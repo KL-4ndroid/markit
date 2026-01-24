@@ -67,9 +67,9 @@ export function InteractionPreferenceChart({ data }: InteractionPreferenceChartP
                   borderRadius: '12px',
                   padding: '12px'
                 }}
-                formatter={(value: any, name: string, props: any) => {
+                formatter={(value: any, name: string | undefined, props: any) => {
                   const percent = ((value / total) * 100).toFixed(1);
-                  return [`${value} 次 (${percent}%)`, `${props.payload.emoji} ${name}`];
+                  return [`${value} 次 (${percent}%)`, `${props.payload.emoji} ${name || ''}`];
                 }}
               />
             </PieChart>

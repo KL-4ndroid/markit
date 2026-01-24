@@ -6,7 +6,7 @@ import { useEvents } from '@/lib/db/hooks';
 import type { Event, DealClosedPayload, InteractionRecordedPayload } from '@/types/db';
 
 interface LiveMetricsProps {
-  marketId: number;
+  marketId: string;
 }
 
 /**

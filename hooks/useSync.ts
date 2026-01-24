@@ -164,7 +164,7 @@ export function useSync(options: UseSyncOptions = {}) {
     };
 
     // ✅ 監聽即時同步事件
-    const handleTriggerSync = (event: Event) => {
+    const handleTriggerSync = (event: any) => {
       const customEvent = event as CustomEvent;
       const { eventType, eventId } = customEvent.detail || {};
       console.log(`⚡ 即時同步觸發：${eventType} (ID: ${eventId?.substring(0, 8)}...)`);
@@ -173,12 +173,12 @@ export function useSync(options: UseSyncOptions = {}) {
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    window.addEventListener('trigger-sync', handleTriggerSync);
+    window.addEventListener('trigger-sync', handleTriggerSync as EventListener);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('trigger-sync', handleTriggerSync);
+      window.removeEventListener('trigger-sync', handleTriggerSync as EventListener);
     };
   }, [throttledSync]);
 
@@ -322,22 +322,25 @@ async function pullEvents(userId: string): Promise<void> {
 
   if (memberError) throw memberError;
 
-  if (!memberMarkets || memberMarkets.length === 0) {
-    return;
-  }
+  const marketIds = memberMarkets?.map(m => m.market_id) || [];
 
-  const marketIds = memberMarkets.map(m => m.market_id);
-
-  // 查詢新事件
+  // ✅ 查詢新事件：包含市集事件 + 用戶自己的全局事件（如商品）
   let query = supabase
     .from('events')
     .select('*')
-    .in('market_id', marketIds)
     .order('timestamp', { ascending: true });
 
   // 只拉取新事件
   if (lastSyncAt) {
     query = query.gt('timestamp', new Date(lastSyncAt).toISOString());
+  }
+
+  // ✅ 過濾條件：市集事件 OR 用戶自己的事件
+  if (marketIds.length > 0) {
+    query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.eq.${userId},market_id.is.null)`);
+  } else {
+    // 如果沒有參與任何市集，只拉取自己的全局事件
+    query = query.eq('actor_id', userId).is('market_id', null);
   }
 
   const { data: newEvents, error: eventsError } = await query;
@@ -370,7 +373,7 @@ async function pullEvents(userId: string): Promise<void> {
 
       // 本地也需要更新讀取模型（重放事件）
       const { eventHandlers } = await import('@/lib/db/events');
-      const handler = eventHandlers[event.type];
+      const handler = eventHandlers[event.type as keyof typeof eventHandlers];
       
       if (handler) {
         await handler({
@@ -378,6 +381,8 @@ async function pullEvents(userId: string): Promise<void> {
           type: event.type,
           payload: event.payload,
           timestamp: new Date(event.timestamp).getTime(),
+          actor_id: event.actor_id,
+          market_id: event.market_id,
         } as Event, db);
       }
     }
@@ -427,7 +432,7 @@ async function handlePermissionRevoked(): Promise<void> {
     // 獲取所有協作市集
     const collaborativeMarkets = await db.markets
       .where('is_collaborative')
-      .equals(true)
+      .equals(1)
       .toArray();
 
     // 清除這些市集的資料

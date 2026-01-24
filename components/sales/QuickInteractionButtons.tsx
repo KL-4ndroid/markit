@@ -9,7 +9,7 @@ import { QuickDealModal } from './QuickDealModal';
 import { db } from '@/lib/db';
 
 interface QuickInteractionButtonsProps {
-  marketId: number;
+  marketId: string;
   onInteractionRecorded?: () => void;
 }
 

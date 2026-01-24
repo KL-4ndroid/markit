@@ -296,6 +296,28 @@ registerEventHandler('market_ended', async (event: Event<{ market_id: string }>,
   console.log(`✅ 市集已結束：ID ${market_id}`);
 });
 
+/**
+ * 處理「市集刪除」事件（軟刪除）
+ * 
+ * 當 market_deleted 事件發生時：
+ * 1. 標記市集為已刪除（isDeleted = true）
+ * 2. 不會真正刪除資料，只是不顯示在列表中
+ * 
+ * 注意：這與「已取消」狀態不同
+ * - 已取消（cancelled）：市集狀態，仍顯示在列表中
+ * - 已刪除（isDeleted）：軟刪除標記，不顯示在列表中
+ */
+registerEventHandler('market_deleted', async (event: Event<{ marketId: string; reason?: string }>, db) => {
+  const { marketId } = event.payload;
+  
+  await db.markets.update(marketId, {
+    isDeleted: true,
+    updatedAt: event.timestamp,
+  });
+  
+  console.log(`🗑️ 市集已刪除（軟刪除）：ID ${marketId.substring(0, 8)}...`);
+});
+
 // ==================== 商品相關事件處理器 ====================
 
 /**
@@ -309,7 +331,8 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
   
   await db.products.add({
     id: productId,
-    market_id: event.market_id, // 關聯市集
+    owner_id: event.actor_id || 'local',  // ✅ 商品所有者
+    market_id: event.market_id,           // ✅ 可選：首次創建的市集
     name: payload.name,
     category: payload.category,
     price: payload.price,
@@ -320,6 +343,7 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
     unlimitedStock: payload.unlimitedStock || false,
     description: payload.description,
     isActive: true,
+    isShared: (payload as any).isShared || false,  // ✅ 是否共享
     totalSold: 0,
     createdAt: event.timestamp,
     updatedAt: event.timestamp,

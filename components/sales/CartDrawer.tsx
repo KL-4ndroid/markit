@@ -10,7 +10,7 @@ import type { Product } from '@/types/db';
 interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  marketId: number;
+  marketId: string;
   onSuccess?: () => void;
 }
 
@@ -27,7 +27,7 @@ type PaymentMethod = 'cash' | 'card' | 'mobile' | 'other';
  */
 export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerProps) {
   const products = useProducts({ isActive: true });
-  const [cart, setCart] = useState<Map<number, CartItem>>(new Map());
+  const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -72,7 +72,7 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
   };
 
   // 減少商品
-  const removeFromCart = (productId: number) => {
+  const removeFromCart = (productId: string) => {
     setCart((prev) => {
       const newCart = new Map(prev);
       const existing = newCart.get(productId);

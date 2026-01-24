@@ -33,11 +33,17 @@ export default function SettingsPage() {
     setHasChanges(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
-      saveQuickActionButtons(buttons);
+      // 保存到本地和雲端
+      await saveQuickActionButtons(buttons, user?.id);
       setHasChanges(false);
-      toast.success('✅ 設定已儲存');
+      
+      if (user) {
+        toast.success('✅ 設定已儲存並同步到雲端');
+      } else {
+        toast.success('✅ 設定已儲存到本地');
+      }
       
       // 觸發 storage 事件讓其他頁面更新
       window.dispatchEvent(new Event('storage'));
@@ -113,20 +119,27 @@ export default function SettingsPage() {
 
       if (eventsError) throw eventsError;
 
-      // 2. 刪除所有商品
-      const { error: productsError } = await supabase
-        .from('products')
-        .delete()
-        .in('market_id', 
-          supabase
-            .from('markets')
-            .select('id')
-            .eq('owner_id', user.id)
-        );
+      // 2. 獲取所有市集 ID
+      const { data: marketsData, error: marketsQueryError } = await supabase
+        .from('markets')
+        .select('id')
+        .eq('owner_id', user.id);
 
-      if (productsError) throw productsError;
+      if (marketsQueryError) throw marketsQueryError;
 
-      // 3. 刪除所有市集
+      const marketIds = marketsData?.map(m => m.id) || [];
+
+      // 3. 刪除所有商品
+      if (marketIds.length > 0) {
+        const { error: productsError } = await supabase
+          .from('products')
+          .delete()
+          .in('market_id', marketIds);
+
+        if (productsError) throw productsError;
+      }
+
+      // 4. 刪除所有市集
       const { error: marketsError } = await supabase
         .from('markets')
         .delete()

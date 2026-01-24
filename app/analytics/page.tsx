@@ -124,7 +124,7 @@ export default function AnalyticsPage() {
           .toArray() as Event<InteractionRecordedPayload>[];
 
         // 篩選屬於當前日期範圍內市集的互動
-        const marketIds = markets.map(m => m.id).filter(id => id !== undefined) as number[];
+        const marketIds = markets.map(m => m.id).filter((id): id is string => id !== undefined);
         const filteredInteractions = interactions.filter(e => 
           marketIds.includes(e.payload.marketId)
         );

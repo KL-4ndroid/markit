@@ -52,11 +52,11 @@ export function InteractionTimeHeatmap({ data }: InteractionTimeHeatmapProps) {
               borderRadius: '12px',
               padding: '12px'
             }}
-            formatter={(value: any, name: string) => {
+            formatter={(value: any, name: string | undefined) => {
               if (name === '成交金額') {
                 return [`NT$${value.toLocaleString()}`, name];
               }
-              return [value, name];
+              return [value, name || ''];
             }}
           />
           <Legend 

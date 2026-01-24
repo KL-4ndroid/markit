@@ -45,19 +45,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // 如果已登入，拉取用戶設定
+      if (session?.user) {
+        syncUserSettings(session.user.id);
+      }
     });
 
     // 監聽 Auth 狀態變化
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // 登入時拉取用戶設定
+      if (event === 'SIGNED_IN' && session?.user) {
+        syncUserSettings(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, [isConfigured]);
+
+  /**
+   * 同步用戶設定（從雲端拉取）
+   */
+  const syncUserSettings = async (userId: string) => {
+    try {
+      // 動態導入避免循環依賴
+      const { pullQuickActionButtonsFromCloud } = await import('@/lib/quick-actions-store');
+      const { initializeUserSettings } = await import('./settings');
+      
+      // 嘗試拉取設定
+      const buttons = await pullQuickActionButtonsFromCloud(userId);
+      
+      // 如果雲端沒有設定，初始化預設設定
+      if (!buttons) {
+        await initializeUserSettings(userId);
+        console.log('✅ 用戶設定已初始化');
+      } else {
+        console.log('✅ 已從雲端同步用戶設定');
+      }
+    } catch (error) {
+      console.error('同步用戶設定失敗:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();

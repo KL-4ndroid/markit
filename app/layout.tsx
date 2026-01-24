@@ -64,11 +64,11 @@ export default function RootLayout({
           <RegisterServiceWorker />
           
           <div className="min-h-screen bg-[#FAFAF8]">
-            {/* 頂部導航 */}
-            <TopNavigation />
+            {/* 頂部導航 - 已移至首頁 Header */}
+            {/* <TopNavigation /> */}
             
             {/* 主要內容區域 */}
-            <main className="pt-16 pb-24">
+            <main className="pb-24">
               {children}
             </main>
             

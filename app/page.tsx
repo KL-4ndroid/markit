@@ -1,36 +1,34 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Calendar, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, ArrowRight, User, UserCircle, LogOut } from 'lucide-react';
 import { useMarkets, useMonthlyStats } from '@/lib/db/hooks';
 import { formatCurrency } from '@/lib/utils';
 import { MarketCard } from '@/components/markets/MarketCard';
-import { db } from '@/lib/db';
+import { useAuth } from '@/lib/supabase/auth-context';
+import { useSync, SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
+import { toast } from 'sonner';
+import { 
+  Cloud, 
+  CloudOff, 
+  Loader2, 
+  CheckCircle, 
+  AlertCircle,
+  RefreshCw
+} from 'lucide-react';
 
 export default function HomePage() {
   const router = useRouter();
   const allMarkets = useMarkets({ orderBy: 'startDate', order: 'asc' });
   const monthlyStats = useMonthlyStats();
-
-  // 臨時調試函數
-  const handleDebugDB = async () => {
-    try {
-      const markets = await db.markets.toArray();
-      console.log('=== 資料庫調試信息 ===');
-      console.log('市集數量:', markets.length);
-      console.log('所有市集:', markets);
-      if (markets[0]) {
-        console.log('第一個市集:', markets[0]);
-        console.log('ID 類型:', typeof markets[0].id);
-        console.log('ID 格式:', markets[0].id);
-        console.log('ID 是否為 UUID:', /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(markets[0].id));
-      }
-      alert('✅ 調試信息已輸出到控制台（按 F12 查看）');
-    } catch (error) {
-      console.error('調試失敗:', error);
-      alert('❌ 調試失敗: ' + error.message);
-    }
-  };
+  const { user, signOut, isConfigured } = useAuth();
+  const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSync({
+    enabled: !!user && isConfigured,
+  });
+  
+  const [showSyncTooltip, setShowSyncTooltip] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // 獲取今天的日期
   const today = new Date().toISOString().split('T')[0];
@@ -49,7 +47,75 @@ export default function HomePage() {
     market.status !== 'completed'
   ) || [];
 
+  // 獲取同步狀態圖示
+  const getSyncIcon = () => {
+    if (!user || !isConfigured) {
+      return <CloudOff className="w-5 h-5" />;
+    }
+    
+    switch (status) {
+      case SyncStatusEnum.SYNCING:
+        return <Loader2 className="w-5 h-5 animate-spin" />;
+      case SyncStatusEnum.SUCCESS:
+        return <CheckCircle className="w-5 h-5" />;
+      case SyncStatusEnum.ERROR:
+        return <AlertCircle className="w-5 h-5" />;
+      case SyncStatusEnum.OFFLINE:
+        return <CloudOff className="w-5 h-5" />;
+      default:
+        return <Cloud className="w-5 h-5" />;
+    }
+  };
 
+  // 獲取同步狀態文字
+  const getSyncStatusText = () => {
+    if (!user || !isConfigured) return '未登入';
+    
+    switch (status) {
+      case SyncStatusEnum.SYNCING:
+        return '同步中';
+      case SyncStatusEnum.SUCCESS:
+        return '已同步';
+      case SyncStatusEnum.ERROR:
+        return '同步失敗';
+      case SyncStatusEnum.OFFLINE:
+        return '離線';
+      default:
+        return '閒置';
+    }
+  };
+
+  // 格式化最後同步時間
+  const formatLastSync = () => {
+    if (!lastSyncAt) return '從未同步';
+    
+    const now = Date.now();
+    const diff = now - lastSyncAt;
+    
+    if (diff < 60000) return '剛剛';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} 分鐘前`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小時前`;
+    return `${Math.floor(diff / 86400000)} 天前`;
+  };
+
+  // 處理登出
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('已登出');
+      setShowUserMenu(false);
+    } catch (error: any) {
+      toast.error('登出失敗：' + error.message);
+    }
+  };
+
+  // 處理登入
+  const handleLogin = () => {
+    const button = document.getElementById('auth-manager-login-trigger');
+    if (button) {
+      button.click();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#FAFAF8]">
@@ -61,16 +127,147 @@ export default function HomePage() {
               Market Pulse
             </h1>
             <div className="flex items-center gap-2">
-              <div className="bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full">
-                <span className="text-white text-sm">離線模式</span>
-              </div>
-              <button
-                onClick={handleDebugDB}
-                className="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full hover:bg-white/30 transition-colors"
-                title="調試資料庫"
-              >
-                <span className="text-white text-sm">🔍</span>
-              </button>
+              {/* 同步狀態按鈕 */}
+              {isConfigured && (
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      if (user && status !== SyncStatusEnum.SYNCING) {
+                        sync();
+                      }
+                    }}
+                    onMouseEnter={() => setShowSyncTooltip(true)}
+                    onMouseLeave={() => setShowSyncTooltip(false)}
+                    className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors"
+                    title={getSyncStatusText()}
+                    disabled={!user || status === SyncStatusEnum.SYNCING}
+                  >
+                    <div className="text-white">
+                      {getSyncIcon()}
+                    </div>
+                  </button>
+
+                  {/* 同步狀態 Tooltip */}
+                  {showSyncTooltip && user && (
+                    <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-4 min-w-[280px] z-50 border border-[#7B9FA6]/10">
+                      <div className="space-y-3">
+                        {/* 狀態 */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-[#6B6B6B]">狀態</span>
+                          <div className="flex items-center gap-2 text-[#7B9FA6]">
+                            {getSyncIcon()}
+                            <span className="text-sm font-medium">{getSyncStatusText()}</span>
+                          </div>
+                        </div>
+
+                        {/* 網路狀態 */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-[#6B6B6B]">網路</span>
+                          <span className={`text-sm font-medium ${isOnline ? 'text-[#7B9FA6]' : 'text-[#6B6B6B]'}`}>
+                            {isOnline ? '🟢 已連線' : '⚪ 離線'}
+                          </span>
+                        </div>
+
+                        {/* 最後同步時間 */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-[#6B6B6B]">最後同步</span>
+                          <span className="text-sm font-medium text-[#3A3A3A]">
+                            {formatLastSync()}
+                          </span>
+                        </div>
+
+                        {/* 待同步事件 */}
+                        {pendingCount > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-[#6B6B6B]">待同步</span>
+                            <span className="text-sm font-medium text-[#7B9FA6]">
+                              {pendingCount} 個事件
+                            </span>
+                          </div>
+                        )}
+
+                        {/* 錯誤訊息 */}
+                        {error && (
+                          <div className="pt-3 border-t border-[#7B9FA6]/10">
+                            <p className="text-xs text-[#d4183d]">
+                              ⚠️ {error}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* 手動同步按鈕 */}
+                        {status !== SyncStatusEnum.SYNCING && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              sync();
+                              setShowSyncTooltip(false);
+                            }}
+                            className="w-full bg-[#7B9FA6] text-white py-2 rounded-xl hover:bg-[#6A8E95] transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                            立即同步
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* 使用者登入狀態按鈕 */}
+              {isConfigured && (
+                <div className="relative">
+                  {user ? (
+                    <>
+                      <button
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                        className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors"
+                        title={`已登入：${user.email}`}
+                      >
+                        <div className="text-white">
+                          <UserCircle className="w-5 h-5" />
+                        </div>
+                      </button>
+
+                      {/* 用戶選單 */}
+                      {showUserMenu && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-40" 
+                            onClick={() => setShowUserMenu(false)}
+                          />
+                          <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-2 min-w-[200px] z-50 border border-[#7B9FA6]/10">
+                            <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
+                              <p className="text-xs text-[#6B6B6B]">登入為</p>
+                              <p className="text-sm font-medium text-[#3A3A3A] truncate">
+                                {user.email}
+                              </p>
+                            </div>
+                            <button
+                              onClick={handleSignOut}
+                              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#F5E6E8] transition-colors text-left"
+                            >
+                              <LogOut className="w-4 h-4 text-[#d4183d]" />
+                              <span className="text-sm text-[#3A3A3A]">登出</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleLogin}
+                      className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors"
+                      title="未登入"
+                    >
+                      <div className="text-white">
+                        <User className="w-5 h-5" />
+                      </div>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <p className="text-white/80 text-sm">

@@ -441,10 +441,12 @@ export default function MarketDetailPage({ params }: PageProps) {
     setIsUpdating(true);
 
     try {
-      // 軟刪除：標記為已取消
-      await updateMarketStatus(marketId, 'cancelled', '用戶刪除記錄');
+      // ✅ 使用軟刪除功能
+      const { deleteMarket } = await import('@/lib/db/hooks');
+      await deleteMarket(marketId, '用戶刪除記錄');
+      
       toast.success('市集已刪除', {
-        description: '記錄已移除',
+        description: '記錄已從列表中移除',
       });
       setShowDeleteConfirm(false);
       
@@ -1302,7 +1304,9 @@ export default function MarketDetailPage({ params }: PageProps) {
             <div className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl">
               <h3 className="text-lg font-medium text-[#3A3A3A] mb-2">確認刪除記錄？</h3>
               <p className="text-sm text-[#6B6B6B] mb-6">
-                刪除後，此市集記錄將被移除，此操作無法復原。
+                刪除後，此市集將不再顯示在列表中，但數據仍會保留。
+                <br />
+                <span className="text-[#D4A574] font-medium">提示：如果只是市集取消，建議使用「已取消」狀態。</span>
               </p>
               <div className="flex gap-3">
                 <button

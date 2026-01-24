@@ -17,6 +17,7 @@ export type EventType =
   | 'market_status_changed'    // 市集狀態變更
   | 'market_started'           // 市集開始營業
   | 'market_ended'             // 市集結束營業
+  | 'market_deleted'           // 市集刪除（軟刪除）
   // 商品相關事件
   | 'product_created'          // 商品建立
   | 'product_updated'          // 商品更新
@@ -89,6 +90,9 @@ export interface Market {
   owner_id?: string;           // 擁有者 UUID
   is_collaborative?: boolean;  // 是否為協作市集
   sync_status?: 'local_only' | 'synced' | 'conflict'; // 同步狀態
+  
+  // 軟刪除標記
+  isDeleted?: boolean;         // 是否已刪除（軟刪除，不顯示在列表中）
   
   // 時間軸資訊
   earlyEntryEnabled?: boolean; // 是否提前進場
@@ -174,6 +178,14 @@ export interface MarketStatusChangedPayload {
   reason?: string;             // 變更原因
 }
 
+/**
+ * 市集刪除事件的 Payload
+ */
+export interface MarketDeletedPayload {
+  marketId: string;            // 市集 UUID
+  reason?: string;             // 刪除原因
+}
+
 // ==================== 商品相關類型 ====================
 
 /**
@@ -195,7 +207,8 @@ export type ProductCategory =
  */
 export interface Product {
   id?: string;                 // UUID（由前端生成）
-  market_id?: string;          // 新增：關聯市集 UUID
+  owner_id?: string;           // ✅ 新增：商品所有者 UUID
+  market_id?: string;          // ✅ 可選：首次創建的市集 UUID（不強制綁定）
   name: string;                // 商品名稱
   category: ProductCategory;   // 商品分類
   price: number;               // 售價
@@ -209,6 +222,7 @@ export interface Product {
   stock?: number;              // 庫存數量（可選）
   unlimitedStock?: boolean;    // 不限庫存（販售服務或接單訂製，預設 false）
   isActive: boolean;           // 是否啟用
+  isShared?: boolean;          // ✅ 新增：是否為共享商品（團隊可見）
   
   // 統計資訊
   totalSold?: number;          // 總銷售數量
@@ -233,6 +247,7 @@ export interface ProductCreatedPayload {
   colorCode?: string;
   stock?: number;
   unlimitedStock?: boolean;    // 不限庫存
+  isShared?: boolean;          // ✅ 新增：是否為共享商品
   description?: string;
 }
 

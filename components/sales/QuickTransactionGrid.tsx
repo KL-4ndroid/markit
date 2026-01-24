@@ -9,7 +9,7 @@ import type { Product } from '@/types/db';
 import Link from 'next/link';
 
 interface QuickTransactionGridProps {
-  marketId: number;
+  marketId: string;
 }
 
 interface CartItem {
@@ -26,7 +26,7 @@ type PaymentMethod = 'cash' | 'card' | 'mobile' | 'other';
 export function QuickTransactionGrid({ marketId }: QuickTransactionGridProps) {
   const products = useProducts({ isActive: true });
   const [showProducts, setShowProducts] = useState(true);
-  const [cart, setCart] = useState<Map<number, CartItem>>(new Map());
+  const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
 
   // 分類樣式
@@ -75,7 +75,7 @@ export function QuickTransactionGrid({ marketId }: QuickTransactionGridProps) {
   };
 
   // 減少商品數量
-  const decreaseQuantity = (productId: number) => {
+  const decreaseQuantity = (productId: string) => {
     setCart((prev) => {
       const newCart = new Map(prev);
       const existing = newCart.get(productId);
@@ -96,7 +96,7 @@ export function QuickTransactionGrid({ marketId }: QuickTransactionGridProps) {
   };
 
   // 增加商品數量
-  const increaseQuantity = (productId: number) => {
+  const increaseQuantity = (productId: string) => {
     setCart((prev) => {
       const newCart = new Map(prev);
       const existing = newCart.get(productId);

@@ -72,8 +72,8 @@ export class MarketPulseDB extends Dexie {
     // 版本 3：UUID 遷移 + 多人協作支援
     this.version(3).stores({
       events: 'id, type, timestamp, actor_id, market_id, sync_status',
-      markets: 'id, status, name, startDate, endDate, owner_id, is_collaborative, sync_status',
-      products: 'id, category, name, isActive, market_id',
+      markets: 'id, status, name, startDate, endDate, owner_id, is_collaborative, sync_status, isDeleted',  // ✅ 添加 isDeleted 索引
+      products: 'id, category, name, isActive, market_id, owner_id',  // ✅ 添加 owner_id 索引
       dailyStats: 'date, marketId',
       settings: '++id',
       syncQueue: 'id, status, created_at',
@@ -99,6 +99,7 @@ export class MarketPulseDB extends Dexie {
           owner_id: 'local',
           is_collaborative: false,
           sync_status: 'local_only',
+          isDeleted: false,  // ✅ 預設為未刪除
         });
       }
       
@@ -219,9 +220,9 @@ export async function initializeDatabase(): Promise<void> {
           updatedAt: Date.now(),
         });
         console.log('✅ 資料庫初始化完成：已建立預設設定');
-      } catch (addError: any) {
+      } catch (addError: unknown) {
         // 如果添加失敗（可能是因為已存在），忽略錯誤
-        if (addError.name !== 'ConstraintError') {
+        if (addError instanceof Error && addError.name !== 'ConstraintError') {
           throw addError;
         }
         console.log('ℹ️ 預設設定已存在，跳過建立');

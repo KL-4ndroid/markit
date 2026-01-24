@@ -11,11 +11,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './index';
 import { recordEvent } from './events';
 import type {
-  Market,
   Product,
-  DailyStats,
   Settings,
-  Event,
   MarketStatus,
   MarketCreatedPayload,
   ProductCreatedPayload,
@@ -29,12 +26,13 @@ import type {
  * 查詢所有市集
  * 
  * @param options - 查詢選項
- * @returns 市集列表
+ * @returns 市集列表（自動過濾已刪除的市集）
  */
 export function useMarkets(options?: {
   status?: MarketStatus;
   orderBy?: 'startDate' | 'createdAt';
   order?: 'asc' | 'desc';
+  includeDeleted?: boolean;  // ✅ 新增：是否包含已刪除的市集（預設 false）
 }) {
   return useLiveQuery(async () => {
     let query = db.markets.toCollection();
@@ -46,15 +44,21 @@ export function useMarkets(options?: {
     
     // 排序
     const markets = await query.toArray();
+    
+    // ✅ 過濾已刪除的市集（除非明確要求包含）
+    const filteredMarkets = options?.includeDeleted 
+      ? markets 
+      : markets.filter(m => !m.isDeleted);
+    
     const orderBy = options?.orderBy || 'startDate';
     const order = options?.order || 'desc';
     
-    return markets.sort((a, b) => {
+    return filteredMarkets.sort((a, b) => {
       const aValue = orderBy === 'startDate' ? new Date(a.startDate).getTime() : a.createdAt;
       const bValue = orderBy === 'startDate' ? new Date(b.startDate).getTime() : b.createdAt;
       return order === 'asc' ? aValue - bValue : bValue - aValue;
     });
-  }, [options?.status, options?.orderBy, options?.order]);
+  }, [options?.status, options?.orderBy, options?.order, options?.includeDeleted]);
 }
 
 /**
@@ -77,7 +81,7 @@ export function useMarket(id: string | undefined) {
  * 查詢即將到來的市集
  * 
  * @param limit - 限制數量
- * @returns 市集列表
+ * @returns 市集列表（自動過濾已刪除的市集）
  */
 export function useUpcomingMarkets(limit: number = 5) {
   return useLiveQuery(async () => {
@@ -89,7 +93,7 @@ export function useUpcomingMarkets(limit: number = 5) {
       .toArray();
     
     return markets
-      .filter(m => m.status !== 'cancelled' && m.status !== 'completed')
+      .filter(m => !m.isDeleted && m.status !== 'cancelled' && m.status !== 'completed')  // ✅ 過濾已刪除的市集
       .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
       .slice(0, limit);
   }, [limit]);
@@ -146,6 +150,16 @@ export async function startMarket(marketId: string): Promise<void> {
  */
 export async function endMarket(marketId: string): Promise<void> {
   await recordEvent('market_ended', { market_id: marketId });  // ✅ 統一使用 market_id
+}
+
+/**
+ * 刪除市集（軟刪除，UUID 版本）
+ * 
+ * @param marketId - 市集 ID（UUID）
+ * @param reason - 刪除原因（可選）
+ */
+export async function deleteMarket(marketId: string, reason?: string): Promise<void> {
+  await recordEvent('market_deleted', { marketId, reason });
 }
 
 // ==================== 商品相關 Hooks ====================
@@ -319,7 +333,7 @@ export function useDateRangeStats(startDate: string, endDate: string) {
 /**
  * 查詢本月統計摘要
  * 
- * @returns 本月統計
+ * @returns 本月統計（自動過濾已刪除的市集）
  */
 export function useMonthlyStats() {
   return useLiveQuery(async () => {
@@ -329,10 +343,15 @@ export function useMonthlyStats() {
     const startDate = `${year}-${month}-01`;
     const endDate = `${year}-${month}-31`;
     
-    const stats = await db.dailyStats
-      .where('date')
+    // ✅ 修復：直接從 markets 表統計本月的市集
+    // 原因：dailyStats 按日期分組，同一天多個市集會被覆蓋
+    const markets = await db.markets
+      .where('startDate')
       .between(startDate, endDate, true, true)
       .toArray();
+    
+    // ✅ 過濾已刪除的市集
+    const activeMarkets = markets.filter(m => !m.isDeleted);
     
     // 彙總統計
     const summary = {
@@ -340,23 +359,16 @@ export function useMonthlyStats() {
       totalProfit: 0,
       totalDeals: 0,
       totalInteractions: 0,
-      marketCount: 0,
+      marketCount: activeMarkets.length,  // ✅ 直接使用市集數量（已過濾刪除的）
     };
     
-    const marketIds = new Set<string>();
-    
-    for (const stat of stats) {
-      summary.totalRevenue += stat.revenue;
-      summary.totalProfit += stat.profit;
-      summary.totalDeals += stat.dealCount;
-      summary.totalInteractions += stat.touchCount + stat.inquiryCount;
-      
-      if (stat.marketId) {
-        marketIds.add(stat.marketId);
-      }
+    // ✅ 從 markets 表累加統計（更準確）
+    for (const market of activeMarkets) {
+      summary.totalRevenue += market.totalRevenue || 0;
+      summary.totalProfit += market.totalProfit || 0;
+      summary.totalDeals += market.totalDeals || 0;
+      summary.totalInteractions += market.totalInteractions || 0;
     }
-    
-    summary.marketCount = marketIds.size;
     
     return summary;
   }, []);
