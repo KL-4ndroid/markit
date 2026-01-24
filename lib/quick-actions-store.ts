@@ -28,9 +28,9 @@ export function getQuickActionButtons(): QuickActionButton[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const buttons = JSON.parse(stored);
+      const buttons = JSON.parse(stored) as QuickActionButton[];
       // 確保每個按鈕都有 id
-      return buttons.map((btn: QuickActionButton, index: number) => ({
+      return buttons.map((btn, index: number) => ({
         id: btn.id || `button_${index + 1}`,
         label: btn.label || '',
         emoji: btn.emoji || '❓',

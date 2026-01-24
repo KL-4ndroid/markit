@@ -220,7 +220,7 @@ export async function initializeDatabase(): Promise<void> {
           updatedAt: Date.now(),
         });
         console.log('✅ 資料庫初始化完成：已建立預設設定');
-      } catch (addError: unknown) {
+      } catch (addError) {
         // 如果添加失敗（可能是因為已存在），忽略錯誤
         if (addError instanceof Error && addError.name !== 'ConstraintError') {
           throw addError;

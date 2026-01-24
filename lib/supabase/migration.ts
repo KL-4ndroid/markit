@@ -202,7 +202,7 @@ async function pullAllDataFromCloud(currentUserId: string): Promise<void> {
     for (const event of events) {
       // 使用雲端的 ID 和資料
       await recordEvent(
-        event.type as never,
+        event.type,
         event.payload,
         event.id // 使用雲端的 UUID
       );
