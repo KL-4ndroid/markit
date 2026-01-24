@@ -7,6 +7,7 @@
 
 import { db } from '@/lib/db';
 import { supabase } from './client';
+import type { EventType } from '@/types/db';
 
 /**
  * 檢測本地是否有匿名資料
@@ -199,10 +200,20 @@ async function pullAllDataFromCloud(currentUserId: string): Promise<void> {
     
     const { recordEvent } = await import('@/lib/db/events');
     
-    for (const event of events) {
+    interface SupabaseEvent {
+      id: string;
+      type: string;
+      payload: Record<string, unknown>;
+      timestamp: number;
+      actor_id?: string;
+      market_id?: string;
+      sync_status?: string;
+    }
+    
+    for (const event of events as SupabaseEvent[]) {
       // 使用雲端的 ID 和資料
       await recordEvent(
-        event.type,
+        event.type as EventType,
         event.payload,
         event.id // 使用雲端的 UUID
       );

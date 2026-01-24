@@ -288,11 +288,24 @@ export async function exportData(): Promise<string> {
 }
 
 /**
+ * 備份資料格式介面
+ */
+interface BackupData {
+  version: number;
+  exportedAt: number;
+  events: Event[];
+  markets: Market[];
+  products: Product[];
+  dailyStats: DailyStats[];
+  settings: Settings[];
+}
+
+/**
  * 匯入資料庫資料（用於還原備份）
  */
 export async function importData(jsonData: string): Promise<void> {
   try {
-    const data = JSON.parse(jsonData);
+    const data = JSON.parse(jsonData) as BackupData;
     
     // 驗證資料格式
     if (!data.version || !data.events || !data.markets) {

@@ -30,7 +30,7 @@ export function getQuickActionButtons(): QuickActionButton[] {
     if (stored) {
       const buttons = JSON.parse(stored) as QuickActionButton[];
       // 確保每個按鈕都有 id
-      return buttons.map((btn, index: number) => ({
+      return buttons.map((btn, index) => ({
         id: btn.id || `button_${index + 1}`,
         label: btn.label || '',
         emoji: btn.emoji || '❓',
