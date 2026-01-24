@@ -50,7 +50,7 @@ export function registerEventHandler(type: EventType, handler: EventHandler): vo
  * @param eventId - 可選的事件 ID（用於同步）
  * @returns 事件 ID（UUID）
  */
-export async function recordEvent<T = any>(
+export async function recordEvent<T = Record<string, unknown>>(
   type: EventType,
   payload: T,
   eventId?: string
@@ -81,10 +81,10 @@ export async function recordEvent<T = any>(
     if (payload && typeof payload === 'object') {
       // ✅ 統一使用 market_id（底線式）
       if ('market_id' in payload) {
-        event.market_id = (payload as any).market_id;
+        event.market_id = (payload as Record<string, unknown>).market_id as string;
       } else if ('marketId' in payload) {
         // 兼容舊的駝峰式命名
-        event.market_id = (payload as any).marketId;
+        event.market_id = (payload as Record<string, unknown>).marketId as string;
       }
     }
 
@@ -119,12 +119,13 @@ export async function recordEvent<T = any>(
     }
     
     return id;
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as Error;
     console.error(`❌ 記錄事件失敗：${type}`, error);
     console.error('錯誤詳情:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
     });
     throw error;
   }
@@ -144,7 +145,8 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
   
   // ✅ 統一使用 market_id（底線式）
   // 生成市集 UUID（如果 payload 中已有則使用，否則生成新的）
-  const market_id = (payload as any).market_id || (payload as any).marketId || generateUUID();
+  const payloadWithId = payload as MarketCreatedPayload & { market_id?: string; marketId?: string };
+  const market_id = payloadWithId.market_id || payloadWithId.marketId || generateUUID();
   
   // 建立市集快照
   const market: Market = {
@@ -202,11 +204,12 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
   await db.markets.add(market);
   
   // ✅ 更新事件的 market_id 和 payload（統一使用 market_id 和底線式命名）
-  const updates: any = { market_id };
+  const updates: { market_id: string; payload?: Record<string, unknown> } = { market_id };
   
   // ✅ 總是轉換 payload 為底線式命名（用於 Supabase 同步）
   // 檢查是否已經有底線式欄位，如果沒有則添加
-  if (!(payload as any).start_date || !(payload as any).end_date) {
+  const payloadWithSnakeCase = payload as MarketCreatedPayload & { start_date?: string; end_date?: string };
+  if (!payloadWithSnakeCase.start_date || !payloadWithSnakeCase.end_date) {
     updates.payload = {
       ...payload,
       market_id,
@@ -247,7 +250,9 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
  * 更新 markets 表中對應市集的狀態
  */
 registerEventHandler('market_status_changed', async (event: Event<MarketStatusChangedPayload>, db) => {
-  const { market_id, newStatus } = event.payload as any;
+  const payloadWithMarketId = event.payload as MarketStatusChangedPayload & { market_id?: string };
+  const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+  const { newStatus } = event.payload;
   
   // 更新市集狀態
   await db.markets.update(market_id, {
@@ -266,7 +271,7 @@ registerEventHandler('market_status_changed', async (event: Event<MarketStatusCh
  * 2. 設定營業階段為 'operating'
  */
 registerEventHandler('market_started', async (event: Event<{ market_id: string }>, db) => {
-  const { market_id } = event.payload as any;
+  const { market_id } = event.payload;
   
   await db.markets.update(market_id, {
     status: 'ongoing',
@@ -285,7 +290,7 @@ registerEventHandler('market_started', async (event: Event<{ market_id: string }
  * 2. 清除營業階段
  */
 registerEventHandler('market_ended', async (event: Event<{ market_id: string }>, db) => {
-  const { market_id } = event.payload as any;
+  const { market_id } = event.payload;
   
   await db.markets.update(market_id, {
     status: 'completed',
@@ -327,7 +332,8 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
   const { payload } = event;
   
   // 生成商品 UUID（如果 payload 中已有則使用，否則生成新的）
-  const productId = (payload as any).productId || generateUUID();
+  const payloadWithId = payload as ProductCreatedPayload & { productId?: string };
+  const productId = payloadWithId.productId || generateUUID();
   
   await db.products.add({
     id: productId,
@@ -343,16 +349,16 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
     unlimitedStock: payload.unlimitedStock || false,
     description: payload.description,
     isActive: true,
-    isShared: (payload as any).isShared || false,  // ✅ 是否共享
+    isShared: payloadWithId.isShared || false,  // ✅ 是否共享
     totalSold: 0,
     createdAt: event.timestamp,
     updatedAt: event.timestamp,
   });
   
   // 將 productId 寫回 payload（用於同步）
-  if (!(payload as any).productId) {
+  if (!payloadWithId.productId) {
     await db.events.update(event.id!, {
-      payload: { ...payload, productId } as any,
+      payload: { ...payload, productId },
     });
   }
   
@@ -398,7 +404,9 @@ registerEventHandler('product_deleted', async (event: Event<{ productId: number 
  * 2. 更新每日統計
  */
 registerEventHandler('interaction_recorded', async (event: Event<InteractionRecordedPayload>, db) => {
-  const { market_id, type } = event.payload as any;
+  const payloadWithMarketId = event.payload as InteractionRecordedPayload & { market_id?: string };
+  const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+  const { type } = event.payload;
   
   // 更新市集統計
   const market = await db.markets.get(market_id);
@@ -415,7 +423,7 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
   
   if (dailyStat) {
     // 更新現有統計
-    const updates: any = { updatedAt: event.timestamp };
+    const updates: { updatedAt: number; touchCount?: number; inquiryCount?: number } = { updatedAt: event.timestamp };
     if (type === 'touch') updates.touchCount = dailyStat.touchCount + 1;
     if (type === 'inquiry') updates.inquiryCount = dailyStat.inquiryCount + 1;
     
@@ -449,7 +457,9 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
  * 4. 儲存交易時的價格快照（防止歷史數據錯誤）
  */
 registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) => {
-  const { market_id, items, totalAmount } = event.payload as any;
+  const payloadWithMarketId = event.payload as DealClosedPayload & { market_id?: string };
+  const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+  const { items, totalAmount } = event.payload;
   
   // 計算總成本並更新商品
   let totalCost = 0;
@@ -469,7 +479,7 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
     
     // 更新商品銷售統計和庫存
     if (product) {
-      const updates: any = {
+      const updates: { totalSold: number; updatedAt: number; stock?: number } = {
         totalSold: (product.totalSold || 0) + item.quantity,
         updatedAt: event.timestamp,
       };
