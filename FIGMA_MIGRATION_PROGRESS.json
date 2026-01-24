@@ -1,0 +1,199 @@
+{
+  "migrationVersion": "1.0.0",
+  "startDate": "2025-12-29",
+  "lastUpdated": "2025-12-29T09:30:00Z",
+  "currentPhase": "核心組件遷移",
+  "currentStep": 6,
+  "totalSteps": 15,
+  "status": "in_progress",
+  "phases": [
+    {
+      "id": "phase1",
+      "name": "準備階段",
+      "status": "completed",
+      "steps": [
+        {
+          "id": "step1",
+          "name": "備份現有專案",
+          "status": "completed",
+          "description": "建立 Git 分支或備份當前程式碼",
+          "files": [],
+          "completed": true,
+          "timestamp": "2025-12-29T08:15:00Z",
+          "notes": "已建立 Git 儲存庫並切換到 feature/figma-design-migration 分支"
+        },
+        {
+          "id": "step2",
+          "name": "提取 Figma 色彩系統",
+          "status": "completed",
+          "description": "從 MarketApp 提取色彩變數到 globals.css",
+          "files": ["app/globals.css"],
+          "completed": true,
+          "timestamp": "2025-12-29T08:20:00Z",
+          "notes": "已添加 Figma 色彩變數：sage-green, warm-sand, soft-pink, light-yellow, mint-green 等"
+        },
+        {
+          "id": "step3",
+          "name": "更新 Tailwind 配置",
+          "status": "completed",
+          "description": "添加自定義色彩和圓角配置",
+          "files": ["tailwind.config.ts"],
+          "completed": true,
+          "timestamp": "2025-12-29T08:30:00Z",
+          "notes": "已添加 figma 色彩系統、特殊圓角 (figma-sm/md/lg/xl) 和陰影系統"
+        }
+      ]
+    },
+    {
+      "id": "phase2",
+      "name": "核心組件遷移",
+      "status": "completed",
+      "steps": [
+        {
+          "id": "step4",
+          "name": "建立共用 UI 組件",
+          "status": "completed",
+          "description": "建立 Card, Button, Badge 等基礎組件",
+          "files": ["components/ui/card.tsx", "components/ui/button.tsx", "components/ui/badge.tsx", "components/ui/gradient-header.tsx"],
+          "completed": true,
+          "timestamp": "2025-12-29T09:00:00Z",
+          "notes": "已建立 Card, Button, Badge, GradientHeader 組件，使用 Figma 設計系統"
+        },
+        {
+          "id": "step5",
+          "name": "遷移底部導航欄",
+          "status": "completed",
+          "description": "更新底部導航欄樣式和互動效果",
+          "files": ["components/Navigation.tsx"],
+          "completed": true,
+          "timestamp": "2025-12-29T09:15:00Z",
+          "notes": "已建立 Navigation 組件，應用 Figma 圓角、陰影和互動效果"
+        },
+        {
+          "id": "step6",
+          "name": "更新首頁布局",
+          "status": "completed",
+          "description": "應用 Figma 設計到首頁 - 漸層頭部、卡片樣式",
+          "files": ["app/page.tsx"],
+          "completed": true,
+          "timestamp": "2025-12-29T09:30:00Z",
+          "notes": "已更新首頁：漸層頭部、Figma 卡片樣式、Badge 組件、Navigation 組件"
+        }
+      ]
+    },
+    {
+      "id": "phase3",
+      "name": "頁面樣式更新",
+      "status": "pending",
+      "steps": [
+        {
+          "id": "step7",
+          "name": "更新市集詳情頁",
+          "status": "pending",
+          "description": "應用 Figma 設計到市集詳情頁面",
+          "files": ["app/market/[id]/page.tsx"],
+          "completed": false,
+          "timestamp": null
+        },
+        {
+          "id": "step8",
+          "name": "更新市集列表頁",
+          "status": "pending",
+          "description": "應用卡片樣式到列表頁",
+          "files": ["app/markets/page.tsx"],
+          "completed": false,
+          "timestamp": null
+        },
+        {
+          "id": "step9",
+          "name": "更新新增市集頁",
+          "status": "pending",
+          "description": "更新表單樣式",
+          "files": ["app/markets/new/page.tsx"],
+          "completed": false,
+          "timestamp": null
+        },
+        {
+          "id": "step10",
+          "name": "更新商品管理頁",
+          "status": "pending",
+          "description": "應用 Figma 設計到商品頁面",
+          "files": ["app/products/page.tsx"],
+          "completed": false,
+          "timestamp": null
+        },
+        {
+          "id": "step11",
+          "name": "更新數據分析頁",
+          "status": "pending",
+          "description": "更新圖表和統計卡片樣式",
+          "files": ["app/analytics/page.tsx"],
+          "completed": false,
+          "timestamp": null
+        },
+        {
+          "id": "step12",
+          "name": "更新設定頁",
+          "status": "pending",
+          "description": "應用 Figma 設計到設定頁面",
+          "files": ["app/settings/page.tsx"],
+          "completed": false,
+          "timestamp": null
+        }
+      ]
+    },
+    {
+      "id": "phase4",
+      "name": "細節優化",
+      "status": "pending",
+      "steps": [
+        {
+          "id": "step13",
+          "name": "更新自定義組件",
+          "status": "pending",
+          "description": "更新 SmartInput, TimelineEditor 等組件樣式",
+          "files": ["components/SmartInput.tsx", "components/TimelineEditor.tsx", "components/TimelineDisplay.tsx", "components/StatusProgressBar.tsx"],
+          "completed": false,
+          "timestamp": null
+        },
+        {
+          "id": "step14",
+          "name": "響應式測試",
+          "status": "pending",
+          "description": "測試各種螢幕尺寸的顯示效果",
+          "files": [],
+          "completed": false,
+          "timestamp": null
+        },
+        {
+          "id": "step15",
+          "name": "最終檢查與文檔",
+          "status": "pending",
+          "description": "檢查所有頁面，更新文檔",
+          "files": ["FIGMA_MIGRATION_COMPLETE.md"],
+          "completed": false,
+          "timestamp": null
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "每個步驟完成後會自動更新此檔案",
+    "如果中斷，系統會從最後完成的步驟繼續",
+    "建議每完成一個階段就測試一次"
+  ],
+  "rollbackPoints": [
+    {
+      "phase": "phase1",
+      "commit": "Phase 1 Complete",
+      "timestamp": "2025-12-29T08:30:00Z",
+      "description": "階段 1 完成：Figma 設計系統設置"
+    },
+    {
+      "phase": "phase2",
+      "commit": "Phase 2 Complete",
+      "timestamp": "2025-12-29T09:30:00Z",
+      "description": "階段 2 完成：核心組件遷移"
+    }
+  ]
+}
