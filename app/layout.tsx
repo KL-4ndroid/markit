@@ -73,7 +73,7 @@ export default function RootLayout({
             {/* <TopNavigation /> */}
             
             {/* 主要內容區域 */}
-            <main className="pb-24">
+            <main className="pb-24 page-transition">
               {children}
             </main>
             

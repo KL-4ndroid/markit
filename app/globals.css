@@ -44,23 +44,28 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  
-  /* 防止頁面切換時的閃爍 */
   min-height: 100vh;
   position: relative;
 }
 
 /* 頁面切換過渡效果 */
-main {
-  animation: fadeIn 0.2s ease-in-out;
+main.page-transition {
+  animation: pageEnter 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: calc(100vh - 6rem);
+  will-change: opacity, transform;
+  /* 強制硬體加速 */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
-@keyframes fadeIn {
+@keyframes pageEnter {
   from {
     opacity: 0;
+    transform: translateZ(0) translateY(8px);
   }
   to {
     opacity: 1;
+    transform: translateZ(0) translateY(0);
   }
 }
 
@@ -139,16 +144,17 @@ html {
   background: var(--background);
 }
 
-/* 頁面切換時保持最小高度 */
-main {
-  min-height: calc(100vh - 6rem);
-  will-change: opacity;
-}
-
 /* 優化觸摸反饋 */
 * {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
+  /* 優化觸摸滾動 */
+  -webkit-overflow-scrolling: touch;
+}
+
+a, button {
+  /* 移除點擊延遲 */
+  touch-action: manipulation;
 }
 
 /* 硬體加速 */
