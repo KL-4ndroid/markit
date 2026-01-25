@@ -48,8 +48,9 @@ next-env.d.ts
 
 # Supabase
 .supabase
-# PWA
-public/sw.js
+
+# PWA - 只排除自動生成的文件，保留手寫的 sw.js
+# public/sw.js  ← 不要排除，這是手寫的
 public/workbox-*.js
 public/worker-*.js
 public/sw.js.map
