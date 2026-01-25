@@ -44,6 +44,24 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* 防止頁面切換時的閃爍 */
+  min-height: 100vh;
+  position: relative;
+}
+
+/* 頁面切換過渡效果 */
+main {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* 數字對齊 */
@@ -113,4 +131,29 @@ html {
 /* 漸層 Header */
 .gradient-header {
   background: linear-gradient(135deg, #7B9FA6 0%, #D4A574 100%);
+}
+
+/* 防止頁面切換閃爍 - 保持背景色 */
+#__next,
+[data-nextjs-scroll-focus-boundary] {
+  background: var(--background);
+}
+
+/* 頁面切換時保持最小高度 */
+main {
+  min-height: calc(100vh - 6rem);
+  will-change: opacity;
+}
+
+/* 優化觸摸反饋 */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* 硬體加速 */
+.hardware-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }

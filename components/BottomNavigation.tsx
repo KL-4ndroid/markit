@@ -65,7 +65,7 @@ export function BottomNavigation() {
 
   return (
     <>
-      <nav className={`fixed left-0 right-0 bg-white border-t border-[#7B9FA6]/20 px-4 py-3 z-50 transition-transform duration-300 ease-in-out ${
+      <nav className={`fixed left-0 right-0 bg-white border-t border-[#7B9FA6]/20 px-4 py-3 z-50 transition-transform duration-300 ease-in-out hardware-accelerated ${
         isNavVisible ? 'bottom-0 translate-y-0' : '-bottom-24 translate-y-24'
       }`}>
         <div className="max-w-lg mx-auto flex justify-around items-center">
@@ -78,10 +78,10 @@ export function BottomNavigation() {
                 key={item.id}
                 href={item.path}
                 prefetch={true}
-                className="flex flex-col items-center gap-1 min-w-[60px] transition-all"
+                className="flex flex-col items-center gap-1 min-w-[60px] transition-all hardware-accelerated"
               >
                 <div
-                  className={`p-2.5 rounded-2xl transition-all ${
+                  className={`p-2.5 rounded-2xl transition-all hardware-accelerated ${
                     isActive
                       ? 'bg-[#7B9FA6] text-white'
                       : 'bg-transparent text-[#6B6B6B] hover:bg-[#F5E6E8]'
