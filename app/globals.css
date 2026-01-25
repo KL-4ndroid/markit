@@ -46,13 +46,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   position: relative;
+  /* 防止下拉回彈 */
+  overscroll-behavior-y: none;
 }
 
-/* 頁面切換過渡效果 */
-main.page-transition {
-  animation: pageEnter 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: calc(100vh - 6rem);
-  will-change: opacity, transform;
+/* 頁面切換過渡效果 - 輕量淡入動畫 */
+.page-transition {
+  animation: pageEnter 0.15s ease-out;
+  will-change: opacity;
   /* 強制硬體加速 */
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -61,11 +62,9 @@ main.page-transition {
 @keyframes pageEnter {
   from {
     opacity: 0;
-    transform: translateZ(0) translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateZ(0) translateY(0);
   }
 }
 
@@ -152,9 +151,15 @@ html {
   -webkit-overflow-scrolling: touch;
 }
 
+/* 移除點擊延遲 */
 a, button {
-  /* 移除點擊延遲 */
   touch-action: manipulation;
+}
+
+/* 防止頁面切換閃爍 - 保持背景色 */
+#__next,
+[data-nextjs-scroll-focus-boundary] {
+  background: var(--background);
 }
 
 /* 硬體加速 */
