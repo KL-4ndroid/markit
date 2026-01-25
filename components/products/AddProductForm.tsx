@@ -86,8 +86,9 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
     <>
       <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
 
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-        <div className="bg-[#FAFAF8] w-full h-[90vh] sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="min-h-full flex items-end sm:items-center sm:justify-center sm:p-4">
+          <div className="bg-[#FAFAF8] w-full max-h-[90vh] sm:max-w-lg sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative shadow-2xl">
           {/* Header */}
           <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] px-6 py-6 flex items-center justify-between">
             <h2 className="text-xl font-medium text-white">新增商品</h2>
@@ -97,7 +98,7 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
           </div>
 
           {/* 表單內容 */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 pb-24">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 pb-24 overscroll-behavior-contain">
             <div className="space-y-5">
               {/* 商品名稱 */}
               <div>
@@ -240,7 +241,7 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
           </form>
 
           {/* 底部按鈕 - 固定在彈窗底部 */}
-          <div className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t border-[#7B9FA6]/10 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+          <div className="sticky bottom-0 left-0 right-0 px-6 py-4 border-t border-[#7B9FA6]/10 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)] flex-shrink-0">
             <div className="flex gap-3">
               <button
                 type="button"
@@ -258,6 +259,7 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
                 {isSubmitting ? '建立中...' : '建立商品'}
               </button>
             </div>
+          </div>
           </div>
         </div>
       </div>

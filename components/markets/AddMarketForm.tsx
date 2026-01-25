@@ -205,9 +205,10 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
         onClick={onClose}
       />
 
-      {/* Drawer 內容 */}
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-        <div className="bg-[#FAFAF8] w-full h-[95vh] sm:h-auto sm:max-h-[95vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
+      {/* Drawer 內容 - 修復定位問題 */}
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="min-h-full flex items-end sm:items-center sm:justify-center sm:p-4">
+          <div className="bg-[#FAFAF8] w-full max-h-[95vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative shadow-2xl">
           {/* Header */}
           <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] px-6 py-6 flex items-center justify-between flex-shrink-0">
             <h2 className="text-xl font-medium text-white">新增市集</h2>
@@ -220,7 +221,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
           </div>
 
           {/* 表單內容 */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pb-24">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pb-24 overscroll-behavior-contain">
             <div className="px-6 py-6 space-y-6">
               {/* 基本資訊 */}
               <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
@@ -609,7 +610,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
           </form>
 
           {/* 底部按鈕 - 固定在彈窗底部 */}
-          <div className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t border-[#7B9FA6]/10 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+          <div className="sticky bottom-0 left-0 right-0 px-6 py-4 border-t border-[#7B9FA6]/10 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)] flex-shrink-0">
             <div className="flex gap-3">
               <button
                 type="button"
@@ -627,6 +628,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                 {isSubmitting ? '建立中...' : '建立市集'}
               </button>
             </div>
+          </div>
           </div>
         </div>
       </div>
