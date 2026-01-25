@@ -1,5 +1,8 @@
 /**
  * 商品頁載入骨架屏
+ * - 防止閃爍：200ms 延遲顯示
+ * - 流光效果：由左至右的光影流動
+ * - 佈局 100% 同步真實頁面
  */
 
 export default function ProductsLoading() {
@@ -9,10 +12,10 @@ export default function ProductsLoading() {
       <div className="gradient-header pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <div className="h-8 w-24 bg-white/20 rounded-lg skeleton-shimmer"></div>
-            <div className="w-12 h-12 bg-white/20 rounded-full skeleton-shimmer"></div>
+            <div className="h-8 w-24 bg-white/20 rounded-lg skeleton-shimmer-header"></div>
+            <div className="w-12 h-12 bg-white/20 rounded-full skeleton-shimmer-header"></div>
           </div>
-          <div className="h-4 w-32 bg-white/10 rounded skeleton-shimmer"></div>
+          <div className="h-4 w-32 bg-white/10 rounded skeleton-shimmer-header"></div>
         </div>
       </div>
 
@@ -43,7 +46,7 @@ export default function ProductsLoading() {
               className="bg-white rounded-[1.5rem] p-4 shadow-lg shadow-[#7B9FA6]/10"
             >
               <div className="h-24 bg-gray-100 rounded-xl mb-3 skeleton-shimmer"></div>
-              <div className="h-4 w-20 bg-gray-200 rounded mb-2 skeleton-shimmer"></div>
+              <div className="h-4 w-20 bg-gray-200 rounded mb-2 skeleton-shimmer-dark"></div>
               <div className="h-5 w-16 bg-gray-100 rounded skeleton-shimmer"></div>
             </div>
           ))}

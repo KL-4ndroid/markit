@@ -169,27 +169,90 @@ a, button {
   perspective: 1000px;
 }
 
-/* 骨架屏呼吸燈動畫 */
+/* 骨架屏動畫 - 防止閃爍 + 流光效果 */
 @keyframes skeleton-pulse {
   0%, 100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.5;
+    opacity: 0.6;
   }
 }
 
-.skeleton {
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* 骨架屏基礎樣式 */
+.skeleton-shimmer {
+  /* 呼吸燈效果 */
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  
+  /* 流光效果 */
+  background: linear-gradient(
+    90deg,
+    rgba(240, 240, 240, 0) 0%,
+    rgba(240, 240, 240, 0.8) 50%,
+    rgba(240, 240, 240, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  
+  /* 防止閃爍：延遲顯示 */
+  animation-delay: 0.2s;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+/* Header 骨架專用（半透明白色流光） */
+.skeleton-shimmer-header {
   animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   background: linear-gradient(
     90deg,
-    #f0f0f0 0%,
-    #e0e0e0 50%,
-    #f0f0f0 100%
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.1) 100%
   );
   background-size: 200% 100%;
+  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation-delay: 0.2s;
+  opacity: 0;
+  animation-fill-mode: forwards;
 }
 
-.skeleton-shimmer {
+/* 深色骨架（卡片內容） */
+.skeleton-shimmer-dark {
   animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background: linear-gradient(
+    90deg,
+    rgba(229, 229, 229, 0.8) 0%,
+    rgba(245, 245, 245, 1) 50%,
+    rgba(229, 229, 229, 0.8) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation-delay: 0.2s;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+/* 淺色骨架（背景區域） */
+.skeleton-shimmer-light {
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background: linear-gradient(
+    90deg,
+    rgba(249, 249, 249, 0.8) 0%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(249, 249, 249, 0.8) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation-delay: 0.2s;
+  opacity: 0;
+  animation-fill-mode: forwards;
 }
