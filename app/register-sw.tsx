@@ -26,43 +26,18 @@ async function registerServiceWorker() {
       scope: '/',
     });
 
-    console.log('[PWA] Service Worker registered:', registration.scope);
+    console.log('[PWA] Service Worker 已註冊:', registration.scope);
 
-    // 檢查更新
-    registration.addEventListener('updatefound', () => {
-      const newWorker = registration.installing;
-      
-      if (newWorker) {
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // 有新版本可用
-            console.log('[PWA] New version available');
-            
-            // 詢問用戶是否更新
-            if (confirm('市集誌有新版本可用，是否立即更新？')) {
-              newWorker.postMessage({ type: 'SKIP_WAITING' });
-              window.location.reload();
-            }
-          }
-        });
-      }
-    });
+    // 立即檢查更新
+    registration.update();
 
-    // 監聽 SW 控制權變更
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload();
-      }
-    });
-
-    // 定期檢查更新（每小時）
+    // 定期檢查更新（每 30 分鐘）
     setInterval(() => {
+      console.log('[PWA] 檢查更新...');
       registration.update();
-    }, 60 * 60 * 1000);
+    }, 30 * 60 * 1000);
 
   } catch (error) {
-    console.error('[PWA] Service Worker registration failed:', error);
+    console.error('[PWA] Service Worker 註冊失敗:', error);
   }
 }

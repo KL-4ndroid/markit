@@ -5,8 +5,10 @@ import { TopNavigation } from "@/components/TopNavigation";
 import { Toaster } from "sonner";
 import { RegisterServiceWorker } from "./register-sw";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { AuthProvider } from "@/lib/supabase/auth-context";
 import { AuthManager } from "@/components/auth/AuthManager";
+import { GlobalLoadingState } from "@/components/GlobalLoadingState";
 
 export const metadata: Metadata = {
   title: "市集誌 - Market Pulse",
@@ -63,6 +65,9 @@ export default function RootLayout({
           {/* Service Worker 註冊 */}
           <RegisterServiceWorker />
           
+          {/* 全局載入狀態 - 首次載入時顯示 */}
+          <GlobalLoadingState />
+          
           <div className="min-h-screen bg-[#FAFAF8]">
             {/* 頂部導航 - 已移至首頁 Header */}
             {/* <TopNavigation /> */}
@@ -77,6 +82,9 @@ export default function RootLayout({
             
             {/* PWA 安裝提示 */}
             <PWAInstallPrompt />
+            
+            {/* PWA 更新提示 */}
+            <PWAUpdatePrompt />
             
             {/* 認證管理（登入/遷移對話框） */}
             <AuthManager />

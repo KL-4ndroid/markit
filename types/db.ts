@@ -284,6 +284,16 @@ export interface InteractionRecordedPayload {
  */
 export interface DealClosedPayload {
   marketId: string;            // 所屬市集（改為 UUID）
+  dealDate?: string;           // ✅ 成交日期（YYYY-MM-DD），用於多天市集區分每日收入
+  isBackfill?: boolean;        // ✅ 補登標記（補登時不扣庫存）
+  isManualEntry?: boolean;     // ✅ 手動輸入標記（簡化模式）
+  
+  // ✅ 簡化模式專用（當 isManualEntry = true）
+  manualRevenue?: number;      // 手動輸入的收入
+  manualCost?: number;         // 手動輸入的成本
+  manualDealCount?: number;    // 手動輸入的成交次數
+  
+  // 完整模式（當 isManualEntry = false 或未設置）
   items: {
     productId: string;         // 商品 ID（改為 UUID）
     quantity: number;          // 數量

@@ -78,7 +78,7 @@ export function useMarket(id: string | undefined) {
 }
 
 /**
- * 查詢即將到來的市集
+ * 查詢即將到來的市集（包含進行中的市集）
  * 
  * @param limit - 限制數量
  * @returns 市集列表（自動過濾已刪除的市集）
@@ -87,13 +87,19 @@ export function useUpcomingMarkets(limit: number = 5) {
   return useLiveQuery(async () => {
     const now = new Date().toISOString().split('T')[0];
     
-    const markets = await db.markets
-      .where('startDate')
-      .aboveOrEqual(now)
-      .toArray();
+    const markets = await db.markets.toArray();
     
     return markets
-      .filter(m => !m.isDeleted && m.status !== 'cancelled' && m.status !== 'completed')  // ✅ 過濾已刪除的市集
+      .filter(m => {
+        // 過濾已刪除、已取消、已完成的市集
+        if (m.isDeleted || m.status === 'cancelled' || m.status === 'completed') {
+          return false;
+        }
+        
+        // ✅ 修復：檢查市集日期區間是否包含今天或未來
+        // 只要 endDate >= 今天，就應該顯示
+        return m.endDate >= now;
+      })
       .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
       .slice(0, limit);
   }, [limit]);
@@ -267,32 +273,42 @@ export async function recordInteraction(
  * 記錄成交
  * 
  * @param data - 成交資料
+ * @param dealDate - 可選：指定交易日期（用於補登收入），格式：YYYY-MM-DD
  */
-export async function recordDeal(data: DealClosedPayload): Promise<void> {
-  // 結帳前庫存檢查
-  for (const item of data.items) {
-    const product = await db.products.get(item.productId);
-    
-    if (!product) {
-      throw new Error(`商品不存在：ID ${item.productId}`);
-    }
-    
-    // 只檢查「有限庫存」商品
-    if (!product.unlimitedStock) {
-      const currentStock = product.stock || 0;
+export async function recordDeal(data: DealClosedPayload, dealDate?: string): Promise<void> {
+  const isBackfill = !!dealDate || data.isBackfill;
+  const isManualEntry = data.isManualEntry || false;
+  
+  // ✅ 補登時跳過庫存檢查（簡化模式或完整模式）
+  if (!isBackfill && !isManualEntry) {
+    // 結帳前庫存檢查（只在正常交易時檢查）
+    for (const item of data.items || []) {
+      const product = await db.products.get(item.productId);
       
-      if (currentStock < item.quantity) {
-        throw new Error(
-          `${product.name} 庫存不足！\n目前庫存：${currentStock}，需要：${item.quantity}`
-        );
+      if (!product) {
+        throw new Error(`商品不存在：ID ${item.productId}`);
+      }
+      
+      // 只檢查「有限庫存」商品
+      if (!product.unlimitedStock) {
+        const currentStock = product.stock || 0;
+        
+        if (currentStock < item.quantity) {
+          throw new Error(
+            `${product.name} 庫存不足！\n目前庫存：${currentStock}，需要：${item.quantity}`
+          );
+        }
       }
     }
   }
   
   // ✅ 將 marketId 轉換為 market_id（統一使用底線式）
+  // ✅ 添加交易日期（用於多天市集的每日收入記錄）
   const payload = {
     ...data,
     market_id: data.marketId,
+    dealDate: dealDate || data.dealDate || new Date().toISOString().split('T')[0],
+    isBackfill: isBackfill,
   };
   
   // 庫存檢查通過，記錄成交事件

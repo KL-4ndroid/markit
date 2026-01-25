@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Home, Calendar, Package, BarChart3, Settings } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { navigationStore } from '@/lib/navigation-store';
 
 export function BottomNavigation() {
@@ -19,6 +20,15 @@ export function BottomNavigation() {
       unsubscribe();
     };
   }, []);
+
+  // 預載所有路由
+  useEffect(() => {
+    // 預載主要路由以減少首次點擊延遲
+    const routesToPrefetch = ['/markets', '/products', '/analytics', '/settings'];
+    routesToPrefetch.forEach(route => {
+      router.prefetch(route);
+    });
+  }, [router]);
 
   const navItems = [
     {
@@ -53,14 +63,6 @@ export function BottomNavigation() {
     },
   ];
 
-  const handleNavigation = (item: any) => {
-    if (item.path) {
-      router.push(item.path);
-    }
-  };
-
-
-
   return (
     <>
       <nav className={`fixed left-0 right-0 bg-white border-t border-[#7B9FA6]/20 px-4 py-3 z-50 transition-transform duration-300 ease-in-out ${
@@ -72,9 +74,10 @@ export function BottomNavigation() {
             const isActive = pathname === item.path;
 
             return (
-              <button
+              <Link
                 key={item.id}
-                onClick={() => handleNavigation(item)}
+                href={item.path}
+                prefetch={true}
                 className="flex flex-col items-center gap-1 min-w-[60px] transition-all"
               >
                 <div
@@ -93,7 +96,7 @@ export function BottomNavigation() {
                 >
                   {item.label}
                 </span>
-              </button>
+              </Link>
             );
           })}
         </div>

@@ -40,6 +40,8 @@ import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { InteractionPreferenceChart } from '@/components/analytics/InteractionPreferenceChart';
 import { InteractionTimeHeatmap } from '@/components/analytics/InteractionTimeHeatmap';
 import { BehaviorInsightCard } from '@/components/analytics/BehaviorInsightCard';
+import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
+import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import type { MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
@@ -59,6 +61,8 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [countdown, setCountdown] = useState<string>('--');
   
   // 互動行為數據狀態
@@ -474,6 +478,18 @@ export default function MarketDetailPage({ params }: PageProps) {
     showNavigation(); // 顯示導航列
   };
 
+  // 處理打開補登收入對話框
+  const handleOpenAddRevenue = (date: string) => {
+    setSelectedDate(date);
+    setShowAddRevenueDialog(true);
+  };
+
+  // 處理關閉補登收入對話框
+  const handleCloseAddRevenue = () => {
+    setShowAddRevenueDialog(false);
+    setSelectedDate('');
+  };
+
   // 載入中
   if (!isInitialized) {
     return (
@@ -540,7 +556,7 @@ export default function MarketDetailPage({ params }: PageProps) {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3 flex-1">
               <button
-                onClick={() => router.push('/markets')}
+                onClick={() => router.back()}
                 className="text-white hover:opacity-80 transition-opacity"
               >
                 <ArrowLeft className="w-6 h-6" />
@@ -1075,11 +1091,18 @@ export default function MarketDetailPage({ params }: PageProps) {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
               <BarChart3 className="w-5 h-5 text-[#7B9FA6]" />
-              即時統計
+              {market.startDate === market.endDate ? '即時統計' : '總計統計'}
             </h2>
-            <button className="text-sm text-[#7B9FA6] hover:underline font-medium">
-              查看每日統計 →
-            </button>
+            {market.startDate !== market.endDate && (
+              <div className="text-xs text-[#6B6B6B]">
+                {(() => {
+                  const start = new Date(market.startDate);
+                  const end = new Date(market.endDate);
+                  const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                  return `共 ${days} 天`;
+                })()}
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-[#7B9FA6]/10 rounded-xl p-4">
@@ -1110,6 +1133,12 @@ export default function MarketDetailPage({ params }: PageProps) {
             </div>
           </div>
         </div>
+
+        {/* 每日收入統計（多天市集才顯示） */}
+        <DailyRevenueStats 
+          market={market} 
+          onAddRevenue={handleOpenAddRevenue}
+        />
 
         {/* 成本明細 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
@@ -1347,6 +1376,14 @@ export default function MarketDetailPage({ params }: PageProps) {
           }}
         />
       )}
+
+      {/* 補登收入對話框 */}
+      <AddRevenueDialog
+        isOpen={showAddRevenueDialog}
+        onClose={handleCloseAddRevenue}
+        marketId={marketId}
+        selectedDate={selectedDate}
+      />
     </div>
   );
 }

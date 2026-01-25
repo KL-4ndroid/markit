@@ -417,9 +417,12 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
     });
   }
   
-  // 更新每日統計
+  // 更新每日統計（使用複合索引查詢）
   const date = new Date(event.timestamp).toISOString().split('T')[0];
-  const dailyStat = await db.dailyStats.get(date);
+  const dailyStat = await db.dailyStats
+    .where('[date+marketId]')
+    .equals([date, market_id])
+    .first();
   
   if (dailyStat) {
     // 更新現有統計
@@ -427,7 +430,7 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
     if (type === 'touch') updates.touchCount = dailyStat.touchCount + 1;
     if (type === 'inquiry') updates.inquiryCount = dailyStat.inquiryCount + 1;
     
-    await db.dailyStats.update(date, updates);
+    await db.dailyStats.update(dailyStat.id!, updates);
   } else {
     // 建立新的每日統計
     await db.dailyStats.add({
@@ -448,57 +451,75 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
 });
 
 /**
- * 處理「成交」事件（UUID 版本 + 交易快照）
+ * 處理「成交」事件（UUID 版本 + 交易快照 + 每日收入記錄 + 補登支持）
  * 
  * 當成交發生時：
  * 1. 更新市集的收入和成交統計
- * 2. 更新商品的銷售統計和庫存（若為有限庫存）
- * 3. 更新每日統計
+ * 2. 更新商品的銷售統計和庫存（若為有限庫存且非補登）
+ * 3. ✅ 更新每日統計（支持多天市集的每日收入記錄）
  * 4. 儲存交易時的價格快照（防止歷史數據錯誤）
+ * 5. ✅ 支持簡化補登（手動輸入金額）和完整補登（選擇商品）
  */
 registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) => {
   const payloadWithMarketId = event.payload as DealClosedPayload & { market_id?: string };
   const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
-  const { items, totalAmount } = event.payload;
+  const { dealDate, isBackfill, isManualEntry } = event.payload;
   
-  // 計算總成本並更新商品
+  // ✅ 使用指定的交易日期，如果沒有則使用事件時間戳
+  const transactionDate = dealDate || new Date(event.timestamp).toISOString().split('T')[0];
+  
+  let totalAmount = event.payload.totalAmount;
   let totalCost = 0;
-  for (const item of items) {
-    const product = await db.products.get(item.productId);
+  let dealCount = 1;
+  
+  // ========== 簡化模式：手動輸入 ==========
+  if (isManualEntry) {
+    totalAmount = event.payload.manualRevenue || 0;
+    totalCost = event.payload.manualCost || 0;
+    dealCount = event.payload.manualDealCount || 1;
     
-    // 儲存交易時的價格快照
-    if (product) {
-      item.price_at_time_of_sale = item.price || product.price;
-      item.cost_at_time_of_sale = product.cost;
-      item.product_name = product.name;
-      
-      if (product.cost) {
-        totalCost += product.cost * item.quantity;
-      }
-    }
+    console.log(`📝 簡化補登：收入 NT$${totalAmount}，成本 NT$${totalCost}，成交 ${dealCount} 筆`);
+  }
+  // ========== 完整模式：選擇商品 ==========
+  else {
+    const { items } = event.payload;
     
-    // 更新商品銷售統計和庫存
-    if (product) {
-      const updates: { totalSold: number; updatedAt: number; stock?: number } = {
-        totalSold: (product.totalSold || 0) + item.quantity,
-        updatedAt: event.timestamp,
-      };
+    // 計算總成本並更新商品
+    for (const item of items) {
+      const product = await db.products.get(item.productId);
       
-      // 只有「有限庫存」商品才扣除庫存
-      if (!product.unlimitedStock && product.stock !== undefined) {
-        updates.stock = Math.max(0, product.stock - item.quantity);
+      if (product) {
+        // 儲存交易時的價格快照
+        item.price_at_time_of_sale = item.price || product.price;
+        item.cost_at_time_of_sale = product.cost;
+        item.product_name = product.name;
+        
+        if (product.cost) {
+          totalCost += product.cost * item.quantity;
+        }
+        
+        // 更新商品銷售統計
+        const updates: { totalSold: number; updatedAt: number; stock?: number } = {
+          totalSold: (product.totalSold || 0) + item.quantity,
+          updatedAt: event.timestamp,
+        };
+        
+        // ✅ 關鍵：補登時不扣庫存
+        if (!isBackfill && !product.unlimitedStock && product.stock !== undefined) {
+          updates.stock = Math.max(0, product.stock - item.quantity);
+        }
+        
+        await db.products.update(item.productId, updates);
       }
-      
-      await db.products.update(item.productId, updates);
     }
   }
   
-  // 更新市集統計
+  // ========== 更新市集統計 ==========
   const market = await db.markets.get(market_id);
   if (market) {
     const newTotalRevenue = (market.totalRevenue || 0) + totalAmount;
     const newTotalProfit = (market.totalProfit || 0) + (totalAmount - totalCost);
-    const newTotalDeals = (market.totalDeals || 0) + 1;
+    const newTotalDeals = (market.totalDeals || 0) + dealCount;
     const newTotalInteractions = market.totalInteractions || 0;
     
     // 計算轉換率（防呆：分母為 0 時回傳 0）
@@ -521,13 +542,16 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
     console.log(`📊 市集統計更新：轉換率 ${conversionRate.toFixed(1)}%，客單價 NT$${averageOrderValue.toFixed(0)}`);
   }
   
-  // 更新每日統計
-  const date = new Date(event.timestamp).toISOString().split('T')[0];
-  const dailyStat = await db.dailyStats.get(date);
+  // ========== 更新每日統計 ==========
+  // ✅ 使用複合索引查詢（而不是複合主鍵）
+  const dailyStat = await db.dailyStats
+    .where('[date+marketId]')
+    .equals([transactionDate, market_id])
+    .first();
   
   if (dailyStat) {
-    await db.dailyStats.update(date, {
-      dealCount: dailyStat.dealCount + 1,
+    await db.dailyStats.update(dailyStat.id!, {
+      dealCount: dailyStat.dealCount + dealCount,
       revenue: dailyStat.revenue + totalAmount,
       cost: dailyStat.cost + totalCost,
       profit: dailyStat.profit + (totalAmount - totalCost),
@@ -535,11 +559,11 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
     });
   } else {
     await db.dailyStats.add({
-      date,
+      date: transactionDate,
       marketId: market_id,
       touchCount: 0,
       inquiryCount: 0,
-      dealCount: 1,
+      dealCount: dealCount,
       revenue: totalAmount,
       cost: totalCost,
       profit: totalAmount - totalCost,
@@ -548,7 +572,8 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
     });
   }
   
-  console.log(`💰 成交已記錄：NT$${totalAmount} (市集 ID: ${market_id.substring(0, 8)}...)`);
+  const modeText = isManualEntry ? '簡化補登' : isBackfill ? '完整補登' : '正常交易';
+  console.log(`💰 ${modeText}已記錄：NT$${totalAmount} (日期: ${transactionDate}, 市集 ID: ${market_id.substring(0, 8)}...)`);
 });
 
 // ==================== 設定相關事件處理器 ====================

@@ -182,6 +182,35 @@ export class MarketPulseDB extends Dexie {
         dailyStats: oldStats.length,
       });
     });
+    
+    // ✅ 版本 4：修復 dailyStats 主鍵（使用 ++id 自動遞增 + 複合索引）
+    this.version(4).stores({
+      events: 'id, type, timestamp, actor_id, market_id, sync_status',
+      markets: 'id, status, name, startDate, endDate, owner_id, is_collaborative, sync_status, isDeleted',
+      products: 'id, category, name, isActive, market_id, owner_id',
+      dailyStats: '++id, [date+marketId], date, marketId',  // ✅ 使用自動遞增 ID + 複合索引
+      settings: '++id',
+      syncQueue: 'id, status, created_at',
+    }).upgrade(async (trans) => {
+      console.log('🔄 修復 dailyStats 索引...');
+      
+      // 讀取所有現有數據
+      const oldStats = await trans.table('dailyStats').toArray();
+      
+      // 清空表
+      await trans.table('dailyStats').clear();
+      
+      // 重新插入（Dexie 會自動生成新的 ID）
+      for (const stat of oldStats) {
+        if (stat.marketId) {
+          // 移除舊的 ID，讓 Dexie 自動生成新的
+          const { id, ...statWithoutId } = stat;
+          await trans.table('dailyStats').add(statWithoutId);
+        }
+      }
+      
+      console.log(`✅ dailyStats 索引修復完成：${oldStats.length} 筆`);
+    });
   }
 }
 

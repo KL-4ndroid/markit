@@ -315,13 +315,6 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
-          <button
-            onClick={() => router.push('/')}
-            className="mb-4 text-white/80 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-medium text-white opacity-90">數據分析</h1>
             <div className="flex items-center gap-2">

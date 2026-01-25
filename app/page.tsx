@@ -33,14 +33,15 @@ export default function HomePage() {
   // 獲取今天的日期
   const today = new Date().toISOString().split('T')[0];
 
-  // 篩選當日市集
+  // ✅ 修復：篩選進行中的市集（日期區間包含今天）
   const todayMarkets = allMarkets?.filter(market => 
-    market.startDate === today && 
+    market.startDate <= today && 
+    market.endDate >= today &&
     market.status !== 'cancelled' && 
     market.status !== 'completed'
   ) || [];
 
-  // 篩選即將到來的市集（不包含當日）
+  // ✅ 修復：篩選即將到來的市集（開始日期在今天之後）
   const upcomingMarkets = allMarkets?.filter(market => 
     market.startDate > today && 
     market.status !== 'cancelled' && 

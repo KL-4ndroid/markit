@@ -140,13 +140,23 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
       {variant === 'default' && (
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="bg-[#7B9FA6]/10 rounded-xl p-3">
-            <div className="text-xs text-[#6B6B6B] mb-1">收入</div>
+            <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
+              收入
+              {market.startDate !== market.endDate && (
+                <span className="text-[10px] text-[#7B9FA6]">(總計)</span>
+              )}
+            </div>
             <div className="font-medium text-[#7B9FA6]">
               {formatCurrency(market.totalRevenue || 0)}
             </div>
           </div>
           <div className="bg-[#E8F3E8] rounded-xl p-3">
-            <div className="text-xs text-[#6B6B6B] mb-1">淨利潤</div>
+            <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
+              淨利潤
+              {market.startDate !== market.endDate && (
+                <span className="text-[10px] text-[#3A3A3A]/60">(總計)</span>
+              )}
+            </div>
             <div className={`font-medium ${(market.totalProfit || 0) >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'}`}>
               {formatCurrency(market.totalProfit || 0)}
             </div>
