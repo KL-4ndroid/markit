@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Calendar, MapPin, DollarSign, Clock, Package, FileText } from 'lucide-react';
+import { X, DollarSign, Clock, Package, FileText, DoorOpen, ClipboardCheck, Store, Moon } from 'lucide-react';
 import { db } from '@/lib/db';
 import { toast } from 'sonner';
 import type { Market } from '@/types/db';
@@ -21,12 +21,14 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
   const [tableFree, setTableFree] = useState(market.tableFree || false);
   const [chairFree, setChairFree] = useState(market.chairFree || false);
   const [umbrellaFree, setUmbrellaFree] = useState(market.umbrellaFree || false);
+  const [noEarlyEntry, setNoEarlyEntry] = useState(!market.earlyEntryEnabled);
   
   const [formData, setFormData] = useState({
     name: market.name,
     location: market.location,
     startDate: market.startDate,
     endDate: market.endDate,
+    earlyEntryTime: market.earlyEntryTime || '09:00',
     checkInTime: market.checkInTime || '09:30',
     operatingStartTime: market.operatingStartTime || '10:00',
     operatingEndTime: market.operatingEndTime || '18:00',
@@ -47,6 +49,7 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
         location: market.location,
         startDate: market.startDate,
         endDate: market.endDate,
+        earlyEntryTime: market.earlyEntryTime || '09:00',
         checkInTime: market.checkInTime || '09:30',
         operatingStartTime: market.operatingStartTime || '10:00',
         operatingEndTime: market.operatingEndTime || '18:00',
@@ -61,11 +64,28 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
       setTableFree(market.tableFree || false);
       setChairFree(market.chairFree || false);
       setUmbrellaFree(market.umbrellaFree || false);
+      setNoEarlyEntry(!market.earlyEntryEnabled);
     }
   }, [market]);
 
   const handleChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // 計算營業時長
+  const calculateDuration = (start: string, end: string) => {
+    const [startH, startM] = start.split(':').map(Number);
+    const [endH, endM] = end.split(':').map(Number);
+    const minutes = (endH * 60 + endM) - (startH * 60 + startM);
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}小時${mins}分鐘` : `${hours}小時`;
+  };
+
+  // 計算總時長
+  const calculateTotalDuration = () => {
+    const startTime = noEarlyEntry ? formData.checkInTime : formData.earlyEntryTime;
+    return calculateDuration(startTime || '09:00', formData.operatingEndTime || '18:00');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,6 +109,8 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
         location: formData.location,
         startDate: formData.startDate,
         endDate: formData.endDate,
+        earlyEntryEnabled: !noEarlyEntry,
+        earlyEntryTime: formData.earlyEntryTime,
         checkInTime: formData.checkInTime,
         operatingStartTime: formData.operatingStartTime,
         operatingEndTime: formData.operatingEndTime,
@@ -121,9 +143,8 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-        <div className="bg-[#FAFAF8] w-full h-[95vh] sm:h-auto sm:max-h-[95vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
-          {/* Header */}
+      <div className="fixed inset-0 z-50 flex justify-center">
+      <div className="bg-[#FAFAF8] w-[94vw] h-[90dvh] sm:max-w-lg rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative shadow-2xl pointer-events-auto">          {/* Header */}
           <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] px-6 py-6 flex items-center justify-between flex-shrink-0">
             <h2 className="text-xl font-medium text-white">編輯市集</h2>
             <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
@@ -195,40 +216,127 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                 </div>
               </div>
 
-              {/* 時間設定 */}
+              {/* 市集時間軸 */}
               <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
-                <h2 className="text-lg font-medium mb-4 text-[#3A3A3A] flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-[#7B9FA6]" />
-                  時間設定
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">報到時間</label>
-                    <input
-                      type="time"
-                      value={formData.checkInTime}
-                      onChange={(e) => handleChange('checkInTime', e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                    />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-[#7B9FA6]" />
+                    <h3 className="text-lg font-semibold text-[#3A3A3A]">市集時間軸</h3>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">營業開始</label>
-                      <input
-                        type="time"
-                        value={formData.operatingStartTime}
-                        onChange={(e) => handleChange('operatingStartTime', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                      />
+                </div>
+
+                <div className="bg-white border-2 border-[#7B9FA6]/15 rounded-[1.5rem] p-4">
+                  <div className="space-y-4">
+                    {/* 提前進場 */}
+                    {!noEarlyEntry && (
+                      <>
+                        <div>
+                          <div className="flex flex-col gap-3">
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-[#F5E6E8] text-[#D4A574] border-[#D4A574]/30">
+                              <DoorOpen className="w-5 h-5" />
+                              <span className="font-medium text-sm">提前進場</span>
+                            </div>
+                            <input
+                              type="time"
+                              value={formData.earlyEntryTime}
+                              onChange={(e) => handleChange('earlyEntryTime', e.target.value)}
+                              className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                            />
+                          </div>
+                          <div className="ml-6 my-2">
+                            <div className="w-0.5 h-4 bg-[#7B9FA6]/20"></div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* 不提前進場 Checkbox */}
+                    <div className="bg-[#F5E6E8]/30 rounded-xl p-3">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={noEarlyEntry}
+                          onChange={(e) => setNoEarlyEntry(e.target.checked)}
+                          className="w-5 h-5 text-[#D4A574] border-[#7B9FA6]/30 rounded focus:ring-[#D4A574]"
+                        />
+                        <span className="text-[#3A3A3A] font-medium">不提前進場</span>
+                      </label>
                     </div>
+
+                    {/* 報到 */}
                     <div>
-                      <label className="block text-sm font-medium mb-2">營業結束</label>
-                      <input
-                        type="time"
-                        value={formData.operatingEndTime}
-                        onChange={(e) => handleChange('operatingEndTime', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                      />
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-[#E8F3E8] text-[#7B9FA6] border-[#7B9FA6]/30">
+                          <ClipboardCheck className="w-5 h-5" />
+                          <span className="font-medium text-sm">報到</span>
+                        </div>
+                        <input
+                          type="time"
+                          value={formData.checkInTime}
+                          onChange={(e) => handleChange('checkInTime', e.target.value)}
+                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                        />
+                      </div>
+                      <div className="ml-6 my-2">
+                        <div className="w-0.5 h-4 bg-[#7B9FA6]/20"></div>
+                      </div>
+                    </div>
+
+                    {/* 營業中 */}
+                    <div>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-[#E8F3E8] text-[#7B9FA6] border-[#7B9FA6]/30">
+                          <Store className="w-5 h-5" />
+                          <span className="font-medium text-sm">營業中</span>
+                        </div>
+                        <input
+                          type="time"
+                          value={formData.operatingStartTime}
+                          onChange={(e) => handleChange('operatingStartTime', e.target.value)}
+                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                        />
+                        <div className="flex items-center gap-2 text-sm text-[#6B6B6B] px-2">
+                          <span>→</span>
+                          <span className="font-medium">{calculateDuration(formData.operatingStartTime || '10:00', formData.operatingEndTime || '18:00')}</span>
+                        </div>
+                      </div>
+                      <div className="ml-6 my-2">
+                        <div className="w-0.5 h-4 bg-[#7B9FA6]/20"></div>
+                      </div>
+                    </div>
+
+                    {/* 營業結束 */}
+                    <div>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-[#FFF8E7] text-[#D4A574] border-[#D4A574]/30">
+                          <Moon className="w-5 h-5" />
+                          <span className="font-medium text-sm">營業結束</span>
+                        </div>
+                        <input
+                          type="time"
+                          value={formData.operatingEndTime}
+                          onChange={(e) => handleChange('operatingEndTime', e.target.value)}
+                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 時長統計 */}
+                  <div className="mt-6 pt-6 border-t-2 border-[#7B9FA6]/10">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="bg-[#E8F3E8] rounded-xl p-3">
+                        <p className="text-[#6B6B6B] mb-1 text-xs">營業時長</p>
+                        <p className="text-lg font-bold text-[#7B9FA6]">
+                          {calculateDuration(formData.operatingStartTime || '10:00', formData.operatingEndTime || '18:00')}
+                        </p>
+                      </div>
+                      <div className="bg-[#F5E6E8] rounded-xl p-3">
+                        <p className="text-[#6B6B6B] mb-1 text-xs">總時長</p>
+                        <p className="text-lg font-bold text-[#D4A574]">
+                          {calculateTotalDuration()}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -86,9 +86,8 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
     <>
       <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
 
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-        <div className="bg-[#FAFAF8] w-full h-[90vh] sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
-          {/* Header */}
+      <div className="fixed inset-0 z-50 flex justify-center p-[3vw] pointer-events-none">
+        <div className="bg-[#FAFAF8] w-full h-[90dvh] sm:max-w-lg rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">          {/* Header */}
           <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] px-6 py-6 flex items-center justify-between">
             <h2 className="text-xl font-medium text-white">新增商品</h2>
             <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
@@ -98,7 +97,7 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
 
           {/* 表單內容 */}
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 pb-24">
-            <div className="space-y-5">
+            <div className="space-y-5 overflow-y-auto">
               {/* 商品名稱 */}
               <div>
                 <label className="block text-sm font-medium text-[#3A3A3A] mb-2">

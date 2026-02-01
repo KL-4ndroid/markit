@@ -41,11 +41,10 @@ export default function HomePage() {
     market.status !== 'completed'
   ) || [];
 
-  // ✅ 修復：篩選即將到來的市集（開始日期在今天之後）
+  // ✅ 修復：篩選即將到來的市集（開始日期在今天之後，且狀態為已繳費或如期舉行）
   const upcomingMarkets = allMarkets?.filter(market => 
     market.startDate > today && 
-    market.status !== 'cancelled' && 
-    market.status !== 'completed'
+    (market.status === 'paid' || market.status === 'ongoing')
   ) || [];
 
   // 獲取同步狀態圖示
@@ -352,7 +351,7 @@ export default function HomePage() {
                 <MarketCard
                   key={market.id}
                   market={market}
-                  variant="home"
+                  variant="upcoming"
                 />
               ))}
             </div>

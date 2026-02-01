@@ -118,8 +118,8 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
     <>
       <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
 
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-        <div className="bg-[#FAFAF8] w-full h-[90vh] sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
+      <div className="fixed inset-0 z-50 flex justify-center p-4">
+        <div className="bg-[#FAFAF8] w-full h-[90vh] sm:h-auto rounded-[2rem] sm:max-h-[90vh] sm:max-w-lg sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
           {/* Header */}
           <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] px-6 py-6 flex items-center justify-between">
             <h2 className="text-xl font-medium text-white">編輯商品</h2>

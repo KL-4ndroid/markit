@@ -206,8 +206,8 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
       />
 
       {/* Drawer 內容 */}
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-        <div className="bg-[#FAFAF8] w-full h-[95vh] sm:h-auto sm:max-h-[95vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
+      <div className="fixed inset-0 z-50 flex justify-center p-4">
+        <div className="bg-[#FAFAF8] w-full h-[90vh] rounded-[2rem] sm:h-auto sm:max-h-[95vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
           {/* Header */}
           <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] px-6 py-6 flex items-center justify-between flex-shrink-0">
             <h2 className="text-xl font-medium text-white">新增市集</h2>
