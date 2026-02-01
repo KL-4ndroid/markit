@@ -139,6 +139,12 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
                 {operatingStatus.label}
               </span>
             )}
+            {/* 市集狀態標籤 - 只在市集頁面顯示 */}
+            {variant === 'default' && (
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusStyle(market.status)}`}>
+                {getStatusText(market.status)}
+              </span>
+            )}
           </div>
           <div className="flex flex-col gap-1">
             {/* 日期 */}

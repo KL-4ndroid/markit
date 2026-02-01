@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import type { MarketStatus } from '@/types/db';
 
-type TabType = 'all' | 'registered' | 'unpaid' | 'scheduled';
+type TabType = 'all' | 'pending' | 'payment' | 'confirmed' | 'completed' | 'cancelled';
 
 export default function MarketsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -35,15 +35,21 @@ export default function MarketsPage() {
     if (!allMarkets) return [];
 
     switch (activeTab) {
-      case 'registered':
-        // 已報名：只顯示 status === 'registered'
-        return allMarkets.filter(m => m.status === 'registered');
-      case 'unpaid':
-        // 未繳費：顯示 status === 'accepted'
+      case 'pending':
+        // 待處理：已報名 + 已錄取
+        return allMarkets.filter(m => m.status === 'registered' || m.status === 'accepted');
+      case 'payment':
+        // 待繳費：已錄取（需要繳費）
         return allMarkets.filter(m => m.status === 'accepted');
-      case 'scheduled':
-        // 如期舉行：顯示 status === 'paid' 或 'ongoing'
+      case 'confirmed':
+        // 已確認：已繳費 + 如期舉行
         return allMarkets.filter(m => m.status === 'paid' || m.status === 'ongoing');
+      case 'completed':
+        // 已結束：已完成
+        return allMarkets.filter(m => m.status === 'completed');
+      case 'cancelled':
+        // 已取消：已取消 + 已延期
+        return allMarkets.filter(m => m.status === 'cancelled' || m.status === 'postponed');
       default:
         // 全部
         return allMarkets;
@@ -75,9 +81,11 @@ export default function MarketsPage() {
   // Tab 配置
   const tabs = [
     { id: 'all' as TabType, label: '全部', count: allMarkets?.length || 0 },
-    { id: 'registered' as TabType, label: '已報名', count: allMarkets?.filter(m => m.status === 'registered').length || 0 },
-    { id: 'unpaid' as TabType, label: '未繳費', count: allMarkets?.filter(m => m.status === 'accepted').length || 0 },
-    { id: 'scheduled' as TabType, label: '如期舉行', count: allMarkets?.filter(m => m.status === 'paid' || m.status === 'ongoing').length || 0 },
+    { id: 'pending' as TabType, label: '待處理', count: allMarkets?.filter(m => m.status === 'registered' || m.status === 'accepted').length || 0 },
+    { id: 'payment' as TabType, label: '待繳費', count: allMarkets?.filter(m => m.status === 'accepted').length || 0 },
+    { id: 'confirmed' as TabType, label: '已確認', count: allMarkets?.filter(m => m.status === 'paid' || m.status === 'ongoing').length || 0 },
+    { id: 'completed' as TabType, label: '已結束', count: allMarkets?.filter(m => m.status === 'completed').length || 0 },
+    { id: 'cancelled' as TabType, label: '已取消', count: allMarkets?.filter(m => m.status === 'cancelled' || m.status === 'postponed').length || 0 },
   ];
 
   if (!isInitialized) {
@@ -119,12 +127,12 @@ export default function MarketsPage() {
       <div className="max-w-lg mx-auto px-6 -mt-4">
         {/* Tabs */}
         <div className="bg-white rounded-[1.5rem] p-2 shadow-lg shadow-[#7B9FA6]/10 mb-6">
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-3 gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                className={`px-2 py-2 rounded-xl text-xs font-medium transition-all ${
                   activeTab === tab.id
                     ? 'bg-[#7B9FA6] text-white shadow-md'
                     : 'text-[#6B6B6B] hover:bg-[#F5E6E8]'
