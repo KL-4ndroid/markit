@@ -40,7 +40,7 @@ export default function MarketsPage() {
     switch (activeTab) {
       case 'pending':
         // 待處理：已報名 + 已錄取
-        return allMarkets.filter(m => m.status === 'registered' || m.status === 'accepted');
+        return allMarkets.filter(m => m.status === 'registered');
       case 'payment':
         // 待繳費：已錄取（需要繳費）
         return allMarkets.filter(m => m.status === 'accepted');
@@ -84,7 +84,7 @@ export default function MarketsPage() {
   // Tab 配置
   const tabs = [
     { id: 'all' as TabType, label: '全部', count: allMarkets?.length || 0 },
-    { id: 'pending' as TabType, label: '待處理', count: allMarkets?.filter(m => m.status === 'registered' || m.status === 'accepted').length || 0 },
+    { id: 'pending' as TabType, label: '待處理', count: allMarkets?.filter(m => m.status === 'registered').length || 0 },
     { id: 'payment' as TabType, label: '待繳費', count: allMarkets?.filter(m => m.status === 'accepted').length || 0 },
     { id: 'upcoming' as TabType, label: '待舉辦', count: (() => {
       const today = new Date().toISOString().split('T')[0];

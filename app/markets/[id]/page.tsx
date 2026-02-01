@@ -42,6 +42,8 @@ import { InteractionTimeHeatmap } from '@/components/analytics/InteractionTimeHe
 import { BehaviorInsightCard } from '@/components/analytics/BehaviorInsightCard';
 import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
 import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
+import { DealItem } from '@/components/markets/DealItem';
+import { DealDetailModal } from '@/components/markets/DealDetailModal';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import type { MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
@@ -63,6 +65,8 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDeal, setSelectedDeal] = useState<Event<DealClosedPayload> | null>(null);
+  const [showDealDetailModal, setShowDealDetailModal] = useState(false);
   const [countdown, setCountdown] = useState<string>('--');
   
   // 互動行為數據狀態
@@ -488,6 +492,52 @@ export default function MarketDetailPage({ params }: PageProps) {
   const handleCloseAddRevenue = () => {
     setShowAddRevenueDialog(false);
     setSelectedDate('');
+  };
+
+  // 處理成交記錄點擊
+  const handleDealClick = (deal: Event<DealClosedPayload>) => {
+    setSelectedDeal(deal);
+    setShowDealDetailModal(true);
+  };
+
+  // 處理關閉成交詳情彈窗
+  const handleCloseDealDetail = () => {
+    setShowDealDetailModal(false);
+    setSelectedDeal(null);
+  };
+
+  // 處理編輯成交記錄（暫時只顯示提示）
+  const handleEditDeal = (deal: Event<DealClosedPayload>) => {
+    toast.info('編輯功能即將推出', {
+      description: '目前僅支援查看成交詳情',
+    });
+  };
+
+  // 處理刪除成交記錄
+  const handleDeleteDeal = async (deal: Event<DealClosedPayload>) => {
+    try {
+      // 從資料庫刪除事件
+      await db.events.delete(deal.id!);
+
+      // 重新載入成交數據
+      const updatedDeals = await db.events
+        .where('type')
+        .equals('deal_closed')
+        .filter(e => e.payload.marketId === marketId)
+        .toArray();
+
+      setDealEvents(updatedDeals as Event<DealClosedPayload>[]);
+
+      toast.success('成交記錄已刪除');
+
+      // 如果刪除的是當前選中的記錄，關閉彈窗
+      if (selectedDeal?.id === deal.id) {
+        handleCloseDealDetail();
+      }
+    } catch (error) {
+      console.error('刪除成交記錄失敗:', error);
+      toast.error('刪除失敗，請稍後再試');
+    }
   };
 
   // 載入中
@@ -1135,10 +1185,45 @@ export default function MarketDetailPage({ params }: PageProps) {
         </div>
 
         {/* 每日收入統計（多天市集才顯示） */}
-        <DailyRevenueStats 
-          market={market} 
+        <DailyRevenueStats
+          market={market}
           onAddRevenue={handleOpenAddRevenue}
         />
+
+        {/* 成交記錄 */}
+        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
+              <span>🧾</span>
+              成交記錄 ({dealEvents.length})
+            </h2>
+            {market?.operationPhase === 'operating' && (
+              <span className="px-2 py-1 bg-[#7B9FA6] text-white text-xs rounded-full animate-pulse">
+                即時更新
+              </span>
+            )}
+          </div>
+
+          {/* 成交記錄列表 */}
+          <div className="space-y-2">
+            {dealEvents.length === 0 ? (
+              <div className="text-center py-8 text-[#6B6B6B]">
+                <span className="text-2xl">🧾</span>
+                <p className="mt-2 text-sm">尚無成交記錄</p>
+              </div>
+            ) : (
+              dealEvents
+                .sort((a, b) => b.timestamp - a.timestamp) // 最新成交優先
+                .map((deal) => (
+                  <DealItem
+                    key={deal.id}
+                    deal={deal}
+                    onClick={() => handleDealClick(deal)}
+                  />
+                ))
+            )}
+          </div>
+        </div>
 
         {/* 成本明細 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
@@ -1376,6 +1461,15 @@ export default function MarketDetailPage({ params }: PageProps) {
           }}
         />
       )}
+
+      {/* 成交詳情彈窗 */}
+      <DealDetailModal
+        isOpen={showDealDetailModal}
+        deal={selectedDeal}
+        onClose={handleCloseDealDetail}
+        onEdit={handleEditDeal}
+        onDelete={handleDeleteDeal}
+      />
 
       {/* 補登收入對話框 */}
       <AddRevenueDialog
