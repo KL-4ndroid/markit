@@ -244,49 +244,47 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
         </div>
       )}
 
-      {/* 租賃設備 - 只在市集頁面顯示 */}
-      {variant === 'default' && (
-        <div className="flex gap-3 mb-3 text-[#6B6B6B]">
-          <div className="flex items-center gap-1">
-            <Table className="w-4 h-4" />
-            <span className="text-xs">
-              {market.tableFree ? (
-                <span className="text-green-600 font-medium">(免費)</span>
-              ) : market.tableRental && market.tableRental > 0 ? (
-                formatCurrency(market.tableRental)
-              ) : (
-                <span className="text-gray-400">(自備)</span>
-              )}
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-1">
-            <Armchair className="w-4 h-4" />
-            <span className="text-xs">
-              {market.chairFree ? (
-                <span className="text-green-600 font-medium">(免費)</span>
-              ) : market.chairRental && market.chairRental > 0 ? (
-                formatCurrency(market.chairRental)
-              ) : (
-                <span className="text-gray-400">(自備)</span>
-              )}
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-1">
-            <Umbrella className="w-4 h-4" />
-            <span className="text-xs">
-              {market.umbrellaFree ? (
-                <span className="text-green-600 font-medium">(免費)</span>
-              ) : market.umbrellaRental && market.umbrellaRental > 0 ? (
-                formatCurrency(market.umbrellaRental)
-              ) : (
-                <span className="text-gray-400">(自備)</span>
-              )}
-            </span>
-          </div>
+      {/* 租賃設備 - 所有變體都顯示 */}
+      <div className="flex gap-3 text-[#6B6B6B] bg-[#FAFAF8] rounded-xl p-3">
+        <div className="flex items-center gap-1">
+          <Table className="w-4 h-4" />
+          <span className="text-xs">
+            {market.tableFree ? (
+              <span className="text-green-600 font-medium">免費</span>
+            ) : market.tableRental && market.tableRental > 0 ? (
+              formatCurrency(market.tableRental)
+            ) : (
+              <span className="text-gray-400">自備</span>
+            )}
+          </span>
         </div>
-      )}
+        
+        <div className="flex items-center gap-1">
+          <Armchair className="w-4 h-4" />
+          <span className="text-xs">
+            {market.chairFree ? (
+              <span className="text-green-600 font-medium">免費</span>
+            ) : market.chairRental && market.chairRental > 0 ? (
+              formatCurrency(market.chairRental)
+            ) : (
+              <span className="text-gray-400">自備</span>
+            )}
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-1">
+          <Umbrella className="w-4 h-4" />
+          <span className="text-xs">
+            {market.umbrellaFree ? (
+              <span className="text-green-600 font-medium">免費</span>
+            ) : market.umbrellaRental && market.umbrellaRental > 0 ? (
+              formatCurrency(market.umbrellaRental)
+            ) : (
+              <span className="text-gray-400">自備</span>
+            )}
+          </span>
+        </div>
+      </div>
 
       {/* 轉換率 - 只在市集頁面顯示 */}
       {variant === 'default' && (
