@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import type { MarketStatus } from '@/types/db';
 
-type TabType = 'all' | 'pending' | 'payment' | 'confirmed' | 'completed' | 'cancelled';
+type TabType = 'all' | 'pending' | 'payment' | 'upcoming' | 'completed' | 'cancelled';
 
 export default function MarketsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -34,6 +34,9 @@ export default function MarketsPage() {
   const getFilteredMarkets = () => {
     if (!allMarkets) return [];
 
+    // 獲取今天的日期
+    const today = new Date().toISOString().split('T')[0];
+
     switch (activeTab) {
       case 'pending':
         // 待處理：已報名 + 已錄取
@@ -41,12 +44,12 @@ export default function MarketsPage() {
       case 'payment':
         // 待繳費：已錄取（需要繳費）
         return allMarkets.filter(m => m.status === 'accepted');
-      case 'confirmed':
-        // 已確認：已繳費 + 如期舉行
-        return allMarkets.filter(m => m.status === 'paid' || m.status === 'ongoing');
+      case 'upcoming':
+        // 待舉辦：已繳費 + 如期舉行，且尚未到來（包含今天）
+        return allMarkets.filter(m => (m.status === 'paid' || m.status === 'ongoing') && m.startDate >= today);
       case 'completed':
-        // 已結束：已完成
-        return allMarkets.filter(m => m.status === 'completed');
+        // 已結束：如期舉辦過但已過期的市集
+        return allMarkets.filter(m => (m.status === 'paid' || m.status === 'ongoing') && m.endDate < today);
       case 'cancelled':
         // 已取消：已取消 + 已延期
         return allMarkets.filter(m => m.status === 'cancelled' || m.status === 'postponed');
@@ -83,8 +86,14 @@ export default function MarketsPage() {
     { id: 'all' as TabType, label: '全部', count: allMarkets?.length || 0 },
     { id: 'pending' as TabType, label: '待處理', count: allMarkets?.filter(m => m.status === 'registered' || m.status === 'accepted').length || 0 },
     { id: 'payment' as TabType, label: '待繳費', count: allMarkets?.filter(m => m.status === 'accepted').length || 0 },
-    { id: 'confirmed' as TabType, label: '已確認', count: allMarkets?.filter(m => m.status === 'paid' || m.status === 'ongoing').length || 0 },
-    { id: 'completed' as TabType, label: '已結束', count: allMarkets?.filter(m => m.status === 'completed').length || 0 },
+    { id: 'upcoming' as TabType, label: '待舉辦', count: (() => {
+      const today = new Date().toISOString().split('T')[0];
+      return allMarkets?.filter(m => (m.status === 'paid' || m.status === 'ongoing') && m.startDate >= today).length || 0;
+    })() },
+    { id: 'completed' as TabType, label: '已結束', count: (() => {
+      const today = new Date().toISOString().split('T')[0];
+      return allMarkets?.filter(m => (m.status === 'paid' || m.status === 'ongoing') && m.endDate < today).length || 0;
+    })() },
     { id: 'cancelled' as TabType, label: '已取消', count: allMarkets?.filter(m => m.status === 'cancelled' || m.status === 'postponed').length || 0 },
   ];
 
