@@ -86,7 +86,7 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
     <>
       <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
 
-      <div className="fixed inset-0 z-50 flex justify-center p-[3vw] pointer-events-none">
+      <div className="fixed inset-0 z-50 flex justify-center p-4">
         <div className="bg-[#FAFAF8] w-full h-[90dvh] sm:max-w-lg rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">          {/* Header */}
           <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] px-6 py-6 flex items-center justify-between">
             <h2 className="text-xl font-medium text-white">新增商品</h2>
