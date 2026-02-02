@@ -39,7 +39,7 @@ export interface Event<T = any> {
   timestamp: number;           // 事件發生時間戳（毫秒）
   actor_id?: string;           // 新增：操作者 UUID（用於多人協作）
   market_id?: string;          // 新增：關聯市集 UUID
-  sync_status?: 'local_only' | 'pending' | 'synced' | 'conflict'; // 新增：同步狀態
+  sync_status?: 'local_only' | 'pending' | 'synced' | 'conflict' | 'error'; // 新增：同步狀態
   metadata?: {                 // 可選的元數據
     userId?: string;           // 未來可能的用戶 ID
     deviceId?: string;         // 裝置 ID

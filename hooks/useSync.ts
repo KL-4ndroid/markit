@@ -277,9 +277,9 @@ async function pushEvents(userId: string): Promise<void> {
             // 保持 pending 狀態，等待下一輪同步
             continue;
           } else {
-            console.error(`❌ 找不到對應的 market_created 事件，標記為錯誤`);
+            console.error(`❌ 找不到對應的 market_created 事件，標記為 local_only`);
             await db.events.update(event.id!, {
-              sync_status: 'error',
+              sync_status: 'local_only',
             });
             continue;
           }
@@ -289,15 +289,15 @@ async function pushEvents(userId: string): Promise<void> {
         if (error.code === 'PGRST301' || error.message?.includes('policy')) {
           console.error(`❌ RLS 政策阻止：${event.type}`, error.message);
           await db.events.update(event.id!, {
-            sync_status: 'error',
+            sync_status: 'local_only',
           });
           continue;
         }
         
-        // 其他錯誤：標記為 error，但不中斷同步
+        // 其他錯誤：標記為 local_only，但不中斷同步
         console.error(`❌ 未知錯誤：${error.code} - ${error.message}`);
         await db.events.update(event.id!, {
-          sync_status: 'error',
+          sync_status: 'local_only',
         });
         continue;
       }
@@ -316,7 +316,7 @@ async function pushEvents(userId: string): Promise<void> {
       
       // 標記為錯誤，但繼續處理下一個事件
       await db.events.update(event.id!, {
-        sync_status: 'error',
+        sync_status: 'local_only',
       });
       continue;
     }
