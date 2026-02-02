@@ -235,7 +235,7 @@ async function pushEvents(userId: string): Promise<void> {
   // 批次上傳
   for (const event of sortedEvents) {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('events')
         .upsert({
           id: event.id,
@@ -247,10 +247,13 @@ async function pushEvents(userId: string): Promise<void> {
           metadata: event.metadata,
         }, {
           onConflict: 'id',
-        });
+        })
+        .select();
 
       if (error) {
-        // ✅ 防禦性程式碼：409 Conflict 代表雲端已有此 ID
+        console.error(`❌ 上傳事件失敗: ${event.type} (${event.id?.substring(0, 8)}...)`, error);
+        
+        // ✅ PostgreSQL unique violation (事件已存在)
         if (error.code === '23505') {
           console.log(`⚠️ 事件 ${event.id} 已存在於雲端，標記為已同步`);
           await db.events.update(event.id!, {
@@ -259,7 +262,7 @@ async function pushEvents(userId: string): Promise<void> {
           continue;
         }
         
-        // ✅ 遞歸同步檢查：外鍵衝突時檢查 market_created 事件
+        // ✅ 外鍵衝突：market 不存在
         if (error.code === '23503' && error.message?.includes('events_market_id_fkey')) {
           console.warn(`⚠️ 外鍵衝突：market_id ${event.market_id} 不存在`);
           
@@ -270,36 +273,51 @@ async function pushEvents(userId: string): Promise<void> {
           );
           
           if (marketCreatedEvent && marketCreatedEvent.id !== event.id) {
-            console.log(`🔄 發現 market_created 事件 ${marketCreatedEvent.id}，將優先處理`);
-            // 跳過當前事件，等待下一輪同步
+            console.log(`🔄 發現 market_created 事件，將在下一輪同步時重試`);
+            // 保持 pending 狀態，等待下一輪同步
             continue;
           } else {
-            console.error(`❌ 找不到對應的 market_created 事件，跳過此事件`);
-            // 標記為錯誤狀態（可選）
+            console.error(`❌ 找不到對應的 market_created 事件，標記為錯誤`);
+            await db.events.update(event.id!, {
+              sync_status: 'error',
+            });
             continue;
           }
         }
         
-        throw error;
-      } else {
-        // 標記為已同步
+        // ✅ RLS 政策錯誤（權限不足）
+        if (error.code === 'PGRST301' || error.message?.includes('policy')) {
+          console.error(`❌ RLS 政策阻止：${event.type}`, error.message);
+          await db.events.update(event.id!, {
+            sync_status: 'error',
+          });
+          continue;
+        }
+        
+        // 其他錯誤：標記為 error，但不中斷同步
+        console.error(`❌ 未知錯誤：${error.code} - ${error.message}`);
         await db.events.update(event.id!, {
-          sync_status: 'synced',
+          sync_status: 'error',
         });
+        continue;
       }
+
+      // ✅ 上傳成功
+      console.log(`✅ 已上傳: ${event.type} (${event.id?.substring(0, 8)}...)`);
+      await db.events.update(event.id!, {
+        sync_status: 'synced',
+      });
+      
     } catch (error: any) {
-      console.error(`❌ 上傳事件失敗: ${event.id}`, error);
+      console.error(`❌ 上傳事件異常: ${event.id}`, error);
       console.log('失敗的事件類型:', event.type);
       console.log('失敗的 Payload:', JSON.stringify(event.payload, null, 2));
       console.log('失敗的 market_id:', event.market_id);
       
-      // ✅ 防禦性程式碼：不讓同步卡死，繼續處理下一個事件
-      if (error.code === '23503') {
-        console.warn(`⚠️ 跳過外鍵衝突事件，繼續同步其他事件`);
-        continue;
-      }
-      
-      // 其他錯誤也繼續處理
+      // 標記為錯誤，但繼續處理下一個事件
+      await db.events.update(event.id!, {
+        sync_status: 'error',
+      });
       continue;
     }
   }

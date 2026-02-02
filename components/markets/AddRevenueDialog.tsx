@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Calendar, AlertCircle } from 'lucide-react';
 import { useProducts, recordDeal } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -194,18 +195,19 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
 
   if (!isOpen) return null;
 
-  return (
+  // 使用 createPortal 確保彈窗不受父層影響
+  return createPortal(
     <>
-      {/* 背景遮罩 */}
+      {/* 背景遮罩 - 確保覆蓋全螢幕 */}
       <div 
-        className="fixed inset-0 bg-black/50 z-50"
+        className="fixed inset-0 bg-black/50 z-[999] transition-opacity"
         onClick={onClose}
       />
       
-      {/* 對話框 */}
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
+      {/* 對話框容器 - 強制鎖定螢幕正中央 */}
+      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center pointer-events-none">
         <div 
-          className="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+          className="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -538,6 +540,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body // 將元件掛載到 body，確保不受父層影響
   );
 }

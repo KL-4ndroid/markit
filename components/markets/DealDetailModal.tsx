@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Edit, Trash2, Clock, CreditCard } from 'lucide-react';
 import type { Event, DealClosedPayload } from '@/types/db';
 
@@ -65,17 +66,17 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
     }
   };
 
-  return (
+  return createPortal(
     <>
-      {/* 背景遮罩 */}
+      {/* 背景遮罩 - 確保覆蓋全螢幕 */}
       <div
-        className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+        className="fixed inset-0 bg-black/50 z-[999] transition-opacity"
         onClick={onClose}
       />
 
-      {/* 彈窗內容 */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl animate-slide-up">
+      {/* 彈窗容器 - 強制鎖定螢幕正中央 */}
+      <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none p-4">
+        <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl animate-slide-up pointer-events-auto">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-[#7B9FA6]/10">
             <h3 className="text-lg font-medium text-[#3A3A3A] flex items-center gap-2">
@@ -195,6 +196,7 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body // 將元件掛載到 body，確保不受父層影響
   );
 }

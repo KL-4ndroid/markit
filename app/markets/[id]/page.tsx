@@ -44,6 +44,7 @@ import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
 import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DealItem } from '@/components/markets/DealItem';
 import { DealDetailModal } from '@/components/markets/DealDetailModal';
+import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import type { MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
@@ -67,6 +68,7 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedDeal, setSelectedDeal] = useState<Event<DealClosedPayload> | null>(null);
   const [showDealDetailModal, setShowDealDetailModal] = useState(false);
+  const [showDailyDealsModal, setShowDailyDealsModal] = useState(false);  // ✅ 新增：日期成交記錄彈窗
   const [countdown, setCountdown] = useState<string>('--');
   
   // 互動行為數據狀態
@@ -180,16 +182,21 @@ export default function MarketDetailPage({ params }: PageProps) {
 
         setInteractionEvents(interactions);
 
-        // 獲取成交事件
-        const deals = await db.events
-          .where('type')
-          .equals('deal_closed')
-          .filter(e => 
-            e.timestamp >= startTimestamp && 
-            e.timestamp < endTimestamp &&
-            e.payload.marketId === marketId
-          )
-          .toArray() as Event<DealClosedPayload>[];
+          // 獲取成交事件
+          const deals = await db.events
+            .where('type')
+            .equals('deal_closed')
+            .filter(e => {
+              // ✅ 使用 dealDate 作為篩選依據，降級到 timestamp
+              const dealTimestamp = e.payload.dealDate 
+                ? new Date(e.payload.dealDate).getTime()
+                : e.timestamp;
+              
+              return dealTimestamp >= startTimestamp && 
+                    dealTimestamp < endTimestamp &&
+                    e.payload.marketId === marketId;
+            })
+            .toArray() as Event<DealClosedPayload>[];
 
         setDealEvents(deals);
       } catch (error) {
@@ -492,6 +499,27 @@ export default function MarketDetailPage({ params }: PageProps) {
   const handleCloseAddRevenue = () => {
     setShowAddRevenueDialog(false);
     setSelectedDate('');
+  };
+
+  // ✅ 新增：處理點擊日期查看成交記錄
+  const handleDateClick = (date: string) => {
+    setSelectedDate(date);
+    setShowDailyDealsModal(true);
+  };
+
+  // ✅ 新增：處理關閉日期成交記錄彈窗
+  const handleCloseDailyDeals = () => {
+    setShowDailyDealsModal(false);
+    setSelectedDate('');
+  };
+
+  // ✅ 新增：根據日期過濾成交記錄
+  const getDealsByDate = (date: string) => {
+    return dealEvents.filter(deal => {
+      const dealDate = deal.payload.dealDate || 
+                       new Date(deal.timestamp).toISOString().split('T')[0];
+      return dealDate === date;
+    });
   };
 
   // 處理成交記錄點擊
@@ -1188,42 +1216,8 @@ export default function MarketDetailPage({ params }: PageProps) {
         <DailyRevenueStats
           market={market}
           onAddRevenue={handleOpenAddRevenue}
+          onDateClick={handleDateClick}
         />
-
-        {/* 成交記錄 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
-              <span>🧾</span>
-              成交記錄 ({dealEvents.length})
-            </h2>
-            {market?.operationPhase === 'operating' && (
-              <span className="px-2 py-1 bg-[#7B9FA6] text-white text-xs rounded-full animate-pulse">
-                即時更新
-              </span>
-            )}
-          </div>
-
-          {/* 成交記錄列表 */}
-          <div className="space-y-2">
-            {dealEvents.length === 0 ? (
-              <div className="text-center py-8 text-[#6B6B6B]">
-                <span className="text-2xl">🧾</span>
-                <p className="mt-2 text-sm">尚無成交記錄</p>
-              </div>
-            ) : (
-              dealEvents
-                .sort((a, b) => b.timestamp - a.timestamp) // 最新成交優先
-                .map((deal) => (
-                  <DealItem
-                    key={deal.id}
-                    deal={deal}
-                    onClick={() => handleDealClick(deal)}
-                  />
-                ))
-            )}
-          </div>
-        </div>
 
         {/* 成本明細 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
@@ -1477,6 +1471,15 @@ export default function MarketDetailPage({ params }: PageProps) {
         onClose={handleCloseAddRevenue}
         marketId={marketId}
         selectedDate={selectedDate}
+      />
+
+      {/* 日期成交記錄彈窗 */}
+      <DailyDealsModal
+        isOpen={showDailyDealsModal}
+        onClose={handleCloseDailyDeals}
+        date={selectedDate}
+        deals={getDealsByDate(selectedDate)}
+        onDealClick={handleDealClick}
       />
     </div>
   );

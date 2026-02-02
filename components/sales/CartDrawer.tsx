@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, Minus, ShoppingCart, CreditCard, Smartphone, Banknote } from 'lucide-react';
 import { useProducts } from '@/lib/db/hooks';
 import { recordDeal } from '@/lib/db/hooks';
@@ -163,14 +164,14 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <>
-      {/* 背景遮罩 */}
-      <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
+      {/* 背景遮罩 - 確保覆蓋全螢幕 */}
+      <div className="fixed inset-0 bg-black/50 z-[999] transition-opacity" onClick={onClose} />
 
-      {/* 抽屜 */}
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-        <div className="bg-[#FAFAF8] w-full h-[90vh] sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up">
+      {/* 抽屜容器 - 強制鎖定螢幕正中央 */}
+      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center sm:justify-center pointer-events-none">
+        <div className="bg-[#FAFAF8] w-full h-[90vh] sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up pointer-events-auto">
           {/* Header */}
           <div className="bg-gradient-to-br from-[#E8F3E8] to-[#7B9FA6] px-6 py-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -327,6 +328,7 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body // 將元件掛載到 body，確保不受父層影響
   );
 }

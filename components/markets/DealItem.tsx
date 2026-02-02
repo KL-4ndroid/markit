@@ -16,10 +16,24 @@ export function DealItem({ deal, onClick }: DealItemProps) {
   const payload = deal.payload as DealClosedPayload;
 
   // 格式化時間顯示
-  const time = new Date(deal.timestamp).toLocaleTimeString('zh-TW', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const time = (() => {
+    // 檢查是否為補登記錄且不是當日的數據
+    if (payload.isBackfill && payload.dealDate) {
+      const today = new Date().toISOString().split('T')[0];
+      const dealDate = payload.dealDate;
+      
+      // 如果是補登非當日的數據，顯示補登日期的 18:00
+      if (dealDate !== today) {
+        return '18:00';  // 統一顯示 18:00
+      }
+    }
+    
+    // 正常情況：顯示事件建立時間
+    return new Date(deal.timestamp).toLocaleTimeString('zh-TW', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  })();
 
   // 支付方式對應
   const paymentIcons = {

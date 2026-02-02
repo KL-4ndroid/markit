@@ -9,6 +9,7 @@ import type { Market } from '@/types/db';
 interface DailyRevenueStatsProps {
   market: Market;
   onAddRevenue: (date: string) => void;
+  onDateClick: (date: string) => void;  // ✅ 新增：點擊日期查看成交記錄
 }
 
 /**
@@ -17,7 +18,7 @@ interface DailyRevenueStatsProps {
  * 顯示多天市集的每日收入明細
  * 支持補登收入功能
  */
-export function DailyRevenueStats({ market, onAddRevenue }: DailyRevenueStatsProps) {
+export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRevenueStatsProps) {
   const stats = useDateRangeStats(market.startDate, market.endDate);
   
   // 生成市集日期範圍內的所有日期
@@ -63,21 +64,18 @@ export function DailyRevenueStats({ market, onAddRevenue }: DailyRevenueStatsPro
   // 判斷是否為單日市集
   const isSingleDay = market.startDate === market.endDate;
   
-  // 如果是單日市集，不顯示此組件
-  if (isSingleDay) {
-    return null;
-  }
-  
   return (
-    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
+    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
           <Calendar className="w-5 h-5 text-[#7B9FA6]" />
-          每日收入明細
+          {isSingleDay ? '收入明細' : '每日收入明細'}
         </h2>
-        <div className="text-xs text-[#6B6B6B]">
-          共 {dateRange.length} 天
-        </div>
+        {!isSingleDay && (
+          <div className="text-xs text-[#6B6B6B]">
+            共 {dateRange.length} 天
+          </div>
+        )}
       </div>
       
       <div className="space-y-3">
@@ -90,11 +88,16 @@ export function DailyRevenueStats({ market, onAddRevenue }: DailyRevenueStatsPro
           return (
             <div
               key={day.date}
+              onClick={() => !isFuture && onDateClick(day.date)}  // ✅ 新增：點擊日期查看成交記錄
               className={`rounded-xl border-2 p-4 transition-all ${
+                isFuture 
+                  ? 'border-gray-200 bg-gray-50 opacity-60'
+                  : 'cursor-pointer hover:shadow-md hover:scale-[1.02]'
+              } ${
                 isToday
                   ? 'border-[#7B9FA6] bg-[#7B9FA6]/5'
                   : isFuture
-                  ? 'border-gray-200 bg-gray-50 opacity-60'
+                  ? ''
                   : 'border-[#E8F3E8] bg-white'
               }`}
             >
@@ -118,8 +121,11 @@ export function DailyRevenueStats({ market, onAddRevenue }: DailyRevenueStatsPro
                 {/* 補登按鈕 - 只在過去或今天顯示 */}
                 {!isFuture && (
                   <button
-                    onClick={() => onAddRevenue(day.date)}
-                    className="flex items-center gap-1 text-xs text-[#7B9FA6] hover:text-[#6A8E95] transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();  // ✅ 阻止冒泡，避免觸發日期點擊
+                      onAddRevenue(day.date);
+                    }}
+                    className="flex items-center gap-1 text-xs text-[#7B9FA6] hover:text-[#6A8E95] transition-colors z-10 bg-white rounded-full px-2 py-1"
                   >
                     <Plus className="w-4 h-4" />
                     補登
@@ -155,36 +161,41 @@ export function DailyRevenueStats({ market, onAddRevenue }: DailyRevenueStatsPro
       </div>
       
       {/* 總計 */}
-      <div className="mt-4 pt-4 border-t border-[#7B9FA6]/10">
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center">
-            <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
-            <div className="text-xl font-bold text-[#7B9FA6]">
-              {formatCurrency(market.totalRevenue || 0)}
+      {!isSingleDay && (
+        <div className="mt-4 pt-4 border-t border-[#7B9FA6]/10">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center">
+              <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
+              <div className="text-xl font-bold text-[#7B9FA6]">
+                {formatCurrency(market.totalRevenue || 0)}
+              </div>
             </div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-[#6B6B6B] mb-1">總利潤</div>
-            <div className={`text-xl font-bold ${
-              (market.totalProfit || 0) >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'
-            }`}>
-              {formatCurrency(market.totalProfit || 0)}
+            <div className="text-center">
+              <div className="text-xs text-[#6B6B6B] mb-1">總利潤</div>
+              <div className={`text-xl font-bold ${
+                (market.totalProfit || 0) >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'
+              }`}>
+                {formatCurrency(market.totalProfit || 0)}
+              </div>
             </div>
-          </div>
-          <div className="text-center">
-            <div className="text-xs text-[#6B6B6B] mb-1">總成交</div>
-            <div className="text-xl font-bold text-[#D4A574]">
-              {market.totalDeals || 0}
+            <div className="text-center">
+              <div className="text-xs text-[#6B6B6B] mb-1">總成交</div>
+              <div className="text-xl font-bold text-[#D4A574]">
+                {market.totalDeals || 0}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
       
       {/* 提示 */}
       <div className="mt-4 bg-[#FFF8E7] border border-[#D4A574]/20 rounded-xl p-3 text-xs text-[#3A3A3A]">
         <p className="font-semibold mb-1">💡 提示：</p>
         <p>
-          點擊「補登」可以為指定日期補登收入記錄。補登的收入會計入該日期的統計，不影響其他日期。
+          {isSingleDay 
+            ? '點擊卡片可查看成交記錄明細。點擊「補登」可以補登收入記錄。'
+            : '點擊日期卡片可查看該日的成交記錄明細。點擊「補登」可以為指定日期補登收入記錄。'
+          }
         </p>
       </div>
     </div>
