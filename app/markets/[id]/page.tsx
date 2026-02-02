@@ -1375,11 +1375,20 @@ export default function MarketDetailPage({ params }: PageProps) {
       </div>
 
       {/* 取消確認對話框 */}
-      {showCancelConfirm && (
+      {showCancelConfirm && createPortal(
         <>
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowCancelConfirm(false)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl">
+          {/* 背景遮罩 - 確保覆蓋全螢幕 */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-[999] transition-opacity" 
+            onClick={() => setShowCancelConfirm(false)} 
+          />
+          
+          {/* 對話框容器 - 強制鎖定螢幕正中央 */}
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none p-6">
+            <div 
+              className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-lg font-medium text-[#3A3A3A] mb-2">確認取消市集？</h3>
               <p className="text-sm text-[#6B6B6B] mb-6">
                 取消後，市集狀態將變更為「已取消」，此操作無法復原。
@@ -1401,15 +1410,25 @@ export default function MarketDetailPage({ params }: PageProps) {
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* 刪除確認對話框 */}
-      {showDeleteConfirm && (
+      {showDeleteConfirm && createPortal(
         <>
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowDeleteConfirm(false)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl">
+          {/* 背景遮罩 - 確保覆蓋全螢幕 */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-[999] transition-opacity" 
+            onClick={() => setShowDeleteConfirm(false)} 
+          />
+          
+          {/* 對話框容器 - 強制鎖定螢幕正中央 */}
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none p-6">
+            <div 
+              className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-lg font-medium text-[#3A3A3A] mb-2">確認刪除記錄？</h3>
               <p className="text-sm text-[#6B6B6B] mb-6">
                 刪除後，此市集將不再顯示在列表中，但數據仍會保留。
@@ -1433,7 +1452,8 @@ export default function MarketDetailPage({ params }: PageProps) {
               </div>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* 購物車抽屜 */}
