@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
@@ -59,6 +60,7 @@ export default function MarketDetailPage({ params }: PageProps) {
   const marketId = params.id; // UUID 字符串，不需要 parseInt
   const market = useMarket(marketId);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -84,6 +86,11 @@ export default function MarketDetailPage({ params }: PageProps) {
         console.error('資料庫初始化失敗：', error);
         toast.error('資料庫初始化失敗');
       });
+  }, []);
+
+  // 確保只在客戶端渲染
+  useEffect(() => {
+    setIsMounted(true);
   }, []);
 
   // 倒數計時邏輯
@@ -1375,7 +1382,7 @@ export default function MarketDetailPage({ params }: PageProps) {
       </div>
 
       {/* 取消確認對話框 */}
-      {showCancelConfirm && createPortal(
+      {showCancelConfirm && isMounted && createPortal(
         <>
           {/* 背景遮罩 - 確保覆蓋全螢幕 */}
           <div 
@@ -1415,7 +1422,7 @@ export default function MarketDetailPage({ params }: PageProps) {
       )}
 
       {/* 刪除確認對話框 */}
-      {showDeleteConfirm && createPortal(
+      {showDeleteConfirm && isMounted && createPortal(
         <>
           {/* 背景遮罩 - 確保覆蓋全螢幕 */}
           <div 
