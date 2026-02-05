@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { X, Calendar, MapPin, DollarSign, Clock, Package, FileText, DoorOpen, ClipboardCheck, Store, Moon } from 'lucide-react';
 import { createMarket } from '@/lib/db/hooks';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { TimePicker } from '@/components/ui/TimePicker';
 import type { MarketCreatedPayload } from '@/types/db';
 
 interface AddMarketFormProps {
@@ -33,10 +35,10 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
     
     // 時間軸 - 預設值
     earlyEntryEnabled: false,
-    earlyEntryTime: '09:00',
-    checkInTime: '09:30',
-    operatingStartTime: '10:00',
-    operatingEndTime: '18:00',
+    earlyEntryTime: '11:00',
+    checkInTime: '12:00',
+    operatingStartTime: '13:00',
+    operatingEndTime: '19:00',
     
     // 財務資訊
     registrationFee: 0,
@@ -71,12 +73,12 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
       if (field === 'checkInTime' && typeof value === 'string') {
         const [hours, minutes] = value.split(':').map(Number);
         
-        // 營業開始 = 報到 + 30分鐘
-        const operatingStart = new Date(2000, 0, 1, hours, minutes + 30);
+        // 營業開始 = 報到 + 60分鐘
+        const operatingStart = new Date(2000, 0, 1, hours, minutes + 60);
         updated.operatingStartTime = `${String(operatingStart.getHours()).padStart(2, '0')}:${String(operatingStart.getMinutes()).padStart(2, '0')}`;
         
-        // 營業結束 = 報到 + 8.5小時
-        const operatingEnd = new Date(2000, 0, 1, hours, minutes + 510); // 8.5小時 = 510分鐘
+        // 營業結束 = 報到 + 6小時
+        const operatingEnd = new Date(2000, 0, 1, hours, minutes + 420); // 6小時 = 360分鐘
         updated.operatingEndTime = `${String(operatingEnd.getHours()).padStart(2, '0')}:${String(operatingEnd.getMinutes()).padStart(2, '0')}`;
       }
       
@@ -88,9 +90,9 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
   const useDefaultValues = () => {
     setFormData(prev => ({
       ...prev,
-      checkInTime: '09:30',
-      operatingStartTime: '10:00',
-      operatingEndTime: '18:00',
+      checkInTime: '12:00',
+      operatingStartTime: '13:00',
+      operatingEndTime: '19:00',
     }));
   };
 
@@ -107,7 +109,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
   // 計算總時長
   const calculateTotalDuration = () => {
     const startTime = noEarlyEntry ? formData.checkInTime : formData.earlyEntryTime;
-    return calculateDuration(startTime || '09:00', formData.operatingEndTime || '18:00');
+    return calculateDuration(startTime || '13:00', formData.operatingEndTime || '19:00');
   };
 
   // 計算固定成本總計
@@ -160,10 +162,10 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
         startDate: '',
         endDate: '',
         earlyEntryEnabled: false,
-        earlyEntryTime: '09:00',
-        checkInTime: '09:30',
-        operatingStartTime: '10:00',
-        operatingEndTime: '18:00',
+        earlyEntryTime: '11:00',
+        checkInTime: '12:00',
+        operatingStartTime: '13:00',
+        operatingEndTime: '19:00',
         registrationFee: 0,
         boothCost: 0,
         deposit: 0,
@@ -260,16 +262,16 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                   </div>
 
                   {/* 日期 */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="block text-sm font-medium text-[#3A3A3A] mb-2">
                     <div>
                       <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
                         開始日期 <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="date"
+                      <DatePicker
                         value={formData.startDate}
-                        onChange={(e) => handleChange('startDate', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+                        onChange={(value) => handleChange('startDate', value)}
+                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] font-medium"
+                        placeholder="選擇開始日期"
                         required
                       />
                     </div>
@@ -277,12 +279,12 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                       <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
                         結束日期 <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="date"
+                      <DatePicker
                         value={formData.endDate}
-                        onChange={(e) => handleChange('endDate', e.target.value)}
-                        min={formData.startDate}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+                        onChange={(value) => handleChange('endDate', value)}
+                        minDate={formData.startDate}
+                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] font-medium"
+                        placeholder="選擇結束日期"
                         required
                       />
                       <p className="text-xs text-[#6B6B6B] mt-1">單日市集請設定相同日期</p>
@@ -300,7 +302,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium mb-2">攤位費 (NT$)</label>
+                      <label className="block text-sm fon-medium mb-2">攤位費 (NT$)</label>
                       <input
                         type="number"
                         value={formData.boothCost}
@@ -463,11 +465,11 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                               <DoorOpen className="w-5 h-5" />
                               <span className="font-medium text-sm">提前進場</span>
                             </div>
-                            <input
-                              type="time"
-                              value={formData.earlyEntryTime}
-                              onChange={(e) => handleChange('earlyEntryTime', e.target.value)}
-                              className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                            <TimePicker
+                              value={formData.earlyEntryTime || '09:00'}
+                              onChange={(value) => handleChange('earlyEntryTime', value)}
+                              className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                              placeholder="選擇時間"
                             />
                           </div>
                           <div className="ml-6 my-2">
@@ -498,15 +500,15 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                           <span className="font-medium text-sm">報到</span>
                           <span className="ml-auto text-xs opacity-70">自動調整</span>
                         </div>
-                        <input
-                          type="time"
-                          value={formData.checkInTime}
-                          onChange={(e) => handleChange('checkInTime', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                        <TimePicker
+                          value={formData.checkInTime || '09:30'}
+                          onChange={(value) => handleChange('checkInTime', value)}
+                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                          placeholder="選擇時間"
                         />
                         <div className="flex items-center gap-2 text-sm text-[#6B6B6B] px-2">
                           <span>→</span>
-                          <span className="font-medium">30分鐘</span>
+                          <span className="font-medium">{calculateDuration(formData.checkInTime || '12:00', formData.operatingStartTime || '13:00')}</span>
                         </div>
                       </div>
                       <div className="ml-6 my-2">
@@ -521,11 +523,11 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                           <Store className="w-5 h-5" />
                           <span className="font-medium text-sm">營業中</span>
                         </div>
-                        <input
-                          type="time"
-                          value={formData.operatingStartTime}
-                          onChange={(e) => handleChange('operatingStartTime', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                        <TimePicker
+                          value={formData.operatingStartTime || '10:00'}
+                          onChange={(value) => handleChange('operatingStartTime', value)}
+                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                          placeholder="選擇時間"
                         />
                         <div className="flex items-center gap-2 text-sm text-[#6B6B6B] px-2">
                           <span>→</span>
@@ -544,11 +546,11 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                           <Moon className="w-5 h-5" />
                           <span className="font-medium text-sm">營業結束</span>
                         </div>
-                        <input
-                          type="time"
-                          value={formData.operatingEndTime}
-                          onChange={(e) => handleChange('operatingEndTime', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                        <TimePicker
+                          value={formData.operatingEndTime || '18:00'}
+                          onChange={(value) => handleChange('operatingEndTime', value)}
+                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                          placeholder="選擇時間"
                         />
                       </div>
                     </div>
@@ -579,14 +581,14 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                     <span className="font-medium">💡 提示：修改報到時間會自動調整營業時間</span>
                   </p>
                   <p className="flex items-center gap-1 ml-4">
-                    <span>• 營業中 = 報到 + 30分鐘</span>
+                    <span>• 營業中 = 報到 + 1小時</span>
                   </p>
                   <p className="flex items-center gap-1 ml-4">
-                    <span>• 營業結束 = 報到 + 8.5小時</span>
+                    <span>• 營業結束 = 營業中 + 6小時</span>
                   </p>
                   <p className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-[#7B9FA6]" />
-                    預設值：報到 09:30 | 營業中 10:00-18:00
+                    預設值：報到 12:00 | 營業中 13:00-19:00
                   </p>
                 </div>
               </div>

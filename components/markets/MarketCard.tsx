@@ -129,6 +129,12 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
+            {/* 市集狀態標籤 - 只在市集頁面顯示 */}
+            {variant === 'default' && (
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusStyle(market.status)}`}>
+                {getStatusText(market.status)}
+              </span>
+            )}
             <h3 className="font-medium text-lg text-[#3A3A3A]">
               {market.name}
             </h3>
@@ -139,12 +145,7 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
                 {operatingStatus.label}
               </span>
             )}
-            {/* 市集狀態標籤 - 只在市集頁面顯示 */}
-            {variant === 'default' && (
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusStyle(market.status)}`}>
-                {getStatusText(market.status)}
-              </span>
-            )}
+            
           </div>
           <div className="flex flex-col gap-1">
             {/* 日期 */}
@@ -293,7 +294,7 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
       </div>
 
       {/* 轉換率 - 只在市集頁面顯示 */}
-      {variant === 'default' && (
+      {/*variant === 'default' && (
         <div className="flex justify-center">
           <div className="bg-[#7B9FA6]/5 rounded-xl px-4 py-2 inline-flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-[#7B9FA6]" />
@@ -303,7 +304,7 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
             </span>
           </div>
         </div>
-      )}
+      )*/}
     </div>
   );
 }

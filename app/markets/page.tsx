@@ -19,12 +19,27 @@ export default function MarketsPage() {
 
   // 初始化資料庫
   useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      console.warn('⚠️ 資料庫初始化超時，強制完成');
+      setIsInitialized(true);
+    }, 10000);
+    
     initializeDatabase()
-      .then(() => setIsInitialized(true))
+      .then(() => {
+        clearTimeout(timeoutId);
+        setIsInitialized(true);
+      })
       .catch((error) => {
+        clearTimeout(timeoutId);
         console.error('資料庫初始化失敗：', error);
         toast.error('資料庫初始化失敗');
+        // 即使失敗也要設置為已初始化，讓用戶可以看到界面
+        setIsInitialized(true);
       });
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // 查詢所有市集

@@ -35,30 +35,35 @@ export function useMarkets(options?: {
   includeDeleted?: boolean;  // ✅ 新增：是否包含已刪除的市集（預設 false）
 }) {
   return useLiveQuery(async () => {
-    let query = db.markets.toCollection();
-    
-    // 篩選狀態
-    if (options?.status) {
-      query = db.markets.where('status').equals(options.status);
+    try {
+      let query = db.markets.toCollection();
+      
+      // 篩選狀態
+      if (options?.status) {
+        query = db.markets.where('status').equals(options.status);
+      }
+      
+      // 排序
+      const markets = await query.toArray();
+      
+      // ✅ 過濾已刪除的市集（除非明確要求包含）
+      const filteredMarkets = options?.includeDeleted 
+        ? markets 
+        : markets.filter(m => !m.isDeleted);
+      
+      const orderBy = options?.orderBy || 'startDate';
+      const order = options?.order || 'desc';
+      
+      return filteredMarkets.sort((a, b) => {
+        const aValue = orderBy === 'startDate' ? new Date(a.startDate).getTime() : a.createdAt;
+        const bValue = orderBy === 'startDate' ? new Date(b.startDate).getTime() : b.createdAt;
+        return order === 'asc' ? aValue - bValue : bValue - aValue;
+      });
+    } catch (error) {
+      console.error('❌ useMarkets 查詢失敗:', error);
+      return []; // 返回空數組而不是 undefined
     }
-    
-    // 排序
-    const markets = await query.toArray();
-    
-    // ✅ 過濾已刪除的市集（除非明確要求包含）
-    const filteredMarkets = options?.includeDeleted 
-      ? markets 
-      : markets.filter(m => !m.isDeleted);
-    
-    const orderBy = options?.orderBy || 'startDate';
-    const order = options?.order || 'desc';
-    
-    return filteredMarkets.sort((a, b) => {
-      const aValue = orderBy === 'startDate' ? new Date(a.startDate).getTime() : a.createdAt;
-      const bValue = orderBy === 'startDate' ? new Date(b.startDate).getTime() : b.createdAt;
-      return order === 'asc' ? aValue - bValue : bValue - aValue;
-    });
-  }, [options?.status, options?.orderBy, options?.order, options?.includeDeleted]);
+  }, [options?.status, options?.orderBy, options?.order, options?.includeDeleted]) || []; // 確保永遠不返回 undefined
 }
 
 /**

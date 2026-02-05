@@ -231,8 +231,20 @@ export { generateUUID } from './uuid';
  */
 export async function initializeDatabase(): Promise<void> {
   try {
-    // 開啟資料庫連接
-    await db.open();
+    console.log('🔄 開始初始化資料庫...');
+    
+    // 設置超時保護
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('資料庫初始化超時')), 8000);
+    });
+    
+    // 開啟資料庫連接（帶超時保護）
+    await Promise.race([
+      db.open(),
+      timeoutPromise
+    ]);
+    
+    console.log('✅ 資料庫連接已開啟');
     
     // 檢查是否已有設定記錄
     const settingsCount = await db.settings.count();
@@ -252,23 +264,43 @@ export async function initializeDatabase(): Promise<void> {
       } catch (addError) {
         // 如果添加失敗（可能是因為已存在），忽略錯誤
         if (addError instanceof Error && addError.name !== 'ConstraintError') {
-          throw addError;
+          console.warn('⚠️ 建立預設設定時發生錯誤，但繼續執行:', addError);
+        } else {
+          console.log('ℹ️ 預設設定已存在，跳過建立');
         }
-        console.log('ℹ️ 預設設定已存在，跳過建立');
       }
     }
     
     // 記錄資料庫統計
-    const stats = {
-      events: await db.events.count(),
-      markets: await db.markets.count(),
-      products: await db.products.count(),
-      dailyStats: await db.dailyStats.count(),
-    };
+    try {
+      const stats = {
+        events: await db.events.count(),
+        markets: await db.markets.count(),
+        products: await db.products.count(),
+        dailyStats: await db.dailyStats.count(),
+      };
+      
+      console.log('📊 資料庫統計：', stats);
+    } catch (statsError) {
+      console.warn('⚠️ 無法獲取資料庫統計，但繼續執行');
+    }
     
-    console.log('📊 資料庫統計：', stats);
+    console.log('✅ 資料庫初始化完成');
   } catch (error) {
     console.error('❌ 資料庫初始化失敗：', error);
+    
+    // 如果是超時錯誤，嘗試強制關閉並重新開啟
+    if (error instanceof Error && error.message.includes('超時')) {
+      console.log('🔄 嘗試重新初始化資料庫...');
+      try {
+        db.close();
+        await db.open();
+        console.log('✅ 資料庫重新初始化成功');
+      } catch (retryError) {
+        console.error('❌ 資料庫重新初始化失敗:', retryError);
+      }
+    }
+    
     // 不要拋出錯誤，讓應用繼續運行
     // throw error;
   }

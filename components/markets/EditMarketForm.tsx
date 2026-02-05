@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { X, DollarSign, Clock, Package, FileText, DoorOpen, ClipboardCheck, Store, Moon } from 'lucide-react';
 import { db } from '@/lib/db';
 import { toast } from 'sonner';
+import { DatePicker } from '@/components/ui/DatePicker';
+import { TimePicker } from '@/components/ui/TimePicker';
 import type { Market } from '@/types/db';
 
 interface EditMarketFormProps {
@@ -191,11 +193,11 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                       <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
                         開始日期 <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="date"
+                      <DatePicker
                         value={formData.startDate}
-                        onChange={(e) => handleChange('startDate', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+                        onChange={(value) => handleChange('startDate', value)}
+                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] font-medium"
+                        placeholder="選擇開始日期"
                         required
                       />
                     </div>
@@ -203,12 +205,12 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                       <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
                         結束日期 <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="date"
+                      <DatePicker
                         value={formData.endDate}
-                        onChange={(e) => handleChange('endDate', e.target.value)}
-                        min={formData.startDate}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+                        onChange={(value) => handleChange('endDate', value)}
+                        minDate={formData.startDate}
+                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] font-medium"
+                        placeholder="選擇結束日期"
                         required
                       />
                     </div>
@@ -236,11 +238,11 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                               <DoorOpen className="w-5 h-5" />
                               <span className="font-medium text-sm">提前進場</span>
                             </div>
-                            <input
-                              type="time"
+                            <TimePicker
                               value={formData.earlyEntryTime}
-                              onChange={(e) => handleChange('earlyEntryTime', e.target.value)}
-                              className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                              onChange={(value) => handleChange('earlyEntryTime', value)}
+                              className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                              placeholder="選擇時間"
                             />
                           </div>
                           <div className="ml-6 my-2">
@@ -270,11 +272,11 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                           <ClipboardCheck className="w-5 h-5" />
                           <span className="font-medium text-sm">報到</span>
                         </div>
-                        <input
-                          type="time"
+                        <TimePicker
                           value={formData.checkInTime}
-                          onChange={(e) => handleChange('checkInTime', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                          onChange={(value) => handleChange('checkInTime', value)}
+                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                          placeholder="選擇時間"
                         />
                       </div>
                       <div className="ml-6 my-2">
@@ -289,11 +291,11 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                           <Store className="w-5 h-5" />
                           <span className="font-medium text-sm">營業中</span>
                         </div>
-                        <input
-                          type="time"
+                        <TimePicker
                           value={formData.operatingStartTime}
-                          onChange={(e) => handleChange('operatingStartTime', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                          onChange={(value) => handleChange('operatingStartTime', value)}
+                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                          placeholder="選擇時間"
                         />
                         <div className="flex items-center gap-2 text-sm text-[#6B6B6B] px-2">
                           <span>→</span>
@@ -312,11 +314,11 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                           <Moon className="w-5 h-5" />
                           <span className="font-medium text-sm">營業結束</span>
                         </div>
-                        <input
-                          type="time"
+                        <TimePicker
                           value={formData.operatingEndTime}
-                          onChange={(e) => handleChange('operatingEndTime', e.target.value)}
-                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] text-lg font-mono"
+                          onChange={(value) => handleChange('operatingEndTime', value)}
+                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                          placeholder="選擇時間"
                         />
                       </div>
                     </div>
