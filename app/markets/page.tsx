@@ -9,6 +9,7 @@ import { AddMarketForm } from '@/components/markets/AddMarketForm';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import type { MarketStatus } from '@/types/db';
+import MarketsLoading from './loading';
 
 type TabType = 'all' | 'pending' | 'payment' | 'upcoming' | 'completed' | 'cancelled';
 
@@ -45,12 +46,16 @@ export default function MarketsPage() {
   // 查詢所有市集
   const allMarkets = useMarkets({ orderBy: 'startDate', order: 'desc' });
 
+  // ✅ 載入狀態檢查：資料庫未初始化或數據未載入時顯示骨架屏
+  const isLoading = !isInitialized || allMarkets === undefined;
+
   // 根據 Tab 篩選市集
   const getFilteredMarkets = () => {
     if (!allMarkets) return [];
 
-    // 獲取今天的日期
-    const today = new Date().toISOString().split('T')[0];
+    // ✅ 獲取今天的日期（使用本地時間）
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     switch (activeTab) {
       case 'pending':
@@ -99,28 +104,24 @@ export default function MarketsPage() {
   // Tab 配置
   const tabs = [
     { id: 'all' as TabType, label: '全部', count: allMarkets?.length || 0 },
-    { id: 'pending' as TabType, label: '待處理', count: allMarkets?.filter(m => m.status === 'registered').length || 0 },
+    { id: 'pending' as TabType, label: '待公佈', count: allMarkets?.filter(m => m.status === 'registered').length || 0 },
     { id: 'payment' as TabType, label: '待繳費', count: allMarkets?.filter(m => m.status === 'accepted').length || 0 },
     { id: 'upcoming' as TabType, label: '待舉辦', count: (() => {
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       return allMarkets?.filter(m => (m.status === 'paid' || m.status === 'ongoing') && m.startDate >= today).length || 0;
     })() },
     { id: 'completed' as TabType, label: '已結束', count: (() => {
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       return allMarkets?.filter(m => (m.status === 'paid' || m.status === 'ongoing') && m.endDate < today).length || 0;
     })() },
     { id: 'cancelled' as TabType, label: '已取消', count: allMarkets?.filter(m => m.status === 'cancelled' || m.status === 'postponed').length || 0 },
   ];
 
-  if (!isInitialized) {
-    return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#7B9FA6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#6B6B6B]">載入中...</p>
-        </div>
-      </div>
-    );
+  // ✅ 數據載入中，顯示骨架屏
+  if (isLoading) {
+    return <MarketsLoading />;
   }
 
   return (

@@ -17,6 +17,7 @@ import {
   AlertCircle,
   RefreshCw
 } from 'lucide-react';
+import HomeLoading from './loading';
 
 export default function HomePage() {
   const router = useRouter();
@@ -30,22 +31,81 @@ export default function HomePage() {
   const [showSyncTooltip, setShowSyncTooltip] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // 獲取今天的日期
-  const today = new Date().toISOString().split('T')[0];
+  // ✅ 載入狀態檢查：數據未載入時顯示骨架屏
+  const isLoading = allMarkets === undefined || monthlyStats === undefined;
+
+  // ✅ 獲取今天的日期（使用本地時間，避免時區問題）
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   // ✅ 修復：篩選進行中的市集（日期區間包含今天）
-  const todayMarkets = allMarkets?.filter(market => 
-    market.startDate <= today && 
-    market.endDate >= today &&
-    market.status !== 'cancelled' && 
-    market.status !== 'completed'
-  ) || [];
+  const todayMarkets = (() => {
+    const markets = allMarkets?.filter(market => 
+      market.startDate <= today && 
+      market.endDate >= today &&
+      market.status !== 'cancelled' && 
+      market.status !== 'completed'
+    ) || [];
+
+    // ✅ 獲取營業狀態的函數
+    const getOperatingStatus = (market: typeof markets[0]) => {
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      // 營業中
+      if (market.operatingStartTime && market.operatingEndTime && 
+          currentTime >= market.operatingStartTime && currentTime < market.operatingEndTime) {
+        return 'operating';
+      }
+      
+      // 已結束
+      if (market.operatingEndTime && currentTime >= market.operatingEndTime) {
+        return 'closed';
+      }
+      
+      // 未開始
+      return 'not_started';
+    };
+
+    // ✅ 排序邏輯：
+    // 1. 營業中（operating）- 按開始時間升序
+    // 2. 未開始（not_started）- 按開始時間升序
+    // 3. 已結束（closed）- 按開始時間升序
+    return markets.sort((a, b) => {
+      const statusA = getOperatingStatus(a);
+      const statusB = getOperatingStatus(b);
+      
+      // 狀態優先級
+      const statusPriority: Record<string, number> = {
+        'operating': 1,
+        'not_started': 2,
+        'closed': 3,
+      };
+      
+      const priorityA = statusPriority[statusA] || 999;
+      const priorityB = statusPriority[statusB] || 999;
+      
+      // 先按狀態排序
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      // 同狀態下，按營業開始時間排序
+      const timeA = a.operatingStartTime || '00:00';
+      const timeB = b.operatingStartTime || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+  })();
 
   // ✅ 修復：篩選即將到來的市集（開始日期在今天之後，且狀態為已繳費或如期舉行）
   const upcomingMarkets = allMarkets?.filter(market => 
     market.startDate > today && 
     (market.status === 'paid' || market.status === 'ongoing')
   ) || [];
+
+  // ✅ 數據載入中，顯示骨架屏
+  if (isLoading) {
+    return <HomeLoading />;
+  }
 
   // 獲取同步狀態圖示
   const getSyncIcon = () => {
@@ -278,35 +338,33 @@ export default function HomePage() {
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4">
-               {/* 本月概覽 */}
-               {monthlyStats && (
-          <div className="mb-6">
-
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-[#7B9FA6]/5">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1">市集場次</div>
-                  <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
-                    {monthlyStats.marketCount}
-                  </div>
+        {/* 本月概覽 - 移除條件渲染，始終顯示容器 */}
+        <div className="mb-6">
+          <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-[#7B9FA6]/5">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-xs text-[#6B6B6B] mb-1">市集場次</div>
+                <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+                  {monthlyStats?.marketCount ?? 0}
                 </div>
-                <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
-                  <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
-                    {formatCurrency(monthlyStats.totalRevenue)}
-                  </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
+                <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+                  {formatCurrency(monthlyStats?.totalRevenue ?? 0)}
                 </div>
-                <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1">成交數</div>
-                  <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
-                    {monthlyStats.totalDeals}
-                  </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-[#6B6B6B] mb-1">成交數</div>
+                <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+                  {monthlyStats?.totalDeals ?? 0}
                 </div>
               </div>
             </div>
           </div>
-        )}
-        {/* 當日市集 */}
+        </div>
+
+        {/* 當日市集 - 移除條件渲染，始終顯示容器 */}
         {todayMarkets.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">

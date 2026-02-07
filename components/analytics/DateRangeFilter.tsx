@@ -38,8 +38,9 @@ export function DateRangeFilter({
   const handleCustomClick = () => {
     setShowCustomPicker(!showCustomPicker);
     if (!showCustomPicker) {
-      // 初始化日期
-      const today = new Date().toISOString().split('T')[0];
+      // ✅ 初始化日期（使用本地日期）
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       setTempStartDate(customStartDate || today);
       setTempEndDate(customEndDate || today);
     }

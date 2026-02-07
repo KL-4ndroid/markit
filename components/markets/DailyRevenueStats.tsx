@@ -28,7 +28,9 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
     const end = new Date(market.endDate);
     
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      dates.push(d.toISOString().split('T')[0]);
+      // ✅ 使用本地日期，避免時區問題
+      const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      dates.push(localDate);
     }
     
     return dates;
@@ -80,7 +82,9 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
       
       <div className="space-y-3">
         {dailyData.map((day) => {
-          const today = new Date().toISOString().split('T')[0];
+          // ✅ 使用本地日期，避免時區問題
+          const now = new Date();
+          const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
           const isPast = day.date < today;
           const isToday = day.date === today;
           const isFuture = day.date > today;

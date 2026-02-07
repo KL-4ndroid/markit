@@ -53,21 +53,41 @@ body {
   }
 }
 
-/* 頁面切換過渡效果 - 輕量淡入動畫 */
+/* 頁面切換過渡效果 - 移除所有動畫 */
 .page-transition {
-  animation: pageEnter 0.15s ease-out;
-  will-change: opacity;
   /* 強制硬體加速 */
   transform: translateZ(0);
   backface-visibility: hidden;
+  /* 確保有背景色，防止白屏 */
+  background-color: #FAFAF8;
+  min-height: 100vh;
+  /* 防止內容跳動 */
+  contain: layout style paint;
 }
 
-@keyframes pageEnter {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
+/* 移除淡入動畫 - 直接顯示 */
+.fade-in {
+  /* 無動畫 */
+}
+
+/* 移除從右滑入動畫 - 直接顯示 */
+.slide-from-right {
+  /* 無動畫 */
+}
+
+/* 移除從左滑入動畫 - 直接顯示 */
+.slide-from-left {
+  /* 無動畫 */
+}
+
+/* 尊重用戶的動畫偏好設定 */
+@media (prefers-reduced-motion: reduce) {
+  .page-transition,
+  .slide-from-right,
+  .slide-from-left,
+  .fade-in {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
@@ -100,39 +120,13 @@ html {
   background: #6A8E95;
 }
 
-/* 動畫 */
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
+/* 動畫 - 移除所有動畫效果 */
 .animate-slide-up {
-  animation: slide-up 0.3s ease-out;
-}
-
-@keyframes bounce-up {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: translateY(-20px) scale(1.2);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-40px) scale(0.8);
-    opacity: 0;
-  }
+  /* 無動畫 - 直接顯示 */
 }
 
 .animate-bounce-up {
-  animation: bounce-up 0.6s ease-out forwards;
+  /* 無動畫 - 直接顯示 */
 }
 
 /* 漸層 Header */
@@ -175,16 +169,7 @@ a, button {
   perspective: 1000px;
 }
 
-/* 骨架屏動畫 - 防止閃爍 + 流光效果 */
-@keyframes skeleton-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
+/* 骨架屏動畫 - 移除透明度變化 */
 @keyframes skeleton-shimmer {
   0% {
     background-position: -200% 0;
@@ -194,11 +179,8 @@ a, button {
   }
 }
 
-/* 骨架屏基礎樣式 */
+/* 骨架屏基礎樣式 - 移除呼吸燈效果 */
 .skeleton-shimmer {
-  /* 呼吸燈效果 */
-  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  
   /* 流光效果 */
   background: linear-gradient(
     90deg,
@@ -207,17 +189,12 @@ a, button {
     rgba(240, 240, 240, 0) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  
-  /* 防止閃爍：延遲顯示 */
-  animation-delay: 0.2s;
-  opacity: 0;
-  animation-fill-mode: forwards;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+  opacity: 1;
 }
 
-/* Header 骨架專用（半透明白色流光） */
+/* Header 骨架專用（半透明白色流光）- 移除呼吸燈效果 */
 .skeleton-shimmer-header {
-  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0.1) 0%,
@@ -225,15 +202,12 @@ a, button {
     rgba(255, 255, 255, 0.1) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation-delay: 0.2s;
-  opacity: 0;
-  animation-fill-mode: forwards;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+  opacity: 1;
 }
 
-/* 深色骨架（卡片內容） */
+/* 深色骨架（卡片內容）- 移除呼吸燈效果 */
 .skeleton-shimmer-dark {
-  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   background: linear-gradient(
     90deg,
     rgba(229, 229, 229, 0.8) 0%,
@@ -241,15 +215,12 @@ a, button {
     rgba(229, 229, 229, 0.8) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation-delay: 0.2s;
-  opacity: 0;
-  animation-fill-mode: forwards;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+  opacity: 1;
 }
 
-/* 淺色骨架（背景區域） */
+/* 淺色骨架（背景區域）- 移除呼吸燈效果 */
 .skeleton-shimmer-light {
-  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   background: linear-gradient(
     90deg,
     rgba(249, 249, 249, 0.8) 0%,
@@ -257,8 +228,6 @@ a, button {
     rgba(249, 249, 249, 0.8) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation-delay: 0.2s;
-  opacity: 0;
-  animation-fill-mode: forwards;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+  opacity: 1;
 }

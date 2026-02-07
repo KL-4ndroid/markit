@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Zap, RotateCcw, Save, ChevronDown, ChevronUp, Database, Trash2, Cloud, HardDrive, AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Zap, RotateCcw, Save, ChevronDown, ChevronUp, Database, Trash2, Cloud, HardDrive, AlertTriangle, Bug } from 'lucide-react';
 import { getQuickActionButtons, saveQuickActionButtons, resetQuickActionButtons, type QuickActionButton } from '@/lib/quick-actions-store';
 import { toast } from 'sonner';
 import { PWAInstallButton } from '@/components/PWAInstallButton';
@@ -9,6 +10,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [buttons, setButtons] = useState<QuickActionButton[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -176,6 +178,29 @@ export default function SettingsPage() {
       <div className="max-w-lg mx-auto px-6 -mt-4 space-y-4">
         {/* PWA 安裝按鈕 */}
         <PWAInstallButton />
+
+        {/* 開發者工具 */}
+        <div className="bg-gradient-to-br from-[#7B9FA6]/10 to-[#D4A574]/10 rounded-[1.5rem] p-6 shadow-lg border-2 border-[#7B9FA6]/20">
+          <div className="flex items-center gap-2 mb-3">
+            <Bug className="w-5 h-5 text-[#7B9FA6]" />
+            <h2 className="text-lg font-medium text-[#3A3A3A]">
+              開發者工具
+            </h2>
+          </div>
+          <p className="text-sm text-[#6B6B6B] mb-4">
+            測試和調試應用程式的專業工具
+          </p>
+          <button
+            onClick={() => router.push('/debug/flicker-test')}
+            className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] text-white hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2"
+          >
+            <Bug className="w-5 h-5" />
+            閃爍測試調試工具
+          </button>
+          <p className="text-xs text-[#6B6B6B] mt-3 text-center">
+            實時調整動畫參數，找出最佳配置
+          </p>
+        </div>
 
         {/* 資料庫管理 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
@@ -355,9 +380,9 @@ export default function SettingsPage() {
           )}
         </div>
 
-        {/* 快速互動按鈕設定 */}
+        {/* 快速互動按鈕設定 - 暫時隱藏 */}
+        {/* 
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
-          {/* 標題區（始終顯示） */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="w-full p-6 text-left hover:bg-[#FAFAF8] transition-colors"
@@ -384,10 +409,8 @@ export default function SettingsPage() {
             </div>
           </button>
 
-          {/* 展開內容 */}
           {isExpanded && (
             <div className="px-6 pb-6 border-t border-[#7B9FA6]/10">
-              {/* 按鈕設定列表 */}
               <div className="space-y-4 mt-4">
                 {buttons.map((button, index) => (
                   <div key={button.id} className="p-4 bg-[#FAFAF8] rounded-xl">
@@ -401,7 +424,6 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="space-y-3">
-                      {/* Emoji 輸入 */}
                       <div>
                         <label className="block text-xs text-[#6B6B6B] mb-1">
                           圖示 Emoji
@@ -416,7 +438,6 @@ export default function SettingsPage() {
                         />
                       </div>
 
-                      {/* 標籤輸入 */}
                       <div>
                         <label className="block text-xs text-[#6B6B6B] mb-1">
                           按鈕文字
@@ -435,7 +456,6 @@ export default function SettingsPage() {
                 ))}
               </div>
 
-              {/* 預覽 */}
               <div className="mt-6 p-4 bg-gradient-to-br from-[#7B9FA6]/5 to-[#D4A574]/5 rounded-xl">
                 <div className="text-xs text-[#6B6B6B] mb-3 text-center">
                   預覽效果
@@ -461,7 +481,6 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* 操作按鈕 */}
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={handleReset}
@@ -479,7 +498,6 @@ export default function SettingsPage() {
                   儲存設定
                 </button>
               </div>
-              {/* 說明卡片 */}
               <div className="mt-6 bg-gradient-to-br from-[#E8F0F8] to-[#FFF8E7] rounded-[1.5rem] p-6">
                 <h3 className="text-sm font-medium text-[#3A3A3A] mb-2">
                   💡 使用說明
@@ -494,6 +512,7 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+        */}
 
 
       </div>

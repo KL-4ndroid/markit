@@ -418,7 +418,9 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
   }
   
   // 更新每日統計（使用複合索引查詢）
-  const date = new Date(event.timestamp).toISOString().split('T')[0];
+  // ✅ 使用本地日期，避免時區問題
+  const eventDate = new Date(event.timestamp);
+  const date = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
   const dailyStat = await db.dailyStats
     .where('[date+marketId]')
     .equals([date, market_id])
@@ -465,8 +467,12 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
   const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
   const { dealDate, isBackfill, isManualEntry } = event.payload;
   
-  // ✅ 使用指定的交易日期，如果沒有則使用事件時間戳
-  const transactionDate = dealDate || new Date(event.timestamp).toISOString().split('T')[0];
+  // ✅ 使用指定的交易日期，如果沒有則使用本地日期
+  let transactionDate = dealDate;
+  if (!transactionDate) {
+    const eventDate = new Date(event.timestamp);
+    transactionDate = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+  }
   
   let totalAmount = event.payload.totalAmount;
   let totalCost = 0;

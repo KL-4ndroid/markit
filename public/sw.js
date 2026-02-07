@@ -1,20 +1,16 @@
 // Service Worker for Market Pulse PWA
-// Version: 1.0.1
+// Version: 1.0.2
 // 快取策略：嚴格區分靜態資源與 API 請求
-// 更新日期：2026-01-25
+// 更新日期：2026-02-08
 
-const CACHE_VERSION = '1.0.1';
+const CACHE_VERSION = '1.0.2';
 const CACHE_NAME = `market-pulse-v${CACHE_VERSION}`;
 const RUNTIME_CACHE = `market-pulse-runtime-v${CACHE_VERSION}`;
 
 // 靜態資源列表（Cache First）
+// 注意：開發環境中只快取離線頁面，避免快取失敗
 const STATIC_ASSETS = [
-  '/',
-  '/markets',
-  '/products',
-  '/analytics',
-  '/settings',
-  '/offline',
+  '/offline.html',
 ];
 
 // API 路徑模式（Network First - 絕不快取）
@@ -43,10 +39,22 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[SW] Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
+      // 使用 Promise.allSettled 避免單個資源失敗導致整體失敗
+      return Promise.allSettled(
+        STATIC_ASSETS.map(url => 
+          cache.add(url).catch(err => {
+            console.warn('[SW] Failed to cache:', url, err);
+            return null;
+          })
+        )
+      );
     }).then(() => {
       console.log('[SW] Installation complete');
       return self.skipWaiting(); // 立即啟用新的 SW
+    }).catch(err => {
+      console.error('[SW] Installation failed:', err);
+      // 即使快取失敗也繼續安裝
+      return self.skipWaiting();
     })
   );
 });

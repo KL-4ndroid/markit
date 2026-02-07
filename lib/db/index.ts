@@ -38,7 +38,7 @@ export class MarketPulseDB extends Dexie {
   events!: Table<Event, string>;
   markets!: Table<Market, string>;
   products!: Table<Product, string>;
-  dailyStats!: Table<DailyStats, string>;
+  dailyStats!: Table<DailyStats, number>;  // ✅ 使用 number 作為主鍵類型（++id 自動遞增）
   settings!: Table<Settings, number>;
   syncQueue!: Table<SyncQueueItem, string>;
 

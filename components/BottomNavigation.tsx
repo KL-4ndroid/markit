@@ -5,11 +5,13 @@ import { Home, Calendar, Package, BarChart3, Settings } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { navigationStore } from '@/lib/navigation-store';
+import { useNavigation } from '@/lib/navigation-context';
 
 export function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
   const [isNavVisible, setIsNavVisible] = useState(true);
+  const { setNavigation } = useNavigation();
 
   // 訂閱全局導航狀態
   useEffect(() => {
@@ -36,36 +38,49 @@ export function BottomNavigation() {
       label: '首頁',
       icon: Home,
       path: '/',
+      index: 0,
     },
     {
       id: 'markets',
       label: '市集',
       icon: Calendar,
       path: '/markets',
+      index: 1,
     },
     {
       id: 'products',
       label: '商品',
       icon: Package,
       path: '/products',
+      index: 2,
     },
     {
       id: 'analytics',
       label: '分析',
       icon: BarChart3,
       path: '/analytics',
+      index: 3,
     },
     {
       id: 'settings',
       label: '設置',
       icon: Settings,
       path: '/settings',
+      index: 4,
     },
   ];
 
+  // 獲取當前路由索引
+  const currentIndex = navItems.find(item => item.path === pathname)?.index ?? 0;
+
+  // 處理導航點擊
+  const handleNavClick = (item: typeof navItems[0]) => {
+    setNavigation(currentIndex, item.index);
+  };
+
   return (
     <>
-      <nav className={`fixed left-0 right-0 bg-white border-t border-[#7B9FA6]/20 px-4 py-3 z-50 transition-transform duration-300 ease-in-out hardware-accelerated ${
+      <nav className={`fixed left-0 right-0 bg-white border-t border-[#7B9FA6]/20 px-4 py-3 z-50 ease-in-out hardware-accelerated ${
         isNavVisible ? 'bottom-0 translate-y-0' : '-bottom-24 translate-y-24'
       }`}>
         <div className="max-w-lg mx-auto flex justify-around items-center">
@@ -78,6 +93,7 @@ export function BottomNavigation() {
                 key={item.id}
                 href={item.path}
                 prefetch={true}
+                onClick={() => handleNavClick(item)}
                 className="flex flex-col items-center gap-1 min-w-[60px] transition-all hardware-accelerated"
               >
                 <div

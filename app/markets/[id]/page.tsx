@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { 
@@ -72,6 +72,40 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [showDealDetailModal, setShowDealDetailModal] = useState(false);
   const [showDailyDealsModal, setShowDailyDealsModal] = useState(false);  // ✅ 新增：日期成交記錄彈窗
   const [countdown, setCountdown] = useState<string>('--');
+  const [isOperatingStatusCollapsed, setIsOperatingStatusCollapsed] = useState(true);  // 營業狀態折疊
+  const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(true);  // 今日時間軸折疊
+  const [showStatusChangeConfirm, setShowStatusChangeConfirm] = useState(false);  // 狀態變更確認
+  const [pendingStatus, setPendingStatus] = useState<MarketStatus | null>(null);  // 待變更的狀態
+  
+  // ✅ 新增：交易功能區塊的展開/折疊狀態（互斥）
+  const [isQuickRevenueExpanded, setIsQuickRevenueExpanded] = useState(true);  // 快速新增收入（預設展開）
+  const [isQuickTransactionExpanded, setIsQuickTransactionExpanded] = useState(false);  // 快速交易（預設折疊）
+  
+  // ✅ 處理快速新增收入的展開/折疊切換
+  const handleToggleQuickRevenue = () => {
+    if (isQuickRevenueExpanded) {
+      // 如果當前是展開的，折疊它並展開快速交易
+      setIsQuickRevenueExpanded(false);
+      setIsQuickTransactionExpanded(true);
+    } else {
+      // 如果當前是折疊的，展開它並折疊快速交易
+      setIsQuickRevenueExpanded(true);
+      setIsQuickTransactionExpanded(false);
+    }
+  };
+  
+  // ✅ 處理快速交易的展開/折疊切換
+  const handleToggleQuickTransaction = () => {
+    if (isQuickTransactionExpanded) {
+      // 如果當前是展開的，折疊它並展開快速新增收入
+      setIsQuickTransactionExpanded(false);
+      setIsQuickRevenueExpanded(true);
+    } else {
+      // 如果當前是折疊的，展開它並折疊快速新增收入
+      setIsQuickTransactionExpanded(true);
+      setIsQuickRevenueExpanded(false);
+    }
+  };
   
   // 互動行為數據狀態
   const [interactionEvents, setInteractionEvents] = useState<Event<InteractionRecordedPayload>[]>([]);
@@ -114,7 +148,8 @@ export default function MarketDetailPage({ params }: PageProps) {
 
     const updateCountdown = () => {
       const now = new Date();
-      const today = now.toISOString().split('T')[0];
+      // ✅ 使用本地日期，避免時區問題
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       
       // 如果不是市集當天，不顯示倒數
       if (today !== market.startDate) {
@@ -416,36 +451,123 @@ export default function MarketDetailPage({ params }: PageProps) {
     }
   };
 
-  // 處理營業階段切換
-  const handlePhaseChange = async (phase: OperationPhase | null) => {
+  // ✅ 自動營業狀態（響應式）- 三種狀態：'not-started' | 'operating' | 'ended'
+  const [operatingPhase, setOperatingPhase] = useState<'not-started' | 'operating' | 'ended'>('not-started');
+
+  // ✅ 自動判斷營業階段
+  const checkOperatingStatus = useCallback(() => {
+    if (!market) {
+      setOperatingPhase('not-started');
+      return;
+    }
+    
+    // ✅ 使用本地日期，避免時區問題
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    // 檢查是否在市集日期範圍內
+    if (market.startDate > today || market.endDate < today) {
+      setOperatingPhase('not-started');
+      return;
+    }
+    
+    // 檢查狀態是否為「已繳費」或「如期舉行」
+    if (market.status !== 'paid' && market.status !== 'ongoing') {
+      setOperatingPhase('not-started');
+      return;
+    }
+    
+    // 計算營業開始時間（報到時間）
+    const startTime = market.checkInTime || market.operatingStartTime;
+    if (!startTime) {
+      setOperatingPhase('not-started');
+      return;
+    }
+    
+    // 計算營業結束時間（營業結束 + 30 分鐘緩衝）
+    const endTime = market.operatingEndTime;
+    if (!endTime) {
+      setOperatingPhase('not-started');
+      return;
+    }
+    
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+    const endWithBuffer = new Date();
+    endWithBuffer.setHours(endHour, endMinute + 30, 0, 0); // ✅ 加上 30 分鐘緩衝
+    const endTimeWithBuffer = `${String(endWithBuffer.getHours()).padStart(2, '0')}:${String(endWithBuffer.getMinutes()).padStart(2, '0')}`;
+    
+    // 判斷當前時間處於哪個階段
+    if (currentTime < startTime) {
+      setOperatingPhase('not-started'); // 未開始
+    } else if (currentTime >= startTime && currentTime < endTimeWithBuffer) {
+      setOperatingPhase('operating'); // 營業中
+    } else {
+      setOperatingPhase('ended'); // 已結束
+    }
+  }, [market]);
+  
+  // ✅ 向後兼容：保留 isOperating 變數
+  const isOperating = operatingPhase === 'operating';
+
+  // ✅ 當 market 數據變化時，立即重新判斷營業狀態
+  useEffect(() => {
+    checkOperatingStatus();
+  }, [market, checkOperatingStatus]);
+
+  // ✅ 每分鐘自動更新一次營業狀態
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkOperatingStatus();
+    }, 60000); // 每分鐘檢查一次
+
+    return () => clearInterval(interval);
+  }, [checkOperatingStatus]);
+
+  // 處理報名狀態變更（帶二次確認）
+  const handleStatusChangeRequest = async (newStatus: MarketStatus) => {
+    if (!market) return;
+
+    // 檢查是否會影響營業狀態
+    const willAffectOperating = checkIfStatusAffectsOperating(market.status, newStatus);
+    
+    if (willAffectOperating && isOperating) {
+      // 如果當前正在營業，且變更會影響營業狀態，顯示確認對話框
+      setPendingStatus(newStatus);
+      setShowStatusChangeConfirm(true);
+      return;
+    }
+
+    // 直接變更狀態
+    await executeStatusChange(newStatus);
+  };
+
+  // 檢查狀態變更是否會影響營業狀態
+  const checkIfStatusAffectsOperating = (currentStatus: MarketStatus, newStatus: MarketStatus): boolean => {
+    const operatingStatuses: MarketStatus[] = ['paid', 'ongoing'];
+    const currentIsOperating = operatingStatuses.includes(currentStatus);
+    const newIsOperating = operatingStatuses.includes(newStatus);
+    
+    // 如果從營業狀態變更為非營業狀態，或反之，則會影響
+    return currentIsOperating !== newIsOperating;
+  };
+
+  // 執行狀態變更
+  const executeStatusChange = async (newStatus: MarketStatus) => {
     if (!market) return;
 
     setIsUpdating(true);
 
     try {
-      if (phase === null) {
-        // 使用 undefined 來清除欄位
-        await db.markets.update(marketId, {
-          operationPhase: undefined,
-          updatedAt: Date.now(),
-        });
-      } else {
-        await db.markets.update(marketId, {
-          operationPhase: phase,
-          updatedAt: Date.now(),
-        });
-      }
-
-      const phaseText = phase === null ? '尚未開始營業' : {
-        preparation: '準備中',
-        operating: '營業中',
-        closing: '收攤中',
-      }[phase];
-
-      toast.success(`營業階段已切換為「${phaseText}」`);
+      await updateMarketStatus(marketId, newStatus);
+      toast.success(`狀態已更新為「${getStatusText(newStatus)}」`, {
+        description: '市集資訊已同步更新',
+      });
+      setShowStatusChangeConfirm(false);
+      setPendingStatus(null);
     } catch (error) {
-      console.error('切換階段失敗：', error);
-      toast.error('切換階段失敗，請稍後再試');
+      console.error('更新狀態失敗：', error);
+      toast.error('更新狀態失敗，請稍後再試');
     } finally {
       setIsUpdating(false);
     }
@@ -538,8 +660,12 @@ export default function MarketDetailPage({ params }: PageProps) {
   // ✅ 新增：根據日期過濾成交記錄
   const getDealsByDate = (date: string) => {
     return dealEvents.filter(deal => {
-      const dealDate = deal.payload.dealDate || 
-                       new Date(deal.timestamp).toISOString().split('T')[0];
+      // ✅ 使用本地日期，避免時區問題
+      let dealDate = deal.payload.dealDate;
+      if (!dealDate) {
+        const dealTimestamp = new Date(deal.timestamp);
+        dealDate = `${dealTimestamp.getFullYear()}-${String(dealTimestamp.getMonth() + 1).padStart(2, '0')}-${String(dealTimestamp.getDate()).padStart(2, '0')}`;
+      }
       return dealDate === date;
     });
   };
@@ -566,8 +692,82 @@ export default function MarketDetailPage({ params }: PageProps) {
   // 處理刪除成交記錄
   const handleDeleteDeal = async (deal: Event<DealClosedPayload>) => {
     try {
-      // 從資料庫刪除事件
-      await db.events.delete(deal.id!);
+      const payload = deal.payload;
+      const payloadWithMarketId = payload as DealClosedPayload & { market_id?: string };
+      const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+      
+      // ✅ 計算要扣除的金額
+      let totalAmount = payload.totalAmount;
+      let totalCost = 0;
+      let dealCount = 1;
+      
+      // 簡化模式：手動輸入
+      if (payload.isManualEntry) {
+        totalAmount = payload.manualRevenue || 0;
+        totalCost = payload.manualCost || 0;
+        dealCount = payload.manualDealCount || 1;
+      }
+      // 完整模式：選擇商品
+      else if (payload.items) {
+        for (const item of payload.items) {
+          const product = await db.products.get(item.productId);
+          if (product && product.cost) {
+            totalCost += product.cost * item.quantity;
+          }
+        }
+      }
+      
+      const totalProfit = totalAmount - totalCost;
+      
+      // ✅ 獲取交易日期（使用本地日期）
+      let transactionDate = payload.dealDate;
+      if (!transactionDate) {
+        const dealTimestamp = new Date(deal.timestamp);
+        transactionDate = `${dealTimestamp.getFullYear()}-${String(dealTimestamp.getMonth() + 1).padStart(2, '0')}-${String(dealTimestamp.getDate()).padStart(2, '0')}`;
+      }
+      
+      // ✅ 使用 transaction 確保原子性
+      await db.transaction('rw', [db.events, db.markets, db.dailyStats], async () => {
+        // 1. 刪除事件
+        await db.events.delete(deal.id!);
+        
+        // 2. 更新市集統計（扣除金額）
+        const market = await db.markets.get(market_id);
+        if (market) {
+          await db.markets.update(market_id, {
+            totalRevenue: Math.max(0, (market.totalRevenue || 0) - totalAmount),
+            totalProfit: (market.totalProfit || 0) - totalProfit,
+            totalDeals: Math.max(0, (market.totalDeals || 0) - dealCount),
+            updatedAt: Date.now(),
+          });
+        }
+        
+        // 3. 更新每日統計（扣除金額）
+        const dailyStat = await db.dailyStats
+          .where('[date+marketId]')
+          .equals([transactionDate, market_id])
+          .first();
+        
+        if (dailyStat) {
+          const newDealCount = Math.max(0, dailyStat.dealCount - dealCount);
+          const newRevenue = Math.max(0, dailyStat.revenue - totalAmount);
+          const newCost = Math.max(0, dailyStat.cost - totalCost);
+          const newProfit = dailyStat.profit - totalProfit;
+          
+          // 如果該日期的統計歸零，刪除記錄
+          if (newDealCount === 0 && newRevenue === 0) {
+            await db.dailyStats.delete(dailyStat.id!);
+          } else {
+            await db.dailyStats.update(dailyStat.id!, {
+              dealCount: newDealCount,
+              revenue: newRevenue,
+              cost: newCost,
+              profit: newProfit,
+              updatedAt: Date.now(),
+            });
+          }
+        }
+      });
 
       // 重新載入成交數據
       const updatedDeals = await db.events
@@ -578,7 +778,9 @@ export default function MarketDetailPage({ params }: PageProps) {
 
       setDealEvents(updatedDeals as Event<DealClosedPayload>[]);
 
-      toast.success('成交記錄已刪除');
+      toast.success('成交記錄已刪除', {
+        description: `已扣除 ${formatCurrency(totalAmount)}`,
+      });
 
       // 如果刪除的是當前選中的記錄，關閉彈窗
       if (selectedDeal?.id === deal.id) {
@@ -675,134 +877,188 @@ export default function MarketDetailPage({ params }: PageProps) {
                 </p>
               </div>
             </div>
-            {market.operationPhase !== 'operating' && (
-              <button 
-                onClick={handleOpenEditForm}
-                className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1 text-white backdrop-blur-sm"
-              >
-                <Edit className="w-4 h-4" />
-                編輯
-              </button>
-            )}
+              <button
+              onClick={handleOpenEditForm}
+              className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1 text-white backdrop-blur-sm"
+            >
+              <Edit className="w-4 h-4" />
+              編輯
+            </button>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4">
-        {/* 營業狀態卡片 - 始終在最上方 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-medium text-[#3A3A3A]">營業狀態</h2>
-              <p className="text-xs text-[#6B6B6B] mt-1">
-                {market.operationPhase === 'operating' 
-                  ? '目前營業中 🎪' 
-                  : '尚未開始營業'}
-              </p>
-            </div>
-            <button
-              disabled={(() => {
-                const today = new Date().toISOString().split('T')[0];
-                const isStatusReady = market.status === 'paid' || market.status === 'ongoing';
-                const isWithinMarketPeriod = today >= market.startDate && today <= market.endDate;
-                return !isStatusReady || !isWithinMarketPeriod;
-              })()}
-              onClick={() => {
-                if (market.operationPhase === 'operating') {
-                  handlePhaseChange(null);
-                } else {
-                  handlePhaseChange('operating');
-                }
-              }}
-              className={`relative inline-flex h-14 w-28 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                (() => {
-                  const today = new Date().toISOString().split('T')[0];
-                  const isStatusReady = market.status === 'paid' || market.status === 'ongoing';
-                  const isWithinMarketPeriod = today >= market.startDate && today <= market.endDate;
-                  const canToggle = isStatusReady && isWithinMarketPeriod;
-                  
-                  if (!canToggle) {
-                    return 'bg-gray-200 cursor-not-allowed opacity-50';
-                  }
-                  
-                  return market.operationPhase === 'operating'
-                    ? 'bg-gradient-to-r from-[#7B9FA6] to-[#6A8E95] focus:ring-[#7B9FA6] shadow-lg shadow-[#7B9FA6]/30'
-                    : 'bg-gray-200 hover:bg-gray-300 focus:ring-gray-400';
-                })()
-              }`}
-            >
-              <span
-                className={`inline-block h-10 w-10 transform rounded-full bg-white shadow-lg transition-all duration-300 flex items-center justify-center ${
-                  market.operationPhase === 'operating'
-                    ? 'translate-x-16'
-                    : 'translate-x-2'
-                }`}
-              >
-                {market.operationPhase === 'operating' ? (
-                  <Store className="w-5 h-5 text-[#7B9FA6]" />
-                ) : (
-                  <div className="w-3 h-3 rounded-full border-2 border-gray-400"></div>
-                )}
-              </span>
-            </button>
-          </div>
-          {(() => {
-            const today = new Date().toISOString().split('T')[0];
-            const isStatusReady = market.status === 'paid' || market.status === 'ongoing';
-            const isWithinMarketPeriod = today >= market.startDate && today <= market.endDate;
-            
-            if (!isStatusReady) {
-              return (
-                <div className="bg-[#FFF8E7] border border-[#FFF8E7] rounded-xl p-3">
-                  <p className="text-sm text-[#3A3A3A] whitespace-pre-line flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-[#D4A574] flex-shrink-0" />
-                    <span>請先將狀態更新為「已繳費」或「如期舉行」</span>
-                  </p>
-                </div>
-              );
-            }
-            
-            if (!isWithinMarketPeriod) {
-              return (
-                <div className="bg-[#FFF8E7] border border-[#FFF8E7] rounded-xl p-3">
-                  <p className="text-sm text-[#3A3A3A] whitespace-pre-line flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-[#D4A574] flex-shrink-0" />
-                    <span>僅限市集期間開啟（{market.startDate} ~ {market.endDate}）</span>
-                  </p>
-                </div>
-              );
-            }
-            
-            return null;
-          })()}
-        </div>
-
-        {/* 營業中時的操作區 */}
-        {market.operationPhase === 'operating' && (
+        {/* 營業中時的操作區 - 根據自動判斷顯示 */}
+        {isOperating && (
           <>
-            {/* 快速互動 */}
+            {/* 1. 新增收入（簡化版：直接輸入金額） */}
             <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
-              <h2 className="text-lg font-medium text-[#3A3A3A] mb-4">快速互動</h2>
-              <QuickInteractionButtons 
-                marketId={marketId}
-              />
+              {/* Header with toggle */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
+                  <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
+                  快速新增收入
+                </h2>
+                <button
+                  onClick={handleToggleQuickRevenue}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    isQuickRevenueExpanded ? 'bg-[#7B9FA6]' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isQuickRevenueExpanded ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  ></span>
+                </button>
+              </div>
+              
+              {/* Content */}
+              {isQuickRevenueExpanded && (
+                <QuickInteractionButtons 
+                  marketId={marketId}
+                />
+              )}
             </div>
-
-            {/* 快速交易 */}
-            <QuickTransactionGrid marketId={marketId} />
+            
+            {/* 2. 快速交易（完整版：選擇商品） */}
+            <QuickTransactionGrid 
+              marketId={marketId}
+              isExpanded={isQuickTransactionExpanded}
+              onToggle={handleToggleQuickTransaction}
+            />
           </>
         )}
 
-        {/* 報名狀態 Stepper */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+        {/* 3. 營業狀態卡片 - 自動判斷（折疊）- 營業中時隱藏 */}
+        {operatingPhase !== 'operating' && (
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+            <button
+              onClick={() => setIsOperatingStatusCollapsed(!isOperatingStatusCollapsed)}
+              className="w-full flex items-center justify-between mb-4"
+            >
+              <div className="flex-1 text-left">
+                <h2 className="text-lg font-medium text-[#3A3A3A]">營業狀態</h2>
+                <p className="text-xs text-[#6B6B6B] mt-1">
+                  根據時間自動判斷
+                </p>
+              </div>
+              
+              {/* 狀態指示器 + 折疊按鈕 */}
+              <div className="flex items-center gap-2">
+                <div className={`px-4 py-2.5 rounded-full flex items-center gap-2 font-medium text-sm transition-all ${
+                  operatingPhase === 'not-started'
+                    ? 'bg-[#FFF8E7] text-[#D4A574] border border-[#D4A574]/30'
+                    : 'bg-gray-100 text-[#6B6B6B]'
+                }`}>
+                  {operatingPhase === 'not-started' ? (
+                    <>
+                      <Clock className="w-5 h-5" />
+                      <span>未開始</span>
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="w-5 h-5" />
+                      <span>已結束</span>
+                    </>
+                  )}
+                </div>
+                <div className={`text-[#6B6B6B] transition-transform ${isOperatingStatusCollapsed ? '' : 'rotate-180'}`}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </button>
+
+            {/* 折疊內容 */}
+            {!isOperatingStatusCollapsed && (
+              <>
+                {/* 營業時段說明 */}
+                <div className="bg-[#7B9FA6]/10 border border-[#7B9FA6]/20 rounded-xl p-3">
+                  <div className="flex items-start gap-2">
+                    <Clock className="w-4 h-4 text-[#7B9FA6] flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 text-sm text-[#3A3A3A]">
+                      <p className="font-medium mb-1">自動營業時段：</p>
+                      <p className="text-xs text-[#6B6B6B]">
+                        開始：{market.checkInTime || market.operatingStartTime || '--:--'} (報到時間)
+                        <br />
+                        結束：{market.operatingEndTime ? (() => {
+                          const [hour, minute] = market.operatingEndTime.split(':').map(Number);
+                          const endWithBuffer = new Date();
+                          endWithBuffer.setHours(hour, minute + 30, 0, 0);
+                          return `${String(endWithBuffer.getHours()).padStart(2, '0')}:${String(endWithBuffer.getMinutes()).padStart(2, '0')}`;
+                        })() : '--:--'} (營業結束 + 30 分鐘)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 條件提示 */}
+                {(() => {
+                  // ✅ 使用本地日期，避免時區問題
+                  const now = new Date();
+                  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                  const isStatusReady = market.status === 'paid' || market.status === 'ongoing';
+                  const isWithinMarketPeriod = today >= market.startDate && today <= market.endDate;
+                  
+                  if (!isStatusReady) {
+                    return (
+                      <div className="bg-[#FFF8E7] border border-[#FFF8E7] rounded-xl p-3 mt-3">
+                        <p className="text-sm text-[#3A3A3A] whitespace-pre-line flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-[#D4A574] flex-shrink-0" />
+                          <span>需將狀態更新為「已繳費」或「如期舉行」才能自動營業</span>
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  if (!isWithinMarketPeriod) {
+                    return (
+                      <div className="bg-[#FFF8E7] border border-[#FFF8E7] rounded-xl p-3 mt-3">
+                        <p className="text-sm text-[#3A3A3A] whitespace-pre-line flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-[#D4A574] flex-shrink-0" />
+                          <span>僅限市集期間自動營業（{market.startDate} ~ {market.endDate}）</span>
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  // 根據營業階段顯示不同提示
+                  if (operatingPhase === 'not-started') {
+                    return (
+                      <div className="bg-[#E8F3E8] border border-[#7B9FA6]/20 rounded-xl p-3 mt-3">
+                        <p className="text-sm text-[#3A3A3A] whitespace-pre-line flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-[#7B9FA6] flex-shrink-0" />
+                          <span>等待營業時間到達，系統將自動切換為「營業中」</span>
+                        </p>
+                      </div>
+                    );
+                  } else if (operatingPhase === 'ended') {
+                    return (
+                      <div className="bg-gray-100 border border-gray-200 rounded-xl p-3 mt-3">
+                        <p className="text-sm text-[#6B6B6B] whitespace-pre-line flex items-center gap-2">
+                          <Moon className="w-4 h-4 flex-shrink-0" />
+                          <span>今日營業已結束，感謝您的辛勞！</span>
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  return null;
+                })()}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* 4. 報名狀態 Stepper - 營業中時完全隱藏 */}
+        {!isOperating && (
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-[#3A3A3A]">報名狀態</h2>
-            {market.operationPhase === 'operating' && (
-              <span className="text-xs bg-[#FFF8E7] text-[#D4A574] px-3 py-1 rounded-full font-medium">
-                🔒 營業中鎖定
-              </span>
-            )}
           </div>
           <div className="space-y-4">
             <div className="relative">
@@ -812,19 +1068,12 @@ export default function MarketDetailPage({ params }: PageProps) {
                   <div className="flex flex-col items-center flex-1">
                     <button
                       onClick={() => {
-                        if (market.operationPhase === 'operating') {
-                          toast.error('營業中無法修改報名狀態');
-                          return;
-                        }
                         if (market.status !== 'registered') {
-                          updateMarketStatus(marketId, 'registered');
+                          handleStatusChangeRequest('registered');
                         }
                       }}
-                      disabled={market.operationPhase === 'operating'}
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
-                        market.operationPhase === 'operating'
-                          ? 'cursor-not-allowed opacity-60'
-                          : market.status === 'registered'
+                        market.status === 'registered'
                           ? 'ring-4 ring-offset-2 ring-[#7B9FA6]/30 scale-110 bg-[#D4A574] text-white cursor-default'
                           : ['accepted', 'paid', 'ongoing', 'completed'].includes(market.status)
                           ? 'bg-[#7B9FA6] text-white hover:scale-105 cursor-pointer'
@@ -851,19 +1100,12 @@ export default function MarketDetailPage({ params }: PageProps) {
                   <div className="flex flex-col items-center flex-1">
                     <button
                       onClick={() => {
-                        if (market.operationPhase === 'operating') {
-                          toast.error('營業中無法修改報名狀態');
-                          return;
-                        }
                         if (market.status !== 'accepted') {
-                          updateMarketStatus(marketId, 'accepted');
+                          handleStatusChangeRequest('accepted');
                         }
                       }}
-                      disabled={market.operationPhase === 'operating'}
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
-                        market.operationPhase === 'operating'
-                          ? 'cursor-not-allowed opacity-60'
-                          : market.status === 'accepted'
+                        market.status === 'accepted'
                           ? 'ring-4 ring-offset-2 ring-[#7B9FA6]/30 scale-110 bg-[#D4A574] text-white cursor-default'
                           : ['paid', 'ongoing', 'completed'].includes(market.status)
                           ? 'bg-[#7B9FA6] text-white hover:scale-105 cursor-pointer'
@@ -890,19 +1132,12 @@ export default function MarketDetailPage({ params }: PageProps) {
                   <div className="flex flex-col items-center flex-1">
                     <button
                       onClick={() => {
-                        if (market.operationPhase === 'operating') {
-                          toast.error('營業中無法修改報名狀態');
-                          return;
-                        }
                         if (market.status !== 'paid') {
-                          updateMarketStatus(marketId, 'paid');
+                          handleStatusChangeRequest('paid');
                         }
                       }}
-                      disabled={market.operationPhase === 'operating'}
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
-                        market.operationPhase === 'operating'
-                          ? 'cursor-not-allowed opacity-60'
-                          : market.status === 'paid'
+                        market.status === 'paid'
                           ? 'ring-4 ring-offset-2 ring-[#7B9FA6]/30 scale-110 bg-[#D4A574] text-white cursor-default'
                           : ['ongoing', 'completed'].includes(market.status)
                           ? 'bg-[#7B9FA6] text-white hover:scale-105 cursor-pointer'
@@ -929,19 +1164,12 @@ export default function MarketDetailPage({ params }: PageProps) {
                   <div className="flex flex-col items-center flex-1">
                     <button
                       onClick={() => {
-                        if (market.operationPhase === 'operating') {
-                          toast.error('營業中無法修改報名狀態');
-                          return;
-                        }
                         if (market.status !== 'ongoing') {
-                          updateMarketStatus(marketId, 'ongoing');
+                          handleStatusChangeRequest('ongoing');
                         }
                       }}
-                      disabled={market.operationPhase === 'operating'}
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
-                        market.operationPhase === 'operating'
-                          ? 'cursor-not-allowed opacity-60'
-                          : market.status === 'ongoing'
+                        market.status === 'ongoing'
                           ? 'ring-4 ring-offset-2 ring-[#7B9FA6]/30 scale-110 bg-[#D4A574] text-white cursor-default'
                           : market.status === 'completed'
                           ? 'bg-[#7B9FA6] text-white hover:scale-105 cursor-pointer'
@@ -966,18 +1194,9 @@ export default function MarketDetailPage({ params }: PageProps) {
             <div className="flex items-center justify-center gap-4 pt-2">
               <div className="text-xs text-[#6B6B6B]">或</div>
               <button
-                onClick={() => {
-                  if (market.operationPhase === 'operating') {
-                    toast.error('營業中無法修改報名狀態');
-                    return;
-                  }
-                  updateMarketStatus(marketId, 'postponed');
-                }}
-                disabled={market.operationPhase === 'operating'}
+                onClick={() => handleStatusChangeRequest('postponed')}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                  market.operationPhase === 'operating'
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
-                    : market.status === 'postponed'
+                  market.status === 'postponed'
                     ? 'bg-[#F5E6E8] text-[#3A3A3A] ring-2 ring-[#D4A574]'
                     : 'bg-[#F5F5F0] text-[#6B6B6B] hover:bg-[#ECECEC] cursor-pointer'
                 }`}
@@ -986,17 +1205,10 @@ export default function MarketDetailPage({ params }: PageProps) {
               </button>
               <button
                 onClick={() => {
-                  if (market.operationPhase === 'operating') {
-                    toast.error('營業中無法修改報名狀態');
-                    return;
-                  }
                   setShowCancelConfirm(true);
                 }}
-                disabled={market.operationPhase === 'operating'}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                  market.operationPhase === 'operating'
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
-                    : market.status === 'cancelled'
+                  market.status === 'cancelled'
                     ? 'bg-[#F5E6E8] text-[#d4183d] ring-2 ring-[#d4183d]'
                     : 'bg-[#F5F5F0] text-[#6B6B6B] hover:bg-[#ECECEC] cursor-pointer'
                 }`}
@@ -1009,30 +1221,239 @@ export default function MarketDetailPage({ params }: PageProps) {
             <div className="bg-[#7B9FA6]/10 border border-[#7B9FA6]/20 rounded-xl p-3 text-xs text-[#3A3A3A]">
               <p className="font-semibold mb-1">💡 提示：</p>
               <p>
-                {market.operationPhase === 'operating'
-                  ? '營業中無法修改報名狀態，請先關閉營業開關。'
-                  : '點擊任意狀態可快速切換。需設定為「已繳費」或「如期舉行」才能開始營業。'}
+                點擊任意狀態可快速切換。需設定為「已繳費」或「如期舉行」才能自動營業。
               </p>
+            </div>
+          </div>
+          </div>
+        )}
+
+        {/* 7. 每日收入統計（多天市集才顯示） */}
+        <DailyRevenueStats
+          market={market}
+          onAddRevenue={handleOpenAddRevenue}
+          onDateClick={handleDateClick}
+        />
+
+        {/* 6. 即時統計 */}
+        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
+              <BarChart3 className="w-5 h-5 text-[#7B9FA6]" />
+              {market.startDate === market.endDate ? '即時統計' : '總計統計'}
+            </h2>
+            {market.startDate !== market.endDate && (
+              <div className="text-xs text-[#6B6B6B]">
+                {(() => {
+                  const start = new Date(market.startDate);
+                  const end = new Date(market.endDate);
+                  const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                  return `共 ${days} 天`;
+                })()}
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-[#7B9FA6]/10 rounded-xl p-4">
+              <div className="text-2xl font-medium text-[#7B9FA6]">
+                {formatCurrency(market.totalRevenue || 0)}
+              </div>
+              <div className="text-sm text-[#6B6B6B] mt-1">總收入</div>
+            </div>
+            <div className="bg-[#E8F3E8] rounded-xl p-4">
+              <div className="text-2xl font-medium text-[#3A3A3A]">
+                {formatCurrency(market.totalProfit || 0)}
+              </div>
+              <div className="text-sm text-[#6B6B6B] mt-1">淨利潤</div>
+            </div>
+            <div className="bg-[#D4A574]/10 rounded-xl p-4">
+              <div className="text-2xl font-medium text-[#D4A574]">
+                {market.totalDeals || 0}
+              </div>
+              <div className="text-sm text-[#6B6B6B] mt-1">成交數</div>
+            </div>
+            <div className="bg-[#F5E6E8] rounded-xl p-4">
+              <div className="text-2xl font-medium text-[#3A3A3A]">
+                {market.totalInteractions && market.totalInteractions > 0
+                  ? `${Math.round(((market.totalDeals || 0) / market.totalInteractions) * 100)}%`
+                  : '0.0%'}
+              </div>
+              <div className="text-sm text-[#6B6B6B] mt-1">轉換率</div>
             </div>
           </div>
         </div>
 
-        {/* 今日時間軸 */}
+
+
+        {/* 8. 成本明細 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
           <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-[#3A3A3A]">
-            <Clock className="w-5 h-5 text-[#7B9FA6]" />
-            今日時間軸
+            <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
+            成本明細
           </h2>
-          <div className="space-y-4">
-            {/* 倒數提示 */}
-            {countdown !== '--' && countdown !== '已開始' && (
-              <div className="bg-[#E8F3E8] border border-[#7B9FA6]/20 rounded-xl p-3 text-center">
-                <p className="text-sm text-[#3A3A3A]">
-                  <span className="font-bold text-lg text-[#7B9FA6]">{countdown}</span>
-                </p>
+          <div className="space-y-2 text-sm">
+            {/* 攤位費 */}
+            <div className="flex justify-between">
+              <span className="text-[#6B6B6B]">攤位費</span>
+              <span className="font-medium text-[#3A3A3A]">
+                {formatCurrency(market.boothCost || 0)}
+              </span>
+            </div>
+            
+            {/* 設備租賃 - 始終顯示 */}
+            <div className="space-y-1 pl-4 py-2 bg-[#FAFAF8] rounded-xl">
+              <div className="text-xs font-medium text-[#6B6B6B] mb-1">設備租賃：</div>
+              
+              {/* 桌子 */}
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1 text-[#6B6B6B]">
+                  <Table className="w-4 h-4" />
+                  桌子
+                </span>
+                <span className="font-medium text-[#3A3A3A]">
+                  {market.tableFree 
+                    ? <span className="text-[#7B9FA6]">免費提供</span>
+                    : (market.tableRental && market.tableRental > 0)
+                    ? formatCurrency(market.tableRental)
+                    : <span className="text-[#6B6B6B]">自備</span>
+                  }
+                </span>
+              </div>
+              
+              {/* 椅子 */}
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1 text-[#6B6B6B]">
+                  <Armchair className="w-4 h-4" />
+                  椅子
+                </span>
+                <span className="font-medium text-[#3A3A3A]">
+                  {market.chairFree 
+                    ? <span className="text-[#7B9FA6]">免費提供</span>
+                    : (market.chairRental && market.chairRental > 0)
+                    ? formatCurrency(market.chairRental)
+                    : <span className="text-[#6B6B6B]">自備</span>
+                  }
+                </span>
+              </div>
+              
+              {/* 傘架 */}
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1 text-[#6B6B6B]">
+                  <Umbrella className="w-4 h-4" />
+                  傘架
+                </span>
+                <span className="font-medium text-[#3A3A3A]">
+                  {market.umbrellaFree 
+                    ? <span className="text-[#7B9FA6]">免費提供</span>
+                    : (market.umbrellaRental && market.umbrellaRental > 0)
+                    ? formatCurrency(market.umbrellaRental)
+                    : <span className="text-[#6B6B6B]">自備</span>
+                  }
+                </span>
+              </div>
+            </div>
+
+            {/* 抽成 */}
+            <div className="flex justify-between">
+              <span className="text-[#6B6B6B]">
+                抽成 ({market.commissionRate || 0}%)
+              </span>
+              <span className="font-medium text-[#3A3A3A]">
+                {formatCurrency(
+                  ((market.totalRevenue || 0) * (market.commissionRate || 0)) / 100
+                )}
+              </span>
+            </div>
+            
+            {/* 保證金 - 不計入成本，僅作提醒 */}
+            {market.deposit && market.deposit > 0 && (
+              <div className="flex justify-between items-center bg-[#FFF8E7] px-3 py-2 rounded-lg">
+                <span className="text-[#6B6B6B] flex items-center gap-1">
+                  保證金
+                  <span className="text-xs text-[#D4A574]">(需退款)</span>
+                </span>
+                <span className="font-medium text-[#D4A574]">
+                  {formatCurrency(market.deposit)}
+                </span>
+              </div>
+            )}
+            
+            {/* 固定成本總計 */}
+            <div className="border-t border-[#7B9FA6]/10 pt-2 flex justify-between font-medium">
+              <span className="text-[#3A3A3A]">固定成本總計</span>
+              <span className="text-[#D4A574]">
+                {formatCurrency(
+                  (market.boothCost || 0) +
+                  (market.tableFree ? 0 : (market.tableRental || 0)) +
+                  (market.chairFree ? 0 : (market.chairRental || 0)) +
+                  (market.umbrellaFree ? 0 : (market.umbrellaRental || 0))
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 顧客行為分析區塊 */}
+        {interactionEvents.length > 0 && (
+          <>
+            <div className="mb-4">
+              <h2 className="text-xl font-medium text-[#3A3A3A] flex items-center gap-2">
+                📈 顧客行為分析
+              </h2>
+              <p className="text-sm text-[#6B6B6B] mt-1">
+                本場市集的顧客互動模式與偏好
+              </p>
+            </div>
+
+            {/* 智能洞察提示 */}
+            <div className="mb-6">
+              <BehaviorInsightCard insights={behaviorInsights} />
+            </div>
+
+            {/* 互動偏好佔比圖 */}
+            {interactionPreferenceData.length > 0 && (
+              <div className="mb-6">
+                <InteractionPreferenceChart data={interactionPreferenceData} />
               </div>
             )}
 
+            {/* 互動時序熱力圖 */}
+            {timeHeatmapData.length > 0 && (
+              <div className="mb-6">
+                <InteractionTimeHeatmap data={timeHeatmapData} />
+              </div>
+            )}
+          </>
+        )}
+
+        {/* 5. 今日時間軸（折疊） */}
+        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+          <button
+            onClick={() => setIsTimelineCollapsed(!isTimelineCollapsed)}
+            className="w-full flex items-center justify-between"
+          >
+            <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
+              <Clock className="w-5 h-5 text-[#7B9FA6]" />
+              今日時間軸
+            </h2>
+            <div className={`text-[#6B6B6B] transition-transform ${isTimelineCollapsed ? '' : 'rotate-180'}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </button>
+
+          {/* 倒數提示 - 始終顯示，不受折疊影響 */}
+          {countdown !== '--' && countdown !== '已開始' && (
+            <div className="bg-[#E8F3E8] border border-[#7B9FA6]/20 rounded-xl p-3 text-center mt-4">
+              <p className="text-sm text-[#3A3A3A]">
+                <span className="font-bold text-lg text-[#7B9FA6]">{countdown}</span>
+              </p>
+            </div>
+          )}
+
+          {!isTimelineCollapsed && (
+          <div className="space-y-4 mt-4">
             {/* 時間線 */}
             <div className="space-y-3">
               {/* 提前進場 */}
@@ -1184,203 +1605,8 @@ export default function MarketDetailPage({ params }: PageProps) {
               </div>
             )}
           </div>
+          )}
         </div>
-
-        {/* 即時統計 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
-              <BarChart3 className="w-5 h-5 text-[#7B9FA6]" />
-              {market.startDate === market.endDate ? '即時統計' : '總計統計'}
-            </h2>
-            {market.startDate !== market.endDate && (
-              <div className="text-xs text-[#6B6B6B]">
-                {(() => {
-                  const start = new Date(market.startDate);
-                  const end = new Date(market.endDate);
-                  const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-                  return `共 ${days} 天`;
-                })()}
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#7B9FA6]/10 rounded-xl p-4">
-              <div className="text-2xl font-medium text-[#7B9FA6]">
-                {formatCurrency(market.totalRevenue || 0)}
-              </div>
-              <div className="text-sm text-[#6B6B6B] mt-1">總收入</div>
-            </div>
-            <div className="bg-[#E8F3E8] rounded-xl p-4">
-              <div className="text-2xl font-medium text-[#3A3A3A]">
-                {formatCurrency(market.totalProfit || 0)}
-              </div>
-              <div className="text-sm text-[#6B6B6B] mt-1">淨利潤</div>
-            </div>
-            <div className="bg-[#D4A574]/10 rounded-xl p-4">
-              <div className="text-2xl font-medium text-[#D4A574]">
-                {market.totalDeals || 0}
-              </div>
-              <div className="text-sm text-[#6B6B6B] mt-1">成交數</div>
-            </div>
-            <div className="bg-[#F5E6E8] rounded-xl p-4">
-              <div className="text-2xl font-medium text-[#3A3A3A]">
-                {market.totalInteractions && market.totalInteractions > 0
-                  ? `${Math.round(((market.totalDeals || 0) / market.totalInteractions) * 100)}%`
-                  : '0.0%'}
-              </div>
-              <div className="text-sm text-[#6B6B6B] mt-1">轉換率</div>
-            </div>
-          </div>
-        </div>
-
-        {/* 每日收入統計（多天市集才顯示） */}
-        <DailyRevenueStats
-          market={market}
-          onAddRevenue={handleOpenAddRevenue}
-          onDateClick={handleDateClick}
-        />
-
-        {/* 成本明細 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
-          <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-[#3A3A3A]">
-            <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
-            成本明細
-          </h2>
-          <div className="space-y-2 text-sm">
-            {/* 攤位費 */}
-            <div className="flex justify-between">
-              <span className="text-[#6B6B6B]">攤位費</span>
-              <span className="font-medium text-[#3A3A3A]">
-                {formatCurrency(market.boothCost || 0)}
-              </span>
-            </div>
-            
-            {/* 設備租賃 - 始終顯示 */}
-            <div className="space-y-1 pl-4 py-2 bg-[#FAFAF8] rounded-xl">
-              <div className="text-xs font-medium text-[#6B6B6B] mb-1">設備租賃：</div>
-              
-              {/* 桌子 */}
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1 text-[#6B6B6B]">
-                  <Table className="w-4 h-4" />
-                  桌子
-                </span>
-                <span className="font-medium text-[#3A3A3A]">
-                  {market.tableFree 
-                    ? <span className="text-[#7B9FA6]">免費提供</span>
-                    : (market.tableRental && market.tableRental > 0)
-                    ? formatCurrency(market.tableRental)
-                    : <span className="text-[#6B6B6B]">自備</span>
-                  }
-                </span>
-              </div>
-              
-              {/* 椅子 */}
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1 text-[#6B6B6B]">
-                  <Armchair className="w-4 h-4" />
-                  椅子
-                </span>
-                <span className="font-medium text-[#3A3A3A]">
-                  {market.chairFree 
-                    ? <span className="text-[#7B9FA6]">免費提供</span>
-                    : (market.chairRental && market.chairRental > 0)
-                    ? formatCurrency(market.chairRental)
-                    : <span className="text-[#6B6B6B]">自備</span>
-                  }
-                </span>
-              </div>
-              
-              {/* 傘架 */}
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1 text-[#6B6B6B]">
-                  <Umbrella className="w-4 h-4" />
-                  傘架
-                </span>
-                <span className="font-medium text-[#3A3A3A]">
-                  {market.umbrellaFree 
-                    ? <span className="text-[#7B9FA6]">免費提供</span>
-                    : (market.umbrellaRental && market.umbrellaRental > 0)
-                    ? formatCurrency(market.umbrellaRental)
-                    : <span className="text-[#6B6B6B]">自備</span>
-                  }
-                </span>
-              </div>
-            </div>
-
-            {/* 抽成 */}
-            <div className="flex justify-between">
-              <span className="text-[#6B6B6B]">
-                抽成 ({market.commissionRate || 0}%)
-              </span>
-              <span className="font-medium text-[#3A3A3A]">
-                {formatCurrency(
-                  ((market.totalRevenue || 0) * (market.commissionRate || 0)) / 100
-                )}
-              </span>
-            </div>
-            
-            {/* 保證金 - 不計入成本，僅作提醒 */}
-            {market.deposit && market.deposit > 0 && (
-              <div className="flex justify-between items-center bg-[#FFF8E7] px-3 py-2 rounded-lg">
-                <span className="text-[#6B6B6B] flex items-center gap-1">
-                  保證金
-                  <span className="text-xs text-[#D4A574]">(需退款)</span>
-                </span>
-                <span className="font-medium text-[#D4A574]">
-                  {formatCurrency(market.deposit)}
-                </span>
-              </div>
-            )}
-            
-            {/* 固定成本總計 */}
-            <div className="border-t border-[#7B9FA6]/10 pt-2 flex justify-between font-medium">
-              <span className="text-[#3A3A3A]">固定成本總計</span>
-              <span className="text-[#D4A574]">
-                {formatCurrency(
-                  (market.boothCost || 0) +
-                  (market.tableFree ? 0 : (market.tableRental || 0)) +
-                  (market.chairFree ? 0 : (market.chairRental || 0)) +
-                  (market.umbrellaFree ? 0 : (market.umbrellaRental || 0))
-                )}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* 顧客行為分析區塊 */}
-        {interactionEvents.length > 0 && (
-          <>
-            <div className="mb-4">
-              <h2 className="text-xl font-medium text-[#3A3A3A] flex items-center gap-2">
-                📈 顧客行為分析
-              </h2>
-              <p className="text-sm text-[#6B6B6B] mt-1">
-                本場市集的顧客互動模式與偏好
-              </p>
-            </div>
-
-            {/* 智能洞察提示 */}
-            <div className="mb-6">
-              <BehaviorInsightCard insights={behaviorInsights} />
-            </div>
-
-            {/* 互動偏好佔比圖 */}
-            {interactionPreferenceData.length > 0 && (
-              <div className="mb-6">
-                <InteractionPreferenceChart data={interactionPreferenceData} />
-              </div>
-            )}
-
-            {/* 互動時序熱力圖 */}
-            {timeHeatmapData.length > 0 && (
-              <div className="mb-6">
-                <InteractionTimeHeatmap data={timeHeatmapData} />
-              </div>
-            )}
-          </>
-        )}
 
         {/* 次要操作 */}
         {market.status !== 'cancelled' && market.status !== 'completed' && (
@@ -1395,6 +1621,68 @@ export default function MarketDetailPage({ params }: PageProps) {
           </div>
         )}
       </div>
+
+      {/* 狀態變更確認對話框 */}
+      {showStatusChangeConfirm && isMounted && pendingStatus && createPortal(
+        <>
+          {/* 背景遮罩 */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-[999] transition-opacity" 
+            onClick={() => {
+              setShowStatusChangeConfirm(false);
+              setPendingStatus(null);
+            }} 
+          />
+          
+          {/* 對話框容器 */}
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none p-6">
+            <div 
+              className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-[#D4A574]" />
+                確認變更狀態？
+              </h3>
+              <p className="text-sm text-[#6B6B6B] mb-4">
+                您即將變更狀態為「{getStatusText(pendingStatus)}」
+              </p>
+              
+              {/* 警告提示 */}
+              {isOperating && (
+                <div className="bg-[#FFF8E7] border border-[#D4A574]/30 rounded-xl p-3 mb-4">
+                  <p className="text-sm text-[#3A3A3A] font-medium mb-1">
+                    ⚠️ 重要提示
+                  </p>
+                  <p className="text-xs text-[#6B6B6B]">
+                    此變更將會<span className="font-bold text-[#d4183d]">立即結束營業狀態</span>，快速互動和快速交易功能將被隱藏。
+                  </p>
+                </div>
+              )}
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowStatusChangeConfirm(false);
+                    setPendingStatus(null);
+                  }}
+                  className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={() => executeStatusChange(pendingStatus)}
+                  disabled={isUpdating}
+                  className="flex-1 px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors disabled:opacity-50"
+                >
+                  {isUpdating ? '處理中...' : '確認變更'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
 
       {/* 取消確認對話框 */}
       {showCancelConfirm && isMounted && createPortal(

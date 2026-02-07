@@ -23,8 +23,8 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
   
   // 判斷市集營業狀態（根據時間判斷）
   const getOperatingStatus = () => {
-    const today = new Date().toISOString().split('T')[0];
     const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     
     // 不在日期範圍內
@@ -84,6 +84,16 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
 
   // 狀態文字映射
   const getStatusText = (status: MarketStatus) => {
+    // ✅ 檢查是否已超過舉辦日期
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const isPastDate = market.endDate < today;
+    
+    // ✅ 如果已超過舉辦日期，且狀態為「已繳費」或「如期舉行」，顯示為「已完成」
+    if (isPastDate && (status === 'paid' || status === 'ongoing')) {
+      return '已完成';
+    }
+    
     const texts = {
       registered: '已報名',
       accepted: '已錄取',
@@ -98,7 +108,8 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
 
   // 判斷市集是否即將到來
   const isUpcoming = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     return market.startDate >= today && market.status !== 'completed' && market.status !== 'cancelled';
   };
 
@@ -227,7 +238,7 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
         </div>
       )}
 
-      {/* 成交與互動統計 - 只在首頁今日市集和市集頁面顯示，即將到來不顯示 */}
+      {/* 成交與費用統計 - 只在首頁今日市集和市集頁面顯示，即將到來不顯示 */}
       {variant !== 'upcoming' && (
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="bg-[#FFF8E7] rounded-xl p-3">
@@ -241,11 +252,16 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
           </div>
           <div className="bg-[#F5E6E8] rounded-xl p-3">
             <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              互動次數
+              <DollarSign className="w-3 h-3" />
+              攤位成本
             </div>
             <div className="font-bold text-lg text-[#3A3A3A] tabular-nums">
-              {market.totalInteractions || 0} <span className="text-sm font-normal">次</span>
+              {formatCurrency(
+                (market.boothCost || 0) +
+                (market.tableFree ? 0 : (market.tableRental || 0)) +
+                (market.chairFree ? 0 : (market.chairRental || 0)) +
+                (market.umbrellaFree ? 0 : (market.umbrellaRental || 0))
+              )}
             </div>
           </div>
         </div>

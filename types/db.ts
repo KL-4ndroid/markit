@@ -315,6 +315,7 @@ export interface DealClosedPayload {
  * 用於快速查詢每日數據
  */
 export interface DailyStats {
+  id?: number;                 // 自動遞增 ID（Dexie 生成）
   date: string;                // 日期（YYYY-MM-DD）
   marketId?: string;           // 關聯的市集 ID（改為 UUID）
   

@@ -90,7 +90,9 @@ export function useMarket(id: string | undefined) {
  */
 export function useUpcomingMarkets(limit: number = 5) {
   return useLiveQuery(async () => {
-    const now = new Date().toISOString().split('T')[0];
+    // ✅ 使用本地日期，避免時區問題
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
     const markets = await db.markets.toArray();
     
@@ -103,7 +105,7 @@ export function useUpcomingMarkets(limit: number = 5) {
         
         // ✅ 修復：檢查市集日期區間是否包含今天或未來
         // 只要 endDate >= 今天，就應該顯示
-        return m.endDate >= now;
+        return m.endDate >= today;
       })
       .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
       .slice(0, limit);
@@ -284,35 +286,52 @@ export async function recordDeal(data: DealClosedPayload, dealDate?: string): Pr
   const isBackfill = !!dealDate || data.isBackfill;
   const isManualEntry = data.isManualEntry || false;
   
-  // ✅ 補登時跳過庫存檢查（簡化模式或完整模式）
-  if (!isBackfill && !isManualEntry) {
-    // 結帳前庫存檢查（只在正常交易時檢查）
-    for (const item of data.items || []) {
+  // ✅ 預先查詢商品資訊並儲存商品名稱（避免顯示時出現 ID）
+  const itemsWithProductInfo = [];
+  
+  if (data.items && data.items.length > 0) {
+    for (const item of data.items) {
       const product = await db.products.get(item.productId);
       
       if (!product) {
         throw new Error(`商品不存在：ID ${item.productId}`);
       }
       
-      // 只檢查「有限庫存」商品
-      if (!product.unlimitedStock) {
-        const currentStock = product.stock || 0;
-        
-        if (currentStock < item.quantity) {
-          throw new Error(
-            `${product.name} 庫存不足！\n目前庫存：${currentStock}，需要：${item.quantity}`
-          );
+      // ✅ 補登時跳過庫存檢查
+      if (!isBackfill && !isManualEntry) {
+        // 只檢查「有限庫存」商品
+        if (!product.unlimitedStock) {
+          const currentStock = product.stock || 0;
+          
+          if (currentStock < item.quantity) {
+            throw new Error(
+              `${product.name} 庫存不足！\n目前庫存：${currentStock}，需要：${item.quantity}`
+            );
+          }
         }
       }
+      
+      // ✅ 儲存商品名稱和價格快照到 item 中
+      itemsWithProductInfo.push({
+        ...item,
+        product_name: product.name,
+        price_at_time_of_sale: item.price || product.price,
+        cost_at_time_of_sale: product.cost,
+      });
     }
   }
   
   // ✅ 將 marketId 轉換為 market_id（統一使用底線式）
   // ✅ 添加交易日期（用於多天市集的每日收入記錄）
+  // ✅ 使用本地日期，避免時區問題
+  const now = new Date();
+  const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
   const payload = {
     ...data,
+    items: itemsWithProductInfo.length > 0 ? itemsWithProductInfo : data.items,
     market_id: data.marketId,
-    dealDate: dealDate || data.dealDate || new Date().toISOString().split('T')[0],
+    dealDate: dealDate || data.dealDate || todayLocal,
     isBackfill: isBackfill,
   };
   
@@ -326,12 +345,16 @@ export async function recordDeal(data: DealClosedPayload, dealDate?: string): Pr
  * 查詢每日統計
  * 
  * @param date - 日期（YYYY-MM-DD）
+ * @param marketId - 市集 ID
  * @returns 每日統計
  */
-export function useDailyStats(date: string) {
+export function useDailyStats(date: string, marketId: string) {
   return useLiveQuery(
-    async () => await db.dailyStats.get(date),
-    [date]
+    async () => await db.dailyStats
+      .where('[date+marketId]')
+      .equals([date, marketId])
+      .first(),
+    [date, marketId]
   );
 }
 

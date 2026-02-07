@@ -43,35 +43,40 @@ export default function AnalyticsPage() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
+    // ✅ 使用本地日期格式化函數
+    const formatLocalDate = (date: Date) => {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+    
     switch (dateRange) {
       case 'today':
         return {
-          startDate: today.toISOString().split('T')[0],
-          endDate: today.toISOString().split('T')[0],
+          startDate: formatLocalDate(today),
+          endDate: formatLocalDate(today),
         };
       case 'week':
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
         return {
-          startDate: weekAgo.toISOString().split('T')[0],
-          endDate: today.toISOString().split('T')[0],
+          startDate: formatLocalDate(weekAgo),
+          endDate: formatLocalDate(today),
         };
       case 'month':
         const monthAgo = new Date(today);
         monthAgo.setMonth(monthAgo.getMonth() - 1);
         return {
-          startDate: monthAgo.toISOString().split('T')[0],
-          endDate: today.toISOString().split('T')[0],
+          startDate: formatLocalDate(monthAgo),
+          endDate: formatLocalDate(today),
         };
       case 'custom':
         return {
-          startDate: customStartDate || today.toISOString().split('T')[0],
-          endDate: customEndDate || today.toISOString().split('T')[0],
+          startDate: customStartDate || formatLocalDate(today),
+          endDate: customEndDate || formatLocalDate(today),
         };
       case 'all':
         return {
           startDate: '2020-01-01',
-          endDate: today.toISOString().split('T')[0],
+          endDate: formatLocalDate(today),
         };
     }
   }, [dateRange, customStartDate, customEndDate]);

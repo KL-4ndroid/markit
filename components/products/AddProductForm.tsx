@@ -22,7 +22,7 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
     price: 0,
     cost: 0,
     stock: 0,
-    unlimitedStock: false,
+    unlimitedStock: true, // ✅ 預設勾選「不限庫存」
     description: '',
   });
 
@@ -66,7 +66,7 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
         price: 0,
         cost: 0,
         stock: 0,
-        unlimitedStock: false,
+        unlimitedStock: true, // ✅ 重置時也預設勾選「不限庫存」
         description: '',
       });
 

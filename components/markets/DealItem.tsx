@@ -19,7 +19,9 @@ export function DealItem({ deal, onClick }: DealItemProps) {
   const time = (() => {
     // 檢查是否為補登記錄且不是當日的數據
     if (payload.isBackfill && payload.dealDate) {
-      const today = new Date().toISOString().split('T')[0];
+      // ✅ 使用本地日期，避免時區問題
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const dealDate = payload.dealDate;
       
       // 如果是補登非當日的數據，顯示補登日期的 18:00
