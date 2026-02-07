@@ -1,42 +1,34 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, TrendingUp, DollarSign, ShoppingCart, Users, Calendar, Package, Download } from 'lucide-react';
-import { useDateRangeStats, useProducts, useMarkets } from '@/lib/db/hooks';
-import { RevenueChart } from '@/components/analytics/RevenueChart';
-import { CategoryPieChart } from '@/components/analytics/CategoryPieChart';
-import { ConversionFunnel } from '@/components/analytics/ConversionFunnel';
-import { MetricCard } from '@/components/analytics/MetricCard';
+import { X, TrendingUp } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useMarkets } from '@/lib/db/hooks';
+import { db } from '@/lib/db';
 import { DateRangeFilter } from '@/components/analytics/DateRangeFilter';
 import { EmptyState } from '@/components/analytics/EmptyState';
-import { InteractionComparisonChart } from '@/components/analytics/InteractionComparisonChart';
-import { MarketDetailList } from '@/components/analytics/MarketDetailList';
-import { CostAnalysis } from '@/components/analytics/CostAnalysis';
-import { InteractionPreferenceChart } from '@/components/analytics/InteractionPreferenceChart';
-import { InteractionTimeHeatmap } from '@/components/analytics/InteractionTimeHeatmap';
-import { BehaviorInsightCard } from '@/components/analytics/BehaviorInsightCard';
-import { db } from '@/lib/db';
-import { getQuickActionButtons } from '@/lib/quick-actions-store';
-import { exportMarketReport } from '@/lib/export-utils';
-import { toast } from 'sonner';
-import type { Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
+import { MarketROICard } from '@/components/analytics/MarketROICard';
+import { MarketAOVCard } from '@/components/analytics/MarketAOVCard';
+import { TopProductsCard } from '@/components/analytics/TopProductsCard';
+import type { Market } from '@/types/db';
 
 /**
  * 數據分析頁面
  * 
- * 功能：
- * - 日期範圍篩選（今日、本週、本月、全選）
- * - 關鍵指標卡片（總營收、淨利潤、平均客單價、總成交數）
- * - 營收趨勢圖（AreaChart）
- * - 分類佔比圖（PieChart）
- * - 轉換漏斗圖（BarChart）
+ * 功能：這場市集值不值得再來？
+ * - 日期範圍篩選（預設本月、可自訂區間）
+ * - 計算單場淨利、每小時淨利、攤位費回收率
+ * - 按每小時淨利排序，次排序攤位費回收率
+ * - 顯示前三名市集卡片
  */
 export default function AnalyticsPage() {
   const router = useRouter();
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('month');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [showInfoTooltip, setShowInfoTooltip] = useState(false); // ✅ 控制ROI說明提示框
+  const [showAOVInfoTooltip, setShowAOVInfoTooltip] = useState(false); // ✅ 控制客單價說明提示框
 
   // 計算日期範圍
   const { startDate, endDate } = useMemo(() => {
@@ -87,233 +79,235 @@ export default function AnalyticsPage() {
     setCustomEndDate(end);
   };
 
-  // 獲取數據
-  const stats = useDateRangeStats(startDate, endDate);
-  const products = useProducts({ isActive: true });
+  // 獲取所有市集數據
   const allMarkets = useMarkets();
   
   // 篩選日期範圍內的市集
   const markets = useMemo(() => {
     if (!allMarkets) return [];
     return allMarkets.filter(market => 
-      market.startDate >= startDate && market.startDate <= endDate
+      market.startDate >= startDate && market.startDate <= endDate &&
+      market.status !== 'cancelled' // 排除已取消的市集
     );
   }, [allMarkets, startDate, endDate]);
 
-  // 互動行為數據狀態
-  const [interactionEvents, setInteractionEvents] = useState<Event<InteractionRecordedPayload>[]>([]);
-  const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
-  const [buttonLabels, setButtonLabels] = useState<Record<string, { label: string; emoji: string }>>({});
+  // 計算市集 ROI 數據
+  interface MarketROIData {
+    market: Market;
+    netProfit: number;
+    hourlyProfit: number;
+    boothROI: number;
+    operatingHours: number;
+  }
 
-  // 載入互動事件數據
-  useEffect(() => {
-    const loadInteractionData = async () => {
-      try {
-        // 獲取按鈕配置
-        const buttons = getQuickActionButtons();
-        const labelMap: Record<string, { label: string; emoji: string }> = {};
-        buttons.forEach(btn => {
-          labelMap[btn.id] = { label: btn.label, emoji: btn.emoji };
-        });
-        setButtonLabels(labelMap);
+  const marketROIData = useMemo(() => {
+    if (!markets || markets.length === 0) return [];
 
-        // 計算時間範圍的時間戳
-        const startTimestamp = new Date(startDate).getTime();
-        const endTimestamp = new Date(endDate).getTime() + 86400000; // +1 天
-
-        // 獲取互動事件
-        const interactions = await db.events
-          .where('type')
-          .equals('interaction_recorded')
-          .filter(e => e.timestamp >= startTimestamp && e.timestamp < endTimestamp)
-          .toArray() as Event<InteractionRecordedPayload>[];
-
-        // 篩選屬於當前日期範圍內市集的互動
-        const marketIds = markets.map(m => m.id).filter((id): id is string => id !== undefined);
-        const filteredInteractions = interactions.filter(e => 
-          marketIds.includes(e.payload.marketId)
-        );
-
-        setInteractionEvents(filteredInteractions);
-
-        // 獲取成交事件
-        const deals = await db.events
-          .where('type')
-          .equals('deal_closed')
-          .filter(e => e.timestamp >= startTimestamp && e.timestamp < endTimestamp)
-          .toArray() as Event<DealClosedPayload>[];
-
-        const filteredDeals = deals.filter(e => 
-          marketIds.includes(e.payload.marketId)
-        );
-
-        setDealEvents(filteredDeals);
-      } catch (error) {
-        console.error('載入互動數據失敗：', error);
+    const data: MarketROIData[] = markets.map(market => {
+      // A. 計算單場淨利
+      const totalRevenue = market.totalRevenue || 0;
+      const boothCost = market.boothCost || 0;
+      const registrationFee = market.registrationFee || 0;
+      
+      // 設備租金
+      const tableRental = market.tableFree ? 0 : (market.tableRental || 0);
+      const chairRental = market.chairFree ? 0 : (market.chairRental || 0);
+      const umbrellaRental = market.umbrellaFree ? 0 : (market.umbrellaRental || 0);
+      const rentals = tableRental + chairRental + umbrellaRental;
+      
+      // 抽成
+      const commission = (totalRevenue * (market.commissionRate || 0)) / 100;
+      
+      // 商品成本（從 totalProfit 反推）
+      const productCost = totalRevenue - (market.totalProfit || 0) - boothCost - registrationFee - rentals - commission;
+      
+      // 淨利潤
+      const netProfit = totalRevenue - boothCost - registrationFee - rentals - commission - productCost;
+      
+      // B. 計算營業時長（小時）
+      let operatingHours = 0;
+      if (market.operatingStartTime && market.operatingEndTime) {
+        const [startHour, startMinute] = market.operatingStartTime.split(':').map(Number);
+        const [endHour, endMinute] = market.operatingEndTime.split(':').map(Number);
+        const startMinutes = startHour * 60 + startMinute;
+        const endMinutes = endHour * 60 + endMinute;
+        operatingHours = (endMinutes - startMinutes) / 60;
       }
-    };
+      
+      // 每小時淨利
+      const hourlyProfit = operatingHours > 0 ? netProfit / operatingHours : 0;
+      
+      // C. 攤位費回收率
+      const boothROI = boothCost > 0 ? (netProfit / boothCost) * 100 : 0;
+      
+      return {
+        market,
+        netProfit,
+        hourlyProfit,
+        boothROI,
+        operatingHours,
+      };
+    });
 
-    if (markets.length > 0) {
-      loadInteractionData();
-    }
-  }, [markets, startDate, endDate]);
+    // 排序：先按每小時淨利降序，再按攤位費回收率降序
+    return data.sort((a, b) => {
+      if (b.hourlyProfit !== a.hourlyProfit) {
+        return b.hourlyProfit - a.hourlyProfit;
+      }
+      return b.boothROI - a.boothROI;
+    });
+  }, [markets]);
 
-  // 計算關鍵指標
-  const metrics = useMemo(() => {
+  // ✅ 新增：計算客單價數據
+  interface MarketAOVData {
+    market: Market;
+    averageOrderValue: number;
+    totalRevenue: number;
+    totalDeals: number;
+  }
+
+  const marketAOVData = useMemo(() => {
+    if (!markets || markets.length === 0) return [];
+
+    const data: MarketAOVData[] = markets
+      .filter(market => (market.totalDeals || 0) > 0) // 只包含有成交的市集
+      .map(market => {
+        const totalRevenue = market.totalRevenue || 0;
+        const totalDeals = market.totalDeals || 0;
+        const averageOrderValue = totalDeals > 0 ? totalRevenue / totalDeals : 0;
+        
+        return {
+          market,
+          averageOrderValue,
+          totalRevenue,
+          totalDeals,
+        };
+      });
+
+    // 排序：按客單價降序
+    return data.sort((a, b) => b.averageOrderValue - a.averageOrderValue);
+  }, [markets]);
+
+  // ✅ 新增：計算商品排行數據
+  const topProductsData = useLiveQuery(async () => {
     if (!markets || markets.length === 0) {
       return {
-        marketCount: 0,
-        totalRevenue: 0,
-        totalProfit: 0,
-        totalCost: 0,
-        averageOrderValue: 0,
-        totalDeals: 0,
-        totalInteractions: 0,
-        conversionRate: 0,
+        topByQuantity: null,
+        topByRevenue: null,
+        topByProfit: null,
       };
     }
 
-    const totalRevenue = markets.reduce((sum, m) => sum + (m.totalRevenue || 0), 0);
-    const totalProfit = markets.reduce((sum, m) => sum + (m.totalProfit || 0), 0);
-    const totalDeals = markets.reduce((sum, m) => sum + (m.totalDeals || 0), 0);
-    const totalInteractions = markets.reduce((sum, m) => sum + (m.totalInteractions || 0), 0);
+    // 從所有市集的事件中收集商品數據
+    const productStats = new Map<string, {
+      productName: string;
+      quantity: number;
+      revenue: number;
+      profit: number;
+    }>();
+
+    // 遍歷所有市集
+    for (const market of markets) {
+      if (!market.id) continue;
+      
+      // 獲取該市集的所有成交事件
+      const events = await db.events
+        .where('market_id')
+        .equals(market.id)
+        .and(event => event.type === 'deal_closed')
+        .toArray();
+
+      // 處理每個成交事件
+      for (const event of events) {
+        const payload = event.payload as any;
+        
+        // 跳過手動輸入的交易（沒有具體商品）
+        if (payload.isManualEntry) continue;
+        
+        // 處理交易項目
+        if (payload.items && Array.isArray(payload.items)) {
+          for (const item of payload.items) {
+            const productId = item.productId;
+            
+            // ✅ 優先使用快照名稱，如果沒有則從商品表查詢
+            let productName = item.product_name;
+            if (!productName) {
+              const product = await db.products.get(productId);
+              productName = product?.name;
+            }
+            
+            // ✅ 如果商品名稱仍然為空，跳過此商品
+            if (!productName) {
+              continue;
+            }
+            
+            const quantity = item.quantity || 0;
+            const price = item.price_at_time_of_sale || item.price || 0;
+            const cost = item.cost_at_time_of_sale || 0;
+            const revenue = price * quantity;
+            const profit = (price - cost) * quantity;
+
+            // 累加統計
+            if (productStats.has(productId)) {
+              const stats = productStats.get(productId)!;
+              stats.quantity += quantity;
+              stats.revenue += revenue;
+              stats.profit += profit;
+            } else {
+              productStats.set(productId, {
+                productName,
+                quantity,
+                revenue,
+                profit,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // 轉換為數組並排序
+    const productsArray = Array.from(productStats.values());
+
+    if (productsArray.length === 0) {
+      return {
+        topByQuantity: null,
+        topByRevenue: null,
+        topByProfit: null,
+      };
+    }
+
+    // 找出各項第一名
+    const topByQuantity = productsArray.reduce((max, p) => 
+      p.quantity > max.quantity ? p : max
+    );
     
-    // 計算總成本
-    const totalCost = markets.reduce((sum, m) => {
-      const boothCost = m.boothCost || 0;
-      const tableCost = m.tableFree ? 0 : (m.tableRental || 0);
-      const chairCost = m.chairFree ? 0 : (m.chairRental || 0);
-      const umbrellaCost = m.umbrellaFree ? 0 : (m.umbrellaRental || 0);
-      const commission = ((m.totalRevenue || 0) * (m.commissionRate || 0)) / 100;
-      return sum + boothCost + tableCost + chairCost + umbrellaCost + commission;
-    }, 0);
+    const topByRevenue = productsArray.reduce((max, p) => 
+      p.revenue > max.revenue ? p : max
+    );
     
+    const topByProfit = productsArray.reduce((max, p) => 
+      p.profit > max.profit ? p : max
+    );
+
     return {
-      marketCount: markets.length,
-      totalRevenue,
-      totalProfit,
-      totalCost,
-      averageOrderValue: totalDeals > 0 ? totalRevenue / totalDeals : 0,
-      totalDeals,
-      totalInteractions,
-      conversionRate: totalInteractions > 0 ? (totalDeals / totalInteractions) * 100 : 0,
+      topByQuantity: {
+        productName: topByQuantity.productName,
+        quantity: topByQuantity.quantity,
+      },
+      topByRevenue: {
+        productName: topByRevenue.productName,
+        revenue: topByRevenue.revenue,
+      },
+      topByProfit: {
+        productName: topByProfit.productName,
+        profit: topByProfit.profit,
+      },
     };
   }, [markets]);
 
   // 檢查是否有數據
-  const hasData = stats && stats.length > 0 && metrics.totalRevenue > 0;
-
-  // 計算互動偏好數據
-  const interactionPreferenceData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    
-    interactionEvents.forEach(event => {
-      const type = event.payload.type;
-      counts[type] = (counts[type] || 0) + 1;
-    });
-
-    return Object.entries(counts).map(([type, count]) => ({
-      name: buttonLabels[type]?.label || type,
-      emoji: buttonLabels[type]?.emoji || '❓',
-      value: count,
-    })).sort((a, b) => b.value - a.value);
-  }, [interactionEvents, buttonLabels]);
-
-  // 計算時序熱力圖數據
-  const timeHeatmapData = useMemo(() => {
-    // 初始化 24 小時數據
-    const hourlyData: Record<number, { interactions: number; revenue: number }> = {};
-    for (let i = 0; i < 24; i++) {
-      hourlyData[i] = { interactions: 0, revenue: 0 };
-    }
-
-    // 統計互動次數
-    interactionEvents.forEach(event => {
-      const hour = new Date(event.timestamp).getHours();
-      hourlyData[hour].interactions += 1;
-    });
-
-    // 統計成交金額
-    dealEvents.forEach(event => {
-      const hour = new Date(event.timestamp).getHours();
-      hourlyData[hour].revenue += event.payload.totalAmount;
-    });
-
-    // 轉換為圖表數據格式
-    return Object.entries(hourlyData)
-      .map(([hour, data]) => ({
-        hour: `${hour.padStart(2, '0')}:00`,
-        interactions: data.interactions,
-        revenue: data.revenue,
-      }))
-      .filter(d => d.interactions > 0 || d.revenue > 0); // 只顯示有數據的時段
-  }, [interactionEvents, dealEvents]);
-
-  // 生成智能洞察
-  const behaviorInsights = useMemo(() => {
-    const insights: string[] = [];
-
-    // 洞察 1：最頻繁的互動類型
-    if (interactionPreferenceData.length > 0) {
-      const topInteraction = interactionPreferenceData[0];
-      const totalInteractions = interactionPreferenceData.reduce((sum, item) => sum + item.value, 0);
-      const percentage = ((topInteraction.value / totalInteractions) * 100).toFixed(0);
-      insights.push(
-        `本期間「${topInteraction.emoji} ${topInteraction.name}」最為頻繁，佔總互動 ${percentage}%。`
-      );
-    }
-
-    // 洞察 2：轉換率分析
-    const totalInteractions = interactionEvents.length;
-    const totalDeals = dealEvents.length;
-    if (totalInteractions > 0 && totalDeals > 0) {
-      const conversionRate = ((totalDeals / totalInteractions) * 100).toFixed(1);
-      const contribution = ((totalInteractions / totalDeals)).toFixed(1);
-      insights.push(
-        `平均每 ${contribution} 次互動產生 1 筆成交，整體轉換率為 ${conversionRate}%。`
-      );
-    }
-
-    // 洞察 3：人氣高峰時段
-    if (timeHeatmapData.length > 0) {
-      const peakInteractionHour = timeHeatmapData.reduce((max, curr) => 
-        curr.interactions > max.interactions ? curr : max
-      );
-      const peakRevenueHour = timeHeatmapData.reduce((max, curr) => 
-        curr.revenue > max.revenue ? curr : max
-      );
-
-      if (peakInteractionHour.hour === peakRevenueHour.hour) {
-        insights.push(
-          `人氣與金流高峰都在 ${peakInteractionHour.hour}，建議在此時段加強服務與推廣。`
-        );
-      } else {
-        insights.push(
-          `人氣高峰在 ${peakInteractionHour.hour}，金流高峰在 ${peakRevenueHour.hour}，可針對不同時段調整策略。`
-        );
-      }
-    }
-
-    return insights;
-  }, [interactionPreferenceData, interactionEvents, dealEvents, timeHeatmapData]);
-
-  // 處理匯出報表
-  const handleExportReport = () => {
-    try {
-      if (markets.length === 0) {
-        toast.error('沒有可匯出的數據');
-        return;
-      }
-
-      exportMarketReport(markets);
-      toast.success('🎉 報表匯出成功', {
-        description: '已下載 CSV 檔案',
-      });
-    } catch (error) {
-      console.error('匯出報表失敗：', error);
-      toast.error('匯出失敗，請稍後再試');
-    }
-  };
+  const hasData = marketROIData.length > 0;
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
@@ -322,21 +316,8 @@ export default function AnalyticsPage() {
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-medium text-white opacity-90">數據分析</h1>
-            <div className="flex items-center gap-2">
-              {/* 匯出報表按鈕 */}
-              {hasData && (
-                <button
-                  onClick={handleExportReport}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-colors"
-                  aria-label="匯出報表"
-                >
-                  <Download className="w-4 h-4 text-white" />
-                  <span className="text-white text-sm font-medium">匯出報表</span>
-                </button>
-              )}
-              <div className="bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full">
-                <span className="text-white text-sm">📊</span>
-              </div>
+            <div className="bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full">
+              <span className="text-white text-sm">📊</span>
             </div>
           </div>
           
@@ -361,105 +342,223 @@ export default function AnalyticsPage() {
 
         {hasData ? (
           <>
-            {/* 關鍵指標卡片 */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <MetricCard
-                icon={Package}
-                label="市集總數"
-                value={metrics.marketCount}
-                format="number"
-                color="blue"
-              />
-              <MetricCard
-                icon={DollarSign}
-                label="總收入"
-                value={metrics.totalRevenue}
-                format="currency"
-                color="wood"
-              />
-              <MetricCard
-                icon={TrendingUp}
-                label="總淨利潤"
-                value={metrics.totalProfit}
-                format="currency"
-                color="pink"
-              />
-              <MetricCard
-                icon={Users}
-                label="平均轉換率"
-                value={metrics.conversionRate}
-                format="percent"
-                color="green"
-              />
+            {/* 最有價值市集 */}
+            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+              {/* 標題與說明 */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-medium text-[#3A3A3A]">
+                    最有價值市集
+                  </h2>
+                  {/* 說明燈泡按鈕 */}
+                  <button
+                    onClick={() => setShowInfoTooltip(!showInfoTooltip)}
+                    className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                    aria-label="查看說明"
+                  >
+                    <svg 
+                      className="w-4 h-4 text-[#D4A574]" 
+                      fill="currentColor" 
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M10 2a6 6 0 016 6v3.586l.707.707A1 1 0 0116 14h-1v1a3 3 0 11-6 0v-1H8a1 1 0 01-.707-1.707L8 11.586V8a6 6 0 016-6zM10 18a1 1 0 100-2 1 1 0 000 2z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* 說明提示框（畫面中央） */}
+              {showInfoTooltip && (
+                <>
+                  {/* 背景遮罩 */}
+                  <div 
+                    className="fixed inset-0 bg-black/50 z-40 transition-opacity" 
+                    onClick={() => setShowInfoTooltip(false)}
+                  />
+                  
+                  {/* 提示框容器 */}
+                  <div className="fixed inset-0 z-50 flex justify-center items-center p-4">
+                    <div 
+                      className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full border border-[#7B9FA6]/10 animate-slide-up"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <h3 className="font-medium text-[#3A3A3A] mb-3 text-base">
+                        💡 市集投資回報分析
+                      </h3>
+                      <p className="text-sm text-[#6B6B6B] leading-relaxed mb-4">
+                        根據<span className="font-medium text-[#7B9FA6]">每小時淨利</span>和<span className="font-medium text-[#D4A574]">攤位費回收率</span>排序，幫助您找出最值得參加的市集。
+                      </p>
+                      <button
+                        onClick={() => setShowInfoTooltip(false)}
+                        className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+                      >
+                        知道了
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* 前三名市集卡片（垂直排列） */}
+              <div className="space-y-3">
+                {/* 第一名 */}
+                {marketROIData[0] && (
+                  <MarketROICard
+                    market={marketROIData[0].market}
+                    rank={1}
+                    netProfit={marketROIData[0].netProfit}
+                    hourlyProfit={marketROIData[0].hourlyProfit}
+                    boothROI={marketROIData[0].boothROI}
+                    operatingHours={marketROIData[0].operatingHours}
+                  />
+                )}
+                
+                {/* 第二名 */}
+                {marketROIData[1] && (
+                  <MarketROICard
+                    market={marketROIData[1].market}
+                    rank={2}
+                    netProfit={marketROIData[1].netProfit}
+                    hourlyProfit={marketROIData[1].hourlyProfit}
+                    boothROI={marketROIData[1].boothROI}
+                    operatingHours={marketROIData[1].operatingHours}
+                  />
+                )}
+                
+                {/* 第三名 */}
+                {marketROIData[2] && (
+                  <MarketROICard
+                    market={marketROIData[2].market}
+                    rank={3}
+                    netProfit={marketROIData[2].netProfit}
+                    hourlyProfit={marketROIData[2].hourlyProfit}
+                    boothROI={marketROIData[2].boothROI}
+                    operatingHours={marketROIData[2].operatingHours}
+                  />
+                )}
+              </div>
+
+              {/* 如果少於3個市集，顯示提示 */}
+              {marketROIData.length < 3 && marketROIData.length > 0 && (
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-[#6B6B6B]">
+                    目前僅有 {marketROIData.length} 場市集數據
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* 營收趨勢圖 */}
-            {stats && stats.length > 0 && (
-              <div className="mb-6">
-                <RevenueChart data={stats} />
+            {/* 客單價最高市集 */}
+            {marketAOVData.length > 0 && (
+              <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+                {/* 標題與說明 */}
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-medium text-[#3A3A3A]">
+                      客單價最高市集
+                    </h2>
+                    {/* 說明燈泡按鈕 */}
+                    <button
+                      onClick={() => setShowAOVInfoTooltip(!showAOVInfoTooltip)}
+                      className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                      aria-label="查看說明"
+                    >
+                      <svg 
+                        className="w-4 h-4 text-[#D4A574]" 
+                        fill="currentColor" 
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M10 2a6 6 0 016 6v3.586l.707.707A1 1 0 0116 14h-1v1a3 3 0 11-6 0v-1H8a1 1 0 01-.707-1.707L8 11.586V8a6 6 0 016-6zM10 18a1 1 0 100-2 1 1 0 000 2z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 說明提示框（畫面中央） */}
+                {showAOVInfoTooltip && (
+                  <>
+                    {/* 背景遮罩 */}
+                    <div 
+                      className="fixed inset-0 bg-black/50 z-40 transition-opacity" 
+                      onClick={() => setShowAOVInfoTooltip(false)}
+                    />
+                    
+                    {/* 提示框容器 */}
+                    <div className="fixed inset-0 z-50 flex justify-center items-center p-4">
+                      <div 
+                        className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full border border-[#7B9FA6]/10 animate-slide-up"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <h3 className="font-medium text-[#3A3A3A] mb-3 text-base">
+                          💡 客單價分析
+                        </h3>
+                        <p className="text-sm text-[#6B6B6B] leading-relaxed mb-4">
+                          客單價 = 總收入 ÷ 成交數，反映每筆交易的平均金額。客單價越高，表示顧客願意花更多錢購買您的商品。
+                        </p>
+                        <button
+                          onClick={() => setShowAOVInfoTooltip(false)}
+                          className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+                        >
+                          知道了
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* 前三名市集卡片（垂直排列） */}
+                <div className="space-y-3">
+                  {/* 第一名 */}
+                  {marketAOVData[0] && (
+                    <MarketAOVCard
+                      market={marketAOVData[0].market}
+                      rank={1}
+                      averageOrderValue={marketAOVData[0].averageOrderValue}
+                      totalRevenue={marketAOVData[0].totalRevenue}
+                      totalDeals={marketAOVData[0].totalDeals}
+                    />
+                  )}
+                  
+                  {/* 第二名 */}
+                  {marketAOVData[1] && (
+                    <MarketAOVCard
+                      market={marketAOVData[1].market}
+                      rank={2}
+                      averageOrderValue={marketAOVData[1].averageOrderValue}
+                      totalRevenue={marketAOVData[1].totalRevenue}
+                      totalDeals={marketAOVData[1].totalDeals}
+                    />
+                  )}
+                  
+                  {/* 第三名 */}
+                  {marketAOVData[2] && (
+                    <MarketAOVCard
+                      market={marketAOVData[2].market}
+                      rank={3}
+                      averageOrderValue={marketAOVData[2].averageOrderValue}
+                      totalRevenue={marketAOVData[2].totalRevenue}
+                      totalDeals={marketAOVData[2].totalDeals}
+                    />
+                  )}
+                </div>
+
+                {/* 如果少於3個市集，顯示提示 */}
+                {marketAOVData.length < 3 && marketAOVData.length > 0 && (
+                  <div className="mt-4 text-center">
+                    <p className="text-xs text-[#6B6B6B]">
+                      目前僅有 {marketAOVData.length} 場市集數據
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* 互動與成交對比圖 */}
-            <div className="mb-6">
-              <InteractionComparisonChart markets={markets} />
-            </div>
-
-            {/* 轉換漏斗 */}
-            <div className="mb-6">
-              <ConversionFunnel
-                touchCount={metrics.totalInteractions}
-                inquiryCount={0}
-                dealCount={metrics.totalDeals}
-              />
-            </div>
-
-            {/* 成本分析 */}
-            <div className="mb-6">
-              <CostAnalysis
-                totalRevenue={metrics.totalRevenue}
-                totalCost={metrics.totalCost}
-                totalProfit={metrics.totalProfit}
-              />
-            </div>
-
-            {/* 顧客行為分析區塊 */}
-            {interactionEvents.length > 0 && (
-              <>
-                <div className="mb-4">
-                  <h2 className="text-xl font-medium text-[#3A3A3A] flex items-center gap-2">
-                    📈 顧客行為分析
-                  </h2>
-                  <p className="text-sm text-[#6B6B6B] mt-1">
-                    深入了解顧客互動模式與偏好
-                  </p>
-                </div>
-
-                {/* 智能洞察提示 */}
-                <div className="mb-6">
-                  <BehaviorInsightCard insights={behaviorInsights} />
-                </div>
-
-                {/* 互動偏好佔比圖 */}
-                {interactionPreferenceData.length > 0 && (
-                  <div className="mb-6">
-                    <InteractionPreferenceChart data={interactionPreferenceData} />
-                  </div>
-                )}
-
-                {/* 互動時序熱力圖 */}
-                {timeHeatmapData.length > 0 && (
-                  <div className="mb-6">
-                    <InteractionTimeHeatmap data={timeHeatmapData} />
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* 市集明細列表 */}
-            <div className="mb-6">
-              <MarketDetailList markets={markets} />
-            </div>
+            {/* 商品排行（無標題） */}
+            <TopProductsCard
+              topByQuantity={topProductsData?.topByQuantity || null}
+              topByRevenue={topProductsData?.topByRevenue || null}
+              topByProfit={topProductsData?.topByProfit || null}
+            />
           </>
         ) : (
           <EmptyState />

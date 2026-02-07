@@ -43,9 +43,9 @@ export default function HomePage() {
     const markets = allMarkets?.filter(market => 
       market.startDate <= today && 
       market.endDate >= today &&
-      market.status !== 'cancelled' && 
-      market.status !== 'completed'
-    ) || [];
+    market.status !== 'cancelled' && 
+    market.status !== 'completed'
+  ) || [];
 
     // ✅ 獲取營業狀態的函數
     const getOperatingStatus = (market: typeof markets[0]) => {
@@ -339,30 +339,30 @@ export default function HomePage() {
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4">
         {/* 本月概覽 - 移除條件渲染，始終顯示容器 */}
-        <div className="mb-6">
-          <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-[#7B9FA6]/5">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-xs text-[#6B6B6B] mb-1">市集場次</div>
-                <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+          <div className="mb-6">
+            <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-[#7B9FA6]/5">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-xs text-[#6B6B6B] mb-1">市集場次</div>
+                  <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
                   {monthlyStats?.marketCount ?? 0}
+                  </div>
                 </div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
-                <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+                <div className="text-center">
+                  <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
+                  <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
                   {formatCurrency(monthlyStats?.totalRevenue ?? 0)}
+                  </div>
                 </div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-[#6B6B6B] mb-1">成交數</div>
-                <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+                <div className="text-center">
+                  <div className="text-xs text-[#6B6B6B] mb-1">成交數</div>
+                  <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
                   {monthlyStats?.totalDeals ?? 0}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
         {/* 當日市集 - 移除條件渲染，始終顯示容器 */}
         {todayMarkets.length > 0 && (
