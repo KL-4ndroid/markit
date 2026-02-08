@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { X, Package, DollarSign, Tag, FileText, Ban, Trash2 } from 'lucide-react';
+import { Dialog, Transition } from '@headlessui/react';
 import { updateProduct, deleteProduct } from '@/lib/db/hooks';
 import type { Product, ProductCategory, ProductUpdatedPayload } from '@/types/db';
 
@@ -325,35 +326,64 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
         </div>
       </div>
 
-      {/* 刪除確認對話框 */}
-      {showDeleteConfirm && (
-        <>
-          <div className="fixed inset-0 bg-black/50 z-[60]" onClick={() => setShowDeleteConfirm(false)} />
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-6">
-            <div className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl">
-              <h3 className="text-lg font-medium text-[#3A3A3A] mb-2">確認刪除商品？</h3>
-              <p className="text-sm text-[#6B6B6B] mb-6">
-                刪除後，此商品將被永久移除，此操作無法復原。
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={isSubmitting}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#d4183d] text-white hover:bg-[#c41739] transition-colors disabled:opacity-50"
-                >
-                  {isSubmitting ? '刪除中...' : '確認刪除'}
-                </button>
-              </div>
+      {/* 刪除確認對話框 - 使用 Headless UI */}
+      <Transition appear show={showDeleteConfirm} as={Fragment}>
+        <Dialog as="div" className="relative z-[60]" onClose={() => setShowDeleteConfirm(false)}>
+          {/* 背景遮罩 */}
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/50" />
+          </Transition.Child>
+
+          {/* 對話框容器 */}
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-6">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-sm transform overflow-hidden rounded-[1.5rem] bg-white p-6 shadow-xl transition-all">
+                  <Dialog.Title className="text-lg font-medium text-[#3A3A3A] mb-2">
+                    確認刪除商品？
+                  </Dialog.Title>
+                  
+                  <Dialog.Description className="text-sm text-[#6B6B6B] mb-6">
+                    刪除後，此商品將被永久移除，此操作無法復原。
+                  </Dialog.Description>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      disabled={isSubmitting}
+                      className="flex-1 px-4 py-3 rounded-2xl bg-[#d4183d] text-white hover:bg-[#c41739] transition-colors disabled:opacity-50"
+                    >
+                      {isSubmitting ? '刪除中...' : '確認刪除'}
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
             </div>
           </div>
-        </>
-      )}
+        </Dialog>
+      </Transition>
     </>
   );
 }

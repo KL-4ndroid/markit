@@ -110,7 +110,7 @@ export function MarketROICard({
         <div className="bg-white rounded-lg p-2">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Clock className="w-3 h-3 text-[#D4A574]" />
-            <span className="text-[10px] text-[#6B6B6B]">時薪</span>
+            <span className="text-[10px] text-[#6B6B6B]">投報率</span>
           </div>
           <div className={`text-xs font-bold tabular-nums text-center ${getProfitColor(hourlyProfit)}`}>
             {formatCurrency(Math.round(hourlyProfit))}

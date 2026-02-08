@@ -74,22 +74,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const syncUserSettings = async (userId: string) => {
     try {
-      // 動態導入避免循環依賴
-      const { pullQuickActionButtonsFromCloud } = await import('@/lib/quick-actions-store');
-      const { initializeUserSettings } = await import('./settings');
-      
-      // 嘗試拉取設定
-      const buttons = await pullQuickActionButtonsFromCloud(userId);
-      
-      // 如果雲端沒有設定，初始化預設設定
-      if (!buttons) {
-        await initializeUserSettings(userId);
-        console.log('✅ 用戶設定已初始化');
-      } else {
-        console.log('✅ 已從雲端同步用戶設定');
-      }
+      // 使用 setTimeout 延遲執行，避免在初始化時立即執行
+      setTimeout(async () => {
+        try {
+          // 動態導入避免循環依賴
+          const { pullQuickActionButtonsFromCloud } = await import('@/lib/quick-actions-store');
+          const { initializeUserSettings } = await import('./settings');
+          
+          // 嘗試拉取設定
+          const buttons = await pullQuickActionButtonsFromCloud(userId);
+          
+          // 如果雲端沒有設定，初始化預設設定
+          if (!buttons) {
+            await initializeUserSettings(userId);
+            console.log('✅ 用戶設定已初始化');
+          } else {
+            console.log('✅ 已從雲端同步用戶設定');
+          }
+        } catch (error) {
+          console.error('同步用戶設定失敗:', error);
+          // 靜默失敗，不影響應用運行
+        }
+      }, 1000); // 延遲 1 秒執行
     } catch (error) {
       console.error('同步用戶設定失敗:', error);
+      // 靜默失敗，不影響應用運行
     }
   };
 

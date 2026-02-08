@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, TrendingUp } from 'lucide-react';
+import { Dialog, Transition } from '@headlessui/react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useMarkets } from '@/lib/db/hooks';
 import { db } from '@/lib/db';
@@ -104,8 +105,9 @@ export default function AnalyticsPage() {
     if (!markets || markets.length === 0) return [];
 
     const data: MarketROIData[] = markets.map(market => {
-      // A. 計算單場淨利
+      // A. 計算單場淨利（扣除攤位費和設備費用）
       const totalRevenue = market.totalRevenue || 0;
+      const totalProfit = market.totalProfit || 0; // 這是扣除商品成本後的利潤
       const boothCost = market.boothCost || 0;
       const registrationFee = market.registrationFee || 0;
       
@@ -118,27 +120,31 @@ export default function AnalyticsPage() {
       // 抽成
       const commission = (totalRevenue * (market.commissionRate || 0)) / 100;
       
-      // 商品成本（從 totalProfit 反推）
-      const productCost = totalRevenue - (market.totalProfit || 0) - boothCost - registrationFee - rentals - commission;
+      // ✅ 淨利潤 = 總利潤 - 攤位費 - 報名費 - 設備租金 - 抽成
+      const netProfit = totalProfit - boothCost - registrationFee - rentals - commission;
       
-      // 淨利潤
-      const netProfit = totalRevenue - boothCost - registrationFee - rentals - commission - productCost;
-      
-      // B. 計算營業時長（小時）
+      // B. 計算營業時長（小時）- ✅ 多天市集需要疊加
       let operatingHours = 0;
       if (market.operatingStartTime && market.operatingEndTime) {
         const [startHour, startMinute] = market.operatingStartTime.split(':').map(Number);
         const [endHour, endMinute] = market.operatingEndTime.split(':').map(Number);
         const startMinutes = startHour * 60 + startMinute;
         const endMinutes = endHour * 60 + endMinute;
-        operatingHours = (endMinutes - startMinutes) / 60;
+        const dailyHours = (endMinutes - startMinutes) / 60;
+        
+        // ✅ 計算市集天數並疊加時數
+        const startDate = new Date(market.startDate);
+        const endDate = new Date(market.endDate);
+        const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        operatingHours = dailyHours * days;
       }
       
       // 每小時淨利
       const hourlyProfit = operatingHours > 0 ? netProfit / operatingHours : 0;
       
-      // C. 攤位費回收率
-      const boothROI = boothCost > 0 ? (netProfit / boothCost) * 100 : 0;
+      // C. 攤位費回收率 = 總收入 ÷ (攤位費 + 設備租賃費) × 100%
+      const totalFixedCost = boothCost + rentals;
+      const boothROI = totalFixedCost > 0 ? (totalRevenue / totalFixedCost) * 100 : 0;
       
       return {
         market,
@@ -367,37 +373,119 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* 說明提示框（畫面中央） */}
-              {showInfoTooltip && (
-                <>
+              {/* 說明提示框（使用 Headless UI） */}
+              <Transition appear show={showInfoTooltip} as={Fragment}>
+                <Dialog as="div" className="relative z-50" onClose={() => setShowInfoTooltip(false)}>
                   {/* 背景遮罩 */}
-                  <div 
-                    className="fixed inset-0 bg-black/50 z-40 transition-opacity" 
-                    onClick={() => setShowInfoTooltip(false)}
-                  />
-                  
-                  {/* 提示框容器 */}
-                  <div className="fixed inset-0 z-50 flex justify-center items-center p-4">
-                    <div 
-                      className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full border border-[#7B9FA6]/10 animate-slide-up"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <h3 className="font-medium text-[#3A3A3A] mb-3 text-base">
-                        💡 市集投資回報分析
-                      </h3>
-                      <p className="text-sm text-[#6B6B6B] leading-relaxed mb-4">
-                        根據<span className="font-medium text-[#7B9FA6]">每小時淨利</span>和<span className="font-medium text-[#D4A574]">攤位費回收率</span>排序，幫助您找出最值得參加的市集。
-                      </p>
-                      <button
-                        onClick={() => setShowInfoTooltip(false)}
-                        className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+                  <Transition.Child
+                    as={Fragment}
+                    enter="ease-out duration-300"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="ease-in duration-200"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                  >
+                    <div className="fixed inset-0 bg-black/50" />
+                  </Transition.Child>
+
+                  {/* 彈窗容器 */}
+                  <div className="fixed inset-0 overflow-y-auto">
+                    <div className="flex min-h-full items-start justify-center p-4 pt-20">
+                      <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0 scale-95"
+                        enterTo="opacity-100 scale-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100 scale-100"
+                        leaveTo="opacity-0 scale-95"
                       >
-                        知道了
-                      </button>
+                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all border border-[#7B9FA6]/10 relative">
+                          {/* 關閉按鈕 */}
+                          <button
+                            onClick={() => setShowInfoTooltip(false)}
+                            className="absolute top-4 right-4 text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                            aria-label="關閉"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+
+                          <Dialog.Title className="font-medium text-[#3A3A3A] mb-4 text-lg pr-8">
+                            💡 市集投資回報分析
+                          </Dialog.Title>
+                          
+                          {/* 三個指標說明 */}
+                          <div className="space-y-4 mb-6">
+                            {/* 1. 淨利潤 */}
+                            <div className="bg-[#E8F3E8] rounded-xl p-4">
+                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                <span className="text-[#7B9FA6]">💰</span>
+                                淨利潤
+                              </h4>
+                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                                <br />
+                                總利潤 - 攤位費 - 報名費 - 設備租金 - 抽成
+                              </p>
+                              <p className="text-xs text-[#6B6B6B]">
+                                <span className="font-medium">意義：</span>扣除所有成本後的實際獲利
+                              </p>
+                            </div>
+
+                            {/* 2. 每小時淨利 */}
+                            <div className="bg-[#FFF8E7] rounded-xl p-4">
+                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                <span className="text-[#D4A574]">⏱️</span>
+                                每小時淨利
+                              </h4>
+                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                                <br />
+                                淨利潤 ÷ 總營業時數
+                              </p>
+                              <p className="text-xs text-[#6B6B6B]">
+                                <span className="font-medium">意義：</span>時間效益指標，數值越高代表時間投資報酬越好
+                              </p>
+                            </div>
+
+                            {/* 3. 回收率 */}
+                            <div className="bg-[#F5E6E8] rounded-xl p-4">
+                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                <span className="text-[#D4A574]">📈</span>
+                                回收率
+                              </h4>
+                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                                <br />
+                                總收入 ÷ (攤位費 + 設備租賃費) × 100%
+                              </p>
+                              <p className="text-xs text-[#6B6B6B]">
+                                <span className="font-medium">意義：</span>固定成本回收倍數，200% 表示收入是成本的 2 倍
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="bg-[#7B9FA6]/10 rounded-xl p-3 mb-4">
+                            <p className="text-xs text-[#3A3A3A] leading-relaxed">
+                              <span className="font-medium">💡 排序規則：</span>
+                              <br />
+                              優先按「每小時淨利」排序，相同時再按「回收率」排序
+                            </p>
+                          </div>
+
+                          <button
+                            onClick={() => setShowInfoTooltip(false)}
+                            className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+                          >
+                            知道了
+                          </button>
+                        </Dialog.Panel>
+                      </Transition.Child>
                     </div>
                   </div>
-                </>
-              )}
+                </Dialog>
+              </Transition>
 
               {/* 前三名市集卡片（垂直排列） */}
               <div className="space-y-3">
@@ -474,37 +562,120 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
 
-                {/* 說明提示框（畫面中央） */}
-                {showAOVInfoTooltip && (
-                  <>
+                {/* 說明提示框（使用 Headless UI） */}
+                <Transition appear show={showAOVInfoTooltip} as={Fragment}>
+                  <Dialog as="div" className="relative z-50" onClose={() => setShowAOVInfoTooltip(false)}>
                     {/* 背景遮罩 */}
-                    <div 
-                      className="fixed inset-0 bg-black/50 z-40 transition-opacity" 
-                      onClick={() => setShowAOVInfoTooltip(false)}
-                    />
-                    
-                    {/* 提示框容器 */}
-                    <div className="fixed inset-0 z-50 flex justify-center items-center p-4">
-                      <div 
-                        className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full border border-[#7B9FA6]/10 animate-slide-up"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <h3 className="font-medium text-[#3A3A3A] mb-3 text-base">
-                          💡 客單價分析
-                        </h3>
-                        <p className="text-sm text-[#6B6B6B] leading-relaxed mb-4">
-                          客單價 = 總收入 ÷ 成交數，反映每筆交易的平均金額。客單價越高，表示顧客願意花更多錢購買您的商品。
-                        </p>
-                        <button
-                          onClick={() => setShowAOVInfoTooltip(false)}
-                          className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+                    <Transition.Child
+                      as={Fragment}
+                      enter="ease-out duration-300"
+                      enterFrom="opacity-0"
+                      enterTo="opacity-100"
+                      leave="ease-in duration-200"
+                      leaveFrom="opacity-100"
+                      leaveTo="opacity-0"
+                    >
+                      <div className="fixed inset-0 bg-black/50" />
+                    </Transition.Child>
+
+                    {/* 彈窗容器 */}
+                    <div className="fixed inset-0 overflow-y-auto">
+                      <div className="flex min-h-full items-start justify-center p-4 pt-20">
+                        <Transition.Child
+                          as={Fragment}
+                          enter="ease-out duration-300"
+                          enterFrom="opacity-0 scale-95"
+                          enterTo="opacity-100 scale-100"
+                          leave="ease-in duration-200"
+                          leaveFrom="opacity-100 scale-100"
+                          leaveTo="opacity-0 scale-95"
                         >
-                          知道了
-                        </button>
+                          <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all border border-[#7B9FA6]/10 relative">
+                            {/* 關閉按鈕 */}
+                            <button
+                              onClick={() => setShowAOVInfoTooltip(false)}
+                              className="absolute top-4 right-4 text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                              aria-label="關閉"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+
+                            <Dialog.Title className="font-medium text-[#3A3A3A] mb-4 text-lg pr-8">
+                              💡 客單價分析
+                            </Dialog.Title>
+                            
+                            {/* 客單價說明 */}
+                            <div className="space-y-4 mb-6">
+                              {/* 計算方式 */}
+                              <div className="bg-[#E8F3E8] rounded-xl p-4">
+                                <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                  <span className="text-[#7B9FA6]">🧮</span>
+                                  計算方式
+                                </h4>
+                                <p className="text-sm text-[#6B6B6B] leading-relaxed">
+                                  <span className="font-medium text-[#3A3A3A]">客單價 = 總收入 ÷ 成交數</span>
+                                </p>
+                              </div>
+
+                              {/* 指標意義 */}
+                              <div className="bg-[#FFF8E7] rounded-xl p-4">
+                                <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                  <span className="text-[#D4A574]">📊</span>
+                                  指標意義
+                                </h4>
+                                <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                  反映每筆交易的平均金額，是衡量顧客消費能力的重要指標。
+                                </p>
+                                <ul className="text-xs text-[#6B6B6B] space-y-1 ml-4">
+                                  <li>• 客單價越高 → 顧客願意花更多錢</li>
+                                  <li>• 可能原因：商品定價高、顧客購買多件、高價值商品受歡迎</li>
+                                </ul>
+                              </div>
+
+                              {/* 實際範例 */}
+                              <div className="bg-[#F5E6E8] rounded-xl p-4">
+                                <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                  <span className="text-[#D4A574]">💡</span>
+                                  實際範例
+                                </h4>
+                                <div className="text-sm text-[#6B6B6B] leading-relaxed space-y-2">
+                                  <div className="bg-white rounded-lg p-3">
+                                    <p className="font-medium text-[#3A3A3A] mb-1">市集 A</p>
+                                    <p className="text-xs">總收入：$10,000 ÷ 成交數：50 筆</p>
+                                    <p className="text-xs font-medium text-[#7B9FA6]">→ 客單價：$200</p>
+                                  </div>
+                                  <div className="bg-white rounded-lg p-3">
+                                    <p className="font-medium text-[#3A3A3A] mb-1">市集 B</p>
+                                    <p className="text-xs">總收入：$10,000 ÷ 成交數：100 筆</p>
+                                    <p className="text-xs font-medium text-[#D4A574]">→ 客單價：$100</p>
+                                  </div>
+                                  <p className="text-xs pt-2">
+                                    市集 A 的客單價較高，表示顧客平均每次購買金額更多
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="bg-[#7B9FA6]/10 rounded-xl p-3 mb-4">
+                              <p className="text-xs text-[#3A3A3A] leading-relaxed">
+                                <span className="font-medium">💡 提升客單價的方法：</span>
+                                <br />
+                                提高商品定價、推出組合優惠、引導顧客購買多件商品
+                              </p>
+                            </div>
+
+                            <button
+                              onClick={() => setShowAOVInfoTooltip(false)}
+                              className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+                            >
+                              知道了
+                            </button>
+                          </Dialog.Panel>
+                        </Transition.Child>
                       </div>
                     </div>
-                  </>
-                )}
+                  </Dialog>
+                </Transition>
 
                 {/* 前三名市集卡片（垂直排列） */}
                 <div className="space-y-3">

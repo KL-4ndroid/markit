@@ -1262,7 +1262,17 @@ export default function MarketDetailPage({ params }: PageProps) {
             </div>
             <div className="bg-[#E8F3E8] rounded-xl p-4">
               <div className="text-2xl font-medium text-[#3A3A3A]">
-                {formatCurrency(market.totalProfit || 0)}
+                {formatCurrency((() => {
+                  // ✅ 計算淨利潤：總利潤 - 攤位費 - 設備租賃費用
+                  const totalProfit = market.totalProfit || 0;
+                  const boothCost = market.boothCost || 0;
+                  const tableRental = market.tableFree ? 0 : (market.tableRental || 0);
+                  const chairRental = market.chairFree ? 0 : (market.chairRental || 0);
+                  const umbrellaRental = market.umbrellaFree ? 0 : (market.umbrellaRental || 0);
+                  const equipmentCost = tableRental + chairRental + umbrellaRental;
+                  
+                  return totalProfit - boothCost - equipmentCost;
+                })())}
               </div>
               <div className="text-sm text-[#6B6B6B] mt-1">淨利潤</div>
             </div>
@@ -1274,11 +1284,18 @@ export default function MarketDetailPage({ params }: PageProps) {
             </div>
             <div className="bg-[#F5E6E8] rounded-xl p-4">
               <div className="text-2xl font-medium text-[#3A3A3A]">
-                {market.totalInteractions && market.totalInteractions > 0
-                  ? `${Math.round(((market.totalDeals || 0) / market.totalInteractions) * 100)}%`
-                  : '0.0%'}
+                {formatCurrency((() => {
+                  // ✅ 總支出：攤位費 + 設備租賃費用
+                  const boothCost = market.boothCost || 0;
+                  const tableRental = market.tableFree ? 0 : (market.tableRental || 0);
+                  const chairRental = market.chairFree ? 0 : (market.chairRental || 0);
+                  const umbrellaRental = market.umbrellaFree ? 0 : (market.umbrellaRental || 0);
+                  const equipmentCost = tableRental + chairRental + umbrellaRental;
+                  
+                  return boothCost + equipmentCost;
+                })())}
               </div>
-              <div className="text-sm text-[#6B6B6B] mt-1">轉換率</div>
+              <div className="text-sm text-[#6B6B6B] mt-1">總支出</div>
             </div>
           </div>
         </div>
