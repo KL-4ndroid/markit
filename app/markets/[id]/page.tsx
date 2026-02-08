@@ -465,7 +465,6 @@ export default function MarketDetailPage({ params }: PageProps) {
     // ✅ 使用本地日期，避免時區問題
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     
     // 檢查是否在市集日期範圍內
     if (market.startDate > today || market.endDate < today) {
@@ -493,15 +492,30 @@ export default function MarketDetailPage({ params }: PageProps) {
       return;
     }
     
+    // ✅ 使用時間戳進行比較（避免跨午夜問題）
+    const [startHour, startMinute] = startTime.split(':').map(Number);
     const [endHour, endMinute] = endTime.split(':').map(Number);
-    const endWithBuffer = new Date();
-    endWithBuffer.setHours(endHour, endMinute + 30, 0, 0); // ✅ 加上 30 分鐘緩衝
-    const endTimeWithBuffer = `${String(endWithBuffer.getHours()).padStart(2, '0')}:${String(endWithBuffer.getMinutes()).padStart(2, '0')}`;
+    
+    // 創建今天的時間對象
+    const startDateTime = new Date(now);
+    startDateTime.setHours(startHour, startMinute, 0, 0);
+    
+    const endDateTime = new Date(now);
+    endDateTime.setHours(endHour, endMinute + 30, 0, 0); // 加上 30 分鐘緩衝
+    
+    // ✅ 如果結束時間小於開始時間，表示跨越午夜，需要加一天
+    if (endDateTime <= startDateTime) {
+      endDateTime.setDate(endDateTime.getDate() + 1);
+    }
+    
+    const currentTimestamp = now.getTime();
+    const startTimestamp = startDateTime.getTime();
+    const endTimestamp = endDateTime.getTime();
     
     // 判斷當前時間處於哪個階段
-    if (currentTime < startTime) {
+    if (currentTimestamp < startTimestamp) {
       setOperatingPhase('not-started'); // 未開始
-    } else if (currentTime >= startTime && currentTime < endTimeWithBuffer) {
+    } else if (currentTimestamp >= startTimestamp && currentTimestamp < endTimestamp) {
       setOperatingPhase('operating'); // 營業中
     } else {
       setOperatingPhase('ended'); // 已結束
