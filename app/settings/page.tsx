@@ -380,8 +380,7 @@ export default function SettingsPage() {
           )}
         </div>
 
-        {/* 快速互動按鈕設定 - 暫時隱藏 */}
-        {/* 
+        {/* 快速互動按鈕設定 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -392,11 +391,11 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="w-5 h-5 text-[#7B9FA6]" />
                   <h2 className="text-lg font-medium text-[#3A3A3A]">
-                    快速互動按鈕
+                    互動按鈕設定
                   </h2>
                 </div>
                 <p className="text-sm text-[#6B6B6B]">
-                  自訂營業中的快速互動按鈕內容。每個按鈕都是獨立的互動類型，會分別統計。
+                  自訂營業中的互動記錄按鈕。每個按鈕都是獨立的互動類型，會分別統計。
                 </p>
               </div>
               <div className="ml-4">
@@ -460,7 +459,7 @@ export default function SettingsPage() {
                 <div className="text-xs text-[#6B6B6B] mb-3 text-center">
                   預覽效果
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {buttons.map((button) => (
                     <div
                       key={button.id}
@@ -472,12 +471,6 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   ))}
-                  <div className="p-3 bg-gradient-to-br from-[#7B9FA6] to-[#6A8E95] rounded-xl shadow-sm">
-                    <div className="text-2xl text-center mb-1">💰</div>
-                    <div className="text-xs text-center text-white font-medium">
-                      快速成交
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -503,16 +496,15 @@ export default function SettingsPage() {
                   💡 使用說明
                 </h3>
                 <ul className="text-xs text-[#6B6B6B] space-y-1">
-                  <li>• 可自訂前三個按鈕的圖示和文字</li>
+                  <li>• 可自訂三個互動按鈕的圖示和文字</li>
                   <li>• 每個按鈕都是獨立的互動類型，會分別統計</li>
-                  <li>• 第四個按鈕為固定的「快速成交」功能</li>
-                  <li>• 快速成交可直接輸入金額完成交易，不需選擇商品</li>
+                  <li>• 適合記錄顧客行為（如：詢問、試吃、拍照等）</li>
+                  <li>• 互動數據會顯示在市集分析報表中</li>
                 </ul>
               </div>
             </div>
           )}
         </div>
-        */}
 
 
       </div>

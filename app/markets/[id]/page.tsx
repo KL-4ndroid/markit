@@ -36,6 +36,7 @@ import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { CartDrawer } from '@/components/sales/CartDrawer';
 import { QuickInteractionButtons } from '@/components/sales/QuickInteractionButtons';
+import { InteractionButtons } from '@/components/sales/InteractionButtons';
 import { QuickTransactionGrid } from '@/components/sales/QuickTransactionGrid';
 import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { InteractionPreferenceChart } from '@/components/analytics/InteractionPreferenceChart';
@@ -893,7 +894,25 @@ export default function MarketDetailPage({ params }: PageProps) {
         {/* 營業中時的操作區 - 根據自動判斷顯示 */}
         {isOperating && (
           <>
-            {/* 1. 新增收入（簡化版：直接輸入金額） */}
+            {/* 1. 互動記錄按鈕 */}
+            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+              <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A] mb-4">
+                <TrendingUp className="w-5 h-5 text-[#7B9FA6]" />
+                記錄互動
+              </h2>
+              <p className="text-sm text-[#6B6B6B] mb-4">
+                記錄顧客互動行為，幫助分析顧客偏好
+              </p>
+              <InteractionButtons 
+                marketId={marketId}
+                onInteractionRecorded={() => {
+                  // 重新載入互動數據
+                  window.dispatchEvent(new Event('interaction-recorded'));
+                }}
+              />
+            </div>
+
+            {/* 2. 新增收入（簡化版：直接輸入金額） */}
             <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
               {/* Header with toggle */}
               <div className="flex items-center justify-between mb-4">
@@ -923,7 +942,7 @@ export default function MarketDetailPage({ params }: PageProps) {
               )}
             </div>
             
-            {/* 2. 快速交易（完整版：選擇商品） */}
+            {/* 3. 快速交易（完整版：選擇商品） */}
             <QuickTransactionGrid 
               marketId={marketId}
               isExpanded={isQuickTransactionExpanded}

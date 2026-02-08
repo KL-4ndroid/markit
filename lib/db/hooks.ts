@@ -269,7 +269,8 @@ export async function recordInteraction(
   notes?: string
 ): Promise<void> {
   await recordEvent('interaction_recorded', {
-    market_id: marketId,  // ✅ 統一使用 market_id
+    marketId,  // ✅ 使用 marketId（符合 InteractionRecordedPayload 介面）
+    market_id: marketId,  // ✅ 同時提供 market_id（用於事件的 market_id 欄位）
     type,
     productIds,
     notes,
