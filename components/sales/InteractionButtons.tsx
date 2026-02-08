@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { recordInteraction } from '@/lib/db/hooks';
 import { toast } from 'sonner';
-import { getQuickActionButtons, type QuickActionButton } from '@/lib/quick-actions-store';
+import { getInteractionButtons, type InteractionButton } from '@/lib/interaction-buttons-store';
 
 interface InteractionButtonsProps {
   marketId: string;
@@ -12,19 +12,19 @@ interface InteractionButtonsProps {
 
 /**
  * 互動記錄按鈕組件
- * 用於記錄顧客互動行為（詢問、試吃、拍照等）
+ * 用於記錄顧客互動行為（有興趣、有互動、轉換）
  */
 export function InteractionButtons({ marketId, onInteractionRecorded }: InteractionButtonsProps) {
-  const [buttons, setButtons] = useState<QuickActionButton[]>([]);
+  const [buttons, setButtons] = useState<InteractionButton[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // 載入按鈕配置
   useEffect(() => {
-    setButtons(getQuickActionButtons());
+    setButtons(getInteractionButtons());
 
     // 監聽 storage 事件，當設定變更時更新按鈕
     const handleStorageChange = () => {
-      setButtons(getQuickActionButtons());
+      setButtons(getInteractionButtons());
     };
 
     window.addEventListener('storage', handleStorageChange);

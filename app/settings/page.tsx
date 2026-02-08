@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap, RotateCcw, Save, ChevronDown, ChevronUp, Database, Trash2, Cloud, HardDrive, AlertTriangle, Bug } from 'lucide-react';
-import { getQuickActionButtons, saveQuickActionButtons, resetQuickActionButtons, type QuickActionButton } from '@/lib/quick-actions-store';
+import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Bug, Edit, ChevronDown, ChevronUp } from 'lucide-react';
+import { getInteractionButtons, resetInteractionButtons, isInteractionSetupComplete, type InteractionButton } from '@/lib/interaction-buttons-store';
+import { InteractionSetupWizard } from '@/components/settings/InteractionSetupWizard';
 import { toast } from 'sonner';
 import { PWAInstallButton } from '@/components/PWAInstallButton';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -11,59 +12,35 @@ import { supabase } from '@/lib/supabase/client';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [buttons, setButtons] = useState<QuickActionButton[]>([]);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [buttons, setButtons] = useState<InteractionButton[]>([]);
+  const [isSetupComplete, setIsSetupComplete] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const [isDatabaseExpanded, setIsDatabaseExpanded] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
-    setButtons(getQuickActionButtons());
+    setButtons(getInteractionButtons());
+    setIsSetupComplete(isInteractionSetupComplete());
   }, []);
 
-  const handleLabelChange = (id: string, label: string) => {
-    setButtons(prev => prev.map(btn => 
-      btn.id === id ? { ...btn, label } : btn
-    ));
-    setHasChanges(true);
-  };
-
-  const handleEmojiChange = (id: string, emoji: string) => {
-    setButtons(prev => prev.map(btn => 
-      btn.id === id ? { ...btn, emoji } : btn
-    ));
-    setHasChanges(true);
-  };
-
-  const handleSave = async () => {
-    try {
-      // 保存到本地和雲端
-      await saveQuickActionButtons(buttons, user?.id);
-      setHasChanges(false);
-      
-      if (user) {
-        toast.success('✅ 設定已儲存並同步到雲端');
-      } else {
-        toast.success('✅ 設定已儲存到本地');
-      }
-      
-      // 觸發 storage 事件讓其他頁面更新
-      window.dispatchEvent(new Event('storage'));
-    } catch (error) {
-      toast.error('儲存失敗，請稍後再試');
-    }
-  };
-
-  const handleReset = () => {
-    if (confirm('確定要重置為預設設定嗎？')) {
-      resetQuickActionButtons();
-      setButtons(getQuickActionButtons());
-      setHasChanges(false);
-      toast.success('🔄 已重置為預設設定');
+  const handleResetInteraction = () => {
+    if (confirm('確定要重置互動設定嗎？重置後需要重新設定。')) {
+      resetInteractionButtons();
+      setButtons(getInteractionButtons());
+      setIsSetupComplete(false);
+      toast.success('🔄 已重置互動設定');
       
       // 觸發 storage 事件
       window.dispatchEvent(new Event('storage'));
     }
+  };
+
+  const handleWizardComplete = () => {
+    setButtons(getInteractionButtons());
+    setIsSetupComplete(true);
+    
+    // 觸發 storage 事件
+    window.dispatchEvent(new Event('storage'));
   };
 
   const handleClearLocalDatabase = async () => {
@@ -200,6 +177,99 @@ export default function SettingsPage() {
           <p className="text-xs text-[#6B6B6B] mt-3 text-center">
             實時調整動畫參數，找出最佳配置
           </p>
+        </div>
+
+        {/* 互動按鈕設定 */}
+        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-5 h-5 text-[#7B9FA6]" />
+              <h2 className="text-lg font-medium text-[#3A3A3A]">
+                互動記錄設定
+              </h2>
+            </div>
+            <p className="text-sm text-[#6B6B6B] mb-4">
+              記錄顧客互動，了解哪一場市集效果最好
+            </p>
+
+            {isSetupComplete ? (
+              <>
+                {/* 已設定：顯示當前配置 */}
+                <div className="bg-[#FAFAF8] rounded-xl p-4 mb-4">
+                  <div className="text-xs text-[#6B6B6B] mb-3 text-center">
+                    當前設定
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {buttons.map((button, index) => (
+                      <div
+                        key={button.id}
+                        className="bg-white rounded-xl p-3 text-center border border-[#7B9FA6]/10"
+                      >
+                        <div className="text-2xl mb-1">{button.emoji}</div>
+                        <div className="text-xs font-medium text-[#3A3A3A] truncate">
+                          {button.label}
+                        </div>
+                        <div className="text-xs text-[#6B6B6B] mt-1">
+                          {index === 0 && '有興趣'}
+                          {index === 1 && '有互動'}
+                          {index === 2 && '轉換'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowWizard(true)}
+                    className="flex-1 px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    重新設定
+                  </button>
+                  <button
+                    onClick={handleResetInteraction}
+                    className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    重置
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* 未設定：引導設定 */}
+                <div className="bg-gradient-to-br from-[#7B9FA6]/10 to-[#D4A574]/10 rounded-xl p-6 mb-4 text-center">
+                  <div className="text-4xl mb-3">📊</div>
+                  <p className="text-sm text-[#3A3A3A] mb-2">
+                    尚未設定互動記錄方式
+                  </p>
+                  <p className="text-xs text-[#6B6B6B]">
+                    設定後即可在營業時記錄顧客互動
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowWizard(true)}
+                  className="w-full px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium"
+                >
+                  開始設定
+                </button>
+              </>
+            )}
+
+            <div className="mt-4 bg-gradient-to-br from-[#E8F0F8] to-[#FFF8E7] rounded-xl p-4">
+              <h3 className="text-sm font-medium text-[#3A3A3A] mb-2">
+                💡 使用說明
+              </h3>
+              <ul className="text-xs text-[#6B6B6B] space-y-1">
+                <li>• 記錄顧客從「有興趣」到「成交」的過程</li>
+                <li>• 不需要精準，只要直覺點擊</li>
+                <li>• 數據會顯示在市集分析報表中</li>
+                <li>• 幫助你了解哪一場市集效果最好</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         {/* 資料庫管理 */}
@@ -379,135 +449,14 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
-
-        {/* 快速互動按鈕設定 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full p-6 text-left hover:bg-[#FAFAF8] transition-colors"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-5 h-5 text-[#7B9FA6]" />
-                  <h2 className="text-lg font-medium text-[#3A3A3A]">
-                    互動按鈕設定
-                  </h2>
-                </div>
-                <p className="text-sm text-[#6B6B6B]">
-                  自訂營業中的互動記錄按鈕。每個按鈕都是獨立的互動類型，會分別統計。
-                </p>
-              </div>
-              <div className="ml-4">
-                {isExpanded ? (
-                  <ChevronUp className="w-5 h-5 text-[#7B9FA6]" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-[#7B9FA6]" />
-                )}
-              </div>
-            </div>
-          </button>
-
-          {isExpanded && (
-            <div className="px-6 pb-6 border-t border-[#7B9FA6]/10">
-              <div className="space-y-4 mt-4">
-                {buttons.map((button, index) => (
-                  <div key={button.id} className="p-4 bg-[#FAFAF8] rounded-xl">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-6 h-6 rounded-full bg-[#7B9FA6] text-white text-xs flex items-center justify-center font-medium">
-                        {index + 1}
-                      </div>
-                      <span className="text-sm font-medium text-[#3A3A3A]">
-                        按鈕 {index + 1}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs text-[#6B6B6B] mb-1">
-                          圖示 Emoji
-                        </label>
-                        <input
-                          type="text"
-                          value={button.emoji}
-                          onChange={(e) => handleEmojiChange(button.id, e.target.value)}
-                          placeholder="💬"
-                          maxLength={2}
-                          className="w-full px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-center text-2xl"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs text-[#6B6B6B] mb-1">
-                          按鈕文字
-                        </label>
-                        <input
-                          type="text"
-                          value={button.label}
-                          onChange={(e) => handleLabelChange(button.id, e.target.value)}
-                          placeholder="詢問"
-                          maxLength={4}
-                          className="w-full px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 p-4 bg-gradient-to-br from-[#7B9FA6]/5 to-[#D4A574]/5 rounded-xl">
-                <div className="text-xs text-[#6B6B6B] mb-3 text-center">
-                  預覽效果
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {buttons.map((button) => (
-                    <div
-                      key={button.id}
-                      className="p-3 bg-white rounded-xl shadow-sm"
-                    >
-                      <div className="text-2xl text-center mb-1">{button.emoji}</div>
-                      <div className="text-xs text-center text-[#3A3A3A] font-medium truncate">
-                        {button.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={handleReset}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium flex items-center justify-center gap-2"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  重置
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={!hasChanges}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  儲存設定
-                </button>
-              </div>
-              <div className="mt-6 bg-gradient-to-br from-[#E8F0F8] to-[#FFF8E7] rounded-[1.5rem] p-6">
-                <h3 className="text-sm font-medium text-[#3A3A3A] mb-2">
-                  💡 使用說明
-                </h3>
-                <ul className="text-xs text-[#6B6B6B] space-y-1">
-                  <li>• 可自訂三個互動按鈕的圖示和文字</li>
-                  <li>• 每個按鈕都是獨立的互動類型，會分別統計</li>
-                  <li>• 適合記錄顧客行為（如：詢問、試吃、拍照等）</li>
-                  <li>• 互動數據會顯示在市集分析報表中</li>
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-
-
       </div>
+
+      {/* 互動設定精靈 */}
+      <InteractionSetupWizard
+        isOpen={showWizard}
+        onClose={() => setShowWizard(false)}
+        onComplete={handleWizardComplete}
+      />
     </div>
   );
 }

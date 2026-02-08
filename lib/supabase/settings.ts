@@ -6,10 +6,12 @@
 
 import { supabase } from './client';
 import type { QuickActionButton } from '@/lib/quick-actions-store';
+import type { InteractionButton } from '@/lib/interaction-buttons-store';
 
 export interface UserSettings {
   user_id: string;
-  quick_action_buttons: QuickActionButton[];
+  quick_action_buttons?: QuickActionButton[];
+  interaction_buttons?: InteractionButton[];
   theme?: 'light' | 'dark' | 'auto';
   language?: string;
   created_at?: string;
@@ -95,6 +97,31 @@ export async function getQuickActionButtons(userId: string): Promise<QuickAction
 }
 
 /**
+ * 保存互動按鈕設定（新版）
+ */
+export async function saveInteractionButtons(
+  userId: string,
+  buttons: InteractionButton[]
+): Promise<void> {
+  return saveUserSettings(userId, {
+    interaction_buttons: buttons,
+  });
+}
+
+/**
+ * 獲取互動按鈕設定（新版）
+ */
+export async function getInteractionButtons(userId: string): Promise<InteractionButton[] | null> {
+  try {
+    const settings = await getUserSettings(userId);
+    return settings?.interaction_buttons || null;
+  } catch (error) {
+    console.error('獲取互動按鈕設定失敗:', error);
+    return null;
+  }
+}
+
+/**
  * 初始化用戶設定（首次登入時調用）
  */
 export async function initializeUserSettings(userId: string): Promise<void> {
@@ -105,10 +132,28 @@ export async function initializeUserSettings(userId: string): Promise<void> {
     if (!existing) {
       // 創建預設設定
       await saveUserSettings(userId, {
-        quick_action_buttons: [
-          { id: 'button_1', label: '詢問', emoji: '💬' },
-          { id: 'button_2', label: '試吃', emoji: '🍰' },
-          { id: 'button_3', label: '拍照', emoji: '📸' },
+        interaction_buttons: [
+          { 
+            id: 'interest', 
+            role: 'interest',
+            label: '有興趣', 
+            emoji: '👋',
+            description: '顧客停下來看、拿起、試試看'
+          },
+          { 
+            id: 'engage', 
+            role: 'engage',
+            label: '詢問', 
+            emoji: '💬',
+            description: '顧客開始跟你說話、問問題'
+          },
+          { 
+            id: 'convert', 
+            role: 'convert',
+            label: '成交', 
+            emoji: '💰',
+            description: '顧客完成你想要的行為'
+          },
         ],
         theme: 'auto',
         language: 'zh-TW',
