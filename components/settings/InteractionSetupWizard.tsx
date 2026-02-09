@@ -45,8 +45,6 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
         </h2>
         <p className="text-[#6B6B6B] text-base leading-relaxed max-w-md mx-auto">
           讓你知道哪一場市集效果最好
-          <br />
-          不需要精準，只要直覺點擊
         </p>
       </div>
 
@@ -63,7 +61,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
   const renderSelectType = () => (
     <div className="py-6">
       <h2 className="text-xl font-medium text-[#3A3A3A] mb-6 text-center">
-        你主要賣的是什麼？
+        你 ﹝主要﹞ 產品是什麼？
       </h2>
 
       <div className="grid grid-cols-1 gap-3">
@@ -92,7 +90,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
         我們幫你準備了一組互動方式
       </h2>
       <p className="text-sm text-[#6B6B6B] mb-6 text-center">
-        記錄顧客從「有興趣」到「成交」的過程
+        記錄顧客從「有興趣」到獲得初步「成果」的過程
       </p>
 
       {/* 預覽三個按鈕 */}
@@ -188,13 +186,18 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
             <h3 className="text-lg font-medium text-[#3A3A3A]">第三個：轉換</h3>
           </div>
           <p className="text-[#3A3A3A] mb-2 leading-relaxed">
-            顧客完成你想要的行為
+            顧客完成你想要的下一步
             <br />
-            不一定是買，但對你有價值
+            代表關係往前走了一格
           </p>
-          <p className="text-xs text-[#6B6B6B]">
-            例如：購買 / 加 IG / 加 Line / 訂單
+          <p className="text-xs text-[#6B6B6B] mb-3">
+            例如：加 IG / 加 Line / 留下聯絡 / 加入追蹤
           </p>
+          <div className="bg-white/80 rounded-lg p-3 border border-[#D4A574]/20">
+            <p className="text-xs text-[#D4A574] font-medium">
+              ⚠️ 這裡記錄的是「有價值的互動結果」，實際銷售金額請使用「商品交易」功能
+            </p>
+          </div>
         </div>
       </div>
 

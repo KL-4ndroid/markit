@@ -136,8 +136,8 @@ export async function initializeUserSettings(userId: string): Promise<void> {
           { 
             id: 'interest', 
             role: 'interest',
-            label: '有興趣', 
-            emoji: '👋',
+            label: '看看', 
+            emoji: '👀',
             description: '顧客停下來看、拿起、試試看'
           },
           { 
@@ -150,9 +150,9 @@ export async function initializeUserSettings(userId: string): Promise<void> {
           { 
             id: 'convert', 
             role: 'convert',
-            label: '成交', 
-            emoji: '💰',
-            description: '顧客完成你想要的行為'
+            label: '後續聯絡', 
+            emoji: '📞',
+            description: '顧客完成你想要的行為（建立未來聯繫）'
           },
         ],
         theme: 'auto',

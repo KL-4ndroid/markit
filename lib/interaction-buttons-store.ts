@@ -21,6 +21,11 @@ export type BoothType = 'food' | 'accessory' | 'art' | 'clothing' | 'other';
 
 /**
  * 預設情境配置
+ * 
+ * 重要原則：
+ * - 「轉換」記錄的是「行為轉換」（關係往前走），不是「金錢轉換」（實際購買）
+ * - 轉換必須是「非金錢、但可累積價值」的行為詞
+ * - 實際銷售金額請使用「商品交易」功能
  */
 export const DEFAULT_SCENARIOS: Record<BoothType, InteractionButton[]> = {
   food: [
@@ -41,9 +46,9 @@ export const DEFAULT_SCENARIOS: Record<BoothType, InteractionButton[]> = {
     { 
       id: 'convert', 
       role: 'convert',
-      label: '購買', 
-      emoji: '💰',
-      description: '顧客完成你想要的行為'
+      label: '加入追蹤', 
+      emoji: '➕',
+      description: '顧客完成你想要的行為（建立未來聯繫）'
     },
   ],
   accessory: [
@@ -64,9 +69,9 @@ export const DEFAULT_SCENARIOS: Record<BoothType, InteractionButton[]> = {
     { 
       id: 'convert', 
       role: 'convert',
-      label: '購買', 
-      emoji: '💰',
-      description: '顧客完成你想要的行為'
+      label: '加 IG', 
+      emoji: '📱',
+      description: '顧客完成你想要的行為（建立未來聯繫）'
     },
   ],
   art: [
@@ -80,16 +85,16 @@ export const DEFAULT_SCENARIOS: Record<BoothType, InteractionButton[]> = {
     { 
       id: 'engage', 
       role: 'engage',
-      label: '詢問', 
+      label: '聊天', 
       emoji: '💬',
       description: '顧客開始跟你說話、問問題'
     },
     { 
       id: 'convert', 
       role: 'convert',
-      label: '訂單', 
-      emoji: '📝',
-      description: '顧客完成你想要的行為'
+      label: '加 Line', 
+      emoji: '💚',
+      description: '顧客完成你想要的行為（建立未來聯繫）'
     },
   ],
   clothing: [
@@ -110,17 +115,17 @@ export const DEFAULT_SCENARIOS: Record<BoothType, InteractionButton[]> = {
     { 
       id: 'convert', 
       role: 'convert',
-      label: '購買', 
-      emoji: '💰',
-      description: '顧客完成你想要的行為'
+      label: '留下聯絡', 
+      emoji: '📝',
+      description: '顧客完成你想要的行為（建立未來聯繫）'
     },
   ],
   other: [
     { 
       id: 'interest', 
       role: 'interest',
-      label: '有興趣', 
-      emoji: '👋',
+      label: '看看', 
+      emoji: '👀',
       description: '顧客停下來看、拿起、試試看'
     },
     { 
@@ -133,9 +138,9 @@ export const DEFAULT_SCENARIOS: Record<BoothType, InteractionButton[]> = {
     { 
       id: 'convert', 
       role: 'convert',
-      label: '成交', 
-      emoji: '💰',
-      description: '顧客完成你想要的行為'
+      label: '後續聯絡', 
+      emoji: '📞',
+      description: '顧客完成你想要的行為（建立未來聯繫）'
     },
   ],
 };
