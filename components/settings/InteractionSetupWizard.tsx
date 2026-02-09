@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
 import { X, Check } from 'lucide-react';
 import { 
   DEFAULT_SCENARIOS, 
@@ -31,8 +32,6 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
   const [selectedType, setSelectedType] = useState<BoothType | null>(null);
   const [buttons, setButtons] = useState<InteractionButton[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-
-  if (!isOpen) return null;
 
   // Step 0: 開場
   const renderIntro = () => (
@@ -300,42 +299,72 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-[2rem] w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-[#7B9FA6]/10 px-6 py-4 flex items-center justify-between rounded-t-[2rem]">
-          <div className="flex items-center gap-2">
-            {step !== 'intro' && (
-              <button
-                onClick={() => {
-                  if (step === 'select-type') setStep('intro');
-                  else if (step === 'preview') setStep('select-type');
-                  else if (step === 'understand') setStep('preview');
-                  else if (step === 'customize') setStep('understand');
-                }}
-                className="text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
-              >
-                ← 上一步
-              </button>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        {/* 背景遮罩 */}
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/50" />
+        </Transition.Child>
 
-        {/* Content */}
-        <div className="px-6 pb-6">
-          {step === 'intro' && renderIntro()}
-          {step === 'select-type' && renderSelectType()}
-          {step === 'preview' && renderPreview()}
-          {step === 'understand' && renderUnderstand()}
-          {step === 'customize' && renderCustomize()}
+        {/* 對話框容器 */}
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-[2rem] bg-white shadow-xl transition-all">
+                {/* Header */}
+                <div className="sticky top-0 bg-white border-b border-[#7B9FA6]/10 px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {step !== 'intro' && (
+                      <button
+                        onClick={() => {
+                          if (step === 'select-type') setStep('intro');
+                          else if (step === 'preview') setStep('select-type');
+                          else if (step === 'understand') setStep('preview');
+                          else if (step === 'customize') setStep('understand');
+                        }}
+                        className="text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                      >
+                        ← 上一步
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={onClose}
+                    className="text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="px-6 pb-6 max-h-[calc(90vh-5rem)] overflow-y-auto">
+                  {step === 'intro' && renderIntro()}
+                  {step === 'select-type' && renderSelectType()}
+                  {step === 'preview' && renderPreview()}
+                  {step === 'understand' && renderUnderstand()}
+                  {step === 'customize' && renderCustomize()}
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
         </div>
-      </div>
-    </div>
+      </Dialog>
+    </Transition>
   );
 }

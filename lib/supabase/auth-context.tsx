@@ -10,6 +10,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './client';
+import { initializeUserSettings } from './settings';
+import { pullQuickActionButtonsFromCloud } from '@/lib/quick-actions-store';
 
 interface AuthContextType {
   user: User | null;
@@ -77,10 +79,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 使用 setTimeout 延遲執行，避免在初始化時立即執行
       setTimeout(async () => {
         try {
-          // 動態導入避免循環依賴
-          const { pullQuickActionButtonsFromCloud } = await import('@/lib/quick-actions-store');
-          const { initializeUserSettings } = await import('./settings');
-          
           // 嘗試拉取設定
           const buttons = await pullQuickActionButtonsFromCloud(userId);
           

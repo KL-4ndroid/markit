@@ -1,9 +1,9 @@
 // Service Worker for Market Pulse PWA
-// Version: 1.0.2
+// Version: 1.0.3
 // 快取策略：嚴格區分靜態資源與 API 請求
-// 更新日期：2026-02-08
+// 更新日期：2026-02-10
 
-const CACHE_VERSION = '1.0.2';
+const CACHE_VERSION = '1.0.3';
 const CACHE_NAME = `market-pulse-v${CACHE_VERSION}`;
 const RUNTIME_CACHE = `market-pulse-runtime-v${CACHE_VERSION}`;
 
