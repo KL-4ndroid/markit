@@ -19,7 +19,7 @@ interface InteractionSetupWizardProps {
   onComplete: () => void;
 }
 
-type Step = 'intro' | 'select-type' | 'preview' | 'understand' | 'customize';
+type Step = 'intro' | 'select-type' | 'preview' | 'customize-1' | 'customize-2' | 'customize-3';
 
 /**
  * 互動設定精靈
@@ -120,7 +120,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
           {isSaving ? '儲存中...' : '✅ 就用這組'}
         </button>
         <button
-          onClick={() => setStep('understand')}
+          onClick={() => setStep('customize-1')}
           className="flex-1 bg-white text-[#3A3A3A] py-4 rounded-2xl border-2 border-[#7B9FA6]/20 hover:bg-[#FAFAF8] transition-colors font-medium"
         >
           ✏️ 我想調整
@@ -129,150 +129,218 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
     </div>
   );
 
-  // Step 3: 理解三個按鈕的意義
-  const renderUnderstand = () => (
+  // Step 3: 調整第一個按鈕（有興趣）
+  const renderCustomize1 = () => (
     <div className="py-6">
-      <h2 className="text-xl font-medium text-[#3A3A3A] mb-2 text-center">
-        在調整前，先讓你知道這三個按鈕的意思
-      </h2>
-      <p className="text-sm text-[#6B6B6B] mb-6 text-center">
-        只要照這個順序設定，後面的分析才會準
-      </p>
-
-      {/* 三張卡片 */}
-      <div className="space-y-4 mb-6">
-        {/* 卡片 1: 有興趣 */}
-        <div className="bg-[#E8F3E8] rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-[#7B9FA6] text-white rounded-full flex items-center justify-center font-bold text-sm">
-              1
-            </div>
-            <h3 className="text-lg font-medium text-[#3A3A3A]">第一個：有興趣</h3>
-          </div>
-          <p className="text-[#3A3A3A] mb-2 leading-relaxed">
-            顧客停下來看、拿起、試試看
-            <br />
-            代表他對你的商品有興趣
-          </p>
-          <p className="text-xs text-[#6B6B6B]">
-            例如：試吃 / 拿起 / 翻看
-          </p>
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-[#7B9FA6] text-white rounded-full mb-3">
+          <span className="text-xl font-bold">1</span>
         </div>
+        <h2 className="text-xl font-medium text-[#3A3A3A] mb-2">
+          第一個：有興趣
+        </h2>
+        <p className="text-sm text-[#6B6B6B]">
+          顧客停下來看、拿起、試試看
+        </p>
+      </div>
 
-        {/* 卡片 2: 有互動 */}
-        <div className="bg-[#FFF8E7] rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-[#D4A574] text-white rounded-full flex items-center justify-center font-bold text-sm">
-              2
-            </div>
-            <h3 className="text-lg font-medium text-[#3A3A3A]">第二個：有互動</h3>
-          </div>
-          <p className="text-[#3A3A3A] mb-2 leading-relaxed">
-            顧客開始跟你說話、問問題
-            <br />
-            代表他有購買或了解的意圖
-          </p>
-          <p className="text-xs text-[#6B6B6B]">
-            例如：詢問價格 / 聊材質 / 問來源
-          </p>
-        </div>
+      {/* 說明卡片 */}
+      <div className="bg-[#E8F3E8] rounded-2xl p-5 mb-6">
+        <p className="text-[#3A3A3A] mb-2 leading-relaxed">
+          代表他對你的商品有興趣
+        </p>
+        <p className="text-xs text-[#6B6B6B]">
+          例如：試吃 / 拿起 / 翻看
+        </p>
+      </div>
 
-        {/* 卡片 3: 轉換 */}
-        <div className="bg-[#F5E6E8] rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 bg-[#D4A574] text-white rounded-full flex items-center justify-center font-bold text-sm">
-              3
-            </div>
-            <h3 className="text-lg font-medium text-[#3A3A3A]">第三個：轉換</h3>
+      {/* 調整欄位 */}
+      <div className="bg-[#FAFAF8] rounded-2xl p-5 mb-6">
+        <div className="grid grid-cols-[1fr_auto] gap-3">
+          <div>
+            <label className="block text-xs text-[#6B6B6B] mb-1">
+              顯示名稱
+            </label>
+            <input
+              type="text"
+              value={buttons[0]?.label || ''}
+              onChange={(e) => {
+                const newButtons = [...buttons];
+                newButtons[0].label = e.target.value;
+                setButtons(newButtons);
+              }}
+              maxLength={4}
+              className="w-full px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+            />
           </div>
-          <p className="text-[#3A3A3A] mb-2 leading-relaxed">
-            顧客完成你想要的下一步
-            <br />
-            代表關係往前走了一格
-          </p>
-          <p className="text-xs text-[#6B6B6B] mb-3">
-            例如：加 IG / 加 Line / 留下聯絡 / 加入追蹤
-          </p>
-          <div className="bg-white/80 rounded-lg p-3 border border-[#D4A574]/20">
-            <p className="text-xs text-[#D4A574] font-medium">
-              ⚠️ 這裡記錄的是「有價值的互動結果」，實際銷售金額請使用「商品交易」功能
-            </p>
+          <div>
+            <label className="block text-xs text-[#6B6B6B] mb-1">
+              圖示
+            </label>
+            <input
+              type="text"
+              value={buttons[0]?.emoji || ''}
+              onChange={(e) => {
+                const newButtons = [...buttons];
+                newButtons[0].emoji = e.target.value;
+                setButtons(newButtons);
+              }}
+              maxLength={2}
+              className="w-16 px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-center text-xl"
+            />
           </div>
         </div>
       </div>
 
       {/* 按鈕 */}
       <button
-        onClick={() => setStep('customize')}
+        onClick={() => setStep('customize-2')}
         className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
       >
-        我懂了，開始調整
+        下一個
       </button>
     </div>
   );
 
-  // Step 4: 自訂
-  const renderCustomize = () => (
+  // Step 4: 調整第二個按鈕（有互動）
+  const renderCustomize2 = () => (
     <div className="py-6">
-      <h2 className="text-xl font-medium text-[#3A3A3A] mb-6 text-center">
-        調整你的互動方式
-      </h2>
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-[#D4A574] text-white rounded-full mb-3">
+          <span className="text-xl font-bold">2</span>
+        </div>
+        <h2 className="text-xl font-medium text-[#3A3A3A] mb-2">
+          第二個：有互動
+        </h2>
+        <p className="text-sm text-[#6B6B6B]">
+          顧客開始跟你說話、問問題
+        </p>
+      </div>
 
-      {/* 三個固定欄位 */}
-      <div className="space-y-4 mb-6">
-        {buttons.map((button, index) => (
-          <div key={button.id} className="bg-[#FAFAF8] rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-[#7B9FA6] text-white rounded-full flex items-center justify-center font-bold text-sm">
-                {index + 1}
-              </div>
-              <div className="text-sm font-medium text-[#3A3A3A]">
-                {button.role === 'interest' && '有興趣'}
-                {button.role === 'engage' && '有互動'}
-                {button.role === 'convert' && '轉換'}
-              </div>
-            </div>
+      {/* 說明卡片 */}
+      <div className="bg-[#FFF8E7] rounded-2xl p-5 mb-6">
+        <p className="text-[#3A3A3A] mb-2 leading-relaxed">
+          代表他有購買或了解的意圖
+        </p>
+        <p className="text-xs text-[#6B6B6B]">
+          例如：詢問價格 / 聊材質 / 問來源
+        </p>
+      </div>
 
-            <div className="grid grid-cols-[1fr_auto] gap-3">
-              <div>
-                <label className="block text-xs text-[#6B6B6B] mb-1">
-                  顯示名稱
-                </label>
-                <input
-                  type="text"
-                  value={button.label}
-                  onChange={(e) => {
-                    const newButtons = [...buttons];
-                    newButtons[index].label = e.target.value;
-                    setButtons(newButtons);
-                  }}
-                  maxLength={4}
-                  className="w-full px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-[#6B6B6B] mb-1">
-                  圖示
-                </label>
-                <input
-                  type="text"
-                  value={button.emoji}
-                  onChange={(e) => {
-                    const newButtons = [...buttons];
-                    newButtons[index].emoji = e.target.value;
-                    setButtons(newButtons);
-                  }}
-                  maxLength={2}
-                  className="w-16 px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-center text-xl"
-                />
-              </div>
-            </div>
-
-            <p className="text-xs text-[#6B6B6B] mt-2">
-              {button.description}
-            </p>
+      {/* 調整欄位 */}
+      <div className="bg-[#FAFAF8] rounded-2xl p-5 mb-6">
+        <div className="grid grid-cols-[1fr_auto] gap-3">
+          <div>
+            <label className="block text-xs text-[#6B6B6B] mb-1">
+              顯示名稱
+            </label>
+            <input
+              type="text"
+              value={buttons[1]?.label || ''}
+              onChange={(e) => {
+                const newButtons = [...buttons];
+                newButtons[1].label = e.target.value;
+                setButtons(newButtons);
+              }}
+              maxLength={4}
+              className="w-full px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+            />
           </div>
-        ))}
+          <div>
+            <label className="block text-xs text-[#6B6B6B] mb-1">
+              圖示
+            </label>
+            <input
+              type="text"
+              value={buttons[1]?.emoji || ''}
+              onChange={(e) => {
+                const newButtons = [...buttons];
+                newButtons[1].emoji = e.target.value;
+                setButtons(newButtons);
+              }}
+              maxLength={2}
+              className="w-16 px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-center text-xl"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 按鈕 */}
+      <button
+        onClick={() => setStep('customize-3')}
+        className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+      >
+        下一個
+      </button>
+    </div>
+  );
+
+  // Step 5: 調整第三個按鈕（轉換）
+  const renderCustomize3 = () => (
+    <div className="py-6">
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-[#D4A574] text-white rounded-full mb-3">
+          <span className="text-xl font-bold">3</span>
+        </div>
+        <h2 className="text-xl font-medium text-[#3A3A3A] mb-2">
+          第三個：轉換
+        </h2>
+        <p className="text-sm text-[#6B6B6B]">
+          顧客完成你想要的下一步
+        </p>
+      </div>
+
+      {/* 說明卡片 */}
+      <div className="bg-[#F5E6E8] rounded-2xl p-5 mb-6">
+        <p className="text-[#3A3A3A] mb-2 leading-relaxed">
+          代表關係往前走了一格
+        </p>
+        <p className="text-xs text-[#6B6B6B] mb-3">
+          例如：加 IG / 加 Line / 留下聯絡 / 加入追蹤
+        </p>
+        <div className="bg-white/80 rounded-lg p-3 border border-[#D4A574]/20">
+          <p className="text-xs text-[#D4A574] font-medium">
+            ⚠️ 這裡記錄的是「有價值的互動結果」，實際銷售、成交使用「商品交易」功能
+          </p>
+        </div>
+      </div>
+
+      {/* 調整欄位 */}
+      <div className="bg-[#FAFAF8] rounded-2xl p-5 mb-6">
+        <div className="grid grid-cols-[1fr_auto] gap-3">
+          <div>
+            <label className="block text-xs text-[#6B6B6B] mb-1">
+              顯示名稱
+            </label>
+            <input
+              type="text"
+              value={buttons[2]?.label || ''}
+              onChange={(e) => {
+                const newButtons = [...buttons];
+                newButtons[2].label = e.target.value;
+                setButtons(newButtons);
+              }}
+              maxLength={4}
+              className="w-full px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-[#6B6B6B] mb-1">
+              圖示
+            </label>
+            <input
+              type="text"
+              value={buttons[2]?.emoji || ''}
+              onChange={(e) => {
+                const newButtons = [...buttons];
+                newButtons[2].emoji = e.target.value;
+                setButtons(newButtons);
+              }}
+              maxLength={2}
+              className="w-16 px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-center text-xl"
+            />
+          </div>
+        </div>
       </div>
 
       {/* 按鈕 */}
@@ -338,8 +406,9 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                         onClick={() => {
                           if (step === 'select-type') setStep('intro');
                           else if (step === 'preview') setStep('select-type');
-                          else if (step === 'understand') setStep('preview');
-                          else if (step === 'customize') setStep('understand');
+                          else if (step === 'customize-1') setStep('preview');
+                          else if (step === 'customize-2') setStep('customize-1');
+                          else if (step === 'customize-3') setStep('customize-2');
                         }}
                         className="text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
                       >
@@ -360,8 +429,9 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                   {step === 'intro' && renderIntro()}
                   {step === 'select-type' && renderSelectType()}
                   {step === 'preview' && renderPreview()}
-                  {step === 'understand' && renderUnderstand()}
-                  {step === 'customize' && renderCustomize()}
+                  {step === 'customize-1' && renderCustomize1()}
+                  {step === 'customize-2' && renderCustomize2()}
+                  {step === 'customize-3' && renderCustomize3()}
                 </div>
               </Dialog.Panel>
             </Transition.Child>
