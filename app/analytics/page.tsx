@@ -86,10 +86,19 @@ export default function AnalyticsPage() {
   // 篩選日期範圍內的市集
   const markets = useMemo(() => {
     if (!allMarkets) return [];
-    return allMarkets.filter(market => 
-      market.startDate >= startDate && market.startDate <= endDate &&
-      market.status !== 'cancelled' // 排除已取消的市集
-    );
+    return allMarkets.filter(market => {
+      // 排除已取消的市集
+      if (market.status === 'cancelled') return false;
+      
+      // ✅ 優先檢查 dates 陣列（多選日期）
+      if (market.dates && market.dates.length > 0) {
+        // 檢查是否有任何日期在範圍內
+        return market.dates.some(date => date >= startDate && date <= endDate);
+      }
+      
+      // ✅ 降級：使用 startDate（連續日期，向後兼容）
+      return market.startDate >= startDate && market.startDate <= endDate;
+    });
   }, [allMarkets, startDate, endDate]);
 
   // 計算市集 ROI 數據
@@ -132,10 +141,19 @@ export default function AnalyticsPage() {
         const endMinutes = endHour * 60 + endMinute;
         const dailyHours = (endMinutes - startMinutes) / 60;
         
-        // ✅ 計算市集天數並疊加時數
-        const startDate = new Date(market.startDate);
-        const endDate = new Date(market.endDate);
-        const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        // ✅ 計算市集天數
+        let days = 1;
+        
+        // 優先使用 dates 陣列（多選日期）
+        if (market.dates && market.dates.length > 0) {
+          days = market.dates.length;
+        } else {
+          // 降級：使用 startDate 和 endDate 計算天數（連續日期，向後兼容）
+          const startDate = new Date(market.startDate);
+          const endDate = new Date(market.endDate);
+          days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        }
+        
         operatingHours = dailyHours * days;
       }
       

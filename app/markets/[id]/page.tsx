@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { 
@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { useMarket, updateMarketStatus, startMarket, endMarket } from '@/lib/db/hooks';
 import { initializeDatabase, db } from '@/lib/db';
-import { formatDate, formatCurrency } from '@/lib/utils';
+import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { CartDrawer } from '@/components/sales/CartDrawer';
@@ -47,7 +47,12 @@ import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DealItem } from '@/components/markets/DealItem';
 import { DealDetailModal } from '@/components/markets/DealDetailModal';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
+import { InteractionDetailModal } from '@/components/markets/InteractionDetailModal';
+import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
+import { getInteractionButtons } from '@/lib/interaction-buttons-store';
+import { useUserRole } from '@/hooks/useUserRole';
+import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import type { MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
@@ -59,10 +64,74 @@ interface PageProps {
 export default function MarketDetailPage({ params }: PageProps) {
   const router = useRouter();
   const marketId = params.id; // UUID 字符串，不需要 parseInt
-  const market = useMarket(marketId);
+  const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
+  const { isStaff, canViewSensitiveData } = useUserRole(); // ✅ 員工權限檢查
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [supabaseMarket, setSupabaseMarket] = useState<any>(null); // Supabase 數據（員工模式使用）
+  const [isLoadingSupabase, setIsLoadingSupabase] = useState(false);
+  
+  // ✅ 員工模式：從 Supabase 獲取實時數據
+  useEffect(() => {
+    if (isStaff && marketId) {
+      setIsLoadingSupabase(true);
+      import('@/lib/supabase/markets').then(({ getAccessibleMarket }) => {
+        getAccessibleMarket(marketId)
+          .then(data => {
+            if (data) {
+              // 轉換 Supabase 數據格式為本地格式
+              const convertedMarket = {
+                id: data.id,
+                name: data.name,
+                location: data.location,
+                dates: data.dates || [],
+                startDate: data.start_date,
+                endDate: data.end_date,
+                status: data.status,
+                earlyEntryEnabled: data.early_entry_enabled,
+                earlyEntryTime: data.early_entry_time,
+                checkInTime: data.check_in_time,
+                operatingStartTime: data.operating_start_time,
+                operatingEndTime: data.operating_end_time,
+                registrationFee: parseFloat(data.registration_fee || '0'),
+                boothCost: parseFloat(data.booth_cost || '0'),
+                deposit: data.deposit ? parseFloat(data.deposit) : undefined,
+                tableRental: data.table_rental ? parseFloat(data.table_rental) : undefined,
+                chairRental: data.chair_rental ? parseFloat(data.chair_rental) : undefined,
+                umbrellaRental: data.umbrella_rental ? parseFloat(data.umbrella_rental) : undefined,
+                tableclothRental: data.tablecloth_rental ? parseFloat(data.tablecloth_rental) : undefined,
+                commissionRate: data.commission_rate ? parseFloat(data.commission_rate) : undefined,
+                tableFree: data.table_free,
+                chairFree: data.chair_free,
+                umbrellaFree: data.umbrella_free,
+                tableclothFree: data.tablecloth_free,
+                totalRevenue: parseFloat(data.total_revenue || '0'),
+                totalProfit: parseFloat(data.total_profit || '0'),
+                totalInteractions: data.total_interactions || 0,
+                totalDeals: data.total_deals || 0,
+                notes: data.notes,
+                createdAt: new Date(data.created_at).getTime(),
+                updatedAt: new Date(data.updated_at).getTime(),
+                access_type: data.access_type,
+                permissions: data.permissions,
+              };
+              setSupabaseMarket(convertedMarket);
+            }
+          })
+          .catch(error => {
+            console.error('獲取 Supabase 市集數據失敗:', error);
+          })
+          .finally(() => {
+            setIsLoadingSupabase(false);
+          });
+      });
+    }
+  }, [isStaff, marketId]);
+  
+  // ✅ 根據模式選擇數據源
+  const market = isStaff ? supabaseMarket : localMarket;
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isPending, startTransition] = useTransition(); // 用於非阻塞更新
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showCartDrawer, setShowCartDrawer] = useState(false);
@@ -72,11 +141,17 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [selectedDeal, setSelectedDeal] = useState<Event<DealClosedPayload> | null>(null);
   const [showDealDetailModal, setShowDealDetailModal] = useState(false);
   const [showDailyDealsModal, setShowDailyDealsModal] = useState(false);  // ✅ 新增：日期成交記錄彈窗
+  const [showInteractionDetailModal, setShowInteractionDetailModal] = useState(false);  // ✅ 新增：互動詳情彈窗
+  const [selectedInteractionType, setSelectedInteractionType] = useState<{ type: string; label: string; emoji: string } | null>(null);
   const [countdown, setCountdown] = useState<string>('--');
   const [isOperatingStatusCollapsed, setIsOperatingStatusCollapsed] = useState(true);  // 營業狀態折疊
-  const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(true);  // 今日時間軸折疊
+  const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(false);  // 今日時間軸折疊（預設展開）
   const [showStatusChangeConfirm, setShowStatusChangeConfirm] = useState(false);  // 狀態變更確認
   const [pendingStatus, setPendingStatus] = useState<MarketStatus | null>(null);  // 待變更的狀態
+  
+  // ✅ 防抖狀態 - 防止重複點擊
+  const [lastClickTime, setLastClickTime] = useState<number>(0);
+  const DEBOUNCE_DELAY = 300; // 300ms 防抖
   
   // ✅ 新增：交易功能區塊的展開/折疊狀態（互斥）
   const [isQuickRevenueExpanded, setIsQuickRevenueExpanded] = useState(true);  // 快速新增收入（預設展開）
@@ -215,46 +290,69 @@ export default function MarketDetailPage({ params }: PageProps) {
       if (!market) return;
 
       try {
-        // 獲取按鈕配置
-        const buttons = getQuickActionButtons();
+        // 獲取按鈕配置（使用新版 interaction-buttons-store）
+        const buttons = getInteractionButtons();
         const labelMap: Record<string, { label: string; emoji: string }> = {};
         buttons.forEach(btn => {
           labelMap[btn.id] = { label: btn.label, emoji: btn.emoji };
         });
         setButtonLabels(labelMap);
 
-        // 計算市集日期範圍的時間戳
-        const startTimestamp = new Date(market.startDate).getTime();
-        const endTimestamp = new Date(market.endDate).getTime() + 86400000; // +1 天
+        // ✅ 修復：使用 dates 陣列或降級到 startDate/endDate
+        const marketDates = market.dates && market.dates.length > 0 
+          ? market.dates 
+          : (() => {
+              // 降級：生成連續日期範圍
+              const dates: string[] = [];
+              const start = new Date(market.startDate);
+              const end = new Date(market.endDate);
+              for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                dates.push(dateStr);
+              }
+              return dates;
+            })();
 
-        // 獲取互動事件
+        // 獲取互動事件 - 只篩選在 marketDates 中的日期
         const interactions = await db.events
           .where('type')
           .equals('interaction_recorded')
-          .filter(e => 
-            e.timestamp >= startTimestamp && 
-            e.timestamp < endTimestamp &&
-            e.payload.marketId === marketId
-          )
+          .filter(e => {
+            if (e.payload.marketId !== marketId) return false;
+            
+            // 將 timestamp 轉換為日期字串
+            const eventDate = new Date(e.timestamp);
+            const dateStr = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+            
+            // 檢查是否在 marketDates 中
+            return marketDates.includes(dateStr);
+          })
           .toArray() as Event<InteractionRecordedPayload>[];
+
+        console.log('✅ 找到互動事件:', interactions.length);
 
         setInteractionEvents(interactions);
 
-          // 獲取成交事件
-          const deals = await db.events
-            .where('type')
-            .equals('deal_closed')
-            .filter(e => {
-              // ✅ 使用 dealDate 作為篩選依據，降級到 timestamp
-              const dealTimestamp = e.payload.dealDate 
-                ? new Date(e.payload.dealDate).getTime()
-                : e.timestamp;
-              
-              return dealTimestamp >= startTimestamp && 
-                    dealTimestamp < endTimestamp &&
-                    e.payload.marketId === marketId;
-            })
-            .toArray() as Event<DealClosedPayload>[];
+        // 獲取成交事件 - 只篩選在 marketDates 中的日期
+        const deals = await db.events
+          .where('type')
+          .equals('deal_closed')
+          .filter(e => {
+            if (e.payload.marketId !== marketId) return false;
+            
+            // ✅ 使用 dealDate 作為篩選依據，降級到 timestamp
+            let dealDateStr: string;
+            if (e.payload.dealDate) {
+              dealDateStr = e.payload.dealDate;
+            } else {
+              const dealTimestamp = new Date(e.timestamp);
+              dealDateStr = `${dealTimestamp.getFullYear()}-${String(dealTimestamp.getMonth() + 1).padStart(2, '0')}-${String(dealTimestamp.getDate()).padStart(2, '0')}`;
+            }
+            
+            // 檢查是否在 marketDates 中
+            return marketDates.includes(dealDateStr);
+          })
+          .toArray() as Event<DealClosedPayload>[];
 
         setDealEvents(deals);
       } catch (error) {
@@ -265,6 +363,17 @@ export default function MarketDetailPage({ params }: PageProps) {
     if (market && isInitialized) {
       loadInteractionData();
     }
+
+    // 監聽互動記錄事件，重新載入數據
+    const handleInteractionRecorded = () => {
+      loadInteractionData();
+    };
+
+    window.addEventListener('interaction-recorded', handleInteractionRecorded);
+
+    return () => {
+      window.removeEventListener('interaction-recorded', handleInteractionRecorded);
+    };
   }, [market, marketId, isInitialized]);
 
   // 計算互動偏好數據
@@ -417,8 +526,8 @@ export default function MarketDetailPage({ params }: PageProps) {
     return actions[currentStatus];
   };
 
-  // 處理狀態切換
-  const handleStatusChange = async () => {
+  // 處理狀態切換 - 優化版本
+  const handleStatusChange = useCallback(async () => {
     if (!market) return;
 
     const nextStatus = getNextStatus(market.status);
@@ -427,30 +536,29 @@ export default function MarketDetailPage({ params }: PageProps) {
     setIsUpdating(true);
 
     try {
-      // 特殊處理：開始營業和結束營業
+      // 使用 Promise 並行處理，減少等待時間
+      const updatePromise = (async () => {
       if (market.status === 'paid' && nextStatus === 'ongoing') {
         await startMarket(marketId);
-        toast.success('市集已開始營業！', {
-          description: '祝您生意興隆 🎪',
-        });
+          return { message: '市集已開始營業！', description: '祝您生意興隆 🎪' };
       } else if (market.status === 'ongoing' && nextStatus === 'completed') {
         await endMarket(marketId);
-        toast.success('市集已結束營業！', {
-          description: '辛苦了，期待下次再見 ✨',
-        });
+          return { message: '市集已結束營業！', description: '辛苦了，期待下次再見 ✨' };
       } else {
         await updateMarketStatus(marketId, nextStatus);
-        toast.success(`狀態已更新為「${getStatusText(nextStatus)}」`, {
-          description: '市集資訊已同步更新',
-        });
+          return { message: `狀態已更新為「${getStatusText(nextStatus)}」`, description: '市集資訊已同步更新' };
       }
+      })();
+
+      const result = await updatePromise;
+      toast.success(result.message, { description: result.description });
     } catch (error) {
       console.error('更新狀態失敗：', error);
       toast.error('更新狀態失敗，請稍後再試');
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [market, marketId]);
 
   // ✅ 自動營業狀態（響應式）- 三種狀態：'not-started' | 'operating' | 'ended'
   const [operatingPhase, setOperatingPhase] = useState<'not-started' | 'operating' | 'ended'>('not-started');
@@ -466,20 +574,30 @@ export default function MarketDetailPage({ params }: PageProps) {
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
-    // 檢查是否在市集日期範圍內
-    if (market.startDate > today || market.endDate < today) {
+    // ✅ 修復：檢查今天是否在市集日期中（支援多日期）
+    let isMarketDay = false;
+    if (market.dates && market.dates.length > 0) {
+      isMarketDay = market.dates.includes(today);
+    } else {
+      isMarketDay = today >= market.startDate && today <= market.endDate;
+    }
+    
+    if (!isMarketDay) {
       setOperatingPhase('not-started');
       return;
     }
     
     // 檢查狀態是否為「已繳費」或「如期舉行」
-    if (market.status !== 'paid' && market.status !== 'ongoing') {
+    const isStatusReady = market.status === 'paid' || market.status === 'ongoing';
+    
+    if (!isStatusReady) {
       setOperatingPhase('not-started');
       return;
     }
     
-    // 計算營業開始時間（報到時間）
-    const startTime = market.checkInTime || market.operatingStartTime;
+    // ✅ 修復：使用營業開始時間（不是報到時間）
+    const startTime = market.operatingStartTime;
+    
     if (!startTime) {
       setOperatingPhase('not-started');
       return;
@@ -487,6 +605,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     
     // 計算營業結束時間（營業結束 + 30 分鐘緩衝）
     const endTime = market.operatingEndTime;
+    
     if (!endTime) {
       setOperatingPhase('not-started');
       return;
@@ -513,13 +632,17 @@ export default function MarketDetailPage({ params }: PageProps) {
     const endTimestamp = endDateTime.getTime();
     
     // 判斷當前時間處於哪個階段
+    let newPhase: 'not-started' | 'operating' | 'ended';
+    
     if (currentTimestamp < startTimestamp) {
-      setOperatingPhase('not-started'); // 未開始
+      newPhase = 'not-started';
     } else if (currentTimestamp >= startTimestamp && currentTimestamp < endTimestamp) {
-      setOperatingPhase('operating'); // 營業中
+      newPhase = 'operating';
     } else {
-      setOperatingPhase('ended'); // 已結束
+      newPhase = 'ended';
     }
+    
+    setOperatingPhase(newPhase);
   }, [market]);
   
   // ✅ 向後兼容：保留 isOperating 變數
@@ -539,9 +662,16 @@ export default function MarketDetailPage({ params }: PageProps) {
     return () => clearInterval(interval);
   }, [checkOperatingStatus]);
 
-  // 處理報名狀態變更（帶二次確認）
-  const handleStatusChangeRequest = async (newStatus: MarketStatus) => {
-    if (!market) return;
+  // 處理報名狀態變更（帶二次確認）- 優化版本 + 防抖
+  const handleStatusChangeRequest = useCallback(async (newStatus: MarketStatus) => {
+    if (!market || isUpdating) return;
+
+    // ✅ 防抖檢查 - 防止快速重複點擊
+    const now = Date.now();
+    if (now - lastClickTime < DEBOUNCE_DELAY) {
+      return;
+    }
+    setLastClickTime(now);
 
     // 檢查是否會影響營業狀態
     const willAffectOperating = checkIfStatusAffectsOperating(market.status, newStatus);
@@ -553,9 +683,23 @@ export default function MarketDetailPage({ params }: PageProps) {
       return;
     }
 
-    // 直接變更狀態
-    await executeStatusChange(newStatus);
-  };
+    // 使用 startTransition 進行非阻塞更新
+    startTransition(() => {
+      setIsUpdating(true);
+    });
+
+    try {
+      await updateMarketStatus(marketId, newStatus);
+      toast.success(`狀態已更新為「${getStatusText(newStatus)}」`, {
+        description: '市集資訊已同步更新',
+      });
+    } catch (error) {
+      console.error('更新狀態失敗：', error);
+      toast.error('更新狀態失敗，請稍後再試');
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [market, marketId, isOperating, isUpdating, lastClickTime]);
 
   // 檢查狀態變更是否會影響營業狀態
   const checkIfStatusAffectsOperating = (currentStatus: MarketStatus, newStatus: MarketStatus): boolean => {
@@ -567,52 +711,59 @@ export default function MarketDetailPage({ params }: PageProps) {
     return currentIsOperating !== newIsOperating;
   };
 
-  // 執行狀態變更
-  const executeStatusChange = async (newStatus: MarketStatus) => {
+  // 執行狀態變更 - 優化版本
+  const executeStatusChange = useCallback(async (newStatus: MarketStatus) => {
     if (!market) return;
 
     setIsUpdating(true);
 
     try {
+      // 先關閉對話框，提升用戶體驗
+      setShowStatusChangeConfirm(false);
+      setPendingStatus(null);
+      
       await updateMarketStatus(marketId, newStatus);
       toast.success(`狀態已更新為「${getStatusText(newStatus)}」`, {
         description: '市集資訊已同步更新',
       });
-      setShowStatusChangeConfirm(false);
-      setPendingStatus(null);
     } catch (error) {
       console.error('更新狀態失敗：', error);
       toast.error('更新狀態失敗，請稍後再試');
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [market, marketId]);
 
-  // 處理取消市集
-  const handleCancelMarket = async () => {
+  // 處理取消市集 - 優化版本
+  const handleCancelMarket = useCallback(async () => {
     if (!market) return;
 
     setIsUpdating(true);
+    
+    // 先關閉對話框，提升用戶體驗
+    setShowCancelConfirm(false);
 
     try {
       await updateMarketStatus(marketId, 'cancelled', '用戶主動取消');
       toast.success('市集已取消', {
         description: '狀態已更新為「已取消」',
       });
-      setShowCancelConfirm(false);
     } catch (error) {
       console.error('取消市集失敗：', error);
       toast.error('取消市集失敗，請稍後再試');
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [market, marketId]);
 
-  // 處理刪除市集（軟刪除）
-  const handleDeleteMarket = async () => {
+  // 處理刪除市集（軟刪除）- 優化版本
+  const handleDeleteMarket = useCallback(async () => {
     if (!market) return;
 
     setIsUpdating(true);
+    
+    // 先關閉對話框，提升用戶體驗
+    setShowDeleteConfirm(false);
 
     try {
       // ✅ 使用軟刪除功能
@@ -622,19 +773,18 @@ export default function MarketDetailPage({ params }: PageProps) {
       toast.success('市集已刪除', {
         description: '記錄已從列表中移除',
       });
-      setShowDeleteConfirm(false);
       
       // 返回列表頁
       setTimeout(() => {
         router.push('/markets');
-      }, 1000);
+      }, 500); // 減少延遲時間
     } catch (error) {
       console.error('刪除市集失敗：', error);
       toast.error('刪除市集失敗，請稍後再試');
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [market, marketId, router]);
 
   // 處理打開編輯表單
   const handleOpenEditForm = () => {
@@ -697,6 +847,18 @@ export default function MarketDetailPage({ params }: PageProps) {
     setSelectedDeal(null);
   };
 
+  // ✅ 新增：處理點擊互動次數方塊
+  const handleInteractionClick = (buttonId: string, label: string, emoji: string) => {
+    setSelectedInteractionType({ type: buttonId, label, emoji });
+    setShowInteractionDetailModal(true);
+  };
+
+  // ✅ 新增：處理關閉互動詳情彈窗
+  const handleCloseInteractionDetail = () => {
+    setShowInteractionDetailModal(false);
+    setSelectedInteractionType(null);
+  };
+
   // 處理編輯成交記錄（暫時只顯示提示）
   const handleEditDeal = (deal: Event<DealClosedPayload>) => {
     toast.info('編輯功能即將推出', {
@@ -704,8 +866,8 @@ export default function MarketDetailPage({ params }: PageProps) {
     });
   };
 
-  // 處理刪除成交記錄
-  const handleDeleteDeal = async (deal: Event<DealClosedPayload>) => {
+  // 處理刪除成交記錄 - 優化版本
+  const handleDeleteDeal = useCallback(async (deal: Event<DealClosedPayload>) => {
     try {
       const payload = deal.payload;
       const payloadWithMarketId = payload as DealClosedPayload & { market_id?: string };
@@ -784,14 +946,8 @@ export default function MarketDetailPage({ params }: PageProps) {
         }
       });
 
-      // 重新載入成交數據
-      const updatedDeals = await db.events
-        .where('type')
-        .equals('deal_closed')
-        .filter(e => e.payload.marketId === marketId)
-        .toArray();
-
-      setDealEvents(updatedDeals as Event<DealClosedPayload>[]);
+      // 樂觀更新 UI - 立即從列表中移除
+      setDealEvents(prev => prev.filter(d => d.id !== deal.id));
 
       toast.success('成交記錄已刪除', {
         description: `已扣除 ${formatCurrency(totalAmount)}`,
@@ -804,11 +960,24 @@ export default function MarketDetailPage({ params }: PageProps) {
     } catch (error) {
       console.error('刪除成交記錄失敗:', error);
       toast.error('刪除失敗，請稍後再試');
+      
+      // 錯誤時重新載入數據
+      const updatedDeals = await db.events
+        .where('type')
+        .equals('deal_closed')
+        .filter(e => e.payload.marketId === marketId)
+        .toArray();
+      setDealEvents(updatedDeals as Event<DealClosedPayload>[]);
     }
-  };
+  }, [marketId, selectedDeal]);
+
+  // ✅ 防止 hydration 錯誤：在客戶端掛載前不渲染任何內容
+  if (!isMounted) {
+    return null;
+  }
 
   // 載入中
-  if (!isInitialized) {
+  if (!isInitialized || (isStaff && isLoadingSupabase)) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
         <div className="text-center">
@@ -865,6 +1034,12 @@ export default function MarketDetailPage({ params }: PageProps) {
   const nextActionText = getNextActionText(market.status);
   const canChangeStatus = nextStatus !== null;
 
+  // ✅ 員工模式：使用簡化的專屬視圖
+  if (isStaff) {
+    return <StaffMarketDetailView market={market} />;
+  }
+
+  // ✅ 老闆模式：使用完整功能視圖
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-20">
       {/* Header */}
@@ -880,25 +1055,37 @@ export default function MarketDetailPage({ params }: PageProps) {
               </button>
               <div className="flex-1">
                 <h1 className="text-white text-xl font-medium">{market.name}</h1>
-                <p className="text-white/80 text-xs flex items-center gap-1 mt-1">
-                  <Calendar className="w-3 h-3" />
-                  {market.startDate === market.endDate 
-                    ? formatDate(market.startDate)
-                    : `${formatDate(market.startDate)}-${formatDate(market.endDate).split('/')[1]}`
-                  }
-                  <span className="mx-1">•</span>
-                  <MapPin className="w-3 h-3" />
-                  {market.location}
-                </p>
+                <div className="text-white/80 text-xs mt-1">
+                  {/* 日期 - 完整顯示，支援換行 */}
+                  <div className="flex items-start gap-1 mb-1">
+                    <Calendar className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                    <span className="flex-1">
+                      {market.dates && market.dates.length > 0 
+                        ? formatDateRanges(market.dates)
+                        : market.startDate === market.endDate 
+                          ? formatDate(market.startDate)
+                          : `${formatDate(market.startDate)} - ${formatDate(market.endDate)}`
+                      }
+                    </span>
+                  </div>
+                  {/* 地點 */}
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                    <span>{market.location}</span>
+                  </div>
+                </div>
               </div>
             </div>
-              <button
-              onClick={handleOpenEditForm}
-              className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1 text-white backdrop-blur-sm"
-            >
-              <Edit className="w-4 h-4" />
-              編輯
-            </button>
+              {/* ✅ 編輯按鈕：員工模式下隱藏 */}
+              {!isStaff && (
+                <button
+                  onClick={handleOpenEditForm}
+                  className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1 text-white backdrop-blur-sm"
+                >
+                  <Edit className="w-4 h-4" />
+                  編輯
+                </button>
+              )}
           </div>
         </div>
       </div>
@@ -964,6 +1151,9 @@ export default function MarketDetailPage({ params }: PageProps) {
             />
           </>
         )}
+
+        {/* ✅ 當日流水帳 - 營業中或已結束時顯示（僅員工模式） */}
+        {/* 老闆模式不顯示流水帳 */}
 
         {/* 3. 營業狀態卡片 - 自動判斷（折疊）- 營業中時隱藏 */}
         {operatingPhase !== 'operating' && (
@@ -1035,7 +1225,22 @@ export default function MarketDetailPage({ params }: PageProps) {
                   const now = new Date();
                   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
                   const isStatusReady = market.status === 'paid' || market.status === 'ongoing';
-                  const isWithinMarketPeriod = today >= market.startDate && today <= market.endDate;
+                  
+                  // ✅ 修復：檢查今天是否在市集日期中（支援多日期）
+                  let isWithinMarketPeriod = false;
+                  let dateRangeText = '';
+                  
+                  if (market.dates && market.dates.length > 0) {
+                    // 使用 dates 陣列檢查
+                    isWithinMarketPeriod = market.dates.includes(today);
+                    dateRangeText = formatDateRanges(market.dates);
+                  } else {
+                    // 降級：使用 startDate/endDate 範圍檢查（向後兼容）
+                    isWithinMarketPeriod = today >= market.startDate && today <= market.endDate;
+                    dateRangeText = market.startDate === market.endDate 
+                      ? formatDate(market.startDate)
+                      : `${formatDate(market.startDate)} ~ ${formatDate(market.endDate)}`;
+                  }
                   
                   if (!isStatusReady) {
                     return (
@@ -1053,7 +1258,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                       <div className="bg-[#FFF8E7] border border-[#FFF8E7] rounded-xl p-3 mt-3">
                         <p className="text-sm text-[#3A3A3A] whitespace-pre-line flex items-center gap-2">
                           <AlertCircle className="w-4 h-4 text-[#D4A574] flex-shrink-0" />
-                          <span>僅限市集期間自動營業（{market.startDate} ~ {market.endDate}）</span>
+                          <span>僅限市集日期自動營業（{dateRangeText}）</span>
                         </p>
                       </div>
                     );
@@ -1278,10 +1483,16 @@ export default function MarketDetailPage({ params }: PageProps) {
             {market.startDate !== market.endDate && (
               <div className="text-xs text-[#6B6B6B]">
                 {(() => {
-                  const start = new Date(market.startDate);
-                  const end = new Date(market.endDate);
-                  const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-                  return `共 ${days} 天`;
+                  // ✅ 修復：使用 dates 陣列的實際天數，而非計算 startDate 到 endDate 的天數
+                  const actualDays = market.dates && market.dates.length > 0 
+                    ? market.dates.length 
+                    : (() => {
+                        // 降級：如果沒有 dates 陣列，使用舊邏輯（連續日期）
+                        const start = new Date(market.startDate);
+                        const end = new Date(market.endDate);
+                        return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                      })();
+                  return `共 ${actualDays} 天`;
                 })()}
               </div>
             )}
@@ -1331,16 +1542,55 @@ export default function MarketDetailPage({ params }: PageProps) {
               <div className="text-sm text-[#6B6B6B] mt-1">總支出</div>
             </div>
           </div>
+
+          {/* 互動次數統計 */}
+          {interactionEvents.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-[#7B9FA6]/10">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="w-4 h-4 text-[#7B9FA6]" />
+                <span className="text-sm font-medium text-[#3A3A3A]">互動次數總計</span>
+                <span className="text-xs text-[#6B6B6B]">（點擊查看詳情）</span>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {(() => {
+                  // 統計各類型互動次數
+                  const interactionCounts: Record<string, number> = {};
+                  interactionEvents.forEach(event => {
+                    const type = event.payload.type;
+                    interactionCounts[type] = (interactionCounts[type] || 0) + 1;
+                  });
+
+                  // 按照互動按鈕的順序顯示
+                  const buttons = getInteractionButtons();
+                  return buttons.map(button => {
+                    const count = interactionCounts[button.id] || 0;
+                    return (
+                      <button
+                        key={button.id}
+                        onClick={() => handleInteractionClick(button.id, button.label, button.emoji)}
+                        className="bg-[#FAFAF8] rounded-xl p-3 text-center hover:bg-[#F5F5F0] hover:scale-105 transition-all cursor-pointer active:scale-95"
+                      >
+                        <div className="text-xl mb-1">{button.emoji}</div>
+                        <div className="text-lg font-medium text-[#3A3A3A]">{count}</div>
+                        <div className="text-xs text-[#6B6B6B] mt-0.5">{button.label}</div>
+                      </button>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          )}
         </div>
 
 
 
-        {/* 8. 成本明細 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
-          <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-[#3A3A3A]">
-            <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
-            成本明細
-          </h2>
+        {/* 8. 成本明細 - ✅ 員工模式下隱藏 */}
+        {!isStaff && (
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+            <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-[#3A3A3A]">
+              <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
+              成本明細
+            </h2>
           <div className="space-y-2 text-sm">
             {/* 攤位費 */}
             <div className="flex justify-between">
@@ -1427,6 +1677,8 @@ export default function MarketDetailPage({ params }: PageProps) {
                 </span>
               </div>
             )}
+
+            
             
             {/* 固定成本總計 */}
             <div className="border-t border-[#7B9FA6]/10 pt-2 flex justify-between font-medium">
@@ -1442,38 +1694,6 @@ export default function MarketDetailPage({ params }: PageProps) {
             </div>
           </div>
         </div>
-
-        {/* 顧客行為分析區塊 */}
-        {interactionEvents.length > 0 && (
-          <>
-            <div className="mb-4">
-              <h2 className="text-xl font-medium text-[#3A3A3A] flex items-center gap-2">
-                📈 顧客行為分析
-              </h2>
-              <p className="text-sm text-[#6B6B6B] mt-1">
-                本場市集的顧客互動模式與偏好
-              </p>
-            </div>
-
-            {/* 智能洞察提示 */}
-            <div className="mb-6">
-              <BehaviorInsightCard insights={behaviorInsights} />
-            </div>
-
-            {/* 互動偏好佔比圖 */}
-            {interactionPreferenceData.length > 0 && (
-              <div className="mb-6">
-                <InteractionPreferenceChart data={interactionPreferenceData} />
-              </div>
-            )}
-
-            {/* 互動時序熱力圖 */}
-            {timeHeatmapData.length > 0 && (
-              <div className="mb-6">
-                <InteractionTimeHeatmap data={timeHeatmapData} />
-              </div>
-            )}
-          </>
         )}
 
         {/* 5. 今日時間軸（折疊） */}
@@ -1504,6 +1724,19 @@ export default function MarketDetailPage({ params }: PageProps) {
 
           {!isTimelineCollapsed && (
           <div className="space-y-4 mt-4">
+            {/* 檢查是否有任何時間設定 */}
+            {!market.checkInTime && !market.operatingStartTime && !market.operatingEndTime && !(market.earlyEntryEnabled && market.earlyEntryTime) ? (
+              <div className="bg-[#FFF8E7] border border-[#D4A574]/30 rounded-xl p-4 text-center">
+                <Clock className="w-8 h-8 text-[#D4A574] mx-auto mb-2 opacity-50" />
+                <p className="text-sm text-[#3A3A3A] font-medium mb-1">
+                  尚未設定時間資訊
+                </p>
+                <p className="text-xs text-[#6B6B6B]">
+                  請點擊右上角「編輯」按鈕，設定報到時間、營業開始時間和營業結束時間
+                </p>
+              </div>
+            ) : (
+              <>
             {/* 時間線 */}
             <div className="space-y-3">
               {/* 提前進場 */}
@@ -1654,9 +1887,46 @@ export default function MarketDetailPage({ params }: PageProps) {
                 </div>
               </div>
             )}
+            </>
+            )}
           </div>
           )}
         </div>
+        
+        {/* 顧客行為分析區塊 */}
+        {interactionEvents.length > 0 && (
+          <>
+            <div className="mb-4">
+              <h2 className="text-xl font-medium text-[#3A3A3A] flex items-center gap-2">
+                📈 顧客行為分析
+              </h2>
+              <p className="text-sm text-[#6B6B6B] mt-1">
+                本場市集的顧客互動模式與偏好
+              </p>
+            </div>
+
+            {/* 智能洞察提示 */}
+            <div className="mb-6">
+              <BehaviorInsightCard insights={behaviorInsights} />
+            </div>
+
+            {/* 互動偏好佔比圖 */}
+            {interactionPreferenceData.length > 0 && (
+              <div className="mb-6">
+                <InteractionPreferenceChart data={interactionPreferenceData} />
+              </div>
+            )}
+
+            {/* 互動時序熱力圖 */}
+            {timeHeatmapData.length > 0 && (
+              <div className="mb-6">
+                <InteractionTimeHeatmap data={timeHeatmapData} />
+              </div>
+            )}
+          </>
+        )}
+
+
 
         {/* 次要操作 */}
         {market.status !== 'cancelled' && market.status !== 'completed' && (
@@ -1861,6 +2131,18 @@ export default function MarketDetailPage({ params }: PageProps) {
         deals={getDealsByDate(selectedDate)}
         onDealClick={handleDealClick}
       />
+
+      {/* 互動詳情彈窗 */}
+      {selectedInteractionType && (
+        <InteractionDetailModal
+          isOpen={showInteractionDetailModal}
+          onClose={handleCloseInteractionDetail}
+          interactionType={selectedInteractionType.type}
+          label={selectedInteractionType.label}
+          emoji={selectedInteractionType.emoji}
+          events={interactionEvents}
+        />
+      )}
     </div>
   );
 }

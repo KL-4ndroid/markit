@@ -1,9 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Calendar, MapPin, DollarSign, Table, Armchair, Umbrella, Target, Users, TrendingUp, Clock, Play } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Table, Armchair, Umbrella, Target, Users, TrendingUp, Clock, Play, Shield, Lock } from 'lucide-react';
 import type { Market, MarketStatus } from '@/types/db';
-import { formatDate, formatCurrency } from '@/lib/utils';
+import { formatDate, formatCurrency, formatDateRanges, filterCurrentWeekDates } from '@/lib/utils';
+import { useUserRole } from '@/hooks/useUserRole';
+import { getShadowClass, getBorderClass } from '@/lib/theme-config';
 
 interface MarketCardProps {
   market: Market;
@@ -16,48 +18,88 @@ interface MarketCardProps {
  * 顯示市集的基本資訊，包含名稱、日期、地點、狀態等
  * 使用日系設計系統的大圓角與柔和色彩
  * 
+ * ✅ 支援員工模式：
+ * - 顯示身份標籤（老闆/員工）
+ * - 員工模式下隱藏敏感數據（成本、利潤）
+ * 
  * @param variant - 'default': 完整版（市集頁面）, 'home': 首頁今日市集（顯示完整資訊）, 'upcoming': 即將到來（隱藏收入/利潤/互動/成交）
  */
 export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
   const router = useRouter();
   
+  // ✅ 員工權限檢查
+  const { isStaff, canViewSensitiveData } = useUserRole();
+  
   // 判斷市集營業狀態（根據時間判斷）
   const getOperatingStatus = () => {
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     
-    // 不在日期範圍內
-    if (market.startDate > today || market.endDate < today) {
+    // ✅ 修復：將時間字串轉換為分鐘數進行比較
+    const timeToMinutes = (timeStr: string) => {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    // ✅ 檢查今天是否為市集日
+    let isMarketDay = false;
+    
+    // 優先檢查 dates 陣列（多選日期）
+    if (market.dates && market.dates.length > 0) {
+      isMarketDay = market.dates.includes(today);
+    } else {
+      // 降級：使用 startDate 和 endDate（連續日期，向後兼容）
+      isMarketDay = market.startDate <= today && market.endDate >= today;
+    }
+    
+    // 不在市集日期內
+    if (!isMarketDay) {
       return { status: 'not_started', label: '尚未開始', color: 'bg-[#6B6B6B]/10 text-[#6B6B6B]' };
     }
     
-    // 在日期範圍內，檢查時間
-    if (market.startDate <= today && market.endDate >= today) {
-      // 如果有提前進場時間且已啟用
-      if (market.earlyEntryEnabled && market.earlyEntryTime && currentTime >= market.earlyEntryTime && currentTime < (market.checkInTime || '09:30')) {
+    // 在市集日期內，檢查時間
+    // 如果有提前進場時間且已啟用
+    if (market.earlyEntryEnabled && market.earlyEntryTime) {
+      const earlyEntryMinutes = timeToMinutes(market.earlyEntryTime);
+      const checkInMinutes = market.checkInTime ? timeToMinutes(market.checkInTime) : 570; // 預設 09:30
+      
+      if (currentMinutes >= earlyEntryMinutes && currentMinutes < checkInMinutes) {
         return { status: 'early_entry', label: '提前進場中', color: 'bg-[#FFF8E7] text-[#D4A574]' };
       }
-      
-      // 報到時間
-      if (market.checkInTime && currentTime >= market.checkInTime && currentTime < (market.operatingStartTime || '10:00')) {
-        return { status: 'check_in', label: '報到中', color: 'bg-[#E8F3E8] text-[#7B9FA6]' };
-      }
-      
-      // 營業中
-      if (market.operatingStartTime && market.operatingEndTime && currentTime >= market.operatingStartTime && currentTime < market.operatingEndTime) {
-        return { status: 'operating', label: '營業中', color: 'bg-[#7B9FA6] text-white' };
-      }
-      
-      // 營業結束
-      if (market.operatingEndTime && currentTime >= market.operatingEndTime) {
-        return { status: 'closed', label: '已結束', color: 'bg-[#F5E6E8] text-[#6B6B6B]' };
-      }
-      
-      // 預設：尚未開始（當天但還沒到時間）
-      return { status: 'not_started', label: '尚未開始', color: 'bg-[#6B6B6B]/10 text-[#6B6B6B]' };
     }
     
+    // 報到時間
+    if (market.checkInTime && market.operatingStartTime) {
+      const checkInMinutes = timeToMinutes(market.checkInTime);
+      const operatingStartMinutes = timeToMinutes(market.operatingStartTime);
+      
+      if (currentMinutes >= checkInMinutes && currentMinutes < operatingStartMinutes) {
+        return { status: 'check_in', label: '報到中', color: 'bg-[#E8F3E8] text-[#7B9FA6]' };
+      }
+    }
+    
+    // 營業中
+    if (market.operatingStartTime && market.operatingEndTime) {
+      const operatingStartMinutes = timeToMinutes(market.operatingStartTime);
+      const operatingEndMinutes = timeToMinutes(market.operatingEndTime);
+      
+      if (currentMinutes >= operatingStartMinutes && currentMinutes < operatingEndMinutes) {
+        return { status: 'operating', label: '營業中', color: 'bg-[#7B9FA6] text-white' };
+      }
+    }
+    
+    // 營業結束
+    if (market.operatingEndTime) {
+      const operatingEndMinutes = timeToMinutes(market.operatingEndTime);
+      
+      if (currentMinutes >= operatingEndMinutes) {
+        return { status: 'closed', label: '已結束', color: 'bg-[#F5E6E8] text-[#6B6B6B]' };
+      }
+    }
+    
+    // 預設：尚未開始（當天但還沒到時間）
     return { status: 'not_started', label: '尚未開始', color: 'bg-[#6B6B6B]/10 text-[#6B6B6B]' };
   };
 
@@ -87,7 +129,17 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
     // ✅ 檢查是否已超過舉辦日期
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const isPastDate = market.endDate < today;
+    
+    let isPastDate = false;
+    
+    // 優先檢查 dates 陣列（多選日期）
+    if (market.dates && market.dates.length > 0) {
+      // 檢查所有日期是否都 < 今天
+      isPastDate = market.dates.every(date => date < today);
+    } else {
+      // 降級：使用 endDate（連續日期，向後兼容）
+      isPastDate = market.endDate < today;
+    }
     
     // ✅ 如果已超過舉辦日期，且狀態為「已繳費」或「如期舉行」，顯示為「已完成」
     if (isPastDate && (status === 'paid' || status === 'ongoing')) {
@@ -110,15 +162,53 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
   const isUpcoming = () => {
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    return market.startDate >= today && market.status !== 'completed' && market.status !== 'cancelled';
+    
+    if (market.status === 'completed' || market.status === 'cancelled') {
+      return false;
+    }
+    
+    // 優先檢查 dates 陣列（多選日期）
+    if (market.dates && market.dates.length > 0) {
+      // 檢查是否有任何日期 >= 今天
+      return market.dates.some(date => date >= today);
+    }
+    
+    // 降級：使用 startDate（連續日期，向後兼容）
+    return market.startDate >= today;
   };
 
-  // 格式化日期範圍
+  // 格式化日期範圍 - 根據 variant 決定顯示邏輯
   const formatDateRange = () => {
-    if (market.startDate === market.endDate) {
-      return formatDate(market.startDate);
+    // 首頁：只顯示當週日期
+    if (variant === 'home') {
+      if (market.dates && market.dates.length > 0) {
+        // 多選日期：過濾當週日期
+        const weekDates = filterCurrentWeekDates(market.dates);
+        if (weekDates.length === 0) {
+          // 如果當週沒有日期，顯示最近的日期
+          return formatDate(market.dates[0]);
+        }
+        return formatDateRanges(weekDates);
+      } else {
+        // 連續日期：顯示完整範圍
+        if (market.startDate === market.endDate) {
+          return formatDate(market.startDate);
+        }
+        return `${formatDate(market.startDate)} - ${formatDate(market.endDate)}`;
+      }
     }
-    return `${formatDate(market.startDate)} - ${formatDate(market.endDate)}`;
+    
+    // 市集頁面和其他：完整顯示所有日期
+    if (market.dates && market.dates.length > 0) {
+      // 多選日期：完整顯示所有日期範圍
+      return formatDateRanges(market.dates);
+    } else {
+      // 連續日期：顯示 startDate - endDate
+      if (market.startDate === market.endDate) {
+        return formatDate(market.startDate);
+      }
+      return `${formatDate(market.startDate)} - ${formatDate(market.endDate)}`;
+    }
   };
 
   // 點擊卡片導向詳情頁
@@ -139,13 +229,14 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
       {/* 標題與營業狀態標籤 */}
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             {/* 市集狀態標籤 - 只在市集頁面顯示 */}
             {variant === 'default' && (
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusStyle(market.status)}`}>
                 {getStatusText(market.status)}
               </span>
             )}
+            
             <h3 className="font-medium text-lg text-[#3A3A3A]">
               {market.name}
             </h3>
@@ -159,36 +250,12 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
             
           </div>
           <div className="flex flex-col gap-1">
-            {/* 日期 */}
-            <p className="text-sm text-[#6B6B6B] flex items-center gap-1">
-              <Calendar className="w-4 h-4 text-[#7B9FA6]" />
-              {variant === 'home' ? (
-                // 首頁：顯示完整日期範圍
-                <>
-                  {(() => {
-                    const startDate = new Date(market.startDate);
-                    const endDate = new Date(market.endDate);
-                    const startYear = startDate.getFullYear();
-                    const startMonth = startDate.getMonth() + 1;
-                    const startDay = startDate.getDate();
-                    const endMonth = endDate.getMonth() + 1;
-                    const endDay = endDate.getDate();
-                    
-                    if (market.startDate === market.endDate) {
-                      const weekday = ['日', '一', '二', '三', '四', '五', '六'][startDate.getDay()];
-                      return `${startYear}/${String(startMonth).padStart(2, '0')}/${String(startDay).padStart(2, '0')} (${weekday})`;
-                    }
-                    
-                    if (startMonth === endMonth) {
-                      return `${startYear}/${String(startMonth).padStart(2, '0')}/${String(startDay).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`;
-                    } else {
-                      return `${startYear}/${String(startMonth).padStart(2, '0')}/${String(startDay).padStart(2, '0')}-${String(endMonth).padStart(2, '0')}/${String(endDay).padStart(2, '0')}`;
-                    }
-                  })()}
-                </>
-              ) : (
-                formatDateRange()
-              )}
+            {/* 日期 - 根據 variant 決定是否換行 */}
+            <p className={`text-sm text-[#6B6B6B] flex items-start gap-1 ${variant === 'default' ? 'flex-wrap' : ''}`}>
+              <Calendar className="w-4 h-4 text-[#7B9FA6] flex-shrink-0 mt-0.5" />
+              <span className={variant === 'default' ? 'flex-1' : ''}>
+                {formatDateRange()}
+              </span>
             </p>
 
             {/* 地點 */}
@@ -209,7 +276,8 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
       </div>
 
       {/* 收入與淨利潤 - 只在首頁今日市集和市集頁面顯示，即將到來不顯示 */}
-      {variant !== 'upcoming' && (
+      {/* ✅ 員工模式下完全隱藏敏感數據區塊 */}
+      {variant !== 'upcoming' && !isStaff && (
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="bg-[#7B9FA6]/10 rounded-xl p-3">
             <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
@@ -223,6 +291,7 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
               {formatCurrency(market.totalRevenue || 0)}
             </div>
           </div>
+          
           <div className="bg-[#E8F3E8] rounded-xl p-3">
             <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
@@ -239,8 +308,9 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
       )}
 
       {/* 成交與費用統計 - 只在首頁今日市集和市集頁面顯示，即將到來不顯示 */}
+      {/* ✅ 員工模式下只顯示成交次數，隱藏攤位成本 */}
       {variant !== 'upcoming' && (
-        <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className={`grid ${isStaff ? 'grid-cols-1' : 'grid-cols-2'} gap-3 mb-3`}>
           <div className="bg-[#FFF8E7] rounded-xl p-3">
             <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
               <Target className="w-3 h-3" />
@@ -250,20 +320,22 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
               {market.totalDeals || 0} <span className="text-sm font-normal">筆</span>
             </div>
           </div>
-          <div className="bg-[#F5E6E8] rounded-xl p-3">
-            <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
-              <DollarSign className="w-3 h-3" />
-              攤位成本
+          {!isStaff && (
+            <div className="bg-[#F5E6E8] rounded-xl p-3">
+              <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
+                <DollarSign className="w-3 h-3" />
+                攤位成本
+              </div>
+              <div className="font-bold text-lg text-[#3A3A3A] tabular-nums">
+                {formatCurrency(
+                  (market.boothCost || 0) +
+                  (market.tableFree ? 0 : (market.tableRental || 0)) +
+                  (market.chairFree ? 0 : (market.chairRental || 0)) +
+                  (market.umbrellaFree ? 0 : (market.umbrellaRental || 0))
+                )}
+              </div>
             </div>
-            <div className="font-bold text-lg text-[#3A3A3A] tabular-nums">
-              {formatCurrency(
-                (market.boothCost || 0) +
-                (market.tableFree ? 0 : (market.tableRental || 0)) +
-                (market.chairFree ? 0 : (market.chairRental || 0)) +
-                (market.umbrellaFree ? 0 : (market.umbrellaRental || 0))
-              )}
-            </div>
-          </div>
+          )}
         </div>
       )}
 

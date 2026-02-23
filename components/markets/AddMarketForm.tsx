@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { X, Calendar, MapPin, DollarSign, Clock, Package, FileText, DoorOpen, ClipboardCheck, Store, Moon } from 'lucide-react';
 import { createMarket } from '@/lib/db/hooks';
-import { DatePicker } from '@/components/ui/DatePicker';
+import { DateMultiPicker } from '@/components/ui/DateMultiPicker'; // ✅ 改用多選日期選擇器
 import { TimePicker } from '@/components/ui/TimePicker';
 import type { MarketCreatedPayload } from '@/types/db';
 
@@ -30,8 +30,9 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
   const [formData, setFormData] = useState<MarketCreatedPayload>({
     name: '',
     location: '',
-    startDate: '',
-    endDate: '',
+    dates: [],              // ✅ 改用日期陣列
+    startDate: '',          // 保留（自動計算）
+    endDate: '',            // 保留（自動計算）
     
     // 時間軸 - 預設值
     earlyEntryEnabled: false,
@@ -58,15 +59,15 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
   });
 
   // 處理表單欄位變更
-  const handleChange = (field: keyof MarketCreatedPayload, value: string | number | boolean) => {
+  const handleChange = (field: keyof MarketCreatedPayload, value: string | number | boolean | string[]) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
       
-      // 當開始日期變更時，自動設定結束日期
-      if (field === 'startDate' && typeof value === 'string') {
-        if (!updated.endDate || updated.endDate < value) {
-          updated.endDate = value;
-        }
+      // ✅ 當日期陣列變更時，自動計算 startDate 和 endDate
+      if (field === 'dates' && Array.isArray(value) && value.length > 0) {
+        const sortedDates = [...value].sort();
+        updated.startDate = sortedDates[0];
+        updated.endDate = sortedDates[sortedDates.length - 1];
       }
       
       // 當報到時間變更時，自動調整營業時間
@@ -124,15 +125,9 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 驗證必填欄位
-    if (!formData.name || !formData.location || !formData.startDate || !formData.endDate) {
-      alert('請填寫所有必填欄位');
-      return;
-    }
-
-    // 驗證日期邏輯
-    if (formData.endDate < formData.startDate) {
-      alert('結束日期不能早於開始日期');
+    // ✅ 驗證必填欄位（改為檢查 dates 陣列）
+    if (!formData.name || !formData.location || !formData.dates || formData.dates.length === 0) {
+      alert('請填寫所有必填欄位並選擇至少一個日期');
       return;
     }
 
@@ -159,6 +154,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
       setFormData({
         name: '',
         location: '',
+        dates: [],              // ✅ 重置為空陣列
         startDate: '',
         endDate: '',
         earlyEntryEnabled: false,
@@ -261,34 +257,21 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                     />
                   </div>
 
-                  {/* 日期 */}
-                  <div className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                    <div>
-                      <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                        開始日期 <span className="text-red-500">*</span>
-                      </label>
-                      <DatePicker
-                        value={formData.startDate}
-                        onChange={(value) => handleChange('startDate', value)}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] font-medium"
-                        placeholder="選擇開始日期"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                        結束日期 <span className="text-red-500">*</span>
-                      </label>
-                      <DatePicker
-                        value={formData.endDate}
-                        onChange={(value) => handleChange('endDate', value)}
-                        minDate={formData.startDate}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] font-medium"
-                        placeholder="選擇結束日期"
-                        required
-                      />
-                      <p className="text-xs text-[#6B6B6B] mt-1">單日市集請設定相同日期</p>
-                    </div>
+                  {/* 日期 - 多選模式 */}
+                  <div>
+                    <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+                      市集日期 <span className="text-red-500">*</span>
+                    </label>
+                    <DateMultiPicker
+                      value={formData.dates || []}
+                      onChange={(value) => handleChange('dates', value)}
+                      className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] font-medium"
+                      placeholder="選擇市集日期（可選擇多個日期）"
+                      required
+                    />
+                    <p className="text-xs text-[#6B6B6B] mt-2">
+                      💡 提示：可以選擇多個不連續的日期（例如：只選週六、週日）
+                    </p>
                   </div>
                 </div>
               </div>

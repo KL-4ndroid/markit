@@ -8,6 +8,8 @@ import { MarketCard } from '@/components/markets/MarketCard';
 import { AddMarketForm } from '@/components/markets/AddMarketForm';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
+import { useUserRole } from '@/hooks/useUserRole';
+import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
 import type { MarketStatus } from '@/types/db';
 import MarketsLoading from './loading';
 
@@ -17,6 +19,7 @@ export default function MarketsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const { isStaff } = useUserRole(); // ✅ 員工權限檢查
 
   // 初始化資料庫
   useEffect(() => {
@@ -65,11 +68,31 @@ export default function MarketsPage() {
         // 待繳費：已錄取（需要繳費）
         return allMarkets.filter(m => m.status === 'accepted');
       case 'upcoming':
-        // 待舉辦：已繳費 + 如期舉行，且尚未到來（包含今天）
-        return allMarkets.filter(m => (m.status === 'paid' || m.status === 'ongoing') && m.startDate >= today);
+        // 待舉辦：已繳費 + 如期舉行，且還有未來的日期
+        return allMarkets.filter(m => {
+          if (m.status !== 'paid' && m.status !== 'ongoing') return false;
+          
+          // ✅ 檢查 dates 陣列中是否有任何日期 >= 今天
+          if (m.dates && m.dates.length > 0) {
+            return m.dates.some(date => date >= today);
+          }
+          
+          // 降級：使用 startDate（向後兼容）
+          return m.startDate >= today;
+        });
       case 'completed':
-        // 已結束：如期舉辦過但已過期的市集
-        return allMarkets.filter(m => (m.status === 'paid' || m.status === 'ongoing') && m.endDate < today);
+        // 已結束：所有日期都已過去
+        return allMarkets.filter(m => {
+          if (m.status !== 'paid' && m.status !== 'ongoing') return false;
+          
+          // ✅ 檢查 dates 陣列中的所有日期是否都 < 今天
+          if (m.dates && m.dates.length > 0) {
+            return m.dates.every(date => date < today);
+          }
+          
+          // 降級：使用 endDate（向後兼容）
+          return m.endDate < today;
+        });
       case 'cancelled':
         // 已取消：已取消 + 已延期
         return allMarkets.filter(m => m.status === 'cancelled' || m.status === 'postponed');
@@ -109,12 +132,26 @@ export default function MarketsPage() {
     { id: 'upcoming' as TabType, label: '待舉辦', count: (() => {
       const now = new Date();
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      return allMarkets?.filter(m => (m.status === 'paid' || m.status === 'ongoing') && m.startDate >= today).length || 0;
+      return allMarkets?.filter(m => {
+        if (m.status !== 'paid' && m.status !== 'ongoing') return false;
+        // ✅ 檢查是否有任何日期 >= 今天
+        if (m.dates && m.dates.length > 0) {
+          return m.dates.some(date => date >= today);
+        }
+        return m.startDate >= today;
+      }).length || 0;
     })() },
     { id: 'completed' as TabType, label: '已結束', count: (() => {
       const now = new Date();
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      return allMarkets?.filter(m => (m.status === 'paid' || m.status === 'ongoing') && m.endDate < today).length || 0;
+      return allMarkets?.filter(m => {
+        if (m.status !== 'paid' && m.status !== 'ongoing') return false;
+        // ✅ 檢查所有日期是否都 < 今天
+        if (m.dates && m.dates.length > 0) {
+          return m.dates.every(date => date < today);
+        }
+        return m.endDate < today;
+      }).length || 0;
     })() },
     { id: 'cancelled' as TabType, label: '已取消', count: allMarkets?.filter(m => m.status === 'cancelled' || m.status === 'postponed').length || 0 },
   ];
@@ -126,32 +163,34 @@ export default function MarketsPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8]">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      {/* Header - ✅ 員工模式使用紫色漸變 */}
+      <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-medium text-white opacity-90">
-              我的市集
+              {isStaff ? '市集列表' : '我的市集'}
             </h1>
-            {/* 新增按鈕 */}
-            <button
-              onClick={handleOpenForm}
-              className="p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm"
-              aria-label="新增市集"
-            >
-              <Plus className="w-6 h-6 text-white" />
-            </button>
+            {/* 新增按鈕 - ✅ 員工模式下隱藏 */}
+            {!isStaff && (
+              <button
+                onClick={handleOpenForm}
+                className="p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm"
+                aria-label="新增市集"
+              >
+                <Plus className="w-6 h-6 text-white" />
+              </button>
+            )}
           </div>
           <p className="text-white/80 text-sm">
-            管理您的市集場次 🎪
+            {isStaff ? '查看所有市集場次 🎪' : '管理您的市集場次 🎪'}
           </p>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4">
-        {/* Tabs */}
-        <div className="bg-white rounded-[1.5rem] p-2 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+        {/* Tabs - ✅ 員工模式使用紫色主題 */}
+        <div className={`bg-white rounded-[1.5rem] p-2 shadow-lg ${getShadowClass(isStaff)} mb-6`}>
           <div className="grid grid-cols-3 gap-1">
             {tabs.map((tab) => (
               <button
@@ -159,7 +198,7 @@ export default function MarketsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-2 py-2 rounded-xl text-xs font-medium transition-all ${
                   activeTab === tab.id
-                    ? 'bg-[#7B9FA6] text-white shadow-md'
+                    ? `${getPrimaryBgClass(isStaff)} text-white shadow-md`
                     : 'text-[#6B6B6B] hover:bg-[#F5E6E8]'
                 }`}
               >
@@ -181,21 +220,21 @@ export default function MarketsPage() {
             ))}
           </div>
         ) : (
-          /* 空狀態 */
-          <div className="bg-white rounded-[1.5rem] p-12 shadow-lg shadow-[#7B9FA6]/10 text-center">
-            <Calendar className="w-16 h-16 text-[#7B9FA6] mx-auto mb-4 opacity-50" />
+          /* 空狀態 - ✅ 員工模式使用紫色主題 */
+          <div className={`bg-white rounded-[1.5rem] p-12 shadow-lg ${getShadowClass(isStaff)} text-center`}>
+            <Calendar className={`w-16 h-16 mx-auto mb-4 opacity-50 ${isStaff ? 'text-[#8B7BA6]' : 'text-[#7B9FA6]'}`} />
             <h2 className="text-lg font-medium text-[#3A3A3A] mb-2">
-              {activeTab === 'all' ? '尚未新增任何市集' : `沒有${tabs.find(t => t.id === activeTab)?.label}的市集`}
+              {activeTab === 'all' ? (isStaff ? '目前沒有市集' : '尚未新增任何市集') : `沒有${tabs.find(t => t.id === activeTab)?.label}的市集`}
             </h2>
             <p className="text-[#6B6B6B] text-sm mb-6">
               {activeTab === 'all' 
-                ? '點擊右上角的 + 按鈕開始新增您的第一個市集 ✨'
+                ? (isStaff ? '老闆尚未新增任何市集' : '點擊右上角的 + 按鈕開始新增您的第一個市集 ✨')
                 : '切換到其他分類查看更多市集'}
             </p>
-            {activeTab === 'all' && (
+            {activeTab === 'all' && !isStaff && (
               <button
                 onClick={handleOpenForm}
-                className="bg-[#7B9FA6] text-white px-6 py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors inline-flex items-center gap-2"
+                className={`${getPrimaryBgClass(isStaff)} text-white px-6 py-3 rounded-2xl hover:opacity-90 transition-opacity inline-flex items-center gap-2`}
               >
                 <Plus className="w-5 h-5" />
                 新增市集

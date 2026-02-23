@@ -2,13 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Bug, Edit, ChevronDown, ChevronUp } from 'lucide-react';
+import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Bug, Edit, ChevronDown, ChevronUp, Sparkles, LogOut, Eye, Edit3 } from 'lucide-react';
 import { getInteractionButtons, resetInteractionButtons, isInteractionSetupComplete, type InteractionButton } from '@/lib/interaction-buttons-store';
 import { InteractionSetupWizard } from '@/components/settings/InteractionSetupWizard';
+import { StaffManagement } from '@/components/settings/StaffManagement';
 import { toast } from 'sonner';
 import { PWAInstallButton } from '@/components/PWAInstallButton';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/lib/supabase/client';
+import { generateTestData } from '@/lib/test-data-generator';
+import { getGradientClass } from '@/lib/theme-config';
+import { StaffPermissionCard } from '@/components/staff/StaffPermissionCard';
+import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -16,7 +22,9 @@ export default function SettingsPage() {
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [isDatabaseExpanded, setIsDatabaseExpanded] = useState(false);
-  const { user } = useAuth();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { user, signOut } = useAuth();
+  const { userRole, isStaff } = useUserRole();
 
   useEffect(() => {
     setButtons(getInteractionButtons());
@@ -137,16 +145,121 @@ export default function SettingsPage() {
     }
   };
 
+  const handleGenerateTestData = async () => {
+    if (!confirm('確定要生成 30 筆測試數據嗎？\n\n這將包含：\n• 30 個市集（單日、連續、多選日期）\n• 20 個商品\n• 每個市集的互動記錄\n• 每個市集的成交記錄\n\n生成過程需要約 30-60 秒。')) {
+      return;
+    }
+
+    setIsGenerating(true);
+    let toastId: string | number | undefined;
+
+    try {
+      toastId = toast.loading('正在生成測試數據...', {
+        description: '0/30 市集',
+      });
+
+      await generateTestData((current, total, message) => {
+        toast.loading(message, {
+          id: toastId,
+          description: `${current}/${total} 市集`,
+        });
+      });
+
+      toast.success('🎉 測試數據生成完成！', {
+        id: toastId,
+        description: '已生成 30 個市集及相關數據',
+      });
+
+      // 延遲刷新頁面
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('生成測試數據失敗:', error);
+      toast.error('生成失敗', {
+        id: toastId,
+        description: error.message || '請稍後再試',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // 員工離開團隊
+  const handleLeaveTeam = async () => {
+    if (!user || !userRole.ownerId) return;
+
+    const confirmed = confirm(
+      '⚠️ 確定要離開團隊嗎？\n\n' +
+      '離開後：\n' +
+      '• 您將無法再訪問老闆的市集\n' +
+      '• 您的本地數據將被清除\n' +
+      '• 您可以重新開始使用自己的帳號\n\n' +
+      '此操作無法復原！'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      toast.loading('正在離開團隊...', { id: 'leave-team' });
+
+      // 1. 刪除員工關係
+      const { error: relError } = await supabase
+        .from('staff_relationships')
+        .delete()
+        .eq('owner_id', userRole.ownerId)
+        .eq('staff_id', user.id);
+
+      if (relError) throw relError;
+
+      // 2. 刪除 market_members 記錄
+      const { data: markets, error: marketsError } = await supabase
+        .from('markets')
+        .select('id')
+        .eq('owner_id', userRole.ownerId);
+
+      if (marketsError) throw marketsError;
+
+      if (markets && markets.length > 0) {
+        const marketIds = markets.map(m => m.id);
+        
+        const { error: membersError } = await supabase
+          .from('market_members')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('role', 'staff')
+          .in('market_id', marketIds);
+
+        if (membersError) throw membersError;
+      }
+
+      // 3. 清除本地數據
+      await indexedDB.deleteDatabase('MarketPulseDB');
+
+      toast.success('✅ 已離開團隊，即將重新載入...', { id: 'leave-team' });
+
+      // 4. 重新載入頁面
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('離開團隊失敗:', error);
+      toast.error('離開失敗：' + error.message, { id: 'leave-team' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
           <h1 className="text-2xl font-medium text-white opacity-90 mb-2">
             設定
           </h1>
           <p className="text-white/80 text-sm">
-            個人化您的使用體驗 ⚙️
+            {isStaff ? '員工設定與權限管理 👤' : '個人化您的使用體驗 ⚙️'}
           </p>
         </div>
       </div>
@@ -156,32 +269,100 @@ export default function SettingsPage() {
         {/* PWA 安裝按鈕 */}
         <PWAInstallButton />
 
-        {/* 開發者工具 */}
-        <div className="bg-gradient-to-br from-[#7B9FA6]/10 to-[#D4A574]/10 rounded-[1.5rem] p-6 shadow-lg border-2 border-[#7B9FA6]/20">
-          <div className="flex items-center gap-2 mb-3">
-            <Bug className="w-5 h-5 text-[#7B9FA6]" />
-            <h2 className="text-lg font-medium text-[#3A3A3A]">
-              開發者工具
-            </h2>
-          </div>
-          <p className="text-sm text-[#6B6B6B] mb-4">
-            測試和調試應用程式的專業工具
-          </p>
-          <button
-            onClick={() => router.push('/debug/flicker-test')}
-            className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] text-white hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2"
-          >
-            <Bug className="w-5 h-5" />
-            閃爍測試調試工具
-          </button>
-          <p className="text-xs text-[#6B6B6B] mt-3 text-center">
-            實時調整動畫參數，找出最佳配置
-          </p>
-        </div>
+        {/* 員工管理 / 離開團隊 */}
+        {isStaff ? (
+          /* 員工：顯示離開團隊 */
+          <>
+            {/* 老闆資訊卡片 */}
+            {userRole.ownerEmail && (
+              <OwnerInfoCard ownerEmail={userRole.ownerEmail} />
+            )}
+            
+            {/* 權限說明卡片 */}
+            <StaffPermissionCard permissions={userRole.permissions} />
+            
+            {/* 離開團隊區塊 */}
+            <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#8B7BA6]/10 p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <LogOut className="w-5 h-5 text-[#8B7BA6]" />
+                <h2 className="text-lg font-medium text-[#3A3A3A]">離開團隊</h2>
+              </div>
+              <p className="text-sm text-[#6B6B6B] mb-4">
+                離開後將無法再訪問老闆的市集資料
+              </p>
+              {/* 離開團隊按鈕 */}
+              <button
+                onClick={handleLeaveTeam}
+                className="w-full px-6 py-4 rounded-2xl bg-[#F5E6E8] text-[#d4183d] hover:bg-[#E5D6D8] transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                離開團隊
+              </button>
 
-        {/* 互動按鈕設定 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
-          <div className="p-6">
+              <p className="text-xs text-center text-[#6B6B6B] mt-3">
+                離開後將清除本地數據，您可以重新開始使用自己的帳號
+              </p>
+            </div>
+          </>
+        ) : (
+          /* 老闆：顯示員工管理 */
+          <StaffManagement />
+        )}
+
+        {/* 開發者工具 - 只有老闆可見 */}
+        {!isStaff && (
+          <div className="bg-gradient-to-br from-[#7B9FA6]/10 to-[#D4A574]/10 rounded-[1.5rem] p-6 shadow-lg border-2 border-[#7B9FA6]/20">
+            <div className="flex items-center gap-2 mb-3">
+              <Bug className="w-5 h-5 text-[#7B9FA6]" />
+              <h2 className="text-lg font-medium text-[#3A3A3A]">
+                開發者工具
+              </h2>
+            </div>
+            <p className="text-sm text-[#6B6B6B] mb-4">
+              測試和調試應用程式的專業工具
+            </p>
+            
+            <div className="space-y-3">
+              {/* 閃爍測試 */}
+            <button
+              onClick={() => router.push('/debug/flicker-test')}
+              className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] text-white hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2"
+            >
+              <Bug className="w-5 h-5" />
+              閃爍測試調試工具
+            </button>
+              
+              {/* 生成測試數據 */}
+              <button
+                onClick={handleGenerateTestData}
+                disabled={isGenerating}
+                className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-[#D4A574] to-[#E8B4B8] text-white hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Sparkles className="w-5 h-5" />
+                {isGenerating ? '生成中...' : '生成測試數據（30筆）'}
+              </button>
+            </div>
+            
+            <div className="mt-4 bg-white/50 rounded-xl p-3">
+              <p className="text-xs text-[#6B6B6B]">
+                <span className="font-medium">💡 測試數據包含：</span>
+                <br />
+                • 30 個市集（單日、連續、多選日期）
+                <br />
+                • 20 個商品
+                <br />
+                • 每個市集的互動記錄（5-15次）
+                <br />
+                • 每個市集的成交記錄（2-8筆）
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 互動按鈕設定 - 只有老闆可見 */}
+        {!isStaff && (
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
+            <div className="p-6">
             <div className="flex items-center gap-2 mb-2">
               <Zap className="w-5 h-5 text-[#7B9FA6]" />
               <h2 className="text-lg font-medium text-[#3A3A3A]">
@@ -271,11 +452,13 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+        )}
 
-        {/* 資料庫管理 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
-          {/* 標題區（始終顯示） */}
-          <button
+        {/* 資料庫管理 - 只有老闆可見 */}
+        {!isStaff && (
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
+            {/* 標題區（始終顯示） */}
+            <button
             onClick={() => setIsDatabaseExpanded(!isDatabaseExpanded)}
             className="w-full p-6 text-left hover:bg-[#FAFAF8] transition-colors"
           >
@@ -320,6 +503,74 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* 優化數據（生成快照） */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-5 h-5 text-[#7B9FA6]" />
+                  <h3 className="text-base font-medium text-[#3A3A3A]">
+                    優化數據
+                  </h3>
+                </div>
+                
+                <div className="bg-gradient-to-br from-[#E8F0F8] to-[#E8F3E8] rounded-xl p-4 mb-3">
+                  <p className="text-sm text-[#3A3A3A] mb-2 font-medium">
+                    📸 生成數據快照
+                  </p>
+                  <ul className="text-xs text-[#6B6B6B] space-y-1 mb-3">
+                    <li>• 將當前數據狀態保存為快照</li>
+                    <li>• 加速新設備的首次同步（提升 95%+）</li>
+                    <li>• 自動壓縮，節省 60-80% 存儲空間</li>
+                    <li>• 系統會在 1000 個事件後自動生成</li>
+                  </ul>
+                  <div className="bg-white rounded-lg p-3 border border-[#7B9FA6]/10">
+                    <p className="text-xs text-[#3A3A3A] font-medium mb-1">
+                      💡 適用場景：
+                    </p>
+                    <ul className="text-xs text-[#6B6B6B] space-y-0.5">
+                      <li>• 準備在新設備上登入</li>
+                      <li>• 累積大量事件後手動優化</li>
+                      <li>• 提升多設備同步速度</li>
+                      <li>• 減少雲端存儲成本</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <button
+                  onClick={async () => {
+                    if (!user) {
+                      toast.error('請先登入 Supabase 帳號');
+                      return;
+                    }
+
+                    const toastId = toast.loading('正在生成快照...');
+                    
+                    try {
+                      const { createSnapshot } = await import('@/lib/db/snapshot');
+                      const snapshotId = await createSnapshot(user.id);
+                      
+                      toast.success('✅ 快照已生成', {
+                        id: toastId,
+                        description: '新設備同步速度將大幅提升',
+                      });
+                    } catch (error: any) {
+                      console.error('生成快照失敗:', error);
+                      toast.error('生成失敗', {
+                        id: toastId,
+                        description: error.message || '請稍後再試',
+                      });
+                    }
+                  }}
+                  disabled={!user}
+                  className="w-full px-4 py-3 rounded-2xl bg-gradient-to-br from-[#7B9FA6] to-[#6A8E95] text-white hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {user ? '生成快照' : '請先登入 Supabase'}
+                </button>
+              </div>
+
+              {/* 分隔線 */}
+              <div className="border-t border-[#7B9FA6]/10 my-6"></div>
 
               {/* 清除本地資料 */}
               <div className="mb-6">
@@ -449,6 +700,7 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* 互動設定精靈 */}

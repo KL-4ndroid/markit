@@ -1,13 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, ArrowRight, User, UserCircle, LogOut } from 'lucide-react';
 import { useMarkets, useMonthlyStats } from '@/lib/db/hooks';
 import { formatCurrency } from '@/lib/utils';
 import { MarketCard } from '@/components/markets/MarketCard';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useSync, SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { 
   Cloud, 
@@ -17,49 +18,140 @@ import {
   AlertCircle,
   RefreshCw
 } from 'lucide-react';
+import { getGradientClass, getShadowClass } from '@/lib/theme-config';
+import { StaffBadge } from '@/components/staff/StaffBadge';
+import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
+import { SensitiveDataMask } from '@/components/staff/SensitiveDataMask';
 import HomeLoading from './loading';
 
 export default function HomePage() {
   const router = useRouter();
-  const allMarkets = useMarkets({ orderBy: 'startDate', order: 'asc' });
+  const localMarkets = useMarkets({ orderBy: 'startDate', order: 'asc' }); // 本地數據（老闆模式）
   const monthlyStats = useMonthlyStats();
   const { user, signOut, isConfigured } = useAuth();
+  const { userRole, isStaff } = useUserRole();
   const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSync({
     enabled: !!user && isConfigured,
   });
   
   const [showSyncTooltip, setShowSyncTooltip] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [supabaseMarkets, setSupabaseMarkets] = useState<any[]>([]);
+  const [isLoadingSupabase, setIsLoadingSupabase] = useState(false);
+
+  // ✅ 員工模式：從 Supabase 獲取市集列表
+  useEffect(() => {
+    if (isStaff && user) {
+      setIsLoadingSupabase(true);
+      import('@/lib/supabase/markets').then(({ getAccessibleMarkets }) => {
+        getAccessibleMarkets()
+          .then(data => {
+            // 轉換 Supabase 數據格式為本地格式
+            const convertedMarkets = data.map((m: any) => ({
+              id: m.id,
+              name: m.name,
+              location: m.location || '',
+              dates: m.date ? [m.date] : [],
+              startDate: m.start_date || m.date || '',
+              endDate: m.end_date || m.date || '',
+              status: m.status || 'registered',
+              operatingStartTime: m.operating_start_time || undefined,
+              operatingEndTime: m.operating_end_time || undefined,
+              totalRevenue: parseFloat(m.total_revenue || '0'),
+              totalDeals: m.total_deals || 0,
+              earlyEntryEnabled: m.early_entry_enabled || false,
+              earlyEntryTime: m.early_entry_time || undefined,
+              checkInTime: m.check_in_time || undefined,
+              boothCost: parseFloat(m.booth_cost || '0'),
+              tableRental: m.table_rental ? parseFloat(m.table_rental) : undefined,
+              chairRental: m.chair_rental ? parseFloat(m.chair_rental) : undefined,
+              umbrellaRental: m.umbrella_rental ? parseFloat(m.umbrella_rental) : undefined,
+              tableFree: m.table_free || false,
+              chairFree: m.chair_free || false,
+              umbrellaFree: m.umbrella_free || false,
+              totalProfit: parseFloat(m.total_profit || '0'),
+              totalInteractions: m.total_interactions || 0,
+              registrationFee: parseFloat(m.registration_fee || '0'),
+              createdAt: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
+              updatedAt: m.updated_at ? new Date(m.updated_at).getTime() : Date.now(),
+            }));
+            
+            // ✅ 去重：使用 Map 確保每個 ID 只出現一次（優先保留 owner 身份）
+            const uniqueMarkets = Array.from(
+              convertedMarkets.reduce((map, market) => {
+                if (!map.has(market.id)) {
+                  map.set(market.id, market);
+                }
+                return map;
+              }, new Map<string, any>())
+            ).map(([_, market]) => market);
+            
+            setSupabaseMarkets(uniqueMarkets);
+          })
+          .catch(error => {
+            console.error('獲取 Supabase 市集列表失敗:', error);
+          })
+          .finally(() => {
+            setIsLoadingSupabase(false);
+          });
+      });
+    }
+  }, [isStaff, user]);
+
+  // ✅ 根據模式選擇數據源
+  const allMarkets = isStaff ? supabaseMarkets : localMarkets;
 
   // ✅ 載入狀態檢查：數據未載入時顯示骨架屏
-  const isLoading = allMarkets === undefined || monthlyStats === undefined;
+  const isLoading = (isStaff ? isLoadingSupabase : localMarkets === undefined) || monthlyStats === undefined;
 
   // ✅ 獲取今天的日期（使用本地時間，避免時區問題）
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  // ✅ 修復：篩選進行中的市集（日期區間包含今天）
+  // ✅ 修復：篩選今日市集（檢查 dates 陣列是否包含今天）
   const todayMarkets = (() => {
-    const markets = allMarkets?.filter(market => 
-      market.startDate <= today && 
-      market.endDate >= today &&
-    market.status !== 'cancelled' && 
-    market.status !== 'completed'
-  ) || [];
+    const markets = allMarkets?.filter(market => {
+      // 過濾已取消和已完成的市集
+      if (market.status === 'cancelled' || market.status === 'completed') {
+        return false;
+      }
+      
+      // 優先檢查 dates 陣列（多選日期）
+      if (market.dates && market.dates.length > 0) {
+        return market.dates.includes(today);
+      }
+      
+      // 降級：使用 startDate 和 endDate（連續日期）
+      return market.startDate <= today && market.endDate >= today;
+    }) || [];
 
-    // ✅ 獲取營業狀態的函數
-    const getOperatingStatus = (market: typeof markets[0]) => {
-      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    // ✅ 獲取營業狀態的函數（修復：使用分鐘數比較）
+    const getOperatingStatus = (market: any) => {
+      // 將時間字串轉換為分鐘數進行比較
+      const timeToMinutes = (timeStr: string) => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
+      
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
       
       // 營業中
-      if (market.operatingStartTime && market.operatingEndTime && 
-          currentTime >= market.operatingStartTime && currentTime < market.operatingEndTime) {
-        return 'operating';
+      if (market.operatingStartTime && market.operatingEndTime) {
+        const startMinutes = timeToMinutes(market.operatingStartTime);
+        const endMinutes = timeToMinutes(market.operatingEndTime);
+        
+        if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+          return 'operating';
+        }
       }
       
       // 已結束
-      if (market.operatingEndTime && currentTime >= market.operatingEndTime) {
-        return 'closed';
+      if (market.operatingEndTime) {
+        const endMinutes = timeToMinutes(market.operatingEndTime);
+        
+        if (currentMinutes >= endMinutes) {
+          return 'closed';
+        }
       }
       
       // 未開始
@@ -96,11 +188,30 @@ export default function HomePage() {
     });
   })();
 
-  // ✅ 修復：篩選即將到來的市集（開始日期在今天之後，且狀態為已繳費或如期舉行）
-  const upcomingMarkets = allMarkets?.filter(market => 
-    market.startDate > today && 
-    (market.status === 'paid' || market.status === 'ongoing')
-  ) || [];
+  // ✅ 修復：篩選即將到來的市集（有未來日期，且狀態為已繳費或如期舉行）
+  // ✅ 排除已在今日市集中顯示的市集（避免重複顯示）
+  const todayMarketIds = new Set(todayMarkets.map(m => m.id));
+  
+  const upcomingMarkets = allMarkets?.filter(market => {
+    // 排除已在今日市集中顯示的市集
+    if (todayMarketIds.has(market.id)) {
+      return false;
+    }
+    
+    // 只顯示已繳費或如期舉行的市集
+    if (market.status !== 'paid' && market.status !== 'ongoing') {
+      return false;
+    }
+    
+    // 優先檢查 dates 陣列（多選日期）
+    if (market.dates && market.dates.length > 0) {
+      // 檢查是否有任何日期在今天之後
+      return market.dates.some((date: string) => date > today);
+    }
+    
+    // 降級：使用 startDate（連續日期）
+    return market.startDate > today;
+  }) || [];
 
   // ✅ 數據載入中，顯示骨架屏
   if (isLoading) {
@@ -180,7 +291,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#FAFAF8]">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-medium text-white opacity-90">
@@ -338,31 +449,41 @@ export default function HomePage() {
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4">
-        {/* 本月概覽 - 移除條件渲染，始終顯示容器 */}
-          <div className="mb-6">
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-[#7B9FA6]/5">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1">市集場次</div>
-                  <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+        {/* 本月概覽 */}
+        <div className="mb-6">
+          <div className={`bg-white rounded-[1.5rem] p-6 shadow-md ${getShadowClass(isStaff)}`}>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-xs text-[#6B6B6B] mb-1">市集場次</div>
+                <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
                   {monthlyStats?.marketCount ?? 0}
-                  </div>
                 </div>
+              </div>
+              
+              {/* 員工模式：隱藏總收入 */}
+              {isStaff ? (
+                <div className="text-center">
+                  <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
+                  <SensitiveDataMask label="僅老闆可見" size="sm" />
+                </div>
+              ) : (
                 <div className="text-center">
                   <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
                   <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
-                  {formatCurrency(monthlyStats?.totalRevenue ?? 0)}
+                    {formatCurrency(monthlyStats?.totalRevenue ?? 0)}
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1">成交數</div>
-                  <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+              )}
+              
+              <div className="text-center">
+                <div className="text-xs text-[#6B6B6B] mb-1">成交數</div>
+                <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
                   {monthlyStats?.totalDeals ?? 0}
-                  </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
         {/* 當日市集 - 移除條件渲染，始終顯示容器 */}
         {todayMarkets.length > 0 && (

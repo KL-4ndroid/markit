@@ -6,12 +6,15 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { navigationStore } from '@/lib/navigation-store';
 import { useNavigation } from '@/lib/navigation-context';
+import { useUserRole } from '@/hooks/useUserRole';
+import { toast } from 'sonner';
 
 export function BottomNavigation() {
   const pathname = usePathname();
   const router = useRouter();
   const [isNavVisible, setIsNavVisible] = useState(true);
   const { setNavigation } = useNavigation();
+  const { isStaff } = useUserRole(); // ✅ 員工權限檢查
 
   // 訂閱全局導航狀態
   useEffect(() => {
@@ -73,8 +76,18 @@ export function BottomNavigation() {
   // 獲取當前路由索引
   const currentIndex = navItems.find(item => item.path === pathname)?.index ?? 0;
 
-  // 處理導航點擊
-  const handleNavClick = (item: typeof navItems[0]) => {
+  // ✅ 處理導航點擊（員工模式下禁用分析功能）
+  const handleNavClick = (e: React.MouseEvent, item: typeof navItems[0]) => {
+    // 員工模式下禁用分析功能
+    if (isStaff && item.id === 'analytics') {
+      e.preventDefault();
+      toast.error('此功能僅供老闆使用', {
+        description: '員工無權限查看數據分析',
+        duration: 2000,
+      });
+      return;
+    }
+    
     setNavigation(currentIndex, item.index);
   };
 
@@ -88,18 +101,25 @@ export function BottomNavigation() {
             const Icon = item.icon;
             const isActive = pathname === item.path;
 
+            // ✅ 員工模式下禁用分析功能
+            const isDisabled = isStaff && item.id === 'analytics';
+            
             return (
               <Link
                 key={item.id}
                 href={item.path}
                 prefetch={true}
-                onClick={() => handleNavClick(item)}
-                className="flex flex-col items-center gap-1 min-w-[60px] transition-all hardware-accelerated"
+                onClick={(e) => handleNavClick(e, item)}
+                className={`flex flex-col items-center gap-1 min-w-[60px] transition-all hardware-accelerated ${
+                  isDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <div
                   className={`p-2.5 rounded-2xl transition-all hardware-accelerated ${
                     isActive
                       ? 'bg-[#7B9FA6] text-white'
+                      : isDisabled
+                      ? 'bg-transparent text-[#6B6B6B]'
                       : 'bg-transparent text-[#6B6B6B] hover:bg-[#F5E6E8]'
                   }`}
                 >

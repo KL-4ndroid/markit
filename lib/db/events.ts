@@ -35,7 +35,7 @@ export function registerEventHandler(type: EventType, handler: EventHandler): vo
 }
 
 /**
- * 核心函數：記錄事件（UUID 版本）
+ * 核心函數：記錄事件（UUID 版本）- 優化版本
  * 
  * 這是整個事件溯源系統的核心函數
  * 流程：
@@ -88,7 +88,7 @@ export async function recordEvent<T = Record<string, unknown>>(
       }
     }
 
-    // 使用 transaction 確保原子性
+    // ✅ 優化：使用 transaction 確保原子性，並減少不必要的等待
     await db.transaction(
       'rw',
       [db.events, db.markets, db.products, db.dailyStats],
@@ -108,14 +108,13 @@ export async function recordEvent<T = Record<string, unknown>>(
 
     console.log(`✅ 事件已記錄：${type} (ID: ${id.substring(0, 8)}...)`);
     
-    // ✅ 立即觸發同步（如果在瀏覽器環境）
+    // ✅ 優化：使用 queueMicrotask 非阻塞觸發同步
     if (typeof window !== 'undefined') {
-      // 使用 setTimeout 避免阻塞，延遲 100ms 讓事件處理完成
-      setTimeout(() => {
+      queueMicrotask(() => {
         window.dispatchEvent(new CustomEvent('trigger-sync', {
           detail: { eventType: type, eventId: id }
         }));
-      }, 100);
+      });
     }
     
     return id;
@@ -139,6 +138,7 @@ export async function recordEvent<T = Record<string, unknown>>(
  * 當 market_created 事件發生時：
  * 1. 在 markets 表中新增一筆記錄
  * 2. 初始狀態設為 'registered'（已報名）
+ * 3. ✅ 支持多選日期（dates 陣列）
  */
 registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>, db) => {
   const { payload } = event;
@@ -148,13 +148,29 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
   const payloadWithId = payload as MarketCreatedPayload & { market_id?: string; marketId?: string };
   const market_id = payloadWithId.market_id || payloadWithId.marketId || generateUUID();
   
+  // ✅ 處理日期：優先使用 dates 陣列，否則使用 startDate/endDate
+  let dates: string[] = [];
+  if (payload.dates && payload.dates.length > 0) {
+    // 使用提供的日期陣列
+    dates = [...payload.dates].sort();
+  } else {
+    // 降級：從 startDate 和 endDate 生成連續日期
+    const { generateDateRange } = await import('@/lib/utils');
+    dates = generateDateRange(payload.startDate, payload.endDate);
+  }
+  
+  // ✅ 自動計算 startDate 和 endDate（取最早和最晚）
+  const startDate = dates[0];
+  const endDate = dates[dates.length - 1];
+  
   // 建立市集快照
   const market: Market = {
     id: market_id,
     name: payload.name,
     location: payload.location,
-    startDate: payload.startDate,
-    endDate: payload.endDate,
+    dates,                       // ✅ 新增：日期陣列
+    startDate,                   // ✅ 自動計算：最早日期
+    endDate,                     // ✅ 自動計算：最晚日期
     startTime: payload.startTime,
     endTime: payload.endTime,
     status: 'registered', // 初始狀態：已報名
@@ -213,8 +229,9 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
     updates.payload = {
       ...payload,
       market_id,
-      start_date: payload.startDate,
-      end_date: payload.endDate,
+      dates,                     // ✅ 添加 dates 陣列
+      start_date: startDate,     // ✅ 使用計算後的最早日期
+      end_date: endDate,         // ✅ 使用計算後的最晚日期
       start_time: payload.startTime,
       end_time: payload.endTime,
       early_entry_enabled: payload.earlyEntryEnabled,
@@ -240,7 +257,71 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
   
   await db.events.update(event.id!, updates);
   
-  console.log(`📅 市集已建立：${market.name} (ID: ${market_id.substring(0, 8)}...)`);
+  console.log(`📅 市集已建立：${market.name} (ID: ${market_id.substring(0, 8)}..., ${dates.length} 天)`);
+});
+
+/**
+ * 處理「市集更新」事件
+ * 
+ * 當 market_updated 事件發生時：
+ * 更新 markets 表中對應市集的資料
+ */
+registerEventHandler('market_updated', async (event: Event<{ market_id: string; updates: Partial<Market> }>, db) => {
+  const { market_id, updates } = event.payload;
+  
+  // 更新市集資料
+  await db.markets.update(market_id, {
+    ...updates,
+    updatedAt: event.timestamp,
+  });
+  
+  // ✅ 轉換 payload 為底線式命名（用於 Supabase 同步）
+  const snakeCaseUpdates: Record<string, unknown> = {};
+  
+  // 基本資訊
+  if (updates.name !== undefined) snakeCaseUpdates.name = updates.name;
+  if (updates.location !== undefined) snakeCaseUpdates.location = updates.location;
+  if (updates.dates !== undefined) snakeCaseUpdates.dates = updates.dates;
+  if (updates.startDate !== undefined) snakeCaseUpdates.start_date = updates.startDate;
+  if (updates.endDate !== undefined) snakeCaseUpdates.end_date = updates.endDate;
+  if (updates.startTime !== undefined) snakeCaseUpdates.start_time = updates.startTime;
+  if (updates.endTime !== undefined) snakeCaseUpdates.end_time = updates.endTime;
+  
+  // 時間軸資訊
+  if (updates.earlyEntryEnabled !== undefined) snakeCaseUpdates.early_entry_enabled = updates.earlyEntryEnabled;
+  if (updates.earlyEntryTime !== undefined) snakeCaseUpdates.early_entry_time = updates.earlyEntryTime;
+  if (updates.checkInTime !== undefined) snakeCaseUpdates.check_in_time = updates.checkInTime;
+  if (updates.operatingStartTime !== undefined) snakeCaseUpdates.operating_start_time = updates.operatingStartTime;
+  if (updates.operatingEndTime !== undefined) snakeCaseUpdates.operating_end_time = updates.operatingEndTime;
+  
+  // 財務資訊
+  if (updates.registrationFee !== undefined) snakeCaseUpdates.registration_fee = updates.registrationFee;
+  if (updates.boothCost !== undefined) snakeCaseUpdates.booth_cost = updates.boothCost;
+  if (updates.deposit !== undefined) snakeCaseUpdates.deposit = updates.deposit;
+  if (updates.tableRental !== undefined) snakeCaseUpdates.table_rental = updates.tableRental;
+  if (updates.chairRental !== undefined) snakeCaseUpdates.chair_rental = updates.chairRental;
+  if (updates.umbrellaRental !== undefined) snakeCaseUpdates.umbrella_rental = updates.umbrellaRental;
+  if (updates.tableclothRental !== undefined) snakeCaseUpdates.tablecloth_rental = updates.tableclothRental;
+  if (updates.commissionRate !== undefined) snakeCaseUpdates.commission_rate = updates.commissionRate;
+  
+  // 免費提供標記
+  if (updates.tableFree !== undefined) snakeCaseUpdates.table_free = updates.tableFree;
+  if (updates.chairFree !== undefined) snakeCaseUpdates.chair_free = updates.chairFree;
+  if (updates.umbrellaFree !== undefined) snakeCaseUpdates.umbrella_free = updates.umbrellaFree;
+  if (updates.tableclothFree !== undefined) snakeCaseUpdates.tablecloth_free = updates.tableclothFree;
+  
+  // 備註
+  if (updates.notes !== undefined) snakeCaseUpdates.notes = updates.notes;
+  
+  // 更新事件的 payload 為底線式命名
+  await db.events.update(event.id!, {
+    payload: {
+      market_id,
+      updates: snakeCaseUpdates,
+    },
+  });
+  
+  console.log(`📅 市集已更新：ID ${market_id.substring(0, 8)}...`);
 });
 
 /**

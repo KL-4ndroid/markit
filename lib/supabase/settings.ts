@@ -98,23 +98,25 @@ export async function getQuickActionButtons(userId: string): Promise<QuickAction
 
 /**
  * 保存互動按鈕設定（新版）
+ * 注意：儲存到 quick_action_buttons 欄位（複用現有欄位）
  */
 export async function saveInteractionButtons(
   userId: string,
   buttons: InteractionButton[]
 ): Promise<void> {
   return saveUserSettings(userId, {
-    interaction_buttons: buttons,
+    quick_action_buttons: buttons as any,  // 複用 quick_action_buttons 欄位
   });
 }
 
 /**
  * 獲取互動按鈕設定（新版）
+ * 注意：從 quick_action_buttons 欄位讀取（複用現有欄位）
  */
 export async function getInteractionButtons(userId: string): Promise<InteractionButton[] | null> {
   try {
     const settings = await getUserSettings(userId);
-    return settings?.interaction_buttons || null;
+    return settings?.quick_action_buttons as any || null;  // 從 quick_action_buttons 讀取
   } catch (error) {
     console.error('獲取互動按鈕設定失敗:', error);
     return null;
@@ -130,9 +132,9 @@ export async function initializeUserSettings(userId: string): Promise<void> {
     const existing = await getUserSettings(userId);
     
     if (!existing) {
-      // 創建預設設定
+      // 創建預設設定（儲存到 quick_action_buttons 欄位）
       await saveUserSettings(userId, {
-        interaction_buttons: [
+        quick_action_buttons: [
           { 
             id: 'interest', 
             role: 'interest',
@@ -154,7 +156,7 @@ export async function initializeUserSettings(userId: string): Promise<void> {
             emoji: '📞',
             description: '顧客完成你想要的行為（建立未來聯繫）'
           },
-        ],
+        ] as any,  // 複用 quick_action_buttons 欄位
         theme: 'auto',
         language: 'zh-TW',
       });

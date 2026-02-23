@@ -1,17 +1,20 @@
 /**
  * DateTimePicker 樣式
- * 輕量級、響應式、iOS PWA 友好
+ * 現代化設計、響應式、iOS PWA 友好
  */
 
 .datetime-picker {
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
+  border-radius: 1.25rem;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(10px);
 }
 
 /* 動畫 */
@@ -24,20 +27,50 @@
   }
 }
 
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translate(-50%, -40%);
+    transform: translate(-50%, -40%) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.95);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
   }
 }
 
 /* 遮罩層 */
 .datetime-picker-overlay {
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(4px);
 }
 
 /* Header */
@@ -45,102 +78,158 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
-  background: linear-gradient(135deg, #7B9FA6 0%, #D4A574 100%);
+  padding: 1.5rem 1.25rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.datetime-picker-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  border-radius: 50%;
 }
 
 .datetime-picker-title {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.125rem;
+  font-weight: 700;
   flex: 1;
   text-align: center;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .datetime-picker-nav {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 0.5rem;
-  width: 2rem;
-  height: 2rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.625rem;
+  width: 2.5rem;
+  height: 2.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: white;
-  transition: background 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
 }
 
 .datetime-picker-nav:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .datetime-picker-nav:active {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(0.95);
 }
 
 /* Weekdays */
 .datetime-picker-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.25rem;
-  padding: 0.75rem;
-  background: #f8f8f8;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #666;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem 0.5rem;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #9ca3af;
   text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Days Grid */
 .datetime-picker-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.25rem;
-  padding: 0.75rem;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem 1.25rem;
 }
 
 .datetime-picker-day {
   aspect-ratio: 1;
-  border: none;
+  border: 2px solid transparent;
   background: transparent;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
+  border-radius: 0.75rem;
+  font-size: 0.9375rem;
   cursor: pointer;
-  transition: all 0.2s;
-  color: #3A3A3A;
-  font-weight: 500;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #1f2937;
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+}
+
+.datetime-picker-day::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(102, 126, 234, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.datetime-picker-day:hover:not(.disabled):not(.other-month)::before {
+  width: 100%;
+  height: 100%;
 }
 
 .datetime-picker-day:hover:not(.disabled):not(.other-month) {
-  background: #E8F3E8;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .datetime-picker-day:active:not(.disabled):not(.other-month) {
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
 .datetime-picker-day.other-month {
-  color: #ccc;
+  color: #d1d5db;
   cursor: default;
+  font-weight: 400;
 }
 
 .datetime-picker-day.today {
-  background: #FFF8E7;
-  color: #D4A574;
-  font-weight: 600;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  font-weight: 700;
+  border-color: #fbbf24;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
 }
 
 .datetime-picker-day.selected {
-  background: #7B9FA6;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-weight: 600;
+  font-weight: 700;
+  border-color: #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  animation: pulse 0.4s ease-out;
+}
+
+.datetime-picker-day.selected:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+  transform: translateY(-2px) scale(1.05);
 }
 
 .datetime-picker-day.disabled {
-  color: #ddd;
+  color: #e5e7eb;
   cursor: not-allowed;
   text-decoration: line-through;
+  opacity: 0.4;
 }
 
 /* Time Picker */
@@ -148,8 +237,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  gap: 0.5rem;
+  padding: 1.5rem 1.25rem;
+  gap: 1rem;
 }
 
 .datetime-picker-time-column {
@@ -160,117 +249,194 @@
 }
 
 .datetime-picker-time-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #666;
-  margin-bottom: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .datetime-picker-time-list {
   width: 100%;
-  height: 200px;
+  height: 220px;
   overflow-y: auto;
-  border: 2px solid #E8F3E8;
-  border-radius: 0.75rem;
-  padding: 0.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 1rem;
+  padding: 0.75rem;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  background: linear-gradient(to bottom, #fafafa 0%, #ffffff 100%);
 }
 
 .datetime-picker-time-list::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .datetime-picker-time-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+  background: #f3f4f6;
+  border-radius: 4px;
 }
 
 .datetime-picker-time-list::-webkit-scrollbar-thumb {
-  background: #7B9FA6;
-  border-radius: 3px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+}
+
+.datetime-picker-time-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
 }
 
 .datetime-picker-time-item {
   width: 100%;
-  padding: 0.5rem;
+  padding: 0.75rem;
   border: none;
   background: transparent;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 500;
+  border-radius: 0.75rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  color: #3A3A3A;
-  margin-bottom: 0.25rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #374151;
+  margin-bottom: 0.375rem;
 }
 
 .datetime-picker-time-item:hover {
-  background: #E8F3E8;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  transform: translateX(4px);
 }
 
 .datetime-picker-time-item.selected {
-  background: #7B9FA6;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transform: scale(1.05);
 }
 
 .datetime-picker-time-separator {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #7B9FA6;
-  margin: 0 0.5rem;
-  padding-top: 2rem;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #667eea;
+  margin: 0 0.75rem;
+  padding-top: 2.5rem;
+  text-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
 }
 
 /* Footer */
 .datetime-picker-footer {
   display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border-top: 1px solid #f0f0f0;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid #f3f4f6;
+  background: white;
+}
+
+/* ✅ 多選模式：已選數量顯示 */
+.datetime-picker-selected-count {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  font-size: 0.9375rem;
+  color: #6b7280;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border-radius: 0.875rem;
+  font-weight: 500;
+}
+
+.datetime-picker-selected-count strong {
+  color: #667eea;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0.375rem;
+  text-shadow: 0 1px 2px rgba(102, 126, 234, 0.1);
+}
+
+/* ✅ 多選模式：按鈕容器 */
+.datetime-picker-actions {
+  display: flex;
+  gap: 0.75rem;
 }
 
 .datetime-picker-today,
 .datetime-picker-cancel,
 .datetime-picker-confirm {
   flex: 1;
-  padding: 0.75rem;
+  padding: 0.875rem 1.25rem;
   border: none;
-  border-radius: 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+  border-radius: 0.875rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.datetime-picker-today::before,
+.datetime-picker-cancel::before,
+.datetime-picker-confirm::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+}
+
+.datetime-picker-today:active::before,
+.datetime-picker-cancel:active::before,
+.datetime-picker-confirm:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* ✅ 多選模式：按鈕最小寬度 */
+.datetime-picker-actions .datetime-picker-cancel,
+.datetime-picker-actions .datetime-picker-confirm {
+  flex: 0 0 auto;
+  min-width: 5.5rem;
 }
 
 .datetime-picker-today,
 .datetime-picker-confirm {
-  background: #7B9FA6;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
 }
 
 .datetime-picker-today:hover,
 .datetime-picker-confirm:hover {
-  background: #6A8E95;
+  background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
 .datetime-picker-today:active,
 .datetime-picker-confirm:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 
 .datetime-picker-cancel {
-  background: #F5E6E8;
-  color: #3A3A3A;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #374151;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .datetime-picker-cancel:hover {
-  background: #E5D6D8;
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .datetime-picker-cancel:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 
 /* 響應式 */
@@ -286,6 +452,7 @@
     position: sticky;
     top: 0;
     z-index: 10;
+    padding: 1.25rem 1rem;
   }
   
   .datetime-picker-footer {
@@ -293,33 +460,61 @@
     bottom: 0;
     z-index: 10;
     background: white;
+    padding: 1rem;
   }
   
   .datetime-picker-time-list {
-    height: 180px;
+    height: 200px;
   }
   
   .datetime-picker-days {
     padding: 1rem;
-    gap: 0.5rem;
+    gap: 0.625rem;
   }
   
   .datetime-picker-day {
     font-size: 1rem;
-    padding: 0.5rem;
+    border-radius: 0.875rem;
   }
   
   /* 增加觸控區域 */
   .datetime-picker-nav {
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
   }
   
   .datetime-picker-today,
   .datetime-picker-cancel,
   .datetime-picker-confirm {
-    padding: 1rem;
+    padding: 1rem 1.125rem;
     font-size: 1rem;
+  }
+  
+  .datetime-picker-selected-count {
+    font-size: 0.875rem;
+    padding: 0.75rem 0.875rem;
+  }
+  
+  .datetime-picker-selected-count strong {
+    font-size: 1.125rem;
+  }
+}
+
+/* 平板優化 */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .datetime-picker {
+    max-width: 420px;
+  }
+}
+
+/* 桌面優化 */
+@media (min-width: 1025px) {
+  .datetime-picker {
+    max-width: 440px;
+  }
+  
+  .datetime-picker-day:hover:not(.disabled):not(.other-month) {
+    transform: translateY(-3px);
   }
 }
 
@@ -337,5 +532,83 @@
   
   .datetime-picker-time-list {
     -webkit-overflow-scrolling: touch;
+  }
+  
+  /* iOS 安全區域 */
+  .datetime-picker-footer {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* 深色模式支援 */
+@media (prefers-color-scheme: dark) {
+  .datetime-picker {
+    background: linear-gradient(to bottom, #1f2937 0%, #111827 100%);
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  
+  .datetime-picker-weekdays {
+    color: #9ca3af;
+  }
+  
+  .datetime-picker-day {
+    color: #f3f4f6;
+  }
+  
+  .datetime-picker-day.other-month {
+    color: #4b5563;
+  }
+  
+  .datetime-picker-day:hover:not(.disabled):not(.other-month) {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+  }
+  
+  .datetime-picker-footer {
+    background: #1f2937;
+    border-top-color: #374151;
+  }
+  
+  .datetime-picker-selected-count {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+    color: #d1d5db;
+  }
+  
+  .datetime-picker-cancel {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+    color: #f3f4f6;
+  }
+  
+  .datetime-picker-cancel:hover {
+    background: linear-gradient(135deg, #4b5563 0%, #6b7280 100%);
+  }
+  
+  .datetime-picker-time-list {
+    background: linear-gradient(to bottom, #1f2937 0%, #111827 100%);
+    border-color: #374151;
+  }
+  
+  .datetime-picker-time-item {
+    color: #f3f4f6;
+  }
+  
+  .datetime-picker-time-item:hover {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+  }
+}
+
+/* 減少動畫（無障礙） */
+@media (prefers-reduced-motion: reduce) {
+  .datetime-picker,
+  .datetime-picker-overlay,
+  .datetime-picker-day,
+  .datetime-picker-nav,
+  .datetime-picker-today,
+  .datetime-picker-cancel,
+  .datetime-picker-confirm,
+  .datetime-picker-time-item {
+    animation: none !important;
+    transition: none !important;
   }
 }

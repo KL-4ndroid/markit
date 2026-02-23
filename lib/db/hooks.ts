@@ -103,11 +103,21 @@ export function useUpcomingMarkets(limit: number = 5) {
           return false;
         }
         
-        // ✅ 修復：檢查市集日期區間是否包含今天或未來
-        // 只要 endDate >= 今天，就應該顯示
+        // ✅ 優先檢查 dates 陣列（多選日期）
+        if (m.dates && m.dates.length > 0) {
+          // 檢查是否有任何日期 >= 今天
+          return m.dates.some(date => date >= today);
+        }
+        
+        // ✅ 降級：使用 endDate（連續日期，向後兼容）
         return m.endDate >= today;
       })
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+      .sort((a, b) => {
+        // 使用第一個日期或 startDate 排序
+        const dateA = (a.dates && a.dates.length > 0) ? a.dates[0] : a.startDate;
+        const dateB = (b.dates && b.dates.length > 0) ? b.dates[0] : b.startDate;
+        return new Date(dateA).getTime() - new Date(dateB).getTime();
+      })
       .slice(0, limit);
   }, [limit]);
 }
@@ -134,11 +144,18 @@ export async function updateMarketStatus(
   newStatus: MarketStatus,
   reason?: string
 ): Promise<void> {
+  // 先查詢市集
   const market = await db.markets.get(marketId);
   if (!market) {
     throw new Error(`市集不存在：ID ${marketId.substring(0, 8)}...`);
   }
   
+  // 如果狀態相同，直接返回，避免不必要的操作
+  if (market.status === newStatus) {
+    return;
+  }
+  
+  // 記錄事件（recordEvent 內部會管理自己的事務）
   await recordEvent('market_status_changed', {
     market_id: marketId,  // ✅ 統一使用 market_id
     oldStatus: market.status,
@@ -228,6 +245,22 @@ export function useProduct(id: string | undefined) {
  */
 export async function createProduct(data: ProductCreatedPayload): Promise<string> {
   return await recordEvent('product_created', data);
+}
+
+/**
+ * 更新市集資料（UUID 版本）
+ * 
+ * @param marketId - 市集 ID（UUID）
+ * @param updates - 要更新的欄位
+ */
+export async function updateMarket(
+  marketId: string,
+  updates: Partial<Omit<Market, 'id' | 'createdAt' | 'updatedAt'>>
+): Promise<void> {
+  await recordEvent('market_updated', {
+    market_id: marketId,
+    updates,
+  });
 }
 
 /**

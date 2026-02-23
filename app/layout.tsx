@@ -7,9 +7,13 @@ import { RegisterServiceWorker } from "./register-sw";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { AuthProvider } from "@/lib/supabase/auth-context";
+import { SyncProvider } from "@/lib/sync-context";
 import { AuthManager } from "@/components/auth/AuthManager";
 import { GlobalLoadingState } from "@/components/GlobalLoadingState";
 import { NavigationProvider } from "@/lib/navigation-context";
+import { SyncProgressManager } from "@/components/sync/SyncProgressManager";
+import { InitialSyncDialog } from "@/components/sync/InitialSyncDialog";
+import { StaffInvitationDialog } from "@/components/staff/StaffInvitationDialog";
 
 export const metadata: Metadata = {
   title: "市集誌 - Market Pulse",
@@ -63,50 +67,62 @@ export default function RootLayout({
       <body>
         {/* Auth Provider - 管理全域用戶狀態 */}
         <AuthProvider>
-          {/* Navigation Provider - 管理頁面切換方向 */}
-          <NavigationProvider>
-            {/* Service Worker 註冊 */}
-            <RegisterServiceWorker />
-            
-            {/* 全局載入狀態 - 首次載入時顯示 */}
-            <GlobalLoadingState />
-            
-            <div className="min-h-screen bg-[#FAFAF8]">
-              {/* 頂部導航 - 已移至首頁 Header */}
-              {/* <TopNavigation /> */}
+          {/* Sync Provider - 管理全域同步狀態 */}
+          <SyncProvider>
+            {/* Navigation Provider - 管理頁面切換方向 */}
+            <NavigationProvider>
+              {/* Service Worker 註冊 */}
+              <RegisterServiceWorker />
               
-              {/* 主要內容區域 */}
-              <main className="pb-24">
-                {children}
-              </main>
+              {/* 全局載入狀態 - 首次載入時顯示 */}
+              <GlobalLoadingState />
               
-              {/* 底部導航 */}
-              <BottomNavigation />
-              
-              {/* PWA 安裝提示 */}
-              <PWAInstallPrompt />
-              
-              {/* PWA 更新提示 */}
-              <PWAUpdatePrompt />
-              
-              {/* 認證管理（登入/遷移對話框） */}
-              <AuthManager />
-              
-              {/* Toast 通知 */}
-              <Toaster 
-                position="top-center"
-                toastOptions={{
-                  style: {
-                    background: '#FFFFFF',
-                    color: '#3A3A3A',
-                    border: '1px solid rgba(123, 159, 166, 0.2)',
-                    borderRadius: '1rem',
-                    padding: '1rem',
-                  },
-                }}
-              />
-            </div>
-          </NavigationProvider>
+              <div className="min-h-screen bg-[#FAFAF8]">
+                {/* 頂部導航 - 已移至首頁 Header */}
+                {/* <TopNavigation /> */}
+                
+                {/* 主要內容區域 */}
+                <main className="pb-24">
+                  {children}
+                </main>
+                
+                {/* 底部導航 */}
+                <BottomNavigation />
+                
+                {/* PWA 安裝提示 */}
+                <PWAInstallPrompt />
+                
+                {/* PWA 更新提示 */}
+                <PWAUpdatePrompt />
+                
+                {/* 認證管理（登入/遷移對話框） */}
+                <AuthManager />
+                
+                {/* 員工邀請對話框（優先級最高） */}
+                <StaffInvitationDialog />
+                
+                {/* 初始同步對話框（登入後立即顯示） */}
+                <InitialSyncDialog />
+                
+                {/* 同步進度管理 */}
+                <SyncProgressManager />
+                
+                {/* Toast 通知 */}
+                <Toaster 
+                  position="top-center"
+                  toastOptions={{
+                    style: {
+                      background: '#FFFFFF',
+                      color: '#3A3A3A',
+                      border: '1px solid rgba(123, 159, 166, 0.2)',
+                      borderRadius: '1rem',
+                      padding: '1rem',
+                    },
+                  }}
+                />
+              </div>
+            </NavigationProvider>
+          </SyncProvider>
         </AuthProvider>
       </body>
     </html>

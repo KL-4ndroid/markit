@@ -9,12 +9,14 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { useUserRole } from '@/hooks/useUserRole';
 import { SyncStatus } from '@/components/sync/SyncStatus';
-import { LogIn, LogOut, User } from 'lucide-react';
+import { LogIn, LogOut, User, Shield, Eye, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function TopNavigation() {
   const { user, signOut, isConfigured } = useAuth();
+  const { userRole } = useUserRole();
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleSignOut = async () => {
@@ -63,7 +65,11 @@ export function TopNavigation() {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 px-3 py-2 rounded-full bg-[#E8F3E8] hover:bg-[#D8E3D8] transition-colors"
               >
-                <User className="w-4 h-4 text-[#7B9FA6]" />
+                {userRole.isStaff ? (
+                  <Shield className="w-4 h-4 text-[#D4A574]" />
+                ) : (
+                  <User className="w-4 h-4 text-[#7B9FA6]" />
+                )}
                 <span className="text-sm text-[#3A3A3A] max-w-[100px] truncate">
                   {user.email?.split('@')[0]}
                 </span>
@@ -76,13 +82,59 @@ export function TopNavigation() {
                     className="fixed inset-0 z-40" 
                     onClick={() => setShowUserMenu(false)}
                   />
-                  <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-2 min-w-[200px] z-50 border border-[#7B9FA6]/10">
+                  <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-2 min-w-[240px] z-50 border border-[#7B9FA6]/10">
+                    {/* 用戶信息 */}
                     <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
                       <p className="text-xs text-[#6B6B6B]">登入為</p>
                       <p className="text-sm font-medium text-[#3A3A3A] truncate">
                         {user.email}
                       </p>
                     </div>
+
+                    {/* 身份信息 */}
+                    <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
+                      {userRole.isStaff ? (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Shield className="w-4 h-4 text-[#D4A574]" />
+                            <span className="text-sm font-medium text-[#3A3A3A]">
+                              員工身份
+                            </span>
+                          </div>
+                          {/* 老闆信息 */}
+                          {userRole.ownerEmail && (
+                            <div className="mb-2 p-2 bg-[#F0E8F3] rounded-lg">
+                              <p className="text-xs text-[#6B6B6B] mb-0.5">為以下老闆工作</p>
+                              <p className="text-sm font-medium text-[#3A3A3A] truncate">
+                                {userRole.ownerEmail}
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 text-xs">
+                            {userRole.permissions?.can_edit ? (
+                              <>
+                                <Edit3 className="w-3 h-3 text-[#7B9FA6]" />
+                                <span className="text-[#6B6B6B]">可編輯</span>
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="w-3 h-3 text-[#6B6B6B]" />
+                                <span className="text-[#6B6B6B]">僅查看</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-[#7B9FA6]" />
+                          <span className="text-sm font-medium text-[#3A3A3A]">
+                            老闆身份
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 登出按鈕 */}
                     <button
                       onClick={handleSignOut}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#F5E6E8] transition-colors text-left"

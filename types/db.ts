@@ -14,6 +14,7 @@
 export type EventType =
   // 市集相關事件
   | 'market_created'           // 市集建立
+  | 'market_updated'           // 市集更新
   | 'market_status_changed'    // 市集狀態變更
   | 'market_started'           // 市集開始營業
   | 'market_ended'             // 市集結束營業
@@ -79,8 +80,9 @@ export interface Market {
   id?: string;                 // UUID（由前端生成）
   name: string;                // 市集名稱
   location: string;            // 地點
-  startDate: string;           // 開始日期（ISO 8601 格式）
-  endDate: string;             // 結束日期（ISO 8601 格式）
+  dates?: string[];            // ✅ 新增：日期陣列（支持多選日期，可選以保持向後兼容）
+  startDate: string;           // 開始日期（ISO 8601 格式）- 保留作為最早日期
+  endDate: string;             // 結束日期（ISO 8601 格式）- 保留作為最晚日期
   startTime?: string;          // 開始時間（HH:mm）
   endTime?: string;            // 結束時間（HH:mm）
   status: MarketStatus;        // 當前狀態
@@ -90,6 +92,14 @@ export interface Market {
   owner_id?: string;           // 擁有者 UUID
   is_collaborative?: boolean;  // 是否為協作市集
   sync_status?: 'local_only' | 'synced' | 'conflict'; // 同步狀態
+  
+  // ✅ 新增：員工權限欄位（可選，向後兼容）
+  access_type?: 'owner' | 'staff';  // 訪問類型
+  permissions?: {                    // 權限設定
+    can_view: boolean;
+    can_edit: boolean;
+  };
+  relationship_owner_id?: string;    // 關係中的老闆 ID
   
   // 軟刪除標記
   isDeleted?: boolean;         // 是否已刪除（軟刪除，不顯示在列表中）
@@ -137,8 +147,9 @@ export interface Market {
 export interface MarketCreatedPayload {
   name: string;
   location: string;
-  startDate: string;
-  endDate: string;
+  dates?: string[];            // ✅ 新增：日期陣列（多選日期）
+  startDate: string;           // 保留：最早日期（向後兼容）
+  endDate: string;             // 保留：最晚日期（向後兼容）
   startTime?: string;
   endTime?: string;
   
@@ -166,6 +177,14 @@ export interface MarketCreatedPayload {
   tableclothFree?: boolean;
   
   notes?: string;
+}
+
+/**
+ * 市集更新事件的 Payload
+ */
+export interface MarketUpdatedPayload {
+  market_id: string;           // 市集 UUID
+  updates: Partial<Omit<Market, 'id' | 'createdAt' | 'updatedAt'>>;
 }
 
 /**
@@ -223,6 +242,14 @@ export interface Product {
   unlimitedStock?: boolean;    // 不限庫存（販售服務或接單訂製，預設 false）
   isActive: boolean;           // 是否啟用
   isShared?: boolean;          // ✅ 新增：是否為共享商品（團隊可見）
+  
+  // ✅ 新增：員工權限欄位（可選，向後兼容）
+  access_type?: 'owner' | 'staff';  // 訪問類型
+  permissions?: {                    // 權限設定
+    can_view: boolean;
+    can_edit: boolean;
+  };
+  relationship_owner_id?: string;    // 關係中的老闆 ID
   
   // 統計資訊
   totalSold?: number;          // 總銷售數量

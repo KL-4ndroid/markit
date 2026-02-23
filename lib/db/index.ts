@@ -231,8 +231,6 @@ export { generateUUID } from './uuid';
  */
 export async function initializeDatabase(): Promise<void> {
   try {
-    console.log('🔄 開始初始化資料庫...');
-    
     // 設置超時保護
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('資料庫初始化超時')), 8000);
@@ -243,8 +241,6 @@ export async function initializeDatabase(): Promise<void> {
       db.open(),
       timeoutPromise
     ]);
-    
-    console.log('✅ 資料庫連接已開啟');
     
     // 檢查是否已有設定記錄
     const settingsCount = await db.settings.count();
@@ -260,32 +256,16 @@ export async function initializeDatabase(): Promise<void> {
           autoBackup: false,
           updatedAt: Date.now(),
         });
-        console.log('✅ 資料庫初始化完成：已建立預設設定');
       } catch (addError) {
         // 如果添加失敗（可能是因為已存在），忽略錯誤
         if (addError instanceof Error && addError.name !== 'ConstraintError') {
           console.warn('⚠️ 建立預設設定時發生錯誤，但繼續執行:', addError);
-        } else {
-          console.log('ℹ️ 預設設定已存在，跳過建立');
         }
       }
     }
     
-    // 記錄資料庫統計
-    try {
-      const stats = {
-        events: await db.events.count(),
-        markets: await db.markets.count(),
-        products: await db.products.count(),
-        dailyStats: await db.dailyStats.count(),
-      };
-      
-      console.log('📊 資料庫統計：', stats);
-    } catch (statsError) {
-      console.warn('⚠️ 無法獲取資料庫統計，但繼續執行');
-    }
-    
-    console.log('✅ 資料庫初始化完成');
+    // ✅ 自動遷移：為舊市集資料生成 dates 陣列
+    await migrateDatesField();
   } catch (error) {
     console.error('❌ 資料庫初始化失敗：', error);
     
@@ -391,6 +371,83 @@ export async function importData(jsonData: string): Promise<void> {
     console.log('✅ 資料匯入完成');
   } catch (error) {
     console.error('❌ 匯入資料失敗：', error);
+    throw error;
+  }
+}
+
+/**
+ * ✅ 自動遷移：為舊市集資料生成 dates 陣列
+ * 
+ * 此函數會檢查所有市集記錄，如果沒有 dates 欄位或為空，
+ * 則根據 startDate 和 endDate 自動生成連續日期陣列。
+ * 
+ * 這是一個安全的操作：
+ * - 只會添加缺失的 dates 欄位
+ * - 不會修改已有 dates 的記錄
+ * - 不會影響其他欄位
+ */
+export async function migrateDatesField(): Promise<void> {
+  try {
+    const markets = await db.markets.toArray();
+    
+    for (const market of markets) {
+      // 檢查是否需要遷移
+      if (!market.dates || market.dates.length === 0) {
+        // 動態導入工具函數
+        const { generateDateRange } = await import('@/lib/utils');
+        
+        // 生成連續日期陣列
+        const dates = generateDateRange(market.startDate, market.endDate);
+        
+        // 更新市集記錄
+        await db.markets.update(market.id!, { dates });
+      }
+    }
+  } catch (error) {
+    console.error('❌ 日期遷移失敗：', error);
+  }
+}
+
+/**
+ * ✅ 回滾機制：重新生成 dates 陣列
+ * 
+ * 此函數會強制重新生成所有市集的 dates 陣列，
+ * 根據 startDate 和 endDate 生成連續日期。
+ * 
+ * ⚠️ 警告：
+ * - 此操作會覆蓋現有的 dates 陣列
+ * - 如果用戶手動選擇了不連續的日期，這些選擇會丟失
+ * - 建議在出現問題時才使用此功能
+ * 
+ * 使用場景：
+ * - 日期資料損壞或不一致
+ * - 需要將多選日期重置為連續日期
+ * - 測試或開發環境重置
+ */
+export async function rollbackDatesField(): Promise<void> {
+  try {
+    console.log('🔄 開始回滾市集日期...');
+    
+    const markets = await db.markets.toArray();
+    let rollbackCount = 0;
+    
+    for (const market of markets) {
+      // 動態導入工具函數
+      const { generateDateRange } = await import('@/lib/utils');
+      
+      // 強制重新生成連續日期陣列
+      const dates = generateDateRange(market.startDate, market.endDate);
+      
+      // 更新市集記錄
+      await db.markets.update(market.id!, { dates });
+      
+      rollbackCount++;
+      console.log(`✅ 回滾市集: ${market.name} (${dates.length} 天)`);
+    }
+    
+    console.log(`✅ 日期回滾完成：${rollbackCount} 筆市集已重置為連續日期`);
+  } catch (error) {
+    console.error('❌ 日期回滾失敗：', error);
     throw error;
   }
 }

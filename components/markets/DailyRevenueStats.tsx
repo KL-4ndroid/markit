@@ -1,10 +1,12 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { Calendar, DollarSign, TrendingUp, Plus } from 'lucide-react';
 import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import type { Market } from '@/types/db';
+import { getInteractionButtons } from '@/lib/interaction-buttons-store';
+import { db } from '@/lib/db';
+import type { Market, Event, InteractionRecordedPayload } from '@/types/db';
 
 interface DailyRevenueStatsProps {
   market: Market;
@@ -20,9 +22,77 @@ interface DailyRevenueStatsProps {
  */
 export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRevenueStatsProps) {
   const stats = useDateRangeStats(market.startDate, market.endDate);
+  const [interactionEvents, setInteractionEvents] = useState<Event<InteractionRecordedPayload>[]>([]);
+  const [interactionButtons, setInteractionButtons] = useState<Array<{ id: string; label: string; emoji: string }>>([]);
+
+  // 載入互動事件和按鈕配置
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // 載入互動按鈕配置
+        const buttons = getInteractionButtons();
+        setInteractionButtons(buttons);
+
+        // ✅ 修復：使用 dates 陣列或降級到連續日期範圍
+        const marketDates = market.dates && market.dates.length > 0 
+          ? market.dates 
+          : (() => {
+              // 降級：生成連續日期範圍
+              const dates: string[] = [];
+              const start = new Date(market.startDate);
+              const end = new Date(market.endDate);
+              for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                dates.push(dateStr);
+              }
+              return dates;
+            })();
+
+        // 獲取互動事件 - 只篩選在 marketDates 中的日期
+        const interactions = await db.events
+          .where('type')
+          .equals('interaction_recorded')
+          .filter(e => {
+            if (e.payload.marketId !== market.id) return false;
+            
+            // 將 timestamp 轉換為日期字串
+            const eventDate = new Date(e.timestamp);
+            const dateStr = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+            
+            // 檢查是否在 marketDates 中
+            return marketDates.includes(dateStr);
+          })
+          .toArray() as Event<InteractionRecordedPayload>[];
+
+        setInteractionEvents(interactions);
+      } catch (error) {
+        console.error('載入互動數據失敗：', error);
+      }
+    };
+
+    loadData();
+
+    // 監聽互動記錄事件，重新載入數據
+    const handleInteractionRecorded = () => {
+      loadData();
+    };
+
+    window.addEventListener('interaction-recorded', handleInteractionRecorded);
+
+    return () => {
+      window.removeEventListener('interaction-recorded', handleInteractionRecorded);
+    };
+  }, [market.id, market.startDate, market.endDate, market.dates]);
   
   // 生成市集日期範圍內的所有日期
   const dateRange = useMemo(() => {
+    // ✅ 修復：優先使用 dates 陣列，降級到連續日期範圍
+    if (market.dates && market.dates.length > 0) {
+      // 使用 dates 陣列（多選日期）
+      return [...market.dates].sort(); // 排序確保順序正確
+    }
+    
+    // 降級：生成連續日期範圍（舊邏輯）
     const dates: string[] = [];
     const start = new Date(market.startDate);
     const end = new Date(market.endDate);
@@ -34,26 +104,58 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
     }
     
     return dates;
-  }, [market.startDate, market.endDate]);
+  }, [market.startDate, market.endDate, market.dates]);
   
-  // 按日期組織統計數據
+  // 按日期組織統計數據（包含互動次數）
   const dailyData = useMemo(() => {
-    const dataMap = new Map<string, { revenue: number; profit: number; deals: number }>();
+    const dataMap = new Map<string, { 
+      revenue: number; 
+      profit: number; 
+      deals: number;
+      interactions: Record<string, number>;
+    }>();
     
     // 初始化所有日期為 0
     dateRange.forEach(date => {
-      dataMap.set(date, { revenue: 0, profit: 0, deals: 0 });
+      const interactionCounts: Record<string, number> = {};
+      interactionButtons.forEach(btn => {
+        interactionCounts[btn.id] = 0;
+      });
+      dataMap.set(date, { 
+        revenue: 0, 
+        profit: 0, 
+        deals: 0,
+        interactions: interactionCounts,
+      });
     });
     
     // ✅ 修復：只累加當前市集的統計數據
     stats?.forEach(stat => {
       // 檢查是否屬於當前市集且在日期範圍內
       if (stat.marketId === market.id && dateRange.includes(stat.date)) {
-        dataMap.set(stat.date, {
-          revenue: stat.revenue || 0,
-          profit: stat.profit || 0,
-          deals: stat.dealCount || 0,
-        });
+        const existing = dataMap.get(stat.date);
+        if (existing) {
+          dataMap.set(stat.date, {
+            ...existing,
+            revenue: stat.revenue || 0,
+            profit: stat.profit || 0,
+            deals: stat.dealCount || 0,
+          });
+        }
+      }
+    });
+
+    // 統計每日的互動次數
+    interactionEvents.forEach(event => {
+      const eventDate = new Date(event.timestamp);
+      const dateStr = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+      
+      const dayData = dataMap.get(dateStr);
+      if (dayData) {
+        const type = event.payload.type;
+        if (dayData.interactions[type] !== undefined) {
+          dayData.interactions[type]++;
+        }
       }
     });
     
@@ -61,7 +163,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
       date,
       ...data,
     }));
-  }, [stats, dateRange, market.id]);
+  }, [stats, dateRange, market.id, interactionEvents, interactionButtons]);
   
   // 判斷是否為單日市集
   const isSingleDay = market.startDate === market.endDate;
@@ -159,6 +261,33 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
                   </div>
                 </div>
               </div>
+
+              {/* 互動次數統計 */}
+              {interactionButtons.length > 0 && !isFuture && (
+                <div className="mt-3 pt-3 border-t border-[#7B9FA6]/10">
+                  <div className="flex items-center gap-2 text-xs text-[#6B6B6B] flex-wrap">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <span>互動：</span>
+                    {Object.values(day.interactions).some(count => count > 0) ? (
+                      // 有互動記錄：顯示各類互動次數
+                      interactionButtons
+                        .filter(button => (day.interactions[button.id] || 0) > 0)
+                        .map((button, index, filteredArray) => {
+                          const count = day.interactions[button.id] || 0;
+                          return (
+                            <span key={button.id} className="text-[#3A3A3A]">
+                              {button.label} <span className="font-medium">{count}</span>
+                              {index < filteredArray.length - 1 && <span className="mx-1">•</span>}
+                            </span>
+                          );
+                        })
+                    ) : (
+                      // 無互動記錄：顯示提示
+                      <span className="text-[#6B6B6B] italic">當日無任何互動記錄</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

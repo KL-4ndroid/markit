@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Package, Utensils, Gem, Shirt, Palette, BookOpen, MoreHorizontal } from 'lucide-react';
+import { Package, Utensils, Gem, Shirt, Palette, BookOpen, MoreHorizontal, Shield } from 'lucide-react';
 import type { Product, ProductCategory } from '@/types/db';
 import { formatCurrency } from '@/lib/utils';
+import { useStaffPermissions } from '@/hooks/useStaffPermissions';
 
 interface ProductCardProps {
   product: Product;
@@ -15,9 +16,20 @@ interface ProductCardProps {
  * 
  * 使用分類背景色和圖標替代圖片
  * 遵循日系設計系統的柔和色彩
+ * 
+ * ✅ 支援員工模式：
+ * - 顯示身份標籤（老闆/員工）
+ * - 員工模式下隱藏敏感數據（成本、利潤率）
+ * - 員工模式下禁用編輯功能
  */
 export function ProductCard({ product, onEdit }: ProductCardProps) {
   const router = useRouter();
+  
+  // ✅ 員工權限檢查
+  const { isStaff, canViewSensitiveData } = useStaffPermissions();
+  
+  // ✅ 檢查是否有權限欄位（向後兼容）
+  const hasPermissions = product.access_type !== undefined;
 
   // 根據分類返回對應的背景色和圖標
   const getCategoryStyle = (category: ProductCategory) => {
@@ -71,8 +83,13 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
   const categoryStyle = getCategoryStyle(product.category);
   const Icon = categoryStyle.icon;
 
-  // 點擊卡片觸發編輯
+  // ✅ 點擊卡片觸發編輯（員工模式下禁用）
   const handleClick = () => {
+    // 員工模式下不允許編輯
+    if (isStaff(product)) {
+      return;
+    }
+    
     if (onEdit) {
       onEdit(product);
     } else {
@@ -92,7 +109,9 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
   return (
     <div
       onClick={handleClick}
-      className="bg-white rounded-[1.5rem] overflow-hidden shadow-md shadow-[#7B9FA6]/5 cursor-pointer hover:shadow-lg transition-shadow"
+      className={`bg-white rounded-[1.5rem] overflow-hidden shadow-md shadow-[#7B9FA6]/5 ${
+        isStaff(product) ? 'cursor-default' : 'cursor-pointer hover:shadow-lg'
+      } transition-shadow`}
     >
       {/* 圖標區域 */}
       <div className={`${categoryStyle.bg} p-6 flex items-center justify-center relative`}>
@@ -102,6 +121,14 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
         <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full">
           <span className="text-xs text-[#6B6B6B]">{categoryStyle.text}</span>
         </div>
+        
+        {/* ✅ 員工模式標籤 - 只在有權限欄位且為員工時顯示 */}
+        {hasPermissions && isStaff(product) && (
+          <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
+            <Shield className="w-3 h-3 text-[#7B9FA6]" />
+            <span className="text-xs text-[#6B6B6B]">員工</span>
+          </div>
+        )}
 
         {/* 停用標記 */}
         {!product.isActive && (
@@ -125,7 +152,8 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
           <span className="text-xl font-medium text-[#7B9FA6] tabular-nums">
             {formatCurrency(product.price)}
           </span>
-          {product.cost && (
+          {/* ✅ 成本只有老闆可見（向後兼容：沒有權限欄位時顯示） */}
+          {product.cost && (!hasPermissions || canViewSensitiveData(product)) && (
             <span className="text-xs text-[#6B6B6B] line-through tabular-nums">
               成本 {formatCurrency(product.cost)}
             </span>
@@ -150,8 +178,8 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
             )}
           </div>
 
-          {/* 利潤率 */}
-          {profitMargin !== null && (
+          {/* ✅ 利潤率只有老闆可見（向後兼容：沒有權限欄位時顯示） */}
+          {profitMargin !== null && (!hasPermissions || canViewSensitiveData(product)) && (
             <span className={`font-medium ${profitMargin > 50 ? 'text-[#7B9FA6]' : 'text-[#D4A574]'}`}>
               {profitMargin}%
             </span>

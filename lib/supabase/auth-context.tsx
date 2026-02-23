@@ -12,6 +12,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './client';
 import { initializeUserSettings } from './settings';
 import { pullQuickActionButtonsFromCloud } from '@/lib/quick-actions-store';
+import { resetInitialSyncFlag } from '@/hooks/useSync';
 
 interface AuthContextType {
   user: User | null;
@@ -85,26 +86,98 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // 如果雲端沒有設定，初始化預設設定
           if (!buttons) {
             await initializeUserSettings(userId);
-            console.log('✅ 用戶設定已初始化');
-          } else {
-            console.log('✅ 已從雲端同步用戶設定');
           }
         } catch (error) {
           console.error('同步用戶設定失敗:', error);
-          // 靜默失敗，不影響應用運行
         }
-      }, 1000); // 延遲 1 秒執行
+      }, 1000);
     } catch (error) {
       console.error('同步用戶設定失敗:', error);
-      // 靜默失敗，不影響應用運行
     }
   };
 
   const handleSignOut = async () => {
+    // ✅ 檢查是否為員工模式
+    const { clearRoleCache } = await import('@/hooks/useUserRole');
+    const cachedRole = typeof window !== 'undefined' ? localStorage.getItem('user_role_cache') : null;
+    let isStaffUser = false;
+    
+    if (cachedRole) {
+      try {
+        const data = JSON.parse(cachedRole);
+        isStaffUser = data.role?.isStaff || false;
+      } catch (error) {
+        console.error('解析角色緩存失敗:', error);
+      }
+    }
+    
+    // 執行登出
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('登出失敗:', error);
       throw error;
+    }
+    
+    // ✅ 重置初始同步標記，下次登入時會重新執行
+    resetInitialSyncFlag();
+    
+    // ✅ 清除 sessionStorage 中的初始同步完成標記
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('hasCompletedInitialSync');
+    }
+    
+    // ✅ 清除角色緩存
+    clearRoleCache();
+    
+    console.log('🔄 已重置同步標記和角色緩存');
+    
+    // ✅ 員工模式：清除本地資料庫並重新載入頁面
+    if (isStaffUser) {
+      console.log('👤 員工模式登出：清除本地資料庫...');
+      
+      try {
+        // 刪除 IndexedDB 資料庫
+        if (typeof window !== 'undefined' && window.indexedDB) {
+          const dbName = 'MarketPulseDB';
+          const deleteRequest = window.indexedDB.deleteDatabase(dbName);
+          
+          deleteRequest.onsuccess = () => {
+            console.log('✅ 本地資料庫已清除');
+            // 清除所有 localStorage
+            localStorage.clear();
+            // 清除所有 sessionStorage
+            sessionStorage.clear();
+            // 強制重新載入頁面
+            window.location.href = '/';
+          };
+          
+          deleteRequest.onerror = (event) => {
+            console.error('❌ 清除本地資料庫失敗:', event);
+            // 即使失敗也要重新載入
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/';
+          };
+          
+          deleteRequest.onblocked = () => {
+            console.warn('⚠️ 資料庫刪除被阻擋，強制重新載入');
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/';
+          };
+        } else {
+          // 如果不支援 IndexedDB，直接清除並重新載入
+          localStorage.clear();
+          sessionStorage.clear();
+          window.location.href = '/';
+        }
+      } catch (error) {
+        console.error('清除本地資料時發生錯誤:', error);
+        // 確保即使出錯也要重新載入
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = '/';
+      }
     }
   };
 

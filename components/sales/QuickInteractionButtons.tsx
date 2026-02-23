@@ -76,6 +76,11 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
         duration: 2500,
       });
 
+      // ✅ 觸發 deal-closed 事件，通知其他組件更新
+      window.dispatchEvent(new CustomEvent('deal-closed', {
+        detail: { marketId, amount, paymentMethod }
+      }));
+
       // 清空金額
       setDisplayAmount('0');
 
