@@ -9,6 +9,7 @@ import { AddMarketForm } from '@/components/markets/AddMarketForm';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/lib/supabase/auth-context';
 import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
 import type { MarketStatus } from '@/types/db';
 import MarketsLoading from './loading';
@@ -19,7 +20,8 @@ export default function MarketsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { isStaff } = useUserRole(); // ✅ 員工權限檢查
+  const { userRole, isStaff } = useUserRole(); // ✅ 員工權限檢查
+  const { user } = useAuth(); // ✅ 獲取當前用戶
 
   // 初始化資料庫
   useEffect(() => {
@@ -46,8 +48,14 @@ export default function MarketsPage() {
     };
   }, []);
 
-  // 查詢所有市集
-  const allMarkets = useMarkets({ orderBy: 'startDate', order: 'desc' });
+  // ✅ 根據用戶身份過濾市集（權限控制）
+  const currentOwnerId = isStaff ? userRole.ownerId : user?.id;
+  
+  const allMarkets = useMarkets({ 
+    orderBy: 'startDate', 
+    order: 'desc',
+    ownerId: currentOwnerId,  // ✅ 根據擁有者 ID 過濾
+  });
 
   // ✅ 載入狀態檢查：資料庫未初始化或數據未載入時顯示骨架屏
   const isLoading = !isInitialized || allMarkets === undefined;
@@ -182,7 +190,7 @@ export default function MarketsPage() {
             )}
           </div>
           <p className="text-white/80 text-sm">
-            {isStaff ? '查看所有市集場次 🎪' : '管理您的市集場次 🎪'}
+            {isStaff ? '' : '管理您的市集場次 🎪'}
           </p>
         </div>
       </div>

@@ -1,29 +1,110 @@
 # Market Pulse - Cursor AI 開發規則
 
 ## 專案概述
-Market Pulse 是一個專為市集攤販設計的離線優先數位助手。
-核心原則：3秒操作、100%離線、日系美學。
+Market Pulse 是一個專為市集攤販設計的 **Local-First（本地優先）** 數位助手。
+核心原則：3秒操作、本地優先、日系美學。
+
+## 🎯 Local-First 架構原則
+
+### 核心理念
+**本地 Dexie 是 UI 的唯一資料來源**
+- 所有讀取操作必須針對 Dexie（使用 `useLiveQuery`）
+- 雲端 Supabase 僅作為備份和協作工具
+- 即使斷網一小時，本地操作也必須完全正常
+
+### 資料流向
+
+```
+┌─────────────────────────────────────────────┐
+│           使用者操作 (UI)                    │
+└─────────────────┬───────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────────┐
+│     寫入 Dexie (Event Sourcing)             │
+│     - 記錄事件到 events 表                   │
+│     - 更新快照表 (markets, products)         │
+└─────────────────┬───────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────────┐
+│     UI 自動更新 (useLiveQuery)              │
+│     - Dexie 驅動 React 重新渲染             │
+└─────────────────┬───────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────────┐
+│     背景同步至 Supabase (非阻塞)            │
+│     - 自動重試機制                           │
+│     - 衝突解決                               │
+└─────────────────────────────────────────────┘
+```
+
+### 雲端回流規則
+
+```
+Supabase 新資料
+    ↓
+寫入 Dexie (events 表)
+    ↓
+觸發事件處理器
+    ↓
+更新快照表
+    ↓
+UI 自動更新 (useLiveQuery)
+```
+
+**⚠️ 嚴格禁止**：直接從 Supabase 讀取資料並渲染 UI
+
+### 斷網處理
+
+```typescript
+// ✅ 正確：本地操作完全不受影響
+async function createMarket(data: MarketData) {
+  // 1. 立即寫入本地
+  await recordEvent({
+    type: 'market_created',
+    payload: data,
+    timestamp: Date.now(),
+  });
+  
+  // 2. UI 立即更新（useLiveQuery 自動觸發）
+  
+  // 3. 背景同步（失敗會自動重試）
+  // 由 useSync Hook 自動處理，不阻塞用戶操作
+}
+
+// ❌ 錯誤：依賴網路連接
+async function createMarket(data: MarketData) {
+  await supabase.from('markets').insert(data); // 斷網會失敗
+}
+```
 
 ## 技術棧
 - Next.js 14+ (App Router)
 - TypeScript (嚴格模式)
 - Tailwind CSS
-- Dexie.js (IndexedDB)
+- **Dexie.js (IndexedDB) - 唯一資料來源**
+- **Supabase (PostgreSQL) - 備份 + 協作**
 - Zustand (狀態管理)
 - Lucide React (圖標)
 
 ## 設計系統規範
 
 ### 必須遵循的色彩
+
+#### 老闆模式（預設）
 - 主色：#7B9FA6 (霧藍)
 - 次色：#D4A574 (暖木)
 - 背景：#FAFAF8 (米白)
 - 輔助色：#F5E6E8 (柔粉)、#E8F3E8 (柔綠)、#FFF8E7 (柔黃)
 
+#### 員工模式
+- 主色：#8B7BA6 (紫灰)
+- 次色：#A6B4D4 (淺藍紫)
+- 淺色背景：#F0E8F3 (淺紫)
+
 ### 圓角系統
 - 主卡片：rounded-[1.5rem] (24px)
 - 次卡片：rounded-[1.25rem] (20px)
-- 按鈕：rounded-2xl (16px)
+- 按鈕：rounded-xl (12px)
 - 標籤：rounded-full
 
 ### 陰影
@@ -81,17 +162,224 @@ export default function PageName() {
 
 ### 禁止事項
 ❌ 不允許圖片上傳或 Base64 儲存
-❌ 不使用外部 API（離線優先）
+❌ 不直接從 Supabase 讀取資料渲染 UI
 ❌ 不使用 Emoji 圖片（使用 Lucide Icons）
 ❌ 不偏離設計系統色彩
+❌ 不在主執行緒執行同步操作（會阻塞 UI）
 
 ### 必須遵循
 ✅ 所有資料存於 IndexedDB (Dexie.js)
+✅ 所有讀取使用 `useLiveQuery` 或自訂 Hooks
 ✅ 使用事件溯源模式
+✅ 背景同步至 Supabase（非阻塞）
 ✅ 單手操作優化（按鈕至少 44x44px）
 ✅ 頁面底部預留 pb-24 給導航
 ✅ 使用 max-w-lg mx-auto 限制內容寬度
 ✅ 添加適當的 transition 動畫
+
+## 資料庫規範
+
+### Local-First 資料流
+
+#### 寫入流程（必須遵循）
+
+```typescript
+// ✅ 正確：Local-First 寫入流程
+import { recordEvent } from '@/lib/db/events';
+
+async function handleUserAction(data: any) {
+  // 步驟 1: 寫入本地 Dexie（立即完成）
+  await recordEvent({
+    type: 'market_created',
+    payload: data,
+    timestamp: Date.now(),
+    actor_id: userId,
+    market_id: marketId,
+  });
+  
+  // 步驟 2: UI 自動更新（useLiveQuery 觸發）
+  // 不需要手動更新狀態
+  
+  // 步驟 3: 背景同步（由 useSync Hook 自動處理）
+  // 失敗會自動重試，不影響用戶體驗
+}
+
+// ❌ 錯誤：直接寫入 Supabase
+async function handleUserAction(data: any) {
+  await supabase.from('markets').insert(data); // 斷網會失敗
+}
+
+// ❌ 錯誤：同時寫入兩處
+async function handleUserAction(data: any) {
+  await db.markets.add(data);
+  await supabase.from('markets').insert(data); // 重複邏輯
+}
+```
+
+#### 讀取流程（必須遵循）
+
+```typescript
+// ✅ 正確：從 Dexie 讀取
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/lib/db';
+
+function MarketsList() {
+  const markets = useLiveQuery(
+    () => db.markets
+      .where('status')
+      .equals('paid')
+      .toArray()
+  );
+  
+  if (!markets) return <Loading />;
+  
+  return (
+    <div>
+      {markets.map(market => (
+        <MarketCard key={market.id} market={market} />
+      ))}
+    </div>
+  );
+}
+
+// ✅ 正確：使用自訂 Hook
+import { useMarkets } from '@/lib/db/hooks';
+
+function MarketsList() {
+  const markets = useMarkets({ 
+    orderBy: 'startDate', 
+    order: 'desc' 
+  });
+  
+  if (!markets) return <Loading />;
+  
+  return (
+    <div>
+      {markets.map(market => (
+        <MarketCard key={market.id} market={market} />
+      ))}
+    </div>
+  );
+}
+
+// ❌ 錯誤：從 Supabase 讀取
+function MarketsList() {
+  const [markets, setMarkets] = useState([]);
+  
+  useEffect(() => {
+    supabase
+      .from('markets')
+      .select('*')
+      .then(({ data }) => setMarkets(data)); // 違反 Local-First
+  }, []);
+  
+  // ...
+}
+
+// ❌ 錯誤：混合讀取
+function MarketsList() {
+  const localMarkets = useLiveQuery(() => db.markets.toArray());
+  const [cloudMarkets, setCloudMarkets] = useState([]);
+  
+  // 不應該有兩個資料來源
+}
+```
+
+#### 雲端回流（由 useSync 自動處理）
+
+```typescript
+// ✅ 正確：雲端資料必須先寫入 Dexie
+async function pullEventsFromCloud(userId: string) {
+  // 1. 從 Supabase 拉取新事件
+  const { data: newEvents } = await supabase
+    .from('events')
+    .select('*')
+    .gt('timestamp', lastSyncAt);
+  
+  // 2. 寫入本地 Dexie
+  for (const event of newEvents) {
+    await db.events.add({
+      ...event,
+      sync_status: 'synced',
+    });
+    
+    // 3. 觸發事件處理器（更新快照表）
+    const handler = eventHandlers[event.type];
+    if (handler) {
+      await handler(event, db);
+    }
+  }
+  
+  // 4. UI 自動更新（useLiveQuery 觸發）
+}
+
+// ❌ 錯誤：直接使用雲端資料更新 UI
+async function pullEventsFromCloud(userId: string) {
+  const { data: markets } = await supabase
+    .from('markets')
+    .select('*');
+  
+  setMarkets(markets); // 違反 Local-First
+}
+```
+
+### 事件溯源架構
+- ✅ 所有操作記錄為不可變事件
+- ✅ 維護快照表以供快速讀取
+- ✅ 使用 transaction 確保原子性
+- ✅ 可從事件歷史重建快照
+
+### 資料表結構
+- **events**: 歷史事件（不可變，唯一真實來源）
+- **markets**: 市集快照（從 events 計算得出）
+- **products**: 商品清單（⚠️ 禁止圖片欄位）
+- **dailyStats**: 每日統計（從 events 計算得出）
+- **settings**: 用戶設定
+
+### 同步機制
+
+```typescript
+// ✅ 正確：使用 useSync Hook
+import { useSync } from '@/hooks/useSync';
+
+function MyComponent() {
+  const { status, lastSyncAt, pendingCount, sync } = useSync({
+    enabled: true,
+    interval: 30000, // 30 秒自動同步
+  });
+  
+  // 手動觸發同步
+  const handleManualSync = () => {
+    sync();
+  };
+  
+  return (
+    <div>
+      <p>同步狀態: {status}</p>
+      <p>待同步事件: {pendingCount}</p>
+      <button onClick={handleManualSync}>立即同步</button>
+    </div>
+  );
+}
+
+// ❌ 錯誤：自己實作同步邏輯
+function MyComponent() {
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      // 不應該自己實作同步
+      await supabase.from('events').insert(localEvents);
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+}
+```
+
+### 事件類型
+- 市集：market_created, market_updated, market_status_changed, market_started, market_ended, market_deleted
+- 商品：product_created, product_updated, product_deleted
+- 互動：interaction_recorded, deal_closed
+- 設定：settings_updated
 
 ## 工具函數使用
 
@@ -114,66 +402,60 @@ formatNumber(1234567)         // "1,234,567"
 ### 必須檢查
 - [ ] 使用 max-w-lg mx-auto
 - [ ] 頁面底部 pb-24
-- [ ] 按鈕尺寸足夠大
+- [ ] 按鈕尺寸足夠大（至少 44x44px）
 - [ ] 添加 hover 和 transition
 - [ ] 使用大圓角
-- [ ] 適當的 emoji 使用
+- [ ] 適當的圖示使用（Lucide Icons）
 
-## 資料庫規範
+## 錯誤處理
 
-### 事件溯源架構
-- ✅ 所有操作記錄為不可變事件
-- ✅ 維護快照表以供快速讀取
-- ✅ 使用 transaction 確保原子性
-- ✅ 可從事件歷史重建快照
+### 網路錯誤處理
 
-### 資料表結構
-- **events**: 歷史事件（不可變）
-- **markets**: 市集快照
-- **products**: 商品清單（⚠️ 禁止圖片欄位）
-- **dailyStats**: 每日統計
-- **settings**: 用戶設定
-
-### 使用規範
 ```typescript
-// ✅ 正確：使用 Hooks
-import { useMarkets, createMarket } from '@/lib/db/hooks';
-const markets = useMarkets();
-await createMarket(data);
+// ✅ 正確：優雅降級
+async function syncToCloud() {
+  try {
+    await supabase.from('events').insert(events);
+  } catch (error) {
+    if (error.message?.includes('Failed to fetch')) {
+      // 網路錯誤，標記為待同步
+      console.warn('⚠️ 網路連線失敗，將在下次自動重試');
+      return; // 不拋出錯誤，讓用戶繼續使用
+    }
+    
+    // 其他錯誤才拋出
+    throw error;
+  }
+}
 
-// ❌ 錯誤：直接修改資料庫
-await db.markets.add(data); // 應該使用 createMarket()
-
-// ✅ 正確：記錄事件
-await recordEvent('market_created', payload);
-
-// ✅ 正確：查詢資料
-const market = await db.markets.get(id);
+// ❌ 錯誤：阻塞用戶操作
+async function syncToCloud() {
+  await supabase.from('events').insert(events); // 斷網會拋出錯誤
+}
 ```
-
-### 事件類型
-- 市集：market_created, market_status_changed, market_started, market_ended
-- 商品：product_created, product_updated, product_deleted
-- 互動：interaction_recorded, deal_closed
-- 設定：settings_updated
 
 ## 參考文件優先級
 
-1. PROJECT_CONTEXT.md - 專案核心原則
-2. JAPANESE_UI_DESIGN_SYSTEM.md - 設計系統
-3. QUICK_START.md - 開發指南
-4. STEP1_COMPLETION_REPORT.md - 當前進度
+1. **AI_ASSISTANT_COMPLETE_GUIDE.md** - AI 助手完整指南
+2. **PROJECT_CONTEXT.md** - 專案核心原則
+3. **JAPANESE_UI_DESIGN_SYSTEM.md** - 設計系統
+4. **SUBSCRIPTION_UI_IMPLEMENTATION.md** - 訂閱付費 UI
+5. **QUICK_START.md** - 開發指南
 
 ## AI 助手指引
 
 當協助開發時：
-1. 始終參考設計系統文件
-2. 保持日系美學風格
-3. 優先考慮移動裝置體驗
-4. 確保離線優先原則
-5. 遵循 3 秒操作原則
-6. 使用 TypeScript 嚴格型別
-7. 添加適當的註解說明
+1. **嚴格遵循 Local-First 架構**
+2. 所有讀取必須從 Dexie（使用 useLiveQuery）
+3. 所有寫入必須先到 Dexie（使用 recordEvent）
+4. 雲端同步由 useSync 自動處理
+5. 始終參考設計系統文件
+6. 保持日系美學風格
+7. 優先考慮移動裝置體驗
+8. 確保斷網時完全可用
+9. 遵循 3 秒操作原則
+10. 使用 TypeScript 嚴格型別
+11. 添加適當的註解說明
 
 ## 提交訊息規範
 
@@ -187,6 +469,19 @@ test: 測試相關
 chore: 雜項任務
 ```
 
+## 🎯 Local-First 檢查清單
+
+在實作任何功能前，請確認：
+
+- [ ] 資料讀取是否使用 `useLiveQuery` 或自訂 Hook？
+- [ ] 資料寫入是否使用 `recordEvent`？
+- [ ] 是否避免直接從 Supabase 讀取資料？
+- [ ] 是否避免在主執行緒執行同步操作？
+- [ ] 斷網時功能是否完全可用？
+- [ ] 是否有適當的錯誤處理（優雅降級）？
+- [ ] UI 更新是否由 Dexie 驅動（不是手動 setState）？
+
 ---
 
-遵循這些規則，確保專案保持一致性與高品質！
+**核心原則**：本地 Dexie 是唯一真實來源，雲端 Supabase 是備份和協作工具。
+遵循這些規則，確保專案保持 Local-First 架構的一致性與高品質！

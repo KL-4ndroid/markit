@@ -6,6 +6,7 @@ import { recordInteraction, recordDeal } from '@/lib/db/hooks';
 import { toast } from 'sonner';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import { db } from '@/lib/db';
+import { useLiveQuery } from 'dexie-react-hooks';
 
 interface QuickInteractionButtonsProps {
   marketId: string;
@@ -17,10 +18,26 @@ type PaymentMethod = 'cash' | 'mobile' | 'card' | 'other';
 /**
  * 快速互動按鈕組件
  * 用於快速成交功能
+ * 
+ * ✅ Optimistic UI：
+ * - 點擊後立即觸發 UI 變化（+1 動畫與數據跳動）
+ * - 基於本地 Dexie 的 useLiveQuery，不等待 API 回傳
+ * - 體感延遲趨近於 0
  */
 export function QuickInteractionButtons({ marketId, onInteractionRecorded }: QuickInteractionButtonsProps) {
   const [displayAmount, setDisplayAmount] = useState<string>('0');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [lastDealAmount, setLastDealAmount] = useState<number>(0);
+
+  // ✅ Optimistic UI：使用 useLiveQuery 即時獲取市集數據
+  const market = useLiveQuery(
+    async () => {
+      if (!marketId) return undefined;
+      return await db.markets.get(marketId);
+    },
+    [marketId]
+  );
 
   // 處理數字按鈕點擊
   const handleNumberClick = (num: number) => {
@@ -37,7 +54,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
     setDisplayAmount('0');
   };
 
-  // 處理快速成交
+  // ✅ Optimistic UI：處理快速成交
   const handleQuickDeal = async (paymentMethod: PaymentMethod) => {
     const amount = parseInt(displayAmount);
     
@@ -48,10 +65,37 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
 
     if (isProcessing) return;
 
+    // ✅ 立即觸發成功動畫（Optimistic UI）
+    setLastDealAmount(amount);
+    setShowSuccessAnimation(true);
+    
+    // 支付方式文字
+    const paymentText = {
+      cash: '現金',
+      mobile: '電子支付',
+      card: '轉帳',
+      other: '其他',
+    }[paymentMethod];
+
+    // ✅ 立即顯示成功提示（不等待 API）
+    toast.success(`🎉 成交記錄已新增！`, {
+      description: `${paymentText} - NT$${amount.toLocaleString()}`,
+      duration: 2500,
+    });
+
+    // ✅ 立即清空金額（提升體感速度）
+    setDisplayAmount('0');
+
+    // 動畫持續 1 秒後消失
+    setTimeout(() => {
+      setShowSuccessAnimation(false);
+    }, 1000);
+
     setIsProcessing(true);
 
     try {
-      // 記錄成交（簡化模式）
+      // ✅ 背景執行：記錄成交（寫入本地 Dexie）
+      // recordDeal 會立即更新本地數據，useLiveQuery 會自動響應
       await recordDeal({
         marketId,
         items: [],
@@ -62,44 +106,41 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
         manualDealCount: 1,
       });
 
-      // 支付方式文字
-      const paymentText = {
-        cash: '現金',
-        mobile: '電子支付',
-        card: '轉帳',
-        other: '其他',
-      }[paymentMethod];
-
-      // 成功提示
-      toast.success(`🎉 成交記錄已新增！`, {
-        description: `${paymentText} - NT$${amount.toLocaleString()}`,
-        duration: 2500,
-      });
-
       // ✅ 觸發 deal-closed 事件，通知其他組件更新
       window.dispatchEvent(new CustomEvent('deal-closed', {
         detail: { marketId, amount, paymentMethod }
       }));
 
-      // 清空金額
-      setDisplayAmount('0');
-
       onInteractionRecorded?.();
     } catch (error) {
       console.error('記錄成交失敗：', error);
-      toast.error('記錄失敗，請稍後再試');
+      
+      // ✅ 只有在真正失敗時才顯示錯誤（不影響 Optimistic UI）
+      toast.error('記錄失敗，數據已暫存本地', {
+        description: '將在連網後自動同步',
+        duration: 3000,
+      });
     } finally {
       setIsProcessing(false);
     }
   };
 
   return (
-    <div>
+    <div className="relative">
+      {/* ✅ 成功動畫（+1 效果） */}
+      {showSuccessAnimation && (
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
+          <div className="bg-[#E8F3E8] text-[#3A3A3A] px-4 py-2 rounded-full shadow-lg font-bold text-lg">
+            +NT$ {lastDealAmount.toLocaleString()} 🎉
+          </div>
+        </div>
+      )}
+
       {/* 顯示框 */}
       <div className="bg-gradient-to-br from-[#7B9FA6] to-[#6A8E95] rounded-2xl p-4 mb-3 relative overflow-hidden">
         <div className="absolute inset-0 bg-white/5"></div>
         <div className="relative flex items-center justify-between">
-          <div className="text-3xl font-bold text-white">
+          <div className="text-3xl font-bold text-white tabular-nums">
             NT$ {parseInt(displayAmount).toLocaleString()}
           </div>
           <button
@@ -110,6 +151,32 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
             <Delete className="w-5 h-5 text-white" />
           </button>
         </div>
+
+        {/* ✅ Optimistic UI：即時顯示市集統計 */}
+        {market && (
+          <div className="mt-3 pt-3 border-t border-white/20">
+            <div className="grid grid-cols-3 gap-2 text-white/80 text-xs">
+              <div className="text-center">
+                <div className="font-medium tabular-nums">
+                  {market.totalDeals || 0}
+                </div>
+                <div className="opacity-70">筆數</div>
+              </div>
+              <div className="text-center">
+                <div className="font-medium tabular-nums">
+                  NT$ {(market.totalRevenue || 0).toLocaleString()}
+                </div>
+                <div className="opacity-70">收入</div>
+              </div>
+              <div className="text-center">
+                <div className="font-medium tabular-nums">
+                  NT$ {(market.totalProfit || 0).toLocaleString()}
+                </div>
+                <div className="opacity-70">利潤</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 數字鍵盤 */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { createPortal } from 'react-dom';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X } from 'lucide-react';
 import { DealItem } from './DealItem';
 import type { Event, DealClosedPayload } from '@/types/db';
@@ -25,8 +25,6 @@ export function DailyDealsModal({
   deals,
   onDealClick,
 }: DailyDealsModalProps) {
-  if (!isOpen) return null;
-
   // 格式化日期顯示
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -40,27 +38,21 @@ export function DailyDealsModal({
   // 計算總收入
   const totalRevenue = deals.reduce((sum, deal) => sum + deal.payload.totalAmount, 0);
 
-  return createPortal(
-    <>
-      {/* 背景遮罩 - 確保覆蓋全螢幕 */}
-      <div
-        className="fixed inset-0 bg-black/50 z-[999] transition-opacity"
-        onClick={onClose}
-      />
+  return (
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      {/* 背景遮罩 */}
+      <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
 
-      {/* 彈窗容器 - 強制鎖定螢幕正中央 */}
-      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center pointer-events-none p-0 sm:p-6">
-        <div
-          className="bg-white rounded-t-[2rem] sm:rounded-[1.5rem] w-full sm:max-w-lg max-h-[85vh] sm:max-h-[80vh] flex flex-col shadow-2xl animate-slide-up pointer-events-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
+      {/* 彈窗容器 */}
+      <div className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-6">
+        <DialogPanel className="bg-white rounded-t-[2rem] sm:rounded-[1.5rem] w-full sm:max-w-lg max-h-[85vh] sm:max-h-[80vh] flex flex-col shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <div>
-              <h2 className="text-xl font-medium text-[#3A3A3A] flex items-center gap-2">
+              <DialogTitle className="text-xl font-medium text-[#3A3A3A] flex items-center gap-2">
                 <span>🧾</span>
                 {formatDate(date)} 成交記錄
-              </h2>
+              </DialogTitle>
               <p className="text-sm text-[#6B6B6B] mt-1">
                 共 {deals.length} 筆 · 總收入 NT$ {totalRevenue.toLocaleString()}
               </p>
@@ -107,25 +99,8 @@ export function DailyDealsModal({
               關閉
             </button>
           </div>
-        </div>
+        </DialogPanel>
       </div>
-
-      <style jsx>{`
-        @keyframes slide-up {
-          from {
-            transform: translateY(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
-        }
-      `}</style>
-    </>,
-    document.body // 將元件掛載到 body，確保不受父層影響
+    </Dialog>
   );
 }

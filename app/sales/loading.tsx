@@ -1,35 +1,37 @@
 /**
  * 銷售頁載入骨架屏
+ * - 純黑白灰階設計：不受主題色影響，視覺一致
+ * - 流光效果：由左至右的光影流動
  */
 
 export default function SalesLoading() {
   return (
     <div className="min-h-screen bg-[#FAFAF8]">
-      {/* Header Skeleton */}
-      <div className="gradient-header pt-12 pb-8 px-6 rounded-b-[2rem]">
+      {/* Header Skeleton - 純灰階 */}
+      <div className="bg-gradient-to-br from-gray-300 to-gray-400 pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
-          <div className="h-8 w-24 bg-white/20 rounded-lg animate-pulse mb-2"></div>
-          <div className="h-4 w-40 bg-white/10 rounded animate-pulse"></div>
+          <div className="h-8 w-24 bg-white/30 rounded-lg skeleton-shimmer-header mb-2"></div>
+          <div className="h-4 w-40 bg-white/20 rounded skeleton-shimmer-header"></div>
         </div>
       </div>
 
       {/* Content Skeleton */}
       <div className="max-w-lg mx-auto px-6 -mt-4 space-y-4">
-        {/* 市集選擇骨架 */}
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10">
-          <div className="h-12 bg-gray-100 rounded-xl animate-pulse"></div>
+        {/* 市集選擇骨架 - 純灰階陰影 */}
+        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-gray-200/50">
+          <div className="h-12 bg-gray-100 rounded-xl skeleton-shimmer"></div>
         </div>
 
-        {/* 商品網格骨架 */}
+        {/* 商品網格骨架 - 純灰階陰影 */}
         <div className="grid grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-[1.5rem] p-4 shadow-lg shadow-[#7B9FA6]/10"
+              className="bg-white rounded-[1.5rem] p-4 shadow-lg shadow-gray-200/50"
             >
-              <div className="h-24 bg-gray-100 rounded-xl animate-pulse mb-3"></div>
-              <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mb-2"></div>
-              <div className="h-5 w-16 bg-gray-100 rounded animate-pulse"></div>
+              <div className="h-24 bg-gray-100 rounded-xl skeleton-shimmer mb-3"></div>
+              <div className="h-4 w-20 bg-gray-200 rounded skeleton-shimmer-dark mb-2"></div>
+              <div className="h-5 w-16 bg-gray-100 rounded skeleton-shimmer"></div>
             </div>
           ))}
         </div>

@@ -221,8 +221,7 @@ export function StaffInvitationDialog() {
 
     const confirmed = confirm(
       '確定要拒絕邀請嗎？\n\n' +
-      '拒絕後，您將繼續使用原有身份，\n' +
-      '老闆將無法再邀請您（除非重新邀請）。'
+      '拒絕後，您將繼續使用原有身份。'
     );
 
     if (!confirmed) return;
@@ -232,12 +231,11 @@ export function StaffInvitationDialog() {
     try {
       toast.loading('正在處理...', { id: 'reject-invitation' });
 
-      // 更新邀請狀態為 revoked
+      // ✅ 直接刪除記錄（而不是更新 status 為 revoked）
+      // 這樣老闆可以再次邀請同一個員工
       const { error } = await supabase
         .from('staff_relationships')
-        .update({
-          status: 'revoked',
-        })
+        .delete()
         .eq('id', invitation.id);
 
       if (error) throw error;

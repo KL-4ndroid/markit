@@ -195,10 +195,10 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       }
 
       if (selectedLog.type === 'deal') {
-        // 刪除成交記錄
+        // ✅ 使用事件溯源方式刪除成交記錄
         await handleDeleteDeal(event as Event<DealClosedPayload>);
       } else {
-        // 刪除互動記錄
+        // ✅ 使用事件溯源方式刪除互動記錄
         await handleDeleteInteraction(event as Event<InteractionRecordedPayload>);
       }
 
@@ -209,7 +209,7 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       // 重新載入流水帳
       await loadDailyLog();
 
-      toast.success('記錄已刪除');
+      toast.success('✅ 記錄已刪除並同步到雲端');
     } catch (error) {
       console.error('刪除記錄失敗:', error);
       toast.error('刪除失敗，請稍後再試');
@@ -218,7 +218,7 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
     }
   };
 
-  // 刪除成交記錄
+  // ✅ 使用事件溯源方式刪除成交記錄
   const handleDeleteDeal = async (event: Event<DealClosedPayload>) => {
     const payload = event.payload;
     const payloadWithMarketId = payload as DealClosedPayload & { market_id?: string };
@@ -245,8 +245,6 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       }
     }
 
-    const totalProfit = totalAmount - totalCost;
-
     // 獲取交易日期
     let transactionDate = payload.dealDate;
     if (!transactionDate) {
@@ -254,54 +252,29 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       transactionDate = `${dealTimestamp.getFullYear()}-${String(dealTimestamp.getMonth() + 1).padStart(2, '0')}-${String(dealTimestamp.getDate()).padStart(2, '0')}`;
     }
 
-    // 使用 transaction 確保原子性
-    await db.transaction('rw', [db.events, db.markets, db.dailyStats], async () => {
-      // 1. 刪除事件
-      await db.events.delete(event.id!);
-
-      // 2. 更新市集統計（扣除金額）
-      const market = await db.markets.get(market_id);
-      if (market) {
-        await db.markets.update(market_id, {
-          totalRevenue: Math.max(0, (market.totalRevenue || 0) - totalAmount),
-          totalProfit: (market.totalProfit || 0) - totalProfit,
-          totalDeals: Math.max(0, (market.totalDeals || 0) - dealCount),
-          updatedAt: Date.now(),
-        });
-      }
-
-      // 3. 更新每日統計（扣除金額）
-      const dailyStat = await db.dailyStats
-        .where('[date+marketId]')
-        .equals([transactionDate, market_id])
-        .first();
-
-      if (dailyStat) {
-        const newDealCount = Math.max(0, dailyStat.dealCount - dealCount);
-        const newRevenue = Math.max(0, dailyStat.revenue - totalAmount);
-        const newCost = Math.max(0, dailyStat.cost - totalCost);
-        const newProfit = dailyStat.profit - totalProfit;
-
-        // 如果該日期的統計歸零，刪除記錄
-        if (newDealCount === 0 && newRevenue === 0) {
-          await db.dailyStats.delete(dailyStat.id!);
-        } else {
-          await db.dailyStats.update(dailyStat.id!, {
-            dealCount: newDealCount,
-            revenue: newRevenue,
-            cost: newCost,
-            profit: newProfit,
-            updatedAt: Date.now(),
-          });
-        }
-      }
+    // ✅ 記錄刪除事件（會自動同步到雲端）
+    const { recordEvent } = await import('@/lib/db/events');
+    await recordEvent('deal_deleted', {
+      eventId: event.id!,
+      marketId: market_id,
+      dealDate: transactionDate,
+      totalAmount,
+      totalCost,
+      dealCount,
     });
   };
 
-  // 刪除互動記錄
+  // ✅ 使用事件溯源方式刪除互動記錄
   const handleDeleteInteraction = async (event: Event<InteractionRecordedPayload>) => {
-    // 直接刪除事件即可
-    await db.events.delete(event.id!);
+    const payloadWithMarketId = event.payload as InteractionRecordedPayload & { market_id?: string };
+    const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+
+    // ✅ 記錄刪除事件（會自動同步到雲端）
+    const { recordEvent } = await import('@/lib/db/events');
+    await recordEvent('interaction_deleted', {
+      eventId: event.id!,
+      marketId: market_id,
+    });
   };
 
   // 打開刪除確認對話框

@@ -64,13 +64,51 @@ export async function recordEvent<T = Record<string, unknown>>(
     // 生成或使用提供的 UUID
     const id = eventId || generateUUID();
 
+    // ✅ 獲取真實的用戶 ID（用於同步）
+    let actor_id = 'local'; // 預設值
+    if (typeof window !== 'undefined') {
+      try {
+        const { supabase } = await import('@/lib/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          actor_id = user.id;
+        }
+      } catch (error) {
+        console.warn('⚠️ 無法獲取用戶 ID，使用預設值 "local"');
+      }
+    }
+
+    // ✅ 計算時間戳：只有補登交易使用指定日期的 23:59，正常交易使用當前時間
+    let timestamp = Date.now();
+    
+    if (type === 'deal_closed' && payload && typeof payload === 'object') {
+      const dealPayload = payload as DealClosedPayload;
+      
+      // ✅ 關鍵修正：只有明確標記為補登（isBackfill = true）時才使用 23:59
+      // 正常交易（快速新增收入、商品銷售）使用當前時間
+      if (dealPayload.isBackfill === true && dealPayload.dealDate) {
+        // 解析日期字串 (YYYY-MM-DD)
+        const [year, month, day] = dealPayload.dealDate.split('-').map(Number);
+        
+        // 建立該日期的 23:59:59 時間戳
+        const backfillDate = new Date(year, month - 1, day, 23, 59, 59, 999);
+        timestamp = backfillDate.getTime();
+        
+        console.log(`⏰ 補登時間設置為：${dealPayload.dealDate} 23:59:59`);
+      }
+      // ✅ 正常交易：使用當前時間（已在上面設置）
+      else {
+        console.log(`⏰ 正常交易時間：${new Date(timestamp).toLocaleString('zh-TW')}`);
+      }
+    }
+
     // 建立事件物件
     const event: Event<T> = {
       id,
       type,
       payload,
-      timestamp: Date.now(),
-      actor_id: 'local', // 本地用戶標記
+      timestamp,
+      actor_id, // ✅ 使用真實的用戶 ID
       sync_status: 'local_only',
       metadata: {
         version: '1.0.0',
@@ -661,6 +699,88 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
   
   const modeText = isManualEntry ? '簡化補登' : isBackfill ? '完整補登' : '正常交易';
   console.log(`💰 ${modeText}已記錄：NT$${totalAmount} (日期: ${transactionDate}, 市集 ID: ${market_id.substring(0, 8)}...)`);
+});
+
+/**
+ * 處理「刪除互動記錄」事件
+ * 
+ * 當刪除互動記錄時：
+ * 1. 從 events 表中刪除原始事件
+ * 2. 更新市集統計（扣除互動次數）
+ * 3. 更新每日統計（扣除互動次數）
+ */
+registerEventHandler('interaction_deleted', async (event: Event<{ eventId: string; marketId: string }>, db) => {
+  const { eventId, marketId } = event.payload;
+  
+  // 1. 刪除原始事件
+  await db.events.delete(eventId);
+  
+  // 2. 更新市集統計
+  const market = await db.markets.get(marketId);
+  if (market) {
+    await db.markets.update(marketId, {
+      totalInteractions: Math.max(0, (market.totalInteractions || 0) - 1),
+      updatedAt: event.timestamp,
+    });
+  }
+  
+  console.log(`🗑️ 互動記錄已刪除：ID ${eventId.substring(0, 8)}...`);
+});
+
+/**
+ * 處理「刪除成交記錄」事件
+ * 
+ * 當刪除成交記錄時：
+ * 1. 從 events 表中刪除原始事件
+ * 2. 更新市集統計（扣除金額）
+ * 3. 更新每日統計（扣除金額）
+ */
+registerEventHandler('deal_deleted', async (event: Event<{ eventId: string; marketId: string; dealDate: string; totalAmount: number; totalCost: number; dealCount: number }>, db) => {
+  const { eventId, marketId, dealDate, totalAmount, totalCost, dealCount } = event.payload;
+  
+  const totalProfit = totalAmount - totalCost;
+  
+  // 1. 刪除原始事件
+  await db.events.delete(eventId);
+  
+  // 2. 更新市集統計（扣除金額）
+  const market = await db.markets.get(marketId);
+  if (market) {
+    await db.markets.update(marketId, {
+      totalRevenue: Math.max(0, (market.totalRevenue || 0) - totalAmount),
+      totalProfit: (market.totalProfit || 0) - totalProfit,
+      totalDeals: Math.max(0, (market.totalDeals || 0) - dealCount),
+      updatedAt: event.timestamp,
+    });
+  }
+  
+  // 3. 更新每日統計（扣除金額）
+  const dailyStat = await db.dailyStats
+    .where('[date+marketId]')
+    .equals([dealDate, marketId])
+    .first();
+  
+  if (dailyStat) {
+    const newDealCount = Math.max(0, dailyStat.dealCount - dealCount);
+    const newRevenue = Math.max(0, dailyStat.revenue - totalAmount);
+    const newCost = Math.max(0, dailyStat.cost - totalCost);
+    const newProfit = dailyStat.profit - totalProfit;
+    
+    // 如果該日期的統計歸零，刪除記錄
+    if (newDealCount === 0 && newRevenue === 0) {
+      await db.dailyStats.delete(dailyStat.id!);
+    } else {
+      await db.dailyStats.update(dailyStat.id!, {
+        dealCount: newDealCount,
+        revenue: newRevenue,
+        cost: newCost,
+        profit: newProfit,
+        updatedAt: event.timestamp,
+      });
+    }
+  }
+  
+  console.log(`🗑️ 成交記錄已刪除：NT$${totalAmount} (日期: ${dealDate}, 市集 ID: ${marketId.substring(0, 8)}...)`);
 });
 
 // ==================== 設定相關事件處理器 ====================

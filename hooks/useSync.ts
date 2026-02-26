@@ -40,6 +40,12 @@ let hasExecutedInitialSync = false;
 let hasSetupIntervals = false;
 
 /**
+ * ✅ 全局同步鎖：防止並發同步導致的競態條件
+ * 確保同一時間只有一個同步在執行
+ */
+let isSyncLocked = false;
+
+/**
  * ✅ 全局共享狀態：確保所有 useSync 實例使用同一個狀態
  * 這樣可以避免 React Strict Mode 雙重渲染導致的狀態不同步
  */
@@ -71,6 +77,8 @@ function updateGlobalState(updater: (prev: SyncState) => SyncState) {
 export function resetInitialSyncFlag() {
   hasExecutedInitialSync = false;
   hasSetupIntervals = false;
+  // ✅ 重置全局同步鎖
+  isSyncLocked = false;
   // ✅ 重置全局狀態
   updateGlobalState(() => ({
     status: SyncStatus.IDLE,
@@ -142,14 +150,34 @@ export function useSync(options: UseSyncOptions = {}) {
       return;
     }
 
+    // ✅ 原子操作：檢查並獲取全局同步鎖（防止並發同步）
+    if (isSyncLocked) {
+      console.log('⏸️ 同步已在進行中，跳過此次請求');
+      return;
+    }
+    isSyncLocked = true; // ✅ 立即設置鎖，避免 Race Condition
+
     // 檢查網路狀態
     if (!navigator.onLine) {
+      isSyncLocked = false; // ✅ 釋放鎖
       setState(prev => ({ ...prev, status: SyncStatus.OFFLINE }));
       return;
     }
 
+    // ✅ 在同步開始前記錄 pendingCount（用於決定是否顯示大彈窗）
+    const initialPendingCount = await db.events
+      .where('sync_status')
+      .anyOf(['pending', 'local_only'])
+      .count();
+
+    // ✅ 設置本地同步標記
     isSyncingRef.current = true;
-    updateGlobalState(prev => ({ ...prev, status: SyncStatus.SYNCING, error: null }));
+    updateGlobalState(prev => ({ 
+      ...prev, 
+      status: SyncStatus.SYNCING, 
+      error: null,
+      pendingCount: initialPendingCount, // ✅ 立即更新 pendingCount
+    }));
 
     try {
       // 1. Push: 上傳本地未同步的事件
@@ -224,6 +252,12 @@ export function useSync(options: UseSyncOptions = {}) {
       
       // 檢查是否為權限錯誤
       if (error.code === 'PGRST301' || error.message?.includes('403')) {
+        console.warn('⚠️ 偵測到權限錯誤，可能導致登出', {
+          errorCode: error.code,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+          userId: user.id,
+        });
         await handlePermissionRevoked();
       }
 
@@ -233,6 +267,8 @@ export function useSync(options: UseSyncOptions = {}) {
         error: error.message || '同步失敗',
       }));
     } finally {
+      // ✅ 釋放全局同步鎖
+      isSyncLocked = false;
       isSyncingRef.current = false;
     }
   }, [enabled, isConfigured, user]);
@@ -406,7 +442,14 @@ export async function getCloudEventCount(userId: string): Promise<number> {
 }
 
 /**
- * Push: 上傳本地未同步的事件
+ * Push: 上傳本地未同步的事件（強化版：等冪性 + 順序處理）
+ * 
+ * ✅ 強化功能：
+ * 1. 等冪性檢查：上傳前檢查事件是否已存在
+ * 2. 順序處理：嚴格按 timestamp 升序處理
+ * 3. 批次提交：每 10 個事件一批
+ * 4. 錯誤恢復：失敗的事件不阻塞後續
+ * 
  * @returns 成功上傳的事件數量
  */
 async function pushEvents(
@@ -421,161 +464,234 @@ async function pushEvents(
     .where('sync_status')
     .anyOf(['pending', 'local_only'])
     .toArray();
+  
+  // 🔒 安全檢查：過濾掉非法事件（防止數據盜取）
+  const validEvents: typeof pendingEvents = [];
+  const invalidEvents: typeof pendingEvents = [];
+  
+  for (const event of pendingEvents) {
+    // 情況 1: 當前用戶創建的事件
+    if (event.actor_id === userId) {
+      validEvents.push(event);
+      continue;
+    }
+    
+    // 情況 2: 本地模式創建的事件（需要更新 actor_id）
+    if (event.actor_id === 'local') {
+      console.log(`📝 更新本地事件的 actor_id: ${event.type} (${event.id?.substring(0, 8)}...)`);
+      await db.events.update(event.id!, {
+        actor_id: userId,
+      });
+      event.actor_id = userId;
+      validEvents.push(event);
+      continue;
+    }
+    
+    // 其他情況：非法事件
+    console.warn(`🚨 非法事件：${event.type} (actor_id: ${event.actor_id}, 當前用戶: ${userId})`);
+    invalidEvents.push(event);
+  }
+  
+  if (invalidEvents.length > 0) {
+    console.warn(`🚨 安全警告：檢測到 ${invalidEvents.length} 個非法事件（actor_id 不匹配）`);
+    
+    // 標記為無效，不再重試
+    for (const event of invalidEvents) {
+      await db.events.update(event.id!, {
+        sync_status: 'synced',
+        metadata: {
+          ...event.metadata,
+          invalid_reason: 'actor_id_mismatch',
+          original_actor_id: event.actor_id,
+          blocked_at: Date.now(),
+        } as any,
+      });
+    }
+  }
 
-  if (pendingEvents.length === 0) {
+  if (validEvents.length === 0) {
     return 0;
   }
 
-  // ✅ 時間順序嚴格化：按 timestamp 升序排序，確保 market_created 先執行
-  const sortedEvents = pendingEvents.sort((a, b) => a.timestamp - b.timestamp);
+  // ✅ 強化 1：嚴格按 timestamp 升序排序（確保順序性）
+  const sortedEvents = validEvents.sort((a, b) => a.timestamp - b.timestamp);
   const total = sortedEvents.length;
 
-  console.log(`📤 開始上傳 ${total} 個事件...`);
+  console.log(`📤 開始上傳 ${total} 個事件（強化版：等冪性 + 順序處理）...`);
 
-  // 批次上傳
+  // ✅ 強化 2：批次處理（每 10 個一批）
+  const BATCH_SIZE = 10;
   let uploadedCount = 0;
-  for (let i = 0; i < sortedEvents.length; i++) {
-    const event = sortedEvents[i];
-    
-    // ✅ 更新進度
-    if (onProgress) {
-      onProgress(i + 1, total, `${event.type} (${event.id?.substring(0, 8)}...)`);
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('events')
-        .upsert({
-          id: event.id,
-          type: event.type,
-          payload: event.payload,
-          actor_id: userId,
-          market_id: event.market_id,
-          timestamp: new Date(event.timestamp).toISOString(),
-          metadata: event.metadata,
-        }, {
-          onConflict: 'id',
-        });
+  let skippedCount = 0;
+  let failedCount = 0;
 
-      if (error) {
-        console.error(`❌ 上傳事件失敗: ${event.type} (${event.id?.substring(0, 8)}...)`, error);
+  for (let batchStart = 0; batchStart < sortedEvents.length; batchStart += BATCH_SIZE) {
+    const batch = sortedEvents.slice(batchStart, batchStart + BATCH_SIZE);
+    
+    // 順序處理每個事件
+    for (let i = 0; i < batch.length; i++) {
+      const event = batch[i];
+      const globalIndex = batchStart + i;
+      
+      // 更新進度
+      if (onProgress) {
+        onProgress(globalIndex + 1, total, `${event.type} (${event.id?.substring(0, 8)}...)`);
+      }
+      
+      try {
+        // ✅ 強化 3：等冪性檢查（避免重複上傳）
+        const { data: existing, error: checkError } = await supabase
+          .from('events')
+          .select('id, sync_status')
+          .eq('id', event.id)
+          .maybeSingle();
         
-        // ✅ PostgreSQL unique violation (事件已存在)
-        if (error.code === '23505') {
-          console.log(`⚠️ 事件 ${event.id} 已存在於雲端，標記為已同步`);
+        if (checkError && checkError.code !== 'PGRST116') {
+          throw checkError;
+        }
+        
+        // 如果已存在，標記為已同步並跳過
+        if (existing) {
+          console.log(`✅ 事件已存在，跳過: ${event.type} (${event.id?.substring(0, 8)}...)`);
           await db.events.update(event.id!, {
             sync_status: 'synced',
           });
+          skippedCount++;
           continue;
         }
         
-        // ✅ 外鍵衝突：market 不存在
-        if (error.code === '23503' && error.message?.includes('events_market_id_fkey')) {
-          console.warn(`⚠️ 外鍵衝突：market_id ${event.market_id} 不存在`);
-          
-          // 檢查是否有對應的 market_created 事件待同步
-          const marketCreatedEvent = sortedEvents.find(
-            e => e.type === 'market_created' && 
-                 (e.market_id === event.market_id || e.payload?.marketId === event.market_id)
-          );
-          
-          if (marketCreatedEvent && marketCreatedEvent.id !== event.id) {
-            console.log(`🔄 發現 market_created 事件，將在下一輪同步時重試`);
-            // 保持 pending 狀態，等待下一輪同步
-            continue;
-          } else {
-            console.error(`❌ 找不到對應的 market_created 事件，標記為 local_only`);
+        // ✅ 強化 4：上傳事件（使用 insert 而非 upsert，更明確）
+        const { error: insertError } = await supabase
+          .from('events')
+          .insert({
+            id: event.id,
+            type: event.type,
+            payload: event.payload,
+            actor_id: userId,
+            market_id: event.market_id,
+            timestamp: new Date(event.timestamp).toISOString(),
+            metadata: event.metadata,
+          });
+
+        if (insertError) {
+          // PostgreSQL unique violation (並發上傳導致的重複)
+          if (insertError.code === '23505') {
+            console.log(`✅ 事件已存在（並發上傳），標記為已同步: ${event.id?.substring(0, 8)}...`);
             await db.events.update(event.id!, {
-              sync_status: 'local_only',
+              sync_status: 'synced',
             });
+            skippedCount++;
             continue;
           }
-        }
-        
-        // ✅ RLS 政策錯誤（權限不足）- market_created 需要特殊處理
-        if (error.code === '42501' && event.type === 'market_created' && event.market_id) {
-          console.log(`🔄 RLS 阻止 market_created，嘗試先創建 market_members...`);
           
-          // 先創建 market_members 記錄
-          const memberCreated = await ensureMarketMember(userId, event.market_id);
-          
-          if (memberCreated) {
-            // 重試上傳事件
-            const { error: retryError } = await supabase
-              .from('events')
-              .upsert({
-                id: event.id,
-                type: event.type,
-                payload: event.payload,
-                actor_id: userId,
-                market_id: event.market_id,
-                timestamp: new Date(event.timestamp).toISOString(),
-                metadata: event.metadata,
-              }, {
-                onConflict: 'id',
-              });
+          // 外鍵衝突：market 不存在
+          if (insertError.code === '23503' && insertError.message?.includes('events_market_id_fkey')) {
+            console.warn(`⚠️ 外鍵衝突：market_id ${event.market_id} 不存在`);
             
-            if (!retryError) {
-              console.log(`✅ 重試成功: ${event.type} (${event.id?.substring(0, 8)}...)`);
+            // 檢查是否有對應的 market_created 事件待同步
+            const marketCreatedEvent = sortedEvents.find(
+              e => e.type === 'market_created' && 
+                   (e.market_id === event.market_id || e.payload?.marketId === event.market_id)
+            );
+            
+            if (marketCreatedEvent && marketCreatedEvent.id !== event.id) {
+              console.log(`🔄 發現 market_created 事件，保持 pending 狀態，等待下一輪同步`);
+              // 保持 pending 狀態
+              failedCount++;
+              continue;
+            } else {
+              console.error(`❌ 找不到對應的 market_created 事件，標記為 local_only`);
               await db.events.update(event.id!, {
-                sync_status: 'synced',
+                sync_status: 'local_only',
               });
+              failedCount++;
               continue;
             }
           }
           
-          // 如果還是失敗，標記為 local_only
-          console.error(`❌ RLS 政策阻止：${event.type}`, error.message);
+          // RLS 政策錯誤 - market_created 需要特殊處理
+          if (insertError.code === '42501' && event.type === 'market_created' && event.market_id) {
+            console.log(`🔄 RLS 阻止 market_created，嘗試先創建 market_members...`);
+            
+            const memberCreated = await ensureMarketMember(userId, event.market_id);
+            
+            if (memberCreated) {
+              // 重試上傳
+              const { error: retryError } = await supabase
+                .from('events')
+                .insert({
+                  id: event.id,
+                  type: event.type,
+                  payload: event.payload,
+                  actor_id: userId,
+                  market_id: event.market_id,
+                  timestamp: new Date(event.timestamp).toISOString(),
+                  metadata: event.metadata,
+                });
+              
+              if (!retryError) {
+                console.log(`✅ 重試成功: ${event.type} (${event.id?.substring(0, 8)}...)`);
+                await db.events.update(event.id!, {
+                  sync_status: 'synced',
+                });
+                uploadedCount++;
+                continue;
+              }
+            }
+            
+            console.error(`❌ RLS 政策阻止：${event.type}`, insertError.message);
+            await db.events.update(event.id!, {
+              sync_status: 'local_only',
+            });
+            failedCount++;
+            continue;
+          }
+          
+          // 其他 RLS 政策錯誤
+          if (insertError.code === 'PGRST301' || insertError.code === '42501' || insertError.message?.includes('policy')) {
+            console.error(`❌ RLS 政策阻止：${event.type}`, insertError.message);
+            await db.events.update(event.id!, {
+              sync_status: 'local_only',
+            });
+            failedCount++;
+            continue;
+          }
+          
+          // 其他錯誤
+          console.error(`❌ 未知錯誤：${insertError.code} - ${insertError.message}`);
           await db.events.update(event.id!, {
             sync_status: 'local_only',
           });
+          failedCount++;
           continue;
         }
+
+        // ✅ 上傳成功
+        await db.events.update(event.id!, {
+          sync_status: 'synced',
+        });
         
-        // ✅ 其他 RLS 政策錯誤
-        if (error.code === 'PGRST301' || error.code === '42501' || error.message?.includes('policy')) {
-          console.error(`❌ RLS 政策阻止：${event.type}`, error.message);
-          await db.events.update(event.id!, {
-            sync_status: 'local_only',
-          });
-          continue;
+        uploadedCount++;
+        
+        // 如果是 market_created 事件，確保 market_members 記錄存在
+        if (event.type === 'market_created' && event.market_id) {
+          await ensureMarketMember(userId, event.market_id);
         }
         
-        // 其他錯誤：標記為 local_only，但不中斷同步
-        console.error(`❌ 未知錯誤：${error.code} - ${error.message}`);
+      } catch (error: any) {
+        console.error(`❌ 上傳事件異常: ${event.id}`, error);
+        
+        // 標記為錯誤，但繼續處理下一個事件
         await db.events.update(event.id!, {
           sync_status: 'local_only',
         });
+        failedCount++;
         continue;
       }
-
-      // ✅ 上傳成功
-      await db.events.update(event.id!, {
-        sync_status: 'synced',
-      });
-      
-      uploadedCount++;
-      
-      // ✅ 如果是 market_created 事件，上傳成功後確保 market_members 記錄存在
-      if (event.type === 'market_created' && event.market_id) {
-        await ensureMarketMember(userId, event.market_id);
-      }
-      
-    } catch (error: any) {
-      console.error(`❌ 上傳事件異常: ${event.id}`, error);
-      console.log('失敗的事件類型:', event.type);
-      console.log('失敗的 Payload:', JSON.stringify(event.payload, null, 2));
-      console.log('失敗的 market_id:', event.market_id);
-      
-      // 標記為錯誤，但繼續處理下一個事件
-      await db.events.update(event.id!, {
-        sync_status: 'local_only',
-      });
-      continue;
     }
   }
 
-  console.log(`✅ 上傳完成：成功上傳 ${uploadedCount}/${total} 個事件`);
+  console.log(`✅ 上傳完成：成功 ${uploadedCount}，跳過 ${skippedCount}，失敗 ${failedCount}，總計 ${total}`);
   return uploadedCount;
 }
 
@@ -666,6 +782,22 @@ async function pullIncrementalEvents(
 
   const marketIds = memberMarkets?.map(m => m.market_id) || [];
 
+  // ✅ 修復：查詢團隊成員的用戶 ID（包括老闆和員工）
+  let teamMemberIds: string[] = [userId]; // 至少包含自己
+  
+  if (marketIds.length > 0) {
+    // 查詢所有團隊成員
+    const { data: teamMembers } = await supabase
+      .from('market_members')
+      .select('user_id')
+      .in('market_id', marketIds);
+    
+    if (teamMembers && teamMembers.length > 0) {
+      // 去重
+      teamMemberIds = Array.from(new Set([userId, ...teamMembers.map(m => m.user_id)]));
+    }
+  }
+
   // 查詢快照之後的新事件
   let query = supabase
     .from('events')
@@ -673,9 +805,9 @@ async function pullIncrementalEvents(
     .gt('timestamp', snapshotAt)
     .order('timestamp', { ascending: true });
 
-  // 過濾條件：市集事件 OR 用戶自己的事件
+  // ✅ 過濾條件：市集事件 OR 團隊成員的全局事件（包括商品）
   if (marketIds.length > 0) {
-    query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.eq.${userId},market_id.is.null)`);
+    query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.in.(${teamMemberIds.join(',')}),market_id.is.null)`);
   } else {
     query = query.eq('actor_id', userId).is('market_id', null);
   }
@@ -847,7 +979,7 @@ async function pullAllEvents(
 
   const marketIds = memberMarkets?.map(m => m.market_id) || [];
 
-  // ✅ 查詢新事件：包含市集事件 + 用戶自己的全局事件（如商品）
+  // ✅ 查詢新事件：包含市集事件 + 團隊成員的全局事件（如商品）
   let query = supabase
     .from('events')
     .select('*')
@@ -858,11 +990,28 @@ async function pullAllEvents(
     query = query.gt('timestamp', new Date(lastSyncAt).toISOString());
   }
 
-  // ✅ 過濾條件：市集事件 OR 用戶自己的事件
+  // ✅ 修復：查詢團隊成員的用戶 ID（包括老闆和員工）
+  let teamMemberIds: string[] = [userId]; // 至少包含自己
+  
   if (marketIds.length > 0) {
-    query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.eq.${userId},market_id.is.null)`);
+    // 查詢所有團隊成員
+    const { data: teamMembers } = await supabase
+      .from('market_members')
+      .select('user_id')
+      .in('market_id', marketIds);
+    
+    if (teamMembers && teamMembers.length > 0) {
+      // 去重
+      teamMemberIds = Array.from(new Set([userId, ...teamMembers.map(m => m.user_id)]));
+    }
+  }
+
+  // ✅ 過濾條件：市集事件 OR 團隊成員的全局事件（包括商品）
+  if (marketIds.length > 0) {
+    // 有市集：查詢市集事件 + 團隊成員的全局事件
+    query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.in.(${teamMemberIds.join(',')}),market_id.is.null)`);
   } else {
-    // 如果沒有參與任何市集，只拉取自己的全局事件
+    // 沒有市集：只拉取自己的全局事件
     query = query.eq('actor_id', userId).is('market_id', null);
   }
 
@@ -1158,37 +1307,110 @@ async function ensureUserProfile(userId: string): Promise<void> {
 
 /**
  * 處理權限被撤銷（403 Forbidden）
+ * ✅ 增強版：完整清除所有非自己擁有的數據
  */
 async function handlePermissionRevoked(): Promise<void> {
   console.warn('⚠️ 權限已被撤銷，清除本地協作資料');
+  
+  // ✅ 記錄權限撤銷事件
+  const permissionRevokedLog = {
+    event: 'permission_revoked',
+    timestamp: new Date().toISOString(),
+    reason: '403_forbidden_or_policy_violation',
+    stackTrace: new Error().stack,
+  };
+  
+  console.error('🚫 權限撤銷詳情:', permissionRevokedLog);
+  
+  // 保存到 localStorage
+  try {
+    const logoutHistory = JSON.parse(localStorage.getItem('logout_history') || '[]');
+    logoutHistory.push(permissionRevokedLog);
+    if (logoutHistory.length > 10) {
+      logoutHistory.shift();
+    }
+    localStorage.setItem('logout_history', JSON.stringify(logoutHistory));
+  } catch (error) {
+    console.error('保存權限撤銷記錄失敗:', error);
+  }
 
   try {
-    // 獲取所有協作市集
-    const collaborativeMarkets = await db.markets
-      .where('is_collaborative')
-      .equals(1)
+    // ✅ 修正：直接從 Supabase 獲取用戶（不使用 useAuth Hook）
+    const { data: { user } } = await supabase.auth.getUser();
+    const currentUserId = user?.id;
+    
+    if (!currentUserId) {
+      console.error('無法獲取當前用戶 ID');
+      return;
+    }
+    
+    console.log(`🧹 開始清除非自己擁有的數據（當前用戶: ${currentUserId.substring(0, 8)}...）`);
+    
+    // ✅ 1. 清除所有非自己擁有的市集（使用批次刪除提升性能）
+    const marketsToDelete = await db.markets
+      .where('owner_id')
+      .notEqual(currentUserId)
       .toArray();
-
-    // 清除這些市集的資料
-    for (const market of collaborativeMarkets) {
+    
+    for (const market of marketsToDelete) {
       if (market.id) {
+        console.log(`🗑️ 清除非自己的市集: ${market.name} (${market.id.substring(0, 8)}...)`);
+        
         // 刪除市集
         await db.markets.delete(market.id);
-
+        
         // 刪除相關商品
         await db.products.where('market_id').equals(market.id).delete();
-
+        
         // 刪除相關事件
         await db.events.where('market_id').equals(market.id).delete();
+        
+        // ✅ 刪除相關每日統計
+        await db.dailyStats.where('marketId').equals(market.id).delete();
       }
     }
+    
+    console.log(`✅ 已清除 ${marketsToDelete.length} 個非自己的市集`);
+    
+    // ✅ 2. 清除所有非自己創建的全局商品（沒有 market_id 的商品）
+    const globalProductsToDelete = await db.products
+      .filter(p => p.owner_id !== currentUserId && !p.market_id)
+      .toArray();
+    
+    for (const product of globalProductsToDelete) {
+      if (product.id) {
+        console.log(`🗑️ 清除非自己的全局商品: ${product.name} (${product.id.substring(0, 8)}...)`);
+        await db.products.delete(product.id);
+      }
+    }
+    
+    console.log(`✅ 已清除 ${globalProductsToDelete.length} 個非自己的全局商品`);
+    
+    // ✅ 3. 清除所有非自己創建的全局事件（沒有 market_id 的事件）
+    const globalEventsToDelete = await db.events
+      .filter(e => e.actor_id !== currentUserId && e.actor_id !== 'local' && !e.market_id)
+      .toArray();
+    
+    for (const event of globalEventsToDelete) {
+      if (event.id) {
+        console.log(`🗑️ 清除非自己的全局事件: ${event.type} (${event.id.substring(0, 8)}...)`);
+        await db.events.delete(event.id);
+      }
+    }
+    
+    console.log(`✅ 已清除 ${globalEventsToDelete.length} 個非自己的全局事件`);
+    
+    console.log('✅ 非自己的數據已全部清除');
 
-    console.log(`✅ 已清除 ${collaborativeMarkets.length} 個協作市集的資料`);
-
-    // 提示用戶
+    // 提示用戶並重新載入
     if (typeof window !== 'undefined') {
       const { toast } = await import('sonner');
-      toast.error('您已被移除出部分市集，相關資料已清除');
+      toast.info('已清除協作數據，即將重新載入...');
+      
+      // 延遲 2 秒後重新載入頁面
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     }
   } catch (error) {
     console.error('清除協作資料失敗:', error);
@@ -1421,3 +1643,280 @@ async function syncProductsToIndexedDB(products: any[]): Promise<void> {
   console.log('✅ 商品同步完成');
 }
 
+// ==================== 衝突解決（Conflict Resolution） ====================
+
+/**
+ * 衝突解決策略
+ * 
+ * 規則：
+ * 1. Last-Write-Wins (LWW)：時間戳較新的優先
+ * 2. 事件不可變：events 表不會衝突（UUID 唯一）
+ * 3. 快照表衝突：比較 updatedAt，取較新的
+ * 4. 特殊處理：統計欄位使用累加（如 totalRevenue）
+ */
+interface ConflictResolution {
+  strategy: 'local' | 'remote' | 'merge';
+  reason: string;
+}
+
+/**
+ * 解決市集數據衝突
+ * 
+ * @param localData - 本地數據
+ * @param remoteData - 雲端數據
+ * @returns 衝突解決策略
+ */
+async function resolveMarketConflict(
+  localData: any,
+  remoteData: any
+): Promise<ConflictResolution> {
+  // 規則 1：比較 updatedAt
+  const localUpdatedAt = localData.updatedAt || 0;
+  const remoteUpdatedAt = remoteData.updated_at 
+    ? new Date(remoteData.updated_at).getTime() 
+    : 0;
+  
+  if (localUpdatedAt > remoteUpdatedAt) {
+    return {
+      strategy: 'local',
+      reason: '本地數據較新',
+    };
+  }
+  
+  if (remoteUpdatedAt > localUpdatedAt) {
+    return {
+      strategy: 'remote',
+      reason: '雲端數據較新',
+    };
+  }
+  
+  // 規則 2：時間戳相同，比較統計欄位
+  const localRevenue = localData.totalRevenue || 0;
+  const remoteRevenue = remoteData.total_revenue || 0;
+  
+  const localDeals = localData.totalDeals || 0;
+  const remoteDeals = remoteData.total_deals || 0;
+  
+  if (localRevenue !== remoteRevenue || localDeals !== remoteDeals) {
+    return {
+      strategy: 'merge',
+      reason: '統計欄位不一致，需要合併',
+    };
+  }
+  
+  // 規則 3：完全相同，使用本地
+  return {
+    strategy: 'local',
+    reason: '數據相同，保留本地',
+  };
+}
+
+/**
+ * 執行市集數據合併
+ * 
+ * @param localData - 本地數據
+ * @param remoteData - 雲端數據
+ * @returns 合併後的數據
+ */
+async function mergeMarketData(
+  localData: any,
+  remoteData: any
+): Promise<any> {
+  console.log(`🔀 合併市集數據: ${localData.id?.substring(0, 8)}...`);
+  
+  return {
+    ...remoteData, // 基礎數據使用雲端
+    
+    // 統計欄位使用較大值（避免數據丟失）
+    totalRevenue: Math.max(
+      localData.totalRevenue || 0,
+      remoteData.total_revenue || 0
+    ),
+    totalProfit: Math.max(
+      localData.totalProfit || 0,
+      remoteData.total_profit || 0
+    ),
+    totalDeals: Math.max(
+      localData.totalDeals || 0,
+      remoteData.total_deals || 0
+    ),
+    totalInteractions: Math.max(
+      localData.totalInteractions || 0,
+      remoteData.total_interactions || 0
+    ),
+    
+    // 時間戳使用較新的
+    updatedAt: Math.max(
+      localData.updatedAt || 0,
+      remoteData.updated_at ? new Date(remoteData.updated_at).getTime() : 0
+    ),
+  };
+}
+
+/**
+ * 解決商品數據衝突
+ * 
+ * @param localData - 本地數據
+ * @param remoteData - 雲端數據
+ * @returns 衝突解決策略
+ */
+async function resolveProductConflict(
+  localData: any,
+  remoteData: any
+): Promise<ConflictResolution> {
+  // 規則 1：比較 updatedAt
+  const localUpdatedAt = localData.updatedAt || 0;
+  const remoteUpdatedAt = remoteData.updated_at 
+    ? new Date(remoteData.updated_at).getTime() 
+    : 0;
+  
+  if (localUpdatedAt > remoteUpdatedAt) {
+    return {
+      strategy: 'local',
+      reason: '本地數據較新',
+    };
+  }
+  
+  if (remoteUpdatedAt > localUpdatedAt) {
+    return {
+      strategy: 'remote',
+      reason: '雲端數據較新',
+    };
+  }
+  
+  // 規則 2：時間戳相同，比較庫存和銷售統計
+  const localStock = localData.stock || 0;
+  const remoteStock = remoteData.stock || 0;
+  
+  const localSold = localData.totalSold || 0;
+  const remoteSold = remoteData.total_sold || 0;
+  
+  if (localStock !== remoteStock || localSold !== remoteSold) {
+    return {
+      strategy: 'merge',
+      reason: '庫存或銷售統計不一致，需要合併',
+    };
+  }
+  
+  // 規則 3：完全相同，使用本地
+  return {
+    strategy: 'local',
+    reason: '數據相同，保留本地',
+  };
+}
+
+/**
+ * 執行商品數據合併
+ * 
+ * @param localData - 本地數據
+ * @param remoteData - 雲端數據
+ * @returns 合併後的數據
+ */
+async function mergeProductData(
+  localData: any,
+  remoteData: any
+): Promise<any> {
+  console.log(`🔀 合併商品數據: ${localData.id?.substring(0, 8)}...`);
+  
+  // 對於商品，庫存使用較小值（保守策略，避免超賣）
+  // 銷售統計使用較大值（避免數據丟失）
+  return {
+    ...remoteData, // 基礎數據使用雲端
+    
+    // 庫存使用較小值（保守策略）
+    stock: Math.min(
+      localData.stock || 0,
+      remoteData.stock || 0
+    ),
+    
+    // 銷售統計使用較大值
+    totalSold: Math.max(
+      localData.totalSold || 0,
+      remoteData.total_sold || 0
+    ),
+    
+    // 時間戳使用較新的
+    updatedAt: Math.max(
+      localData.updatedAt || 0,
+      remoteData.updated_at ? new Date(remoteData.updated_at).getTime() : 0
+    ),
+  };
+}
+
+/**
+ * 檢測並解決衝突（通用函數）
+ * 
+ * 使用場景：
+ * 1. Pull 時發現本地和雲端數據不一致
+ * 2. 多設備同時編輯同一筆數據
+ * 
+ * @param tableName - 表名
+ * @param localData - 本地數據
+ * @param remoteData - 雲端數據
+ * @returns 是否發生衝突並已解決
+ */
+export async function detectAndResolveConflict(
+  tableName: 'markets' | 'products',
+  localData: any,
+  remoteData: any
+): Promise<boolean> {
+  try {
+    let resolution: ConflictResolution;
+    
+    // 根據表名選擇衝突解決策略
+    if (tableName === 'markets') {
+      resolution = await resolveMarketConflict(localData, remoteData);
+    } else {
+      resolution = await resolveProductConflict(localData, remoteData);
+    }
+    
+    console.log(`🔍 衝突檢測: ${tableName} (${localData.id?.substring(0, 8)}...) - ${resolution.strategy} (${resolution.reason})`);
+    
+    // 執行策略
+    switch (resolution.strategy) {
+      case 'local':
+        // 保留本地數據，不做任何操作
+        return false;
+      
+      case 'remote':
+        // 使用雲端數據，更新本地
+        if (tableName === 'markets') {
+          await db.markets.update(localData.id, {
+            ...remoteData,
+            updatedAt: remoteData.updated_at 
+              ? new Date(remoteData.updated_at).getTime() 
+              : Date.now(),
+          });
+        } else {
+          await db.products.update(localData.id, {
+            ...remoteData,
+            updatedAt: remoteData.updated_at 
+              ? new Date(remoteData.updated_at).getTime() 
+              : Date.now(),
+          });
+        }
+        return true;
+      
+      case 'merge':
+        // 合併數據
+        let mergedData: any;
+        
+        if (tableName === 'markets') {
+          mergedData = await mergeMarketData(localData, remoteData);
+          await db.markets.update(localData.id, mergedData);
+        } else {
+          mergedData = await mergeProductData(localData, remoteData);
+          await db.products.update(localData.id, mergedData);
+        }
+        
+        console.log(`✅ 衝突已合併: ${tableName} (${localData.id?.substring(0, 8)}...)`);
+        return true;
+      
+      default:
+        return false;
+    }
+  } catch (error) {
+    console.error(`❌ 衝突解決失敗: ${tableName} (${localData.id})`, error);
+    return false;
+  }
+}

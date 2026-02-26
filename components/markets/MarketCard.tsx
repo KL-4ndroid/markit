@@ -1,11 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Calendar, MapPin, DollarSign, Table, Armchair, Umbrella, Target, Users, TrendingUp, Clock, Play, Shield, Lock } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Table, Armchair, Umbrella, Target, Users, TrendingUp, Clock, Play, Shield, Lock, AlertCircle } from 'lucide-react';
 import type { Market, MarketStatus } from '@/types/db';
 import { formatDate, formatCurrency, formatDateRanges, filterCurrentWeekDates } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
 import { getShadowClass, getBorderClass } from '@/lib/theme-config';
+import { useState } from 'react';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 
 interface MarketCardProps {
   market: Market;
@@ -26,6 +28,7 @@ interface MarketCardProps {
  */
 export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
   const router = useRouter();
+  const [showNotesModal, setShowNotesModal] = useState(false);
   
   // ✅ 員工權限檢查
   const { isStaff, canViewSensitiveData } = useUserRole();
@@ -216,39 +219,58 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
     router.push(`/markets/${market.id}`);
   };
 
+  // 點擊備註圖示
+  const handleNotesClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止事件冒泡，避免觸發卡片點擊
+    setShowNotesModal(true);
+  };
+
   const operatingStatus = getOperatingStatus();
   const isOperating = operatingStatus.status === 'operating';
+  const hasNotes = market.notes && market.notes.trim().length > 0;
 
   return (
-    <div
-      onClick={handleClick}
-      className={`bg-white rounded-[1.5rem] p-5 shadow-lg shadow-[#7B9FA6]/10 cursor-pointer hover:shadow-xl transition-all ${
-        isOperating ? 'ring-4 ring-[#7B9FA6] ring-opacity-50' : ''
-      }`}
-    >
-      {/* 標題與營業狀態標籤 */}
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            {/* 市集狀態標籤 - 只在市集頁面顯示 */}
-            {variant === 'default' && (
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusStyle(market.status)}`}>
-                {getStatusText(market.status)}
-              </span>
-            )}
-            
-            <h3 className="font-medium text-lg text-[#3A3A3A]">
-              {market.name}
-            </h3>
-            {/* 營業狀態標籤 - 只在首頁今日市集顯示 */}
-            {variant === 'home' && (
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${operatingStatus.color} flex items-center gap-1`}>
-                {isOperating && <Play className="w-3 h-3" />}
-                {operatingStatus.label}
-              </span>
-            )}
-            
-          </div>
+    <>
+      <div
+        onClick={handleClick}
+        className={`bg-white rounded-[1.5rem] p-5 shadow-lg shadow-[#7B9FA6]/10 cursor-pointer hover:shadow-xl transition-all relative ${
+          isOperating ? 'ring-4 ring-[#7B9FA6] ring-opacity-50' : ''
+        }`}
+      >
+        {/* 備註提醒圖示 - 右上角 */}
+        {hasNotes && (
+          <button
+            onClick={handleNotesClick}
+            className="absolute top-4 right-4 bg-[#FFF8E7] hover:bg-[#FFE4A3] text-[#D4A574] rounded-full p-2 transition-colors z-10"
+            title="查看備註"
+          >
+            <AlertCircle className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* 標題與營業狀態標籤 */}
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1" style={{ paddingRight: hasNotes ? '40px' : '0' }}>
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              {/* 市集狀態標籤 - 只在市集頁面顯示 */}
+              {variant === 'default' && (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusStyle(market.status)}`}>
+                  {getStatusText(market.status)}
+                </span>
+              )}
+              
+              <h3 className="font-medium text-lg text-[#3A3A3A]">
+                {market.name}
+              </h3>
+              {/* 營業狀態標籤 - 只在首頁今日市集顯示 */}
+              {variant === 'home' && (
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${operatingStatus.color} flex items-center gap-1`}>
+                  {isOperating && <Play className="w-3 h-3" />}
+                  {operatingStatus.label}
+                </span>
+              )}
+              
+            </div>
           <div className="flex flex-col gap-1">
             {/* 日期 - 根據 variant 決定是否換行 */}
             <p className={`text-sm text-[#6B6B6B] flex items-start gap-1 ${variant === 'default' ? 'flex-wrap' : ''}`}>
@@ -394,5 +416,35 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
         </div>
       )*/}
     </div>
+
+    {/* 備註彈窗 - 使用 Headless UI Dialog */}
+    <Dialog open={showNotesModal} onClose={() => setShowNotesModal(false)} className="relative z-50">
+      {/* 背景遮罩 */}
+      <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
+      
+      {/* 彈窗容器 */}
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <DialogPanel className="bg-white rounded-[1.5rem] p-6 max-w-md w-full shadow-2xl">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertCircle className="w-5 h-5 text-[#D4A574]" />
+            <DialogTitle className="text-lg font-medium text-[#3A3A3A]">市集備註</DialogTitle>
+          </div>
+          
+          <div className="bg-[#FFF8E7] rounded-xl p-4 mb-4">
+            <p className="text-sm text-[#3A3A3A] whitespace-pre-wrap">
+              {market.notes}
+            </p>
+          </div>
+          
+          <button
+            onClick={() => setShowNotesModal(false)}
+            className="w-full bg-[#7B9FA6] text-white py-3 rounded-xl hover:bg-[#6A8E95] transition-colors font-medium"
+          >
+            關閉
+          </button>
+        </DialogPanel>
+      </div>
+    </Dialog>
+  </>
   );
 }

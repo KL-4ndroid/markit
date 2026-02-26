@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Bug, Edit, ChevronDown, ChevronUp, Sparkles, LogOut, Eye, Edit3 } from 'lucide-react';
+import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Edit, ChevronDown, ChevronUp, Sparkles, LogOut, Eye, Edit3 } from 'lucide-react';
 import { getInteractionButtons, resetInteractionButtons, isInteractionSetupComplete, type InteractionButton } from '@/lib/interaction-buttons-store';
 import { InteractionSetupWizard } from '@/components/settings/InteractionSetupWizard';
 import { StaffManagement } from '@/components/settings/StaffManagement';
@@ -11,7 +11,6 @@ import { PWAInstallButton } from '@/components/PWAInstallButton';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/lib/supabase/client';
-import { generateTestData } from '@/lib/test-data-generator';
 import { getGradientClass } from '@/lib/theme-config';
 import { StaffPermissionCard } from '@/components/staff/StaffPermissionCard';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
@@ -21,8 +20,9 @@ export default function SettingsPage() {
   const [buttons, setButtons] = useState<InteractionButton[]>([]);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [isStaffManagementExpanded, setIsStaffManagementExpanded] = useState(false);
+  const [isInteractionExpanded, setIsInteractionExpanded] = useState(false);
   const [isDatabaseExpanded, setIsDatabaseExpanded] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const { user, signOut } = useAuth();
   const { userRole, isStaff } = useUserRole();
 
@@ -80,23 +80,85 @@ export default function SettingsPage() {
     }
 
     const confirmText = prompt(
-      '⚠️⚠️⚠️ 超級警告 ⚠️⚠️⚠️\n\n' +
+      '⚠️⚠️⚠️ DANGER: PERMANENT DATA DELETION ⚠️⚠️⚠️\n\n' +
       '這將永久刪除您在 Supabase 雲端的所有資料：\n' +
-      '• 所有市集記錄\n' +
-      '• 所有商品資料\n' +
-      '• 所有事件歷史\n' +
-      '• 所有統計資料\n\n' +
-      '此操作無法復原！\n' +
-      '如果您確定要繼續，請輸入「刪除線上資料」：'
+      'This will permanently delete all your data from Supabase cloud:\n\n' +
+      '• 所有市集記錄 (All market records)\n' +
+      '• 所有商品資料 (All product data)\n' +
+      '• 所有事件歷史 (All event history)\n' +
+      '• 所有統計資料 (All statistics)\n' +
+      '• 本地資料庫 (Local database)\n\n' +
+      '⚠️ 此操作無法復原！(This action CANNOT be undone!)\n' +
+      '⚠️ 所有設備的資料都會被清除！(All devices will be affected!)\n' +
+      '⚠️ 本地資料也會同時清除，防止重新上傳！(Local data will also be cleared!)\n\n' +
+      '如果您確定要繼續，請輸入 DELETE：\n' +
+      'If you are sure, type DELETE:'
     );
 
-    if (confirmText !== '刪除線上資料') {
-      toast.info('已取消操作');
+    if (confirmText !== 'DELETE') {
+      toast.info('已取消操作 (Operation cancelled)');
       return;
     }
 
+    const toastId = toast.loading('正在清除所有資料...');
+
     try {
-      toast.loading('正在清除線上資料...');
+      // ✅ 步驟 1：優先清除本地資料（防止重新上傳）
+      console.log('🧹 步驟 1/3：清除本地資料...');
+      
+      try {
+        const { db } = await import('@/lib/db');
+        await db.markets.clear();
+        await db.products.clear();
+        await db.events.clear();
+        await db.dailyStats.clear();
+        console.log('✅ 數據表已清除');
+      } catch (dbError) {
+        console.error('清除數據表失敗:', dbError);
+      }
+      
+      try {
+        await indexedDB.deleteDatabase('MarketPulseDB');
+        console.log('✅ IndexedDB 已刪除');
+      } catch (idbError) {
+        console.error('刪除 IndexedDB 失敗:', idbError);
+      }
+      
+      try {
+        const keysToRemove = [
+          'user_role_cache',
+          'logout_history',
+          'hasCompletedInitialSync',
+        ];
+        
+        keysToRemove.forEach(key => {
+          try {
+            localStorage.removeItem(key);
+          } catch (e) {
+            console.error(`清除 ${key} 失敗:`, e);
+          }
+        });
+        
+        sessionStorage.clear();
+        console.log('✅ 緩存已清除');
+      } catch (storageError) {
+        console.error('清除緩存失敗:', storageError);
+      }
+      
+      try {
+        const { resetInitialSyncFlag } = await import('@/hooks/useSync');
+        const { clearRoleCache } = await import('@/hooks/useUserRole');
+        resetInitialSyncFlag();
+        clearRoleCache();
+        console.log('✅ 同步標記已重置');
+      } catch (resetError) {
+        console.error('重置標記失敗:', resetError);
+      }
+
+      toast.loading('正在清除雲端資料...', { id: toastId });
+
+      // ✅ 步驟 2：刪除雲端資料
+      console.log('☁️ 步驟 2/3：刪除雲端資料...');
 
       // 1. 刪除所有市集的事件
       const { error: eventsError } = await supabase
@@ -134,59 +196,35 @@ export default function SettingsPage() {
 
       if (marketsError) throw marketsError;
 
-      toast.dismiss();
-      toast.success('✅ 線上資料已清除');
-      toast.info('💡 建議同時清除本地資料以保持一致');
+      console.log('✅ 雲端資料已刪除');
+
+      // ✅ 步驟 3：重新載入頁面
+      toast.success('✅ 所有資料已清除，即將重新載入...', { id: toastId });
+      
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
       
     } catch (error: any) {
-      toast.dismiss();
-      console.error('清除線上資料失敗:', error);
-      toast.error(`清除失敗：${error.message || '請稍後再試'}`);
+      console.error('清除資料失敗:', error);
+      toast.error(`清除失敗：${error.message || '請稍後再試'}`, { id: toastId });
+      
+      // ✅ 錯誤處理：本地資料已清除，建議重新載入
+      const shouldReload = confirm(
+        '清除資料時發生錯誤，但本地資料已清除。\n\n' +
+        'An error occurred, but local data has been cleared.\n\n' +
+        '建議重新載入頁面以確保狀態正確。\n' +
+        'Recommend reloading the page to ensure correct state.\n\n' +
+        '是否立即重新載入？(Reload now?)'
+      );
+      
+      if (shouldReload) {
+        window.location.href = '/';
+      }
     }
   };
 
-  const handleGenerateTestData = async () => {
-    if (!confirm('確定要生成 30 筆測試數據嗎？\n\n這將包含：\n• 30 個市集（單日、連續、多選日期）\n• 20 個商品\n• 每個市集的互動記錄\n• 每個市集的成交記錄\n\n生成過程需要約 30-60 秒。')) {
-      return;
-    }
-
-    setIsGenerating(true);
-    let toastId: string | number | undefined;
-
-    try {
-      toastId = toast.loading('正在生成測試數據...', {
-        description: '0/30 市集',
-      });
-
-      await generateTestData((current, total, message) => {
-        toast.loading(message, {
-          id: toastId,
-          description: `${current}/${total} 市集`,
-        });
-      });
-
-      toast.success('🎉 測試數據生成完成！', {
-        id: toastId,
-        description: '已生成 30 個市集及相關數據',
-      });
-
-      // 延遲刷新頁面
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-
-    } catch (error: any) {
-      console.error('生成測試數據失敗:', error);
-      toast.error('生成失敗', {
-        id: toastId,
-        description: error.message || '請稍後再試',
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  // 員工離開團隊
+  // ✅ 員工離開團隊（優化版：優先清除本地數據）
   const handleLeaveTeam = async () => {
     if (!user || !userRole.ownerId) return;
 
@@ -195,16 +233,69 @@ export default function SettingsPage() {
       '離開後：\n' +
       '• 您將無法再訪問老闆的市集\n' +
       '• 您的本地數據將被清除\n' +
-      '• 您可以重新開始使用自己的帳號\n\n' +
+      '• 您將恢復為一般用戶身分\n\n' +
       '此操作無法復原！'
     );
 
     if (!confirmed) return;
 
     try {
+      // ✅ 步驟 1：優先清除本地數據（避免數據混亂）
+      toast.loading('正在清除本地數據...', { id: 'leave-team' });
+      console.log('🧹 開始清除本地數據...');
+      
+      try {
+        const { db } = await import('@/lib/db');
+        await db.markets.clear();
+        await db.products.clear();
+        await db.events.clear();
+        await db.dailyStats.clear();
+        console.log('✅ 數據表已清除');
+      } catch (dbError) {
+        console.error('清除數據表失敗:', dbError);
+      }
+      
+      try {
+        await indexedDB.deleteDatabase('MarketPulseDB');
+        console.log('✅ IndexedDB 已刪除');
+      } catch (idbError) {
+        console.error('刪除 IndexedDB 失敗:', idbError);
+      }
+      
+      try {
+        const keysToRemove = [
+          'user_role_cache',
+          'logout_history',
+          'hasCompletedInitialSync',
+        ];
+        
+        keysToRemove.forEach(key => {
+          try {
+            localStorage.removeItem(key);
+          } catch (e) {
+            console.error(`清除 ${key} 失敗:`, e);
+          }
+        });
+        
+        sessionStorage.clear();
+        console.log('✅ 緩存已清除');
+      } catch (storageError) {
+        console.error('清除緩存失敗:', storageError);
+      }
+      
+      try {
+        const { resetInitialSyncFlag } = await import('@/hooks/useSync');
+        const { clearRoleCache } = await import('@/hooks/useUserRole');
+        resetInitialSyncFlag();
+        clearRoleCache();
+        console.log('✅ 同步標記已重置');
+      } catch (resetError) {
+        console.error('重置標記失敗:', resetError);
+      }
+
+      // ✅ 步驟 2：刪除雲端員工關係
       toast.loading('正在離開團隊...', { id: 'leave-team' });
 
-      // 1. 刪除員工關係
       const { error: relError } = await supabase
         .from('staff_relationships')
         .delete()
@@ -213,7 +304,7 @@ export default function SettingsPage() {
 
       if (relError) throw relError;
 
-      // 2. 刪除 market_members 記錄
+      // ✅ 步驟 3：刪除 market_members 記錄
       const { data: markets, error: marketsError } = await supabase
         .from('markets')
         .select('id')
@@ -234,19 +325,59 @@ export default function SettingsPage() {
         if (membersError) throw membersError;
       }
 
-      // 3. 清除本地數據
-      await indexedDB.deleteDatabase('MarketPulseDB');
+      // ✅ 步驟 4：驗證雲端記錄已刪除（可選，不影響本地）
+      toast.loading('正在驗證雲端同步...', { id: 'leave-team' });
+      
+      let retryCount = 0;
+      const maxRetries = 10;
+      let isDeleted = false;
+      
+      while (retryCount < maxRetries && !isDeleted) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const { data, error } = await supabase
+          .from('staff_relationships')
+          .select('id')
+          .eq('owner_id', userRole.ownerId)
+          .eq('staff_id', user.id)
+          .eq('status', 'active');
+        
+        if (error) {
+          console.error('驗證失敗:', error);
+          break;
+        }
+        
+        if (!data || data.length === 0) {
+          isDeleted = true;
+          console.log('✅ 雲端記錄已確認刪除');
+          break;
+        }
+        
+        retryCount++;
+        console.log(`等待雲端同步... (${retryCount}/${maxRetries})`);
+      }
 
       toast.success('✅ 已離開團隊，即將重新載入...', { id: 'leave-team' });
 
-      // 4. 重新載入頁面
+      // ✅ 步驟 5：強制重新載入頁面
       setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+        window.location.href = '/';
+      }, 1000);
 
     } catch (error: any) {
       console.error('離開團隊失敗:', error);
       toast.error('離開失敗：' + error.message, { id: 'leave-team' });
+      
+      // ✅ 錯誤處理：本地數據已清除，建議重新載入
+      const shouldReload = confirm(
+        '離開團隊時發生錯誤，但本地數據已清除。\n\n' +
+        '建議重新載入頁面以確保狀態正確。\n\n' +
+        '是否立即重新載入？'
+      );
+      
+      if (shouldReload) {
+        window.location.href = '/';
+      }
     }
   };
 
@@ -305,78 +436,77 @@ export default function SettingsPage() {
             </div>
           </>
         ) : (
-          /* 老闆：顯示員工管理 */
-          <StaffManagement />
-        )}
-
-        {/* 開發者工具 - 只有老闆可見 */}
-        {!isStaff && (
-          <div className="bg-gradient-to-br from-[#7B9FA6]/10 to-[#D4A574]/10 rounded-[1.5rem] p-6 shadow-lg border-2 border-[#7B9FA6]/20">
-            <div className="flex items-center gap-2 mb-3">
-              <Bug className="w-5 h-5 text-[#7B9FA6]" />
-              <h2 className="text-lg font-medium text-[#3A3A3A]">
-                開發者工具
-              </h2>
-            </div>
-            <p className="text-sm text-[#6B6B6B] mb-4">
-              測試和調試應用程式的專業工具
-            </p>
-            
-            <div className="space-y-3">
-              {/* 閃爍測試 */}
+          /* 老闆：顯示員工管理（可折疊） */
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
             <button
-              onClick={() => router.push('/debug/flicker-test')}
-              className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] text-white hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2"
+              onClick={() => setIsStaffManagementExpanded(!isStaffManagementExpanded)}
+              className="w-full p-6 text-left hover:bg-[#FAFAF8] transition-colors"
             >
-              <Bug className="w-5 h-5" />
-              閃爍測試調試工具
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Eye className="w-5 h-5 text-[#7B9FA6]" />
+                    <h2 className="text-lg font-medium text-[#3A3A3A]">
+                      員工管理
+                    </h2>
+                  </div>
+                  <p className="text-sm text-[#6B6B6B]">
+                    邀請員工協作，管理權限設定
+                  </p>
+                </div>
+                <div className="ml-4">
+                  {isStaffManagementExpanded ? (
+                    <ChevronUp className="w-5 h-5 text-[#7B9FA6]" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-[#7B9FA6]" />
+                  )}
+                </div>
+              </div>
             </button>
-              
-              {/* 生成測試數據 */}
-              <button
-                onClick={handleGenerateTestData}
-                disabled={isGenerating}
-                className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-[#D4A574] to-[#E8B4B8] text-white hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Sparkles className="w-5 h-5" />
-                {isGenerating ? '生成中...' : '生成測試數據（30筆）'}
-              </button>
-            </div>
-            
-            <div className="mt-4 bg-white/50 rounded-xl p-3">
-              <p className="text-xs text-[#6B6B6B]">
-                <span className="font-medium">💡 測試數據包含：</span>
-                <br />
-                • 30 個市集（單日、連續、多選日期）
-                <br />
-                • 20 個商品
-                <br />
-                • 每個市集的互動記錄（5-15次）
-                <br />
-                • 每個市集的成交記錄（2-8筆）
-              </p>
-            </div>
+
+            {isStaffManagementExpanded && (
+              <div className="border-t border-[#7B9FA6]/10">
+                <StaffManagement />
+              </div>
+            )}
           </div>
         )}
 
-        {/* 互動按鈕設定 - 只有老闆可見 */}
+        {/* 互動按鈕設定 - 只有老闆可見（可折疊） */}
         {!isStaff && (
           <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
-            <div className="p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="w-5 h-5 text-[#7B9FA6]" />
-              <h2 className="text-lg font-medium text-[#3A3A3A]">
-                互動記錄設定
-              </h2>
-            </div>
-            <p className="text-sm text-[#6B6B6B] mb-4">
-              記錄顧客互動，了解哪一場市集效果最好
-            </p>
+            <button
+              onClick={() => setIsInteractionExpanded(!isInteractionExpanded)}
+              className="w-full p-6 text-left hover:bg-[#FAFAF8] transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="w-5 h-5 text-[#7B9FA6]" />
+                    <h2 className="text-lg font-medium text-[#3A3A3A]">
+                      互動記錄設定
+                    </h2>
+                  </div>
+                  <p className="text-sm text-[#6B6B6B]">
+                    記錄顧客互動，了解哪一場市集效果最好
+                  </p>
+                </div>
+                <div className="ml-4">
+                  {isInteractionExpanded ? (
+                    <ChevronUp className="w-5 h-5 text-[#7B9FA6]" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-[#7B9FA6]" />
+                  )}
+                </div>
+              </div>
+            </button>
 
+            {isInteractionExpanded && (
+              <div className="px-6 pb-6 border-t border-[#7B9FA6]/10">
             {isSetupComplete ? (
               <>
                 {/* 已設定：顯示當前配置 */}
-                <div className="bg-[#FAFAF8] rounded-xl p-4 mb-4">
+                <div className="bg-[#FAFAF8] rounded-xl p-4 mb-4 mt-4">
                   <div className="text-xs text-[#6B6B6B] mb-3 text-center">
                     當前設定
                   </div>
@@ -420,7 +550,7 @@ export default function SettingsPage() {
             ) : (
               <>
                 {/* 未設定：引導設定 */}
-                <div className="bg-gradient-to-br from-[#7B9FA6]/10 to-[#D4A574]/10 rounded-xl p-6 mb-4 text-center">
+                <div className="bg-gradient-to-br from-[#7B9FA6]/10 to-[#D4A574]/10 rounded-xl p-6 mb-4 mt-4 text-center">
                   <div className="text-4xl mb-3">📊</div>
                   <p className="text-sm text-[#3A3A3A] mb-2">
                     尚未設定互動記錄方式
@@ -450,8 +580,9 @@ export default function SettingsPage() {
                 <li>• 幫助你了解哪一場市集效果最好</li>
               </ul>
             </div>
+              </div>
+            )}
           </div>
-        </div>
         )}
 
         {/* 資料庫管理 - 只有老闆可見 */}
@@ -643,6 +774,7 @@ export default function SettingsPage() {
                       <li>• 此操作會永久刪除雲端所有資料</li>
                       <li>• 所有設備的資料都會受影響</li>
                       <li>• 無法從雲端恢復資料</li>
+                      <li>• <strong className="text-[#d4183d]">本地資料也會同時清除</strong>（防止重新上傳）</li>
                       <li>• 建議先備份重要資料</li>
                     </ul>
                   </div>

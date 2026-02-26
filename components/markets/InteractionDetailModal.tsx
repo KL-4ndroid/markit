@@ -1,6 +1,6 @@
 'use client';
 
-import { createPortal } from 'react-dom';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X, Clock } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Event, InteractionRecordedPayload } from '@/types/db';
@@ -81,28 +81,20 @@ export function InteractionDetailModal({
     return `${hours}:${minutes}:${seconds}`;
   };
 
-  if (!isOpen) return null;
-
-  return createPortal(
-    <>
+  return (
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       {/* 背景遮罩 */}
-      <div 
-        className="fixed inset-0 bg-black/50 z-[999] transition-opacity" 
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
       
       {/* 彈窗容器 */}
-      <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none p-6">
-        <div 
-          className="bg-white rounded-[1.5rem] max-w-md w-full shadow-xl pointer-events-auto max-h-[80vh] flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
+      <div className="fixed inset-0 flex items-center justify-center p-6">
+        <DialogPanel className="bg-white rounded-[1.5rem] max-w-md w-full shadow-xl max-h-[80vh] flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="text-3xl">{emoji}</div>
               <div>
-                <h3 className="text-lg font-medium text-[#3A3A3A]">{label}</h3>
+                <DialogTitle className="text-lg font-medium text-[#3A3A3A]">{label}</DialogTitle>
                 <p className="text-sm text-[#6B6B6B]">共 {filteredEvents.length} 次互動</p>
               </div>
             </div>
@@ -172,9 +164,8 @@ export function InteractionDetailModal({
               關閉
             </button>
           </div>
-        </div>
+        </DialogPanel>
       </div>
-    </>,
-    document.body
+    </Dialog>
   );
 }

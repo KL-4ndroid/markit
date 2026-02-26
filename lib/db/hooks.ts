@@ -26,13 +26,14 @@ import type {
  * 查詢所有市集
  * 
  * @param options - 查詢選項
- * @returns 市集列表（自動過濾已刪除的市集）
+ * @returns 市集列表（自動過濾已刪除的市集和無權限的市集）
  */
 export function useMarkets(options?: {
   status?: MarketStatus;
   orderBy?: 'startDate' | 'createdAt';
   order?: 'asc' | 'desc';
-  includeDeleted?: boolean;  // ✅ 新增：是否包含已刪除的市集（預設 false）
+  includeDeleted?: boolean;  // ✅ 是否包含已刪除的市集（預設 false）
+  ownerId?: string;  // ✅ 新增：根據擁有者 ID 過濾（用於權限控制）
 }) {
   return useLiveQuery(async () => {
     try {
@@ -47,9 +48,14 @@ export function useMarkets(options?: {
       const markets = await query.toArray();
       
       // ✅ 過濾已刪除的市集（除非明確要求包含）
-      const filteredMarkets = options?.includeDeleted 
+      let filteredMarkets = options?.includeDeleted 
         ? markets 
         : markets.filter(m => !m.isDeleted);
+      
+      // ✅ 根據擁有者 ID 過濾（權限控制）
+      if (options?.ownerId) {
+        filteredMarkets = filteredMarkets.filter(m => m.owner_id === options.ownerId);
+      }
       
       const orderBy = options?.orderBy || 'startDate';
       const order = options?.order || 'desc';
@@ -63,7 +69,7 @@ export function useMarkets(options?: {
       console.error('❌ useMarkets 查詢失敗:', error);
       return []; // 返回空數組而不是 undefined
     }
-  }, [options?.status, options?.orderBy, options?.order, options?.includeDeleted]) || []; // 確保永遠不返回 undefined
+  }, [options?.status, options?.orderBy, options?.order, options?.includeDeleted, options?.ownerId]) || []; // 確保永遠不返回 undefined
 }
 
 /**

@@ -8,6 +8,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { supabase } from '@/lib/supabase/client';
 import { Mail, Lock, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,8 +24,6 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>('login');
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,21 +112,18 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
   };
 
   return (
-    <>
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       {/* 背景遮罩 */}
-      <div 
-        className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
       
-      {/* 對話框 */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl">
+      {/* 對話框容器 */}
+      <div className="fixed inset-0 flex items-center justify-center p-6">
+        <DialogPanel className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl">
           {/* 標題 */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-medium text-[#3A3A3A]">
+            <DialogTitle className="text-2xl font-medium text-[#3A3A3A]">
               {mode === 'login' ? '登入帳號' : '註冊帳號'}
-            </h2>
+            </DialogTitle>
             <button
               onClick={onClose}
               className="p-2 hover:bg-[#F5E6E8] rounded-full transition-colors"
@@ -220,8 +216,8 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
               您可以選擇同步、清除或取消登入。
             </p>
           </div>
-        </div>
+        </DialogPanel>
       </div>
-    </>
+    </Dialog>
   );
 }

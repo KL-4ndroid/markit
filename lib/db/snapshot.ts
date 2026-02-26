@@ -150,13 +150,24 @@ export async function createSnapshot(userId: string): Promise<string> {
     // 步驟 6: 上傳到 Supabase
     console.log('☁️ 上傳到雲端...');
     
+    // 獲取下一個版本號
+    const { data: latestSnapshot } = await supabase
+      .from('snapshots')
+      .select('version')
+      .eq('user_id', userId)
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    const nextVersion = (latestSnapshot?.version || 0) + 1;
+    
     // 將壓縮後的字符串包裝為 JSONB 對象
     const { data, error } = await supabase
       .from('snapshots')
       .insert({
         user_id: userId,
         snapshot_at: snapshotData.snapshot_at,
-        version: 1,
+        version: nextVersion,
         data: { compressed: compressedData }, // 包裝為對象
         event_count: eventCount,
         last_event_id: lastEvent.id || '',

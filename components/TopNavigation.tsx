@@ -10,14 +10,19 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
-import { SyncStatus } from '@/components/sync/SyncStatus';
-import { LogIn, LogOut, User, Shield, Eye, Edit3 } from 'lucide-react';
+import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
+import { LogIn, LogOut, User, Shield, Eye, Edit3, Crown } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export function TopNavigation() {
   const { user, signOut, isConfigured } = useAuth();
   const { userRole } = useUserRole();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const router = useRouter();
+  
+  // TODO: 從實際訂閱狀態獲取
+  const currentPlan: 'free' | 'pro' | 'enterprise' = 'free';
 
   const handleSignOut = async () => {
     try {
@@ -55,8 +60,8 @@ export function TopNavigation() {
 
         {/* Right Side */}
         <div className="flex items-center gap-3">
-          {/* 同步狀態 */}
-          {user && <SyncStatus />}
+          {/* ✅ 輕量化同步狀態指示器 */}
+          {user && <SyncStatusIndicator />}
 
           {/* 用戶資訊 / 登入按鈕 */}
           {user ? (
@@ -90,6 +95,50 @@ export function TopNavigation() {
                         {user.email}
                       </p>
                     </div>
+
+                    {/* 訂閱狀態（僅老闆身份顯示） */}
+                    {!userRole.isStaff && (
+                      <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-[#6B6B6B]">目前方案</span>
+                          {currentPlan === 'free' && (
+                            <Crown className="w-4 h-4 text-[#D4A574]" />
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-[#3A3A3A]">
+                            {currentPlan === "free"
+                              ? "免費版"
+                              : currentPlan === "pro"
+                              ? "專業版"
+                              : currentPlan === "enterprise"
+                              ? "企業版"
+                              : ""}
+                          </span>
+                          {currentPlan === 'free' ? (
+                            <button
+                              onClick={() => {
+                                setShowUserMenu(false);
+                                router.push('/subscription');
+                              }}
+                              className="text-xs text-[#7B9FA6] hover:underline"
+                            >
+                              升級
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setShowUserMenu(false);
+                                router.push('/subscription');
+                              }}
+                              className="text-xs text-[#7B9FA6] hover:underline"
+                            >
+                              管理
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* 身份信息 */}
                     <div className="px-3 py-2 border-b border-[#7B9FA6]/10">

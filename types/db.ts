@@ -25,7 +25,9 @@ export type EventType =
   | 'product_deleted'          // 商品刪除
   // 互動相關事件
   | 'interaction_recorded'     // 記錄互動（摸摸、詢問）
+  | 'interaction_deleted'      // 刪除互動記錄
   | 'deal_closed'              // 成交
+  | 'deal_deleted'             // 刪除成交記錄
   // 設定相關事件
   | 'settings_updated';        // 設定更新
 
@@ -304,6 +306,26 @@ export interface InteractionRecordedPayload {
   type: InteractionType;       // 互動類型（使用按鈕 ID）
   productIds?: string[];       // 相關商品 ID（改為 UUID）
   notes?: string;              // 備註
+}
+
+/**
+ * 刪除互動記錄事件的 Payload
+ */
+export interface InteractionDeletedPayload {
+  eventId: string;             // 要刪除的互動事件 ID
+  marketId: string;            // 所屬市集 ID
+}
+
+/**
+ * 刪除成交記錄事件的 Payload
+ */
+export interface DealDeletedPayload {
+  eventId: string;             // 要刪除的成交事件 ID
+  marketId: string;            // 所屬市集 ID
+  dealDate: string;            // 成交日期（用於更新每日統計）
+  totalAmount: number;         // 要扣除的金額
+  totalCost: number;           // 要扣除的成本
+  dealCount: number;           // 要扣除的成交次數
 }
 
 /**

@@ -42,6 +42,7 @@ import { InteractionButtons } from '@/components/sales/InteractionButtons';
 import { QuickInteractionButtons } from '@/components/sales/QuickInteractionButtons';
 import { QuickTransactionGrid } from '@/components/sales/QuickTransactionGrid';
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
+import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import type { Market } from '@/types/db';
 
 interface StaffMarketDetailViewProps {
@@ -139,35 +140,40 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
       {/* Header - 員工模式紫色漸變 */}
       <div className="bg-gradient-to-br from-[#8B7BA6] to-[#A6B4D4] pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <button
-              onClick={() => router.back()}
-              className="text-white hover:opacity-80 transition-opacity"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <div className="flex-1">
-              <h1 className="text-white text-xl font-medium">{market.name}</h1>
-              <div className="text-white/80 text-xs mt-1">
-                {/* 日期 */}
-                <div className="flex items-start gap-1 mb-1">
-                  <Calendar className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                  <span className="flex-1">
-                    {market.dates && market.dates.length > 0 
-                      ? formatDateRanges(market.dates)
-                      : market.startDate === market.endDate 
-                        ? formatDate(market.startDate)
-                        : `${formatDate(market.startDate)} - ${formatDate(market.endDate)}`
-                    }
-                  </span>
-                </div>
-                {/* 地點 */}
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3 flex-shrink-0" />
-                  <span>{market.location}</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3 flex-1">
+              <button
+                onClick={() => router.back()}
+                className="text-white hover:opacity-80 transition-opacity"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div className="flex-1">
+                <h1 className="text-white text-xl font-medium">{market.name}</h1>
+                <div className="text-white/80 text-xs mt-1">
+                  {/* 日期 */}
+                  <div className="flex items-start gap-1 mb-1">
+                    <Calendar className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                    <span className="flex-1">
+                      {market.dates && market.dates.length > 0 
+                        ? formatDateRanges(market.dates)
+                        : market.startDate === market.endDate 
+                          ? formatDate(market.startDate)
+                          : `${formatDate(market.startDate)} - ${formatDate(market.endDate)}`
+                      }
+                    </span>
+                  </div>
+                  {/* 地點 */}
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                    <span>{market.location}</span>
+                  </div>
                 </div>
               </div>
             </div>
+            
+            {/* ✅ 同步狀態指示器 */}
+            <SyncStatusIndicator />
           </div>
         </div>
       </div>

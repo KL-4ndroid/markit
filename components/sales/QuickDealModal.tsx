@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X, DollarSign } from 'lucide-react';
 import { recordDeal } from '@/lib/db/hooks';
 import { toast } from 'sonner';
@@ -67,25 +67,20 @@ export function QuickDealModal({ isOpen, onClose, marketId, onSuccess }: QuickDe
     }
   };
 
-  if (!isOpen) return null;
+  return (
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      {/* 背景遮罩 */}
+      <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
 
-  return createPortal(
-    <>
-      {/* 背景遮罩 - 確保覆蓋全螢幕 */}
-      <div
-        className="fixed inset-0 bg-black/50 z-[999] transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* 彈窗容器 - 強制鎖定螢幕正中央 */}
-      <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none p-6">
-        <div className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl pointer-events-auto">
+      {/* 彈窗容器 */}
+      <div className="fixed inset-0 flex items-center justify-center p-6">
+        <DialogPanel className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-[#3A3A3A] flex items-center gap-2">
+            <DialogTitle className="text-lg font-medium text-[#3A3A3A] flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
               快速成交
-            </h3>
+            </DialogTitle>
             <button
               onClick={onClose}
               className="p-2 rounded-full hover:bg-[#F5E6E8] transition-colors"
@@ -144,9 +139,8 @@ export function QuickDealModal({ isOpen, onClose, marketId, onSuccess }: QuickDe
               </p>
             </div>
           </div>
-        </div>
+        </DialogPanel>
       </div>
-    </>,
-    document.body // 將元件掛載到 body，確保不受父層影響
+    </Dialog>
   );
 }

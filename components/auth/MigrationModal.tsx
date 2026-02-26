@@ -8,6 +8,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { 
   executeMigration, 
   MigrationOption 
@@ -48,8 +49,6 @@ export function MigrationModal({
   const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
-  if (!isOpen) return null;
-
   const handleMigration = async (option: MigrationOption) => {
     setSelectedOption(option);
     setIsLoading(true);
@@ -89,10 +88,10 @@ export function MigrationModal({
   // 如果正在處理或已完成，顯示狀態畫面
   if (status === 'processing' || status === 'success' || status === 'error') {
     return (
-      <>
-        <div className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm" />
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl">
+      <Dialog open={isOpen} onClose={() => {}} className="relative z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-6">
+          <DialogPanel className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl">
             <div className="text-center">
               {status === 'processing' && (
                 <>
@@ -143,26 +142,26 @@ export function MigrationModal({
                 </>
               )}
             </div>
-          </div>
+          </DialogPanel>
         </div>
-      </>
+      </Dialog>
     );
   }
 
   return (
-    <>
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       {/* 背景遮罩 */}
-      <div className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm" />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
       
       {/* 對話框 */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-[2rem] p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0 flex items-center justify-center p-6">
+        <DialogPanel className="bg-white rounded-[2rem] p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
           {/* 標題 */}
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-medium text-[#3A3A3A] mb-2">
+              <DialogTitle className="text-2xl font-medium text-[#3A3A3A] mb-2">
                 發現本地資料
-              </h2>
+              </DialogTitle>
               <p className="text-sm text-[#6B6B6B]">
                 登入帳號：<span className="font-medium text-[#7B9FA6]">{userEmail}</span>
               </p>
@@ -285,8 +284,8 @@ export function MigrationModal({
               請確保您已備份重要資料。
             </p>
           </div>
-        </div>
+        </DialogPanel>
       </div>
-    </>
+    </Dialog>
   );
 }

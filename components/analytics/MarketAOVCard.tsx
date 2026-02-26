@@ -67,9 +67,20 @@ export function MarketAOVCard({
           <h3 className={`font-medium ${rank === 1 ? 'text-base' : 'text-sm'} text-[#3A3A3A] truncate`}>
             {market.name}
           </h3>
-          <p className="text-xs text-[#6B6B6B] truncate">
-            {market.location}
-          </p>
+          <div className="flex items-center gap-2 text-xs text-[#6B6B6B]">
+            <span className="truncate">{market.location}</span>
+            <span className="text-[#7B9FA6]">•</span>
+            <span className="flex-shrink-0">
+              {market.dates && market.dates.length > 0 
+                ? market.dates.length === 1 
+                  ? market.dates[0]
+                  : `${market.dates[0]} 等 ${market.dates.length} 天`
+                : market.startDate === market.endDate
+                  ? market.startDate
+                  : `${market.startDate} ~ ${market.endDate}`
+              }
+            </span>
+          </div>
         </div>
       </div>
 

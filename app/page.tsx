@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Calendar, ArrowRight, User, UserCircle, LogOut } from 'lucide-react';
+import { Calendar, ArrowRight, User, UserCircle, LogOut, Shield, Eye, Edit3, Crown, LogIn } from 'lucide-react';
 import { useMarkets, useMonthlyStats } from '@/lib/db/hooks';
 import { formatCurrency } from '@/lib/utils';
 import { MarketCard } from '@/components/markets/MarketCard';
@@ -22,87 +22,39 @@ import { getGradientClass, getShadowClass } from '@/lib/theme-config';
 import { StaffBadge } from '@/components/staff/StaffBadge';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 import { SensitiveDataMask } from '@/components/staff/SensitiveDataMask';
+import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import HomeLoading from './loading';
 
 export default function HomePage() {
   const router = useRouter();
-  const localMarkets = useMarkets({ orderBy: 'startDate', order: 'asc' }); // 本地數據（老闆模式）
-  const monthlyStats = useMonthlyStats();
+  
   const { user, signOut, isConfigured } = useAuth();
   const { userRole, isStaff } = useUserRole();
+  
+  // ✅ 根據用戶身份過濾市集（權限控制）
+  // - 員工：只顯示老闆的市集（userRole.ownerId）
+  // - 老闆：只顯示自己的市集（user.id）
+  const currentOwnerId = isStaff ? userRole.ownerId : user?.id;
+  
+  const allMarkets = useMarkets({ 
+    orderBy: 'startDate', 
+    order: 'asc',
+    ownerId: currentOwnerId,  // ✅ 根據擁有者 ID 過濾
+  });
+  
+  const monthlyStats = useMonthlyStats();
   const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSync({
     enabled: !!user && isConfigured,
   });
   
   const [showSyncTooltip, setShowSyncTooltip] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [supabaseMarkets, setSupabaseMarkets] = useState<any[]>([]);
-  const [isLoadingSupabase, setIsLoadingSupabase] = useState(false);
-
-  // ✅ 員工模式：從 Supabase 獲取市集列表
-  useEffect(() => {
-    if (isStaff && user) {
-      setIsLoadingSupabase(true);
-      import('@/lib/supabase/markets').then(({ getAccessibleMarkets }) => {
-        getAccessibleMarkets()
-          .then(data => {
-            // 轉換 Supabase 數據格式為本地格式
-            const convertedMarkets = data.map((m: any) => ({
-              id: m.id,
-              name: m.name,
-              location: m.location || '',
-              dates: m.date ? [m.date] : [],
-              startDate: m.start_date || m.date || '',
-              endDate: m.end_date || m.date || '',
-              status: m.status || 'registered',
-              operatingStartTime: m.operating_start_time || undefined,
-              operatingEndTime: m.operating_end_time || undefined,
-              totalRevenue: parseFloat(m.total_revenue || '0'),
-              totalDeals: m.total_deals || 0,
-              earlyEntryEnabled: m.early_entry_enabled || false,
-              earlyEntryTime: m.early_entry_time || undefined,
-              checkInTime: m.check_in_time || undefined,
-              boothCost: parseFloat(m.booth_cost || '0'),
-              tableRental: m.table_rental ? parseFloat(m.table_rental) : undefined,
-              chairRental: m.chair_rental ? parseFloat(m.chair_rental) : undefined,
-              umbrellaRental: m.umbrella_rental ? parseFloat(m.umbrella_rental) : undefined,
-              tableFree: m.table_free || false,
-              chairFree: m.chair_free || false,
-              umbrellaFree: m.umbrella_free || false,
-              totalProfit: parseFloat(m.total_profit || '0'),
-              totalInteractions: m.total_interactions || 0,
-              registrationFee: parseFloat(m.registration_fee || '0'),
-              createdAt: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
-              updatedAt: m.updated_at ? new Date(m.updated_at).getTime() : Date.now(),
-            }));
-            
-            // ✅ 去重：使用 Map 確保每個 ID 只出現一次（優先保留 owner 身份）
-            const uniqueMarkets = Array.from(
-              convertedMarkets.reduce((map, market) => {
-                if (!map.has(market.id)) {
-                  map.set(market.id, market);
-                }
-                return map;
-              }, new Map<string, any>())
-            ).map(([_, market]) => market);
-            
-            setSupabaseMarkets(uniqueMarkets);
-          })
-          .catch(error => {
-            console.error('獲取 Supabase 市集列表失敗:', error);
-          })
-          .finally(() => {
-            setIsLoadingSupabase(false);
-          });
-      });
-    }
-  }, [isStaff, user]);
-
-  // ✅ 根據模式選擇數據源
-  const allMarkets = isStaff ? supabaseMarkets : localMarkets;
+  
+  // TODO: 從實際訂閱狀態獲取
+  const currentPlan: 'free' | 'pro' | 'enterprise' = 'free';
 
   // ✅ 載入狀態檢查：數據未載入時顯示骨架屏
-  const isLoading = (isStaff ? isLoadingSupabase : localMarkets === undefined) || monthlyStats === undefined;
+  const isLoading = allMarkets === undefined || monthlyStats === undefined;
 
   // ✅ 獲取今天的日期（使用本地時間，避免時區問題）
   const now = new Date();
@@ -294,127 +246,143 @@ export default function HomePage() {
       <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-medium text-white opacity-90">
-              Market Pulse
-            </h1>
+            {/* ✅ 左側：Logo + 品牌名稱 */}
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-xl font-medium text-white">
+                  市集誌 - Markit
+                </h1>
+              </div>
+            </div>
+            
+            {/* ✅ 右側：同步狀態 + 用戶選單 */}
             <div className="flex items-center gap-2">
-              {/* 同步狀態按鈕 */}
-              {isConfigured && (
-                <div className="relative">
-                  <button
-                    onClick={() => {
-                      if (user && status !== SyncStatusEnum.SYNCING) {
-                        sync();
-                      }
-                    }}
-                    onMouseEnter={() => setShowSyncTooltip(true)}
-                    onMouseLeave={() => setShowSyncTooltip(false)}
-                    className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors"
-                    title={getSyncStatusText()}
-                    disabled={!user || status === SyncStatusEnum.SYNCING}
-                  >
-                    <div className="text-white">
-                      {getSyncIcon()}
-                    </div>
-                  </button>
-
-                  {/* 同步狀態 Tooltip */}
-                  {showSyncTooltip && user && (
-                    <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-4 min-w-[280px] z-50 border border-[#7B9FA6]/10">
-                      <div className="space-y-3">
-                        {/* 狀態 */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-[#6B6B6B]">狀態</span>
-                          <div className="flex items-center gap-2 text-[#7B9FA6]">
-                            {getSyncIcon()}
-                            <span className="text-sm font-medium">{getSyncStatusText()}</span>
-                          </div>
-                        </div>
-
-                        {/* 網路狀態 */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-[#6B6B6B]">網路</span>
-                          <span className={`text-sm font-medium ${isOnline ? 'text-[#7B9FA6]' : 'text-[#6B6B6B]'}`}>
-                            {isOnline ? '🟢 已連線' : '⚪ 離線'}
-                          </span>
-                        </div>
-
-                        {/* 最後同步時間 */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-[#6B6B6B]">最後同步</span>
-                          <span className="text-sm font-medium text-[#3A3A3A]">
-                            {formatLastSync()}
-                          </span>
-                        </div>
-
-                        {/* 待同步事件 */}
-                        {pendingCount > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-[#6B6B6B]">待同步</span>
-                            <span className="text-sm font-medium text-[#7B9FA6]">
-                              {pendingCount} 個事件
-                            </span>
-                          </div>
-                        )}
-
-                        {/* 錯誤訊息 */}
-                        {error && (
-                          <div className="pt-3 border-t border-[#7B9FA6]/10">
-                            <p className="text-xs text-[#d4183d]">
-                              ⚠️ {error}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* 手動同步按鈕 */}
-                        {status !== SyncStatusEnum.SYNCING && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              sync();
-                              setShowSyncTooltip(false);
-                            }}
-                            className="w-full bg-[#7B9FA6] text-white py-2 rounded-xl hover:bg-[#6A8E95] transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                            立即同步
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* ✅ 同步狀態指示器（輕量化呼吸燈） */}
+              {user && isConfigured && <SyncStatusIndicator />}
               
-              {/* 使用者登入狀態按鈕 */}
+              {/* ✅ 用戶選單 */}
               {isConfigured && (
                 <div className="relative">
                   {user ? (
                     <>
                       <button
                         onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors"
-                        title={`已登入：${user.email}`}
+                        className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors"
                       >
-                        <div className="text-white">
-                          <UserCircle className="w-5 h-5" />
-                        </div>
+                        {userRole.isStaff ? (
+                          <Shield className="w-4 h-4 text-white" />
+                        ) : (
+                          <User className="w-4 h-4 text-white" />
+                        )}
+                        <span className="text-sm text-white max-w-[100px] truncate">
+                          {user.email?.split('@')[0]}
+                        </span>
                       </button>
 
-                      {/* 用戶選單 */}
+                      {/* 用戶選單彈窗 */}
                       {showUserMenu && (
                         <>
                           <div 
                             className="fixed inset-0 z-40" 
                             onClick={() => setShowUserMenu(false)}
                           />
-                          <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-2 min-w-[200px] z-50 border border-[#7B9FA6]/10">
+                          <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-2 min-w-[240px] z-50 border border-[#7B9FA6]/10">
+                            {/* 用戶信息 */}
                             <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
                               <p className="text-xs text-[#6B6B6B]">登入為</p>
                               <p className="text-sm font-medium text-[#3A3A3A] truncate">
                                 {user.email}
                               </p>
                             </div>
+
+                            {/* 訂閱狀態（僅老闆身份顯示） */}
+                            {!userRole.isStaff && (
+                              <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs text-[#6B6B6B]">目前方案</span>
+                                  {currentPlan === 'free' && (
+                                    <Crown className="w-4 h-4 text-[#D4A574]" />
+                                  )}
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-[#3A3A3A]">
+                                    {currentPlan === "free"
+                                      ? "免費版"
+                                      : currentPlan === "pro"
+                                      ? "專業版"
+                                      : currentPlan === "enterprise"
+                                      ? "企業版"
+                                      : ""}
+                                  </span>
+                                  {currentPlan === 'free' ? (
+                                    <button
+                                      onClick={() => {
+                                        setShowUserMenu(false);
+                                        router.push('/subscription');
+                                      }}
+                                      className="text-xs text-[#7B9FA6] hover:underline"
+                                    >
+                                      升級
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        setShowUserMenu(false);
+                                        router.push('/subscription');
+                                      }}
+                                      className="text-xs text-[#7B9FA6] hover:underline"
+                                    >
+                                      管理
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 身份信息 */}
+                            <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
+                              {userRole.isStaff ? (
+                                <div>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Shield className="w-4 h-4 text-[#D4A574]" />
+                                    <span className="text-sm font-medium text-[#3A3A3A]">
+                                      員工身份
+                                    </span>
+                                  </div>
+                                  {/* 老闆信息 */}
+                                  {userRole.ownerEmail && (
+                                    <div className="mb-2 p-2 bg-[#F0E8F3] rounded-lg">
+                                      <p className="text-xs text-[#6B6B6B] mb-0.5">為以下老闆工作</p>
+                                      <p className="text-sm font-medium text-[#3A3A3A] truncate">
+                                        {userRole.ownerEmail}
+                                      </p>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2 text-xs">
+                                    {userRole.permissions?.can_edit ? (
+                                      <>
+                                        <Edit3 className="w-3 h-3 text-[#7B9FA6]" />
+                                        <span className="text-[#6B6B6B]">可編輯</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Eye className="w-3 h-3 text-[#6B6B6B]" />
+                                        <span className="text-[#6B6B6B]">僅查看</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <User className="w-4 h-4 text-[#7B9FA6]" />
+                                  <span className="text-sm font-medium text-[#3A3A3A]">
+                                    老闆身份
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* 登出按鈕 */}
                             <button
                               onClick={handleSignOut}
                               className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#F5E6E8] transition-colors text-left"
@@ -429,21 +397,16 @@ export default function HomePage() {
                   ) : (
                     <button
                       onClick={handleLogin}
-                      className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors"
-                      title="未登入"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors"
                     >
-                      <div className="text-white">
-                        <User className="w-5 h-5" />
-                      </div>
+                      <LogIn className="w-4 h-4 text-white" />
+                      <span className="text-sm font-medium text-white">登入</span>
                     </button>
                   )}
                 </div>
               )}
             </div>
           </div>
-          <p className="text-white/80 text-sm">
-            您的市集攤販數位助手 ✨
-          </p>
         </div>
       </div>
 

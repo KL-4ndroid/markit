@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X, Edit, Trash2, Clock, CreditCard } from 'lucide-react';
 import type { Event, DealClosedPayload } from '@/types/db';
 
@@ -20,7 +20,7 @@ interface DealDetailModalProps {
 export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: DealDetailModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
-  if (!deal || !isOpen) return null;
+  if (!deal) return null;
 
   const payload = deal.payload as DealClosedPayload;
 
@@ -66,23 +66,20 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
     }
   };
 
-  return createPortal(
-    <>
-      {/* 背景遮罩 - 確保覆蓋全螢幕 */}
-      <div
-        className="fixed inset-0 bg-black/50 z-[999] transition-opacity"
-        onClick={onClose}
-      />
+  return (
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      {/* 背景遮罩 */}
+      <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
 
-      {/* 彈窗容器 - 強制鎖定螢幕正中央 */}
-      <div className="fixed inset-0 z-[1000] flex items-center justify-center pointer-events-none p-4">
-        <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl animate-slide-up pointer-events-auto">
+      {/* 彈窗容器 */}
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <DialogPanel className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-[#7B9FA6]/10">
-            <h3 className="text-lg font-medium text-[#3A3A3A] flex items-center gap-2">
+            <DialogTitle className="text-lg font-medium text-[#3A3A3A] flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-[#7B9FA6]" />
               成交詳情
-            </h3>
+            </DialogTitle>
             <button
               onClick={onClose}
               className="p-2 rounded-full hover:bg-[#FAFAF8] transition-colors"
@@ -194,9 +191,8 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
               編輯
             </button>
           </div>
-        </div>
+        </DialogPanel>
       </div>
-    </>,
-    document.body // 將元件掛載到 body，確保不受父層影響
+    </Dialog>
   );
 }

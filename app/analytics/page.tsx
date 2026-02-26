@@ -1,18 +1,32 @@
 'use client';
 
-import { useState, useMemo, Fragment } from 'react';
+import { useState, useMemo, Fragment, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, TrendingUp } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { toast } from 'sonner';
 import { useMarkets } from '@/lib/db/hooks';
+import { useAuth } from '@/lib/supabase/auth-context';
+import { useUserRole } from '@/hooks/useUserRole';
 import { db } from '@/lib/db';
 import { DateRangeFilter } from '@/components/analytics/DateRangeFilter';
 import { EmptyState } from '@/components/analytics/EmptyState';
 import { MarketROICard } from '@/components/analytics/MarketROICard';
 import { MarketAOVCard } from '@/components/analytics/MarketAOVCard';
 import { TopProductsCard } from '@/components/analytics/TopProductsCard';
+import { KPICards } from '@/components/analytics/KPICards';
+import { QuadrantGrid } from '@/components/analytics/QuadrantGrid';
+import { ProductAffinityCard } from '@/components/analytics/ProductAffinityCard';
+import { DailyRevenueChart } from '@/components/analytics/DailyRevenueChart';
+import { MetricGuide } from '@/components/analytics/MetricGuide';
+import {
+  calculateQuadrants,
+  calculateProductAffinity,
+  calculateDailyRevenue,
+} from '@/lib/analytics-utils';
 import type { Market } from '@/types/db';
+import type { ProductPair } from '@/lib/analytics-utils';
 
 /**
  * 數據分析頁面
@@ -25,11 +39,14 @@ import type { Market } from '@/types/db';
  */
 export default function AnalyticsPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { userRole, isStaff } = useUserRole();
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('month');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
   const [showInfoTooltip, setShowInfoTooltip] = useState(false); // ✅ 控制ROI說明提示框
   const [showAOVInfoTooltip, setShowAOVInfoTooltip] = useState(false); // ✅ 控制客單價說明提示框
+  const hasShownEmptyToast = useRef(false); // ✅ 追蹤是否已顯示過空狀態提示
 
   // 計算日期範圍
   const { startDate, endDate } = useMemo(() => {
@@ -80,8 +97,12 @@ export default function AnalyticsPage() {
     setCustomEndDate(end);
   };
 
-  // 獲取所有市集數據
-  const allMarkets = useMarkets();
+  // ✅ 根據用戶身份過濾市集（權限控制）
+  const currentOwnerId = isStaff ? userRole.ownerId : user?.id;
+  
+  const allMarkets = useMarkets({
+    ownerId: currentOwnerId,  // ✅ 根據擁有者 ID 過濾
+  });
   
   // 篩選日期範圍內的市集
   const markets = useMemo(() => {
@@ -100,6 +121,20 @@ export default function AnalyticsPage() {
       return market.startDate >= startDate && market.startDate <= endDate;
     });
   }, [allMarkets, startDate, endDate]);
+
+  // ✅ 全域空狀態處理：當無市集數據時顯示一次性提示
+  useEffect(() => {
+    if (markets.length === 0 && !hasShownEmptyToast.current) {
+      toast.info('目前範圍內尚無市集數據', {
+        description: '調整日期範圍或建立新市集開始記錄',
+        duration: 4000,
+      });
+      hasShownEmptyToast.current = true;
+    } else if (markets.length > 0) {
+      // 重置標記，當有數據後再次變為空時可以再次提示
+      hasShownEmptyToast.current = false;
+    }
+  }, [markets.length]);
 
   // 計算市集 ROI 數據
   interface MarketROIData {
@@ -211,6 +246,54 @@ export default function AnalyticsPage() {
     // 排序：按客單價降序
     return data.sort((a, b) => b.averageOrderValue - a.averageOrderValue);
   }, [markets]);
+
+  // ✅ 新增：計算象限數據（使用 useMemo 優化性能，包含邏輯判斷）
+  const quadrantData = useMemo(() => {
+    if (!markets || markets.length === 0) {
+      return {
+        stars: [],
+        potentials: [],
+        precisies: [],
+        observables: [],
+        averages: {
+          avgInteractions: 0,
+          avgConversionRate: 0,
+        },
+        isEmpty: true,
+      };
+    }
+
+    // ✅ 象限分析邏輯保護：檢查是否所有市集的互動數均為 0
+    return calculateQuadrants(markets);
+  }, [markets]);
+
+  // ✅ 新增：計算商品親和力（使用 useLiveQuery 確保與 Dexie 同步）
+  const affinityPairs = useLiveQuery(async () => {
+    if (!markets || markets.length === 0) {
+      return [];
+    }
+
+    try {
+      return await calculateProductAffinity(markets, db);
+    } catch (error) {
+      console.error('計算商品親和力失敗:', error);
+      return [];
+    }
+  }, [markets]) as ProductPair[] | undefined;
+
+  // ✅ 新增：計算每日收入數據（使用 useLiveQuery）
+  const dailyRevenueData = useLiveQuery(async () => {
+    if (!markets || markets.length === 0) {
+      return new Map<string, number>();
+    }
+
+    try {
+      return await calculateDailyRevenue(markets, db, startDate, endDate);
+    } catch (error) {
+      console.error('計算每日收入失敗:', error);
+      return new Map<string, number>();
+    }
+  }, [markets, startDate, endDate]);
 
   // ✅ 新增：計算商品排行數據
   const topProductsData = useLiveQuery(async () => {
@@ -366,6 +449,43 @@ export default function AnalyticsPage() {
 
         {hasData ? (
           <>
+            {/* 核心 KPI 卡片 */}
+            <KPICards
+              avgConversionRate={quadrantData.averages.avgConversionRate}
+              topPair={affinityPairs && affinityPairs.length > 0 ? affinityPairs[0] : null}
+            />
+
+            {/* 市集象限網格 */}
+            <div className="mb-6">
+              <QuadrantGrid
+                stars={quadrantData.stars}
+                potentials={quadrantData.potentials}
+                precisies={quadrantData.precisies}
+                observables={quadrantData.observables}
+                averages={quadrantData.averages}
+                isEmpty={quadrantData.isEmpty}
+              />
+            </div>
+
+            {/* 每日收入趨勢圖 */}
+            {dailyRevenueData && (
+              <div className="mb-6">
+                <DailyRevenueChart
+                  revenueMap={dailyRevenueData}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
+              </div>
+            )}
+
+            {/* 商品關聯分析 */}
+            <div className="mb-6">
+              <ProductAffinityCard
+                pairs={affinityPairs || []}
+                isLoading={affinityPairs === undefined}
+              />
+            </div>
+
             {/* 最有價值市集 */}
             <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
               {/* 標題與說明 */}
