@@ -42,7 +42,8 @@ export default function HomePage() {
     ownerId: currentOwnerId,  // ✅ 根據擁有者 ID 過濾
   });
   
-  const monthlyStats = useMonthlyStats();
+  // ✅ 修復：傳入 ownerId 參數，只統計當前使用者的市集
+  const monthlyStats = useMonthlyStats(currentOwnerId);
   const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSync({
     enabled: !!user && isConfigured,
   });
@@ -415,36 +416,77 @@ export default function HomePage() {
         {/* 本月概覽 */}
         <div className="mb-6">
           <div className={`bg-white rounded-[1.5rem] p-6 shadow-md ${getShadowClass(isStaff)}`}>
+            {/* ✅ 標題區：明確標示「本月概覽」 */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#7B9FA6]/10">
+              <div>
+                <h3 className="text-base font-semibold text-[#3A3A3A] mb-0.5">
+                  本月概覽
+                </h3>
+                <p className="text-xs text-[#6B6B6B]">
+                  {now.getFullYear()} 年 {now.getMonth() + 1} 月統計
+                </p>
+              </div>
+              {/* ✅ 可選：添加「查看詳情」按鈕 */}
+              <button
+                onClick={() => router.push('/analytics')}
+                className="text-xs text-[#7B9FA6] hover:text-[#6A8E95] transition-colors flex items-center gap-1"
+              >
+                詳情
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* ✅ 統計數據區：更清晰的標籤 */}
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
-                <div className="text-xs text-[#6B6B6B] mb-1">市集場次</div>
-                <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+                <div className="text-xs text-[#6B6B6B] mb-1.5">
+                  本月市集
+                </div>
+                <div className="text-2xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
                   {monthlyStats?.marketCount ?? 0}
                 </div>
+                <div className="text-[10px] text-[#6B6B6B]">場次</div>
               </div>
               
               {/* 員工模式：隱藏總收入 */}
               {isStaff ? (
                 <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
+                  <div className="text-xs text-[#6B6B6B] mb-1.5">
+                    本月收入
+                  </div>
                   <SensitiveDataMask label="僅老闆可見" size="sm" />
                 </div>
               ) : (
                 <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
-                  <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+                  <div className="text-xs text-[#6B6B6B] mb-1.5">
+                    本月收入
+                  </div>
+                  <div className="text-xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
                     {formatCurrency(monthlyStats?.totalRevenue ?? 0)}
                   </div>
+                  <div className="text-[10px] text-[#6B6B6B]">總收入</div>
                 </div>
               )}
               
               <div className="text-center">
-                <div className="text-xs text-[#6B6B6B] mb-1">成交數</div>
-                <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+                <div className="text-xs text-[#6B6B6B] mb-1.5">
+                  本月成交
+                </div>
+                <div className="text-2xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
                   {monthlyStats?.totalDeals ?? 0}
                 </div>
+                <div className="text-[10px] text-[#6B6B6B]">筆數</div>
               </div>
             </div>
+
+            {/* ✅ 可選：添加提示文字 */}
+            {monthlyStats && monthlyStats.marketCount === 0 && (
+              <div className="mt-4 pt-3 border-t border-[#7B9FA6]/10">
+                <p className="text-xs text-center text-[#6B6B6B]">
+                  本月尚未有市集記錄
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

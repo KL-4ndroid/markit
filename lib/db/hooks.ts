@@ -11,6 +11,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './index';
 import { recordEvent } from './events';
 import type {
+  Market,
   Product,
   Settings,
   MarketStatus,
@@ -417,9 +418,10 @@ export function useDateRangeStats(startDate: string, endDate: string) {
 /**
  * 查詢本月統計摘要
  * 
- * @returns 本月統計（自動過濾已刪除的市集）
+ * @param ownerId - 擁有者 ID（用於權限控制）
+ * @returns 本月統計（自動過濾已刪除的市集和無權限的市集，只統計已繳費和如期舉行的市集）
  */
-export function useMonthlyStats() {
+export function useMonthlyStats(ownerId?: string) {
   return useLiveQuery(async () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -435,7 +437,17 @@ export function useMonthlyStats() {
       .toArray();
     
     // ✅ 過濾已刪除的市集
-    const activeMarkets = markets.filter(m => !m.isDeleted);
+    let activeMarkets = markets.filter(m => !m.isDeleted);
+    
+    // ✅ 根據擁有者 ID 過濾（權限控制）
+    if (ownerId) {
+      activeMarkets = activeMarkets.filter(m => m.owner_id === ownerId);
+    }
+    
+    // ✅ 只統計「已繳費」和「如期舉行」狀態的市集
+    const validMarkets = activeMarkets.filter(m => 
+      m.status === 'paid' || m.status === 'ongoing'
+    );
     
     // 彙總統計
     const summary = {
@@ -443,11 +455,11 @@ export function useMonthlyStats() {
       totalProfit: 0,
       totalDeals: 0,
       totalInteractions: 0,
-      marketCount: activeMarkets.length,  // ✅ 直接使用市集數量（已過濾刪除的）
+      marketCount: validMarkets.length,  // ✅ 只計算有效狀態的市集數量
     };
     
     // ✅ 從 markets 表累加統計（更準確）
-    for (const market of activeMarkets) {
+    for (const market of validMarkets) {
       summary.totalRevenue += market.totalRevenue || 0;
       summary.totalProfit += market.totalProfit || 0;
       summary.totalDeals += market.totalDeals || 0;
@@ -455,7 +467,7 @@ export function useMonthlyStats() {
     }
     
     return summary;
-  }, []);
+  }, [ownerId]);
 }
 
 // ==================== 設定相關 Hooks ====================

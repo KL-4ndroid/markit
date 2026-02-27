@@ -34,7 +34,6 @@ export function StaffManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [invitePermission, setInvitePermission] = useState<'view' | 'edit'>('view');
   const [isInviting, setIsInviting] = useState(false);
 
   // 載入員工列表
@@ -131,9 +130,10 @@ export function StaffManagement() {
       }
 
       // 2. 創建員工關係（staff_relationships）
+      // ✅ 固定權限：所有員工都可以查看和記錄互動/成交，但不能編輯
       const permissions = {
         can_view: true,
-        can_edit: invitePermission === 'edit',
+        can_edit: false,  // ✅ 固定為 false，員工不能編輯
       };
 
       const { error: relError } = await supabase
@@ -162,7 +162,6 @@ export function StaffManagement() {
       // 關閉對話框
       setShowInviteDialog(false);
       setInviteEmail('');
-      setInvitePermission('view');
 
     } catch (error: any) {
       console.error('邀請員工失敗:', error);
@@ -262,9 +261,9 @@ export function StaffManagement() {
                 💡 員工權限說明
               </p>
               <ul className="text-xs text-[#6B6B6B] space-y-1">
-                <li>• <strong>僅查看</strong>：可以查看市集和商品，但無法編輯</li>
-                <li>• <strong>可編輯</strong>：可以記錄互動、成交，編輯商品</li>
-                <li>• 員工<strong>無法查看</strong>敏感數據（成本、利潤）</li>
+                <li>• <strong>可以做的事</strong>：查看市集和商品、記錄互動、記錄成交</li>
+                <li>• <strong>不能做的事</strong>：編輯市集、編輯商品、新增商品、新增市集</li>
+                <li>• <strong>敏感數據保護</strong>：員工無法查看成本、利潤、總收入</li>
                 <li>• 員工可以訪問<strong>所有進行中的市集</strong>（ongoing、registered、accepted、paid）</li>
                 <li>• 員工<strong>無法訪問</strong>已完成或已取消的市集</li>
               </ul>
@@ -308,18 +307,9 @@ export function StaffManagement() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Shield className="w-3 h-3 text-[#6B6B6B]" />
-                    <span className="text-xs text-[#6B6B6B]">
-                      {staff.permissions.can_edit ? (
-                        <span className="flex items-center gap-1">
-                          <Edit3 className="w-3 h-3" />
-                          可編輯
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1">
-                          <Eye className="w-3 h-3" />
-                          僅查看
-                        </span>
-                      )}
+                    <span className="text-xs text-[#6B6B6B] flex items-center gap-1">
+                      <Eye className="w-3 h-3" />
+                      可查看與記錄
                     </span>
                     <span className="text-xs text-[#6B6B6B]">
                       • {staff.status === 'pending' ? '邀請於' : '加入於'} {new Date(staff.joined_at).toLocaleDateString('zh-TW')}
@@ -407,51 +397,24 @@ export function StaffManagement() {
                       </p>
                     </div>
 
-                    {/* 權限選擇 */}
+                    {/* 權限說明（固定） */}
                     <div>
                       <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                        權限設定
+                        員工權限
                       </label>
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-3 p-3 rounded-xl border border-[#7B9FA6]/20 cursor-pointer hover:bg-[#FAFAF8] transition-colors">
-                          <input
-                            type="radio"
-                            name="permission"
-                            value="view"
-                            checked={invitePermission === 'view'}
-                            onChange={(e) => setInvitePermission(e.target.value as 'view' | 'edit')}
-                            className="w-4 h-4 text-[#7B9FA6]"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Eye className="w-4 h-4 text-[#7B9FA6]" />
-                              <span className="text-sm font-medium text-[#3A3A3A]">僅查看</span>
-                            </div>
-                            <p className="text-xs text-[#6B6B6B]">
-                              可以查看市集和商品，但無法編輯
-                            </p>
-                          </div>
-                        </label>
-
-                        <label className="flex items-center gap-3 p-3 rounded-xl border border-[#7B9FA6]/20 cursor-pointer hover:bg-[#FAFAF8] transition-colors">
-                          <input
-                            type="radio"
-                            name="permission"
-                            value="edit"
-                            checked={invitePermission === 'edit'}
-                            onChange={(e) => setInvitePermission(e.target.value as 'view' | 'edit')}
-                            className="w-4 h-4 text-[#7B9FA6]"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Edit3 className="w-4 h-4 text-[#7B9FA6]" />
-                              <span className="text-sm font-medium text-[#3A3A3A]">可編輯</span>
-                            </div>
-                            <p className="text-xs text-[#6B6B6B]">
-                              可以記錄互動、成交，編輯商品
-                            </p>
-                          </div>
-                        </label>
+                      <div className="p-4 rounded-xl border border-[#7B9FA6]/20 bg-[#E8F0F8]">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Eye className="w-5 h-5 text-[#7B9FA6]" />
+                          <span className="text-sm font-medium text-[#3A3A3A]">固定權限</span>
+                        </div>
+                        <ul className="text-xs text-[#6B6B6B] space-y-1">
+                          <li>✅ 可以查看市集和商品</li>
+                          <li>✅ 可以記錄互動、成交</li>
+                          <li>❌ 不能編輯商品</li>
+                          <li>❌ 不能編輯市集</li>
+                          <li>❌ 不能新增商品、市集</li>
+                          <li>❌ 不能查看成本、利潤</li>
+                        </ul>
                       </div>
                     </div>
 

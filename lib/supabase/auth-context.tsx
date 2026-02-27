@@ -3,11 +3,12 @@
  * 
  * 管理全域用戶狀態和身份驗證
  * 支援離線優先架構
+ * ✅ 增強：跨分頁同步、Session 過期檢查、防閃爍優化
  */
 
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './client';
 import { initializeUserSettings } from './settings';
@@ -22,6 +23,10 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
+// ✅ 跨分頁通訊頻道
+const AUTH_CHANNEL_NAME = 'auth_channel';
+const AUTH_STORAGE_KEY = 'auth_state_sync';
+
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
@@ -30,11 +35,31 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
+/**
+ * ✅ 檢查 Session 是否過期
+ */
+function isSessionExpired(session: Session | null): boolean {
+  if (!session) return true;
+  
+  const expiresAt = session.expires_at;
+  if (!expiresAt) return false;
+  
+  // 提前 5 分鐘判定為過期，給予緩衝時間
+  const bufferSeconds = 5 * 60;
+  const now = Math.floor(Date.now() / 1000);
+  
+  return now >= (expiresAt - bufferSeconds);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isConfigured] = useState(isSupabaseConfigured());
+  
+  // ✅ 使用 ref 追蹤 BroadcastChannel，避免重複創建
+  const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
+  const sessionCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // 如果 Supabase 未配置，直接設為未登入狀態
@@ -43,8 +68,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // ✅ 初始化跨分頁通訊
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      broadcastChannelRef.current = new BroadcastChannel(AUTH_CHANNEL_NAME);
+      
+      broadcastChannelRef.current.onmessage = (event) => {
+        console.log('📡 收到跨分頁訊息:', event.data);
+        
+        if (event.data.type === 'SIGNED_OUT') {
+          // 其他分頁登出，同步更新狀態
+          console.log('🔄 同步登出：其他分頁已登出');
+          setUser(null);
+          setSession(null);
+          setLoading(false);
+        } else if (event.data.type === 'SIGNED_IN') {
+          // 其他分頁登入，重新載入頁面以同步狀態
+          console.log('🔄 同步登入：其他分頁已登入，重新載入頁面');
+          window.location.reload();
+        }
+      };
+    } else {
+      // ✅ Fallback: 使用 localStorage 事件監聽
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === AUTH_STORAGE_KEY && e.newValue) {
+          const data = JSON.parse(e.newValue);
+          console.log('📡 收到 localStorage 同步訊息:', data);
+          
+          if (data.type === 'SIGNED_OUT') {
+            setUser(null);
+            setSession(null);
+            setLoading(false);
+          } else if (data.type === 'SIGNED_IN') {
+            window.location.reload();
+          }
+        }
+      };
+      
+      window.addEventListener('storage', handleStorageChange);
+      
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+      };
+    }
+
     // 獲取初始 Session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      // ✅ 檢查 Session 是否過期
+      if (isSessionExpired(session)) {
+        console.warn('⚠️ Session 已過期，清除狀態');
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -54,6 +131,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         syncUserSettings(session.user.id);
       }
     });
+
+    // ✅ 定期檢查 Session 是否過期（每分鐘檢查一次）
+    sessionCheckIntervalRef.current = setInterval(() => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (isSessionExpired(session)) {
+          console.warn('⚠️ Session 已過期，觸發登出');
+          // 觸發登出流程
+          setSession(null);
+          setUser(null);
+        }
+      });
+    }, 60 * 1000); // 每分鐘檢查
 
     // 監聽 Auth 狀態變化
     const {
@@ -88,6 +177,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           console.error('保存登出記錄失敗:', error);
         }
+        
+        // ✅ 廣播登出事件到其他分頁
+        if (broadcastChannelRef.current) {
+          broadcastChannelRef.current.postMessage({ type: 'SIGNED_OUT', timestamp: Date.now() });
+        } else {
+          // Fallback: 使用 localStorage
+          try {
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ type: 'SIGNED_OUT', timestamp: Date.now() }));
+            // 立即清除，避免干擾
+            setTimeout(() => localStorage.removeItem(AUTH_STORAGE_KEY), 100);
+          } catch (e) {
+            console.error('廣播登出事件失敗:', e);
+          }
+        }
+      }
+      
+      // ✅ 登入事件
+      if (event === 'SIGNED_IN') {
+        // 廣播登入事件到其他分頁
+        if (broadcastChannelRef.current) {
+          broadcastChannelRef.current.postMessage({ type: 'SIGNED_IN', timestamp: Date.now() });
+        } else {
+          try {
+            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ type: 'SIGNED_IN', timestamp: Date.now() }));
+            setTimeout(() => localStorage.removeItem(AUTH_STORAGE_KEY), 100);
+          } catch (e) {
+            console.error('廣播登入事件失敗:', e);
+          }
+        }
       }
       
       setSession(session);
@@ -100,7 +218,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      
+      // 清理 BroadcastChannel
+      if (broadcastChannelRef.current) {
+        broadcastChannelRef.current.close();
+        broadcastChannelRef.current = null;
+      }
+      
+      // 清理定時器
+      if (sessionCheckIntervalRef.current) {
+        clearInterval(sessionCheckIntervalRef.current);
+        sessionCheckIntervalRef.current = null;
+      }
+    };
   }, [isConfigured]);
 
   /**
@@ -133,24 +265,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       userId: user?.id,
       timestamp: new Date().toISOString(),
       reason: 'manual_signout',
-      stackTrace: new Error().stack,
     });
     
-    // 🔒 安全措施：登出時清空本地資料庫（防止數據盜取）
+    // 🔒 安全措施：登出時清空本地資料庫（防止數據殘留）
     console.log('🔒 安全清理：準備清空本地資料庫...');
     
-    // ✅ 增強：先手動清除數據表（防止 IndexedDB 刪除被阻擋）
     try {
-      const { db } = await import('@/lib/db');
-      await db.markets.clear();
-      await db.products.clear();
-      await db.events.clear();
-      await db.dailyStats.clear();
-      console.log('✅ 數據表已手動清除');
+      // ✅ 調用統一的清除函數
+      const { clearAllData } = await import('@/lib/db');
+      await clearAllData();
+      console.log('✅ 本地資料已清除');
     } catch (dbError) {
-      console.error('手動清除數據表失敗:', dbError);
+      console.error('清除本地資料失敗:', dbError);
       // 繼續執行，不中斷流程
     }
+    
+    // ✅ 先清除本地狀態（立即反應）
+    setUser(null);
+    setSession(null);
     
     // 執行登出
     const { error } = await supabase.auth.signOut();
@@ -161,70 +293,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     console.log('✅ 登出成功');
     
-    // ✅ 重置初始同步標記，下次登入時會重新執行
+    // ✅ 重置初始同步標記
     resetInitialSyncFlag();
     
     // ✅ 清除角色緩存
     const { clearRoleCache } = await import('@/hooks/useUserRole');
     clearRoleCache();
     
-    console.log('🔄 已重置同步標記和角色緩存');
+    // ✅ 選擇性清除 localStorage
+    const keysToRemove = [
+      'user_role_cache',
+      'logout_history',
+      'hasCompletedInitialSync',
+    ];
     
-    // 🔒 所有用戶登出時都清除本地資料庫（安全措施）
-    console.log('🔒 安全清理：清除本地資料庫...');
-    
-    try {
-      // ✅ 選擇性清除 localStorage（保留用戶設定）
-      const keysToRemove = [
-        'user_role_cache',
-        'logout_history',
-        'hasCompletedInitialSync',
-      ];
-      
-      keysToRemove.forEach(key => {
-        try {
-          localStorage.removeItem(key);
-        } catch (e) {
-          console.error(`清除 ${key} 失敗:`, e);
-        }
-      });
-      
-      // 清除所有 sessionStorage
-      sessionStorage.clear();
-      
-      console.log('✅ 緩存已選擇性清除');
-      
-      // 刪除 IndexedDB 資料庫
-      if (typeof window !== 'undefined' && window.indexedDB) {
-        const dbName = 'MarketPulseDB';
-        const deleteRequest = window.indexedDB.deleteDatabase(dbName);
-        
-        deleteRequest.onsuccess = () => {
-          console.log('✅ IndexedDB 已刪除');
-          // 強制重新載入頁面
-          window.location.href = '/';
-        };
-        
-        deleteRequest.onerror = (event) => {
-          console.error('❌ 刪除 IndexedDB 失敗:', event);
-          // 即使失敗也要重新載入（數據表已清除）
-          window.location.href = '/';
-        };
-        
-        deleteRequest.onblocked = () => {
-          console.warn('⚠️ IndexedDB 刪除被阻擋（多標籤頁），但數據表已清除');
-          // 強制重新載入（數據表已清除，安全）
-          window.location.href = '/';
-        };
-      } else {
-        // 如果不支援 IndexedDB，直接重新載入
-        window.location.href = '/';
+    keysToRemove.forEach(key => {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {
+        console.error(`清除 ${key} 失敗:`, e);
       }
-    } catch (error) {
-      console.error('清除本地資料時發生錯誤:', error);
-      // 確保即使出錯也要重新載入
-      window.location.href = '/';
-    }
+    });
+    
+    // 清除所有 sessionStorage
+    sessionStorage.clear();
+    
+    console.log('✅ 緩存已清除');
+    
+    // ✅ 不重新載入頁面，讓 AuthGuard 自動顯示歡迎頁面
+    // window.location.href = '/';
   };
 
   return (

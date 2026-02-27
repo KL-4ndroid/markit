@@ -176,7 +176,7 @@ return {
     isLoading,
     isStaff: userRole.isStaff,
     isOwner: !userRole.isStaff,
-    canEdit: userRole.isStaff ? (userRole.permissions?.can_edit ?? false) : true,
+    canEdit: !userRole.isStaff, // ✅ 只有老闆可以編輯，員工固定不能編輯
     canViewSensitiveData: !userRole.isStaff, // 只有老闆可以查看敏感數據
   };
 }

@@ -21,14 +21,15 @@ interface StaffPermissionCardProps {
 }
 
 export function StaffPermissionCard({ permissions }: StaffPermissionCardProps) {
-  const canEdit = permissions?.can_edit ?? false;
-  
+  // ✅ 固定權限：所有員工都一樣
   const permissionList: Permission[] = [
     { label: '查看市集和商品', allowed: true },
-    { label: '記錄互動和成交', allowed: canEdit },
-    { label: '編輯商品資訊', allowed: canEdit },
-    { label: '查看成本和利潤', allowed: false },
+    { label: '記錄互動和成交', allowed: true },
+    { label: '編輯商品資訊', allowed: false },
+    { label: '新增商品', allowed: false },
     { label: '編輯市集資訊', allowed: false },
+    { label: '新增市集', allowed: false },
+    { label: '查看成本和利潤', allowed: false },
     { label: '管理員工', allowed: false },
   ];
 

@@ -3,6 +3,7 @@
  * 
  * 整合登入和資料遷移流程
  * 處理登入後的遷移詢問邏輯
+ * ✅ 增強：支援全域事件觸發登入 Modal
  */
 
 'use client';
@@ -24,10 +25,27 @@ export function AuthManager() {
     eventCount: 0,
   });
 
+  // ✅ 監聽全域事件，支援從任何地方觸發登入
+  useEffect(() => {
+    const handleOpenLogin = () => {
+      console.log('📢 收到開啟登入 Modal 的請求');
+      setShowLoginModal(true);
+    };
+
+    window.addEventListener('auth:open-login', handleOpenLogin);
+
+    return () => {
+      window.removeEventListener('auth:open-login', handleOpenLogin);
+    };
+  }, []);
+
   // 處理登入成功
   const handleLoginSuccess = async (userId: string, email: string) => {
     // 關閉登入對話框
     setShowLoginModal(false);
+
+    // ✅ 發送登入成功事件
+    window.dispatchEvent(new CustomEvent('auth:login-success'));
 
     // 檢測匿名資料
     const { hasAnonymousData, marketCount, eventCount } = await detectAnonymousData(userId);

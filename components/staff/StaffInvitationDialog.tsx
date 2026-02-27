@@ -311,13 +311,11 @@ export function StaffInvitationDialog() {
                     </span>
                   </div>
                   <ul className="text-sm text-[#6B6B6B] space-y-1">
-                    <li>• 可以查看老闆的市集和商品</li>
-                    {invitation.permissions.can_edit ? (
-                      <li>• 可以記錄互動、成交，編輯商品</li>
-                    ) : (
-                      <li>• 僅能查看，無法編輯</li>
-                    )}
-                    <li>• 無法查看成本、利潤等敏感數據</li>
+                    <li>✅ 可以查看老闆的市集和商品</li>
+                    <li>✅ 可以記錄互動、成交</li>
+                    <li>❌ 不能編輯商品、市集</li>
+                    <li>❌ 不能新增商品、市集</li>
+                    <li>❌ 無法查看成本、利潤等敏感數據</li>
                   </ul>
                 </div>
 
