@@ -137,6 +137,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (isSessionExpired(session)) {
           console.warn('⚠️ Session 已過期，觸發登出');
+          
+          // ✅ Session 過期時清除數據
+          clearUserData('session_expired').catch(error => {
+            console.error('Session 過期清除數據失敗:', error);
+          });
+          
           // 觸發登出流程
           setSession(null);
           setUser(null);
@@ -163,7 +169,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           previousUser: user?.id,
           stackTrace: new Error().stack,
         };
-        console.warn('⚠️ 用戶已登出', logoutReason);
+        console.warn('⚠️ 用戶已登出（被動）', logoutReason);
+        
+        // ✅ 被動登出時也清除數據
+        clearUserData('passive_signout').catch(error => {
+          console.error('被動登出清除數據失敗:', error);
+        });
         
         // 保存到 localStorage 供後續分析
         try {
@@ -259,6 +270,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /**
+   * ✅ 統一的清除數據函數
+   * 無論是主動登出還是被動登出，都調用此函數
+   */
+  const clearUserData = async (reason: string) => {
+    console.log(`🔒 清除用戶數據 (原因: ${reason})`, {
+      userId: user?.id,
+      timestamp: new Date().toISOString(),
+    });
+    
+    try {
+      // 1. 清除本地資料庫
+      const { clearAllData } = await import('@/lib/db');
+      await clearAllData();
+      console.log('✅ 本地資料庫已清除');
+    } catch (dbError) {
+      console.error('清除本地資料庫失敗:', dbError);
+    }
+    
+    try {
+      // 2. 重置初始同步標記
+      resetInitialSyncFlag();
+      
+      // 3. 清除角色緩存
+      const { clearRoleCache } = await import('@/hooks/useUserRole');
+      clearRoleCache();
+      
+      // 4. 清除 localStorage
+      const keysToRemove = [
+        'user_role_cache',
+        'logout_history',
+        'hasCompletedInitialSync',
+      ];
+      
+      keysToRemove.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {
+          console.error(`清除 ${key} 失敗:`, e);
+        }
+      });
+      
+      // 5. 清除 sessionStorage
+      sessionStorage.clear();
+      
+      console.log('✅ 所有緩存已清除');
+    } catch (error) {
+      console.error('清除緩存失敗:', error);
+    }
+  };
+
   const handleSignOut = async () => {
     // ✅ 記錄主動登出
     console.log('🚪 用戶主動登出', {
@@ -267,18 +329,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       reason: 'manual_signout',
     });
     
-    // 🔒 安全措施：登出時清空本地資料庫（防止數據殘留）
-    console.log('🔒 安全清理：準備清空本地資料庫...');
-    
-    try {
-      // ✅ 調用統一的清除函數
-      const { clearAllData } = await import('@/lib/db');
-      await clearAllData();
-      console.log('✅ 本地資料已清除');
-    } catch (dbError) {
-      console.error('清除本地資料失敗:', dbError);
-      // 繼續執行，不中斷流程
-    }
+    // ✅ 清除用戶數據
+    await clearUserData('manual_signout');
     
     // ✅ 先清除本地狀態（立即反應）
     setUser(null);
@@ -292,33 +344,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     console.log('✅ 登出成功');
-    
-    // ✅ 重置初始同步標記
-    resetInitialSyncFlag();
-    
-    // ✅ 清除角色緩存
-    const { clearRoleCache } = await import('@/hooks/useUserRole');
-    clearRoleCache();
-    
-    // ✅ 選擇性清除 localStorage
-    const keysToRemove = [
-      'user_role_cache',
-      'logout_history',
-      'hasCompletedInitialSync',
-    ];
-    
-    keysToRemove.forEach(key => {
-      try {
-        localStorage.removeItem(key);
-      } catch (e) {
-        console.error(`清除 ${key} 失敗:`, e);
-      }
-    });
-    
-    // 清除所有 sessionStorage
-    sessionStorage.clear();
-    
-    console.log('✅ 緩存已清除');
     
     // ✅ 不重新載入頁面，讓 AuthGuard 自動顯示歡迎頁面
     // window.location.href = '/';

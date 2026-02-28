@@ -157,18 +157,10 @@ export default function SettingsPage() {
 
       toast.loading('正在清除雲端資料...', { id: toastId });
 
-      // ✅ 步驟 2：刪除雲端資料
+      // ✅ 步驟 2：刪除雲端資料（正確順序：事件 → 商品 → 市集）
       console.log('☁️ 步驟 2/3：刪除雲端資料...');
 
-      // 1. 刪除所有市集的事件
-      const { error: eventsError } = await supabase
-        .from('events')
-        .delete()
-        .eq('actor_id', user.id);
-
-      if (eventsError) throw eventsError;
-
-      // 2. 獲取所有市集 ID
+      // 1. 獲取所有市集 ID（先查詢，後續刪除時需要）
       const { data: marketsData, error: marketsQueryError } = await supabase
         .from('markets')
         .select('id')
@@ -177,6 +169,35 @@ export default function SettingsPage() {
       if (marketsQueryError) throw marketsQueryError;
 
       const marketIds = marketsData?.map(m => m.id) || [];
+      console.log(`📊 找到 ${marketIds.length} 個市集`);
+
+      // 2. 刪除所有事件（包括市集事件和全局事件）
+      if (marketIds.length > 0) {
+        // 刪除市集相關的所有事件（不限 actor_id）
+        const { error: marketEventsError } = await supabase
+          .from('events')
+          .delete()
+          .in('market_id', marketIds);
+
+        if (marketEventsError) {
+          console.error('刪除市集事件失敗:', marketEventsError);
+          throw marketEventsError;
+        }
+        console.log('✅ 市集事件已刪除');
+      }
+
+      // 刪除全局事件（actor_id = user.id 且 market_id = null）
+      const { error: globalEventsError } = await supabase
+        .from('events')
+        .delete()
+        .eq('actor_id', user.id)
+        .is('market_id', null);
+
+      if (globalEventsError) {
+        console.error('刪除全局事件失敗:', globalEventsError);
+        throw globalEventsError;
+      }
+      console.log('✅ 全局事件已刪除');
 
       // 3. 刪除所有商品
       if (marketIds.length > 0) {
@@ -185,18 +206,67 @@ export default function SettingsPage() {
           .delete()
           .in('market_id', marketIds);
 
-        if (productsError) throw productsError;
+        if (productsError) {
+          console.error('刪除商品失敗:', productsError);
+          throw productsError;
+        }
+        console.log('✅ 商品已刪除');
       }
 
-      // 4. 刪除所有市集
+      // 刪除全局商品（owner_id = user.id 且 market_id = null）
+      const { error: globalProductsError } = await supabase
+        .from('products')
+        .delete()
+        .eq('owner_id', user.id)
+        .is('market_id', null);
+
+      if (globalProductsError) {
+        console.error('刪除全局商品失敗:', globalProductsError);
+        throw globalProductsError;
+      }
+      console.log('✅ 全局商品已刪除');
+
+      // 4. 刪除 market_members 記錄
+      if (marketIds.length > 0) {
+        const { error: membersError } = await supabase
+          .from('market_members')
+          .delete()
+          .in('market_id', marketIds);
+
+        if (membersError) {
+          console.error('刪除 market_members 失敗:', membersError);
+          // 不拋出錯誤，繼續執行
+        } else {
+          console.log('✅ market_members 已刪除');
+        }
+      }
+
+      // 5. 刪除所有市集（最後刪除，避免外鍵約束錯誤）
       const { error: marketsError } = await supabase
         .from('markets')
         .delete()
         .eq('owner_id', user.id);
 
-      if (marketsError) throw marketsError;
+      if (marketsError) {
+        console.error('刪除市集失敗:', marketsError);
+        throw marketsError;
+      }
+      console.log('✅ 市集已刪除');
 
-      console.log('✅ 雲端資料已刪除');
+      // 6. 刪除快照（如果有）
+      const { error: snapshotsError } = await supabase
+        .from('snapshots')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (snapshotsError) {
+        console.error('刪除快照失敗:', snapshotsError);
+        // 不拋出錯誤，繼續執行
+      } else {
+        console.log('✅ 快照已刪除');
+      }
+
+      console.log('✅ 雲端資料已完全清除');
 
       // ✅ 步驟 3：重新載入頁面
       toast.success('✅ 所有資料已清除，即將重新載入...', { id: toastId });

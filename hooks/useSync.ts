@@ -699,10 +699,11 @@ async function pushEvents(
  * Pull: 下載雲端新事件（使用快照優化）
  * 
  * 優化邏輯：
- * 1. 檢查本地是否為空（新設備）
- * 2. 如果是新設備，嘗試載入快照 + 增量事件
- * 3. 如果快照載入失敗，降級到全量同步
- * 4. 如果不是新設備，只下載增量事件
+ * 1. ✅ 檢查是否為員工模式（員工模式不使用快照，直接從視圖拉取）
+ * 2. 檢查本地是否為空（新設備）
+ * 3. 如果是新設備，嘗試載入快照 + 增量事件
+ * 4. 如果快照載入失敗，降級到全量同步
+ * 5. 如果不是新設備，只下載增量事件
  * 
  * @returns 是否使用了快照同步（true = 使用快照，false = 全量同步）
  */
@@ -711,6 +712,17 @@ async function pullEventsWithSnapshot(
   onProgress?: (current: number, total: number, currentItem?: string, phase?: 'snapshot' | 'incremental') => void
 ): Promise<boolean> {
   try {
+    // ✅ 步驟 0: 檢查是否為員工模式
+    // 員工模式不使用快照，因為快照不包含權限信息
+    const { isStaffModeEnabled } = await import('@/lib/db/feature-flags');
+    const staffModeEnabled = isStaffModeEnabled();
+    
+    if (staffModeEnabled) {
+      console.log('👥 員工模式：跳過快照，直接從視圖拉取');
+      await pullAllEvents(userId, onProgress);
+      return false; // ❌ 沒有使用快照
+    }
+    
     // 步驟 1: 檢查本地是否為空（新設備）
     const hasLocalData = await db.markets.count() > 0;
 
@@ -1423,17 +1435,18 @@ async function handlePermissionRevoked(): Promise<void> {
  * 從員工視圖拉取數據（員工模式）
  * ✅ 這是員工模式的核心函數
  * ✅ 從 Supabase 視圖拉取數據，保留權限信息
+ * ✅ 不使用 lastSyncAt 過濾（避免跨用戶污染）
  */
 async function pullEventsFromViews(
   userId: string,
   onProgress?: (current: number, total: number, currentItem?: string, phase?: 'snapshot' | 'incremental') => void
 ): Promise<void> {
-  console.log('📊 從員工視圖拉取數據...');
+  console.log('📊 從員工視圖拉取數據（完整同步，不使用 lastSyncAt）...');
   
   try {
     // 1. 拉取市集數據（從視圖）
     if (onProgress) {
-      onProgress(1, 4, '拉取市集數據...', 'incremental');
+      onProgress(1, 5, '拉取市集數據...', 'incremental');
     }
     
     const { data: marketsData, error: marketsError } = await supabase
@@ -1449,7 +1462,7 @@ async function pullEventsFromViews(
     
     // 2. 拉取商品數據（從視圖）
     if (onProgress) {
-      onProgress(2, 4, '拉取商品數據...', 'incremental');
+      onProgress(2, 5, '拉取商品數據...', 'incremental');
     }
     
     const { data: productsData, error: productsError } = await supabase
@@ -1463,20 +1476,42 @@ async function pullEventsFromViews(
     
     console.log(`📥 拉取到 ${productsData?.length || 0} 個商品`);
     
-    // 3. 同步到 IndexedDB（保留權限信息）
+    // 3. 拉取事件數據（從視圖）
+    // ⚠️ 重要：不使用 lastSyncAt 過濾，因為：
+    // 1. 視圖已經處理了權限過濾
+    // 2. lastSyncAt 是全局的，會被其他用戶污染
+    // 3. 員工切換時需要完整同步所有可訪問的數據
     if (onProgress) {
-      onProgress(3, 4, '同步市集到本地...', 'incremental');
+      onProgress(3, 5, '拉取事件數據...', 'incremental');
+    }
+    
+    const { data: eventsData, error: eventsError } = await supabase
+      .from('staff_accessible_events')
+      .select('*')
+      .order('timestamp', { ascending: true });
+    
+    if (eventsError) {
+      console.error('❌ 拉取事件視圖失敗:', eventsError);
+      throw eventsError;
+    }
+    
+    console.log(`📥 拉取到 ${eventsData?.length || 0} 個事件`);
+    
+    // 4. 同步到 IndexedDB（保留權限信息）
+    if (onProgress) {
+      onProgress(4, 5, '同步到本地數據庫...', 'incremental');
     }
     
     await syncMarketsToIndexedDB(marketsData || []);
+    await syncProductsToIndexedDB(productsData || []);
+    await syncEventsToIndexedDB(eventsData || []);
     
+    // 5. 更新最後同步時間
+    // ⚠️ 注意：這裡更新 lastSyncAt 是為了記錄同步時間，但下次同步時不會使用它過濾
     if (onProgress) {
-      onProgress(4, 4, '同步商品到本地...', 'incremental');
+      onProgress(5, 5, '完成同步...', 'incremental');
     }
     
-    await syncProductsToIndexedDB(productsData || []);
-    
-    // 4. 更新最後同步時間
     await updateLastSyncTimestamp();
     
     console.log('✅ 視圖數據同步完成');
@@ -1492,6 +1527,18 @@ async function pullEventsFromViews(
  */
 async function syncMarketsToIndexedDB(markets: any[]): Promise<void> {
   console.log(`📝 同步 ${markets.length} 個市集到 IndexedDB...`);
+  
+  // ✅ 調試：打印前 3 個市集的詳細信息
+  if (markets.length > 0) {
+    console.log('🔍 市集數據樣本（前3個）:', markets.slice(0, 3).map(m => ({
+      id: m.id?.substring(0, 8),
+      name: m.name,
+      owner_id: m.owner_id?.substring(0, 8),
+      access_type: m.access_type,
+      status: m.status,
+      isDeleted: m.isDeleted,
+    })));
+  }
   
   for (const market of markets) {
     try {
@@ -1641,6 +1688,117 @@ async function syncProductsToIndexedDB(products: any[]): Promise<void> {
   }
   
   console.log('✅ 商品同步完成');
+}
+
+/**
+ * 同步事件到 IndexedDB（保留權限）
+ * ✅ 重放事件以更新讀取模型
+ */
+async function syncEventsToIndexedDB(events: any[]): Promise<void> {
+  console.log(`📝 同步 ${events.length} 個事件到 IndexedDB...`);
+  
+  let processedCount = 0;
+  let skippedCount = 0;
+  
+  for (const event of events) {
+    try {
+      // 檢查是否已存在
+      const existing = await db.events.get(event.id);
+      
+      if (existing) {
+        skippedCount++;
+        continue;
+      }
+      
+      // 插入事件
+      await db.events.add({
+        id: event.id,
+        type: event.type,
+        payload: event.payload,
+        actor_id: event.actor_id,
+        market_id: event.market_id,
+        timestamp: new Date(event.timestamp).getTime(),
+        sync_status: 'synced',
+        metadata: event.metadata,
+      });
+      
+      // 重放事件處理器（更新讀取模型）
+      const { eventHandlers } = await import('@/lib/db/events');
+      const handler = eventHandlers[event.type as keyof typeof eventHandlers];
+      
+      if (handler) {
+        // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式
+        let processedPayload = event.payload;
+        
+        if (event.type === 'market_updated' && event.payload?.updates) {
+          const updates = event.payload.updates;
+          const camelCaseUpdates: Record<string, unknown> = {};
+          
+          // 轉換底線式為駝峰式
+          if (updates.name !== undefined) camelCaseUpdates.name = updates.name;
+          if (updates.location !== undefined) camelCaseUpdates.location = updates.location;
+          if (updates.dates !== undefined) camelCaseUpdates.dates = updates.dates;
+          if (updates.start_date !== undefined) camelCaseUpdates.startDate = updates.start_date;
+          if (updates.end_date !== undefined) camelCaseUpdates.endDate = updates.end_date;
+          if (updates.start_time !== undefined) camelCaseUpdates.startTime = updates.start_time;
+          if (updates.end_time !== undefined) camelCaseUpdates.endTime = updates.end_time;
+          
+          // 時間軸資訊
+          if (updates.early_entry_enabled !== undefined) camelCaseUpdates.earlyEntryEnabled = updates.early_entry_enabled;
+          if (updates.early_entry_time !== undefined) camelCaseUpdates.earlyEntryTime = updates.early_entry_time;
+          if (updates.check_in_time !== undefined) camelCaseUpdates.checkInTime = updates.check_in_time;
+          if (updates.operating_start_time !== undefined) camelCaseUpdates.operatingStartTime = updates.operating_start_time;
+          if (updates.operating_end_time !== undefined) camelCaseUpdates.operatingEndTime = updates.operating_end_time;
+          
+          // 財務資訊
+          if (updates.registration_fee !== undefined) camelCaseUpdates.registrationFee = updates.registration_fee;
+          if (updates.booth_cost !== undefined) camelCaseUpdates.boothCost = updates.booth_cost;
+          if (updates.deposit !== undefined) camelCaseUpdates.deposit = updates.deposit;
+          if (updates.table_rental !== undefined) camelCaseUpdates.tableRental = updates.table_rental;
+          if (updates.chair_rental !== undefined) camelCaseUpdates.chairRental = updates.chair_rental;
+          if (updates.umbrella_rental !== undefined) camelCaseUpdates.umbrellaRental = updates.umbrella_rental;
+          if (updates.tablecloth_rental !== undefined) camelCaseUpdates.tableclothRental = updates.tablecloth_rental;
+          if (updates.commission_rate !== undefined) camelCaseUpdates.commissionRate = updates.commission_rate;
+          
+          // 免費提供標記
+          if (updates.table_free !== undefined) camelCaseUpdates.tableFree = updates.table_free;
+          if (updates.chair_free !== undefined) camelCaseUpdates.chairFree = updates.chair_free;
+          if (updates.umbrella_free !== undefined) camelCaseUpdates.umbrellaFree = updates.umbrella_free;
+          if (updates.tablecloth_free !== undefined) camelCaseUpdates.tableclothFree = updates.tablecloth_free;
+          
+          // 備註
+          if (updates.notes !== undefined) camelCaseUpdates.notes = updates.notes;
+          
+          processedPayload = {
+            market_id: event.payload.market_id,
+            updates: camelCaseUpdates,
+          };
+        }
+        
+        await handler({
+          id: event.id,
+          type: event.type,
+          payload: processedPayload,
+          timestamp: new Date(event.timestamp).getTime(),
+          actor_id: event.actor_id,
+          market_id: event.market_id,
+        } as Event, db);
+      }
+      
+      processedCount++;
+    } catch (error: any) {
+      // 如果是 ConstraintError（Key already exists），靜默跳過
+      if (error.name === 'ConstraintError') {
+        skippedCount++;
+        continue;
+      }
+      
+      console.error(`❌ 同步事件失敗: ${event.type} (${event.id?.substring(0, 8)}...)`, error);
+      // 繼續處理下一個
+    }
+  }
+  
+  console.log(`✅ 事件同步完成：處理 ${processedCount}，跳過 ${skippedCount}，總計 ${events.length}`);
 }
 
 // ==================== 衝突解決（Conflict Resolution） ====================
