@@ -4,18 +4,28 @@
  * 功能：
  * 1. 顯示當前所有員工列表
  * 2. 邀請新員工（輸入 email，選擇權限）
- * 3. 移除員工
- * 4. 員工可以訪問老闆的所有進行中的市集
+ * 3. 產生邀請連結（透過連結邀請新用戶）
+ * 4. 移除員工
+ * 5. 員工可以訪問老闆的所有進行中的市集
  */
 
 'use client';
 
 import { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { Users, Mail, Shield, Trash2, Plus, X, Eye, Edit3, AlertCircle } from 'lucide-react';
+import { Users, Mail, Shield, Trash2, Plus, X, Eye, Edit3, AlertCircle, Link2, Copy, QrCode, Clock } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import {
+  createInvitation,
+  getMyInvitations,
+  deleteInvitation,
+  generateInvitationUrl,
+  formatRemainingTime,
+  type StaffInvitation,
+} from '@/lib/supabase/staff-invitations';
 
 interface StaffMember {
   id: string;
@@ -35,11 +45,19 @@ export function StaffManagement() {
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
+  
+  // 邀請連結相關狀態
+  const [invitations, setInvitations] = useState<StaffInvitation[]>([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(false);
+  const [creatingInvitation, setCreatingInvitation] = useState(false);
+  const [showQRCode, setShowQRCode] = useState<string | null>(null);
+  const [showInvitationsSection, setShowInvitationsSection] = useState(false);
 
-  // 載入員工列表
+  // 載入員工列表和邀請連結
   useEffect(() => {
     if (user) {
       loadStaffList();
+      loadInvitations();
     }
   }, [user]);
 
@@ -169,6 +187,70 @@ export function StaffManagement() {
     } finally {
       setIsInviting(false);
     }
+  };
+
+  // 載入邀請連結列表
+  const loadInvitations = async () => {
+    try {
+      setLoadingInvitations(true);
+      const data = await getMyInvitations();
+      setInvitations(data);
+    } catch (error: any) {
+      console.error('載入邀請列表失敗:', error);
+    } finally {
+      setLoadingInvitations(false);
+    }
+  };
+
+  // 產生邀請連結
+  const handleCreateInvitation = async () => {
+    setCreatingInvitation(true);
+    try {
+      const invitation = await createInvitation();
+      toast.success('邀請連結已建立！', {
+        description: '有效期限為 3 天',
+      });
+      loadInvitations();
+    } catch (error: any) {
+      console.error('建立邀請失敗:', error);
+      toast.error('建立失敗', {
+        description: error.message,
+      });
+    } finally {
+      setCreatingInvitation(false);
+    }
+  };
+
+  // 刪除邀請連結
+  const handleDeleteInvitation = async (invitationId: string) => {
+    if (!confirm('確定要刪除此邀請連結嗎？')) {
+      return;
+    }
+
+    try {
+      await deleteInvitation(invitationId);
+      toast.success('已刪除邀請連結');
+      loadInvitations();
+    } catch (error: any) {
+      console.error('刪除邀請失敗:', error);
+      toast.error('刪除失敗', {
+        description: error.message,
+      });
+    }
+  };
+
+  // 複製邀請連結
+  const handleCopyLink = (token: string) => {
+    const url = generateInvitationUrl(token);
+    navigator.clipboard.writeText(url);
+    toast.success('已複製連結！', {
+      description: '可以分享給員工了',
+    });
+  };
+
+  // 檢查邀請是否過期
+  const isExpired = (expiresAt: string): boolean => {
+    return new Date(expiresAt) < new Date();
   };
 
   // 移除員工
@@ -328,14 +410,147 @@ export function StaffManagement() {
           </div>
         )}
 
-        {/* 邀請按鈕 */}
-        <button
-          onClick={() => setShowInviteDialog(true)}
-          className="w-full px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium flex items-center justify-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          邀請員工
-        </button>
+        {/* 邀請按鈕組 */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowInviteDialog(true)}
+            className="px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium flex items-center justify-center gap-2"
+          >
+            <Mail className="w-4 h-4" />
+            Email 邀請
+          </button>
+          <button
+            onClick={() => setShowInvitationsSection(!showInvitationsSection)}
+            className="px-4 py-3 rounded-2xl bg-[#E8F3E8] text-[#3A3A3A] hover:bg-[#D8E3D8] transition-colors font-medium flex items-center justify-center gap-2"
+          >
+            <Link2 className="w-4 h-4" />
+            邀請連結
+          </button>
+        </div>
+
+        {/* 邀請連結區塊 */}
+        {showInvitationsSection && (
+          <div className="mt-4 pt-4 border-t border-[#E5E5E5]">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-[#3A3A3A] flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-[#7B9FA6]" />
+                邀請連結管理
+              </h3>
+              <button
+                onClick={handleCreateInvitation}
+                disabled={creatingInvitation}
+                className="px-3 py-1.5 bg-[#7B9FA6] text-white rounded-lg hover:bg-[#6A8E95] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+              >
+                {creatingInvitation ? '建立中...' : '產生新連結'}
+              </button>
+            </div>
+
+            <p className="text-xs text-[#6B6B6B] mb-3">
+              產生邀請連結後，新用戶可透過連結註冊並自動加入您的團隊。每個連結有效期為 3 天，可重複使用。
+            </p>
+
+            {loadingInvitations ? (
+              <div className="text-center py-4 text-xs text-[#6B6B6B]">
+                載入中...
+              </div>
+            ) : invitations.length === 0 ? (
+              <div className="bg-[#FAFAF8] rounded-xl p-4 text-center">
+                <Link2 className="w-8 h-8 text-[#7B9FA6] mx-auto mb-2 opacity-50" />
+                <p className="text-xs text-[#6B6B6B]">
+                  尚未建立邀請連結
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {invitations.map((invitation) => {
+                  const url = generateInvitationUrl(invitation.token);
+                  const expired = isExpired(invitation.expires_at);
+
+                  return (
+                    <div
+                      key={invitation.id}
+                      className={`bg-[#FAFAF8] rounded-xl p-3 ${
+                        expired ? 'opacity-50' : ''
+                      }`}
+                    >
+                      {/* 連結資訊 */}
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            {expired ? (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#F5E6E8] text-[#d4183d]">
+                                已過期
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#E8F3E8] text-[#3A3A3A]">
+                                有效
+                              </span>
+                            )}
+                            <div className="flex items-center gap-1 text-xs text-[#6B6B6B]">
+                              <Clock className="w-3 h-3" />
+                              {expired ? '已過期' : `剩餘 ${formatRemainingTime(invitation.expires_at)}`}
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-lg p-2 border border-[#E5E5E5]">
+                            <p className="text-xs text-[#6B6B6B] font-mono break-all">
+                              {url}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 操作按鈕 */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleCopyLink(invitation.token)}
+                          disabled={expired}
+                          className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-[#7B9FA6] text-white rounded-lg hover:bg-[#6A8E95] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+                        >
+                          <Copy className="w-3 h-3" />
+                          複製
+                        </button>
+                        <button
+                          onClick={() => setShowQRCode(showQRCode === invitation.token ? null : invitation.token)}
+                          disabled={expired}
+                          className="flex items-center justify-center gap-1 px-3 py-1.5 bg-[#E8F3E8] text-[#3A3A3A] rounded-lg hover:bg-[#D8E3D8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+                        >
+                          <QrCode className="w-3 h-3" />
+                          QR
+                        </button>
+                        <button
+                          onClick={() => handleDeleteInvitation(invitation.id)}
+                          className="flex items-center justify-center px-3 py-1.5 bg-[#F5E6E8] text-[#d4183d] rounded-lg hover:bg-[#F5E6E8]/80 transition-colors text-xs font-medium"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      {/* QR Code 顯示 */}
+                      {showQRCode === invitation.token && !expired && (
+                        <div className="mt-3 pt-3 border-t border-[#E5E5E5]">
+                          <div className="bg-white rounded-lg p-3 flex flex-col items-center">
+                            <p className="text-xs font-medium text-[#3A3A3A] mb-2">
+                              掃描 QR Code 加入團隊
+                            </p>
+                            <QRCodeSVG
+                              value={url}
+                              size={160}
+                              level="H"
+                              includeMargin={true}
+                            />
+                            <p className="text-xs text-[#6B6B6B] mt-2 text-center">
+                              員工可使用手機掃描此 QR Code 快速註冊
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 邀請對話框 */}

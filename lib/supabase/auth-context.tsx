@@ -153,11 +153,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 監聽 Auth 狀態變化
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       // ✅ 記錄所有 Auth 狀態變化
       console.log(`🔐 Auth 狀態變化: ${event}`, {
         hasSession: !!session,
         userId: session?.user?.id,
+        previousUserId: user?.id,
         timestamp: new Date().toISOString(),
       });
       
@@ -204,8 +205,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      // ✅ 登入事件
+      // ✅ 登入事件：檢測用戶切換
       if (event === 'SIGNED_IN') {
+        const newUserId = session?.user?.id;
+        const previousUserId = user?.id;
+        
+        // ✅ 檢測用戶切換（不同用戶登入）
+        if (previousUserId && newUserId && previousUserId !== newUserId) {
+          console.warn('⚠️ 檢測到用戶切換', {
+            from: previousUserId.substring(0, 8),
+            to: newUserId.substring(0, 8),
+          });
+          
+          // ✅ 清除前一個用戶的數據
+          try {
+            const { clearOtherUsersData } = await import('@/lib/db/clear-user-data');
+            await clearOtherUsersData(newUserId);
+            console.log('✅ 已清除前一個用戶的數據');
+          } catch (error) {
+            console.error('❌ 清除前一個用戶數據失敗:', error);
+          }
+        }
+        
         // 廣播登入事件到其他分頁
         if (broadcastChannelRef.current) {
           broadcastChannelRef.current.postMessage({ type: 'SIGNED_IN', timestamp: Date.now() });
@@ -281,7 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     
     try {
-      // 1. 清除本地資料庫
+      // 1. 清除本地資料庫（完整清除，不保留任何用戶數據）
       const { clearAllData } = await import('@/lib/db');
       await clearAllData();
       console.log('✅ 本地資料庫已清除');
@@ -297,11 +318,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { clearRoleCache } = await import('@/hooks/useUserRole');
       clearRoleCache();
       
-      // 4. 清除 localStorage
+      // 4. 清除 localStorage（包括員工模式標記）
       const keysToRemove = [
         'user_role_cache',
         'logout_history',
         'hasCompletedInitialSync',
+        'staff_mode_enabled',  // ✅ 清除員工模式標記
+        'lastSyncAt',          // ✅ 清除同步時間戳
       ];
       
       keysToRemove.forEach(key => {

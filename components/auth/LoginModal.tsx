@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { supabase } from '@/lib/supabase/client';
 import { Mail, Lock, X, Loader2 } from 'lucide-react';
@@ -17,13 +17,19 @@ interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLoginSuccess: (userId: string, email: string) => void;
+  defaultMode?: 'login' | 'signup';  // ✅ 新增：允許指定預設模式
 }
 
-export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps) {
+export function LoginModal({ isOpen, onClose, onLoginSuccess, defaultMode = 'login' }: LoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>(defaultMode);
+  
+  // ✅ 當 defaultMode 改變時，更新 mode
+  useEffect(() => {
+    setMode(defaultMode);
+  }, [defaultMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +70,39 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
         if (error) throw error;
 
         if (data.user) {
-          toast.success('註冊成功！請檢查您的信箱以驗證帳號');
+          // ✅ 檢查是否有邀請 Token（透過連結註冊）
+          const invitationToken = sessionStorage.getItem('invitation_token');
+          
+          if (invitationToken) {
+            try {
+              // 自動綁定員工關係
+              const { acceptInvitationAndBind } = await import('@/lib/supabase/staff-invitations');
+              const result = await acceptInvitationAndBind(invitationToken, data.user.id);
+              
+              if (result.success) {
+                // ✅ 啟用員工模式
+                const { enableStaffMode } = await import('@/lib/db/feature-flags');
+                enableStaffMode();
+                
+                toast.success('註冊成功！已自動加入團隊');
+                // 清除 token
+                sessionStorage.removeItem('invitation_token');
+              } else {
+                toast.warning('註冊成功，但加入團隊失敗', {
+                  description: result.message,
+                });
+              }
+            } catch (bindError: any) {
+              console.error('自動綁定員工關係失敗:', bindError);
+              toast.warning('註冊成功，但加入團隊失敗', {
+                description: '請聯繫邀請人重新邀請',
+              });
+            }
+          } else {
+            // 一般註冊（無邀請）
+            toast.success('註冊成功！');
+          }
+          
           onLoginSuccess(data.user.id, data.user.email!);
         }
       }

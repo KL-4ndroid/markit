@@ -17,6 +17,7 @@ import { MigrationModal } from './MigrationModal';
 export function AuthManager() {
   const { user } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginMode, setLoginMode] = useState<'login' | 'signup'>('login');  // ✅ 新增：控制登入模式
   const [showMigrationModal, setShowMigrationModal] = useState(false);
   const [migrationData, setMigrationData] = useState({
     userId: '',
@@ -27,15 +28,24 @@ export function AuthManager() {
 
   // ✅ 監聽全域事件，支援從任何地方觸發登入
   useEffect(() => {
-    const handleOpenLogin = () => {
+    const handleOpenLogin = (event?: CustomEvent) => {
       console.log('📢 收到開啟登入 Modal 的請求');
+      
+      // ✅ 檢查是否有邀請 Token，如果有則預設為註冊模式
+      const invitationToken = sessionStorage.getItem('invitation_token');
+      if (invitationToken) {
+        setLoginMode('signup');
+      } else {
+        setLoginMode('login');
+      }
+      
       setShowLoginModal(true);
     };
 
-    window.addEventListener('auth:open-login', handleOpenLogin);
+    window.addEventListener('auth:open-login', handleOpenLogin as EventListener);
 
     return () => {
-      window.removeEventListener('auth:open-login', handleOpenLogin);
+      window.removeEventListener('auth:open-login', handleOpenLogin as EventListener);
     };
   }, []);
 
@@ -78,6 +88,7 @@ export function AuthManager() {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onLoginSuccess={handleLoginSuccess}
+        defaultMode={loginMode}  // ✅ 傳入預設模式
       />
 
       {/* 遷移對話框 */}

@@ -1436,14 +1436,27 @@ async function handlePermissionRevoked(): Promise<void> {
  * ✅ 這是員工模式的核心函數
  * ✅ 從 Supabase 視圖拉取數據，保留權限信息
  * ✅ 不使用 lastSyncAt 過濾（避免跨用戶污染）
+ * ✅ 清除其他用戶的數據（防止數據混合）
  */
 async function pullEventsFromViews(
   userId: string,
   onProgress?: (current: number, total: number, currentItem?: string, phase?: 'snapshot' | 'incremental') => void
 ): Promise<void> {
-  console.log('📊 從員工視圖拉取數據（完整同步，不使用 lastSyncAt）...');
+  console.log('📊 從員工視圖拉取數據（完整同步，不使用 lastSyncAt）...', {
+    userId: userId.substring(0, 8),
+  });
   
   try {
+    // ✅ 步驟 0：清除其他用戶的數據（防止數據混合）
+    console.log('🧹 清除其他用戶的數據...');
+    try {
+      const { clearOtherUsersData } = await import('@/lib/db/clear-user-data');
+      await clearOtherUsersData(userId);
+      console.log('✅ 其他用戶數據已清除');
+    } catch (clearError) {
+      console.error('⚠️ 清除其他用戶數據失敗（繼續同步）:', clearError);
+    }
+    
     // 1. 拉取市集數據（從視圖）
     if (onProgress) {
       onProgress(1, 5, '拉取市集數據...', 'incremental');
@@ -1502,8 +1515,8 @@ async function pullEventsFromViews(
       onProgress(4, 5, '同步到本地數據庫...', 'incremental');
     }
     
-    await syncMarketsToIndexedDB(marketsData || []);
-    await syncProductsToIndexedDB(productsData || []);
+    await syncMarketsToIndexedDB(marketsData || [], userId);
+    await syncProductsToIndexedDB(productsData || [], userId);
     await syncEventsToIndexedDB(eventsData || []);
     
     // 5. 更新最後同步時間
@@ -1513,6 +1526,20 @@ async function pullEventsFromViews(
     }
     
     await updateLastSyncTimestamp();
+    
+    // ✅ 驗證數據隔離性
+    try {
+      const { validateDataIsolation } = await import('@/lib/db/clear-user-data');
+      const validation = await validateDataIsolation(userId);
+      
+      if (!validation.isValid) {
+        console.error('❌ 數據隔離性驗證失敗:', validation.violations);
+      } else {
+        console.log('✅ 數據隔離性驗證通過');
+      }
+    } catch (validationError) {
+      console.error('⚠️ 數據隔離性驗證失敗:', validationError);
+    }
     
     console.log('✅ 視圖數據同步完成');
   } catch (error) {
@@ -1524,9 +1551,12 @@ async function pullEventsFromViews(
 /**
  * 同步市集到 IndexedDB（保留權限）
  * ✅ 合併視圖數據和本地數據
+ * ✅ 只同步當前用戶可訪問的市集
  */
-async function syncMarketsToIndexedDB(markets: any[]): Promise<void> {
-  console.log(`📝 同步 ${markets.length} 個市集到 IndexedDB...`);
+async function syncMarketsToIndexedDB(markets: any[], currentUserId: string): Promise<void> {
+  console.log(`📝 同步 ${markets.length} 個市集到 IndexedDB...`, {
+    currentUserId: currentUserId.substring(0, 8),
+  });
   
   // ✅ 調試：打印前 3 個市集的詳細信息
   if (markets.length > 0) {
@@ -1631,12 +1661,42 @@ async function syncMarketsToIndexedDB(markets: any[]): Promise<void> {
 /**
  * 同步商品到 IndexedDB（保留權限）
  * ✅ 合併視圖數據和本地數據
+ * ✅ 只同步當前用戶可訪問的商品
+ * ✅ 驗證 owner_id，防止數據混合
  */
-async function syncProductsToIndexedDB(products: any[]): Promise<void> {
-  console.log(`📝 同步 ${products.length} 個商品到 IndexedDB...`);
+async function syncProductsToIndexedDB(products: any[], currentUserId: string): Promise<void> {
+  console.log(`📝 同步 ${products.length} 個商品到 IndexedDB...`, {
+    currentUserId: currentUserId.substring(0, 8),
+  });
+  
+  // ✅ 調試：打印前 3 個商品的詳細信息
+  if (products.length > 0) {
+    console.log('🔍 商品數據樣本（前3個）:', products.slice(0, 3).map(p => ({
+      id: p.id?.substring(0, 8),
+      name: p.name,
+      owner_id: p.owner_id?.substring(0, 8),
+      access_type: p.access_type,
+      relationship_owner_id: p.relationship_owner_id?.substring(0, 8),
+    })));
+  }
+  
+  let syncedCount = 0;
+  let skippedCount = 0;
   
   for (const product of products) {
     try {
+      // ✅ 驗證：確保商品屬於當前用戶或當前用戶可訪問
+      // 1. 如果是 owner 模式，owner_id 必須是當前用戶
+      // 2. 如果是 staff 模式，relationship_owner_id 必須存在
+      const isOwner = product.access_type === 'owner' && product.owner_id === currentUserId;
+      const isStaff = product.access_type === 'staff' && product.relationship_owner_id;
+      
+      if (!isOwner && !isStaff) {
+        console.warn(`⚠️ 跳過不屬於當前用戶的商品: ${product.name} (owner: ${product.owner_id?.substring(0, 8)})`);
+        skippedCount++;
+        continue;
+      }
+      
       const existing = await db.products.get(product.id);
       
       // 準備商品數據（保留權限信息）
@@ -1681,13 +1741,16 @@ async function syncProductsToIndexedDB(products: any[]): Promise<void> {
         // 新增記錄
         await db.products.add(productData);
       }
+      
+      syncedCount++;
     } catch (error) {
       console.error(`❌ 同步商品失敗: ${product.id}`, error);
+      skippedCount++;
       // 繼續處理下一個
     }
   }
   
-  console.log('✅ 商品同步完成');
+  console.log(`✅ 商品同步完成: 成功 ${syncedCount}，跳過 ${skippedCount}，總計 ${products.length}`);
 }
 
 /**
