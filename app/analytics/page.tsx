@@ -20,13 +20,16 @@ import { QuadrantGrid } from '@/components/analytics/QuadrantGrid';
 import { ProductAffinityCard } from '@/components/analytics/ProductAffinityCard';
 import { DailyRevenueChart } from '@/components/analytics/DailyRevenueChart';
 import { MetricGuide } from '@/components/analytics/MetricGuide';
+import { MarketHealthScoreCard } from '@/components/analytics/MarketHealthScoreCard';
 import {
   calculateQuadrants,
   calculateProductAffinity,
   calculateDailyRevenue,
+  calculateMarketHealthScores,
+  buildMarketOverview,
 } from '@/lib/analytics-utils';
 import type { Market } from '@/types/db';
-import type { ProductPair } from '@/lib/analytics-utils';
+import type { ProductPair, MarketHealthScore } from '@/lib/analytics-utils';
 
 /**
  * 數據分析頁面
@@ -47,6 +50,7 @@ export default function AnalyticsPage() {
   const [showInfoTooltip, setShowInfoTooltip] = useState(false); // ✅ 控制ROI說明提示框
   const [showAOVInfoTooltip, setShowAOVInfoTooltip] = useState(false); // ✅ 控制客單價說明提示框
   const hasShownEmptyToast = useRef(false); // ✅ 追蹤是否已顯示過空狀態提示
+  const [mode, setMode] = useState<'quick' | 'advanced'>('quick'); // ✅ 分析模式
 
   // 計算日期範圍
   const { startDate, endDate } = useMemo(() => {
@@ -267,6 +271,28 @@ export default function AnalyticsPage() {
     return calculateQuadrants(markets);
   }, [markets]);
 
+  // ✅ 新增：計算市集健康評分
+  const marketHealthScores = useMemo(() => {
+    if (!markets || markets.length === 0) return [];
+    return calculateMarketHealthScores(markets);
+  }, [markets]);
+
+  // ✅ 新增：計算市集總覽（取第一名市集）
+  const topMarketOverview = useMemo(() => {
+    if (!markets || markets.length === 0) return null;
+    
+    // 取得評分最高的市集
+    const scores = calculateMarketHealthScores(markets);
+    if (scores.length === 0) return null;
+    
+    const topScore = scores.sort((a, b) => b.healthScore - a.healthScore)[0];
+    const topMarket = markets.find(m => m.id === topScore.marketId);
+    
+    if (!topMarket) return null;
+    
+    return buildMarketOverview(topMarket);
+  }, [markets]);
+
   // ✅ 新增：計算商品親和力（使用 useLiveQuery 確保與 Dexie 同步）
   const affinityPairs = useLiveQuery(async () => {
     if (!markets || markets.length === 0) {
@@ -447,235 +473,411 @@ export default function AnalyticsPage() {
           />
         </div>
 
+        {/* 模式切換器 */}
+        <div className="bg-white rounded-[1.5rem] p-2 shadow-md shadow-[#7B9FA6]/10 mb-6 flex gap-2">
+          <button
+            onClick={() => setMode('quick')}
+            className={`flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all ${
+              mode === 'quick'
+                ? 'bg-gradient-to-r from-[#7B9FA6] to-[#6A8E95] text-white shadow-md'
+                : 'text-[#6B6B6B] hover:bg-[#F5F5F3]'
+            }`}
+          >
+            ⚡ 快速模式
+          </button>
+          <button
+            onClick={() => setMode('advanced')}
+            className={`flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all ${
+              mode === 'advanced'
+                ? 'bg-gradient-to-r from-[#7B9FA6] to-[#6A8E95] text-white shadow-md'
+                : 'text-[#6B6B6B] hover:bg-[#F5F5F3]'
+            }`}
+          >
+            📊 進階模式
+          </button>
+        </div>
+
         {hasData ? (
           <>
+            {/* 市集總覽卡片 */}
+            {topMarketOverview && (
+              <div className="bg-gradient-to-br from-white to-[#F5F5F3] rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6 border-2 border-[#7B9FA6]/20">
+                {/* 標題 */}
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-2xl">🟢</span>
+                  <h2 className="text-xl font-medium text-[#3A3A3A]">
+                    本場市集：{topMarketOverview.summaryLabel}
+                  </h2>
+                </div>
+
+                {/* 健康分數 */}
+                <div className="bg-white rounded-xl p-4 mb-4 border border-[#7B9FA6]/10">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[#6B6B6B]">健康分數</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-bold text-[#7B9FA6]">
+                        {topMarketOverview.healthScore.toFixed(1)}
+                      </span>
+                      <span className="text-lg text-[#6B6B6B]">/100</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 關鍵指標 */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {/* 人流品質 */}
+                  <div className="bg-[#E8F3E8] rounded-xl p-3">
+                    <p className="text-xs text-[#6B6B6B] mb-1">人流品質</p>
+                    <p className="text-sm font-semibold text-[#3A3A3A]">
+                      {topMarketOverview.diagnosisType}
+                    </p>
+                  </div>
+
+                  {/* 成交效率 */}
+                  <div className="bg-[#FFF8E7] rounded-xl p-3">
+                    <p className="text-xs text-[#6B6B6B] mb-1">成交效率</p>
+                    <p className="text-sm font-semibold text-[#3A3A3A]">
+                      {topMarketOverview.keyStats.conversionRate.toFixed(1)}%
+                    </p>
+                  </div>
+
+                  {/* 客單價 */}
+                  <div className="bg-[#F5E6E8] rounded-xl p-3">
+                    <p className="text-xs text-[#6B6B6B] mb-1">客單價</p>
+                    <p className="text-sm font-semibold text-[#3A3A3A]">
+                      ${topMarketOverview.keyStats.aov.toFixed(0)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 建議 */}
+                <div className="bg-[#7B9FA6]/10 rounded-xl p-4">
+                  <div className="flex items-start gap-2">
+                    <span className="text-lg">💡</span>
+                    <div className="flex-1">
+                      <p className="text-xs text-[#6B6B6B] mb-1">建議</p>
+                      <p className="text-sm text-[#3A3A3A] leading-relaxed">
+                        {topMarketOverview.suggestion}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 核心 KPI 卡片 */}
             <KPICards
               avgConversionRate={quadrantData.averages.avgConversionRate}
               topPair={affinityPairs && affinityPairs.length > 0 ? affinityPairs[0] : null}
             />
 
-            {/* 市集象限網格 */}
-            <div className="mb-6">
-              <QuadrantGrid
-                stars={quadrantData.stars}
-                potentials={quadrantData.potentials}
-                precisies={quadrantData.precisies}
-                observables={quadrantData.observables}
-                averages={quadrantData.averages}
-                isEmpty={quadrantData.isEmpty}
-              />
-            </div>
+            {/* 進階模式：顯示所有圖表 */}
+            {mode === 'advanced' && (
+              <>
+                {/* 市集健康評分排行榜 */}
+                {marketHealthScores.length > 0 && (
+                  <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+                    {/* 標題與說明 */}
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-medium text-[#3A3A3A]">
+                          市集綜合評分
+                        </h2>
+                        {/* 說明燈泡按鈕 */}
+                        <button
+                          onClick={() => {
+                            toast.info('市集健康評分說明', {
+                              description: '綜合評估每小時淨利(40%)、回收率(20%)、轉換率(20%)、客單價(20%)，使用 Z-score 標準化後計算 0-100 分',
+                              duration: 6000,
+                            });
+                          }}
+                          className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                          aria-label="查看說明"
+                        >
+                          <svg 
+                            className="w-4 h-4 text-[#D4A574]" 
+                            fill="currentColor" 
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M10 2a6 6 0 016 6v3.586l.707.707A1 1 0 0116 14h-1v1a3 3 0 11-6 0v-1H8a1 1 0 01-.707-1.707L8 11.586V8a6 6 0 016-6zM10 18a1 1 0 100-2 1 1 0 000 2z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
 
-            {/* 每日收入趨勢圖 */}
-            {dailyRevenueData && (
-              <div className="mb-6">
-                <DailyRevenueChart
-                  revenueMap={dailyRevenueData}
-                  startDate={startDate}
-                  endDate={endDate}
-                />
-              </div>
-            )}
+                    {/* 評分統計摘要 */}
+                    <div className="grid grid-cols-3 gap-3 mb-5">
+                      <div className="bg-[#E8F3E8] rounded-xl p-3 text-center">
+                        <p className="text-xs text-[#6B6B6B] mb-1">平均分數</p>
+                        <p className="text-xl font-bold text-[#3A3A3A]">
+                          {(marketHealthScores.reduce((sum, s) => sum + s.healthScore, 0) / marketHealthScores.length).toFixed(1)}
+                        </p>
+                      </div>
+                      <div className="bg-[#FFF8E7] rounded-xl p-3 text-center">
+                        <p className="text-xs text-[#6B6B6B] mb-1">最高分</p>
+                        <p className="text-xl font-bold text-[#FFD700]">
+                          {Math.max(...marketHealthScores.map(s => s.healthScore)).toFixed(1)}
+                        </p>
+                      </div>
+                      <div className="bg-[#F5E6E8] rounded-xl p-3 text-center">
+                        <p className="text-xs text-[#6B6B6B] mb-1">最低分</p>
+                        <p className="text-xl font-bold text-[#D4A574]">
+                          {Math.min(...marketHealthScores.map(s => s.healthScore)).toFixed(1)}
+                        </p>
+                      </div>
+                    </div>
 
-            {/* 商品關聯分析 */}
-            <div className="mb-6">
-              <ProductAffinityCard
-                pairs={affinityPairs || []}
-                isLoading={affinityPairs === undefined}
-              />
-            </div>
+                    {/* 前三名市集健康評分卡片 */}
+                    <div className="space-y-4">
+                      {marketHealthScores
+                        .sort((a, b) => b.healthScore - a.healthScore)
+                        .slice(0, 3)
+                        .map((scoreData, index) => {
+                          const market = markets.find(m => m.id === scoreData.marketId);
+                          if (!market) return null;
+                          return (
+                            <MarketHealthScoreCard
+                              key={scoreData.marketId}
+                              market={market}
+                              score={scoreData}
+                              rank={index + 1}
+                            />
+                          );
+                        })}
+                    </div>
 
-            {/* 最有價值市集 */}
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
-              {/* 標題與說明 */}
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-medium text-[#3A3A3A]">
-                    最有價值市集
-                  </h2>
-                  {/* 說明燈泡按鈕 */}
-                  <button
-                    onClick={() => setShowInfoTooltip(!showInfoTooltip)}
-                    className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
-                    aria-label="查看說明"
-                  >
-                    <svg 
-                      className="w-4 h-4 text-[#D4A574]" 
-                      fill="currentColor" 
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M10 2a6 6 0 016 6v3.586l.707.707A1 1 0 0116 14h-1v1a3 3 0 11-6 0v-1H8a1 1 0 01-.707-1.707L8 11.586V8a6 6 0 016-6zM10 18a1 1 0 100-2 1 1 0 000 2z"/>
-                    </svg>
-                  </button>
+                    {/* 如果少於3個市集，顯示提示 */}
+                    {marketHealthScores.length < 3 && marketHealthScores.length > 0 && (
+                      <div className="mt-4 text-center">
+                        <p className="text-xs text-[#6B6B6B]">
+                          目前僅有 {marketHealthScores.length} 場市集數據
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 市集象限網格 */}
+                <div className="mb-6">
+                  <QuadrantGrid
+                    stars={quadrantData.stars}
+                    potentials={quadrantData.potentials}
+                    precisies={quadrantData.precisies}
+                    observables={quadrantData.observables}
+                    averages={quadrantData.averages}
+                    isEmpty={quadrantData.isEmpty}
+                  />
                 </div>
-              </div>
 
-              {/* 說明提示框（使用 Headless UI） */}
-              <Transition appear show={showInfoTooltip} as={Fragment}>
-                <Dialog as="div" className="relative z-50" onClose={() => setShowInfoTooltip(false)}>
-                  {/* 背景遮罩 */}
-                  <Transition.Child
-                    as={Fragment}
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                  >
-                    <div className="fixed inset-0 bg-black/50" />
-                  </Transition.Child>
+                {/* 每日收入趨勢圖 */}
+                {dailyRevenueData && (
+                  <div className="mb-6">
+                    <DailyRevenueChart
+                      revenueMap={dailyRevenueData}
+                      startDate={startDate}
+                      endDate={endDate}
+                    />
+                  </div>
+                )}
 
-                  {/* 彈窗容器 */}
-                  <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-start justify-center p-4 pt-20">
+                {/* 商品關聯分析 */}
+                <div className="mb-6">
+                  <ProductAffinityCard
+                    pairs={affinityPairs || []}
+                    isLoading={affinityPairs === undefined}
+                  />
+                </div>
+
+                {/* 最有價值市集 */}
+                <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+                  {/* 標題與說明 */}
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-medium text-[#3A3A3A]">
+                        最有價值市集
+                      </h2>
+                      {/* 說明燈泡按鈕 */}
+                      <button
+                        onClick={() => setShowInfoTooltip(!showInfoTooltip)}
+                        className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                        aria-label="查看說明"
+                      >
+                        <svg 
+                          className="w-4 h-4 text-[#D4A574]" 
+                          fill="currentColor" 
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M10 2a6 6 0 016 6v3.586l.707.707A1 1 0 0116 14h-1v1a3 3 0 11-6 0v-1H8a1 1 0 01-.707-1.707L8 11.586V8a6 6 0 016-6zM10 18a1 1 0 100-2 1 1 0 000 2z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 說明提示框（使用 Headless UI） */}
+                  <Transition appear show={showInfoTooltip} as={Fragment}>
+                    <Dialog as="div" className="relative z-50" onClose={() => setShowInfoTooltip(false)}>
+                      {/* 背景遮罩 */}
                       <Transition.Child
                         as={Fragment}
                         enter="ease-out duration-300"
-                        enterFrom="opacity-0 scale-95"
-                        enterTo="opacity-100 scale-100"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
                         leave="ease-in duration-200"
-                        leaveFrom="opacity-100 scale-100"
-                        leaveTo="opacity-0 scale-95"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
                       >
-                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all border border-[#7B9FA6]/10 relative">
-                          {/* 關閉按鈕 */}
-                          <button
-                            onClick={() => setShowInfoTooltip(false)}
-                            className="absolute top-4 right-4 text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
-                            aria-label="關閉"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-
-                          <Dialog.Title className="font-medium text-[#3A3A3A] mb-4 text-lg pr-8">
-                            💡 市集投資回報分析
-                          </Dialog.Title>
-                          
-                          {/* 三個指標說明 */}
-                          <div className="space-y-4 mb-6">
-                            {/* 1. 淨利潤 */}
-                            <div className="bg-[#E8F3E8] rounded-xl p-4">
-                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                <span className="text-[#7B9FA6]">💰</span>
-                                淨利潤
-                              </h4>
-                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
-                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
-                                <br />
-                                總利潤 - 攤位費 - 報名費 - 設備租金 - 抽成
-                              </p>
-                              <p className="text-xs text-[#6B6B6B]">
-                                <span className="font-medium">意義：</span>扣除所有成本後的實際獲利
-                              </p>
-                            </div>
-
-                            {/* 2. 每小時淨利 */}
-                            <div className="bg-[#FFF8E7] rounded-xl p-4">
-                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                <span className="text-[#D4A574]">⏱️</span>
-                                每小時淨利
-                              </h4>
-                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
-                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
-                                <br />
-                                淨利潤 ÷ 總營業時數
-                              </p>
-                              <p className="text-xs text-[#6B6B6B]">
-                                <span className="font-medium">意義：</span>時間效益指標，數值越高代表時間投資報酬越好
-                              </p>
-                            </div>
-
-                            {/* 3. 回收率 */}
-                            <div className="bg-[#F5E6E8] rounded-xl p-4">
-                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                <span className="text-[#D4A574]">📈</span>
-                                回收率
-                              </h4>
-                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
-                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
-                                <br />
-                                總收入 ÷ (攤位費 + 設備租賃費) × 100%
-                              </p>
-                              <p className="text-xs text-[#6B6B6B]">
-                                <span className="font-medium">意義：</span>固定成本回收倍數，200% 表示收入是成本的 2 倍
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="bg-[#7B9FA6]/10 rounded-xl p-3 mb-4">
-                            <p className="text-xs text-[#3A3A3A] leading-relaxed">
-                              <span className="font-medium">💡 排序規則：</span>
-                              <br />
-                              優先按「每小時淨利」排序，相同時再按「回收率」排序
-                            </p>
-                          </div>
-
-                          <button
-                            onClick={() => setShowInfoTooltip(false)}
-                            className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
-                          >
-                            知道了
-                          </button>
-                        </Dialog.Panel>
+                        <div className="fixed inset-0 bg-black/50" />
                       </Transition.Child>
-                    </div>
+
+                      {/* 彈窗容器 */}
+                      <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-start justify-center p-4 pt-20">
+                          <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-300"
+                            enterFrom="opacity-0 scale-95"
+                            enterTo="opacity-100 scale-100"
+                            leave="ease-in duration-200"
+                            leaveFrom="opacity-100 scale-100"
+                            leaveTo="opacity-0 scale-95"
+                          >
+                            <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all border border-[#7B9FA6]/10 relative">
+                              {/* 關閉按鈕 */}
+                              <button
+                                onClick={() => setShowInfoTooltip(false)}
+                                className="absolute top-4 right-4 text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                                aria-label="關閉"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+
+                              <Dialog.Title className="font-medium text-[#3A3A3A] mb-4 text-lg pr-8">
+                                💡 市集投資回報分析
+                              </Dialog.Title>
+                              
+                              {/* 三個指標說明 */}
+                              <div className="space-y-4 mb-6">
+                                {/* 1. 淨利潤 */}
+                                <div className="bg-[#E8F3E8] rounded-xl p-4">
+                                  <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                    <span className="text-[#7B9FA6]">💰</span>
+                                    淨利潤
+                                  </h4>
+                                  <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                    <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                                    <br />
+                                    總利潤 - 攤位費 - 報名費 - 設備租金 - 抽成
+                                  </p>
+                                  <p className="text-xs text-[#6B6B6B]">
+                                    <span className="font-medium">意義：</span>扣除所有成本後的實際獲利
+                                  </p>
+                                </div>
+
+                                {/* 2. 每小時淨利 */}
+                                <div className="bg-[#FFF8E7] rounded-xl p-4">
+                                  <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                    <span className="text-[#D4A574]">⏱️</span>
+                                    每小時淨利
+                                  </h4>
+                                  <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                    <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                                    <br />
+                                    淨利潤 ÷ 總營業時數
+                                  </p>
+                                  <p className="text-xs text-[#6B6B6B]">
+                                    <span className="font-medium">意義：</span>時間效益指標，數值越高代表時間投資報酬越好
+                                  </p>
+                                </div>
+
+                                {/* 3. 回收率 */}
+                                <div className="bg-[#F5E6E8] rounded-xl p-4">
+                                  <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                    <span className="text-[#D4A574]">📈</span>
+                                    回收率
+                                  </h4>
+                                  <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                    <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                                    <br />
+                                    總收入 ÷ (攤位費 + 設備租賃費) × 100%
+                                  </p>
+                                  <p className="text-xs text-[#6B6B6B]">
+                                    <span className="font-medium">意義：</span>固定成本回收倍數，200% 表示收入是成本的 2 倍
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="bg-[#7B9FA6]/10 rounded-xl p-3 mb-4">
+                                <p className="text-xs text-[#3A3A3A] leading-relaxed">
+                                  <span className="font-medium">💡 排序規則：</span>
+                                  <br />
+                                  優先按「每小時淨利」排序，相同時再按「回收率」排序
+                                </p>
+                              </div>
+
+                              <button
+                                onClick={() => setShowInfoTooltip(false)}
+                                className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+                              >
+                                知道了
+                              </button>
+                            </Dialog.Panel>
+                          </Transition.Child>
+                        </div>
+                      </div>
+                    </Dialog>
+                  </Transition>
+
+                  {/* 前三名市集卡片（垂直排列） */}
+                  <div className="space-y-3">
+                    {/* 第一名 */}
+                    {marketROIData[0] && (
+                      <MarketROICard
+                        market={marketROIData[0].market}
+                        rank={1}
+                        netProfit={marketROIData[0].netProfit}
+                        hourlyProfit={marketROIData[0].hourlyProfit}
+                        boothROI={marketROIData[0].boothROI}
+                        operatingHours={marketROIData[0].operatingHours}
+                      />
+                    )}
+                    
+                    {/* 第二名 */}
+                    {marketROIData[1] && (
+                      <MarketROICard
+                        market={marketROIData[1].market}
+                        rank={2}
+                        netProfit={marketROIData[1].netProfit}
+                        hourlyProfit={marketROIData[1].hourlyProfit}
+                        boothROI={marketROIData[1].boothROI}
+                        operatingHours={marketROIData[1].operatingHours}
+                      />
+                    )}
+                    
+                    {/* 第三名 */}
+                    {marketROIData[2] && (
+                      <MarketROICard
+                        market={marketROIData[2].market}
+                        rank={3}
+                        netProfit={marketROIData[2].netProfit}
+                        hourlyProfit={marketROIData[2].hourlyProfit}
+                        boothROI={marketROIData[2].boothROI}
+                        operatingHours={marketROIData[2].operatingHours}
+                      />
+                    )}
                   </div>
-                </Dialog>
-              </Transition>
 
-              {/* 前三名市集卡片（垂直排列） */}
-              <div className="space-y-3">
-                {/* 第一名 */}
-                {marketROIData[0] && (
-                  <MarketROICard
-                    market={marketROIData[0].market}
-                    rank={1}
-                    netProfit={marketROIData[0].netProfit}
-                    hourlyProfit={marketROIData[0].hourlyProfit}
-                    boothROI={marketROIData[0].boothROI}
-                    operatingHours={marketROIData[0].operatingHours}
-                  />
-                )}
-                
-                {/* 第二名 */}
-                {marketROIData[1] && (
-                  <MarketROICard
-                    market={marketROIData[1].market}
-                    rank={2}
-                    netProfit={marketROIData[1].netProfit}
-                    hourlyProfit={marketROIData[1].hourlyProfit}
-                    boothROI={marketROIData[1].boothROI}
-                    operatingHours={marketROIData[1].operatingHours}
-                  />
-                )}
-                
-                {/* 第三名 */}
-                {marketROIData[2] && (
-                  <MarketROICard
-                    market={marketROIData[2].market}
-                    rank={3}
-                    netProfit={marketROIData[2].netProfit}
-                    hourlyProfit={marketROIData[2].hourlyProfit}
-                    boothROI={marketROIData[2].boothROI}
-                    operatingHours={marketROIData[2].operatingHours}
-                  />
-                )}
-              </div>
-
-              {/* 如果少於3個市集，顯示提示 */}
-              {marketROIData.length < 3 && marketROIData.length > 0 && (
-                <div className="mt-4 text-center">
-                  <p className="text-xs text-[#6B6B6B]">
-                    目前僅有 {marketROIData.length} 場市集數據
-                  </p>
+                  {/* 如果少於3個市集，顯示提示 */}
+                  {marketROIData.length < 3 && marketROIData.length > 0 && (
+                    <div className="mt-4 text-center">
+                      <p className="text-xs text-[#6B6B6B]">
+                        目前僅有 {marketROIData.length} 場市集數據
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* 客單價最高市集 */}
-            {marketAOVData.length > 0 && (
+                {/* 客單價最高市集 */}
+                {marketAOVData.length > 0 && (
               <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
                 {/* 標題與說明 */}
                 <div className="flex items-center justify-between mb-5">
@@ -868,6 +1070,8 @@ export default function AnalyticsPage() {
               topByRevenue={topProductsData?.topByRevenue || null}
               topByProfit={topProductsData?.topByProfit || null}
             />
+              </>
+            )}
           </>
         ) : (
           <EmptyState />

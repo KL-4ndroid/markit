@@ -36,7 +36,8 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 /**
- * ✅ 檢查 Session 是否過期
+ * ✅ 檢查 Session 是否真正過期（已經超過過期時間）
+ * 注意：不提前判定，讓 Supabase 的 autoRefreshToken 機制自動處理
  */
 function isSessionExpired(session: Session | null): boolean {
   if (!session) return true;
@@ -44,11 +45,10 @@ function isSessionExpired(session: Session | null): boolean {
   const expiresAt = session.expires_at;
   if (!expiresAt) return false;
   
-  // 提前 5 分鐘判定為過期，給予緩衝時間
-  const bufferSeconds = 5 * 60;
   const now = Math.floor(Date.now() / 1000);
   
-  return now >= (expiresAt - bufferSeconds);
+  // 只有真正過期才返回 true，不提前判定
+  return now >= expiresAt;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -113,15 +113,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 獲取初始 Session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      // ✅ 檢查 Session 是否過期
-      if (isSessionExpired(session)) {
-        console.warn('⚠️ Session 已過期，清除狀態');
-        setSession(null);
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -132,23 +123,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // ✅ 定期檢查 Session 是否過期（每分鐘檢查一次）
-    sessionCheckIntervalRef.current = setInterval(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (isSessionExpired(session)) {
-          console.warn('⚠️ Session 已過期，觸發登出');
-          
-          // ✅ Session 過期時清除數據
-          clearUserData('session_expired').catch(error => {
-            console.error('Session 過期清除數據失敗:', error);
-          });
-          
-          // 觸發登出流程
-          setSession(null);
-          setUser(null);
-        }
-      });
-    }, 60 * 1000); // 每分鐘檢查
+    // ✅ 移除定期檢查 Session 的邏輯
+    // Supabase 的 autoRefreshToken 會自動處理 token 刷新
+    // 只在 onAuthStateChange 收到 SIGNED_OUT 事件時才登出
 
     // 監聽 Auth 狀態變化
     const {
@@ -161,6 +138,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         previousUserId: user?.id,
         timestamp: new Date().toISOString(),
       });
+      
+      // ✅ TOKEN_REFRESHED 是正常的自動刷新，應該接受
+      // 這讓用戶可以長時間保持登入狀態
       
       // ✅ 特別記錄登出事件
       if (event === 'SIGNED_OUT') {
@@ -257,12 +237,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (broadcastChannelRef.current) {
         broadcastChannelRef.current.close();
         broadcastChannelRef.current = null;
-      }
-      
-      // 清理定時器
-      if (sessionCheckIntervalRef.current) {
-        clearInterval(sessionCheckIntervalRef.current);
-        sessionCheckIntervalRef.current = null;
       }
     };
   }, [isConfigured]);
