@@ -25,11 +25,23 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess, defaultMode = 'log
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>(defaultMode);
+  const [rememberMe, setRememberMe] = useState(false); // ✅ 新增：記住帳號狀態
   
   // ✅ 當 defaultMode 改變時，更新 mode
   useEffect(() => {
     setMode(defaultMode);
   }, [defaultMode]);
+  
+  // ✅ 新增：載入已記住的帳號
+  useEffect(() => {
+    if (isOpen) {
+      const savedEmail = localStorage.getItem('remembered_email');
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setRememberMe(true);
+      }
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +64,13 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess, defaultMode = 'log
         if (error) throw error;
 
         if (data.user) {
+          // ✅ 新增：根據「記住帳號」選項儲存或清除 Email
+          if (rememberMe) {
+            localStorage.setItem('remembered_email', email);
+          } else {
+            localStorage.removeItem('remembered_email');
+          }
+          
           toast.success('登入成功！');
           onLoginSuccess(data.user.id, data.user.email!);
         }
@@ -207,6 +226,26 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess, defaultMode = 'log
                 />
               </div>
             </div>
+
+            {/* ✅ 新增：記住帳號選項（僅在登入模式顯示） */}
+            {mode === 'login' && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-[#7B9FA6]/20 text-[#7B9FA6] focus:ring-[#7B9FA6] focus:ring-offset-0 cursor-pointer"
+                  disabled={isLoading}
+                />
+                <label
+                  htmlFor="rememberMe"
+                  className="text-sm text-[#6B6B6B] cursor-pointer select-none"
+                >
+                  記住帳號
+                </label>
+              </div>
+            )}
 
             {/* 提交按鈕 */}
             <button

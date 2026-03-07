@@ -7,7 +7,7 @@
 'use client';
 
 import { Percent, Link2 } from 'lucide-react';
-import type { ProductPair } from '@/lib/analytics-utils';
+import type { ProductPair } from '@/lib/analytics';
 import { MetricGuide } from './MetricGuide';
 
 interface KPICardsProps {

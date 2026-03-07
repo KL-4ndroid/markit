@@ -7,7 +7,7 @@
 'use client';
 
 import { ShoppingBag, Lightbulb } from 'lucide-react';
-import type { ProductPair } from '@/lib/analytics-utils';
+import type { ProductPair } from '@/lib/analytics';
 import { MetricGuide } from './MetricGuide';
 
 interface ProductAffinityCardProps {

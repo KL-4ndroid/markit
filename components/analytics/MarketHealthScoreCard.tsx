@@ -1,5 +1,5 @@
 import { Market } from '@/types/db';
-import { MarketHealthScore } from '@/lib/analytics-utils';
+import { MarketHealthScore } from '@/lib/analytics';
 
 interface MarketHealthScoreCardProps {
   market: Market;

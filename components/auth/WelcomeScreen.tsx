@@ -15,9 +15,9 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
   return (
     <div className="fixed inset-0 bg-[#F4F1EA] flex items-center justify-center p-6 z-50">
 
-      {/* subtle paper overlay */}
-      <div className="absolute inset-0 opacity-[0.06] pointer-events-none 
-        bg-[url('/washi-texture.png')] bg-cover bg-center" />
+      {/* subtle paper overlay - 移除不存在的圖片 */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none 
+        bg-gradient-to-br from-[#E8E4DC] via-transparent to-[#E8E4DC]" />
 
       <div className="relative max-w-md w-full">
 

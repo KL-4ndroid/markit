@@ -21,15 +21,19 @@ import { ProductAffinityCard } from '@/components/analytics/ProductAffinityCard'
 import { DailyRevenueChart } from '@/components/analytics/DailyRevenueChart';
 import { MetricGuide } from '@/components/analytics/MetricGuide';
 import { MarketHealthScoreCard } from '@/components/analytics/MarketHealthScoreCard';
+import { useAnalyticsCacheInvalidation, useAnalyticsCache } from '@/hooks/useAnalyticsCache';
 import {
   calculateQuadrants,
   calculateProductAffinity,
   calculateDailyRevenue,
-  calculateMarketHealthScores,
+  calculateHealthScores,
+  calculateMarketMetrics,
   buildMarketOverview,
-} from '@/lib/analytics-utils';
+  getDataReliability,
+} from '@/lib/analytics';
+import { UnlockGuard } from '@/components/analytics/UnlockGuard';
 import type { Market } from '@/types/db';
-import type { ProductPair, MarketHealthScore } from '@/lib/analytics-utils';
+import type { ProductPair, MarketHealthScore } from '@/lib/analytics';
 
 /**
  * 數據分析頁面
@@ -51,6 +55,13 @@ export default function AnalyticsPage() {
   const [showAOVInfoTooltip, setShowAOVInfoTooltip] = useState(false); // ✅ 控制客單價說明提示框
   const hasShownEmptyToast = useRef(false); // ✅ 追蹤是否已顯示過空狀態提示
   const [mode, setMode] = useState<'quick' | 'advanced'>('quick'); // ✅ 分析模式
+  const [isRecalculating, setIsRecalculating] = useState(false); // ✅ 重新計算狀態
+  
+  // 🔥 監聽補登操作，自動清除快取
+  useAnalyticsCacheInvalidation();
+  
+  // 🔥 快取管理
+  const { clearAllCache } = useAnalyticsCache();
 
   // 計算日期範圍
   const { startDate, endDate } = useMemo(() => {
@@ -140,6 +151,40 @@ export default function AnalyticsPage() {
     }
   }, [markets.length]);
 
+  // 🔥 處理重新計算
+  const handleRecalculate = async () => {
+    setIsRecalculating(true);
+    
+    try {
+      // 1. 清除所有快取
+      clearAllCache();
+      
+      // 2. 顯示提示
+      toast.loading('正在清除快取並重新計算...', {
+        id: 'recalculate',
+      });
+      
+      // 3. 等待一小段時間讓 UI 更新
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // 4. 強制重新計算（透過重新渲染觸發）
+      // React 會自動重新執行所有 useMemo 和 useLiveQuery
+      
+      // 5. 顯示成功提示
+      toast.success('快取已清除，數據已重新計算', {
+        id: 'recalculate',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('重新計算失敗:', error);
+      toast.error('重新計算失敗，請稍後再試', {
+        id: 'recalculate',
+      });
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   // 計算市集 ROI 數據
   interface MarketROIData {
     market: Market;
@@ -212,8 +257,11 @@ export default function AnalyticsPage() {
       };
     });
 
+    // ✅ 過濾掉淨利潤或每小時淨利為負值的市集
+    const filteredData = data.filter(item => item.netProfit >= 0 && item.hourlyProfit >= 0);
+
     // 排序：先按每小時淨利降序，再按攤位費回收率降序
-    return data.sort((a, b) => {
+    return filteredData.sort((a, b) => {
       if (b.hourlyProfit !== a.hourlyProfit) {
         return b.hourlyProfit - a.hourlyProfit;
       }
@@ -252,7 +300,7 @@ export default function AnalyticsPage() {
   }, [markets]);
 
   // ✅ 新增：計算象限數據（使用 useMemo 優化性能，包含邏輯判斷）
-  const quadrantData = useMemo(() => {
+  const quadrantData = useLiveQuery(async () => {
     if (!markets || markets.length === 0) {
       return {
         stars: [],
@@ -267,22 +315,55 @@ export default function AnalyticsPage() {
       };
     }
 
-    // ✅ 象限分析邏輯保護：檢查是否所有市集的互動數均為 0
-    return calculateQuadrants(markets);
+    // 🔥 使用新架構：先計算 metrics，再計算象限
+    const marketMetrics = [];
+    for (const market of markets) {
+      const metrics = await calculateMarketMetrics(market, { db, allMarkets: markets });
+      marketMetrics.push({
+        market,
+        metrics,
+      });
+    }
+    
+    return calculateQuadrants(marketMetrics);
   }, [markets]);
 
-  // ✅ 新增：計算市集健康評分
-  const marketHealthScores = useMemo(() => {
+  // ✅ 新增：計算市集健康評分（過濾負值）
+  const marketHealthScores = useLiveQuery(async () => {
     if (!markets || markets.length === 0) return [];
-    return calculateMarketHealthScores(markets);
+    
+    // 🔥 使用新架構：先計算 metrics，再計算健康評分
+    const marketMetrics = [];
+    for (const market of markets) {
+      const metrics = await calculateMarketMetrics(market, { db, allMarkets: markets });
+      
+      // ✅ 只包含淨利潤和每小時淨利為正值的市集
+      if (metrics.netProfit >= 0 && metrics.hourlyProfit >= 0) {
+        marketMetrics.push({
+          marketId: market.id!,
+          metrics,
+        });
+      }
+    }
+    
+    return calculateHealthScores(marketMetrics);
   }, [markets]);
 
   // ✅ 新增：計算市集總覽（取第一名市集）
-  const topMarketOverview = useMemo(() => {
+  const topMarketOverview = useLiveQuery(async () => {
     if (!markets || markets.length === 0) return null;
     
     // 取得評分最高的市集
-    const scores = calculateMarketHealthScores(markets);
+    const marketMetrics = [];
+    for (const market of markets) {
+      const metrics = await calculateMarketMetrics(market, { db, allMarkets: markets });
+      marketMetrics.push({
+        marketId: market.id!,
+        metrics,
+      });
+    }
+    
+    const scores = calculateHealthScores(marketMetrics);
     if (scores.length === 0) return null;
     
     const topScore = scores.sort((a, b) => b.healthScore - a.healthScore)[0];
@@ -290,7 +371,7 @@ export default function AnalyticsPage() {
     
     if (!topMarket) return null;
     
-    return buildMarketOverview(topMarket);
+    return await buildMarketOverview(topMarket, { db, allMarkets: markets });
   }, [markets]);
 
   // ✅ 新增：計算商品親和力（使用 useLiveQuery 確保與 Dexie 同步）
@@ -442,6 +523,23 @@ export default function AnalyticsPage() {
   // 檢查是否有數據
   const hasData = marketROIData.length > 0;
 
+  // 🔥 計算有效市集數量（用於解鎖邏輯和可信度計算）
+  // 基於當前日期範圍內，只計算有收入的市集（排除未來預先輸入的市集）
+  const validMarketCount = useMemo(() => {
+    if (!markets || markets.length === 0) return 0;
+    return markets.filter(market => {
+      // 排除已取消的市集
+      if (market.status === 'cancelled') return false;
+      // 只計算有收入的市集
+      return (market.totalRevenue || 0) > 0;
+    }).length;
+  }, [markets]); // 注意：依賴 markets（已經過濾日期範圍）
+  
+  // 🔥 取得數據可信度（基於當前日期範圍內的有效市集數量）
+  const dataReliability = useMemo(() => {
+    return getDataReliability(validMarketCount);
+  }, [validMarketCount]);
+
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       {/* Header */}
@@ -449,13 +547,40 @@ export default function AnalyticsPage() {
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-medium text-white opacity-90">數據分析</h1>
-            <div className="bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full">
-              <span className="text-white text-sm">📊</span>
+            <div className="flex items-center gap-2">
+              {/* 重新計算按鈕 */}
+              <button
+                onClick={handleRecalculate}
+                disabled={isRecalculating}
+                className="bg-white/20 backdrop-blur-sm hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-1.5 rounded-full transition-all flex items-center gap-2"
+                aria-label="重新計算"
+              >
+                <svg 
+                  className={`w-4 h-4 text-white ${isRecalculating ? 'animate-spin' : ''}`}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+                  />
+                </svg>
+                <span className="text-white text-sm font-medium">
+                  {isRecalculating ? '計算中' : '更新'}
+                </span>
+              </button>
+              
+              <div className="bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full">
+                <span className="text-white text-sm">📊</span>
+              </div>
             </div>
           </div>
           
           <p className="text-white/80 text-sm">
-            深入洞察營業數據，優化經營策略 ✨
+            分析功能尚在測試、優化中，請謹慎判讀 ✨
           </p>
         </div>
       </div>
@@ -497,12 +622,32 @@ export default function AnalyticsPage() {
           </button>
         </div>
 
+        {/* 🔥 數據可信度標籤 */}
+        <div className={`rounded-[1.5rem] p-4 mb-6 ${
+          dataReliability.level === 'insufficient' 
+            ? 'bg-red-50 border-2 border-red-200' 
+            : dataReliability.level === 'medium'
+            ? 'bg-yellow-50 border-2 border-yellow-200'
+            : 'bg-green-50 border-2 border-green-200'
+        }`}>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{dataReliability.icon}</span>
+            <div className="flex-1">
+              <p className="font-medium text-[#3A3A3A] text-sm">
+                {dataReliability.label}
+              </p>
+              <p className="text-xs text-[#6B6B6B] mt-0.5">
+                {dataReliability.description} ({validMarketCount} 場有效市集)
+              </p>
+            </div>
+          </div>
+        </div>
+
         {hasData ? (
           <>
-            {/* 市集總覽卡片 */}
-            {topMarketOverview && (
+            {/* ✅ 市集總覽卡片（暫時註解） */}
+            {/* {topMarketOverview && (
               <div className="bg-gradient-to-br from-white to-[#F5F5F3] rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6 border-2 border-[#7B9FA6]/20">
-                {/* 標題 */}
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-2xl">🟢</span>
                   <h2 className="text-xl font-medium text-[#3A3A3A]">
@@ -510,7 +655,6 @@ export default function AnalyticsPage() {
                   </h2>
                 </div>
 
-                {/* 健康分數 */}
                 <div className="bg-white rounded-xl p-4 mb-4 border border-[#7B9FA6]/10">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-[#6B6B6B]">健康分數</span>
@@ -523,9 +667,7 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
 
-                {/* 關鍵指標 */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
-                  {/* 人流品質 */}
                   <div className="bg-[#E8F3E8] rounded-xl p-3">
                     <p className="text-xs text-[#6B6B6B] mb-1">人流品質</p>
                     <p className="text-sm font-semibold text-[#3A3A3A]">
@@ -533,7 +675,6 @@ export default function AnalyticsPage() {
                     </p>
                   </div>
 
-                  {/* 成交效率 */}
                   <div className="bg-[#FFF8E7] rounded-xl p-3">
                     <p className="text-xs text-[#6B6B6B] mb-1">成交效率</p>
                     <p className="text-sm font-semibold text-[#3A3A3A]">
@@ -541,7 +682,6 @@ export default function AnalyticsPage() {
                     </p>
                   </div>
 
-                  {/* 客單價 */}
                   <div className="bg-[#F5E6E8] rounded-xl p-3">
                     <p className="text-xs text-[#6B6B6B] mb-1">客單價</p>
                     <p className="text-sm font-semibold text-[#3A3A3A]">
@@ -550,7 +690,6 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
 
-                {/* 建議 */}
                 <div className="bg-[#7B9FA6]/10 rounded-xl p-4">
                   <div className="flex items-start gap-2">
                     <span className="text-lg">💡</span>
@@ -563,321 +702,182 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
 
-            {/* 核心 KPI 卡片 */}
-            <KPICards
-              avgConversionRate={quadrantData.averages.avgConversionRate}
-              topPair={affinityPairs && affinityPairs.length > 0 ? affinityPairs[0] : null}
-            />
-
-            {/* 進階模式：顯示所有圖表 */}
-            {mode === 'advanced' && (
-              <>
-                {/* 市集健康評分排行榜 */}
-                {marketHealthScores.length > 0 && (
-                  <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
-                    {/* 標題與說明 */}
-                    <div className="flex items-center justify-between mb-5">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-xl font-medium text-[#3A3A3A]">
-                          市集綜合評分
-                        </h2>
-                        {/* 說明燈泡按鈕 */}
-                        <button
-                          onClick={() => {
-                            toast.info('市集健康評分說明', {
-                              description: '綜合評估每小時淨利(40%)、回收率(20%)、轉換率(20%)、客單價(20%)，使用 Z-score 標準化後計算 0-100 分',
-                              duration: 6000,
-                            });
-                          }}
-                          className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
-                          aria-label="查看說明"
-                        >
-                          <svg 
-                            className="w-4 h-4 text-[#D4A574]" 
-                            fill="currentColor" 
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M10 2a6 6 0 016 6v3.586l.707.707A1 1 0 0116 14h-1v1a3 3 0 11-6 0v-1H8a1 1 0 01-.707-1.707L8 11.586V8a6 6 0 016-6zM10 18a1 1 0 100-2 1 1 0 000 2z"/>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* 評分統計摘要 */}
-                    <div className="grid grid-cols-3 gap-3 mb-5">
-                      <div className="bg-[#E8F3E8] rounded-xl p-3 text-center">
-                        <p className="text-xs text-[#6B6B6B] mb-1">平均分數</p>
-                        <p className="text-xl font-bold text-[#3A3A3A]">
-                          {(marketHealthScores.reduce((sum, s) => sum + s.healthScore, 0) / marketHealthScores.length).toFixed(1)}
-                        </p>
-                      </div>
-                      <div className="bg-[#FFF8E7] rounded-xl p-3 text-center">
-                        <p className="text-xs text-[#6B6B6B] mb-1">最高分</p>
-                        <p className="text-xl font-bold text-[#FFD700]">
-                          {Math.max(...marketHealthScores.map(s => s.healthScore)).toFixed(1)}
-                        </p>
-                      </div>
-                      <div className="bg-[#F5E6E8] rounded-xl p-3 text-center">
-                        <p className="text-xs text-[#6B6B6B] mb-1">最低分</p>
-                        <p className="text-xl font-bold text-[#D4A574]">
-                          {Math.min(...marketHealthScores.map(s => s.healthScore)).toFixed(1)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* 前三名市集健康評分卡片 */}
-                    <div className="space-y-4">
-                      {marketHealthScores
-                        .sort((a, b) => b.healthScore - a.healthScore)
-                        .slice(0, 3)
-                        .map((scoreData, index) => {
-                          const market = markets.find(m => m.id === scoreData.marketId);
-                          if (!market) return null;
-                          return (
-                            <MarketHealthScoreCard
-                              key={scoreData.marketId}
-                              market={market}
-                              score={scoreData}
-                              rank={index + 1}
-                            />
-                          );
-                        })}
-                    </div>
-
-                    {/* 如果少於3個市集，顯示提示 */}
-                    {marketHealthScores.length < 3 && marketHealthScores.length > 0 && (
-                      <div className="mt-4 text-center">
-                        <p className="text-xs text-[#6B6B6B]">
-                          目前僅有 {marketHealthScores.length} 場市集數據
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* 市集象限網格 */}
-                <div className="mb-6">
-                  <QuadrantGrid
-                    stars={quadrantData.stars}
-                    potentials={quadrantData.potentials}
-                    precisies={quadrantData.precisies}
-                    observables={quadrantData.observables}
-                    averages={quadrantData.averages}
-                    isEmpty={quadrantData.isEmpty}
-                  />
+            {/* ✅ 最有價值市集（移到最上層，快速模式顯示） */}
+            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+              {/* 標題與說明 */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-medium text-[#3A3A3A]">
+                    最有價值市集
+                  </h2>
+                  {/* 說明燈泡按鈕 */}
+                  <button
+                    onClick={() => setShowInfoTooltip(!showInfoTooltip)}
+                    className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                    aria-label="查看說明"
+                  >
+                    <svg 
+                      className="w-4 h-4 text-[#D4A574]" 
+                      fill="currentColor" 
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M10 2a6 6 0 016 6v3.586l.707.707A1 1 0 0116 14h-1v1a3 3 0 11-6 0v-1H8a1 1 0 01-.707-1.707L8 11.586V8a6 6 0 016-6zM10 18a1 1 0 100-2 1 1 0 000 2z"/>
+                    </svg>
+                  </button>
                 </div>
+              </div>
 
-                {/* 每日收入趨勢圖 */}
-                {dailyRevenueData && (
-                  <div className="mb-6">
-                    <DailyRevenueChart
-                      revenueMap={dailyRevenueData}
-                      startDate={startDate}
-                      endDate={endDate}
-                    />
-                  </div>
-                )}
+              {/* 說明提示框（使用 Headless UI） */}
+              <Transition appear show={showInfoTooltip} as={Fragment}>
+                <Dialog as="div" className="relative z-50" onClose={() => setShowInfoTooltip(false)}>
+                  {/* 背景遮罩 */}
+                  <Transition.Child
+                    as={Fragment}
+                    enter="ease-out duration-300"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="ease-in duration-200"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                  >
+                    <div className="fixed inset-0 bg-black/50" />
+                  </Transition.Child>
 
-                {/* 商品關聯分析 */}
-                <div className="mb-6">
-                  <ProductAffinityCard
-                    pairs={affinityPairs || []}
-                    isLoading={affinityPairs === undefined}
-                  />
-                </div>
-
-                {/* 最有價值市集 */}
-                <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
-                  {/* 標題與說明 */}
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-medium text-[#3A3A3A]">
-                        最有價值市集
-                      </h2>
-                      {/* 說明燈泡按鈕 */}
-                      <button
-                        onClick={() => setShowInfoTooltip(!showInfoTooltip)}
-                        className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
-                        aria-label="查看說明"
-                      >
-                        <svg 
-                          className="w-4 h-4 text-[#D4A574]" 
-                          fill="currentColor" 
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M10 2a6 6 0 016 6v3.586l.707.707A1 1 0 0116 14h-1v1a3 3 0 11-6 0v-1H8a1 1 0 01-.707-1.707L8 11.586V8a6 6 0 016-6zM10 18a1 1 0 100-2 1 1 0 000 2z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 說明提示框（使用 Headless UI） */}
-                  <Transition appear show={showInfoTooltip} as={Fragment}>
-                    <Dialog as="div" className="relative z-50" onClose={() => setShowInfoTooltip(false)}>
-                      {/* 背景遮罩 */}
+                  {/* 彈窗容器 */}
+                  <div className="fixed inset-0 overflow-y-auto">
+                    <div className="flex min-h-full items-start justify-center p-4 pt-20">
                       <Transition.Child
                         as={Fragment}
                         enter="ease-out duration-300"
-                        enterFrom="opacity-0"
-                        enterTo="opacity-100"
+                        enterFrom="opacity-0 scale-95"
+                        enterTo="opacity-100 scale-100"
                         leave="ease-in duration-200"
-                        leaveFrom="opacity-100"
-                        leaveTo="opacity-0"
+                        leaveFrom="opacity-100 scale-100"
+                        leaveTo="opacity-0 scale-95"
                       >
-                        <div className="fixed inset-0 bg-black/50" />
-                      </Transition.Child>
-
-                      {/* 彈窗容器 */}
-                      <div className="fixed inset-0 overflow-y-auto">
-                        <div className="flex min-h-full items-start justify-center p-4 pt-20">
-                          <Transition.Child
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0 scale-95"
-                            enterTo="opacity-100 scale-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100 scale-100"
-                            leaveTo="opacity-0 scale-95"
+                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all border border-[#7B9FA6]/10 relative">
+                          {/* 關閉按鈕 */}
+                          <button
+                            onClick={() => setShowInfoTooltip(false)}
+                            className="absolute top-4 right-4 text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                            aria-label="關閉"
                           >
-                            <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all border border-[#7B9FA6]/10 relative">
-                              {/* 關閉按鈕 */}
-                              <button
-                                onClick={() => setShowInfoTooltip(false)}
-                                className="absolute top-4 right-4 text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
-                                aria-label="關閉"
-                              >
-                                <X className="w-5 h-5" />
-                              </button>
+                            <X className="w-5 h-5" />
+                          </button>
 
-                              <Dialog.Title className="font-medium text-[#3A3A3A] mb-4 text-lg pr-8">
-                                💡 市集投資回報分析
-                              </Dialog.Title>
-                              
-                              {/* 三個指標說明 */}
-                              <div className="space-y-4 mb-6">
-                                {/* 1. 淨利潤 */}
-                                <div className="bg-[#E8F3E8] rounded-xl p-4">
-                                  <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                    <span className="text-[#7B9FA6]">💰</span>
-                                    淨利潤
-                                  </h4>
-                                  <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
-                                    <span className="font-medium text-[#3A3A3A]">計算方式：</span>
-                                    <br />
-                                    總利潤 - 攤位費 - 報名費 - 設備租金 - 抽成
-                                  </p>
-                                  <p className="text-xs text-[#6B6B6B]">
-                                    <span className="font-medium">意義：</span>扣除所有成本後的實際獲利
-                                  </p>
-                                </div>
+                          <Dialog.Title className="font-medium text-[#3A3A3A] mb-4 text-lg pr-8">
+                            💡 市集投資回報分析
+                          </Dialog.Title>
+                          
+                          {/* 三個指標說明 */}
+                          <div className="space-y-4 mb-6">
+                            {/* 1. 淨利潤 */}
+                            <div className="bg-[#E8F3E8] rounded-xl p-4">
+                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                <span className="text-[#7B9FA6]">💰</span>
+                                淨利潤
+                              </h4>
+                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                                <br />
+                                總利潤 - 攤位費 - 報名費 - 設備租金 - 抽成
+                              </p>
+                              <p className="text-xs text-[#6B6B6B]">
+                                <span className="font-medium">意義：</span>扣除所有成本後的實際獲利
+                              </p>
+                            </div>
 
-                                {/* 2. 每小時淨利 */}
-                                <div className="bg-[#FFF8E7] rounded-xl p-4">
-                                  <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                    <span className="text-[#D4A574]">⏱️</span>
-                                    每小時淨利
-                                  </h4>
-                                  <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
-                                    <span className="font-medium text-[#3A3A3A]">計算方式：</span>
-                                    <br />
-                                    淨利潤 ÷ 總營業時數
-                                  </p>
-                                  <p className="text-xs text-[#6B6B6B]">
-                                    <span className="font-medium">意義：</span>時間效益指標，數值越高代表時間投資報酬越好
-                                  </p>
-                                </div>
+                            {/* 2. 每小時淨利 */}
+                            <div className="bg-[#FFF8E7] rounded-xl p-4">
+                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                <span className="text-[#D4A574]">⏱️</span>
+                                每小時淨利
+                              </h4>
+                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                                <br />
+                                淨利潤 ÷ 總營業時數
+                              </p>
+                              <p className="text-xs text-[#6B6B6B]">
+                                <span className="font-medium">意義：</span>時間效益指標，數值越高代表時間投資報酬越好
+                              </p>
+                            </div>
 
-                                {/* 3. 回收率 */}
-                                <div className="bg-[#F5E6E8] rounded-xl p-4">
-                                  <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                    <span className="text-[#D4A574]">📈</span>
-                                    回收率
-                                  </h4>
-                                  <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
-                                    <span className="font-medium text-[#3A3A3A]">計算方式：</span>
-                                    <br />
-                                    總收入 ÷ (攤位費 + 設備租賃費) × 100%
-                                  </p>
-                                  <p className="text-xs text-[#6B6B6B]">
-                                    <span className="font-medium">意義：</span>固定成本回收倍數，200% 表示收入是成本的 2 倍
-                                  </p>
-                                </div>
-                              </div>
+                            {/* 3. 回收率 */}
+                            <div className="bg-[#F5E6E8] rounded-xl p-4">
+                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+                                <span className="text-[#D4A574]">📈</span>
+                                回收率
+                              </h4>
+                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                                <br />
+                                總收入 ÷ (攤位費 + 設備租賃費) × 100%
+                              </p>
+                              <p className="text-xs text-[#6B6B6B]">
+                                <span className="font-medium">意義：</span>固定成本回收倍數，200% 表示收入是成本的 2 倍
+                              </p>
+                            </div>
+                          </div>
 
-                              <div className="bg-[#7B9FA6]/10 rounded-xl p-3 mb-4">
-                                <p className="text-xs text-[#3A3A3A] leading-relaxed">
-                                  <span className="font-medium">💡 排序規則：</span>
-                                  <br />
-                                  優先按「每小時淨利」排序，相同時再按「回收率」排序
-                                </p>
-                              </div>
+                          <div className="bg-[#7B9FA6]/10 rounded-xl p-3 mb-4">
+                            <p className="text-xs text-[#3A3A3A] leading-relaxed">
+                              <span className="font-medium">💡 排序規則：</span>
+                              <br />
+                              優先按「每小時淨利」排序，相同時再按「回收率」排序
+                            </p>
+                          </div>
 
-                              <button
-                                onClick={() => setShowInfoTooltip(false)}
-                                className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
-                              >
-                                知道了
-                              </button>
-                            </Dialog.Panel>
-                          </Transition.Child>
-                        </div>
-                      </div>
-                    </Dialog>
-                  </Transition>
-
-                  {/* 前三名市集卡片（垂直排列） */}
-                  <div className="space-y-3">
-                    {/* 第一名 */}
-                    {marketROIData[0] && (
-                      <MarketROICard
-                        market={marketROIData[0].market}
-                        rank={1}
-                        netProfit={marketROIData[0].netProfit}
-                        hourlyProfit={marketROIData[0].hourlyProfit}
-                        boothROI={marketROIData[0].boothROI}
-                        operatingHours={marketROIData[0].operatingHours}
-                      />
-                    )}
-                    
-                    {/* 第二名 */}
-                    {marketROIData[1] && (
-                      <MarketROICard
-                        market={marketROIData[1].market}
-                        rank={2}
-                        netProfit={marketROIData[1].netProfit}
-                        hourlyProfit={marketROIData[1].hourlyProfit}
-                        boothROI={marketROIData[1].boothROI}
-                        operatingHours={marketROIData[1].operatingHours}
-                      />
-                    )}
-                    
-                    {/* 第三名 */}
-                    {marketROIData[2] && (
-                      <MarketROICard
-                        market={marketROIData[2].market}
-                        rank={3}
-                        netProfit={marketROIData[2].netProfit}
-                        hourlyProfit={marketROIData[2].hourlyProfit}
-                        boothROI={marketROIData[2].boothROI}
-                        operatingHours={marketROIData[2].operatingHours}
-                      />
-                    )}
+                          <button
+                            onClick={() => setShowInfoTooltip(false)}
+                            className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+                          >
+                            知道了
+                          </button>
+                        </Dialog.Panel>
+                      </Transition.Child>
+                    </div>
                   </div>
+                </Dialog>
+              </Transition>
 
+              {/* 前三名市集卡片（垂直排列） - 只顯示有效排名 */}
+              {marketROIData.length > 0 ? (
+                <div className="space-y-3">
+                  {marketROIData.slice(0, 3).map((data, index) => (
+                    <MarketROICard
+                      key={data.market.id}
+                      market={data.market}
+                      rank={index + 1}
+                      netProfit={data.netProfit}
+                      hourlyProfit={data.hourlyProfit}
+                      boothROI={data.boothROI}
+                      operatingHours={data.operatingHours}
+                    />
+                  ))}
+                  
                   {/* 如果少於3個市集，顯示提示 */}
-                  {marketROIData.length < 3 && marketROIData.length > 0 && (
+                  {marketROIData.length < 3 && (
                     <div className="mt-4 text-center">
                       <p className="text-xs text-[#6B6B6B]">
-                        目前僅有 {marketROIData.length} 場市集數據
+                        目前僅有 {marketROIData.length} 場符合條件的市集數據
                       </p>
                     </div>
                   )}
                 </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm text-[#6B6B6B]">
+                    目前沒有獲利的市集數據
+                  </p>
+                </div>
+              )}
+            </div>
 
-                {/* 客單價最高市集 */}
-                {marketAOVData.length > 0 && (
+            {/* ✅ 客單價最高市集（移到最上層，快速模式顯示） */}
+            {marketAOVData.length > 0 && (
               <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
                 {/* 標題與說明 */}
                 <div className="flex items-center justify-between mb-5">
@@ -1017,59 +1017,197 @@ export default function AnalyticsPage() {
                   </Dialog>
                 </Transition>
 
-                {/* 前三名市集卡片（垂直排列） */}
-                <div className="space-y-3">
-                  {/* 第一名 */}
-                  {marketAOVData[0] && (
-                    <MarketAOVCard
-                      market={marketAOVData[0].market}
-                      rank={1}
-                      averageOrderValue={marketAOVData[0].averageOrderValue}
-                      totalRevenue={marketAOVData[0].totalRevenue}
-                      totalDeals={marketAOVData[0].totalDeals}
-                    />
-                  )}
-                  
-                  {/* 第二名 */}
-                  {marketAOVData[1] && (
-                    <MarketAOVCard
-                      market={marketAOVData[1].market}
-                      rank={2}
-                      averageOrderValue={marketAOVData[1].averageOrderValue}
-                      totalRevenue={marketAOVData[1].totalRevenue}
-                      totalDeals={marketAOVData[1].totalDeals}
-                    />
-                  )}
-                  
-                  {/* 第三名 */}
-                  {marketAOVData[2] && (
-                    <MarketAOVCard
-                      market={marketAOVData[2].market}
-                      rank={3}
-                      averageOrderValue={marketAOVData[2].averageOrderValue}
-                      totalRevenue={marketAOVData[2].totalRevenue}
-                      totalDeals={marketAOVData[2].totalDeals}
-                    />
-                  )}
-                </div>
-
-                {/* 如果少於3個市集，顯示提示 */}
-                {marketAOVData.length < 3 && marketAOVData.length > 0 && (
-                  <div className="mt-4 text-center">
-                    <p className="text-xs text-[#6B6B6B]">
-                      目前僅有 {marketAOVData.length} 場市集數據
+                {/* 前三名市集卡片（垂直排列） - 只顯示有效排名 */}
+                {marketAOVData.length > 0 ? (
+                  <div className="space-y-3">
+                    {marketAOVData.slice(0, 3).map((data, index) => (
+                      <MarketAOVCard
+                        key={data.market.id}
+                        market={data.market}
+                        rank={index + 1}
+                        averageOrderValue={data.averageOrderValue}
+                        totalRevenue={data.totalRevenue}
+                        totalDeals={data.totalDeals}
+                      />
+                    ))}
+                    
+                    {/* 如果少於3個市集，顯示提示 */}
+                    {marketAOVData.length < 3 && (
+                      <div className="mt-4 text-center">
+                        <p className="text-xs text-[#6B6B6B]">
+                          目前僅有 {marketAOVData.length} 場有成交的市集數據
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-[#6B6B6B]">
+                      目前沒有成交記錄的市集數據
                     </p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* 商品排行（無標題） */}
-            <TopProductsCard
-              topByQuantity={topProductsData?.topByQuantity || null}
-              topByRevenue={topProductsData?.topByRevenue || null}
-              topByProfit={topProductsData?.topByProfit || null}
+            {/* 核心 KPI 卡片 */}
+            <KPICards
+              avgConversionRate={quadrantData?.averages.avgConversionRate || 0}
+              topPair={affinityPairs && affinityPairs.length > 0 ? affinityPairs[0] : null}
             />
+
+            {/* 進階模式：顯示所有圖表 */}
+            {mode === 'advanced' && (
+              <>
+                {/* 🔥 市集健康評分排行榜 - 基礎診斷（3場解鎖） */}
+                <UnlockGuard
+                  currentCount={validMarketCount}
+                  requiredCount={3}
+                  featureName="基礎診斷"
+                >
+                  {marketHealthScores && marketHealthScores.length > 0 && (
+                    <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+                      {/* 標題與說明 */}
+                      <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-xl font-medium text-[#3A3A3A]">
+                            市集綜合評分
+                          </h2>
+                          {/* 說明燈泡按鈕 */}
+                          <button
+                            onClick={() => {
+                              toast.info('市集健康評分說明', {
+                                description: '綜合評估每小時淨利(40%)、回收率(20%)、轉換率(20%)、客單價(20%)，使用 Z-score 標準化後計算 0-100 分',
+                                duration: 6000,
+                              });
+                            }}
+                            className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                            aria-label="查看說明"
+                          >
+                            <svg 
+                              className="w-4 h-4 text-[#D4A574]" 
+                              fill="currentColor" 
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M10 2a6 6 0 016 6v3.586l.707.707A1 1 0 0116 14h-1v1a3 3 0 11-6 0v-1H8a1 1 0 01-.707-1.707L8 11.586V8a6 6 0 016-6zM10 18a1 1 0 100-2 1 1 0 000 2z"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 評分統計摘要 */}
+                      <div className="grid grid-cols-3 gap-3 mb-5">
+                        <div className="bg-[#E8F3E8] rounded-xl p-3 text-center">
+                          <p className="text-xs text-[#6B6B6B] mb-1">平均分數</p>
+                          <p className="text-xl font-bold text-[#3A3A3A]">
+                            {(marketHealthScores.reduce((sum, s) => sum + s.healthScore, 0) / marketHealthScores.length).toFixed(1)}
+                          </p>
+                        </div>
+                        <div className="bg-[#FFF8E7] rounded-xl p-3 text-center">
+                          <p className="text-xs text-[#6B6B6B] mb-1">最高分</p>
+                          <p className="text-xl font-bold text-[#FFD700]">
+                            {Math.max(...marketHealthScores.map(s => s.healthScore)).toFixed(1)}
+                          </p>
+                        </div>
+                        <div className="bg-[#F5E6E8] rounded-xl p-3 text-center">
+                          <p className="text-xs text-[#6B6B6B] mb-1">最低分</p>
+                          <p className="text-xl font-bold text-[#D4A574]">
+                            {Math.min(...marketHealthScores.map(s => s.healthScore)).toFixed(1)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 前三名市集健康評分卡片 - 只顯示有效排名 */}
+                      {marketHealthScores.length > 0 ? (
+                        <div className="space-y-4">
+                          {marketHealthScores
+                            .sort((a, b) => b.healthScore - a.healthScore)
+                            .slice(0, 3)
+                            .map((scoreData, index) => {
+                              const market = markets.find(m => m.id === scoreData.marketId);
+                              if (!market) return null;
+                              return (
+                                <MarketHealthScoreCard
+                                  key={scoreData.marketId}
+                                  market={market}
+                                  score={scoreData}
+                                  rank={index + 1}
+                                />
+                              );
+                            })}
+                          
+                          {/* 如果少於3個市集，顯示提示 */}
+                          {marketHealthScores.length < 3 && (
+                            <div className="mt-4 text-center">
+                              <p className="text-xs text-[#6B6B6B]">
+                                目前僅有 {marketHealthScores.length} 場符合條件的市集數據
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-sm text-[#6B6B6B]">
+                            目前沒有符合評分條件的市集數據
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </UnlockGuard>
+
+                {/* 🔥 市集象限網格 + 每日收入趨勢圖 - 深度對比（8場解鎖） */}
+                <UnlockGuard
+                  currentCount={validMarketCount}
+                  requiredCount={8}
+                  featureName="深度對比"
+                >
+                  {/* 市集象限網格 */}
+                  {quadrantData && (
+                    <div className="mb-6">
+                      <QuadrantGrid
+                        stars={quadrantData.stars}
+                        potentials={quadrantData.potentials}
+                        precisies={quadrantData.precisies}
+                        observables={quadrantData.observables}
+                        averages={quadrantData.averages}
+                        isEmpty={quadrantData.isEmpty}
+                      />
+                    </div>
+                  )}
+
+                  {/* 每日收入趨勢圖 */}
+                  {dailyRevenueData && (
+                    <div className="mb-6">
+                      <DailyRevenueChart
+                        revenueMap={dailyRevenueData}
+                        startDate={startDate}
+                        endDate={endDate}
+                      />
+                    </div>
+                  )}
+                </UnlockGuard>
+
+                {/* 🔥 商品關聯分析 - 品牌定位（15場解鎖） */}
+                <UnlockGuard
+                  currentCount={validMarketCount}
+                  requiredCount={15}
+                  featureName="品牌定位"
+                >
+                  <div className="mb-6">
+                    <ProductAffinityCard
+                      pairs={affinityPairs || []}
+                      isLoading={affinityPairs === undefined}
+                    />
+                  </div>
+                </UnlockGuard>
+
+                {/* 商品排行（無標題） */}
+                <TopProductsCard
+                  topByQuantity={topProductsData?.topByQuantity || null}
+                  topByRevenue={topProductsData?.topByRevenue || null}
+                  topByProfit={topProductsData?.topByProfit || null}
+                />
               </>
             )}
           </>

@@ -60,6 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ✅ 使用 ref 追蹤 BroadcastChannel，避免重複創建
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
   const sessionCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // ✅ 追蹤是否為主動登出
+  const isManualSignOutRef = useRef(false);
 
   useEffect(() => {
     // 如果 Supabase 未配置，直接設為未登入狀態
@@ -144,13 +146,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // ✅ 特別記錄登出事件
       if (event === 'SIGNED_OUT') {
+        const isManual = isManualSignOutRef.current;
         const logoutReason = {
           event: 'SIGNED_OUT',
           timestamp: new Date().toISOString(),
           previousUser: user?.id,
+          isManual,
           stackTrace: new Error().stack,
         };
-        console.warn('⚠️ 用戶已登出（被動）', logoutReason);
+        
+        if (isManual) {
+          console.log('✅ 用戶主動登出', logoutReason);
+          // 重置標記
+          isManualSignOutRef.current = false;
+        } else {
+          console.warn('⚠️ 用戶已登出（被動）', logoutReason);
+        }
         
         // ✅ 被動登出時也清除數據
         clearUserData('passive_signout').catch(error => {
@@ -319,6 +330,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleSignOut = async () => {
+    // ✅ 設置主動登出標記
+    isManualSignOutRef.current = true;
+    
     // ✅ 記錄主動登出
     console.log('🚪 用戶主動登出', {
       userId: user?.id,
