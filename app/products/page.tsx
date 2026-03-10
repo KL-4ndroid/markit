@@ -10,6 +10,7 @@ import { EditProductForm } from '@/components/products/EditProductForm';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/lib/supabase/auth-context'; // ✅ 導入 useAuth
 import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
 import type { ProductCategory } from '@/types/db';
 
@@ -22,7 +23,8 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
-  const { isStaff } = useUserRole(); // ✅ 員工權限檢查
+  const { isStaff, userRole } = useUserRole(); // ✅ 員工權限檢查
+  const { user } = useAuth(); // ✅ 獲取當前用戶
 
   // 初始化資料庫
   useEffect(() => {
@@ -34,8 +36,13 @@ export default function ProductsPage() {
       });
   }, []);
 
-  // 查詢所有商品
-  const allProducts = useProducts({ isActive: true });
+  // ✅ 根據身份查詢商品：員工看老闆的商品，老闆看自己的商品
+  const effectiveOwnerId = isStaff ? userRole.ownerId : user?.id;
+  
+  const allProducts = useProducts({ 
+    isActive: true,
+    ownerId: effectiveOwnerId, // ✅ 員工模式下使用老闆的 ID，老闆模式下使用自己的 ID
+  });
 
   // 根據 Tab 和搜尋關鍵字篩選商品
   const getFilteredProducts = () => {

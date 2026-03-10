@@ -426,8 +426,8 @@ export async function calculateBatchMetrics(
     });
     
     results.push({
-      market,
-      marketId: market.id!,
+    market,
+    marketId: market.id!,
       metrics,
     });
   }

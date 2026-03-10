@@ -643,10 +643,10 @@ export default function MarketDetailPage({ params }: PageProps) {
     
     // 創建今天的時間對象
     const startDateTime = new Date(now);
-    startDateTime.setHours(startHour, startMinute, 0, 0);
+    startDateTime.setHours(startHour, startMinute - 60, 0, 0); // 提前 60 分鐘開始
     
     const endDateTime = new Date(now);
-    endDateTime.setHours(endHour, endMinute + 30, 0, 0); // 加上 30 分鐘緩衝
+    endDateTime.setHours(endHour, endMinute + 60, 0, 0); // 延後 60 分鐘結束
     
     // ✅ 如果結束時間小於開始時間，表示跨越午夜，需要加一天
     if (endDateTime <= startDateTime) {
@@ -1239,14 +1239,19 @@ export default function MarketDetailPage({ params }: PageProps) {
                     <div className="flex-1 text-sm text-[#3A3A3A]">
                       <p className="font-medium mb-1">自動營業時段：</p>
                       <p className="text-xs text-[#6B6B6B]">
-                        開始：{market.checkInTime || market.operatingStartTime || '--:--'} (報到時間)
+                        開始：{market.operatingStartTime ? (() => {
+                          const [hour, minute] = market.operatingStartTime.split(':').map(Number);
+                          const startWithBuffer = new Date();
+                          startWithBuffer.setHours(hour, minute - 60, 0, 0);
+                          return `${String(startWithBuffer.getHours()).padStart(2, '0')}:${String(startWithBuffer.getMinutes()).padStart(2, '0')}`;
+                        })() : '--:--'} (營業開始前 60 分鐘)
                         <br />
                         結束：{market.operatingEndTime ? (() => {
                           const [hour, minute] = market.operatingEndTime.split(':').map(Number);
                           const endWithBuffer = new Date();
-                          endWithBuffer.setHours(hour, minute + 30, 0, 0);
+                          endWithBuffer.setHours(hour, minute + 60, 0, 0);
                           return `${String(endWithBuffer.getHours()).padStart(2, '0')}:${String(endWithBuffer.getMinutes()).padStart(2, '0')}`;
-                        })() : '--:--'} (營業結束 + 30 分鐘)
+                        })() : '--:--'} (營業結束後 60 分鐘)
                       </p>
                     </div>
                   </div>

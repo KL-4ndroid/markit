@@ -359,9 +359,15 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
     setIsSaving(true);
     try {
       await saveInteractionButtons(buttons, user?.id);
-      toast.success('✅ 互動方式已設定完成');
-      onComplete();
+      
+      // ✅ 先關閉窗口,再顯示成功訊息和執行回調
       onClose();
+      
+      // ✅ 使用 setTimeout 確保窗口關閉動畫完成後再顯示訊息
+      setTimeout(() => {
+        toast.success('✅ 互動方式已設定完成');
+        onComplete();
+      }, 300);
     } catch (error) {
       toast.error('儲存失敗，請稍後再試');
     } finally {

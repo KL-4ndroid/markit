@@ -12,7 +12,6 @@ import { SyncProvider } from "@/lib/sync-context";
 import { AuthManager } from "@/components/auth/AuthManager";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { SessionExpiredHandler } from "@/components/auth/SessionExpiredHandler";
-import { GlobalLoadingState } from "@/components/GlobalLoadingState";
 import { NavigationProvider } from "@/lib/navigation-context";
 import { SyncProgressManager } from "@/components/sync/SyncProgressManager";
 import { InitialSyncDialog } from "@/components/sync/InitialSyncDialog";
@@ -83,9 +82,6 @@ export default function RootLayout({
               
               {/* 調試工具載入器（僅開發環境） */}
               <DebugToolsLoader />
-              
-              {/* 全局載入狀態 - 首次載入時顯示 */}
-              <GlobalLoadingState />
               
               {/* ✅ 認證守衛 - 包裹所有受保護的內容 */}
               <AuthGuard>

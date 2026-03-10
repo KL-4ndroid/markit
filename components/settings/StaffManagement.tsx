@@ -312,7 +312,7 @@ export function StaffManagement() {
           <h2 className="text-lg font-medium text-[#3A3A3A]">員工管理</h2>
         </div>
         <p className="text-sm text-[#6B6B6B] mb-4">
-          邀請員工協助管理市集
+        邀請員工協助管理市集，員工可以訪問您所有進行中的市集
         </p>
         <div className="bg-[#FFF8E7] rounded-xl p-4 text-center">
           <p className="text-sm text-[#6B6B6B]">
@@ -326,13 +326,6 @@ export function StaffManagement() {
   return (
     <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
       <div className="p-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Users className="w-5 h-5 text-[#7B9FA6]" />
-          <h2 className="text-lg font-medium text-[#3A3A3A]">員工管理</h2>
-        </div>
-        <p className="text-sm text-[#6B6B6B] mb-4">
-          邀請員工協助管理市集，員工可以訪問您所有進行中的市集
-        </p>
 
         {/* 說明區塊 */}
         <div className="bg-gradient-to-br from-[#E8F0F8] to-[#E8F3E8] rounded-xl p-4 mb-4">

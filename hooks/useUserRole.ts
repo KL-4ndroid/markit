@@ -95,9 +95,12 @@ export function useUserRole() {
 
   useEffect(() => {
     let isMounted = true;
+    let abortController = new AbortController();
 
     const loadUserRole = async () => {
+      // ✅ 如果沒有用戶,立即清除緩存並返回
       if (!user) {
+        clearRoleCache();
         if (isMounted) {
           setUserRole({ isStaff: false });
           setIsLoading(false);
@@ -110,6 +113,9 @@ export function useUserRole() {
           setIsLoading(true);
         }
 
+        // ✅ 檢查是否已被取消
+        if (abortController.signal.aborted) return;
+
         // 查詢是否為員工
         const { data, error } = await supabase
           .from('staff_relationships')
@@ -120,6 +126,9 @@ export function useUserRole() {
 
         if (error) throw error;
 
+        // ✅ 再次檢查是否已被取消
+        if (abortController.signal.aborted || !isMounted) return;
+
         if (data && data.length > 0) {
           // 是員工，獲取老闆的 email
           const { data: ownerProfile, error: ownerError } = await supabase
@@ -129,6 +138,9 @@ export function useUserRole() {
             .single();
 
           if (ownerError) throw ownerError;
+
+          // ✅ 最後檢查是否已被取消
+          if (abortController.signal.aborted || !isMounted) return;
 
           const role: UserRole = {
             isStaff: true,
@@ -153,6 +165,9 @@ export function useUserRole() {
           }
         }
       } catch (error: any) {
+        // ✅ 忽略已取消的請求錯誤
+        if (abortController.signal.aborted || !isMounted) return;
+        
         console.error('檢查用戶身份失敗:', error);
         if (isMounted) {
           setUserRole({ isStaff: false });
@@ -168,6 +183,7 @@ export function useUserRole() {
 
     return () => {
       isMounted = false;
+      abortController.abort(); // ✅ 取消進行中的請求
     };
   }, [user]);
 

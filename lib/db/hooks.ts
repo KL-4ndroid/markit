@@ -205,27 +205,38 @@ export async function deleteMarket(marketId: string, reason?: string): Promise<v
  * 查詢所有商品
  * 
  * @param options - 查詢選項
- * @returns 商品列表
+ * @returns 商品列表（自動根據當前用戶過濾）
  */
 export function useProducts(options?: {
   category?: string;
   isActive?: boolean;
+  ownerId?: string;  // ✅ 新增：根據擁有者 ID 過濾（用於權限控制）
 }) {
   return useLiveQuery(async () => {
-    let query = db.products.toCollection();
-    
-    if (options?.category) {
-      query = db.products.where('category').equals(options.category);
+    try {
+      let query = db.products.toCollection();
+      
+      if (options?.category) {
+        query = db.products.where('category').equals(options.category);
+      }
+      
+      let products = await query.toArray();
+      
+      // ✅ 根據擁有者 ID 過濾（權限控制）
+      if (options?.ownerId) {
+        products = products.filter(p => p.owner_id === options.ownerId);
+      }
+      
+      if (options?.isActive !== undefined) {
+        products = products.filter(p => p.isActive === options.isActive);
+      }
+      
+      return products;
+    } catch (error) {
+      console.error('❌ useProducts 查詢失敗:', error);
+      return []; // 返回空數組而不是 undefined
     }
-    
-    const products = await query.toArray();
-    
-    if (options?.isActive !== undefined) {
-      return products.filter(p => p.isActive === options.isActive);
-    }
-    
-    return products;
-  }, [options?.category, options?.isActive]);
+  }, [options?.category, options?.isActive, options?.ownerId]) || []; // 確保永遠不返回 undefined
 }
 
 /**
