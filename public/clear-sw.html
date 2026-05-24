@@ -63,12 +63,21 @@
   <script>
     const statusDiv = document.getElementById('status');
 
+    function isLocalRepairPage() {
+      return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    }
+
     function showStatus(message, isError = false) {
       statusDiv.className = 'status' + (isError ? ' error' : '');
       statusDiv.textContent = message;
     }
 
     async function unregisterServiceWorker() {
+      if (!isLocalRepairPage()) {
+        showStatus('This repair tool is only available on localhost.', true);
+        return;
+      }
+
       try {
         if ('serviceWorker' in navigator) {
           const registrations = await navigator.serviceWorker.getRegistrations();
@@ -92,6 +101,11 @@
     }
 
     async function clearAllCaches() {
+      if (!isLocalRepairPage()) {
+        showStatus('This repair tool is only available on localhost.', true);
+        return;
+      }
+
       try {
         if ('caches' in window) {
           const cacheNames = await caches.keys();

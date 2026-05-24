@@ -146,7 +146,7 @@ export async function calculateMarketMetrics(
   
   // ==================== 1. 批次補登偵測與修正（僅在分析層） ====================
   
-  let batchEntryWarnings: BatchEntryWarning[] = [];
+  const batchEntryWarnings: BatchEntryWarning[] = [];
   let adjustedTotalDeals = market.totalDeals || 0;
   let usedHeuristicCorrection = false;
   

@@ -70,6 +70,10 @@
 
   <script>
     const logs = [];
+
+    function isLocalRepairPage() {
+      return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    }
     
     function log(message, type = 'info') {
       const timestamp = new Date().toLocaleTimeString();
@@ -176,6 +180,11 @@
 
     // 強制更新
     async function forceUpdate() {
+      if (!isLocalRepairPage()) {
+        log('This repair tool is only available on localhost.', 'error');
+        return;
+      }
+
       try {
         const registration = await navigator.serviceWorker.getRegistration();
         
@@ -197,6 +206,11 @@
 
     // 取消註冊
     async function unregister() {
+      if (!isLocalRepairPage()) {
+        log('This repair tool is only available on localhost.', 'error');
+        return;
+      }
+
       if (!confirm('確定要取消註冊 Service Worker 嗎？這會清除所有快取。')) {
         return;
       }

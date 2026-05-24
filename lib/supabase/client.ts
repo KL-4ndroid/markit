@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 // 從環境變數讀取配置
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const isConfigured = !!(supabaseUrl && supabaseAnonKey);
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Supabase 環境變數未設置，多人協作功能將無法使用');
@@ -24,8 +25,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
  * - auth.detectSessionInUrl: true - 從 URL 檢測 Session（用於 Magic Link）
  */
 export const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || '',
+  isConfigured ? supabaseUrl : 'https://placeholder.supabase.co',
+  isConfigured ? supabaseAnonKey : 'placeholder-anon-key',
   {
     auth: {
       persistSession: true,
@@ -39,7 +40,7 @@ export const supabase = createClient(
  * 檢查 Supabase 是否已配置
  */
 export function isSupabaseConfigured(): boolean {
-  return !!(supabaseUrl && supabaseAnonKey);
+  return isConfigured;
 }
 
 /**
@@ -70,6 +71,10 @@ export async function testSupabaseConnection(): Promise<boolean> {
  * 獲取當前用戶
  */
 export async function getCurrentUser() {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
   const { data: { user }, error } = await supabase.auth.getUser();
   
   if (error) {
@@ -84,6 +89,10 @@ export async function getCurrentUser() {
  * 登出
  */
 export async function signOut() {
+  if (!isSupabaseConfigured()) {
+    return;
+  }
+
   const { error } = await supabase.auth.signOut();
   
   if (error) {

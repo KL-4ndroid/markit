@@ -49,7 +49,7 @@ export async function clearUserData(
     }
 
     // 清除特定用戶的數據
-    let deletedCount = {
+    const deletedCount = {
       markets: 0,
       products: 0,
       events: 0,
@@ -135,7 +135,7 @@ export async function clearOtherUsersData(currentUserId: string): Promise<void> 
   });
 
   try {
-    let deletedCount = {
+    const deletedCount = {
       markets: 0,
       products: 0,
       events: 0,

@@ -181,6 +181,10 @@
   </div>
   
   <script>
+    function isLocalRepairPage() {
+      return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    }
+
     // 日誌函數
     function log(message, type = 'info') {
       const logEl = document.getElementById('log');
@@ -277,6 +281,11 @@
     
     // 重置資料庫
     async function resetDatabase() {
+      if (!isLocalRepairPage()) {
+        alert('This repair tool is only available on localhost.');
+        return;
+      }
+
       if (!confirm('⚠️ 警告：此操作將刪除所有本地資料（市集、商品、交易記錄等），且無法復原。\n\n確定要繼續嗎？')) {
         return;
       }

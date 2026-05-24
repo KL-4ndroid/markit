@@ -161,6 +161,10 @@
   </div>
   
   <script>
+    function isLocalRepairPage() {
+      return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    }
+
     function log(message, type = 'info') {
       const statusEl = document.getElementById('status');
       statusEl.classList.add('show');
@@ -172,6 +176,11 @@
     }
     
     async function fixNow() {
+      if (!isLocalRepairPage()) {
+        alert('This repair tool is only available on localhost.');
+        return;
+      }
+
       if (!confirm('確定要重置資料庫嗎？\n\n此操作將刪除所有本地資料，且無法復原。')) {
         return;
       }

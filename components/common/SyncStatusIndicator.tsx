@@ -30,6 +30,7 @@ export function SyncStatusIndicator() {
   // ✅ 本地防抖鎖：防止快速連續點擊
   const [isClickLocked, setIsClickLocked] = useState(false);
   const clickLockTimeoutRef = useRef<NodeJS.Timeout>();
+  const shouldShowLargeDialog = pendingCount >= 5 && status === SyncStatusEnum.SYNCING;
 
   // ✅ 清理防抖鎖的 timeout
   useEffect(() => {
@@ -49,14 +50,6 @@ export function SyncStatusIndicator() {
       }, 500);
     }
   }, [status, isClickLocked]);
-
-  // 如果未配置或未登入，不顯示
-  if (!isConfigured || !user) {
-    return null;
-  }
-
-  // 決定是否顯示大彈窗
-  const shouldShowLargeDialog = pendingCount >= 5 && status === SyncStatusEnum.SYNCING;
 
   // ✅ Debug Log：追蹤彈窗顯示邏輯
   useEffect(() => {
@@ -98,6 +91,10 @@ export function SyncStatusIndicator() {
   }, [status, pendingCount, hasShownOfflineToast]);
 
   // 獲取指示器顏色和動畫
+  if (!isConfigured || !user) {
+    return null;
+  }
+
   const getIndicatorStyle = () => {
     // ✅ 同步中：柔綠色呼吸閃爍（不論 pendingCount，員工模式也會顯示）
     if (status === SyncStatusEnum.SYNCING) {

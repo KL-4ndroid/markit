@@ -26,7 +26,7 @@ export function DailyRevenueChart({
     const startDate = new Date(start);
     const endDate = new Date(end);
     
-    let currentDate = new Date(startDate);
+    const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
       const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
       dates.push(dateStr);
