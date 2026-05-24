@@ -30,6 +30,9 @@ export function DateMultiPicker({
   const inputRef = useRef<HTMLInputElement>(null);
   const pickerRef = useRef<any>(null);
   const onChangeRef = useRef(onChange);
+  const initialValueRef = useRef(value);
+  const initialMinDateRef = useRef(minDate);
+  const initialMaxDateRef = useRef(maxDate);
 
   // ✅ 保持 onChange 引用最新，但不觸發重新初始化
   useEffect(() => {
@@ -71,13 +74,13 @@ export function DateMultiPicker({
           // ✅ 使用 ref 來獲取最新的 onChange
           onChangeRef.current(newValue);
         },
-        minDate,
-        maxDate,
+        minDate: initialMinDateRef.current,
+        maxDate: initialMaxDateRef.current,
       });
       
       // ✅ 設置初始選中的日期
-      if (value && value.length > 0) {
-        pickerRef.current.selectedDates = [...value];
+      if (initialValueRef.current && initialValueRef.current.length > 0) {
+        pickerRef.current.selectedDates = [...initialValueRef.current];
       }
     };
 

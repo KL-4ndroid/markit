@@ -10,7 +10,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { 
@@ -58,13 +58,7 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
 
   // 載入可用帳號
-  useEffect(() => {
-    if (isOpen && user) {
-      loadAccounts();
-    }
-  }, [isOpen, user]);
-
-  const loadAccounts = async () => {
+  const loadAccounts = useCallback(async () => {
     if (!user) return;
 
     setIsLoading(true);
@@ -77,7 +71,13 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      loadAccounts();
+    }
+  }, [isOpen, user, loadAccounts]);
 
   // 切換帳號
   const handleSwitchAccount = async (account: Account) => {

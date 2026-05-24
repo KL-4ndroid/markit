@@ -13,11 +13,12 @@ Last updated: 2026-05-24
 
 - [x] Make Supabase client safe when public env vars are missing.
 - [x] Restrict destructive public repair tools to localhost.
-- [x] Clear current lint errors while leaving existing warnings visible.
+- [x] Clear current lint errors and hook dependency warnings.
 - [x] Fix remaining `tsc --noEmit --incremental false` errors.
 - [ ] Replace ad hoc camelCase/snake_case handling with mapper helpers.
-- [ ] Harden staff invitation RLS and RPC functions.
-- [ ] Review dependency updates for `next`, `next-pwa`, and transitive audit findings.
+- [x] Harden staff invitation RLS and RPC functions.
+- [x] Apply non-breaking transitive dependency audit fixes.
+- [ ] Plan breaking upgrades for `next`, `eslint-config-next`, and `next-pwa`.
 - [x] Remove `ignoreBuildErrors` and `ignoreDuringBuilds` after type/lint checks are clean.
 
 ## Work Order

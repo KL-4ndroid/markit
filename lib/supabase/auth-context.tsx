@@ -62,6 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const sessionCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   // ✅ 追蹤是否為主動登出
   const isManualSignOutRef = useRef(false);
+  const userRef = useRef<User | null>(null);
+  const syncUserSettingsRef = useRef<(userId: string) => Promise<void>>(async () => {});
+  const clearUserDataRef = useRef<(reason: string) => Promise<void>>(async () => {});
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   useEffect(() => {
     // 如果 Supabase 未配置，直接設為未登入狀態
@@ -123,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // 如果已登入，拉取用戶設定
       if (session?.user) {
-        syncUserSettings(session.user.id);
+        syncUserSettingsRef.current(session.user.id);
       }
     });
 
@@ -139,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log(`🔐 Auth 狀態變化: ${event}`, {
         hasSession: !!session,
         userId: session?.user?.id,
-        previousUserId: user?.id,
+        previousUserId: userRef.current?.id,
         timestamp: new Date().toISOString(),
       });
       
@@ -152,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const logoutReason = {
           event: 'SIGNED_OUT',
           timestamp: new Date().toISOString(),
-          previousUser: user?.id,
+          previousUser: userRef.current?.id,
           isManual,
           stackTrace: new Error().stack,
         };
@@ -166,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         // ✅ 被動登出時也清除數據
-        clearUserData('passive_signout').catch(error => {
+        clearUserDataRef.current('passive_signout').catch(error => {
           console.error('被動登出清除數據失敗:', error);
         });
         
@@ -201,7 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ✅ 登入事件：檢測用戶切換
       if (event === 'SIGNED_IN') {
         const newUserId = session?.user?.id;
-        const previousUserId = user?.id;
+        const previousUserId = userRef.current?.id;
         
         // ✅ 檢測用戶切換（不同用戶登入）
         if (previousUserId && newUserId && previousUserId !== newUserId) {
@@ -239,7 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // 登入時拉取用戶設定
       if (event === 'SIGNED_IN' && session?.user) {
-        syncUserSettings(session.user.id);
+        syncUserSettingsRef.current(session.user.id);
       }
     });
 
@@ -330,6 +337,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('清除緩存失敗:', error);
     }
   };
+
+  syncUserSettingsRef.current = syncUserSettings;
+  clearUserDataRef.current = clearUserData;
 
   const handleSignOut = async () => {
     // ✅ 設置主動登出標記

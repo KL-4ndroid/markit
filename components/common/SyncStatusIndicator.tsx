@@ -72,7 +72,7 @@ export function SyncStatusIndicator() {
       }
       setShowLargeDialog(false);
     }
-  }, [shouldShowLargeDialog, showLargeDialog]);
+  }, [pendingCount, status, shouldShowLargeDialog, showLargeDialog]);
 
   // 當同步失敗且有待同步事件時，顯示 Toast
   useEffect(() => {

@@ -11,7 +11,7 @@
 
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
+import { useCallback, useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Users, Mail, Shield, Trash2, Plus, X, Eye, Edit3, AlertCircle, Link2, Copy, QrCode, Clock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -54,14 +54,7 @@ export function StaffManagement() {
   const [showInvitationsSection, setShowInvitationsSection] = useState(false);
 
   // 載入員工列表和邀請連結
-  useEffect(() => {
-    if (user) {
-      loadStaffList();
-      loadInvitations();
-    }
-  }, [user]);
-
-  const loadStaffList = async () => {
+  const loadStaffList = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -112,7 +105,7 @@ export function StaffManagement() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   // 邀請員工
   const handleInvite = async () => {
@@ -190,7 +183,7 @@ export function StaffManagement() {
   };
 
   // 載入邀請連結列表
-  const loadInvitations = async () => {
+  const loadInvitations = useCallback(async () => {
     try {
       setLoadingInvitations(true);
       const data = await getMyInvitations();
@@ -200,7 +193,14 @@ export function StaffManagement() {
     } finally {
       setLoadingInvitations(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadStaffList();
+      loadInvitations();
+    }
+  }, [user, loadStaffList, loadInvitations]);
 
   // 產生邀請連結
   const handleCreateInvitation = async () => {

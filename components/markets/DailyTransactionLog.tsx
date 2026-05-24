@@ -10,7 +10,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Clock, TrendingUp, DollarSign, Package, Trash2, AlertCircle } from 'lucide-react';
 import { db } from '@/lib/db';
@@ -52,14 +52,14 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
   }, []);
 
   // 獲取今天的日期字串
-  const getTargetDate = () => {
+  const getTargetDate = useCallback(() => {
     if (date) return date;
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  };
+  }, [date]);
 
   // 載入當日流水帳
-  const loadDailyLog = async () => {
+  const loadDailyLog = useCallback(async () => {
     setIsLoading(true);
     try {
       const targetDate = getTargetDate();
@@ -159,12 +159,12 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [getTargetDate, marketId]);
 
   // 初始載入
   useEffect(() => {
     loadDailyLog();
-  }, [marketId, date]);
+  }, [loadDailyLog]);
 
   // 監聽新的交易和互動
   useEffect(() => {
@@ -179,7 +179,7 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       window.removeEventListener('interaction-recorded', handleUpdate);
       window.removeEventListener('deal-closed', handleUpdate);
     };
-  }, [marketId, date]);
+  }, [loadDailyLog]);
 
   // 處理刪除記錄
   const handleDeleteLog = async () => {

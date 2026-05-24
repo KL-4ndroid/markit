@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFormAutoSave, useFormAutoLoad } from '@/lib/form-autosave';
 import { toast } from 'sonner';
 
@@ -24,6 +24,7 @@ export function AddProductFormExample() {
 
   // ✅ 載入暫存的表單資料
   const { savedData, hasSavedData, clearSaved } = useFormAutoLoad(formId);
+  const restorePromptShownRef = useRef(false);
 
   // ✅ 自動保存表單（防抖 1 秒）
   useFormAutoSave(formId, formData, {
@@ -33,7 +34,10 @@ export function AddProductFormExample() {
 
   // 初始化時檢查是否有暫存資料
   useEffect(() => {
+    if (restorePromptShownRef.current) return;
+
     if (hasSavedData && savedData) {
+      restorePromptShownRef.current = true;
       // 詢問使用者是否要恢復
       const shouldRestore = window.confirm(
         '偵測到未完成的表單，是否要恢復？'
@@ -46,7 +50,7 @@ export function AddProductFormExample() {
         clearSaved();
       }
     }
-  }, []);
+  }, [clearSaved, hasSavedData, savedData]);
 
   // 監聽表單恢復事件（登入成功後）
   useEffect(() => {
@@ -210,6 +214,7 @@ export function QuickDealFormExample() {
   });
 
   const { savedData, hasSavedData, clearSaved } = useFormAutoLoad(formId);
+  const hasRestoredSavedDataRef = useRef(false);
 
   useFormAutoSave(formId, formData, {
     enabled: true,
@@ -217,11 +222,14 @@ export function QuickDealFormExample() {
   });
 
   useEffect(() => {
+    if (hasRestoredSavedDataRef.current) return;
+
     if (hasSavedData && savedData) {
+      hasRestoredSavedDataRef.current = true;
       setFormData(savedData.data as typeof formData);
       toast.info('已恢復未完成的交易');
     }
-  }, []);
+  }, [hasSavedData, savedData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

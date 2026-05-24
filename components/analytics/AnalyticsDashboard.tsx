@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { db } from '@/lib/db';
 import { computeMarketAnalytics, calculateProductAffinity } from '@/lib/analytics';
 import type { MarketAnalytics, ProductPair } from '@/lib/analytics';
@@ -29,11 +29,7 @@ export default function AnalyticsDashboard({ marketId }: AnalyticsDashboardProps
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadAnalytics();
-  }, [marketId]);
-
-  async function loadAnalytics() {
+  const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -66,7 +62,11 @@ export default function AnalyticsDashboard({ marketId }: AnalyticsDashboardProps
     } finally {
       setLoading(false);
     }
-  }
+  }, [marketId]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
 
   if (loading) {
     return (

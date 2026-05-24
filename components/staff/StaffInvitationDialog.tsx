@@ -17,7 +17,7 @@
 
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { AlertTriangle, Users, Shield, Trash2, CheckCircle, X } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -42,13 +42,7 @@ export function StaffInvitationDialog() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   // 檢查是否有待處理的邀請
-  useEffect(() => {
-    if (user) {
-      checkPendingInvitation();
-    }
-  }, [user]);
-
-  const checkPendingInvitation = async () => {
+  const checkPendingInvitation = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -82,7 +76,13 @@ export function StaffInvitationDialog() {
     } catch (error: any) {
       console.error('檢查邀請失敗:', error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      checkPendingInvitation();
+    }
+  }, [user, checkPendingInvitation]);
 
   // 接受邀請
   const handleAccept = async () => {
