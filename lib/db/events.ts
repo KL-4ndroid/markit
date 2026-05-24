@@ -6,6 +6,12 @@
  */
 
 import { db, generateUUID } from './index';
+import {
+  marketCreatedPayloadToCloud,
+  marketUpdatesToSnake,
+  pickMarketId,
+  productCreatedPayloadToLocal,
+} from '@/lib/data-mappers';
 import type {
   Event,
   EventType,
@@ -127,6 +133,8 @@ export async function recordEvent<T = Record<string, unknown>>(
     }
 
     // ✅ 優化：使用 transaction 確保原子性，並減少不必要的等待
+    event.market_id = event.market_id ?? pickMarketId(payload);
+
     await db.transaction(
       'rw',
       [db.events, db.markets, db.products, db.dailyStats],
@@ -293,6 +301,11 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
     };
   }
   
+  updates.payload = marketCreatedPayloadToCloud(
+    { ...payload, dates, startDate, endDate },
+    market_id
+  );
+
   await db.events.update(event.id!, updates);
   
   console.log(`📅 市集已建立：${market.name} (ID: ${market_id.substring(0, 8)}..., ${dates.length} 天)`);
@@ -314,7 +327,7 @@ registerEventHandler('market_updated', async (event: Event<{ market_id: string; 
   });
   
   // ✅ 轉換 payload 為底線式命名（用於 Supabase 同步）
-  const snakeCaseUpdates: Record<string, unknown> = {};
+  const snakeCaseUpdates: Record<string, unknown> = marketUpdatesToSnake(updates as Record<string, unknown>);
   
   // 基本資訊
   if (updates.name !== undefined) snakeCaseUpdates.name = updates.name;
@@ -369,8 +382,7 @@ registerEventHandler('market_updated', async (event: Event<{ market_id: string; 
  * 更新 markets 表中對應市集的狀態
  */
 registerEventHandler('market_status_changed', async (event: Event<MarketStatusChangedPayload>, db) => {
-  const payloadWithMarketId = event.payload as MarketStatusChangedPayload & { market_id?: string };
-  const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+  const market_id = pickMarketId(event.payload)!;
   const { newStatus } = event.payload;
   
   // 更新市集狀態
@@ -451,7 +463,7 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
   const { payload } = event;
   
   // 生成商品 UUID（如果 payload 中已有則使用，否則生成新的）
-  const payloadWithId = payload as ProductCreatedPayload & { productId?: string };
+  const payloadWithId = productCreatedPayloadToLocal(payload as ProductCreatedPayload & Record<string, unknown>);
   const productId = payloadWithId.productId || generateUUID();
   
   await db.products.add({
@@ -523,8 +535,7 @@ registerEventHandler('product_deleted', async (event: Event<{ productId: number 
  * 2. 更新每日統計
  */
 registerEventHandler('interaction_recorded', async (event: Event<InteractionRecordedPayload>, db) => {
-  const payloadWithMarketId = event.payload as InteractionRecordedPayload & { market_id?: string };
-  const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+  const market_id = pickMarketId(event.payload)!;
   const { type } = event.payload;
   
   // 更新市集統計
@@ -582,8 +593,7 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
  * 5. ✅ 支持簡化補登（手動輸入金額）和完整補登（選擇商品）
  */
 registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) => {
-  const payloadWithMarketId = event.payload as DealClosedPayload & { market_id?: string };
-  const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+  const market_id = pickMarketId(event.payload)!;
   const { dealDate, isBackfill, isManualEntry } = event.payload;
   
   // ✅ 使用指定的交易日期，如果沒有則使用本地日期

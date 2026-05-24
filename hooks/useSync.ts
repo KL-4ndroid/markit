@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
+import { normalizeEventForCloud, normalizeEventPayloadForLocal, pickMarketId } from '@/lib/data-mappers';
 import type { Event } from '@/types/db';
 
 /**
@@ -540,6 +541,8 @@ async function pushEvents(
       
       try {
         // ✅ 強化 3：等冪性檢查（避免重複上傳）
+        const cloudEvent = normalizeEventForCloud(event);
+
         const { data: existing, error: checkError } = await supabase
           .from('events')
           .select('id, sync_status')
@@ -566,9 +569,9 @@ async function pushEvents(
           .insert({
             id: event.id,
             type: event.type,
-            payload: event.payload,
+            payload: cloudEvent.payload,
             actor_id: userId,
-            market_id: event.market_id,
+            market_id: cloudEvent.market_id,
             timestamp: new Date(event.timestamp).toISOString(),
             metadata: event.metadata,
           });
@@ -591,7 +594,7 @@ async function pushEvents(
             // 檢查是否有對應的 market_created 事件待同步
             const marketCreatedEvent = sortedEvents.find(
               e => e.type === 'market_created' && 
-                   (e.market_id === event.market_id || e.payload?.marketId === event.market_id)
+                   (e.market_id === cloudEvent.market_id || pickMarketId(e.payload) === cloudEvent.market_id)
             );
             
             if (marketCreatedEvent && marketCreatedEvent.id !== event.id) {
@@ -610,10 +613,10 @@ async function pushEvents(
           }
           
           // RLS 政策錯誤 - market_created 需要特殊處理
-          if (insertError.code === '42501' && event.type === 'market_created' && event.market_id) {
+          if (insertError.code === '42501' && event.type === 'market_created' && cloudEvent.market_id) {
             console.log(`🔄 RLS 阻止 market_created，嘗試先創建 market_members...`);
             
-            const memberCreated = await ensureMarketMember(userId, event.market_id);
+            const memberCreated = await ensureMarketMember(userId, cloudEvent.market_id);
             
             if (memberCreated) {
               // 重試上傳
@@ -622,9 +625,9 @@ async function pushEvents(
                 .insert({
                   id: event.id,
                   type: event.type,
-                  payload: event.payload,
+                  payload: cloudEvent.payload,
                   actor_id: userId,
-                  market_id: event.market_id,
+                  market_id: cloudEvent.market_id,
                   timestamp: new Date(event.timestamp).toISOString(),
                   metadata: event.metadata,
                 });
@@ -883,7 +886,7 @@ async function replayEvents(
       
       if (handler) {
         // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式（用於本地事件處理器）
-        let processedPayload = event.payload;
+        let processedPayload = normalizeEventPayloadForLocal(event.payload);
         
         if (event.type === 'market_updated' && event.payload?.updates) {
           const updates = event.payload.updates;
@@ -1084,7 +1087,7 @@ async function pullAllEvents(
       
       if (handler) {
         // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式（用於本地事件處理器）
-        let processedPayload = event.payload;
+        let processedPayload = normalizeEventPayloadForLocal(event.payload);
         
         if (event.type === 'market_updated' && event.payload?.updates) {
           const updates = event.payload.updates;
@@ -1791,7 +1794,7 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
       
       if (handler) {
         // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式
-        let processedPayload = event.payload;
+        let processedPayload = normalizeEventPayloadForLocal(event.payload);
         
         if (event.type === 'market_updated' && event.payload?.updates) {
           const updates = event.payload.updates;

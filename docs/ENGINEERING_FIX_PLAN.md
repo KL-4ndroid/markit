@@ -1,6 +1,6 @@
 # Engineering Fix Plan
 
-Last updated: 2026-05-24
+Last updated: 2026-05-25
 
 ## Goals
 
@@ -15,7 +15,8 @@ Last updated: 2026-05-24
 - [x] Restrict destructive public repair tools to localhost.
 - [x] Clear current lint errors and hook dependency warnings.
 - [x] Fix remaining `tsc --noEmit --incremental false` errors.
-- [ ] Replace ad hoc camelCase/snake_case handling with mapper helpers.
+- [x] Add the first mapper layer for event payload and row normalization.
+- [ ] Continue replacing remaining ad hoc camelCase/snake_case handling with mapper helpers.
 - [x] Harden staff invitation RLS and RPC functions.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [ ] Plan breaking upgrades for `next`, `eslint-config-next`, and `next-pwa`.
@@ -40,6 +41,7 @@ Last updated: 2026-05-24
 4. **Data normalization**
    - Create a single mapper layer for Supabase rows and Dexie models.
    - Normalize event payloads before persistence and sync.
+   - Expand mapper adoption into staff-accessible market/product query helpers.
    - Add focused tests around event creation, sync payloads, and analytics cache invalidation.
 
 ## Verification Commands
