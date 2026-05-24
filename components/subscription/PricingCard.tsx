@@ -7,6 +7,7 @@
 'use client';
 
 import { Check, Sparkles, Crown, Building2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 export type PlanType = 'free' | 'pro' | 'enterprise';
 
@@ -16,7 +17,19 @@ interface PricingCardProps {
   onSelect?: () => void;
 }
 
-const planConfig = {
+interface PlanConfig {
+  name: string;
+  price: number;
+  period: string;
+  icon: LucideIcon;
+  color: string;
+  badge?: string;
+  badgeColor?: string;
+  features: string[];
+  limitations?: string[];
+}
+
+const planConfig: Record<PlanType, PlanConfig> = {
   free: {
     name: '免費版',
     price: 0,

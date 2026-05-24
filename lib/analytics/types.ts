@@ -6,6 +6,8 @@
 
 import type { Market } from '@/types/db';
 
+export type { Market } from '@/types/db';
+
 // ==================== 批次補登偵測 ====================
 
 /**

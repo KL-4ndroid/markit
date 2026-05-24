@@ -111,11 +111,11 @@ function median(values: number[]): number {
  * 計算市集基礎指標
  */
 function calculateMetrics(market: Market): MarketMetrics {
-  const totalInteractions = market.interactions || 0;
-  const totalDeals = market.deals || 0;
-  const totalRevenue = market.revenue || 0;
-  const boothFee = market.boothFee || 0;
-  const hours = market.hours || 1;
+  const totalInteractions = market.totalInteractions || 0;
+  const totalDeals = market.totalDeals || 0;
+  const totalRevenue = market.totalRevenue || 0;
+  const boothFee = market.boothCost || 0;
+  const hours = 1;
 
   // 基礎指標
   const conversionRate = totalInteractions > 0 ? (totalDeals / totalInteractions) * 100 : 0;
@@ -285,8 +285,8 @@ export function calculateMomentumScore(
 ): number {
   // 按日期排序（最新在前）
   const sortedMarkets = [...markets].sort((a, b) => {
-    const dateA = new Date(a.date).getTime();
-    const dateB = new Date(b.date).getTime();
+    const dateA = new Date(a.startDate).getTime();
+    const dateB = new Date(b.startDate).getTime();
     return dateB - dateA;
   });
 
@@ -413,9 +413,9 @@ export function calculatePersonalizedROI(
   market: Market,
   context: PersonalContext
 ): PersonalizedROIResult {
-  const totalRevenue = market.revenue || 0;
-  const boothFee = market.boothFee || 0;
-  const hours = market.hours || 1;
+  const totalRevenue = market.totalRevenue || 0;
+  const boothFee = market.boothCost || 0;
+  const hours = 1;
 
   // 總成本
   const totalCost = 

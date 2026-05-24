@@ -27,6 +27,9 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
   
   // ✅ 員工權限檢查
   const { isStaff, canViewSensitiveData } = useStaffPermissions();
+  const productAccessItem = product.id
+    ? (product as unknown as Parameters<typeof isStaff>[0])
+    : undefined;
   
   // ✅ 檢查是否有權限欄位（向後兼容）
   const hasPermissions = product.access_type !== undefined;
@@ -86,7 +89,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
   // ✅ 點擊卡片觸發編輯（員工模式下禁用）
   const handleClick = () => {
     // 員工模式下不允許編輯
-    if (isStaff(product)) {
+    if (isStaff(productAccessItem)) {
       return;
     }
     
@@ -110,7 +113,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
     <div
       onClick={handleClick}
       className={`bg-white rounded-[1.5rem] overflow-hidden shadow-md shadow-[#7B9FA6]/5 ${
-        isStaff(product) ? 'cursor-default' : 'cursor-pointer hover:shadow-lg'
+        isStaff(productAccessItem) ? 'cursor-default' : 'cursor-pointer hover:shadow-lg'
       } transition-shadow`}
     >
       {/* 圖標區域 */}
@@ -123,7 +126,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
         </div>
         
         {/* ✅ 員工模式標籤 - 只在有權限欄位且為員工時顯示 */}
-        {hasPermissions && isStaff(product) && (
+        {hasPermissions && isStaff(productAccessItem) && (
           <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
             <Shield className="w-3 h-3 text-[#7B9FA6]" />
             <span className="text-xs text-[#6B6B6B]">員工</span>
@@ -153,7 +156,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
             {formatCurrency(product.price)}
           </span>
           {/* ✅ 成本只有老闆可見（向後兼容：沒有權限欄位時顯示） */}
-          {product.cost && (!hasPermissions || canViewSensitiveData(product)) && (
+          {product.cost && (!hasPermissions || canViewSensitiveData(productAccessItem)) && (
             <span className="text-xs text-[#6B6B6B] line-through tabular-nums">
               成本 {formatCurrency(product.cost)}
             </span>
@@ -179,7 +182,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
           </div>
 
           {/* ✅ 利潤率只有老闆可見（向後兼容：沒有權限欄位時顯示） */}
-          {profitMargin !== null && (!hasPermissions || canViewSensitiveData(product)) && (
+          {profitMargin !== null && (!hasPermissions || canViewSensitiveData(productAccessItem)) && (
             <span className={`font-medium ${profitMargin > 50 ? 'text-[#7B9FA6]' : 'text-[#D4A574]'}`}>
               {profitMargin}%
             </span>

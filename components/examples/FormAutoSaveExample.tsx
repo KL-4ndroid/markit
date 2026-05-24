@@ -40,7 +40,7 @@ export function AddProductFormExample() {
       );
 
       if (shouldRestore) {
-        setFormData(savedData.data);
+        setFormData(savedData.data as typeof formData);
         toast.success('表單資料已恢復');
       } else {
         clearSaved();
@@ -92,7 +92,7 @@ export function AddProductFormExample() {
           <button
             onClick={() => {
               if (savedData) {
-                setFormData(savedData.data);
+                setFormData(savedData.data as typeof formData);
                 toast.success('表單資料已恢復');
               }
             }}
@@ -218,7 +218,7 @@ export function QuickDealFormExample() {
 
   useEffect(() => {
     if (hasSavedData && savedData) {
-      setFormData(savedData.data);
+      setFormData(savedData.data as typeof formData);
       toast.info('已恢復未完成的交易');
     }
   }, []);

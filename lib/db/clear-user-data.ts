@@ -209,7 +209,7 @@ export async function validateDataIsolation(expectedUserId: string): Promise<{
   try {
     // 檢查市集
     const foreignMarkets = await db.markets
-      .filter(m => m.owner_id && m.owner_id !== expectedUserId && m.owner_id !== 'local')
+      .filter(m => Boolean(m.owner_id && m.owner_id !== expectedUserId && m.owner_id !== 'local'))
       .toArray();
     
     if (foreignMarkets.length > 0) {
@@ -218,7 +218,7 @@ export async function validateDataIsolation(expectedUserId: string): Promise<{
 
     // 檢查商品
     const foreignProducts = await db.products
-      .filter(p => p.owner_id && p.owner_id !== expectedUserId && p.owner_id !== 'local')
+      .filter(p => Boolean(p.owner_id && p.owner_id !== expectedUserId && p.owner_id !== 'local'))
       .toArray();
     
     if (foreignProducts.length > 0) {
@@ -227,7 +227,7 @@ export async function validateDataIsolation(expectedUserId: string): Promise<{
 
     // 檢查事件
     const foreignEvents = await db.events
-      .filter(e => e.actor_id && e.actor_id !== expectedUserId && e.actor_id !== 'local')
+      .filter(e => Boolean(e.actor_id && e.actor_id !== expectedUserId && e.actor_id !== 'local'))
       .toArray();
     
     if (foreignEvents.length > 0) {

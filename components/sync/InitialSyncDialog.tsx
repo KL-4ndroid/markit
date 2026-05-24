@@ -49,7 +49,7 @@ export function InitialSyncDialog() {
   // 監聽同步狀態
   useEffect(() => {
     // ✅ 只在第一次看到 SUCCESS 時關閉，忽略後續的狀態變化
-    if ((status === SyncStatus.SUCCESS || status === 'success') && isOpen && !hasSeenSuccessRef.current) {
+    if (status === SyncStatus.SUCCESS && isOpen && !hasSeenSuccessRef.current) {
       hasSeenSuccessRef.current = true;
       const timeoutId = setTimeout(() => {
         setIsOpen(false);
@@ -60,7 +60,7 @@ export function InitialSyncDialog() {
       return () => clearTimeout(timeoutId);
     }
 
-    if ((status === SyncStatus.ERROR || status === 'error') && isOpen && !hasSeenSuccessRef.current) {
+    if (status === SyncStatus.ERROR && isOpen && !hasSeenSuccessRef.current) {
       hasSeenSuccessRef.current = true;
       const timeoutId = setTimeout(() => {
         setIsOpen(false);
@@ -72,7 +72,7 @@ export function InitialSyncDialog() {
     }
 
     // ✅ 添加超時保護：如果 30 秒後還在 SYNCING，強制關閉
-    if ((status === SyncStatus.SYNCING || status === 'syncing') && isOpen && !hasSeenSuccessRef.current) {
+    if (status === SyncStatus.SYNCING && isOpen && !hasSeenSuccessRef.current) {
       const timeoutId = setTimeout(() => {
         setIsOpen(false);
         setHasCompletedInitialSyncState(true);

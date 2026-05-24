@@ -82,7 +82,7 @@ export async function recordEvent<T = Record<string, unknown>>(
     let timestamp = Date.now();
     
     if (type === 'deal_closed' && payload && typeof payload === 'object') {
-      const dealPayload = payload as DealClosedPayload;
+      const dealPayload = payload as unknown as DealClosedPayload;
       
       // ✅ 關鍵修正：只有明確標記為補登（isBackfill = true）時才使用 23:59
       // 正常交易（快速新增收入、商品銷售）使用當前時間

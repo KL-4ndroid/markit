@@ -257,7 +257,7 @@ export async function buildMarketOverview(
     hourlyProfit: metrics.hourlyProfit,
     conversionRate: metrics.conversionRate,
     aov: metrics.aov,
-    totalInteractions: metrics.totalInteractions,
+    totalInteractions: metrics.uniqueEngaged,
     totalDeals: metrics.totalDeals,
     totalRevenue: metrics.totalRevenue,
   });
@@ -270,10 +270,9 @@ export async function buildMarketOverview(
   console.log('✅ 健康評分:', healthScore, '分');
   if (healthScoreData) {
     console.log('   - 評分細節:', {
-      profitScore: healthScoreData.profitScore,
-      conversionScore: healthScoreData.conversionScore,
-      aovScore: healthScoreData.aovScore,
-      interactionScore: healthScoreData.interactionScore,
+      hourlyProfitZ: healthScoreData.zScores.hourlyProfitZ,
+      conversionRateZ: healthScoreData.zScores.conversionRateZ,
+      aovZ: healthScoreData.zScores.aovZ,
     });
   }
   
@@ -291,7 +290,7 @@ export async function buildMarketOverview(
   if (diagnosis) {
     console.log('   - 診斷依據:', {
       conversionRate: `${(metrics.conversionRate * 100).toFixed(1)}%`,
-      totalInteractions: metrics.totalInteractions,
+      totalInteractions: metrics.uniqueEngaged,
       判斷邏輯: diagnosis.diagnosisType,
     });
   }

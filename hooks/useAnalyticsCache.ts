@@ -38,13 +38,11 @@ export function useAnalyticsCacheInvalidation() {
     };
     
     // 註冊 hook 並保存返回的 unsubscribe 函數
-    const unsubscribe = db.events.hook('creating', hookFunction);
+    db.events.hook('creating', hookFunction);
     
     return () => {
       // 清理訂閱
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      db.events.hook('creating').unsubscribe(hookFunction);
     };
   }, []);
 }

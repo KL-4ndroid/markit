@@ -71,7 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // ✅ 初始化跨分頁通訊
-    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    const supportsBroadcastChannel = typeof window !== 'undefined' && typeof window.BroadcastChannel !== 'undefined';
+
+    if (supportsBroadcastChannel) {
       broadcastChannelRef.current = new BroadcastChannel(AUTH_CHANNEL_NAME);
       
       broadcastChannelRef.current.onmessage = (event) => {
@@ -89,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           window.location.reload();
         }
       };
-    } else {
+    } else if (typeof window !== 'undefined') {
       // ✅ Fallback: 使用 localStorage 事件監聽
       const handleStorageChange = (e: StorageEvent) => {
         if (e.key === AUTH_STORAGE_KEY && e.newValue) {

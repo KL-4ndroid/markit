@@ -7,7 +7,11 @@
 
 'use client';
 
-export function GlobalLoadingSkeleton() {
+interface GlobalLoadingSkeletonProps {
+  message?: string;
+}
+
+export function GlobalLoadingSkeleton({ message }: GlobalLoadingSkeletonProps) {
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       {/* 頂部區域骨架 */}
@@ -47,6 +51,9 @@ export function GlobalLoadingSkeleton() {
       {/* 市集列表骨架 */}
       <div className="px-6 space-y-4">
         <div className="h-6 w-32 bg-gray-200 rounded-lg animate-pulse mb-4" />
+        {message && (
+          <p className="text-sm text-[#6B6B6B]">{message}</p>
+        )}
         
         <MarketCardSkeleton />
         <MarketCardSkeleton />

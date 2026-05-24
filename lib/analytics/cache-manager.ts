@@ -61,8 +61,8 @@ async function hasNewBackfillEntries(
   }
   
   // 檢查市集數據是否被修改
-  const currentModified = market.updated_at 
-    ? new Date(market.updated_at).getTime() 
+  const currentModified = market.updatedAt
+    ? market.updatedAt
     : Date.now();
   
   if (currentModified > timestamp.lastModified) {
@@ -90,8 +90,8 @@ async function updateMarketTimestamp(
   const timestamp: MarketTimestamp = {
     marketId: market.id!,
     lastCalculated: Date.now(),
-    lastModified: market.updated_at 
-      ? new Date(market.updated_at).getTime() 
+    lastModified: market.updatedAt
+      ? market.updatedAt
       : Date.now(),
     eventCount,
   };

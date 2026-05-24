@@ -25,6 +25,7 @@ export interface MarketWithAccess {
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;
+  is_deleted?: boolean;
   
   // 新增的權限欄位
   relationship_owner_id: string;  // 關係中的老闆 ID

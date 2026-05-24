@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useDB } from '@/lib/db-context';
+import { db } from '@/lib/db';
 import { computeMarketAnalytics, calculateProductAffinity } from '@/lib/analytics';
 import type { MarketAnalytics, ProductPair } from '@/lib/analytics';
 import type { Market } from '@/types/db';
@@ -23,7 +23,6 @@ interface AnalyticsDashboardProps {
 }
 
 export default function AnalyticsDashboard({ marketId }: AnalyticsDashboardProps) {
-  const db = useDB();
   const [market, setMarket] = useState<Market | null>(null);
   const [analytics, setAnalytics] = useState<MarketAnalytics | null>(null);
   const [productPairs, setProductPairs] = useState<ProductPair[]>([]);
