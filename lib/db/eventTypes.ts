@@ -10,6 +10,11 @@ import type {
 } from '@/types/db';
 import { generateUUID } from './uuid';
 
+type WithMarketIdAlias<T extends { marketId: string }> = Omit<T, 'marketId'> & {
+  marketId?: string;
+  market_id?: string;
+};
+
 /**
  * EventPayloadMap 對應每個事件類型的 payload 型別。
  *
@@ -17,15 +22,15 @@ import { generateUUID } from './uuid';
  */
 export interface EventPayloadMap {
   market_created: MarketCreatedPayload & { market_id?: string; marketId?: string };
-  market_status_changed: MarketStatusChangedPayload & { market_id?: string };
+  market_status_changed: WithMarketIdAlias<MarketStatusChangedPayload>;
   market_started: { market_id?: string; marketId?: string };
   market_ended: { market_id?: string; marketId?: string };
-  market_deleted: MarketDeletedPayload & { market_id?: string };
+  market_deleted: WithMarketIdAlias<MarketDeletedPayload>;
   product_created: ProductCreatedPayload & { productId?: string };
   product_updated: ProductUpdatedPayload;
   product_deleted: { productId: string };
-  interaction_recorded: InteractionRecordedPayload & { market_id?: string };
-  deal_closed: DealClosedPayload & { market_id?: string };
+  interaction_recorded: WithMarketIdAlias<InteractionRecordedPayload>;
+  deal_closed: WithMarketIdAlias<DealClosedPayload>;
   settings_updated: Partial<Settings>;
 }
 
