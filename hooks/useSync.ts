@@ -15,10 +15,12 @@ import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
+  marketAccessRowToLocal,
   marketUpdatesToCamel,
   normalizeEventForCloud,
   normalizeEventPayloadForLocal,
   pickMarketId,
+  productAccessRowToLocal,
 } from '@/lib/data-mappers';
 import type { Event } from '@/types/db';
 
@@ -1581,9 +1583,11 @@ async function syncMarketsToIndexedDB(markets: any[], currentUserId: string): Pr
   for (const market of markets) {
     try {
       const existing = await db.markets.get(market.id);
+      const mappedMarket = marketAccessRowToLocal(market as Record<string, unknown>);
       
       // 準備市集數據（保留權限信息）
       const marketData = {
+        ...mappedMarket,
         id: market.id,
         name: market.name,
         location: market.location,
@@ -1706,9 +1710,11 @@ async function syncProductsToIndexedDB(products: any[], currentUserId: string): 
       }
       
       const existing = await db.products.get(product.id);
+      const mappedProduct = productAccessRowToLocal(product as Record<string, unknown>);
       
       // 準備商品數據（保留權限信息）
       const productData = {
+        ...mappedProduct,
         id: product.id,
         owner_id: product.owner_id,
         market_id: product.market_id,

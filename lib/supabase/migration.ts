@@ -7,6 +7,7 @@
 
 import { db } from '@/lib/db';
 import { supabase } from './client';
+import { normalizeEventPayloadForLocal } from '@/lib/data-mappers';
 import type { EventType } from '@/types/db';
 
 /**
@@ -214,7 +215,7 @@ async function pullAllDataFromCloud(currentUserId: string): Promise<void> {
       // 使用雲端的 ID 和資料
       await recordEvent(
         event.type as EventType,
-        event.payload,
+        normalizeEventPayloadForLocal(event.payload),
         event.id // 使用雲端的 UUID
       );
       

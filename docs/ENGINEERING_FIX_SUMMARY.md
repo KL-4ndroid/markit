@@ -10,9 +10,11 @@ The first data normalization pass added `lib/data-mappers.ts` for event payload 
 
 The mapper layer is now also used by `lib/supabase/markets.ts` and `lib/supabase/products.ts`, so staff-accessible Supabase view rows keep their original access metadata while also exposing the local camelCase fields expected by the app.
 
+Snapshot loading and full-sync import paths now normalize market/product rows before writing to IndexedDB, and legacy cloud replay normalizes event payloads before sending them through event handlers.
+
 Current status:
 
 - Build: passing.
 - Lint: passing with no warnings.
 - TypeScript: passing.
-- Security backlog: breaking dependency upgrades and mapper adoption for snapshot/full-sync import paths.
+- Security backlog: breaking dependency upgrades and mapper adoption for remaining migration/debug utilities.

@@ -7,6 +7,7 @@
 
 import { db } from './index';
 import { supabase } from '@/lib/supabase/client';
+import { marketRowToLocal, productRowToLocal } from '@/lib/data-mappers';
 import { strToU8, strFromU8, compressSync, decompressSync } from 'fflate';
 import type { Market, Product, DailyStats, Settings } from '@/types/db';
 
@@ -240,6 +241,13 @@ export async function loadSnapshot(snapshotData: SnapshotData): Promise<void> {
   console.log('📥 載入快照到本地數據庫...');
   
   try {
+    const markets = snapshotData.tables.markets.map(market =>
+      marketRowToLocal(market as unknown as Record<string, unknown>)
+    );
+    const products = snapshotData.tables.products.map(product =>
+      productRowToLocal(product as unknown as Record<string, unknown>)
+    );
+
     await db.transaction('rw', [db.markets, db.products, db.dailyStats, db.settings], async () => {
       // 清空現有數據
       await Promise.all([
@@ -251,8 +259,8 @@ export async function loadSnapshot(snapshotData: SnapshotData): Promise<void> {
       
       // 批次寫入快照數據
       await Promise.all([
-        db.markets.bulkAdd(snapshotData.tables.markets),
-        db.products.bulkAdd(snapshotData.tables.products),
+        db.markets.bulkAdd(markets),
+        db.products.bulkAdd(products),
         db.dailyStats.bulkAdd(snapshotData.tables.dailyStats),
         snapshotData.tables.settings.length > 0 
           ? db.settings.bulkAdd(snapshotData.tables.settings)
