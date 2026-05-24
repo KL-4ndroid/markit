@@ -16,6 +16,7 @@ Last updated: 2026-05-25
 - [x] Clear current lint errors and hook dependency warnings.
 - [x] Fix remaining `tsc --noEmit --incremental false` errors.
 - [x] Add the first mapper layer for event payload and row normalization.
+- [x] Adopt mappers in staff-accessible market/product query helpers.
 - [ ] Continue replacing remaining ad hoc camelCase/snake_case handling with mapper helpers.
 - [x] Harden staff invitation RLS and RPC functions.
 - [x] Apply non-breaking transitive dependency audit fixes.
@@ -41,7 +42,7 @@ Last updated: 2026-05-25
 4. **Data normalization**
    - Create a single mapper layer for Supabase rows and Dexie models.
    - Normalize event payloads before persistence and sync.
-   - Expand mapper adoption into staff-accessible market/product query helpers.
+   - Expand mapper adoption into snapshot and full-sync import paths.
    - Add focused tests around event creation, sync payloads, and analytics cache invalidation.
 
 ## Verification Commands

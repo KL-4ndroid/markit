@@ -14,7 +14,12 @@ import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
-import { normalizeEventForCloud, normalizeEventPayloadForLocal, pickMarketId } from '@/lib/data-mappers';
+import {
+  marketUpdatesToCamel,
+  normalizeEventForCloud,
+  normalizeEventPayloadForLocal,
+  pickMarketId,
+} from '@/lib/data-mappers';
 import type { Event } from '@/types/db';
 
 /**
@@ -890,7 +895,7 @@ async function replayEvents(
         
         if (event.type === 'market_updated' && event.payload?.updates) {
           const updates = event.payload.updates;
-          const camelCaseUpdates: Record<string, unknown> = {};
+          const camelCaseUpdates: Record<string, unknown> = marketUpdatesToCamel(updates as Record<string, unknown>);
           
           // 轉換底線式為駝峰式
           if (updates.name !== undefined) camelCaseUpdates.name = updates.name;
@@ -1091,7 +1096,7 @@ async function pullAllEvents(
         
         if (event.type === 'market_updated' && event.payload?.updates) {
           const updates = event.payload.updates;
-          const camelCaseUpdates: Record<string, unknown> = {};
+          const camelCaseUpdates: Record<string, unknown> = marketUpdatesToCamel(updates as Record<string, unknown>);
           
           // 轉換底線式為駝峰式
           if (updates.name !== undefined) camelCaseUpdates.name = updates.name;
@@ -1798,7 +1803,7 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
         
         if (event.type === 'market_updated' && event.payload?.updates) {
           const updates = event.payload.updates;
-          const camelCaseUpdates: Record<string, unknown> = {};
+          const camelCaseUpdates: Record<string, unknown> = marketUpdatesToCamel(updates as Record<string, unknown>);
           
           // 轉換底線式為駝峰式
           if (updates.name !== undefined) camelCaseUpdates.name = updates.name;

@@ -5,6 +5,7 @@ import type {
   Product,
   ProductCreatedPayload,
 } from '@/types/db';
+import type { MarketWithAccess, ProductWithAccess } from '@/types/staff';
 
 type AnyRecord = Record<string, unknown>;
 
@@ -226,6 +227,16 @@ export function marketRowToLocal(row: AnyRecord): Market {
   }) as unknown as Market;
 }
 
+export function marketAccessRowToLocal(row: AnyRecord): MarketWithAccess {
+  return {
+    ...row,
+    ...marketRowToLocal(row),
+    relationship_owner_id: row.relationship_owner_id as string,
+    permissions: row.permissions as MarketWithAccess['permissions'],
+    access_type: row.access_type as MarketWithAccess['access_type'],
+  } as unknown as MarketWithAccess;
+}
+
 export function productRowToLocal(row: AnyRecord): Product {
   return definedEntries({
     ...row,
@@ -250,6 +261,16 @@ export function productRowToLocal(row: AnyRecord): Product {
     createdAt: toEpoch(row.createdAt ?? row.created_at) ?? Date.now(),
     updatedAt: toEpoch(row.updatedAt ?? row.updated_at) ?? Date.now(),
   }) as unknown as Product;
+}
+
+export function productAccessRowToLocal(row: AnyRecord): ProductWithAccess {
+  return {
+    ...row,
+    ...productRowToLocal(row),
+    relationship_owner_id: row.relationship_owner_id as string,
+    permissions: row.permissions as ProductWithAccess['permissions'],
+    access_type: row.access_type as ProductWithAccess['access_type'],
+  } as unknown as ProductWithAccess;
 }
 
 export function productCreatedPayloadToLocal(

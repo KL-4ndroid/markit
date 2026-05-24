@@ -5,7 +5,12 @@
  */
 
 import { supabase } from './client';
+import { productAccessRowToLocal } from '@/lib/data-mappers';
 import type { ProductWithAccess } from '@/types/staff';
+
+function mapProducts(data: unknown[] | null): ProductWithAccess[] {
+  return (data || []).map(row => productAccessRowToLocal(row as Record<string, unknown>));
+}
 
 /**
  * 查詢可訪問的商品（包含員工權限）
@@ -35,7 +40,7 @@ export async function getAccessibleProducts(marketId?: string): Promise<ProductW
     throw error;
   }
 
-  return (data || []) as ProductWithAccess[];
+  return mapProducts(data);
 }
 
 /**
@@ -61,7 +66,7 @@ export async function getAccessibleProduct(productId: string): Promise<ProductWi
     throw error;
   }
 
-  return data as ProductWithAccess;
+  return productAccessRowToLocal(data as Record<string, unknown>);
 }
 
 /**
@@ -99,7 +104,7 @@ export async function getOwnedProducts(marketId?: string): Promise<ProductWithAc
     throw error;
   }
 
-  return (data || []) as ProductWithAccess[];
+  return mapProducts(data);
 }
 
 /**
@@ -126,7 +131,7 @@ export async function getStaffProducts(marketId?: string): Promise<ProductWithAc
     throw error;
   }
 
-  return (data || []) as ProductWithAccess[];
+  return mapProducts(data);
 }
 
 /**
@@ -153,7 +158,7 @@ export async function getProductsWithStock(marketId?: string): Promise<ProductWi
     throw error;
   }
 
-  return (data || []) as ProductWithAccess[];
+  return mapProducts(data);
 }
 
 /**
@@ -180,7 +185,7 @@ export async function getOutOfStockProducts(marketId?: string): Promise<ProductW
     throw error;
   }
 
-  return (data || []) as ProductWithAccess[];
+  return mapProducts(data);
 }
 
 // ============================================

@@ -8,9 +8,11 @@ The non-breaking `npm audit fix` pass updated transitive dependencies in `packag
 
 The first data normalization pass added `lib/data-mappers.ts` for event payload and row-shape conversion. Event creation and sync now share mapper helpers for `marketId`/`market_id` extraction and for market create/update payload conversion, reducing duplicated camelCase/snake_case logic in the highest-risk sync path.
 
+The mapper layer is now also used by `lib/supabase/markets.ts` and `lib/supabase/products.ts`, so staff-accessible Supabase view rows keep their original access metadata while also exposing the local camelCase fields expected by the app.
+
 Current status:
 
 - Build: passing.
 - Lint: passing with no warnings.
 - TypeScript: passing.
-- Security backlog: breaking dependency upgrades and mapper adoption for the remaining Supabase query helpers.
+- Security backlog: breaking dependency upgrades and mapper adoption for snapshot/full-sync import paths.

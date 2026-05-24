@@ -5,7 +5,14 @@
  */
 
 import { supabase } from './client';
+import { marketAccessRowToLocal } from '@/lib/data-mappers';
 import type { MarketWithAccess } from '@/types/staff';
+
+function mapVisibleMarkets(data: unknown[] | null): MarketWithAccess[] {
+  return (data || [])
+    .filter((row: any) => !row.is_deleted && !row.deleted_at)
+    .map(row => marketAccessRowToLocal(row as Record<string, unknown>));
+}
 
 /**
  * 查詢可訪問的市集（包含員工權限）
@@ -29,7 +36,7 @@ export async function getAccessibleMarkets(): Promise<MarketWithAccess[]> {
   }
 
   // 在客戶端過濾已刪除的市集
-  return ((data || []) as MarketWithAccess[]).filter(m => !m.is_deleted);
+  return mapVisibleMarkets(data);
 }
 
 /**
@@ -62,11 +69,11 @@ export async function getAccessibleMarket(marketId: string): Promise<MarketWithA
   })[0];
 
   // 檢查是否已刪除
-  if (market && (market as any).is_deleted) {
+  if (market && ((market as any).is_deleted || (market as any).deleted_at)) {
     return null;
   }
 
-  return market as MarketWithAccess;
+  return marketAccessRowToLocal(market as Record<string, unknown>);
 }
 
 /**
@@ -93,7 +100,7 @@ export async function getAccessibleMarketsByDateRange(
   }
 
   // 在客戶端過濾已刪除的市集
-  return ((data || []) as MarketWithAccess[]).filter(m => !m.is_deleted);
+  return mapVisibleMarkets(data);
 }
 
 /**
@@ -125,7 +132,7 @@ export async function getOwnedMarkets(): Promise<MarketWithAccess[]> {
   }
 
   // 在客戶端過濾已刪除的市集
-  return ((data || []) as MarketWithAccess[]).filter(m => !m.is_deleted);
+  return mapVisibleMarkets(data);
 }
 
 /**
@@ -146,7 +153,7 @@ export async function getStaffMarkets(): Promise<MarketWithAccess[]> {
   }
 
   // 在客戶端過濾已刪除的市集
-  return ((data || []) as MarketWithAccess[]).filter(m => !m.is_deleted);
+  return mapVisibleMarkets(data);
 }
 
 // ============================================
