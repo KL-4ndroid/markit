@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback, useTransition } from 'react';
+import { useEffect, useState, useMemo, useCallback, useTransition, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  MapPin, 
-  DollarSign, 
+import {
+  ArrowLeft,
+  Calendar,
+  MapPin,
+  DollarSign,
   TrendingUp,
   Clock,
   AlertCircle,
@@ -48,6 +48,7 @@ import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
 import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DealItem } from '@/components/markets/DealItem';
 import { DealDetailModal } from '@/components/markets/DealDetailModal';
+import { useAuth } from '@/lib/supabase/auth-context';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { InteractionDetailModal } from '@/components/markets/InteractionDetailModal';
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
@@ -69,11 +70,14 @@ export default function MarketDetailPage({ params }: PageProps) {
   const marketId = params.id; // UUID 字符串，不需要 parseInt
   const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
   const { isStaff, canViewSensitiveData } = useUserRole(); // ✅ 員工權限檢查
+  const { user } = useAuth(); // ✅ 檢查是否已登入
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [supabaseMarket, setSupabaseMarket] = useState<any>(null); // Supabase 數據（員工模式使用）
   const [isLoadingSupabase, setIsLoadingSupabase] = useState(false);
-  
+  const [hasTriedSupabaseFallback, setHasTriedSupabaseFallback] = useState(false);
+  const fallbackAttempted = useRef(false);
+
   // ✅ 員工模式：從 Supabase 獲取實時數據
   useEffect(() => {
     if (isStaff && marketId) {
@@ -95,8 +99,52 @@ export default function MarketDetailPage({ params }: PageProps) {
       });
     }
   }, [isStaff, marketId]);
-  
-  // ✅ 根據模式選擇數據源
+
+  // ✅ 混合降級策略：當本地查不到但用戶已登入時，嘗試從 Supabase 獲取
+  useEffect(() => {
+    // 防止重複觸發
+    if (fallbackAttempted.current) return;
+    // 如果已經從員工模式獲取到 Supabase 數據，不需要降級
+    if (supabaseMarket) return;
+    // 如果已經嘗試過降級，不需要重複
+    if (hasTriedSupabaseFallback) return;
+    // 如果本地有數據，不需要降級
+    if (localMarket) return;
+    // 如果用戶未登入，不需要降級
+    if (!user) return;
+    // 如果 isStaff 還在載入中，等待
+    if (isStaff === undefined) return;
+
+    // 延遲一點執行，確保 useMarket 的查詢完成
+    const timer = setTimeout(async () => {
+      // 再次檢查本地數據（可能在此期間已載入）
+      const currentLocalMarket = await db.markets.get(marketId);
+      if (currentLocalMarket || supabaseMarket) return;
+
+      fallbackAttempted.current = true;
+      setHasTriedSupabaseFallback(true);
+
+      console.log('🔄 本地查不到市集，嘗試從 Supabase 獲取...');
+      setIsLoadingSupabase(true);
+
+      try {
+        const { getAccessibleMarket } = await import('@/lib/supabase/markets');
+        const data = await getAccessibleMarket(marketId);
+        if (data) {
+          setSupabaseMarket(data);
+          console.log('✅ 從 Supabase 成功獲取市集數據');
+        }
+      } catch (error) {
+        console.error('從 Supabase 獲取市集失敗:', error);
+      } finally {
+        setIsLoadingSupabase(false);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [localMarket, supabaseMarket, user, isStaff, marketId, hasTriedSupabaseFallback]);
+
+  // ✅ 根據模式選擇數據源（優先順序：員工 Supabase > 本地 > 降級 Supabase）
   const market = isStaff ? supabaseMarket : localMarket;
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPending, startTransition] = useTransition(); // 用於非阻塞更新
@@ -906,8 +954,8 @@ export default function MarketDetailPage({ params }: PageProps) {
     return null;
   }
 
-  // 載入中
-  if (!isInitialized || (isStaff && isLoadingSupabase)) {
+  // 載入中（包括 Supabase 降級查詢）
+  if (!isInitialized || (isLoadingSupabase && !market)) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
         <div className="text-center">
