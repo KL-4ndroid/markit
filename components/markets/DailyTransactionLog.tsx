@@ -269,12 +269,14 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
   // ✅ 使用事件溯源方式刪除互動記錄
   const handleDeleteInteraction = async (event: Event<InteractionRecordedPayload>) => {
     const market_id = event.payload.market_id;
+    const interactionType = event.payload.type;
 
     // ✅ 記錄刪除事件（會自動同步到雲端）
     const { recordEvent } = await import('@/lib/db/events');
     await recordEvent('interaction_deleted', {
       eventId: event.id!,
       market_id: market_id,
+      interactionType,  // ✅ 傳遞互動類型用於扣除統計
     });
   };
 

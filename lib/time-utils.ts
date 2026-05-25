@@ -1,8 +1,8 @@
 /**
  * 時間工具函數
- * 
+ *
  * 統一處理本地時間，避免時區問題
- * 
+ *
  * 核心原則：
  * 1. 所有時間判斷使用本地時間（用戶設備的時區）
  * 2. 日期字串統一使用 YYYY-MM-DD 格式
@@ -12,10 +12,10 @@
 
 /**
  * 獲取當前本地日期字串（YYYY-MM-DD）
- * 
+ *
  * @param date - Date 對象（預設為當前時間）
  * @returns 日期字串（YYYY-MM-DD）
- * 
+ *
  * @example
  * getLocalDateString()  // '2026-02-22'
  * getLocalDateString(new Date(2026, 1, 23))  // '2026-02-23'
@@ -25,6 +25,46 @@ export function getLocalDateString(date: Date = new Date()): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * ✅ 從時間戳獲取本地日期字串（YYYY-MM-DD）
+ *
+ * 這是與 Supabase timestamptz 交互時的核心工具。
+ * Supabase 返回 ISO 字串會被解析為本地時間，這個函數確保結果是本地日期。
+ *
+ * @param timestamp - 時間戳（毫秒）
+ * @returns 日期字串（YYYY-MM-DD，本地時間）
+ *
+ * @example
+ * // 台北時間 (UTC+8) 2026-02-22 08:00 UTC -> '2026-02-22'
+ * timestampToLocalDateString(Date.now())
+ */
+export function timestampToLocalDateString(timestamp: number): string {
+  return getLocalDateString(new Date(timestamp));
+}
+
+/**
+ * ✅ 將 ISO 時間字串轉換為本地日期字串
+ *
+ * 用於處理 Supabase 返回的 timestamptz 字串。
+ *
+ * @param isoString - ISO 8601 時間字串
+ * @returns 日期字串（YYYY-MM-DD，本地時間）
+ */
+export function isoToLocalDateString(isoString: string): string {
+  return timestampToLocalDateString(new Date(isoString).getTime());
+}
+
+/**
+ * ✅ 獲取當前本地時間戳
+ *
+ * 與 Supabase timestamptz 保持一致，忽略時區偏移。
+ *
+ * @returns 時間戳（毫秒）
+ */
+export function getLocalNow(): number {
+  return Date.now();
 }
 
 /**

@@ -314,6 +314,7 @@ export interface InteractionRecordedPayload {
 export interface InteractionDeletedPayload {
   eventId: string;             // 要刪除的互動事件 ID
   market_id: string;            // 所屬市集 ID
+  interactionType?: string;    // ✅ 互動類型（用於扣除統計）
 }
 
 /**
@@ -367,24 +368,29 @@ export interface DailyStats {
   id?: number;                 // 自動遞增 ID（Dexie 生成）
   date: string;                // 日期（YYYY-MM-DD）
   marketId?: string;           // 關聯的市集 ID（改為 UUID）
-  
-  // 互動統計
+
+  // 互動統計（預設類型）
   touchCount: number;          // 摸摸次數
   inquiryCount: number;        // 詢問次數
   dealCount: number;           // 成交次數
-  
+
+  // ✅ 靈活互動統計：用於存儲自定義按鈕的互動次數
+  // key: 互動按鈕 ID（如 'interest', 'engage', 'button_1' 等）
+  // value: 該類型的互動次數
+  extraInteractions?: Record<string, number>;
+
   // 財務統計
   revenue: number;             // 收入
   cost: number;                // 成本
   profit: number;              // 利潤
-  
+
   // 商品統計
   productsSold: {
     productId: string;         // 改為 UUID
     quantity: number;
     revenue: number;
   }[];
-  
+
   // 時間戳
   updatedAt: number;           // 最後更新時間
 }

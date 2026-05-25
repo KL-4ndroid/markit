@@ -71,6 +71,12 @@ export async function isStaffOf(ownerId: string): Promise<boolean> {
  * @returns 創建的員工關係記錄
  */
 export async function inviteStaff(inviteData: StaffInviteForm): Promise<StaffRelationship> {
+  // 0. 獲取當前用戶
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    throw new Error('請先登入');
+  }
+
   // 1. 查詢用戶是否存在
   const { data: userData, error: userError } = await supabase
     .from('profiles')
@@ -82,10 +88,11 @@ export async function inviteStaff(inviteData: StaffInviteForm): Promise<StaffRel
     throw new Error('找不到此用戶，請確認 Email 是否正確');
   }
 
-  // 2. 創建員工關係
+  // 2. 創建員工關係（包含 owner_id）
   const { data, error } = await supabase
     .from('staff_relationships')
     .insert({
+      owner_id: user.id,  // ✅ 修復：添加 owner_id
       staff_id: userData.id,
       staff_email: inviteData.staff_email.toLowerCase(),
       status: 'pending',
@@ -226,12 +233,24 @@ export async function getPendingInvitations(): Promise<StaffRelationship[]> {
 /**
  * 檢查用戶是否為老闆（擁有自己的市集）
  * 
+ * @param userId - 可選的用戶 ID，預設使用當前登入用戶
  * @returns 是否為老闆
  */
-export async function isOwner(): Promise<boolean> {
+export async function isOwner(userId?: string): Promise<boolean> {
+  // 獲取當前用戶 ID
+  let targetUserId = userId;
+  if (!targetUserId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+    targetUserId = user.id;
+  }
+
+  // ✅ 修復：檢查當前用戶是否為某市集的 owner
   const { data, error } = await supabase
     .from('market_members')
-    .select('id')
+    .select('role')
+    .eq('user_id', targetUserId)
+    .eq('role', 'owner')
     .limit(1);
 
   if (error) {

@@ -106,27 +106,27 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
   
   // 按日期組織統計數據（包含互動次數）
   const dailyData = useMemo(() => {
-    const dataMap = new Map<string, { 
-      revenue: number; 
-      profit: number; 
+    const dataMap = new Map<string, {
+      revenue: number;
+      profit: number;
       deals: number;
       interactions: Record<string, number>;
     }>();
-    
+
     // 初始化所有日期為 0
     dateRange.forEach(date => {
       const interactionCounts: Record<string, number> = {};
       interactionButtons.forEach(btn => {
         interactionCounts[btn.id] = 0;
       });
-      dataMap.set(date, { 
-        revenue: 0, 
-        profit: 0, 
+      dataMap.set(date, {
+        revenue: 0,
+        profit: 0,
         deals: 0,
         interactions: interactionCounts,
       });
     });
-    
+
     // ✅ 修復：只累加當前市集的統計數據
     stats?.forEach(stat => {
       // 檢查是否屬於當前市集且在日期範圍內
@@ -138,25 +138,32 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
             revenue: stat.revenue || 0,
             profit: stat.profit || 0,
             deals: stat.dealCount || 0,
+            // ✅ 合并 extraInteractions（自定義按鈕統計）
+            interactions: {
+              ...existing.interactions,
+              ...(stat.extraInteractions || {}),
+            },
           });
         }
       }
     });
 
-    // 統計每日的互動次數
+    // ✅ 統計每日的互動次數（從事件記錄）
     interactionEvents.forEach(event => {
       const eventDate = new Date(event.timestamp);
       const dateStr = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
-      
+
       const dayData = dataMap.get(dateStr);
       if (dayData) {
         const type = event.payload.type;
-        if (dayData.interactions[type] !== undefined) {
-          dayData.interactions[type]++;
+        // 初始化該類型（如果尚未初始化）
+        if (dayData.interactions[type] === undefined) {
+          dayData.interactions[type] = 0;
         }
+        dayData.interactions[type]++;
       }
     });
-    
+
     return Array.from(dataMap.entries()).map(([date, data]) => ({
       date,
       ...data,

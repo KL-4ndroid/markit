@@ -14,6 +14,7 @@ import {
   checkBackupIntegrity,
   type BackupData,
 } from './integrity';
+import { timestampToLocalDateString } from '@/lib/time-utils';
 import type {
   Event,
   EventType,
@@ -685,15 +686,15 @@ registerEventHandler('product_deleted', async (event: Event<{ productId: string 
 
 /**
  * 處理「互動記錄」事件
- * 
- * 當記錄互動（摸摸、詢問）時：
+ *
+ * 當記錄互動時：
  * 1. 更新市集的互動統計
- * 2. 更新每日統計
+ * 2. 更新每日統計（支持自定義按鈕）
  */
 registerEventHandler('interaction_recorded', async (event: Event<InteractionRecordedPayload>, db) => {
   const market_id = pickMarketId(event.payload)!;
   const { type } = event.payload;
-  
+
   // 更新市集統計
   const market = await db.markets.get(market_id);
   if (market) {
@@ -702,7 +703,7 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
       updatedAt: event.timestamp,
     });
   }
-  
+
   // 更新每日統計（使用複合索引查詢）
   // ✅ 使用本地日期，避免時區問題
   const eventDate = new Date(event.timestamp);
@@ -711,16 +712,34 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
     .where('[date+marketId]')
     .equals([date, market_id])
     .first();
-  
+
   if (dailyStat) {
-    // 更新現有統計
-    const updates: { updatedAt: number; touchCount?: number; inquiryCount?: number } = { updatedAt: event.timestamp };
-    if (type === 'touch') updates.touchCount = dailyStat.touchCount + 1;
-    if (type === 'inquiry') updates.inquiryCount = dailyStat.inquiryCount + 1;
-    
+    // ✅ 構建更新對象（支持自定義按鈕）
+    const updates: { updatedAt: number; touchCount?: number; inquiryCount?: number; extraInteractions?: Record<string, number> } = { updatedAt: event.timestamp };
+
+    // 預設類型
+    if (type === 'touch') updates.touchCount = (dailyStat.touchCount || 0) + 1;
+    if (type === 'inquiry') updates.inquiryCount = (dailyStat.inquiryCount || 0) + 1;
+
+    // ✅ 自定義按鈕：使用 extraInteractions 記錄
+    if (type !== 'touch' && type !== 'inquiry') {
+      const currentExtra = dailyStat.extraInteractions || {};
+      updates.extraInteractions = {
+        ...currentExtra,
+        [type]: (currentExtra[type] || 0) + 1,
+      };
+    }
+
     await db.dailyStats.update(dailyStat.id!, updates);
   } else {
-    // 建立新的每日統計
+    // ✅ 建立新的每日統計（支持自定義按鈕）
+    const extraInteractions: Record<string, number> = {};
+
+    // 自定義按鈕計入 extraInteractions
+    if (type !== 'touch' && type !== 'inquiry') {
+      extraInteractions[type] = 1;
+    }
+
     await db.dailyStats.add({
       date,
       marketId: market_id,
@@ -731,10 +750,11 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
       cost: 0,
       profit: 0,
       productsSold: [],
+      extraInteractions: Object.keys(extraInteractions).length > 0 ? extraInteractions : undefined,
       updatedAt: event.timestamp,
     });
   }
-  
+
   console.log(`👋 互動已記錄：${type} (市集 ID: ${market_id})`);
 });
 
@@ -887,14 +907,14 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
 
 /**
  * 處理「刪除互動記錄」事件
- * 
+ *
  * 當刪除互動記錄時：
  * 1. 保留原始事件，由 interaction_deleted 作為 tombstone
  * 2. 更新市集統計（扣除互動次數）
- * 3. 更新每日統計（扣除互動次數）
+ * 3. 更新每日統計（扣除互動次數，支持自定義按鈕）
  */
 registerEventHandler('interaction_deleted', async (event: Event<InteractionDeletedPayload>, db) => {
-  const { eventId, market_id } = event.payload;
+  const { eventId, market_id, interactionType } = event.payload;
 
   // 2. 更新市集統計
   const market = await db.markets.get(market_id);
@@ -904,24 +924,70 @@ registerEventHandler('interaction_deleted', async (event: Event<InteractionDelet
       updatedAt: event.timestamp,
     });
   }
-  
+
+  // ✅ 更新每日統計（支持自定義按鈕）
+  const eventDate = new Date(event.timestamp);
+  const date = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+  const dailyStat = await db.dailyStats
+    .where('[date+marketId]')
+    .equals([date, market_id])
+    .first();
+
+  if (dailyStat) {
+    const updates: { updatedAt: number; touchCount?: number; inquiryCount?: number; extraInteractions?: Record<string, number> } = { updatedAt: event.timestamp };
+
+    // 預設類型
+    if (interactionType === 'touch') updates.touchCount = Math.max(0, (dailyStat.touchCount || 0) - 1);
+    if (interactionType === 'inquiry') updates.inquiryCount = Math.max(0, (dailyStat.inquiryCount || 0) - 1);
+
+    // ✅ 自定義按鈕：從 extraInteractions 扣除
+    if (interactionType && interactionType !== 'touch' && interactionType !== 'inquiry') {
+      const currentExtra = dailyStat.extraInteractions || {};
+      const currentCount = currentExtra[interactionType] || 0;
+      const newExtra = { ...currentExtra };
+      if (currentCount > 0) {
+        newExtra[interactionType] = currentCount - 1;
+        if (newExtra[interactionType] === 0) delete newExtra[interactionType];
+      }
+      updates.extraInteractions = newExtra;
+    }
+
+    await db.dailyStats.update(dailyStat.id!, updates);
+  }
+
   console.log(`🗑️ 互動記錄已刪除：ID ${eventId.substring(0, 8)}...`);
 });
 
 /**
  * 處理「刪除成交記錄」事件
- * 
+ *
  * 當刪除成交記錄時：
  * 1. 保留原始事件，由 deal_deleted 作為 tombstone
- * 2. 更新市集統計（扣除金額）
- * 3. 更新每日統計（扣除金額）
+ * 2. ✅ 恢復商品庫存
+ * 3. 更新市集統計（扣除金額）
+ * 4. 更新每日統計（扣除金額）
  */
 registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db) => {
   const { eventId, market_id, dealDate, totalAmount, totalCost, dealCount, productsSold = [] } = event.payload;
-  
+
   const totalProfit = totalAmount - totalCost;
 
-  // 2. 更新市集統計（扣除金額）
+  // ✅ 2. 恢復商品庫存
+  for (const soldItem of productsSold) {
+    const product = await db.products.get(soldItem.productId);
+    if (product) {
+      // 如果商品庫存不是無限的，則恢復庫存
+      if (!product.unlimitedStock && product.stock !== undefined) {
+        await db.products.update(soldItem.productId, {
+          stock: product.stock + soldItem.quantity,
+          updatedAt: event.timestamp,
+        });
+        console.log(`📦 已恢復庫存：${product.name} x${soldItem.quantity}（市集 ID: ${market_id.substring(0, 8)}...）`);
+      }
+    }
+  }
+
+  // 3. 更新市集統計（扣除金額）
   const market = await db.markets.get(market_id);
   if (market) {
     await db.markets.update(market_id, {
@@ -931,20 +997,20 @@ registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db
       updatedAt: event.timestamp,
     });
   }
-  
-  // 3. 更新每日統計（扣除金額）
+
+  // 4. 更新每日統計（扣除金額）
   const dailyStat = await db.dailyStats
     .where('[date+marketId]')
     .equals([dealDate, market_id])
     .first();
-  
+
   if (dailyStat) {
     const newDealCount = Math.max(0, nonNegativeNumber(dailyStat.dealCount) - dealCount);
     const newRevenue = Math.max(0, nonNegativeNumber(dailyStat.revenue) - totalAmount);
     const newCost = Math.max(0, nonNegativeNumber(dailyStat.cost) - totalCost);
     const newProfit = finiteNumber(dailyStat.profit) - totalProfit;
     const newProductsSold = subtractProductsSold(safeProductsSold(dailyStat.productsSold), productsSold);
-    
+
     // 如果該日期的統計歸零，刪除記錄
     if (newDealCount === 0 && newRevenue === 0) {
       await db.dailyStats.delete(dailyStat.id!);
@@ -959,7 +1025,7 @@ registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db
       });
     }
   }
-  
+
   console.log(`🗑️ 成交記錄已刪除：NT$${totalAmount} (日期: ${dealDate}, 市集 ID: ${market_id.substring(0, 8)}...)`);
 });
 

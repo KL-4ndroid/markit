@@ -100,29 +100,42 @@ export function useUpcomingMarkets(limit: number = 5) {
     // ✅ 使用本地日期，避免時區問題
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
+
     const markets = await db.markets.toArray();
-    
+
     return markets
       .filter(m => {
         // 過濾已刪除、已取消、已完成的市集
         if (m.isDeleted || m.status === 'cancelled' || m.status === 'completed') {
           return false;
         }
-        
-        // ✅ 優先檢查 dates 陣列（多選日期）
+
+        // ✅ 優先使用 dates 陣列（多選日期）
         if (m.dates && m.dates.length > 0) {
-          // 檢查是否有任何日期 >= 今天
-          return m.dates.some(date => date >= today);
+          // 找出最近一個未來的日期
+          const futureDates = m.dates.filter(date => date >= today);
+          if (futureDates.length === 0) {
+            // 所有日期都已過期，不顯示
+            return false;
+          }
+          // ✅ 有未來日期，顯示該市集
+          return true;
         }
-        
+
         // ✅ 降級：使用 endDate（連續日期，向後兼容）
         return m.endDate >= today;
       })
       .sort((a, b) => {
-        // 使用第一個日期或 startDate 排序
-        const dateA = (a.dates && a.dates.length > 0) ? a.dates[0] : a.startDate;
-        const dateB = (b.dates && b.dates.length > 0) ? b.dates[0] : b.startDate;
+        // 使用第一個未來日期或 startDate 排序
+        const getNextDate = (m: typeof a) => {
+          if (m.dates && m.dates.length > 0) {
+            const futureDates = m.dates.filter(date => date >= today);
+            return futureDates.length > 0 ? futureDates.sort()[0] : m.endDate;
+          }
+          return m.startDate;
+        };
+        const dateA = getNextDate(a);
+        const dateB = getNextDate(b);
         return new Date(dateA).getTime() - new Date(dateB).getTime();
       })
       .slice(0, limit);

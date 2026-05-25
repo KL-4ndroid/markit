@@ -12,13 +12,13 @@ export type StaffPermissions = {
   can_edit: boolean;
 };
 
-// 帶有訪問權限的市集類型
+// 帶有訪問權限的市集類型（匹配 staff_accessible_markets 視圖）
 export interface MarketWithAccess {
-  // 原有的 market 欄位
+  // 視圖返回的所有市場欄位
   id: string;
   name: string;
   location?: string;
-  date?: string;
+  dates?: string[];           // ✅ 視圖可能返回
   start_date?: string;
   end_date?: string;
   notes?: string;
@@ -26,31 +26,55 @@ export interface MarketWithAccess {
   updated_at?: string;
   deleted_at?: string | null;
   is_deleted?: boolean;
-  
-  // 新增的權限欄位
-  relationship_owner_id: string;  // 關係中的老闆 ID
-  permissions: StaffPermissions;   // 權限設定
-  access_type: AccessType;         // 訪問類型
+
+  // 市集狀態欄位（從 markets 表）
+  status?: string;
+  early_entry_enabled?: boolean;
+  early_entry_time?: string;
+  check_in_time?: string;
+  operating_start_time?: string;
+  operating_end_time?: string;
+  registration_fee?: number;
+  booth_cost?: number;
+  total_revenue?: number;
+  total_profit?: number;
+  total_interactions?: number;
+  total_deals?: number;
+
+  // 權限欄位（視圖新增）
+  owner_id: string;                 // 市集擁有者
+  relationship_owner_id: string;     // 關係中的老闆 ID
+  permissions: StaffPermissions;       // 權限設定
+  access_type: AccessType;          // 訪問類型
 }
 
-// 帶有訪問權限的商品類型
+// 帶有訪問權限的商品類型（匹配 staff_accessible_products 視圖）
 export interface ProductWithAccess {
-  // 原有的 product 欄位
+  // 視圖返回的所有商品欄位
   id: string;
+  owner_id?: string;                // ✅ 商品擁有者
+  market_id?: string;
   name: string;
-  market_id: string;
-  cost?: number;
+  category?: string;
   price?: number;
+  cost?: number;
+  icon_name?: string;
+  color_code?: string;
   stock?: number;
+  unlimited_stock?: boolean;
+  is_active?: boolean;
+  is_shared?: boolean;
+  total_sold?: number;
+  description?: string;
   notes?: string;
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;
-  
-  // 新增的權限欄位
-  relationship_owner_id: string;  // 關係中的老闆 ID
-  permissions: StaffPermissions;   // 權限設定
-  access_type: AccessType;         // 訪問類型
+
+  // 權限欄位（視圖新增）
+  relationship_owner_id: string;     // 關係中的老闆 ID
+  permissions: StaffPermissions;      // 權限設定
+  access_type: AccessType;          // 訪問類型
 }
 
 // 員工關係記錄
@@ -61,10 +85,23 @@ export interface StaffRelationship {
   staff_email: string;        // 員工的 Email
   status: 'pending' | 'active' | 'revoked';  // 狀態
   permissions: StaffPermissions;  // 權限設定
-  invited_at: string;         // 邀請時間
+  invited_at?: string;        // ✅ 邀請時間
   accepted_at?: string;       // 接受時間
   created_at: string;
   updated_at: string;
+}
+
+// 帶有訪問權限的事件類型（匹配 staff_accessible_events 視圖）
+export interface EventWithAccess {
+  id: string;
+  type: string;
+  payload: Record<string, unknown>;
+  actor_id: string;
+  market_id?: string;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
+  relationship_owner_id?: string;
+  access_type?: AccessType;
 }
 
 // 員工邀請表單數據
