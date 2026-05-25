@@ -172,6 +172,81 @@ function validateBackupEventPayload(event: Event, index: number): string[] {
   return errors;
 }
 
+function validateEventReferences(
+  data: BackupData,
+  eventById: Map<string, Event>,
+  marketIds: Set<string>,
+  productIds: Set<string>
+): IntegrityResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  data.events.forEach((event, index) => {
+    if (!isRecord(event.payload)) return;
+
+    const payload = event.payload;
+    const label = `events[${index}] ${event.type}`;
+    const payloadMarketId = pickPayloadMarketId(payload);
+
+    if (payloadMarketId && event.market_id && payloadMarketId !== event.market_id) {
+      warnings.push(`${label} payload marketId differs from event.market_id`);
+    }
+
+    if (payloadMarketId && !marketIds.has(payloadMarketId)) {
+      errors.push(`${label} references missing market: ${payloadMarketId}`);
+    }
+
+    if (
+      (event.type === 'product_updated' || event.type === 'product_deleted') &&
+      isNonEmptyString(payload.productId) &&
+      !productIds.has(payload.productId)
+    ) {
+      errors.push(`${label} references missing product: ${payload.productId}`);
+    }
+
+    if (event.type === 'deal_closed' && Array.isArray(payload.items)) {
+      payload.items.forEach((item, itemIndex) => {
+        if (!isRecord(item) || !isNonEmptyString(item.productId)) return;
+        if (!productIds.has(item.productId)) {
+          errors.push(`${label}.items[${itemIndex}] references missing product: ${item.productId}`);
+        }
+      });
+    }
+
+    if (event.type !== 'deal_deleted' && event.type !== 'interaction_deleted') return;
+    if (!isNonEmptyString(payload.eventId)) return;
+
+    if (payload.eventId === event.id) {
+      errors.push(`${label} cannot tombstone itself`);
+      return;
+    }
+
+    const target = eventById.get(payload.eventId);
+    if (!target) {
+      errors.push(`${label} references missing event: ${payload.eventId}`);
+      return;
+    }
+
+    const expectedType = event.type === 'deal_deleted' ? 'deal_closed' : 'interaction_recorded';
+    if (target.type !== expectedType) {
+      errors.push(`${label} references ${target.type}; expected ${expectedType}`);
+    }
+
+    if (isRecord(target.payload)) {
+      const targetMarketId = pickPayloadMarketId(target.payload);
+      if (payloadMarketId && targetMarketId && payloadMarketId !== targetMarketId) {
+        warnings.push(`${label} marketId differs from tombstoned event`);
+      }
+    }
+  });
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
 export function parseBackupData(jsonData: string): BackupData {
   let parsed: unknown;
 
@@ -227,6 +302,11 @@ export function checkBackupIntegrity(data: BackupData): IntegrityResult {
 
   const marketIds = new Set(data.markets.map(market => market.id).filter(isNonEmptyString));
   const productIds = new Set(data.products.map(product => product.id).filter(isNonEmptyString));
+  const eventById = new Map(
+    data.events
+      .filter(event => isNonEmptyString(event.id))
+      .map(event => [event.id as string, event])
+  );
 
   data.events.forEach((event, index) => {
     if (!isNonEmptyString(event.id)) errors.push(`events[${index}] 缺少有效 id`);
@@ -242,6 +322,10 @@ export function checkBackupIntegrity(data: BackupData): IntegrityResult {
   data.events.forEach((event, index) => {
     errors.push(...validateBackupEventPayload(event, index));
   });
+
+  const referenceCheck = validateEventReferences(data, eventById, marketIds, productIds);
+  errors.push(...referenceCheck.errors);
+  warnings.push(...referenceCheck.warnings);
 
   data.markets.forEach((market, index) => {
     if (!isNonEmptyString(market.id)) errors.push(`markets[${index}] 缺少有效 id`);

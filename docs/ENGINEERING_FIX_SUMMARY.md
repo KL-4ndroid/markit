@@ -52,6 +52,8 @@ A reusable `DatabaseRecoveryPanel` now provides integrity check, retry, and resc
 
 The app now includes a dedicated `/recovery` page that exposes the repair panel and a safe recovery workflow without touching the existing high-risk page files.
 
+Integrity checks now validate cross-event references: delete/tombstone events must point to the expected original event type, cannot point to themselves, and product deal items must reference existing products before import or recovery proceeds.
+
 Current status:
 
 - Build: passing.
