@@ -16,10 +16,12 @@ The remaining duplicated `market_updated` replay conversion blocks in `hooks/use
 
 Staff market detail loading and full-sync market/product imports now consume the shared row mappers instead of rebuilding local row shapes inline. The mapper layer also normalizes numeric fields and single-date market rows more consistently.
 
+Sync conflict resolution and event payload rewriting now normalize remote rows and event updates through the shared mapper layer. Semver-safe dependency updates were applied; the only remaining audit findings are still the upstream Next/PostCSS moderate advisories with no clean stable upgrade path available.
+
 Current status:
 
 - Build: passing.
 - Lint: passing with no warnings.
 - TypeScript: passing.
 - Production audit: 2 moderate upstream `next`/`postcss` findings remain.
-- Security backlog: mapper adoption for remaining migration/debug utilities and monitoring the upstream Next/PostCSS advisory.
+- Security backlog: monitoring the upstream Next/PostCSS advisory.

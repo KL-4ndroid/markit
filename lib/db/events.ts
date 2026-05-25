@@ -268,39 +268,6 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
   // ✅ 更新事件的 market_id 和 payload（統一使用 market_id 和底線式命名）
   const updates: { market_id: string; payload?: Record<string, unknown> } = { market_id };
   
-  // ✅ 總是轉換 payload 為底線式命名（用於 Supabase 同步）
-  // 檢查是否已經有底線式欄位，如果沒有則添加
-  const payloadWithSnakeCase = payload as MarketCreatedPayload & { start_date?: string; end_date?: string };
-  if (!payloadWithSnakeCase.start_date || !payloadWithSnakeCase.end_date) {
-    updates.payload = {
-      ...payload,
-      market_id,
-      dates,                     // ✅ 添加 dates 陣列
-      start_date: startDate,     // ✅ 使用計算後的最早日期
-      end_date: endDate,         // ✅ 使用計算後的最晚日期
-      start_time: payload.startTime,
-      end_time: payload.endTime,
-      early_entry_enabled: payload.earlyEntryEnabled,
-      early_entry_time: payload.earlyEntryTime,
-      check_in_time: payload.checkInTime,
-      operating_start_time: payload.operatingStartTime,
-      operating_end_time: payload.operatingEndTime,
-      registration_fee: payload.registrationFee,
-      booth_cost: payload.boothCost,
-      deposit: payload.deposit,  // ✅ 添加 deposit
-      table_rental: payload.tableRental,
-      chair_rental: payload.chairRental,
-      umbrella_rental: payload.umbrellaRental,
-      tablecloth_rental: payload.tableclothRental,
-      commission_rate: payload.commissionRate,
-      table_free: payload.tableFree,
-      chair_free: payload.chairFree,
-      umbrella_free: payload.umbrellaFree,
-      tablecloth_free: payload.tableclothFree,
-      notes: payload.notes,  // ✅ 添加 notes
-    };
-  }
-  
   updates.payload = marketCreatedPayloadToCloud(
     { ...payload, dates, startDate, endDate },
     market_id
@@ -329,40 +296,6 @@ registerEventHandler('market_updated', async (event: Event<{ market_id: string; 
   // ✅ 轉換 payload 為底線式命名（用於 Supabase 同步）
   const snakeCaseUpdates: Record<string, unknown> = marketUpdatesToSnake(updates as Record<string, unknown>);
   
-  // 基本資訊
-  if (updates.name !== undefined) snakeCaseUpdates.name = updates.name;
-  if (updates.location !== undefined) snakeCaseUpdates.location = updates.location;
-  if (updates.dates !== undefined) snakeCaseUpdates.dates = updates.dates;
-  if (updates.startDate !== undefined) snakeCaseUpdates.start_date = updates.startDate;
-  if (updates.endDate !== undefined) snakeCaseUpdates.end_date = updates.endDate;
-  if (updates.startTime !== undefined) snakeCaseUpdates.start_time = updates.startTime;
-  if (updates.endTime !== undefined) snakeCaseUpdates.end_time = updates.endTime;
-  
-  // 時間軸資訊
-  if (updates.earlyEntryEnabled !== undefined) snakeCaseUpdates.early_entry_enabled = updates.earlyEntryEnabled;
-  if (updates.earlyEntryTime !== undefined) snakeCaseUpdates.early_entry_time = updates.earlyEntryTime;
-  if (updates.checkInTime !== undefined) snakeCaseUpdates.check_in_time = updates.checkInTime;
-  if (updates.operatingStartTime !== undefined) snakeCaseUpdates.operating_start_time = updates.operatingStartTime;
-  if (updates.operatingEndTime !== undefined) snakeCaseUpdates.operating_end_time = updates.operatingEndTime;
-  
-  // 財務資訊
-  if (updates.registrationFee !== undefined) snakeCaseUpdates.registration_fee = updates.registrationFee;
-  if (updates.boothCost !== undefined) snakeCaseUpdates.booth_cost = updates.boothCost;
-  if (updates.deposit !== undefined) snakeCaseUpdates.deposit = updates.deposit;
-  if (updates.tableRental !== undefined) snakeCaseUpdates.table_rental = updates.tableRental;
-  if (updates.chairRental !== undefined) snakeCaseUpdates.chair_rental = updates.chairRental;
-  if (updates.umbrellaRental !== undefined) snakeCaseUpdates.umbrella_rental = updates.umbrellaRental;
-  if (updates.tableclothRental !== undefined) snakeCaseUpdates.tablecloth_rental = updates.tableclothRental;
-  if (updates.commissionRate !== undefined) snakeCaseUpdates.commission_rate = updates.commissionRate;
-  
-  // 免費提供標記
-  if (updates.tableFree !== undefined) snakeCaseUpdates.table_free = updates.tableFree;
-  if (updates.chairFree !== undefined) snakeCaseUpdates.chair_free = updates.chairFree;
-  if (updates.umbrellaFree !== undefined) snakeCaseUpdates.umbrella_free = updates.umbrellaFree;
-  if (updates.tableclothFree !== undefined) snakeCaseUpdates.tablecloth_free = updates.tableclothFree;
-  
-  // 備註
-  if (updates.notes !== undefined) snakeCaseUpdates.notes = updates.notes;
   
   // 更新事件的 payload 為底線式命名
   await db.events.update(event.id!, {

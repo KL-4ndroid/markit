@@ -52,7 +52,7 @@ export function InteractionTimeHeatmap({ data }: InteractionTimeHeatmapProps) {
               borderRadius: '12px',
               padding: '12px'
             }}
-            formatter={(value: any, name: string | undefined) => {
+            formatter={(value: any, name: string | number | undefined) => {
               if (name === '成交金額') {
                 return [`NT$${value.toLocaleString()}`, name];
               }

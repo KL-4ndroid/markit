@@ -16,10 +16,12 @@ import { recordEvent } from '@/lib/db/events';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
   marketAccessRowToLocal,
+  marketRowToLocal,
   normalizeEventForCloud,
   normalizeEventPayloadForLocal,
   pickMarketId,
   productAccessRowToLocal,
+  productRowToLocal,
 } from '@/lib/data-mappers';
 import type { Event } from '@/types/db';
 
@@ -1682,11 +1684,11 @@ async function resolveMarketConflict(
   localData: any,
   remoteData: any
 ): Promise<ConflictResolution> {
+  const normalizedRemote = marketRowToLocal(remoteData as Record<string, unknown>);
+
   // 規則 1：比較 updatedAt
   const localUpdatedAt = localData.updatedAt || 0;
-  const remoteUpdatedAt = remoteData.updated_at 
-    ? new Date(remoteData.updated_at).getTime() 
-    : 0;
+  const remoteUpdatedAt = normalizedRemote.updatedAt || 0;
   
   if (localUpdatedAt > remoteUpdatedAt) {
     return {
@@ -1704,10 +1706,10 @@ async function resolveMarketConflict(
   
   // 規則 2：時間戳相同，比較統計欄位
   const localRevenue = localData.totalRevenue || 0;
-  const remoteRevenue = remoteData.total_revenue || 0;
+  const remoteRevenue = normalizedRemote.totalRevenue || 0;
   
   const localDeals = localData.totalDeals || 0;
-  const remoteDeals = remoteData.total_deals || 0;
+  const remoteDeals = normalizedRemote.totalDeals || 0;
   
   if (localRevenue !== remoteRevenue || localDeals !== remoteDeals) {
     return {
@@ -1735,32 +1737,33 @@ async function mergeMarketData(
   remoteData: any
 ): Promise<any> {
   console.log(`🔀 合併市集數據: ${localData.id?.substring(0, 8)}...`);
+  const normalizedRemote = marketRowToLocal(remoteData as Record<string, unknown>);
   
   return {
-    ...remoteData, // 基礎數據使用雲端
+    ...normalizedRemote, // 基礎數據使用雲端
     
     // 統計欄位使用較大值（避免數據丟失）
     totalRevenue: Math.max(
       localData.totalRevenue || 0,
-      remoteData.total_revenue || 0
+      normalizedRemote.totalRevenue || 0
     ),
     totalProfit: Math.max(
       localData.totalProfit || 0,
-      remoteData.total_profit || 0
+      normalizedRemote.totalProfit || 0
     ),
     totalDeals: Math.max(
       localData.totalDeals || 0,
-      remoteData.total_deals || 0
+      normalizedRemote.totalDeals || 0
     ),
     totalInteractions: Math.max(
       localData.totalInteractions || 0,
-      remoteData.total_interactions || 0
+      normalizedRemote.totalInteractions || 0
     ),
     
     // 時間戳使用較新的
     updatedAt: Math.max(
       localData.updatedAt || 0,
-      remoteData.updated_at ? new Date(remoteData.updated_at).getTime() : 0
+      normalizedRemote.updatedAt || 0
     ),
   };
 }
@@ -1776,11 +1779,11 @@ async function resolveProductConflict(
   localData: any,
   remoteData: any
 ): Promise<ConflictResolution> {
+  const normalizedRemote = productRowToLocal(remoteData as Record<string, unknown>);
+
   // 規則 1：比較 updatedAt
   const localUpdatedAt = localData.updatedAt || 0;
-  const remoteUpdatedAt = remoteData.updated_at 
-    ? new Date(remoteData.updated_at).getTime() 
-    : 0;
+  const remoteUpdatedAt = normalizedRemote.updatedAt || 0;
   
   if (localUpdatedAt > remoteUpdatedAt) {
     return {
@@ -1798,10 +1801,10 @@ async function resolveProductConflict(
   
   // 規則 2：時間戳相同，比較庫存和銷售統計
   const localStock = localData.stock || 0;
-  const remoteStock = remoteData.stock || 0;
+  const remoteStock = normalizedRemote.stock || 0;
   
   const localSold = localData.totalSold || 0;
-  const remoteSold = remoteData.total_sold || 0;
+  const remoteSold = normalizedRemote.totalSold || 0;
   
   if (localStock !== remoteStock || localSold !== remoteSold) {
     return {
@@ -1829,28 +1832,29 @@ async function mergeProductData(
   remoteData: any
 ): Promise<any> {
   console.log(`🔀 合併商品數據: ${localData.id?.substring(0, 8)}...`);
+  const normalizedRemote = productRowToLocal(remoteData as Record<string, unknown>);
   
   // 對於商品，庫存使用較小值（保守策略，避免超賣）
   // 銷售統計使用較大值（避免數據丟失）
   return {
-    ...remoteData, // 基礎數據使用雲端
+    ...normalizedRemote, // 基礎數據使用雲端
     
     // 庫存使用較小值（保守策略）
     stock: Math.min(
       localData.stock || 0,
-      remoteData.stock || 0
+      normalizedRemote.stock || 0
     ),
     
     // 銷售統計使用較大值
     totalSold: Math.max(
       localData.totalSold || 0,
-      remoteData.total_sold || 0
+      normalizedRemote.totalSold || 0
     ),
     
     // 時間戳使用較新的
     updatedAt: Math.max(
       localData.updatedAt || 0,
-      remoteData.updated_at ? new Date(remoteData.updated_at).getTime() : 0
+      normalizedRemote.updatedAt || 0
     ),
   };
 }
@@ -1894,17 +1898,11 @@ export async function detectAndResolveConflict(
         // 使用雲端數據，更新本地
         if (tableName === 'markets') {
           await db.markets.update(localData.id, {
-            ...remoteData,
-            updatedAt: remoteData.updated_at 
-              ? new Date(remoteData.updated_at).getTime() 
-              : Date.now(),
+            ...marketRowToLocal(remoteData as Record<string, unknown>),
           });
         } else {
           await db.products.update(localData.id, {
-            ...remoteData,
-            updatedAt: remoteData.updated_at 
-              ? new Date(remoteData.updated_at).getTime() 
-              : Date.now(),
+            ...productRowToLocal(remoteData as Record<string, unknown>),
           });
         }
         return true;

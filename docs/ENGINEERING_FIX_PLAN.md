@@ -20,11 +20,11 @@ Last updated: 2026-05-25
 - [x] Adopt mappers in snapshot and full-sync import paths.
 - [x] Remove duplicated market update replay conversion blocks from sync.
 - [x] Use shared mappers for staff market detail loading and full-sync import row shaping.
-- [ ] Continue replacing remaining ad hoc camelCase/snake_case handling with mapper helpers.
+- [x] Replace remaining high-risk ad hoc camelCase/snake_case handling in sync conflicts and event payload rewriting.
 - [x] Harden staff invitation RLS and RPC functions.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
-- [ ] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.
+- [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.
 - [x] Remove `ignoreBuildErrors` and `ignoreDuringBuilds` after type/lint checks are clean.
 
 ## Work Order
@@ -46,7 +46,7 @@ Last updated: 2026-05-25
 4. **Data normalization**
    - Create a single mapper layer for Supabase rows and Dexie models.
    - Normalize event payloads before persistence and sync.
-   - Expand mapper adoption into remaining migration and debug/import utilities.
+   - Expand mapper adoption into remaining high-risk import, replay, conflict, and event payload rewrite paths.
    - Add focused tests around event creation, sync payloads, and analytics cache invalidation.
 
 ## Verification Commands
