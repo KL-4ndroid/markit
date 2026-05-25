@@ -60,6 +60,8 @@ Deal projection updates now sanitize existing `dailyStats` numeric cache fields 
 
 The first automated data-safety tests now cover valid backups, invalid `dailyStats` numeric cache values, invalid tombstone references, and deal items that reference missing products. The standard verification flow now includes `npm test`.
 
+The integrity test suite now also covers backup parsing, unsupported backup versions, valid deal tombstones, self-referential tombstones, and warnings for mismatched payload `marketId` versus event `market_id`.
+
 Current status:
 
 - Build: passing.

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { checkBackupIntegrity, type BackupData } from '../lib/db/integrity';
+import { checkBackupIntegrity, parseBackupData, type BackupData } from '../lib/db/integrity';
 import type { Event, Market, Product, Settings } from '../types/db';
 
 const now = 1_700_000_000_000;
@@ -156,4 +156,91 @@ runTest('rejects deal item product references that do not exist', () => {
 
   assert.equal(result.ok, false);
   assert.ok(result.errors.includes('events[0] deal_closed.items[0] references missing product: missing-product'));
+});
+
+runTest('parses supported backup data', () => {
+  const parsed = parseBackupData(JSON.stringify(backup()));
+
+  assert.equal(parsed.version, 1);
+  assert.equal(parsed.markets.length, 1);
+});
+
+runTest('rejects unsupported backup versions', () => {
+  assert.throws(
+    () => parseBackupData(JSON.stringify({ ...backup(), version: 999 })),
+    /不支援的備份版本/
+  );
+});
+
+runTest('accepts valid deal tombstone references', () => {
+  const result = checkBackupIntegrity(backup({
+    events: [
+      event({
+        id: 'deal-1',
+        type: 'deal_closed',
+        market_id: 'market-1',
+        payload: {
+          marketId: 'market-1',
+          totalAmount: 100,
+          paymentMethod: 'cash',
+          items: [{ productId: 'product-1', quantity: 1, price: 100 }],
+        },
+      }),
+      event({
+        id: 'deal-delete-1',
+        type: 'deal_deleted',
+        market_id: 'market-1',
+        payload: {
+          eventId: 'deal-1',
+          marketId: 'market-1',
+          dealDate: '2026-01-01',
+          totalAmount: 100,
+          totalCost: 0,
+          dealCount: 1,
+        },
+      }),
+    ],
+  }));
+
+  assert.equal(result.ok, true);
+});
+
+runTest('rejects tombstone events that point to themselves', () => {
+  const result = checkBackupIntegrity(backup({
+    events: [
+      event({
+        id: 'deal-delete-1',
+        type: 'deal_deleted',
+        market_id: 'market-1',
+        payload: {
+          eventId: 'deal-delete-1',
+          marketId: 'market-1',
+          dealDate: '2026-01-01',
+          totalAmount: 100,
+          totalCost: 0,
+          dealCount: 1,
+        },
+      }),
+    ],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes('events[0] deal_deleted cannot tombstone itself'));
+});
+
+runTest('warns when payload marketId differs from event market_id', () => {
+  const result = checkBackupIntegrity(backup({
+    markets: [market(), market({ id: 'market-2' })],
+    events: [
+      event({
+        id: 'interaction-1',
+        type: 'interaction_recorded',
+        market_id: 'market-1',
+        payload: { marketId: 'market-2', type: 'touch' },
+      }),
+    ],
+  }));
+
+  assert.equal(result.ok, true);
+  assert.ok(result.warnings.includes('events[0] interaction_recorded payload marketId differs from event.market_id'));
 });
