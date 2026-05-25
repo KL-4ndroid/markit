@@ -28,6 +28,8 @@ Staff-view synchronization no longer clears other users' local records before ev
 
 Backup import now has a first safety layer: imported JSON is parsed, version-checked, validated for required arrays, duplicate IDs, invalid dates, missing required fields, orphan references, and negative stock before any replacement happens. `importData()` also creates an emergency backup of the current local data before replacing tables and reruns integrity checks after import.
 
+Event creation is now cleaner for market/product create/update flows: `recordEvent()` prepares generated `marketId`/`productId` values before insertion, and the corresponding projection handlers no longer rewrite those event rows after they are stored.
+
 Current status:
 
 - Build: passing.

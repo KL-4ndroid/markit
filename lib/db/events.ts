@@ -7,8 +7,6 @@
 
 import { db, generateUUID } from './index';
 import {
-  marketCreatedPayloadToCloud,
-  marketUpdatesToSnake,
   pickMarketId,
   productCreatedPayloadToLocal,
 } from '@/lib/data-mappers';
@@ -38,6 +36,45 @@ export const eventHandlers: Partial<Record<EventType, EventHandler>> = {};
  */
 export function registerEventHandler(type: EventType, handler: EventHandler): void {
   eventHandlers[type] = handler;
+}
+
+function prepareEventForInsert<T>(
+  type: EventType,
+  payload: T
+): { payload: T; market_id?: string } {
+  if (!payload || typeof payload !== 'object') {
+    return { payload };
+  }
+
+  const record = payload as Record<string, unknown>;
+
+  if (type === 'market_created') {
+    const marketId = pickMarketId(record) || generateUUID();
+    return {
+      payload: {
+        ...record,
+        marketId,
+      } as T,
+      market_id: marketId,
+    };
+  }
+
+  if (type === 'product_created') {
+    const productPayload = productCreatedPayloadToLocal(record as ProductCreatedPayload & Record<string, unknown>);
+    const productId = productPayload.productId || generateUUID();
+    return {
+      payload: {
+        ...productPayload,
+        productId,
+      } as T,
+      market_id: pickMarketId(productPayload),
+    };
+  }
+
+  return {
+    payload,
+    market_id: pickMarketId(record),
+  };
 }
 
 /**
@@ -108,11 +145,13 @@ export async function recordEvent<T = Record<string, unknown>>(
       }
     }
 
+    const preparedEvent = prepareEventForInsert(type, payload);
+
     // 建立事件物件
     const event: Event<T> = {
       id,
       type,
-      payload,
+      payload: preparedEvent.payload,
       timestamp,
       actor_id, // ✅ 使用真實的用戶 ID
       sync_status: 'local_only',
@@ -121,19 +160,8 @@ export async function recordEvent<T = Record<string, unknown>>(
       },
     };
 
-    // 從 payload 中提取 market_id（如果有）
-    if (payload && typeof payload === 'object') {
-      // ✅ 統一使用 market_id（底線式）
-      if ('market_id' in payload) {
-        event.market_id = (payload as Record<string, unknown>).market_id as string;
-      } else if ('marketId' in payload) {
-        // 兼容舊的駝峰式命名
-        event.market_id = (payload as Record<string, unknown>).marketId as string;
-      }
-    }
-
     // ✅ 優化：使用 transaction 確保原子性，並減少不必要的等待
-    event.market_id = event.market_id ?? pickMarketId(payload);
+    event.market_id = preparedEvent.market_id ?? pickMarketId(preparedEvent.payload);
 
     await db.transaction(
       'rw',
@@ -265,16 +293,6 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
   // 寫入 markets 表
   await db.markets.add(market);
   
-  // ✅ 更新事件的 market_id 和 payload（統一使用 market_id 和底線式命名）
-  const updates: { market_id: string; payload?: Record<string, unknown> } = { market_id };
-  
-  updates.payload = marketCreatedPayloadToCloud(
-    { ...payload, dates, startDate, endDate },
-    market_id
-  );
-
-  await db.events.update(event.id!, updates);
-  
   console.log(`📅 市集已建立：${market.name} (ID: ${market_id.substring(0, 8)}..., ${dates.length} 天)`);
 });
 
@@ -291,18 +309,6 @@ registerEventHandler('market_updated', async (event: Event<{ market_id: string; 
   await db.markets.update(market_id, {
     ...updates,
     updatedAt: event.timestamp,
-  });
-  
-  // ✅ 轉換 payload 為底線式命名（用於 Supabase 同步）
-  const snakeCaseUpdates: Record<string, unknown> = marketUpdatesToSnake(updates as Record<string, unknown>);
-  
-  
-  // 更新事件的 payload 為底線式命名
-  await db.events.update(event.id!, {
-    payload: {
-      market_id,
-      updates: snakeCaseUpdates,
-    },
   });
   
   console.log(`📅 市集已更新：ID ${market_id.substring(0, 8)}...`);
@@ -418,13 +424,6 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
     createdAt: event.timestamp,
     updatedAt: event.timestamp,
   });
-  
-  // 將 productId 寫回 payload（用於同步）
-  if (!payloadWithId.productId) {
-    await db.events.update(event.id!, {
-      payload: { ...payload, productId },
-    });
-  }
   
   console.log(`📦 商品已建立：${payload.name}${payload.unlimitedStock ? ' (不限庫存)' : ''} (ID: ${productId.substring(0, 8)}...)`);
 });
