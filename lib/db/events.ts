@@ -518,10 +518,13 @@ registerEventHandler('market_status_changed', async (event: Event<MarketStatusCh
   const { newStatus } = event.payload;
   
   // 更新市集狀態
-  await db.markets.update(market_id, {
+  const updated = await db.markets.update(market_id, {
     status: newStatus,
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Market not found for ${event.type}: ${market_id}`);
+  }
   
   console.log(`📅 市集狀態已更新：ID ${market_id} -> ${newStatus}`);
 });
@@ -536,11 +539,14 @@ registerEventHandler('market_status_changed', async (event: Event<MarketStatusCh
 registerEventHandler('market_started', async (event: Event<{ market_id: string }>, db) => {
   const { market_id } = event.payload;
   
-  await db.markets.update(market_id, {
+  const updated = await db.markets.update(market_id, {
     status: 'ongoing',
     operationPhase: 'operating',
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Market not found for ${event.type}: ${market_id}`);
+  }
   
   console.log(`🎪 市集開始營業：ID ${market_id}`);
 });
@@ -555,11 +561,14 @@ registerEventHandler('market_started', async (event: Event<{ market_id: string }
 registerEventHandler('market_ended', async (event: Event<{ market_id: string }>, db) => {
   const { market_id } = event.payload;
   
-  await db.markets.update(market_id, {
+  const updated = await db.markets.update(market_id, {
     status: 'completed',
     operationPhase: undefined,
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Market not found for ${event.type}: ${market_id}`);
+  }
   
   console.log(`✅ 市集已結束：ID ${market_id}`);
 });
@@ -575,13 +584,16 @@ registerEventHandler('market_ended', async (event: Event<{ market_id: string }>,
  * - 已取消（cancelled）：市集狀態，仍顯示在列表中
  * - 已刪除（isDeleted）：軟刪除標記，不顯示在列表中
  */
-registerEventHandler('market_deleted', async (event: Event<{ marketId: string; reason?: string }>, db) => {
-  const { marketId } = event.payload;
+registerEventHandler('market_deleted', async (event: Event<{ marketId?: string; market_id?: string; reason?: string }>, db) => {
+  const marketId = pickMarketId(event.payload)!;
   
-  await db.markets.update(marketId, {
+  const updated = await db.markets.update(marketId, {
     isDeleted: true,
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Market not found for ${event.type}: ${marketId}`);
+  }
   
   console.log(`🗑️ 市集已刪除（軟刪除）：ID ${marketId.substring(0, 8)}...`);
 });
@@ -627,10 +639,13 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
 registerEventHandler('product_updated', async (event: Event<ProductUpdatedPayload>, db) => {
   const { productId, updates } = event.payload;
   
-  await db.products.update(productId, {
+  const updated = await db.products.update(productId, {
     ...updates,
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Product not found for ${event.type}: ${productId}`);
+  }
   
   console.log(`📦 商品已更新：ID ${productId}`);
 });
@@ -642,10 +657,13 @@ registerEventHandler('product_updated', async (event: Event<ProductUpdatedPayloa
 registerEventHandler('product_deleted', async (event: Event<{ productId: string }>, db) => {
   const { productId } = event.payload;
   
-  await db.products.update(productId, {
+  const updated = await db.products.update(productId, {
     isActive: false,
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Product not found for ${event.type}: ${productId}`);
+  }
   
   console.log(`📦 商品已停用：ID ${productId}`);
 });

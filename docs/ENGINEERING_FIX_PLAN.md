@@ -38,6 +38,7 @@ Last updated: 2026-05-25
 - [x] Add a typed `EventPayloadMap` so literal `recordEvent()` calls are checked against their event payload shape.
 - [x] Add lightweight runtime payload validation before events are written to IndexedDB.
 - [x] Run integrity validation after snapshot rebuilds so inconsistent projections fail fast.
+- [x] Fail projection handlers when market/product update or delete targets are missing.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
 - [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.

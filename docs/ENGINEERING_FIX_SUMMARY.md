@@ -44,6 +44,8 @@ Events are also validated at runtime before being persisted. The first guard che
 
 Snapshot rebuilds now run the shared integrity validator after event replay. If the rebuilt projections are inconsistent, the rebuild fails immediately instead of leaving corrupted cache tables in place.
 
+Projection handlers for market status/start/end/delete and product update/delete now verify that the target row was actually updated. Missing snapshot targets throw immediately, preventing a recorded event from silently failing to change the user-visible data.
+
 Current status:
 
 - Build: passing.
