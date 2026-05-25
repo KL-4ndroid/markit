@@ -10,6 +10,7 @@ import { useMarkets } from '@/lib/db/hooks';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { db } from '@/lib/db';
+import { getActiveDealEvents } from '@/lib/db/event-tombstones';
 import { DateRangeFilter } from '@/components/analytics/DateRangeFilter';
 import { EmptyState } from '@/components/analytics/EmptyState';
 import { MarketROICard } from '@/components/analytics/MarketROICard';
@@ -425,11 +426,8 @@ export default function AnalyticsPage() {
       if (!market.id) continue;
       
       // 獲取該市集的所有成交事件
-      const events = await db.events
-        .where('market_id')
-        .equals(market.id)
-        .and(event => event.type === 'deal_closed')
-        .toArray();
+      const events = (await getActiveDealEvents())
+        .filter(event => event.market_id === market.id || event.payload.marketId === market.id);
 
       // 處理每個成交事件
       for (const event of events) {

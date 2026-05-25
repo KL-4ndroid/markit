@@ -36,6 +36,8 @@ Product-based deals now update `dailyStats.productsSold`, merging quantity and r
 
 Market-detail deal deletion now records a `deal_deleted` event instead of directly deleting the original `deal_closed` event and hand-editing projections. Deletion cost calculations also prefer the original sale-time cost snapshot.
 
+Deal and interaction deletion handlers now preserve the original event rows. Tombstone-aware query helpers exclude records referenced by `deal_deleted` and `interaction_deleted` for the main market detail, daily log, daily revenue, and product analytics views.
+
 Current status:
 
 - Build: passing.

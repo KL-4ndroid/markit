@@ -34,6 +34,7 @@ Last updated: 2026-05-25
 - [x] Prevent normal `deal_closed` handlers from silently clamping oversold stock to zero.
 - [x] Update `dailyStats.productsSold` for product deals and reverse it for event-sourced deal deletion.
 - [x] Route market-detail deal deletion through the event-sourced `deal_deleted` handler.
+- [x] Preserve original deal/interaction events and filter deleted records through tombstone-aware queries.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
 - [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.

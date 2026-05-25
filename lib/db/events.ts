@@ -718,16 +718,13 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
  * 處理「刪除互動記錄」事件
  * 
  * 當刪除互動記錄時：
- * 1. 從 events 表中刪除原始事件
+ * 1. 保留原始事件，由 interaction_deleted 作為 tombstone
  * 2. 更新市集統計（扣除互動次數）
  * 3. 更新每日統計（扣除互動次數）
  */
 registerEventHandler('interaction_deleted', async (event: Event<{ eventId: string; marketId: string }>, db) => {
   const { eventId, marketId } = event.payload;
-  
-  // 1. 刪除原始事件
-  await db.events.delete(eventId);
-  
+
   // 2. 更新市集統計
   const market = await db.markets.get(marketId);
   if (market) {
@@ -744,7 +741,7 @@ registerEventHandler('interaction_deleted', async (event: Event<{ eventId: strin
  * 處理「刪除成交記錄」事件
  * 
  * 當刪除成交記錄時：
- * 1. 從 events 表中刪除原始事件
+ * 1. 保留原始事件，由 deal_deleted 作為 tombstone
  * 2. 更新市集統計（扣除金額）
  * 3. 更新每日統計（扣除金額）
  */
@@ -752,10 +749,7 @@ registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db
   const { eventId, marketId, dealDate, totalAmount, totalCost, dealCount, productsSold = [] } = event.payload;
   
   const totalProfit = totalAmount - totalCost;
-  
-  // 1. 刪除原始事件
-  await db.events.delete(eventId);
-  
+
   // 2. 更新市集統計（扣除金額）
   const market = await db.markets.get(marketId);
   if (market) {

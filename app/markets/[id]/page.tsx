@@ -32,6 +32,7 @@ import {
 import { useMarket, updateMarketStatus, startMarket, endMarket } from '@/lib/db/hooks';
 import { initializeDatabase, db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
+import { getActiveDealEvents, getActiveInteractionEvents } from '@/lib/db/event-tombstones';
 import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
@@ -281,9 +282,7 @@ export default function MarketDetailPage({ params }: PageProps) {
             })();
 
         // 獲取互動事件 - 只篩選在 marketDates 中的日期
-        const interactions = await db.events
-          .where('type')
-          .equals('interaction_recorded')
+        const interactions = (await getActiveInteractionEvents())
           .filter(e => {
             if (e.payload.marketId !== marketId) return false;
             
@@ -293,17 +292,14 @@ export default function MarketDetailPage({ params }: PageProps) {
             
             // 檢查是否在 marketDates 中
             return marketDates.includes(dateStr);
-          })
-          .toArray() as Event<InteractionRecordedPayload>[];
+          });
 
         console.log('✅ 找到互動事件:', interactions.length);
 
         setInteractionEvents(interactions);
 
         // 獲取成交事件 - 只篩選在 marketDates 中的日期
-        const deals = await db.events
-          .where('type')
-          .equals('deal_closed')
+        const deals = (await getActiveDealEvents())
           .filter(e => {
             if (e.payload.marketId !== marketId) return false;
             
@@ -318,8 +314,7 @@ export default function MarketDetailPage({ params }: PageProps) {
             
             // 檢查是否在 marketDates 中
             return marketDates.includes(dealDateStr);
-          })
-          .toArray() as Event<DealClosedPayload>[];
+          });
 
         setDealEvents(deals);
       } catch (error) {
@@ -899,12 +894,9 @@ export default function MarketDetailPage({ params }: PageProps) {
       toast.error('刪除失敗，請稍後再試');
       
       // 錯誤時重新載入數據
-      const updatedDeals = await db.events
-        .where('type')
-        .equals('deal_closed')
-        .filter(e => e.payload.marketId === marketId)
-        .toArray();
-      setDealEvents(updatedDeals as Event<DealClosedPayload>[]);
+      const updatedDeals = (await getActiveDealEvents())
+        .filter(event => event.payload.marketId === marketId);
+      setDealEvents(updatedDeals);
     }
   }, [marketId, selectedDeal]);
 

@@ -5,7 +5,7 @@ import { Calendar, DollarSign, TrendingUp, Plus } from 'lucide-react';
 import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
-import { db } from '@/lib/db';
+import { getActiveInteractionEvents } from '@/lib/db/event-tombstones';
 import type { Market, Event, InteractionRecordedPayload } from '@/types/db';
 
 interface DailyRevenueStatsProps {
@@ -49,9 +49,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
             })();
 
         // 獲取互動事件 - 只篩選在 marketDates 中的日期
-        const interactions = await db.events
-          .where('type')
-          .equals('interaction_recorded')
+        const interactions = (await getActiveInteractionEvents())
           .filter(e => {
             if (e.payload.marketId !== market.id) return false;
             
@@ -61,8 +59,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
             
             // 檢查是否在 marketDates 中
             return marketDates.includes(dateStr);
-          })
-          .toArray() as Event<InteractionRecordedPayload>[];
+          });
 
         setInteractionEvents(interactions);
       } catch (error) {

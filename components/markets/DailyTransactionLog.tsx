@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Clock, TrendingUp, DollarSign, Package, Trash2, AlertCircle } from 'lucide-react';
 import { db } from '@/lib/db';
+import { getActiveDealEvents, getActiveInteractionEvents } from '@/lib/db/event-tombstones';
 import { formatCurrency } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { toast } from 'sonner';
@@ -71,19 +72,14 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       const buttonMap = new Map(buttons.map(b => [b.id, { label: b.label, emoji: b.emoji }]));
 
       // 獲取當日互動記錄
-      const interactions = await db.events
-        .where('type')
-        .equals('interaction_recorded')
+      const interactions = (await getActiveInteractionEvents())
         .filter(e => {
           if (e.payload.marketId !== marketId) return false;
           return e.timestamp >= startOfDay && e.timestamp <= endOfDay;
-        })
-        .toArray() as Event<InteractionRecordedPayload>[];
+        });
 
       // 獲取當日成交記錄
-      const deals = await db.events
-        .where('type')
-        .equals('deal_closed')
+      const deals = (await getActiveDealEvents())
         .filter(e => {
           if (e.payload.marketId !== marketId) return false;
           
@@ -97,8 +93,7 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
           }
           
           return dealDateStr === targetDate;
-        })
-        .toArray() as Event<DealClosedPayload>[];
+        });
 
       // 轉換為流水帳格式
       const logEntries: LogEntry[] = [];
