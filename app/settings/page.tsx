@@ -15,6 +15,59 @@ import { getGradientClass } from '@/lib/theme-config';
 import { StaffPermissionCard } from '@/components/staff/StaffPermissionCard';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 
+async function clearLocalAppData(): Promise<void> {
+  const { clearAllData, db } = await import('@/lib/db');
+  const { resetInitialSyncFlag } = await import('@/hooks/useSync');
+  const { clearRoleCache } = await import('@/hooks/useUserRole');
+
+  try {
+    await clearAllData();
+  } catch (error) {
+    console.error('清除本地資料表失敗:', error);
+  }
+
+  try {
+    db.close();
+  } catch (error) {
+    console.error('關閉本地資料庫失敗:', error);
+  }
+
+  try {
+    await new Promise<void>((resolve) => {
+      const request = indexedDB.deleteDatabase('MarketPulseDB');
+      request.onsuccess = () => resolve();
+      request.onerror = () => {
+        console.error('刪除 IndexedDB 失敗:', request.error);
+        resolve();
+      };
+      request.onblocked = () => resolve();
+    });
+  } catch (error) {
+    console.error('刪除 IndexedDB 失敗:', error);
+  }
+
+  try {
+    ['user_role_cache', 'logout_history', 'hasCompletedInitialSync'].forEach(key => {
+      localStorage.removeItem(key);
+    });
+  } catch (error) {
+    console.error('清除 localStorage 快取失敗:', error);
+  }
+
+  try {
+    sessionStorage.clear();
+  } catch (error) {
+    console.error('清除 sessionStorage 快取失敗:', error);
+  }
+
+  try {
+    resetInitialSyncFlag();
+    clearRoleCache();
+  } catch (error) {
+    console.error('重置同步或角色快取失敗:', error);
+  }
+}
+
 export default function SettingsPage() {
   const router = useRouter();
   const [buttons, setButtons] = useState<InteractionButton[]>([]);
@@ -90,7 +143,7 @@ export default function SettingsPage() {
       '• 本地資料庫 (Local database)\n\n' +
       '⚠️ 此操作無法復原！(This action CANNOT be undone!)\n' +
       '⚠️ 所有設備的資料都會被清除！(All devices will be affected!)\n' +
-      '⚠️ 本地資料也會同時清除，防止重新上傳！(Local data will also be cleared!)\n\n' +
+      '⚠️ 雲端刪除成功後才會清除本地資料！(Local data is cleared only after cloud deletion succeeds!)\n\n' +
       '如果您確定要繼續，請輸入 DELETE：\n' +
       'If you are sure, type DELETE:'
     );
@@ -103,172 +156,16 @@ export default function SettingsPage() {
     const toastId = toast.loading('正在清除所有資料...');
 
     try {
-      // ✅ 步驟 1：優先清除本地資料（防止重新上傳）
-      console.log('🧹 步驟 1/3：清除本地資料...');
-      
-      try {
-        const { db } = await import('@/lib/db');
-        await db.markets.clear();
-        await db.products.clear();
-        await db.events.clear();
-        await db.dailyStats.clear();
-        console.log('✅ 數據表已清除');
-      } catch (dbError) {
-        console.error('清除數據表失敗:', dbError);
-      }
-      
-      try {
-        await indexedDB.deleteDatabase('MarketPulseDB');
-        console.log('✅ IndexedDB 已刪除');
-      } catch (idbError) {
-        console.error('刪除 IndexedDB 失敗:', idbError);
-      }
-      
-      try {
-        const keysToRemove = [
-          'user_role_cache',
-          'logout_history',
-          'hasCompletedInitialSync',
-        ];
-        
-        keysToRemove.forEach(key => {
-          try {
-            localStorage.removeItem(key);
-          } catch (e) {
-            console.error(`清除 ${key} 失敗:`, e);
-          }
-        });
-        
-        sessionStorage.clear();
-        console.log('✅ 緩存已清除');
-      } catch (storageError) {
-        console.error('清除緩存失敗:', storageError);
-      }
-      
-      try {
-        const { resetInitialSyncFlag } = await import('@/hooks/useSync');
-        const { clearRoleCache } = await import('@/hooks/useUserRole');
-        resetInitialSyncFlag();
-        clearRoleCache();
-        console.log('✅ 同步標記已重置');
-      } catch (resetError) {
-        console.error('重置標記失敗:', resetError);
-      }
+      toast.loading('正在以安全交易清除雲端資料...', { id: toastId });
 
-      toast.loading('正在清除雲端資料...', { id: toastId });
+      const { data, error } = await supabase.rpc('delete_current_user_app_data');
+      if (error) throw error;
 
-      // ✅ 步驟 2：刪除雲端資料（正確順序：事件 → 商品 → 市集）
-      console.log('☁️ 步驟 2/3：刪除雲端資料...');
+      console.log('✅ 雲端資料已透過 RPC 清除:', data);
 
-      // 1. 獲取所有市集 ID（先查詢，後續刪除時需要）
-      const { data: marketsData, error: marketsQueryError } = await supabase
-        .from('markets')
-        .select('id')
-        .eq('owner_id', user.id);
+      toast.loading('雲端資料已清除，正在清除本地快取...', { id: toastId });
+      await clearLocalAppData();
 
-      if (marketsQueryError) throw marketsQueryError;
-
-      const marketIds = marketsData?.map(m => m.id) || [];
-      console.log(`📊 找到 ${marketIds.length} 個市集`);
-
-      // 2. 刪除所有事件（包括市集事件和全局事件）
-      if (marketIds.length > 0) {
-        // 刪除市集相關的所有事件（不限 actor_id）
-        const { error: marketEventsError } = await supabase
-          .from('events')
-          .delete()
-          .in('market_id', marketIds);
-
-        if (marketEventsError) {
-          console.error('刪除市集事件失敗:', marketEventsError);
-          throw marketEventsError;
-        }
-        console.log('✅ 市集事件已刪除');
-      }
-
-      // 刪除全局事件（actor_id = user.id 且 market_id = null）
-      const { error: globalEventsError } = await supabase
-        .from('events')
-        .delete()
-        .eq('actor_id', user.id)
-        .is('market_id', null);
-
-      if (globalEventsError) {
-        console.error('刪除全局事件失敗:', globalEventsError);
-        throw globalEventsError;
-      }
-      console.log('✅ 全局事件已刪除');
-
-      // 3. 刪除所有商品
-      if (marketIds.length > 0) {
-        const { error: productsError } = await supabase
-          .from('products')
-          .delete()
-          .in('market_id', marketIds);
-
-        if (productsError) {
-          console.error('刪除商品失敗:', productsError);
-          throw productsError;
-        }
-        console.log('✅ 商品已刪除');
-      }
-
-      // 刪除全局商品（owner_id = user.id 且 market_id = null）
-      const { error: globalProductsError } = await supabase
-        .from('products')
-        .delete()
-        .eq('owner_id', user.id)
-        .is('market_id', null);
-
-      if (globalProductsError) {
-        console.error('刪除全局商品失敗:', globalProductsError);
-        throw globalProductsError;
-      }
-      console.log('✅ 全局商品已刪除');
-
-      // 4. 刪除 market_members 記錄
-      if (marketIds.length > 0) {
-        const { error: membersError } = await supabase
-          .from('market_members')
-          .delete()
-          .in('market_id', marketIds);
-
-        if (membersError) {
-          console.error('刪除 market_members 失敗:', membersError);
-          // 不拋出錯誤，繼續執行
-        } else {
-          console.log('✅ market_members 已刪除');
-        }
-      }
-
-      // 5. 刪除所有市集（最後刪除，避免外鍵約束錯誤）
-      const { error: marketsError } = await supabase
-        .from('markets')
-        .delete()
-        .eq('owner_id', user.id);
-
-      if (marketsError) {
-        console.error('刪除市集失敗:', marketsError);
-        throw marketsError;
-      }
-      console.log('✅ 市集已刪除');
-
-      // 6. 刪除快照（如果有）
-      const { error: snapshotsError } = await supabase
-        .from('snapshots')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (snapshotsError) {
-        console.error('刪除快照失敗:', snapshotsError);
-        // 不拋出錯誤，繼續執行
-      } else {
-        console.log('✅ 快照已刪除');
-      }
-
-      console.log('✅ 雲端資料已完全清除');
-
-      // ✅ 步驟 3：重新載入頁面
       toast.success('✅ 所有資料已清除，即將重新載入...', { id: toastId });
       
       setTimeout(() => {
@@ -278,23 +175,10 @@ export default function SettingsPage() {
     } catch (error: any) {
       console.error('清除資料失敗:', error);
       toast.error(`清除失敗：${error.message || '請稍後再試'}`, { id: toastId });
-      
-      // ✅ 錯誤處理：本地資料已清除，建議重新載入
-      const shouldReload = confirm(
-        '清除資料時發生錯誤，但本地資料已清除。\n\n' +
-        'An error occurred, but local data has been cleared.\n\n' +
-        '建議重新載入頁面以確保狀態正確。\n' +
-        'Recommend reloading the page to ensure correct state.\n\n' +
-        '是否立即重新載入？(Reload now?)'
-      );
-      
-      if (shouldReload) {
-        window.location.href = '/';
-      }
     }
   };
 
-  // ✅ 員工離開團隊（優化版：優先清除本地數據）
+  // ✅ 員工離開團隊：先解除雲端關係，成功後才清除本地快取
   const handleLeaveTeam = async () => {
     if (!user || !userRole.ownerId) return;
 
@@ -310,126 +194,21 @@ export default function SettingsPage() {
     if (!confirmed) return;
 
     try {
-      // ✅ 步驟 1：優先清除本地數據（避免數據混亂）
-      toast.loading('正在清除本地數據...', { id: 'leave-team' });
-      console.log('🧹 開始清除本地數據...');
-      
-      try {
-        const { db } = await import('@/lib/db');
-        await db.markets.clear();
-        await db.products.clear();
-        await db.events.clear();
-        await db.dailyStats.clear();
-        console.log('✅ 數據表已清除');
-      } catch (dbError) {
-        console.error('清除數據表失敗:', dbError);
-      }
-      
-      try {
-        await indexedDB.deleteDatabase('MarketPulseDB');
-        console.log('✅ IndexedDB 已刪除');
-      } catch (idbError) {
-        console.error('刪除 IndexedDB 失敗:', idbError);
-      }
-      
-      try {
-        const keysToRemove = [
-          'user_role_cache',
-          'logout_history',
-          'hasCompletedInitialSync',
-        ];
-        
-        keysToRemove.forEach(key => {
-          try {
-            localStorage.removeItem(key);
-          } catch (e) {
-            console.error(`清除 ${key} 失敗:`, e);
-          }
-        });
-        
-        sessionStorage.clear();
-        console.log('✅ 緩存已清除');
-      } catch (storageError) {
-        console.error('清除緩存失敗:', storageError);
-      }
-      
-      try {
-        const { resetInitialSyncFlag } = await import('@/hooks/useSync');
-        const { clearRoleCache } = await import('@/hooks/useUserRole');
-        resetInitialSyncFlag();
-        clearRoleCache();
-        console.log('✅ 同步標記已重置');
-      } catch (resetError) {
-        console.error('重置標記失敗:', resetError);
-      }
-
-      // ✅ 步驟 2：刪除雲端員工關係
       toast.loading('正在離開團隊...', { id: 'leave-team' });
 
-      const { error: relError } = await supabase
-        .from('staff_relationships')
-        .delete()
-        .eq('owner_id', userRole.ownerId)
-        .eq('staff_id', user.id);
+      const { data, error } = await supabase.rpc('leave_current_staff_team', {
+        p_owner_id: userRole.ownerId,
+      });
 
-      if (relError) throw relError;
+      if (error) throw error;
 
-      // ✅ 步驟 3：刪除 market_members 記錄
-      const { data: markets, error: marketsError } = await supabase
-        .from('markets')
-        .select('id')
-        .eq('owner_id', userRole.ownerId);
+      console.log('✅ 已透過 RPC 離開團隊:', data);
 
-      if (marketsError) throw marketsError;
-
-      if (markets && markets.length > 0) {
-        const marketIds = markets.map(m => m.id);
-        
-        const { error: membersError } = await supabase
-          .from('market_members')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('role', 'staff')
-          .in('market_id', marketIds);
-
-        if (membersError) throw membersError;
-      }
-
-      // ✅ 步驟 4：驗證雲端記錄已刪除（可選，不影響本地）
-      toast.loading('正在驗證雲端同步...', { id: 'leave-team' });
-      
-      let retryCount = 0;
-      const maxRetries = 10;
-      let isDeleted = false;
-      
-      while (retryCount < maxRetries && !isDeleted) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const { data, error } = await supabase
-          .from('staff_relationships')
-          .select('id')
-          .eq('owner_id', userRole.ownerId)
-          .eq('staff_id', user.id)
-          .eq('status', 'active');
-        
-        if (error) {
-          console.error('驗證失敗:', error);
-          break;
-        }
-        
-        if (!data || data.length === 0) {
-          isDeleted = true;
-          console.log('✅ 雲端記錄已確認刪除');
-          break;
-        }
-        
-        retryCount++;
-        console.log(`等待雲端同步... (${retryCount}/${maxRetries})`);
-      }
+      toast.loading('團隊關係已解除，正在清除本地快取...', { id: 'leave-team' });
+      await clearLocalAppData();
 
       toast.success('✅ 已離開團隊，即將重新載入...', { id: 'leave-team' });
 
-      // ✅ 步驟 5：強制重新載入頁面
       setTimeout(() => {
         window.location.href = '/';
       }, 1000);
@@ -437,17 +216,6 @@ export default function SettingsPage() {
     } catch (error: any) {
       console.error('離開團隊失敗:', error);
       toast.error('離開失敗：' + error.message, { id: 'leave-team' });
-      
-      // ✅ 錯誤處理：本地數據已清除，建議重新載入
-      const shouldReload = confirm(
-        '離開團隊時發生錯誤，但本地數據已清除。\n\n' +
-        '建議重新載入頁面以確保狀態正確。\n\n' +
-        '是否立即重新載入？'
-      );
-      
-      if (shouldReload) {
-        window.location.href = '/';
-      }
     }
   };
 

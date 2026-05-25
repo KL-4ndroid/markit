@@ -20,6 +20,8 @@ Sync conflict resolution and event payload rewriting now normalize remote rows a
 
 The first irreversible-operation hardening pass removes cloud-data deletion from the legacy staff invitation acceptance dialog, verifies cloud events before clear-and-pull migration wipes local IndexedDB data, fixes the `product_deleted` UUID type, and adds a Supabase migration so token invitation acceptance grants market membership atomically.
 
+The next irreversible-operation pass moves full app-data deletion and staff leave-team cleanup into authenticated `SECURITY DEFINER` RPCs. The settings page now clears local IndexedDB/cache only after those cloud mutations succeed, reducing partial-delete and local-data-loss failure modes.
+
 Current status:
 
 - Build: passing.

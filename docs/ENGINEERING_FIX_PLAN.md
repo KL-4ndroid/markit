@@ -25,6 +25,8 @@ Last updated: 2026-05-25
 - [x] Remove cloud-data deletion from legacy staff invitation acceptance flow.
 - [x] Make clear-and-pull migration verify cloud events before clearing local IndexedDB.
 - [x] Add atomic token invitation RPC migration that also grants market membership.
+- [x] Move full app-data deletion into a single authenticated RPC before local cache clearing.
+- [x] Move leave-team cleanup into a single authenticated RPC before local cache clearing.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
 - [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.
