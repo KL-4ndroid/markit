@@ -38,6 +38,8 @@ Market-detail deal deletion now records a `deal_deleted` event instead of direct
 
 Deal and interaction deletion handlers now preserve the original event rows. Tombstone-aware query helpers exclude records referenced by `deal_deleted` and `interaction_deleted` for the main market detail, daily log, daily revenue, and product analytics views.
 
+`recordEvent()` now has event-specific TypeScript overloads backed by `EventPayloadMap`, so normal literal calls such as `product_deleted`, `deal_closed`, and `market_status_changed` are checked against their expected payload shape. Dynamic cloud replay still keeps a guarded generic overload so sync recovery can continue to process persisted remote events.
+
 Current status:
 
 - Build: passing.

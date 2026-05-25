@@ -13,6 +13,7 @@ import {
 import type {
   Event,
   EventType,
+  EventPayloadMap,
   EventHandler,
   Market,
   MarketCreatedPayload,
@@ -42,10 +43,12 @@ export function registerEventHandler(type: EventType, handler: EventHandler): vo
 
 type ProductSoldEntry = DailyStats['productsSold'][number];
 
-function prepareEventForInsert<T>(
+type EventPayload = EventPayloadMap[EventType] | Record<string, unknown>;
+
+function prepareEventForInsert(
   type: EventType,
-  payload: T
-): { payload: T; market_id?: string } {
+  payload: EventPayload
+): { payload: EventPayload; market_id?: string } {
   if (!payload || typeof payload !== 'object') {
     return { payload };
   }
@@ -58,7 +61,7 @@ function prepareEventForInsert<T>(
       payload: {
         ...record,
         marketId,
-      } as T,
+      },
       market_id: marketId,
     };
   }
@@ -70,7 +73,7 @@ function prepareEventForInsert<T>(
       payload: {
         ...productPayload,
         productId,
-      } as T,
+      },
       market_id: pickMarketId(productPayload),
     };
   }
@@ -150,9 +153,19 @@ function subtractProductsSold(
  * @param eventId - 可選的事件 ID（用於同步）
  * @returns 事件 ID（UUID）
  */
-export async function recordEvent<T = Record<string, unknown>>(
+export async function recordEvent<T extends EventType>(
+  type: T,
+  payload: EventPayloadMap[T],
+  eventId?: string
+): Promise<string>;
+export async function recordEvent(
   type: EventType,
-  payload: T,
+  payload: Record<string, unknown>,
+  eventId?: string
+): Promise<string>;
+export async function recordEvent(
+  type: EventType,
+  payload: EventPayload,
   eventId?: string
 ): Promise<string> {
   try {
@@ -205,7 +218,7 @@ export async function recordEvent<T = Record<string, unknown>>(
     const preparedEvent = prepareEventForInsert(type, payload);
 
     // 建立事件物件
-    const event: Event<T> = {
+    const event: Event<EventPayload> = {
       id,
       type,
       payload: preparedEvent.payload,

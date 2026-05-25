@@ -424,6 +424,55 @@ export interface Settings {
  * 事件處理器函數類型
  * 用於處理特定類型的事件並更新快照
  */
+export type MarketIdPayload =
+  | { marketId: string; market_id?: string }
+  | { market_id: string; marketId?: string };
+
+export type MarketStatusChangedEventPayload = MarketIdPayload & {
+  oldStatus: MarketStatus;
+  newStatus: MarketStatus;
+  reason?: string;
+};
+
+export type ProductCreatedEventPayload = ProductCreatedPayload & {
+  productId?: string;
+  product_id?: string;
+  marketId?: string;
+  market_id?: string;
+};
+
+export type InteractionRecordedEventPayload = InteractionRecordedPayload & {
+  market_id?: string;
+};
+
+export type DealClosedEventPayload = DealClosedPayload & {
+  market_id?: string;
+};
+
+export type EventPayloadMap = {
+  market_created: MarketCreatedPayload & {
+    marketId?: string;
+    market_id?: string;
+  };
+  market_updated: MarketUpdatedPayload;
+  market_status_changed: MarketStatusChangedEventPayload;
+  market_started: MarketIdPayload;
+  market_ended: MarketIdPayload;
+  market_deleted: MarketDeletedPayload & {
+    market_id?: string;
+  };
+  product_created: ProductCreatedEventPayload;
+  product_updated: ProductUpdatedPayload;
+  product_deleted: {
+    productId: string;
+  };
+  interaction_recorded: InteractionRecordedEventPayload;
+  interaction_deleted: InteractionDeletedPayload;
+  deal_closed: DealClosedEventPayload;
+  deal_deleted: DealDeletedPayload;
+  settings_updated: Partial<Settings>;
+};
+
 export type EventHandler<T = any> = (
   event: Event<T>,
   db: any // Dexie 資料庫實例
