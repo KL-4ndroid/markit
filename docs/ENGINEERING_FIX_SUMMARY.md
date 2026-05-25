@@ -58,10 +58,13 @@ Recovery mode can now repair invalid `dailyStats` numeric fields. The repair cre
 
 Deal projection updates now sanitize existing `dailyStats` numeric cache fields before adding or subtracting new transaction totals. This prevents existing invalid cache values from turning future statistics into `NaN`.
 
+The first automated data-safety tests now cover valid backups, invalid `dailyStats` numeric cache values, invalid tombstone references, and deal items that reference missing products. The standard verification flow now includes `npm test`.
+
 Current status:
 
 - Build: passing.
 - Lint: passing with no warnings.
 - TypeScript: passing.
+- Tests: passing.
 - Production audit: 2 moderate upstream `next`/`postcss` findings remain.
 - Security backlog: monitoring the upstream Next/PostCSS advisory.

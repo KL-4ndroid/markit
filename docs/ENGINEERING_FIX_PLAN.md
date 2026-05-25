@@ -46,6 +46,7 @@ Last updated: 2026-05-25
 - [x] Validate cross-event references for tombstones and deal product items during integrity checks.
 - [x] Add guarded dailyStats numeric repair with automatic pre-repair backup.
 - [x] Normalize existing dailyStats numeric cache fields during deal projection updates.
+- [x] Add initial automated tests for backup integrity and event reference validation.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
 - [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.
@@ -78,6 +79,7 @@ Last updated: 2026-05-25
 ```bash
 npm run build
 npm run lint
+npm test
 npx tsc --noEmit --incremental false
 npm audit --omit=dev
 ```
