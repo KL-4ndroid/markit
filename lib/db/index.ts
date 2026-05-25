@@ -475,9 +475,10 @@ export async function importData(jsonData: string): Promise<void> {
       throw new Error(`匯入後資料完整性檢查失敗：\n${postImportCheck.errors.join('\n')}`);
     }
     
-    if (preImportCheck.warnings.length > 0 || postImportCheck.warnings.length > 0) {
+    if (preImportCheck.warnings.length > 0 || replayReadiness.warnings.length > 0 || postImportCheck.warnings.length > 0) {
       console.warn('⚠️ 資料匯入完成，但有非阻擋警告:', [
         ...preImportCheck.warnings,
+        ...replayReadiness.warnings,
         ...postImportCheck.warnings,
       ]);
     }
