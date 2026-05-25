@@ -14,6 +14,11 @@ import type {
   DailyStats,
   Settings,
 } from '@/types/db';
+import {
+  checkBackupIntegrity,
+  parseBackupData,
+  type BackupData,
+} from './integrity';
 
 /**
  * 同步佇列項目介面
@@ -328,17 +333,52 @@ export async function exportData(): Promise<string> {
   }
 }
 
-/**
- * 備份資料格式介面
- */
-interface BackupData {
-  version: number;
-  exportedAt: number;
-  events: Event[];
-  markets: Market[];
-  products: Product[];
-  dailyStats: DailyStats[];
-  settings: Settings[];
+const EMERGENCY_BACKUP_KEY = 'market_pulse_emergency_backup';
+const EMERGENCY_BACKUP_METADATA_KEY = 'market_pulse_emergency_backup_metadata';
+
+function triggerEmergencyBackupDownload(backupJson: string): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  const blob = new Blob([backupJson], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  link.href = url;
+  link.download = `market-pulse-emergency-backup-${timestamp}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+async function createEmergencyBackupBeforeImport(): Promise<void> {
+  const backupJson = await exportData();
+
+  if (typeof window === 'undefined') {
+    console.warn('⚠️ 非瀏覽器環境，無法保存匯入前緊急備份');
+    return;
+  }
+
+  const metadata = {
+    createdAt: Date.now(),
+    size: backupJson.length,
+  };
+
+  try {
+    if (backupJson.length < 4_000_000) {
+      localStorage.setItem(EMERGENCY_BACKUP_KEY, backupJson);
+      localStorage.setItem(EMERGENCY_BACKUP_METADATA_KEY, JSON.stringify(metadata));
+    } else {
+      triggerEmergencyBackupDownload(backupJson);
+      localStorage.setItem(EMERGENCY_BACKUP_METADATA_KEY, JSON.stringify({
+        ...metadata,
+        downloaded: true,
+      }));
+    }
+  } catch (error) {
+    console.error('❌ 建立匯入前緊急備份失敗:', error);
+    throw new Error('無法建立匯入前緊急備份，已取消匯入以保護現有資料');
+  }
 }
 
 /**
@@ -346,12 +386,14 @@ interface BackupData {
  */
 export async function importData(jsonData: string): Promise<void> {
   try {
-    const data = JSON.parse(jsonData) as BackupData;
-    
-    // 驗證資料格式
-    if (!data.version || !data.events || !data.markets) {
-      throw new Error('無效的備份資料格式');
+    const data: BackupData = parseBackupData(jsonData);
+    const preImportCheck = checkBackupIntegrity(data);
+
+    if (!preImportCheck.ok) {
+      throw new Error(`備份資料完整性檢查失敗：\n${preImportCheck.errors.join('\n')}`);
     }
+
+    await createEmergencyBackupBeforeImport();
     
     // 清空現有資料並匯入
     await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings], async () => {
@@ -367,8 +409,29 @@ export async function importData(jsonData: string): Promise<void> {
       await db.dailyStats.bulkAdd(data.dailyStats);
       await db.settings.bulkAdd(data.settings);
     });
+
+    const postImportData: BackupData = {
+      version: data.version,
+      exportedAt: data.exportedAt,
+      events: await db.events.toArray(),
+      markets: await db.markets.toArray(),
+      products: await db.products.toArray(),
+      dailyStats: await db.dailyStats.toArray(),
+      settings: await db.settings.toArray(),
+    };
+    const postImportCheck = checkBackupIntegrity(postImportData);
+    if (!postImportCheck.ok) {
+      throw new Error(`匯入後資料完整性檢查失敗：\n${postImportCheck.errors.join('\n')}`);
+    }
     
-    console.log('✅ 資料匯入完成');
+    if (preImportCheck.warnings.length > 0 || postImportCheck.warnings.length > 0) {
+      console.warn('⚠️ 資料匯入完成，但有非阻擋警告:', [
+        ...preImportCheck.warnings,
+        ...postImportCheck.warnings,
+      ]);
+    }
+
+    console.log('✅ 資料匯入完成，並已通過完整性檢查');
   } catch (error) {
     console.error('❌ 匯入資料失敗：', error);
     throw error;

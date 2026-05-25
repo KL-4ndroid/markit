@@ -26,6 +26,8 @@ Sync permission-error handling now preserves local data. A 403/RLS failure recor
 
 Staff-view synchronization no longer clears other users' local records before every pull. It now preserves local data and logs isolation findings, keeping destructive cleanup reserved for explicit account lifecycle flows.
 
+Backup import now has a first safety layer: imported JSON is parsed, version-checked, validated for required arrays, duplicate IDs, invalid dates, missing required fields, orphan references, and negative stock before any replacement happens. `importData()` also creates an emergency backup of the current local data before replacing tables and reruns integrity checks after import.
+
 Current status:
 
 - Build: passing.
