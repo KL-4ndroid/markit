@@ -22,6 +22,9 @@ Last updated: 2026-05-25
 - [x] Use shared mappers for staff market detail loading and full-sync import row shaping.
 - [x] Replace remaining high-risk ad hoc camelCase/snake_case handling in sync conflicts and event payload rewriting.
 - [x] Harden staff invitation RLS and RPC functions.
+- [x] Remove cloud-data deletion from legacy staff invitation acceptance flow.
+- [x] Make clear-and-pull migration verify cloud events before clearing local IndexedDB.
+- [x] Add atomic token invitation RPC migration that also grants market membership.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
 - [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.

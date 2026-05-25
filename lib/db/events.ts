@@ -447,7 +447,7 @@ registerEventHandler('product_updated', async (event: Event<ProductUpdatedPayloa
  * 處理「商品刪除」事件
  * 注意：我們不真正刪除商品，只是標記為不啟用
  */
-registerEventHandler('product_deleted', async (event: Event<{ productId: number }>, db) => {
+registerEventHandler('product_deleted', async (event: Event<{ productId: string }>, db) => {
   const { productId } = event.payload;
   
   await db.products.update(productId, {

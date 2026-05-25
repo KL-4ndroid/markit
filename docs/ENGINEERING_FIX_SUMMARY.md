@@ -18,6 +18,8 @@ Staff market detail loading and full-sync market/product imports now consume the
 
 Sync conflict resolution and event payload rewriting now normalize remote rows and event updates through the shared mapper layer. Semver-safe dependency updates were applied; the only remaining audit findings are still the upstream Next/PostCSS moderate advisories with no clean stable upgrade path available.
 
+The first irreversible-operation hardening pass removes cloud-data deletion from the legacy staff invitation acceptance dialog, verifies cloud events before clear-and-pull migration wipes local IndexedDB data, fixes the `product_deleted` UUID type, and adds a Supabase migration so token invitation acceptance grants market membership atomically.
+
 Current status:
 
 - Build: passing.

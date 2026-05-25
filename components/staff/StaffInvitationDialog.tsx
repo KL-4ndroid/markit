@@ -5,9 +5,9 @@
  * 用戶可以選擇接受或拒絕邀請
  * 
  * 接受邀請的流程：
- * 1. 清除本地數據（IndexedDB）
- * 2. 清除雲端數據（Supabase）
- * 3. 更新邀請狀態為 active
+ * 1. 更新邀請狀態為 active
+ * 2. 補齊員工可訪問市集的 market_members 記錄
+ * 3. 清除本機快取資料
  * 4. 重新載入頁面，以員工身份同步數據
  * 
  * 拒絕邀請的流程：
@@ -89,15 +89,9 @@ export function StaffInvitationDialog() {
     if (!user || !invitation) return;
 
     const confirmed = confirm(
-      '⚠️ 重要提醒\n\n' +
-      '接受邀請後，您將成為員工，並且：\n\n' +
-      '1. 您的本地數據將被清除\n' +
-      '2. 您的雲端數據將被刪除（如果有）\n' +
-      '3. 您將無法再訪問自己原有的市集和商品\n' +
-      '4. 您只能訪問老闆的市集和商品\n' +
-      '5. 您無法查看成本、利潤等敏感數據\n\n' +
-      '此操作無法復原！\n\n' +
-      '確定要繼續嗎？'
+      '接受員工邀請後，系統會切換到員工模式並清除本機快取資料。\n\n' +
+      '雲端個人資料不會在這個流程中刪除；如需刪除個人資料，請到設定頁另外操作。\n\n' +
+      '是否繼續？'
     );
 
     if (!confirmed) return;
@@ -105,51 +99,7 @@ export function StaffInvitationDialog() {
     setIsProcessing(true);
 
     try {
-      toast.loading('正在處理邀請...', { id: 'accept-invitation' });
-
-      // 1. 清除雲端數據
-      console.log('🗑️ 清除雲端數據...');
-
-      // 刪除所有事件
-      const { error: eventsError } = await supabase
-        .from('events')
-        .delete()
-        .eq('actor_id', user.id);
-
-      if (eventsError) throw eventsError;
-
-      // 獲取所有市集 ID
-      const { data: marketsData, error: marketsQueryError } = await supabase
-        .from('markets')
-        .select('id')
-        .eq('owner_id', user.id);
-
-      if (marketsQueryError) throw marketsQueryError;
-
-      const marketIds = marketsData?.map(m => m.id) || [];
-
-      // 刪除所有商品
-      if (marketIds.length > 0) {
-        const { error: productsError } = await supabase
-          .from('products')
-          .delete()
-          .in('market_id', marketIds);
-
-        if (productsError) throw productsError;
-      }
-
-      // 刪除所有市集
-      const { error: marketsDeleteError } = await supabase
-        .from('markets')
-        .delete()
-        .eq('owner_id', user.id);
-
-      if (marketsDeleteError) throw marketsDeleteError;
-
-      console.log('✅ 雲端數據已清除');
-
-      // 2. 更新邀請狀態為 active
-      console.log('✅ 接受邀請...');
+      toast.loading('正在接受邀請...', { id: 'accept-invitation' });
 
       const { error: updateError } = await supabase
         .from('staff_relationships')
@@ -157,14 +107,10 @@ export function StaffInvitationDialog() {
           status: 'active',
           accepted_at: new Date().toISOString(),
         })
-        .eq('id', invitation.id);
+        .eq('id', invitation.id)
+        .eq('staff_id', user.id);
 
       if (updateError) throw updateError;
-
-      console.log('✅ 邀請已接受');
-
-      // 3. 獲取老闆的所有進行中的市集
-      console.log('🔍 獲取老闆的市集...');
 
       const { data: ownerMarkets, error: ownerMarketsError } = await supabase
         .from('markets')
@@ -174,43 +120,54 @@ export function StaffInvitationDialog() {
 
       if (ownerMarketsError) throw ownerMarketsError;
 
-      // 4. 為每個市集創建 market_members 記錄
-      if (ownerMarkets && ownerMarkets.length > 0) {
-        console.log(`📝 添加到 ${ownerMarkets.length} 個市集...`);
-
-        const memberRecords = ownerMarkets.map(market => ({
-          market_id: market.id,
-          user_id: user.id,
-          role: 'staff',
-          joined_at: new Date().toISOString(),
-        }));
-
-        const { error: membersError } = await supabase
+      const marketIds = ownerMarkets?.map(market => market.id) || [];
+      if (marketIds.length > 0) {
+        const { data: existingMembers, error: existingMembersError } = await supabase
           .from('market_members')
-          .insert(memberRecords);
+          .select('market_id')
+          .eq('user_id', user.id)
+          .in('market_id', marketIds);
 
-        if (membersError) throw membersError;
+        if (existingMembersError) throw existingMembersError;
 
-        console.log('✅ 已添加到所有市集');
+        const existingMarketIds = new Set((existingMembers || []).map(member => member.market_id));
+        const memberRecords = marketIds
+          .filter(marketId => !existingMarketIds.has(marketId))
+          .map(marketId => ({
+            market_id: marketId,
+            user_id: user.id,
+            role: 'staff',
+            joined_at: new Date().toISOString(),
+          }));
+
+        if (memberRecords.length > 0) {
+          const { error: membersError } = await supabase
+            .from('market_members')
+            .insert(memberRecords);
+
+          if (membersError) throw membersError;
+        }
       }
 
-      // 5. 清除本地數據
-      console.log('🗑️ 清除本地數據...');
+      const { clearAllData } = await import('@/lib/db');
+      const { resetInitialSyncFlag } = await import('@/hooks/useSync');
+      const { clearRoleCache } = await import('@/hooks/useUserRole');
+      const { enableStaffMode } = await import('@/lib/db/feature-flags');
 
-      await indexedDB.deleteDatabase('MarketPulseDB');
+      await clearAllData();
+      resetInitialSyncFlag();
+      clearRoleCache();
+      enableStaffMode();
 
-      console.log('✅ 本地數據已清除');
+      toast.success('已接受邀請，正在重新載入資料...', { id: 'accept-invitation' });
 
-      toast.success('✅ 已接受邀請，即將重新載入...', { id: 'accept-invitation' });
-
-      // 6. 重新載入頁面
       setTimeout(() => {
         window.location.reload();
-      }, 2000);
+      }, 1500);
 
     } catch (error: any) {
       console.error('接受邀請失敗:', error);
-      toast.error('接受邀請失敗：' + error.message, { id: 'accept-invitation' });
+      toast.error('接受邀請失敗：' + (error.message || '未知錯誤'), { id: 'accept-invitation' });
       setIsProcessing(false);
     }
   };
@@ -328,11 +285,11 @@ export function StaffInvitationDialog() {
                         ⚠️ 重要提醒
                       </p>
                       <ul className="text-xs text-[#6B6B6B] space-y-1">
-                        <li>• <strong>您的本地數據將被清除</strong></li>
-                        <li>• <strong>您的雲端數據將被刪除</strong>（如果有）</li>
+                        <li>• <strong>您的本機快取資料將被清除</strong></li>
+                        <li>• <strong>您的雲端個人資料不會在此流程中刪除</strong></li>
                         <li>• 您將無法再訪問自己原有的市集和商品</li>
                         <li>• 您只能訪問老闆的市集和商品</li>
-                        <li>• <strong className="text-[#d4183d]">此操作無法復原！</strong></li>
+                        <li>• <strong className="text-[#d4183d]">接受後會切換為員工模式</strong></li>
                       </ul>
                     </div>
                   </div>
