@@ -50,6 +50,8 @@ The data layer now exposes `initializeDatabaseSafely()` and `checkCurrentDatabas
 
 A reusable `DatabaseRecoveryPanel` now provides integrity check, retry, and rescue-backup actions. It is ready for gradual page adoption without forcing risky edits into the existing large page files.
 
+The app now includes a dedicated `/recovery` page that exposes the repair panel and a safe recovery workflow without touching the existing high-risk page files.
+
 Current status:
 
 - Build: passing.
