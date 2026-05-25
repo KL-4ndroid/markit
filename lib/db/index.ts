@@ -18,7 +18,12 @@ import {
   checkBackupIntegrity,
   parseBackupData,
   type BackupData,
+  type IntegrityResult,
 } from './integrity';
+
+export type DatabaseInitResult =
+  | { ok: true; integrity: IntegrityResult }
+  | { ok: false; error: Error; recoverable: boolean; integrity?: IntegrityResult };
 
 /**
  * 同步佇列項目介面
@@ -330,6 +335,46 @@ export async function exportData(): Promise<string> {
   } catch (error) {
     console.error('❌ 匯出資料失敗：', error);
     throw error;
+  }
+}
+
+export async function checkCurrentDatabaseIntegrity(): Promise<IntegrityResult> {
+  return checkBackupIntegrity({
+    version: 1,
+    exportedAt: Date.now(),
+    events: await db.events.toArray(),
+    markets: await db.markets.toArray(),
+    products: await db.products.toArray(),
+    dailyStats: await db.dailyStats.toArray(),
+    settings: await db.settings.toArray(),
+  });
+}
+
+export async function initializeDatabaseSafely(): Promise<DatabaseInitResult> {
+  try {
+    await initializeDatabase();
+
+    if (!db.isOpen()) {
+      throw new Error('Database did not open after initialization');
+    }
+
+    const integrity = await checkCurrentDatabaseIntegrity();
+    if (!integrity.ok) {
+      return {
+        ok: false,
+        error: new Error(`Database integrity check failed:\n${integrity.errors.join('\n')}`),
+        recoverable: true,
+        integrity,
+      };
+    }
+
+    return { ok: true, integrity };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error : new Error(String(error)),
+      recoverable: true,
+    };
   }
 }
 

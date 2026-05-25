@@ -52,6 +52,11 @@ function isValidDateString(value: unknown): boolean {
   return Number.isFinite(time);
 }
 
+function pickPayloadMarketId(payload: Record<string, unknown>): string | undefined {
+  const marketId = payload.marketId ?? payload.market_id;
+  return isNonEmptyString(marketId) ? marketId : undefined;
+}
+
 function findDuplicateIds(items: Array<{ id?: string | number }>, label: string): string[] {
   const seen = new Set<string>();
   const duplicates = new Set<string>();
@@ -67,6 +72,104 @@ function findDuplicateIds(items: Array<{ id?: string | number }>, label: string)
   }
 
   return [...duplicates].map(id => `${label} duplicate id: ${id}`);
+}
+
+function validateBackupEventPayload(event: Event, index: number): string[] {
+  const errors: string[] = [];
+  if (!isRecord(event.payload)) return errors;
+
+  const payload = event.payload;
+  const label = `events[${index}] ${event.type}`;
+
+  const requireMarketId = () => {
+    if (!pickPayloadMarketId(payload)) errors.push(`${label} missing marketId`);
+  };
+
+  switch (event.type) {
+    case 'market_created':
+      if (!isNonEmptyString(payload.name)) errors.push(`${label} missing name`);
+      if (!isNonEmptyString(payload.location)) errors.push(`${label} missing location`);
+      if (!isNonEmptyString(payload.startDate ?? payload.start_date)) errors.push(`${label} missing startDate`);
+      if (!isNonEmptyString(payload.endDate ?? payload.end_date)) errors.push(`${label} missing endDate`);
+      if (!isNumber(payload.registrationFee ?? payload.registration_fee)) errors.push(`${label} invalid registrationFee`);
+      if (!isNumber(payload.boothCost ?? payload.booth_cost)) errors.push(`${label} invalid boothCost`);
+      break;
+
+    case 'market_updated':
+      requireMarketId();
+      if (!isRecord(payload.updates)) errors.push(`${label} invalid updates`);
+      break;
+
+    case 'market_status_changed':
+      requireMarketId();
+      if (!isNonEmptyString(payload.oldStatus)) errors.push(`${label} missing oldStatus`);
+      if (!isNonEmptyString(payload.newStatus)) errors.push(`${label} missing newStatus`);
+      break;
+
+    case 'market_started':
+    case 'market_ended':
+    case 'market_deleted':
+    case 'interaction_recorded':
+      requireMarketId();
+      if (event.type === 'interaction_recorded' && !isNonEmptyString(payload.type)) {
+        errors.push(`${label} missing type`);
+      }
+      break;
+
+    case 'product_created':
+      if (!isNonEmptyString(payload.name)) errors.push(`${label} missing name`);
+      if (!isNonEmptyString(payload.category)) errors.push(`${label} missing category`);
+      if (!isNumber(payload.price)) errors.push(`${label} invalid price`);
+      break;
+
+    case 'product_updated':
+      if (!isNonEmptyString(payload.productId)) errors.push(`${label} missing productId`);
+      if (!isRecord(payload.updates)) errors.push(`${label} invalid updates`);
+      break;
+
+    case 'product_deleted':
+      if (!isNonEmptyString(payload.productId)) errors.push(`${label} missing productId`);
+      break;
+
+    case 'interaction_deleted':
+      if (!isNonEmptyString(payload.eventId)) errors.push(`${label} missing eventId`);
+      requireMarketId();
+      break;
+
+    case 'deal_closed':
+      requireMarketId();
+      if (!isNumber(payload.totalAmount)) errors.push(`${label} invalid totalAmount`);
+      if (payload.isManualEntry !== true) {
+        if (!Array.isArray(payload.items)) {
+          errors.push(`${label} invalid items`);
+        } else {
+          payload.items.forEach((item, itemIndex) => {
+            if (!isRecord(item)) {
+              errors.push(`${label}.items[${itemIndex}] invalid item`);
+              return;
+            }
+            if (!isNonEmptyString(item.productId)) errors.push(`${label}.items[${itemIndex}] missing productId`);
+            if (!isNumber(item.quantity) || item.quantity <= 0) errors.push(`${label}.items[${itemIndex}] invalid quantity`);
+            if (!isNumber(item.price)) errors.push(`${label}.items[${itemIndex}] invalid price`);
+          });
+        }
+      }
+      break;
+
+    case 'deal_deleted':
+      if (!isNonEmptyString(payload.eventId)) errors.push(`${label} missing eventId`);
+      requireMarketId();
+      if (!isNonEmptyString(payload.dealDate)) errors.push(`${label} missing dealDate`);
+      if (!isNumber(payload.totalAmount)) errors.push(`${label} invalid totalAmount`);
+      if (!isNumber(payload.totalCost)) errors.push(`${label} invalid totalCost`);
+      if (!isNumber(payload.dealCount)) errors.push(`${label} invalid dealCount`);
+      break;
+
+    case 'settings_updated':
+      break;
+  }
+
+  return errors;
 }
 
 export function parseBackupData(jsonData: string): BackupData {
@@ -134,6 +237,10 @@ export function checkBackupIntegrity(data: BackupData): IntegrityResult {
     if (event.market_id && !marketIds.has(event.market_id)) {
       errors.push(`events[${index}] 指向不存在的 market_id：${event.market_id}`);
     }
+  });
+
+  data.events.forEach((event, index) => {
+    errors.push(...validateBackupEventPayload(event, index));
   });
 
   data.markets.forEach((market, index) => {

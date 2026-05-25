@@ -46,6 +46,8 @@ Snapshot rebuilds now run the shared integrity validator after event replay. If 
 
 Projection handlers for market status/start/end/delete and product update/delete now verify that the target row was actually updated. Missing snapshot targets throw immediately, preventing a recorded event from silently failing to change the user-visible data.
 
+The data layer now exposes `initializeDatabaseSafely()` and `checkCurrentDatabaseIntegrity()` so pages can adopt recovery-mode behavior without relying on the legacy initializer that swallows some failures. Backup integrity checks also validate event-specific payload requirements before import replacement.
+
 Current status:
 
 - Build: passing.

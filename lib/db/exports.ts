@@ -5,7 +5,16 @@
  */
 
 // 資料庫實例與初始化
-export { db, MarketPulseDB, initializeDatabase, clearAllData, exportData, importData } from './index';
+export {
+  db,
+  MarketPulseDB,
+  initializeDatabase,
+  initializeDatabaseSafely,
+  checkCurrentDatabaseIntegrity,
+  clearAllData,
+  exportData,
+  importData,
+} from './index';
 
 // 事件溯源核心
 export { recordEvent, queryEvents, rebuildSnapshots, registerEventHandler } from './events';
