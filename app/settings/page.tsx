@@ -456,6 +456,19 @@ export default function SettingsPage() {
           {/* 展開內容 */}
           {isDatabaseExpanded && (
             <div className="px-6 pb-6 border-t border-[#7B9FA6]/10">
+              <button
+                type="button"
+                onClick={() => router.push('/recovery')}
+                className="mt-4 mb-4 flex w-full items-center justify-between rounded-xl border border-[#7B9FA6]/20 bg-[#F8FBFB] p-4 text-left transition-colors hover:bg-[#EEF6F7]"
+              >
+                <span>
+                  <span className="block text-sm font-medium text-[#3A3A3A]">資料修復與救援備份</span>
+                  <span className="mt-1 block text-xs text-[#6B6B6B]">
+                    檢查本機資料完整性，必要時先建立救援備份。
+                  </span>
+                </span>
+                <Database className="h-5 w-5 shrink-0 text-[#7B9FA6]" />
+              </button>
               {/* 總體說明 */}
               <div className="bg-[#FFF8E7] border border-[#D4A574]/20 rounded-xl p-4 mt-4 mb-6">
                 <div className="flex items-start gap-2">
