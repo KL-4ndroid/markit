@@ -571,9 +571,16 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
           updatedAt: event.timestamp,
         };
         
-        // ✅ 關鍵：補登時不扣庫存
-        if (!isBackfill && !product.unlimitedStock && product.stock !== undefined) {
-          updates.stock = Math.max(0, product.stock - item.quantity);
+        // ✅ 正常交易不得超賣；補登不扣庫存
+        if (!isBackfill && !product.unlimitedStock) {
+          const currentStock = product.stock ?? 0;
+          if (currentStock < item.quantity) {
+            throw new Error(
+              `${product.name} 庫存不足！目前庫存：${currentStock}，需要：${item.quantity}`
+            );
+          }
+
+          updates.stock = currentStock - item.quantity;
         }
         
         await db.products.update(item.productId, updates);

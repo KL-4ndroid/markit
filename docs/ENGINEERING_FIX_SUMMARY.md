@@ -30,6 +30,8 @@ Backup import now has a first safety layer: imported JSON is parsed, version-che
 
 Event creation is now cleaner for market/product create/update flows: `recordEvent()` prepares generated `marketId`/`productId` values before insertion, and the corresponding projection handlers no longer rewrite those event rows after they are stored.
 
+Normal product-sale transactions now fail if finite stock is insufficient instead of silently clamping inventory to zero. Backfill transactions still avoid stock deduction.
+
 Current status:
 
 - Build: passing.

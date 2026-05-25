@@ -31,6 +31,7 @@ Last updated: 2026-05-25
 - [x] Stop staff-view sync from automatically deleting other users' local data.
 - [x] Add backup integrity validation and emergency backup creation before `importData()` replaces local data.
 - [x] Move market/product create/update event normalization before insert so projection handlers no longer mutate those events.
+- [x] Prevent normal `deal_closed` handlers from silently clamping oversold stock to zero.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
 - [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.
