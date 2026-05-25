@@ -84,6 +84,123 @@ function prepareEventForInsert(
   };
 }
 
+function assertRecord(payload: EventPayload, type: EventType): Record<string, unknown> {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error(`Invalid ${type} payload: expected an object`);
+  }
+
+  return payload as Record<string, unknown>;
+}
+
+function assertString(value: unknown, field: string, type: EventType): void {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`Invalid ${type} payload: missing ${field}`);
+  }
+}
+
+function assertNumber(value: unknown, field: string, type: EventType): void {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`Invalid ${type} payload: ${field} must be a finite number`);
+  }
+}
+
+function assertMarketId(record: Record<string, unknown>, type: EventType): void {
+  if (!pickMarketId(record)) {
+    throw new Error(`Invalid ${type} payload: missing marketId`);
+  }
+}
+
+function validateEventPayload(type: EventType, payload: EventPayload): void {
+  const record = assertRecord(payload, type);
+
+  switch (type) {
+    case 'market_created':
+      assertString(record.name, 'name', type);
+      assertString(record.location, 'location', type);
+      assertString(record.startDate ?? record.start_date, 'startDate', type);
+      assertString(record.endDate ?? record.end_date, 'endDate', type);
+      assertNumber(record.registrationFee ?? record.registration_fee, 'registrationFee', type);
+      assertNumber(record.boothCost ?? record.booth_cost, 'boothCost', type);
+      return;
+
+    case 'market_updated':
+      assertMarketId(record, type);
+      if (!record.updates || typeof record.updates !== 'object' || Array.isArray(record.updates)) {
+        throw new Error(`Invalid ${type} payload: updates must be an object`);
+      }
+      return;
+
+    case 'market_status_changed':
+      assertMarketId(record, type);
+      assertString(record.oldStatus, 'oldStatus', type);
+      assertString(record.newStatus, 'newStatus', type);
+      return;
+
+    case 'market_started':
+    case 'market_ended':
+    case 'market_deleted':
+      assertMarketId(record, type);
+      return;
+
+    case 'product_created':
+      assertString(record.name, 'name', type);
+      assertString(record.category, 'category', type);
+      assertNumber(record.price, 'price', type);
+      return;
+
+    case 'product_updated':
+      assertString(record.productId, 'productId', type);
+      if (!record.updates || typeof record.updates !== 'object' || Array.isArray(record.updates)) {
+        throw new Error(`Invalid ${type} payload: updates must be an object`);
+      }
+      return;
+
+    case 'product_deleted':
+      assertString(record.productId, 'productId', type);
+      return;
+
+    case 'interaction_recorded':
+      assertMarketId(record, type);
+      assertString(record.type, 'type', type);
+      return;
+
+    case 'interaction_deleted':
+      assertString(record.eventId, 'eventId', type);
+      assertMarketId(record, type);
+      return;
+
+    case 'deal_closed':
+      assertMarketId(record, type);
+      assertNumber(record.totalAmount, 'totalAmount', type);
+      if (record.isManualEntry === true) return;
+      if (!Array.isArray(record.items)) {
+        throw new Error(`Invalid ${type} payload: items must be an array`);
+      }
+      for (const [index, item] of record.items.entries()) {
+        const saleItem = item as Record<string, unknown>;
+        assertString(saleItem.productId, `items[${index}].productId`, type);
+        assertNumber(saleItem.quantity, `items[${index}].quantity`, type);
+        assertNumber(saleItem.price, `items[${index}].price`, type);
+        if ((saleItem.quantity as number) <= 0) {
+          throw new Error(`Invalid ${type} payload: items[${index}].quantity must be greater than zero`);
+        }
+      }
+      return;
+
+    case 'deal_deleted':
+      assertString(record.eventId, 'eventId', type);
+      assertMarketId(record, type);
+      assertString(record.dealDate, 'dealDate', type);
+      assertNumber(record.totalAmount, 'totalAmount', type);
+      assertNumber(record.totalCost, 'totalCost', type);
+      assertNumber(record.dealCount, 'dealCount', type);
+      return;
+
+    case 'settings_updated':
+      return;
+  }
+}
+
 function mergeProductsSold(
   existing: ProductSoldEntry[] = [],
   additions: ProductSoldEntry[] = []
@@ -192,6 +309,8 @@ export async function recordEvent(
     }
 
     // ✅ 計算時間戳：只有補登交易使用指定日期的 23:59，正常交易使用當前時間
+    validateEventPayload(type, payload);
+
     let timestamp = Date.now();
     
     if (type === 'deal_closed' && payload && typeof payload === 'object') {

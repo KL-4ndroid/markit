@@ -40,6 +40,8 @@ Deal and interaction deletion handlers now preserve the original event rows. Tom
 
 `recordEvent()` now has event-specific TypeScript overloads backed by `EventPayloadMap`, so normal literal calls such as `product_deleted`, `deal_closed`, and `market_status_changed` are checked against their expected payload shape. Dynamic cloud replay still keeps a guarded generic overload so sync recovery can continue to process persisted remote events.
 
+Events are also validated at runtime before being persisted. The first guard checks required IDs, sale item quantities/prices, update objects, and core market/product fields so malformed payloads fail before they can become immutable history.
+
 Current status:
 
 - Build: passing.
