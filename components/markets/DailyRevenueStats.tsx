@@ -51,7 +51,8 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
         // 獲取互動事件 - 只篩選在 marketDates 中的日期
         const interactions = (await getActiveInteractionEvents())
           .filter(e => {
-            if (e.payload.marketId !== market.id) return false;
+            const payload = e.payload as { market_id?: string };
+            if (payload.market_id !== market.id) return false;
             
             // 將 timestamp 轉換為日期字串
             const eventDate = new Date(e.timestamp);

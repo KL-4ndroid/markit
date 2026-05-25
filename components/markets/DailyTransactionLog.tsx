@@ -74,14 +74,16 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       // 獲取當日互動記錄
       const interactions = (await getActiveInteractionEvents())
         .filter(e => {
-          if (e.payload.marketId !== marketId) return false;
+          const payload = e.payload as { market_id?: string };
+          if (payload.market_id !== marketId) return false;
           return e.timestamp >= startOfDay && e.timestamp <= endOfDay;
         });
 
       // 獲取當日成交記錄
       const deals = (await getActiveDealEvents())
         .filter(e => {
-          if (e.payload.marketId !== marketId) return false;
+          const payload = e.payload as { market_id?: string };
+          if (payload.market_id !== marketId) return false;
           
           // 使用 dealDate 或 timestamp 判斷
           let dealDateStr: string;
@@ -216,8 +218,7 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
   // ✅ 使用事件溯源方式刪除成交記錄
   const handleDeleteDeal = async (event: Event<DealClosedPayload>) => {
     const payload = event.payload;
-    const payloadWithMarketId = payload as DealClosedPayload & { market_id?: string };
-    const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+    const market_id = payload.market_id;
 
     // 計算要扣除的金額
     let totalAmount = payload.totalAmount;
@@ -267,14 +268,13 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
 
   // ✅ 使用事件溯源方式刪除互動記錄
   const handleDeleteInteraction = async (event: Event<InteractionRecordedPayload>) => {
-    const payloadWithMarketId = event.payload as InteractionRecordedPayload & { market_id?: string };
-    const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+    const market_id = event.payload.market_id;
 
     // ✅ 記錄刪除事件（會自動同步到雲端）
     const { recordEvent } = await import('@/lib/db/events');
     await recordEvent('interaction_deleted', {
       eventId: event.id!,
-      marketId: market_id,
+      market_id: market_id,
     });
   };
 

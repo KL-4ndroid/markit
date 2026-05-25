@@ -25,6 +25,7 @@ import type {
   ProductCreatedPayload,
   ProductUpdatedPayload,
   InteractionRecordedPayload,
+  InteractionDeletedPayload,
   DealClosedPayload,
   DealDeletedPayload,
   DailyStats,
@@ -122,7 +123,7 @@ function assertNumber(value: unknown, field: string, type: EventType): void {
 
 function assertMarketId(record: Record<string, unknown>, type: EventType): void {
   if (!pickMarketId(record)) {
-    throw new Error(`Invalid ${type} payload: missing marketId`);
+    throw new Error(`Invalid ${type} payload: missing market_id`);
   }
 }
 
@@ -892,13 +893,13 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
  * 2. 更新市集統計（扣除互動次數）
  * 3. 更新每日統計（扣除互動次數）
  */
-registerEventHandler('interaction_deleted', async (event: Event<{ eventId: string; marketId: string }>, db) => {
-  const { eventId, marketId } = event.payload;
+registerEventHandler('interaction_deleted', async (event: Event<InteractionDeletedPayload>, db) => {
+  const { eventId, market_id } = event.payload;
 
   // 2. 更新市集統計
-  const market = await db.markets.get(marketId);
+  const market = await db.markets.get(market_id);
   if (market) {
-    await db.markets.update(marketId, {
+    await db.markets.update(market_id, {
       totalInteractions: Math.max(0, (market.totalInteractions || 0) - 1),
       updatedAt: event.timestamp,
     });
@@ -916,14 +917,14 @@ registerEventHandler('interaction_deleted', async (event: Event<{ eventId: strin
  * 3. 更新每日統計（扣除金額）
  */
 registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db) => {
-  const { eventId, marketId, dealDate, totalAmount, totalCost, dealCount, productsSold = [] } = event.payload;
+  const { eventId, market_id, dealDate, totalAmount, totalCost, dealCount, productsSold = [] } = event.payload;
   
   const totalProfit = totalAmount - totalCost;
 
   // 2. 更新市集統計（扣除金額）
-  const market = await db.markets.get(marketId);
+  const market = await db.markets.get(market_id);
   if (market) {
-    await db.markets.update(marketId, {
+    await db.markets.update(market_id, {
       totalRevenue: Math.max(0, (market.totalRevenue || 0) - totalAmount),
       totalProfit: (market.totalProfit || 0) - totalProfit,
       totalDeals: Math.max(0, (market.totalDeals || 0) - dealCount),
@@ -934,7 +935,7 @@ registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db
   // 3. 更新每日統計（扣除金額）
   const dailyStat = await db.dailyStats
     .where('[date+marketId]')
-    .equals([dealDate, marketId])
+    .equals([dealDate, market_id])
     .first();
   
   if (dailyStat) {
@@ -959,7 +960,7 @@ registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db
     }
   }
   
-  console.log(`🗑️ 成交記錄已刪除：NT$${totalAmount} (日期: ${dealDate}, 市集 ID: ${marketId.substring(0, 8)}...)`);
+  console.log(`🗑️ 成交記錄已刪除：NT$${totalAmount} (日期: ${dealDate}, 市集 ID: ${market_id.substring(0, 8)}...)`);
 });
 
 // ==================== 設定相關事件處理器 ====================

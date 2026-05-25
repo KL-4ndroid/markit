@@ -193,7 +193,7 @@ export interface MarketUpdatedPayload {
  * 市集狀態變更事件的 Payload
  */
 export interface MarketStatusChangedPayload {
-  marketId: string;            // 改為 UUID
+  market_id: string;            // 市集 UUID
   oldStatus: MarketStatus;
   newStatus: MarketStatus;
   reason?: string;             // 變更原因
@@ -203,7 +203,7 @@ export interface MarketStatusChangedPayload {
  * 市集刪除事件的 Payload
  */
 export interface MarketDeletedPayload {
-  marketId: string;            // 市集 UUID
+  market_id: string;            // 市集 UUID
   reason?: string;             // 刪除原因
 }
 
@@ -302,9 +302,9 @@ export type InteractionType = string;
  * 互動記錄事件的 Payload
  */
 export interface InteractionRecordedPayload {
-  marketId: string;            // 所屬市集（改為 UUID）
+  market_id: string;            // 所屬市集 UUID
   type: InteractionType;       // 互動類型（使用按鈕 ID）
-  productIds?: string[];       // 相關商品 ID（改為 UUID）
+  productIds?: string[];       // 相關商品 ID（UUID）
   notes?: string;              // 備註
 }
 
@@ -313,7 +313,7 @@ export interface InteractionRecordedPayload {
  */
 export interface InteractionDeletedPayload {
   eventId: string;             // 要刪除的互動事件 ID
-  marketId: string;            // 所屬市集 ID
+  market_id: string;            // 所屬市集 ID
 }
 
 /**
@@ -321,7 +321,7 @@ export interface InteractionDeletedPayload {
  */
 export interface DealDeletedPayload {
   eventId: string;             // 要刪除的成交事件 ID
-  marketId: string;            // 所屬市集 ID
+  market_id: string;            // 所屬市集 ID
   dealDate: string;            // 成交日期（用於更新每日統計）
   totalAmount: number;         // 要扣除的金額
   totalCost: number;           // 要扣除的成本
@@ -333,22 +333,21 @@ export interface DealDeletedPayload {
  * 成交事件的 Payload
  */
 export interface DealClosedPayload {
-  marketId: string;            // 所屬市集（改為 UUID）
-  dealDate?: string;           // ✅ 成交日期（YYYY-MM-DD），用於多天市集區分每日收入
-  isBackfill?: boolean;        // ✅ 補登標記（補登時不扣庫存）
-  isManualEntry?: boolean;     // ✅ 手動輸入標記（簡化模式）
+  market_id: string;            // 所屬市集 UUID
+  dealDate?: string;           // 成交日期（YYYY-MM-DD），用於多天市集區分每日收入
+  isBackfill?: boolean;        // 補登標記（補登時不扣庫存）
+  isManualEntry?: boolean;     // 手動輸入標記（簡化模式）
   
-  // ✅ 簡化模式專用（當 isManualEntry = true）
+  // 簡化模式專用（當 isManualEntry = true）
   manualRevenue?: number;      // 手動輸入的收入
   manualCost?: number;         // 手動輸入的成本
   manualDealCount?: number;    // 手動輸入的成交次數
   
   // 完整模式（當 isManualEntry = false 或未設置）
   items: {
-    productId: string;         // 商品 ID（改為 UUID）
+    productId: string;         // 商品 ID（UUID）
     quantity: number;          // 數量
     price: number;             // 實際售價（可能有折扣）
-    // 新增：交易時快照（防止歷史數據錯誤）
     price_at_time_of_sale?: number;  // 成交時的售價
     cost_at_time_of_sale?: number;   // 成交時的成本
     product_name?: string;           // 成交時的商品名稱
@@ -424,9 +423,9 @@ export interface Settings {
  * 事件處理器函數類型
  * 用於處理特定類型的事件並更新快照
  */
-export type MarketIdPayload =
-  | { marketId: string; market_id?: string }
-  | { market_id: string; marketId?: string };
+export type MarketIdPayload = {
+  market_id: string;            // 統一使用 market_id (snake_case)
+};
 
 export type MarketStatusChangedEventPayload = MarketIdPayload & {
   oldStatus: MarketStatus;
@@ -437,21 +436,15 @@ export type MarketStatusChangedEventPayload = MarketIdPayload & {
 export type ProductCreatedEventPayload = ProductCreatedPayload & {
   productId?: string;
   product_id?: string;
-  marketId?: string;
   market_id?: string;
 };
 
-export type InteractionRecordedEventPayload = InteractionRecordedPayload & {
-  market_id?: string;
-};
+export type InteractionRecordedEventPayload = InteractionRecordedPayload & {};
 
-export type DealClosedEventPayload = DealClosedPayload & {
-  market_id?: string;
-};
+export type DealClosedEventPayload = DealClosedPayload & {};
 
 export type EventPayloadMap = {
   market_created: MarketCreatedPayload & {
-    marketId?: string;
     market_id?: string;
   };
   market_updated: MarketUpdatedPayload;

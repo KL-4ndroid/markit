@@ -284,7 +284,8 @@ export default function MarketDetailPage({ params }: PageProps) {
         // 獲取互動事件 - 只篩選在 marketDates 中的日期
         const interactions = (await getActiveInteractionEvents())
           .filter(e => {
-            if (e.payload.marketId !== marketId) return false;
+            const payload = e.payload as { market_id?: string };
+            if (payload.market_id !== marketId) return false;
             
             // 將 timestamp 轉換為日期字串
             const eventDate = new Date(e.timestamp);
@@ -301,7 +302,8 @@ export default function MarketDetailPage({ params }: PageProps) {
         // 獲取成交事件 - 只篩選在 marketDates 中的日期
         const deals = (await getActiveDealEvents())
           .filter(e => {
-            if (e.payload.marketId !== marketId) return false;
+            const payload = e.payload as { market_id?: string };
+            if (payload.market_id !== marketId) return false;
             
             // ✅ 使用 dealDate 作為篩選依據，降級到 timestamp
             let dealDateStr: string;
@@ -832,8 +834,7 @@ export default function MarketDetailPage({ params }: PageProps) {
   const handleDeleteDeal = useCallback(async (deal: Event<DealClosedPayload>) => {
     try {
       const payload = deal.payload;
-      const payloadWithMarketId = payload as DealClosedPayload & { market_id?: string };
-      const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+      const market_id = payload.market_id;
       
       // ✅ 計算要扣除的金額
       let totalAmount = payload.totalAmount;
@@ -895,7 +896,7 @@ export default function MarketDetailPage({ params }: PageProps) {
       
       // 錯誤時重新載入數據
       const updatedDeals = (await getActiveDealEvents())
-        .filter(event => event.payload.marketId === marketId);
+        .filter(event => (event.payload as { market_id?: string }).market_id === marketId);
       setDealEvents(updatedDeals);
     }
   }, [marketId, selectedDeal]);

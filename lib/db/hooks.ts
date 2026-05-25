@@ -331,12 +331,16 @@ export async function recordInteraction(
 /**
  * 記錄成交
  * 
- * @param data - 成交資料
+ * @param data - 成交資料（支援 marketId 或 market_id）
  * @param dealDate - 可選：指定交易日期（用於補登收入），格式：YYYY-MM-DD
  */
-export async function recordDeal(data: DealClosedPayload, dealDate?: string): Promise<void> {
+export async function recordDeal(
+  data: DealClosedPayload | { marketId: string } & Omit<DealClosedPayload, 'market_id'>,
+  dealDate?: string
+): Promise<void> {
   const isBackfill = !!dealDate || data.isBackfill;
   const isManualEntry = data.isManualEntry || false;
+  const marketId = 'marketId' in data ? data.marketId : data.market_id;
   
   // ✅ 預先查詢商品資訊並儲存商品名稱（避免顯示時出現 ID）
   const itemsWithProductInfo = [];
@@ -373,18 +377,20 @@ export async function recordDeal(data: DealClosedPayload, dealDate?: string): Pr
     }
   }
   
-  // ✅ 將 marketId 轉換為 market_id（統一使用底線式）
   // ✅ 添加交易日期（用於多天市集的每日收入記錄）
   // ✅ 使用本地日期，避免時區問題
   const now = new Date();
   const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   
-  const payload = {
-    ...data,
-    items: itemsWithProductInfo.length > 0 ? itemsWithProductInfo : data.items,
-    market_id: data.marketId,
+  const payload: DealClosedPayload = {
+    market_id: marketId || '',
     dealDate: dealDate || data.dealDate || todayLocal,
     isBackfill: isBackfill,
+    isManualEntry: isManualEntry,
+    items: itemsWithProductInfo.length > 0 ? itemsWithProductInfo : data.items,
+    totalAmount: data.totalAmount,
+    paymentMethod: data.paymentMethod,
+    notes: data.notes,
   };
   
   // 庫存檢查通過，記錄成交事件

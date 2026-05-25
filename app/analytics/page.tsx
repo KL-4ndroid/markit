@@ -427,7 +427,7 @@ export default function AnalyticsPage() {
       
       // 獲取該市集的所有成交事件
       const events = (await getActiveDealEvents())
-        .filter(event => event.market_id === market.id || event.payload.marketId === market.id);
+        .filter(event => event.market_id === market.id || (event.payload as any).market_id === market.id);
 
       // 處理每個成交事件
       for (const event of events) {

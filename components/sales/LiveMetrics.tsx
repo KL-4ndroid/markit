@@ -31,10 +31,10 @@ export function LiveMetrics({ marketId }: LiveMetricsProps) {
     // 篩選當前市集的事件
     const marketEvents = events.filter((event) => {
       if (event.type === 'deal_closed') {
-        return (event.payload as DealClosedPayload).marketId === marketId;
+        return (event.payload as DealClosedPayload).market_id === marketId;
       }
       if (event.type === 'interaction_recorded') {
-        return (event.payload as InteractionRecordedPayload).marketId === marketId;
+        return (event.payload as InteractionRecordedPayload).market_id === marketId;
       }
       return false;
     });
