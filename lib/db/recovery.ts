@@ -5,6 +5,7 @@ import {
   initializeDatabaseSafely,
   type DatabaseInitResult,
 } from './index';
+import type { DailyStats } from '@/types/db';
 import type { IntegrityResult } from './integrity';
 
 export type DatabaseRecoveryStatus =
@@ -26,6 +27,33 @@ export interface RecoveryBackup {
   mimeType: 'application/json';
   content: string;
   createdAt: number;
+}
+
+export interface RecoveryRepairResult {
+  backup: RecoveryBackup;
+  repairedDailyStats: number;
+  integrity: IntegrityResult;
+}
+
+function toNonNegativeNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+function toNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeProductsSold(productsSold: unknown): DailyStats['productsSold'] {
+  if (!Array.isArray(productsSold)) return [];
+
+  return productsSold
+    .filter((item): item is Record<string, unknown> => item !== null && typeof item === 'object' && !Array.isArray(item))
+    .filter((item) => typeof item.productId === 'string' && item.productId.length > 0)
+    .map((item) => ({
+      productId: item.productId as string,
+      quantity: toNonNegativeNumber(item.quantity),
+      revenue: toNonNegativeNumber(item.revenue),
+    }));
 }
 
 export async function getDatabaseRecoveryStatus(): Promise<DatabaseRecoveryStatus> {
@@ -72,5 +100,61 @@ export async function createRecoveryBackup(): Promise<RecoveryBackup> {
     mimeType: 'application/json',
     content,
     createdAt,
+  };
+}
+
+export async function repairInvalidDailyStats(): Promise<RecoveryRepairResult> {
+  const backup = await createRecoveryBackup();
+  const stats = await db.dailyStats.toArray();
+  let repairedDailyStats = 0;
+
+  await db.transaction('rw', [db.dailyStats], async () => {
+    for (const stat of stats) {
+      if (stat.id === undefined) continue;
+
+      const cost = toNonNegativeNumber(stat.cost);
+      const revenue = toNonNegativeNumber(stat.revenue);
+      const normalized: DailyStats = {
+        ...stat,
+        touchCount: toNonNegativeNumber(stat.touchCount),
+        inquiryCount: toNonNegativeNumber(stat.inquiryCount),
+        dealCount: toNonNegativeNumber(stat.dealCount),
+        revenue,
+        cost,
+        profit: toNumber(stat.profit, revenue - cost),
+        productsSold: normalizeProductsSold(stat.productsSold),
+        updatedAt: toNonNegativeNumber(stat.updatedAt, Date.now()),
+      };
+
+      const changed =
+        normalized.touchCount !== stat.touchCount ||
+        normalized.inquiryCount !== stat.inquiryCount ||
+        normalized.dealCount !== stat.dealCount ||
+        normalized.revenue !== stat.revenue ||
+        normalized.cost !== stat.cost ||
+        normalized.profit !== stat.profit ||
+        normalized.updatedAt !== stat.updatedAt ||
+        JSON.stringify(normalized.productsSold) !== JSON.stringify(stat.productsSold);
+
+      if (!changed) continue;
+
+      await db.dailyStats.update(stat.id, {
+        touchCount: normalized.touchCount,
+        inquiryCount: normalized.inquiryCount,
+        dealCount: normalized.dealCount,
+        revenue: normalized.revenue,
+        cost: normalized.cost,
+        profit: normalized.profit,
+        productsSold: normalized.productsSold,
+        updatedAt: normalized.updatedAt,
+      });
+      repairedDailyStats += 1;
+    }
+  });
+
+  return {
+    backup,
+    repairedDailyStats,
+    integrity: await checkCurrentDatabaseIntegrity(),
   };
 }

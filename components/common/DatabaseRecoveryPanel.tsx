@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Download, RefreshCw, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Download, RefreshCw, ShieldCheck, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   createRecoveryBackup,
   getDatabaseRecoveryStatus,
+  repairInvalidDailyStats,
   retryDatabaseRecovery,
   type DatabaseRecoveryStatus,
 } from '@/lib/db/recovery';
@@ -27,6 +28,7 @@ export function DatabaseRecoveryPanel() {
   const [status, setStatus] = useState<DatabaseRecoveryStatus | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isRepairing, setIsRepairing] = useState(false);
 
   const handleCheck = async () => {
     setIsChecking(true);
@@ -68,6 +70,26 @@ export function DatabaseRecoveryPanel() {
       toast.error(error instanceof Error ? error.message : '救援備份失敗');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleRepairDailyStats = async () => {
+    setIsRepairing(true);
+    try {
+      const result = await repairInvalidDailyStats();
+      downloadJson(result.backup.filename, result.backup.content);
+      const nextStatus = await getDatabaseRecoveryStatus();
+      setStatus(nextStatus);
+
+      if (result.integrity.ok) {
+        toast.success(`已修復 ${result.repairedDailyStats} 筆每日統計，並建立修復前備份`);
+      } else {
+        toast.warning(`已修復 ${result.repairedDailyStats} 筆每日統計，但仍有其他問題需要檢查`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '每日統計修復失敗');
+    } finally {
+      setIsRepairing(false);
     }
   };
 
@@ -121,6 +143,15 @@ export function DatabaseRecoveryPanel() {
           >
             <Download size={16} />
             備份
+          </button>
+          <button
+            type="button"
+            onClick={handleRepairDailyStats}
+            disabled={isRepairing}
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-[#D4A574] px-3 text-sm font-medium text-white disabled:opacity-50"
+          >
+            <Wrench size={16} />
+            修復
           </button>
         </div>
       </div>

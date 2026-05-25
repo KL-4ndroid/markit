@@ -54,6 +54,8 @@ The app now includes a dedicated `/recovery` page that exposes the repair panel 
 
 Integrity checks now validate cross-event references: delete/tombstone events must point to the expected original event type, cannot point to themselves, and product deal items must reference existing products before import or recovery proceeds.
 
+Recovery mode can now repair invalid `dailyStats` numeric fields. The repair creates and downloads a pre-repair backup first, then normalizes invalid counters, revenue, cost, profit, product-sale entries, and timestamps so cache data can pass integrity checks again.
+
 Current status:
 
 - Build: passing.

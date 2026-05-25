@@ -19,6 +19,7 @@ export {
 export {
   createRecoveryBackup,
   getDatabaseRecoveryStatus,
+  repairInvalidDailyStats,
   retryDatabaseRecovery,
 } from './recovery';
 
