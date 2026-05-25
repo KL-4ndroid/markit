@@ -14,6 +14,8 @@ Snapshot loading and full-sync import paths now normalize market/product rows be
 
 The remaining duplicated `market_updated` replay conversion blocks in `hooks/useSync.ts` have been removed; replay paths now rely on the shared mapper only.
 
+Staff market detail loading and full-sync market/product imports now consume the shared row mappers instead of rebuilding local row shapes inline. The mapper layer also normalizes numeric fields and single-date market rows more consistently.
+
 Current status:
 
 - Build: passing.

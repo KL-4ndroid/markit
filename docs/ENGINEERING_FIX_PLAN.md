@@ -19,6 +19,7 @@ Last updated: 2026-05-25
 - [x] Adopt mappers in staff-accessible market/product query helpers.
 - [x] Adopt mappers in snapshot and full-sync import paths.
 - [x] Remove duplicated market update replay conversion blocks from sync.
+- [x] Use shared mappers for staff market detail loading and full-sync import row shaping.
 - [ ] Continue replacing remaining ad hoc camelCase/snake_case handling with mapper helpers.
 - [x] Harden staff invitation RLS and RPC functions.
 - [x] Apply non-breaking transitive dependency audit fixes.

@@ -1497,70 +1497,12 @@ async function syncMarketsToIndexedDB(markets: any[], currentUserId: string): Pr
       // 準備市集數據（保留權限信息）
       const marketData = {
         ...mappedMarket,
-        id: market.id,
-        name: market.name,
-        location: market.location,
-        dates: market.dates,
-        startDate: market.start_date || market.startDate,
-        endDate: market.end_date || market.endDate,
-        startTime: market.start_time || market.startTime,
-        endTime: market.end_time || market.endTime,
-        status: market.status,
-        
-        // ✅ 保留權限信息
-        access_type: market.access_type,
-        permissions: market.permissions,
-        relationship_owner_id: market.relationship_owner_id,
-        
-        // 其他欄位
-        owner_id: market.owner_id,
-        is_collaborative: market.is_collaborative,
         sync_status: 'synced' as const,
-        
-        // 時間軸（✅ 修復：使用嚴格的 null/undefined 檢查，避免空字符串被誤判）
-        earlyEntryEnabled: market.early_entry_enabled !== null && market.early_entry_enabled !== undefined 
-          ? market.early_entry_enabled 
-          : (existing?.earlyEntryEnabled || false),
-        earlyEntryTime: market.early_entry_time !== null && market.early_entry_time !== undefined 
-          ? market.early_entry_time 
-          : existing?.earlyEntryTime || null,
-        checkInTime: market.check_in_time !== null && market.check_in_time !== undefined 
-          ? market.check_in_time 
-          : existing?.checkInTime || null,
-        operatingStartTime: market.operating_start_time !== null && market.operating_start_time !== undefined 
-          ? market.operating_start_time 
-          : existing?.operatingStartTime || null,
-        operatingEndTime: market.operating_end_time !== null && market.operating_end_time !== undefined 
-          ? market.operating_end_time 
-          : existing?.operatingEndTime || null,
-        
-        // 財務
-        registrationFee: market.registration_fee || market.registrationFee || 0,
-        boothCost: market.booth_cost || market.boothCost || 0,
-        deposit: market.deposit,
-        tableRental: market.table_rental || market.tableRental,
-        chairRental: market.chair_rental || market.chairRental,
-        umbrellaRental: market.umbrella_rental || market.umbrellaRental,
-        tableclothRental: market.tablecloth_rental || market.tableclothRental,
-        commissionRate: market.commission_rate || market.commissionRate,
-        
-        // 免費標記
-        tableFree: market.table_free || market.tableFree,
-        chairFree: market.chair_free || market.chairFree,
-        umbrellaFree: market.umbrella_free || market.umbrellaFree,
-        tableclothFree: market.tablecloth_free || market.tableclothFree,
-        
-        // 統計
-        totalRevenue: market.total_revenue || market.totalRevenue || 0,
-        totalProfit: market.total_profit || market.totalProfit || 0,
-        totalInteractions: market.total_interactions || market.totalInteractions || 0,
-        totalDeals: market.total_deals || market.totalDeals || 0,
-        
-        notes: market.notes,
-        
-        // 時間戳
-        createdAt: market.created_at ? new Date(market.created_at).getTime() : Date.now(),
-        updatedAt: market.updated_at ? new Date(market.updated_at).getTime() : Date.now(),
+        earlyEntryEnabled: mappedMarket.earlyEntryEnabled ?? existing?.earlyEntryEnabled ?? false,
+        earlyEntryTime: mappedMarket.earlyEntryTime ?? existing?.earlyEntryTime,
+        checkInTime: mappedMarket.checkInTime ?? existing?.checkInTime,
+        operatingStartTime: mappedMarket.operatingStartTime ?? existing?.operatingStartTime,
+        operatingEndTime: mappedMarket.operatingEndTime ?? existing?.operatingEndTime,
       };
       
       if (existing) {
@@ -1624,37 +1566,8 @@ async function syncProductsToIndexedDB(products: any[], currentUserId: string): 
       // 準備商品數據（保留權限信息）
       const productData = {
         ...mappedProduct,
-        id: product.id,
-        owner_id: product.owner_id,
-        market_id: product.market_id,
-        name: product.name,
-        category: product.category,
-        price: product.price || 0,
-        cost: product.cost,
-        
-        // ✅ 保留權限信息
-        access_type: product.access_type,
-        permissions: product.permissions,
-        relationship_owner_id: product.relationship_owner_id,
-        
-        // 視覺
-        iconName: product.icon_name || product.iconName,
-        colorCode: product.color_code || product.colorCode,
-        
-        // 庫存
-        stock: product.stock,
-        unlimitedStock: product.unlimited_stock || product.unlimitedStock || false,
-        isActive: product.is_active !== undefined ? product.is_active : true,
-        isShared: product.is_shared || product.isShared,
-        
-        // 統計
-        totalSold: product.total_sold || product.totalSold || 0,
-        
-        description: product.description,
-        
-        // 時間戳
-        createdAt: product.created_at ? new Date(product.created_at).getTime() : Date.now(),
-        updatedAt: product.updated_at ? new Date(product.updated_at).getTime() : Date.now(),
+        unlimitedStock: mappedProduct.unlimitedStock ?? false,
+        isActive: mappedProduct.isActive ?? true,
       };
       
       if (existing) {

@@ -80,68 +80,8 @@ export default function MarketDetailPage({ params }: PageProps) {
         getAccessibleMarket(marketId)
           .then(data => {
             if (data) {
-              // ✅ 轉換 Supabase 數據格式為本地格式（保留底線式欄位名稱）
-              const convertedMarket = {
-                id: data.id,
-                name: data.name,
-                location: data.location,
-                // ✅ 使用 date 欄位（MarketWithAccess 的欄位名稱）
-                dates: data.date ? [data.date] : [],
-                startDate: data.date || data.start_date,
-                endDate: data.date || data.end_date,
-                // ✅ 保留底線式欄位名稱（與 MarketWithAccess 類型一致）
-                status: (data as any).status,
-                early_entry_enabled: (data as any).early_entry_enabled,
-                early_entry_time: (data as any).early_entry_time,
-                check_in_time: (data as any).check_in_time,
-                operating_start_time: (data as any).operating_start_time,
-                operating_end_time: (data as any).operating_end_time,
-                registration_fee: (data as any).registration_fee,
-                booth_cost: (data as any).booth_cost,
-                deposit: (data as any).deposit,
-                table_rental: (data as any).table_rental,
-                chair_rental: (data as any).chair_rental,
-                umbrella_rental: (data as any).umbrella_rental,
-                tablecloth_rental: (data as any).tablecloth_rental,
-                commission_rate: (data as any).commission_rate,
-                table_free: (data as any).table_free,
-                chair_free: (data as any).chair_free,
-                umbrella_free: (data as any).umbrella_free,
-                tablecloth_free: (data as any).tablecloth_free,
-                total_revenue: (data as any).total_revenue,
-                total_profit: (data as any).total_profit,
-                total_interactions: (data as any).total_interactions,
-                total_deals: (data as any).total_deals,
-                notes: data.notes,
-                created_at: data.created_at,
-                updated_at: data.updated_at,
-                // ✅ 駝峰式別名（向後兼容）
-                earlyEntryEnabled: (data as any).early_entry_enabled,
-                earlyEntryTime: (data as any).early_entry_time,
-                checkInTime: (data as any).check_in_time,
-                operatingStartTime: (data as any).operating_start_time,
-                operatingEndTime: (data as any).operating_end_time,
-                registrationFee: parseFloat((data as any).registration_fee || '0'),
-                boothCost: parseFloat((data as any).booth_cost || '0'),
-                tableRental: (data as any).table_rental ? parseFloat((data as any).table_rental) : undefined,
-                chairRental: (data as any).chair_rental ? parseFloat((data as any).chair_rental) : undefined,
-                umbrellaRental: (data as any).umbrella_rental ? parseFloat((data as any).umbrella_rental) : undefined,
-                tableclothRental: (data as any).tablecloth_rental ? parseFloat((data as any).tablecloth_rental) : undefined,
-                commissionRate: (data as any).commission_rate ? parseFloat((data as any).commission_rate) : undefined,
-                tableFree: (data as any).table_free,
-                chairFree: (data as any).chair_free,
-                umbrellaFree: (data as any).umbrella_free,
-                tableclothFree: (data as any).tablecloth_free,
-                totalRevenue: parseFloat((data as any).total_revenue || '0'),
-                totalProfit: parseFloat((data as any).total_profit || '0'),
-                totalInteractions: (data as any).total_interactions || 0,
-                totalDeals: (data as any).total_deals || 0,
-                createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now(),
-                updatedAt: data.updated_at ? new Date(data.updated_at).getTime() : Date.now(),
-                access_type: data.access_type,
-                permissions: data.permissions,
-              };
-              setSupabaseMarket(convertedMarket);
+              // getAccessibleMarket already normalizes Supabase rows through the shared mapper.
+              setSupabaseMarket(data);
             }
           })
           .catch(error => {

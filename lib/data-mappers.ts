@@ -186,7 +186,7 @@ export function marketRowToLocal(row: AnyRecord): Market {
     id: row.id as string | undefined,
     name: row.name,
     location: row.location ?? '',
-    dates: row.dates,
+    dates: row.dates ?? (row.date ? [row.date] : undefined),
     startDate: row.startDate ?? row.start_date ?? row.date,
     endDate: row.endDate ?? row.end_date ?? row.date,
     startTime: row.startTime ?? row.start_time,
@@ -205,36 +205,36 @@ export function marketRowToLocal(row: AnyRecord): Market {
     checkInTime: row.checkInTime ?? row.check_in_time,
     operatingStartTime: row.operatingStartTime ?? row.operating_start_time,
     operatingEndTime: row.operatingEndTime ?? row.operating_end_time,
-    registrationFee: row.registrationFee ?? row.registration_fee ?? 0,
-    boothCost: row.boothCost ?? row.booth_cost ?? 0,
-    deposit: row.deposit,
-    tableRental: row.tableRental ?? row.table_rental,
-    chairRental: row.chairRental ?? row.chair_rental,
-    umbrellaRental: row.umbrellaRental ?? row.umbrella_rental,
-    tableclothRental: row.tableclothRental ?? row.tablecloth_rental,
-    commissionRate: row.commissionRate ?? row.commission_rate,
+    registrationFee: toNumber(row.registrationFee ?? row.registration_fee) ?? 0,
+    boothCost: toNumber(row.boothCost ?? row.booth_cost) ?? 0,
+    deposit: toNumber(row.deposit),
+    tableRental: toNumber(row.tableRental ?? row.table_rental),
+    chairRental: toNumber(row.chairRental ?? row.chair_rental),
+    umbrellaRental: toNumber(row.umbrellaRental ?? row.umbrella_rental),
+    tableclothRental: toNumber(row.tableclothRental ?? row.tablecloth_rental),
+    commissionRate: toNumber(row.commissionRate ?? row.commission_rate),
     tableFree: row.tableFree ?? row.table_free,
     chairFree: row.chairFree ?? row.chair_free,
     umbrellaFree: row.umbrellaFree ?? row.umbrella_free,
     tableclothFree: row.tableclothFree ?? row.tablecloth_free,
-    totalRevenue: row.totalRevenue ?? row.total_revenue,
-    totalProfit: row.totalProfit ?? row.total_profit,
-    totalInteractions: row.totalInteractions ?? row.total_interactions,
-    totalDeals: row.totalDeals ?? row.total_deals,
+    totalRevenue: toNumber(row.totalRevenue ?? row.total_revenue) ?? 0,
+    totalProfit: toNumber(row.totalProfit ?? row.total_profit) ?? 0,
+    totalInteractions: toNumber(row.totalInteractions ?? row.total_interactions) ?? 0,
+    totalDeals: toNumber(row.totalDeals ?? row.total_deals) ?? 0,
     notes: row.notes,
     createdAt: toEpoch(row.createdAt ?? row.created_at) ?? Date.now(),
     updatedAt: toEpoch(row.updatedAt ?? row.updated_at) ?? Date.now(),
   }) as unknown as Market;
 }
 
-export function marketAccessRowToLocal(row: AnyRecord): MarketWithAccess {
+export function marketAccessRowToLocal(row: AnyRecord): MarketWithAccess & Market {
   return {
     ...row,
     ...marketRowToLocal(row),
     relationship_owner_id: row.relationship_owner_id as string,
     permissions: row.permissions as MarketWithAccess['permissions'],
     access_type: row.access_type as MarketWithAccess['access_type'],
-  } as unknown as MarketWithAccess;
+  } as unknown as MarketWithAccess & Market;
 }
 
 export function productRowToLocal(row: AnyRecord): Product {
@@ -245,32 +245,32 @@ export function productRowToLocal(row: AnyRecord): Product {
     market_id: row.market_id,
     name: row.name,
     category: row.category ?? 'other',
-    price: row.price ?? 0,
-    cost: row.cost,
+    price: toNumber(row.price) ?? 0,
+    cost: toNumber(row.cost),
     iconName: row.iconName ?? row.icon_name,
     colorCode: row.colorCode ?? row.color_code,
-    stock: row.stock,
+    stock: toNumber(row.stock),
     unlimitedStock: row.unlimitedStock ?? row.unlimited_stock,
     isActive: row.isActive ?? row.is_active ?? !row.deleted_at,
     isShared: row.isShared ?? row.is_shared,
     access_type: row.access_type,
     permissions: row.permissions,
     relationship_owner_id: row.relationship_owner_id,
-    totalSold: row.totalSold ?? row.total_sold,
+    totalSold: toNumber(row.totalSold ?? row.total_sold) ?? 0,
     description: row.description ?? row.notes,
     createdAt: toEpoch(row.createdAt ?? row.created_at) ?? Date.now(),
     updatedAt: toEpoch(row.updatedAt ?? row.updated_at) ?? Date.now(),
   }) as unknown as Product;
 }
 
-export function productAccessRowToLocal(row: AnyRecord): ProductWithAccess {
+export function productAccessRowToLocal(row: AnyRecord): ProductWithAccess & Product {
   return {
     ...row,
     ...productRowToLocal(row),
     relationship_owner_id: row.relationship_owner_id as string,
     permissions: row.permissions as ProductWithAccess['permissions'],
     access_type: row.access_type as ProductWithAccess['access_type'],
-  } as unknown as ProductWithAccess;
+  } as unknown as ProductWithAccess & Product;
 }
 
 export function productCreatedPayloadToLocal(
@@ -299,5 +299,13 @@ function toEpoch(value: unknown): number | undefined {
   if (typeof value !== 'string') return undefined;
 
   const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function toNumber(value: unknown): number | undefined {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string' || value.trim() === '') return undefined;
+
+  const parsed = Number(value);
   return Number.isNaN(parsed) ? undefined : parsed;
 }
