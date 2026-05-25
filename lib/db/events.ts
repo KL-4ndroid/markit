@@ -10,6 +10,10 @@ import {
   pickMarketId,
   productCreatedPayloadToLocal,
 } from '@/lib/data-mappers';
+import {
+  checkBackupIntegrity,
+  type BackupData,
+} from './integrity';
 import type {
   Event,
   EventType,
@@ -982,6 +986,18 @@ export async function queryEvents(options: {
  * ⚠️ 這是一個高級功能，通常不需要使用
  * 只在資料不一致時才需要重建
  */
+async function collectIntegritySnapshot(): Promise<BackupData> {
+  return {
+    version: 1,
+    exportedAt: Date.now(),
+    events: await db.events.toArray(),
+    markets: await db.markets.toArray(),
+    products: await db.products.toArray(),
+    dailyStats: await db.dailyStats.toArray(),
+    settings: await db.settings.toArray(),
+  };
+}
+
 export async function rebuildSnapshots(): Promise<void> {
   console.log('🔄 開始重建快照...');
   
@@ -1001,6 +1017,15 @@ export async function rebuildSnapshots(): Promise<void> {
       if (handler) {
         await handler(event, db);
       }
+    }
+
+    const integrity = checkBackupIntegrity(await collectIntegritySnapshot());
+    if (!integrity.ok) {
+      throw new Error(`Snapshot rebuild produced inconsistent data:\n${integrity.errors.join('\n')}`);
+    }
+
+    if (integrity.warnings.length > 0) {
+      console.warn('Snapshot rebuild completed with integrity warnings:', integrity.warnings);
     }
     
     console.log(`✅ 快照重建完成：處理了 ${events.length} 個事件`);

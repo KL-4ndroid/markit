@@ -42,6 +42,8 @@ Deal and interaction deletion handlers now preserve the original event rows. Tom
 
 Events are also validated at runtime before being persisted. The first guard checks required IDs, sale item quantities/prices, update objects, and core market/product fields so malformed payloads fail before they can become immutable history.
 
+Snapshot rebuilds now run the shared integrity validator after event replay. If the rebuilt projections are inconsistent, the rebuild fails immediately instead of leaving corrupted cache tables in place.
+
 Current status:
 
 - Build: passing.
