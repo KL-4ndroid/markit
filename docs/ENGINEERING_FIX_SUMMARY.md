@@ -24,6 +24,8 @@ The next irreversible-operation pass moves full app-data deletion and staff leav
 
 Sync permission-error handling now preserves local data. A 403/RLS failure records a bounded diagnostic entry, pauses sync temporarily, and lets the app retry later instead of deleting local collaborative records immediately.
 
+Staff-view synchronization no longer clears other users' local records before every pull. It now preserves local data and logs isolation findings, keeping destructive cleanup reserved for explicit account lifecycle flows.
+
 Current status:
 
 - Build: passing.

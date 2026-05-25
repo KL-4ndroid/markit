@@ -126,6 +126,7 @@ export async function clearUserData(
 
 /**
  * 清除非當前用戶的數據
+ * 僅用於明確的帳號切換/登出流程；一般同步流程不得呼叫，避免誤刪可恢復資料。
  * 
  * @param currentUserId - 當前用戶 ID
  */

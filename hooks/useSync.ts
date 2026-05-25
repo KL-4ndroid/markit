@@ -1338,7 +1338,7 @@ async function handlePermissionSyncError(error: any, userId: string): Promise<vo
  * ✅ 這是員工模式的核心函數
  * ✅ 從 Supabase 視圖拉取數據，保留權限信息
  * ✅ 不使用 lastSyncAt 過濾（避免跨用戶污染）
- * ✅ 清除其他用戶的數據（防止數據混合）
+ * ✅ 同步過程不刪除本地資料；只記錄隔離性驗證結果
  */
 async function pullEventsFromViews(
   userId: string,
@@ -1349,16 +1349,6 @@ async function pullEventsFromViews(
   });
   
   try {
-    // ✅ 步驟 0：清除其他用戶的數據（防止數據混合）
-    console.log('🧹 清除其他用戶的數據...');
-    try {
-      const { clearOtherUsersData } = await import('@/lib/db/clear-user-data');
-      await clearOtherUsersData(userId);
-      console.log('✅ 其他用戶數據已清除');
-    } catch (clearError) {
-      console.error('⚠️ 清除其他用戶數據失敗（繼續同步）:', clearError);
-    }
-    
     // 1. 拉取市集數據（從視圖）
     if (onProgress) {
       onProgress(1, 5, '拉取市集數據...', 'incremental');
@@ -1429,13 +1419,13 @@ async function pullEventsFromViews(
     
     await updateLastSyncTimestamp();
     
-    // ✅ 驗證數據隔離性
+    // ✅ 驗證數據隔離性；同步流程只記錄，不自動刪除本地資料。
     try {
       const { validateDataIsolation } = await import('@/lib/db/clear-user-data');
       const validation = await validateDataIsolation(userId);
       
       if (!validation.isValid) {
-        console.error('❌ 數據隔離性驗證失敗:', validation.violations);
+        console.warn('⚠️ 本地存在非當前用戶資料，已保留並僅記錄:', validation.violations);
       } else {
         console.log('✅ 數據隔離性驗證通過');
       }

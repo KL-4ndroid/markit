@@ -28,6 +28,7 @@ Last updated: 2026-05-25
 - [x] Move full app-data deletion into a single authenticated RPC before local cache clearing.
 - [x] Move leave-team cleanup into a single authenticated RPC before local cache clearing.
 - [x] Replace destructive 403 sync handling with temporary sync pause and local-data preservation.
+- [x] Stop staff-view sync from automatically deleting other users' local data.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
 - [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.
