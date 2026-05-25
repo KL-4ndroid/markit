@@ -48,6 +48,7 @@ Last updated: 2026-05-25
 - [x] Normalize existing dailyStats numeric cache fields during deal projection updates.
 - [x] Add initial automated tests for backup integrity and event reference validation.
 - [x] Expand integrity tests for backup parsing, valid tombstones, self-tombstones, and market-id mismatch warnings.
+- [x] Add import-time replay readiness checks for event order, duplicate tombstones, and deleted product sales.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
 - [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.

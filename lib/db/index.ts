@@ -17,6 +17,7 @@ import type {
 import {
   checkBackupIntegrity,
   parseBackupData,
+  validateBackupReplayReadiness,
   type BackupData,
   type IntegrityResult,
 } from './integrity';
@@ -436,6 +437,11 @@ export async function importData(jsonData: string): Promise<void> {
 
     if (!preImportCheck.ok) {
       throw new Error(`備份資料完整性檢查失敗：\n${preImportCheck.errors.join('\n')}`);
+    }
+
+    const replayReadiness = validateBackupReplayReadiness(data);
+    if (!replayReadiness.ok) {
+      throw new Error(`Backup events are not safe to replay before import:\n${replayReadiness.errors.join('\n')}`);
     }
 
     await createEmergencyBackupBeforeImport();

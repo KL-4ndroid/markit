@@ -247,6 +247,113 @@ function validateEventReferences(
   };
 }
 
+function pickPayloadProductId(payload: Record<string, unknown>): string | undefined {
+  const productId = payload.productId ?? payload.product_id;
+  return isNonEmptyString(productId) ? productId : undefined;
+}
+
+export function validateBackupReplayReadiness(data: BackupData): IntegrityResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const activeMarkets = new Set(data.markets.map(market => market.id).filter(isNonEmptyString));
+  const activeProducts = new Set(data.products.map(product => product.id).filter(isNonEmptyString));
+  const tombstonedEvents = new Set<string>();
+
+  const indexedEvents = data.events
+    .map((event, index) => ({ event, index }))
+    .sort((a, b) => {
+      if (a.event.timestamp !== b.event.timestamp) return a.event.timestamp - b.event.timestamp;
+      return a.index - b.index;
+    });
+
+  const replayIndexByEventId = new Map<string, number>();
+  indexedEvents.forEach(({ event }, replayIndex) => {
+    if (isNonEmptyString(event.id)) {
+      replayIndexByEventId.set(event.id, replayIndex);
+    }
+  });
+
+  indexedEvents.forEach(({ event, index }, replayIndex) => {
+    if (!isRecord(event.payload)) return;
+
+    const payload = event.payload;
+    const label = `events[${index}] ${event.type}`;
+    const marketId = pickPayloadMarketId(payload);
+
+    if (
+      marketId &&
+      !activeMarkets.has(marketId) &&
+      event.type !== 'market_created' &&
+      event.type !== 'settings_updated'
+    ) {
+      errors.push(`${label} cannot replay because market is unavailable: ${marketId}`);
+    }
+
+    if (event.type === 'market_created') {
+      const createdMarketId = marketId ?? event.market_id;
+      if (createdMarketId) activeMarkets.add(createdMarketId);
+      return;
+    }
+
+    if (event.type === 'market_deleted' && marketId) {
+      activeMarkets.delete(marketId);
+      return;
+    }
+
+    if (event.type === 'product_created') {
+      const productId = pickPayloadProductId(payload);
+      if (productId) activeProducts.add(productId);
+      return;
+    }
+
+    if (event.type === 'product_deleted') {
+      const productId = pickPayloadProductId(payload);
+      if (productId) activeProducts.delete(productId);
+      return;
+    }
+
+    if (event.type === 'product_updated') {
+      const productId = pickPayloadProductId(payload);
+      if (productId && !activeProducts.has(productId)) {
+        errors.push(`${label} cannot replay because product is unavailable: ${productId}`);
+      }
+      return;
+    }
+
+    if (event.type === 'deal_closed' && Array.isArray(payload.items)) {
+      payload.items.forEach((item, itemIndex) => {
+        if (!isRecord(item) || !isNonEmptyString(item.productId)) return;
+        if (!activeProducts.has(item.productId)) {
+          errors.push(`${label}.items[${itemIndex}] cannot replay because product is unavailable: ${item.productId}`);
+        }
+      });
+    }
+
+    if (event.type !== 'deal_deleted' && event.type !== 'interaction_deleted') return;
+    if (!isNonEmptyString(payload.eventId)) return;
+
+    const targetReplayIndex = replayIndexByEventId.get(payload.eventId);
+    if (targetReplayIndex !== undefined && targetReplayIndex >= replayIndex) {
+      errors.push(`${label} tombstones an event that has not replayed yet: ${payload.eventId}`);
+    }
+
+    if (tombstonedEvents.has(payload.eventId)) {
+      errors.push(`${label} duplicates tombstone for event: ${payload.eventId}`);
+    }
+    tombstonedEvents.add(payload.eventId);
+  });
+
+  if (data.events.length === 0 && (data.markets.length > 0 || data.products.length > 0 || data.dailyStats.length > 0)) {
+    warnings.push('Backup has snapshots but no events; snapshots cannot be independently replayed');
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
 export function parseBackupData(jsonData: string): BackupData {
   let parsed: unknown;
 
@@ -326,6 +433,10 @@ export function checkBackupIntegrity(data: BackupData): IntegrityResult {
   const referenceCheck = validateEventReferences(data, eventById, marketIds, productIds);
   errors.push(...referenceCheck.errors);
   warnings.push(...referenceCheck.warnings);
+
+  const replayReadiness = validateBackupReplayReadiness(data);
+  errors.push(...replayReadiness.errors);
+  warnings.push(...replayReadiness.warnings);
 
   data.markets.forEach((market, index) => {
     if (!isNonEmptyString(market.id)) errors.push(`markets[${index}] 缺少有效 id`);

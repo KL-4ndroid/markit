@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
-import { checkBackupIntegrity, parseBackupData, type BackupData } from '../lib/db/integrity';
+import {
+  checkBackupIntegrity,
+  parseBackupData,
+  validateBackupReplayReadiness,
+  type BackupData,
+} from '../lib/db/integrity';
 import type { Event, Market, Product, Settings } from '../types/db';
 
 const now = 1_700_000_000_000;
@@ -243,4 +248,118 @@ runTest('warns when payload marketId differs from event market_id', () => {
 
   assert.equal(result.ok, true);
   assert.ok(result.warnings.includes('events[0] interaction_recorded payload marketId differs from event.market_id'));
+});
+
+runTest('rejects tombstones that replay before their target event', () => {
+  const result = validateBackupReplayReadiness(backup({
+    events: [
+      event({
+        id: 'deal-delete-1',
+        type: 'deal_deleted',
+        timestamp: now,
+        market_id: 'market-1',
+        payload: {
+          eventId: 'deal-1',
+          marketId: 'market-1',
+          dealDate: '2026-01-01',
+          totalAmount: 100,
+          totalCost: 0,
+          dealCount: 1,
+        },
+      }),
+      event({
+        id: 'deal-1',
+        type: 'deal_closed',
+        timestamp: now + 1,
+        market_id: 'market-1',
+        payload: {
+          marketId: 'market-1',
+          totalAmount: 100,
+          paymentMethod: 'cash',
+          items: [{ productId: 'product-1', quantity: 1, price: 100 }],
+        },
+      }),
+    ],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes('events[0] deal_deleted tombstones an event that has not replayed yet: deal-1'));
+});
+
+runTest('rejects duplicate tombstones for the same event', () => {
+  const result = validateBackupReplayReadiness(backup({
+    events: [
+      event({
+        id: 'deal-1',
+        type: 'deal_closed',
+        timestamp: now,
+        market_id: 'market-1',
+        payload: {
+          marketId: 'market-1',
+          totalAmount: 100,
+          paymentMethod: 'cash',
+          items: [{ productId: 'product-1', quantity: 1, price: 100 }],
+        },
+      }),
+      event({
+        id: 'deal-delete-1',
+        type: 'deal_deleted',
+        timestamp: now + 1,
+        market_id: 'market-1',
+        payload: {
+          eventId: 'deal-1',
+          marketId: 'market-1',
+          dealDate: '2026-01-01',
+          totalAmount: 100,
+          totalCost: 0,
+          dealCount: 1,
+        },
+      }),
+      event({
+        id: 'deal-delete-2',
+        type: 'deal_deleted',
+        timestamp: now + 2,
+        market_id: 'market-1',
+        payload: {
+          eventId: 'deal-1',
+          marketId: 'market-1',
+          dealDate: '2026-01-01',
+          totalAmount: 100,
+          totalCost: 0,
+          dealCount: 1,
+        },
+      }),
+    ],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes('events[2] deal_deleted duplicates tombstone for event: deal-1'));
+});
+
+runTest('rejects deals that replay after their product was deleted', () => {
+  const result = validateBackupReplayReadiness(backup({
+    events: [
+      event({
+        id: 'product-delete-1',
+        type: 'product_deleted',
+        timestamp: now,
+        payload: { productId: 'product-1' },
+      }),
+      event({
+        id: 'deal-1',
+        type: 'deal_closed',
+        timestamp: now + 1,
+        market_id: 'market-1',
+        payload: {
+          marketId: 'market-1',
+          totalAmount: 100,
+          paymentMethod: 'cash',
+          items: [{ productId: 'product-1', quantity: 1, price: 100 }],
+        },
+      }),
+    ],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes('events[1] deal_closed.items[0] cannot replay because product is unavailable: product-1'));
 });

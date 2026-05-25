@@ -62,6 +62,8 @@ The first automated data-safety tests now cover valid backups, invalid `dailySta
 
 The integrity test suite now also covers backup parsing, unsupported backup versions, valid deal tombstones, self-referential tombstones, and warnings for mismatched payload `marketId` versus event `market_id`.
 
+Import now runs a pure replay-readiness pass before replacement. The check rejects tombstones that replay before their target, duplicate tombstones for the same event, and product-sale events that would replay after the referenced product has been deleted.
+
 Current status:
 
 - Build: passing.
