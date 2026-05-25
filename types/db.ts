@@ -326,6 +326,7 @@ export interface DealDeletedPayload {
   totalAmount: number;         // 要扣除的金額
   totalCost: number;           // 要扣除的成本
   dealCount: number;           // 要扣除的成交次數
+  productsSold?: DailyStats['productsSold']; // 要扣除的商品銷售統計
 }
 
 /**

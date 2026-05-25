@@ -21,6 +21,8 @@ import type {
   ProductUpdatedPayload,
   InteractionRecordedPayload,
   DealClosedPayload,
+  DealDeletedPayload,
+  DailyStats,
   Settings,
 } from '@/types/db';
 
@@ -37,6 +39,8 @@ export const eventHandlers: Partial<Record<EventType, EventHandler>> = {};
 export function registerEventHandler(type: EventType, handler: EventHandler): void {
   eventHandlers[type] = handler;
 }
+
+type ProductSoldEntry = DailyStats['productsSold'][number];
 
 function prepareEventForInsert<T>(
   type: EventType,
@@ -75,6 +79,59 @@ function prepareEventForInsert<T>(
     payload,
     market_id: pickMarketId(record),
   };
+}
+
+function mergeProductsSold(
+  existing: ProductSoldEntry[] = [],
+  additions: ProductSoldEntry[] = []
+): ProductSoldEntry[] {
+  const merged = new Map<string, ProductSoldEntry>();
+
+  for (const item of existing) {
+    merged.set(item.productId, { ...item });
+  }
+
+  for (const item of additions) {
+    const current = merged.get(item.productId);
+    merged.set(item.productId, {
+      productId: item.productId,
+      quantity: (current?.quantity || 0) + item.quantity,
+      revenue: (current?.revenue || 0) + item.revenue,
+    });
+  }
+
+  return [...merged.values()];
+}
+
+function subtractProductsSold(
+  existing: ProductSoldEntry[] = [],
+  removals: ProductSoldEntry[] = []
+): ProductSoldEntry[] {
+  const merged = new Map<string, ProductSoldEntry>();
+
+  for (const item of existing) {
+    merged.set(item.productId, { ...item });
+  }
+
+  for (const item of removals) {
+    const current = merged.get(item.productId);
+    if (!current) continue;
+
+    const quantity = Math.max(0, current.quantity - item.quantity);
+    const revenue = Math.max(0, current.revenue - item.revenue);
+
+    if (quantity > 0 || revenue > 0) {
+      merged.set(item.productId, {
+        productId: item.productId,
+        quantity,
+        revenue,
+      });
+    } else {
+      merged.delete(item.productId);
+    }
+  }
+
+  return [...merged.values()];
 }
 
 /**
@@ -538,6 +595,7 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
   let totalAmount = event.payload.totalAmount;
   let totalCost = 0;
   let dealCount = 1;
+  const productsSold: ProductSoldEntry[] = [];
   
   // ========== 簡化模式：手動輸入 ==========
   if (isManualEntry) {
@@ -560,6 +618,11 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
         item.price_at_time_of_sale = item.price || product.price;
         item.cost_at_time_of_sale = product.cost;
         item.product_name = product.name;
+        productsSold.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          revenue: (item.price || product.price) * item.quantity,
+        });
         
         if (product.cost) {
           totalCost += product.cost * item.quantity;
@@ -629,6 +692,7 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
       revenue: dailyStat.revenue + totalAmount,
       cost: dailyStat.cost + totalCost,
       profit: dailyStat.profit + (totalAmount - totalCost),
+      productsSold: mergeProductsSold(dailyStat.productsSold, productsSold),
       updatedAt: event.timestamp,
     });
   } else {
@@ -641,7 +705,7 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
       revenue: totalAmount,
       cost: totalCost,
       profit: totalAmount - totalCost,
-      productsSold: [],
+      productsSold,
       updatedAt: event.timestamp,
     });
   }
@@ -684,8 +748,8 @@ registerEventHandler('interaction_deleted', async (event: Event<{ eventId: strin
  * 2. 更新市集統計（扣除金額）
  * 3. 更新每日統計（扣除金額）
  */
-registerEventHandler('deal_deleted', async (event: Event<{ eventId: string; marketId: string; dealDate: string; totalAmount: number; totalCost: number; dealCount: number }>, db) => {
-  const { eventId, marketId, dealDate, totalAmount, totalCost, dealCount } = event.payload;
+registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db) => {
+  const { eventId, marketId, dealDate, totalAmount, totalCost, dealCount, productsSold = [] } = event.payload;
   
   const totalProfit = totalAmount - totalCost;
   
@@ -714,6 +778,7 @@ registerEventHandler('deal_deleted', async (event: Event<{ eventId: string; mark
     const newRevenue = Math.max(0, dailyStat.revenue - totalAmount);
     const newCost = Math.max(0, dailyStat.cost - totalCost);
     const newProfit = dailyStat.profit - totalProfit;
+    const newProductsSold = subtractProductsSold(dailyStat.productsSold, productsSold);
     
     // 如果該日期的統計歸零，刪除記錄
     if (newDealCount === 0 && newRevenue === 0) {
@@ -724,6 +789,7 @@ registerEventHandler('deal_deleted', async (event: Event<{ eventId: string; mark
         revenue: newRevenue,
         cost: newCost,
         profit: newProfit,
+        productsSold: newProductsSold,
         updatedAt: event.timestamp,
       });
     }

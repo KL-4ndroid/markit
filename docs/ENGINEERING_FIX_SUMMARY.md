@@ -32,6 +32,8 @@ Event creation is now cleaner for market/product create/update flows: `recordEve
 
 Normal product-sale transactions now fail if finite stock is insufficient instead of silently clamping inventory to zero. Backfill transactions still avoid stock deduction.
 
+Product-based deals now update `dailyStats.productsSold`, merging quantity and revenue per product. Event-sourced deal deletion carries the same product-sale entries so daily product stats can be reversed consistently.
+
 Current status:
 
 - Build: passing.

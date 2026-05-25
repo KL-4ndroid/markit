@@ -261,6 +261,11 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       totalAmount,
       totalCost,
       dealCount,
+      productsSold: payload.items?.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        revenue: (item.price_at_time_of_sale ?? item.price) * item.quantity,
+      })) || [],
     });
   };
 
