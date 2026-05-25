@@ -54,6 +54,10 @@ let hasSetupIntervals = false;
  */
 let isSyncLocked = false;
 
+const SYNC_PAUSE_UNTIL_KEY = 'sync_pause_until';
+const SYNC_PERMISSION_ERROR_LOG_KEY = 'sync_permission_error_history';
+const PERMISSION_ERROR_PAUSE_MS = 10 * 60 * 1000;
+
 /**
  * ✅ 全局共享狀態：確保所有 useSync 實例使用同一個狀態
  * 這樣可以避免 React Strict Mode 雙重渲染導致的狀態不同步
@@ -88,6 +92,13 @@ export function resetInitialSyncFlag() {
   hasSetupIntervals = false;
   // ✅ 重置全局同步鎖
   isSyncLocked = false;
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(SYNC_PAUSE_UNTIL_KEY);
+    } catch (error) {
+      console.error('清除同步暫停標記失敗:', error);
+    }
+  }
   // ✅ 重置全局狀態
   updateGlobalState(() => ({
     status: SyncStatus.IDLE,
@@ -97,6 +108,32 @@ export function resetInitialSyncFlag() {
     uploadProgress: undefined,
     downloadProgress: undefined,
   }));
+}
+
+function getSyncPauseUntil(): number {
+  if (typeof window === 'undefined') return 0;
+
+  try {
+    const value = Number(localStorage.getItem(SYNC_PAUSE_UNTIL_KEY) || '0');
+    return Number.isFinite(value) ? value : 0;
+  } catch (error) {
+    console.error('讀取同步暫停標記失敗:', error);
+    return 0;
+  }
+}
+
+function pauseSyncTemporarily(): number {
+  const pauseUntil = Date.now() + PERMISSION_ERROR_PAUSE_MS;
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(SYNC_PAUSE_UNTIL_KEY, String(pauseUntil));
+    } catch (error) {
+      console.error('保存同步暫停標記失敗:', error);
+    }
+  }
+
+  return pauseUntil;
 }
 
 interface UseSyncOptions {
@@ -156,6 +193,16 @@ export function useSync(options: UseSyncOptions = {}) {
   const sync = useCallback(async () => {
     // 檢查條件
     if (!enabled || !isConfigured || !user || isSyncingRef.current) {
+      return;
+    }
+
+    const pauseUntil = getSyncPauseUntil();
+    if (pauseUntil > Date.now()) {
+      updateGlobalState(prev => ({
+        ...prev,
+        status: SyncStatus.ERROR,
+        error: '同步因權限錯誤暫停，稍後會自動重試',
+      }));
       return;
     }
 
@@ -261,13 +308,14 @@ export function useSync(options: UseSyncOptions = {}) {
       
       // 檢查是否為權限錯誤
       if (error.code === 'PGRST301' || error.message?.includes('403')) {
-        console.warn('⚠️ 偵測到權限錯誤，可能導致登出', {
+        console.warn('⚠️ 偵測到權限錯誤，暫停同步並保留本地資料', {
           errorCode: error.code,
           errorMessage: error.message,
           timestamp: new Date().toISOString(),
           userId: user.id,
         });
-        await handlePermissionRevoked();
+        await handlePermissionSyncError(error, user.id);
+        return;
       }
 
       updateGlobalState(prev => ({
@@ -1239,114 +1287,47 @@ async function ensureUserProfile(userId: string): Promise<void> {
 }
 
 /**
- * 處理權限被撤銷（403 Forbidden）
- * ✅ 增強版：完整清除所有非自己擁有的數據
+ * 處理同步權限錯誤（403 Forbidden）
+ * 保留本地資料，暫停同步一段時間，避免把暫時性 RLS/網路狀態誤判成永久失權。
  */
-async function handlePermissionRevoked(): Promise<void> {
-  console.warn('⚠️ 權限已被撤銷，清除本地協作資料');
-  
-  // ✅ 記錄權限撤銷事件
-  const permissionRevokedLog = {
-    event: 'permission_revoked',
+async function handlePermissionSyncError(error: any, userId: string): Promise<void> {
+  const pauseUntil = pauseSyncTemporarily();
+  const permissionErrorLog = {
+    event: 'sync_permission_error',
     timestamp: new Date().toISOString(),
     reason: '403_forbidden_or_policy_violation',
-    stackTrace: new Error().stack,
+    userId,
+    errorCode: error?.code,
+    errorMessage: error?.message,
+    pauseUntil,
   };
-  
-  console.error('🚫 權限撤銷詳情:', permissionRevokedLog);
-  
-  // 保存到 localStorage
+
+  console.error('🚫 同步權限錯誤，已保留本地資料並暫停同步:', permissionErrorLog);
+
   try {
-    const logoutHistory = JSON.parse(localStorage.getItem('logout_history') || '[]');
-    logoutHistory.push(permissionRevokedLog);
-    if (logoutHistory.length > 10) {
-      logoutHistory.shift();
+    if (typeof window !== 'undefined') {
+      const history = JSON.parse(localStorage.getItem(SYNC_PERMISSION_ERROR_LOG_KEY) || '[]');
+      history.push(permissionErrorLog);
+      if (history.length > 10) {
+        history.shift();
+      }
+      localStorage.setItem(SYNC_PERMISSION_ERROR_LOG_KEY, JSON.stringify(history));
     }
-    localStorage.setItem('logout_history', JSON.stringify(logoutHistory));
-  } catch (error) {
-    console.error('保存權限撤銷記錄失敗:', error);
+  } catch (storageError) {
+    console.error('保存同步權限錯誤記錄失敗:', storageError);
   }
 
-  try {
-    // ✅ 修正：直接從 Supabase 獲取用戶（不使用 useAuth Hook）
-    const { data: { user } } = await supabase.auth.getUser();
-    const currentUserId = user?.id;
-    
-    if (!currentUserId) {
-      console.error('無法獲取當前用戶 ID');
-      return;
-    }
-    
-    console.log(`🧹 開始清除非自己擁有的數據（當前用戶: ${currentUserId.substring(0, 8)}...）`);
-    
-    // ✅ 1. 清除所有非自己擁有的市集（使用批次刪除提升性能）
-    const marketsToDelete = await db.markets
-      .where('owner_id')
-      .notEqual(currentUserId)
-      .toArray();
-    
-    for (const market of marketsToDelete) {
-      if (market.id) {
-        console.log(`🗑️ 清除非自己的市集: ${market.name} (${market.id.substring(0, 8)}...)`);
-        
-        // 刪除市集
-        await db.markets.delete(market.id);
-        
-        // 刪除相關商品
-        await db.products.where('market_id').equals(market.id).delete();
-        
-        // 刪除相關事件
-        await db.events.where('market_id').equals(market.id).delete();
-        
-        // ✅ 刪除相關每日統計
-        await db.dailyStats.where('marketId').equals(market.id).delete();
-      }
-    }
-    
-    console.log(`✅ 已清除 ${marketsToDelete.length} 個非自己的市集`);
-    
-    // ✅ 2. 清除所有非自己創建的全局商品（沒有 market_id 的商品）
-    const globalProductsToDelete = await db.products
-      .filter(p => p.owner_id !== currentUserId && !p.market_id)
-      .toArray();
-    
-    for (const product of globalProductsToDelete) {
-      if (product.id) {
-        console.log(`🗑️ 清除非自己的全局商品: ${product.name} (${product.id.substring(0, 8)}...)`);
-        await db.products.delete(product.id);
-      }
-    }
-    
-    console.log(`✅ 已清除 ${globalProductsToDelete.length} 個非自己的全局商品`);
-    
-    // ✅ 3. 清除所有非自己創建的全局事件（沒有 market_id 的事件）
-    const globalEventsToDelete = await db.events
-      .filter(e => e.actor_id !== currentUserId && e.actor_id !== 'local' && !e.market_id)
-      .toArray();
-    
-    for (const event of globalEventsToDelete) {
-      if (event.id) {
-        console.log(`🗑️ 清除非自己的全局事件: ${event.type} (${event.id.substring(0, 8)}...)`);
-        await db.events.delete(event.id);
-      }
-    }
-    
-    console.log(`✅ 已清除 ${globalEventsToDelete.length} 個非自己的全局事件`);
-    
-    console.log('✅ 非自己的數據已全部清除');
+  updateGlobalState(prev => ({
+    ...prev,
+    status: SyncStatus.ERROR,
+    error: '同步因權限錯誤暫停，稍後會自動重試',
+    uploadProgress: undefined,
+    downloadProgress: undefined,
+  }));
 
-    // 提示用戶並重新載入
-    if (typeof window !== 'undefined') {
-      const { toast } = await import('sonner');
-      toast.info('已清除協作數據，即將重新載入...');
-      
-      // 延遲 2 秒後重新載入頁面
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
-    }
-  } catch (error) {
-    console.error('清除協作資料失敗:', error);
+  if (typeof window !== 'undefined') {
+    const { toast } = await import('sonner');
+    toast.warning('同步暫時因權限檢查失敗而暫停；本地資料已保留，稍後會自動重試。');
   }
 }
 

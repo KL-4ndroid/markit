@@ -22,6 +22,8 @@ The first irreversible-operation hardening pass removes cloud-data deletion from
 
 The next irreversible-operation pass moves full app-data deletion and staff leave-team cleanup into authenticated `SECURITY DEFINER` RPCs. The settings page now clears local IndexedDB/cache only after those cloud mutations succeed, reducing partial-delete and local-data-loss failure modes.
 
+Sync permission-error handling now preserves local data. A 403/RLS failure records a bounded diagnostic entry, pauses sync temporarily, and lets the app retry later instead of deleting local collaborative records immediately.
+
 Current status:
 
 - Build: passing.
