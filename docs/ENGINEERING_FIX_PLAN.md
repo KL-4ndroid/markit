@@ -41,6 +41,7 @@ Last updated: 2026-05-25
 - [x] Fail projection handlers when market/product update or delete targets are missing.
 - [x] Add safe database initialization/integrity APIs for recovery-mode adoption.
 - [x] Deepen backup event payload validation before import replacement.
+- [x] Add a reusable database recovery panel for integrity check, retry, and rescue backup flows.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
 - [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.

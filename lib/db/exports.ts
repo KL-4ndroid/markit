@@ -16,6 +16,12 @@ export {
   importData,
 } from './index';
 
+export {
+  createRecoveryBackup,
+  getDatabaseRecoveryStatus,
+  retryDatabaseRecovery,
+} from './recovery';
+
 // 事件溯源核心
 export { recordEvent, queryEvents, rebuildSnapshots, registerEventHandler } from './events';
 

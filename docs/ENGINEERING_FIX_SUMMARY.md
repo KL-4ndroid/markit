@@ -48,6 +48,8 @@ Projection handlers for market status/start/end/delete and product update/delete
 
 The data layer now exposes `initializeDatabaseSafely()` and `checkCurrentDatabaseIntegrity()` so pages can adopt recovery-mode behavior without relying on the legacy initializer that swallows some failures. Backup integrity checks also validate event-specific payload requirements before import replacement.
 
+A reusable `DatabaseRecoveryPanel` now provides integrity check, retry, and rescue-backup actions. It is ready for gradual page adoption without forcing risky edits into the existing large page files.
+
 Current status:
 
 - Build: passing.
