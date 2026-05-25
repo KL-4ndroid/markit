@@ -96,6 +96,9 @@ export function DatabaseRecoveryPanel() {
   const isHealthy = status?.state === 'healthy';
   const errors = status?.state === 'unhealthy' ? status.integrity?.errors || [] : [];
   const warnings = status?.integrity?.warnings || [];
+  const hasDailyStatsNumericErrors = errors.some((error) =>
+    /^dailyStats\[\d+\] (touchCount|inquiryCount|dealCount|revenue|cost|profit|productsSold|updatedAt)/.test(error)
+  );
 
   return (
     <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm">
@@ -147,7 +150,7 @@ export function DatabaseRecoveryPanel() {
           <button
             type="button"
             onClick={handleRepairDailyStats}
-            disabled={isRepairing}
+            disabled={isRepairing || !hasDailyStatsNumericErrors}
             className="inline-flex h-10 items-center gap-2 rounded-md bg-[#D4A574] px-3 text-sm font-medium text-white disabled:opacity-50"
           >
             <Wrench size={16} />
@@ -158,6 +161,11 @@ export function DatabaseRecoveryPanel() {
 
       {(errors.length > 0 || warnings.length > 0) && (
         <div className="mt-4 space-y-2 border-t border-[#F0ECE4] pt-3 text-sm">
+          {hasDailyStatsNumericErrors && (
+            <p className="text-[#3A3A3A]">
+              可使用修復按鈕處理每日統計快取的數值錯誤；修復前會先下載備份。
+            </p>
+          )}
           {errors.slice(0, 4).map((error) => (
             <p key={error} className="text-red-700">{error}</p>
           ))}
