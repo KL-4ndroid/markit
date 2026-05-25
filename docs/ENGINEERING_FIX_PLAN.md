@@ -18,10 +18,12 @@ Last updated: 2026-05-25
 - [x] Add the first mapper layer for event payload and row normalization.
 - [x] Adopt mappers in staff-accessible market/product query helpers.
 - [x] Adopt mappers in snapshot and full-sync import paths.
+- [x] Remove duplicated market update replay conversion blocks from sync.
 - [ ] Continue replacing remaining ad hoc camelCase/snake_case handling with mapper helpers.
 - [x] Harden staff invitation RLS and RPC functions.
 - [x] Apply non-breaking transitive dependency audit fixes.
-- [ ] Plan breaking upgrades for `next`, `eslint-config-next`, and `next-pwa`.
+- [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
+- [ ] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.
 - [x] Remove `ignoreBuildErrors` and `ignoreDuringBuilds` after type/lint checks are clean.
 
 ## Work Order

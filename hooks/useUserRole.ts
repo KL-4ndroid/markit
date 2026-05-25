@@ -95,7 +95,7 @@ export function useUserRole() {
 
   useEffect(() => {
     let isMounted = true;
-    let abortController = new AbortController();
+    const abortController = new AbortController();
 
     const loadUserRole = async () => {
       // ✅ 如果沒有用戶,立即清除緩存並返回

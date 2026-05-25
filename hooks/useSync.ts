@@ -16,7 +16,6 @@ import { recordEvent } from '@/lib/db/events';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
   marketAccessRowToLocal,
-  marketUpdatesToCamel,
   normalizeEventForCloud,
   normalizeEventPayloadForLocal,
   pickMarketId,
@@ -893,52 +892,7 @@ async function replayEvents(
       
       if (handler) {
         // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式（用於本地事件處理器）
-        let processedPayload = normalizeEventPayloadForLocal(event.payload);
-        
-        if (event.type === 'market_updated' && event.payload?.updates) {
-          const updates = event.payload.updates;
-          const camelCaseUpdates: Record<string, unknown> = marketUpdatesToCamel(updates as Record<string, unknown>);
-          
-          // 轉換底線式為駝峰式
-          if (updates.name !== undefined) camelCaseUpdates.name = updates.name;
-          if (updates.location !== undefined) camelCaseUpdates.location = updates.location;
-          if (updates.dates !== undefined) camelCaseUpdates.dates = updates.dates;
-          if (updates.start_date !== undefined) camelCaseUpdates.startDate = updates.start_date;
-          if (updates.end_date !== undefined) camelCaseUpdates.endDate = updates.end_date;
-          if (updates.start_time !== undefined) camelCaseUpdates.startTime = updates.start_time;
-          if (updates.end_time !== undefined) camelCaseUpdates.endTime = updates.end_time;
-          
-          // 時間軸資訊
-          if (updates.early_entry_enabled !== undefined) camelCaseUpdates.earlyEntryEnabled = updates.early_entry_enabled;
-          if (updates.early_entry_time !== undefined) camelCaseUpdates.earlyEntryTime = updates.early_entry_time;
-          if (updates.check_in_time !== undefined) camelCaseUpdates.checkInTime = updates.check_in_time;
-          if (updates.operating_start_time !== undefined) camelCaseUpdates.operatingStartTime = updates.operating_start_time;
-          if (updates.operating_end_time !== undefined) camelCaseUpdates.operatingEndTime = updates.operating_end_time;
-          
-          // 財務資訊
-          if (updates.registration_fee !== undefined) camelCaseUpdates.registrationFee = updates.registration_fee;
-          if (updates.booth_cost !== undefined) camelCaseUpdates.boothCost = updates.booth_cost;
-          if (updates.deposit !== undefined) camelCaseUpdates.deposit = updates.deposit;
-          if (updates.table_rental !== undefined) camelCaseUpdates.tableRental = updates.table_rental;
-          if (updates.chair_rental !== undefined) camelCaseUpdates.chairRental = updates.chair_rental;
-          if (updates.umbrella_rental !== undefined) camelCaseUpdates.umbrellaRental = updates.umbrella_rental;
-          if (updates.tablecloth_rental !== undefined) camelCaseUpdates.tableclothRental = updates.tablecloth_rental;
-          if (updates.commission_rate !== undefined) camelCaseUpdates.commissionRate = updates.commission_rate;
-          
-          // 免費提供標記
-          if (updates.table_free !== undefined) camelCaseUpdates.tableFree = updates.table_free;
-          if (updates.chair_free !== undefined) camelCaseUpdates.chairFree = updates.chair_free;
-          if (updates.umbrella_free !== undefined) camelCaseUpdates.umbrellaFree = updates.umbrella_free;
-          if (updates.tablecloth_free !== undefined) camelCaseUpdates.tableclothFree = updates.tablecloth_free;
-          
-          // 備註
-          if (updates.notes !== undefined) camelCaseUpdates.notes = updates.notes;
-          
-          processedPayload = {
-            market_id: event.payload.market_id,
-            updates: camelCaseUpdates,
-          };
-        }
+        const processedPayload = normalizeEventPayloadForLocal(event.payload);
         
         await handler({
           id: event.id,
@@ -1094,52 +1048,7 @@ async function pullAllEvents(
       
       if (handler) {
         // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式（用於本地事件處理器）
-        let processedPayload = normalizeEventPayloadForLocal(event.payload);
-        
-        if (event.type === 'market_updated' && event.payload?.updates) {
-          const updates = event.payload.updates;
-          const camelCaseUpdates: Record<string, unknown> = marketUpdatesToCamel(updates as Record<string, unknown>);
-          
-          // 轉換底線式為駝峰式
-          if (updates.name !== undefined) camelCaseUpdates.name = updates.name;
-          if (updates.location !== undefined) camelCaseUpdates.location = updates.location;
-          if (updates.dates !== undefined) camelCaseUpdates.dates = updates.dates;
-          if (updates.start_date !== undefined) camelCaseUpdates.startDate = updates.start_date;
-          if (updates.end_date !== undefined) camelCaseUpdates.endDate = updates.end_date;
-          if (updates.start_time !== undefined) camelCaseUpdates.startTime = updates.start_time;
-          if (updates.end_time !== undefined) camelCaseUpdates.endTime = updates.end_time;
-          
-          // 時間軸資訊
-          if (updates.early_entry_enabled !== undefined) camelCaseUpdates.earlyEntryEnabled = updates.early_entry_enabled;
-          if (updates.early_entry_time !== undefined) camelCaseUpdates.earlyEntryTime = updates.early_entry_time;
-          if (updates.check_in_time !== undefined) camelCaseUpdates.checkInTime = updates.check_in_time;
-          if (updates.operating_start_time !== undefined) camelCaseUpdates.operatingStartTime = updates.operating_start_time;
-          if (updates.operating_end_time !== undefined) camelCaseUpdates.operatingEndTime = updates.operating_end_time;
-          
-          // 財務資訊
-          if (updates.registration_fee !== undefined) camelCaseUpdates.registrationFee = updates.registration_fee;
-          if (updates.booth_cost !== undefined) camelCaseUpdates.boothCost = updates.booth_cost;
-          if (updates.deposit !== undefined) camelCaseUpdates.deposit = updates.deposit;
-          if (updates.table_rental !== undefined) camelCaseUpdates.tableRental = updates.table_rental;
-          if (updates.chair_rental !== undefined) camelCaseUpdates.chairRental = updates.chair_rental;
-          if (updates.umbrella_rental !== undefined) camelCaseUpdates.umbrellaRental = updates.umbrella_rental;
-          if (updates.tablecloth_rental !== undefined) camelCaseUpdates.tableclothRental = updates.tablecloth_rental;
-          if (updates.commission_rate !== undefined) camelCaseUpdates.commissionRate = updates.commission_rate;
-          
-          // 免費提供標記
-          if (updates.table_free !== undefined) camelCaseUpdates.tableFree = updates.table_free;
-          if (updates.chair_free !== undefined) camelCaseUpdates.chairFree = updates.chair_free;
-          if (updates.umbrella_free !== undefined) camelCaseUpdates.umbrellaFree = updates.umbrella_free;
-          if (updates.tablecloth_free !== undefined) camelCaseUpdates.tableclothFree = updates.tablecloth_free;
-          
-          // 備註
-          if (updates.notes !== undefined) camelCaseUpdates.notes = updates.notes;
-          
-          processedPayload = {
-            market_id: event.payload.market_id,
-            updates: camelCaseUpdates,
-          };
-        }
+        const processedPayload = normalizeEventPayloadForLocal(event.payload);
         
         await handler({
           id: event.id,
@@ -1805,52 +1714,7 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
       
       if (handler) {
         // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式
-        let processedPayload = normalizeEventPayloadForLocal(event.payload);
-        
-        if (event.type === 'market_updated' && event.payload?.updates) {
-          const updates = event.payload.updates;
-          const camelCaseUpdates: Record<string, unknown> = marketUpdatesToCamel(updates as Record<string, unknown>);
-          
-          // 轉換底線式為駝峰式
-          if (updates.name !== undefined) camelCaseUpdates.name = updates.name;
-          if (updates.location !== undefined) camelCaseUpdates.location = updates.location;
-          if (updates.dates !== undefined) camelCaseUpdates.dates = updates.dates;
-          if (updates.start_date !== undefined) camelCaseUpdates.startDate = updates.start_date;
-          if (updates.end_date !== undefined) camelCaseUpdates.endDate = updates.end_date;
-          if (updates.start_time !== undefined) camelCaseUpdates.startTime = updates.start_time;
-          if (updates.end_time !== undefined) camelCaseUpdates.endTime = updates.end_time;
-          
-          // 時間軸資訊
-          if (updates.early_entry_enabled !== undefined) camelCaseUpdates.earlyEntryEnabled = updates.early_entry_enabled;
-          if (updates.early_entry_time !== undefined) camelCaseUpdates.earlyEntryTime = updates.early_entry_time;
-          if (updates.check_in_time !== undefined) camelCaseUpdates.checkInTime = updates.check_in_time;
-          if (updates.operating_start_time !== undefined) camelCaseUpdates.operatingStartTime = updates.operating_start_time;
-          if (updates.operating_end_time !== undefined) camelCaseUpdates.operatingEndTime = updates.operating_end_time;
-          
-          // 財務資訊
-          if (updates.registration_fee !== undefined) camelCaseUpdates.registrationFee = updates.registration_fee;
-          if (updates.booth_cost !== undefined) camelCaseUpdates.boothCost = updates.booth_cost;
-          if (updates.deposit !== undefined) camelCaseUpdates.deposit = updates.deposit;
-          if (updates.table_rental !== undefined) camelCaseUpdates.tableRental = updates.table_rental;
-          if (updates.chair_rental !== undefined) camelCaseUpdates.chairRental = updates.chair_rental;
-          if (updates.umbrella_rental !== undefined) camelCaseUpdates.umbrellaRental = updates.umbrella_rental;
-          if (updates.tablecloth_rental !== undefined) camelCaseUpdates.tableclothRental = updates.tablecloth_rental;
-          if (updates.commission_rate !== undefined) camelCaseUpdates.commissionRate = updates.commission_rate;
-          
-          // 免費提供標記
-          if (updates.table_free !== undefined) camelCaseUpdates.tableFree = updates.table_free;
-          if (updates.chair_free !== undefined) camelCaseUpdates.chairFree = updates.chair_free;
-          if (updates.umbrella_free !== undefined) camelCaseUpdates.umbrellaFree = updates.umbrella_free;
-          if (updates.tablecloth_free !== undefined) camelCaseUpdates.tableclothFree = updates.tablecloth_free;
-          
-          // 備註
-          if (updates.notes !== undefined) camelCaseUpdates.notes = updates.notes;
-          
-          processedPayload = {
-            market_id: event.payload.market_id,
-            updates: camelCaseUpdates,
-          };
-        }
+        const processedPayload = normalizeEventPayloadForLocal(event.payload);
         
         await handler({
           id: event.id,
