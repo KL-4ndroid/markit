@@ -49,6 +49,18 @@ type ProductSoldEntry = DailyStats['productsSold'][number];
 
 type EventPayload = EventPayloadMap[EventType] | Record<string, unknown>;
 
+function finiteNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function nonNegativeNumber(value: unknown, fallback = 0): number {
+  return Math.max(0, finiteNumber(value, fallback));
+}
+
+function safeProductsSold(value: unknown): ProductSoldEntry[] {
+  return Array.isArray(value) ? value : [];
+}
+
 function prepareEventForInsert(
   type: EventType,
   payload: EventPayload
@@ -841,12 +853,16 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
     .first();
   
   if (dailyStat) {
+    const currentDealCount = nonNegativeNumber(dailyStat.dealCount);
+    const currentRevenue = nonNegativeNumber(dailyStat.revenue);
+    const currentCost = nonNegativeNumber(dailyStat.cost);
+    const currentProfit = finiteNumber(dailyStat.profit);
     await db.dailyStats.update(dailyStat.id!, {
-      dealCount: dailyStat.dealCount + dealCount,
-      revenue: dailyStat.revenue + totalAmount,
-      cost: dailyStat.cost + totalCost,
-      profit: dailyStat.profit + (totalAmount - totalCost),
-      productsSold: mergeProductsSold(dailyStat.productsSold, productsSold),
+      dealCount: currentDealCount + dealCount,
+      revenue: currentRevenue + totalAmount,
+      cost: currentCost + totalCost,
+      profit: currentProfit + (totalAmount - totalCost),
+      productsSold: mergeProductsSold(safeProductsSold(dailyStat.productsSold), productsSold),
       updatedAt: event.timestamp,
     });
   } else {
@@ -922,11 +938,11 @@ registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db
     .first();
   
   if (dailyStat) {
-    const newDealCount = Math.max(0, dailyStat.dealCount - dealCount);
-    const newRevenue = Math.max(0, dailyStat.revenue - totalAmount);
-    const newCost = Math.max(0, dailyStat.cost - totalCost);
-    const newProfit = dailyStat.profit - totalProfit;
-    const newProductsSold = subtractProductsSold(dailyStat.productsSold, productsSold);
+    const newDealCount = Math.max(0, nonNegativeNumber(dailyStat.dealCount) - dealCount);
+    const newRevenue = Math.max(0, nonNegativeNumber(dailyStat.revenue) - totalAmount);
+    const newCost = Math.max(0, nonNegativeNumber(dailyStat.cost) - totalCost);
+    const newProfit = finiteNumber(dailyStat.profit) - totalProfit;
+    const newProductsSold = subtractProductsSold(safeProductsSold(dailyStat.productsSold), productsSold);
     
     // 如果該日期的統計歸零，刪除記錄
     if (newDealCount === 0 && newRevenue === 0) {

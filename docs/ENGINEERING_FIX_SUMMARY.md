@@ -56,6 +56,8 @@ Integrity checks now validate cross-event references: delete/tombstone events mu
 
 Recovery mode can now repair invalid `dailyStats` numeric fields. The repair creates and downloads a pre-repair backup first, then normalizes invalid counters, revenue, cost, profit, product-sale entries, and timestamps so cache data can pass integrity checks again.
 
+Deal projection updates now sanitize existing `dailyStats` numeric cache fields before adding or subtracting new transaction totals. This prevents existing invalid cache values from turning future statistics into `NaN`.
+
 Current status:
 
 - Build: passing.

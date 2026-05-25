@@ -45,6 +45,7 @@ Last updated: 2026-05-25
 - [x] Add a dedicated `/recovery` route for database repair and rescue backup workflows.
 - [x] Validate cross-event references for tombstones and deal product items during integrity checks.
 - [x] Add guarded dailyStats numeric repair with automatic pre-repair backup.
+- [x] Normalize existing dailyStats numeric cache fields during deal projection updates.
 - [x] Apply non-breaking transitive dependency audit fixes.
 - [x] Remove unused `next-pwa` dependency and upgrade `next`/ESLint after build verification.
 - [x] Track remaining upstream `next`/`postcss` audit advisory until a clean patched release is available.
