@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useMarket, updateMarketStatus, startMarket, endMarket } from '@/lib/db/hooks';
 import { initializeDatabase, db } from '@/lib/db';
+import { recordEvent } from '@/lib/db/events';
 import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
@@ -854,13 +855,12 @@ export default function MarketDetailPage({ params }: PageProps) {
       else if (payload.items) {
         for (const item of payload.items) {
           const product = await db.products.get(item.productId);
-          if (product && product.cost) {
-            totalCost += product.cost * item.quantity;
+          const cost = item.cost_at_time_of_sale ?? product?.cost;
+          if (cost) {
+            totalCost += cost * item.quantity;
           }
         }
       }
-      
-      const totalProfit = totalAmount - totalCost;
       
       // ✅ 獲取交易日期（使用本地日期）
       let transactionDate = payload.dealDate;
@@ -868,48 +868,19 @@ export default function MarketDetailPage({ params }: PageProps) {
         const dealTimestamp = new Date(deal.timestamp);
         transactionDate = `${dealTimestamp.getFullYear()}-${String(dealTimestamp.getMonth() + 1).padStart(2, '0')}-${String(dealTimestamp.getDate()).padStart(2, '0')}`;
       }
-      
-      // ✅ 使用 transaction 確保原子性
-      await db.transaction('rw', [db.events, db.markets, db.dailyStats], async () => {
-        // 1. 刪除事件
-        await db.events.delete(deal.id!);
-        
-        // 2. 更新市集統計（扣除金額）
-        const market = await db.markets.get(market_id);
-        if (market) {
-          await db.markets.update(market_id, {
-            totalRevenue: Math.max(0, (market.totalRevenue || 0) - totalAmount),
-            totalProfit: (market.totalProfit || 0) - totalProfit,
-            totalDeals: Math.max(0, (market.totalDeals || 0) - dealCount),
-            updatedAt: Date.now(),
-          });
-        }
-        
-        // 3. 更新每日統計（扣除金額）
-        const dailyStat = await db.dailyStats
-          .where('[date+marketId]')
-          .equals([transactionDate, market_id])
-          .first();
-        
-        if (dailyStat) {
-          const newDealCount = Math.max(0, dailyStat.dealCount - dealCount);
-          const newRevenue = Math.max(0, dailyStat.revenue - totalAmount);
-          const newCost = Math.max(0, dailyStat.cost - totalCost);
-          const newProfit = dailyStat.profit - totalProfit;
-          
-          // 如果該日期的統計歸零，刪除記錄
-          if (newDealCount === 0 && newRevenue === 0) {
-            await db.dailyStats.delete(dailyStat.id!);
-          } else {
-            await db.dailyStats.update(dailyStat.id!, {
-              dealCount: newDealCount,
-              revenue: newRevenue,
-              cost: newCost,
-              profit: newProfit,
-              updatedAt: Date.now(),
-            });
-          }
-        }
+
+      await recordEvent('deal_deleted', {
+        eventId: deal.id!,
+        marketId: market_id,
+        dealDate: transactionDate,
+        totalAmount,
+        totalCost,
+        dealCount,
+        productsSold: payload.items?.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          revenue: (item.price_at_time_of_sale ?? item.price) * item.quantity,
+        })) || [],
       });
 
       // 樂觀更新 UI - 立即從列表中移除

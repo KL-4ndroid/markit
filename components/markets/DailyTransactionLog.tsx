@@ -239,8 +239,9 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
     else if (payload.items) {
       for (const item of payload.items) {
         const product = await db.products.get(item.productId);
-        if (product && product.cost) {
-          totalCost += product.cost * item.quantity;
+        const cost = item.cost_at_time_of_sale ?? product?.cost;
+        if (cost) {
+          totalCost += cost * item.quantity;
         }
       }
     }

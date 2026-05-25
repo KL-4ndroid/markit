@@ -34,6 +34,8 @@ Normal product-sale transactions now fail if finite stock is insufficient instea
 
 Product-based deals now update `dailyStats.productsSold`, merging quantity and revenue per product. Event-sourced deal deletion carries the same product-sale entries so daily product stats can be reversed consistently.
 
+Market-detail deal deletion now records a `deal_deleted` event instead of directly deleting the original `deal_closed` event and hand-editing projections. Deletion cost calculations also prefer the original sale-time cost snapshot.
+
 Current status:
 
 - Build: passing.
