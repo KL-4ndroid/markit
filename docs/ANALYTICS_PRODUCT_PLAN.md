@@ -33,6 +33,7 @@ Important limitation:
 
 - Some historical records may be incomplete or manually entered.
 - Analytics must show reliability/confidence when data volume is low or when data is mostly manual entries.
+- Some vendors may only record a daily total after the market closes. This is valid usage and must not be treated as failure.
 
 ## 3. Problems In The Current Analytics Experience
 
@@ -70,8 +71,118 @@ Use these rules for future analytics work:
 6. Avoid shaming language. Use supportive operational suggestions.
 7. Keep analytics read-only. Do not add write flows inside analytics until the data layer is stable.
 8. Do not modify event history for analytics.
+9. Detect data granularity before showing recommendations.
+10. Do not show product, pricing, interaction, or time-based suggestions when the underlying data is not detailed enough.
 
-## 5. Recommended Analytics Modules
+## 5. Data Completeness And Adaptive Analytics
+
+The analytics experience must adapt to how the vendor actually records data.
+
+Some users will record every product sale in real time. Others may only add one manual total after the market ends because the booth is busy. Both workflows are valid. The app should provide the best available analysis for each workflow instead of forcing all users into the same data model.
+
+### Data Recording Levels
+
+| Level | Recording style | Available analysis | Do not show yet |
+|---|---|---|---|
+| Level 1: Summary only | User records total revenue/cost after the market | market performance, cost pressure, basic rejoin guidance | product restock, pricing suggestions, time-of-day analysis, product ranking |
+| Level 2: Transaction amount | User records transactions or deal count, but no product detail | revenue trend, average order value, conversion rate if interactions exist | product restock, product pricing, product affinity |
+| Level 3: Product detail | User records product, quantity, price, and cost | product ranking, restock suggestions, margin warnings, basic pricing hints | precise time-of-day analysis if timestamps are incomplete |
+| Level 4: Full behavior | User records products, interactions, and real-time activity | interaction conversion, time patterns, product affinity, market recap, richer recommendations | none, but still show confidence labels |
+
+### Capability Matrix
+
+| Capability | Minimum level | Required signals |
+|---|---|---|
+| Market performance | Level 1 | revenue, cost or market fees |
+| Cost pressure | Level 1 | booth cost, rental cost, revenue |
+| Rejoin guidance | Level 1 | revenue, cost, market status, at least one completed market |
+| Average order value | Level 2 | revenue and deal count |
+| Conversion rate | Level 2 | interactions and deals |
+| Product ranking | Level 3 | productId, quantity, revenue |
+| Restock suggestion | Level 3 | product sales and preferably stock |
+| Pricing suggestion | Level 3 | price, quantity, cost, repeated product sales |
+| Interaction conversion | Level 4 | interaction events and deal events in comparable market/day context |
+| Time-of-day insight | Level 4 | reliable event timestamps recorded during operation |
+
+### UI Behavior By Level
+
+When data is Level 1:
+
+- Show market performance, cost pressure, and simple rejoin guidance.
+- Explain that product and interaction insights need more detailed records.
+- Suggest one lightweight next step, such as recording the top 3 products next time.
+
+When data is Level 2:
+
+- Show revenue trend, average order value, and conversion if interactions exist.
+- Avoid product-level recommendations.
+- Suggest using quick product buttons for best sellers.
+
+When data is Level 3:
+
+- Show product ranking, restock suggestions, and margin warnings.
+- Avoid time-of-day claims unless timestamps are reliable.
+
+When data is Level 4:
+
+- Show full insights, including interaction conversion and market recap.
+- Still include confidence labels when sample size is small.
+
+### Example Copy
+
+For summary-only users:
+
+```text
+Your current records are enough for market performance and cost analysis.
+Product restock suggestions need product-level sales. Next time, try recording just your top 3 products with quick buttons.
+```
+
+For product-detail users:
+
+```text
+Product-level insights are available. Restock recommendations are based on recorded quantities and revenue. Pricing suggestions are estimates unless product cost is complete.
+```
+
+For full-behavior users:
+
+```text
+Detailed insights are available. Interaction and timing suggestions are based on real-time records from this market.
+```
+
+### Suggested Service Boundary
+
+Future implementation should start with a read-only service:
+
+```text
+lib/analytics/data-completeness.ts
+```
+
+Suggested types:
+
+```ts
+export type AnalyticsDataLevel =
+  | 'summary_only'
+  | 'transaction_amount'
+  | 'product_detail'
+  | 'full_behavior';
+
+export interface AnalyticsCapability {
+  marketPerformance: boolean;
+  costPressure: boolean;
+  rejoinGuidance: boolean;
+  averageOrderValue: boolean;
+  conversionRate: boolean;
+  productRanking: boolean;
+  restockSuggestion: boolean;
+  pricingSuggestion: boolean;
+  interactionConversion: boolean;
+  timeOfDayInsight: boolean;
+}
+```
+
+This service should be pure and tested before changing the analytics page UI.
+
+## 6. Recommended Analytics Modules
 
 ### Module A: Market Decision Score
 
@@ -241,7 +352,7 @@ Minimum implementation:
 - Do not call an external AI model.
 - Use local rule-based templates first.
 
-## 6. Homepage And Navigation Improvements
+## 7. Homepage And Navigation Improvements
 
 The homepage should become an operational dashboard, not only a navigation entry.
 
@@ -264,7 +375,7 @@ Good homepage question:
 What should I pay attention to today?
 ```
 
-## 7. Market Detail UI Direction
+## 8. Market Detail UI Direction
 
 Market detail should support two states:
 
@@ -293,17 +404,17 @@ For after-market review:
 
 Avoid hiding live actions under too many advanced panels.
 
-## 8. Analytics Page Information Architecture
+## 9. Analytics Page Information Architecture
 
 Recommended first screen:
 
 1. Period selector
-2. Data reliability notice
+2. Data completeness and reliability notice
 3. Top action card
 4. Market decision cards
-5. Product suggestions
-6. Cost pressure card
-7. Advanced analysis section
+5. Cost pressure card
+6. Product suggestions when available
+7. Advanced analysis section when available
 
 Advanced section can keep:
 
@@ -314,7 +425,7 @@ Advanced section can keep:
 
 But these should be secondary, not the first thing users see.
 
-## 9. Data Reliability Rules
+## 10. Data Reliability Rules
 
 Add reliability labels to analytics:
 
@@ -336,7 +447,7 @@ Do not lock all value behind data volume. Instead:
 - show advanced ranking later,
 - explain why some insights are limited.
 
-## 10. UIUX Direction
+## 11. UIUX Direction
 
 General UI goals:
 
@@ -357,6 +468,7 @@ Primary number or label
 Plain-language interpretation
 Recommended next action
 Confidence label
+Data completeness label
 ```
 
 Example:
@@ -367,9 +479,10 @@ Rejoin with adjustments
 Profit was healthy, but booth cost pressure was high.
 Next action: reduce rental cost or bring higher-margin products.
 Confidence: Medium
+Data: Product detail
 ```
 
-## 11. Implementation Order
+## 12. Implementation Order
 
 ### Phase A: Planning And Copy Cleanup
 
@@ -383,6 +496,7 @@ Tasks:
 2. Rename sections around user questions, not formulas.
 3. Document current metrics and their meaning.
 4. Add empty states with next steps.
+5. Add data completeness labels to planned analytics states.
 
 Risk:
 
@@ -400,8 +514,16 @@ Suggested file:
 lib/analytics/actionable-insights.ts
 ```
 
+Prerequisite:
+
+```text
+lib/analytics/data-completeness.ts
+```
+
 Suggested outputs:
 
+- data level
+- available capabilities
 - market recommendations
 - product recommendations
 - cost pressure warnings
@@ -421,8 +543,8 @@ Add simple recommendation cards to the analytics page.
 Start with:
 
 1. Rejoin recommendation
-2. Product restock suggestion
-3. Cost pressure warning
+2. Cost pressure warning
+3. Product restock suggestion only when data completeness allows it
 
 Risk:
 
@@ -448,7 +570,7 @@ Risk:
 
 Medium to high if UI is heavily refactored. Do this after core cards are stable.
 
-## 12. What Not To Do Yet
+## 13. What Not To Do Yet
 
 Do not do these in the next UIUX phase:
 
@@ -459,8 +581,10 @@ Do not do these in the next UIUX phase:
 - Do not add a large dashboard redesign in one commit.
 - Do not refactor `app/analytics/page.tsx` and change metrics at the same time.
 - Do not move market-day actions into analytics.
+- Do not show detailed product or interaction suggestions for summary-only users.
+- Do not penalize users for using manual total entry.
 
-## 13. Recommended Next Task
+## 14. Recommended Next Task
 
 Start with a low-risk planning-to-implementation bridge:
 
@@ -471,10 +595,11 @@ docs: audit analytics page copy and UX structure
 Then:
 
 ```text
+refactor: add analytics data completeness service
+test: cover analytics data completeness rules
 refactor: add actionable analytics insight service
 test: cover actionable analytics insight rules
 feat: add analytics action summary cards
 ```
 
 Each step should be reviewed and verified independently.
-
