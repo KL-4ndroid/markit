@@ -166,6 +166,9 @@ export default function MarketDetailPage({ params }: PageProps) {
     // 防止重複觸發
     if (fallbackAttempted.current) return;
 
+    // 初始化中不允許 fallback
+    if (dbStatus === null) return;
+
     const ctx = {
       hasLocalRecord: !!localMarket,
       hasSupabaseRecord: !!supabaseMarket,
@@ -173,7 +176,7 @@ export default function MarketDetailPage({ params }: PageProps) {
       isStaff,
       fallbackAttempted: fallbackAttempted.current,
       hasTriedSupabaseFallback,
-      isDatabaseHealthy: dbStatus?.ok !== false,
+      isDatabaseHealthy: dbStatus.ok === true,
     };
 
     const decision = shouldTrySupabaseFallback(ctx);
