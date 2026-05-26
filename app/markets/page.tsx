@@ -16,6 +16,62 @@ import MarketsLoading from './loading';
 
 type TabType = 'all' | 'pending' | 'payment' | 'upcoming' | 'completed' | 'cancelled';
 
+const SORT_ASCENDING_TABS: TabType[] = ['all', 'pending', 'payment', 'upcoming'];
+
+function getTodayString() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function getMarketDateForSorting(market: { dates?: string[]; startDate: string }) {
+  if (market.dates && market.dates.length > 0) {
+    return market.dates.slice().sort()[0];
+  }
+
+  return market.startDate;
+}
+
+function sortMarketsByNearestDate<T extends { dates?: string[]; startDate: string }>(markets: T[]) {
+  return markets.slice().sort((a, b) => {
+    const aTime = new Date(getMarketDateForSorting(a)).getTime();
+    const bTime = new Date(getMarketDateForSorting(b)).getTime();
+
+    if (Number.isNaN(aTime) && Number.isNaN(bTime)) return 0;
+    if (Number.isNaN(aTime)) return 1;
+    if (Number.isNaN(bTime)) return -1;
+
+    return aTime - bTime;
+  });
+}
+
+function isEndedMarket(market: { status: MarketStatus; dates?: string[]; endDate: string }, today: string) {
+  if (market.status === 'completed') {
+    return true;
+  }
+
+  if (market.status !== 'paid' && market.status !== 'ongoing') {
+    return false;
+  }
+
+  if (market.dates && market.dates.length > 0) {
+    return market.dates.every(date => date < today);
+  }
+
+  return market.endDate < today;
+}
+
+function isUpcomingMarket(market: { status: MarketStatus; dates?: string[]; startDate: string }, today: string) {
+  if (market.status !== 'paid' && market.status !== 'ongoing') {
+    return false;
+  }
+
+  if (market.dates && market.dates.length > 0) {
+    return market.dates.some(date => date >= today);
+  }
+
+  return market.startDate >= today;
+}
+
 export default function MarketsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -64,50 +120,29 @@ export default function MarketsPage() {
   const getFilteredMarkets = () => {
     if (!allMarkets) return [];
 
-    // ✅ 獲取今天的日期（使用本地時間）
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const today = getTodayString();
+    let markets;
 
     switch (activeTab) {
       case 'pending':
-        // 待處理：已報名 + 已錄取
-        return allMarkets.filter(m => m.status === 'registered');
+        markets = allMarkets.filter(m => m.status === 'registered');
+        break;
       case 'payment':
-        // 待繳費：已錄取（需要繳費）
-        return allMarkets.filter(m => m.status === 'accepted');
+        markets = allMarkets.filter(m => m.status === 'accepted');
+        break;
       case 'upcoming':
-        // 待舉辦：已繳費 + 如期舉行，且還有未來的日期
-        return allMarkets.filter(m => {
-          if (m.status !== 'paid' && m.status !== 'ongoing') return false;
-          
-          // ✅ 檢查 dates 陣列中是否有任何日期 >= 今天
-          if (m.dates && m.dates.length > 0) {
-            return m.dates.some(date => date >= today);
-          }
-          
-          // 降級：使用 startDate（向後兼容）
-          return m.startDate >= today;
-        });
+        markets = allMarkets.filter(m => isUpcomingMarket(m, today));
+        break;
       case 'completed':
-        // 已結束：所有日期都已過去
-        return allMarkets.filter(m => {
-          if (m.status !== 'paid' && m.status !== 'ongoing') return false;
-          
-          // ✅ 檢查 dates 陣列中的所有日期是否都 < 今天
-          if (m.dates && m.dates.length > 0) {
-            return m.dates.every(date => date < today);
-          }
-          
-          // 降級：使用 endDate（向後兼容）
-          return m.endDate < today;
-        });
+        return allMarkets.filter(m => isEndedMarket(m, today));
       case 'cancelled':
-        // 已取消：已取消 + 已延期
         return allMarkets.filter(m => m.status === 'cancelled' || m.status === 'postponed');
       default:
-        // 全部
-        return allMarkets;
+        markets = allMarkets.filter(m => !isEndedMarket(m, today));
+        break;
     }
+
+    return SORT_ASCENDING_TABS.includes(activeTab) ? sortMarketsByNearestDate(markets) : markets;
   };
 
   const filteredMarkets = getFilteredMarkets();
@@ -133,35 +168,21 @@ export default function MarketsPage() {
   };
 
   // Tab 配置
+  const today = getTodayString();
+  const allTabMarkets = allMarkets?.filter(m => !isEndedMarket(m, today)) || [];
+  const pendingTabMarkets = allMarkets?.filter(m => m.status === 'registered') || [];
+  const paymentTabMarkets = allMarkets?.filter(m => m.status === 'accepted') || [];
+  const upcomingTabMarkets = allMarkets?.filter(m => isUpcomingMarket(m, today)) || [];
+  const completedTabMarkets = allMarkets?.filter(m => isEndedMarket(m, today)) || [];
+  const cancelledTabMarkets = allMarkets?.filter(m => m.status === 'cancelled' || m.status === 'postponed') || [];
+
   const tabs = [
-    { id: 'all' as TabType, label: '全部', count: allMarkets?.length || 0 },
-    { id: 'pending' as TabType, label: '待公佈', count: allMarkets?.filter(m => m.status === 'registered').length || 0 },
-    { id: 'payment' as TabType, label: '待繳費', count: allMarkets?.filter(m => m.status === 'accepted').length || 0 },
-    { id: 'upcoming' as TabType, label: '待舉辦', count: (() => {
-      const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      return allMarkets?.filter(m => {
-        if (m.status !== 'paid' && m.status !== 'ongoing') return false;
-        // ✅ 檢查是否有任何日期 >= 今天
-        if (m.dates && m.dates.length > 0) {
-          return m.dates.some(date => date >= today);
-        }
-        return m.startDate >= today;
-      }).length || 0;
-    })() },
-    { id: 'completed' as TabType, label: '已結束', count: (() => {
-      const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      return allMarkets?.filter(m => {
-        if (m.status !== 'paid' && m.status !== 'ongoing') return false;
-        // ✅ 檢查所有日期是否都 < 今天
-        if (m.dates && m.dates.length > 0) {
-          return m.dates.every(date => date < today);
-        }
-        return m.endDate < today;
-      }).length || 0;
-    })() },
-    { id: 'cancelled' as TabType, label: '已取消', count: allMarkets?.filter(m => m.status === 'cancelled' || m.status === 'postponed').length || 0 },
+    { id: 'all' as TabType, label: '全部', count: allTabMarkets.length },
+    { id: 'pending' as TabType, label: '待公佈', count: pendingTabMarkets.length },
+    { id: 'payment' as TabType, label: '待繳費', count: paymentTabMarkets.length },
+    { id: 'upcoming' as TabType, label: '待舉辦', count: upcomingTabMarkets.length },
+    { id: 'completed' as TabType, label: '已結束', count: completedTabMarkets.length },
+    { id: 'cancelled' as TabType, label: '已取消', count: cancelledTabMarkets.length },
   ];
 
   // ✅ 數據載入中，顯示骨架屏
