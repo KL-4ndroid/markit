@@ -15,12 +15,13 @@ import {
   ToggleRight
 } from 'lucide-react';
 import { useProduct, updateProduct, deleteProduct } from '@/lib/db/hooks';
-import { initializeDatabase, db } from '@/lib/db';
+import { initializeDatabase } from '@/lib/db';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { EditProductForm } from '@/components/products/EditProductForm';
 import { normalizeRouteId, shouldShowLocalDetailLoading } from '@/lib/markets/detail-loading';
+import { getProductDetail } from '@/lib/products/detail-service';
 import type { Product, ProductCategory } from '@/types/db';
 
 interface PageProps {
@@ -70,8 +71,7 @@ export default function ProductDetailPage({ params }: PageProps) {
       };
     }
 
-    db.products
-      .get(productId)
+    getProductDetail(productId)
       .then((productData) => {
         if (!cancelled) {
           setDirectLocalProduct(productData);
