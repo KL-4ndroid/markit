@@ -20,8 +20,8 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { EditProductForm } from '@/components/products/EditProductForm';
-import { normalizeRouteId } from '@/lib/markets/detail-loading';
-import type { ProductCategory } from '@/types/db';
+import { normalizeRouteId, shouldShowLocalDetailLoading } from '@/lib/markets/detail-loading';
+import type { Product, ProductCategory } from '@/types/db';
 
 interface PageProps {
   params?: {
@@ -33,7 +33,10 @@ export default function ProductDetailPage({ params }: PageProps) {
   const router = useRouter();
   const routeParams = useParams<{ id?: string | string[] }>();
   const productId = normalizeRouteId(routeParams?.id ?? params?.id) ?? ''; // UUID 字符串，不需要 parseInt
-  const product = useProduct(productId);
+  const liveProduct = useProduct(productId);
+  const [directLocalProduct, setDirectLocalProduct] = useState<Product | undefined>(undefined);
+  const [localProductLookupComplete, setLocalProductLookupComplete] = useState(false);
+  const product = liveProduct ?? directLocalProduct;
   const [isInitialized, setIsInitialized] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -48,6 +51,47 @@ export default function ProductDetailPage({ params }: PageProps) {
         toast.error('資料庫初始化失敗');
       });
   }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    setDirectLocalProduct(undefined);
+    setLocalProductLookupComplete(false);
+
+    if (!isInitialized) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!productId) {
+      setLocalProductLookupComplete(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    db.products
+      .get(productId)
+      .then((productData) => {
+        if (!cancelled) {
+          setDirectLocalProduct(productData);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Local product lookup failed:', error);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLocalProductLookupComplete(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [productId, isInitialized]);
 
   // 分類樣式
   const getCategoryStyle = (category: ProductCategory) => {
@@ -124,7 +168,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   };
 
   // 載入中
-  if (!isInitialized) {
+  if (shouldShowLocalDetailLoading(isInitialized, localProductLookupComplete)) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
         <div className="text-center">

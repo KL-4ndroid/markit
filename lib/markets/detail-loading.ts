@@ -40,3 +40,10 @@ export function shouldShowMarketDetailLoading(state: MarketDetailLoadingState): 
     (state.isLoadingSupabase && !state.hasMarket)
   );
 }
+
+export function shouldShowLocalDetailLoading(
+  isInitialized: boolean,
+  localLookupComplete: boolean
+): boolean {
+  return !isInitialized || !localLookupComplete;
+}

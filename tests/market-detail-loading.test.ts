@@ -3,6 +3,7 @@ import {
   normalizeMarketRouteId,
   normalizeRouteId,
   selectMarketDetailSource,
+  shouldShowLocalDetailLoading,
   shouldShowMarketDetailLoading,
 } from '../lib/markets/detail-loading';
 
@@ -15,6 +16,9 @@ assert.equal(normalizeMarketRouteId('  '), undefined);
 assert.equal(normalizeMarketRouteId(undefined), undefined);
 assert.equal(normalizeRouteId('product-1'), 'product-1');
 assert.equal(normalizeRouteId(['product-1', 'ignored']), 'product-1');
+assert.equal(shouldShowLocalDetailLoading(false, false), true);
+assert.equal(shouldShowLocalDetailLoading(true, false), true);
+assert.equal(shouldShowLocalDetailLoading(true, true), false);
 
 assert.equal(
   selectMarketDetailSource(supabaseMarket, localMarket),

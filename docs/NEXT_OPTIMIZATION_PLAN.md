@@ -11,6 +11,8 @@ Last updated: 2026-05-26
 - Moved shared deal and interaction tombstone creation into `lib/markets/event-deletion-service.ts`.
 - Replaced duplicated deletion logic in market detail and daily transaction log paths.
 - Added focused deletion service tests for manual deals, product deals, missing event IDs, missing market IDs, and duplicate tombstones.
+- Started Phase 3 safe detail data services with explicit product detail local lookup completion state.
+- Added a shared local detail loading helper so product detail does not confuse loading with not-found.
 
 ## Purpose
 
@@ -248,7 +250,7 @@ Goal: keep detail pages predictable and smaller.
 Tasks:
 
 1. Create market detail data service.
-2. Create product detail data service.
+2. Create product detail data service. Started: product detail now has explicit local lookup completion state and shared loading helper.
 3. Move local/Supabase fallback rules out of page components.
 4. Add tests for local-only, owner, staff, and missing records.
 5. Reduce page-level direct `db` usage.
