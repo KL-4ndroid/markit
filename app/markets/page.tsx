@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Calendar, Plus, AlertCircle } from 'lucide-react';
 import { useMarkets } from '@/lib/db/hooks';
-import { initializeDatabase } from '@/lib/db';
+import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { MarketCard } from '@/components/markets/MarketCard';
 import { AddMarketForm } from '@/components/markets/AddMarketForm';
 import { toast } from 'sonner';
@@ -73,35 +74,25 @@ function isUpcomingMarket(market: { status: MarketStatus; dates?: string[]; star
 }
 
 export default function MarketsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const { userRole, isStaff } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 獲取當前用戶
 
-  // 初始化資料庫
+  // 初始化資料庫（使用安全初始化）
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      console.warn('⚠️ 資料庫初始化超時，強制完成');
-      setIsInitialized(true);
-    }, 10000);
-    
-    initializeDatabase()
-      .then(() => {
-        clearTimeout(timeoutId);
-        setIsInitialized(true);
-      })
+    initializeDatabaseSafely()
+      .then((result) => setDbStatus(result))
       .catch((error) => {
-        clearTimeout(timeoutId);
         console.error('資料庫初始化失敗：', error);
-        toast.error('資料庫初始化失敗');
-        // 即使失敗也要設置為已初始化，讓用戶可以看到界面
-        setIsInitialized(true);
+        setDbStatus({
+          ok: false,
+          error: error instanceof Error ? error : new Error(String(error)),
+          recoverable: true,
+        });
       });
-    
-    return () => {
-      clearTimeout(timeoutId);
-    };
   }, []);
 
   // ✅ 根據用戶身份過濾市集（權限控制）
@@ -112,9 +103,6 @@ export default function MarketsPage() {
     order: 'desc',
     ownerId: currentOwnerId,  // ✅ 根據擁有者 ID 過濾
   });
-
-  // ✅ 載入狀態檢查：資料庫未初始化或數據未載入時顯示骨架屏
-  const isLoading = !isInitialized || allMarkets === undefined;
 
   // 根據 Tab 篩選市集
   const getFilteredMarkets = () => {
@@ -157,6 +145,7 @@ export default function MarketsPage() {
 
   // 處理打開表單
   const handleOpenForm = () => {
+    if (dbStatus?.ok === false) return;
     setIsFormOpen(true);
     hideNavigation(); // 隱藏導航列
   };
@@ -185,11 +174,58 @@ export default function MarketsPage() {
     { id: 'cancelled' as TabType, label: '已取消', count: cancelledTabMarkets.length },
   ];
 
-  // ✅ 數據載入中，顯示骨架屏
-  if (isLoading) {
+  // 初始化中，顯示骨架屏
+  if (dbStatus === null) {
     return <MarketsLoading />;
   }
 
+  // DB 不健康
+  if (dbStatus.ok === false) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF8]">
+        <div className="bg-gradient-to-br from-[#D4A574] to-[#c49560] pt-12 pb-8 px-6 rounded-b-[2rem]">
+          <div className="max-w-lg mx-auto">
+            <h1 className="text-2xl font-medium text-white opacity-90">
+              資料庫異常
+            </h1>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto px-6 -mt-4 pb-6">
+          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-[#D4A574]/10 text-center space-y-4">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle className="w-8 h-8 text-amber-600" />
+            </div>
+            <h2 className="text-lg font-medium text-[#3A3A3A]">
+              本機資料庫無法正常存取
+            </h2>
+            <p className="text-[#6B6B6B] text-sm leading-relaxed">
+              系統無法讀取本地資料庫，可能因瀏覽器儲存空間不足、隱私模式，或資料庫結構損壞。
+            </p>
+            {dbStatus.recoverable && (
+              <p className="text-[#6B6B6B] text-sm">
+                建議前往「資料修復」頁面嘗試還原資料庫。
+              </p>
+            )}
+            <button
+              onClick={() => router.push('/recovery')}
+              className="w-full bg-[#D4A574] text-white px-6 py-3 rounded-2xl hover:bg-[#c49560] transition-colors font-medium"
+            >
+              前往資料修復
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-[#F5E6E8] text-[#3A3A3A] px-6 py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors font-medium"
+            >
+              重新整理頁面
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // DB 健康，正常列表 UI
   return (
     <div className="min-h-screen bg-[#FAFAF8]">
       {/* Header - ✅ 員工模式使用紫色漸變 */}
