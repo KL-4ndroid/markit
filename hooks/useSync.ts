@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
-import { markEventSynced, markEventLocalOnly, bindEventActor } from '@/lib/sync/event-sync-service';
+import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
   marketAccessRowToLocal,
@@ -553,15 +553,7 @@ async function pushEvents(
     
     // 標記為無效，不再重試
     for (const event of invalidEvents) {
-      await db.events.update(event.id!, {
-        sync_status: 'synced',
-        metadata: {
-          ...event.metadata,
-          invalid_reason: 'actor_id_mismatch',
-          original_actor_id: event.actor_id,
-          blocked_at: Date.now(),
-        } as any,
-      });
+      await markEventBlocked(event.id!, 'actor_id_mismatch', event.actor_id);
     }
   }
 
