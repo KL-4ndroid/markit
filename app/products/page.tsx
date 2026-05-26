@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Package, Plus, Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Package, Plus, Search, AlertCircle } from 'lucide-react';
 import { useProducts } from '@/lib/db/hooks';
-import { initializeDatabase } from '@/lib/db';
+import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { ProductCard } from '@/components/products/ProductCard';
 import { AddProductForm } from '@/components/products/AddProductForm';
 import { EditProductForm } from '@/components/products/EditProductForm';
@@ -17,22 +18,27 @@ import type { ProductCategory } from '@/types/db';
 type TabType = 'all' | ProductCategory;
 
 export default function ProductsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const { isStaff, userRole } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 獲取當前用戶
 
-  // 初始化資料庫
+  // 初始化資料庫（使用安全初始化）
   useEffect(() => {
-    initializeDatabase()
-      .then(() => setIsInitialized(true))
+    initializeDatabaseSafely()
+      .then((result) => setDbStatus(result))
       .catch((error) => {
         console.error('資料庫初始化失敗：', error);
-        toast.error('資料庫初始化失敗');
+        setDbStatus({
+          ok: false,
+          error: error instanceof Error ? error : new Error(String(error)),
+          recoverable: true,
+        });
       });
   }, []);
 
@@ -106,6 +112,7 @@ export default function ProductsPage() {
 
   // 處理打開表單
   const handleOpenForm = () => {
+    if (dbStatus?.ok === false) return;
     setIsFormOpen(true);
     hideNavigation(); // 隱藏導航列
   };
@@ -118,6 +125,7 @@ export default function ProductsPage() {
 
   // 處理編輯商品
   const handleEditProduct = (product: any) => {
+    if (dbStatus?.ok === false) return;
     setEditingProduct(product);
     setIsEditFormOpen(true);
     hideNavigation(); // 隱藏導航列
@@ -140,7 +148,8 @@ export default function ProductsPage() {
 
 
 
-  if (!isInitialized) {
+  // 初始化中
+  if (dbStatus === null) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
         <div className="text-center">
@@ -150,6 +159,54 @@ export default function ProductsPage() {
       </div>
     );
   }
+
+  // DB 不健康
+  if (dbStatus.ok === false) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF8]">
+        <div className="bg-gradient-to-br from-[#D4A574] to-[#c49560] pt-12 pb-8 px-6 rounded-b-[2rem]">
+          <div className="max-w-lg mx-auto">
+            <h1 className="text-2xl font-medium text-white opacity-90">
+              資料庫異常
+            </h1>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto px-6 -mt-4 pb-6">
+          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-[#D4A574]/10 text-center space-y-4">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle className="w-8 h-8 text-amber-600" />
+            </div>
+            <h2 className="text-lg font-medium text-[#3A3A3A]">
+              本機資料庫無法正常存取
+            </h2>
+            <p className="text-[#6B6B6B] text-sm leading-relaxed">
+              系統無法讀取本地資料庫，可能因瀏覽器儲存空間不足、隱私模式，或資料庫結構損壞。
+            </p>
+            {dbStatus.recoverable && (
+              <p className="text-[#6B6B6B] text-sm">
+                建議前往「資料修復」頁面嘗試還原資料庫。
+              </p>
+            )}
+            <button
+              onClick={() => router.push('/recovery')}
+              className="w-full bg-[#D4A574] text-white px-6 py-3 rounded-2xl hover:bg-[#c49560] transition-colors font-medium"
+            >
+              前往資料修復
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-[#F5E6E8] text-[#3A3A3A] px-6 py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors font-medium"
+            >
+              重新整理頁面
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // DB 健康，正常列表 UI
 
   return (
     <div className="min-h-screen bg-[#FAFAF8]">
