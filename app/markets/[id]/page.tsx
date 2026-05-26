@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useTransition, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Calendar,
@@ -57,18 +57,19 @@ import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { useUserRole } from '@/hooks/useUserRole';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
-import { selectMarketDetailSource, shouldShowMarketDetailLoading } from '@/lib/markets/detail-loading';
+import { normalizeMarketRouteId, selectMarketDetailSource, shouldShowMarketDetailLoading } from '@/lib/markets/detail-loading';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
-  params: {
-    id: string;
+  params?: {
+    id?: string | string[];
   };
 }
 
 export default function MarketDetailPage({ params }: PageProps) {
   const router = useRouter();
-  const marketId = params.id; // UUID 字符串，不需要 parseInt
+  const routeParams = useParams<{ id?: string | string[] }>();
+  const marketId = normalizeMarketRouteId(routeParams?.id ?? params?.id) ?? ''; // UUID 字符串，不需要 parseInt
   const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
   const { isStaff, canViewSensitiveData } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 檢查是否已登入
@@ -93,7 +94,14 @@ export default function MarketDetailPage({ params }: PageProps) {
     setDirectLocalMarket(undefined);
     setLocalLookupComplete(false);
 
-    if (!marketId || !isInitialized) {
+    if (!isInitialized) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!marketId) {
+      setLocalLookupComplete(true);
       return () => {
         cancelled = true;
       };
@@ -156,6 +164,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     if (localMarket) return;
     // 如果用戶未登入，不需要降級
     if (!user) return;
+    if (!marketId) return;
     // 如果 isStaff 還在載入中，等待
     if (isStaff === undefined) return;
 
@@ -1003,7 +1012,7 @@ export default function MarketDetailPage({ params }: PageProps) {
   if (shouldShowMarketDetailLoading({
     isInitialized,
     localLookupComplete,
-    hasUser: !!user,
+    hasUser: !!user && !!marketId,
     hasMarket: !!market,
     hasTriedSupabaseFallback,
     isLoadingSupabase,

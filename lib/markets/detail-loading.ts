@@ -7,6 +7,16 @@ export interface MarketDetailLoadingState {
   isLoadingSupabase: boolean;
 }
 
+export type MarketRouteParam = string | string[] | null | undefined;
+
+export function normalizeMarketRouteId(value: MarketRouteParam): string | undefined {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (typeof rawValue !== 'string') return undefined;
+
+  const trimmedValue = rawValue.trim();
+  return trimmedValue.length > 0 ? trimmedValue : undefined;
+}
+
 export function selectMarketDetailSource<TMarket>(
   supabaseMarket: TMarket | null | undefined,
   localMarket: TMarket | null | undefined

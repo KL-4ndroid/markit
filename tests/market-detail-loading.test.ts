@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict';
 import {
+  normalizeMarketRouteId,
   selectMarketDetailSource,
   shouldShowMarketDetailLoading,
 } from '../lib/markets/detail-loading';
 
 const localMarket = { id: 'local-market', name: 'Local Market' };
 const supabaseMarket = { id: 'remote-market', name: 'Remote Market' };
+
+assert.equal(normalizeMarketRouteId('market-1'), 'market-1');
+assert.equal(normalizeMarketRouteId(['market-1']), 'market-1');
+assert.equal(normalizeMarketRouteId('  '), undefined);
+assert.equal(normalizeMarketRouteId(undefined), undefined);
 
 assert.equal(
   selectMarketDetailSource(supabaseMarket, localMarket),
