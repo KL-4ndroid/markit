@@ -57,8 +57,9 @@ import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { useUserRole } from '@/hooks/useUserRole';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
-import { normalizeMarketRouteId, selectMarketDetailSource, shouldShowMarketDetailLoading } from '@/lib/markets/detail-loading';
+import { normalizeMarketRouteId, shouldShowMarketDetailLoading } from '@/lib/markets/detail-loading';
 import { getMarketDetail } from '@/lib/markets/detail-service';
+import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
@@ -157,17 +158,19 @@ export default function MarketDetailPage({ params }: PageProps) {
   useEffect(() => {
     // 防止重複觸發
     if (fallbackAttempted.current) return;
-    // 如果已經從員工模式獲取到 Supabase 數據，不需要降級
-    if (supabaseMarket) return;
-    // 如果已經嘗試過降級，不需要重複
-    if (hasTriedSupabaseFallback) return;
-    // 如果本地有數據，不需要降級
-    if (localMarket) return;
-    // 如果用戶未登入，不需要降級
-    if (!user) return;
+
+    const ctx = {
+      hasLocalRecord: !!localMarket,
+      hasSupabaseRecord: !!supabaseMarket,
+      isAuthenticated: !!user,
+      isStaff,
+      fallbackAttempted: fallbackAttempted.current,
+      hasTriedSupabaseFallback,
+    };
+
+    const decision = shouldTrySupabaseFallback(ctx);
+    if (!decision.shouldTrySupabaseFallback) return;
     if (!marketId) return;
-    // 如果 isStaff 還在載入中，等待
-    if (isStaff === undefined) return;
 
     // 延遲一點執行，確保 useMarket 的查詢完成
     const timer = setTimeout(async () => {
@@ -200,7 +203,7 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // ✅ 根據模式選擇數據源（優先順序：員工 Supabase > 本地 > 降級 Supabase）
   const effectiveLocalMarket = localMarket ?? directLocalMarket;
-  const market = selectMarketDetailSource(supabaseMarket, effectiveLocalMarket);
+  const market = selectMarketDetailRecord(supabaseMarket, effectiveLocalMarket);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPending, startTransition] = useTransition(); // 用於非阻塞更新
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
