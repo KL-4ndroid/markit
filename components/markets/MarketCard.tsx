@@ -216,6 +216,11 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
 
   // 點擊卡片導向詳情頁
   const handleClick = () => {
+    if (!market.id) {
+      console.error('Cannot open market detail because market id is missing:', market);
+      return;
+    }
+
     router.push(`/markets/${market.id}`);
   };
 

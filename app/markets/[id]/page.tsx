@@ -57,7 +57,8 @@ import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { useUserRole } from '@/hooks/useUserRole';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
-import type { MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
+import { selectMarketDetailSource, shouldShowMarketDetailLoading } from '@/lib/markets/detail-loading';
+import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
   params: {
@@ -73,10 +74,53 @@ export default function MarketDetailPage({ params }: PageProps) {
   const { user } = useAuth(); // ✅ 檢查是否已登入
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [directLocalMarket, setDirectLocalMarket] = useState<Market | undefined>(undefined);
+  const [localLookupComplete, setLocalLookupComplete] = useState(false);
   const [supabaseMarket, setSupabaseMarket] = useState<any>(null); // Supabase 數據（員工模式使用）
   const [isLoadingSupabase, setIsLoadingSupabase] = useState(false);
   const [hasTriedSupabaseFallback, setHasTriedSupabaseFallback] = useState(false);
   const fallbackAttempted = useRef(false);
+
+  useEffect(() => {
+    setSupabaseMarket(null);
+    setHasTriedSupabaseFallback(false);
+    fallbackAttempted.current = false;
+  }, [marketId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setDirectLocalMarket(undefined);
+    setLocalLookupComplete(false);
+
+    if (!marketId || !isInitialized) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    db.markets
+      .get(marketId)
+      .then((market) => {
+        if (!cancelled) {
+          setDirectLocalMarket(market);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Local market lookup failed:', error);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLocalLookupComplete(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [marketId, isInitialized]);
 
   // ✅ 員工模式：從 Supabase 獲取實時數據
   useEffect(() => {
@@ -145,7 +189,8 @@ export default function MarketDetailPage({ params }: PageProps) {
   }, [localMarket, supabaseMarket, user, isStaff, marketId, hasTriedSupabaseFallback]);
 
   // ✅ 根據模式選擇數據源（優先順序：員工 Supabase > 本地 > 降級 Supabase）
-  const market = isStaff ? supabaseMarket : localMarket;
+  const effectiveLocalMarket = localMarket ?? directLocalMarket;
+  const market = selectMarketDetailSource(supabaseMarket, effectiveLocalMarket);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPending, startTransition] = useTransition(); // 用於非阻塞更新
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -955,7 +1000,14 @@ export default function MarketDetailPage({ params }: PageProps) {
   }
 
   // 載入中（包括 Supabase 降級查詢）
-  if (!isInitialized || (isLoadingSupabase && !market)) {
+  if (shouldShowMarketDetailLoading({
+    isInitialized,
+    localLookupComplete,
+    hasUser: !!user,
+    hasMarket: !!market,
+    hasTriedSupabaseFallback,
+    isLoadingSupabase,
+  })) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
         <div className="text-center">
