@@ -219,7 +219,7 @@ function validateEventPayload(type: EventType, payload: EventPayload): void {
   }
 }
 
-function mergeProductsSold(
+export function mergeProductsSold(
   existing: ProductSoldEntry[] = [],
   additions: ProductSoldEntry[] = []
 ): ProductSoldEntry[] {
@@ -241,7 +241,7 @@ function mergeProductsSold(
   return [...merged.values()];
 }
 
-function subtractProductsSold(
+export function subtractProductsSold(
   existing: ProductSoldEntry[] = [],
   removals: ProductSoldEntry[] = []
 ): ProductSoldEntry[] {
