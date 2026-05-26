@@ -35,20 +35,20 @@ export interface RecoveryRepairResult {
   integrity: IntegrityResult;
 }
 
-function toNonNegativeNumber(value: unknown, fallback = 0): number {
+export function toNonNegativeNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback;
 }
 
-function toNumber(value: unknown, fallback = 0): number {
+export function toNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-function normalizeProductsSold(productsSold: unknown): DailyStats['productsSold'] {
+export function normalizeProductsSold(productsSold: unknown): DailyStats['productsSold'] {
   if (!Array.isArray(productsSold)) return [];
 
   return productsSold
     .filter((item): item is Record<string, unknown> => item !== null && typeof item === 'object' && !Array.isArray(item))
-    .filter((item) => typeof item.productId === 'string' && item.productId.length > 0)
+    .filter((item) => typeof item.productId === 'string' && item.productId.trim().length > 0)
     .map((item) => ({
       productId: item.productId as string,
       quantity: toNonNegativeNumber(item.quantity),
