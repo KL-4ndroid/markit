@@ -15,12 +15,12 @@ import {
   ToggleRight
 } from 'lucide-react';
 import { useProduct, updateProduct, deleteProduct } from '@/lib/db/hooks';
-import { initializeDatabase } from '@/lib/db';
+import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { EditProductForm } from '@/components/products/EditProductForm';
-import { normalizeRouteId, shouldShowLocalDetailLoading } from '@/lib/markets/detail-loading';
+import { normalizeRouteId } from '@/lib/markets/detail-loading';
 import { getProductDetail } from '@/lib/products/detail-service';
 import type { Product, ProductCategory } from '@/types/db';
 
@@ -38,18 +38,22 @@ export default function ProductDetailPage({ params }: PageProps) {
   const [directLocalProduct, setDirectLocalProduct] = useState<Product | undefined>(undefined);
   const [localProductLookupComplete, setLocalProductLookupComplete] = useState(false);
   const product = liveProduct ?? directLocalProduct;
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
 
-  // 初始化資料庫
+  // 初始化資料庫（使用安全初始化）
   useEffect(() => {
-    initializeDatabase()
-      .then(() => setIsInitialized(true))
+    initializeDatabaseSafely()
+      .then((result) => setDbStatus(result))
       .catch((error) => {
         console.error('資料庫初始化失敗：', error);
-        toast.error('資料庫初始化失敗');
+        setDbStatus({
+          ok: false,
+          error: error instanceof Error ? error : new Error(String(error)),
+          recoverable: true,
+        });
       });
   }, []);
   useEffect(() => {
@@ -58,7 +62,14 @@ export default function ProductDetailPage({ params }: PageProps) {
     setDirectLocalProduct(undefined);
     setLocalProductLookupComplete(false);
 
-    if (!isInitialized) {
+    if (dbStatus === null) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (dbStatus.ok === false) {
+      setLocalProductLookupComplete(true);
       return () => {
         cancelled = true;
       };
@@ -91,7 +102,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     return () => {
       cancelled = true;
     };
-  }, [productId, isInitialized]);
+  }, [productId, dbStatus]);
 
   // 分類樣式
   const getCategoryStyle = (category: ProductCategory) => {
@@ -109,7 +120,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // 切換啟用狀態
   const handleToggleActive = async () => {
-    if (!product) return;
+    if (!product || dbStatus?.ok === false) return;
 
     setIsUpdating(true);
 
@@ -129,7 +140,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // 刪除商品
   const handleDelete = async () => {
-    if (!product) return;
+    if (!product || dbStatus?.ok === false) return;
 
     setIsUpdating(true);
 
@@ -157,6 +168,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // 處理打開編輯表單
   const handleOpenEditForm = () => {
+    if (dbStatus?.ok === false) return;
     setShowEditForm(true);
     hideNavigation(); // 隱藏導航列
   };
@@ -167,13 +179,66 @@ export default function ProductDetailPage({ params }: PageProps) {
     showNavigation(); // 顯示導航列
   };
 
-  // 載入中
-  if (shouldShowLocalDetailLoading(isInitialized, localProductLookupComplete)) {
+  // 載入中（初始化中）
+  if (dbStatus === null || !localProductLookupComplete) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#7B9FA6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-[#6B6B6B]">載入中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // DB 不健康
+  if (dbStatus.ok === false) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF8]">
+        <div className="bg-gradient-to-br from-[#D4A574] to-[#c49560] pt-12 pb-8 px-6 rounded-b-[2rem]">
+          <div className="max-w-lg mx-auto">
+            <button
+              onClick={() => router.push('/products')}
+              className="mb-4 text-white/80 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>返回</span>
+            </button>
+            <h1 className="text-2xl font-medium text-white opacity-90">
+              資料庫異常
+            </h1>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto px-6 -mt-4 pb-6">
+          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-[#D4A574]/10 text-center space-y-4">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle className="w-8 h-8 text-amber-600" />
+            </div>
+            <h2 className="text-lg font-medium text-[#3A3A3A]">
+              本機資料庫無法正常存取
+            </h2>
+            <p className="text-[#6B6B6B] text-sm leading-relaxed">
+              系統無法讀取本地資料庫，可能因瀏覽器儲存空間不足、隱私模式，或資料庫結構損壞。
+            </p>
+            {dbStatus.recoverable && (
+              <p className="text-[#6B6B6B] text-sm">
+                建議前往「資料修復」頁面嘗試還原資料庫。
+              </p>
+            )}
+            <button
+              onClick={() => router.push('/recovery')}
+              className="w-full bg-[#D4A574] text-white px-6 py-3 rounded-2xl hover:bg-[#c49560] transition-colors font-medium"
+            >
+              前往資料修復
+            </button>
+            <button
+              onClick={() => router.push('/products')}
+              className="w-full bg-[#F5E6E8] text-[#3A3A3A] px-6 py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors font-medium"
+            >
+              返回商品列表
+            </button>
+          </div>
         </div>
       </div>
     );
