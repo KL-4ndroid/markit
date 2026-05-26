@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
   Package, 
@@ -20,17 +20,19 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { EditProductForm } from '@/components/products/EditProductForm';
+import { normalizeRouteId } from '@/lib/markets/detail-loading';
 import type { ProductCategory } from '@/types/db';
 
 interface PageProps {
-  params: {
-    id: string;
+  params?: {
+    id?: string | string[];
   };
 }
 
 export default function ProductDetailPage({ params }: PageProps) {
   const router = useRouter();
-  const productId = params.id; // UUID 字符串，不需要 parseInt
+  const routeParams = useParams<{ id?: string | string[] }>();
+  const productId = normalizeRouteId(routeParams?.id ?? params?.id) ?? ''; // UUID 字符串，不需要 parseInt
   const product = useProduct(productId);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);

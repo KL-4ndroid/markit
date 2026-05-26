@@ -96,6 +96,11 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
     if (onEdit) {
       onEdit(product);
     } else {
+      if (!product.id) {
+        console.error('Cannot open product detail because product id is missing:', product);
+        return;
+      }
+
       router.push(`/products/${product.id}`);
     }
   };

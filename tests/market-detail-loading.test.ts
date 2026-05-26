@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   normalizeMarketRouteId,
+  normalizeRouteId,
   selectMarketDetailSource,
   shouldShowMarketDetailLoading,
 } from '../lib/markets/detail-loading';
@@ -12,6 +13,8 @@ assert.equal(normalizeMarketRouteId('market-1'), 'market-1');
 assert.equal(normalizeMarketRouteId(['market-1']), 'market-1');
 assert.equal(normalizeMarketRouteId('  '), undefined);
 assert.equal(normalizeMarketRouteId(undefined), undefined);
+assert.equal(normalizeRouteId('product-1'), 'product-1');
+assert.equal(normalizeRouteId(['product-1', 'ignored']), 'product-1');
 
 assert.equal(
   selectMarketDetailSource(supabaseMarket, localMarket),
