@@ -58,6 +58,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { normalizeMarketRouteId, selectMarketDetailSource, shouldShowMarketDetailLoading } from '@/lib/markets/detail-loading';
+import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
@@ -935,74 +936,26 @@ export default function MarketDetailPage({ params }: PageProps) {
   // 處理刪除成交記錄 - 優化版本
   const handleDeleteDeal = useCallback(async (deal: Event<DealClosedPayload>) => {
     try {
-      const payload = deal.payload;
-      const market_id = payload.market_id;
-      
-      // ✅ 計算要扣除的金額
-      let totalAmount = payload.totalAmount;
-      let totalCost = 0;
-      let dealCount = 1;
-      
-      // 簡化模式：手動輸入
-      if (payload.isManualEntry) {
-        totalAmount = payload.manualRevenue || 0;
-        totalCost = payload.manualCost || 0;
-        dealCount = payload.manualDealCount || 1;
-      }
-      // 完整模式：選擇商品
-      else if (payload.items) {
-        for (const item of payload.items) {
-          const product = await db.products.get(item.productId);
-          const cost = item.cost_at_time_of_sale ?? product?.cost;
-          if (cost) {
-            totalCost += cost * item.quantity;
-          }
-        }
-      }
-      
-      // ✅ 獲取交易日期（使用本地日期）
-      let transactionDate = payload.dealDate;
-      if (!transactionDate) {
-        const dealTimestamp = new Date(deal.timestamp);
-        transactionDate = `${dealTimestamp.getFullYear()}-${String(dealTimestamp.getMonth() + 1).padStart(2, '0')}-${String(dealTimestamp.getDate()).padStart(2, '0')}`;
-      }
+      const result = await deleteDealEvent(deal);
 
-      await recordEvent('deal_deleted', {
-        eventId: deal.id!,
-        marketId: market_id,
-        dealDate: transactionDate,
-        totalAmount,
-        totalCost,
-        dealCount,
-        productsSold: payload.items?.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          revenue: (item.price_at_time_of_sale ?? item.price) * item.quantity,
-        })) || [],
-      });
-
-      // 樂觀更新 UI - 立即從列表中移除
       setDealEvents(prev => prev.filter(d => d.id !== deal.id));
 
       toast.success('成交記錄已刪除', {
-        description: `已扣除 ${formatCurrency(totalAmount)}`,
+        description: `已扣回 ${formatCurrency(result.totalAmount)}`,
       });
 
-      // 如果刪除的是當前選中的記錄，關閉彈窗
       if (selectedDeal?.id === deal.id) {
         handleCloseDealDetail();
       }
     } catch (error) {
       console.error('刪除成交記錄失敗:', error);
       toast.error('刪除失敗，請稍後再試');
-      
-      // 錯誤時重新載入數據
+
       const updatedDeals = (await getActiveDealEvents())
         .filter(event => (event.payload as { market_id?: string }).market_id === marketId);
       setDealEvents(updatedDeals);
     }
   }, [marketId, selectedDeal]);
-
   // ✅ 防止 hydration 錯誤：在客戶端掛載前不渲染任何內容
   if (!isMounted) {
     return null;

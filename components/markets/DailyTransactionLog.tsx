@@ -13,12 +13,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Clock, TrendingUp, DollarSign, Package, Trash2, AlertCircle } from 'lucide-react';
-import { db } from '@/lib/db';
 import { getActiveDealEvents, getActiveInteractionEvents } from '@/lib/db/event-tombstones';
 import { formatCurrency } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
+import { deleteDealEventById, deleteInteractionEventById } from '@/lib/markets/event-deletion-service';
 import { toast } from 'sonner';
-import type { Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface DailyTransactionLogProps {
   marketId: string;
@@ -178,35 +177,23 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
     };
   }, [loadDailyLog]);
 
-  // 處理刪除記錄
   const handleDeleteLog = async () => {
     if (!selectedLog) return;
 
     setIsDeleting(true);
 
     try {
-      const event = await db.events.get(selectedLog.id);
-      if (!event) {
-        toast.error('找不到該記錄');
-        return;
-      }
-
       if (selectedLog.type === 'deal') {
-        // ✅ 使用事件溯源方式刪除成交記錄
-        await handleDeleteDeal(event as Event<DealClosedPayload>);
+        await deleteDealEventById(selectedLog.id);
       } else {
-        // ✅ 使用事件溯源方式刪除互動記錄
-        await handleDeleteInteraction(event as Event<InteractionRecordedPayload>);
+        await deleteInteractionEventById(selectedLog.id);
       }
-
-      // 關閉對話框
       setShowDeleteConfirm(false);
       setSelectedLog(null);
 
-      // 重新載入流水帳
       await loadDailyLog();
 
-      toast.success('✅ 記錄已刪除並同步到雲端');
+      toast.success('記錄已刪除並同步到雲端');
     } catch (error) {
       console.error('刪除記錄失敗:', error);
       toast.error('刪除失敗，請稍後再試');
@@ -214,73 +201,6 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       setIsDeleting(false);
     }
   };
-
-  // ✅ 使用事件溯源方式刪除成交記錄
-  const handleDeleteDeal = async (event: Event<DealClosedPayload>) => {
-    const payload = event.payload;
-    const market_id = payload.market_id;
-
-    // 計算要扣除的金額
-    let totalAmount = payload.totalAmount;
-    let totalCost = 0;
-    let dealCount = 1;
-
-    // 簡化模式：手動輸入
-    if (payload.isManualEntry) {
-      totalAmount = payload.manualRevenue || 0;
-      totalCost = payload.manualCost || 0;
-      dealCount = payload.manualDealCount || 1;
-    }
-    // 完整模式：選擇商品
-    else if (payload.items) {
-      for (const item of payload.items) {
-        const product = await db.products.get(item.productId);
-        const cost = item.cost_at_time_of_sale ?? product?.cost;
-        if (cost) {
-          totalCost += cost * item.quantity;
-        }
-      }
-    }
-
-    // 獲取交易日期
-    let transactionDate = payload.dealDate;
-    if (!transactionDate) {
-      const dealTimestamp = new Date(event.timestamp);
-      transactionDate = `${dealTimestamp.getFullYear()}-${String(dealTimestamp.getMonth() + 1).padStart(2, '0')}-${String(dealTimestamp.getDate()).padStart(2, '0')}`;
-    }
-
-    // ✅ 記錄刪除事件（會自動同步到雲端）
-    const { recordEvent } = await import('@/lib/db/events');
-    await recordEvent('deal_deleted', {
-      eventId: event.id!,
-      marketId: market_id,
-      dealDate: transactionDate,
-      totalAmount,
-      totalCost,
-      dealCount,
-      productsSold: payload.items?.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        revenue: (item.price_at_time_of_sale ?? item.price) * item.quantity,
-      })) || [],
-    });
-  };
-
-  // ✅ 使用事件溯源方式刪除互動記錄
-  const handleDeleteInteraction = async (event: Event<InteractionRecordedPayload>) => {
-    const market_id = event.payload.market_id;
-    const interactionType = event.payload.type;
-
-    // ✅ 記錄刪除事件（會自動同步到雲端）
-    const { recordEvent } = await import('@/lib/db/events');
-    await recordEvent('interaction_deleted', {
-      eventId: event.id!,
-      market_id: market_id,
-      interactionType,  // ✅ 傳遞互動類型用於扣除統計
-    });
-  };
-
-  // 打開刪除確認對話框
   const openDeleteConfirm = (log: LogEntry) => {
     setSelectedLog(log);
     setShowDeleteConfirm(true);
