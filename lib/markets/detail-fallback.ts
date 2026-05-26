@@ -7,6 +7,8 @@ export interface MarketFallbackContext {
   isStaff: boolean | undefined;
   fallbackAttempted: boolean;
   hasTriedSupabaseFallback: boolean;
+  /** 若為 false，則不執行 Supabase fallback（DB 不健康時傳入） */
+  isDatabaseHealthy?: boolean;
 }
 
 export interface MarketFallbackDecision {
@@ -15,6 +17,9 @@ export interface MarketFallbackDecision {
 }
 
 export function shouldTrySupabaseFallback(ctx: MarketFallbackContext): MarketFallbackDecision {
+  if (ctx.isDatabaseHealthy === false) {
+    return { shouldTrySupabaseFallback: false, reason: 'database_unhealthy' };
+  }
   if (ctx.hasLocalRecord) {
     return { shouldTrySupabaseFallback: false, reason: 'local_record_exists' };
   }

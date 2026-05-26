@@ -30,7 +30,7 @@ import {
   Package
 } from 'lucide-react';
 import { useMarket, updateMarketStatus, startMarket, endMarket } from '@/lib/db/hooks';
-import { initializeDatabase } from '@/lib/db';
+import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { getActiveDealEvents, getActiveInteractionEvents } from '@/lib/db/event-tombstones';
 import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
@@ -76,7 +76,7 @@ export default function MarketDetailPage({ params }: PageProps) {
   const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
   const { isStaff, canViewSensitiveData } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 檢查是否已登入
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [directLocalMarket, setDirectLocalMarket] = useState<Market | undefined>(undefined);
   const [localLookupComplete, setLocalLookupComplete] = useState(false);
@@ -97,7 +97,14 @@ export default function MarketDetailPage({ params }: PageProps) {
     setDirectLocalMarket(undefined);
     setLocalLookupComplete(false);
 
-    if (!isInitialized) {
+    if (dbStatus === null) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (dbStatus.ok === false) {
+      setLocalLookupComplete(true);
       return () => {
         cancelled = true;
       };
@@ -130,7 +137,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     return () => {
       cancelled = true;
     };
-  }, [marketId, isInitialized]);
+  }, [marketId, dbStatus]);
 
   // ✅ 員工模式：從 Supabase 獲取實時數據
   useEffect(() => {
@@ -166,6 +173,7 @@ export default function MarketDetailPage({ params }: PageProps) {
       isStaff,
       fallbackAttempted: fallbackAttempted.current,
       hasTriedSupabaseFallback,
+      isDatabaseHealthy: dbStatus?.ok !== false,
     };
 
     const decision = shouldTrySupabaseFallback(ctx);
@@ -199,7 +207,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [localMarket, supabaseMarket, user, isStaff, marketId, hasTriedSupabaseFallback]);
+  }, [localMarket, supabaseMarket, user, isStaff, marketId, hasTriedSupabaseFallback, dbStatus]);
 
   // ✅ 根據模式選擇數據源（優先順序：員工 Supabase > 本地 > 降級 Supabase）
   const effectiveLocalMarket = localMarket ?? directLocalMarket;
@@ -262,29 +270,18 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
   const [buttonLabels, setButtonLabels] = useState<Record<string, { label: string; emoji: string }>>({});
 
-  // 初始化資料庫
+  // 初始化資料庫（使用安全初始化）
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      console.warn('⚠️ 資料庫初始化超時，強制完成');
-      setIsInitialized(true);
-    }, 10000);
-    
-    initializeDatabase()
-      .then(() => {
-        clearTimeout(timeoutId);
-        setIsInitialized(true);
-      })
+    initializeDatabaseSafely()
+      .then((result) => setDbStatus(result))
       .catch((error) => {
-        clearTimeout(timeoutId);
         console.error('資料庫初始化失敗：', error);
-        toast.error('資料庫初始化失敗');
-        // 即使失敗也要設置為已初始化，讓用戶可以看到界面
-        setIsInitialized(true);
+        setDbStatus({
+          ok: false,
+          error: error instanceof Error ? error : new Error(String(error)),
+          recoverable: true,
+        });
       });
-    
-    return () => {
-      clearTimeout(timeoutId);
-    };
   }, []);
 
   // 確保只在客戶端渲染
@@ -430,7 +427,7 @@ export default function MarketDetailPage({ params }: PageProps) {
       }
     };
 
-    if (market && isInitialized) {
+    if (market && dbStatus?.ok !== false) {
       loadInteractionData();
     }
 
@@ -444,7 +441,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     return () => {
       window.removeEventListener('interaction-recorded', handleInteractionRecorded);
     };
-  }, [market, marketId, isInitialized]);
+  }, [market, marketId, dbStatus]);
 
   // 計算互動偏好數據
   const interactionPreferenceData = useMemo(() => {
@@ -598,7 +595,7 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // 處理狀態切換 - 優化版本
   const handleStatusChange = useCallback(async () => {
-    if (!market) return;
+    if (!market || dbStatus?.ok === false) return;
 
     const nextStatus = getNextStatus(market.status);
     if (!nextStatus) return;
@@ -628,7 +625,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     } finally {
       setIsUpdating(false);
     }
-  }, [market, marketId]);
+  }, [market, marketId, dbStatus]);
 
   // ✅ 自動營業狀態（響應式）- 三種狀態：'not-started' | 'operating' | 'ended'
   const [operatingPhase, setOperatingPhase] = useState<'not-started' | 'operating' | 'ended'>('not-started');
@@ -734,7 +731,7 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // 處理報名狀態變更（帶二次確認）- 優化版本 + 防抖
   const handleStatusChangeRequest = useCallback(async (newStatus: MarketStatus) => {
-    if (!market || isUpdating) return;
+    if (!market || isUpdating || dbStatus?.ok === false) return;
 
     // ✅ 防抖檢查 - 防止快速重複點擊
     const now = Date.now();
@@ -769,7 +766,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     } finally {
       setIsUpdating(false);
     }
-  }, [market, marketId, isOperating, isUpdating, lastClickTime]);
+  }, [market, marketId, isOperating, isUpdating, lastClickTime, dbStatus]);
 
   // 檢查狀態變更是否會影響營業狀態
   const checkIfStatusAffectsOperating = (currentStatus: MarketStatus, newStatus: MarketStatus): boolean => {
@@ -783,7 +780,7 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // 執行狀態變更 - 優化版本
   const executeStatusChange = useCallback(async (newStatus: MarketStatus) => {
-    if (!market) return;
+    if (!market || dbStatus?.ok === false) return;
 
     setIsUpdating(true);
 
@@ -802,11 +799,11 @@ export default function MarketDetailPage({ params }: PageProps) {
     } finally {
       setIsUpdating(false);
     }
-  }, [market, marketId]);
+  }, [market, marketId, dbStatus]);
 
   // 處理取消市集 - 優化版本
   const handleCancelMarket = useCallback(async () => {
-    if (!market) return;
+    if (!market || dbStatus?.ok === false) return;
 
     setIsUpdating(true);
     
@@ -824,11 +821,11 @@ export default function MarketDetailPage({ params }: PageProps) {
     } finally {
       setIsUpdating(false);
     }
-  }, [market, marketId]);
+  }, [market, marketId, dbStatus]);
 
   // 處理刪除市集（軟刪除）- 優化版本
   const handleDeleteMarket = useCallback(async () => {
-    if (!market) return;
+    if (!market || dbStatus?.ok === false) return;
 
     setIsUpdating(true);
     
@@ -854,10 +851,11 @@ export default function MarketDetailPage({ params }: PageProps) {
     } finally {
       setIsUpdating(false);
     }
-  }, [market, marketId, router]);
+  }, [market, marketId, router, dbStatus]);
 
   // 處理打開編輯表單
   const handleOpenEditForm = () => {
+    if (dbStatus?.ok === false) return;
     setShowEditForm(true);
     hideNavigation(); // 隱藏導航列
   };
@@ -870,6 +868,7 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // 處理打開補登收入對話框
   const handleOpenAddRevenue = (date: string) => {
+    if (dbStatus?.ok === false) return;
     setSelectedDate(date);
     setShowAddRevenueDialog(true);
   };
@@ -938,6 +937,7 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // 處理刪除成交記錄 - 優化版本
   const handleDeleteDeal = useCallback(async (deal: Event<DealClosedPayload>) => {
+    if (dbStatus?.ok === false) return;
     try {
       const result = await deleteDealEvent(deal);
 
@@ -958,15 +958,15 @@ export default function MarketDetailPage({ params }: PageProps) {
         .filter(event => (event.payload as { market_id?: string }).market_id === marketId);
       setDealEvents(updatedDeals);
     }
-  }, [marketId, selectedDeal]);
+  }, [marketId, selectedDeal, dbStatus]);
   // ✅ 防止 hydration 錯誤：在客戶端掛載前不渲染任何內容
   if (!isMounted) {
     return null;
   }
 
-  // 載入中（包括 Supabase 降級查詢）
-  if (shouldShowMarketDetailLoading({
-    isInitialized,
+  // 載入中（初始化中或等待 Supabase fallback）
+  if (dbStatus === null || shouldShowMarketDetailLoading({
+    isInitialized: dbStatus?.ok !== false,
     localLookupComplete,
     hasUser: !!user && !!marketId,
     hasMarket: !!market,
@@ -978,6 +978,59 @@ export default function MarketDetailPage({ params }: PageProps) {
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-[#7B9FA6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-[#6B6B6B]">載入中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // DB 不健康
+  if (dbStatus?.ok === false) {
+    return (
+      <div className="min-h-screen bg-[#FAFAF8]">
+        <div className="bg-gradient-to-br from-[#D4A574] to-[#c49560] pt-12 pb-8 px-6 rounded-b-[2rem]">
+          <div className="max-w-lg mx-auto">
+            <button
+              onClick={() => router.push('/markets')}
+              className="mb-4 text-white/80 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>返回</span>
+            </button>
+            <h1 className="text-2xl font-medium text-white opacity-90">
+              資料庫異常
+            </h1>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto px-6 -mt-4 pb-6">
+          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-[#D4A574]/10 text-center space-y-4">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle className="w-8 h-8 text-amber-600" />
+            </div>
+            <h2 className="text-lg font-medium text-[#3A3A3A]">
+              本機資料庫無法正常存取
+            </h2>
+            <p className="text-[#6B6B6B] text-sm leading-relaxed">
+              系統無法讀取本地資料庫，可能因瀏覽器儲存空間不足、隱私模式，或資料庫結構損壞。
+            </p>
+            {dbStatus.recoverable && (
+              <p className="text-[#6B6B6B] text-sm">
+                建議前往「資料修復」頁面嘗試還原資料庫。
+              </p>
+            )}
+            <button
+              onClick={() => router.push('/recovery')}
+              className="w-full bg-[#D4A574] text-white px-6 py-3 rounded-2xl hover:bg-[#c49560] transition-colors font-medium"
+            >
+              前往資料修復
+            </button>
+            <button
+              onClick={() => router.push('/markets')}
+              className="w-full bg-[#F5E6E8] text-[#3A3A3A] px-6 py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors font-medium"
+            >
+              返回市集列表
+            </button>
+          </div>
         </div>
       </div>
     );

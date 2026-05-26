@@ -325,4 +325,48 @@ assert.equal(isBlankMarketId('  \n\t  '), true, 'whitespace with tabs/newlines i
 assert.equal(isBlankMarketId('market-123'), false, 'valid UUID-like id is not blank');
 assert.equal(isBlankMarketId('0'), false, 'single digit 0 is not blank');
 
+// ─── isDatabaseHealthy guard ───────────────────────────────────────────────────
+
+// DB 不健康 → 不觸發 fallback（最優先檢查）
+assert.equal(
+  shouldTrySupabaseFallback(makeCtx({ isDatabaseHealthy: false })).shouldTrySupabaseFallback,
+  false,
+  'database unhealthy: must not trigger fallback'
+);
+assert.equal(
+  shouldTrySupabaseFallback(makeCtx({ isDatabaseHealthy: false })).reason,
+  'database_unhealthy',
+  'database unhealthy: reason must be database_unhealthy'
+);
+
+// DB 不健康 + 已登入 + 無 local record → 仍然不觸發
+assert.equal(
+  shouldTrySupabaseFallback(
+    makeCtx({ isAuthenticated: true, isStaff: false, isDatabaseHealthy: false })
+  ).shouldTrySupabaseFallback,
+  false,
+  'database unhealthy + authenticated + no local record: must not trigger fallback'
+);
+assert.equal(
+  shouldTrySupabaseFallback(
+    makeCtx({ isAuthenticated: true, isStaff: false, isDatabaseHealthy: false })
+  ).reason,
+  'database_unhealthy',
+  'reason must be database_unhealthy regardless of auth state'
+);
+
+// DB 健康（未傳 isDatabaseHealthy，預設）→ 行為不變
+assert.equal(
+  shouldTrySupabaseFallback(makeCtx()).shouldTrySupabaseFallback,
+  false,
+  'default (no isDatabaseHealthy): unauthenticated → no fallback'
+);
+assert.equal(
+  shouldTrySupabaseFallback(
+    makeCtx({ isAuthenticated: true, isStaff: false })
+  ).shouldTrySupabaseFallback,
+  true,
+  'default (no isDatabaseHealthy): authenticated non-staff → should fallback'
+);
+
 console.log('PASS market detail fallback decisions');
