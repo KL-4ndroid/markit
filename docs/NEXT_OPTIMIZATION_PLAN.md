@@ -15,6 +15,7 @@ Last updated: 2026-05-26
 - Added a shared local detail loading helper so product detail does not confuse loading with not-found.
 - Added `lib/products/detail-service.ts` and moved product detail's direct local product lookup behind a service boundary.
 - Added `lib/markets/detail-service.ts` and moved market detail's direct local market lookups behind a service boundary.
+- Added detail service tests for blank ID rejection and valid ID lookup delegation.
 
 ## Purpose
 
@@ -254,7 +255,7 @@ Tasks:
 1. Create market detail data service. Started: market detail now reads local records through a market detail read service.
 2. Create product detail data service. Started: product detail now has explicit local lookup completion state, shared loading helper, and a product detail read service.
 3. Move local/Supabase fallback rules out of page components.
-4. Add tests for local-only, owner, staff, and missing records.
+4. Add tests for local-only, owner, staff, and missing records. Started: detail read services now reject blank IDs before touching Dexie.
 5. Reduce page-level direct `db` usage.
 
 ### Phase 4: Safer Database Initialization Adoption
