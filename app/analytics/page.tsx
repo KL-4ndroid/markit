@@ -6,12 +6,13 @@ import { X, TrendingUp } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { toast } from 'sonner';
-import { useMarkets } from '@/lib/db/hooks';
+import { useMarkets, useProducts } from '@/lib/db/hooks';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { db } from '@/lib/db';
 import { getActiveDealEvents } from '@/lib/db/event-tombstones';
 import { DateRangeFilter } from '@/components/analytics/DateRangeFilter';
+import { ActionableInsightsCard } from '@/components/analytics/ActionableInsightsCard';
 import { EmptyState } from '@/components/analytics/EmptyState';
 import { MarketROICard } from '@/components/analytics/MarketROICard';
 import { MarketAOVCard } from '@/components/analytics/MarketAOVCard';
@@ -33,7 +34,8 @@ import {
   getDataReliability,
 } from '@/lib/analytics';
 import { UnlockGuard } from '@/components/analytics/UnlockGuard';
-import type { Market } from '@/types/db';
+import { buildActionableAnalytics } from '@/lib/analytics/actionable-insights';
+import type { Event, Market } from '@/types/db';
 import type { ProductPair, MarketHealthScore } from '@/lib/analytics';
 
 /**
@@ -121,6 +123,10 @@ export default function AnalyticsPage() {
   });
   
   // 篩選日期範圍內的市集
+  const products = useProducts({
+    ownerId: currentOwnerId,
+  });
+
   const markets = useMemo(() => {
     if (!allMarkets) return [];
     return allMarkets.filter(market => {
@@ -519,6 +525,36 @@ export default function AnalyticsPage() {
   }, [markets]);
 
   // 檢查是否有數據
+  const analyticsEvents = useLiveQuery(async () => {
+    const marketIds = new Set(markets.map((market) => market.id).filter(Boolean));
+    if (marketIds.size === 0) return [];
+
+    const activeDeals = await getActiveDealEvents();
+    const interactions = await db.events.where('type').equals('interaction_recorded').toArray();
+
+    return [...activeDeals, ...interactions].filter((event) => {
+      const payload = event.payload as { market_id?: string; marketId?: string };
+      const marketId = event.market_id ?? payload.market_id ?? payload.marketId;
+
+      return !!marketId && marketIds.has(marketId);
+    }) as Event[];
+  }, [markets]);
+
+  const analyticsDailyStats = useLiveQuery(async () => {
+    const marketIds = new Set(markets.map((market) => market.id).filter(Boolean));
+    if (marketIds.size === 0) return [];
+
+    const stats = await db.dailyStats.where('date').between(startDate, endDate, true, true).toArray();
+    return stats.filter((stat) => stat.marketId && marketIds.has(stat.marketId));
+  }, [markets, startDate, endDate]);
+
+  const actionableAnalytics = useMemo(() => buildActionableAnalytics({
+    markets,
+    events: analyticsEvents ?? [],
+    dailyStats: analyticsDailyStats ?? [],
+    products,
+  }), [markets, analyticsEvents, analyticsDailyStats, products]);
+
   const hasData = marketROIData.length > 0;
 
   // 🔥 計算有效市集數量（用於解鎖邏輯和可信度計算）
@@ -640,6 +676,8 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </div>
+
+        <ActionableInsightsCard result={actionableAnalytics} />
 
         {hasData ? (
           <>
