@@ -2,9 +2,9 @@
 
 Last updated: 2026-05-26
 
-Status: Phase 3, Phase 4, and Phase 5 are complete. Phase 6 low-risk fixture coverage is partially complete.
+Status: Phase 3, Phase 4, Phase 5, and Phase 6 are complete.
 
-Overall stability estimate: 90-92%.
+Overall stability estimate: 93-94%.
 
 ## 1. Purpose
 
@@ -17,6 +17,7 @@ The main goals were:
 - Move high-risk IndexedDB access and sync metadata updates behind small service boundaries.
 - Protect event immutability by centralizing allowed sync metadata mutations.
 - Add focused regression tests around recovery, event deletion, detail loading, and sync status updates.
+- Add fixture coverage for import integrity validation and replay readiness.
 
 This was not intended to be a full rewrite. The work intentionally avoided broad changes to database schema, event payload schema, Supabase RLS/RPC, and large event-handler refactors.
 
@@ -105,15 +106,19 @@ Completed:
 
 ### Phase 6: Fixture Coverage
 
-Goal: add focused fixture coverage around data repair and projection helper behavior without introducing a large new test framework.
+Goal: add focused fixture coverage around data repair, projection helper behavior, and import integrity validation without introducing a large new test framework.
 
-Completed low-risk fixture work:
+Key commits:
 
 | Commit | Summary |
 |---|---|
 | `3a449d0` | `test: add recovery helper fixtures` |
 | `c8c9930` | `test: add dailyStats repair fixture` |
 | `cfb2a6d` | `test: add productsSold merge fixtures` |
+| `835c335` | `test: add import parse rejection fixtures` |
+| `d103e7e` | `test: add import integrity event rejection fixtures` |
+| `09fdd7e` | `test: add import integrity table rejection fixtures` |
+| `f3d20dc` | `test: add import replay readiness fixtures` |
 
 Completed:
 
@@ -121,8 +126,9 @@ Completed:
 - Fixed `normalizeProductsSold` so whitespace-only `productId` values are rejected.
 - Added a minimal `repairInvalidDailyStats()` fixture.
 - Added tests for `mergeProductsSold` and `subtractProductsSold`.
-
-Remaining Phase 6 items are intentionally deferred because they touch higher-risk replay and import paths.
+- Added `tests/import-rejection.test.ts`: `parseBackupData` rejection for non-JSON, missing version, invalid arrays.
+- Added `tests/import-integrity-rejection.test.ts`: `checkBackupIntegrity` rejection for event structure, event payload, and table field validation.
+- Added `tests/import-replay-readiness.test.ts`: `validateBackupReplayReadiness` rejection for market/product unavailable during replay and positive acceptance cases.
 
 ## 3. Main Safety Improvements
 
@@ -136,6 +142,7 @@ Remaining Phase 6 items are intentionally deferred because they touch higher-ris
 | Event immutability | Tests verify sync helpers do not mutate event identity, payload, type, timestamp, or market association. |
 | Daily stats repair | Recovery helpers and a minimal dailyStats repair path now have regression coverage. |
 | Products sold math | `mergeProductsSold` and `subtractProductsSold` are exported and covered by fixture tests. |
+| Import integrity | `parseBackupData`, `checkBackupIntegrity`, and `validateBackupReplayReadiness` have focused fixture coverage. |
 
 ## 4. Test Coverage Added Or Preserved
 
@@ -152,25 +159,29 @@ Current test script runs these files:
 | `tests/recovery-helpers.test.ts` | Recovery numeric normalization and productsSold normalization. |
 | `tests/daily-stats-repair.test.ts` | Minimal dirty dailyStats repair fixture. |
 | `tests/products-sold-helpers.test.ts` | productsSold merge/subtract helper behavior. |
+| `tests/import-rejection.test.ts` | `parseBackupData` rejection: non-JSON, missing/invalid version, invalid exportedAt, non-array fields. |
+| `tests/import-integrity-rejection.test.ts` | `checkBackupIntegrity` rejection: event structure, event payload, market/product/dailyStat/settings field validation. |
+| `tests/import-replay-readiness.test.ts` | `validateBackupReplayReadiness` rejection: market/product unavailable during replay, and positive acceptance cases. |
 
-Current test count: 43 passing tests.
+Current test count: 79 passing tests.
 
 ## 5. Current Stability Assessment
 
-Estimated stability: 90-92%.
+Estimated stability: 93-94%.
 
 Why this is a reasonable estimate:
 
 - The highest-risk user-facing breakage, detail pages stuck in loading or false not-found, has been addressed.
 - Database-unhealthy states now have explicit UI and recovery paths on the highest-risk pages.
 - Sync event metadata mutation has been centralized and tested.
+- Import integrity validation (`parseBackupData`, `checkBackupIntegrity`, `validateBackupReplayReadiness`) now has comprehensive fixture coverage.
 - The most important low-risk recovery and productsSold helpers have fixture coverage.
 - The app continues to pass tests, TypeScript, lint, and production build.
 
 Remaining risk:
 
-- Full `rebuildSnapshots()` replay fixture coverage is still deferred.
-- Import rollback and rejected-import fixture coverage can still be improved.
+- Full `rebuildSnapshots()` replay fixture coverage is still deferred; it requires complex multi-handler projection mocking.
+- Import rollback fixture (full undo on failed import) is still deferred.
 - Supabase RLS/RPC behavior still needs validation against a real Supabase environment.
 - There may still be UI/data race conditions not covered by current Node-based tests.
 
@@ -181,8 +192,7 @@ These tasks are intentionally not part of this completed stabilization pass:
 | Task | Reason to defer |
 |---|---|
 | Full `rebuildSnapshots()` replay fixture | High mock complexity; touches many event handlers and projection tables. |
-| Product sale -> deal deletion -> rebuild end-to-end fixture | Valuable, but should be built only after smaller handler fixtures exist. |
-| Import rollback / rejected import fixtures | Important, but needs careful design to avoid testing implementation details. |
+| Full import rollback fixture | Needs careful design; current rejection fixtures cover detection but not rollback. |
 | Supabase RLS/RPC hardening | Requires a real Supabase environment and policy-level verification. |
 | Broad `lib/db/events.ts` refactor | High-risk core event system file; avoid large changes unless backed by dedicated tests. |
 
@@ -190,14 +200,13 @@ These tasks are intentionally not part of this completed stabilization pass:
 
 Recommended if work resumes later:
 
-1. Add import rejection / rollback fixtures that do not require heavy DB mocks.
-2. Add single-handler projection tests before attempting full replay tests.
-3. Add a small replay chain fixture:
+1. Add single-handler projection tests before attempting full replay tests.
+2. Add a small replay chain fixture:
    - `market_created`
    - `product_created`
    - `deal_closed`
-4. Only after the above, add a full `rebuildSnapshots()` fixture with multiple event types.
-5. Validate Supabase RLS/RPC flows in a real Supabase project.
+3. Only after the above, add a full `rebuildSnapshots()` fixture with multiple event types.
+4. Validate Supabase RLS/RPC flows in a real Supabase project.
 
 ## 8. Verification Commands
 
@@ -215,7 +224,7 @@ Expected result for the current baseline:
 
 | Command | Expected result |
 |---|---|
-| `npm.cmd test` | 43/43 PASS |
+| `npm.cmd test` | 79/79 PASS |
 | `npx.cmd tsc --noEmit --incremental false` | pass |
 | `npm.cmd run lint` | pass |
 | `npm.cmd run build` | pass |
