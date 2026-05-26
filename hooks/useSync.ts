@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
+import { markEventSynced, markEventLocalOnly } from '@/lib/sync/event-sync-service';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
   marketAccessRowToLocal,
@@ -612,9 +613,7 @@ async function pushEvents(
         // 如果已存在，標記為已同步並跳過
         if (existing) {
           console.log(`✅ 事件已存在，跳過: ${event.type} (${event.id?.substring(0, 8)}...)`);
-          await db.events.update(event.id!, {
-            sync_status: 'synced',
-          });
+          await markEventSynced(event.id!);
           skippedCount++;
           continue;
         }
@@ -636,9 +635,7 @@ async function pushEvents(
           // PostgreSQL unique violation (並發上傳導致的重複)
           if (insertError.code === '23505') {
             console.log(`✅ 事件已存在（並發上傳），標記為已同步: ${event.id?.substring(0, 8)}...`);
-            await db.events.update(event.id!, {
-              sync_status: 'synced',
-            });
+            await markEventSynced(event.id!);
             skippedCount++;
             continue;
           }
@@ -660,9 +657,7 @@ async function pushEvents(
               continue;
             } else {
               console.error(`❌ 找不到對應的 market_created 事件，標記為 local_only`);
-              await db.events.update(event.id!, {
-                sync_status: 'local_only',
-              });
+              await markEventLocalOnly(event.id!);
               failedCount++;
               continue;
             }
@@ -690,18 +685,14 @@ async function pushEvents(
               
               if (!retryError) {
                 console.log(`✅ 重試成功: ${event.type} (${event.id?.substring(0, 8)}...)`);
-                await db.events.update(event.id!, {
-                  sync_status: 'synced',
-                });
+                await markEventSynced(event.id!);
                 uploadedCount++;
                 continue;
               }
             }
             
             console.error(`❌ RLS 政策阻止：${event.type}`, insertError.message);
-            await db.events.update(event.id!, {
-              sync_status: 'local_only',
-            });
+            await markEventLocalOnly(event.id!);
             failedCount++;
             continue;
           }
@@ -709,26 +700,20 @@ async function pushEvents(
           // 其他 RLS 政策錯誤
           if (insertError.code === 'PGRST301' || insertError.code === '42501' || insertError.message?.includes('policy')) {
             console.error(`❌ RLS 政策阻止：${event.type}`, insertError.message);
-            await db.events.update(event.id!, {
-              sync_status: 'local_only',
-            });
+            await markEventLocalOnly(event.id!);
             failedCount++;
             continue;
           }
           
           // 其他錯誤
           console.error(`❌ 未知錯誤：${insertError.code} - ${insertError.message}`);
-          await db.events.update(event.id!, {
-            sync_status: 'local_only',
-          });
+          await markEventLocalOnly(event.id!);
           failedCount++;
           continue;
         }
 
         // ✅ 上傳成功
-        await db.events.update(event.id!, {
-          sync_status: 'synced',
-        });
+        await markEventSynced(event.id!);
         
         uploadedCount++;
         
@@ -741,9 +726,7 @@ async function pushEvents(
         console.error(`❌ 上傳事件異常: ${event.id}`, error);
         
         // 標記為錯誤，但繼續處理下一個事件
-        await db.events.update(event.id!, {
-          sync_status: 'local_only',
-        });
+        await markEventLocalOnly(event.id!);
         failedCount++;
         continue;
       }
