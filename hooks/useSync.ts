@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
-import { markEventSynced, markEventLocalOnly } from '@/lib/sync/event-sync-service';
+import { markEventSynced, markEventLocalOnly, bindEventActor } from '@/lib/sync/event-sync-service';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
   marketAccessRowToLocal,
@@ -537,9 +537,7 @@ async function pushEvents(
     // 情況 2: 本地模式創建的事件（需要更新 actor_id）
     if (event.actor_id === 'local') {
       console.log(`📝 更新本地事件的 actor_id: ${event.type} (${event.id?.substring(0, 8)}...)`);
-      await db.events.update(event.id!, {
-        actor_id: userId,
-      });
+      await bindEventActor(event.id!, userId);
       event.actor_id = userId;
       validEvents.push(event);
       continue;
