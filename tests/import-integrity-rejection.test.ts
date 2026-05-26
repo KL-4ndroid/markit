@@ -223,3 +223,157 @@ runTest('rejects product_updated missing productId', () => {
   assert.equal(result.ok, false);
   assert.ok(result.errors.some(e => e.includes('product_updated') && e.includes('missing productId')), `Unexpected errors: ${result.errors.join('; ')}`);
 });
+
+runTest('rejects market missing id', () => {
+  const result = checkBackupIntegrity(validBackup({
+    markets: [{
+      id: '',
+      name: 'Test Market',
+      location: 'Taipei',
+      startDate: '2026-01-01',
+      endDate: '2026-01-01',
+      status: 'registered',
+      registrationFee: 100,
+      boothCost: 200,
+      createdAt: now,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('markets[0]') && e.includes('缺少有效 id')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects market invalid startDate', () => {
+  const result = checkBackupIntegrity(validBackup({
+    markets: [{
+      id: 'market-1',
+      name: 'Test Market',
+      location: 'Taipei',
+      startDate: 'not-a-date',
+      endDate: '2026-01-01',
+      status: 'registered',
+      registrationFee: 100,
+      boothCost: 200,
+      createdAt: now,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('markets[0]') && e.includes('startDate 無效')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects market invalid boothCost', () => {
+  const result = checkBackupIntegrity(validBackup({
+    markets: [{
+      id: 'market-1',
+      name: 'Test Market',
+      location: 'Taipei',
+      startDate: '2026-01-01',
+      endDate: '2026-01-01',
+      status: 'registered',
+      registrationFee: 100,
+      boothCost: NaN,
+      createdAt: now,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('markets[0]') && e.includes('boothCost 無效')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects product missing id', () => {
+  const result = checkBackupIntegrity(validBackup({
+    products: [{
+      id: '',
+      name: 'Test Product',
+      category: 'other',
+      price: 100,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('products[0]') && e.includes('缺少有效 id')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects product invalid price', () => {
+  const result = checkBackupIntegrity(validBackup({
+    products: [{
+      id: 'product-1',
+      name: 'Test Product',
+      category: 'other',
+      price: NaN,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('products[0]') && e.includes('price 無效')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects product negative stock', () => {
+  const result = checkBackupIntegrity(validBackup({
+    products: [{
+      id: 'product-1',
+      name: 'Test Product',
+      category: 'other',
+      price: 100,
+      stock: -5,
+      isActive: true,
+      createdAt: now,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('products[0]') && e.includes('stock 無效或為負數')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects dailyStats productsSold item negative quantity', () => {
+  const result = checkBackupIntegrity(validBackup({
+    dailyStats: [{
+      id: 1,
+      date: '2026-01-01',
+      marketId: 'market-1',
+      touchCount: 0,
+      inquiryCount: 0,
+      dealCount: 0,
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+      productsSold: [{
+        productId: 'product-1',
+        quantity: -3,
+        revenue: 0,
+      }],
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('dailyStats[0].productsSold[0]') && e.includes('quantity 無效')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects settings invalid theme', () => {
+  const result = checkBackupIntegrity(validBackup({
+    settings: [{
+      id: 1,
+      theme: 'invalid-theme' as import('../types/db').Settings['theme'],
+      language: 'zh-TW',
+      defaultCurrency: 'TWD',
+      enableNotifications: true,
+      autoBackup: false,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('settings[0]') && e.includes('theme 無效')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
