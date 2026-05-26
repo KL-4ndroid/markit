@@ -28,11 +28,21 @@ function formatLocalDate(timestamp: number): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-async function assertNotAlreadyDeleted(eventId: string): Promise<void> {
-  const deletedEventIds = await getDeletedEventIds();
+export function assertEventCanBeDeleted(eventId: string | undefined, deletedEventIds: Set<string>): string {
+  if (!eventId) {
+    throw new Error('Cannot delete an event without an event id');
+  }
+
   if (deletedEventIds.has(eventId)) {
     throw new Error(`Event already deleted: ${eventId}`);
   }
+
+  return eventId;
+}
+
+async function assertNotAlreadyDeleted(eventId: string): Promise<void> {
+  const deletedEventIds = await getDeletedEventIds();
+  assertEventCanBeDeleted(eventId, deletedEventIds);
 }
 
 async function getStoredProductCost(productId: string): Promise<number | undefined> {

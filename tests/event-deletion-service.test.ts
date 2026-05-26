@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { resolveDealDeletionResult } from '../lib/markets/event-deletion-service';
+import {
+  assertEventCanBeDeleted,
+  resolveDealDeletionResult,
+} from '../lib/markets/event-deletion-service';
 import type { DealClosedPayload, Event } from '../types/db';
 
 const timestamp = new Date('2026-01-15T10:30:00+08:00').getTime();
@@ -100,6 +103,18 @@ async function main(): Promise<void> {
       },
     })),
     /missing market_id/
+  );
+
+  assert.equal(assertEventCanBeDeleted('deal-1', new Set()), 'deal-1');
+
+  assert.throws(
+    () => assertEventCanBeDeleted('deal-1', new Set(['deal-1'])),
+    /already deleted/
+  );
+
+  assert.throws(
+    () => assertEventCanBeDeleted(undefined, new Set()),
+    /without an event id/
   );
 
   console.log('PASS event deletion service payload calculation');
