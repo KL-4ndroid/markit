@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "tsx tests/integrity.test.ts && tsx tests/market-detail-loading.test.ts && tsx tests/event-deletion-service.test.ts && tsx tests/detail-service.test.ts && tsx tests/detail-fallback.test.ts && tsx tests/event-sync-service.test.ts && tsx tests/recovery-helpers.test.ts && tsx tests/daily-stats-repair.test.ts && tsx tests/products-sold-helpers.test.ts && tsx tests/import-rejection.test.ts",
+    "test": "tsx tests/integrity.test.ts && tsx tests/market-detail-loading.test.ts && tsx tests/event-deletion-service.test.ts && tsx tests/detail-service.test.ts && tsx tests/detail-fallback.test.ts && tsx tests/event-sync-service.test.ts && tsx tests/recovery-helpers.test.ts && tsx tests/daily-stats-repair.test.ts && tsx tests/products-sold-helpers.test.ts && tsx tests/import-rejection.test.ts && tsx tests/import-integrity-rejection.test.ts",
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
