@@ -10,6 +10,7 @@ Last updated: 2026-05-26
 - Started Phase 2 event deletion service extraction.
 - Moved shared deal and interaction tombstone creation into `lib/markets/event-deletion-service.ts`.
 - Replaced duplicated deletion logic in market detail and daily transaction log paths.
+- Added focused deletion service tests for manual deals, product deals, missing event IDs, and missing market IDs.
 
 ## Purpose
 
@@ -238,7 +239,7 @@ Tasks:
 2. Move duplicated cost/date/productsSold reversal logic into the service. Done.
 3. Replace market detail deletion path. Done.
 4. Replace daily transaction log deletion path. Done.
-5. Add tests for manual deal, product deal, missing event, and duplicate tombstone.
+5. Add tests for manual deal, product deal, missing event, and duplicate tombstone. Partially done: manual deal, product deal, missing event id, and missing market id are covered. Duplicate tombstone needs an IndexedDB-backed service test or a small test seam.
 
 ### Phase 3: Safe Detail Data Services
 

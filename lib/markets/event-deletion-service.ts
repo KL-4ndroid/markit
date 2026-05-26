@@ -21,6 +21,8 @@ export interface DeleteDealResult extends DeleteEventResult {
   productsSold: DailyStats['productsSold'];
 }
 
+export type ProductCostResolver = (productId: string) => Promise<number | undefined>;
+
 function formatLocalDate(timestamp: number): string {
   const date = new Date(timestamp);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -33,7 +35,15 @@ async function assertNotAlreadyDeleted(eventId: string): Promise<void> {
   }
 }
 
-async function resolveDealDeletionResult(event: Event<DealClosedPayload>): Promise<DeleteDealResult> {
+async function getStoredProductCost(productId: string): Promise<number | undefined> {
+  const product = await db.products.get(productId);
+  return product?.cost;
+}
+
+export async function resolveDealDeletionResult(
+  event: Event<DealClosedPayload>,
+  resolveProductCost: ProductCostResolver = getStoredProductCost
+): Promise<DeleteDealResult> {
   if (!event.id) {
     throw new Error('Cannot delete a deal event without an event id');
   }
@@ -55,8 +65,7 @@ async function resolveDealDeletionResult(event: Event<DealClosedPayload>): Promi
     dealCount = payload.manualDealCount ?? 1;
   } else if (payload.items) {
     for (const item of payload.items) {
-      const product = await db.products.get(item.productId);
-      const cost = item.cost_at_time_of_sale ?? product?.cost ?? 0;
+      const cost = item.cost_at_time_of_sale ?? await resolveProductCost(item.productId) ?? 0;
       totalCost += cost * item.quantity;
       productsSold.push({
         productId: item.productId,

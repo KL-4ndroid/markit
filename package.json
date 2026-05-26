@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "tsx tests/integrity.test.ts && tsx tests/market-detail-loading.test.ts",
+    "test": "tsx tests/integrity.test.ts && tsx tests/market-detail-loading.test.ts && tsx tests/event-deletion-service.test.ts",
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {

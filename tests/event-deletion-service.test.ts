@@ -1,0 +1,111 @@
+import assert from 'node:assert/strict';
+import { resolveDealDeletionResult } from '../lib/markets/event-deletion-service';
+import type { DealClosedPayload, Event } from '../types/db';
+
+const timestamp = new Date('2026-01-15T10:30:00+08:00').getTime();
+
+function dealEvent(overrides: Partial<Event<DealClosedPayload>> = {}): Event<DealClosedPayload> {
+  const payload: DealClosedPayload = {
+    market_id: 'market-1',
+    totalAmount: 300,
+    paymentMethod: 'cash',
+    items: [
+      {
+        productId: 'product-1',
+        quantity: 3,
+        price: 100,
+        price_at_time_of_sale: 100,
+        cost_at_time_of_sale: 40,
+      },
+    ],
+    ...overrides.payload,
+  };
+
+  return {
+    id: 'deal-1',
+    type: 'deal_closed',
+    timestamp,
+    ...overrides,
+    payload,
+  };
+}
+
+async function main(): Promise<void> {
+  const manualResult = await resolveDealDeletionResult(dealEvent({
+    payload: {
+      market_id: 'market-1',
+      totalAmount: 999,
+      paymentMethod: 'cash',
+      items: [],
+      isManualEntry: true,
+      manualRevenue: 500,
+      manualCost: 150,
+      manualDealCount: 4,
+      dealDate: '2026-01-20',
+    },
+  }));
+
+  assert.equal(manualResult.totalAmount, 500);
+  assert.equal(manualResult.totalCost, 150);
+  assert.equal(manualResult.dealCount, 4);
+  assert.equal(manualResult.dealDate, '2026-01-20');
+  assert.deepEqual(manualResult.productsSold, []);
+
+  const productResult = await resolveDealDeletionResult(
+    dealEvent({
+      payload: {
+        market_id: 'market-1',
+        totalAmount: 450,
+        paymentMethod: 'cash',
+        items: [
+          {
+            productId: 'product-1',
+            quantity: 2,
+            price: 100,
+            price_at_time_of_sale: 120,
+            cost_at_time_of_sale: 50,
+          },
+          {
+            productId: 'product-2',
+            quantity: 1,
+            price: 200,
+          },
+        ],
+      },
+    }),
+    async (productId) => productId === 'product-2' ? 80 : undefined
+  );
+
+  assert.equal(productResult.totalAmount, 450);
+  assert.equal(productResult.totalCost, 180);
+  assert.equal(productResult.dealCount, 1);
+  assert.equal(productResult.dealDate, '2026-01-15');
+  assert.deepEqual(productResult.productsSold, [
+    { productId: 'product-1', quantity: 2, revenue: 240 },
+    { productId: 'product-2', quantity: 1, revenue: 200 },
+  ]);
+
+  await assert.rejects(
+    () => resolveDealDeletionResult(dealEvent({ id: undefined })),
+    /without an event id/
+  );
+
+  await assert.rejects(
+    () => resolveDealDeletionResult(dealEvent({
+      payload: {
+        market_id: '',
+        totalAmount: 100,
+        paymentMethod: 'cash',
+        items: [],
+      },
+    })),
+    /missing market_id/
+  );
+
+  console.log('PASS event deletion service payload calculation');
+}
+
+main().catch((error) => {
+  console.error('FAIL event deletion service payload calculation');
+  throw error;
+});
