@@ -30,7 +30,7 @@ import {
   Package
 } from 'lucide-react';
 import { useMarket, updateMarketStatus, startMarket, endMarket } from '@/lib/db/hooks';
-import { initializeDatabase, db } from '@/lib/db';
+import { initializeDatabase } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { getActiveDealEvents, getActiveInteractionEvents } from '@/lib/db/event-tombstones';
 import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
@@ -58,6 +58,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { normalizeMarketRouteId, selectMarketDetailSource, shouldShowMarketDetailLoading } from '@/lib/markets/detail-loading';
+import { getMarketDetail } from '@/lib/markets/detail-service';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
@@ -108,8 +109,7 @@ export default function MarketDetailPage({ params }: PageProps) {
       };
     }
 
-    db.markets
-      .get(marketId)
+    getMarketDetail(marketId)
       .then((market) => {
         if (!cancelled) {
           setDirectLocalMarket(market);
@@ -172,7 +172,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     // 延遲一點執行，確保 useMarket 的查詢完成
     const timer = setTimeout(async () => {
       // 再次檢查本地數據（可能在此期間已載入）
-      const currentLocalMarket = await db.markets.get(marketId);
+      const currentLocalMarket = await getMarketDetail(marketId);
       if (currentLocalMarket || supabaseMarket) return;
 
       fallbackAttempted.current = true;
