@@ -9,6 +9,7 @@ This plan turns `docs/ANALYTICS_PRODUCT_PLAN.md` into small implementation steps
 - Data completeness service: `lib/analytics/data-completeness.ts`
 - Actionable insight service: `lib/analytics/actionable-insights.ts`
 - Market recap service: `lib/analytics/market-recap.ts`
+- Market trend service: `lib/analytics/market-trend.ts`
 - First action summary card on `/analytics`
 - Market recap card on `/analytics`
 - Market-scope filter:
@@ -93,6 +94,11 @@ Definition of done:
 
 - Users can compare markets directly.
 - The chart or card answers: "Are recent markets getting better or worse?"
+
+Status:
+
+- In progress: pure market trend service and regression tests have been added.
+- Pending: connect the trend result to a user-facing market trend card.
 
 ## Phase 4: Product Recommendation Refinement
 
