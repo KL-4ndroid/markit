@@ -1,8 +1,8 @@
 # Analytics Product Plan
 
-Last updated: 2026-05-26
+Last updated: 2026-05-27
 
-Status: planning document only. No production code changes in this step.
+Status: analytics data completeness, actionable insight service, first action cards, and market-scope filtering have been implemented. Remaining work should build on these read-only foundations.
 
 ## 1. Product Direction
 
@@ -408,13 +408,30 @@ Avoid hiding live actions under too many advanced panels.
 
 Recommended first screen:
 
-1. Period selector
+1. Market-scope selector
 2. Data completeness and reliability notice
 3. Top action card
 4. Market decision cards
 5. Cost pressure card
 6. Product suggestions when available
 7. Advanced analysis section when available
+
+### Market-Scope Selector
+
+The analytics page should prioritize market-based scopes instead of calendar periods. Market vendors do not always operate daily, so `today`, `this week`, and `this month` often feel empty or less useful than comparing actual completed market sessions.
+
+Implemented scopes:
+
+| Scope | Purpose |
+|---|---|
+| All | Default view for long-term judgment and overall recommendations |
+| Recent 3 markets | Quick view of the latest operating pattern |
+| Recent 10 markets | Recent trend view without relying on calendar months |
+| Single market | Focused review for one completed market session |
+
+The default should remain `All` because the user most often wants to judge overall business direction: which markets are worth joining again, whether costs are too high, and what to prepare next.
+
+Calendar-based filters can return later as an advanced option if repeated use shows a clear need, but they should not be the primary analytics navigation.
 
 Advanced section can keep:
 
@@ -502,6 +519,12 @@ Risk:
 
 Low.
 
+Current status:
+
+- Completed: analytics copy is being clarified incrementally.
+- Completed: the primary analytics filter has moved from calendar periods to market scopes (`All`, `Recent 3`, `Recent 10`, `Single market`).
+- Continue to avoid broad page rewrites while copy and card hierarchy stabilize.
+
 ### Phase B: Analytics Summary Service
 
 Goal:
@@ -534,6 +557,12 @@ Risk:
 
 Medium. Keep read-only and test pure functions.
 
+Current status:
+
+- Completed: `lib/analytics/data-completeness.ts`
+- Completed: `lib/analytics/actionable-insights.ts`
+- Completed: tests covering data completeness and actionable insight rules.
+
 ### Phase C: First Actionable Cards
 
 Goal:
@@ -549,6 +578,11 @@ Start with:
 Risk:
 
 Medium. Avoid changing existing analytics engines at first.
+
+Current status:
+
+- Completed: first action summary card added to the analytics page.
+- Continue with small UI iterations instead of replacing all existing charts at once.
 
 ### Phase D: Market Recap
 
@@ -600,6 +634,7 @@ test: cover analytics data completeness rules
 refactor: add actionable analytics insight service
 test: cover actionable analytics insight rules
 feat: add analytics action summary cards
+feat: switch analytics filter to market scopes
 ```
 
 Each step should be reviewed and verified independently.
