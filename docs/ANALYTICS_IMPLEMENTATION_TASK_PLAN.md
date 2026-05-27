@@ -118,6 +118,12 @@ Definition of done:
 - Summary-only users are not shown product advice.
 - Product-detail users get practical restock/promote/watch recommendations.
 
+Status:
+
+- In progress: product recommendation rules have been extracted into a tested pure service.
+- In progress: actionable insights now receive estimated restock/promote/watch recommendations from the product recommendation service.
+- Pending: expose estimated-data labels more clearly in the visible analytics UI copy.
+
 ## Phase 5: Advanced Section Cleanup
 
 Goal:

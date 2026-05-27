@@ -119,6 +119,7 @@ async function main(): Promise<void> {
   assert.equal(productDetail.productInsights.length, 1);
   assert.equal(productDetail.productInsights[0].productName, 'Herbal Tea');
   assert.equal(productDetail.productInsights[0].action, 'restock');
+  assert.equal(productDetail.productInsights[0].isEstimated, true);
   assert.equal(productDetail.cards.some((card) => card.kind === 'product_suggestion' && card.blockedBy === undefined), true);
 
   const mediumConfidence = buildActionableAnalytics({

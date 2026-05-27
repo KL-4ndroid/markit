@@ -4,6 +4,10 @@ import {
   type AnalyticsDataCompletenessResult,
   type AnalyticsDataLevel,
 } from './data-completeness';
+import {
+  buildProductRecommendations,
+  type ProductRecommendationAction,
+} from './product-recommendations';
 
 export type AnalyticsConfidence = 'low' | 'medium' | 'high';
 export type AnalyticsInsightTone = 'positive' | 'notice' | 'warning';
@@ -30,9 +34,11 @@ export interface ProductInsight {
   productName: string;
   quantity: number;
   revenue: number;
-  action: 'restock' | 'promote' | 'watch';
+  action: ProductRecommendationAction;
   reason: string;
   confidence: AnalyticsConfidence;
+  isEstimated?: boolean;
+  estimatedReason?: string;
 }
 
 export interface ActionableAnalyticsInput {
@@ -268,38 +274,11 @@ function buildProductInsights(
 ): ProductInsight[] {
   if (!completeness.capabilities.productRanking) return [];
 
-  const productNames = new Map(
-    (input.products ?? [])
-      .filter((product) => product.id)
-      .map((product) => [product.id!, product.name])
-  );
-  const productStats = new Map<string, { quantity: number; revenue: number }>();
-
-  for (const stat of input.dailyStats ?? []) {
-    for (const item of stat.productsSold ?? []) {
-      if (!item.productId.trim()) continue;
-      const existing = productStats.get(item.productId) ?? { quantity: 0, revenue: 0 };
-      productStats.set(item.productId, {
-        quantity: existing.quantity + Math.max(0, item.quantity),
-        revenue: existing.revenue + Math.max(0, item.revenue),
-      });
-    }
-  }
-
-  return Array.from(productStats.entries())
-    .map(([productId, stats]) => ({
-      productId,
-      productName: productNames.get(productId) ?? '未命名商品',
-      quantity: stats.quantity,
-      revenue: stats.revenue,
-      action: stats.quantity >= 5 ? 'restock' as const : 'promote' as const,
-      reason: stats.quantity >= 5
-        ? '銷售數量較高，適合優先補貨。'
-        : '已有銷售紀錄，可以再觀察是否值得增加備貨。',
-      confidence,
-    }))
-    .sort((a, b) => b.quantity - a.quantity || b.revenue - a.revenue)
-    .slice(0, 3);
+  return buildProductRecommendations({
+    dailyStats: input.dailyStats,
+    products: input.products,
+    confidence,
+  });
 }
 
 function buildProductCard(
