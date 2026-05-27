@@ -647,9 +647,18 @@ export default function AnalyticsPage() {
                 : 'text-[#6B6B6B] hover:bg-[#F5F5F3]'
             }`}
           >
-            完整分析
+            進階分析
           </button>
         </div>
+
+        {mode === 'advanced' && (
+          <div className="bg-[#F5F5F3] border border-[#7B9FA6]/15 rounded-[1.25rem] p-4 mb-6">
+            <p className="text-sm font-medium text-[#3A3A3A] mb-1">進階分析是輔助判斷</p>
+            <p className="text-xs text-[#6B6B6B] leading-relaxed">
+              下方圖表適合用來檢查細節；主要決策仍建議先看行動建議與市集回顧。
+            </p>
+          </div>
+        )}
 
         {/* 🔥 數據可信度標籤 */}
         <div className={`rounded-[1.5rem] p-4 mb-6 ${
