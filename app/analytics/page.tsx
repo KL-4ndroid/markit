@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { db } from '@/lib/db';
 import { getActiveDealEvents } from '@/lib/db/event-tombstones';
-import { DateRangeFilter } from '@/components/analytics/DateRangeFilter';
+import { DateRangeFilter, type AnalyticsRange } from '@/components/analytics/DateRangeFilter';
 import { ActionableInsightsCard } from '@/components/analytics/ActionableInsightsCard';
 import { EmptyState } from '@/components/analytics/EmptyState';
 import { MarketROICard } from '@/components/analytics/MarketROICard';
@@ -51,9 +51,8 @@ export default function AnalyticsPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { userRole, isStaff } = useUserRole();
-  const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('month');
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [dateRange, setDateRange] = useState<AnalyticsRange>('all');
+  const [selectedMarketId, setSelectedMarketId] = useState<string>('');
   const [showInfoTooltip, setShowInfoTooltip] = useState(false); // ✅ 控制ROI說明提示框
   const [showAOVInfoTooltip, setShowAOVInfoTooltip] = useState(false); // ✅ 控制客單價說明提示框
   const hasShownEmptyToast = useRef(false); // ✅ 追蹤是否已顯示過空狀態提示
@@ -66,54 +65,10 @@ export default function AnalyticsPage() {
   // 🔥 快取管理
   const { clearAllCache } = useAnalyticsCache();
 
-  // 計算日期範圍
-  const { startDate, endDate } = useMemo(() => {
+  const todayString = useMemo(() => {
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    // ✅ 使用本地日期格式化函數
-    const formatLocalDate = (date: Date) => {
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    };
-    
-    switch (dateRange) {
-      case 'today':
-        return {
-          startDate: formatLocalDate(today),
-          endDate: formatLocalDate(today),
-        };
-      case 'week':
-        const weekAgo = new Date(today);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        return {
-          startDate: formatLocalDate(weekAgo),
-          endDate: formatLocalDate(today),
-        };
-      case 'month':
-        const monthAgo = new Date(today);
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        return {
-          startDate: formatLocalDate(monthAgo),
-          endDate: formatLocalDate(today),
-        };
-      case 'custom':
-        return {
-          startDate: customStartDate || formatLocalDate(today),
-          endDate: customEndDate || formatLocalDate(today),
-        };
-      case 'all':
-        return {
-          startDate: '2020-01-01',
-          endDate: formatLocalDate(today),
-        };
-    }
-  }, [dateRange, customStartDate, customEndDate]);
-
-  // 處理自訂日期變更
-  const handleCustomDateChange = (start: string, end: string) => {
-    setCustomStartDate(start);
-    setCustomEndDate(end);
-  };
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }, []);
 
   // ✅ 根據用戶身份過濾市集（權限控制）
   const currentOwnerId = isStaff ? userRole.ownerId : user?.id;
@@ -127,28 +82,64 @@ export default function AnalyticsPage() {
     ownerId: currentOwnerId,
   });
 
-  const markets = useMemo(() => {
+  const selectableMarkets = useMemo(() => {
     if (!allMarkets) return [];
-    return allMarkets.filter(market => {
-      // 排除已取消的市集
+    return allMarkets
+      .filter(market => {
       if (market.status === 'cancelled') return false;
-      
-      // ✅ 優先檢查 dates 陣列（多選日期）
+
       if (market.dates && market.dates.length > 0) {
-        // 檢查是否有任何日期在範圍內
-        return market.dates.some(date => date >= startDate && date <= endDate);
+        return market.dates.some(date => date <= todayString);
       }
-      
-      // ✅ 降級：使用 startDate（連續日期，向後兼容）
-      return market.startDate >= startDate && market.startDate <= endDate;
+
+      return market.startDate <= todayString;
+    })
+    .sort((a, b) => b.startDate.localeCompare(a.startDate));
+  }, [allMarkets, todayString]);
+
+  const markets = useMemo(() => {
+    switch (dateRange) {
+      case 'recent3':
+        return selectableMarkets.slice(0, 3);
+      case 'recent10':
+        return selectableMarkets.slice(0, 10);
+      case 'single':
+        return selectableMarkets.filter(market => market.id === selectedMarketId);
+      case 'all':
+        return selectableMarkets;
+    }
+  }, [dateRange, selectableMarkets, selectedMarketId]);
+
+  useEffect(() => {
+    if (dateRange !== 'single') return;
+    if (selectedMarketId && selectableMarkets.some(market => market.id === selectedMarketId)) return;
+    const firstMarket = selectableMarkets[0];
+    if (firstMarket?.id) {
+      setSelectedMarketId(firstMarket.id);
+    }
+  }, [dateRange, selectableMarkets, selectedMarketId]);
+
+  const { startDate, endDate } = useMemo(() => {
+    if (markets.length === 0) {
+      return { startDate: todayString, endDate: todayString };
+    }
+
+    const marketDates = markets.flatMap((market) => {
+      if (market.dates && market.dates.length > 0) return market.dates;
+      return [market.startDate, market.endDate];
     });
-  }, [allMarkets, startDate, endDate]);
+
+    return {
+      startDate: marketDates.reduce((earliest, date) => date < earliest ? date : earliest, marketDates[0]),
+      endDate: marketDates.reduce((latest, date) => date > latest ? date : latest, marketDates[0]),
+    };
+  }, [markets, todayString]);
 
   // ✅ 全域空狀態處理：當無市集數據時顯示一次性提示
   useEffect(() => {
     if (markets.length === 0 && !hasShownEmptyToast.current) {
       toast.info('目前範圍內尚無市集數據', {
-        description: '調整日期範圍或建立新市集開始記錄',
+        description: '調整分析範圍或建立新市集開始記錄',
         duration: 4000,
       });
       hasShownEmptyToast.current = true;
@@ -626,9 +617,9 @@ export default function AnalyticsPage() {
           <DateRangeFilter 
             value={dateRange} 
             onChange={setDateRange}
-            customStartDate={customStartDate}
-            customEndDate={customEndDate}
-            onCustomDateChange={handleCustomDateChange}
+            markets={selectableMarkets}
+            selectedMarketId={selectedMarketId}
+            onMarketChange={setSelectedMarketId}
           />
         </div>
 
