@@ -14,6 +14,7 @@ import { getActiveDealEvents } from '@/lib/db/event-tombstones';
 import { DateRangeFilter, type AnalyticsRange } from '@/components/analytics/DateRangeFilter';
 import { ActionableInsightsCard } from '@/components/analytics/ActionableInsightsCard';
 import { MarketRecapCard } from '@/components/analytics/MarketRecapCard';
+import { AdvancedAnalysisGate } from '@/components/analytics/AdvancedAnalysisGate';
 import { EmptyState } from '@/components/analytics/EmptyState';
 import { MarketROICard } from '@/components/analytics/MarketROICard';
 import { MarketAOVCard } from '@/components/analytics/MarketAOVCard';
@@ -549,6 +550,7 @@ export default function AnalyticsPage() {
   }), [markets, analyticsEvents, analyticsDailyStats, products]);
   const actionableAnalytics = useMemo(() => buildActionableAnalytics(analyticsInput), [analyticsInput]);
   const marketRecap = useMemo(() => buildMarketRecapReport(analyticsInput), [analyticsInput]);
+  const analyticsCapabilities = actionableAnalytics.dataCompleteness.capabilities;
 
   const hasData = marketROIData.length > 0;
 
@@ -1230,25 +1232,41 @@ export default function AnalyticsPage() {
                 </UnlockGuard>
 
                 {/* 🔥 商品關聯分析 - 品牌定位（15場解鎖） */}
-                <UnlockGuard
-                  currentCount={validMarketCount}
-                  requiredCount={15}
-                  featureName="品牌定位"
-                >
-                  <div className="mb-6">
-                    <ProductAffinityCard
-                      pairs={affinityPairs || []}
-                      isLoading={affinityPairs === undefined}
-                    />
-                  </div>
-                </UnlockGuard>
+                {analyticsCapabilities.productRanking ? (
+                  <UnlockGuard
+                    currentCount={validMarketCount}
+                    requiredCount={15}
+                    featureName="品牌定位"
+                  >
+                    <div className="mb-6">
+                      <ProductAffinityCard
+                        pairs={affinityPairs || []}
+                        isLoading={affinityPairs === undefined}
+                      />
+                    </div>
+                  </UnlockGuard>
+                ) : (
+                  <AdvancedAnalysisGate
+                    title="商品關聯分析需要商品明細"
+                    description="目前資料還不足以判斷哪些商品經常一起被購買。系統會先避免做不可靠的商品關聯推論。"
+                    requirement="記錄商品、數量與成交金額；如果現場很忙，可以先從熱銷前 3 個商品開始。"
+                  />
+                )}
 
                 {/* 商品排行（無標題） */}
-                <TopProductsCard
-                  topByQuantity={topProductsData?.topByQuantity || null}
-                  topByRevenue={topProductsData?.topByRevenue || null}
-                  topByProfit={topProductsData?.topByProfit || null}
-                />
+                {analyticsCapabilities.productRanking ? (
+                  <TopProductsCard
+                    topByQuantity={topProductsData?.topByQuantity || null}
+                    topByRevenue={topProductsData?.topByRevenue || null}
+                    topByProfit={topProductsData?.topByProfit || null}
+                  />
+                ) : (
+                  <AdvancedAnalysisGate
+                    title="商品排行需要商品銷售資料"
+                    description="目前可以分析市集表現與成本，但還不能可靠排序商品。"
+                    requirement="至少記錄商品 ID、銷售數量與收入。"
+                  />
+                )}
               </>
             )}
           </>

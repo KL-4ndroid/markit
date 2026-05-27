@@ -48,6 +48,11 @@ Definition of done:
 - No chart removals.
 - Build, lint, and test pass.
 
+Status:
+
+- Completed: user-facing `Full Analysis` has been renamed to `Advanced Analysis`.
+- Completed: advanced mode includes helper copy explaining that charts are supporting evidence.
+
 ## Phase 2: Data-Gated Advanced Analytics
 
 Goal:
@@ -66,6 +71,10 @@ Definition of done:
 - Summary-only users still see useful market/cost guidance.
 - Product and interaction-heavy analytics explain why they are unavailable.
 - No event or DB schema changes.
+
+Status:
+
+- In progress: product affinity and product ranking are gated by product-level data completeness.
 
 ## Phase 3: Replace Calendar Trend With Market Trend
 
