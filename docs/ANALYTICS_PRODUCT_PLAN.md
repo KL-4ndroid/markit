@@ -442,6 +442,46 @@ Advanced section can keep:
 
 But these should be secondary, not the first thing users see.
 
+### Primary Vs Advanced Analytics
+
+The analytics page should not treat `Key Recommendations` and `Full Analysis` as two equally important modes forever.
+
+Recommended direction:
+
+- `Key Recommendations` should be the primary analytics experience.
+- `Full Analysis` should become a secondary advanced section for users who want to inspect supporting metrics.
+- The advanced section should be placed below action-oriented cards or shown as an expandable section.
+- Do not remove the existing charts immediately. First demote them visually, then remove or redesign only after the new recommendation cards are stable.
+
+Why:
+
+- Most vendors want to know what to do next, not inspect every metric.
+- Calendar and chart-heavy dashboards can feel abstract when market sessions are irregular.
+- Advanced metrics are useful only when the data is detailed enough and the user understands how to act on them.
+
+### Advanced Analysis Triage
+
+The existing advanced analytics features should be reviewed using this order:
+
+| Item | Recommendation | Reason |
+|---|---|---|
+| Market health score | Keep, but demote to advanced | Useful as a supporting signal, but not intuitive enough to lead the page |
+| Quadrant analysis | Move to advanced / experimental | Too abstract for many vendors; should not drive primary decisions |
+| Product affinity | Gate behind sufficient product detail or full behavior data | Requires many detailed product sale records; unreliable for summary-only users |
+| Daily revenue chart | Replace or supplement with per-market trend | Vendors operate by market sessions, not always by calendar day |
+| KPI cards | Keep only with plain-language interpretation | Numbers without interpretation do not help the user decide what to do |
+
+Near-term UI recommendation:
+
+```text
+Key Recommendations
+Market Recap
+Cost / Rejoin / Product Action Cards
+Advanced Analysis (collapsed or lower priority)
+```
+
+Avoid deleting advanced features until the replacement recommendation cards cover the same user questions more clearly.
+
 ## 10. Data Reliability Rules
 
 Add reliability labels to analytics:
@@ -603,6 +643,13 @@ Move quadrant, affinity, and health score into a clearly labeled advanced sectio
 Risk:
 
 Medium to high if UI is heavily refactored. Do this after core cards are stable.
+
+Current direction:
+
+- Rename the user-facing mode from `Full Analysis` toward `Advanced Analysis` when the UI is ready.
+- Keep advanced metrics below the recommendation-first experience.
+- Gate product affinity and time-based insights using the data completeness layer.
+- Consider replacing daily revenue charts with per-market performance trends.
 
 ## 13. What Not To Do Yet
 
