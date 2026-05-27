@@ -14,6 +14,7 @@ import { getActiveDealEvents } from '@/lib/db/event-tombstones';
 import { DateRangeFilter, type AnalyticsRange } from '@/components/analytics/DateRangeFilter';
 import { ActionableInsightsCard } from '@/components/analytics/ActionableInsightsCard';
 import { MarketRecapCard } from '@/components/analytics/MarketRecapCard';
+import { MarketTrendCard } from '@/components/analytics/MarketTrendCard';
 import { AdvancedAnalysisGate } from '@/components/analytics/AdvancedAnalysisGate';
 import { EmptyState } from '@/components/analytics/EmptyState';
 import { MarketROICard } from '@/components/analytics/MarketROICard';
@@ -38,6 +39,7 @@ import {
 import { UnlockGuard } from '@/components/analytics/UnlockGuard';
 import { buildActionableAnalytics } from '@/lib/analytics/actionable-insights';
 import { buildMarketRecapReport } from '@/lib/analytics/market-recap';
+import { buildMarketTrend } from '@/lib/analytics/market-trend';
 import type { Event, Market } from '@/types/db';
 import type { ProductPair, MarketHealthScore } from '@/lib/analytics';
 
@@ -550,6 +552,7 @@ export default function AnalyticsPage() {
   }), [markets, analyticsEvents, analyticsDailyStats, products]);
   const actionableAnalytics = useMemo(() => buildActionableAnalytics(analyticsInput), [analyticsInput]);
   const marketRecap = useMemo(() => buildMarketRecapReport(analyticsInput), [analyticsInput]);
+  const marketTrend = useMemo(() => buildMarketTrend(markets), [markets]);
   const analyticsCapabilities = actionableAnalytics.dataCompleteness.capabilities;
 
   const hasData = marketROIData.length > 0;
@@ -685,6 +688,7 @@ export default function AnalyticsPage() {
 
         <ActionableInsightsCard result={actionableAnalytics} />
         <MarketRecapCard report={marketRecap} />
+        <MarketTrendCard trend={marketTrend} />
 
         {hasData ? (
           <>

@@ -12,6 +12,7 @@ This plan turns `docs/ANALYTICS_PRODUCT_PLAN.md` into small implementation steps
 - Market trend service: `lib/analytics/market-trend.ts`
 - First action summary card on `/analytics`
 - Market recap card on `/analytics`
+- Market trend card on `/analytics`
 - Market-scope filter:
   - All
   - Recent 3 markets
@@ -98,7 +99,7 @@ Definition of done:
 Status:
 
 - In progress: pure market trend service and regression tests have been added.
-- Pending: connect the trend result to a user-facing market trend card.
+- In progress: trend result is connected to a user-facing market trend card.
 
 ## Phase 4: Product Recommendation Refinement
 
