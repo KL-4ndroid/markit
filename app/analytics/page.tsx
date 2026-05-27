@@ -614,7 +614,7 @@ export default function AnalyticsPage() {
           </div>
           
           <p className="text-white/80 text-sm">
-            分析功能尚在測試、優化中，請謹慎判讀 ✨
+            依照你的紀錄完整度，整理可採取的下一步建議。
           </p>
         </div>
       </div>
@@ -642,7 +642,7 @@ export default function AnalyticsPage() {
                 : 'text-[#6B6B6B] hover:bg-[#F5F5F3]'
             }`}
           >
-            ⚡ 快速模式
+            重點建議
           </button>
           <button
             onClick={() => setMode('advanced')}
@@ -652,7 +652,7 @@ export default function AnalyticsPage() {
                 : 'text-[#6B6B6B] hover:bg-[#F5F5F3]'
             }`}
           >
-            📊 進階模式
+            完整分析
           </button>
         </div>
 

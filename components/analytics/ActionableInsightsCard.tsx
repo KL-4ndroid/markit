@@ -77,7 +77,7 @@ export function ActionableInsightsCard({ result }: ActionableInsightsCardProps) 
     <section className="bg-white rounded-[1.5rem] p-5 shadow-lg shadow-[#7B9FA6]/10 mb-6">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <p className="text-xs font-medium text-[#7B9FA6] mb-1">今日優先看這裡</p>
+          <p className="text-xs font-medium text-[#7B9FA6] mb-1">先看這裡</p>
           <h2 className="text-xl font-semibold text-[#3A3A3A]">行動建議</h2>
         </div>
         <div className="w-10 h-10 rounded-full bg-[#FFF8E7] flex items-center justify-center flex-shrink-0">
@@ -87,10 +87,10 @@ export function ActionableInsightsCard({ result }: ActionableInsightsCardProps) 
 
       <div className="flex flex-wrap gap-2 mb-4">
         <span className="text-xs px-3 py-1 rounded-full bg-[#E8F3E8] text-[#3A3A3A]">
-          {levelLabels[result.dataCompleteness.level]}
+          資料：{levelLabels[result.dataCompleteness.level]}
         </span>
         <span className="text-xs px-3 py-1 rounded-full bg-[#F5F5F3] text-[#3A3A3A]">
-          {confidenceLabels[result.confidence]}
+          信心：{confidenceLabels[result.confidence]}
         </span>
       </div>
 
