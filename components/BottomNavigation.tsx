@@ -26,13 +26,25 @@ export function BottomNavigation() {
     };
   }, []);
 
-  // 預載所有路由
+  // Prefetch routes when browser is idle (non-blocking)
   useEffect(() => {
-    // 預載主要路由以減少首次點擊延遲
     const routesToPrefetch = ['/markets', '/products', '/analytics', '/settings'];
-    routesToPrefetch.forEach(route => {
-      router.prefetch(route);
-    });
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const doPrefetch = () => {
+      routesToPrefetch.forEach(route => {
+        router.prefetch(route);
+      });
+    };
+
+    if (typeof requestIdleCallback !== 'undefined') {
+      const idleId = requestIdleCallback(() => doPrefetch());
+      return () => cancelIdleCallback(idleId);
+    } else {
+      timeoutId = setTimeout(doPrefetch, 1500);
+      return () => clearTimeout(timeoutId);
+    }
   }, [router]);
 
   const navItems = [
