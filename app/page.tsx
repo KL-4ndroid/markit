@@ -23,7 +23,65 @@ import { StaffBadge } from '@/components/staff/StaffBadge';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 import { SensitiveDataMask } from '@/components/staff/SensitiveDataMask';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
-import HomeLoading from './loading';
+// Overview skeleton — mirrors the 3-column grid layout
+function OverviewSkeleton() {
+  return (
+    <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-gray-100">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#7B9FA6]/10">
+        <div>
+          <div className="h-4 w-20 bg-gray-200 rounded skeleton-shimmer-dark mb-1" />
+          <div className="h-3 w-28 bg-gray-100 rounded skeleton-shimmer" />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="text-center">
+            <div className="h-3 w-12 bg-gray-200 rounded mx-auto mb-2 skeleton-shimmer-dark" />
+            <div className="h-8 w-14 bg-gray-200 rounded mx-auto skeleton-shimmer-dark" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Market list skeleton — mirrors the market card structure
+function MarketsSkeleton({ count = 2 }: { count?: number }) {
+  return (
+    <div className="space-y-3">
+      {[...Array(count)].map((_, i) => (
+        <div key={i} className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-gray-100">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <div className="h-5 w-32 bg-gray-200 rounded mb-2 skeleton-shimmer-dark" />
+              <div className="h-3 w-44 bg-gray-100 rounded skeleton-shimmer" />
+            </div>
+            <div className="h-6 w-16 bg-gray-100 rounded-full skeleton-shimmer" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="h-14 bg-gray-50 rounded-xl skeleton-shimmer-light" />
+            <div className="h-14 bg-gray-50 rounded-xl skeleton-shimmer-light" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Empty state — only shown when markets have loaded and are empty
+function MarketsEmptyState({ hasToday }: { hasToday: boolean }) {
+  return (
+    <div className="bg-white rounded-[1.5rem] p-8 shadow-md shadow-[#7B9FA6]/5 text-center">
+      <Calendar className="w-12 h-12 text-[#7B9FA6] mx-auto mb-3 opacity-50" />
+      <p className="text-[#6B6B6B] text-sm mb-2">
+        {hasToday ? '沒有即將到來的市集' : '尚未新增任何市集'}
+      </p>
+      <p className="text-[#6B6B6B] text-xs">
+        前往市集頁面新增您的市集
+      </p>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -54,8 +112,9 @@ export default function HomePage() {
   // TODO: 從實際訂閱狀態獲取
   const currentPlan: 'free' | 'pro' | 'enterprise' = 'free';
 
-  // ✅ 載入狀態檢查：數據未載入時顯示骨架屏
-  const isLoading = allMarkets === undefined || monthlyStats === undefined;
+  // Per-section loading states — each section resolves independently
+  const marketsLoading = allMarkets === undefined;
+  const statsLoading = monthlyStats === undefined;
 
   // ✅ 獲取今天的日期（使用本地時間，避免時區問題）
   const now = new Date();
@@ -143,7 +202,9 @@ export default function HomePage() {
 
   // ✅ 修復：篩選即將到來的市集（有未來日期，且狀態為已繳費或如期舉行）
   // ✅ 排除已在今日市集中顯示的市集（避免重複顯示）
-  const todayMarketIds = new Set(todayMarkets.map(m => m.id));
+  const todayMarketIds = marketsLoading
+    ? new Set<string>()
+    : new Set(todayMarkets.map(m => m.id));
   
   const upcomingMarkets = allMarkets?.filter(market => {
     // 排除已在今日市集中顯示的市集
@@ -165,11 +226,6 @@ export default function HomePage() {
     // 降級：使用 startDate（連續日期）
     return market.startDate > today;
   }) || [];
-
-  // ✅ 數據載入中，顯示骨架屏
-  if (isLoading) {
-    return <HomeLoading />;
-  }
 
   // 獲取同步狀態圖示
   const getSyncIcon = () => {
@@ -415,79 +471,82 @@ export default function HomePage() {
       <div className="max-w-lg mx-auto px-6 -mt-4">
         {/* 本月概覽 */}
         <div className="mb-6">
-          <div className={`bg-white rounded-[1.5rem] p-6 shadow-md ${getShadowClass(isStaff)}`}>
-            {/* ✅ 標題區：明確標示「本月概覽」 */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#7B9FA6]/10">
-              <div>
-                <h3 className="text-base font-semibold text-[#3A3A3A] mb-0.5">
-                  本月概覽
-                </h3>
-                <p className="text-xs text-[#6B6B6B]">
-                  {now.getFullYear()} 年 {now.getMonth() + 1} 月統計
-                </p>
+          {statsLoading ? (
+            <OverviewSkeleton />
+          ) : (
+            <div className={`bg-white rounded-[1.5rem] p-6 shadow-md ${getShadowClass(isStaff)}`}>
+              {/* 標題區 */}
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#7B9FA6]/10">
+                <div>
+                  <h3 className="text-base font-semibold text-[#3A3A3A] mb-0.5">
+                    本月概覽
+                  </h3>
+                  <p className="text-xs text-[#6B6B6B]">
+                    {now.getFullYear()} 年 {now.getMonth() + 1} 月統計
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push('/analytics')}
+                  className="text-xs text-[#7B9FA6] hover:text-[#6A8E95] transition-colors flex items-center gap-1"
+                >
+                  詳情
+                  <ArrowRight className="w-3 h-3" />
+                </button>
               </div>
-              {/* ✅ 可選：添加「查看詳情」按鈕 */}
-              <button
-                onClick={() => router.push('/analytics')}
-                className="text-xs text-[#7B9FA6] hover:text-[#6A8E95] transition-colors flex items-center gap-1"
-              >
-                詳情
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
 
-            {/* ✅ 統計數據區：更清晰的標籤 */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-xs text-[#6B6B6B] mb-1.5">
-                  本月市集
+              {/* 統計數據區 */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-xs text-[#6B6B6B] mb-1.5">
+                    本月市集
+                  </div>
+                  <div className="text-2xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
+                    {monthlyStats?.marketCount ?? 0}
+                  </div>
+                  <div className="text-[10px] text-[#6B6B6B]">場次</div>
                 </div>
-                <div className="text-2xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
-                  {monthlyStats?.marketCount ?? 0}
+
+                {/* 員工模式：隱藏總收入 */}
+                {isStaff ? (
+                  <div className="text-center">
+                    <div className="text-xs text-[#6B6B6B] mb-1.5">
+                      本月收入
+                    </div>
+                    <SensitiveDataMask label="僅老闆可見" size="sm" />
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <div className="text-xs text-[#6B6B6B] mb-1.5">
+                      本月收入
+                    </div>
+                    <div className="text-xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
+                      {formatCurrency(monthlyStats?.totalRevenue ?? 0)}
+                    </div>
+                    <div className="text-[10px] text-[#6B6B6B]">總收入</div>
+                  </div>
+                )}
+
+                <div className="text-center">
+                  <div className="text-xs text-[#6B6B6B] mb-1.5">
+                    本月成交
+                  </div>
+                  <div className="text-2xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
+                    {monthlyStats?.totalDeals ?? 0}
+                  </div>
+                  <div className="text-[10px] text-[#6B6B6B]">筆數</div>
                 </div>
-                <div className="text-[10px] text-[#6B6B6B]">場次</div>
               </div>
-              
-              {/* 員工模式：隱藏總收入 */}
-              {isStaff ? (
-                <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1.5">
-                    本月收入
-                  </div>
-                  <SensitiveDataMask label="僅老闆可見" size="sm" />
-                </div>
-              ) : (
-                <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1.5">
-                    本月收入
-                  </div>
-                  <div className="text-xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
-                    {formatCurrency(monthlyStats?.totalRevenue ?? 0)}
-                  </div>
-                  <div className="text-[10px] text-[#6B6B6B]">總收入</div>
+
+              {/* 提示文字 */}
+              {monthlyStats && monthlyStats.marketCount === 0 && (
+                <div className="mt-4 pt-3 border-t border-[#7B9FA6]/10">
+                  <p className="text-xs text-center text-[#6B6B6B]">
+                    本月尚未有市集記錄
+                  </p>
                 </div>
               )}
-              
-              <div className="text-center">
-                <div className="text-xs text-[#6B6B6B] mb-1.5">
-                  本月成交
-                </div>
-                <div className="text-2xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
-                  {monthlyStats?.totalDeals ?? 0}
-                </div>
-                <div className="text-[10px] text-[#6B6B6B]">筆數</div>
-              </div>
             </div>
-
-            {/* ✅ 可選：添加提示文字 */}
-            {monthlyStats && monthlyStats.marketCount === 0 && (
-              <div className="mt-4 pt-3 border-t border-[#7B9FA6]/10">
-                <p className="text-xs text-center text-[#6B6B6B]">
-                  本月尚未有市集記錄
-                </p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
         {/* 當日市集 - 移除條件渲染，始終顯示容器 */}
@@ -517,8 +576,8 @@ export default function HomePage() {
             <h2 className="text-lg font-medium text-[#3A3A3A]">
               即將到來的市集
             </h2>
-            {(todayMarkets.length > 0 || upcomingMarkets.length > 0) && (
-              <button 
+            {!marketsLoading && (todayMarkets.length > 0 || upcomingMarkets.length > 0) && (
+              <button
                 onClick={() => router.push('/markets')}
                 className="text-[#7B9FA6] text-sm flex items-center gap-1 hover:gap-2 transition-all"
               >
@@ -527,9 +586,11 @@ export default function HomePage() {
               </button>
             )}
           </div>
-          
-          {/* 市集列表 */}
-          {upcomingMarkets.length > 0 ? (
+
+          {/* 市集列表 — 三選一：骨架 / 卡片 / 空狀態 */}
+          {marketsLoading ? (
+            <MarketsSkeleton count={2} />
+          ) : upcomingMarkets.length > 0 ? (
             <div className="space-y-3">
               {upcomingMarkets.map((market) => (
                 <MarketCard
@@ -540,16 +601,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            /* 空狀態 */
-            <div className="bg-white rounded-[1.5rem] p-8 shadow-md shadow-[#7B9FA6]/5 text-center">
-              <Calendar className="w-12 h-12 text-[#7B9FA6] mx-auto mb-3 opacity-50" />
-              <p className="text-[#6B6B6B] text-sm mb-2">
-                {todayMarkets.length > 0 ? '沒有即將到來的市集' : '尚未新增任何市集'}
-              </p>
-              <p className="text-[#6B6B6B] text-xs">
-                前往市集頁面新增您的市集 📅
-              </p>
-            </div>
+            <MarketsEmptyState hasToday={todayMarkets.length > 0} />
           )}
         </div>
 
