@@ -126,7 +126,11 @@ export default function MarketsPage() {
       case 'cancelled':
         return allMarkets.filter(m => m.status === 'cancelled' || m.status === 'postponed');
       default:
-        markets = allMarkets.filter(m => !isEndedMarket(m, today));
+        markets = allMarkets.filter(m =>
+          !isEndedMarket(m, today) &&
+          m.status !== 'cancelled' &&
+          m.status !== 'postponed'
+        );
         break;
     }
 
