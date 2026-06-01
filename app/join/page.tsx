@@ -107,10 +107,14 @@ function JoinPageContent() {
       const result = await acceptInvitationAndBind(token, user.id);
 
       if (result.success) {
+        // ✅ 失效角色快取，讓 UI 立即反映新角色
+        const { invalidateRoleCache } = await import('@/hooks/useUserRole');
+        invalidateRoleCache();
+
         // ✅ 啟用員工模式
         const { enableStaffMode } = await import('@/lib/db/feature-flags');
         enableStaffMode();
-        
+
         // 清除 token
         sessionStorage.removeItem('invitation_token');
         
