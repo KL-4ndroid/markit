@@ -1,6 +1,6 @@
 # 角色存取模型（Role Access Model）
 
-> 文件版本：2026-06-01 v4
+> 文件版本：2026-06-01 v5
 > 用途：記錄目前老闆 / 員工角色系統的設計意圖與已知技術債，供後續修正參照。
 
 ---
@@ -190,7 +190,7 @@ SyncProvider
 
 - `lib/db/feature-flags.ts` 已刪除
 - `feature_staff_mode` 全域無任何讀寫引用
-- `diagnose-staff-products.js` 仍 import `isStaffModeEnabled()`（已無法執行，屬於待清理的附帶檔案）
+- `diagnose-staff-products.js` 隨 Phase 6B-2 一併刪除
 
 ---
 
@@ -218,7 +218,7 @@ SyncProvider
 | 查詢員工列表 | `getMyStaff()` 使用 RPC `get_my_staff` | 直接查 `staff_relationships` + `profiles` |
 | 邀請員工 | `inviteStaff()` | 直接 `supabase.from('staff_relationships').insert()` |
 | 接受邀請 | `acceptInvitation()` | 直接 `supabase.from('staff_relationships').update()` |
-| 移除員工 | `revokeStaff()` / `deleteStaffRelationship()` | 直接 `supabase.from('staff_relationships').delete()` |
+| **移除員工** | **`removeStaff(staffId)` — Phase 7B-2** | ~~直接 `delete()`~~ → 改用 `removeStaff()` — **Phase 7B-3** ✅ |
 
 ### 8.2 問題
 
@@ -243,7 +243,7 @@ StaffManagement.tsx 應逐步收斂至呼叫 `lib/supabase/staff.ts` 的 service
 | `revokeStaff(relationshipId)` | **軟刪除**（撤銷）| `UPDATE status = 'revoked'` |
 | `deleteStaffRelationship(relationshipId)` | **物理刪除** | `DELETE FROM staff_relationships` |
 
-`components/settings/StaffManagement.tsx` 目前使用 **`delete`**（物理刪除），不使用 `revoke`。
+`components/settings/StaffManagement.tsx` 現在使用 **`removeStaff(staffId)`**（Phase 7B-3），內部呼叫 `revokeStaff()` + 清理 `market_members`，不再直接 `delete()`。
 
 ### 9.2 語意差異
 
@@ -262,7 +262,7 @@ StaffManagement.tsx 應逐步收斂至呼叫 `lib/supabase/staff.ts` 的 service
 
 ### 9.4 修正方向
 
-Phase 4 將修改 `StaffManagement.tsx` 的 `handleRemove()`，由直接呼叫 `supabase.from('staff_relationships').delete()` 改為呼叫 `revokeStaff(relationshipId)`。
+> ✅ **已實作（Phase 7B-2、7B-3）**：`StaffManagement.tsx` 的 `handleRemove()` 已改用 `removeStaff(staffId)`，內部執行 `revokeStaff()` + 清理 `market_members`，`staff_relationships` 改為 `UPDATE status = 'revoked'`，不再物理刪除。
 
 ---
 
@@ -284,7 +284,7 @@ Phase 4 將修改 `StaffManagement.tsx` 的 `handleRemove()`，由直接呼叫 `
 ### Phase 4：收斂 StaffManagement 至 service 層
 - 查詢員工列表 → 改用 `getMyStaff()`
 - 邀請員工 → 改用 `inviteStaff()`
-- 移除員工 → **先確認語意**（revoke 或 delete）
+- 移除員工 → ~~先確認語意~~ → ✅ **已確認為 revoke，並已實作（Phase 7B-3）**
 
 ### Phase 5：角色快取 TTL 優化（Phase 5B-1、5B-2 已完成）
 
