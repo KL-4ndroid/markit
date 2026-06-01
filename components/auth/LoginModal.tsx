@@ -99,10 +99,6 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess, defaultMode = 'log
               const result = await acceptInvitationAndBind(invitationToken, data.user.id);
               
               if (result.success) {
-                // ✅ 啟用員工模式
-                const { enableStaffMode } = await import('@/lib/db/feature-flags');
-                enableStaffMode();
-                
                 toast.success('註冊成功！已自動加入團隊');
                 // 清除 token
                 sessionStorage.removeItem('invitation_token');

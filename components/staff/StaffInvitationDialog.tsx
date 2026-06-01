@@ -152,12 +152,10 @@ export function StaffInvitationDialog() {
       const { clearAllData } = await import('@/lib/db');
       const { resetInitialSyncFlag } = await import('@/hooks/useSync');
       const { clearRoleCache } = await import('@/hooks/useUserRole');
-      const { enableStaffMode } = await import('@/lib/db/feature-flags');
 
       await clearAllData();
       resetInitialSyncFlag();
       clearRoleCache();
-      enableStaffMode();
 
       toast.success('已接受邀請，正在重新載入資料...', { id: 'accept-invitation' });
 
