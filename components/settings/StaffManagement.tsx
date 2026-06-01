@@ -26,7 +26,7 @@ import {
   formatRemainingTime,
   type StaffInvitation,
 } from '@/lib/supabase/staff-invitations';
-import { getMyStaffMembers, type StaffMember } from '@/lib/supabase/staff';
+import { getMyStaffMembers, type StaffMember, inviteStaff } from '@/lib/supabase/staff';
 
 export function StaffManagement() {
   const { user } = useAuth();
@@ -66,68 +66,33 @@ export function StaffManagement() {
       return;
     }
 
+    // ✅ 本地檢查：避免多一次 DB round-trip
+    if (staffList.some(s => s.email.toLowerCase() === inviteEmail.trim().toLowerCase())) {
+      toast.error('此用戶已經是您的員工');
+      return;
+    }
+
     setIsInviting(true);
-
     try {
-      // 1. 檢查 email 是否存在
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .eq('email', inviteEmail.trim().toLowerCase());
-
-      if (profileError) throw profileError;
-
-      if (!profiles || profiles.length === 0) {
-        toast.error('找不到此 email 的用戶，請確認對方已註冊');
-        return;
-      }
-
-      const staffId = profiles[0].id;
-      const staffEmail = profiles[0].email;
-
-      // 檢查是否已經是員工
-      if (staffList.some(s => s.id === staffId)) {
-        toast.error('此用戶已經是您的員工');
-        return;
-      }
-
-      // 2. 創建員工關係（staff_relationships）
-      // ✅ 固定權限：所有員工都可以查看和記錄互動/成交，但不能編輯
-      const permissions = {
-        can_view: true,
-        can_edit: false,  // ✅ 固定為 false，員工不能編輯
-      };
-
-      const { error: relError } = await supabase
-        .from('staff_relationships')
-        .insert({
-          owner_id: user.id,
-          staff_id: staffId,
-          staff_email: staffEmail,
-          status: 'pending', // ✅ 設置為 pending（需要員工接受邀請）
-          permissions,
-        });
-
-      if (relError) {
-        if (relError.code === '23505') {
-          toast.error('此用戶已經是您的員工');
-          return;
-        }
-        throw relError;
-      }
+      // ✅ 使用 service 函式處理邀請邏輯
+      await inviteStaff({ staff_email: inviteEmail.trim() });
 
       toast.success(`✅ 已發送邀請給 ${inviteEmail}，等待對方接受`);
-      
+
       // 重新載入列表
       await loadStaffList();
-      
+
       // 關閉對話框
       setShowInviteDialog(false);
       setInviteEmail('');
 
     } catch (error: any) {
       console.error('邀請員工失敗:', error);
-      toast.error('邀請失敗：' + error.message);
+      if (error.message?.includes('已經')) {
+        toast.error('此用戶已經是您的員工');
+      } else {
+        toast.error('邀請失敗：' + error.message);
+      }
     } finally {
       setIsInviting(false);
     }
