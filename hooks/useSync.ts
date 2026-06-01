@@ -24,6 +24,7 @@ import {
   productAccessRowToLocal,
   productRowToLocal,
 } from '@/lib/data-mappers';
+import { sanitizeObject, sanitizeEvents } from '@/lib/data-sanitization';
 import type { Event } from '@/types/db';
 import type { RoleMode } from '@/lib/auth/role-mode';
 
@@ -1438,10 +1439,15 @@ async function syncMarketsToIndexedDB(markets: any[], currentUserId: string): Pr
     })));
   }
   
+  // ✅ Staff 資料脫敏：在寫入 IndexedDB 前移除敏感欄位
+  const staffRole = { isStaff: true };
+
   for (const market of markets) {
     try {
       const existing = await db.markets.get(market.id);
-      const mappedMarket = marketAccessRowToLocal(market as Record<string, unknown>);
+      // ✅ 先 sanitize snake_case row，再交給 mapper
+      const sanitizedRow = sanitizeObject(market, 'market', staffRole);
+      const mappedMarket = marketAccessRowToLocal(sanitizedRow as Record<string, unknown>);
       
       // 準備市集數據（保留權限信息）
       const marketData = {
@@ -1495,6 +1501,9 @@ async function syncProductsToIndexedDB(products: any[], currentUserId: string): 
   let syncedCount = 0;
   let skippedCount = 0;
   
+  // ✅ Staff 資料脫敏：在寫入 IndexedDB 前移除敏感欄位
+  const staffRole = { isStaff: true };
+
   for (const product of products) {
     try {
       // ✅ 驗證：確保商品屬於當前用戶或當前用戶可訪問
@@ -1502,15 +1511,17 @@ async function syncProductsToIndexedDB(products: any[], currentUserId: string): 
       // 2. 如果是 staff 模式，relationship_owner_id 必須存在
       const isOwner = product.access_type === 'owner' && product.owner_id === currentUserId;
       const isStaff = product.access_type === 'staff' && product.relationship_owner_id;
-      
+
       if (!isOwner && !isStaff) {
         console.warn(`⚠️ 跳過不屬於當前用戶的商品: ${product.name} (owner: ${product.owner_id?.substring(0, 8)})`);
         skippedCount++;
         continue;
       }
-      
+
       const existing = await db.products.get(product.id);
-      const mappedProduct = productAccessRowToLocal(product as Record<string, unknown>);
+      // ✅ 先 sanitize snake_case row，再交給 mapper
+      const sanitizedRow = sanitizeObject(product, 'product', staffRole);
+      const mappedProduct = productAccessRowToLocal(sanitizedRow as Record<string, unknown>);
       
       // 準備商品數據（保留權限信息）
       const productData = {
@@ -1541,14 +1552,19 @@ async function syncProductsToIndexedDB(products: any[], currentUserId: string): 
 /**
  * 同步事件到 IndexedDB（保留權限）
  * ✅ 重放事件以更新讀取模型
+ * ✅ Staff 模式：事件寫入 IndexedDB 前執行脫敏
  */
 async function syncEventsToIndexedDB(events: any[]): Promise<void> {
-  console.log(`📝 同步 ${events.length} 個事件到 IndexedDB...`);
+  // ✅ Staff 資料脫敏：在寫入 IndexedDB 前移除敏感欄位
+  const staffRole = { isStaff: true };
+  const sanitizedEvents = sanitizeEvents(events, staffRole);
+
+  console.log(`📝 同步 ${sanitizedEvents.length} 個事件到 IndexedDB...`);
   
   let processedCount = 0;
   let skippedCount = 0;
   
-  for (const event of events) {
+  for (const event of sanitizedEvents) {
     try {
       // 檢查是否已存在
       const existing = await db.events.get(event.id);
