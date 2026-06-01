@@ -9,7 +9,10 @@
 --   2. Removes all market_members INSERT policies
 --      (write via SECURITY DEFINER RPCs only)
 --   3. Removes all market_members DELETE policies and replaces with
---      secure policy: user can only delete own membership
+--      a role-aware policy:
+--      - staff can delete their own staff memberships
+--      - owner can delete staff memberships in their own markets
+--      - nobody can delete owner memberships
 --   4. Enables RLS on market_members
 --   5. Creates secure market_members SELECT policy using helper
 --   6. Removes markets_select_temp and replaces with helper-based policy
@@ -49,6 +52,30 @@ COMMENT ON FUNCTION public.current_user_market_ids() IS
   'Returns market_ids the current authenticated user is a member of. SECURITY DEFINER avoids market_members RLS recursion. No parameters — always uses auth.uid().';
 
 -- ============================================================
+-- STEP 1b: Helper for owned market IDs (for owner-based DELETE)
+-- Returns market IDs where the current user is the market owner.
+-- SECURITY DEFINER: does not go through RLS, no parameters.
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.current_user_owned_market_ids()
+RETURNS TABLE(id UUID)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT id
+  FROM public.markets
+  WHERE owner_id = auth.uid();
+$$;
+
+REVOKE ALL ON FUNCTION public.current_user_owned_market_ids() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.current_user_owned_market_ids() TO authenticated;
+
+COMMENT ON FUNCTION public.current_user_owned_market_ids() IS
+  'Returns market_ids where the current user is the owner. SECURITY DEFINER, no parameters.';
+
+-- ============================================================
 -- STEP 2: Remove all market_members INSERT policies
 -- ============================================================
 
@@ -74,7 +101,10 @@ $$;
 
 -- ============================================================
 -- STEP 3: Remove all market_members DELETE policies, then create
---         a secure policy: user can only delete their own membership
+--         a role-aware secure policy:
+--         - staff: can delete only their own staff membership
+--         - owner: can delete staff memberships in their own markets
+--         - nobody: can delete owner memberships
 -- ============================================================
 
 DO $$
@@ -92,14 +122,20 @@ BEGIN
 END;
 $$;
 
--- Secure DELETE: users can remove only their own membership.
--- This allows staff to leave a team via direct DELETE.
--- RPC-based deletes (remove_team_member, leave_current_staff_team) are also
--- available as the primary controlled path.
-CREATE POLICY "market_members_delete_own"
+CREATE POLICY "market_members_delete_owner_or_self_staff"
 ON public.market_members FOR DELETE
 TO authenticated
-USING (user_id = auth.uid());
+USING (
+  role = 'staff'
+  AND (
+    user_id = auth.uid()
+    OR market_id IN (SELECT * FROM public.current_user_owned_market_ids())
+  )
+);
+-- Logic: only staff rows are deletable.
+--   - A staff member can delete their own staff row.
+--   - A market owner can delete staff rows in markets they own.
+--   - Owner rows (role = 'owner') are never deletable via this policy.
 
 -- ============================================================
 -- STEP 4: Enable RLS on market_members
@@ -188,11 +224,13 @@ FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'market_members' AND cmd = 'INSERT';
 -- Expected: 0 rows
 
--- V3: market_members DELETE policy: user_id = auth.uid()
+-- V3: market_members DELETE policy: role='staff' + self OR owner market
 SELECT policyname, cmd, qual::text
 FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'market_members' AND cmd = 'DELETE';
--- Expected: 1 row, qual contains 'user_id = auth.uid()'
+-- Expected: 1 row named 'market_members_delete_owner_or_self_staff'
+-- Expected: qual contains 'role = \'staff\'', 'user_id = auth.uid()',
+--           'market_id IN', 'current_user_owned_market_ids'
 
 -- V4: market_members SELECT policy uses helper
 SELECT policyname, cmd, qual::text
@@ -216,27 +254,34 @@ SELECT policyname FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'products' AND policyname = 'products_select_temp';
 -- Expected: 0 rows
 
--- V8: current_user_market_ids is SECURITY DEFINER with no IN parameters
+-- V8: current_user_market_ids and current_user_owned_market_ids
+--      are SECURITY DEFINER with no IN parameters
 SELECT routine_name, security_type
 FROM information_schema.routines
-WHERE routine_schema = 'public' AND routine_name = 'current_user_market_ids';
--- Expected: routine_name = 'current_user_market_ids', security_type = 'DEFINER'
+WHERE routine_schema = 'public'
+  AND routine_name IN ('current_user_market_ids', 'current_user_owned_market_ids');
+-- Expected: 2 rows, all security_type = 'DEFINER'
 
-SELECT COUNT(*) AS param_count
+SELECT routine_name, COUNT(*) AS param_count
 FROM information_schema.parameters
 WHERE specific_schema = 'public'
+  AND parameter_mode = 'IN'
   AND specific_name IN (
     SELECT specific_name FROM information_schema.routines
-    WHERE routine_schema = 'public' AND routine_name = 'current_user_market_ids'
+    WHERE routine_schema = 'public'
+      AND routine_name IN ('current_user_market_ids', 'current_user_owned_market_ids')
   )
-  AND parameter_mode = 'IN';
--- Expected: 0 (no input parameters)
+GROUP BY routine_name;
+-- Expected: both = 0 (no input parameters)
 
 -- V9: Helper grants
-SELECT grantee, privilege_type
+SELECT routine_name, grantee, privilege_type
 FROM information_schema.function_privileges
-WHERE specific_schema = 'public' AND routine_name = 'current_user_market_ids';
--- Expected: authenticated has EXECUTE; PUBLIC does not appear
+WHERE specific_schema = 'public'
+  AND routine_name IN ('current_user_market_ids', 'current_user_owned_market_ids')
+ORDER BY routine_name, privilege_type;
+-- Expected: both functions have EXECUTE granted to 'authenticated';
+--           PUBLIC does not appear
 
 */
 
