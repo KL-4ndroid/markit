@@ -26,7 +26,7 @@ import {
   formatRemainingTime,
   type StaffInvitation,
 } from '@/lib/supabase/staff-invitations';
-import { getMyStaffMembers, type StaffMember, inviteStaff } from '@/lib/supabase/staff';
+import { getMyStaffMembers, type StaffMember, inviteStaff, removeStaff } from '@/lib/supabase/staff';
 
 export function StaffManagement() {
   const { user } = useAuth();
@@ -171,46 +171,14 @@ export function StaffManagement() {
 
   // 移除員工
   const handleRemove = async (staffId: string, email: string) => {
-    if (!user) return;
-
     if (!confirm(`確定要移除員工「${email}」嗎？\n\n移除後，該員工將無法訪問您的任何市集。`)) {
       return;
     }
 
     try {
-      // 1. 刪除員工關係
-      const { error: relError } = await supabase
-        .from('staff_relationships')
-        .delete()
-        .eq('owner_id', user.id)
-        .eq('staff_id', staffId);
-
-      if (relError) throw relError;
-
-      // 2. 獲取所有自己的市集 ID
-      const { data: markets, error: marketsError } = await supabase
-        .from('markets')
-        .select('id')
-        .eq('owner_id', user.id);
-
-      if (marketsError) throw marketsError;
-
-      // 3. 刪除所有 market_members 記錄
-      if (markets && markets.length > 0) {
-        const marketIds = markets.map(m => m.id);
-        
-        const { error: membersError } = await supabase
-          .from('market_members')
-          .delete()
-          .eq('user_id', staffId)
-          .eq('role', 'staff')
-          .in('market_id', marketIds);
-
-        if (membersError) throw membersError;
-      }
-
+      await removeStaff(staffId);
       toast.success(`✅ 已移除員工 ${email}`);
-      
+
       // 重新載入列表
       await loadStaffList();
 
