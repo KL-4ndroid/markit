@@ -610,4 +610,159 @@ assert.equal(
   'boothCost is sensitive for market'
 );
 
+// ==================== Phase 9E: fake-0 regression ====================
+
+// Mapper 可能補出 cost: 0 / boothCost: 0 等假 0，sanitize 後 key 必須消失（不等於 0，是要消失）
+const fakeZeroProduct = {
+  id: 'p-zero',
+  name: '零成本商品',
+  price: 50,
+  cost: 0,
+  profitMargin: 0,
+  supplierInfo: 0,
+};
+const sanitizedFakeZeroProduct = sanitizeObject(fakeZeroProduct, 'product', staffRole);
+assert.equal(
+  sanitizedFakeZeroProduct.cost,
+  undefined,
+  'fake-0 product: cost key must be removed (not just set to 0)'
+);
+assert.equal(
+  sanitizedFakeZeroProduct.profitMargin,
+  undefined,
+  'fake-0 product: profitMargin key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroProduct.supplierInfo,
+  undefined,
+  'fake-0 product: supplierInfo key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroProduct.price,
+  50,
+  'fake-0 product: price must be preserved'
+);
+
+const fakeZeroMarket = {
+  id: 'm-zero',
+  name: '零成本市集',
+  boothCost: 0,
+  registrationFee: 0,
+  totalProfit: 0,
+  commissionRate: 0,
+  deposit: 0,
+  totalRevenue: 10000,
+};
+const sanitizedFakeZeroMarket = sanitizeObject(fakeZeroMarket, 'market', staffRole);
+assert.equal(
+  sanitizedFakeZeroMarket.boothCost,
+  undefined,
+  'fake-0 market: boothCost key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroMarket.registrationFee,
+  undefined,
+  'fake-0 market: registrationFee key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroMarket.totalProfit,
+  undefined,
+  'fake-0 market: totalProfit key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroMarket.commissionRate,
+  undefined,
+  'fake-0 market: commissionRate key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroMarket.deposit,
+  undefined,
+  'fake-0 market: deposit key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroMarket.totalRevenue,
+  10000,
+  'fake-0 market: totalRevenue must be preserved'
+);
+
+// sanitizeStats 也必須移除 cost: 0 / profit: 0
+const fakeZeroStats = {
+  total_revenue: 8000,
+  total_cost: 0,
+  net_profit: 0,
+  profit_margin: 0,
+  cost_breakdown: undefined,
+  average_cost: 0,
+  cost_per_item: 0,
+  items_sold: 100,
+};
+const sanitizedFakeZeroStats = sanitizeStats(fakeZeroStats, staffRole);
+assert.equal(
+  sanitizedFakeZeroStats.total_cost,
+  undefined,
+  'fake-0 stats: total_cost key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroStats.net_profit,
+  undefined,
+  'fake-0 stats: net_profit key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroStats.profit_margin,
+  undefined,
+  'fake-0 stats: profit_margin key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroStats.average_cost,
+  undefined,
+  'fake-0 stats: average_cost key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroStats.cost_per_item,
+  undefined,
+  'fake-0 stats: cost_per_item key must be removed'
+);
+assert.equal(
+  sanitizedFakeZeroStats.total_revenue,
+  8000,
+  'fake-0 stats: total_revenue must be preserved'
+);
+assert.equal(
+  sanitizedFakeZeroStats.items_sold,
+  100,
+  'fake-0 stats: items_sold must be preserved'
+);
+
+// ==================== Phase 9E: sanitizeEvents does NOT mutate original ====================
+
+const phase9eEvents = [
+  {
+    id: 'e-immut-test',
+    type: 'deal_closed',
+    payload: {
+      market_id: 'm-immut',
+      totalCost: 999,
+      manualCost: 888,
+      items: [{ price_at_time_of_sale: 100, cost_at_time_of_sale: 50 }],
+    },
+  },
+];
+const phase9eOriginalPayload = phase9eEvents[0].payload;
+sanitizeEvents(phase9eEvents, staffRole);
+assert.equal(
+  (phase9eOriginalPayload as any).totalCost,
+  999,
+  'sanitizeEvents must not mutate original payload.totalCost'
+);
+assert.equal(
+  (phase9eOriginalPayload as any).manualCost,
+  888,
+  'sanitizeEvents must not mutate original payload.manualCost'
+);
+assert.equal(
+  (phase9eOriginalPayload as any).items[0].cost_at_time_of_sale,
+  50,
+  'sanitizeEvents must not mutate original payload.items[0].cost_at_time_of_sale'
+);
+
 console.log('✅ All data-sanitization assertions passed');

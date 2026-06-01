@@ -25,7 +25,7 @@ import {
   productRowToLocal,
 } from '@/lib/data-mappers';
 import { sanitizeObject, sanitizeEvents, sanitizeStats } from '@/lib/data-sanitization';
-import type { Market, DailyStats } from '@/types/db';
+import type { Market, DailyStats, Product } from '@/types/db';
 import type { Event } from '@/types/db';
 import type { RoleMode } from '@/lib/auth/role-mode';
 
@@ -1449,7 +1449,7 @@ async function syncMarketsToIndexedDB(markets: any[], currentUserId: string): Pr
       // ✅ 先 sanitize snake_case row，再交給 mapper
       const sanitizedRow = sanitizeObject(market, 'market', staffRole);
       const mappedMarket = marketAccessRowToLocal(sanitizedRow as Record<string, unknown>);
-      
+
       // 準備市集數據（保留權限信息）
       const marketData = {
         ...mappedMarket,
@@ -1460,14 +1460,11 @@ async function syncMarketsToIndexedDB(markets: any[], currentUserId: string): Pr
         operatingStartTime: mappedMarket.operatingStartTime ?? existing?.operatingStartTime,
         operatingEndTime: mappedMarket.operatingEndTime ?? existing?.operatingEndTime,
       };
-      
-      if (existing) {
-        // 更新現有記錄（保留權限信息）
-        await db.markets.update(market.id, marketData);
-      } else {
-        // 新增記錄
-        await db.markets.add(marketData);
-      }
+
+      // ✅ Mapper 可能補出假 0 敏感欄位（如 boothCost: 0, registrationFee: 0）；
+      // ✅ Dexie update 不會刪除舊 key，故用 put 完全替換 record。
+      const sanitizedMarketData = sanitizeObject(marketData, 'market', staffRole);
+      await db.markets.put({ ...sanitizedMarketData, id: market.id } as Market);
     } catch (error) {
       console.error(`❌ 同步市集失敗: ${market.id}`, error);
       // 繼續處理下一個
@@ -1519,25 +1516,21 @@ async function syncProductsToIndexedDB(products: any[], currentUserId: string): 
         continue;
       }
 
-      const existing = await db.products.get(product.id);
       // ✅ 先 sanitize snake_case row，再交給 mapper
       const sanitizedRow = sanitizeObject(product, 'product', staffRole);
       const mappedProduct = productAccessRowToLocal(sanitizedRow as Record<string, unknown>);
-      
+
       // 準備商品數據（保留權限信息）
       const productData = {
         ...mappedProduct,
         unlimitedStock: mappedProduct.unlimitedStock ?? false,
         isActive: mappedProduct.isActive ?? true,
       };
-      
-      if (existing) {
-        // 更新現有記錄（保留權限信息）
-        await db.products.update(product.id, productData);
-      } else {
-        // 新增記錄
-        await db.products.add(productData);
-      }
+
+      // ✅ Mapper 可能補出假 0 敏感欄位（如 cost: 0）；
+      // ✅ Dexie update 不會刪除舊 key，故用 put 完全替換 record。
+      const sanitizedProductData = sanitizeObject(productData, 'product', staffRole);
+      await db.products.put({ ...sanitizedProductData, id: product.id } as Product);
       
       syncedCount++;
     } catch (error) {
@@ -1579,14 +1572,16 @@ async function sanitizeStaffProjectionsAfterReplay(event: { type: string; payloa
   const existingMarket = await db.markets.get(marketId);
   if (existingMarket) {
     const sanitized = sanitizeObject(existingMarket, 'market', staffRole);
-    await db.markets.update(marketId, sanitized as Partial<Market>);
+    // ✅ update 不刪除舊 key，改用 put 完全替換，確保敏感欄位確實消失
+    await db.markets.put({ ...sanitized, id: marketId } as Market);
   }
 
   const dailyStats = await db.dailyStats.where('marketId').equals(marketId).toArray();
   for (const stat of dailyStats) {
     if (stat.id === undefined) continue;
     const sanitized = sanitizeStats(stat, staffRole);
-    await db.dailyStats.update(stat.id, sanitized as Partial<DailyStats>);
+    // ✅ update 不刪除舊 key，改用 put 完全替換，確保敏感欄位確實消失
+    await db.dailyStats.put({ ...sanitized, id: stat.id } as DailyStats);
   }
 }
 
