@@ -15,7 +15,6 @@ import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
-import { isStaffModeEnabled } from '@/lib/db/feature-flags';
 import {
   marketAccessRowToLocal,
   marketRowToLocal,
@@ -169,12 +168,8 @@ export function useSync(options: UseSyncOptions = {}) {
   const { user, isConfigured } = useAuth();
 
   // ✅ Phase 3: 角色模式 helper
-  // 優先使用傳入的 roleMode；若未傳入則 fallback 到 feature_staff_mode（保持現有行為）
-  const effectiveStaffMode = (() => {
-    if (roleMode === 'staff') return true;
-    if (roleMode === 'owner') return false;
-    return isStaffModeEnabled(); // fallback：未傳入 roleMode 時保持現有邏輯
-  })();
+  // 完全由 SyncProvider 傳入的 roleMode 決定，不 fallback 到 localStorage
+  const effectiveStaffMode = roleMode === 'staff';
   
   // ✅ 使用全局狀態，並訂閱更新
   const [state, setState] = useState<SyncState>(globalSyncState);
