@@ -24,6 +24,9 @@ export interface UserRole {
 // ✅ localStorage 緩存鍵
 const ROLE_CACHE_KEY = 'user_role_cache';
 
+// ✅ 角色快取 TTL：5 分鐘（降低角色不一致風險）
+const ROLE_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /**
  * 從 localStorage 讀取緩存的角色
  */
@@ -39,9 +42,9 @@ function getCachedRole(userId: string): UserRole | null {
     // 檢查是否為同一用戶
     if (data.userId !== userId) return null;
     
-    // 檢查緩存是否過期（24 小時）
+    // 檢查緩存是否過期
     const now = Date.now();
-    if (now - data.timestamp > 24 * 60 * 60 * 1000) {
+    if (now - data.timestamp > ROLE_CACHE_TTL_MS) {
       localStorage.removeItem(ROLE_CACHE_KEY);
       return null;
     }
@@ -67,6 +70,15 @@ function setCachedRole(userId: string, role: UserRole): void {
   } catch (error) {
     console.error('保存角色緩存失敗:', error);
   }
+}
+
+/**
+ * 主動失效角色快取
+ * 供外部流程（如接受邀請、員工被移除）在關鍵狀態變化後呼叫，
+ * 強制下次 useUserRole() 重新查詢 Supabase。
+ */
+export function invalidateRoleCache(): void {
+  clearRoleCache();
 }
 
 /**
