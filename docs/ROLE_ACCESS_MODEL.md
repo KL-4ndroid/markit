@@ -1,6 +1,6 @@
 # 角色存取模型（Role Access Model）
 
-> 文件版本：2026-06-01
+> 文件版本：2026-06-01 v2
 > 用途：記錄目前老闆 / 員工角色系統的設計意圖與已知技術債，供後續修正參照。
 
 ---
@@ -40,10 +40,13 @@ export function useUserRole(): {
 ### 1.4 角色快取
 
 - **位置**：`localStorage['user_role_cache']`
-- **TTL**：24 小時
+- **TTL**：5 分鐘（`ROLE_CACHE_TTL_MS = 5 * 60 * 1000`，Phase 5B-1 修正）
 - **內容**：`{ userId, role: UserRole, timestamp }`
-- **觸發清除**：登出時（`clearRoleCache()`）
-- **風險**：員工被老闆移除後，最長 24 小時內員工端仍保持員工身份
+- **觸發清除**：
+  - 登出時（`clearRoleCache()`）
+  - 接受員工邀請成功後（`invalidateRoleCache()`，Phase 5B-2）
+- **風險**：員工被老闆移除後，最長 5 分鐘內員工端仍保持員工身份（已從 24 小時縮短，但仍存在）
+- **待設計**：員工被移除後的即時失效機制（`revokeStaff` / `removeStaff` service 中尚未呼叫 `invalidateRoleCache()`）
 
 ---
 
@@ -289,14 +292,32 @@ Phase 4 將修改 `StaffManagement.tsx` 的 `handleRemove()`，由直接呼叫 `
 - 邀請員工 → 改用 `inviteStaff()`
 - 移除員工 → **先確認語意**（revoke 或 delete）
 
-### Phase 5：角色快取 TTL 優化
-- 評估將 24 小時 TTL 縮短至 5–15 分鐘
-- 加入 `clearRoleCache()` 觸發點：登出、接受邀請成功、被移除員工
+### Phase 5：角色快取 TTL 優化（Phase 5B-1、5B-2 已完成）
+
+#### Phase 5A：分析與設計 ✅（已完成）
+- 評估 TTL 縮短的 UX 影響
+- 確認 `feature_staff_mode` fallback 的必要性
+
+#### Phase 5B-1：縮短 TTL + 新增失效 API ✅（已完成）
+- TTL 從 24 小時縮短至 5 分鐘（`ROLE_CACHE_TTL_MS = 5 * 60 * 1000`）
+- 新增 `invalidateRoleCache()` export
+
+#### Phase 5B-2：接受邀請後失效快取 ✅（已完成）
+- `app/join/page.tsx` 的 `handleAcceptInvitation()` 在成功後呼叫 `invalidateRoleCache()`
+
+#### Phase 5B-3：移除員工後失效快取（待執行）
+- 老闆端無法直接清除員工裝置上的 localStorage role cache，員工被移除後的即時失效仍需另行設計
+- 目前靠 5 分鐘 TTL 降低風險，最長 5 分鐘後員工端角色會自動失效
+- 未來可考慮以下方向：
+  - Supabase Realtime 監聽 `staff_relationships` 變化並推送失效訊息
+  - 同步時收到 permission error 後觸發角色重新驗證
+  - 其他 client-side role revalidation 機制
 
 ### Phase 6：建立安全驗證清單
 - 建立 `docs/ROLE_SECURITY_CHECKLIST.md`
 - 驗證 RLS 各表的 staff 存取控制
 - 驗證敏感資料在 API 層的保護
+- 確認 `revoke` 語意落地（`staff_relationships.status = 'revoked'` 而非物理刪除）
 
 ---
 
