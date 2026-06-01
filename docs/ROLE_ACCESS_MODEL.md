@@ -1,6 +1,6 @@
 # 角色存取模型（Role Access Model）
 
-> 文件版本：2026-06-01 v3
+> 文件版本：2026-06-01 v4
 > 用途：記錄目前老闆 / 員工角色系統的設計意圖與已知技術債，供後續修正參照。
 
 ---
@@ -176,42 +176,25 @@ SyncProvider
             使用快照 + 增量事件（老闆路徑）
 ```
 
-### 6.2 Phase 6A 完成摘要
+### 6.2 Phase 6 完成摘要
 
 | 變更 | 狀態 |
 |---|---|
 | Phase 6A-1：`useSync.ts` 移除 `feature_staff_mode` fallback | ✅ 已完成 |
 | Phase 6A-2：`app/join/page.tsx` 移除 `enableStaffMode()` 呼叫 | ✅ 已完成 |
 | Phase 6A-2：`role-mode.ts` 移除 `deriveSyncStaffMode()` | ✅ 已完成 |
-| Phase 6A-2：`feature-flags.ts` | 保留（`enableStaffMode()` 仍被 `LoginModal` 和 `StaffInvitationDialog` 使用）|
+| Phase 6B-1：`LoginModal.tsx` 和 `StaffInvitationDialog.tsx` 移除 `enableStaffMode()` | ✅ 已完成 |
+| Phase 6B-2：刪除 `lib/db/feature-flags.ts` | ✅ 已完成 |
 
-### 6.3 `feature_staff_mode` 殘留說明
+### 6.3 清理後狀態
 
-`lib/db/feature-flags.ts` 中的 `enableStaffMode()` 仍被以下元件呼叫：
-- `components/auth/LoginModal.tsx`
-- `components/staff/StaffInvitationDialog.tsx`
-
-這 2 個元件屬於 `components/` 層，不在 Phase 6A 清理範圍內。待 `LoginModal` 和 `StaffInvitationDialog` 的 UI 需求確認後，可視需求移除其 `enableStaffMode()` 呼叫。
-
-`feature_staff_mode` 殘留寫入點：
-- `enableStaffMode()` — 寫入 `localStorage['feature_staff_mode'] = 'true'`
-- `disableStaffMode()` — 移除 key（目前無任何 consumer 呼叫）
-- `toggleStaffMode()` — toggle（目前無任何 consumer 呼叫）
-
-`isStaffModeEnabled()` — 目前無任何 consumer（`useSync` fallback 已移除）。
-
-| 情境 | useUserRole | feature_staff_mode | 結果 |
-|---|---|---|---|
-| 老闆已接受員工邀請，但從未開過員工模式 | `isStaff = true` | `false` | UI 顯示員工介面，但同步走老闆路徑（快照）→ 可能失敗 |
-| 員工已關閉 feature_staff_mode | `isStaff = true` | `false` | UI 顯示員工介面，但同步走老闆路徑 → 資料錯誤 |
-| 老闆故意關閉 feature_staff_mode | `isStaff = false` | `false` | 一致，OK |
-| 員工啟用 feature_staff_mode | `isStaff = true` | `true` | 一致，OK |
-
-**根本問題**：`feature_staff_mode` 應由 `useUserRole().isStaff` 推導，而非獨立的 localStorage flag。
+- `lib/db/feature-flags.ts` 已刪除
+- `feature_staff_mode` 全域無任何讀寫引用
+- `diagnose-staff-products.js` 仍 import `isStaffModeEnabled()`（已無法執行，屬於待清理的附帶檔案）
 
 ---
 
-## 7. Phase 6A 完成狀態
+## 7. Phase 6 完成狀態
 
 ### 7.1 變更摘要
 
@@ -219,14 +202,10 @@ SyncProvider
 |---|---|
 | `hooks/useSync.ts` | 移除 `isStaffModeEnabled` import；`effectiveStaffMode` 改為 `roleMode === 'staff'` |
 | `app/join/page.tsx` | 移除 `enableStaffMode()` 呼叫，保留 `invalidateRoleCache()` |
-| `lib/auth/role-mode.ts` | 移除 `deriveSyncStaffMode()`；移除所有 `feature_staff_mode` 相關 comments |
-| `lib/db/feature-flags.ts` | 保留（`enableStaffMode` 仍被 UI 元件使用）|
-
-### 7.2 殘留說明
-
-- `enableStaffMode()` 寫入 `localStorage['feature_staff_mode'] = 'true'`，被 `LoginModal` 和 `StaffInvitationDialog` 呼叫
-- `isStaffModeEnabled()` 無任何 consumer，但檔案保留以避免破壞 UI 元件編譯
-- `disableStaffMode()` 和 `toggleStaffMode()` 無任何 consumer，純 dead code
+| `lib/auth/role-mode.ts` | 移除 `deriveSyncStaffMode()`；移除過時 `feature_staff_mode` doc comments |
+| `components/auth/LoginModal.tsx` | 移除 `enableStaffMode()` dynamic import 與呼叫 |
+| `components/staff/StaffInvitationDialog.tsx` | 移除 `enableStaffMode()` dynamic import 與呼叫 |
+| `lib/db/feature-flags.ts` | **已刪除** |
 
 ---
 
@@ -328,9 +307,9 @@ Phase 4 將修改 `StaffManagement.tsx` 的 `handleRemove()`，由直接呼叫 `
   - 同步時收到 permission error 後觸發角色重新驗證
   - 其他 client-side role revalidation 機制
 
-### Phase 6：建立安全驗證清單（Phase 6A 已完成）
+### Phase 6：清理 `feature_staff_mode` ✅（已完成）
 
-#### Phase 6A：清理 feature_staff_mode fallback ✅（已完成）
+#### Phase 6A：移除同步層 fallback ✅（已完成）
 
 | 項目 | 狀態 |
 |---|---|
@@ -338,13 +317,14 @@ Phase 4 將修改 `StaffManagement.tsx` 的 `handleRemove()`，由直接呼叫 `
 | Phase 6A-2：`app/join/page.tsx` 移除 `enableStaffMode()` | ✅ 已完成 |
 | Phase 6A-2：`role-mode.ts` 移除 `deriveSyncStaffMode()` | ✅ 已完成 |
 | Phase 6A-2：清理 `feature_staff_mode` 相關文件 | ✅ 已完成 |
-| Phase 6A-2：刪除 `feature-flags.ts` | ⏸️ 擱置（`enableStaffMode` 仍被 `LoginModal` / `StaffInvitationDialog` 使用）|
 
-#### Phase 6B：清理 `enableStaffMode` 殘留呼叫（待執行）
-- 評估並移除 `components/auth/LoginModal.tsx` 的 `enableStaffMode()` 呼叫
-- 評估並移除 `components/staff/StaffInvitationDialog.tsx` 的 `enableStaffMode()` 呼叫
-- 確認移除後是否影響 UI 流程
-- 確認後刪除 `lib/db/feature-flags.ts`
+#### Phase 6B：移除 UI 層寫入 + 刪除檔案 ✅（已完成）
+
+| 項目 | 狀態 |
+|---|---|
+| Phase 6B-1：移除 `LoginModal` 和 `StaffInvitationDialog` 中的 `enableStaffMode()` | ✅ 已完成 |
+| Phase 6B-2：刪除 `lib/db/feature-flags.ts` | ✅ 已完成 |
+| Phase 6B-2：清理 `hooks/useSync.ts` 和 `role-mode.ts` 過時 comments | ✅ 已完成 |
 - 驗證敏感資料在 API 層的保護
 - 確認 `revoke` 語意落地（`staff_relationships.status = 'revoked'` 而非物理刪除）
 
@@ -356,5 +336,4 @@ Phase 4 將修改 `StaffManagement.tsx` 的 `handleRemove()`，由直接呼叫 `
 |---|---|
 | `hooks/useUserRole.ts` | **核心**：唯一前端角色判斷來源 |
 | `hooks/useSync.ts` | 同步引擎，角色由 `roleMode` 參數決定（Phase 6A-1） |
-| `lib/db/feature-flags.ts` | `feature_staff_mode` 讀寫，`enableStaffMode` 仍被 UI 元件呼叫 |
-| `lib/auth/role-mode.ts` | `resolveRoleMode()` 單一入口，`deriveSyncStaffMode` 已移除 |
+| `lib/auth/role-mode.ts` | `resolveRoleMode()` 單一入口 |

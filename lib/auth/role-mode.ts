@@ -10,10 +10,6 @@
  * - **唯一真相來源**：`resolveRoleMode()` 以 `useUserRole()` 的回傳值（`UserRole`）為輸入，
  *   完全基於 Supabase `staff_relationships` 表的遠端事實。
  *
- * - **Phase 6A-1 完成**：`hooks/useSync.ts` 已移除 `feature_staff_mode` fallback，
- *   `effectiveStaffMode` 完全由 `SyncProvider` 傳入的 `roleMode` 決定。
- *   `feature_staff_mode` 及相關 helper 已於 Phase 6A-2 清理。
- *
  * @module role-mode
  */
 

@@ -142,7 +142,7 @@ interface UseSyncOptions {
   enabled?: boolean;       // 是否啟用同步
   interval?: number;       // 同步間隔（毫秒）
   throttle?: number;       // 節流延遲（毫秒）
-  roleMode?: RoleMode;    // 角色模式（Phase 3: 取代 feature_staff_mode）
+  roleMode?: RoleMode;    // 角色模式
 }
 
 interface SyncState {
