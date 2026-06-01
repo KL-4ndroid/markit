@@ -15,6 +15,7 @@ import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
+import { isStaffModeEnabled } from '@/lib/db/feature-flags';
 import {
   marketAccessRowToLocal,
   marketRowToLocal,
@@ -25,6 +26,7 @@ import {
   productRowToLocal,
 } from '@/lib/data-mappers';
 import type { Event } from '@/types/db';
+import type { RoleMode } from '@/lib/auth/role-mode';
 
 /**
  * 同步狀態
@@ -141,6 +143,7 @@ interface UseSyncOptions {
   enabled?: boolean;       // 是否啟用同步
   interval?: number;       // 同步間隔（毫秒）
   throttle?: number;       // 節流延遲（毫秒）
+  roleMode?: RoleMode;    // 角色模式（Phase 3: 取代 feature_staff_mode）
 }
 
 interface SyncState {
@@ -160,9 +163,18 @@ export function useSync(options: UseSyncOptions = {}) {
     enabled = true,
     interval = 30000,      // 預設 30 秒
     throttle = 5000,       // 預設 5 秒節流
+    roleMode,
   } = options;
 
   const { user, isConfigured } = useAuth();
+
+  // ✅ Phase 3: 角色模式 helper
+  // 優先使用傳入的 roleMode；若未傳入則 fallback 到 feature_staff_mode（保持現有行為）
+  const effectiveStaffMode = (() => {
+    if (roleMode === 'staff') return true;
+    if (roleMode === 'owner') return false;
+    return isStaffModeEnabled(); // fallback：未傳入 roleMode 時保持現有邏輯
+  })();
   
   // ✅ 使用全局狀態，並訂閱更新
   const [state, setState] = useState<SyncState>(globalSyncState);
@@ -251,7 +263,7 @@ export function useSync(options: UseSyncOptions = {}) {
           ...prev,
           downloadProgress: { current, total, currentItem, phase },
         }));
-      });
+      }, effectiveStaffMode);
 
       // 3. 更新狀態
       const pendingCount = await db.events
@@ -741,17 +753,15 @@ async function pushEvents(
  */
 async function pullEventsWithSnapshot(
   userId: string,
-  onProgress?: (current: number, total: number, currentItem?: string, phase?: 'snapshot' | 'incremental') => void
+  onProgress: (current: number, total: number, currentItem?: string, phase?: 'snapshot' | 'incremental') => void,
+  effectiveStaffMode: boolean
 ): Promise<boolean> {
   try {
     // ✅ 步驟 0: 檢查是否為員工模式
     // 員工模式不使用快照，因為快照不包含權限信息
-    const { isStaffModeEnabled } = await import('@/lib/db/feature-flags');
-    const staffModeEnabled = isStaffModeEnabled();
-    
-    if (staffModeEnabled) {
+    if (effectiveStaffMode) {
       console.log('👥 員工模式：跳過快照，直接從視圖拉取');
-      await pullAllEvents(userId, onProgress);
+      await pullAllEvents(userId, onProgress, effectiveStaffMode);
       return false; // ❌ 沒有使用快照
     }
     
@@ -797,13 +807,13 @@ async function pullEventsWithSnapshot(
     }
     
     // 降級：沒有快照或已有本地數據，使用原邏輯
-    await pullAllEvents(userId, onProgress);
+    await pullAllEvents(userId, onProgress, effectiveStaffMode);
     return false; // ❌ 沒有使用快照
     
   } catch (error) {
     console.error('❌ 快照同步失敗，切換至全量同步:', error);
     // 最終降級方案
-    await pullAllEvents(userId, onProgress);
+    await pullAllEvents(userId, onProgress, effectiveStaffMode);
     return false; // ❌ 沒有使用快照
   }
 }
@@ -946,13 +956,11 @@ async function replayEvents(
  */
 async function pullAllEvents(
   userId: string,
-  onProgress?: (current: number, total: number, currentItem?: string, phase?: 'snapshot' | 'incremental') => void
+  onProgress: (current: number, total: number, currentItem?: string, phase?: 'snapshot' | 'incremental') => void,
+  effectiveStaffMode: boolean
 ): Promise<void> {
   // ✅ 檢查是否啟用員工模式
-  const { isStaffModeEnabled } = await import('@/lib/db/feature-flags');
-  const staffModeEnabled = isStaffModeEnabled();
-  
-  if (staffModeEnabled) {
+  if (effectiveStaffMode) {
     try {
       console.log('📊 員工模式已啟用，嘗試從視圖拉取數據...');
       await pullEventsFromViews(userId, onProgress);
