@@ -205,6 +205,51 @@ export async function revokeStaff(relationshipId: string): Promise<StaffRelation
 }
 
 /**
+ * 移除員工（revoke + 清除 market_members 存取權）
+ *
+ * 流程：revoke staff_relationships → 刪除 market_members
+ *
+ * @param relationshipId - 員工關係 ID
+ * @param staffId - 員工 user_id
+ */
+export async function removeStaff(relationshipId: string, staffId: string): Promise<void> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    throw new Error('請先登入');
+  }
+
+  await revokeStaff(relationshipId);
+
+  const { data: markets, error: marketsError } = await supabase
+    .from('markets')
+    .select('id')
+    .eq('owner_id', user.id);
+
+  if (marketsError) {
+    console.error('查詢市集失敗:', marketsError);
+    throw marketsError;
+  }
+
+  if (!markets || markets.length === 0) {
+    return;
+  }
+
+  const marketIds = markets.map(m => m.id);
+
+  const { error: membersError } = await supabase
+    .from('market_members')
+    .delete()
+    .eq('user_id', staffId)
+    .eq('role', 'staff')
+    .in('market_id', marketIds);
+
+  if (membersError) {
+    console.error('刪除 market_members 失敗:', membersError);
+    throw membersError;
+  }
+}
+
+/**
  * 更新員工權限
  * 
  * @param relationshipId - 員工關係 ID
