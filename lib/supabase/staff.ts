@@ -52,7 +52,9 @@ export async function getMyStaff(): Promise<StaffRelationship[]> {
 export async function getMyStaffMembers(): Promise<StaffMember[]> {
   const staffList = await getMyStaff();
 
-  return staffList.map(s => ({
+  return staffList
+    .filter(s => s.status !== 'revoked')
+    .map(s => ({
     id: s.staff_id,
     email: s.staff_email || '未知',
     status: s.status,
