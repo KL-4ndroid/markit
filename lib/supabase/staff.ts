@@ -207,18 +207,34 @@ export async function revokeStaff(relationshipId: string): Promise<StaffRelation
 /**
  * 移除員工（revoke + 清除 market_members 存取權）
  *
- * 流程：revoke staff_relationships → 刪除 market_members
+ * 流程：查 staff_relationships → revoke → 刪除 market_members
  *
- * @param relationshipId - 員工關係 ID
  * @param staffId - 員工 user_id
  */
-export async function removeStaff(relationshipId: string, staffId: string): Promise<void> {
+export async function removeStaff(staffId: string): Promise<void> {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     throw new Error('請先登入');
   }
 
-  await revokeStaff(relationshipId);
+  const { data: relationships, error: relError } = await supabase
+    .from('staff_relationships')
+    .select('id')
+    .eq('owner_id', user.id)
+    .eq('staff_id', staffId)
+    .in('status', ['pending', 'active'])
+    .limit(1);
+
+  if (relError) {
+    console.error('查詢員工關係失敗:', relError);
+    throw relError;
+  }
+
+  if (!relationships || relationships.length === 0) {
+    throw new Error('找不到此員工關係');
+  }
+
+  await revokeStaff(relationships[0].id);
 
   const { data: markets, error: marketsError } = await supabase
     .from('markets')
