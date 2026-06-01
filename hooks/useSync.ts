@@ -341,7 +341,7 @@ export function useSync(options: UseSyncOptions = {}) {
       isSyncLocked = false;
       isSyncingRef.current = false;
     }
-  }, [enabled, isConfigured, user]);
+  }, [enabled, isConfigured, user, effectiveStaffMode]);
 
   // 將 sync 存儲到 ref 中
   syncFnRef.current = sync;
