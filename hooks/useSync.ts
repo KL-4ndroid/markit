@@ -24,7 +24,8 @@ import {
   productAccessRowToLocal,
   productRowToLocal,
 } from '@/lib/data-mappers';
-import { sanitizeObject, sanitizeEvents } from '@/lib/data-sanitization';
+import { sanitizeObject, sanitizeEvents, sanitizeStats } from '@/lib/data-sanitization';
+import type { Market, DailyStats } from '@/types/db';
 import type { Event } from '@/types/db';
 import type { RoleMode } from '@/lib/auth/role-mode';
 
@@ -1553,10 +1554,44 @@ async function syncProductsToIndexedDB(products: any[], currentUserId: string): 
  * 同步事件到 IndexedDB（保留權限）
  * ✅ 重放事件以更新讀取模型
  * ✅ Staff 模式：事件寫入 IndexedDB 前執行脫敏
+ * ✅ Staff 模式：handler replay 後清理衍生敏感 projection
  */
+
+/** 會寫出敏感衍生資料的事件類型 */
+const PROJECTION_EVENT_TYPES = new Set(['deal_closed', 'deal_deleted']);
+
+const staffRole = { isStaff: true };
+
+/**
+ * Staff sync 專用：handler replay 後，清理 markets 和 dailyStats 的敏感 projection。
+ * handler 根據已脫敏的 event payload 寫入衍生資料，
+ * 這些衍生資料（如 totalProfit、cost）必須在寫入後移除。
+ *
+ * 注意：不使用 setter 設成 0，避免 analytics 誤判為真實 0 成本。
+ * 直接刪除 key，使欄位變成 undefined。
+ */
+async function sanitizeStaffProjectionsAfterReplay(event: { type: string; payload?: any }): Promise<void> {
+  if (!PROJECTION_EVENT_TYPES.has(event.type)) return;
+
+  const marketId: string | undefined = event.payload?.market_id ?? event.payload?.marketId;
+  if (!marketId) return;
+
+  const existingMarket = await db.markets.get(marketId);
+  if (existingMarket) {
+    const sanitized = sanitizeObject(existingMarket, 'market', staffRole);
+    await db.markets.update(marketId, sanitized as Partial<Market>);
+  }
+
+  const dailyStats = await db.dailyStats.where('marketId').equals(marketId).toArray();
+  for (const stat of dailyStats) {
+    if (stat.id === undefined) continue;
+    const sanitized = sanitizeStats(stat, staffRole);
+    await db.dailyStats.update(stat.id, sanitized as Partial<DailyStats>);
+  }
+}
+
 async function syncEventsToIndexedDB(events: any[]): Promise<void> {
   // ✅ Staff 資料脫敏：在寫入 IndexedDB 前移除敏感欄位
-  const staffRole = { isStaff: true };
   const sanitizedEvents = sanitizeEvents(events, staffRole);
 
   console.log(`📝 同步 ${sanitizedEvents.length} 個事件到 IndexedDB...`);
@@ -1593,7 +1628,7 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
       if (handler) {
         // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式
         const processedPayload = normalizeEventPayloadForLocal(event.payload);
-        
+
         await handler({
           id: event.id,
           type: event.type,
@@ -1602,8 +1637,11 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
           actor_id: event.actor_id,
           market_id: event.market_id,
         } as Event, db);
+
+        // ✅ Staff 清理：handler replay 可能已寫入敏感 projection，隨即移除
+        await sanitizeStaffProjectionsAfterReplay(event);
       }
-      
+
       processedCount++;
     } catch (error: any) {
       // 如果是 ConstraintError（Key already exists），靜默跳過
@@ -1611,7 +1649,7 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
         skippedCount++;
         continue;
       }
-      
+
       console.error(`❌ 同步事件失敗: ${event.type} (${event.id?.substring(0, 8)}...)`, error);
       // 繼續處理下一個
     }
