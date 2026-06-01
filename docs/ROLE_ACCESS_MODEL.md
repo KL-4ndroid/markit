@@ -1,6 +1,6 @@
 # 角色存取模型（Role Access Model）
 
-> 文件版本：2026-06-01 v2
+> 文件版本：2026-06-01 v3
 > 用途：記錄目前老闆 / 員工角色系統的設計意圖與已知技術債，供後續修正參照。
 
 ---
@@ -30,12 +30,12 @@ export function useUserRole(): {
 
 **原則**：`useUserRole()` 是 UI 層和同步 Context 層的單一角色來源，任何需要判斷身份的程式碼應呼叫此 hook，而非直接讀取其他來源。
 
-### 1.3 同步層的輔助開關：`feature_staff_mode`
+### 1.3 同步層的角色來源：SyncProvider 傳入的 roleMode
 
-- **儲存位置**：`localStorage['feature_staff_mode']`
-- **設計意圖**：Feature flag，控制員工同步路徑是否啟用
-- **使用範圍**：僅用於 `hooks/useSync.ts` 中的路徑分支
-- **風險**：`useUserRole().isStaff`（Supabase 事實）與 `feature_staff_mode`（localStorage）可能不一致，見第 7 節
+- **類型**：`RoleMode = 'owner' | 'staff'`（`lib/auth/role-mode.ts`）
+- **取值方式**：`resolveRoleMode(userRole)`
+- **傳入**：`SyncProvider` → `useSync({ roleMode })`
+- **Phase 6A-1 完成**：同步路徑已完全由 `roleMode` 決定，不再 fallback 到 `feature_staff_mode`
 
 ### 1.4 角色快取
 
@@ -162,25 +162,43 @@ const SENSITIVE_FIELDS = {
 
 ---
 
-## 6. 同步模式目前風險
+## 6. 同步模式（Phase 6A 完成）
 
 ### 6.1 同步流程架構
 
 ```
 SyncProvider
-  └─ useSync({ enabled: !!user && isConfigured })
-       ├─ feature_staff_mode = false → pullEventsWithSnapshot()
-       │    使用快照 + 增量事件（老闆路徑）
-       └─ feature_staff_mode = true  → pullAllEvents()
-            ├─ pullEventsFromViews()
-            │    從 staff_accessible_markets/products/events 視圖拉資料
-            │    用 access_type 和 relationship_owner_id 過濾
-            └─ 跳過快照（快照不含權限資訊）
+  └─ useSync({ enabled: !!user && isConfigured, roleMode })
+       └─ roleMode === 'staff'  → pullEventsFromViews()
+       │    從 staff_accessible_markets/products/events 視圖拉資料
+       │    用 access_type 和 relationship_owner_id 過濾
+       └─ roleMode === 'owner' → pullEventsWithSnapshot()
+            使用快照 + 增量事件（老闆路徑）
 ```
 
-### 6.2 風險：雙軌不同步
+### 6.2 Phase 6A 完成摘要
 
-`useUserRole().isStaff`（Supabase 事實）可能與 `feature_staff_mode`（localStorage）不一致：
+| 變更 | 狀態 |
+|---|---|
+| Phase 6A-1：`useSync.ts` 移除 `feature_staff_mode` fallback | ✅ 已完成 |
+| Phase 6A-2：`app/join/page.tsx` 移除 `enableStaffMode()` 呼叫 | ✅ 已完成 |
+| Phase 6A-2：`role-mode.ts` 移除 `deriveSyncStaffMode()` | ✅ 已完成 |
+| Phase 6A-2：`feature-flags.ts` | 保留（`enableStaffMode()` 仍被 `LoginModal` 和 `StaffInvitationDialog` 使用）|
+
+### 6.3 `feature_staff_mode` 殘留說明
+
+`lib/db/feature-flags.ts` 中的 `enableStaffMode()` 仍被以下元件呼叫：
+- `components/auth/LoginModal.tsx`
+- `components/staff/StaffInvitationDialog.tsx`
+
+這 2 個元件屬於 `components/` 層，不在 Phase 6A 清理範圍內。待 `LoginModal` 和 `StaffInvitationDialog` 的 UI 需求確認後，可視需求移除其 `enableStaffMode()` 呼叫。
+
+`feature_staff_mode` 殘留寫入點：
+- `enableStaffMode()` — 寫入 `localStorage['feature_staff_mode'] = 'true'`
+- `disableStaffMode()` — 移除 key（目前無任何 consumer 呼叫）
+- `toggleStaffMode()` — toggle（目前無任何 consumer 呼叫）
+
+`isStaffModeEnabled()` — 目前無任何 consumer（`useSync` fallback 已移除）。
 
 | 情境 | useUserRole | feature_staff_mode | 結果 |
 |---|---|---|---|
@@ -193,24 +211,22 @@ SyncProvider
 
 ---
 
-## 7. `feature_staff_mode` 與 `useUserRole()` 雙軌問題
+## 7. Phase 6A 完成狀態
 
-### 7.1 現況
+### 7.1 變更摘要
 
-| 來源 | 類型 | 依據 | 使用範圍 |
-|---|---|---|---|
-| `useUserRole()` | Supabase 查詢（遠端事實）| `staff_relationships` 表 | 所有 UI 元件、SyncContext |
-| `feature_staff_mode` | localStorage（本地狀態）| Feature flag | 僅 `useSync.ts` 的路徑分支 |
+| 檔案 | 變更 |
+|---|---|
+| `hooks/useSync.ts` | 移除 `isStaffModeEnabled` import；`effectiveStaffMode` 改為 `roleMode === 'staff'` |
+| `app/join/page.tsx` | 移除 `enableStaffMode()` 呼叫，保留 `invalidateRoleCache()` |
+| `lib/auth/role-mode.ts` | 移除 `deriveSyncStaffMode()`；移除所有 `feature_staff_mode` 相關 comments |
+| `lib/db/feature-flags.ts` | 保留（`enableStaffMode` 仍被 UI 元件使用）|
 
-### 7.2 問題
+### 7.2 殘留說明
 
-1. **地位相同，無優先順序**：兩者無從屬關係，`useSync` 不參考 `useUserRole`，兩者可同時為 true 或 false，無法保證同步路徑與 UI 身份一致。
-2. **使用者可任意切換**：`feature_staff_mode` 由使用者透過 Settings 頁面 toggle，等同於讓使用者自行決定同步時的身份路由，而非由系統角色事實決定。
-3. **缺乏 fallback**：當 `useUserRole()` 載入中時（`isLoading = true`），`feature_staff_mode` 的值是唯一的參考，導致載入期間同步行為不穩定。
-
-### 7.3 修正方向
-
-同步層的角色應完全由 `useUserRole()` 推導，不再依賴獨立的 `feature_staff_mode`。`feature_staff_mode` 可降級為「已棄用」的狀態，保留但不再作為邏輯判斷依據。
+- `enableStaffMode()` 寫入 `localStorage['feature_staff_mode'] = 'true'`，被 `LoginModal` 和 `StaffInvitationDialog` 呼叫
+- `isStaffModeEnabled()` 無任何 consumer，但檔案保留以避免破壞 UI 元件編譯
+- `disableStaffMode()` 和 `toggleStaffMode()` 無任何 consumer，純 dead code
 
 ---
 
@@ -276,13 +292,12 @@ Phase 4 將修改 `StaffManagement.tsx` 的 `handleRemove()`，由直接呼叫 `
 ### Phase 1（本文件）
 建立角色存取模型文件，確認設計語意。
 
-### Phase 2：新增角色模式解析 helper
+### Phase 2：新增角色模式解析 helper ✅（已完成）
 - 新增 `lib/auth/role-mode.ts`
 - 實作 `resolveRoleMode(userRole): 'owner' | 'staff'`
-- `feature_staff_mode` 降級為 fallback，不作為主要判斷依據
-- **不刪除** `feature_staff_mode`
+- `deriveSyncStaffMode()` 已於 Phase 6A-2 移除
 
-### Phase 3：SyncProvider 接入角色語意
+### Phase 3：SyncProvider 接入角色語意 ✅（已完成）
 - `useSync()` 接收由 `useUserRole()` 推導的角色參數
 - 同步層不再直接讀取 `feature_staff_mode`
 - **不重寫** `useSync` 整體演算法
@@ -313,9 +328,23 @@ Phase 4 將修改 `StaffManagement.tsx` 的 `handleRemove()`，由直接呼叫 `
   - 同步時收到 permission error 後觸發角色重新驗證
   - 其他 client-side role revalidation 機制
 
-### Phase 6：建立安全驗證清單
-- 建立 `docs/ROLE_SECURITY_CHECKLIST.md`
-- 驗證 RLS 各表的 staff 存取控制
+### Phase 6：建立安全驗證清單（Phase 6A 已完成）
+
+#### Phase 6A：清理 feature_staff_mode fallback ✅（已完成）
+
+| 項目 | 狀態 |
+|---|---|
+| Phase 6A-1：`useSync.ts` 移除 `isStaffModeEnabled` fallback | ✅ 已完成 |
+| Phase 6A-2：`app/join/page.tsx` 移除 `enableStaffMode()` | ✅ 已完成 |
+| Phase 6A-2：`role-mode.ts` 移除 `deriveSyncStaffMode()` | ✅ 已完成 |
+| Phase 6A-2：清理 `feature_staff_mode` 相關文件 | ✅ 已完成 |
+| Phase 6A-2：刪除 `feature-flags.ts` | ⏸️ 擱置（`enableStaffMode` 仍被 `LoginModal` / `StaffInvitationDialog` 使用）|
+
+#### Phase 6B：清理 `enableStaffMode` 殘留呼叫（待執行）
+- 評估並移除 `components/auth/LoginModal.tsx` 的 `enableStaffMode()` 呼叫
+- 評估並移除 `components/staff/StaffInvitationDialog.tsx` 的 `enableStaffMode()` 呼叫
+- 確認移除後是否影響 UI 流程
+- 確認後刪除 `lib/db/feature-flags.ts`
 - 驗證敏感資料在 API 層的保護
 - 確認 `revoke` 語意落地（`staff_relationships.status = 'revoked'` 而非物理刪除）
 
@@ -326,14 +355,6 @@ Phase 4 將修改 `StaffManagement.tsx` 的 `handleRemove()`，由直接呼叫 `
 | 檔案 | 角色 |
 |---|---|
 | `hooks/useUserRole.ts` | **核心**：唯一前端角色判斷來源 |
-| `hooks/useSync.ts` | 同步引擎，目前使用 `feature_staff_mode` |
-| `lib/db/feature-flags.ts` | `feature_staff_mode` 的讀寫 |
-| `lib/supabase/staff.ts` | 員工 CRUD service 函式 |
-| `lib/supabase/staff-invitations.ts` | 邀請連結管理 |
-| `components/settings/StaffManagement.tsx` | 員工管理 UI，目前直接操作 Supabase |
-| `app/join/page.tsx` | 員工接受邀請頁面 |
-| `lib/sync-context.tsx` | 全域同步 Context，消費 `useUserRole()` |
-| `lib/data-sanitization.ts` | 敏感資料脫敏（目前閒置）|
-| `components/staff/SensitiveDataMask.tsx` | DOM 層敏感資料遮罩元件 |
-| `types/staff.ts` | 員工系統 TypeScript 類型定義 |
-| `types/db.ts` | 資料庫類型，含 Market 與 staff 相關欄位 |
+| `hooks/useSync.ts` | 同步引擎，角色由 `roleMode` 參數決定（Phase 6A-1） |
+| `lib/db/feature-flags.ts` | `feature_staff_mode` 讀寫，`enableStaffMode` 仍被 UI 元件呼叫 |
+| `lib/auth/role-mode.ts` | `resolveRoleMode()` 單一入口，`deriveSyncStaffMode` 已移除 |
