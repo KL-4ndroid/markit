@@ -254,34 +254,55 @@ SELECT policyname FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'products' AND policyname = 'products_select_temp';
 -- Expected: 0 rows
 
--- V8: current_user_market_ids and current_user_owned_market_ids
---      are SECURITY DEFINER with no IN parameters
-SELECT routine_name, security_type
-FROM information_schema.routines
-WHERE routine_schema = 'public'
-  AND routine_name IN ('current_user_market_ids', 'current_user_owned_market_ids');
--- Expected: 2 rows, all security_type = 'DEFINER'
-
-SELECT routine_name, COUNT(*) AS param_count
-FROM information_schema.parameters
-WHERE specific_schema = 'public'
-  AND parameter_mode = 'IN'
-  AND specific_name IN (
-    SELECT specific_name FROM information_schema.routines
-    WHERE routine_schema = 'public'
-      AND routine_name IN ('current_user_market_ids', 'current_user_owned_market_ids')
-  )
-GROUP BY routine_name;
--- Expected: both = 0 (no input parameters)
+-- V8: Helper functions are SECURITY DEFINER with no IN parameters
+SELECT r.routine_name, r.security_type,
+  COUNT(p.parameter_name) FILTER (WHERE p.parameter_mode = 'IN') AS in_param_count
+FROM information_schema.routines r
+LEFT JOIN information_schema.parameters p
+  ON p.specific_schema = r.specific_schema
+ AND p.specific_name = r.specific_name
+WHERE r.routine_schema = 'public'
+  AND r.routine_name IN ('current_user_market_ids', 'current_user_owned_market_ids')
+GROUP BY r.routine_name, r.security_type
+ORDER BY r.routine_name;
+-- Expected: 2 rows, all security_type = 'DEFINER', all in_param_count = 0
 
 -- V9: Helper grants
-SELECT routine_name, grantee, privilege_type
-FROM information_schema.function_privileges
-WHERE specific_schema = 'public'
-  AND routine_name IN ('current_user_market_ids', 'current_user_owned_market_ids')
-ORDER BY routine_name, privilege_type;
+SELECT r.routine_name, fp.grantee, fp.privilege_type
+FROM information_schema.routines r
+JOIN information_schema.function_privileges fp
+  ON fp.specific_schema = r.specific_schema
+ AND fp.specific_name = r.specific_name
+WHERE r.routine_schema = 'public'
+  AND r.routine_name IN ('current_user_market_ids', 'current_user_owned_market_ids')
+ORDER BY r.routine_name, fp.privilege_type;
 -- Expected: both functions have EXECUTE granted to 'authenticated';
 --           PUBLIC does not appear
+
+-- V10: Owner membership integrity
+-- IMPORTANT: Run this BEFORE applying this migration. If it returns rows,
+-- the owner market membership is missing — the owner will lose access to
+-- their own market after RLS is enabled. Backfill the missing memberships
+-- before proceeding with this migration.
+--
+-- Backfill example (run as service_role):
+--   INSERT INTO public.market_members (market_id, user_id, role)
+--   SELECT m.id, m.owner_id, 'owner'
+--   FROM public.markets m
+--   WHERE NOT EXISTS (
+--     SELECT 1 FROM public.market_members mm
+--     WHERE mm.market_id = m.id AND mm.user_id = m.owner_id AND mm.role = 'owner'
+--   );
+SELECT m.id AS market_id, m.name AS market_name, m.owner_id
+FROM public.markets m
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM public.market_members mm
+  WHERE mm.market_id = m.id
+    AND mm.user_id = m.owner_id
+    AND mm.role = 'owner'
+);
+-- Expected: 0 rows before migration. If rows appear, backfill first.
 
 */
 
