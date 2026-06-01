@@ -8,6 +8,21 @@ import { supabase } from './client';
 import type { StaffRelationship, StaffInviteForm, StaffPermissions } from '@/types/staff';
 
 /**
+ * 員工列表 UI 顯示型別
+ * 與 StaffManagement 組件的 UI 需求對齊
+ */
+export interface StaffMember {
+  id: string;
+  email: string;
+  status: 'pending' | 'active' | 'revoked';
+  permissions: {
+    can_view: boolean;
+    can_edit: boolean;
+  };
+  joined_at: string;
+}
+
+/**
  * 獲取我的員工列表（作為老闆）
  * 
  * @returns 員工列表
@@ -22,6 +37,28 @@ export async function getMyStaff(): Promise<StaffRelationship[]> {
   }
 
   return (data || []) as StaffRelationship[];
+}
+
+/**
+ * 獲取我的員工列表（對齊 UI 顯示型別）
+ *
+ * 包裝 getMyStaff()，將 RPC 回傳的欄位映射為 StaffManagement 所需的格式。
+ * joined_at 對齊 StaffManagement 的邏輯：
+ *   pending → created_at（邀請時間）
+ *   active  → created_at（加入時間）
+ *
+ * @returns 員工列表（UI 顯示格式）
+ */
+export async function getMyStaffMembers(): Promise<StaffMember[]> {
+  const staffList = await getMyStaff();
+
+  return staffList.map(s => ({
+    id: s.staff_id,
+    email: s.staff_email || '未知',
+    status: s.status,
+    permissions: s.permissions || { can_view: true, can_edit: false },
+    joined_at: s.created_at || new Date().toISOString(),
+  }));
 }
 
 /**

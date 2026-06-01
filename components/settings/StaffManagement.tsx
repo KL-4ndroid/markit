@@ -26,17 +26,7 @@ import {
   formatRemainingTime,
   type StaffInvitation,
 } from '@/lib/supabase/staff-invitations';
-
-interface StaffMember {
-  id: string;
-  email: string;
-  status: 'pending' | 'active' | 'revoked';
-  permissions: {
-    can_view: boolean;
-    can_edit: boolean;
-  };
-  joined_at: string;
-}
+import { getMyStaffMembers, type StaffMember } from '@/lib/supabase/staff';
 
 export function StaffManagement() {
   const { user } = useAuth();
@@ -55,49 +45,10 @@ export function StaffManagement() {
 
   // 載入員工列表和邀請連結
   const loadStaffList = useCallback(async () => {
-    if (!user) return;
-
     try {
       setIsLoading(true);
 
-      // 直接從 staff_relationships 表查詢員工關係
-      const { data: relationships, error: relError } = await supabase
-        .from('staff_relationships')
-        .select('staff_id, status, permissions, created_at')
-        .eq('owner_id', user.id)
-        .in('status', ['pending', 'active']); // ✅ 包含 pending 和 active
-
-      if (relError) throw relError;
-
-      if (!relationships || relationships.length === 0) {
-        setStaffList([]);
-        setIsLoading(false);
-        return;
-      }
-
-      // 獲取員工的 email
-      const staffIds = relationships.map(r => r.staff_id);
-      
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email')
-        .in('id', staffIds);
-
-      if (profileError) throw profileError;
-
-      // 組合數據
-      const staffData: StaffMember[] = profiles?.map(profile => {
-        const relationship = relationships.find(r => r.staff_id === profile.id);
-        
-        return {
-          id: profile.id,
-          email: profile.email || '未知',
-          status: relationship?.status || 'active',
-          permissions: relationship?.permissions || { can_view: true, can_edit: false },
-          joined_at: relationship?.created_at || new Date().toISOString(),
-        };
-      }) || [];
-
+      const staffData = await getMyStaffMembers();
       setStaffList(staffData);
     } catch (error: any) {
       console.error('載入員工列表失敗:', error);
@@ -105,7 +56,7 @@ export function StaffManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   // 邀請員工
   const handleInvite = async () => {
