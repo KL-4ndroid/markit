@@ -1563,10 +1563,13 @@ const staffRole = { isStaff: true };
  * 注意：不使用 setter 設成 0，避免 analytics 誤判為真實 0 成本。
  * 直接刪除 key，使欄位變成 undefined。
  */
-async function sanitizeStaffProjectionsAfterReplay(event: { type: string; payload?: any }): Promise<void> {
+async function sanitizeStaffProjectionsAfterReplay(
+  event: { type: string; market_id?: string; payload?: any }
+): Promise<void> {
   if (!PROJECTION_EVENT_TYPES.has(event.type)) return;
 
-  const marketId: string | undefined = event.payload?.market_id ?? event.payload?.marketId;
+  const marketId: string | undefined =
+    event.payload?.market_id ?? event.payload?.marketId ?? event.market_id;
   if (!marketId) return;
 
   const existingMarket = await db.markets.get(marketId);

@@ -138,8 +138,13 @@
 
 | 檢查項 | 狀態 | 備註 |
 |---|---|---|
-| `lib/data-sanitization.ts` 已定義脫敏邏輯 | 通過 | `sanitizeObject()` / `sanitizeArray()` |
-| 是否被資料流向源頭呼叫 | **需確認** | 目前未發現呼叫點，屬閒置程式碼 |
+| `lib/data-sanitization.ts` 已定義脫敏邏輯 | 通過 | Phase 9B：`sanitizeObject()` / `sanitizeArray()` / `sanitizeEvents()` / `sanitizeStats()` |
+| staff sync 寫入 IndexedDB 前執行脫敏 | 通過 | Phase 9C：`syncMarketsToIndexedDB` / `syncProductsToIndexedDB` / `syncEventsToIndexedDB` |
+| mapper 後二次脫敏（移除假 0 欄位）| 通過 | Phase 9E：避免 mapper 補出 `boothCost: 0` 等假 0 |
+| handler replay 後清理衍生 projection | 通過 | Phase 9D：`sanitizeStaffProjectionsAfterReplay()` 清理 `totalProfit` / `cost` 等 |
+| Supabase view / RLS 層過濾敏感欄位 | **待確認** | view 本身不刪欄位，RLS 需人工驗證 Supabase Dashboard |
+
+> ⚠️ **仍待確認**：client-side sanitizer 已完整接入 staff sync data flow，但 **Supabase view 定義的 RLS 政策需人工在 Supabase Dashboard 驗證是否已正確設定**，確認 staff 視圖不會因 RLS 漏洞而漏出成本 / 利潤欄位。
 
 ---
 
@@ -241,17 +246,16 @@
 | 1. 角色來源驗證 | 8 | 0 | 0 | 0 |
 | 2. 員工資料存取驗證 | 5 | 0 | 0 | 0 |
 | 3. RLS 檢查表 | 0 | 15 | 0 | 0 |
-| 4. 敏感資料檢查 | 6 | 1 | 0 | 1 |
+| 4. 敏感資料檢查 | 7 | 1 | 0 | 0 |
 | 5. 員工操作權限 | 7 | 0 | 0 | 0 |
 | 6. 移除員工驗證 | 4 | 0 | 0 | 1 |
-| **總計** | **30** | **16** | **0** | **2** |
+| **總計** | **31** | **16** | **0** | **1** |
 
 ### 待修正項目
 
 | # | 項目 | 說明 | 建議 |
 |---|---|---|---|
-| 1 | `data-sanitization.ts` 閒置 | 脫敏邏輯已定義但無呼叫點，敏感資料仍依賴 DOM 遮罩 | 評估是否整合至資料流向源頭 |
-| 2 | `removeStaff()` 未呼叫 `invalidateRoleCache()` | 老闆端無法主動使員工快取失效 | 考慮 Supabase Realtime 推送或同步時主動 revalidate |
+| 1 | `removeStaff()` 未呼叫 `invalidateRoleCache()` | 老闆端無法主動使員工快取失效 | 考慮 Supabase Realtime 推送或同步時主動 revalidate |
 
 ### 待確認項目（需 Supabase Dashboard 驗證）
 

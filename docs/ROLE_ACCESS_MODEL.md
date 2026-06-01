@@ -152,13 +152,14 @@ const SENSITIVE_FIELDS = {
 | 機制 | 實作位置 | 說明 |
 |---|---|---|
 | DOM 元件替換 | `components/staff/SensitiveDataMask.tsx` | 直接在 UI 層用 Lock/EyeOff icon 替換內容 |
-| 資料層脫敏 | `lib/data-sanitization.ts` | `sanitizeObject()` / `sanitizeArray()` 定義了但**幾乎沒有任何地方呼叫** |
+| 資料層脫敏 | `lib/data-sanitization.ts` | Phase 9C/9D/9E 已完整接入 staff sync data flow |
 
 ### 5.3 風險
 
-- 敏感資料遮罩目前只在 **DOM 層** 執行，攻擊者仍可透過 DevTools 或 API 攔截取得原始資料。
-- `data-sanitization.ts` 定義完整但閒置，應評估將其整合至資料流向的源頭。
-- **真正保護敏感資料的防線是 Supabase RLS**，前端遮罩只是 UX 手段。
+- DOM `SensitiveDataMask` 遮罩攻擊者仍可透過 DevTools 看到原始內容，但 Phase 9C/9D/9E 已在 **IndexedDB 寫入前**移除敏感欄位，限制攻擊面。
+- `data-sanitization.ts` 已接入 `hooks/useSync.ts` 的 staff sync 流程（Phase 9C：markets/products/events 寫入前脫敏；Phase 9D：handler replay 後 projection 清理；Phase 9E：put 完全替換避免殘留）。
+- mapper 可能補出假 0 敏感欄位，已透過二次 sanitize 處理（Phase 9E）。
+- **`data-sanitization.ts` 不保護 Supabase API 回應**：攻擊者若有 network 存取權，仍可直接呼叫 Supabase API 取得未脫敏資料。**真正保護敏感資料的防線是 Supabase RLS**，需在 Supabase Dashboard 人工確認。
 
 ---
 
