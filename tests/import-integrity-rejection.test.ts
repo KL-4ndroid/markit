@@ -377,3 +377,141 @@ runTest('rejects settings invalid theme', () => {
   assert.equal(result.ok, false);
   assert.ok(result.errors.some(e => e.includes('settings[0]') && e.includes('theme 無效')), `Unexpected errors: ${result.errors.join('; ')}`);
 });
+
+// ==================== Legacy market_created backward-compat ====================
+
+runTest('accepts legacy market_created missing registrationFee and boothCost', () => {
+  const result = checkBackupIntegrity(validBackup({
+    events: [{
+      id: 'legacy-market-1',
+      type: 'market_created',
+      timestamp: now,
+      actor_id: 'local',
+      sync_status: 'local_only',
+      payload: {
+        name: 'Legacy Market',
+        location: 'Taipei',
+        startDate: '2026-01-01',
+        endDate: '2026-01-01',
+        // registrationFee / boothCost 完全不存在
+      },
+    }],
+  }));
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('accepts legacy market_created registrationFee / boothCost = null', () => {
+  const result = checkBackupIntegrity(validBackup({
+    events: [{
+      id: 'legacy-market-2',
+      type: 'market_created',
+      timestamp: now,
+      actor_id: 'local',
+      sync_status: 'local_only',
+      payload: {
+        name: 'Legacy Market',
+        location: 'Taipei',
+        startDate: '2026-01-01',
+        endDate: '2026-01-01',
+        registrationFee: null,
+        boothCost: null,
+      },
+    }],
+  }));
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('accepts legacy market_created registrationFee / boothCost = empty string', () => {
+  const result = checkBackupIntegrity(validBackup({
+    events: [{
+      id: 'legacy-market-3',
+      type: 'market_created',
+      timestamp: now,
+      actor_id: 'local',
+      sync_status: 'local_only',
+      payload: {
+        name: 'Legacy Market',
+        location: 'Taipei',
+        startDate: '2026-01-01',
+        endDate: '2026-01-01',
+        registrationFee: '',
+        boothCost: '',
+      },
+    }],
+  }));
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects market_created registrationFee / boothCost = non-numeric string', () => {
+  const result = checkBackupIntegrity(validBackup({
+    events: [{
+      id: 'bad-market-1',
+      type: 'market_created',
+      timestamp: now,
+      actor_id: 'local',
+      sync_status: 'local_only',
+      payload: {
+        name: 'Bad Market',
+        location: 'Taipei',
+        startDate: '2026-01-01',
+        endDate: '2026-01-01',
+        registrationFee: 'abc',
+        boothCost: 'xyz',
+      },
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('registrationFee') && e.includes('invalid')), `Unexpected errors: ${result.errors.join('; ')}`);
+  assert.ok(result.errors.some(e => e.includes('boothCost') && e.includes('invalid')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects market_created registrationFee / boothCost = NaN', () => {
+  const result = checkBackupIntegrity(validBackup({
+    events: [{
+      id: 'bad-market-2',
+      type: 'market_created',
+      timestamp: now,
+      actor_id: 'local',
+      sync_status: 'local_only',
+      payload: {
+        name: 'Bad Market',
+        location: 'Taipei',
+        startDate: '2026-01-01',
+        endDate: '2026-01-01',
+        registrationFee: NaN,
+        boothCost: NaN,
+      },
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('registrationFee') && e.includes('invalid')), `Unexpected errors: ${result.errors.join('; ')}`);
+  assert.ok(result.errors.some(e => e.includes('boothCost') && e.includes('invalid')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+// Guard: product_created invalid price still fails (global isNumber not relaxed)
+runTest('rejects product_created invalid price', () => {
+  const result = checkBackupIntegrity(validBackup({
+    events: [{
+      id: 'product-bad-1',
+      type: 'product_created',
+      market_id: 'market-1',
+      timestamp: now,
+      actor_id: 'local',
+      sync_status: 'local_only',
+      payload: {
+        name: 'Test Product',
+        price: 'not-a-number' as unknown as number,
+        stock: 10,
+        category: 'other',
+      },
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('product_created') && e.includes('price')), `Unexpected errors: ${result.errors.join('; ')}`);
+});

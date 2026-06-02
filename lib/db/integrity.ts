@@ -46,6 +46,17 @@ function isNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+/**
+ * 寬容的 legacy market cost 欄位驗證。
+ * 舊版 market_created 事件可能缺少或傳入空值，視為 0（預設值）。
+ * 只允許：finite number | undefined | null | ''（空字串）
+ * 其他仍由 isNumber 把關。
+ */
+function isLegacyMarketCostValue(value: unknown): boolean {
+  if (isNumber(value)) return true;
+  return value === undefined || value === null || value === '';
+}
+
 function isValidDateString(value: unknown): boolean {
   if (!isNonEmptyString(value)) return false;
   const time = Date.parse(value);
@@ -91,8 +102,8 @@ function validateBackupEventPayload(event: Event, index: number): string[] {
       if (!isNonEmptyString(payload.location)) errors.push(`${label} missing location`);
       if (!isNonEmptyString(payload.startDate ?? payload.start_date)) errors.push(`${label} missing startDate`);
       if (!isNonEmptyString(payload.endDate ?? payload.end_date)) errors.push(`${label} missing endDate`);
-      if (!isNumber(payload.registrationFee ?? payload.registration_fee)) errors.push(`${label} invalid registrationFee`);
-      if (!isNumber(payload.boothCost ?? payload.booth_cost)) errors.push(`${label} invalid boothCost`);
+      if (!isLegacyMarketCostValue(payload.registrationFee ?? payload.registration_fee)) errors.push(`${label} invalid registrationFee`);
+      if (!isLegacyMarketCostValue(payload.boothCost ?? payload.booth_cost)) errors.push(`${label} invalid boothCost`);
       break;
 
     case 'market_updated':
