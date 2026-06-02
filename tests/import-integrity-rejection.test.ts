@@ -6,7 +6,7 @@ import {
 
 const now = 1_700_000_000_000;
 
-function validBackup(overrides: Partial<BackupData> = {}): BackupData {
+function validBackup(overrides: Partial<Record<string, unknown>> = {}): BackupData {
   return {
     version: 1,
     exportedAt: now,
@@ -282,6 +282,142 @@ runTest('rejects market invalid boothCost', () => {
 
   assert.equal(result.ok, false);
   assert.ok(result.errors.some(e => e.includes('markets[0]') && e.includes('boothCost 無效')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+// ==================== Legacy markets[] snapshot registrationFee / boothCost ====================
+
+runTest('accepts legacy market snapshot missing registrationFee and boothCost', () => {
+  const marketWithoutCosts = {
+    id: 'market-1',
+    name: 'Test Market',
+    location: 'Taipei',
+    startDate: '2026-01-01',
+    endDate: '2026-01-01',
+    status: 'registered',
+    createdAt: now,
+    updatedAt: now,
+  };
+  const result = checkBackupIntegrity(validBackup({
+    markets: [marketWithoutCosts],
+  }) as unknown as BackupData);
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('accepts legacy market snapshot registrationFee / boothCost = null', () => {
+  const result = checkBackupIntegrity(validBackup({
+    markets: [{
+      id: 'market-1',
+      name: 'Test Market',
+      location: 'Taipei',
+      startDate: '2026-01-01',
+      endDate: '2026-01-01',
+      status: 'registered',
+      registrationFee: null as unknown as number,
+      boothCost: null as unknown as number,
+      createdAt: now,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('accepts legacy market snapshot registrationFee / boothCost = empty string', () => {
+  const result = checkBackupIntegrity(validBackup({
+    markets: [{
+      id: 'market-1',
+      name: 'Test Market',
+      location: 'Taipei',
+      startDate: '2026-01-01',
+      endDate: '2026-01-01',
+      status: 'registered',
+      registrationFee: '' as unknown as number,
+      boothCost: '' as unknown as number,
+      createdAt: now,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects market snapshot registrationFee / boothCost = non-numeric string', () => {
+  const result = checkBackupIntegrity(validBackup({
+    markets: [{
+      id: 'market-1',
+      name: 'Test Market',
+      location: 'Taipei',
+      startDate: '2026-01-01',
+      endDate: '2026-01-01',
+      status: 'registered',
+      registrationFee: 'abc' as unknown as number,
+      boothCost: 'xyz' as unknown as number,
+      createdAt: now,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('markets[0]') && e.includes('registrationFee')), `Unexpected errors: ${result.errors.join('; ')}`);
+  assert.ok(result.errors.some(e => e.includes('markets[0]') && e.includes('boothCost')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('rejects market snapshot registrationFee / boothCost = NaN', () => {
+  const result = checkBackupIntegrity(validBackup({
+    markets: [{
+      id: 'market-1',
+      name: 'Test Market',
+      location: 'Taipei',
+      startDate: '2026-01-01',
+      endDate: '2026-01-01',
+      status: 'registered',
+      registrationFee: NaN,
+      boothCost: NaN,
+      createdAt: now,
+      updatedAt: now,
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('markets[0]') && e.includes('registrationFee')), `Unexpected errors: ${result.errors.join('; ')}`);
+  assert.ok(result.errors.some(e => e.includes('markets[0]') && e.includes('boothCost')), `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
+runTest('product_deleted missing product is warning, ok=true', () => {
+  const result = checkBackupIntegrity(validBackup({
+    products: [{ id: 'product-1', name: 'Product', price: 100, stock: 10, category: 'other', isActive: true, createdAt: now, updatedAt: now }],
+    events: [{
+      id: 'product-del-1',
+      type: 'product_deleted',
+      market_id: 'market-1',
+      timestamp: now + 1,
+      actor_id: 'owner-abc',
+      sync_status: 'local_only',
+      payload: { productId: 'product-2', marketId: 'market-1' },
+    }],
+  }));
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+  assert.ok(result.warnings.some(w => w.includes('product_deleted') && w.includes('not in snapshot')), `Unexpected warnings: ${result.warnings.join('; ')}`);
+});
+
+runTest('product_updated missing product is error, ok=false', () => {
+  const result = checkBackupIntegrity(validBackup({
+    products: [],
+    events: [{
+      id: 'product-upd-1',
+      type: 'product_updated',
+      market_id: 'market-1',
+      timestamp: now,
+      actor_id: 'owner-abc',
+      sync_status: 'local_only',
+      payload: { productId: 'product-missing', marketId: 'market-1', updates: {} },
+    }],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some(e => e.includes('product_updated') && e.includes('references missing product')), `Unexpected errors: ${result.errors.join('; ')}`);
 });
 
 runTest('rejects product missing id', () => {

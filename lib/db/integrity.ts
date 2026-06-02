@@ -467,8 +467,8 @@ export function checkBackupIntegrity(data: BackupData): IntegrityResult {
     if (!isNonEmptyString(market.location)) errors.push(`markets[${index}] 缺少有效 location`);
     if (!isValidDateString(market.startDate)) errors.push(`markets[${index}] startDate 無效`);
     if (!isValidDateString(market.endDate)) errors.push(`markets[${index}] endDate 無效`);
-    if (!isNumber(market.registrationFee)) errors.push(`markets[${index}] registrationFee 無效`);
-    if (!isNumber(market.boothCost)) errors.push(`markets[${index}] boothCost 無效`);
+    if (!isLegacyMarketCostValue(market.registrationFee)) errors.push(`markets[${index}] registrationFee 無效`);
+    if (!isLegacyMarketCostValue(market.boothCost)) errors.push(`markets[${index}] boothCost 無效`);
     if (!isNumber(market.createdAt)) errors.push(`markets[${index}] createdAt 無效`);
     if (!isNumber(market.updatedAt)) errors.push(`markets[${index}] updatedAt 無效`);
 
