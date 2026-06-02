@@ -1,6 +1,6 @@
 # 角色安全驗證清單（Role Security Checklist）
 
-> 文件版本：2026-06-02 v2
+> 文件版本：2026-06-02 v3
 > 用途：老闆 / 員工權限系統的安全驗證參照，確認 RLS、資料流、UI 遮罩與同步邏輯的正確性。
 
 ---
@@ -9,9 +9,9 @@
 
 | Migration | 檔案 | 狀態 | 說明 |
 |---|---|---|---|
-| 035 | `035_fix_p0_rls_security.sql` | **Migration 已建立，尚未套用** | Phase 8E/8F。見下方 3.3 / 3.4 最新政策。套用前需先跑 V10 確認 owner membership 完整性。|
+| 035 | `035_fix_p0_rls_security.sql` | **已套用並通過 P0 驗證** | Phase 8E/8F。Owner membership backfill 完成（V10 預檢由 4 rows → 0 rows）。`market_members` RLS、INSERT/SELECT/DELETE policy、`markets_select_secure`、`products_select_temp` 移除均已驗證。|
 
-> ⚠️ **尚未套用到 Supabase**：migration 035 已 commit 至 `origin/main`，但尚未在 Supabase Dashboard SQL Editor 中執行。套用前請詳閱 migration 檔案內的驗證 SQL（V1–V10）。
+> ✅ **Migration 035 已套用到 Supabase**：2026-06-02 完成 V10 backfill 及 P0 驗證。
 
 ---
 
@@ -90,36 +90,30 @@
 
 | 政策名稱 | 操作 | 條件 | 狀態 |
 |---|---|---|---|
-| `market_members_select_secure` | SELECT | `market_id IN current_user_market_ids()`（SECURITY DEFINER helper）| Migration 035 已建立，套用後待確認 |
-| `market_members_delete_owner_or_self_staff` | DELETE | `role = 'staff' AND (user_id = auth.uid() OR market_id IN current_user_owned_market_ids())` | Migration 035 已建立，套用後待確認 |
-| — | INSERT | 無 client-side INSERT policy；寫入由 SECURITY DEFINER RPC 控制 | Migration 035 已移除，套用後待確認 |
+| `market_members_select_secure` | SELECT | `market_id IN current_user_market_ids()`（SECURITY DEFINER helper）| 通過（Supabase 已驗證）|
+| `market_members_delete_owner_or_self_staff` | DELETE | `role = 'staff' AND (user_id = auth.uid() OR market_id IN current_user_owned_market_ids())` | 通過（Supabase 已驗證）|
+| — | INSERT | 無 client-side INSERT policy；寫入由 SECURITY DEFINER RPC 控制 | 通過（Supabase 已驗證）|
+| — | — | `rowsecurity = true`（V1）| 通過（Supabase 已驗證）|
 
-> ⚠️ **Migration 035 尚未套用**：套用前 `market_members` 可能仍無 RLS 或仍有過寬 policies。套用後需驗證：
-> - `pg_tables` 中 `market_members` 的 `rowsecurity = true`
-> - V2 確認無 INSERT policy
-> - V3 確認 DELETE policy 含 `role = 'staff'` 前置條件
-> - V4 確認 SELECT policy 含 `current_user_market_ids()`
-> - **V10（重要）**：確認每個 market 的 owner 在 `market_members` 中都有對應的 `role = 'owner'` 記錄，若缺漏需先 Backfill 否則 owner 會看不到自己的 market
+> ✅ P0 驗證已完成：V1–V4 及 V10 均通過。
 
 ### 3.4 markets
 
 | 政策名稱 | 操作 | 條件 | 狀態 |
 |---|---|---|---|
-| `markets_select_secure` | SELECT | `id IN current_user_market_ids()`（SECURITY DEFINER helper）| Migration 035 已建立，套用後待確認 |
+| `markets_select_secure` | SELECT | `id IN current_user_market_ids()`（SECURITY DEFINER helper）| 通過（Supabase 已驗證）|
+| `markets_select_temp` | SELECT | — | 已移除（Supabase 已驗證，V5）|
 
-> ⚠️ **Migration 035 尚未套用**：套用後需驗證：
-> - `markets_select_temp` 已被移除（V5）
-> - `markets_select_secure` 的 USING 條件含 `current_user_market_ids()`（V6）
-> - `staff_accessible_markets` 視圖依賴 `markets` 表的 RLS，staff 無法繞過視圖直接查詢
+> ✅ P0 驗證已完成：V5 / V6 均通過。
 
 ### 3.5 products
 
 | 政策名稱 | 操作 | 條件 | 狀態 |
 |---|---|---|---|
-| `products_select_temp` | SELECT | — | Migration 035 已移除（`DROP POLICY IF EXISTS`），套用後待確認 |
-| Migration 014 SELECT policy | SELECT | `owner_id = auth.uid() OR owner_id IN (...) OR is_shared = true` | Migration 014，套用後待確認 |
+| `products_select_temp` | SELECT | — | 已移除（Supabase 已驗證，V7）|
+| Migration 014 SELECT policy | SELECT | `owner_id = auth.uid() OR owner_id IN (...) OR is_shared = true` | 待確認（P1 清理後需重新驗證）|
 
-> ⚠️ **Migration 035 尚未套用**：套用後需驗證 `products_select_temp` 已被移除（V7）。Migration 014 的安全 SELECT policy 會自動接管。
+> ⚠️ Migration 014 SELECT policy 尚未完整驗證。P1 階段需確認 `is_shared = true` 是否可能讓 staff 看到不應看到的商品。
 
 ### 3.6 events
 
@@ -268,11 +262,11 @@
 |---|---|---|---|---|
 | 1. 角色來源驗證 | 8 | 0 | 0 | 0 |
 | 2. 員工資料存取驗證 | 5 | 0 | 0 | 0 |
-| 3. RLS 檢查表 | 4 | 8 | 0 | 0 |
+| 3. RLS 檢查表 | 7 | 7 | 0 | 0 |
 | 4. 敏感資料檢查 | 7 | 1 | 0 | 0 |
 | 5. 員工操作權限 | 7 | 0 | 0 | 0 |
 | 6. 移除員工驗證 | 4 | 0 | 0 | 1 |
-| **總計** | **35** | **9** | **0** | **1** |
+| **總計** | **38** | **8** | **0** | **1** |
 
 ### 待修正項目
 
@@ -280,12 +274,13 @@
 |---|---|---|---|
 | 1 | `removeStaff()` 未呼叫 `invalidateRoleCache()` | 老闆端無法主動使員工快取失效 | 考慮 Supabase Realtime 推送或同步時主動 revalidate |
 
-### 待確認項目（需 Supabase Dashboard 驗證，套用 migration 035 後再確認）
+### 待確認項目（P1/P2 安全清理，仍需驗證）
 
-- Section 3 `staff_relationships` / `staff_invitations` / `events` / `profiles` RLS policies
-- Migration 035 套用後：`market_members` / `markets` / `products` 的 policies 是否與 Section 3 記錄一致
-- `staff_accessible_*` 視圖的 RLS 保護（目前 migration 中未見明確 RLS 定義）
-- **V10 預檢**：每個 market 的 owner 在 `market_members` 中是否有 `role = 'owner'` 記錄，若缺漏需先 Backfill
+- `staff_accessible_*` 視圖是否應將敏感欄位改為 `typed NULL`（P1）
+- `events` payload 是否需 SQL 層 sanitization（目前依賴 client-side）
+- `get_my_staff` RPC 是否應在 SQL 層排除 `revoked` 員工
+- `markets` / `products` INSERT/UPDATE policy 是否過寬（P1）
+- Section 7 Smoke Test 是否已完成
 
 ---
 
