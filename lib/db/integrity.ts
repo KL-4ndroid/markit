@@ -284,7 +284,8 @@ export function validateBackupReplayReadiness(data: BackupData): IntegrityResult
       marketId &&
       !activeMarkets.has(marketId) &&
       event.type !== 'market_created' &&
-      event.type !== 'settings_updated'
+      event.type !== 'settings_updated' &&
+      event.type !== 'market_deleted'
     ) {
       errors.push(`${label} cannot replay because market is unavailable: ${marketId}`);
     }

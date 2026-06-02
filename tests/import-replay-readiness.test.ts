@@ -176,6 +176,42 @@ runTest('accepts product_updated before product_deleted', () => {
   assert.equal(result.ok, true);
 });
 
+runTest('accepts market_deleted when market is absent from snapshot', () => {
+  const result = validateBackupReplayReadiness(validBackup({
+    markets: [],
+    events: [
+      {
+        id: 'market-deleted-1',
+        type: 'market_deleted',
+        timestamp: 100,
+        actor_id: 'local',
+        sync_status: 'local_only',
+        payload: { marketId: 'market-deleted-orphan' },
+      },
+    ],
+  }));
+
+  assert.equal(result.ok, true, `Expected ok, got errors: ${result.errors.join('; ')}`);
+});
+
+runTest('accepts market_deleted when market exists in snapshot', () => {
+  const result = validateBackupReplayReadiness(validBackup({
+    events: [
+      {
+        id: 'market-deleted-1',
+        type: 'market_deleted',
+        timestamp: 100,
+        market_id: 'market-1',
+        actor_id: 'local',
+        sync_status: 'local_only',
+        payload: { marketId: 'market-1' },
+      },
+    ],
+  }));
+
+  assert.equal(result.ok, true, `Expected ok, got errors: ${result.errors.join('; ')}`);
+});
+
 runTest('accepts interaction after market_created', () => {
   const result = validateBackupReplayReadiness(validBackup({
     markets: [{
