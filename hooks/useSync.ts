@@ -837,6 +837,32 @@ async function pullEventsWithSnapshot(
   }
 }
 
+// ==================== Owner event pull marketIds helper ====================
+
+/**
+ * 取得 owner 可訪問的所有 market IDs（用於事件同步查詢）
+ *
+ * owner 可能沒有自己的 market_members record（如新設備 sync），
+ * 因此 owner-owned markets 必須直接從 markets 表納入。
+ */
+async function getOwnerAccessibleMarketIds(userId: string): Promise<string[]> {
+  const [{ data: memberMarkets, error: memberError }, { data: ownedMarkets, error: ownedError }] =
+    await Promise.all([
+      supabase.from('market_members').select('market_id').eq('user_id', userId),
+      supabase.from('markets').select('id').eq('owner_id', userId),
+    ]);
+
+  if (memberError) throw memberError;
+  if (ownedError) throw ownedError;
+
+  const memberIds = (memberMarkets || []).map(m => m.market_id).filter(Boolean);
+  const ownedIds = (ownedMarkets || []).map(m => m.id).filter(Boolean);
+
+  return Array.from(new Set([...memberIds, ...ownedIds]));
+}
+
+// ==================== 下載增量事件（快照之後的事件）====================
+
 /**
  * 下載增量事件（快照之後的事件）
  */
@@ -845,15 +871,7 @@ async function pullIncrementalEvents(
   snapshotAt: string,
   onProgress?: (current: number, total: number, currentItem?: string) => void
 ): Promise<void> {
-  // 獲取用戶參與的市集
-  const { data: memberMarkets, error: memberError } = await supabase
-    .from('market_members')
-    .select('market_id')
-    .eq('user_id', userId);
-
-  if (memberError) throw memberError;
-
-  const marketIds = memberMarkets?.map(m => m.market_id) || [];
+  const marketIds = await getOwnerAccessibleMarketIds(userId);
 
   // ✅ 修復：查詢團隊成員的用戶 ID（包括老闆和員工）
   let teamMemberIds: string[] = [userId]; // 至少包含自己
@@ -995,15 +1013,7 @@ async function pullAllEvents(
   // 獲取本地最後同步時間
   const lastSyncAt = await getLastSyncTimestamp();
 
-  // 獲取用戶參與的市集
-  const { data: memberMarkets, error: memberError } = await supabase
-    .from('market_members')
-    .select('market_id')
-    .eq('user_id', userId);
-
-  if (memberError) throw memberError;
-
-  const marketIds = memberMarkets?.map(m => m.market_id) || [];
+  const marketIds = await getOwnerAccessibleMarketIds(userId);
 
   // ✅ 查詢新事件：包含市集事件 + 團隊成員的全局事件（如商品）
   let query = supabase
