@@ -408,7 +408,12 @@ export function useSync(options: UseSyncOptions = {}) {
     // ✅ 初始同步（只執行一次）
     if (!hasExecutedInitialSync) {
       hasExecutedInitialSync = true;
-      throttledSyncFnRef.current?.();
+      if (typeof window !== 'undefined' && sessionStorage.getItem('force_initial_sync') === '1') {
+        sessionStorage.removeItem('force_initial_sync');
+        syncFnRef.current?.();
+      } else {
+        throttledSyncFnRef.current?.();
+      }
     }
 
     // 策略 1: 定期檢查待同步事件（每 5 分鐘）

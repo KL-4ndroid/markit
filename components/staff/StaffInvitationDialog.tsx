@@ -159,6 +159,7 @@ export function StaffInvitationDialog() {
 
       toast.success('已接受邀請，正在重新載入資料...', { id: 'accept-invitation' });
 
+      sessionStorage.setItem('force_initial_sync', '1');
       window.location.reload();
 
     } catch (error: any) {
