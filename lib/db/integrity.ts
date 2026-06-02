@@ -208,11 +208,22 @@ function validateEventReferences(
     }
 
     if (
-      (event.type === 'product_updated' || event.type === 'product_deleted') &&
+      event.type === 'product_updated' &&
       isNonEmptyString(payload.productId) &&
       !productIds.has(payload.productId)
     ) {
       errors.push(`${label} references missing product: ${payload.productId}`);
+    }
+
+    if (
+      event.type === 'product_deleted' &&
+      isNonEmptyString(payload.productId) &&
+      !productIds.has(payload.productId)
+    ) {
+      // product_deleted 是 tombstone，deleted 的商品本來就不在 snapshot 中（無論是
+      // 因為被刪除、尚未授權、或從未被員工同步）。Integrity check 不應對此报错。
+      // 此 warn 可幫助偵測員工視圖範圍外的 orphan tombstone，但不阻擋 sync。
+      warnings.push(`${label} references product not in snapshot (may be deleted or out-of-scope)`);
     }
 
     if (event.type === 'deal_closed' && Array.isArray(payload.items)) {

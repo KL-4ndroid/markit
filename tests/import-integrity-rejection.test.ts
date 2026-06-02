@@ -378,6 +378,70 @@ runTest('rejects settings invalid theme', () => {
   assert.ok(result.errors.some(e => e.includes('settings[0]') && e.includes('theme 無效')), `Unexpected errors: ${result.errors.join('; ')}`);
 });
 
+// ==================== product_deleted tombstone backward-compat ====================
+
+// product_deleted is a tombstone — the product it references may have been
+// deleted before the employee was invited, or may be outside the staff view scope.
+// checkBackupIntegrity must not block on this; it is a warning at most.
+runTest('accepts product_deleted when product is absent from snapshot (orphan tombstone)', () => {
+  const result = checkBackupIntegrity(validBackup({
+    products: [
+      // Only product-1 in snapshot; product-2 was deleted before employee was invited
+      {
+        id: 'product-1',
+        name: 'Existing Product',
+        price: 100,
+        stock: 10,
+        category: 'other',
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
+    events: [
+      {
+        id: 'product-delete-orphan',
+        type: 'product_deleted',
+        market_id: 'market-1',
+        timestamp: now + 1,
+        actor_id: 'owner-abc',
+        sync_status: 'local_only',
+        payload: { productId: 'product-2', marketId: 'market-1' },
+      },
+    ],
+  }));
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+  assert.ok(
+    result.warnings.some(w => w.includes('product_deleted') && w.includes('not in snapshot')),
+    `Expected warning about orphan tombstone, got warnings: ${result.warnings.join('; ')}`
+  );
+});
+
+// Guard: product_updated on a truly missing product is still an error
+runTest('still rejects product_updated when product is truly missing from snapshot', () => {
+  const result = checkBackupIntegrity(validBackup({
+    products: [],
+    events: [
+      {
+        id: 'product-update-1',
+        type: 'product_updated',
+        market_id: 'market-1',
+        timestamp: now,
+        actor_id: 'owner-abc',
+        sync_status: 'local_only',
+        payload: { productId: 'product-missing', marketId: 'market-1', updates: {} },
+      },
+    ],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(
+    result.errors.some(e => e.includes('product_updated') && e.includes('references missing product')),
+    `Expected error about missing product, got errors: ${result.errors.join('; ')}`
+  );
+});
+
 // ==================== Legacy market_created backward-compat ====================
 
 runTest('accepts legacy market_created missing registrationFee and boothCost', () => {
