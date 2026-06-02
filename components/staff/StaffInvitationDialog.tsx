@@ -159,9 +159,7 @@ export function StaffInvitationDialog() {
 
       toast.success('已接受邀請，正在重新載入資料...', { id: 'accept-invitation' });
 
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      window.location.reload();
 
     } catch (error: any) {
       console.error('接受邀請失敗:', error);
