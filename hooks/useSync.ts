@@ -183,6 +183,8 @@ export function useSync(options: UseSyncOptions = {}) {
   const lastSnapshotCheckFailedRef = useRef(false);
   const syncFnRef = useRef<() => Promise<void>>();
   const throttledSyncFnRef = useRef<() => void>();
+  /** ✅ 只允許 force_initial_sync 消耗一次的本地標記（不受 module-level 重置影響） */
+  const forceSyncExecutedRef = useRef(false);
 
   // ✅ 訂閱全局狀態更新
   useEffect(() => {
@@ -196,6 +198,26 @@ export function useSync(options: UseSyncOptions = {}) {
       globalStateListeners.delete(listener);
     };
   }, []);
+
+  // ✅ force_initial_sync 專用 effect
+  // 不被 hasSetupIntervals 阻擋，確保條件就緒時才消耗 flag
+  useEffect(() => {
+    if (
+      !enabled ||
+      !isConfigured ||
+      !user ||
+      !syncFnRef.current ||
+      forceSyncExecutedRef.current
+    ) {
+      return;
+    }
+
+    if (typeof window !== 'undefined' && sessionStorage.getItem('force_initial_sync') === '1') {
+      forceSyncExecutedRef.current = true;
+      sessionStorage.removeItem('force_initial_sync');
+      syncFnRef.current();
+    }
+  }, [enabled, isConfigured, user]);
 
   /**
    * 執行同步
@@ -408,12 +430,7 @@ export function useSync(options: UseSyncOptions = {}) {
     // ✅ 初始同步（只執行一次）
     if (!hasExecutedInitialSync) {
       hasExecutedInitialSync = true;
-      if (typeof window !== 'undefined' && sessionStorage.getItem('force_initial_sync') === '1') {
-        sessionStorage.removeItem('force_initial_sync');
-        syncFnRef.current?.();
-      } else {
-        throttledSyncFnRef.current?.();
-      }
+      throttledSyncFnRef.current?.();
     }
 
     // 策略 1: 定期檢查待同步事件（每 5 分鐘）
