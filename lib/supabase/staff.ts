@@ -105,7 +105,15 @@ export async function isStaffOf(ownerId: string): Promise<boolean> {
 
 /**
  * 邀請員工
- * 
+ *
+ * 邏輯：
+ * 1. 查詢用戶是否存在
+ * 2. 檢查雙方是否已有 staff_relationships 記錄
+ *    - 有 revoked 記錄 → 復原為 pending（重新邀請）
+ *    - 有 pending / active 記錄 → 擋住（已是員工）
+ * 3. 無記錄 → 新增 pending 記錄
+ * 4. 保留 23505 fallback 作為 race condition 最後防線
+ *
  * @param inviteData - 邀請數據
  * @returns 創建的員工關係記錄
  */
@@ -127,11 +135,53 @@ export async function inviteStaff(inviteData: StaffInviteForm): Promise<StaffRel
     throw new Error('找不到此用戶，請確認 Email 是否正確');
   }
 
-  // 2. 創建員工關係（包含 owner_id）
+  // 2. 檢查是否已有 staff_relationships 記錄
+  const { data: existing, error: existingError } = await supabase
+    .from('staff_relationships')
+    .select('id, status')
+    .eq('owner_id', user.id)
+    .eq('staff_id', userData.id)
+    .limit(1);
+
+  if (existingError) {
+    console.error('查詢員工關係失敗:', existingError);
+    throw existingError;
+  }
+
+  if (existing && existing.length > 0) {
+    const record = existing[0];
+
+    if (record.status === 'revoked') {
+      // 3a. revoked → 復原為 pending（重新邀請）
+      const { data, error: updateError } = await supabase
+        .from('staff_relationships')
+        .update({
+          status: 'pending',
+          accepted_at: null,
+          staff_email: inviteData.staff_email.toLowerCase(),
+          permissions: inviteData.permissions || { can_view: true, can_edit: false },
+        })
+        .eq('id', record.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('重新邀請員工失敗:', updateError);
+        throw updateError;
+      }
+
+      return data as StaffRelationship;
+    }
+
+    // 3b. pending / active → 擋住
+    throw new Error('此用戶已經是你的員工');
+  }
+
+  // 4. 無記錄 → 新增 pending 記錄
   const { data, error } = await supabase
     .from('staff_relationships')
     .insert({
-      owner_id: user.id,  // ✅ 修復：添加 owner_id
+      owner_id: user.id,
       staff_id: userData.id,
       staff_email: inviteData.staff_email.toLowerCase(),
       status: 'pending',
@@ -142,12 +192,12 @@ export async function inviteStaff(inviteData: StaffInviteForm): Promise<StaffRel
 
   if (error) {
     console.error('邀請員工失敗:', error);
-    
-    // 處理重複邀請
+
+    // 5. 23505 fallback — race condition 最後防線
     if (error.code === '23505') {
       throw new Error('此用戶已經是你的員工');
     }
-    
+
     throw error;
   }
 
