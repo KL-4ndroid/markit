@@ -893,7 +893,7 @@ async function pullIncrementalEvents(
   let query = supabase
     .from('events')
     .select('*')
-    .gt('timestamp', snapshotAt)
+    .gt('created_at', snapshotAt)
     .order('timestamp', { ascending: true });
 
   // ✅ 過濾條件：市集事件 OR 團隊成員的全局事件（包括商品）
@@ -915,9 +915,17 @@ async function pullIncrementalEvents(
 
   // 重放增量事件
   await replayEvents(incrementalEvents, onProgress);
-  
-  // 更新最後同步時間
-  await updateLastSyncTimestamp();
+
+  // 更新最後同步時間（使用 max(created_at)）
+  const validCreatedAt = (incrementalEvents || [])
+    .map(e => new Date(e.created_at).getTime())
+    .filter(ts => Number.isFinite(ts));
+
+  if (validCreatedAt.length > 0) {
+    await updateLastSyncTimestamp(Math.max(...validCreatedAt));
+  } else {
+    console.warn('[useSync] pullIncrementalEvents: no event has valid created_at, refusing to advance cursor');
+  }
 }
 
 /**
@@ -1023,7 +1031,7 @@ async function pullAllEvents(
 
   // 只拉取新事件
   if (lastSyncAt) {
-    query = query.gt('timestamp', new Date(lastSyncAt).toISOString());
+    query = query.gt('created_at', new Date(lastSyncAt).toISOString());
   }
 
   // ✅ 修復：查詢團隊成員的用戶 ID（包括老闆和員工）
@@ -1135,8 +1143,18 @@ async function pullAllEvents(
 
   console.log(`✅ 下載完成：成功處理 ${processedCount}/${eventsToProcess.length} 個新事件`);
 
-  // 更新最後同步時間
-  await updateLastSyncTimestamp();
+  // 更新最後同步時間（使用 max(created_at)，若事件皆已存在則不推進）
+  if (eventsToProcess.length > 0) {
+    const validCreatedAt = eventsToProcess
+      .map(e => new Date(e.created_at).getTime())
+      .filter(ts => Number.isFinite(ts));
+
+    if (validCreatedAt.length > 0) {
+      await updateLastSyncTimestamp(Math.max(...validCreatedAt));
+    } else {
+      console.warn('[useSync] pullAllEvents: no event has valid created_at, refusing to advance cursor');
+    }
+  }
 }
 
 /**
@@ -1153,13 +1171,19 @@ async function getLastSyncTimestamp(): Promise<number | null> {
 
 /**
  * 更新最後同步時間戳
+ * @param lastSyncedCreatedAt 本次實際處理的最後一筆事件的 created_at（Unix ms）
+ *                           若不傳入則拋出錯誤，避免 caller 意外用 Date.now() 推進錯誤 cursor
  */
-async function updateLastSyncTimestamp(): Promise<void> {
+async function updateLastSyncTimestamp(lastSyncedCreatedAt: number): Promise<void> {
+  if (lastSyncedCreatedAt == null || !Number.isFinite(lastSyncedCreatedAt)) {
+    console.error('[useSync] updateLastSyncTimestamp: invalid lastSyncedCreatedAt, refusing to advance cursor');
+    return;
+  }
   try {
     const settings = await db.settings.toArray();
     if (settings[0]) {
       await db.settings.update(settings[0].id!, {
-        lastSyncAt: Date.now(),
+        lastSyncAt: lastSyncedCreatedAt,
       });
     }
   } catch (error) {
@@ -1422,12 +1446,20 @@ async function pullEventsFromViews(
     await syncEventsToIndexedDB(eventsData || []);
     
     // 5. 更新最後同步時間
-    // ⚠️ 注意：這裡更新 lastSyncAt 是為了記錄同步時間，但下次同步時不會使用它過濾
+    // staff 模式不使用 lastSyncAt 作為 cursor，但更新它有助於記錄最後同步時間
+    if (eventsData && eventsData.length > 0) {
+      const validCreatedAt = (eventsData || [])
+        .map(e => new Date(e.created_at).getTime())
+        .filter(ts => Number.isFinite(ts));
+      if (validCreatedAt.length > 0) {
+        await updateLastSyncTimestamp(Math.max(...validCreatedAt));
+      }
+    }
+
+    // 6. 進度完成回報（不論是否有事件都應回報）
     if (onProgress) {
       onProgress(5, 5, '完成同步...', 'incremental');
     }
-    
-    await updateLastSyncTimestamp();
     
     // ✅ 驗證數據隔離性；同步流程只記錄，不自動刪除本地資料。
     try {
