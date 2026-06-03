@@ -893,7 +893,7 @@ async function pullIncrementalEvents(
   let query = supabase
     .from('events')
     .select('*')
-    .gt('created_at', snapshotAt)
+    .gt('timestamp', snapshotAt)
     .order('timestamp', { ascending: true });
 
   // ✅ 過濾條件：市集事件 OR 團隊成員的全局事件（包括商品）
