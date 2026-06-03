@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Database } from 'lucide-react';
 import { DatabaseRecoveryPanel } from '@/components/common/DatabaseRecoveryPanel';
+import { OwnerRevenueGapRepairPanel } from '@/components/common/OwnerRevenueGapRepairPanel';
 
 export default function RecoveryPage() {
   return (
@@ -32,6 +33,8 @@ export default function RecoveryPage() {
         </header>
 
         <DatabaseRecoveryPanel />
+
+        <OwnerRevenueGapRepairPanel />
 
         <section className="border border-[#E8E3D8] bg-white px-4 py-4 text-sm text-[#6B6B6B] shadow-sm">
           <h2 className="mb-2 text-base font-semibold text-[#3A3A3A]">建議流程</h2>
