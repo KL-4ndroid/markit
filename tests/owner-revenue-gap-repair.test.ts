@@ -145,6 +145,7 @@ runTest('zero-to-cloud: repairs missing deal_closed', async () => {
   const origMarketsUpdate = (
     db.markets as any
   ).update.bind(db.markets);
+  const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
 
   const origHandler = eventHandlers['deal_closed'];
 
@@ -212,6 +213,10 @@ runTest('zero-to-cloud: repairs missing deal_closed', async () => {
       return 1;
     };
 
+    (db.dailyStats as any).where = () => ({
+      equals: () => ({ toArray: async () => [] }),
+    });
+
     const { repairOwnerRevenueGaps } = await import(
       '../lib/sync/owner-revenue-gap-repair'
     );
@@ -238,6 +243,7 @@ runTest('zero-to-cloud: repairs missing deal_closed', async () => {
     (db.markets as any).get = origMarketsGet;
     (db.markets as any).bulkGet = origMarketsBulkGet;
     (db.markets as any).update = origMarketsUpdate;
+    (db.dailyStats as any).where = origDailyStatsWhere;
   }
 });
 
@@ -258,6 +264,7 @@ runTest('dryRun does not replay', async () => {
   const origEventsAdd = (db.events as any).add.bind(
     db.events
   );
+  const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
 
   try {
     (db.markets as any).get = async (id: string) =>
@@ -271,6 +278,9 @@ runTest('dryRun does not replay', async () => {
     (db.events as unknown as { add: unknown }).add = async () => {
       throw new Error('must not be called in dryRun');
     };
+    (db.dailyStats as any).where = () => ({
+      equals: () => ({ toArray: async () => [] }),
+    });
 
     const { repairOwnerRevenueGaps } = await import(
       '../lib/sync/owner-revenue-gap-repair'
@@ -302,6 +312,7 @@ runTest('dryRun does not replay', async () => {
     (db.markets as any).bulkGet = origMarketsBulkGet;
     (db.events as any).where = origEventsWhere;
     (db.events as unknown as { add: unknown }).add = origEventsAdd;
+    (db.dailyStats as any).where = origDailyStatsWhere;
   }
 });
 
@@ -319,6 +330,7 @@ runTest('localRevenue === cloudRevenue skips already_in_sync', async () => {
   const origEventsWhere = (
     db.events as any
   ).where.bind(db.events);
+  const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
 
   try {
     (db.markets as any).get = async (id: string) =>
@@ -328,6 +340,9 @@ runTest('localRevenue === cloudRevenue skips already_in_sync', async () => {
     ) => ids.map(id => localMarkets.get(id));
     (db.events as any).where = () => ({
       equals: () => ({ and: () => ({ toArray: async () => [] }) }),
+    });
+    (db.dailyStats as any).where = () => ({
+      equals: () => ({ toArray: async () => [] }),
     });
 
     const { repairOwnerRevenueGaps } = await import(
@@ -347,6 +362,7 @@ runTest('localRevenue === cloudRevenue skips already_in_sync', async () => {
     (db.markets as any).get = origMarketsGet;
     (db.markets as any).bulkGet = origMarketsBulkGet;
     (db.events as any).where = origEventsWhere;
+    (db.dailyStats as any).where = origDailyStatsWhere;
   }
 });
 
@@ -366,6 +382,7 @@ runTest(
     const origEventsWhere = (
       db.events as any
     ).where.bind(db.events);
+    const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
 
     try {
       (db.markets as any).get = async (id: string) =>
@@ -375,6 +392,9 @@ runTest(
       ) => ids.map(id => localMarkets.get(id));
       (db.events as any).where = () => ({
         equals: () => ({ and: () => ({ toArray: async () => [] }) }),
+      });
+      (db.dailyStats as any).where = () => ({
+        equals: () => ({ toArray: async () => [] }),
       });
 
       const { repairOwnerRevenueGaps } = await import(
@@ -398,6 +418,7 @@ runTest(
       (db.markets as any).bulkGet =
         origMarketsBulkGet;
       (db.events as any).where = origEventsWhere;
+      (db.dailyStats as any).where = origDailyStatsWhere;
     }
   }
 );
@@ -417,7 +438,8 @@ runTest(
     ).bulkGet.bind(db.markets);
     const origEventsWhere = (
       db.events as any
-  ).where.bind(db.events);
+    ).where.bind(db.events);
+    const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
 
     try {
       (db.markets as any).get = async (id: string) =>
@@ -427,6 +449,9 @@ runTest(
       ) => ids.map(id => localMarkets.get(id));
       (db.events as any).where = () => ({
         equals: () => ({ and: () => ({ toArray: async () => [] }) }),
+      });
+      (db.dailyStats as any).where = () => ({
+        equals: () => ({ toArray: async () => [] }),
       });
 
       const { repairOwnerRevenueGaps } = await import(
@@ -447,6 +472,7 @@ runTest(
       (db.markets as any).bulkGet =
         origMarketsBulkGet;
       (db.events as any).where = origEventsWhere;
+      (db.dailyStats as any).where = origDailyStatsWhere;
     }
   }
 );
@@ -470,6 +496,7 @@ runTest(
     const origEventsWhere = (
       db.events as any
     ).where.bind(db.events);
+    const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
 
     try {
       (db.markets as any).get = async (id: string) =>
@@ -481,6 +508,9 @@ runTest(
         equals: () => ({
           and: () => ({ toArray: async () => localEvents }),
         }),
+      });
+      (db.dailyStats as any).where = () => ({
+        equals: () => ({ toArray: async () => [] }),
       });
 
       const { repairOwnerRevenueGaps } = await import(
@@ -504,6 +534,7 @@ runTest(
       (db.markets as any).bulkGet =
         origMarketsBulkGet;
       (db.events as any).where = origEventsWhere;
+      (db.dailyStats as any).where = origDailyStatsWhere;
     }
   }
 );
@@ -554,6 +585,7 @@ runTest('cloud revenue <= 0 skips', async () => {
   const origEventsWhere = (
     db.events as any
   ).where.bind(db.events);
+  const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
 
   try {
     (db.markets as any).get = async (id: string) =>
@@ -563,6 +595,9 @@ runTest('cloud revenue <= 0 skips', async () => {
     ) => ids.map(id => localMarkets.get(id));
     (db.events as any).where = () => ({
       equals: () => ({ and: () => ({ toArray: async () => [] }) }),
+    });
+    (db.dailyStats as any).where = () => ({
+      equals: () => ({ toArray: async () => [] }),
     });
 
     const { repairOwnerRevenueGaps } = await import(
@@ -586,6 +621,7 @@ runTest('cloud revenue <= 0 skips', async () => {
     (db.markets as any).bulkGet =
       origMarketsBulkGet;
     (db.events as any).where = origEventsWhere;
+    (db.dailyStats as any).where = origDailyStatsWhere;
   }
 });
 
@@ -603,6 +639,7 @@ runTest('cloud deal events empty skips', async () => {
   const origEventsWhere = (
     db.events as any
   ).where.bind(db.events);
+  const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
 
   try {
     (db.markets as any).get = async (id: string) =>
@@ -612,6 +649,9 @@ runTest('cloud deal events empty skips', async () => {
     ) => ids.map(id => localMarkets.get(id));
     (db.events as any).where = () => ({
       equals: () => ({ and: () => ({ toArray: async () => [] }) }),
+    });
+    (db.dailyStats as any).where = () => ({
+      equals: () => ({ toArray: async () => [] }),
     });
 
     const { repairOwnerRevenueGaps } = await import(
@@ -635,6 +675,7 @@ runTest('cloud deal events empty skips', async () => {
     (db.markets as any).bulkGet =
       origMarketsBulkGet;
     (db.events as any).where = origEventsWhere;
+    (db.dailyStats as any).where = origDailyStatsWhere;
   }
 });
 
@@ -650,6 +691,126 @@ runTest('blank ownerId throws', async () => {
       `blank ownerId ${JSON.stringify(blank)} should throw`
     );
   }
+});
+
+runTest(
+  'dailyStats.revenue > 0 skips with local_daily_stats_exist',
+  async () => {
+    const localMarkets = new Map([
+      [MARKET_ID, fixtureMarket({ totalRevenue: 0 })],
+    ]);
+    const localStats = [
+      { id: 'ds-1', marketId: MARKET_ID, revenue: 34911, dealCount: 1, date: '2025-12-01' },
+    ];
+
+    const origMarketsGet = (db.markets as any).get.bind(db.markets);
+    const origMarketsBulkGet = (db.markets as any).bulkGet.bind(db.markets);
+    const origEventsWhere = (db.events as any).where.bind(db.events);
+    const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
+
+    try {
+      (db.markets as any).get = async (id: string) => localMarkets.get(id);
+      (db.markets as any).bulkGet = async (ids: string[]) =>
+        ids.map(id => localMarkets.get(id));
+      (db.events as any).where = () => ({
+        equals: () => ({ and: () => ({ toArray: async () => [] }) }),
+      });
+      (db.dailyStats as any).where = () => ({
+        equals: () => ({ toArray: async () => localStats }),
+      });
+
+      const { repairOwnerRevenueGaps } = await import(
+        '../lib/sync/owner-revenue-gap-repair'
+      );
+
+      const result = await repairOwnerRevenueGaps({
+        ownerId: OWNER_ID,
+        marketIds: [MARKET_ID],
+        supabaseClient: makeSupabaseMock(makeCloudEvents(['evt-c1'])),
+      });
+
+      assert.equal(result.repaired.length, 0);
+      assert.equal(result.skipped.length, 1);
+      assert.equal(
+        result.skipped[0].reason,
+        'local_daily_stats_exist'
+      );
+    } finally {
+      (db.markets as any).get = origMarketsGet;
+      (db.markets as any).bulkGet = origMarketsBulkGet;
+      (db.events as any).where = origEventsWhere;
+      (db.dailyStats as any).where = origDailyStatsWhere;
+    }
+  }
+);
+
+runTest(
+  'dailyStats.dealCount > 0 skips with local_daily_stats_exist',
+  async () => {
+    const localMarkets = new Map([
+      [MARKET_ID, fixtureMarket({ totalRevenue: 0 })],
+    ]);
+    // revenue = 0，但 dealCount > 0
+    const localStats = [
+      { id: 'ds-1', marketId: MARKET_ID, revenue: 0, dealCount: 2, date: '2025-12-01' },
+    ];
+
+    const origMarketsGet = (db.markets as any).get.bind(db.markets);
+    const origMarketsBulkGet = (db.markets as any).bulkGet.bind(db.markets);
+    const origEventsWhere = (db.events as any).where.bind(db.events);
+    const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
+
+    try {
+      (db.markets as any).get = async (id: string) => localMarkets.get(id);
+      (db.markets as any).bulkGet = async (ids: string[]) =>
+        ids.map(id => localMarkets.get(id));
+      (db.events as any).where = () => ({
+        equals: () => ({ and: () => ({ toArray: async () => [] }) }),
+      });
+      (db.dailyStats as any).where = () => ({
+        equals: () => ({ toArray: async () => localStats }),
+      });
+
+      const { repairOwnerRevenueGaps } = await import(
+        '../lib/sync/owner-revenue-gap-repair'
+      );
+
+      const result = await repairOwnerRevenueGaps({
+        ownerId: OWNER_ID,
+        marketIds: [MARKET_ID],
+        supabaseClient: makeSupabaseMock(makeCloudEvents(['evt-c1'])),
+      });
+
+      assert.equal(result.repaired.length, 0);
+      assert.equal(result.skipped.length, 1);
+      assert.equal(
+        result.skipped[0].reason,
+        'local_daily_stats_exist'
+      );
+    } finally {
+      (db.markets as any).get = origMarketsGet;
+      (db.markets as any).bulkGet = origMarketsBulkGet;
+      (db.events as any).where = origEventsWhere;
+      (db.dailyStats as any).where = origDailyStatsWhere;
+    }
+  }
+);
+
+runTest('panel handleExecute passes preview repaired marketIds', async () => {
+  // 確認 handleExecute 的 code path 會傳 marketIds。
+  // 我們驗證 panel 原始碼有正確的 marketIds 傳遞。
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const panelSrc = fs.readFileSync(
+    path.resolve(__dirname, '../components/common/OwnerRevenueGapRepairPanel.tsx'),
+    'utf8'
+  );
+
+  // handleExecute 呼叫 repairOwnerRevenueGaps 時，marketIds 必須來自 previewResult.repaired
+  assert.match(
+    panelSrc,
+    /dryRun:\s*false,\s*\n?\s*marketIds:\s*previewResult\.repaired\.map\(r\s*=>\s*r\.marketId\)/
+  );
 });
 
 // ---------------------------------------------------------------------------

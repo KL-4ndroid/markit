@@ -90,6 +90,7 @@ export function OwnerRevenueGapRepairPanel() {
       const result = await repairOwnerRevenueGaps({
         ownerId: user.id,
         dryRun: false,
+        marketIds: previewResult.repaired.map(r => r.marketId),
       });
 
       const repairedCount = result.repaired.length;

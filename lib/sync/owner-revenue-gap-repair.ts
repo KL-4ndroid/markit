@@ -88,6 +88,7 @@ export interface SkippedMarket {
     | 'local_revenue_exceeds_cloud'
     | 'partial_gap_not_supported'
     | 'local_deal_events_exist'
+    | 'local_daily_stats_exist'
     | 'cloud_revenue_not_positive'
     | 'cloud_deals_not_positive'
     | 'cloud_deal_events_empty';
@@ -242,6 +243,20 @@ async function processOneMarket(
     .and(e => e.type === 'deal_closed')
     .toArray();
 
+  // --- Local dailyStats check (止血：防止已有統計的市場被重放) ---
+  const localDailyStats = await db.dailyStats
+    .where('marketId')
+    .equals(marketId)
+    .toArray();
+  const localDailyStatsRevenueSum = localDailyStats.reduce(
+    (sum, s) => sum + (s.revenue || 0),
+    0
+  );
+  const localDailyStatsDealCountSum = localDailyStats.reduce(
+    (sum, s) => sum + (s.dealCount || 0),
+    0
+  );
+
   // --- Cloud market stats ---
   const marketResult = await client
     .from('markets')
@@ -275,6 +290,8 @@ async function processOneMarket(
   if (
     localRevenue === 0 &&
     localDeals.length === 0 &&
+    localDailyStatsRevenueSum === 0 &&
+    localDailyStatsDealCountSum === 0 &&
     cloudRevenue > 0 &&
     cloudDeals > 0 &&
     cloudDealEvents.length > 0
@@ -329,6 +346,8 @@ async function processOneMarket(
       localRevenueAfter,
       replayedEvents: trulyMissing.length,
     });
+  } else if (localDailyStatsRevenueSum > 0 || localDailyStatsDealCountSum > 0) {
+    skipped.push({ marketId, reason: 'local_daily_stats_exist' });
   } else if (cloudRevenue === localRevenue && localRevenue > 0) {
     skipped.push({ marketId, reason: 'already_in_sync' });
   } else if (localRevenue > cloudRevenue) {
