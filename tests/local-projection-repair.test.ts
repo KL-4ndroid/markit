@@ -129,6 +129,7 @@ async function withMockDb<T>(
   fn: () => Promise<T>
 ): Promise<T> {
   const origMarketsGet = (db.markets as any).get.bind(db.markets);
+  const origMarketsToArray = (db.markets as any).toArray.bind(db.markets);
   const origMarketsUpdate = (db.markets as any).update.bind(db.markets);
   const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
   const origDailyStatsAdd = (db.dailyStats as any).add.bind(db.dailyStats);
@@ -140,6 +141,7 @@ async function withMockDb<T>(
 
   try {
     (db.markets as any).get = async (id: string) => store.markets.get(id);
+    (db.markets as any).toArray = async () => Array.from(store.markets.values());
     (db.markets as any).update = async (id: string, changes: Partial<Market>) => {
       store.updateMarket(id, changes);
       return 1;
@@ -183,6 +185,7 @@ async function withMockDb<T>(
     return await fn();
   } finally {
     (db.markets as any).get = origMarketsGet;
+    (db.markets as any).toArray = origMarketsToArray;
     (db.markets as any).update = origMarketsUpdate;
     (db.dailyStats as any).where = origDailyStatsWhere;
     (db.dailyStats as any).add = origDailyStatsAdd;
@@ -465,6 +468,112 @@ runTest('only requested markets are repaired', async () => {
   assert.equal(store.markets.get(MARKET_ID)!.totalRevenue, 100);
   assert.equal(store.markets.get(OTHER_MARKET_ID)!.totalRevenue, 900);
   assert.equal(store.getDailyStatsByMarket(OTHER_MARKET_ID)[0].revenue, 900);
+});
+
+runTest('auto-detect repairs inflated markets without explicit marketIds', async () => {
+  const store = makeStore(
+    [
+      market({ id: MARKET_ID, totalRevenue: 300, totalDeals: 3 }),
+      market({ id: OTHER_MARKET_ID, totalRevenue: 200, totalDeals: 2 }),
+    ],
+    [
+      stat({ id: 1, marketId: MARKET_ID, revenue: 300, dealCount: 3 }),
+      stat({ id: 2, marketId: OTHER_MARKET_ID, revenue: 200, dealCount: 2 }),
+    ],
+    [
+      deal('d1', {
+        isManualEntry: true,
+        manualRevenue: 100,
+        manualCost: 0,
+        manualDealCount: 1,
+        totalAmount: 100,
+      }),
+      {
+        ...deal('d2', {
+          isManualEntry: true,
+          manualRevenue: 200,
+          manualCost: 0,
+          manualDealCount: 2,
+          totalAmount: 200,
+        }),
+        market_id: OTHER_MARKET_ID,
+        payload: {
+          ...deal('d2', {
+            isManualEntry: true,
+            manualRevenue: 200,
+            manualCost: 0,
+            manualDealCount: 2,
+            totalAmount: 200,
+          }).payload,
+          market_id: OTHER_MARKET_ID,
+        },
+      },
+    ]
+  );
+
+  const result = await withMockDb(store, () =>
+    repairLocalMarketProjections({ dryRun: true })
+  );
+
+  assert.equal(result.repaired.length, 1);
+  assert.equal(result.repaired[0].marketId, MARKET_ID);
+  assert.equal(result.repaired[0].before.marketTotalRevenue, 300);
+  assert.equal(result.repaired[0].after.marketTotalRevenue, 100);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].marketId, OTHER_MARKET_ID);
+  assert.equal(result.skipped[0].reason, 'already_consistent');
+});
+
+runTest('already consistent projection is skipped', async () => {
+  const store = makeStore(
+    [market({ totalRevenue: 100, totalDeals: 1 })],
+    [stat({ revenue: 100, dealCount: 1 })],
+    [
+      deal('d1', {
+        isManualEntry: true,
+        manualRevenue: 100,
+        manualCost: 0,
+        manualDealCount: 1,
+        totalAmount: 100,
+      }),
+    ]
+  );
+
+  const result = await withMockDb(store, () =>
+    repairLocalMarketProjections({ marketIds: [MARKET_ID], dryRun: false })
+  );
+
+  assert.equal(result.repaired.length, 0);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].reason, 'already_consistent');
+  assert.equal(store.writes.marketUpdates, 0);
+  assert.equal(store.writes.statsDeleted, 0);
+});
+
+runTest('projection lower than events is skipped for safety', async () => {
+  const store = makeStore(
+    [market({ totalRevenue: 50, totalDeals: 1 })],
+    [stat({ revenue: 50, dealCount: 1 })],
+    [
+      deal('d1', {
+        isManualEntry: true,
+        manualRevenue: 100,
+        manualCost: 0,
+        manualDealCount: 1,
+        totalAmount: 100,
+      }),
+    ]
+  );
+
+  const result = await withMockDb(store, () =>
+    repairLocalMarketProjections({ marketIds: [MARKET_ID], dryRun: false })
+  );
+
+  assert.equal(result.repaired.length, 0);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].reason, 'projection_lower_than_events');
+  assert.equal(store.writes.marketUpdates, 0);
+  assert.equal(store.writes.statsDeleted, 0);
 });
 
 runTest('falls back to payload market_id when market_id index has no matches', async () => {

@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 import type { DailyStats, DealClosedPayload, Event } from '@/types/db';
 
 export interface LocalProjectionRepairOptions {
-  marketIds: string[];
+  marketIds?: string[];
   dryRun: boolean;
 }
 
@@ -26,7 +26,12 @@ export interface LocalProjectionRepairResult {
   repaired: LocalProjectionRepairItem[];
   skipped: Array<{
     marketId: string;
-    reason: 'blank_market_id' | 'local_market_not_found' | 'no_deal_events';
+    reason:
+      | 'blank_market_id'
+      | 'local_market_not_found'
+      | 'no_deal_events'
+      | 'already_consistent'
+      | 'projection_lower_than_events';
   }>;
   warnings: string[];
 }
@@ -252,6 +257,33 @@ function makeSnapshot(
   };
 }
 
+function projectionsAreEqual(before: ProjectionSnapshot, after: ProjectionSnapshot): boolean {
+  return (
+    before.marketTotalRevenue === after.marketTotalRevenue &&
+    before.marketTotalDeals === after.marketTotalDeals &&
+    before.dailyStatsRevenue === after.dailyStatsRevenue &&
+    before.dailyStatsDealCount === after.dailyStatsDealCount
+  );
+}
+
+function projectionIsInflated(before: ProjectionSnapshot, after: ProjectionSnapshot): boolean {
+  return (
+    before.marketTotalRevenue > after.marketTotalRevenue ||
+    before.marketTotalDeals > after.marketTotalDeals ||
+    before.dailyStatsRevenue > after.dailyStatsRevenue ||
+    before.dailyStatsDealCount > after.dailyStatsDealCount
+  );
+}
+
+function projectionIsLowerThanEvents(before: ProjectionSnapshot, after: ProjectionSnapshot): boolean {
+  return (
+    before.marketTotalRevenue < after.marketTotalRevenue ||
+    before.marketTotalDeals < after.marketTotalDeals ||
+    before.dailyStatsRevenue < after.dailyStatsRevenue ||
+    before.dailyStatsDealCount < after.dailyStatsDealCount
+  );
+}
+
 export async function repairLocalMarketProjections(
   options: LocalProjectionRepairOptions
 ): Promise<LocalProjectionRepairResult> {
@@ -259,7 +291,11 @@ export async function repairLocalMarketProjections(
   const skipped: LocalProjectionRepairResult['skipped'] = [];
   const warnings: string[] = [];
 
-  const uniqueMarketIds = Array.from(new Set(options.marketIds));
+  const uniqueMarketIds = options.marketIds && options.marketIds.length > 0
+    ? Array.from(new Set(options.marketIds))
+    : (await db.markets.toArray())
+        .map(market => market.id)
+        .filter(nonBlankString);
 
   for (const marketId of uniqueMarketIds) {
     if (!nonBlankString(marketId)) {
@@ -297,6 +333,20 @@ export async function repairLocalMarketProjections(
       rebuiltDailyStats,
       dealEvents
     );
+
+    if (projectionsAreEqual(before, after)) {
+      skipped.push({ marketId, reason: 'already_consistent' });
+      continue;
+    }
+
+    if (!projectionIsInflated(before, after)) {
+      if (projectionIsLowerThanEvents(before, after)) {
+        skipped.push({ marketId, reason: 'projection_lower_than_events' });
+      } else {
+        skipped.push({ marketId, reason: 'already_consistent' });
+      }
+      continue;
+    }
 
     repaired.push({ marketId, before, after });
 

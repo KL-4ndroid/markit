@@ -10,17 +10,10 @@ import {
   type LocalProjectionRepairResult,
 } from '@/lib/sync/local-projection-repair';
 
-const AFFECTED_MARKET_IDS = [
-  '758160e7-d03d-42d6-8b0b-80520b9465c7',
-  'a2bb38ce-e320-46e1-a619-a5cc5b0213f3',
-];
-
 type PanelState = 'idle' | 'checking' | 'preview' | 'executing';
 
 function formatMoney(value: number): string {
-  return value.toLocaleString('zh-TW', {
-    maximumFractionDigits: 0,
-  });
+  return value.toLocaleString('zh-TW', { maximumFractionDigits: 0 });
 }
 
 export function LocalProjectionRepairPanel() {
@@ -53,7 +46,6 @@ export function LocalProjectionRepairPanel() {
 
     try {
       const result = await repairLocalMarketProjections({
-        marketIds: AFFECTED_MARKET_IDS,
         dryRun: true,
       });
       setPreviewResult(result);
@@ -166,7 +158,7 @@ export function LocalProjectionRepairPanel() {
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-[#3A3A3A]">本機統計投影修復</h2>
             <p className="mt-1 text-sm text-[#6B6B6B]">
-              只修復已診斷的兩個舊市場。此工具會用本機 deal_closed events 重新計算 dailyStats 和市場總收入，不會修改雲端或刪除 events。
+              掃描所有本機市場，找出 dailyStats 或市場總收入高於本機 deal_closed events 的場次。此工具只重算本機 projection，不修改雲端、不刪除 events。
             </p>
           </div>
         </div>
@@ -188,11 +180,14 @@ export function LocalProjectionRepairPanel() {
             {previewResult.skipped.length > 0 && (
               <div>
                 <p className="font-medium text-[#6B6B6B]">略過 ({previewResult.skipped.length})</p>
-                {previewResult.skipped.map(item => (
+                {previewResult.skipped.slice(0, 8).map(item => (
                   <p key={`${item.marketId}-${item.reason}`} className="text-[#9B9B9B]">
                     {item.marketId}: {item.reason}
                   </p>
                 ))}
+                {previewResult.skipped.length > 8 && (
+                  <p className="text-[#9B9B9B]">...還有 {previewResult.skipped.length - 8} 個</p>
+                )}
               </div>
             )}
 
@@ -210,7 +205,7 @@ export function LocalProjectionRepairPanel() {
               className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F3EE]"
             >
               <Eye size={16} />
-              預覽本機修復
+              掃描所有市場
             </button>
           )}
 
