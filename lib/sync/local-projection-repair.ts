@@ -59,6 +59,10 @@ function getDealDate(event: Event<DealClosedPayload>): string {
   return event.payload.dealDate ?? formatLocalDate(event.timestamp);
 }
 
+function getEventMarketId(event: Event<DealClosedPayload>): string | undefined {
+  return event.market_id ?? event.payload.market_id ?? (event.payload as unknown as { marketId?: string }).marketId;
+}
+
 function getItemPrice(item: DealClosedPayload['items'][number]): number {
   return finiteNumber(
     item.price_at_time_of_sale ??
@@ -216,6 +220,24 @@ function summarizeEvents(dealEvents: Array<Event<DealClosedPayload>>): Pick<Proj
   };
 }
 
+async function getDealEventsForMarket(marketId: string): Promise<Array<Event<DealClosedPayload>>> {
+  const directMatches = await db.events
+    .where('market_id')
+    .equals(marketId)
+    .and(event => event.type === 'deal_closed')
+    .toArray() as Array<Event<DealClosedPayload>>;
+
+  if (directMatches.length > 0) {
+    return directMatches;
+  }
+
+  return await db.events
+    .where('type')
+    .equals('deal_closed')
+    .and(event => getEventMarketId(event as Event<DealClosedPayload>) === marketId)
+    .toArray() as Array<Event<DealClosedPayload>>;
+}
+
 function makeSnapshot(
   marketTotalRevenue: unknown,
   marketTotalDeals: unknown,
@@ -253,11 +275,7 @@ export async function repairLocalMarketProjections(
 
     const [currentDailyStats, dealEvents] = await Promise.all([
       db.dailyStats.where('marketId').equals(marketId).toArray(),
-      db.events
-        .where('market_id')
-        .equals(marketId)
-        .and(event => event.type === 'deal_closed')
-        .toArray() as Promise<Array<Event<DealClosedPayload>>>,
+      getDealEventsForMarket(marketId),
     ]);
 
     if (dealEvents.length === 0) {

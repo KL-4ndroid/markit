@@ -153,10 +153,16 @@ async function withMockDb<T>(
     (db.dailyStats as any).delete = async (id: number) => {
       store.deleteDailyStat(id);
     };
-    (db.events as any).where = () => ({
-      equals: (marketId: string) => ({
+    (db.events as any).where = (field: string) => ({
+      equals: (value: string) => ({
         and: (predicate: (event: Event) => boolean) => ({
-          toArray: async () => store.getEventsByMarket(marketId).filter(predicate),
+          toArray: async () => {
+            const base =
+              field === 'market_id'
+                ? store.getEventsByMarket(value)
+                : store.events.filter(event => (event as any)[field] === value);
+            return base.filter(predicate);
+          },
         }),
       }),
     });
@@ -459,6 +465,40 @@ runTest('only requested markets are repaired', async () => {
   assert.equal(store.markets.get(MARKET_ID)!.totalRevenue, 100);
   assert.equal(store.markets.get(OTHER_MARKET_ID)!.totalRevenue, 900);
   assert.equal(store.getDailyStatsByMarket(OTHER_MARKET_ID)[0].revenue, 900);
+});
+
+runTest('falls back to payload market_id when market_id index has no matches', async () => {
+  const event = deal('d1', {
+    isManualEntry: true,
+    manualRevenue: 250,
+    manualCost: 25,
+    manualDealCount: 2,
+    totalAmount: 250,
+  });
+  const store = makeStore(
+    [market({ totalRevenue: 750, totalDeals: 6 })],
+    [stat({ revenue: 750, dealCount: 6 })],
+    [
+      {
+        ...event,
+        market_id: undefined,
+        payload: {
+          ...event.payload,
+          market_id: MARKET_ID,
+        },
+      } as Event,
+    ]
+  );
+
+  const result = await withMockDb(store, () =>
+    repairLocalMarketProjections({ marketIds: [MARKET_ID], dryRun: false })
+  );
+  const item = assertRepair(result);
+
+  assert.equal(item.after.marketTotalRevenue, 250);
+  assert.equal(item.after.marketTotalDeals, 2);
+  assert.equal(store.markets.get(MARKET_ID)!.totalRevenue, 250);
+  assert.equal(store.getDailyStatsByMarket(MARKET_ID)[0].revenue, 250);
 });
 
 async function main(): Promise<void> {
