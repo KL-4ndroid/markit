@@ -503,8 +503,8 @@ export function checkBackupIntegrity(data: BackupData): IntegrityResult {
     if (!isNumber(stat.inquiryCount) || stat.inquiryCount < 0) errors.push(`dailyStats[${index}] inquiryCount 無效`);
     if (!isNumber(stat.dealCount) || stat.dealCount < 0) errors.push(`dailyStats[${index}] dealCount 無效`);
     if (!isNumber(stat.revenue) || stat.revenue < 0) errors.push(`dailyStats[${index}] revenue 無效`);
-    if (!isNumber(stat.cost) || stat.cost < 0) errors.push(`dailyStats[${index}] cost 無效`);
-    if (!isNumber(stat.profit)) errors.push(`dailyStats[${index}] profit 無效`);
+    if (stat.cost !== undefined && (!isNumber(stat.cost) || stat.cost < 0)) errors.push(`dailyStats[${index}] cost 無效`);
+    if (stat.profit !== undefined && !isNumber(stat.profit)) errors.push(`dailyStats[${index}] profit 無效`);
     if (!Array.isArray(stat.productsSold)) {
       errors.push(`dailyStats[${index}] productsSold 必須是陣列`);
     } else {

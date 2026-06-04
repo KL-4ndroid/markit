@@ -113,6 +113,26 @@ runTest('rejects invalid daily stat numeric cache values', () => {
   assert.ok(result.errors.includes('dailyStats[0] cost 無效'));
 });
 
+runTest('accepts staff-sanitized daily stats without cost or profit', () => {
+  const result = checkBackupIntegrity(backup({
+    dailyStats: [{
+      id: 1,
+      date: '2026-01-01',
+      marketId: 'market-1',
+      touchCount: 0,
+      inquiryCount: 0,
+      dealCount: 1,
+      revenue: 100,
+      productsSold: [],
+      updatedAt: now,
+    } as any],
+  }));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.errors.some(error => error.includes('dailyStats[0] cost')), false);
+  assert.equal(result.errors.some(error => error.includes('dailyStats[0] profit')), false);
+});
+
 runTest('rejects tombstone events that point to the wrong event type', () => {
   const result = checkBackupIntegrity(backup({
     events: [
