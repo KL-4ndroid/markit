@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
+import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
   marketAccessRowToLocal,
@@ -952,6 +953,14 @@ async function replayEvents(
         continue;
       }
 
+      if (await hasSemanticDuplicateDealClosedEvent(db, event)) {
+        console.warn('[useSync] Skipping semantic duplicate deal_closed event during replay', {
+          eventId: event.id,
+          marketId: event.market_id ?? event.payload?.market_id ?? event.payload?.marketId,
+        });
+        continue;
+      }
+
       // 插入事件
       await db.events.add({
         id: event.id,
@@ -1076,10 +1085,34 @@ async function pullAllEvents(
   existingEvents.forEach(e => existingIds.add(e.id!));
 
   // 過濾出真正需要處理的新事件
-  const eventsToProcess = newEvents.filter(e => !existingIds.has(e.id));
+  const eventsToProcess: any[] = [];
+  let semanticDuplicateCount = 0;
+  for (const event of newEvents) {
+    if (existingIds.has(event.id)) continue;
+
+    if (await hasSemanticDuplicateDealClosedEvent(db, event)) {
+      semanticDuplicateCount++;
+      continue;
+    }
+
+    eventsToProcess.push(event);
+  }
   
   if (eventsToProcess.length === 0) {
     console.log(`✅ ${total} 個事件已全部存在，無需下載`);
+    if (semanticDuplicateCount > 0) {
+      console.warn('[useSync] Skipped semantic duplicate deal_closed events', {
+        semanticDuplicateCount,
+      });
+    }
+    const validCreatedAt = newEvents
+      .map(e => new Date(e.created_at).getTime())
+      .filter(ts => Number.isFinite(ts));
+    if (validCreatedAt.length > 0) {
+      await updateLastSyncTimestamp(Math.max(...validCreatedAt));
+    } else {
+      console.warn('[useSync] pullAllEvents: no event has valid created_at, refusing to advance cursor');
+    }
     return;
   }
 
@@ -1145,7 +1178,7 @@ async function pullAllEvents(
 
   // 更新最後同步時間（使用 max(created_at)，若事件皆已存在則不推進）
   if (eventsToProcess.length > 0) {
-    const validCreatedAt = eventsToProcess
+    const validCreatedAt = newEvents
       .map(e => new Date(e.created_at).getTime())
       .filter(ts => Number.isFinite(ts));
 
@@ -1668,6 +1701,15 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
       
       if (existing) {
         skippedCount++;
+        continue;
+      }
+
+      if (await hasSemanticDuplicateDealClosedEvent(db, event)) {
+        skippedCount++;
+        console.warn('[useSync] Skipping semantic duplicate deal_closed event during staff sync', {
+          eventId: event.id,
+          marketId: event.market_id ?? event.payload?.market_id ?? event.payload?.marketId,
+        });
         continue;
       }
       
