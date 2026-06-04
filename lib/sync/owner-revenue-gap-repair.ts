@@ -110,6 +110,41 @@ function toFiniteNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
+function getCloudDealRevenue(event: CloudEvent): number {
+  const payload = event.payload ?? {};
+  const directRevenue =
+    payload.manualRevenue ??
+    payload.manual_revenue ??
+    payload.totalAmount ??
+    payload.total_amount;
+
+  if (typeof directRevenue === 'number' && Number.isFinite(directRevenue)) {
+    return directRevenue;
+  }
+
+  if (Array.isArray(payload.items)) {
+    return payload.items.reduce((sum: number, item: any) => {
+      const price = toFiniteNumber(
+        item.price_at_time_of_sale ??
+          item.priceAtTimeOfSale ??
+          item.price
+      );
+      const quantity = toFiniteNumber(item.quantity);
+      return sum + price * quantity;
+    }, 0);
+  }
+
+  return 0;
+}
+
+function getCloudDealCount(event: CloudEvent): number {
+  const payload = event.payload ?? {};
+  return toFiniteNumber(
+    payload.manualDealCount ?? payload.manual_deal_count,
+    1
+  );
+}
+
 /**
  * Returns true when the market is owner-accessible:
  * owner_id matches the given userId, OR access_type is not 'staff'.
@@ -159,6 +194,27 @@ async function replayOneEvent(
     } as Event,
     db
   );
+}
+
+async function resetLocalMarketStatsProjection(
+  marketId: string,
+  dailyStats: Array<{ id?: number }>
+): Promise<void> {
+  await db.transaction('rw', [db.markets, db.dailyStats], async () => {
+    for (const stat of dailyStats) {
+      if (stat.id !== undefined) {
+        await db.dailyStats.delete(stat.id);
+      }
+    }
+
+    await db.markets.update(marketId, {
+      totalRevenue: 0,
+      totalProfit: 0,
+      totalDeals: 0,
+      totalInteractions: 0,
+      updatedAt: Date.now(),
+    });
+  });
 }
 
 /**
@@ -285,6 +341,25 @@ async function processOneMarket(
     .order('timestamp', { ascending: true });
 
   const cloudDealEvents: CloudEvent[] = eventsResult.data ?? [];
+  const cloudEventRevenue = cloudDealEvents.reduce(
+    (sum, event) => sum + getCloudDealRevenue(event),
+    0
+  );
+  const cloudEventDeals = cloudDealEvents.reduce(
+    (sum, event) => sum + getCloudDealCount(event),
+    0
+  );
+  const expectedRevenue = cloudRevenue > 0 ? cloudRevenue : cloudEventRevenue;
+  const expectedDeals = cloudDeals > 0 ? cloudDeals : cloudEventDeals;
+  const hasInflatedLocalProjection =
+    localDeals.length === 0 &&
+    cloudDealEvents.length > 0 &&
+    expectedRevenue > 0 &&
+    (
+      localRevenue > expectedRevenue ||
+      localDailyStatsRevenueSum > expectedRevenue ||
+      localDailyStatsDealCountSum > expectedDeals
+    );
 
   // --- Apply decision rules ---
   if (
@@ -345,6 +420,39 @@ async function processOneMarket(
       localRevenueBefore: localRevenue,
       localRevenueAfter,
       replayedEvents: trulyMissing.length,
+    });
+  } else if (hasInflatedLocalProjection) {
+    if (dryRun) {
+      repaired.push({
+        marketId,
+        cloudRevenue: expectedRevenue,
+        cloudDeals: expectedDeals,
+        localRevenueBefore: localRevenue,
+        localRevenueAfter: expectedRevenue,
+        replayedEvents: cloudDealEvents.length,
+      });
+      return;
+    }
+
+    await resetLocalMarketStatsProjection(marketId, localDailyStats);
+
+    for (const event of cloudDealEvents) {
+      await replayOneEvent(event as unknown as Record<string, unknown>);
+    }
+
+    const updatedMarket = await db.markets.get(marketId);
+    const localRevenueAfter = toFiniteNumber(
+      updatedMarket?.totalRevenue,
+      0
+    );
+
+    repaired.push({
+      marketId,
+      cloudRevenue: expectedRevenue,
+      cloudDeals: expectedDeals,
+      localRevenueBefore: localRevenue,
+      localRevenueAfter,
+      replayedEvents: cloudDealEvents.length,
     });
   } else if (localDailyStatsRevenueSum > 0 || localDailyStatsDealCountSum > 0) {
     skipped.push({ marketId, reason: 'local_daily_stats_exist' });

@@ -424,6 +424,115 @@ runTest(
 );
 
 runTest(
+  'inflated projection with no local deal events is repaired from cloud events',
+  async () => {
+    const localEvents = new Map<string, unknown>();
+    const localStats = [
+      { id: 1, marketId: MARKET_ID, revenue: 181176, dealCount: 120, date: '2025-12-01' },
+    ];
+    let updatedMarketRevenue = 181176;
+    let deletedStats = 0;
+
+    const origEventsWhere = (db.events as any).where.bind(db.events);
+    const origEventsGet = (db.events as any).get.bind(db.events);
+    const origEventsAdd = (db.events as any).add.bind(db.events);
+    const origMarketsGet = (db.markets as any).get.bind(db.markets);
+    const origMarketsBulkGet = (db.markets as any).bulkGet.bind(db.markets);
+    const origMarketsUpdate = (db.markets as any).update.bind(db.markets);
+    const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
+    const origDailyStatsDelete = (db.dailyStats as any).delete.bind(db.dailyStats);
+    const origTransaction = db.transaction.bind(db);
+    const origHandler = eventHandlers['deal_closed'];
+
+    eventHandlers['deal_closed'] = async (event: unknown, dbHandle: unknown) => {
+      const e = event as { market_id?: string; payload?: { market_id?: string; totalAmount?: number; manualRevenue?: number } };
+      const mId = e.market_id ?? e.payload?.market_id;
+      if (!mId) return;
+      const market = await (dbHandle as { markets: { get: (id: string) => Promise<Market | undefined> } }).markets.get(mId);
+      if (!market) return;
+      const total =
+        (market.totalRevenue ?? 0) +
+        ((e.payload?.totalAmount ?? 0) ||
+          (e.payload?.manualRevenue ?? 0));
+      await (dbHandle as { markets: { update: (id: string, changes: Record<string, unknown>) => Promise<number> } }).markets.update(mId, {
+        totalRevenue: total,
+      });
+    };
+
+    const localMarkets = new Map([
+      [MARKET_ID, fixtureMarket({ totalRevenue: 181176, totalDeals: 120 })],
+    ]);
+
+    try {
+      (db.events as any).where = () => ({
+        equals: () => ({
+          and: () => ({ toArray: async () => [] }),
+        }),
+      });
+      (db.events as any).get = async (id: string) => localEvents.get(id);
+      (db.events as any).add = async (event: unknown) => {
+        const e = event as { id: string };
+        localEvents.set(e.id, e);
+        return e.id;
+      };
+      (db.markets as any).get = async (id: string) => {
+        const market = localMarkets.get(id);
+        if (!market) return undefined;
+        return { ...market, totalRevenue: updatedMarketRevenue };
+      };
+      (db.markets as any).bulkGet = async (ids: string[]) =>
+        ids.map(id => localMarkets.get(id));
+      (db.markets as any).update = async (id: string, changes: Record<string, unknown>) => {
+        const existing = localMarkets.get(id);
+        if (existing) {
+          localMarkets.set(id, { ...existing, ...changes } as Market);
+          updatedMarketRevenue = (changes.totalRevenue as number) ?? updatedMarketRevenue;
+        }
+        return 1;
+      };
+      (db.dailyStats as any).where = () => ({
+        equals: () => ({ toArray: async () => localStats }),
+      });
+      (db.dailyStats as any).delete = async () => {
+        deletedStats++;
+      };
+      (db as any).transaction = async (_mode: string, _tables: unknown[], callback: () => Promise<void>) => {
+        await callback();
+      };
+
+      const { repairOwnerRevenueGaps } = await import(
+        '../lib/sync/owner-revenue-gap-repair'
+      );
+
+      const result = await repairOwnerRevenueGaps({
+        ownerId: OWNER_ID,
+        marketIds: [MARKET_ID],
+        supabaseClient: makeSupabaseMock(makeCloudEvents(['evt-c1', 'evt-c2'])),
+      });
+
+      assert.equal(result.repaired.length, 1);
+      assert.equal(result.skipped.length, 0);
+      assert.equal(result.repaired[0].localRevenueBefore, 181176);
+      assert.equal(result.repaired[0].localRevenueAfter, 69822);
+      assert.equal(result.repaired[0].replayedEvents, 2);
+      assert.equal(localEvents.size, 2);
+      assert.equal(deletedStats, 1);
+    } finally {
+      eventHandlers['deal_closed'] = origHandler;
+      (db.events as any).where = origEventsWhere;
+      (db.events as any).get = origEventsGet;
+      (db.events as any).add = origEventsAdd;
+      (db.markets as any).get = origMarketsGet;
+      (db.markets as any).bulkGet = origMarketsBulkGet;
+      (db.markets as any).update = origMarketsUpdate;
+      (db.dailyStats as any).where = origDailyStatsWhere;
+      (db.dailyStats as any).delete = origDailyStatsDelete;
+      (db as any).transaction = origTransaction;
+    }
+  }
+);
+
+runTest(
   '0 < localRevenue < cloudRevenue skips partial_gap_not_supported',
   async () => {
     const localMarkets = new Map([
