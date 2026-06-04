@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import type { DailyStats, DealClosedPayload, Event } from '@/types/db';
+import type { DailyStats, DealClosedPayload, Event, InteractionRecordedPayload } from '@/types/db';
 
 export interface LocalProjectionRepairOptions {
   marketIds?: string[];
@@ -9,11 +9,16 @@ export interface LocalProjectionRepairOptions {
 export interface ProjectionSnapshot {
   marketTotalRevenue: number;
   marketTotalDeals: number;
+  marketTotalInteractions: number;
   dailyStatsRevenue: number;
   dailyStatsDealCount: number;
+  dailyStatsTouchCount: number;
+  dailyStatsInquiryCount: number;
+  dailyStatsExtraInteractionCount: number;
   dailyStatsRows: number;
   eventRevenue: number;
   eventCount: number;
+  eventInteractionCount: number;
 }
 
 export interface LocalProjectionRepairItem {
@@ -38,6 +43,10 @@ export interface LocalProjectionRepairResult {
 
 type ProductSoldEntry = DailyStats['productsSold'][number];
 
+type DeletedEventPayload = {
+  eventId?: string;
+};
+
 interface DealProjection {
   date: string;
   revenue: number;
@@ -45,6 +54,20 @@ interface DealProjection {
   profit: number;
   dealCount: number;
   productsSold: DailyStats['productsSold'];
+}
+
+interface InteractionProjection {
+  date: string;
+  type: string;
+  updatedAt: number;
+}
+
+interface MarketStatsRebuildPlan {
+  marketId: string;
+  before: ProjectionSnapshot;
+  after: ProjectionSnapshot;
+  rebuiltDailyStats: DailyStats[];
+  currentDailyStats: DailyStats[];
 }
 
 function finiteNumber(value: unknown, fallback = 0): number {
@@ -66,6 +89,14 @@ function getDealDate(event: Event<DealClosedPayload>): string {
 
 function getEventMarketId(event: Event<DealClosedPayload>): string | undefined {
   return event.market_id ?? event.payload.market_id ?? (event.payload as unknown as { marketId?: string }).marketId;
+}
+
+function getGenericEventMarketId(event: Event<any>): string | undefined {
+  return event.market_id ?? event.payload?.market_id ?? event.payload?.marketId;
+}
+
+function getEventDate(event: Event): string {
+  return formatLocalDate(event.timestamp);
 }
 
 function getItemPrice(item: DealClosedPayload['items'][number]): number {
@@ -142,6 +173,14 @@ function projectDealEvent(event: Event<DealClosedPayload>): DealProjection {
   };
 }
 
+function projectInteractionEvent(event: Event<InteractionRecordedPayload>): InteractionProjection {
+  return {
+    date: getEventDate(event),
+    type: nonBlankString(event.payload.type) ? event.payload.type : 'unknown',
+    updatedAt: event.timestamp,
+  };
+}
+
 function mergeProductsSold(
   existing: DailyStats['productsSold'],
   additions: DailyStats['productsSold']
@@ -176,44 +215,78 @@ function mergeProductsSold(
 
 function buildDailyStatsFromEvents(
   marketId: string,
-  dealEvents: Array<Event<DealClosedPayload>>
+  dealEvents: Array<Event<DealClosedPayload>>,
+  interactionEvents: Array<Event<InteractionRecordedPayload>> = []
 ): DailyStats[] {
   const byDate = new Map<string, DailyStats>();
 
+  function getOrCreate(date: string, updatedAt: number): DailyStats {
+    const current = byDate.get(date);
+    if (current) return current;
+
+    const stat: DailyStats = {
+      date,
+      marketId,
+      touchCount: 0,
+      inquiryCount: 0,
+      dealCount: 0,
+      revenue: 0,
+      cost: 0,
+      profit: 0,
+      productsSold: [],
+      updatedAt,
+    };
+    byDate.set(date, stat);
+    return stat;
+  }
+
   for (const event of dealEvents) {
     const projected = projectDealEvent(event);
-    const current = byDate.get(projected.date);
+    const current = getOrCreate(projected.date, event.timestamp);
+    current.dealCount += projected.dealCount;
+    current.revenue += projected.revenue;
+    current.cost += projected.cost;
+    current.profit += projected.profit;
+    current.productsSold = mergeProductsSold(current.productsSold, projected.productsSold);
+    current.updatedAt = Math.max(finiteNumber(current.updatedAt), event.timestamp);
+  }
 
-    if (current) {
-      current.dealCount += projected.dealCount;
-      current.revenue += projected.revenue;
-      current.cost += projected.cost;
-      current.profit += projected.profit;
-      current.productsSold = mergeProductsSold(current.productsSold, projected.productsSold);
-      current.updatedAt = Math.max(finiteNumber(current.updatedAt), event.timestamp);
+  for (const event of interactionEvents) {
+    const projected = projectInteractionEvent(event);
+    const current = getOrCreate(projected.date, event.timestamp);
+
+    if (projected.type === 'touch') {
+      current.touchCount = finiteNumber(current.touchCount) + 1;
+    } else if (projected.type === 'inquiry') {
+      current.inquiryCount = finiteNumber(current.inquiryCount) + 1;
     } else {
-      byDate.set(projected.date, {
-        date: projected.date,
-        marketId,
-        touchCount: 0,
-        inquiryCount: 0,
-        dealCount: projected.dealCount,
-        revenue: projected.revenue,
-        cost: projected.cost,
-        profit: projected.profit,
-        productsSold: projected.productsSold,
-        updatedAt: event.timestamp,
-      });
+      const extraInteractions = current.extraInteractions ?? {};
+      current.extraInteractions = {
+        ...extraInteractions,
+        [projected.type]: finiteNumber(extraInteractions[projected.type]) + 1,
+      };
     }
+    current.updatedAt = Math.max(finiteNumber(current.updatedAt), projected.updatedAt);
   }
 
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-function summarizeDailyStats(stats: DailyStats[]): Pick<ProjectionSnapshot, 'dailyStatsRevenue' | 'dailyStatsDealCount' | 'dailyStatsRows'> {
+function summarizeDailyStats(
+  stats: DailyStats[]
+): Pick<
+  ProjectionSnapshot,
+  'dailyStatsRevenue' | 'dailyStatsDealCount' | 'dailyStatsTouchCount' | 'dailyStatsInquiryCount' | 'dailyStatsExtraInteractionCount' | 'dailyStatsRows'
+> {
   return {
     dailyStatsRevenue: stats.reduce((sum, stat) => sum + finiteNumber(stat.revenue), 0),
     dailyStatsDealCount: stats.reduce((sum, stat) => sum + finiteNumber(stat.dealCount), 0),
+    dailyStatsTouchCount: stats.reduce((sum, stat) => sum + finiteNumber(stat.touchCount), 0),
+    dailyStatsInquiryCount: stats.reduce((sum, stat) => sum + finiteNumber(stat.inquiryCount), 0),
+    dailyStatsExtraInteractionCount: stats.reduce((sum, stat) => {
+      const extra = stat.extraInteractions ?? {};
+      return sum + Object.values(extra).reduce((extraSum, count) => extraSum + finiteNumber(count), 0);
+    }, 0),
     dailyStatsRows: stats.length,
   };
 }
@@ -222,6 +295,14 @@ function summarizeEvents(dealEvents: Array<Event<DealClosedPayload>>): Pick<Proj
   return {
     eventRevenue: dealEvents.reduce((sum, event) => sum + projectDealEvent(event).revenue, 0),
     eventCount: dealEvents.length,
+  };
+}
+
+function summarizeInteractionEvents(
+  interactionEvents: Array<Event<InteractionRecordedPayload>>
+): Pick<ProjectionSnapshot, 'eventInteractionCount'> {
+  return {
+    eventInteractionCount: interactionEvents.length,
   };
 }
 
@@ -243,17 +324,65 @@ async function getDealEventsForMarket(marketId: string): Promise<Array<Event<Dea
     .toArray() as Array<Event<DealClosedPayload>>;
 }
 
+async function getEventsByTypeForMarket<TPayload>(
+  type: Event['type'],
+  marketId: string
+): Promise<Array<Event<TPayload>>> {
+  return await db.events
+    .where('type')
+    .equals(type)
+    .and(event => getGenericEventMarketId(event as Event<any>) === marketId)
+    .toArray() as Array<Event<TPayload>>;
+}
+
+async function getDeletedEventIdsForMarket(marketId: string): Promise<Set<string>> {
+  const deletedEvents = [
+    ...await getEventsByTypeForMarket<DeletedEventPayload>('deal_deleted', marketId),
+    ...await getEventsByTypeForMarket<DeletedEventPayload>('interaction_deleted', marketId),
+  ];
+
+  return new Set(
+    deletedEvents
+      .map(event => event.payload?.eventId)
+      .filter(nonBlankString)
+  );
+}
+
+function withoutDeletedEvents<T extends Event>(events: T[], deletedEventIds: Set<string>): T[] {
+  return events.filter(event => !event.id || !deletedEventIds.has(event.id));
+}
+
+async function getActiveStatsEventsForMarket(marketId: string): Promise<{
+  dealEvents: Array<Event<DealClosedPayload>>;
+  interactionEvents: Array<Event<InteractionRecordedPayload>>;
+}> {
+  const [dealEvents, interactionEvents, deletedEventIds] = await Promise.all([
+    getDealEventsForMarket(marketId),
+    getEventsByTypeForMarket<InteractionRecordedPayload>('interaction_recorded', marketId),
+    getDeletedEventIdsForMarket(marketId),
+  ]);
+
+  return {
+    dealEvents: withoutDeletedEvents(dealEvents, deletedEventIds).sort((a, b) => a.timestamp - b.timestamp),
+    interactionEvents: withoutDeletedEvents(interactionEvents, deletedEventIds).sort((a, b) => a.timestamp - b.timestamp),
+  };
+}
+
 function makeSnapshot(
   marketTotalRevenue: unknown,
   marketTotalDeals: unknown,
+  marketTotalInteractions: unknown,
   dailyStats: DailyStats[],
-  dealEvents: Array<Event<DealClosedPayload>>
+  dealEvents: Array<Event<DealClosedPayload>>,
+  interactionEvents: Array<Event<InteractionRecordedPayload>>
 ): ProjectionSnapshot {
   return {
     marketTotalRevenue: finiteNumber(marketTotalRevenue),
     marketTotalDeals: finiteNumber(marketTotalDeals),
+    marketTotalInteractions: finiteNumber(marketTotalInteractions),
     ...summarizeDailyStats(dailyStats),
     ...summarizeEvents(dealEvents),
+    ...summarizeInteractionEvents(interactionEvents),
   };
 }
 
@@ -261,8 +390,12 @@ function projectionsAreEqual(before: ProjectionSnapshot, after: ProjectionSnapsh
   return (
     before.marketTotalRevenue === after.marketTotalRevenue &&
     before.marketTotalDeals === after.marketTotalDeals &&
+    before.marketTotalInteractions === after.marketTotalInteractions &&
     before.dailyStatsRevenue === after.dailyStatsRevenue &&
-    before.dailyStatsDealCount === after.dailyStatsDealCount
+    before.dailyStatsDealCount === after.dailyStatsDealCount &&
+    before.dailyStatsTouchCount === after.dailyStatsTouchCount &&
+    before.dailyStatsInquiryCount === after.dailyStatsInquiryCount &&
+    before.dailyStatsExtraInteractionCount === after.dailyStatsExtraInteractionCount
   );
 }
 
@@ -270,8 +403,12 @@ function projectionIsInflated(before: ProjectionSnapshot, after: ProjectionSnaps
   return (
     before.marketTotalRevenue > after.marketTotalRevenue ||
     before.marketTotalDeals > after.marketTotalDeals ||
+    before.marketTotalInteractions > after.marketTotalInteractions ||
     before.dailyStatsRevenue > after.dailyStatsRevenue ||
-    before.dailyStatsDealCount > after.dailyStatsDealCount
+    before.dailyStatsDealCount > after.dailyStatsDealCount ||
+    before.dailyStatsTouchCount > after.dailyStatsTouchCount ||
+    before.dailyStatsInquiryCount > after.dailyStatsInquiryCount ||
+    before.dailyStatsExtraInteractionCount > after.dailyStatsExtraInteractionCount
   );
 }
 
@@ -279,9 +416,93 @@ function projectionIsLowerThanEvents(before: ProjectionSnapshot, after: Projecti
   return (
     before.marketTotalRevenue < after.marketTotalRevenue ||
     before.marketTotalDeals < after.marketTotalDeals ||
+    before.marketTotalInteractions < after.marketTotalInteractions ||
     before.dailyStatsRevenue < after.dailyStatsRevenue ||
-    before.dailyStatsDealCount < after.dailyStatsDealCount
+    before.dailyStatsDealCount < after.dailyStatsDealCount ||
+    before.dailyStatsTouchCount < after.dailyStatsTouchCount ||
+    before.dailyStatsInquiryCount < after.dailyStatsInquiryCount ||
+    before.dailyStatsExtraInteractionCount < after.dailyStatsExtraInteractionCount
   );
+}
+
+async function buildMarketStatsRebuildPlan(marketId: string): Promise<MarketStatsRebuildPlan | undefined> {
+  const market = await db.markets.get(marketId);
+  if (!market) return undefined;
+
+  const [currentDailyStats, activeEvents] = await Promise.all([
+    db.dailyStats.where('marketId').equals(marketId).toArray(),
+    getActiveStatsEventsForMarket(marketId),
+  ]);
+
+  const { dealEvents, interactionEvents } = activeEvents;
+  if (dealEvents.length === 0 && interactionEvents.length === 0) {
+    return undefined;
+  }
+
+  const rebuiltDailyStats = buildDailyStatsFromEvents(marketId, dealEvents, interactionEvents);
+  const before = makeSnapshot(
+    market.totalRevenue,
+    market.totalDeals,
+    market.totalInteractions,
+    currentDailyStats,
+    dealEvents,
+    interactionEvents
+  );
+  const rebuiltSummary = summarizeDailyStats(rebuiltDailyStats);
+  const after = makeSnapshot(
+    before.eventRevenue,
+    rebuiltSummary.dailyStatsDealCount,
+    interactionEvents.length,
+    rebuiltDailyStats,
+    dealEvents,
+    interactionEvents
+  );
+
+  return {
+    marketId,
+    before,
+    after,
+    rebuiltDailyStats,
+    currentDailyStats,
+  };
+}
+
+export async function rebuildMarketStatsFromEvents(
+  marketId: string,
+  options: { dryRun: boolean }
+): Promise<LocalProjectionRepairItem | undefined> {
+  if (!nonBlankString(marketId)) return undefined;
+
+  const plan = await buildMarketStatsRebuildPlan(marketId);
+  if (!plan) return undefined;
+
+  if (!options.dryRun) {
+    await db.transaction('rw', [db.markets, db.dailyStats], async () => {
+      for (const stat of plan.currentDailyStats) {
+        if (stat.id !== undefined) {
+          await db.dailyStats.delete(stat.id);
+        }
+      }
+
+      for (const stat of plan.rebuiltDailyStats) {
+        await db.dailyStats.add(stat);
+      }
+
+      await db.markets.update(marketId, {
+        totalRevenue: plan.after.marketTotalRevenue,
+        totalDeals: plan.after.marketTotalDeals,
+        totalInteractions: plan.after.marketTotalInteractions,
+        totalProfit: plan.rebuiltDailyStats.reduce((sum, stat) => sum + finiteNumber(stat.profit), 0),
+        updatedAt: Date.now(),
+      });
+    });
+  }
+
+  return {
+    marketId,
+    before: plan.before,
+    after: plan.after,
+  };
 }
 
 export async function repairLocalMarketProjections(
@@ -309,30 +530,13 @@ export async function repairLocalMarketProjections(
       continue;
     }
 
-    const [currentDailyStats, dealEvents] = await Promise.all([
-      db.dailyStats.where('marketId').equals(marketId).toArray(),
-      getDealEventsForMarket(marketId),
-    ]);
-
-    if (dealEvents.length === 0) {
+    const plan = await buildMarketStatsRebuildPlan(marketId);
+    if (!plan) {
       skipped.push({ marketId, reason: 'no_deal_events' });
       continue;
     }
 
-    const rebuiltDailyStats = buildDailyStatsFromEvents(marketId, dealEvents);
-    const before = makeSnapshot(
-      market.totalRevenue,
-      market.totalDeals,
-      currentDailyStats,
-      dealEvents
-    );
-    const rebuiltSummary = summarizeDailyStats(rebuiltDailyStats);
-    const after = makeSnapshot(
-      before.eventRevenue,
-      rebuiltSummary.dailyStatsDealCount,
-      rebuiltDailyStats,
-      dealEvents
-    );
+    const { before, after } = plan;
 
     if (projectionsAreEqual(before, after)) {
       skipped.push({ marketId, reason: 'already_consistent' });
@@ -352,26 +556,12 @@ export async function repairLocalMarketProjections(
 
     if (options.dryRun) continue;
 
-    await db.transaction('rw', [db.markets, db.dailyStats], async () => {
-      for (const stat of currentDailyStats) {
-        if (stat.id !== undefined) {
-          await db.dailyStats.delete(stat.id);
-        } else {
-          warnings.push(`market ${marketId}: dailyStats row without id was not deleted`);
-        }
+    for (const stat of plan.currentDailyStats) {
+      if (stat.id === undefined) {
+        warnings.push(`market ${marketId}: dailyStats row without id was not deleted`);
       }
-
-      for (const stat of rebuiltDailyStats) {
-        await db.dailyStats.add(stat);
-      }
-
-      await db.markets.update(marketId, {
-        totalRevenue: after.marketTotalRevenue,
-        totalDeals: after.marketTotalDeals,
-        totalProfit: rebuiltDailyStats.reduce((sum, stat) => sum + finiteNumber(stat.profit), 0),
-        updatedAt: Date.now(),
-      });
-    });
+    }
+    await rebuildMarketStatsFromEvents(marketId, { dryRun: false });
   }
 
   return { repaired, skipped, warnings };

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { db } from '../lib/db';
 import {
+  rebuildMarketStatsFromEvents,
   repairLocalMarketProjections,
   type LocalProjectionRepairResult,
 } from '../lib/sync/local-projection-repair';
@@ -72,6 +73,50 @@ function deal(
       ...payload,
     } as DealClosedPayload,
   };
+}
+
+function interaction(
+  id: string,
+  type: string,
+  timestamp = new Date(2026, 4, 1, 13, 0, 0).getTime()
+): Event {
+  return {
+    id,
+    type: 'interaction_recorded',
+    market_id: MARKET_ID,
+    actor_id: 'owner-1',
+    timestamp,
+    sync_status: 'synced',
+    payload: {
+      market_id: MARKET_ID,
+      type,
+    },
+  } as Event;
+}
+
+function tombstone(
+  id: string,
+  type: 'deal_deleted' | 'interaction_deleted',
+  eventId: string,
+  timestamp = new Date(2026, 4, 1, 14, 0, 0).getTime()
+): Event {
+  return {
+    id,
+    type,
+    market_id: MARKET_ID,
+    actor_id: 'owner-1',
+    timestamp,
+    sync_status: 'synced',
+    payload: {
+      eventId,
+      market_id: MARKET_ID,
+      dealDate: '2026-05-01',
+      totalAmount: 100,
+      totalCost: 0,
+      dealCount: 1,
+      interactionType: 'touch',
+    },
+  } as Event;
 }
 
 function makeStore(
@@ -608,6 +653,99 @@ runTest('falls back to payload market_id when market_id index has no matches', a
   assert.equal(item.after.marketTotalDeals, 2);
   assert.equal(store.markets.get(MARKET_ID)!.totalRevenue, 250);
   assert.equal(store.getDailyStatsByMarket(MARKET_ID)[0].revenue, 250);
+});
+
+runTest('rebuildMarketStatsFromEvents rebuilds interaction totals', async () => {
+  const store = makeStore(
+    [market({ totalRevenue: 0, totalDeals: 0, totalInteractions: 9 })],
+    [stat({ revenue: 0, dealCount: 0, touchCount: 6, inquiryCount: 3 })],
+    [
+      interaction('i1', 'touch'),
+      interaction('i2', 'inquiry'),
+      interaction('i3', 'photo'),
+    ]
+  );
+
+  const result = await withMockDb(store, () =>
+    rebuildMarketStatsFromEvents(MARKET_ID, { dryRun: false })
+  );
+  const repairedMarket = store.markets.get(MARKET_ID)!;
+  const repairedStats = store.getDailyStatsByMarket(MARKET_ID);
+
+  assert.ok(result);
+  assert.equal(result?.after.marketTotalInteractions, 3);
+  assert.equal(repairedMarket.totalInteractions, 3);
+  assert.equal(repairedStats.length, 1);
+  assert.equal(repairedStats[0].touchCount, 1);
+  assert.equal(repairedStats[0].inquiryCount, 1);
+  assert.deepEqual(repairedStats[0].extraInteractions, { photo: 1 });
+  assert.equal(store.writes.eventsAdded, 0);
+  assert.equal(store.writes.eventsDeleted, 0);
+});
+
+runTest('rebuildMarketStatsFromEvents excludes deleted deal and interaction events', async () => {
+  const store = makeStore(
+    [market({ totalRevenue: 600, totalDeals: 6, totalInteractions: 6 })],
+    [stat({ revenue: 600, dealCount: 6, touchCount: 6 })],
+    [
+      deal('d1', {
+        isManualEntry: true,
+        manualRevenue: 100,
+        manualCost: 0,
+        manualDealCount: 1,
+        totalAmount: 100,
+      }),
+      deal('d2', {
+        isManualEntry: true,
+        manualRevenue: 200,
+        manualCost: 0,
+        manualDealCount: 1,
+        totalAmount: 200,
+      }),
+      tombstone('td1', 'deal_deleted', 'd1'),
+      interaction('i1', 'touch'),
+      interaction('i2', 'touch'),
+      tombstone('ti1', 'interaction_deleted', 'i1'),
+    ]
+  );
+
+  const result = await withMockDb(store, () =>
+    rebuildMarketStatsFromEvents(MARKET_ID, { dryRun: false })
+  );
+  const repairedMarket = store.markets.get(MARKET_ID)!;
+  const repairedStats = store.getDailyStatsByMarket(MARKET_ID);
+
+  assert.ok(result);
+  assert.equal(repairedMarket.totalRevenue, 200);
+  assert.equal(repairedMarket.totalDeals, 1);
+  assert.equal(repairedMarket.totalInteractions, 1);
+  assert.equal(repairedStats[0].revenue, 200);
+  assert.equal(repairedStats[0].dealCount, 1);
+  assert.equal(repairedStats[0].touchCount, 1);
+});
+
+runTest('rebuildMarketStatsFromEvents does not write events', async () => {
+  const store = makeStore(
+    [market({ totalRevenue: 300, totalDeals: 3 })],
+    [stat({ revenue: 300, dealCount: 3 })],
+    [
+      deal('d1', {
+        isManualEntry: true,
+        manualRevenue: 100,
+        manualCost: 0,
+        manualDealCount: 1,
+        totalAmount: 100,
+      }),
+    ]
+  );
+
+  await withMockDb(store, () =>
+    rebuildMarketStatsFromEvents(MARKET_ID, { dryRun: false })
+  );
+
+  assert.equal(store.writes.eventsAdded, 0);
+  assert.equal(store.writes.eventsDeleted, 0);
+  assert.equal(store.events.length, 1);
 });
 
 async function main(): Promise<void> {
