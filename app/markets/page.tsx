@@ -16,9 +16,9 @@ import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme
 import type { MarketStatus } from '@/types/db';
 import MarketsLoading from './loading';
 
-type TabType = 'all' | 'pending' | 'payment' | 'upcoming' | 'completed' | 'cancelled';
+type TabType = 'all' | 'pending' | 'completed' | 'cancelled';
 
-const SORT_ASCENDING_TABS: TabType[] = ['all', 'pending', 'payment', 'upcoming'];
+const SORT_ASCENDING_TABS: TabType[] = ['all', 'pending'];
 
 function getTodayString() {
   const now = new Date();
@@ -62,18 +62,6 @@ function isEndedMarket(market: { status: MarketStatus; dates?: string[]; endDate
   return market.endDate < today;
 }
 
-function isUpcomingMarket(market: { status: MarketStatus; dates?: string[]; startDate: string }, today: string) {
-  if (market.status !== 'paid' && market.status !== 'ongoing') {
-    return false;
-  }
-
-  if (market.dates && market.dates.length > 0) {
-    return market.dates.some(date => date >= today);
-  }
-
-  return market.startDate >= today;
-}
-
 export default function MarketsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('all');
@@ -114,23 +102,20 @@ export default function MarketsPage() {
 
     switch (activeTab) {
       case 'pending':
-        markets = allMarkets.filter(m => m.status === 'registered');
-        break;
-      case 'payment':
-        markets = allMarkets.filter(m => m.status === 'accepted');
-        break;
-      case 'upcoming':
-        markets = allMarkets.filter(m => isUpcomingMarket(m, today));
+        markets = allMarkets.filter(m =>
+          m.status === 'registered' ||
+          m.status === 'accepted' ||
+          m.status === 'postponed'
+        );
         break;
       case 'completed':
         return allMarkets.filter(m => isEndedMarket(m, today));
       case 'cancelled':
-        return allMarkets.filter(m => m.status === 'cancelled' || m.status === 'postponed');
+        return allMarkets.filter(m => m.status === 'cancelled');
       default:
         markets = allMarkets.filter(m =>
           !isEndedMarket(m, today) &&
-          m.status !== 'cancelled' &&
-          m.status !== 'postponed'
+          m.status !== 'cancelled'
         );
         break;
     }
@@ -163,18 +148,18 @@ export default function MarketsPage() {
 
   // Tab 配置
   const today = getTodayString();
-  const allTabMarkets = allMarkets?.filter(m => !isEndedMarket(m, today)) || [];
-  const pendingTabMarkets = allMarkets?.filter(m => m.status === 'registered') || [];
-  const paymentTabMarkets = allMarkets?.filter(m => m.status === 'accepted') || [];
-  const upcomingTabMarkets = allMarkets?.filter(m => isUpcomingMarket(m, today)) || [];
+  const allTabMarkets = allMarkets?.filter(m => !isEndedMarket(m, today) && m.status !== 'cancelled') || [];
+  const pendingTabMarkets = allMarkets?.filter(m =>
+    m.status === 'registered' ||
+    m.status === 'accepted' ||
+    m.status === 'postponed'
+  ) || [];
   const completedTabMarkets = allMarkets?.filter(m => isEndedMarket(m, today)) || [];
-  const cancelledTabMarkets = allMarkets?.filter(m => m.status === 'cancelled' || m.status === 'postponed') || [];
+  const cancelledTabMarkets = allMarkets?.filter(m => m.status === 'cancelled') || [];
 
   const tabs = [
     { id: 'all' as TabType, label: '全部', count: allTabMarkets.length },
-    { id: 'pending' as TabType, label: '待公佈', count: pendingTabMarkets.length },
-    { id: 'payment' as TabType, label: '待繳費', count: paymentTabMarkets.length },
-    { id: 'upcoming' as TabType, label: '待舉辦', count: upcomingTabMarkets.length },
+    { id: 'pending' as TabType, label: '待處理', count: pendingTabMarkets.length },
     { id: 'completed' as TabType, label: '已結束', count: completedTabMarkets.length },
     { id: 'cancelled' as TabType, label: '已取消', count: cancelledTabMarkets.length },
   ];
@@ -263,7 +248,7 @@ export default function MarketsPage() {
 
         {/* Tabs - ✅ 員工模式使用紫色主題 */}
         <div className={`bg-white rounded-[1.5rem] p-2 shadow-lg ${getShadowClass(isStaff)} mb-6`}>
-          <div className="grid grid-cols-3 gap-1">
+          <div className="grid grid-cols-4 gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
