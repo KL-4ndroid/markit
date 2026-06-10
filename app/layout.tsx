@@ -16,7 +16,6 @@ import { NavigationProvider } from "@/lib/navigation-context";
 import { SyncProgressManager } from "@/components/sync/SyncProgressManager";
 import { InitialSyncDialog } from "@/components/sync/InitialSyncDialog";
 import { StaffInvitationDialog } from "@/components/staff/StaffInvitationDialog";
-import { DebugToolsLoader } from "@/components/DebugToolsLoader";
 
 export const metadata: Metadata = {
   title: "市集誌 - Market Pulse",
@@ -79,9 +78,6 @@ export default function RootLayout({
             <NavigationProvider>
               {/* Service Worker 註冊 */}
               <RegisterServiceWorker />
-              
-              {/* 調試工具載入器（僅開發環境） */}
-              <DebugToolsLoader />
               
               {/* ✅ 認證守衛 - 包裹所有受保護的內容 */}
               <AuthGuard>
