@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
 import type { MarketStatus } from '@/types/db';
 import MarketsLoading from './loading';
@@ -258,6 +259,8 @@ export default function MarketsPage() {
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4">
+        <StaffModeNotice className="mb-4" compact />
+
         {/* Tabs - ✅ 員工模式使用紫色主題 */}
         <div className={`bg-white rounded-[1.5rem] p-2 shadow-lg ${getShadowClass(isStaff)} mb-6`}>
           <div className="grid grid-cols-3 gap-1">

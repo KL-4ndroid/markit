@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getGradientClass } from '@/lib/theme-config';
 import { StaffPermissionCard } from '@/components/staff/StaffPermissionCard';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
+import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 
 async function clearLocalAppData(): Promise<void> {
   const { clearAllData, db } = await import('@/lib/db');
@@ -235,6 +236,8 @@ export default function SettingsPage() {
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4 space-y-4">
+        <StaffModeNotice />
+
         {/* PWA 安裝按鈕 */}
         <PWAInstallButton />
 

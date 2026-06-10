@@ -37,6 +37,7 @@ import {
   getDataReliability,
 } from '@/lib/analytics';
 import { UnlockGuard } from '@/components/analytics/UnlockGuard';
+import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { buildActionableAnalytics } from '@/lib/analytics/actionable-insights';
 import { buildMarketRecapReport } from '@/lib/analytics/market-recap';
 import { buildMarketTrend } from '@/lib/analytics/market-trend';
@@ -621,6 +622,8 @@ export default function AnalyticsPage() {
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4">
+        <StaffModeNotice className="mb-4" />
+
         {/* 日期範圍篩選器 */}
         <div className="mb-6">
           <DateRangeFilter 

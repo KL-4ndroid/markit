@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context'; // ✅ 導入 useAuth
+import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
 import type { ProductCategory } from '@/types/db';
 
@@ -236,6 +237,8 @@ export default function ProductsPage() {
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4">
+        <StaffModeNotice className="mb-4" compact />
+
         {/* 搜尋框 - ✅ 員工模式使用紫色主題 */}
         <div className={`bg-white rounded-[1.5rem] p-4 shadow-lg ${getShadowClass(isStaff)} mb-4`}>
           <div className="relative">

@@ -21,6 +21,7 @@ import {
 import { getGradientClass, getShadowClass } from '@/lib/theme-config';
 import { StaffBadge } from '@/components/staff/StaffBadge';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
+import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { SensitiveDataMask } from '@/components/staff/SensitiveDataMask';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 // Overview skeleton — mirrors the 3-column grid layout
@@ -469,6 +470,8 @@ export default function HomePage() {
 
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4">
+        <StaffModeNotice className="mb-4" />
+
         {/* 本月概覽 */}
         <div className="mb-6">
           {statsLoading ? (
