@@ -48,15 +48,22 @@ export function LoginModal({
   const [mode, setMode] = useState<'login' | 'signup'>(defaultMode);
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [isSlowAuth, setIsSlowAuth] = useState(false);
 
   const isSignup = mode === 'signup';
 
   useEffect(() => {
     setMode(defaultMode);
+    setAuthError('');
+    setIsSlowAuth(false);
   }, [defaultMode]);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    setAuthError('');
+    setIsSlowAuth(false);
 
     const savedEmail = localStorage.getItem('remembered_email');
     if (savedEmail) {
@@ -67,20 +74,28 @@ export function LoginModal({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setAuthError('');
 
     const normalizedEmail = email.trim();
 
     if (!normalizedEmail || !password) {
-      toast.error('請輸入 Email 和密碼。');
+      const message = '請輸入 Email 和密碼。';
+      setAuthError(message);
+      toast.error(message);
       return;
     }
 
     if (isSignup && password.length < 6) {
-      toast.error('密碼至少需要 6 位字元。');
+      const message = '密碼至少需要 6 位字元。';
+      setAuthError(message);
+      toast.error(message);
       return;
     }
 
     setIsLoading(true);
+    const slowAuthTimer = window.setTimeout(() => {
+      setIsSlowAuth(true);
+    }, 8000);
 
     try {
       if (mode === 'login') {
@@ -100,6 +115,8 @@ export function LoginModal({
 
           toast.success('登入成功。');
           onLoginSuccess(data.user.id, data.user.email || normalizedEmail);
+        } else {
+          throw new Error('登入失敗，請確認 Email 和密碼後再試一次。');
         }
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -141,12 +158,18 @@ export function LoginModal({
           }
 
           onLoginSuccess(data.user.id, data.user.email || normalizedEmail);
+        } else {
+          throw new Error('帳號建立失敗，請稍後再試。');
         }
       }
     } catch (error) {
       console.error('Auth error:', error);
-      toast.error(getFriendlyAuthError(error, mode));
+      const message = getFriendlyAuthError(error, mode);
+      setAuthError(message);
+      toast.error(message);
     } finally {
+      window.clearTimeout(slowAuthTimer);
+      setIsSlowAuth(false);
       setIsLoading(false);
     }
   };
@@ -188,7 +211,10 @@ export function LoginModal({
                 <input
                   type="email"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    if (authError) setAuthError('');
+                  }}
                   placeholder="your@email.com"
                   autoComplete="email"
                   className="w-full pl-12 pr-4 py-3 rounded-2xl border border-[#7B9FA6]/20 focus:border-[#7B9FA6] focus:outline-none transition-colors"
@@ -211,7 +237,10 @@ export function LoginModal({
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (authError) setAuthError('');
+                  }}
                   placeholder="輸入密碼"
                   autoComplete={isSignup ? 'new-password' : 'current-password'}
                   className="w-full pl-12 pr-12 py-3 rounded-2xl border border-[#7B9FA6]/20 focus:border-[#7B9FA6] focus:outline-none transition-colors"
@@ -248,6 +277,21 @@ export function LoginModal({
               </div>
             )}
 
+            {authError && (
+              <div
+                role="alert"
+                className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700"
+              >
+                {authError}
+              </div>
+            )}
+
+            {isSlowAuth && !authError && (
+              <div className="rounded-2xl border border-[#D4A574]/30 bg-[#FFF8E7] px-4 py-3 text-sm leading-relaxed text-[#6B6B6B]">
+                正在等待伺服器回應。若持續太久，請確認網路連線後再試一次。
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
@@ -266,7 +310,10 @@ export function LoginModal({
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => setMode(isSignup ? 'login' : 'signup')}
+              onClick={() => {
+                setAuthError('');
+                setMode(isSignup ? 'login' : 'signup');
+              }}
               className="text-[#7B9FA6] hover:text-[#6A8E95] transition-colors text-sm"
               disabled={isLoading}
             >
