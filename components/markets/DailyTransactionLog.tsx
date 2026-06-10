@@ -17,6 +17,7 @@ import { getActiveDealEvents, getActiveInteractionEvents } from '@/lib/db/event-
 import { formatCurrency } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { deleteDealEventById, deleteInteractionEventById } from '@/lib/markets/event-deletion-service';
+import { getDealEventDate, getEventMarketId } from '@/lib/markets/event-view-utils';
 import { toast } from 'sonner';
 
 interface DailyTransactionLogProps {
@@ -73,27 +74,15 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       // 獲取當日互動記錄
       const interactions = (await getActiveInteractionEvents())
         .filter(e => {
-          const payload = e.payload as { market_id?: string };
-          if (payload.market_id !== marketId) return false;
+          if (getEventMarketId(e) !== marketId) return false;
           return e.timestamp >= startOfDay && e.timestamp <= endOfDay;
         });
 
       // 獲取當日成交記錄
       const deals = (await getActiveDealEvents())
         .filter(e => {
-          const payload = e.payload as { market_id?: string };
-          if (payload.market_id !== marketId) return false;
-          
-          // 使用 dealDate 或 timestamp 判斷
-          let dealDateStr: string;
-          if (e.payload.dealDate) {
-            dealDateStr = e.payload.dealDate;
-          } else {
-            const dealTimestamp = new Date(e.timestamp);
-            dealDateStr = `${dealTimestamp.getFullYear()}-${String(dealTimestamp.getMonth() + 1).padStart(2, '0')}-${String(dealTimestamp.getDate()).padStart(2, '0')}`;
-          }
-          
-          return dealDateStr === targetDate;
+          if (getEventMarketId(e) !== marketId) return false;
+          return getDealEventDate(e) === targetDate;
         });
 
       // 轉換為流水帳格式

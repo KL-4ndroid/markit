@@ -6,6 +6,7 @@ import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { getActiveInteractionEvents } from '@/lib/db/event-tombstones';
+import { getEventMarketId, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
 import type { Market, Event, InteractionRecordedPayload } from '@/types/db';
 
 interface DailyRevenueStatsProps {
@@ -51,15 +52,10 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
         // 獲取互動事件 - 只篩選在 marketDates 中的日期
         const interactions = (await getActiveInteractionEvents())
           .filter(e => {
-            const payload = e.payload as { market_id?: string };
-            if (payload.market_id !== market.id) return false;
-            
-            // 將 timestamp 轉換為日期字串
-            const eventDate = new Date(e.timestamp);
-            const dateStr = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+            if (getEventMarketId(e) !== market.id) return false;
             
             // 檢查是否在 marketDates 中
-            return marketDates.includes(dateStr);
+            return marketDates.includes(getLocalDateStringFromTimestamp(e.timestamp));
           });
 
         setInteractionEvents(interactions);
@@ -150,8 +146,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
 
     // ✅ 統計每日的互動次數（從事件記錄）
     interactionEvents.forEach(event => {
-      const eventDate = new Date(event.timestamp);
-      const dateStr = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+      const dateStr = getLocalDateStringFromTimestamp(event.timestamp);
 
       const dayData = dataMap.get(dateStr);
       if (dayData) {

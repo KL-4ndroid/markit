@@ -61,6 +61,7 @@ import { normalizeMarketRouteId, shouldShowMarketDetailLoading } from '@/lib/mar
 import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
+import { getDealEventDate, getEventMarketId, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
@@ -390,15 +391,10 @@ export default function MarketDetailPage({ params }: PageProps) {
         // 獲取互動事件 - 只篩選在 marketDates 中的日期
         const interactions = (await getActiveInteractionEvents())
           .filter(e => {
-            const payload = e.payload as { market_id?: string };
-            if (payload.market_id !== marketId) return false;
-            
-            // 將 timestamp 轉換為日期字串
-            const eventDate = new Date(e.timestamp);
-            const dateStr = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+            if (getEventMarketId(e) !== marketId) return false;
             
             // 檢查是否在 marketDates 中
-            return marketDates.includes(dateStr);
+            return marketDates.includes(getLocalDateStringFromTimestamp(e.timestamp));
           });
 
         console.log('✅ 找到互動事件:', interactions.length);
@@ -408,20 +404,10 @@ export default function MarketDetailPage({ params }: PageProps) {
         // 獲取成交事件 - 只篩選在 marketDates 中的日期
         const deals = (await getActiveDealEvents())
           .filter(e => {
-            const payload = e.payload as { market_id?: string };
-            if (payload.market_id !== marketId) return false;
-            
-            // ✅ 使用 dealDate 作為篩選依據，降級到 timestamp
-            let dealDateStr: string;
-            if (e.payload.dealDate) {
-              dealDateStr = e.payload.dealDate;
-            } else {
-              const dealTimestamp = new Date(e.timestamp);
-              dealDateStr = `${dealTimestamp.getFullYear()}-${String(dealTimestamp.getMonth() + 1).padStart(2, '0')}-${String(dealTimestamp.getDate()).padStart(2, '0')}`;
-            }
+            if (getEventMarketId(e) !== marketId) return false;
             
             // 檢查是否在 marketDates 中
-            return marketDates.includes(dealDateStr);
+            return marketDates.includes(getDealEventDate(e));
           });
 
         setDealEvents(deals);
@@ -897,13 +883,7 @@ export default function MarketDetailPage({ params }: PageProps) {
   // ✅ 新增：根據日期過濾成交記錄
   const getDealsByDate = (date: string) => {
     return dealEvents.filter(deal => {
-      // ✅ 使用本地日期，避免時區問題
-      let dealDate = deal.payload.dealDate;
-      if (!dealDate) {
-        const dealTimestamp = new Date(deal.timestamp);
-        dealDate = `${dealTimestamp.getFullYear()}-${String(dealTimestamp.getMonth() + 1).padStart(2, '0')}-${String(dealTimestamp.getDate()).padStart(2, '0')}`;
-      }
-      return dealDate === date;
+      return getDealEventDate(deal) === date;
     });
   };
 
@@ -958,7 +938,7 @@ export default function MarketDetailPage({ params }: PageProps) {
       toast.error('刪除失敗，請稍後再試');
 
       const updatedDeals = (await getActiveDealEvents())
-        .filter(event => (event.payload as { market_id?: string }).market_id === marketId);
+        .filter(event => getEventMarketId(event) === marketId);
       setDealEvents(updatedDeals);
     }
   }, [marketId, selectedDeal, dbStatus]);
