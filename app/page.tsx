@@ -7,7 +7,8 @@ import { useMarkets, useMonthlyStats } from '@/lib/db/hooks';
 import { formatCurrency } from '@/lib/utils';
 import { MarketCard } from '@/components/markets/MarketCard';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { useSync, SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
+import { SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
+import { useSyncContext } from '@/lib/sync-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { 
@@ -103,9 +104,7 @@ export default function HomePage() {
   
   // ✅ 修復：傳入 ownerId 參數，只統計當前使用者的市集
   const monthlyStats = useMonthlyStats(currentOwnerId);
-  const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSync({
-    enabled: !!user && isConfigured,
-  });
+  const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSyncContext();
   
   const [showSyncTooltip, setShowSyncTooltip] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -473,6 +472,7 @@ export default function HomePage() {
         <StaffModeNotice className="mb-4" />
 
         {/* 本月概覽 */}
+        {!isStaff && (
         <div className="mb-6">
           {statsLoading ? (
             <OverviewSkeleton />
@@ -551,6 +551,7 @@ export default function HomePage() {
             </div>
           )}
         </div>
+        )}
 
         {/* 當日市集 - 移除條件渲染，始終顯示容器 */}
         {todayMarkets.length > 0 && (

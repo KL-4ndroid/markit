@@ -7,7 +7,8 @@
 
 'use client';
 
-import { useSync, SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
+import { SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
+import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { 
   Cloud, 
@@ -21,9 +22,7 @@ import { useState } from 'react';
 
 export function SyncStatus() {
   const { user, isConfigured } = useAuth();
-  const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSync({
-    enabled: !!user && isConfigured,
-  });
+  const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSyncContext();
   const [showTooltip, setShowTooltip] = useState(false);
 
   // 如果未配置或未登入，不顯示

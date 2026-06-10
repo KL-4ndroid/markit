@@ -58,6 +58,7 @@ let hasSetupIntervals = false;
  * 確保同一時間只有一個同步在執行
  */
 let isSyncLocked = false;
+let activeSyncIdentity: string | null = null;
 
 const SYNC_PAUSE_UNTIL_KEY = 'sync_pause_until';
 const SYNC_PERMISSION_ERROR_LOG_KEY = 'sync_permission_error_history';
@@ -89,22 +90,10 @@ function updateGlobalState(updater: (prev: SyncState) => SyncState) {
   globalStateListeners.forEach(listener => listener(globalSyncState));
 }
 
-/**
- * 重置初始同步標記（用於測試或登出）
- */
-export function resetInitialSyncFlag() {
+function resetSyncRuntimeState() {
   hasExecutedInitialSync = false;
   hasSetupIntervals = false;
-  // ✅ 重置全局同步鎖
   isSyncLocked = false;
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.removeItem(SYNC_PAUSE_UNTIL_KEY);
-    } catch (error) {
-      console.error('清除同步暫停標記失敗:', error);
-    }
-  }
-  // ✅ 重置全局狀態
   updateGlobalState(() => ({
     status: SyncStatus.IDLE,
     lastSyncAt: null,
@@ -113,6 +102,23 @@ export function resetInitialSyncFlag() {
     uploadProgress: undefined,
     downloadProgress: undefined,
   }));
+}
+
+/**
+ * 重置初始同步標記（用於測試或登出）
+ */
+export function resetInitialSyncFlag() {
+  activeSyncIdentity = null;
+  resetSyncRuntimeState();
+  // ✅ 重置全局同步鎖
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem(SYNC_PAUSE_UNTIL_KEY);
+    } catch (error) {
+      console.error('清除同步暫停標記失敗:', error);
+    }
+  }
+  // ✅ 重置全局狀態
 }
 
 function getSyncPauseUntil(): number {
@@ -173,6 +179,9 @@ export function useSync(options: UseSyncOptions = {}) {
   // ✅ Phase 3: 角色模式 helper
   // 完全由 SyncProvider 傳入的 roleMode 決定，不 fallback 到 localStorage
   const effectiveStaffMode = roleMode === 'staff';
+  const syncIdentity = enabled && isConfigured && user
+    ? `${user.id}:${effectiveStaffMode ? 'staff' : 'owner'}`
+    : null;
   
   // ✅ 使用全局狀態，並訂閱更新
   const [state, setState] = useState<SyncState>(globalSyncState);
@@ -199,6 +208,17 @@ export function useSync(options: UseSyncOptions = {}) {
       globalStateListeners.delete(listener);
     };
   }, []);
+
+  useEffect(() => {
+    if (activeSyncIdentity === syncIdentity) {
+      return;
+    }
+
+    activeSyncIdentity = syncIdentity;
+    forceSyncExecutedRef.current = false;
+    lastSnapshotCheckFailedRef.current = false;
+    resetSyncRuntimeState();
+  }, [syncIdentity]);
 
   // ✅ force_initial_sync 專用 effect
   // 不被 hasSetupIntervals 阻擋，確保條件就緒時才消耗 flag
@@ -417,7 +437,7 @@ export function useSync(options: UseSyncOptions = {}) {
 
   // 定期同步
   useEffect(() => {
-    if (!enabled || !isConfigured || !user) {
+    if (!enabled || !isConfigured || !user || !syncIdentity) {
       return;
     }
 
@@ -476,7 +496,7 @@ export function useSync(options: UseSyncOptions = {}) {
       }
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [enabled, isConfigured, user, interval]);
+  }, [enabled, isConfigured, user, interval, syncIdentity]);
 
   // ✅ 使用 useMemo 避免每次渲染都創建新對象
   return useMemo(() => ({

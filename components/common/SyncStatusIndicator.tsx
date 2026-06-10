@@ -14,16 +14,15 @@
 
 'use client';
 
-import { useSync, SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
+import { SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
+import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 export function SyncStatusIndicator() {
   const { user, isConfigured } = useAuth();
-  const { status, pendingCount, error, sync, isOnline, uploadProgress, downloadProgress } = useSync({
-    enabled: !!user && isConfigured,
-  });
+  const { status, pendingCount, error, sync, isOnline, uploadProgress, downloadProgress } = useSyncContext();
   const [showLargeDialog, setShowLargeDialog] = useState(false);
   const [hasShownOfflineToast, setHasShownOfflineToast] = useState(false);
   

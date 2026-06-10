@@ -13,38 +13,52 @@ import { Cloud, Loader2, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { SyncStatus } from '@/hooks/useSync';
 import { useSyncContext } from '@/lib/sync-context';
+import { useUserRole } from '@/hooks/useUserRole';
+import { resolveRoleMode } from '@/lib/auth/role-mode';
 
 // 使用 sessionStorage 記錄是否已完成初始同步（會話級別，關閉瀏覽器後重置）
 const INITIAL_SYNC_KEY = 'hasCompletedInitialSync';
 
-function getHasCompletedInitialSync(): boolean {
+function getHasCompletedInitialSync(key: string): boolean {
   if (typeof window === 'undefined') return false;
-  return sessionStorage.getItem(INITIAL_SYNC_KEY) === 'true';
+  return sessionStorage.getItem(key) === 'true';
 }
 
-function setHasCompletedInitialSync(value: boolean): void {
+function setHasCompletedInitialSync(key: string, value: boolean): void {
   if (typeof window === 'undefined') return;
-  sessionStorage.setItem(INITIAL_SYNC_KEY, value.toString());
+  sessionStorage.setItem(key, value.toString());
 }
 
 export function InitialSyncDialog() {
   const { user, isConfigured } = useAuth();
+  const { userRole, isLoading: isRoleLoading } = useUserRole();
   const syncContext = useSyncContext(); // ✅ 使用全局同步狀態
   const { status, downloadProgress } = syncContext;
+  const roleMode = resolveRoleMode(userRole);
+  const initialSyncKey = user ? `${INITIAL_SYNC_KEY}:${user.id}:${roleMode}` : INITIAL_SYNC_KEY;
 
   const [isOpen, setIsOpen] = useState(false);
-  const [hasCompletedInitialSync, setHasCompletedInitialSyncState] = useState(() => 
-    getHasCompletedInitialSync()
-  );
+  const [, setHasCompletedInitialSyncState] = useState(false);
   const hasSeenSuccessRef = useRef(false); // ✅ 使用 ref 避免觸發重新渲染
 
   // 監聽用戶登入
   useEffect(() => {
-    if (user && isConfigured && !hasCompletedInitialSync) {
+    if (!user || !isConfigured || isRoleLoading) {
+      setIsOpen(false);
+      setHasCompletedInitialSyncState(false);
+      hasSeenSuccessRef.current = false;
+      return;
+    }
+
+    const completed = getHasCompletedInitialSync(initialSyncKey);
+    setHasCompletedInitialSyncState(completed);
+    hasSeenSuccessRef.current = false;
+
+    if (!completed) {
       // 用戶剛登入且未完成初始同步，顯示對話框
       setIsOpen(true);
     }
-  }, [user, isConfigured, hasCompletedInitialSync]);
+  }, [user, isConfigured, isRoleLoading, initialSyncKey]);
 
   // 監聽同步狀態
   useEffect(() => {
@@ -54,7 +68,7 @@ export function InitialSyncDialog() {
       const timeoutId = setTimeout(() => {
         setIsOpen(false);
         setHasCompletedInitialSyncState(true);
-        setHasCompletedInitialSync(true);
+        setHasCompletedInitialSync(initialSyncKey, true);
       }, 1000);
       
       return () => clearTimeout(timeoutId);
@@ -65,7 +79,7 @@ export function InitialSyncDialog() {
       const timeoutId = setTimeout(() => {
         setIsOpen(false);
         setHasCompletedInitialSyncState(true);
-        setHasCompletedInitialSync(true);
+        setHasCompletedInitialSync(initialSyncKey, true);
       }, 2000);
       
       return () => clearTimeout(timeoutId);
@@ -76,12 +90,12 @@ export function InitialSyncDialog() {
       const timeoutId = setTimeout(() => {
         setIsOpen(false);
         setHasCompletedInitialSyncState(true);
-        setHasCompletedInitialSync(true);
+        setHasCompletedInitialSync(initialSyncKey, true);
       }, 30000);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [status, isOpen]);
+  }, [status, isOpen, initialSyncKey]);
 
   // 獲取當前階段描述
   const getPhaseDescription = () => {

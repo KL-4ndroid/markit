@@ -29,7 +29,7 @@ const SyncContext = createContext<SyncContextType | null>(null);
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { user, isConfigured } = useAuth();
-  const { userRole } = useUserRole();
+  const { userRole, isLoading: isRoleLoading } = useUserRole();
 
   // ✅ Phase 3: 解析角色模式並傳入 useSync
   // resolveRoleMode 對 userRole 尚未載入（isStaff=false, ownerId=undefined）時回傳 'owner'
@@ -37,7 +37,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
   // ✅ 只創建一個 useSync 實例
   const syncState = useSync({
-    enabled: !!user && isConfigured,
+    enabled: !!user && isConfigured && !isRoleLoading,
     roleMode,
   });
 
