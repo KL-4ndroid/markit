@@ -1,8 +1,4 @@
-/**
- * About Page - 關於頁面
- * 
- * 白名單路由：無需登入即可訪問
- */
+import { APP_METADATA } from '@/lib/app-metadata';
 
 export default function AboutPage() {
   return (
@@ -70,8 +66,8 @@ export default function AboutPage() {
           <section>
             <h2 className="text-xl font-semibold text-[#3A3A3A] mb-3">版本資訊</h2>
             <p className="text-[#6B6B6B] leading-relaxed">
-              當前版本：v1.0.0<br />
-              最後更新：2025 年 2 月
+              當前版本：v{APP_METADATA.version}<br />
+              最後更新：{APP_METADATA.lastUpdatedLabel}
             </p>
           </section>
         </div>

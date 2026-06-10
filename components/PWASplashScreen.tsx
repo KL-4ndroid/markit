@@ -8,6 +8,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { APP_METADATA } from '@/lib/app-metadata';
 
 export function PWASplashScreen() {
   const [isVisible, setIsVisible] = useState(true);
@@ -93,7 +94,7 @@ export function PWASplashScreen() {
 
       {/* 版本資訊 */}
       <div className="absolute bottom-8 text-white/60 text-sm">
-        v1.0.0
+        v{APP_METADATA.version}
       </div>
     </div>
   );
