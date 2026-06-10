@@ -1,28 +1,26 @@
 /**
- * Supabase Client 初始化
- * 
- * 使用環境變數配置 Supabase 連線
- * 支援離線優先架構
+ * Supabase client configuration.
+ *
+ * This module centralizes Supabase initialization and a few small auth helpers.
  */
 
 import { createClient } from '@supabase/supabase-js';
 
-// 從環境變數讀取配置
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const isConfigured = !!(supabaseUrl && supabaseAnonKey);
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('⚠️ Supabase 環境變數未設置，多人協作功能將無法使用');
+  console.warn('Supabase environment variables are not configured. Some cloud features will be disabled.');
 }
 
 /**
- * Supabase 客戶端實例
- * 
- * 配置說明：
- * - auth.persistSession: true - 持久化登入狀態
- * - auth.autoRefreshToken: true - 自動刷新 Token
- * - auth.detectSessionInUrl: true - 從 URL 檢測 Session（用於 Magic Link）
+ * Supabase browser client.
+ *
+ * Auth settings:
+ * - persistSession: keep the signed-in session in browser storage.
+ * - autoRefreshToken: refresh auth tokens automatically.
+ * - detectSessionInUrl: detect Supabase session callbacks from the URL.
  */
 export const supabase = createClient(
   isConfigured ? supabaseUrl : 'https://placeholder.supabase.co',
@@ -36,16 +34,10 @@ export const supabase = createClient(
   }
 );
 
-/**
- * 檢查 Supabase 是否已配置
- */
 export function isSupabaseConfigured(): boolean {
   return isConfigured;
 }
 
-/**
- * 測試 Supabase 連線
- */
 export async function testSupabaseConnection(): Promise<boolean> {
   if (!isSupabaseConfigured()) {
     return false;
@@ -53,50 +45,47 @@ export async function testSupabaseConnection(): Promise<boolean> {
 
   try {
     const { error } = await supabase.from('profiles').select('id').limit(1);
-    
-    // PGRST116 = 表不存在或無權限（正常，因為可能還沒有資料）
+
+    // PGRST116 means no rows were found; the request still reached Supabase.
     if (error && error.code !== 'PGRST116') {
-      console.error('Supabase 連線測試失敗:', error);
+      console.error('Supabase connection test failed:', error);
       return false;
     }
-    
+
     return true;
   } catch (error) {
-    console.error('Supabase 連線測試失敗:', error);
+    console.error('Supabase connection test failed:', error);
     return false;
   }
 }
 
-/**
- * 獲取當前用戶
- */
 export async function getCurrentUser() {
   if (!isSupabaseConfigured()) {
     return null;
   }
 
-  const { data: { user }, error } = await supabase.auth.getUser();
-  
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
   if (error) {
-    console.error('獲取用戶失敗:', error);
+    console.error('Failed to get current user:', error);
     return null;
   }
-  
+
   return user;
 }
 
-/**
- * 登出
- */
 export async function signOut() {
   if (!isSupabaseConfigured()) {
     return;
   }
 
   const { error } = await supabase.auth.signOut();
-  
+
   if (error) {
-    console.error('登出失敗:', error);
+    console.error('Failed to sign out:', error);
     throw error;
   }
 }

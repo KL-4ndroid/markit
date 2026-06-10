@@ -38,8 +38,14 @@ export function MigrationModal({
   const [selectedOption, setSelectedOption] = useState<MigrationOption | null>(null);
   const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [clearConfirmation, setClearConfirmation] = useState('');
 
   const handleMigration = async (option: MigrationOption) => {
+    if (option === MigrationOption.CLEAR && clearConfirmation.trim() !== '清除') {
+      toast.error('請先輸入「清除」以確認此操作。');
+      return;
+    }
+
     setSelectedOption(option);
     setIsLoading(true);
     setStatus('processing');
@@ -209,11 +215,7 @@ export function MigrationModal({
               </div>
             </button>
 
-            <button
-              onClick={() => handleMigration(MigrationOption.CLEAR)}
-              disabled={isLoading}
-              className="w-full bg-[#FFF8E7] text-[#3A3A3A] p-6 rounded-2xl hover:bg-[#F5E6D8] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left group border-2 border-[#D4A574]/20"
-            >
+            <div className="w-full bg-[#FFF8E7] text-[#3A3A3A] p-6 rounded-2xl border-2 border-[#D4A574]/20">
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-[#D4A574]/20 rounded-xl group-hover:bg-[#D4A574]/30 transition-colors">
                   <Trash2 className="w-6 h-6 text-[#D4A574]" />
@@ -225,9 +227,27 @@ export function MigrationModal({
                   <p className="text-sm text-[#6B6B6B]">
                     只清除此裝置上的本機資料，不會刪除雲端資料。若不確定，請選擇保留並同步。
                   </p>
+                  <label className="block text-xs font-medium text-[#6B6B6B] mt-4 mb-2">
+                    若要使用此選項，請輸入「清除」
+                  </label>
+                  <input
+                    value={clearConfirmation}
+                    onChange={(event) => setClearConfirmation(event.target.value)}
+                    disabled={isLoading}
+                    placeholder="清除"
+                    className="w-full bg-white px-3 py-2 rounded-xl border border-[#D4A574]/30 focus:border-[#D4A574] focus:outline-none text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleMigration(MigrationOption.CLEAR)}
+                    disabled={isLoading || clearConfirmation.trim() !== '清除'}
+                    className="mt-3 w-full bg-[#D4A574] text-white py-3 rounded-xl hover:bg-[#C29565] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    清除此裝置的本機資料
+                  </button>
                 </div>
               </div>
-            </button>
+            </div>
 
             <button
               onClick={() => handleMigration(MigrationOption.CANCEL)}

@@ -291,10 +291,7 @@ export default function HomePage() {
 
   // 處理登入
   const handleLogin = () => {
-    const button = document.getElementById('auth-manager-login-trigger');
-    if (button) {
-      button.click();
-    }
+    window.dispatchEvent(new CustomEvent('auth:open-login', { detail: { mode: 'login' } }));
   };
 
   return (

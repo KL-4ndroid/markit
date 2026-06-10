@@ -36,10 +36,7 @@ export function TopNavigation() {
 
   const handleLogin = () => {
     // 觸發登入對話框
-    const button = document.getElementById('auth-manager-login-trigger');
-    if (button) {
-      button.click();
-    }
+    window.dispatchEvent(new CustomEvent('auth:open-login', { detail: { mode: 'login' } }));
   };
 
   // 如果未配置 Supabase，不顯示
