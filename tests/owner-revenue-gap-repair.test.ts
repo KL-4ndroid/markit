@@ -922,6 +922,75 @@ runTest('panel handleExecute passes preview repaired marketIds', async () => {
   );
 });
 
+runTest('hydrates missing detail events without replaying existing projections', async () => {
+  const cloudEvents = makeCloudEvents(['evt-detail-1', 'evt-detail-2']);
+  const persistedEvents: unknown[] = [];
+
+  const origMarketsGet = (db.markets as any).get.bind(db.markets);
+  const origEventsWhere = (db.events as any).where.bind(db.events);
+  const origEventsGet = (db.events as any).get.bind(db.events);
+  const origEventsAdd = (db.events as any).add.bind(db.events);
+  const origDailyStatsWhere = (db.dailyStats as any).where.bind(db.dailyStats);
+  const origHandler = eventHandlers.deal_closed;
+
+  try {
+    (eventHandlers as any).deal_closed = async () => {
+      throw new Error('detail hydration must not replay deal_closed handler');
+    };
+
+    (db.markets as any).get = async () =>
+      fixtureMarket({ totalRevenue: 69822, totalDeals: 2 });
+    (db.events as any).where = () => ({
+      equals: () => ({
+        and: () => ({
+          toArray: async () => [],
+        }),
+      }),
+    });
+    (db.events as any).get = async () => undefined;
+    (db.events as any).add = async (event: unknown) => {
+      persistedEvents.push(event);
+      return (event as { id?: string }).id;
+    };
+    (db.dailyStats as any).where = () => ({
+      equals: () => ({
+        toArray: async () => [
+          {
+            id: 1,
+            date: '2025-12-01',
+            marketId: MARKET_ID,
+            revenue: 69822,
+            dealCount: 2,
+          },
+        ],
+      }),
+    });
+
+    const { repairOwnerRevenueGaps } = await import(
+      '../lib/sync/owner-revenue-gap-repair'
+    );
+
+    const result = await repairOwnerRevenueGaps({
+      ownerId: OWNER_ID,
+      marketIds: [MARKET_ID],
+      supabaseClient: makeSupabaseMock(cloudEvents),
+    });
+
+    assert.equal(result.repaired.length, 1);
+    assert.equal(result.repaired[0].replayedEvents, 2);
+    assert.equal(result.repaired[0].localRevenueBefore, 69822);
+    assert.equal(result.repaired[0].localRevenueAfter, 69822);
+    assert.equal(persistedEvents.length, 2);
+  } finally {
+    (db.markets as any).get = origMarketsGet;
+    (db.events as any).where = origEventsWhere;
+    (db.events as any).get = origEventsGet;
+    (db.events as any).add = origEventsAdd;
+    (db.dailyStats as any).where = origDailyStatsWhere;
+    (eventHandlers as any).deal_closed = origHandler;
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Run all tests
 // ---------------------------------------------------------------------------

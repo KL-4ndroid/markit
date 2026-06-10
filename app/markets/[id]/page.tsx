@@ -422,9 +422,11 @@ export default function MarketDetailPage({ params }: PageProps) {
     };
 
     window.addEventListener('interaction-recorded', handleInteractionRecorded);
+    window.addEventListener('deal-closed', handleInteractionRecorded);
 
     return () => {
       window.removeEventListener('interaction-recorded', handleInteractionRecorded);
+      window.removeEventListener('deal-closed', handleInteractionRecorded);
     };
   }, [market, marketId, dbStatus]);
 

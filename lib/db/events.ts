@@ -787,7 +787,7 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
   
   // ========== 簡化模式：手動輸入 ==========
   if (isManualEntry) {
-    totalAmount = event.payload.manualRevenue || 0;
+    totalAmount = event.payload.manualRevenue ?? event.payload.totalAmount ?? 0;
     totalCost = event.payload.manualCost || 0;
     dealCount = event.payload.manualDealCount || 1;
     

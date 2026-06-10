@@ -107,7 +107,12 @@ function assertNonBlank(value: string, name: string): void {
 }
 
 function toFiniteNumber(value: unknown, fallback = 0): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
 }
 
 function getCloudDealRevenue(event: CloudEvent): number {
@@ -194,6 +199,26 @@ async function replayOneEvent(
     } as Event,
     db
   );
+}
+
+async function persistEventWithoutReplay(
+  rawEvent: Record<string, unknown>
+): Promise<boolean> {
+  const existing = await db.events.get(rawEvent.id as string);
+  if (existing) return false;
+
+  await db.events.add({
+    id: rawEvent.id as string,
+    type: rawEvent.type as Event['type'],
+    payload: normalizeEventPayloadForLocal(rawEvent.payload) as Event['payload'],
+    actor_id: rawEvent.actor_id as string | undefined,
+    market_id: rawEvent.market_id as string | undefined,
+    timestamp: new Date(rawEvent.timestamp as string).getTime(),
+    sync_status: 'synced',
+    metadata: rawEvent.metadata as Event['metadata'],
+  });
+
+  return true;
 }
 
 async function resetLocalMarketStatsProjection(
@@ -351,6 +376,12 @@ async function processOneMarket(
   );
   const expectedRevenue = cloudRevenue > 0 ? cloudRevenue : cloudEventRevenue;
   const expectedDeals = cloudDeals > 0 ? cloudDeals : cloudEventDeals;
+  const hasMissingDetailEventsOnly =
+    localRevenue === expectedRevenue &&
+    localDailyStatsRevenueSum === expectedRevenue &&
+    localDailyStatsDealCountSum === expectedDeals &&
+    localDeals.length < cloudDealEvents.length &&
+    cloudDealEvents.length > 0;
   const hasInflatedLocalProjection =
     localDeals.length === 0 &&
     cloudDealEvents.length > 0 &&
@@ -420,6 +451,38 @@ async function processOneMarket(
       localRevenueBefore: localRevenue,
       localRevenueAfter,
       replayedEvents: trulyMissing.length,
+    });
+  } else if (hasMissingDetailEventsOnly) {
+    const localEventIds = new Set(localDeals.map(e => e.id!));
+    const trulyMissing = cloudDealEvents.filter(
+      e => !localEventIds.has(e.id)
+    );
+
+    if (dryRun) {
+      repaired.push({
+        marketId,
+        cloudRevenue: expectedRevenue,
+        cloudDeals: expectedDeals,
+        localRevenueBefore: localRevenue,
+        localRevenueAfter: localRevenue,
+        replayedEvents: trulyMissing.length,
+      });
+      return;
+    }
+
+    let persisted = 0;
+    for (const event of trulyMissing) {
+      const didPersist = await persistEventWithoutReplay(event as unknown as Record<string, unknown>);
+      if (didPersist) persisted += 1;
+    }
+
+    repaired.push({
+      marketId,
+      cloudRevenue: expectedRevenue,
+      cloudDeals: expectedDeals,
+      localRevenueBefore: localRevenue,
+      localRevenueAfter: localRevenue,
+      replayedEvents: persisted,
     });
   } else if (hasInflatedLocalProjection) {
     if (dryRun) {

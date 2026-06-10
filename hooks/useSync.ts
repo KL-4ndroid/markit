@@ -15,6 +15,7 @@ import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
+import { repairOwnerRevenueGaps } from '@/lib/sync/owner-revenue-gap-repair';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
   marketAccessRowToLocal,
@@ -839,6 +840,15 @@ async function pullEventsWithSnapshot(
             }
           );
           
+
+          try {
+            const repairResult = await repairOwnerRevenueGaps({ ownerId: userId });
+            if (repairResult.repaired.length > 0) {
+              console.log('[useSync] snapshot detail/projection repair completed', repairResult);
+            }
+          } catch (repairError) {
+            console.warn('[useSync] snapshot detail/projection repair skipped:', repairError);
+          }
           return true; // ✅ 使用了快照
         }
       } catch (snapshotError) {

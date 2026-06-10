@@ -107,6 +107,9 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
         description: `已記錄到 ${formatDate(selectedDate)}`,
       });
       
+      window.dispatchEvent(new CustomEvent('deal-closed', {
+        detail: { marketId, date: selectedDate, amount: revenueNum },
+      }));
       onClose();
     } catch (error) {
       console.error('補登收入失敗：', error);
@@ -184,6 +187,9 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
         description: `已記錄到 ${formatDate(selectedDate)}`,
       });
 
+      window.dispatchEvent(new CustomEvent('deal-closed', {
+        detail: { marketId, date: selectedDate, amount: totalAmount },
+      }));
       onClose();
     } catch (error) {
       console.error('補登收入失敗：', error);
