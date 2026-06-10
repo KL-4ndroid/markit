@@ -52,8 +52,8 @@ export default function AboutPage() {
               <li className="flex items-start gap-3">
                 <span className="text-2xl">🔒</span>
                 <div>
-                  <h3 className="font-semibold text-[#3A3A3A]">離線優先</h3>
-                  <p className="text-[#6B6B6B] text-sm">無網路也能記帳，自動同步到雲端</p>
+                  <h3 className="font-semibold text-[#3A3A3A]">本機儲存</h3>
+                  <p className="text-[#6B6B6B] text-sm">資料保存在此裝置，登入後可同步到雲端備份</p>
                 </div>
               </li>
             </ul>
