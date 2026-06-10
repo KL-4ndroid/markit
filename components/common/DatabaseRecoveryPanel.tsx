@@ -36,7 +36,7 @@ export function DatabaseRecoveryPanel() {
       const nextStatus = await getDatabaseRecoveryStatus();
       setStatus(nextStatus);
       toast[nextStatus.state === 'healthy' ? 'success' : 'error'](
-        nextStatus.state === 'healthy' ? '資料庫狀態正常' : '資料庫需要修復'
+        nextStatus.state === 'healthy' ? '本機資料庫狀態正常' : '本機資料庫需要處理'
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '資料庫檢查失敗');
@@ -51,10 +51,10 @@ export function DatabaseRecoveryPanel() {
       const nextStatus = await retryDatabaseRecovery();
       setStatus(nextStatus);
       toast[nextStatus.state === 'healthy' ? 'success' : 'error'](
-        nextStatus.state === 'healthy' ? '資料庫已恢復' : '資料庫仍需要修復'
+        nextStatus.state === 'healthy' ? '重新檢查完成，資料庫正常' : '重新檢查後仍有問題'
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '資料庫重試失敗');
+      toast.error(error instanceof Error ? error.message : '重新檢查失敗');
     } finally {
       setIsChecking(false);
     }
@@ -65,9 +65,9 @@ export function DatabaseRecoveryPanel() {
     try {
       const backup = await createRecoveryBackup();
       downloadJson(backup.filename, backup.content);
-      toast.success('救援備份已建立');
+      toast.success('已建立並下載本機備份');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '救援備份失敗');
+      toast.error(error instanceof Error ? error.message : '建立備份失敗');
     } finally {
       setIsExporting(false);
     }
@@ -82,9 +82,9 @@ export function DatabaseRecoveryPanel() {
       setStatus(nextStatus);
 
       if (result.integrity.ok) {
-        toast.success(`已修復 ${result.repairedDailyStats} 筆每日統計，並建立修復前備份`);
+        toast.success(`已修復 ${result.repairedDailyStats} 筆每日統計，並已下載修復前備份`);
       } else {
-        toast.warning(`已修復 ${result.repairedDailyStats} 筆每日統計，但仍有其他問題需要檢查`);
+        toast.warning(`已修復 ${result.repairedDailyStats} 筆每日統計，但仍有其他項目需要檢查`);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '每日統計修復失敗');
@@ -111,15 +111,17 @@ export function DatabaseRecoveryPanel() {
           </div>
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-[#3A3A3A]">
-              {isHealthy ? '資料庫狀態正常' : '資料庫修復模式'}
+              {isHealthy ? '資料庫狀態正常' : '資料庫健康檢查'}
             </h2>
             <p className="mt-1 text-sm text-[#6B6B6B]">
-              {isHealthy ? '本機資料完整性檢查通過。' : '請先建立救援備份，再重試初始化。'}
+              {isHealthy
+                ? '本機資料完整性檢查已通過。'
+                : '檢查本機 IndexedDB 是否有格式錯誤或統計快取異常。修復前會自動下載備份。'}
             </p>
           </div>
         </div>
 
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <button
             type="button"
             onClick={handleCheck}
@@ -163,7 +165,7 @@ export function DatabaseRecoveryPanel() {
         <div className="mt-4 space-y-2 border-t border-[#F0ECE4] pt-3 text-sm">
           {hasDailyStatsNumericErrors && (
             <p className="text-[#3A3A3A]">
-              可使用修復按鈕處理每日統計快取的數值錯誤；修復前會先下載備份。
+              發現每日統計快取欄位異常。可先按「備份」，再按「修復」將無效數值正規化。
             </p>
           )}
           {errors.slice(0, 4).map((error) => (

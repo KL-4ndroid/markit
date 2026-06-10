@@ -12,6 +12,10 @@ import {
 
 type PanelState = 'idle' | 'checking' | 'preview' | 'executing';
 
+function formatMoney(value: number): string {
+  return value.toLocaleString('zh-TW', { maximumFractionDigits: 0 });
+}
+
 export function OwnerRevenueGapRepairPanel() {
   const { user } = useAuth();
   const { isStaff, isLoading: isRoleLoading } = useUserRole();
@@ -27,11 +31,11 @@ export function OwnerRevenueGapRepairPanel() {
       return;
     }
     if (isRoleLoading) {
-      toast.error('角色權限確認中，請稍後再試');
+      toast.error('角色權限確認中，請稍候');
       return;
     }
     if (isStaff) {
-      toast.error('此功能僅限帳戶擁有者使用，員工無法執行收入修復');
+      toast.error('員工帳號不能執行收入修復');
       return;
     }
 
@@ -48,16 +52,14 @@ export function OwnerRevenueGapRepairPanel() {
       setState('preview');
 
       if (result.repaired.length === 0 && result.skipped.length === 0) {
-        toast.success('掃描完成，沒有需要修復的項目');
+        toast.success('掃描完成，沒有需要修復的市場');
       } else if (result.repaired.length === 0) {
-        toast.info('掃描完成，沒有符合修復條件的市場');
+        toast.info('掃描完成，沒有符合安全修復條件的市場');
       } else {
-        toast.success(
-          `掃描完成，發現 ${result.repaired.length} 個市場可修復，${result.skipped.length} 個跳過`
-        );
+        toast.success(`掃描完成，發現 ${result.repaired.length} 個市場可修復，${result.skipped.length} 個略過`);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '掃描失敗');
+      toast.error(error instanceof Error ? error.message : '預覽失敗');
       setState('idle');
     }
   };
@@ -68,19 +70,19 @@ export function OwnerRevenueGapRepairPanel() {
       return;
     }
     if (isRoleLoading) {
-      toast.error('角色權限確認中，請稍後再試');
+      toast.error('角色權限確認中，請稍候');
       return;
     }
     if (isStaff) {
-      toast.error('此功能僅限帳戶擁有者使用');
+      toast.error('員工帳號不能執行收入修復');
       return;
     }
     if (!previewResult) return;
 
     const confirmed = window.confirm(
-      `即將修復 ${previewResult.repaired.length} 個市場的收入資料。\n\n` +
-        `此操作將從雲端重新下載 ${previewResult.repaired.reduce((s, m) => s + m.replayedEvents, 0)} 個 deal_closed 事件。\n\n` +
-        '是否繼續？'
+      `即將修復 ${previewResult.repaired.length} 個市場的本機收入資料。\n\n` +
+        `此操作會從雲端重新下載 ${previewResult.repaired.reduce((s, m) => s + m.replayedEvents, 0)} 個 deal_closed 事件，並只重建本機統計。\n\n` +
+        '不會修改雲端資料，也不會刪除事件。是否繼續？'
     );
     if (!confirmed) return;
 
@@ -96,9 +98,7 @@ export function OwnerRevenueGapRepairPanel() {
       const repairedCount = result.repaired.length;
 
       if (repairedCount > 0) {
-        toast.success(
-          `已修復 ${repairedCount} 個市場，請重新同步或重新整理頁面查看最新資料`
-        );
+        toast.success(`已修復 ${repairedCount} 個市場，請重新整理頁面確認收入`);
       } else {
         toast.info('沒有市場需要修復');
       }
@@ -116,66 +116,34 @@ export function OwnerRevenueGapRepairPanel() {
     setState('idle');
   };
 
-  // Not logged in
   if (!isLoggedIn) {
     return (
-      <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm opacity-60">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F0ECE4] text-[#6B6B6B]">
-            <Lock size={20} />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-[#3A3A3A]">
-              收入差距修復
-            </h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">
-              請先登入以使用收入差距修復功能。
-            </p>
-          </div>
-        </div>
-      </section>
+      <BlockedPanel
+        icon={<Lock size={20} />}
+        title="收入差距修復"
+        message="請先登入老闆帳號，才能檢查雲端事件與本機收入是否一致。"
+      />
     );
   }
 
-  // Role loading
   if (isRoleLoading) {
     return (
-      <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm opacity-60">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F0ECE4] text-[#6B6B6B]">
-            <RefreshCw size={20} className="animate-spin" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-[#3A3A3A]">
-              收入差距修復
-            </h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">
-              確認角色權限中，請稍候...
-            </p>
-          </div>
-        </div>
-      </section>
+      <BlockedPanel
+        icon={<RefreshCw size={20} className="animate-spin" />}
+        title="收入差距修復"
+        message="正在確認角色權限，請稍候。"
+      />
     );
   }
 
-  // Staff blocked
   if (isStaff) {
     return (
-      <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm opacity-60">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5E6E8] text-[#B85C5C]">
-            <Lock size={20} />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-[#3A3A3A]">
-              收入差距修復
-            </h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">
-              此功能僅限帳戶擁有者使用，員工無法執行。
-            </p>
-          </div>
-        </div>
-      </section>
+      <BlockedPanel
+        icon={<Lock size={20} />}
+        title="收入差距修復"
+        message="員工帳號無法執行資料修復。請改用老闆帳號操作。"
+        danger
+      />
     );
   }
 
@@ -195,12 +163,9 @@ export function OwnerRevenueGapRepairPanel() {
             {hasRepairs ? <Zap size={20} /> : <RefreshCw size={20} />}
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-[#3A3A3A]">
-              收入差距修復
-            </h2>
+            <h2 className="text-base font-semibold text-[#3A3A3A]">收入差距修復</h2>
             <p className="mt-1 text-sm text-[#6B6B6B]">
-              修復從未同步過的市場（本地收入為零但雲端有收入）。
-              僅修復本地從未出現過 deal_closed 事件的市場。
+              用於新裝置或重新登入後，本機收入低於雲端 deal_closed 事件的情況。工具會先預覽可修復市場，執行時只重建本機資料，不修改雲端。
             </p>
           </div>
         </div>
@@ -209,23 +174,18 @@ export function OwnerRevenueGapRepairPanel() {
           <div className="space-y-2 rounded-md border border-[#E8E3D8] bg-[#FAFAF8] p-3 text-sm">
             {previewResult.repaired.length > 0 && (
               <div>
-                <p className="mb-1 font-medium text-[#4D7F87]">
-                  可修復 ({previewResult.repaired.length})
-                </p>
+                <p className="mb-1 font-medium text-[#4D7F87]">可修復 ({previewResult.repaired.length})</p>
                 {previewResult.repaired.map(r => (
                   <div key={r.marketId} className="pl-2 text-[#6B6B6B]">
-                    {r.marketId.slice(0, 8)}...
-                    {' → '}收入 {r.cloudRevenue.toLocaleString()}，
-                    重放 {r.replayedEvents} 個事件
+                    {r.marketId.slice(0, 8)}... 收入 {formatMoney(r.localRevenueBefore)} → {formatMoney(r.localRevenueAfter)}，
+                    重放 {r.replayedEvents} 筆事件
                   </div>
                 ))}
               </div>
             )}
             {previewResult.skipped.length > 0 && (
               <div>
-                <p className="mb-1 font-medium text-[#6B6B6B]">
-                  跳過 ({previewResult.skipped.length})
-                </p>
+                <p className="mb-1 font-medium text-[#6B6B6B]">略過 ({previewResult.skipped.length})</p>
                 {previewResult.skipped.slice(0, 5).map(s => (
                   <div key={s.marketId} className="pl-2 text-[#9B9B9B]">
                     {s.marketId.slice(0, 8)}... — {s.reason}
@@ -240,21 +200,20 @@ export function OwnerRevenueGapRepairPanel() {
             )}
             {previewResult.warnings.length > 0 && (
               <div>
-                {previewResult.warnings.map((w, i) => (
-                  <p key={i} className="text-amber-700">
-                    ⚠ {w}
-                  </p>
+                {previewResult.warnings.map((warning, index) => (
+                  <p key={index} className="text-amber-700">{warning}</p>
                 ))}
               </div>
             )}
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {state === 'idle' && (
             <button
               type="button"
               onClick={handleDryRun}
+              disabled={isBlocked}
               className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F3EE] disabled:opacity-50"
             >
               <Eye size={16} />
@@ -263,14 +222,7 @@ export function OwnerRevenueGapRepairPanel() {
           )}
 
           {state === 'checking' && (
-            <button
-              type="button"
-              disabled
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-[#6B6B6B] opacity-50"
-            >
-              <RefreshCw size={16} className="animate-spin" />
-              掃描中...
-            </button>
+            <BusyButton label="掃描中..." />
           )}
 
           {hasPreview && (
@@ -296,17 +248,55 @@ export function OwnerRevenueGapRepairPanel() {
           )}
 
           {state === 'executing' && (
-            <button
-              type="button"
-              disabled
-              className="inline-flex h-10 items-center gap-2 rounded-md bg-[#D4A574] px-3 text-sm font-medium text-white opacity-50"
-            >
-              <RefreshCw size={16} className="animate-spin" />
-              修復中...
-            </button>
+            <BusyButton label="修復中..." filled />
           )}
         </div>
       </div>
     </section>
+  );
+}
+
+function BlockedPanel({
+  icon,
+  title,
+  message,
+  danger = false,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  message: string;
+  danger?: boolean;
+}) {
+  return (
+    <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm opacity-70">
+      <div className="flex items-start gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+          danger ? 'bg-[#F5E6E8] text-[#B85C5C]' : 'bg-[#F0ECE4] text-[#6B6B6B]'
+        }`}>
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-[#3A3A3A]">{title}</h2>
+          <p className="mt-1 text-sm text-[#6B6B6B]">{message}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BusyButton({ label, filled = false }: { label: string; filled?: boolean }) {
+  return (
+    <button
+      type="button"
+      disabled
+      className={`inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-medium opacity-50 ${
+        filled
+          ? 'bg-[#D4A574] text-white'
+          : 'border border-[#D8D0C3] text-[#6B6B6B]'
+      }`}
+    >
+      <RefreshCw size={16} className="animate-spin" />
+      {label}
+    </button>
   );
 }

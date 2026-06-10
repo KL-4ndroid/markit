@@ -26,7 +26,7 @@ export default function RecoveryPage() {
               <div className="min-w-0">
                 <h1 className="text-2xl font-semibold text-[#3A3A3A]">資料修復</h1>
                 <p className="mt-1 text-sm text-[#6B6B6B]">
-                  檢查本機資料完整性，並在必要時建立救援備份。
+                  這裡只處理本機資料健康、收入同步落差與統計投影異常。執行修復前會先提供預覽或備份，避免誤改資料。
                 </p>
               </div>
             </div>
@@ -40,11 +40,12 @@ export default function RecoveryPage() {
         <LocalProjectionRepairPanel />
 
         <section className="border border-[#E8E3D8] bg-white px-4 py-4 text-sm text-[#6B6B6B] shadow-sm">
-          <h2 className="mb-2 text-base font-semibold text-[#3A3A3A]">建議流程</h2>
+          <h2 className="mb-2 text-base font-semibold text-[#3A3A3A]">使用建議</h2>
           <ol className="list-decimal space-y-2 pl-5">
-            <li>先執行完整性檢查，確認目前 IndexedDB 狀態。</li>
-            <li>若狀態異常，先建立救援備份，再嘗試重新初始化。</li>
-            <li>如果重試後仍異常，保留救援備份並避免新增交易或清除資料。</li>
+            <li>先按「檢查」確認本機資料庫狀態，若有 numeric cache 錯誤，再使用資料庫修復。</li>
+            <li>若新裝置或無痕登入後收入為 0 或與雲端不一致，先使用「收入差距修復」。</li>
+            <li>若本機收入出現倍增，但本機已經有 deal_closed events，使用「本機統計投影修復」。</li>
+            <li>修復完成後重新整理頁面，再檢查市集詳情與分析頁的數字是否一致。</li>
           </ol>
         </section>
       </div>
