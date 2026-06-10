@@ -676,7 +676,8 @@ registerEventHandler('product_deleted', async (event: Event<{ productId: string 
     updatedAt: event.timestamp,
   });
   if (updated === 0) {
-    throw new Error(`Product not found for ${event.type}: ${productId}`);
+    console.warn(`[events] Product not found for ${event.type}, treating as idempotent tombstone: ${productId}`);
+    return;
   }
   
   console.log(`📦 商品已停用：ID ${productId}`);
