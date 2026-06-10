@@ -54,6 +54,24 @@ async function main(): Promise<void> {
   assert.equal(manualResult.dealDate, '2026-01-20');
   assert.deepEqual(manualResult.productsSold, []);
 
+  const manualFallbackResult = await resolveDealDeletionResult(dealEvent({
+    market_id: 'market-root',
+    payload: {
+      market_id: '',
+      totalAmount: 800,
+      paymentMethod: 'cash',
+      items: [],
+      isManualEntry: true,
+      dealDate: '2026-01-21',
+    },
+  }));
+
+  assert.equal(manualFallbackResult.marketId, 'market-root');
+  assert.equal(manualFallbackResult.totalAmount, 800);
+  assert.equal(manualFallbackResult.totalCost, 0);
+  assert.equal(manualFallbackResult.dealCount, 1);
+  assert.equal(manualFallbackResult.dealDate, '2026-01-21');
+
   const productResult = await resolveDealDeletionResult(
     dealEvent({
       payload: {
@@ -86,6 +104,30 @@ async function main(): Promise<void> {
   assert.deepEqual(productResult.productsSold, [
     { productId: 'product-1', quantity: 2, revenue: 240 },
     { productId: 'product-2', quantity: 1, revenue: 200 },
+  ]);
+
+  const legacyProductResult = await resolveDealDeletionResult(
+    dealEvent({
+      payload: {
+        market_id: 'market-1',
+        totalAmount: 240,
+        paymentMethod: 'cash',
+        items: [
+          {
+            product_id: 'legacy-product',
+            quantity: 2,
+            price_at_time_of_sale: 120,
+            price: 999,
+          } as DealClosedPayload['items'][number] & { product_id: string },
+        ],
+      },
+    }),
+    async () => 50
+  );
+
+  assert.equal(legacyProductResult.totalCost, 100);
+  assert.deepEqual(legacyProductResult.productsSold, [
+    { productId: 'legacy-product', quantity: 2, revenue: 240 },
   ]);
 
   await assert.rejects(

@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { getDeletedEventIds } from '@/lib/db/event-tombstones';
+import { getDealEventDate, getDealEventRevenue, getEventMarketId } from '@/lib/markets/event-view-utils';
 import type {
   DailyStats,
   DealClosedPayload,
@@ -23,10 +24,10 @@ export interface DeleteDealResult extends DeleteEventResult {
 
 export type ProductCostResolver = (productId: string) => Promise<number | undefined>;
 
-function formatLocalDate(timestamp: number): string {
-  const date = new Date(timestamp);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
+type DealItemForDeletion = DealClosedPayload['items'][number] & {
+  product_id?: string;
+  price_at_time_of_sale?: number;
+};
 
 export function assertEventCanBeDeleted(eventId: string | undefined, deletedEventIds: Set<string>): string {
   if (!eventId) {
@@ -59,28 +60,32 @@ export async function resolveDealDeletionResult(
   }
 
   const payload = event.payload;
-  const marketId = payload.market_id;
+  const marketId = getEventMarketId(event);
   if (!marketId) {
     throw new Error(`Deal event is missing market_id: ${event.id}`);
   }
 
-  let totalAmount = payload.totalAmount;
+  const totalAmount = getDealEventRevenue(event);
   let totalCost = 0;
   let dealCount = 1;
   const productsSold: DailyStats['productsSold'] = [];
 
   if (payload.isManualEntry) {
-    totalAmount = payload.manualRevenue ?? 0;
     totalCost = payload.manualCost ?? 0;
     dealCount = payload.manualDealCount ?? 1;
   } else if (payload.items) {
-    for (const item of payload.items) {
-      const cost = item.cost_at_time_of_sale ?? await resolveProductCost(item.productId) ?? 0;
-      totalCost += cost * item.quantity;
+    for (const item of payload.items as DealItemForDeletion[]) {
+      const productId = item.productId ?? item.product_id;
+      if (!productId) continue;
+
+      const cost = item.cost_at_time_of_sale ?? await resolveProductCost(productId) ?? 0;
+      const quantity = item.quantity ?? 0;
+      const price = item.price_at_time_of_sale ?? item.price ?? 0;
+      totalCost += cost * quantity;
       productsSold.push({
-        productId: item.productId,
-        quantity: item.quantity,
-        revenue: (item.price_at_time_of_sale ?? item.price) * item.quantity,
+        productId,
+        quantity,
+        revenue: price * quantity,
       });
     }
   }
@@ -91,7 +96,7 @@ export async function resolveDealDeletionResult(
     totalAmount,
     totalCost,
     dealCount,
-    dealDate: payload.dealDate ?? formatLocalDate(event.timestamp),
+    dealDate: getDealEventDate(event),
     productsSold,
   };
 }
