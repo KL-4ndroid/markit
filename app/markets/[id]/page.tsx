@@ -61,7 +61,7 @@ import { normalizeMarketRouteId, shouldShowMarketDetailLoading } from '@/lib/mar
 import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
-import { getDealEventDate, getEventMarketId, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
+import { getDealEventDate, getDealEventRevenue, getEventMarketId, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
@@ -392,8 +392,6 @@ export default function MarketDetailPage({ params }: PageProps) {
         const interactions = (await getActiveInteractionEvents())
           .filter(e => {
             if (getEventMarketId(e) !== marketId) return false;
-            
-            // 檢查是否在 marketDates 中
             return marketDates.includes(getLocalDateStringFromTimestamp(e.timestamp));
           });
 
@@ -405,8 +403,6 @@ export default function MarketDetailPage({ params }: PageProps) {
         const deals = (await getActiveDealEvents())
           .filter(e => {
             if (getEventMarketId(e) !== marketId) return false;
-            
-            // 檢查是否在 marketDates 中
             return marketDates.includes(getDealEventDate(e));
           });
 
@@ -465,7 +461,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     // 統計成交金額
     dealEvents.forEach(event => {
       const hour = new Date(event.timestamp).getHours();
-      hourlyData[hour].revenue += event.payload.totalAmount;
+      hourlyData[hour].revenue += getDealEventRevenue(event);
     });
 
     // 轉換為圖表數據格式

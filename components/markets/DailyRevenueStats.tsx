@@ -53,8 +53,6 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
         const interactions = (await getActiveInteractionEvents())
           .filter(e => {
             if (getEventMarketId(e) !== market.id) return false;
-            
-            // 檢查是否在 marketDates 中
             return marketDates.includes(getLocalDateStringFromTimestamp(e.timestamp));
           });
 

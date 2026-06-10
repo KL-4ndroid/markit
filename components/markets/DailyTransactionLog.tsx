@@ -17,7 +17,7 @@ import { getActiveDealEvents, getActiveInteractionEvents } from '@/lib/db/event-
 import { formatCurrency } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { deleteDealEventById, deleteInteractionEventById } from '@/lib/markets/event-deletion-service';
-import { getDealEventDate, getEventMarketId } from '@/lib/markets/event-view-utils';
+import { getDealEventDate, getDealEventRevenue, getEventMarketId } from '@/lib/markets/event-view-utils';
 import { toast } from 'sonner';
 
 interface DailyTransactionLogProps {
@@ -108,7 +108,7 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       let revenue = 0;
       deals.forEach(event => {
         const time = new Date(event.timestamp);
-        const amount = event.payload.totalAmount;
+        const amount = getDealEventRevenue(event);
         revenue += amount;
         
         // 獲取商品資訊

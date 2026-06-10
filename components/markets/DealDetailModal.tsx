@@ -3,6 +3,13 @@
 import { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X, Edit, Trash2, Clock, CreditCard } from 'lucide-react';
+import {
+  getDealEventRevenue,
+  getDealItemProductName,
+  getDealItemRevenue,
+  getDealItems,
+  getDealPaymentMethod,
+} from '@/lib/markets/event-view-utils';
 import type { Event, DealClosedPayload } from '@/types/db';
 
 interface DealDetailModalProps {
@@ -23,6 +30,9 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
   if (!deal) return null;
 
   const payload = deal.payload as DealClosedPayload;
+  const amount = getDealEventRevenue(deal);
+  const paymentMethod = getDealPaymentMethod(deal);
+  const items = getDealItems(deal);
 
   // 格式化時間顯示
   const time = new Date(deal.timestamp).toLocaleString('zh-TW', {
@@ -102,8 +112,8 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
               <div className="bg-[#FAFAF8] rounded-xl p-3">
                 <div className="text-xs text-[#6B6B6B] mb-1">支付方式</div>
                 <div className="text-sm font-medium text-[#3A3A3A] flex items-center gap-2">
-                  <span>{paymentIcons[payload.paymentMethod]}</span>
-                  <span>{paymentLabels[payload.paymentMethod]}</span>
+                  <span>{paymentIcons[paymentMethod]}</span>
+                  <span>{paymentLabels[paymentMethod]}</span>
                 </div>
               </div>
             </div>
@@ -115,18 +125,18 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
                 商品明細
               </div>
               <div className="space-y-2">
-                {payload.items && payload.items.length > 0 ? (
-                  payload.items.map((item, index) => (
+                {items.length > 0 ? (
+                  items.map((item, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-[#FAFAF8] rounded-lg">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-[#3A3A3A]">
-                          {item.product_name || `商品 ${item.productId}`}
+                          {getDealItemProductName(item)}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-sm">
                         <span className="text-[#6B6B6B]">× {item.quantity}</span>
                         <span className="font-medium text-[#7B9FA6]">
-                          NT$ {(item.price * item.quantity).toLocaleString()}
+                          NT$ {getDealItemRevenue(item).toLocaleString()}
                         </span>
                       </div>
                     </div>
@@ -144,7 +154,7 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
               <div className="flex justify-between items-center">
                 <span className="text-lg font-medium text-[#3A3A3A]">總計</span>
                 <span className="text-xl font-bold text-[#7B9FA6] tabular-nums">
-                  NT$ {payload.totalAmount.toLocaleString()}
+                  NT$ {amount.toLocaleString()}
                 </span>
               </div>
             </div>

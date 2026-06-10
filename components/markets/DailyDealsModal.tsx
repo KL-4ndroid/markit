@@ -3,6 +3,7 @@
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X } from 'lucide-react';
 import { DealItem } from './DealItem';
+import { getDealEventRevenue } from '@/lib/markets/event-view-utils';
 import type { Event, DealClosedPayload } from '@/types/db';
 
 interface DailyDealsModalProps {
@@ -36,7 +37,7 @@ export function DailyDealsModal({
   };
 
   // 計算總收入
-  const totalRevenue = deals.reduce((sum, deal) => sum + deal.payload.totalAmount, 0);
+  const totalRevenue = deals.reduce((sum, deal) => sum + getDealEventRevenue(deal), 0);
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
