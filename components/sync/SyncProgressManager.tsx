@@ -55,19 +55,9 @@ export function SyncProgressManager() {
 
   // 監聽下載進度
   useEffect(() => {
-    // ✅ 下載進度通常是大量數據，總是顯示
-    if (downloadProgress && downloadProgress.total > 0) {
-      console.log('📱 [SyncProgressManager] 顯示下載彈窗:', { total: downloadProgress.total });
-      setShowDownloadProgress(true);
-      
-      // 下載完成後 1 秒關閉
-      if (downloadProgress.current >= downloadProgress.total) {
-        setTimeout(() => {
-          console.log('✅ [SyncProgressManager] 關閉下載彈窗');
-          setShowDownloadProgress(false);
-        }, 1000);
-      }
-    }
+    // 初次同步由 InitialSyncDialog 顯示；後續下載同步應在背景完成，不打斷使用者。
+    // 保留 downloadProgress 資料給狀態列/初始同步視窗使用，但不再開第二個大彈窗。
+    setShowDownloadProgress(false);
   }, [downloadProgress]);
 
   return (
