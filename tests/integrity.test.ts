@@ -230,6 +230,65 @@ runTest('accepts valid deal tombstone references', () => {
   assert.equal(result.ok, true);
 });
 
+runTest('warns but accepts tombstone references missing from local snapshot', () => {
+  const result = checkBackupIntegrity(backup({
+    events: [
+      event({
+        id: 'deal-delete-1',
+        type: 'deal_deleted',
+        market_id: 'market-1',
+        payload: {
+          eventId: 'missing-deal-event',
+          marketId: 'market-1',
+          dealDate: '2026-01-01',
+          totalAmount: 100,
+          totalCost: 0,
+          dealCount: 1,
+        },
+      }),
+    ],
+  }));
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+  assert.ok(
+    result.warnings.some(warning => warning.includes('deal_deleted') && warning.includes('missing-deal-event')),
+    `Expected missing tombstone target warning, got: ${result.warnings.join('; ')}`
+  );
+});
+
+runTest('accepts snake_case event_id tombstone references', () => {
+  const result = checkBackupIntegrity(backup({
+    events: [
+      event({
+        id: 'deal-1',
+        type: 'deal_closed',
+        market_id: 'market-1',
+        payload: {
+          marketId: 'market-1',
+          totalAmount: 100,
+          paymentMethod: 'cash',
+          items: [{ productId: 'product-1', quantity: 1, price: 100 }],
+        },
+      }),
+      event({
+        id: 'deal-delete-1',
+        type: 'deal_deleted',
+        market_id: 'market-1',
+        payload: {
+          event_id: 'deal-1',
+          marketId: 'market-1',
+          dealDate: '2026-01-01',
+          totalAmount: 100,
+          totalCost: 0,
+          dealCount: 1,
+        },
+      }),
+    ],
+  }));
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
 runTest('rejects tombstone events that point to themselves', () => {
   const result = checkBackupIntegrity(backup({
     events: [

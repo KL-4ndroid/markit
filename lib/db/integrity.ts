@@ -143,7 +143,7 @@ function validateBackupEventPayload(event: Event, index: number): string[] {
       break;
 
     case 'interaction_deleted':
-      if (!isNonEmptyString(payload.eventId)) errors.push(`${label} missing eventId`);
+      if (!pickPayloadEventId(payload)) errors.push(`${label} missing eventId`);
       requireMarketId();
       break;
 
@@ -168,7 +168,7 @@ function validateBackupEventPayload(event: Event, index: number): string[] {
       break;
 
     case 'deal_deleted':
-      if (!isNonEmptyString(payload.eventId)) errors.push(`${label} missing eventId`);
+      if (!pickPayloadEventId(payload)) errors.push(`${label} missing eventId`);
       requireMarketId();
       if (!isNonEmptyString(payload.dealDate)) errors.push(`${label} missing dealDate`);
       if (!isNumber(payload.totalAmount)) errors.push(`${label} invalid totalAmount`);
@@ -236,16 +236,17 @@ function validateEventReferences(
     }
 
     if (event.type !== 'deal_deleted' && event.type !== 'interaction_deleted') return;
-    if (!isNonEmptyString(payload.eventId)) return;
+    const deletedEventId = pickPayloadEventId(payload);
+    if (!deletedEventId) return;
 
-    if (payload.eventId === event.id) {
+    if (deletedEventId === event.id) {
       errors.push(`${label} cannot tombstone itself`);
       return;
     }
 
-    const target = eventById.get(payload.eventId);
+    const target = eventById.get(deletedEventId);
     if (!target) {
-      errors.push(`${label} references missing event: ${payload.eventId}`);
+      warnings.push(`${label} references event not in snapshot (may be already deduped or out-of-scope): ${deletedEventId}`);
       return;
     }
 
@@ -272,6 +273,11 @@ function validateEventReferences(
 function pickPayloadProductId(payload: Record<string, unknown>): string | undefined {
   const productId = payload.productId ?? payload.product_id;
   return isNonEmptyString(productId) ? productId : undefined;
+}
+
+function pickPayloadEventId(payload: Record<string, unknown>): string | undefined {
+  const eventId = payload.eventId ?? payload.event_id;
+  return isNonEmptyString(eventId) ? eventId : undefined;
 }
 
 export function validateBackupReplayReadiness(data: BackupData): IntegrityResult {
@@ -353,17 +359,18 @@ export function validateBackupReplayReadiness(data: BackupData): IntegrityResult
     }
 
     if (event.type !== 'deal_deleted' && event.type !== 'interaction_deleted') return;
-    if (!isNonEmptyString(payload.eventId)) return;
+    const deletedEventId = pickPayloadEventId(payload);
+    if (!deletedEventId) return;
 
-    const targetReplayIndex = replayIndexByEventId.get(payload.eventId);
+    const targetReplayIndex = replayIndexByEventId.get(deletedEventId);
     if (targetReplayIndex !== undefined && targetReplayIndex >= replayIndex) {
-      errors.push(`${label} tombstones an event that has not replayed yet: ${payload.eventId}`);
+      errors.push(`${label} tombstones an event that has not replayed yet: ${deletedEventId}`);
     }
 
-    if (tombstonedEvents.has(payload.eventId)) {
-      errors.push(`${label} duplicates tombstone for event: ${payload.eventId}`);
+    if (tombstonedEvents.has(deletedEventId)) {
+      errors.push(`${label} duplicates tombstone for event: ${deletedEventId}`);
     }
-    tombstonedEvents.add(payload.eventId);
+    tombstonedEvents.add(deletedEventId);
   });
 
   if (data.events.length === 0 && (data.markets.length > 0 || data.products.length > 0 || data.dailyStats.length > 0)) {
