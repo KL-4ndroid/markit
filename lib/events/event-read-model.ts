@@ -109,6 +109,13 @@ export function getDealEventCount(event: EventLike): number {
   );
 }
 
+export function getInteractionType(event: EventLike): string | undefined {
+  const interactionType = event.payload?.interactionType ?? event.payload?.interaction_type ?? event.payload?.type;
+  return typeof interactionType === 'string' && interactionType.trim().length > 0
+    ? interactionType
+    : undefined;
+}
+
 export function getDealPaymentMethod(event: EventLike): DealClosedPayload['paymentMethod'] {
   return event.payload?.paymentMethod ?? event.payload?.payment_method ?? 'other';
 }

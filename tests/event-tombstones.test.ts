@@ -87,6 +87,43 @@ async function main(): Promise<void> {
     'semantic tombstone fallback should remove only one matching local deal',
   );
 
+  const activeBySnakeCaseSemanticFallback = withoutDeletedDealEvents(
+    [
+      deal('snake-local-copy-1', {
+        payload: {
+          totalAmount: 700,
+          manualRevenue: 700,
+          manualDealCount: 2,
+        },
+      }),
+      deal('snake-local-copy-2', {
+        payload: {
+          totalAmount: 700,
+          manualRevenue: 700,
+          manualDealCount: 2,
+        },
+      }),
+    ],
+    [
+      dealDeleted('delete-snake-semantic', 'cloud-deal-id-not-in-local', {
+        payload: {
+          eventId: undefined,
+          event_id: 'cloud-deal-id-not-in-local',
+          totalAmount: undefined,
+          total_amount: 700,
+          dealCount: undefined,
+          deal_count: 2,
+        },
+      }),
+    ]
+  );
+
+  assert.deepEqual(
+    activeBySnakeCaseSemanticFallback.map(event => event.id),
+    ['snake-local-copy-2'],
+    'snake_case semantic tombstone should remove one matching local deal',
+  );
+
   const originalWhere = db.events.where.bind(db.events);
 
   try {

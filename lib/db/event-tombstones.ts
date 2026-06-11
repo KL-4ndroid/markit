@@ -1,5 +1,11 @@
 import type { DealClosedPayload, Event, InteractionRecordedPayload } from '@/types/db';
-import { getDealEventDate, getDealEventRevenue, getEventMarketId } from '@/lib/markets/event-view-utils';
+import {
+  getDealEventCount,
+  getDealEventDate,
+  getDealEventRevenue,
+  getEventMarketId,
+  getTombstoneTargetEventId,
+} from '@/lib/events/event-read-model';
 import { db } from './index';
 
 type DeletedEventPayload = {
@@ -18,11 +24,6 @@ type DealDeletedPayloadView = DeletedEventPayload & {
   deal_count?: number;
 };
 
-function getDeletedPayloadEventId(payload: DeletedEventPayload | undefined): string | undefined {
-  const eventId = payload?.eventId ?? payload?.event_id;
-  return typeof eventId === 'string' && eventId.length > 0 ? eventId : undefined;
-}
-
 export async function getDeletedEventIds(): Promise<Set<string>> {
   const deletedEvents = await db.events
     .where('type')
@@ -31,7 +32,7 @@ export async function getDeletedEventIds(): Promise<Set<string>> {
 
   return new Set(
     deletedEvents
-      .map(event => getDeletedPayloadEventId(event.payload))
+      .map(event => getTombstoneTargetEventId(event))
       .filter((eventId): eventId is string => typeof eventId === 'string' && eventId.length > 0)
   );
 }
@@ -43,17 +44,11 @@ export function withoutDeletedEvents<T extends Event>(
   return events.filter(event => !event.id || !deletedEventIds.has(event.id));
 }
 
-function getDealCountForKey(event: Event<DealClosedPayload> | Event<DealDeletedPayloadView>): number {
-  const payload = event.payload as DealClosedPayload & DealDeletedPayloadView;
-  const dealCount = payload.dealCount ?? payload.deal_count ?? payload.manualDealCount ?? 1;
-  return typeof dealCount === 'number' && Number.isFinite(dealCount) ? dealCount : 1;
-}
-
 function getDealTombstoneKey(event: Event<DealClosedPayload> | Event<DealDeletedPayloadView>): string | undefined {
   const marketId = getEventMarketId(event);
   const date = getDealEventDate(event as Event<DealClosedPayload>);
   const revenue = getDealEventRevenue(event as Event<DealClosedPayload>);
-  const dealCount = getDealCountForKey(event);
+  const dealCount = getDealEventCount(event);
 
   if (!marketId || !date || !Number.isFinite(revenue) || !Number.isFinite(dealCount)) {
     return undefined;
@@ -71,7 +66,7 @@ export function withoutDeletedDealEvents(
   const semanticDeleteCounts = new Map<string, number>();
 
   for (const deletedEvent of deletedEvents) {
-    const deletedEventId = getDeletedPayloadEventId(deletedEvent.payload);
+    const deletedEventId = getTombstoneTargetEventId(deletedEvent);
     if (deletedEventId) {
       deletedEventIds.add(deletedEventId);
     }
