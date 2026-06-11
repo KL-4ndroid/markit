@@ -1,4 +1,12 @@
 import type { DailyStats, DealClosedPayload, Event, Market } from '@/types/db';
+import {
+  getDealItemPrice,
+  getDealItemProductId,
+  getDealItems,
+  isBackfillDealEvent,
+  isDealClosedEvent,
+  isManualDealEvent,
+} from '@/lib/events/event-read-model';
 
 export type AnalyticsDataLevel =
   | 'summary_only'
@@ -47,19 +55,14 @@ function hasValidProductId(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function isDealClosedEvent(event: Event): event is Event<DealClosedPayload> {
-  return event.type === 'deal_closed';
-}
-
 function hasProductDetailInDeal(event: Event): boolean {
   if (!isDealClosedEvent(event)) return false;
-  if (event.payload.isManualEntry) return false;
-  if (!Array.isArray(event.payload.items)) return false;
+  if (isManualDealEvent(event)) return false;
 
-  return event.payload.items.some((item) =>
-    hasValidProductId(item.productId) &&
+  return getDealItems(event).some((item) =>
+    hasValidProductId(getDealItemProductId(item)) &&
     isPositiveNumber(item.quantity) &&
-    isPositiveNumber(item.price_at_time_of_sale ?? item.price)
+    isPositiveNumber(getDealItemPrice(item))
   );
 }
 
@@ -134,10 +137,10 @@ export function analyzeDataCompleteness(
 
   const marketsWithRevenue = markets.filter((market) => isPositiveNumber(market.totalRevenue)).length;
   const dailyStatsWithRevenue = dailyStats.filter((stat) => isPositiveNumber(stat.revenue)).length;
-  const manualDealEvents = events.filter((event) => isDealClosedEvent(event) && event.payload.isManualEntry).length;
+  const manualDealEvents = events.filter((event) => isDealClosedEvent(event) && isManualDealEvent(event)).length;
 
   const eventDealRecords = events.filter(
-    (event) => isDealClosedEvent(event) && event.payload.isManualEntry !== true
+    (event) => isDealClosedEvent(event) && !isManualDealEvent(event)
   ).length;
   const dailyDealRecords = dailyStats.filter((stat) => stat.dealCount > 0).length;
   const marketDealRecords = markets.filter((market) => isPositiveNumber(market.totalDeals)).length;
@@ -152,7 +155,7 @@ export function analyzeDataCompleteness(
   const realTimeBehaviorRecords = events.filter((event) => {
     if (event.type === 'interaction_recorded') return true;
     if (!isDealClosedEvent(event)) return false;
-    return !event.payload.isManualEntry && !event.payload.isBackfill;
+    return !isManualDealEvent(event) && !isBackfillDealEvent(event);
   }).length;
 
   const counts: AnalyticsDataCompletenessResult['counts'] = {

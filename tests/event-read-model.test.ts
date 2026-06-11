@@ -10,6 +10,8 @@ import {
   getEventMarketId,
   getPayloadPreferredEventMarketId,
   getTombstoneTargetEventId,
+  isBackfillDealEvent,
+  isManualDealEvent,
 } from '../lib/events/event-read-model';
 
 const TS = new Date('2026-06-11T10:30:00+08:00').getTime();
@@ -82,6 +84,12 @@ function main(): void {
   assert.equal(getDealItemPrice({ priceAtTimeOfSale: 66 } as any), 66);
   assert.equal(getDealItemCost({ cost_at_time_of_sale: 7 } as any), 7);
   assert.equal(getDealItemCost({ costAtTimeOfSale: 8 } as any), 8);
+  assert.equal(isManualDealEvent({ payload: { isManualEntry: true } }), true);
+  assert.equal(isManualDealEvent({ payload: { is_manual_entry: true } }), true);
+  assert.equal(isManualDealEvent({ payload: { isManualEntry: false } }), false);
+  assert.equal(isBackfillDealEvent({ payload: { isBackfill: true } }), true);
+  assert.equal(isBackfillDealEvent({ payload: { is_backfill: true } }), true);
+  assert.equal(isBackfillDealEvent({ payload: { isBackfill: false } }), false);
 
   console.log('PASS event read model helpers');
 }

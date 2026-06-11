@@ -144,6 +144,14 @@ export function getDealItemRevenue(item: DealItemLike): number {
   return getDealItemPrice(item) * finiteNumber(item.quantity);
 }
 
+export function isManualDealEvent(event: EventLike): boolean {
+  return event.payload?.isManualEntry === true || event.payload?.is_manual_entry === true;
+}
+
+export function isBackfillDealEvent(event: EventLike): boolean {
+  return event.payload?.isBackfill === true || event.payload?.is_backfill === true;
+}
+
 export function isDealClosedEvent(event: EventLike): event is Event<DealClosedPayload> {
   return event.type === 'deal_closed';
 }

@@ -168,6 +168,29 @@ async function main(): Promise<void> {
   assert.equal(fullBehavior.capabilities.interactionConversion, true);
   assert.equal(fullBehavior.capabilities.timeOfDayInsight, true);
 
+  const snakeCaseProductDetail = analyzeDataCompleteness({
+    events: [
+      dealEvent({
+        payload: {
+          market_id: 'market-1',
+          is_manual_entry: false,
+          total_amount: 500,
+          paymentMethod: 'cash',
+          items: [
+            {
+              product_id: 'product-1',
+              quantity: 2,
+              price_at_time_of_sale: 250,
+            },
+          ],
+        },
+      }),
+    ],
+  });
+
+  assert.equal(snakeCaseProductDetail.level, 'product_detail');
+  assert.equal(snakeCaseProductDetail.capabilities.productRanking, true);
+
   const emptyData = analyzeDataCompleteness({});
 
   assert.equal(emptyData.level, 'summary_only');
