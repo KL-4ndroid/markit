@@ -969,7 +969,7 @@ registerEventHandler('interaction_deleted', async (event: Event<InteractionDelet
  * 4. 更新每日統計（扣除金額）
  */
 registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db) => {
-  const { eventId, dealDate, totalAmount, totalCost, dealCount, productsSold = [] } = event.payload;
+  const { eventId, dealDate, totalAmount, totalCost = 0, dealCount, productsSold = [] } = event.payload;
   const market_id = pickMarketId(event.payload) ?? event.market_id;
 
   if (!market_id) {

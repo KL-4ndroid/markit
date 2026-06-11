@@ -172,7 +172,7 @@ function validateBackupEventPayload(event: Event, index: number): string[] {
       requireMarketId();
       if (!isNonEmptyString(payload.dealDate)) errors.push(`${label} missing dealDate`);
       if (!isNumber(payload.totalAmount)) errors.push(`${label} invalid totalAmount`);
-      if (!isNumber(payload.totalCost)) errors.push(`${label} invalid totalCost`);
+      if (payload.totalCost !== undefined && !isNumber(payload.totalCost)) errors.push(`${label} invalid totalCost`);
       if (!isNumber(payload.dealCount)) errors.push(`${label} invalid dealCount`);
       break;
 

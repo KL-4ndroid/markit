@@ -218,6 +218,24 @@ async function main(): Promise<void> {
     assert.equal(dailyStatUpdate?.dealCount, 1);
 
     console.log('PASS deal_deleted handler accepts camelCase marketId tombstones');
+
+    marketUpdate = undefined;
+    dailyStatUpdate = undefined;
+
+    await dealDeletedHandler(dealDeletedEvent({
+      marketId: 'market-root',
+      totalCost: undefined as unknown as number,
+    }), db);
+
+    const sanitizedMarketUpdate = marketUpdate as Partial<Market> | undefined;
+    const sanitizedDailyStatUpdate = dailyStatUpdate as Partial<DailyStats> | undefined;
+
+    assert.equal(sanitizedMarketUpdate?.totalRevenue, 0);
+    assert.equal(sanitizedMarketUpdate?.totalProfit, 0);
+    assert.equal(sanitizedDailyStatUpdate?.cost, 0);
+    assert.equal(sanitizedDailyStatUpdate?.profit, 300);
+
+    console.log('PASS deal_deleted handler accepts staff-sanitized missing totalCost');
   } finally {
     db.markets.get = originalMarketGet;
     db.markets.update = originalMarketUpdate;

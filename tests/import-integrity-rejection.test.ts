@@ -402,6 +402,45 @@ runTest('product_deleted missing product is warning, ok=true', () => {
   assert.ok(result.warnings.some(w => w.includes('product_deleted') && w.includes('not in snapshot')), `Unexpected warnings: ${result.warnings.join('; ')}`);
 });
 
+runTest('accepts staff-sanitized deal_deleted without totalCost', () => {
+  const result = checkBackupIntegrity(validBackup({
+    events: [
+      {
+        id: 'deal-1',
+        type: 'deal_closed',
+        market_id: 'market-1',
+        timestamp: now,
+        actor_id: 'owner-abc',
+        sync_status: 'local_only',
+        payload: {
+          market_id: 'market-1',
+          totalAmount: 500,
+          paymentMethod: 'cash',
+          items: [],
+          isManualEntry: true,
+        },
+      },
+      {
+        id: 'deal-del-1',
+        type: 'deal_deleted',
+        market_id: 'market-1',
+        timestamp: now + 1,
+        actor_id: 'owner-abc',
+        sync_status: 'local_only',
+        payload: {
+          eventId: 'deal-1',
+          market_id: 'market-1',
+          dealDate: '2026-01-01',
+          totalAmount: 500,
+          dealCount: 1,
+        } as import('../types/db').DealDeletedPayload,
+      },
+    ],
+  }));
+
+  assert.equal(result.ok, true, `Unexpected errors: ${result.errors.join('; ')}`);
+});
+
 runTest('product_updated missing product is error, ok=false', () => {
   const result = checkBackupIntegrity(validBackup({
     products: [],
