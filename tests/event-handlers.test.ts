@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { db } from '../lib/db';
 import { eventHandlers } from '../lib/db/events';
-import type { DailyStats, DealClosedPayload, DealDeletedPayload, Event, Market } from '../types/db';
+import type { DailyStats, DealClosedPayload, DealDeletedPayload, Event, Market, Product } from '../types/db';
 
 const TS = 1_700_000_000_000;
 
@@ -175,6 +175,509 @@ async function main(): Promise<void> {
     db.markets.update = originalMarketUpdate;
     db.dailyStats.where = originalDailyStatsWhere;
     db.dailyStats.add = originalDailyStatsAdd;
+  }
+
+  // =========================================================
+  // Regression tests: deal_closed product mode (NOT manual entry)
+  // These tests lock down existing handler behavior for product-mode deals.
+  // =========================================================
+
+  // Test 1: camelCase item with all required fields
+  {
+    const originalProductGet = db.products.get.bind(db.products);
+    const originalProductUpdate = db.products.update.bind(db.products);
+    let marketUpdate: Partial<Market> | undefined;
+    let dailyStatAdd: Record<string, unknown> | undefined;
+    let productUpdateId: unknown;
+    let productUpdateChanges: Record<string, unknown> | undefined;
+
+    try {
+      db.markets.get = ((id: string) =>
+        Promise.resolve({
+          id,
+          name: 'Market',
+          startDate: '2026-06-11',
+          endDate: '2026-06-11',
+          totalRevenue: 0,
+          totalProfit: 0,
+          totalDeals: 0,
+          totalInteractions: 0,
+        } as Market)) as typeof db.markets.get;
+
+      db.markets.update = ((_id: string, changes: Partial<Market>) => {
+        marketUpdate = changes;
+        return Promise.resolve(1);
+      }) as typeof db.markets.update;
+
+      db.dailyStats.where = (() => ({
+        equals: () => ({
+          first: () => Promise.resolve(undefined),
+        }),
+      })) as unknown as typeof db.dailyStats.where;
+
+      db.dailyStats.add = ((stat: Record<string, unknown>) => {
+        dailyStatAdd = stat;
+        return Promise.resolve(1);
+      }) as unknown as typeof db.dailyStats.add;
+
+      db.products.get = ((id: string) =>
+        Promise.resolve({
+          id,
+          name: '手作耳環',
+          category: 'accessory' as const,
+          price: 320,
+          cost: 80,
+          stock: 10,
+          unlimitedStock: false,
+          isActive: true,
+          totalSold: 0,
+          createdAt: TS,
+          updatedAt: TS,
+        } as Product)) as typeof db.products.get;
+
+      db.products.update = ((id: string, changes: Record<string, unknown>) => {
+        productUpdateId = id;
+        productUpdateChanges = changes;
+        return Promise.resolve(1);
+      }) as typeof db.products.update;
+
+      const productEvent = {
+        id: 'evt-product-deal-1',
+        type: 'deal_closed' as const,
+        payload: {
+          market_id: 'market-1',
+          dealDate: '2026-06-11',
+          items: [
+            {
+              productId: 'product-1',
+              quantity: 2,
+              price: 300,
+            },
+          ],
+          totalAmount: 600,
+          paymentMethod: 'cash' as const,
+        } as DealClosedPayload,
+        timestamp: TS,
+        actor_id: 'user-1',
+        market_id: 'market-1',
+      };
+
+      await dealHandler(productEvent as Event<DealClosedPayload>, db);
+
+      assert.equal(marketUpdate?.totalRevenue, 600, 'market totalRevenue should accumulate');
+      assert.equal(marketUpdate?.totalProfit, 440, 'market totalProfit should be revenue - cost (600 - 160)');
+      assert.equal(marketUpdate?.totalDeals, 1, 'market totalDeals should increment by 1');
+      assert.equal(dailyStatAdd?.date, '2026-06-11', 'dailyStats date should match dealDate');
+      assert.equal(dailyStatAdd?.revenue, 600, 'dailyStats revenue should accumulate');
+      assert.equal(dailyStatAdd?.dealCount, 1, 'dailyStats dealCount should be 1');
+      assert.equal(productUpdateId, 'product-1', 'product update should target correct product');
+      assert.equal(productUpdateChanges?.totalSold, 2, 'product totalSold should increase by quantity');
+      assert.equal(productUpdateChanges?.stock, 8, 'product stock should decrease by quantity');
+
+      const productsSold = dailyStatAdd?.productsSold as DailyStats['productsSold'] | undefined;
+      assert.ok(Array.isArray(productsSold), 'productsSold should be an array');
+      assert.equal(productsSold.length, 1, 'productsSold should have one entry');
+      assert.equal(productsSold[0]?.productId, 'product-1', 'productsSold productId should match');
+      assert.equal(productsSold[0]?.quantity, 2, 'productsSold quantity should match');
+      assert.equal(productsSold[0]?.revenue, 600, 'productsSold revenue should be price * quantity');
+
+      console.log('PASS deal_closed product mode camelCase item projects correctly');
+    } finally {
+      db.markets.get = originalMarketGet;
+      db.markets.update = originalMarketUpdate;
+      db.dailyStats.where = originalDailyStatsWhere;
+      db.dailyStats.add = originalDailyStatsAdd;
+      db.products.get = originalProductGet;
+      db.products.update = originalProductUpdate;
+    }
+  }
+
+  // Test 2: product snapshot fallback when item.price is missing
+  {
+    const originalProductGet = db.products.get.bind(db.products);
+    const originalProductUpdate = db.products.update.bind(db.products);
+    let marketUpdate: Partial<Market> | undefined;
+
+    try {
+      db.markets.get = ((id: string) =>
+        Promise.resolve({
+          id,
+          name: 'Market',
+          startDate: '2026-06-11',
+          endDate: '2026-06-11',
+          totalRevenue: 0,
+          totalProfit: 0,
+          totalDeals: 0,
+          totalInteractions: 0,
+        } as Market)) as typeof db.markets.get;
+
+      db.markets.update = ((_id: string, changes: Partial<Market>) => {
+        marketUpdate = changes;
+        return Promise.resolve(1);
+      }) as typeof db.markets.update;
+
+      db.dailyStats.where = (() => ({
+        equals: () => ({
+          first: () => Promise.resolve({
+            id: 1,
+            date: '2026-06-11',
+            marketId: 'market-1',
+            touchCount: 0,
+            inquiryCount: 0,
+            dealCount: 0,
+            revenue: 0,
+            cost: 0,
+            profit: 0,
+            productsSold: [],
+            updatedAt: TS,
+          } as DailyStats),
+        }),
+      })) as unknown as typeof db.dailyStats.where;
+
+      db.dailyStats.update = (() => {
+        return ((_id: number, _changes: Partial<DailyStats>) =>
+          Promise.resolve(1)) as unknown as typeof db.dailyStats.update;
+      })() as unknown as typeof db.dailyStats.update;
+
+      db.products.get = ((id: string) =>
+        Promise.resolve({
+          id,
+          name: '貼紙',
+          category: 'stationery' as const,
+          price: 180,
+          cost: 40,
+          stock: 5,
+          unlimitedStock: false,
+          isActive: true,
+          totalSold: 0,
+          createdAt: TS,
+          updatedAt: TS,
+        } as Product)) as typeof db.products.get;
+
+      db.products.update = ((_id: string, _changes: Record<string, unknown>) =>
+        Promise.resolve(1)) as typeof db.products.update;
+
+      const productEvent = {
+        id: 'evt-product-deal-2',
+        type: 'deal_closed' as const,
+        payload: {
+          market_id: 'market-1',
+          dealDate: '2026-06-11',
+          items: [{ productId: 'product-2', quantity: 1 }],
+          totalAmount: 180,
+          paymentMethod: 'cash' as const,
+        } as DealClosedPayload,
+        timestamp: TS,
+        actor_id: 'user-1',
+        market_id: 'market-1',
+      };
+
+      await dealHandler(productEvent as Event<DealClosedPayload>, db);
+
+      // Handler trusts payload.totalAmount; the items loop computes cost from product.cost.
+      assert.equal(marketUpdate?.totalRevenue, 180, 'revenue comes from payload.totalAmount');
+      // Cost is computed as product.cost * quantity in the loop.
+      assert.equal(marketUpdate?.totalProfit, 140, 'profit = totalAmount(180) - cost(40)');
+
+      console.log('PASS deal_closed product mode uses payload.totalAmount; cost from product.cost');
+    } finally {
+      db.markets.get = originalMarketGet;
+      db.markets.update = originalMarketUpdate;
+      db.dailyStats.where = originalDailyStatsWhere;
+      db.dailyStats.update = originalDailyStatsUpdate;
+      db.products.get = originalProductGet;
+      db.products.update = originalProductUpdate;
+    }
+  }
+
+  // Test 3: isBackfill does NOT deduct stock
+  {
+    const originalProductGet = db.products.get.bind(db.products);
+    const originalProductUpdate = db.products.update.bind(db.products);
+    let marketUpdate: Partial<Market> | undefined;
+    let productUpdateId: unknown;
+    let productUpdateChanges: Record<string, unknown> | undefined;
+
+    try {
+      db.markets.get = ((id: string) =>
+        Promise.resolve({
+          id,
+          name: 'Market',
+          startDate: '2026-06-11',
+          endDate: '2026-06-11',
+          totalRevenue: 0,
+          totalProfit: 0,
+          totalDeals: 0,
+          totalInteractions: 0,
+        } as Market)) as typeof db.markets.get;
+
+      db.markets.update = ((_id: string, changes: Partial<Market>) => {
+        marketUpdate = changes;
+        return Promise.resolve(1);
+      }) as typeof db.markets.update;
+
+      db.dailyStats.where = (() => ({
+        equals: () => ({
+          first: () => Promise.resolve(undefined),
+        }),
+      })) as unknown as typeof db.dailyStats.where;
+
+      db.dailyStats.add = ((_stat: Record<string, unknown>) =>
+        Promise.resolve(1)) as unknown as typeof db.dailyStats.add;
+
+      db.products.get = ((id: string) =>
+        Promise.resolve({
+          id,
+          name: '測試商品',
+          category: 'handmade' as const,
+          price: 100,
+          cost: 20,
+          stock: 5,
+          unlimitedStock: false,
+          isActive: true,
+          totalSold: 0,
+          createdAt: TS,
+          updatedAt: TS,
+        } as Product)) as typeof db.products.get;
+
+      db.products.update = ((id: string, changes: Record<string, unknown>) => {
+        productUpdateId = id;
+        productUpdateChanges = changes;
+        return Promise.resolve(1);
+      }) as typeof db.products.update;
+
+      const backfillEvent = {
+        id: 'evt-backfill-deal',
+        type: 'deal_closed' as const,
+        payload: {
+          market_id: 'market-1',
+          dealDate: '2026-06-11',
+          isBackfill: true,
+          items: [
+            {
+              productId: 'product-backfill',
+              quantity: 3,
+              price: 100,
+            },
+          ],
+          totalAmount: 300,
+          paymentMethod: 'cash' as const,
+        } as DealClosedPayload,
+        timestamp: TS,
+        actor_id: 'user-1',
+        market_id: 'market-1',
+      };
+
+      await dealHandler(backfillEvent as Event<DealClosedPayload>, db);
+
+      assert.equal(marketUpdate?.totalRevenue, 300, 'backfill should still accumulate market revenue');
+      assert.equal(marketUpdate?.totalDeals, 1, 'backfill should still increment totalDeals');
+      assert.equal(productUpdateId, 'product-backfill', 'product update should still be called');
+      assert.equal(productUpdateChanges?.totalSold, 3, 'backfill should still increase totalSold');
+      assert.equal(productUpdateChanges?.stock, undefined, 'backfill should NOT deduct stock');
+      assert.ok(!('stock' in (productUpdateChanges ?? {})), 'stock key should not be in updates for backfill');
+
+      console.log('PASS deal_closed isBackfill does NOT deduct stock');
+    } finally {
+      db.markets.get = originalMarketGet;
+      db.markets.update = originalMarketUpdate;
+      db.dailyStats.where = originalDailyStatsWhere;
+      db.dailyStats.add = originalDailyStatsAdd;
+      db.products.get = originalProductGet;
+      db.products.update = originalProductUpdate;
+    }
+  }
+
+  // Test 4: normal deal throws when stock is insufficient
+  {
+    const originalProductGet = db.products.get.bind(db.products);
+    let insufficientStockError: unknown;
+
+    try {
+      db.markets.get = ((id: string) =>
+        Promise.resolve({
+          id,
+          name: 'Market',
+          startDate: '2026-06-11',
+          endDate: '2026-06-11',
+          totalRevenue: 0,
+          totalProfit: 0,
+          totalDeals: 0,
+          totalInteractions: 0,
+        } as Market)) as typeof db.markets.get;
+
+      db.dailyStats.where = (() => ({
+        equals: () => ({
+          first: () => Promise.resolve(undefined),
+        }),
+      })) as unknown as typeof db.dailyStats.where;
+
+      db.dailyStats.add = ((_stat: Record<string, unknown>) =>
+        Promise.resolve(1)) as unknown as typeof db.dailyStats.add;
+
+      // Product with only 2 in stock
+      db.products.get = ((id: string) =>
+        Promise.resolve({
+          id,
+          name: '限量商品',
+          category: 'other' as const,
+          price: 500,
+          cost: 100,
+          stock: 2,
+          unlimitedStock: false,
+          isActive: true,
+          totalSold: 0,
+          createdAt: TS,
+          updatedAt: TS,
+        } as Product)) as typeof db.products.get;
+
+      const insufficientEvent = {
+        id: 'evt-insufficient-stock',
+        type: 'deal_closed' as const,
+        payload: {
+          market_id: 'market-1',
+          dealDate: '2026-06-11',
+          items: [
+            {
+              productId: 'product-limited',
+              quantity: 5,
+              price: 500,
+            },
+          ],
+          totalAmount: 2500,
+          paymentMethod: 'cash' as const,
+        } as DealClosedPayload,
+        timestamp: TS,
+        actor_id: 'user-1',
+        market_id: 'market-1',
+      };
+
+      try {
+        await dealHandler(insufficientEvent as Event<DealClosedPayload>, db);
+        assert.fail('handler should throw when stock is insufficient');
+      } catch (err) {
+        insufficientStockError = err;
+        assert.match(
+          String((err as Error).message),
+          /庫存不足/,
+          'error message should mention insufficient stock',
+        );
+      }
+
+      assert.ok(insufficientStockError instanceof Error, 'should throw an Error');
+      console.log('PASS deal_closed normal deal throws when stock insufficient');
+    } finally {
+      db.markets.get = originalMarketGet;
+      db.dailyStats.where = originalDailyStatsWhere;
+      db.dailyStats.add = originalDailyStatsAdd;
+      db.products.get = originalProductGet;
+    }
+  }
+
+  // Test 5: productsSold shape is maintained
+  {
+    const originalProductGet = db.products.get.bind(db.products);
+    const originalProductUpdate = db.products.update.bind(db.products);
+
+    try {
+      db.markets.get = ((id: string) =>
+        Promise.resolve({
+          id,
+          name: 'Market',
+          startDate: '2026-06-11',
+          endDate: '2026-06-11',
+          totalRevenue: 0,
+          totalProfit: 0,
+          totalDeals: 0,
+          totalInteractions: 0,
+        } as Market)) as typeof db.markets.get;
+
+      db.markets.update = ((_id: string, _changes: Partial<Market>) =>
+        Promise.resolve(1)) as typeof db.markets.update;
+
+      db.dailyStats.where = (() => ({
+        equals: () => ({
+          first: () => Promise.resolve(undefined),
+        }),
+      })) as unknown as typeof db.dailyStats.where;
+
+      db.dailyStats.add = ((stat: Record<string, unknown>) =>
+        Promise.resolve(1)) as unknown as typeof db.dailyStats.add;
+
+      db.products.get = ((id: string) =>
+        Promise.resolve({
+          id,
+          name: '商品',
+          category: 'other' as const,
+          price: 150,
+          cost: 30,
+          stock: 99,
+          unlimitedStock: false,
+          isActive: true,
+          totalSold: 0,
+          createdAt: TS,
+          updatedAt: TS,
+        } as Product)) as typeof db.products.get;
+
+      db.products.update = ((_id: string, _changes: Record<string, unknown>) =>
+        Promise.resolve(1)) as typeof db.products.update;
+
+      const multiItemEvent = {
+        id: 'evt-multi-item',
+        type: 'deal_closed' as const,
+        payload: {
+          market_id: 'market-1',
+          dealDate: '2026-06-13',
+          items: [
+            { productId: 'p-a', quantity: 1, price: 150 },
+            { productId: 'p-b', quantity: 3, price: 120 },
+          ],
+          totalAmount: 510,
+          paymentMethod: 'card' as const,
+        } as DealClosedPayload,
+        timestamp: TS,
+        actor_id: 'user-1',
+        market_id: 'market-1',
+      };
+
+      let addedDailyStat: Record<string, unknown> | undefined;
+      db.dailyStats.add = ((stat: Record<string, unknown>) => {
+        addedDailyStat = stat;
+        return Promise.resolve(1);
+      }) as unknown as typeof db.dailyStats.add;
+
+      await dealHandler(multiItemEvent as Event<DealClosedPayload>, db);
+
+      const productsSold = addedDailyStat?.productsSold as DailyStats['productsSold'] | undefined;
+      assert.ok(Array.isArray(productsSold), 'productsSold should be an array');
+      assert.equal(productsSold.length, 2, 'productsSold should have 2 entries for 2 items');
+
+      for (const entry of productsSold) {
+        assert.ok('productId' in entry, 'productsSold entry must have productId');
+        assert.ok('quantity' in entry, 'productsSold entry must have quantity');
+        assert.ok('revenue' in entry, 'productsSold entry must have revenue');
+        assert.equal(typeof entry.productId, 'string', 'productId should be string');
+        assert.equal(typeof entry.quantity, 'number', 'quantity should be number');
+        assert.equal(typeof entry.revenue, 'number', 'revenue should be number');
+      }
+
+      const entryA = productsSold.find((e: { productId: string }) => e.productId === 'p-a');
+      assert.equal(entryA?.quantity, 1, 'p-a quantity should be 1');
+      assert.equal(entryA?.revenue, 150, 'p-a revenue should be 150');
+
+      const entryB = productsSold.find((e: { productId: string }) => e.productId === 'p-b');
+      assert.equal(entryB?.quantity, 3, 'p-b quantity should be 3');
+      assert.equal(entryB?.revenue, 360, 'p-b revenue should be 120 * 3');
+
+      console.log('PASS deal_closed productsSold shape is maintained correctly');
+    } finally {
+      db.markets.get = originalMarketGet;
+      db.markets.update = originalMarketUpdate;
+      db.dailyStats.where = originalDailyStatsWhere;
+      db.dailyStats.add = originalDailyStatsAdd;
+      db.products.get = originalProductGet;
+      db.products.update = originalProductUpdate;
+    }
   }
 
   const dealDeletedHandler = eventHandlers.deal_deleted;
