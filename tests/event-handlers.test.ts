@@ -680,6 +680,260 @@ async function main(): Promise<void> {
     }
   }
 
+  // =========================================================
+  // Handler regression tests: edge cases (C2.5)
+  // These lock down existing handler behavior at the handler level.
+  // =========================================================
+
+  // H1: item.price = 0 falls back to product.price in handler
+  // handler: item.price || product.price → 0 is falsy → use product.price
+  {
+    const originalProductGet = db.products.get.bind(db.products);
+    const originalProductUpdate = db.products.update.bind(db.products);
+
+    try {
+      db.markets.get = ((id: string) =>
+        Promise.resolve({
+          id, name: 'Market',
+          startDate: '2026-06-14', endDate: '2026-06-14',
+          totalRevenue: 0, totalProfit: 0, totalDeals: 0, totalInteractions: 0,
+        } as Market)) as typeof db.markets.get;
+
+      db.markets.update = ((_id: string, changes: Partial<Market>) =>
+        Promise.resolve(1)) as typeof db.markets.update;
+
+      db.dailyStats.where = (() => ({
+        equals: () => ({ first: () => Promise.resolve(undefined) }),
+      })) as unknown as typeof db.dailyStats.where;
+
+      db.dailyStats.add = ((stat: Record<string, unknown>) =>
+        Promise.resolve(1)) as unknown as typeof db.dailyStats.add;
+
+      db.products.get = ((id: string) =>
+        Promise.resolve({
+          id, name: '耳環', category: 'accessory' as const,
+          price: 200, cost: 50,
+          stock: 99, unlimitedStock: false,
+          isActive: true, totalSold: 0,
+          createdAt: TS, updatedAt: TS,
+        } as Product)) as typeof db.products.get;
+
+      db.products.update = ((_id: string, _changes: Record<string, unknown>) =>
+        Promise.resolve(1)) as typeof db.products.update;
+
+      const zeroPriceEvent = {
+        id: 'evt-zero-price',
+        type: 'deal_closed' as const,
+        payload: {
+          market_id: 'market-1',
+          dealDate: '2026-06-14',
+          items: [{ productId: 'product-zero', quantity: 2, price: 0 }], // price = 0
+          totalAmount: 400,
+          paymentMethod: 'cash' as const,
+        } as DealClosedPayload,
+        timestamp: TS,
+        actor_id: 'user-1',
+        market_id: 'market-1',
+      };
+
+      let addedDailyStat: Record<string, unknown> | undefined;
+      let productUpdateId: unknown;
+      let productUpdateChanges: Record<string, unknown> | undefined;
+
+      db.dailyStats.add = ((stat: Record<string, unknown>) => {
+        addedDailyStat = stat;
+        return Promise.resolve(1);
+      }) as unknown as typeof db.dailyStats.add;
+
+      db.products.update = ((id: string, changes: Record<string, unknown>) => {
+        productUpdateId = id;
+        productUpdateChanges = changes;
+        return Promise.resolve(1);
+      }) as typeof db.products.update;
+
+      await dealHandler(zeroPriceEvent as Event<DealClosedPayload>, db);
+
+      const productsSold = addedDailyStat?.productsSold as DailyStats['productsSold'] | undefined;
+      assert.ok(productsSold, 'productsSold should exist');
+      assert.equal(productsSold[0]?.productId, 'product-zero');
+      assert.equal(productsSold[0]?.quantity, 2);
+      assert.equal(productsSold[0]?.revenue, 400,
+        'handler falls back: 0 || 200 = 200, revenue = 200 * 2 = 400');
+      assert.equal(productUpdateChanges?.totalSold, 2,
+        'product.totalSold should be incremented');
+      assert.equal(addedDailyStat?.dealCount, 1);
+
+      console.log('PASS handler edge: item.price=0 falls back to product.price');
+    } finally {
+      db.markets.get = originalMarketGet;
+      db.markets.update = originalMarketUpdate;
+      db.dailyStats.where = originalDailyStatsWhere;
+      db.dailyStats.add = originalDailyStatsAdd;
+      db.products.get = originalProductGet;
+      db.products.update = originalProductUpdate;
+    }
+  }
+
+  // H2: product.cost = 0 → handler skips cost accumulation
+  // handler: if (product.cost) → 0 is falsy → skip → totalCost stays 0
+  {
+    const originalProductGet = db.products.get.bind(db.products);
+
+    try {
+      db.markets.get = ((id: string) =>
+        Promise.resolve({
+          id, name: 'Market',
+          startDate: '2026-06-15', endDate: '2026-06-15',
+          totalRevenue: 0, totalProfit: 0, totalDeals: 0, totalInteractions: 0,
+        } as Market)) as typeof db.markets.get;
+
+      db.markets.update = ((_id: string, changes: Partial<Market>) =>
+        Promise.resolve(1)) as typeof db.markets.update;
+
+      db.dailyStats.where = (() => ({
+        equals: () => ({ first: () => Promise.resolve(undefined) }),
+      })) as unknown as typeof db.dailyStats.where;
+
+      db.dailyStats.add = ((stat: Record<string, unknown>) =>
+        Promise.resolve(1)) as unknown as typeof db.dailyStats.add;
+
+      db.products.get = ((id: string) =>
+        Promise.resolve({
+          id, name: '免費贈品', category: 'other' as const,
+          price: 150, cost: 0, // cost = 0
+          stock: 99, unlimitedStock: false,
+          isActive: true, totalSold: 0,
+          createdAt: TS, updatedAt: TS,
+        } as Product)) as typeof db.products.get;
+
+      db.products.update = ((_id: string, _changes: Record<string, unknown>) =>
+        Promise.resolve(1)) as typeof db.products.update;
+
+      const zeroCostEvent = {
+        id: 'evt-zero-cost',
+        type: 'deal_closed' as const,
+        payload: {
+          market_id: 'market-1',
+          dealDate: '2026-06-15',
+          items: [{ productId: 'product-zero-cost', quantity: 3, price: 150 }],
+          totalAmount: 450,
+          paymentMethod: 'cash' as const,
+        } as DealClosedPayload,
+        timestamp: TS,
+        actor_id: 'user-1',
+        market_id: 'market-1',
+      };
+
+      let marketUpdate: Partial<Market> | undefined;
+      db.markets.update = ((_id: string, changes: Partial<Market>) => {
+        marketUpdate = changes;
+        return Promise.resolve(1);
+      }) as typeof db.markets.update;
+
+      await dealHandler(zeroCostEvent as Event<DealClosedPayload>, db);
+
+      assert.equal(marketUpdate?.totalRevenue, 450);
+      assert.equal(marketUpdate?.totalProfit, 450,
+        'profit = totalAmount(450) - totalCost(0) = 450');
+      assert.equal(marketUpdate?.totalDeals, 1);
+
+      console.log('PASS handler edge: product.cost=0 is skipped in totalCost accumulation');
+    } finally {
+      db.markets.get = originalMarketGet;
+      db.markets.update = originalMarketUpdate;
+      db.dailyStats.where = originalDailyStatsWhere;
+      db.dailyStats.add = originalDailyStatsAdd;
+      db.products.get = originalProductGet;
+    }
+  }
+
+  // H3: multiple items, one missing product → only existing product is processed
+  {
+    const originalProductGet = db.products.get.bind(db.products);
+    const originalProductUpdate = db.products.update.bind(db.products);
+
+    try {
+      db.markets.get = ((id: string) =>
+        Promise.resolve({
+          id, name: 'Market',
+          startDate: '2026-06-16', endDate: '2026-06-16',
+          totalRevenue: 0, totalProfit: 0, totalDeals: 0, totalInteractions: 0,
+        } as Market)) as typeof db.markets.get;
+
+      db.markets.update = ((_id: string, changes: Partial<Market>) =>
+        Promise.resolve(1)) as typeof db.markets.update;
+
+      db.dailyStats.where = (() => ({
+        equals: () => ({ first: () => Promise.resolve(undefined) }),
+      })) as unknown as typeof db.dailyStats.where;
+
+      db.dailyStats.add = ((stat: Record<string, unknown>) =>
+        Promise.resolve(1)) as unknown as typeof db.dailyStats.add;
+
+      // Only product-1 exists; nonexistent-product does not
+      db.products.get = ((id: string) => {
+        if (id === 'product-1') {
+          return Promise.resolve({
+            id, name: '耳環', category: 'accessory' as const,
+            price: 200, cost: 50,
+            stock: 99, unlimitedStock: false,
+            isActive: true, totalSold: 0,
+            createdAt: TS, updatedAt: TS,
+          } as Product);
+        }
+        return Promise.resolve(undefined); // nonexistent-product → undefined
+      }) as typeof db.products.get;
+
+      db.products.update = ((id: string, changes: Record<string, unknown>) =>
+        Promise.resolve(1)) as typeof db.products.update;
+
+      const mixedItemsEvent = {
+        id: 'evt-mixed-items',
+        type: 'deal_closed' as const,
+        payload: {
+          market_id: 'market-1',
+          dealDate: '2026-06-16',
+          items: [
+            { productId: 'product-1', quantity: 2, price: 200 },        // exists
+            { productId: 'nonexistent-product', quantity: 5, price: 100 }, // does not exist
+          ],
+          totalAmount: 400,
+          paymentMethod: 'cash' as const,
+        } as DealClosedPayload,
+        timestamp: TS,
+        actor_id: 'user-1',
+        market_id: 'market-1',
+      };
+
+      let addedDailyStat: Record<string, unknown> | undefined;
+      db.dailyStats.add = ((stat: Record<string, unknown>) => {
+        addedDailyStat = stat;
+        return Promise.resolve(1);
+      }) as unknown as typeof db.dailyStats.add;
+
+      await dealHandler(mixedItemsEvent as Event<DealClosedPayload>, db);
+
+      const productsSold = addedDailyStat?.productsSold as DailyStats['productsSold'] | undefined;
+      assert.ok(productsSold, 'productsSold should exist');
+      assert.equal(productsSold.length, 1,
+        'only existing product should appear in productsSold');
+      assert.equal(productsSold[0]?.productId, 'product-1',
+        'only product-1 should be processed');
+      assert.equal(productsSold[0]?.quantity, 2);
+      assert.equal(productsSold[0]?.revenue, 400);
+      assert.equal(addedDailyStat?.dealCount, 1);
+
+      console.log('PASS handler edge: missing product item is skipped, only existing product processed');
+    } finally {
+      db.markets.get = originalMarketGet;
+      db.markets.update = originalMarketUpdate;
+      db.dailyStats.where = originalDailyStatsWhere;
+      db.dailyStats.add = originalDailyStatsAdd;
+      db.products.get = originalProductGet;
+      db.products.update = originalProductUpdate;
+    }
+  }
+
   const dealDeletedHandler = eventHandlers.deal_deleted;
   assert.ok(dealDeletedHandler, 'deal_deleted handler should be registered');
 

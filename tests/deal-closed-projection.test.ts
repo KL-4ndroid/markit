@@ -354,6 +354,156 @@ function run() {
     console.log('PASS handler-compatible: productsSold shape is { productId, quantity, revenue }');
   }
 
+  // =========================================================
+  // Edge cases: handler-compatible helper vs handler semantics (C2.5)
+  // =========================================================
+
+  // T7: item.price = 0 — documents HELPER behavior (DIFF from handler)
+  // Helper uses ?? (nullish coalescing): 0 ?? product.price → 0 (0 is NOT nullish)
+  // Handler uses || (logical OR): item.price || product.price → product.price (0 is falsy)
+  // ⚠️ C3接入前需注意：若直接swap helper into handler, this 0 would propagate
+  {
+    const result = getDealClosedHandlerItemProjection(
+      deal({
+        totalAmount: 400,
+        items: [{ productId: 'product-1', quantity: 2, price: 0 }],
+      } as any),
+      new Map([['product-1', { id: 'product-1', name: '手作耳環', price: 200, cost: 50 }]])
+    );
+
+    assert.equal(result.projectedItems.length, 1);
+    assert.equal(result.projectedItems[0].unitPrice, 0,
+      'helper: 0 ?? 200 = 0 (?? does NOT treat 0 as fallback trigger)');
+    assert.equal(result.productsSold[0].revenue, 0,
+      'helper revenue = 0 * 2 = 0 (not 400 like handler)');
+    assert.equal(result.totalCost, 100,
+      'totalCost = product.cost(50) * quantity(2) = 100 (cost unaffected by price diff)');
+
+    console.log('NOTE handler-compatible edge: item.price=0 helper stays at 0 (DIFF from handler || behavior)');
+  }
+
+  // T8: product.cost = 0 → handler if(product.cost) skips, totalCost stays 0
+  // handler: if (product.cost) → 0 is falsy → skip
+  // helper: if (product.cost) → 0 is falsy → skip → unitCost = 0, totalCost = 0
+  // Behavior is EQUIVALENT
+  {
+    const result = getDealClosedHandlerItemProjection(
+      deal({
+        totalAmount: 400,
+        items: [{ productId: 'product-1', quantity: 2, price: 200 }],
+      } as any),
+      new Map([['product-1', { id: 'product-1', name: '免費贈品', price: 200, cost: 0 }]])
+    );
+
+    assert.equal(result.projectedItems.length, 1);
+    assert.equal(result.projectedItems[0].unitCost, 0, 'product.cost = 0, not added to totalCost');
+    assert.equal(result.totalCost, 0, 'product.cost is falsy, handler skips → totalCost = 0');
+
+    console.log('PASS handler-compatible edge: product.cost=0 does not contribute to totalCost (equivalent)');
+  }
+
+  // T9: blank productId is skipped (empty string)
+  // handler: db.products.get('') → falsy product → skipped
+  // helper: !itemProductId || !itemProductId.trim() → continue
+  // Behavior is EQUIVALENT
+  {
+    const result = getDealClosedHandlerItemProjection(
+      deal({
+        totalAmount: 600,
+        items: [
+          { productId: 'product-1', quantity: 2, price: 300 },
+          { productId: '', quantity: 5, price: 100 },
+        ],
+      } as any),
+      new Map([['product-1', { id: 'product-1', name: '正常商品', price: 300, cost: 80 }]])
+    );
+
+    assert.equal(result.projectedItems.length, 1, 'blank productId should be skipped');
+    assert.equal(result.productsSold.length, 1, 'blank productId should not appear in productsSold');
+    assert.equal(result.productsSold[0].productId, 'product-1');
+    assert.equal(result.totalCost, 160);
+
+    console.log('PASS handler-compatible edge: empty string productId is skipped (equivalent)');
+  }
+
+  // T10: snake_case product_id is resolved correctly
+  // handler: db.products.get(item.productId) → reads camelCase, not product_id
+  // helper: getDealItemProductId() → handles both camelCase and snake_case
+  {
+    const result = getDealClosedHandlerItemProjection(
+      deal({
+        totalAmount: 280,
+        items: [{
+          product_id: 'product-1', // snake_case
+          quantity: 2,
+          price: 140,
+        }],
+      } as any),
+      new Map([['product-1', { id: 'product-1', name: '舊格式耳環', price: 140, cost: 35 }]])
+    );
+
+    assert.equal(result.projectedItems.length, 1, 'snake_case product_id should be resolved');
+    assert.equal(result.projectedItems[0].productId, 'product-1');
+    assert.equal(result.projectedItems[0].quantity, 2);
+    assert.equal(result.projectedItems[0].unitPrice, 140);
+    assert.equal(result.projectedItems[0].unitCost, 35);
+    assert.equal(result.productsSold.length, 1);
+    assert.equal(result.productsSold[0].productId, 'product-1');
+    assert.equal(result.productsSold[0].revenue, 280);
+
+    console.log('PASS handler-compatible edge: snake_case product_id resolved correctly');
+  }
+
+  // T11: quantity undefined → helper uses ?? 0 (documents helper behavior)
+  // NOTE: This is helper behavior, NOT handler behavior.
+  // Handler: item.quantity is used directly (produces NaN in handler math)
+  // Helper: item.quantity ?? 0 → uses 0
+  // This difference means helper CANNOT be blindly swapped into the handler.
+  // See C2 analysis: Gap #1 (quantity防呆).
+  {
+    const result = getDealClosedHandlerItemProjection(
+      deal({
+        totalAmount: 0,
+        items: [{ productId: 'product-1' }], // quantity is undefined
+      } as any),
+      new Map([['product-1', { id: 'product-1', name: '手作耳環', price: 200, cost: 50 }]])
+    );
+
+    assert.equal(result.projectedItems.length, 1);
+    assert.equal(result.projectedItems[0].quantity, 0, 'helper uses ?? 0 for undefined quantity');
+    assert.equal(result.projectedItems[0].unitPrice, 200);
+    assert.equal(result.productsSold[0].quantity, 0);
+    assert.equal(result.productsSold[0].revenue, 0);
+    assert.equal(result.totalCost, 0);
+
+    console.log('PASS handler-compatible edge: quantity undefined → helper uses 0 (C3接入前需注意)');
+  }
+
+  // T12: quantity NaN → ?? does NOT fall back to 0 (NaN is not null/undefined)
+  // NOTE: This is helper behavior, NOT handler behavior.
+  // Helper: NaN ?? 0 → NaN (?? only handles null/undefined, not NaN)
+  // Handler: NaN * 2 → NaN (NaN propagates through multiplication)
+  // Both produce NaN, so behavior is EQUIVALENT in practice.
+  {
+    const result = getDealClosedHandlerItemProjection(
+      deal({
+        totalAmount: 0,
+        items: [{ productId: 'product-1', quantity: Number.NaN, price: 200 }],
+      } as any),
+      new Map([['product-1', { id: 'product-1', name: '手作耳環', price: 200, cost: 50 }]])
+    );
+
+    assert.equal(result.projectedItems.length, 1);
+    assert.ok(Number.isNaN(result.projectedItems[0].quantity),
+      'NaN ?? 0 is NaN (?? does not treat NaN as nullish)');
+    assert.ok(Number.isNaN(result.productsSold[0].revenue),
+      'revenue = NaN * 200 = NaN');
+    assert.ok(Number.isNaN(result.totalCost) || result.totalCost === 0,
+      'totalCost = NaN or 0 (NaN propagates)');
+
+    console.log('PASS handler-compatible edge: quantity NaN → NaN (?? does not fall back, equivalent to handler in practice)');
+  }
+
   console.log('PASS deal closed projection helpers');
 }
 
