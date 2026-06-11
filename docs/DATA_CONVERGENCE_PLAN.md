@@ -43,7 +43,7 @@
 
 ## 目前完成進度
 
-整體估計：約 85%。
+整體估計：約 86%。
 
 | 區塊 | 狀態 | 說明 |
 |---|---:|---|
@@ -61,6 +61,7 @@
 | Analytics data completeness | 已完成 | 資料完整度判斷已改用 shared deal flag helper。 |
 | Market detail transaction log | 已完成 | 每日交易紀錄已改用 shared helper 讀互動類型、手動成交、商品項目與成交筆數。 |
 | Market detail revenue UI | 已完成 | 每日收入明細互動類型已改用 shared helper。 |
+| Market detail interaction UI | 已完成 | 市集詳情互動偏好、互動詳情彈窗與互動統計已改用 shared helper。 |
 | Market deal item UI | 已完成 | 成交列表項目的回補判斷已改用 shared helper。 |
 | Market deal detail UI | 已完成 | 成交詳情 modal 已改用 shared helper 讀備註、商品數量、回補標記。 |
 | Batch entry analytics | 已完成 | `batch-entry-detection-engine.ts` 已改用 shared helper 讀回補、手動成交、成交金額、成交筆數與商品項目。 |
@@ -93,6 +94,7 @@
 | `05cac92` | Top products / product affinity 改用 shared helper 判斷手動成交。 |
 | `f1c42d0` | Local projection repair 改用 shared helper 讀手動成交與商品項目。 |
 | `6a0349d` | Event deletion service 改用 shared helper 讀手動成交、商品項目與互動類型。 |
+| `90aafd7` | Market detail interaction UI / local projection repair 改用 shared helper 讀互動類型。 |
 
 ## 目前剩餘工作
 
