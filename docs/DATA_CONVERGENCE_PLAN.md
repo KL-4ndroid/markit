@@ -43,7 +43,7 @@
 
 ## 目前完成進度
 
-整體估計：約 78%。
+整體估計：約 80%。
 
 | 區塊 | 狀態 | 說明 |
 |---|---:|---|
@@ -62,7 +62,7 @@
 | Market deal item UI | 已完成 | 成交列表項目的回補判斷已改用 shared helper。 |
 | Market deal detail UI | 已完成 | 成交詳情 modal 已改用 shared helper 讀備註、商品數量、回補標記。 |
 | Batch entry analytics | 已完成 | `batch-entry-detection-engine.ts` 已改用 shared helper 讀回補、手動成交、成交金額、成交筆數與商品項目。 |
-| Metrics engine | 未完成 | `metrics-engine.ts` 仍有直接讀 `dealEvent.payload.manualDealCount`，下一步可改用 `getDealEventCount()`。 |
+| Metrics engine | 已完成 | `metrics-engine.ts` 已改用 `getDealEventCount()` 計算批次補登調整前的原始成交數。 |
 | Event handler projection | 部分完成 | handler 已有不少相容處理，但仍是高風險區，不建議一次大改。 |
 | Integrity / import validation | 部分完成 | 已有大量相容測試，但仍有部分舊格式與 staff-sanitized 資料情境可補。 |
 
@@ -87,6 +87,7 @@
 | `dd45ab3` | DealItem 改用 shared helper 判斷回補成交。 |
 | `d22cfc8` | DealDetailModal 改用 shared helper 讀交易詳情欄位。 |
 | `f1995c6` | Batch entry detection 改用 shared helper 讀回補、手動成交、成交金額與成交筆數。 |
+| `2d4e149` | Metrics engine 改用 shared helper 讀批次補登原始成交數。 |
 
 ## 目前剩餘工作
 
@@ -98,11 +99,7 @@
 
 這些任務仍屬中低風險，但影響分析結果，需要補測試。
 
-1. `lib/analytics/metrics-engine.ts`
-   - 仍有直接讀 `dealEvent.payload.manualDealCount`。
-   - 目標：改用 `getDealEventCount()`。
-
-2. `lib/analytics/product-recommendations.ts`
+1. `lib/analytics/product-recommendations.ts`
    - 目前主要讀 `dailyStats.productsSold`，風險較低。
    - 可視情況補上 productsSold normalization helper。
 
@@ -162,8 +159,9 @@
 
 下一階段建議順序：
 
-1. 收斂 `metrics-engine.ts`
-   - 統計與健康分數的成交數讀取一致化。
+1. 評估 `dailyStats.productsSold` normalization helper
+   - 先確認 `product-recommendations.ts`、`top-products.ts`、`product-affinity-engine.ts` 是否還有重複處理 productsSold 的地方。
+   - 若重複邏輯明確，再抽成小 helper；若目前已穩定，則暫緩。
 
 ## 每次任務完成標準
 
