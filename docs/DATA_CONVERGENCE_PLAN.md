@@ -121,9 +121,12 @@
 
 以下區域先不要大幅修改，除非有明確 bug 與測試保護。
 
+詳細拆分分析見：`docs/EVENT_HANDLER_CONVERGENCE_ANALYSIS.md`
+
 1. `lib/db/events.ts`
    - 事件 handler / projection 核心。
    - 一次性大改很容易造成統計、庫存、刪除 replay 回歸。
+   - 下一步只建議先新增 `deal_closed` 手動補登 projection 純函式測試，不直接替換 handler。
 
 2. `hooks/useSync.ts`
    - 同步主流程。
