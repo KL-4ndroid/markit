@@ -15,6 +15,7 @@ import { getGradientClass } from '@/lib/theme-config';
 import { StaffPermissionCard } from '@/components/staff/StaffPermissionCard';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
+import { DataCanonicalizationPanel } from '@/components/settings/DataCanonicalizationPanel';
 
 async function clearLocalAppData(): Promise<void> {
   const { clearAllData, db } = await import('@/lib/db');
@@ -472,6 +473,7 @@ export default function SettingsPage() {
                 </span>
                 <Database className="h-5 w-5 shrink-0 text-[#7B9FA6]" />
               </button>
+              <DataCanonicalizationPanel />
               {/* 總體說明 */}
               <div className="bg-[#FFF8E7] border border-[#D4A574]/20 rounded-xl p-4 mt-4 mb-6">
                 <div className="flex items-start gap-2">
