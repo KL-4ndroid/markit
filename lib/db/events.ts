@@ -19,6 +19,7 @@ import {
   getDealClosedMode,
   getDealClosedTransactionDate,
 } from './deal-closed-projection';
+import { isBackfillDealEvent } from '@/lib/events/event-read-model';
 import { timestampToLocalDateString } from '@/lib/time-utils';
 import type {
   Event,
@@ -968,9 +969,17 @@ registerEventHandler('interaction_deleted', async (event: Event<InteractionDelet
  *
  * 當刪除成交記錄時：
  * 1. 保留原始事件，由 deal_deleted 作為 tombstone
- * 2. ✅ 恢復商品庫存
- * 3. 更新市集統計（扣除金額）
- * 4. 更新每日統計（扣除金額）
+ * 2. 查回原始 deal_closed event，推斷是否為完整補登
+ * 3. 根據原始類型，安全恢復或扣回商品狀態
+ * 4. 更新市集統計（扣除金額）
+ * 5. 更新每日統計（扣除金額）
+ *
+ * 刪除對稱性：
+ * - 一般成交刪除：扣回 totalSold + 恢復 stock
+ * - 完整補登刪除：扣回 totalSold，不恢復 stock
+ * - Unlimited 商品刪除：扣回 totalSold，不修改 stock
+ * - 簡易補登刪除：無商品異動
+ * - Legacy 非法 quantity：跳過商品異動
  */
 registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db) => {
   const { eventId, dealDate, totalAmount, totalCost = 0, dealCount, productsSold = [] } = event.payload;
@@ -982,22 +991,83 @@ registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db
 
   const totalProfit = totalAmount - totalCost;
 
-  // ✅ 2. 恢復商品庫存
-  for (const soldItem of productsSold) {
-    const product = await db.products.get(soldItem.productId);
-    if (product) {
-      // 如果商品庫存不是無限的，則恢復庫存
-      if (!product.unlimitedStock && product.stock !== undefined) {
-        await db.products.update(soldItem.productId, {
-          stock: product.stock + soldItem.quantity,
-          updatedAt: event.timestamp,
-        });
-        console.log(`📦 已恢復庫存：${product.name} x${soldItem.quantity}（市集 ID: ${market_id.substring(0, 8)}...）`);
+  // ==========================================================
+  // Step 0: 查回原始 deal_closed event，推斷補登狀態（tri-state 安全）
+  // ==========================================================
+  let originalWasBackfill = false;
+  let canDetermineBackfillStatus = false;
+
+  if (eventId) {
+    const originalDealEvent = await db.events.get(eventId);
+    if (originalDealEvent && originalDealEvent.type === 'deal_closed') {
+      const payload = originalDealEvent.payload as Record<string, unknown>;
+      const hasExplicitBackfillFlag =
+        typeof payload.isBackfill === 'boolean' ||
+        typeof payload.is_backfill === 'boolean';
+
+      if (hasExplicitBackfillFlag) {
+        canDetermineBackfillStatus = true;
+        originalWasBackfill = isBackfillDealEvent(originalDealEvent);
       }
+      // 若無明確欄位，canDetermineBackfillStatus 保持 false → 保守不恢復 stock
     }
   }
 
-  // 3. 更新市集統計（扣除金額）
+  // ==========================================================
+  // Step 1: 恢復商品狀態（stock + totalSold）
+  // ==========================================================
+  for (const soldItem of productsSold) {
+    const product = await db.products.get(soldItem.productId);
+    if (!product) continue;
+
+    const quantity = soldItem.quantity;
+
+    // ==========================================================
+    // Step 1a: Legacy 非法 quantity — 跳過，避免污染
+    // ==========================================================
+    if (
+      typeof quantity !== 'number' ||
+      !Number.isFinite(quantity) ||
+      quantity <= 0
+    ) {
+      console.warn(
+        `[deal_deleted] skip product mutation for non-positive quantity: ` +
+        `${soldItem.productId} qty=${quantity}`
+      );
+      continue;
+    }
+
+    const updates: { stock?: number; totalSold: number; updatedAt: number } = {
+      totalSold: Math.max(0, (product.totalSold || 0) - quantity),
+      updatedAt: event.timestamp,
+    };
+
+    // ==========================================================
+    // Step 1b: stock 恢復 — 只有非補登的一般成交才執行
+    // ==========================================================
+    if (canDetermineBackfillStatus && !originalWasBackfill) {
+      // 一般成交：可以恢復 stock
+      if (!product.unlimitedStock && product.stock !== undefined) {
+        updates.stock = product.stock + quantity;
+        console.log(
+          `📦 已恢復庫存：${product.name} x${quantity}（市集 ID: ${market_id.substring(0, 8)}...）`
+        );
+      }
+    } else if (!canDetermineBackfillStatus) {
+      // 無法確認原始事件，保守策略：不上漲 stock
+      console.warn(
+        `[deal_deleted] cannot determine backfill status for eventId=${eventId}; ` +
+        `skipping stock restoration to avoid corruption`
+      );
+    }
+    // 若為補登：完全不恢復 stock（無論如何都不增加）
+
+    await db.products.update(soldItem.productId, updates);
+  }
+
+  // ==========================================================
+  // Step 2: 更新市集統計（扣除金額）
+  // ==========================================================
   const market = await db.markets.get(market_id);
   if (market) {
     await db.markets.update(market_id, {
@@ -1008,7 +1078,9 @@ registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db
     });
   }
 
-  // 4. 更新每日統計（扣除金額）
+  // ==========================================================
+  // Step 3: 更新每日統計（扣除金額）
+  // ==========================================================
   const dailyStat = await db.dailyStats
     .where('[date+marketId]')
     .equals([dealDate, market_id])
@@ -1021,7 +1093,6 @@ registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db
     const newProfit = finiteNumber(dailyStat.profit) - totalProfit;
     const newProductsSold = subtractProductsSold(safeProductsSold(dailyStat.productsSold), productsSold);
 
-    // 如果該日期的統計歸零，刪除記錄
     if (newDealCount === 0 && newRevenue === 0) {
       await db.dailyStats.delete(dailyStat.id!);
     } else {

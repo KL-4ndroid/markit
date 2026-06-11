@@ -937,9 +937,28 @@ async function main(): Promise<void> {
   const dealDeletedHandler = eventHandlers.deal_deleted;
   assert.ok(dealDeletedHandler, 'deal_deleted handler should be registered');
 
+  const originalEventsGet = db.events.get.bind(db.events);
+  const originalEventsAdd = db.events.add.bind(db.events);
+
   try {
     let marketUpdate: Partial<Market> | undefined;
     let dailyStatUpdate: Partial<DailyStats> | undefined;
+
+    db.events.get = ((id: string) => {
+      if (id === 'evt-manual-deal') {
+        return Promise.resolve({
+          id: 'evt-manual-deal',
+          type: 'deal_closed' as const,
+          payload: { market_id: 'market-1', dealDate: '2026-06-11', isBackfill: true, isManualEntry: true, items: [], totalAmount: 1200, paymentMethod: 'cash' as const },
+          timestamp: TS,
+          actor_id: 'user-1',
+          market_id: 'market-1',
+        });
+      }
+      return Promise.resolve(undefined);
+    }) as unknown as typeof db.events.get;
+
+    db.events.add = (async () => 0) as unknown as typeof db.events.add;
 
     db.markets.get = ((id: string) =>
       Promise.resolve({
@@ -1008,6 +1027,8 @@ async function main(): Promise<void> {
 
     console.log('PASS deal_deleted handler accepts staff-sanitized missing totalCost');
   } finally {
+    db.events.get = originalEventsGet;
+    db.events.add = originalEventsAdd;
     db.markets.get = originalMarketGet;
     db.markets.update = originalMarketUpdate;
     db.dailyStats.where = originalDailyStatsWhere;
