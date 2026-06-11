@@ -1,12 +1,12 @@
 import type { DealClosedPayload, Event } from '@/types/db';
+import {
+  getDealEventDate,
+  getDealEventRevenue,
+  getPayloadPreferredEventMarketId,
+  type EventLike,
+} from '@/lib/events/event-read-model';
 
-export type SyncEventLike = {
-  id?: string;
-  type?: string;
-  payload?: any;
-  market_id?: string;
-  timestamp?: string | number;
-};
+export type SyncEventLike = EventLike;
 
 type EventsTableLike = {
   where: (index: string) => {
@@ -23,49 +23,16 @@ export type SemanticDedupeDbLike = {
   events: EventsTableLike;
 };
 
-function finiteNumber(value: unknown, fallback = 0): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-function formatLocalDate(timestamp: string | number | undefined): string | undefined {
-  if (timestamp === undefined) return undefined;
-  const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return undefined;
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 export function getDealClosedMarketId(event: SyncEventLike): string | undefined {
-  return (
-    event.payload?.market_id ??
-    event.payload?.marketId ??
-    event.market_id
-  );
+  return getPayloadPreferredEventMarketId(event);
 }
 
 export function getDealClosedDate(event: SyncEventLike): string | undefined {
-  return event.payload?.dealDate ?? event.payload?.deal_date ?? formatLocalDate(event.timestamp);
+  return getDealEventDate(event) || undefined;
 }
 
 export function getDealClosedRevenue(event: SyncEventLike): number {
-  const payload = event.payload ?? {};
-  const directRevenue = payload.manualRevenue ?? payload.manual_revenue ?? payload.totalAmount ?? payload.total_amount;
-  if (typeof directRevenue === 'number' && Number.isFinite(directRevenue)) {
-    return directRevenue;
-  }
-
-  if (Array.isArray(payload.items)) {
-    return payload.items.reduce((sum: number, item: any) => {
-      const price = finiteNumber(item.price_at_time_of_sale ?? item.priceAtTimeOfSale ?? item.price);
-      const quantity = finiteNumber(item.quantity);
-      return sum + price * quantity;
-    }, 0);
-  }
-
-  return 0;
+  return getDealEventRevenue(event);
 }
 
 export function isSemanticDuplicateDealClosedEvent(
