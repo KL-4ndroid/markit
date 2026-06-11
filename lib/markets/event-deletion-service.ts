@@ -1,7 +1,17 @@
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { getDeletedEventIds } from '@/lib/db/event-tombstones';
-import { getDealEventDate, getDealEventRevenue, getEventMarketId } from '@/lib/markets/event-view-utils';
+import {
+  finiteNumber,
+  getDealEventCost,
+  getDealEventCount,
+  getDealEventDate,
+  getDealEventRevenue,
+  getDealItemPrice,
+  getDealItemCost,
+  getDealItemProductId,
+  getEventMarketId,
+} from '@/lib/events/event-read-model';
 import type {
   DailyStats,
   DealClosedPayload,
@@ -27,7 +37,6 @@ export type EventRecorder = typeof recordEvent;
 
 type DealItemForDeletion = DealClosedPayload['items'][number] & {
   product_id?: string;
-  price_at_time_of_sale?: number;
 };
 
 export function assertEventCanBeDeleted(eventId: string | undefined, deletedEventIds: Set<string>): string {
@@ -67,21 +76,20 @@ export async function resolveDealDeletionResult(
   }
 
   const totalAmount = getDealEventRevenue(event);
-  let totalCost = 0;
-  let dealCount = 1;
+  let totalCost = getDealEventCost(event);
+  const dealCount = getDealEventCount(event);
   const productsSold: DailyStats['productsSold'] = [];
 
-  if (payload.isManualEntry) {
-    totalCost = payload.manualCost ?? 0;
-    dealCount = payload.manualDealCount ?? 1;
-  } else if (payload.items) {
+  if (!payload.isManualEntry && payload.items) {
+    totalCost = 0;
     for (const item of payload.items as DealItemForDeletion[]) {
-      const productId = item.productId ?? item.product_id;
+      const productId = getDealItemProductId(item);
       if (!productId) continue;
 
-      const cost = item.cost_at_time_of_sale ?? await resolveProductCost(productId) ?? 0;
-      const quantity = item.quantity ?? 0;
-      const price = item.price_at_time_of_sale ?? item.price ?? 0;
+      const itemCost = getDealItemCost(item);
+      const cost = itemCost > 0 ? itemCost : await resolveProductCost(productId) ?? 0;
+      const quantity = finiteNumber(item.quantity);
+      const price = getDealItemPrice(item);
       totalCost += cost * quantity;
       productsSold.push({
         productId,
@@ -148,7 +156,7 @@ export async function deleteInteractionEvent(event: Event<InteractionRecordedPay
     throw new Error('Cannot delete an interaction event without an event id');
   }
 
-  const marketId = event.payload.market_id;
+  const marketId = getEventMarketId(event);
   if (!marketId) {
     throw new Error(`Interaction event is missing market_id: ${event.id}`);
   }
