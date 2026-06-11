@@ -111,6 +111,19 @@ getDealClosedManualProjection(event)
 
 此階段只新增函式與測試，不替換 handler。
 
+狀態：已完成。
+
+完成 commit：
+
+```txt
+f5b852a test(events): cover deal closed manual projection helpers
+```
+
+已新增：
+
+- `lib/db/deal-closed-projection.ts`
+- `tests/deal-closed-projection.test.ts`
+
 必須測試：
 
 - camelCase 手動補登。
@@ -133,6 +146,8 @@ getDealClosedManualProjection(event)
 不碰商品模式、不碰庫存、不碰 productsSold。
 
 這是最安全的第一個 production code commit。
+
+狀態：尚未開始。
 
 ### Step 3：抽商品項目 projection，仍不改庫存
 

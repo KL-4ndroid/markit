@@ -95,6 +95,7 @@
 | `f1c42d0` | Local projection repair 改用 shared helper 讀手動成交與商品項目。 |
 | `6a0349d` | Event deletion service 改用 shared helper 讀手動成交、商品項目與互動類型。 |
 | `90aafd7` | Market detail interaction UI / local projection repair 改用 shared helper 讀互動類型。 |
+| `f5b852a` | 新增 deal_closed 手動補登 projection helper 與測試，尚未替換 handler。 |
 
 ## 目前剩餘工作
 
@@ -126,7 +127,7 @@
 1. `lib/db/events.ts`
    - 事件 handler / projection 核心。
    - 一次性大改很容易造成統計、庫存、刪除 replay 回歸。
-   - 下一步只建議先新增 `deal_closed` 手動補登 projection 純函式測試，不直接替換 handler。
+   - 已新增 `deal_closed` 手動補登 projection 純函式測試；下一步可評估只替換手動補登分支。
 
 2. `hooks/useSync.ts`
    - 同步主流程。
