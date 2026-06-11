@@ -43,7 +43,7 @@
 
 ## 目前完成進度
 
-整體估計：約 89%。
+整體估計：約 90%。
 
 | 區塊 | 狀態 | 說明 |
 |---|---:|---|
@@ -66,7 +66,7 @@
 | Market deal detail UI | 已完成 | 成交詳情 modal 已改用 shared helper 讀備註、商品數量、回補標記。 |
 | Batch entry analytics | 已完成 | `batch-entry-detection-engine.ts` 已改用 shared helper 讀回補、手動成交、成交金額、成交筆數與商品項目。 |
 | Metrics engine | 已完成 | `metrics-engine.ts` 已改用 `getDealEventCount()` 計算批次補登調整前的原始成交數。 |
-| Event handler projection | 部分完成 | `deal_closed` 手動補登分支已改用 shared projection helper；商品項目 projection helper 與測試已建立；Step 4A handler-level regression tests 已完成，確認 helper 與 handler revenue source of truth 不同，不可直接接入。 |
+| Event handler projection | 部分完成 | `deal_closed` 手動補登分支已改用 shared projection helper；商品項目 projection helper 與測試已建立；Step 4A tests 完成；C1 新增 handler-compatible item projection helper，維持 handler 語意，不接入 handler。 |
 | Integrity / import validation | 部分完成 | 已有大量相容測試，但仍有部分舊格式與 staff-sanitized 資料情境可補。 |
 
 ## 已完成的主要 Commit
@@ -97,7 +97,8 @@
 | `90aafd7` | Market detail interaction UI / local projection repair 改用 shared helper 讀互動類型。 |
 | `f5b852a` | 新增 deal_closed 手動補登 projection helper 與測試，尚未替換 handler。 |
 | `bb97027` | `deal_closed` 手動補登分支改用 projection helper，支援 snake_case / camelCase 補登欄位。 |
-| `c0e285a` | 新增 deal_closed 商品項目 projection helper 與測試，尚未替換 handler。 ||
+| `c0e285a` | 新增 deal_closed 商品項目 projection helper 與測試，尚未替換 handler。 |||
+| `83767f3` | 新增 handler-compatible item projection helper 與測試，維持 handler 語意，payload.totalAmount 仍是 revenue source of truth，不接入 handler。 |
 | `64f8e38` | 新增 deal_closed 商品模式 handler-level regression tests，確認 helper 與 handler revenue source of truth 不同，不可直接接入。
 
 ## 目前剩餘工作

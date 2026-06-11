@@ -216,6 +216,24 @@ bb97027 refactor(events): centralize manual deal projection reads
 
 狀態：已完成。確認 helper 與 handler revenue source of truth 不同，不可直接接入。
 
+### C1：新增 handler-compatible item projection helper
+
+選擇 Option C：新增與 handler 等價的 helper。
+
+完成 commit：`83767f3 test(events): cover handler-compatible deal item projection`
+
+新增 `getDealClosedHandlerItemProjection()` helper：
+
+- **Revenue source of truth**：不從 items 推導，`payload.totalAmount` 仍是 handler 的 revenue source
+- **Price fallback**：`item.price || product.price`（模擬 handler 現況，非 snapshot-first）
+- **Cost**：`product.cost` 有值才計入 totalCost（模擬 handler 現況）
+- **Product 找不到**：item 跳過，不產生 undefined productId 的 productsSold entry
+- **productsSold.revenue**：`unitPrice * quantity`（模擬 handler 現況）
+
+此 helper 專為未來 C2/C3 接入設計，維持與 handler 完全等價的語意。
+
+狀態：已完成。
+
 ### Step 4：重新評估接入可行性（待決定）
 
 替換 handler 裡的：
@@ -259,6 +277,7 @@ bb97027 refactor(events): centralize manual deal projection reads
 3. 測試通過後，只替換手動補登分支。
 4. 新增商品項目 projection 純函式與測試（Step 3）。
 5. Step 4A：handler-level regression tests，確認 helper 與 handler 不等價。
+5. C1：新增 handler-compatible item projection helper，維持 handler 語意。
 
 完成 commit：
 
