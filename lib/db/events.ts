@@ -14,6 +14,11 @@ import {
   checkBackupIntegrity,
   type BackupData,
 } from './integrity';
+import {
+  getDealClosedManualProjection,
+  getDealClosedMode,
+  getDealClosedTransactionDate,
+} from './deal-closed-projection';
 import { timestampToLocalDateString } from '@/lib/time-utils';
 import type {
   Event,
@@ -771,14 +776,12 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
  */
 registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) => {
   const market_id = pickMarketId(event.payload)!;
-  const { dealDate, isBackfill, isManualEntry } = event.payload;
+  const dealMode = getDealClosedMode(event);
+  const isBackfill = dealMode === 'backfill';
+  const isManualEntry = dealMode === 'manual';
   
   // ✅ 使用指定的交易日期，如果沒有則使用本地日期
-  let transactionDate = dealDate;
-  if (!transactionDate) {
-    const eventDate = new Date(event.timestamp);
-    transactionDate = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
-  }
+  const transactionDate = getDealClosedTransactionDate(event);
   
   let totalAmount = event.payload.totalAmount;
   let totalCost = 0;
@@ -787,9 +790,10 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
   
   // ========== 簡化模式：手動輸入 ==========
   if (isManualEntry) {
-    totalAmount = event.payload.manualRevenue ?? event.payload.totalAmount ?? 0;
-    totalCost = event.payload.manualCost || 0;
-    dealCount = event.payload.manualDealCount || 1;
+    const manualProjection = getDealClosedManualProjection(event);
+    totalAmount = manualProjection.revenue;
+    totalCost = manualProjection.cost;
+    dealCount = manualProjection.dealCount;
     
     console.log(`📝 簡化補登：收入 NT$${totalAmount}，成本 NT$${totalCost}，成交 ${dealCount} 筆`);
   }

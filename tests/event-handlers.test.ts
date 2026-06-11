@@ -148,14 +148,28 @@ async function main(): Promise<void> {
       return Promise.resolve(1);
     }) as unknown as typeof db.dailyStats.add;
 
-    await dealHandler(manualDealEvent({ totalAmount: 1200, manualRevenue: undefined }), db);
+    await dealHandler(manualDealEvent({
+      dealDate: undefined,
+      deal_date: '2026-06-12',
+      isManualEntry: false,
+      is_manual_entry: true,
+      totalAmount: undefined,
+      total_amount: 1200,
+      manual_revenue: 1200,
+      manual_cost: 100,
+      manual_deal_count: 3,
+    } as Partial<DealClosedPayload>), db);
 
     assert.equal(marketUpdate?.totalRevenue, 1200);
-    assert.equal(marketUpdate?.totalDeals, 1);
+    assert.equal(marketUpdate?.totalProfit, 1100);
+    assert.equal(marketUpdate?.totalDeals, 3);
+    assert.equal(dailyStatAdd?.date, '2026-06-12');
     assert.equal(dailyStatAdd?.revenue, 1200);
-    assert.equal(dailyStatAdd?.dealCount, 1);
+    assert.equal(dailyStatAdd?.cost, 100);
+    assert.equal(dailyStatAdd?.profit, 1100);
+    assert.equal(dailyStatAdd?.dealCount, 3);
 
-    console.log('PASS deal_closed manual entry falls back to totalAmount');
+    console.log('PASS deal_closed manual entry accepts snake_case projection');
   } finally {
     db.markets.get = originalMarketGet;
     db.markets.update = originalMarketUpdate;
