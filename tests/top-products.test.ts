@@ -44,10 +44,10 @@ async function main(): Promise<void> {
         ],
       } as any),
       deal('deal-2', {
-        isManualEntry: true,
-        manualRevenue: 9999,
+        is_manual_entry: true,
+        manual_revenue: 9999,
         items: [],
-      }, 'market-1'),
+      } as any, 'market-1'),
       deal('deal-3', {
         items: [
           {

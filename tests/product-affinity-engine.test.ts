@@ -59,9 +59,9 @@ async function main(): Promise<void> {
       ],
     }, 'market-1'),
     deal('manual', {
-      isManualEntry: true,
-      manualRevenue: 999,
-    }, 'market-1'),
+      is_manual_entry: true,
+      manual_revenue: 999,
+    } as any, 'market-1'),
     deal('other-market', {
       items: [
         { productId: 'product-a', productName: '商品 A', quantity: 1, price: 100 } as any,

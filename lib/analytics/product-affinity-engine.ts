@@ -9,6 +9,7 @@ import {
   getDealItems,
   getEventMarketId,
   isDealClosedEvent,
+  isManualDealEvent,
 } from '@/lib/events/event-read-model';
 
 type ProductNameResolver = (productId: string) => Promise<string | undefined>;
@@ -29,7 +30,7 @@ export async function calculateProductAffinity(
 
   const productIdsToFetch = new Set<string>();
   for (const event of events) {
-    if (!isDealClosedEvent(event) || event.payload.isManualEntry) continue;
+    if (!isDealClosedEvent(event) || isManualDealEvent(event)) continue;
 
     const items = getDealItems(event);
     if (items.length < 2) continue;
@@ -78,7 +79,7 @@ export async function calculateProductAffinityFromEvents(
   for (const event of events) {
     const marketId = getEventMarketId(event);
     if (!marketId || !marketIds.has(marketId)) continue;
-    if (event.payload.isManualEntry) continue;
+    if (isManualDealEvent(event)) continue;
 
     const items = getDealItems(event);
     if (items.length < 2) continue;

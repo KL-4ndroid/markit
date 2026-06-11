@@ -6,6 +6,7 @@ import {
   getDealItemProductName,
   getDealItems,
   getEventMarketId,
+  isManualDealEvent,
 } from '@/lib/events/event-read-model';
 import type { DealClosedPayload, Event } from '@/types/db';
 
@@ -44,7 +45,7 @@ export async function calculateTopProductsFromEvents(
   for (const event of events) {
     const marketId = getEventMarketId(event);
     if (!marketId || !marketIds.has(marketId)) continue;
-    if (event.payload.isManualEntry) continue;
+    if (isManualDealEvent(event)) continue;
 
     for (const item of getDealItems(event)) {
       const productId = getDealItemProductId(item);
