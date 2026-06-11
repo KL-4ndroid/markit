@@ -17,6 +17,7 @@ import { canonicalizeEvent } from '@/lib/db/data-canonicalization';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
 import { repairOwnerRevenueGaps } from '@/lib/sync/owner-revenue-gap-repair';
+import { getEventMarketId } from '@/lib/events/event-read-model';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
   marketAccessRowToLocal,
@@ -1002,7 +1003,7 @@ async function replayEvents(
       if (await hasSemanticDuplicateDealClosedEvent(db, event)) {
         console.warn('[useSync] Skipping semantic duplicate deal_closed event during replay', {
           eventId: event.id,
-          marketId: event.market_id ?? event.payload?.market_id ?? event.payload?.marketId,
+          marketId: getEventMarketId(event),
         });
         continue;
       }
@@ -1697,8 +1698,7 @@ async function sanitizeStaffProjectionsAfterReplay(
 ): Promise<void> {
   if (!PROJECTION_EVENT_TYPES.has(event.type)) return;
 
-  const marketId: string | undefined =
-    event.payload?.market_id ?? event.payload?.marketId ?? event.market_id;
+  const marketId = getEventMarketId(event);
   if (!marketId) return;
 
   const existingMarket = await db.markets.get(marketId);
@@ -1740,7 +1740,7 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
         skippedCount++;
         console.warn('[useSync] Skipping semantic duplicate deal_closed event during staff sync', {
           eventId: event.id,
-          marketId: event.market_id ?? event.payload?.market_id ?? event.payload?.marketId,
+          marketId: getEventMarketId(event),
         });
         continue;
       }
