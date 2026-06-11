@@ -43,7 +43,7 @@
 
 ## 目前完成進度
 
-整體估計：約 82%。
+整體估計：約 84%。
 
 | 區塊 | 狀態 | 說明 |
 |---|---:|---|
@@ -53,6 +53,7 @@
 | Tombstone / 刪除讀取收斂 | 已完成 | 成交/互動刪除流程已改用 shared helper。 |
 | 本機統計 projection repair | 已完成 | 可從本機 events 重建 market / dailyStats 統計。 |
 | Owner revenue gap repair | 已完成 | 老闆漏拉舊 deal_closed 的修復工具已建立，並 canonicalize repair events。 |
+| Local projection repair | 已完成 | 本機統計重建工具已改用 shared helper 讀手動成交與商品項目。 |
 | Live metrics | 已完成 | 即時銷售數據已改用 shared helper。 |
 | Analytics top products | 已完成 | 熱門商品排行已改用 shared helper。 |
 | Product affinity | 已完成 | 商品關聯分析與每日收入計算已改用 shared helper。 |
@@ -90,6 +91,7 @@
 | `f1995c6` | Batch entry detection 改用 shared helper 讀回補、手動成交、成交金額與成交筆數。 |
 | `2d4e149` | Metrics engine 改用 shared helper 讀批次補登原始成交數。 |
 | `05cac92` | Top products / product affinity 改用 shared helper 判斷手動成交。 |
+| `f1c42d0` | Local projection repair 改用 shared helper 讀手動成交與商品項目。 |
 
 ## 目前剩餘工作
 
@@ -109,11 +111,7 @@
 
 這些任務會碰修復邏輯，需更謹慎。
 
-1. `lib/sync/local-projection-repair.ts`
-   - 已部分使用 helper，但仍有少量直接讀 `payload.isManualEntry`、`payload.items`。
-   - 目標：完全改用 read-model helper。
-
-2. `lib/sync/owner-revenue-gap-repair.ts`
+1. `lib/sync/owner-revenue-gap-repair.ts`
    - 已 canonicalize repair events，但仍有部分 local event 轉換與 revenue/count 計算可再統一。
 
 ### P4：高風險區，暫緩
@@ -161,9 +159,9 @@
 
 下一階段建議順序：
 
-1. 收斂 `lib/sync/local-projection-repair.ts`
-   - 先只處理少量直接讀 `payload.isManualEntry`、`payload.items` 的位置。
-   - 必須保留現有 projection repair 行為與測試。
+1. 評估 `lib/sync/owner-revenue-gap-repair.ts`
+   - 檢查是否仍有可安全替換為 shared helper 的 local event revenue/count 判斷。
+   - 只做小範圍替換，不改修復條件與寫入流程。
 
 2. 評估 `dailyStats.productsSold` normalization helper
    - 目前重複程度不高，暫緩抽象。
