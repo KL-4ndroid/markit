@@ -41,6 +41,8 @@ import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { buildActionableAnalytics } from '@/lib/analytics/actionable-insights';
 import { buildMarketRecapReport } from '@/lib/analytics/market-recap';
 import { buildMarketTrend } from '@/lib/analytics/market-trend';
+import { calculateTopProductsFromEvents, createEmptyTopProductsResult } from '@/lib/analytics/top-products';
+import { getEventMarketId } from '@/lib/events/event-read-model';
 import type { Event, Market } from '@/types/db';
 import type { ProductPair, MarketHealthScore } from '@/lib/analytics';
 
@@ -409,116 +411,20 @@ export default function AnalyticsPage() {
   // ✅ 新增：計算商品排行數據
   const topProductsData = useLiveQuery(async () => {
     if (!markets || markets.length === 0) {
-      return {
-        topByQuantity: null,
-        topByRevenue: null,
-        topByProfit: null,
-      };
+      return createEmptyTopProductsResult();
     }
 
-    // 從所有市集的事件中收集商品數據
-    const productStats = new Map<string, {
-      productName: string;
-      quantity: number;
-      revenue: number;
-      profit: number;
-    }>();
+    const marketIds = new Set(markets.map(market => market.id).filter((id): id is string => !!id));
+    const activeDeals = await getActiveDealEvents();
 
-    // 遍歷所有市集
-    for (const market of markets) {
-      if (!market.id) continue;
-      
-      // 獲取該市集的所有成交事件
-      const events = (await getActiveDealEvents())
-        .filter(event => event.market_id === market.id || (event.payload as any).market_id === market.id);
-
-      // 處理每個成交事件
-      for (const event of events) {
-        const payload = event.payload as any;
-        
-        // 跳過手動輸入的交易（沒有具體商品）
-        if (payload.isManualEntry) continue;
-        
-        // 處理交易項目
-        if (payload.items && Array.isArray(payload.items)) {
-          for (const item of payload.items) {
-            const productId = item.productId;
-            
-            // ✅ 優先使用快照名稱，如果沒有則從商品表查詢
-            let productName = item.product_name;
-            if (!productName) {
-              const product = await db.products.get(productId);
-              productName = product?.name;
-            }
-            
-            // ✅ 如果商品名稱仍然為空，跳過此商品
-            if (!productName) {
-              continue;
-            }
-            
-            const quantity = item.quantity || 0;
-            const price = item.price_at_time_of_sale || item.price || 0;
-            const cost = item.cost_at_time_of_sale || 0;
-            const revenue = price * quantity;
-            const profit = (price - cost) * quantity;
-
-            // 累加統計
-            if (productStats.has(productId)) {
-              const stats = productStats.get(productId)!;
-              stats.quantity += quantity;
-              stats.revenue += revenue;
-              stats.profit += profit;
-            } else {
-              productStats.set(productId, {
-                productName,
-                quantity,
-                revenue,
-                profit,
-              });
-            }
-          }
-        }
+    return calculateTopProductsFromEvents(
+      activeDeals,
+      marketIds,
+      async (productId) => {
+        const product = await db.products.get(productId);
+        return product?.name;
       }
-    }
-
-    // 轉換為數組並排序
-    const productsArray = Array.from(productStats.values());
-
-    if (productsArray.length === 0) {
-      return {
-        topByQuantity: null,
-        topByRevenue: null,
-        topByProfit: null,
-      };
-    }
-
-    // 找出各項第一名
-    const topByQuantity = productsArray.reduce((max, p) => 
-      p.quantity > max.quantity ? p : max
     );
-    
-    const topByRevenue = productsArray.reduce((max, p) => 
-      p.revenue > max.revenue ? p : max
-    );
-    
-    const topByProfit = productsArray.reduce((max, p) => 
-      p.profit > max.profit ? p : max
-    );
-
-    return {
-      topByQuantity: {
-        productName: topByQuantity.productName,
-        quantity: topByQuantity.quantity,
-      },
-      topByRevenue: {
-        productName: topByRevenue.productName,
-        revenue: topByRevenue.revenue,
-      },
-      topByProfit: {
-        productName: topByProfit.productName,
-        profit: topByProfit.profit,
-      },
-    };
   }, [markets]);
 
   // 檢查是否有數據
@@ -530,8 +436,7 @@ export default function AnalyticsPage() {
     const interactions = await db.events.where('type').equals('interaction_recorded').toArray();
 
     return [...activeDeals, ...interactions].filter((event) => {
-      const payload = event.payload as { market_id?: string; marketId?: string };
-      const marketId = event.market_id ?? payload.market_id ?? payload.marketId;
+      const marketId = getEventMarketId(event);
 
       return !!marketId && marketIds.has(marketId);
     }) as Event[];
