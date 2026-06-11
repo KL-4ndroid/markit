@@ -43,7 +43,7 @@
 
 ## 目前完成進度
 
-整體估計：約 65%。
+整體估計：約 68%。
 
 | 區塊 | 狀態 | 說明 |
 |---|---:|---|
@@ -57,7 +57,8 @@
 | Analytics top products | 已完成 | 熱門商品排行已改用 shared helper。 |
 | Product affinity | 已完成 | 商品關聯分析與每日收入計算已改用 shared helper。 |
 | Analytics data completeness | 已完成 | 資料完整度判斷已改用 shared deal flag helper。 |
-| Market detail transaction UI | 未完成 | 每日成交紀錄、互動紀錄顯示仍有直接讀 payload 的地方。 |
+| Market detail transaction log | 已完成 | 每日交易紀錄已改用 shared helper 讀互動類型、手動成交、商品項目與成交筆數。 |
+| Market detail revenue UI | 未完成 | 每日收入明細仍有互動類型直接讀 payload 的地方。 |
 | Metrics / batch entry analytics | 未完成 | `metrics-engine.ts`、`batch-entry-detection-engine.ts` 仍有直接讀 payload。 |
 | Event handler projection | 部分完成 | handler 已有不少相容處理，但仍是高風險區，不建議一次大改。 |
 | Integrity / import validation | 部分完成 | 已有大量相容測試，但仍有部分舊格式與 staff-sanitized 資料情境可補。 |
@@ -78,6 +79,7 @@
 | `1b17013` | analytics top products 改用 shared event helper。 |
 | `27685b6` | product affinity / daily revenue 改用 shared event helper。 |
 | `3a691e7` | data completeness deal flags 改用 shared helper。 |
+| `a1ab5d3` | DailyTransactionLog 改用 shared helper 讀互動與成交資訊。 |
 
 ## 目前剩餘工作
 
@@ -85,19 +87,15 @@
 
 這些任務風險較低，建議優先做。
 
-1. `components/markets/DailyTransactionLog.tsx`
-   - 目前仍直接讀 `event.payload.type`、`event.payload.isManualEntry`、`event.payload.items`、`manualDealCount`。
-   - 目標：改用 `getInteractionType()`、`isManualDealEvent()`、`getDealItems()`、`getDealEventCount()`。
-
-2. `components/markets/DailyRevenueStats.tsx`
+1. `components/markets/DailyRevenueStats.tsx`
    - 目前互動類型仍直接讀 `event.payload.type`。
    - 目標：改用 `getInteractionType()`。
 
-3. `components/markets/DealItem.tsx`
+2. `components/markets/DealItem.tsx`
    - 目前補登判斷仍直接讀 `payload.isBackfill`。
    - 目標：改用 `isBackfillDealEvent()`。
 
-4. `components/markets/DealDetailModal.tsx`
+3. `components/markets/DealDetailModal.tsx`
    - 目前仍直接讀 payload notes / backfill / items。
    - 目標：先只收斂 backfill、items、deal count，文案與 UI 不混入本階段。
 
@@ -173,20 +171,16 @@
 
 下一階段建議順序：
 
-1. 收斂 `DailyTransactionLog.tsx`
-   - 這是使用者最常看到問題的地方。
-   - 和「每日收入明細 → 成交紀錄」功能直接相關。
-
-2. 收斂 `DailyRevenueStats.tsx`
+1. 收斂 `DailyRevenueStats.tsx`
    - 互動類型讀取集中化。
 
-3. 收斂 `DealItem.tsx` / `DealDetailModal.tsx`
+2. 收斂 `DealItem.tsx` / `DealDetailModal.tsx`
    - 改善補登、回補、交易明細顯示一致性。
 
-4. 收斂 `batch-entry-detection-engine.ts`
+3. 收斂 `batch-entry-detection-engine.ts`
    - 分析功能更穩定，不受 snake/camel 差異影響。
 
-5. 收斂 `metrics-engine.ts`
+4. 收斂 `metrics-engine.ts`
    - 統計與健康分數的成交數讀取一致化。
 
 ## 每次任務完成標準
