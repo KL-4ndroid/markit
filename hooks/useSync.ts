@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
+import { canonicalizeEvent } from '@/lib/db/data-canonicalization';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
 import { repairOwnerRevenueGaps } from '@/lib/sync/owner-revenue-gap-repair';
@@ -64,6 +65,21 @@ let activeSyncIdentity: string | null = null;
 const SYNC_PAUSE_UNTIL_KEY = 'sync_pause_until';
 const SYNC_PERMISSION_ERROR_LOG_KEY = 'sync_permission_error_history';
 const PERMISSION_ERROR_PAUSE_MS = 10 * 60 * 1000;
+
+function createCanonicalSyncedEvent(event: any): Event {
+  const localEvent = {
+    id: event.id,
+    type: event.type,
+    payload: event.payload,
+    actor_id: event.actor_id,
+    market_id: event.market_id,
+    timestamp: new Date(event.timestamp).getTime(),
+    sync_status: 'synced',
+    metadata: event.metadata,
+  } as Event;
+
+  return canonicalizeEvent(localEvent).event;
+}
 
 /**
  * ✅ 全局共享狀態：確保所有 useSync 實例使用同一個狀態
@@ -991,17 +1007,10 @@ async function replayEvents(
         continue;
       }
 
+      const localEvent = createCanonicalSyncedEvent(event);
+
       // 插入事件
-      await db.events.add({
-        id: event.id,
-        type: event.type,
-        payload: event.payload,
-        actor_id: event.actor_id,
-        market_id: event.market_id,
-        timestamp: new Date(event.timestamp).getTime(),
-        sync_status: 'synced',
-        metadata: event.metadata,
-      });
+      await db.events.add(localEvent);
 
       // 重放事件處理器
       const { eventHandlers } = await import('@/lib/db/events');
@@ -1009,15 +1018,15 @@ async function replayEvents(
       
       if (handler) {
         // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式（用於本地事件處理器）
-        const processedPayload = normalizeEventPayloadForLocal(event.payload);
+        const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
         
         await handler({
-          id: event.id,
-          type: event.type,
+          id: localEvent.id,
+          type: localEvent.type,
           payload: processedPayload,
-          timestamp: new Date(event.timestamp).getTime(),
-          actor_id: event.actor_id,
-          market_id: event.market_id,
+          timestamp: localEvent.timestamp,
+          actor_id: localEvent.actor_id,
+          market_id: localEvent.market_id,
         } as Event, db);
       }
       
@@ -1161,17 +1170,10 @@ async function pullAllEvents(
     }
     
     try {
+      const localEvent = createCanonicalSyncedEvent(event);
+
       // 直接插入事件（不通過 recordEvent，避免重複處理）
-      await db.events.add({
-        id: event.id,
-        type: event.type,
-        payload: event.payload,
-        actor_id: event.actor_id,
-        market_id: event.market_id,
-        timestamp: new Date(event.timestamp).getTime(),
-        sync_status: 'synced',
-        metadata: event.metadata,
-      });
+      await db.events.add(localEvent);
 
       // 本地也需要更新讀取模型（重放事件）
       const { eventHandlers } = await import('@/lib/db/events');
@@ -1179,15 +1181,15 @@ async function pullAllEvents(
       
       if (handler) {
         // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式（用於本地事件處理器）
-        const processedPayload = normalizeEventPayloadForLocal(event.payload);
+        const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
         
         await handler({
-          id: event.id,
-          type: event.type,
+          id: localEvent.id,
+          type: localEvent.type,
           payload: processedPayload,
-          timestamp: new Date(event.timestamp).getTime(),
-          actor_id: event.actor_id,
-          market_id: event.market_id,
+          timestamp: localEvent.timestamp,
+          actor_id: localEvent.actor_id,
+          market_id: localEvent.market_id,
         } as Event, db);
       }
       
@@ -1742,18 +1744,11 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
         });
         continue;
       }
+
+      const localEvent = createCanonicalSyncedEvent(event);
       
       // 插入事件
-      await db.events.add({
-        id: event.id,
-        type: event.type,
-        payload: event.payload,
-        actor_id: event.actor_id,
-        market_id: event.market_id,
-        timestamp: new Date(event.timestamp).getTime(),
-        sync_status: 'synced',
-        metadata: event.metadata,
-      });
+      await db.events.add(localEvent);
       
       // 重放事件處理器（更新讀取模型）
       const { eventHandlers } = await import('@/lib/db/events');
@@ -1761,19 +1756,19 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
       
       if (handler) {
         // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式
-        const processedPayload = normalizeEventPayloadForLocal(event.payload);
+        const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
 
         await handler({
-          id: event.id,
-          type: event.type,
+          id: localEvent.id,
+          type: localEvent.type,
           payload: processedPayload,
-          timestamp: new Date(event.timestamp).getTime(),
-          actor_id: event.actor_id,
-          market_id: event.market_id,
+          timestamp: localEvent.timestamp,
+          actor_id: localEvent.actor_id,
+          market_id: localEvent.market_id,
         } as Event, db);
 
         // ✅ Staff 清理：handler replay 可能已寫入敏感 projection，隨即移除
-        await sanitizeStaffProjectionsAfterReplay(event);
+        await sanitizeStaffProjectionsAfterReplay(localEvent);
       }
 
       processedCount++;
