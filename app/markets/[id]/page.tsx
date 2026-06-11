@@ -61,7 +61,7 @@ import { normalizeMarketRouteId, shouldShowMarketDetailLoading } from '@/lib/mar
 import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
-import { getDealEventDate, getDealEventRevenue, getEventMarketId, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
+import { getDealEventDate, getDealEventRevenue, getEventMarketId, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
@@ -435,7 +435,8 @@ export default function MarketDetailPage({ params }: PageProps) {
     const counts: Record<string, number> = {};
     
     interactionEvents.forEach(event => {
-      const type = event.payload.type;
+      const type = getInteractionType(event);
+      if (!type) return;
       counts[type] = (counts[type] || 0) + 1;
     });
 
@@ -1597,7 +1598,8 @@ export default function MarketDetailPage({ params }: PageProps) {
                   // 統計各類型互動次數
                   const interactionCounts: Record<string, number> = {};
                   interactionEvents.forEach(event => {
-                    const type = event.payload.type;
+                    const type = getInteractionType(event);
+                    if (!type) return;
                     interactionCounts[type] = (interactionCounts[type] || 0) + 1;
                   });
 

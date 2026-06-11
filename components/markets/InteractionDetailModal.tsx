@@ -4,6 +4,7 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X, Clock } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Event, InteractionRecordedPayload } from '@/types/db';
+import { getInteractionType } from '@/lib/events/event-read-model';
 
 interface InteractionDetailModalProps {
   isOpen: boolean;
@@ -29,7 +30,7 @@ export function InteractionDetailModal({
   // 過濾出該類型的互動事件，並按時間排序（最新的在前）
   const filteredEvents = useMemo(() => {
     return events
-      .filter(e => e.payload.type === interactionType)
+      .filter(e => getInteractionType(e) === interactionType)
       .sort((a, b) => b.timestamp - a.timestamp);
   }, [events, interactionType]);
 

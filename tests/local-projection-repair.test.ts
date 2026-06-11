@@ -78,7 +78,8 @@ function deal(
 function interaction(
   id: string,
   type: string,
-  timestamp = new Date(2026, 4, 1, 13, 0, 0).getTime()
+  timestamp = new Date(2026, 4, 1, 13, 0, 0).getTime(),
+  format: 'camel' | 'snake' = 'camel'
 ): Event {
   return {
     id,
@@ -89,7 +90,7 @@ function interaction(
     sync_status: 'synced',
     payload: {
       market_id: MARKET_ID,
-      type,
+      ...(format === 'snake' ? { interaction_type: type } : { type }),
     },
   } as Event;
 }
@@ -676,7 +677,7 @@ runTest('rebuildMarketStatsFromEvents rebuilds interaction totals', async () => 
     [stat({ revenue: 0, dealCount: 0, touchCount: 6, inquiryCount: 3 })],
     [
       interaction('i1', 'touch'),
-      interaction('i2', 'inquiry'),
+      interaction('i2', 'inquiry', undefined, 'snake'),
       interaction('i3', 'photo'),
     ]
   );

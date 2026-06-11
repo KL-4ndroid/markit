@@ -10,6 +10,7 @@ import {
   getDealItemQuantity,
   getDealItems,
   getEventMarketId,
+  getInteractionType,
   getLocalDateStringFromTimestamp,
   getTombstoneTargetEventId,
   isManualDealEvent,
@@ -155,7 +156,7 @@ function projectDealEvent(event: Event<DealClosedPayload>): DealProjection {
 function projectInteractionEvent(event: Event<InteractionRecordedPayload>): InteractionProjection {
   return {
     date: getEventDate(event),
-    type: nonBlankString(event.payload.type) ? event.payload.type : 'unknown',
+    type: getInteractionType(event) ?? 'unknown',
     updatedAt: event.timestamp,
   };
 }
