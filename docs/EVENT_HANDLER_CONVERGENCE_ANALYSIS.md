@@ -147,7 +147,28 @@ f5b852a test(events): cover deal closed manual projection helpers
 
 這是最安全的第一個 production code commit。
 
-狀態：尚未開始。
+狀態：已完成。
+
+完成 commit：
+
+```txt
+bb97027 refactor(events): centralize manual deal projection reads
+```
+
+已替換：
+
+- `isManualEntry` / `is_manual_entry` 判斷。
+- `dealDate` / `deal_date` / timestamp fallback。
+- `totalAmount` / `total_amount` / `manualRevenue` / `manual_revenue`。
+- `manualCost` / `manual_cost`。
+- `manualDealCount` / `manual_deal_count`。
+
+未觸碰：
+
+- 商品模式。
+- 庫存扣減。
+- `productsSold` 計算。
+- event payload 寫回或 immutability。
 
 ### Step 3：抽商品項目 projection，仍不改庫存
 
@@ -203,22 +224,29 @@ f5b852a test(events): cover deal closed manual projection helpers
 
 ## 建議下一個可執行任務
 
-下一個最安全任務：
+已完成：
 
 1. 新增純函式測試，覆蓋手動補登 projection。
 2. 不接 handler。
-3. 測試通過後，再決定是否進入 Step 2。
+3. 測試通過後，只替換手動補登分支。
+
+完成 commit：
+
+```txt
+test(events): cover deal closed manual projection helpers
+refactor(events): centralize manual deal projection reads
+```
+
+下一個最安全任務：
+
+1. 先新增商品項目 projection 純函式與測試。
+2. 不接 handler。
+3. 測試通過後，再評估是否進入 Step 4。
 
 建議 commit：
 
 ```txt
-test(events): cover deal closed manual projection helpers
-```
-
-若 Step 2 再執行，建議 commit：
-
-```txt
-refactor(events): centralize manual deal projection reads
+test(events): cover deal closed item projection helpers
 ```
 
 ## 目前判斷
