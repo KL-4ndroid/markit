@@ -134,3 +134,77 @@ export function getDealClosedItemsProjection(
     productsSold: items.flatMap((item) => item.productsSold ? [item.productsSold] : []),
   };
 }
+
+/**
+ * Handler-compatible deal item projection.
+ *
+ * This helper mirrors the current `deal_closed` handler semantics for the items loop.
+ * It does NOT derive revenue source of truth from items.
+ * `payload.totalAmount` remains the revenue source of truth in the handler.
+ *
+ * Key differences from `getDealClosedItemProjection()`:
+ * - price: `item.price || product.price` (NOT snapshot-first like the helper)
+ * - cost: `product.cost` only if truthy (NOT item snapshot cost)
+ * - skipped items: product not found → excluded from projection (no undefined productId entry)
+ * - productsSold.revenue: `(item.price || product.price) * item.quantity`
+ *
+ * Use this helper for future handler refactors (C2/C3) where the goal is to
+ * centralize item reading without changing handler revenue semantics.
+ */
+export function getDealClosedHandlerItemProjection(
+  event: Event<DealClosedPayload>,
+  productsById: Map<string, ProductSnapshotForDealProjection> = new Map()
+): {
+  projectedItems: DealClosedHandlerProjectedItem[];
+  totalCost: number;
+  productsSold: Array<{ productId: string; quantity: number; revenue: number }>;
+} {
+  const { items: rawItems } = event.payload;
+  if (!Array.isArray(rawItems)) {
+    return { projectedItems: [], totalCost: 0, productsSold: [] };
+  }
+
+  const projectedItems: DealClosedHandlerProjectedItem[] = [];
+  const productsSold: Array<{ productId: string; quantity: number; revenue: number }> = [];
+  let totalCost = 0;
+
+  for (const item of rawItems) {
+    const itemProductId = getDealItemProductId(item);
+    if (!itemProductId || itemProductId.trim().length === 0) continue;
+
+    const product = productsById.get(itemProductId);
+    if (!product) continue;
+
+    const quantity = item.quantity ?? 0;
+    const unitPrice = item.price ?? product.price ?? 0;
+    const revenue = unitPrice * quantity;
+
+    productsSold.push({
+      productId: itemProductId,
+      quantity,
+      revenue,
+    });
+
+    projectedItems.push({
+      productId: itemProductId,
+      productName: product.name,
+      quantity,
+      unitPrice,
+      unitCost: product.cost ?? 0,
+    });
+
+    if (product.cost) {
+      totalCost += product.cost * quantity;
+    }
+  }
+
+  return { projectedItems, totalCost, productsSold };
+}
+
+export interface DealClosedHandlerProjectedItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  unitCost: number;
+}
