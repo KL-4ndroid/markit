@@ -8,6 +8,7 @@ import {
   getDealItemPrice,
   getDealItemProductId,
   getEventMarketId,
+  getInteractionType,
   getPayloadPreferredEventMarketId,
   getTombstoneTargetEventId,
   isBackfillDealEvent,
@@ -90,6 +91,10 @@ function main(): void {
   assert.equal(isBackfillDealEvent({ payload: { isBackfill: true } }), true);
   assert.equal(isBackfillDealEvent({ payload: { is_backfill: true } }), true);
   assert.equal(isBackfillDealEvent({ payload: { isBackfill: false } }), false);
+  assert.equal(getInteractionType({ payload: { type: 'touch' } }), 'touch');
+  assert.equal(getInteractionType({ payload: { interaction_type: 'inquiry' } }), 'inquiry');
+  assert.equal(getInteractionType({ payload: { interactionType: 'photo' } }), 'photo');
+  assert.equal(getInteractionType({ payload: { type: '   ' } }), undefined);
 
   console.log('PASS event read model helpers');
 }

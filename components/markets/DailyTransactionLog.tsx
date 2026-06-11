@@ -17,7 +17,15 @@ import { getActiveDealEvents, getActiveInteractionEvents } from '@/lib/db/event-
 import { formatCurrency } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { deleteDealEventById, deleteInteractionEventById } from '@/lib/markets/event-deletion-service';
-import { getDealEventDate, getDealEventRevenue, getEventMarketId } from '@/lib/markets/event-view-utils';
+import {
+  getDealEventCount,
+  getDealEventDate,
+  getDealEventRevenue,
+  getDealItems,
+  getEventMarketId,
+  getInteractionType,
+  isManualDealEvent,
+} from '@/lib/markets/event-view-utils';
 import { toast } from 'sonner';
 
 interface DailyTransactionLogProps {
@@ -91,14 +99,15 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       // 添加互動記錄
       interactions.forEach(event => {
         const time = new Date(event.timestamp);
-        const button = buttonMap.get(event.payload.type);
+        const interactionType = getInteractionType(event) ?? 'unknown';
+        const button = buttonMap.get(interactionType);
         
         logEntries.push({
           id: event.id!,
           type: 'interaction',
           timestamp: event.timestamp,
           time: `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`,
-          description: button?.label || event.payload.type,
+          description: button?.label || interactionType,
           emoji: button?.emoji || '📝',
           color: 'text-[#8B7BA6]',
         });
@@ -113,11 +122,12 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
         
         // 獲取商品資訊
         let description = '成交';
-        if (event.payload.isManualEntry) {
-          description = `手動輸入 - ${event.payload.manualDealCount || 1} 筆`;
-        } else if (event.payload.items && event.payload.items.length > 0) {
-          const itemCount = event.payload.items.reduce((sum, item) => sum + item.quantity, 0);
-          description = `${event.payload.items.length} 項商品，共 ${itemCount} 件`;
+        const items = getDealItems(event);
+        if (isManualDealEvent(event)) {
+          description = `手動輸入 - ${getDealEventCount(event)} 筆`;
+        } else if (items.length > 0) {
+          const itemCount = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+          description = `${items.length} 項商品，共 ${itemCount} 件`;
         }
         
         logEntries.push({
