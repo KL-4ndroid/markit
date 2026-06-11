@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import {
+  getDealClosedItemProjection,
+  getDealClosedItemsProjection,
   getDealClosedManualProjection,
   getDealClosedMode,
   getDealClosedTransactionDate,
+  type ProductSnapshotForDealProjection,
 } from '../lib/db/deal-closed-projection';
 import type { DealClosedPayload, Event } from '../types/db';
 
@@ -77,6 +80,130 @@ function run() {
   assert.equal(getDealClosedMode(deal({ isBackfill: true })), 'backfill');
   assert.equal(getDealClosedMode(deal({ is_backfill: true })), 'backfill');
   assert.equal(getDealClosedMode(deal({})), 'normal');
+
+  const product: ProductSnapshotForDealProjection = {
+    id: 'product-1',
+    name: '手作耳環',
+    price: 320,
+    cost: 80,
+  };
+
+  assert.deepEqual(getDealClosedItemProjection({
+    productId: 'product-1',
+    productName: '成交快照名稱',
+    quantity: 2,
+    priceAtTimeOfSale: 300,
+    costAtTimeOfSale: 70,
+    price: 999,
+  } as any, product), {
+    productId: 'product-1',
+    productName: '成交快照名稱',
+    quantity: 2,
+    unitPrice: 300,
+    unitCost: 70,
+    revenue: 600,
+    cost: 140,
+    productsSold: {
+      productId: 'product-1',
+      quantity: 2,
+      revenue: 600,
+    },
+  });
+
+  assert.deepEqual(getDealClosedItemProjection({
+    product_id: 'product-1',
+    product_name: '舊格式耳環',
+    quantity: 3,
+    price_at_time_of_sale: 280,
+    cost_at_time_of_sale: 60,
+  } as any, product), {
+    productId: 'product-1',
+    productName: '舊格式耳環',
+    quantity: 3,
+    unitPrice: 280,
+    unitCost: 60,
+    revenue: 840,
+    cost: 180,
+    productsSold: {
+      productId: 'product-1',
+      quantity: 3,
+      revenue: 840,
+    },
+  });
+
+  assert.deepEqual(getDealClosedItemProjection({
+    product_id: 'product-1',
+    quantity: 1,
+  } as any, product), {
+    productId: 'product-1',
+    productName: '手作耳環',
+    quantity: 1,
+    unitPrice: 320,
+    unitCost: 80,
+    revenue: 320,
+    cost: 80,
+    productsSold: {
+      productId: 'product-1',
+      quantity: 1,
+      revenue: 320,
+    },
+  });
+
+  assert.deepEqual(getDealClosedItemProjection({
+    product_id: ' ',
+    quantity: Number.NaN,
+    price: 250,
+    cost: 50,
+  } as any), {
+    productId: undefined,
+    productName: '商品',
+    quantity: 0,
+    unitPrice: 250,
+    unitCost: 50,
+    revenue: 0,
+    cost: 0,
+    productsSold: undefined,
+  });
+
+  const itemsProjection = getDealClosedItemsProjection(deal({
+    items: [
+      {
+        product_id: 'product-1',
+        quantity: 2,
+        price_at_time_of_sale: 300,
+        cost_at_time_of_sale: 80,
+      },
+      {
+        productId: 'product-2',
+        quantity: 1,
+        price: 150,
+        cost: 30,
+      },
+    ],
+  } as any), new Map([
+    ['product-1', product],
+    ['product-2', {
+      id: 'product-2',
+      name: '貼紙',
+      price: 180,
+      cost: 40,
+    }],
+  ]));
+
+  assert.equal(itemsProjection.totalAmount, 750);
+  assert.equal(itemsProjection.totalCost, 190);
+  assert.deepEqual(itemsProjection.productsSold, [
+    {
+      productId: 'product-1',
+      quantity: 2,
+      revenue: 600,
+    },
+    {
+      productId: 'product-2',
+      quantity: 1,
+      revenue: 150,
+    },
+  ]);
 
   console.log('PASS deal closed projection helpers');
 }
