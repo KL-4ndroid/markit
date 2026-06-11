@@ -41,12 +41,12 @@ async function main(): Promise<void> {
       totalAmount: 999,
       paymentMethod: 'cash',
       items: [],
-      isManualEntry: true,
-      manualRevenue: 500,
-      manualCost: 150,
-      manualDealCount: 4,
-      dealDate: '2026-01-20',
-    },
+      is_manual_entry: true,
+      manual_revenue: 500,
+      manual_cost: 150,
+      manual_deal_count: 4,
+      deal_date: '2026-01-20',
+    } as any,
   }));
 
   assert.equal(manualResult.totalAmount, 500);
