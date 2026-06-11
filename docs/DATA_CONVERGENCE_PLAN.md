@@ -43,7 +43,7 @@
 
 ## 目前完成進度
 
-整體估計：約 80%。
+整體估計：約 82%。
 
 | 區塊 | 狀態 | 說明 |
 |---|---:|---|
@@ -56,6 +56,7 @@
 | Live metrics | 已完成 | 即時銷售數據已改用 shared helper。 |
 | Analytics top products | 已完成 | 熱門商品排行已改用 shared helper。 |
 | Product affinity | 已完成 | 商品關聯分析與每日收入計算已改用 shared helper。 |
+| Analytics manual deal checks | 已完成 | 熱門商品與商品關聯分析已改用 `isManualDealEvent()`，可辨識 snake_case 手動成交。 |
 | Analytics data completeness | 已完成 | 資料完整度判斷已改用 shared deal flag helper。 |
 | Market detail transaction log | 已完成 | 每日交易紀錄已改用 shared helper 讀互動類型、手動成交、商品項目與成交筆數。 |
 | Market detail revenue UI | 已完成 | 每日收入明細互動類型已改用 shared helper。 |
@@ -88,6 +89,7 @@
 | `d22cfc8` | DealDetailModal 改用 shared helper 讀交易詳情欄位。 |
 | `f1995c6` | Batch entry detection 改用 shared helper 讀回補、手動成交、成交金額與成交筆數。 |
 | `2d4e149` | Metrics engine 改用 shared helper 讀批次補登原始成交數。 |
+| `05cac92` | Top products / product affinity 改用 shared helper 判斷手動成交。 |
 
 ## 目前剩餘工作
 
@@ -97,11 +99,11 @@
 
 ### P2：收斂分析引擎
 
-這些任務仍屬中低風險，但影響分析結果，需要補測試。
+主要分析引擎已完成收斂。剩餘項目為低風險、低急迫度，可先觀察。
 
 1. `lib/analytics/product-recommendations.ts`
    - 目前主要讀 `dailyStats.productsSold`，風險較低。
-   - 可視情況補上 productsSold normalization helper。
+   - 已有基本防呆與測試，暫不強行抽 helper；若未來其他模組也重複處理 productsSold，再抽成 normalization helper。
 
 ### P3：收斂修復工具內部細節
 
@@ -159,9 +161,12 @@
 
 下一階段建議順序：
 
-1. 評估 `dailyStats.productsSold` normalization helper
-   - 先確認 `product-recommendations.ts`、`top-products.ts`、`product-affinity-engine.ts` 是否還有重複處理 productsSold 的地方。
-   - 若重複邏輯明確，再抽成小 helper；若目前已穩定，則暫緩。
+1. 收斂 `lib/sync/local-projection-repair.ts`
+   - 先只處理少量直接讀 `payload.isManualEntry`、`payload.items` 的位置。
+   - 必須保留現有 projection repair 行為與測試。
+
+2. 評估 `dailyStats.productsSold` normalization helper
+   - 目前重複程度不高，暫緩抽象。
 
 ## 每次任務完成標準
 
