@@ -1,4 +1,16 @@
 import { db } from '@/lib/db';
+import {
+  getDealEventCost,
+  getDealEventCount,
+  getDealEventDate,
+  getDealEventRevenue,
+  getDealItemPrice,
+  getDealItemCost,
+  getDealItemProductId,
+  getEventMarketId,
+  getLocalDateStringFromTimestamp,
+  getTombstoneTargetEventId,
+} from '@/lib/events/event-read-model';
 import type { DailyStats, DealClosedPayload, Event, InteractionRecordedPayload } from '@/types/db';
 
 export interface LocalProjectionRepairOptions {
@@ -43,10 +55,6 @@ export interface LocalProjectionRepairResult {
 
 type ProductSoldEntry = DailyStats['productsSold'][number];
 
-type DeletedEventPayload = {
-  eventId?: string;
-};
-
 interface DealProjection {
   date: string;
   revenue: number;
@@ -78,41 +86,8 @@ function nonBlankString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function formatLocalDate(timestamp: number): string {
-  const date = new Date(timestamp);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function getDealDate(event: Event<DealClosedPayload>): string {
-  return event.payload.dealDate ?? formatLocalDate(event.timestamp);
-}
-
-function getEventMarketId(event: Event<DealClosedPayload>): string | undefined {
-  return event.market_id ?? event.payload.market_id ?? (event.payload as unknown as { marketId?: string }).marketId;
-}
-
-function getGenericEventMarketId(event: Event<any>): string | undefined {
-  return event.market_id ?? event.payload?.market_id ?? event.payload?.marketId;
-}
-
 function getEventDate(event: Event): string {
-  return formatLocalDate(event.timestamp);
-}
-
-function getItemPrice(item: DealClosedPayload['items'][number]): number {
-  return finiteNumber(
-    item.price_at_time_of_sale ??
-      (item as unknown as { priceAtTimeOfSale?: number }).priceAtTimeOfSale ??
-      item.price
-  );
-}
-
-function getItemCost(item: DealClosedPayload['items'][number]): number {
-  return finiteNumber(
-    item.cost_at_time_of_sale ??
-      (item as unknown as { costAtTimeOfSale?: number }).costAtTimeOfSale ??
-      (item as unknown as { cost?: number }).cost
-  );
+  return getLocalDateStringFromTimestamp(event.timestamp) ?? '';
 }
 
 function projectDealEvent(event: Event<DealClosedPayload>): DealProjection {
@@ -120,14 +95,14 @@ function projectDealEvent(event: Event<DealClosedPayload>): DealProjection {
   const productsSold: DailyStats['productsSold'] = [];
 
   if (payload.isManualEntry) {
-    const revenue = finiteNumber(payload.manualRevenue ?? payload.totalAmount);
-    const cost = finiteNumber(payload.manualCost);
+    const revenue = getDealEventRevenue(event);
+    const cost = getDealEventCost(event);
     return {
-      date: getDealDate(event),
+      date: getDealEventDate(event),
       revenue,
       cost,
       profit: revenue - cost,
-      dealCount: finiteNumber(payload.manualDealCount, 1),
+      dealCount: getDealEventCount(event),
       productsSold,
     };
   }
@@ -138,13 +113,14 @@ function projectDealEvent(event: Event<DealClosedPayload>): DealProjection {
 
     for (const item of payload.items) {
       const quantity = finiteNumber(item.quantity);
-      const itemRevenue = getItemPrice(item) * quantity;
+      const itemRevenue = getDealItemPrice(item) * quantity;
       revenue += itemRevenue;
-      cost += getItemCost(item) * quantity;
+      cost += getDealItemCost(item) * quantity;
 
-      if (nonBlankString(item.productId)) {
+      const productId = getDealItemProductId(item);
+      if (nonBlankString(productId)) {
         productsSold.push({
-          productId: item.productId,
+          productId,
           quantity,
           revenue: itemRevenue,
         });
@@ -152,19 +128,19 @@ function projectDealEvent(event: Event<DealClosedPayload>): DealProjection {
     }
 
     return {
-      date: getDealDate(event),
-      revenue: revenue || finiteNumber(payload.totalAmount),
-      cost: cost || finiteNumber((payload as unknown as { totalCost?: number }).totalCost),
-      profit: (revenue || finiteNumber(payload.totalAmount)) - (cost || finiteNumber((payload as unknown as { totalCost?: number }).totalCost)),
+      date: getDealEventDate(event),
+      revenue: revenue || getDealEventRevenue(event),
+      cost: cost || getDealEventCost(event),
+      profit: (revenue || getDealEventRevenue(event)) - (cost || getDealEventCost(event)),
       dealCount: 1,
       productsSold: mergeProductsSold([], productsSold),
     };
   }
 
-  const revenue = finiteNumber(payload.totalAmount);
-  const cost = finiteNumber((payload as unknown as { totalCost?: number }).totalCost);
+  const revenue = getDealEventRevenue(event);
+  const cost = getDealEventCost(event);
   return {
-    date: getDealDate(event),
+    date: getDealEventDate(event),
     revenue,
     cost,
     profit: revenue - cost,
@@ -320,7 +296,7 @@ async function getDealEventsForMarket(marketId: string): Promise<Array<Event<Dea
   return await db.events
     .where('type')
     .equals('deal_closed')
-    .and(event => getEventMarketId(event as Event<DealClosedPayload>) === marketId)
+    .and(event => getEventMarketId(event as Event<any>) === marketId)
     .toArray() as Array<Event<DealClosedPayload>>;
 }
 
@@ -331,19 +307,19 @@ async function getEventsByTypeForMarket<TPayload>(
   return await db.events
     .where('type')
     .equals(type)
-    .and(event => getGenericEventMarketId(event as Event<any>) === marketId)
+    .and(event => getEventMarketId(event as Event<any>) === marketId)
     .toArray() as Array<Event<TPayload>>;
 }
 
 async function getDeletedEventIdsForMarket(marketId: string): Promise<Set<string>> {
   const deletedEvents = [
-    ...await getEventsByTypeForMarket<DeletedEventPayload>('deal_deleted', marketId),
-    ...await getEventsByTypeForMarket<DeletedEventPayload>('interaction_deleted', marketId),
+    ...await getEventsByTypeForMarket<Record<string, unknown>>('deal_deleted', marketId),
+    ...await getEventsByTypeForMarket<Record<string, unknown>>('interaction_deleted', marketId),
   ];
 
   return new Set(
     deletedEvents
-      .map(event => event.payload?.eventId)
+      .map(event => getTombstoneTargetEventId(event))
       .filter(nonBlankString)
   );
 }

@@ -119,6 +119,21 @@ function tombstone(
   } as Event;
 }
 
+function snakeTombstone(
+  id: string,
+  type: 'deal_deleted' | 'interaction_deleted',
+  eventId: string,
+  timestamp = new Date(2026, 4, 1, 14, 0, 0).getTime()
+): Event {
+  const event = tombstone(id, type, eventId, timestamp);
+  event.payload = {
+    ...event.payload,
+    eventId: undefined,
+    event_id: eventId,
+  };
+  return event;
+}
+
 function makeStore(
   initialMarkets: Market[],
   initialStats: DailyStats[],
@@ -722,6 +737,42 @@ runTest('rebuildMarketStatsFromEvents excludes deleted deal and interaction even
   assert.equal(repairedStats[0].revenue, 200);
   assert.equal(repairedStats[0].dealCount, 1);
   assert.equal(repairedStats[0].touchCount, 1);
+});
+
+runTest('rebuildMarketStatsFromEvents excludes snake_case tombstone target ids', async () => {
+  const store = makeStore(
+    [market({ totalRevenue: 300, totalDeals: 3 })],
+    [stat({ revenue: 300, dealCount: 3 })],
+    [
+      deal('d1', {
+        isManualEntry: true,
+        manualRevenue: 100,
+        manualCost: 0,
+        manualDealCount: 1,
+        totalAmount: 100,
+      }),
+      deal('d2', {
+        isManualEntry: true,
+        manualRevenue: 200,
+        manualCost: 0,
+        manualDealCount: 1,
+        totalAmount: 200,
+      }),
+      snakeTombstone('td1', 'deal_deleted', 'd1'),
+    ]
+  );
+
+  const result = await withMockDb(store, () =>
+    rebuildMarketStatsFromEvents(MARKET_ID, { dryRun: false })
+  );
+  const repairedMarket = store.markets.get(MARKET_ID)!;
+  const repairedStats = store.getDailyStatsByMarket(MARKET_ID);
+
+  assert.ok(result);
+  assert.equal(repairedMarket.totalRevenue, 200);
+  assert.equal(repairedMarket.totalDeals, 1);
+  assert.equal(repairedStats[0].revenue, 200);
+  assert.equal(repairedStats[0].dealCount, 1);
 });
 
 runTest('rebuildMarketStatsFromEvents does not write events', async () => {
