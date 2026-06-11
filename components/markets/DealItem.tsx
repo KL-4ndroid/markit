@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronRight } from 'lucide-react';
-import { getDealEventDate, getDealEventRevenue, getDealPaymentMethod } from '@/lib/markets/event-view-utils';
+import { getDealEventDate, getDealEventRevenue, getDealPaymentMethod, isBackfillDealEvent } from '@/lib/markets/event-view-utils';
 import type { Event, DealClosedPayload } from '@/types/db';
 
 interface DealItemProps {
@@ -14,14 +14,13 @@ interface DealItemProps {
  * 顯示簡潔的成交資訊：時間 + 金額 + 支付方式
  */
 export function DealItem({ deal, onClick }: DealItemProps) {
-  const payload = deal.payload as DealClosedPayload;
   const amount = getDealEventRevenue(deal);
   const paymentMethod = getDealPaymentMethod(deal);
 
   // 格式化時間顯示
   const time = (() => {
     // 檢查是否為補登記錄且不是當日的數據
-    if (payload.isBackfill && getDealEventDate(deal)) {
+    if (isBackfillDealEvent(deal) && getDealEventDate(deal)) {
       // ✅ 使用本地日期，避免時區問題
       const now = new Date();
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;

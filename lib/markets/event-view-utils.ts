@@ -9,6 +9,7 @@ import {
   getEventMarketId,
   getInteractionType,
   getLocalDateStringFromTimestamp as getOptionalLocalDateStringFromTimestamp,
+  isBackfillDealEvent,
   isManualDealEvent,
 } from '@/lib/events/event-read-model';
 
@@ -22,6 +23,7 @@ export {
   getDealPaymentMethod,
   getEventMarketId,
   getInteractionType,
+  isBackfillDealEvent,
   isManualDealEvent,
 };
 
