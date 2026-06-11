@@ -7,9 +7,12 @@ import {
   getDealItemPrice,
   getDealItemCost,
   getDealItemProductId,
+  getDealItemQuantity,
+  getDealItems,
   getEventMarketId,
   getLocalDateStringFromTimestamp,
   getTombstoneTargetEventId,
+  isManualDealEvent,
 } from '@/lib/events/event-read-model';
 import type { DailyStats, DealClosedPayload, Event, InteractionRecordedPayload } from '@/types/db';
 
@@ -91,10 +94,9 @@ function getEventDate(event: Event): string {
 }
 
 function projectDealEvent(event: Event<DealClosedPayload>): DealProjection {
-  const payload = event.payload;
   const productsSold: DailyStats['productsSold'] = [];
 
-  if (payload.isManualEntry) {
+  if (isManualDealEvent(event)) {
     const revenue = getDealEventRevenue(event);
     const cost = getDealEventCost(event);
     return {
@@ -107,12 +109,13 @@ function projectDealEvent(event: Event<DealClosedPayload>): DealProjection {
     };
   }
 
-  if (Array.isArray(payload.items) && payload.items.length > 0) {
+  const items = getDealItems(event);
+  if (items.length > 0) {
     let revenue = 0;
     let cost = 0;
 
-    for (const item of payload.items) {
-      const quantity = finiteNumber(item.quantity);
+    for (const item of items) {
+      const quantity = getDealItemQuantity(item);
       const itemRevenue = getDealItemPrice(item) * quantity;
       revenue += itemRevenue;
       cost += getDealItemCost(item) * quantity;

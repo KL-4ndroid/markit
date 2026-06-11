@@ -271,12 +271,12 @@ runTest('dry-run computes repaired projection without writing', async () => {
     [stat({ id: 1, revenue: 300, dealCount: 3 })],
     [
       deal('d1', {
-        isManualEntry: true,
-        manualRevenue: 100,
-        manualCost: 10,
-        manualDealCount: 1,
-        totalAmount: 100,
-      }),
+        is_manual_entry: true,
+        manual_revenue: 100,
+        manual_cost: 10,
+        manual_deal_count: 1,
+        total_amount: 100,
+      } as Partial<DealClosedPayload>),
     ]
   );
 
