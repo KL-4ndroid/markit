@@ -42,6 +42,27 @@ function makeCloudEvents(ids: string[]): CloudEvent[] {
   }));
 }
 
+function makeSnakeCaseCloudEvents(ids: string[]): CloudEvent[] {
+  return ids.map((id, i) => ({
+    id,
+    type: 'deal_closed',
+    payload: {
+      market_id: MARKET_ID,
+      total_amount: 34911,
+      deal_date: '2025-12-01',
+      isManualEntry: true,
+      manual_revenue: 34911,
+      manual_cost: 0,
+      manual_deal_count: 1,
+    },
+    actor_id: OWNER_ID,
+    market_id: MARKET_ID,
+    timestamp: new Date(2025, 11, i + 1, 12, 0, 0).toISOString(),
+    created_at: new Date(2026, 4, 20, 10, 0, 0).toISOString(),
+    metadata: {},
+  }));
+}
+
 function fixtureMarket(overrides: Partial<Market> = {}): Market {
   return {
     id: MARKET_ID,
@@ -123,7 +144,7 @@ const tests: Array<{ name: string; fn: () => Promise<void> | void }> = [];
 // Test cases
 // ---------------------------------------------------------------------------
 
-runTest('zero-to-cloud: repairs missing deal_closed', async () => {
+runTest('zero-to-cloud: repairs missing snake_case deal_closed events', async () => {
   const localEvents = new Map<string, unknown>();
   let updatedMarketRevenue = 0;
 
@@ -225,7 +246,7 @@ runTest('zero-to-cloud: repairs missing deal_closed', async () => {
       ownerId: OWNER_ID,
       marketIds: [MARKET_ID],
       supabaseClient: makeSupabaseMock(
-        makeCloudEvents(['evt-c1', 'evt-c2'])
+        makeSnakeCaseCloudEvents(['evt-c1', 'evt-c2'])
       ),
     });
 
@@ -235,6 +256,8 @@ runTest('zero-to-cloud: repairs missing deal_closed', async () => {
     assert.equal(result.repaired[0].localRevenueBefore, 0);
     assert.equal(result.repaired[0].replayedEvents, 2);
     assert.equal(result.skipped.length, 0);
+    assert.equal((localEvents.get('evt-c1') as any).payload.totalAmount, 34911);
+    assert.equal((localEvents.get('evt-c1') as any).payload.manualRevenue, 34911);
   } finally {
     eventHandlers['deal_closed'] = origHandler;
     (db.events as any).where = origEventsWhere;

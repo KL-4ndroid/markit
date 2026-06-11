@@ -13,7 +13,9 @@
 import { db } from '@/lib/db';
 import { supabase } from '@/lib/supabase/client';
 import { eventHandlers } from '@/lib/db/events';
+import { canonicalizeEvent } from '@/lib/db/data-canonicalization';
 import { normalizeEventPayloadForLocal } from '@/lib/data-mappers';
+import { getDealEventCount, getDealEventRevenue } from '@/lib/events/event-read-model';
 import type { Event, Market } from '@/types/db';
 
 // Re-exported result shapes for callers
@@ -115,41 +117,6 @@ function toFiniteNumber(value: unknown, fallback = 0): number {
   return fallback;
 }
 
-function getCloudDealRevenue(event: CloudEvent): number {
-  const payload = event.payload ?? {};
-  const directRevenue =
-    payload.manualRevenue ??
-    payload.manual_revenue ??
-    payload.totalAmount ??
-    payload.total_amount;
-
-  if (typeof directRevenue === 'number' && Number.isFinite(directRevenue)) {
-    return directRevenue;
-  }
-
-  if (Array.isArray(payload.items)) {
-    return payload.items.reduce((sum: number, item: any) => {
-      const price = toFiniteNumber(
-        item.price_at_time_of_sale ??
-          item.priceAtTimeOfSale ??
-          item.price
-      );
-      const quantity = toFiniteNumber(item.quantity);
-      return sum + price * quantity;
-    }, 0);
-  }
-
-  return 0;
-}
-
-function getCloudDealCount(event: CloudEvent): number {
-  const payload = event.payload ?? {};
-  return toFiniteNumber(
-    payload.manualDealCount ?? payload.manual_deal_count,
-    1
-  );
-}
-
 /**
  * Returns true when the market is owner-accessible:
  * owner_id matches the given userId, OR access_type is not 'staff'.
@@ -160,6 +127,21 @@ function isOwnerMarket(market: Market, ownerId: string): boolean {
   if (!market.owner_id && !market.access_type) return true;
   if (market.access_type !== 'staff') return true;
   return false;
+}
+
+function createCanonicalSyncedEvent(rawEvent: Record<string, unknown>): Event {
+  const localEvent = {
+    id: rawEvent.id as string,
+    type: rawEvent.type as Event['type'],
+    payload: rawEvent.payload as Event['payload'],
+    actor_id: rawEvent.actor_id as string | undefined,
+    market_id: rawEvent.market_id as string | undefined,
+    timestamp: new Date(rawEvent.timestamp as string).getTime(),
+    sync_status: 'synced',
+    metadata: rawEvent.metadata as Event['metadata'],
+  } as Event;
+
+  return canonicalizeEvent(localEvent).event;
 }
 
 /**
@@ -173,29 +155,21 @@ async function replayOneEvent(
   const existing = await db.events.get(rawEvent.id as string);
   if (existing) return;
 
-  await db.events.add({
-    id: rawEvent.id as string,
-    type: rawEvent.type as Event['type'],
-    payload: rawEvent.payload as Event['payload'],
-    actor_id: rawEvent.actor_id as string | undefined,
-    market_id: rawEvent.market_id as string | undefined,
-    timestamp: new Date(rawEvent.timestamp as string).getTime(),
-    sync_status: 'synced',
-    metadata: rawEvent.metadata as Event['metadata'],
-  });
+  const localEvent = createCanonicalSyncedEvent(rawEvent);
+  await db.events.add(localEvent);
 
   const handler = eventHandlers[rawEvent.type as keyof typeof eventHandlers];
   if (!handler) return;
 
-  const processedPayload = normalizeEventPayloadForLocal(rawEvent.payload);
+  const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
   await handler(
     {
-      id: rawEvent.id as string,
-      type: rawEvent.type as Event['type'],
+      id: localEvent.id,
+      type: localEvent.type,
       payload: processedPayload,
-      timestamp: new Date(rawEvent.timestamp as string).getTime(),
-      actor_id: rawEvent.actor_id as string | undefined,
-      market_id: rawEvent.market_id as string | undefined,
+      timestamp: localEvent.timestamp,
+      actor_id: localEvent.actor_id,
+      market_id: localEvent.market_id,
     } as Event,
     db
   );
@@ -207,16 +181,7 @@ async function persistEventWithoutReplay(
   const existing = await db.events.get(rawEvent.id as string);
   if (existing) return false;
 
-  await db.events.add({
-    id: rawEvent.id as string,
-    type: rawEvent.type as Event['type'],
-    payload: normalizeEventPayloadForLocal(rawEvent.payload) as Event['payload'],
-    actor_id: rawEvent.actor_id as string | undefined,
-    market_id: rawEvent.market_id as string | undefined,
-    timestamp: new Date(rawEvent.timestamp as string).getTime(),
-    sync_status: 'synced',
-    metadata: rawEvent.metadata as Event['metadata'],
-  });
+  await db.events.add(createCanonicalSyncedEvent(rawEvent));
 
   return true;
 }
@@ -367,11 +332,11 @@ async function processOneMarket(
 
   const cloudDealEvents: CloudEvent[] = eventsResult.data ?? [];
   const cloudEventRevenue = cloudDealEvents.reduce(
-    (sum, event) => sum + getCloudDealRevenue(event),
+    (sum, event) => sum + getDealEventRevenue(event),
     0
   );
   const cloudEventDeals = cloudDealEvents.reduce(
-    (sum, event) => sum + getCloudDealCount(event),
+    (sum, event) => sum + getDealEventCount(event),
     0
   );
   const expectedRevenue = cloudRevenue > 0 ? cloudRevenue : cloudEventRevenue;
