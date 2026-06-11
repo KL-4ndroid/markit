@@ -6,7 +6,7 @@ import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { getActiveInteractionEvents } from '@/lib/db/event-tombstones';
-import { getEventMarketId, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
+import { getEventMarketId, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
 import type { Market, Event, InteractionRecordedPayload } from '@/types/db';
 
 interface DailyRevenueStatsProps {
@@ -148,7 +148,8 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
 
       const dayData = dataMap.get(dateStr);
       if (dayData) {
-        const type = event.payload.type;
+        const type = getInteractionType(event);
+        if (!type) return;
         // 初始化該類型（如果尚未初始化）
         if (dayData.interactions[type] === undefined) {
           dayData.interactions[type] = 0;
