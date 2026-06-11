@@ -43,14 +43,14 @@
 
 ## 目前完成進度
 
-整體估計：約 84%。
+整體估計：約 85%。
 
 | 區塊 | 狀態 | 說明 |
 |---|---:|---|
 | 本機資料格式修復工具 | 已完成 | 設定頁已有本機資料 canonicalization 工具。 |
 | 雲端事件同步前 canonicalize | 已完成 | 雲端事件寫入本機與 replay 前先做格式補齊。 |
 | 共用事件讀取 helper | 已完成 | `lib/events/event-read-model.ts` 已建立並逐步擴充。 |
-| Tombstone / 刪除讀取收斂 | 已完成 | 成交/互動刪除流程已改用 shared helper。 |
+| Tombstone / 刪除讀取收斂 | 已完成 | 成交/互動刪除流程已改用 shared helper，包含手動成交、商品項目與互動類型。 |
 | 本機統計 projection repair | 已完成 | 可從本機 events 重建 market / dailyStats 統計。 |
 | Owner revenue gap repair | 已完成 | 老闆漏拉舊 deal_closed 的修復工具已建立，並 canonicalize repair events。 |
 | Local projection repair | 已完成 | 本機統計重建工具已改用 shared helper 讀手動成交與商品項目。 |
@@ -92,6 +92,7 @@
 | `2d4e149` | Metrics engine 改用 shared helper 讀批次補登原始成交數。 |
 | `05cac92` | Top products / product affinity 改用 shared helper 判斷手動成交。 |
 | `f1c42d0` | Local projection repair 改用 shared helper 讀手動成交與商品項目。 |
+| `6a0349d` | Event deletion service 改用 shared helper 讀手動成交、商品項目與互動類型。 |
 
 ## 目前剩餘工作
 
