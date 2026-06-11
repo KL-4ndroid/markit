@@ -43,7 +43,7 @@
 
 ## 目前完成進度
 
-整體估計：約 87%。
+整體估計：約 88%。
 
 | 區塊 | 狀態 | 說明 |
 |---|---:|---|
@@ -66,7 +66,7 @@
 | Market deal detail UI | 已完成 | 成交詳情 modal 已改用 shared helper 讀備註、商品數量、回補標記。 |
 | Batch entry analytics | 已完成 | `batch-entry-detection-engine.ts` 已改用 shared helper 讀回補、手動成交、成交金額、成交筆數與商品項目。 |
 | Metrics engine | 已完成 | `metrics-engine.ts` 已改用 `getDealEventCount()` 計算批次補登調整前的原始成交數。 |
-| Event handler projection | 部分完成 | `deal_closed` 手動補登分支已改用 shared projection helper；商品模式、庫存與 productsSold 仍維持原邏輯。 |
+| Event handler projection | 部分完成 | `deal_closed` 手動補登分支已改用 shared projection helper；商品項目 projection helper 與測試已建立，但尚未接 handler。 |
 | Integrity / import validation | 部分完成 | 已有大量相容測試，但仍有部分舊格式與 staff-sanitized 資料情境可補。 |
 
 ## 已完成的主要 Commit
@@ -97,6 +97,7 @@
 | `90aafd7` | Market detail interaction UI / local projection repair 改用 shared helper 讀互動類型。 |
 | `f5b852a` | 新增 deal_closed 手動補登 projection helper 與測試，尚未替換 handler。 |
 | `bb97027` | `deal_closed` 手動補登分支改用 projection helper，支援 snake_case / camelCase 補登欄位。 |
+| `c0e285a` | 新增 deal_closed 商品項目 projection helper 與測試，尚未替換 handler。 |
 
 ## 目前剩餘工作
 
@@ -129,7 +130,8 @@
    - 事件 handler / projection 核心。
    - 一次性大改很容易造成統計、庫存、刪除 replay 回歸。
    - 已完成 `deal_closed` 手動補登分支替換。
-   - 下一步只建議新增商品項目 projection helper 與測試，暫不接 handler、不改庫存。
+   - 已新增商品項目 projection helper 與測試。
+   - 下一步若要前進，只能評估「小範圍替換商品讀取」，仍不改庫存、不改 event payload 寫回。
 
 2. `hooks/useSync.ts`
    - 同步主流程。
@@ -172,11 +174,11 @@
    - 目前不急著調整，避免修復工具與 handler 收斂交錯。
    - 若未來要處理，只能小範圍替換讀取 helper，不改修復條件與寫入流程。
 
-2. 新增商品項目 projection helper 測試
-   - 覆蓋 `productId` / `product_id`。
-   - 覆蓋 `price_at_time_of_sale` / `priceAtTimeOfSale` / `price`。
-   - 覆蓋 `cost_at_time_of_sale` / `costAtTimeOfSale` / product cost fallback。
-   - 只新增 helper 和測試，不替換 handler、不改庫存。
+2. 評估是否小範圍接入商品項目 projection helper
+   - 只替換商品 ID、價格、成本、productsSold 計算讀取。
+   - 不改庫存扣減。
+   - 不改 event payload 寫回。
+   - 不改 `deal_deleted`。
 
 3. 評估 `dailyStats.productsSold` normalization helper
    - 目前重複程度不高，暫緩抽象。
