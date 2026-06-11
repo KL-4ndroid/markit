@@ -17,6 +17,7 @@ import type { Market, Event, DealClosedPayload } from '@/types/db';
 import type { MarketMetrics, BatchEntryWarning } from './types';
 import { detectBatchEntry } from './batch-entry-detection-engine';
 import type { MarketPulseDB } from '@/lib/db';
+import { getDealEventCount } from '@/lib/events/event-read-model';
 
 // ==================== Metrics Cache ====================
 
@@ -177,7 +178,7 @@ export async function calculateMarketMetrics(
           
           if (detection.isBatchEntry) {
             // ⚠️ 重要：不修改原始數據，只在分析層調整
-            const originalCount = dealEvent.payload.manualDealCount || 1;
+            const originalCount = getDealEventCount(dealEvent);
             const adjustment = detection.estimatedDealCount - originalCount;
             adjustedTotalDeals += adjustment;
             usedHeuristicCorrection = true;
