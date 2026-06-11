@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   assertEventCanBeDeleted,
+  recordDealDeletedEvent,
   resolveDealDeletionResult,
 } from '../lib/markets/event-deletion-service';
 import type { DealClosedPayload, Event } from '../types/db';
@@ -129,6 +130,20 @@ async function main(): Promise<void> {
   assert.deepEqual(legacyProductResult.productsSold, [
     { productId: 'legacy-product', quantity: 2, revenue: 240 },
   ]);
+
+  let recordedType: string | undefined;
+  let recordedPayload: Record<string, unknown> | undefined;
+
+  await recordDealDeletedEvent(manualFallbackResult, async (type: string, payload: unknown) => {
+    recordedType = type;
+    recordedPayload = payload as Record<string, unknown>;
+    return 'tombstone-1';
+  });
+
+  assert.equal(recordedType, 'deal_deleted');
+  assert.equal(recordedPayload?.market_id, 'market-root');
+  assert.equal(recordedPayload?.marketId, 'market-root');
+  assert.equal(recordedPayload?.totalAmount, 800);
 
   await assert.rejects(
     () => resolveDealDeletionResult(dealEvent({ id: undefined })),

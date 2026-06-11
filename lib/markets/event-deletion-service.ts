@@ -23,6 +23,7 @@ export interface DeleteDealResult extends DeleteEventResult {
 }
 
 export type ProductCostResolver = (productId: string) => Promise<number | undefined>;
+export type EventRecorder = typeof recordEvent;
 
 type DealItemForDeletion = DealClosedPayload['items'][number] & {
   product_id?: string;
@@ -105,8 +106,18 @@ export async function deleteDealEvent(event: Event<DealClosedPayload>): Promise<
   const result = await resolveDealDeletionResult(event);
   await assertNotAlreadyDeleted(result.deletedEventId);
 
-  await recordEvent('deal_deleted', {
+  await recordDealDeletedEvent(result);
+
+  return result;
+}
+
+export async function recordDealDeletedEvent(
+  result: DeleteDealResult,
+  recorder: EventRecorder = recordEvent
+): Promise<void> {
+  await recorder('deal_deleted', {
     eventId: result.deletedEventId,
+    market_id: result.marketId,
     marketId: result.marketId,
     dealDate: result.dealDate,
     totalAmount: result.totalAmount,
@@ -114,8 +125,6 @@ export async function deleteDealEvent(event: Event<DealClosedPayload>): Promise<
     dealCount: result.dealCount,
     productsSold: result.productsSold,
   });
-
-  return result;
 }
 
 export async function deleteDealEventById(eventId: string): Promise<DeleteDealResult> {

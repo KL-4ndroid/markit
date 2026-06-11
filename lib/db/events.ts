@@ -969,7 +969,12 @@ registerEventHandler('interaction_deleted', async (event: Event<InteractionDelet
  * 4. 更新每日統計（扣除金額）
  */
 registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db) => {
-  const { eventId, market_id, dealDate, totalAmount, totalCost, dealCount, productsSold = [] } = event.payload;
+  const { eventId, dealDate, totalAmount, totalCost, dealCount, productsSold = [] } = event.payload;
+  const market_id = pickMarketId(event.payload) ?? event.market_id;
+
+  if (!market_id) {
+    throw new Error(`deal_deleted is missing market_id: ${event.id ?? eventId}`);
+  }
 
   const totalProfit = totalAmount - totalCost;
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { db } from '../lib/db';
 import { eventHandlers } from '../lib/db/events';
-import type { DealClosedPayload, Event, Market } from '../types/db';
+import type { DailyStats, DealClosedPayload, DealDeletedPayload, Event, Market } from '../types/db';
 
 const TS = 1_700_000_000_000;
 
@@ -33,6 +33,26 @@ function manualDealEvent(payload: Partial<DealClosedPayload>): Event<DealClosedP
     timestamp: TS,
     actor_id: 'user-1',
     market_id: 'market-1',
+  };
+}
+
+function dealDeletedEvent(payload: Partial<DealDeletedPayload> & { marketId?: string }): Event<DealDeletedPayload> {
+  return {
+    id: 'evt-delete-deal',
+    type: 'deal_deleted',
+    payload: {
+      eventId: 'evt-manual-deal',
+      market_id: '',
+      dealDate: '2026-06-11',
+      totalAmount: 1200,
+      totalCost: 0,
+      dealCount: 1,
+      productsSold: [],
+      ...payload,
+    } as DealDeletedPayload,
+    timestamp: TS,
+    actor_id: 'user-1',
+    market_id: 'market-root',
   };
 }
 
@@ -94,6 +114,7 @@ async function main(): Promise<void> {
   const originalMarketUpdate = db.markets.update.bind(db.markets);
   const originalDailyStatsWhere = db.dailyStats.where.bind(db.dailyStats);
   const originalDailyStatsAdd = db.dailyStats.add.bind(db.dailyStats);
+  const originalDailyStatsUpdate = db.dailyStats.update.bind(db.dailyStats);
 
   try {
     let marketUpdate: Partial<Market> | undefined;
@@ -140,6 +161,68 @@ async function main(): Promise<void> {
     db.markets.update = originalMarketUpdate;
     db.dailyStats.where = originalDailyStatsWhere;
     db.dailyStats.add = originalDailyStatsAdd;
+  }
+
+  const dealDeletedHandler = eventHandlers.deal_deleted;
+  assert.ok(dealDeletedHandler, 'deal_deleted handler should be registered');
+
+  try {
+    let marketUpdate: Partial<Market> | undefined;
+    let dailyStatUpdate: Partial<DailyStats> | undefined;
+
+    db.markets.get = ((id: string) =>
+      Promise.resolve({
+        id,
+        name: 'Market',
+        startDate: '2026-06-11',
+        endDate: '2026-06-11',
+        totalRevenue: 1200,
+        totalProfit: 1200,
+        totalDeals: 1,
+        totalInteractions: 0,
+      } as Market)) as typeof db.markets.get;
+
+    db.markets.update = ((_id: string, changes: Partial<Market>) => {
+      marketUpdate = changes;
+      return Promise.resolve(1);
+    }) as typeof db.markets.update;
+
+    db.dailyStats.where = (() => ({
+      equals: () => ({
+        first: () => Promise.resolve({
+          id: 1,
+          date: '2026-06-11',
+          marketId: 'market-root',
+          touchCount: 0,
+          inquiryCount: 0,
+          dealCount: 2,
+          revenue: 1500,
+          cost: 0,
+          profit: 1500,
+          productsSold: [],
+          updatedAt: TS,
+        } as DailyStats),
+      }),
+    })) as unknown as typeof db.dailyStats.where;
+
+    db.dailyStats.update = ((_id: number, changes: Partial<DailyStats>) => {
+      dailyStatUpdate = changes;
+      return Promise.resolve(1);
+    }) as unknown as typeof db.dailyStats.update;
+
+    await dealDeletedHandler(dealDeletedEvent({ marketId: 'market-root' }), db);
+
+    assert.equal(marketUpdate?.totalRevenue, 0);
+    assert.equal(marketUpdate?.totalDeals, 0);
+    assert.equal(dailyStatUpdate?.revenue, 300);
+    assert.equal(dailyStatUpdate?.dealCount, 1);
+
+    console.log('PASS deal_deleted handler accepts camelCase marketId tombstones');
+  } finally {
+    db.markets.get = originalMarketGet;
+    db.markets.update = originalMarketUpdate;
+    db.dailyStats.where = originalDailyStatsWhere;
+    db.dailyStats.update = originalDailyStatsUpdate;
   }
 }
 
