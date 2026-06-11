@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { TrendingUp, DollarSign, Users, Target } from 'lucide-react';
 import { useEvents } from '@/lib/db/hooks';
-import type { Event, DealClosedPayload, InteractionRecordedPayload } from '@/types/db';
+import { calculateLiveMetrics } from '@/lib/sales/live-metrics';
 
 interface LiveMetricsProps {
   marketId: string;
@@ -18,57 +18,7 @@ export function LiveMetrics({ marketId }: LiveMetricsProps) {
 
   // 計算即時指標
   const metrics = useMemo(() => {
-    if (!events) {
-      return {
-        totalRevenue: 0,
-        dealCount: 0,
-        interactionCount: 0,
-        averageOrderValue: 0,
-        conversionRate: 0,
-      };
-    }
-
-    // 篩選當前市集的事件
-    const marketEvents = events.filter((event) => {
-      if (event.type === 'deal_closed') {
-        return (event.payload as DealClosedPayload).market_id === marketId;
-      }
-      if (event.type === 'interaction_recorded') {
-        return (event.payload as InteractionRecordedPayload).market_id === marketId;
-      }
-      return false;
-    });
-
-    // 計算成交金額
-    let totalRevenue = 0;
-    let dealCount = 0;
-    marketEvents.forEach((event) => {
-      if (event.type === 'deal_closed') {
-        const payload = event.payload as DealClosedPayload;
-        totalRevenue += payload.totalAmount;
-        dealCount++;
-      }
-    });
-
-    // 計算互動次數
-    const interactionCount = marketEvents.filter(
-      (event) => event.type === 'interaction_recorded'
-    ).length;
-
-    // 計算客單價 (AOV)
-    const averageOrderValue = dealCount > 0 ? totalRevenue / dealCount : 0;
-
-    // 計算轉換率
-    const totalInteractions = interactionCount + dealCount;
-    const conversionRate = totalInteractions > 0 ? (dealCount / totalInteractions) * 100 : 0;
-
-    return {
-      totalRevenue,
-      dealCount,
-      interactionCount,
-      averageOrderValue,
-      conversionRate,
-    };
+    return calculateLiveMetrics(events, marketId);
   }, [events, marketId]);
 
   return (
