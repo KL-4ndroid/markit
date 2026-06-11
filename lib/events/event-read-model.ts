@@ -120,6 +120,11 @@ export function getDealPaymentMethod(event: EventLike): DealClosedPayload['payme
   return event.payload?.paymentMethod ?? event.payload?.payment_method ?? 'other';
 }
 
+export function getDealNotes(event: EventLike): string | undefined {
+  const notes = event.payload?.notes;
+  return typeof notes === 'string' && notes.trim().length > 0 ? notes : undefined;
+}
+
 export function getDealItems(event: EventLike): DealItemLike[] {
   return Array.isArray(event.payload?.items) ? event.payload.items as DealItemLike[] : [];
 }
@@ -140,8 +145,12 @@ export function getDealItemCost(item: DealItemLike): number {
   return finiteNumber(item.cost_at_time_of_sale ?? item.costAtTimeOfSale ?? item.cost);
 }
 
+export function getDealItemQuantity(item: DealItemLike): number {
+  return finiteNumber(item.quantity);
+}
+
 export function getDealItemRevenue(item: DealItemLike): number {
-  return getDealItemPrice(item) * finiteNumber(item.quantity);
+  return getDealItemPrice(item) * getDealItemQuantity(item);
 }
 
 export function isManualDealEvent(event: EventLike): boolean {

@@ -5,10 +5,13 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X, Edit, Trash2, Clock, CreditCard } from 'lucide-react';
 import {
   getDealEventRevenue,
+  getDealNotes,
   getDealItemProductName,
+  getDealItemQuantity,
   getDealItemRevenue,
   getDealItems,
   getDealPaymentMethod,
+  isBackfillDealEvent,
 } from '@/lib/markets/event-view-utils';
 import type { Event, DealClosedPayload } from '@/types/db';
 
@@ -29,10 +32,10 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
 
   if (!deal) return null;
 
-  const payload = deal.payload as DealClosedPayload;
   const amount = getDealEventRevenue(deal);
   const paymentMethod = getDealPaymentMethod(deal);
   const items = getDealItems(deal);
+  const notes = getDealNotes(deal);
 
   // 格式化時間顯示
   const time = new Date(deal.timestamp).toLocaleString('zh-TW', {
@@ -134,7 +137,7 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-sm">
-                        <span className="text-[#6B6B6B]">× {item.quantity}</span>
+                        <span className="text-[#6B6B6B]">× {getDealItemQuantity(item)}</span>
                         <span className="font-medium text-[#7B9FA6]">
                           NT$ {getDealItemRevenue(item).toLocaleString()}
                         </span>
@@ -160,17 +163,17 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
             </div>
 
             {/* 備註 */}
-            {payload.notes && (
+            {notes && (
               <div className="pt-2">
                 <div className="text-xs text-[#6B6B6B] mb-2">備註</div>
                 <div className="text-sm bg-[#FAFAF8] p-3 rounded-lg border-l-4 border-[#7B9FA6]/20">
-                  {payload.notes}
+                  {notes}
                 </div>
               </div>
             )}
 
             {/* 補登標記 */}
-            {payload.isBackfill && (
+            {isBackfillDealEvent(deal) && (
               <div className="bg-[#FFF8E7] border border-[#D4A574]/30 rounded-lg p-3">
                 <div className="text-xs text-[#D4A574] font-medium flex items-center gap-1">
                   <span>📝</span>

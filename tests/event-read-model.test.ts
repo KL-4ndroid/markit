@@ -3,10 +3,12 @@ import {
   getDealEventCost,
   getDealEventCount,
   getDealEventDate,
+  getDealNotes,
   getDealEventRevenue,
   getDealItemCost,
   getDealItemPrice,
   getDealItemProductId,
+  getDealItemQuantity,
   getEventMarketId,
   getInteractionType,
   getPayloadPreferredEventMarketId,
@@ -85,6 +87,10 @@ function main(): void {
   assert.equal(getDealItemPrice({ priceAtTimeOfSale: 66 } as any), 66);
   assert.equal(getDealItemCost({ cost_at_time_of_sale: 7 } as any), 7);
   assert.equal(getDealItemCost({ costAtTimeOfSale: 8 } as any), 8);
+  assert.equal(getDealItemQuantity({ quantity: 3 } as any), 3);
+  assert.equal(getDealItemQuantity({ quantity: Number.NaN } as any), 0);
+  assert.equal(getDealNotes({ payload: { notes: '備註內容' } }), '備註內容');
+  assert.equal(getDealNotes({ payload: { notes: '   ' } }), undefined);
   assert.equal(isManualDealEvent({ payload: { isManualEntry: true } }), true);
   assert.equal(isManualDealEvent({ payload: { is_manual_entry: true } }), true);
   assert.equal(isManualDealEvent({ payload: { isManualEntry: false } }), false);
