@@ -43,7 +43,7 @@
 
 ## 目前完成進度
 
-整體估計：約 72%。
+整體估計：約 75%。
 
 | 區塊 | 狀態 | 說明 |
 |---|---:|---|
@@ -60,6 +60,7 @@
 | Market detail transaction log | 已完成 | 每日交易紀錄已改用 shared helper 讀互動類型、手動成交、商品項目與成交筆數。 |
 | Market detail revenue UI | 已完成 | 每日收入明細互動類型已改用 shared helper。 |
 | Market deal item UI | 已完成 | 成交列表項目的回補判斷已改用 shared helper。 |
+| Market deal detail UI | 已完成 | 成交詳情 modal 已改用 shared helper 讀備註、商品數量、回補標記。 |
 | Metrics / batch entry analytics | 未完成 | `metrics-engine.ts`、`batch-entry-detection-engine.ts` 仍有直接讀 payload。 |
 | Event handler projection | 部分完成 | handler 已有不少相容處理，但仍是高風險區，不建議一次大改。 |
 | Integrity / import validation | 部分完成 | 已有大量相容測試，但仍有部分舊格式與 staff-sanitized 資料情境可補。 |
@@ -83,16 +84,13 @@
 | `a1ab5d3` | DailyTransactionLog 改用 shared helper 讀互動與成交資訊。 |
 | `a3e6beb` | DailyRevenueStats 改用 shared helper 讀互動類型。 |
 | `dd45ab3` | DealItem 改用 shared helper 判斷回補成交。 |
+| `d22cfc8` | DealDetailModal 改用 shared helper 讀交易詳情欄位。 |
 
 ## 目前剩餘工作
 
-### P1：繼續收斂讀取層
+### P1：市集詳情顯示層
 
-這些任務風險較低，建議優先做。
-
-1. `components/markets/DealDetailModal.tsx`
-   - 目前仍直接讀 payload notes / backfill / items。
-   - 目標：先只收斂 backfill、items、deal count，文案與 UI 不混入本階段。
+目前已完成。每日收入明細、每日交易紀錄、成交列表項目、成交詳情 modal 已逐步改用 shared read model。
 
 ### P2：收斂分析引擎
 
@@ -166,13 +164,10 @@
 
 下一階段建議順序：
 
-1. 收斂 `DealDetailModal.tsx`
-   - 改善補登、回補、交易明細顯示一致性。
-
-2. 收斂 `batch-entry-detection-engine.ts`
+1. 收斂 `batch-entry-detection-engine.ts`
    - 分析功能更穩定，不受 snake/camel 差異影響。
 
-3. 收斂 `metrics-engine.ts`
+2. 收斂 `metrics-engine.ts`
    - 統計與健康分數的成交數讀取一致化。
 
 ## 每次任務完成標準
