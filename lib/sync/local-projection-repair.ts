@@ -52,6 +52,7 @@ export interface LocalProjectionRepairResult {
       | 'local_market_not_found'
       | 'no_deal_events'
       | 'already_consistent'
+      | 'local_events_incomplete'
       | 'projection_lower_than_events';
   }>;
   warnings: string[];
@@ -405,6 +406,38 @@ function projectionIsLowerThanEvents(before: ProjectionSnapshot, after: Projecti
   );
 }
 
+const DUPLICATE_RATIO_TOLERANCE = 0.000001;
+
+function getDuplicateRatio(beforeValue: number, afterValue: number): number | undefined {
+  if (beforeValue <= afterValue || afterValue <= 0) return undefined;
+
+  const ratio = beforeValue / afterValue;
+  const rounded = Math.round(ratio);
+  if (rounded <= 1) return undefined;
+  return Math.abs(ratio - rounded) <= DUPLICATE_RATIO_TOLERANCE ? rounded : undefined;
+}
+
+export function projectionLooksLikeRepeatedMultiple(before: ProjectionSnapshot, after: ProjectionSnapshot): boolean {
+  const ratios = [
+    getDuplicateRatio(before.marketTotalRevenue, after.marketTotalRevenue),
+    getDuplicateRatio(before.marketTotalDeals, after.marketTotalDeals),
+    getDuplicateRatio(before.marketTotalInteractions, after.marketTotalInteractions),
+    getDuplicateRatio(before.dailyStatsRevenue, after.dailyStatsRevenue),
+    getDuplicateRatio(before.dailyStatsDealCount, after.dailyStatsDealCount),
+    getDuplicateRatio(before.dailyStatsTouchCount, after.dailyStatsTouchCount),
+    getDuplicateRatio(before.dailyStatsInquiryCount, after.dailyStatsInquiryCount),
+    getDuplicateRatio(before.dailyStatsExtraInteractionCount, after.dailyStatsExtraInteractionCount),
+  ].filter((ratio): ratio is number => ratio !== undefined);
+
+  if (ratios.length === 0) return false;
+  const firstRatio = ratios[0];
+  return ratios.every(ratio => ratio === firstRatio);
+}
+
+export function projectionMayUseIncompleteLocalEvents(before: ProjectionSnapshot, after: ProjectionSnapshot): boolean {
+  return projectionIsInflated(before, after) && !projectionLooksLikeRepeatedMultiple(before, after);
+}
+
 async function buildMarketStatsRebuildPlan(marketId: string): Promise<MarketStatsRebuildPlan | undefined> {
   const market = await db.markets.get(marketId);
   if (!market) return undefined;
@@ -529,6 +562,11 @@ export async function repairLocalMarketProjections(
       } else {
         skipped.push({ marketId, reason: 'already_consistent' });
       }
+      continue;
+    }
+
+    if (projectionMayUseIncompleteLocalEvents(before, after)) {
+      skipped.push({ marketId, reason: 'local_events_incomplete' });
       continue;
     }
 

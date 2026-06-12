@@ -192,6 +192,35 @@ runTest('compareMarketProjectionWithEvents detects inflated projection', async (
   });
 });
 
+runTest('compareMarketProjectionWithEvents detects incomplete local events', async () => {
+  const store = makeStore(
+    [market({ totalRevenue: 56287, totalDeals: 25 })],
+    [stat({ revenue: 56287, dealCount: 25 })],
+    [
+      deal({
+        payload: {
+          market_id: MARKET_ID,
+          dealDate: '2026-06-01',
+          isManualEntry: true,
+          items: [],
+          totalAmount: 2111,
+          manualRevenue: 2111,
+          manualDealCount: 2,
+          paymentMethod: 'cash',
+        },
+      }),
+    ]
+  );
+
+  await withMockDb(store, async () => {
+    const comparison = await compareMarketProjectionWithEvents(MARKET_ID);
+
+    assert.equal(comparison.status, 'local_events_incomplete');
+    assert.equal(comparison.before?.marketTotalRevenue, 56287);
+    assert.equal(comparison.after?.marketTotalRevenue, 2111);
+  });
+});
+
 runTest('compareMarketProjectionWithEvents detects consistent projection', async () => {
   const store = makeStore(
     [market({ totalRevenue: 100, totalDeals: 1 })],

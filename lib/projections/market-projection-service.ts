@@ -1,4 +1,5 @@
 import {
+  projectionMayUseIncompleteLocalEvents,
   rebuildMarketStatsFromEvents as rebuildLocalMarketStatsFromEvents,
   repairLocalMarketProjections,
   type LocalProjectionRepairItem,
@@ -15,6 +16,7 @@ export type MarketProjectionComparisonStatus =
   | 'missing_or_no_events'
   | 'consistent'
   | 'inflated'
+  | 'local_events_incomplete'
   | 'lower_than_events'
   | 'different';
 
@@ -87,6 +89,10 @@ export async function compareMarketProjectionWithEvents(
   }
 
   if (snapshotIsInflated(before, after)) {
+    if (projectionMayUseIncompleteLocalEvents(before, after)) {
+      return { marketId, status: 'local_events_incomplete', before, after };
+    }
+
     return { marketId, status: 'inflated', before, after };
   }
 

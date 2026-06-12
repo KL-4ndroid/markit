@@ -15,6 +15,7 @@ export type ProjectionReconciliationSkipReason =
   | 'blank_market_id'
   | 'consistent'
   | 'missing_or_no_events'
+  | 'local_events_incomplete'
   | 'lower_than_events'
   | 'different'
   | 'dry_run';

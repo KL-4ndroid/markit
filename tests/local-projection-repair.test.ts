@@ -377,8 +377,8 @@ runTest('no deal events skips without writing', async () => {
 
 runTest('dailyStats are grouped by local date', async () => {
   const store = makeStore(
-    [market({ totalRevenue: 999, totalDeals: 9 })],
-    [stat({ id: 1, revenue: 999, dealCount: 9 })],
+    [market({ totalRevenue: 600, totalDeals: 4 })],
+    [stat({ id: 1, revenue: 600, dealCount: 4 })],
     [
       deal('d1', {
         isManualEntry: true,
@@ -413,8 +413,8 @@ runTest('dailyStats are grouped by local date', async () => {
 
 runTest('manualRevenue and manualCost are used when present', async () => {
   const store = makeStore(
-    [market({ totalRevenue: 999, totalDeals: 9 })],
-    [stat({ revenue: 999, dealCount: 9 })],
+    [market({ totalRevenue: 1000, totalDeals: 8 })],
+    [stat({ revenue: 1000, dealCount: 8 })],
     [
       deal('d1', {
         isManualEntry: true,
@@ -441,8 +441,8 @@ runTest('manualRevenue and manualCost are used when present', async () => {
 
 runTest('items revenue cost and productsSold are rebuilt', async () => {
   const store = makeStore(
-    [market({ totalRevenue: 999, totalDeals: 9 })],
-    [stat({ revenue: 999, dealCount: 9, productsSold: [] })],
+    [market({ totalRevenue: 640, totalDeals: 2 })],
+    [stat({ revenue: 640, dealCount: 2, productsSold: [] })],
     [
       deal('d1', {
         items: [
@@ -633,6 +633,41 @@ runTest('projection lower than events is skipped for safety', async () => {
   assert.equal(result.repaired.length, 0);
   assert.equal(result.skipped.length, 1);
   assert.equal(result.skipped[0].reason, 'projection_lower_than_events');
+  assert.equal(store.writes.marketUpdates, 0);
+  assert.equal(store.writes.statsDeleted, 0);
+});
+
+runTest('partial local event totals are skipped to avoid destructive rebuilds', async () => {
+  const store = makeStore(
+    [market({ totalRevenue: 56287, totalDeals: 25 })],
+    [stat({ revenue: 56287, dealCount: 25 })],
+    [
+      deal('d-new-1', {
+        isManualEntry: true,
+        manualRevenue: 1000,
+        manualCost: 0,
+        manualDealCount: 1,
+        totalAmount: 1000,
+      }),
+      deal('d-new-2', {
+        isManualEntry: true,
+        manualRevenue: 1111,
+        manualCost: 0,
+        manualDealCount: 1,
+        totalAmount: 1111,
+      }),
+    ]
+  );
+
+  const result = await withMockDb(store, () =>
+    repairLocalMarketProjections({ marketIds: [MARKET_ID], dryRun: false })
+  );
+
+  assert.equal(result.repaired.length, 0);
+  assert.equal(result.skipped.length, 1);
+  assert.equal(result.skipped[0].reason, 'local_events_incomplete');
+  assert.equal(store.markets.get(MARKET_ID)!.totalRevenue, 56287);
+  assert.equal(store.getDailyStatsByMarket(MARKET_ID)[0].revenue, 56287);
   assert.equal(store.writes.marketUpdates, 0);
   assert.equal(store.writes.statsDeleted, 0);
 });

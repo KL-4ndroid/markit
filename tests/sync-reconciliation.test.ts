@@ -102,6 +102,26 @@ runTest('does not repair lower_than_events or missing projections', async () => 
   ]);
 });
 
+runTest('does not repair projections when local events look incomplete', async () => {
+  const rebuilt: string[] = [];
+  const result = await reconcileTouchedMarketProjections(
+    ['market-partial'],
+    {
+      context: 'owner-incremental',
+      compare: async (marketId) => comparison(marketId, 'local_events_incomplete'),
+      rebuild: async (marketId) => {
+        rebuilt.push(marketId);
+      },
+    }
+  );
+
+  assert.deepEqual(rebuilt, []);
+  assert.deepEqual(result.repaired, []);
+  assert.deepEqual(result.skipped, [
+    { marketId: 'market-partial', reason: 'local_events_incomplete' },
+  ]);
+});
+
 runTest('captures per-market errors without throwing', async () => {
   const result = await reconcileTouchedMarketProjections(
     ['market-error', 'market-ok'],
