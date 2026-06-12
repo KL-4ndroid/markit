@@ -17,6 +17,11 @@ import { canonicalizeEvent } from '@/lib/db/data-canonicalization';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
 import { repairOwnerRevenueGaps } from '@/lib/sync/owner-revenue-gap-repair';
+import {
+  collectProjectionMarketId,
+  reconcileTouchedMarketProjections,
+  type ProjectionReconciliationContext,
+} from '@/lib/sync/projection-reconciliation';
 import { getEventMarketId } from '@/lib/events/event-read-model';
 import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
@@ -80,6 +85,22 @@ function createCanonicalSyncedEvent(event: any): Event {
   } as Event;
 
   return canonicalizeEvent(localEvent).event;
+}
+
+async function reconcileSyncedProjectionMarkets(
+  marketIds: Set<string>,
+  context: ProjectionReconciliationContext
+): Promise<void> {
+  if (marketIds.size === 0) return;
+
+  try {
+    const result = await reconcileTouchedMarketProjections(marketIds, { context });
+    if (result.repaired.length > 0 || result.errors.length > 0) {
+      console.log('[useSync] projection reconciliation completed', result);
+    }
+  } catch (error) {
+    console.warn('[useSync] projection reconciliation skipped:', error);
+  }
 }
 
 /**
@@ -961,8 +982,14 @@ async function pullIncrementalEvents(
     return;
   }
 
+  const touchedMarketIds = new Set<string>();
+  for (const event of incrementalEvents || []) {
+    collectProjectionMarketId(touchedMarketIds, event);
+  }
+
   // 重放增量事件
   await replayEvents(incrementalEvents, onProgress);
+  await reconcileSyncedProjectionMarkets(touchedMarketIds, 'snapshot');
 
   // 更新最後同步時間（使用 max(created_at)）
   const validCreatedAt = (incrementalEvents || [])
@@ -1117,6 +1144,10 @@ async function pullAllEvents(
   }
 
   const total = newEvents.length;
+  const touchedMarketIds = new Set<string>();
+  for (const event of newEvents) {
+    collectProjectionMarketId(touchedMarketIds, event);
+  }
 
   // ✅ 先批次檢查哪些事件已存在，避免重複日誌
   const existingIds = new Set<string>();
@@ -1145,6 +1176,7 @@ async function pullAllEvents(
         semanticDuplicateCount,
       });
     }
+    await reconcileSyncedProjectionMarkets(touchedMarketIds, 'owner-full');
     const validCreatedAt = newEvents
       .map(e => new Date(e.created_at).getTime())
       .filter(ts => Number.isFinite(ts));
@@ -1210,6 +1242,8 @@ async function pullAllEvents(
   console.log(`✅ 下載完成：成功處理 ${processedCount}/${eventsToProcess.length} 個新事件`);
 
   // 更新最後同步時間（使用 max(created_at)，若事件皆已存在則不推進）
+  await reconcileSyncedProjectionMarkets(touchedMarketIds, 'owner-full');
+
   if (eventsToProcess.length > 0) {
     const validCreatedAt = newEvents
       .map(e => new Date(e.created_at).getTime())
