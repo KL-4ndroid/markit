@@ -444,6 +444,142 @@ assert.equal(
   'deal_closed manual: manualDealCount must be preserved'
 );
 
+// ==================== sanitizeEvents – tombstone replay fields ====================
+
+const tombstoneEvents = [
+  {
+    id: 'delete-deal-camel',
+    type: 'deal_deleted',
+    payload: {
+      eventId: 'deal-1',
+      marketId: 'market-1',
+      market_id: 'market-1',
+      dealDate: '2026-06-12',
+      totalAmount: 1200,
+      totalCost: 500,
+      dealCount: 3,
+      reason: 'manual_delete',
+    },
+  },
+  {
+    id: 'delete-deal-snake',
+    type: 'deal_deleted',
+    payload: {
+      event_id: 'deal-2',
+      market_id: 'market-1',
+      deal_date: '2026-06-13',
+      total_amount: 800,
+      total_cost: 300,
+      deal_count: 2,
+      reason: 'manual_delete',
+    },
+  },
+  {
+    id: 'delete-interaction',
+    type: 'interaction_deleted',
+    payload: {
+      eventId: 'interaction-1',
+      event_id: 'interaction-1',
+      marketId: 'market-1',
+      market_id: 'market-1',
+      interactionType: 'touch',
+    },
+  },
+];
+
+const sanitizedTombstones = sanitizeEvents(tombstoneEvents, staffRole);
+
+const sanitizedDealDeletedCamel = sanitizedTombstones[0].payload as any;
+assert.equal(
+  sanitizedDealDeletedCamel.eventId,
+  'deal-1',
+  'deal_deleted camel: eventId must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedCamel.marketId,
+  'market-1',
+  'deal_deleted camel: marketId must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedCamel.market_id,
+  'market-1',
+  'deal_deleted camel: market_id must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedCamel.dealDate,
+  '2026-06-12',
+  'deal_deleted camel: dealDate must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedCamel.totalAmount,
+  1200,
+  'deal_deleted camel: totalAmount must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedCamel.dealCount,
+  3,
+  'deal_deleted camel: dealCount must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedCamel.totalCost,
+  undefined,
+  'deal_deleted camel: totalCost must be removed for staff'
+);
+
+const sanitizedDealDeletedSnake = sanitizedTombstones[1].payload as any;
+assert.equal(
+  sanitizedDealDeletedSnake.event_id,
+  'deal-2',
+  'deal_deleted snake: event_id must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedSnake.market_id,
+  'market-1',
+  'deal_deleted snake: market_id must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedSnake.deal_date,
+  '2026-06-13',
+  'deal_deleted snake: deal_date must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedSnake.total_amount,
+  800,
+  'deal_deleted snake: total_amount must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedSnake.deal_count,
+  2,
+  'deal_deleted snake: deal_count must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedDealDeletedSnake.total_cost,
+  undefined,
+  'deal_deleted snake: total_cost must be removed for staff'
+);
+
+const sanitizedInteractionDeleted = sanitizedTombstones[2].payload as any;
+assert.equal(
+  sanitizedInteractionDeleted.eventId,
+  'interaction-1',
+  'interaction_deleted: eventId must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedInteractionDeleted.event_id,
+  'interaction-1',
+  'interaction_deleted: event_id must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedInteractionDeleted.marketId,
+  'market-1',
+  'interaction_deleted: marketId must be preserved for tombstone replay'
+);
+assert.equal(
+  sanitizedInteractionDeleted.market_id,
+  'market-1',
+  'interaction_deleted: market_id must be preserved for tombstone replay'
+);
+
 // ==================== sanitizeEvents – cost events must be filtered ====================
 
 const costEvents = [

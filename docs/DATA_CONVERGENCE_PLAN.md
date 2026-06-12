@@ -1,7 +1,7 @@
 ﻿# Markit 資料存取收斂計畫
 
 更新日期：2026-06-12
-狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已接入 Owner / Staff sync；C2.19 主要 UI active event 讀取已接入
+狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已接入 Owner / Staff sync；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊
 目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂，讓 UI、同步、修復工具都透過一致的資料讀取與投影規則運作。
 
 ## 一、問題摘要
@@ -59,7 +59,7 @@ UI 不應直接自行判斷資料真相；它應該讀取穩定的 view model。
 | C2.17 | Recovery 接入 Projection Rebuild | 讓 `/recovery` 只用 projection service 修本機統計 | UI dry-run / execute | 中 | 已接入 |
 | C2.18 | Sync 後 Reconciliation | sync 完成後檢查 touched markets 並自動重建不一致 projection | sync reconciliation hook | 中高 | Owner / Staff sync 已接入 |
 | C2.19 | UI View Model 收斂 | 市集詳情、每日成交、分析頁改讀 view model | `market-detail-view-model.ts` 等 | 中 | 市集詳情、每日收入、每日記錄、分析頁 active events 已接入 |
-| C2.20 | Staff Data Flow 加固 | 確保 Staff tombstone / sanitized events 可正確 replay | tests + service guard | 中高 | P1 |
+| C2.20 | Staff Data Flow 加固 | 確保 Staff tombstone / sanitized events 可正確 replay | tests + service guard | 中高 | sanitizer 欄位保護已測，staff view SQL 待審 |
 | C2.21 | 舊資料雲端一致性審查 | 確認 cloud events / snapshots / projection 是否仍有污染 | SQL 診斷報告 | 中 | P2 |
 | C2.22 | 完整文件與操作手冊 | 建立未來維護規範 | docs | 低 | P2 |
 
@@ -296,19 +296,27 @@ View model 應回傳：
 
 - 確認 `staff_accessible_events` 包含 `deal_deleted` / `interaction_deleted`。
 - 確認 `deal_deleted.market_id` 不為 null。
-- 確認 sanitizer 不會移除 replay 必要欄位：
+- 已補測試確認 sanitizer 不會移除 replay 必要欄位：
   - `eventId`
+  - `event_id`
+  - `marketId`
   - `market_id`
   - `dealDate`
+  - `deal_date`
   - `totalAmount`
+  - `total_amount`
   - `dealCount`
+  - `deal_count`
+- 已補測試確認 staff sanitizer 仍會移除敏感成本欄位：
+  - `totalCost`
+  - `total_cost`
 - 如果 event 已存在但 projection stale，sync reconciliation 必須修。
 
 完成條件：
 
-- Owner 補登 → Staff 可見。
-- Owner 刪除補登 → Staff 不再顯示，統計也扣除。
-- Staff 無成本欄位時，不產生 fatal integrity error。
+- Owner 補登 → Staff 可見。（已由 active events + sync reconciliation 支撐，仍需瀏覽器 smoke test）
+- Owner 刪除補登 → Staff 不再顯示，統計也扣除。（sanitizer 欄位保護已測，仍需確認 `staff_accessible_events` view 含 tombstone）
+- Staff 無成本欄位時，不產生 fatal integrity error。（已有 integrity / handler / sanitizer 測試覆蓋）
 
 ### C2.21：舊資料雲端一致性審查
 
