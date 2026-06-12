@@ -1,7 +1,7 @@
 ﻿# Markit 資料存取收斂計畫
 
 更新日期：2026-06-12
-狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已接入 Owner / Staff sync；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理
+狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已降級為只偵測不自動修復，避免本機 events 不完整時覆寫正確 projection；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理
 目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂，讓 UI、同步、修復工具都透過一致的資料讀取與投影規則運作。
 
 ## 一、問題摘要
@@ -57,7 +57,7 @@ UI 不應直接自行判斷資料真相；它應該讀取穩定的 view model。
 | C2.15 | Active Event Service | 統一 active deals / interactions / tombstones 讀取 | `active-event-service.ts` + tests | 中 | 已建立，待 UI 接入 |
 | C2.16 | Market Projection Service | 從 active events 重建單一 market projection | `market-projection-service.ts` + tests | 中 | 已建立，待 Recovery / Sync 接入 |
 | C2.17 | Recovery 接入 Projection Rebuild | 讓 `/recovery` 只用 projection service 修本機統計 | UI dry-run / execute | 中 | 已接入 |
-| C2.18 | Sync 後 Reconciliation | sync 完成後檢查 touched markets 並自動重建不一致 projection | sync reconciliation hook | 中高 | Owner / Staff sync 已接入 |
+| C2.18 | Sync 後 Reconciliation | sync 完成後檢查 touched markets，但不在 sync 中自動重建 projection | sync reconciliation hook | 中高 | 已降級為 observation-only |
 | C2.19 | UI View Model 收斂 | 市集詳情、每日成交、分析頁改讀 view model | `market-detail-view-model.ts` 等 | 中 | 市集詳情、每日收入、每日記錄、分析頁 active events 已接入 |
 | C2.20 | Staff Data Flow 加固 | 確保 Staff tombstone / sanitized events 可正確 replay | tests + service guard | 中高 | sanitizer 欄位保護已測，staff view SQL 已整理待線上驗證 |
 | C2.21 | 舊資料雲端一致性審查 | 確認 cloud events / snapshots / projection 是否仍有污染 | SQL 診斷報告 | 中 | SQL 已整理，待線上執行 |
@@ -220,6 +220,8 @@ components/common/*ProjectionRepairPanel.tsx
 
 目的：解決「修復後正常，但下一次自動同步又復發」。
 
+2026-06-12 修正：Sync reconciliation 已改為 observation-only。原因是 snapshot / staff-view / historical backfill 可能讓本機 event store 只有部分事件；若此時直接用本機 events 重建 projection，會把正確的舊收入覆寫成只剩新增事件。自動重建必須等到能證明該 market 的本機 events 完整後才可恢復。
+
 建議做法：
 
 ```text
@@ -229,7 +231,7 @@ collect touched marketIds
   ↓
 compare projection
   ↓
-if mismatch: rebuild projection
+if mismatch: log / report only
 ```
 
 接入點候選：
@@ -247,8 +249,9 @@ if mismatch: rebuild projection
 
 完成條件：
 
-- Owner / Staff sync 完成後，projection 不會因 replay 重複累加。
-- Tombstone 已存在但 projection stale 的情境可被修復。
+- Owner / Staff sync 完成後，不會因不完整本機 events 自動覆寫 projection。
+- Tombstone 已存在但 projection stale 的情境仍需透過 `/recovery` projection rebuild 修復。
+- 若未來要恢復自動修復，必須先新增 market event completeness guard。
 
 ### C2.19：UI View Model 收斂
 

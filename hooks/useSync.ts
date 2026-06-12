@@ -94,9 +94,15 @@ async function reconcileSyncedProjectionMarkets(
   if (marketIds.size === 0) return;
 
   try {
-    const result = await reconcileTouchedMarketProjections(marketIds, { context });
-    if (result.repaired.length > 0 || result.errors.length > 0) {
-      console.log('[useSync] projection reconciliation completed', result);
+    // Sync may see only a partial local event set, especially after snapshot loads,
+    // staff-view imports, or historical backfills. In that state an "inflated"
+    // comparison can be a false positive and rebuilding would destroy valid
+    // projection totals. Keep sync reconciliation observational until event
+    // completeness can be proven; recovery tools can still rebuild explicitly.
+    const result = await reconcileTouchedMarketProjections(marketIds, { context, dryRun: true });
+    const detectedInflated = result.skipped.some(item => item.reason === 'dry_run');
+    if (detectedInflated || result.errors.length > 0) {
+      console.log('[useSync] projection reconciliation checked without auto-repair', result);
     }
   } catch (error) {
     console.warn('[useSync] projection reconciliation skipped:', error);
