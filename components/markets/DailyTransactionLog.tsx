@@ -20,6 +20,7 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { deleteDealEventById, deleteInteractionEventById } from '@/lib/markets/event-deletion-service';
+import { canDeleteDailyLogEntry } from '@/lib/markets/daily-log-permissions';
 import {
   getDealEventCount,
   getDealEventRevenue,
@@ -32,6 +33,7 @@ import { toast } from 'sonner';
 interface DailyTransactionLogProps {
   marketId: string;
   date?: string; // 可選：指定日期，預設為今天
+  allowDelete?: boolean;
 }
 
 interface LogEntry {
@@ -45,7 +47,7 @@ interface LogEntry {
   color: string;
 }
 
-export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps) {
+export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransactionLogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalDeals, setTotalDeals] = useState(0);
@@ -168,6 +170,7 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
   }, [loadDailyLog]);
 
   const handleDeleteLog = async () => {
+    if (!canDeleteDailyLogEntry(allowDelete)) return;
     if (!selectedLog) return;
 
     setIsDeleting(true);
@@ -192,6 +195,7 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
     }
   };
   const openDeleteConfirm = (log: LogEntry) => {
+    if (!canDeleteDailyLogEntry(allowDelete)) return;
     setSelectedLog(log);
     setShowDeleteConfirm(true);
   };
@@ -279,14 +283,15 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
                     </div>
                   </div>
                 )}
-                {/* 刪除按鈕 - hover 時顯示 */}
-                <button
-                  onClick={() => openDeleteConfirm(log)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg hover:bg-red-50 text-red-500"
-                  title="刪除記錄"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {canDeleteDailyLogEntry(allowDelete) && (
+                  <button
+                    onClick={() => openDeleteConfirm(log)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg hover:bg-red-50 text-red-500"
+                    title="刪除記錄"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -304,7 +309,7 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
       )}
 
       {/* 刪除確認對話框 */}
-      {showDeleteConfirm && isMounted && selectedLog && createPortal(
+      {canDeleteDailyLogEntry(allowDelete) && showDeleteConfirm && isMounted && selectedLog && createPortal(
         <>
           {/* 背景遮罩 */}
           <div 
