@@ -46,6 +46,18 @@ export function filterDealEventsForMarket(
   return sortEventsByTimestamp(events.filter(event => getEventMarketId(event) === marketId));
 }
 
+export function filterDealEventsForMarkets(
+  events: Event<DealClosedPayload>[],
+  marketIds: Iterable<string>
+): Event<DealClosedPayload>[] {
+  const ids = new Set(Array.from(marketIds).filter(id => typeof id === 'string' && id.trim().length > 0));
+  if (ids.size === 0) return [];
+  return sortEventsByTimestamp(events.filter(event => {
+    const marketId = getEventMarketId(event);
+    return !!marketId && ids.has(marketId);
+  }));
+}
+
 export function filterDealEventsForDate(
   events: Event<DealClosedPayload>[],
   marketId: string,
@@ -64,6 +76,17 @@ export function filterActiveDealEventsForMarket(
   return filterDealEventsForMarket(
     withoutDeletedDealEvents(events, deletedEvents),
     marketId
+  );
+}
+
+export function filterActiveDealEventsForMarkets(
+  events: Event<DealClosedPayload>[],
+  deletedEvents: DealDeletedEventView[],
+  marketIds: Iterable<string>
+): Event<DealClosedPayload>[] {
+  return filterDealEventsForMarkets(
+    withoutDeletedDealEvents(events, deletedEvents),
+    marketIds
   );
 }
 
@@ -86,6 +109,18 @@ export function filterInteractionEventsForMarket(
 ): Event<InteractionRecordedPayload>[] {
   if (!marketId) return [];
   return sortEventsByTimestamp(events.filter(event => getEventMarketId(event) === marketId));
+}
+
+export function filterInteractionEventsForMarkets(
+  events: Event<InteractionRecordedPayload>[],
+  marketIds: Iterable<string>
+): Event<InteractionRecordedPayload>[] {
+  const ids = new Set(Array.from(marketIds).filter(id => typeof id === 'string' && id.trim().length > 0));
+  if (ids.size === 0) return [];
+  return sortEventsByTimestamp(events.filter(event => {
+    const marketId = getEventMarketId(event);
+    return !!marketId && ids.has(marketId);
+  }));
 }
 
 export function filterInteractionEventsForDate(
@@ -145,6 +180,13 @@ export async function getActiveDealEventsForMarket(
   return filterDealEventsForMarket(events, marketId);
 }
 
+export async function getActiveDealEventsForMarkets(
+  marketIds: Iterable<string>
+): Promise<Event<DealClosedPayload>[]> {
+  const events = await getActiveDealEvents();
+  return filterDealEventsForMarkets(events, marketIds);
+}
+
 export async function getActiveDealEventsForDate(
   marketId: string,
   date: string
@@ -158,6 +200,13 @@ export async function getActiveInteractionEventsForMarket(
 ): Promise<Event<InteractionRecordedPayload>[]> {
   const events = await getActiveInteractionEvents();
   return filterInteractionEventsForMarket(events, marketId);
+}
+
+export async function getActiveInteractionEventsForMarkets(
+  marketIds: Iterable<string>
+): Promise<Event<InteractionRecordedPayload>[]> {
+  const events = await getActiveInteractionEvents();
+  return filterInteractionEventsForMarkets(events, marketIds);
 }
 
 export async function getActiveInteractionEventsForDate(

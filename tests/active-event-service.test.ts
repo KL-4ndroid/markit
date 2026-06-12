@@ -3,8 +3,10 @@ import {
   buildDealSummaryFromActiveEvents,
   filterActiveDealEventsForDate,
   filterActiveDealEventsForMarket,
+  filterActiveDealEventsForMarkets,
   filterDealEventsForDate,
   filterInteractionEventsForDate,
+  filterInteractionEventsForMarkets,
 } from '../lib/events/active-event-service';
 import type { DealClosedPayload, Event, InteractionRecordedPayload } from '../types/db';
 
@@ -138,6 +140,39 @@ runTest('filterActiveDealEventsForMarket removes exact tombstone target', () => 
   assert.deepEqual(active.map(event => event.id), ['deal-2']);
 });
 
+runTest('filterActiveDealEventsForMarkets returns only active deals for selected markets', () => {
+  const active = filterActiveDealEventsForMarkets(
+    [
+      deal('deal-1', { timestamp: TS + 3 }),
+      deal('deal-2', {
+        market_id: 'market-2',
+        timestamp: TS + 2,
+        payload: { market_id: 'market-2' },
+      }),
+      deal('deal-3', {
+        market_id: 'market-3',
+        timestamp: TS + 1,
+        payload: { market_id: 'market-3' },
+      }),
+    ],
+    [
+      deletedDeal('delete-1', 'deal-2', {
+        market_id: 'market-2',
+        payload: {
+          eventId: 'deal-2',
+          market_id: 'market-2',
+          dealDate: '2026-06-12',
+          totalAmount: 500,
+          dealCount: 1,
+        },
+      }),
+    ],
+    ['market-1', 'market-2']
+  );
+
+  assert.deepEqual(active.map(event => event.id), ['deal-1']);
+});
+
 runTest('filterActiveDealEventsForDate applies semantic tombstone fallback only once', () => {
   const active = filterActiveDealEventsForDate(
     [
@@ -198,5 +233,26 @@ runTest('filterInteractionEventsForDate uses local timestamp date and market id'
   assert.deepEqual(
     filterInteractionEventsForDate(events, 'market-1', '2026-06-12').map(event => event.id),
     ['interaction-1']
+  );
+});
+
+runTest('filterInteractionEventsForMarkets returns selected market interactions sorted by timestamp', () => {
+  const events = [
+    interaction('interaction-1', { timestamp: TS + 3 }),
+    interaction('interaction-2', {
+      market_id: 'market-2',
+      timestamp: TS + 2,
+      payload: { market_id: 'market-2' },
+    }),
+    interaction('interaction-3', {
+      market_id: 'market-3',
+      timestamp: TS + 1,
+      payload: { market_id: 'market-3' },
+    }),
+  ];
+
+  assert.deepEqual(
+    filterInteractionEventsForMarkets(events, ['market-1', 'market-2']).map(event => event.id),
+    ['interaction-2', 'interaction-1']
   );
 });

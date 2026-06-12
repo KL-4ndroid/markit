@@ -10,7 +10,10 @@ import { useMarkets, useProducts } from '@/lib/db/hooks';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { db } from '@/lib/db';
-import { getActiveDealEvents } from '@/lib/db/event-tombstones';
+import {
+  getActiveDealEventsForMarkets,
+  getActiveInteractionEventsForMarkets,
+} from '@/lib/events/active-event-service';
 import { DateRangeFilter, type AnalyticsRange } from '@/components/analytics/DateRangeFilter';
 import { ActionableInsightsCard } from '@/components/analytics/ActionableInsightsCard';
 import { MarketRecapCard } from '@/components/analytics/MarketRecapCard';
@@ -42,7 +45,6 @@ import { buildActionableAnalytics } from '@/lib/analytics/actionable-insights';
 import { buildMarketRecapReport } from '@/lib/analytics/market-recap';
 import { buildMarketTrend } from '@/lib/analytics/market-trend';
 import { calculateTopProductsFromEvents, createEmptyTopProductsResult } from '@/lib/analytics/top-products';
-import { getEventMarketId } from '@/lib/events/event-read-model';
 import type { Event, Market } from '@/types/db';
 import type { ProductPair, MarketHealthScore } from '@/lib/analytics';
 
@@ -415,7 +417,7 @@ export default function AnalyticsPage() {
     }
 
     const marketIds = new Set(markets.map(market => market.id).filter((id): id is string => !!id));
-    const activeDeals = await getActiveDealEvents();
+    const activeDeals = await getActiveDealEventsForMarkets(marketIds);
 
     return calculateTopProductsFromEvents(
       activeDeals,
@@ -429,17 +431,15 @@ export default function AnalyticsPage() {
 
   // 檢查是否有數據
   const analyticsEvents = useLiveQuery(async () => {
-    const marketIds = new Set(markets.map((market) => market.id).filter(Boolean));
+    const marketIds = new Set(markets.map((market) => market.id).filter((id): id is string => !!id));
     if (marketIds.size === 0) return [];
 
-    const activeDeals = await getActiveDealEvents();
-    const interactions = await db.events.where('type').equals('interaction_recorded').toArray();
+    const [activeDeals, activeInteractions] = await Promise.all([
+      getActiveDealEventsForMarkets(marketIds),
+      getActiveInteractionEventsForMarkets(marketIds),
+    ]);
 
-    return [...activeDeals, ...interactions].filter((event) => {
-      const marketId = getEventMarketId(event);
-
-      return !!marketId && marketIds.has(marketId);
-    }) as Event[];
+    return [...activeDeals, ...activeInteractions] as Event[];
   }, [markets]);
 
   const analyticsDailyStats = useLiveQuery(async () => {
