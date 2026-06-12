@@ -23,6 +23,16 @@ import type {
 
 // ==================== 市集相關 Hooks ====================
 
+export function resolveDealModeFlags(
+  data: Pick<DealClosedPayload, 'isBackfill' | 'isManualEntry'>,
+  dealDate?: string
+): { isBackfill: boolean; isManualEntry: boolean } {
+  return {
+    isBackfill: Boolean(dealDate || data.isBackfill),
+    isManualEntry: Boolean(data.isManualEntry),
+  };
+}
+
 /**
  * 查詢所有市集
  * 
@@ -351,8 +361,7 @@ export async function recordDeal(
   data: DealClosedPayload | { marketId: string } & Omit<DealClosedPayload, 'market_id'>,
   dealDate?: string
 ): Promise<void> {
-  const isBackfill = !!dealDate || data.isBackfill;
-  const isManualEntry = data.isManualEntry || false;
+  const { isBackfill, isManualEntry } = resolveDealModeFlags(data, dealDate);
   const marketId = 'marketId' in data ? data.marketId : data.market_id;
   
   // ✅ 預先查詢商品資訊並儲存商品名稱（避免顯示時出現 ID）
