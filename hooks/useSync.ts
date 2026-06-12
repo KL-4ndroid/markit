@@ -1541,9 +1541,15 @@ async function pullEventsFromViews(
       onProgress(4, 5, '同步到本地數據庫...', 'incremental');
     }
     
+    const touchedMarketIds = new Set<string>();
+    for (const event of eventsData || []) {
+      collectProjectionMarketId(touchedMarketIds, event);
+    }
+
     await syncMarketsToIndexedDB(marketsData || [], userId);
     await syncProductsToIndexedDB(productsData || [], userId);
     await syncEventsToIndexedDB(eventsData || []);
+    await reconcileSyncedProjectionMarkets(touchedMarketIds, 'staff-view');
     
     // 5. 更新最後同步時間
     // staff 模式不使用 lastSyncAt 作為 cursor，但更新它有助於記錄最後同步時間
