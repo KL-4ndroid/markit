@@ -32,7 +32,10 @@ import {
 import { useMarket, updateMarketStatus, startMarket, endMarket } from '@/lib/db/hooks';
 import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
-import { getActiveDealEvents, getActiveInteractionEvents } from '@/lib/db/event-tombstones';
+import {
+  getActiveDealEventsForMarket,
+  getActiveInteractionEventsForMarket,
+} from '@/lib/events/active-event-service';
 import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
@@ -61,7 +64,7 @@ import { normalizeMarketRouteId, shouldShowMarketDetailLoading } from '@/lib/mar
 import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
-import { getDealEventDate, getDealEventRevenue, getEventMarketId, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
+import { getDealEventDate, getDealEventRevenue, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
@@ -389,9 +392,8 @@ export default function MarketDetailPage({ params }: PageProps) {
             })();
 
         // 獲取互動事件 - 只篩選在 marketDates 中的日期
-        const interactions = (await getActiveInteractionEvents())
+        const interactions = (await getActiveInteractionEventsForMarket(marketId))
           .filter(e => {
-            if (getEventMarketId(e) !== marketId) return false;
             return marketDates.includes(getLocalDateStringFromTimestamp(e.timestamp));
           });
 
@@ -400,9 +402,8 @@ export default function MarketDetailPage({ params }: PageProps) {
         setInteractionEvents(interactions);
 
         // 獲取成交事件 - 只篩選在 marketDates 中的日期
-        const deals = (await getActiveDealEvents())
+        const deals = (await getActiveDealEventsForMarket(marketId))
           .filter(e => {
-            if (getEventMarketId(e) !== marketId) return false;
             return marketDates.includes(getDealEventDate(e));
           });
 
@@ -936,8 +937,7 @@ export default function MarketDetailPage({ params }: PageProps) {
       console.error('刪除成交記錄失敗:', error);
       toast.error('刪除失敗，請稍後再試');
 
-      const updatedDeals = (await getActiveDealEvents())
-        .filter(event => getEventMarketId(event) === marketId);
+      const updatedDeals = await getActiveDealEventsForMarket(marketId);
       setDealEvents(updatedDeals);
     }
   }, [marketId, selectedDeal, dbStatus]);
