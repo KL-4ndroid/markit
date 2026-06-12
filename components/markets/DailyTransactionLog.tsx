@@ -13,16 +13,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Clock, TrendingUp, DollarSign, Package, Trash2, AlertCircle } from 'lucide-react';
-import { getActiveDealEvents, getActiveInteractionEvents } from '@/lib/db/event-tombstones';
+import {
+  getActiveDealEventsForDate,
+  getActiveInteractionEventsForDate,
+} from '@/lib/events/active-event-service';
 import { formatCurrency } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { deleteDealEventById, deleteInteractionEventById } from '@/lib/markets/event-deletion-service';
 import {
   getDealEventCount,
-  getDealEventDate,
   getDealEventRevenue,
   getDealItems,
-  getEventMarketId,
   getInteractionType,
   isManualDealEvent,
 } from '@/lib/markets/event-view-utils';
@@ -72,26 +73,16 @@ export function DailyTransactionLog({ marketId, date }: DailyTransactionLogProps
     setIsLoading(true);
     try {
       const targetDate = getTargetDate();
-      const startOfDay = new Date(targetDate).setHours(0, 0, 0, 0);
-      const endOfDay = new Date(targetDate).setHours(23, 59, 59, 999);
 
       // 獲取互動按鈕配置
       const buttons = getInteractionButtons();
       const buttonMap = new Map(buttons.map(b => [b.id, { label: b.label, emoji: b.emoji }]));
 
       // 獲取當日互動記錄
-      const interactions = (await getActiveInteractionEvents())
-        .filter(e => {
-          if (getEventMarketId(e) !== marketId) return false;
-          return e.timestamp >= startOfDay && e.timestamp <= endOfDay;
-        });
+      const interactions = await getActiveInteractionEventsForDate(marketId, targetDate);
 
       // 獲取當日成交記錄
-      const deals = (await getActiveDealEvents())
-        .filter(e => {
-          if (getEventMarketId(e) !== marketId) return false;
-          return getDealEventDate(e) === targetDate;
-        });
+      const deals = await getActiveDealEventsForDate(marketId, targetDate);
 
       // 轉換為流水帳格式
       const logEntries: LogEntry[] = [];

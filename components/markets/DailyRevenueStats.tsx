@@ -5,8 +5,8 @@ import { Calendar, DollarSign, TrendingUp, Plus } from 'lucide-react';
 import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
-import { getActiveInteractionEvents } from '@/lib/db/event-tombstones';
-import { getEventMarketId, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
+import { getActiveInteractionEventsForMarket } from '@/lib/events/active-event-service';
+import { getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
 import type { Market, Event, InteractionRecordedPayload } from '@/types/db';
 
 interface DailyRevenueStatsProps {
@@ -30,6 +30,11 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
   useEffect(() => {
     const loadData = async () => {
       try {
+        if (!market.id) {
+          setInteractionEvents([]);
+          return;
+        }
+
         // 載入互動按鈕配置
         const buttons = getInteractionButtons();
         setInteractionButtons(buttons);
@@ -50,9 +55,8 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
             })();
 
         // 獲取互動事件 - 只篩選在 marketDates 中的日期
-        const interactions = (await getActiveInteractionEvents())
+        const interactions = (await getActiveInteractionEventsForMarket(market.id))
           .filter(e => {
-            if (getEventMarketId(e) !== market.id) return false;
             return marketDates.includes(getLocalDateStringFromTimestamp(e.timestamp));
           });
 
