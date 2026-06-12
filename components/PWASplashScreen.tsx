@@ -94,7 +94,7 @@ export function PWASplashScreen() {
 
       {/* 版本資訊 */}
       <div className="absolute bottom-8 text-white/60 text-sm">
-        v{APP_METADATA.version}
+        v{APP_METADATA.versionLabel}
       </div>
     </div>
   );

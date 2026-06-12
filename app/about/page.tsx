@@ -66,7 +66,7 @@ export default function AboutPage() {
           <section>
             <h2 className="text-xl font-semibold text-[#3A3A3A] mb-3">版本資訊</h2>
             <p className="text-[#6B6B6B] leading-relaxed">
-              當前版本：v{APP_METADATA.version}<br />
+              當前版本：v{APP_METADATA.versionLabel}<br />
               最後更新：{APP_METADATA.lastUpdatedLabel}
             </p>
           </section>

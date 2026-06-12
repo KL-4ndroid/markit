@@ -2,6 +2,8 @@ import packageJson from '@/package.json';
 
 const appVersion = process.env.NEXT_PUBLIC_APP_VERSION || packageJson.version;
 const appBuildTime = process.env.NEXT_PUBLIC_APP_BUILD_TIME || '';
+const appCommitSha = process.env.NEXT_PUBLIC_APP_COMMIT_SHA || '';
+const appVersionLabel = appCommitSha ? `${appVersion} (${appCommitSha})` : appVersion;
 
 function formatDateTime(value: string): string {
   const date = new Date(value);
@@ -25,6 +27,8 @@ export const APP_METADATA = {
   name: 'Market Pulse',
   displayName: '市集誌',
   version: appVersion,
+  commitSha: appCommitSha,
+  versionLabel: appVersionLabel,
   buildTime: appBuildTime,
   lastUpdatedLabel: formatDateTime(appBuildTime),
 };
