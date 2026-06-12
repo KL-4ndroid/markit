@@ -1,7 +1,7 @@
 ﻿# Markit 資料存取收斂計畫
 
 更新日期：2026-06-12
-狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18A Sync Reconciliation 設計完成
+狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Reconciliation helper 已建立，尚未接入 useSync
 目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂，讓 UI、同步、修復工具都透過一致的資料讀取與投影規則運作。
 
 ## 一、問題摘要
@@ -57,7 +57,7 @@ UI 不應直接自行判斷資料真相；它應該讀取穩定的 view model。
 | C2.15 | Active Event Service | 統一 active deals / interactions / tombstones 讀取 | `active-event-service.ts` + tests | 中 | 已建立，待 UI 接入 |
 | C2.16 | Market Projection Service | 從 active events 重建單一 market projection | `market-projection-service.ts` + tests | 中 | 已建立，待 Recovery / Sync 接入 |
 | C2.17 | Recovery 接入 Projection Rebuild | 讓 `/recovery` 只用 projection service 修本機統計 | UI dry-run / execute | 中 | 已接入 |
-| C2.18 | Sync 後 Reconciliation | sync 完成後檢查 touched markets 並自動重建不一致 projection | sync reconciliation hook | 中高 | 設計完成，待實作 |
+| C2.18 | Sync 後 Reconciliation | sync 完成後檢查 touched markets 並自動重建不一致 projection | sync reconciliation hook | 中高 | Helper 已建立，待 Owner / Staff sync 接入 |
 | C2.19 | UI View Model 收斂 | 市集詳情、每日成交、分析頁改讀 view model | `market-detail-view-model.ts` 等 | 中 | P1 |
 | C2.20 | Staff Data Flow 加固 | 確保 Staff tombstone / sanitized events 可正確 replay | tests + service guard | 中高 | P1 |
 | C2.21 | 舊資料雲端一致性審查 | 確認 cloud events / snapshots / projection 是否仍有污染 | SQL 診斷報告 | 中 | P2 |
