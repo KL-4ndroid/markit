@@ -6,9 +6,9 @@ import { toast } from 'sonner';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import {
-  repairLocalMarketProjections,
-  type LocalProjectionRepairResult,
-} from '@/lib/sync/local-projection-repair';
+  repairMarketProjectionsFromEvents,
+  type MarketProjectionRepairResult,
+} from '@/lib/projections/market-projection-service';
 
 type PanelState = 'idle' | 'checking' | 'preview' | 'executing';
 
@@ -20,7 +20,7 @@ export function LocalProjectionRepairPanel() {
   const { user } = useAuth();
   const { isStaff, isLoading: isRoleLoading } = useUserRole();
   const [state, setState] = useState<PanelState>('idle');
-  const [previewResult, setPreviewResult] = useState<LocalProjectionRepairResult | null>(null);
+  const [previewResult, setPreviewResult] = useState<MarketProjectionRepairResult | null>(null);
 
   const assertOwnerCanRun = (): boolean => {
     if (!user) {
@@ -45,7 +45,7 @@ export function LocalProjectionRepairPanel() {
     setPreviewResult(null);
 
     try {
-      const result = await repairLocalMarketProjections({
+      const result = await repairMarketProjectionsFromEvents({
         dryRun: true,
       });
       setPreviewResult(result);
@@ -77,7 +77,7 @@ export function LocalProjectionRepairPanel() {
     setState('executing');
 
     try {
-      const result = await repairLocalMarketProjections({
+      const result = await repairMarketProjectionsFromEvents({
         marketIds,
         dryRun: false,
       });
