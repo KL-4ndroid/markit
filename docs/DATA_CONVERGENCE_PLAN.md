@@ -1,7 +1,7 @@
 ﻿# Markit 資料存取收斂計畫
 
 更新日期：2026-06-12
-狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已接入 Owner / Staff sync；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理
+狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已接入 Owner / Staff sync；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理
 目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂，讓 UI、同步、修復工具都透過一致的資料讀取與投影規則運作。
 
 ## 一、問題摘要
@@ -60,7 +60,7 @@ UI 不應直接自行判斷資料真相；它應該讀取穩定的 view model。
 | C2.18 | Sync 後 Reconciliation | sync 完成後檢查 touched markets 並自動重建不一致 projection | sync reconciliation hook | 中高 | Owner / Staff sync 已接入 |
 | C2.19 | UI View Model 收斂 | 市集詳情、每日成交、分析頁改讀 view model | `market-detail-view-model.ts` 等 | 中 | 市集詳情、每日收入、每日記錄、分析頁 active events 已接入 |
 | C2.20 | Staff Data Flow 加固 | 確保 Staff tombstone / sanitized events 可正確 replay | tests + service guard | 中高 | sanitizer 欄位保護已測，staff view SQL 已整理待線上驗證 |
-| C2.21 | 舊資料雲端一致性審查 | 確認 cloud events / snapshots / projection 是否仍有污染 | SQL 診斷報告 | 中 | P2 |
+| C2.21 | 舊資料雲端一致性審查 | 確認 cloud events / snapshots / projection 是否仍有污染 | SQL 診斷報告 | 中 | SQL 已整理，待線上執行 |
 | C2.22 | 完整文件與操作手冊 | 建立未來維護規範 | docs | 低 | P2 |
 
 ## 四、詳細執行順序
@@ -329,12 +329,19 @@ docs/STAFF_DATA_FLOW_AUDIT.md
 
 目的：確認是否還有 cloud snapshot 或 cloud projection 污染。
 
+審查文件：
+
+```text
+docs/CLOUD_DATA_CONSISTENCY_AUDIT.md
+```
+
 只做 SQL 診斷，不直接修：
 
 - cloud `markets.total_revenue` vs `events deal_closed - deal_deleted`
 - snapshots 是否含污染 projection
 - staff view 是否缺 tombstone
 - deleted target 是否 missing
+- duplicate semantic deals 是否疑似重複寫入
 
 產出：
 
