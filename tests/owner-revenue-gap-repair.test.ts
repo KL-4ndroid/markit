@@ -989,11 +989,11 @@ runTest('hydrates missing detail events without replaying existing projections',
       }),
     });
 
-    const { repairOwnerRevenueGaps } = await import(
+    const { hydrateOwnerMissingDetailEvents } = await import(
       '../lib/sync/owner-revenue-gap-repair'
     );
 
-    const result = await repairOwnerRevenueGaps({
+    const result = await hydrateOwnerMissingDetailEvents({
       ownerId: OWNER_ID,
       marketIds: [MARKET_ID],
       supabaseClient: makeSupabaseMock(cloudEvents),
@@ -1012,6 +1012,18 @@ runTest('hydrates missing detail events without replaying existing projections',
     (db.dailyStats as any).where = origDailyStatsWhere;
     (eventHandlers as any).deal_closed = origHandler;
   }
+});
+
+runTest('useSync does not auto-run owner revenue repair during snapshot sync', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const useSyncSrc = fs.readFileSync(
+    path.resolve(__dirname, '../hooks/useSync.ts'),
+    'utf8'
+  );
+
+  assert.doesNotMatch(useSyncSrc, /repairOwnerRevenueGaps\(\{\s*ownerId:\s*userId\s*\}\)/);
+  assert.match(useSyncSrc, /hydrateOwnerMissingDetailEvents\(\{\s*ownerId:\s*userId\s*\}\)/);
 });
 
 // ---------------------------------------------------------------------------

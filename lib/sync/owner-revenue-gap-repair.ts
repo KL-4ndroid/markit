@@ -34,6 +34,8 @@ export interface OwnerRevenueGapRepairOptions {
   supabaseClient?: SupabaseClientLike;
 }
 
+export type OwnerRevenueGapRepairMode = 'repair' | 'hydrate_details_only';
+
 /**
  * Loose type describing only the Supabase client surface we use.
  * Tests can pass a plain object with a `from` method without matching
@@ -116,6 +118,8 @@ function toFiniteNumber(value: unknown, fallback = 0): number {
   }
   return fallback;
 }
+
+export type OwnerDetailEventHydrationOptions = OwnerRevenueGapRepairOptions;
 
 /**
  * Returns true when the market is owner-accessible:
@@ -217,6 +221,19 @@ async function resetLocalMarketStatsProjection(
 export async function repairOwnerRevenueGaps(
   options: OwnerRevenueGapRepairOptions
 ): Promise<OwnerRevenueGapRepairResult> {
+  return runOwnerRevenueGapRepair(options, 'repair');
+}
+
+export async function hydrateOwnerMissingDetailEvents(
+  options: OwnerDetailEventHydrationOptions
+): Promise<OwnerRevenueGapRepairResult> {
+  return runOwnerRevenueGapRepair(options, 'hydrate_details_only');
+}
+
+async function runOwnerRevenueGapRepair(
+  options: OwnerRevenueGapRepairOptions,
+  mode: OwnerRevenueGapRepairMode
+): Promise<OwnerRevenueGapRepairResult> {
   assertNonBlank(options.ownerId, 'ownerId');
 
   const { ownerId, marketIds, dryRun = false, supabaseClient } = options;
@@ -243,6 +260,7 @@ export async function repairOwnerRevenueGaps(
         market,
         dryRun,
         client,
+        mode,
         repaired,
         skipped,
         warnings
@@ -257,6 +275,7 @@ export async function repairOwnerRevenueGaps(
         market,
         dryRun,
         client,
+        mode,
         repaired,
         skipped,
         warnings
@@ -275,6 +294,7 @@ async function processOneMarket(
   market: Market,
   dryRun: boolean,
   client: SupabaseClientLike,
+  mode: OwnerRevenueGapRepairMode,
   repaired: RepairedMarket[],
   skipped: SkippedMarket[],
   warnings: string[]
@@ -358,6 +378,46 @@ async function processOneMarket(
     );
 
   // --- Apply decision rules ---
+  if (mode === 'hydrate_details_only') {
+    if (!hasMissingDetailEventsOnly) {
+      skipped.push({ marketId, reason: localDailyStatsRevenueSum > 0 ? 'local_daily_stats_exist' : 'already_in_sync' });
+      return;
+    }
+
+    const localEventIds = new Set(localDeals.map(e => e.id!));
+    const trulyMissing = cloudDealEvents.filter(
+      e => !localEventIds.has(e.id)
+    );
+
+    if (dryRun) {
+      repaired.push({
+        marketId,
+        cloudRevenue: expectedRevenue,
+        cloudDeals: expectedDeals,
+        localRevenueBefore: localRevenue,
+        localRevenueAfter: localRevenue,
+        replayedEvents: trulyMissing.length,
+      });
+      return;
+    }
+
+    let persisted = 0;
+    for (const event of trulyMissing) {
+      const didPersist = await persistEventWithoutReplay(event as unknown as Record<string, unknown>);
+      if (didPersist) persisted += 1;
+    }
+
+    repaired.push({
+      marketId,
+      cloudRevenue: expectedRevenue,
+      cloudDeals: expectedDeals,
+      localRevenueBefore: localRevenue,
+      localRevenueAfter: localRevenue,
+      replayedEvents: persisted,
+    });
+    return;
+  }
+
   if (
     localRevenue === 0 &&
     localDeals.length === 0 &&

@@ -16,6 +16,7 @@ import { recordEvent } from '@/lib/db/events';
 import { canonicalizeEvent } from '@/lib/db/data-canonicalization';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
+import { hydrateOwnerMissingDetailEvents } from '@/lib/sync/owner-revenue-gap-repair';
 import {
   collectProjectionMarketId,
   reconcileTouchedMarketProjections,
@@ -886,7 +887,18 @@ async function pullEventsWithSnapshot(
           // Projection repair is intentionally manual-only. Snapshot sync can load
           // projection tables before the complete local event history is available,
           // so automatic repair here may overwrite correct legacy revenue with
-          // partial local event totals. Use /recovery for dry-run guarded repairs.
+          // partial local event totals. Hydration below only persists missing detail
+          // events when existing local projections already match cloud totals; it
+          // does not replay handlers or modify markets/dailyStats.
+          try {
+            const hydrateResult = await hydrateOwnerMissingDetailEvents({ ownerId: userId });
+            if (hydrateResult.repaired.length > 0) {
+              console.log('[useSync] snapshot detail event hydration completed', hydrateResult);
+            }
+          } catch (hydrateError) {
+            console.warn('[useSync] snapshot detail event hydration skipped:', hydrateError);
+          }
+
           return true; // ✅ 使用了快照
         }
       } catch (snapshotError) {
