@@ -16,7 +16,6 @@ import { recordEvent } from '@/lib/db/events';
 import { canonicalizeEvent } from '@/lib/db/data-canonicalization';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
-import { repairOwnerRevenueGaps } from '@/lib/sync/owner-revenue-gap-repair';
 import {
   collectProjectionMarketId,
   reconcileTouchedMarketProjections,
@@ -883,16 +882,11 @@ async function pullEventsWithSnapshot(
               }
             }
           );
-          
 
-          try {
-            const repairResult = await repairOwnerRevenueGaps({ ownerId: userId });
-            if (repairResult.repaired.length > 0) {
-              console.log('[useSync] snapshot detail/projection repair completed', repairResult);
-            }
-          } catch (repairError) {
-            console.warn('[useSync] snapshot detail/projection repair skipped:', repairError);
-          }
+          // Projection repair is intentionally manual-only. Snapshot sync can load
+          // projection tables before the complete local event history is available,
+          // so automatic repair here may overwrite correct legacy revenue with
+          // partial local event totals. Use /recovery for dry-run guarded repairs.
           return true; // ✅ 使用了快照
         }
       } catch (snapshotError) {

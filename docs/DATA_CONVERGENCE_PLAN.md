@@ -1,7 +1,7 @@
 ﻿# Markit 資料存取收斂計畫
 
 更新日期：2026-06-12
-狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已降級為只偵測不自動修復；C2.18B Projection rebuild 已加入本機事件完整性防護，避免本機 events 不完整時覆寫正確 projection；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理
+狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已降級為只偵測不自動修復；C2.18B Projection rebuild 已加入本機事件完整性防護；C2.18C owner revenue gap repair 已從 snapshot sync 移除，僅允許 /recovery 手動 dry-run 後執行；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理
 目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂，讓 UI、同步、修復工具都透過一致的資料讀取與投影規則運作。
 
 ## 一、問題摘要
@@ -59,6 +59,7 @@ UI 不應直接自行判斷資料真相；它應該讀取穩定的 view model。
 | C2.17 | Recovery 接入 Projection Rebuild | 讓 `/recovery` 只用 projection service 修本機統計 | UI dry-run / execute | 中 | 已接入 |
 | C2.18 | Sync 後 Reconciliation | sync 完成後檢查 touched markets，但不在 sync 中自動重建 projection | sync reconciliation hook | 中高 | 已降級為 observation-only |
 | C2.18B | Projection Rebuild 完整性防護 | 只有明顯 2x/3x 重複累加時才允許本機 events 重建 projection；疑似 partial events 時跳過 | projection service + repair tests | 中高 | 已完成 |
+| C2.18C | Owner Revenue Gap Repair 手動化 | 移除 snapshot sync 中的自動 revenue repair，避免登入/同步時以不完整 events 覆寫 projection | useSync snapshot path | 高 | 已完成 |
 | C2.19 | UI View Model 收斂 | 市集詳情、每日成交、分析頁改讀 view model | `market-detail-view-model.ts` 等 | 中 | 市集詳情、每日收入、每日記錄、分析頁 active events 已接入 |
 | C2.20 | Staff Data Flow 加固 | 確保 Staff tombstone / sanitized events 可正確 replay | tests + service guard | 中高 | sanitizer 欄位保護已測，staff view SQL 已整理待線上驗證 |
 | C2.21 | 舊資料雲端一致性審查 | 確認 cloud events / snapshots / projection 是否仍有污染 | SQL 診斷報告 | 中 | SQL 已整理，待線上執行 |
@@ -224,6 +225,8 @@ components/common/*ProjectionRepairPanel.tsx
 2026-06-12 修正：Sync reconciliation 已改為 observation-only。原因是 snapshot / staff-view / historical backfill 可能讓本機 event store 只有部分事件；若此時直接用本機 events 重建 projection，會把正確的舊收入覆寫成只剩新增事件。自動重建必須等到能證明該 market 的本機 events 完整後才可恢復。
 
 2026-06-12 追加 C2.18B：Projection rebuild 加入保守完整性防護。當現有 projection 高於本機 active events，但差異不像整數倍重複累加（例如不是 2x / 3x），系統會視為 `local_events_incomplete` 並跳過修復。這避免 snapshot 載入 projection 但 local events 只含少數新補登事件時，把正確總收入覆寫成 partial events 的小額總和。
+
+2026-06-12 追加 C2.18C：`repairOwnerRevenueGaps()` 已從 snapshot sync path 移除。此工具只能由 `/recovery` 以 dry-run / confirm 方式手動執行。原因是 snapshot path 可能先載入正確 projection，但本機 events 還不是完整歷史；若在此時自動 replay 或 reset projection，會讓舊市集收入被 partial local events 覆寫。
 
 建議做法：
 
