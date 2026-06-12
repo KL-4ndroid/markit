@@ -1,61 +1,43 @@
-# Cursor Data Convergence Handoff
+﻿# Cursor / Codex 資料收斂任務交接手冊
 
-更新日期：2026-06-11
+更新日期：2026-06-12
+用途：讓 Cursor 或 Codex 可隨時接手 Markit 資料收斂計畫，並以低風險、可驗證、可回滾的方式逐步完成。
 
-## 交接目標
+## 一、接手前必讀
 
-請接續 `docs/DATA_CONVERGENCE_PLAN.md` 的資料格式收斂計畫，以最小風險方式完成剩餘工作。
-
-目前整體進度約 88%。核心方向不是大重構，而是逐步把事件 payload 讀取集中到 shared read model / projection helper，降低 `marketId` / `market_id`、`eventId` / `event_id`、`totalAmount` / `total_amount` 等欄位差異造成的反覆錯誤。
-
-## 必讀文件
-
-開始前請先讀：
+請先閱讀：
 
 1. `docs/DATA_CONVERGENCE_PLAN.md`
 2. `docs/EVENT_HANDLER_CONVERGENCE_ANALYSIS.md`
-3. `lib/events/event-read-model.ts`
-4. `lib/db/deal-closed-projection.ts`
-5. `tests/deal-closed-projection.test.ts`
-6. `tests/event-handlers.test.ts`
+3. `docs/STABILITY_OPTIMIZATION_FINAL_SUMMARY.md`
+4. `docs/RECOVERY_USER_GUIDE.md`
+5. `lib/events/event-read-model.ts`
+6. `lib/db/event-tombstones.ts`
+7. `hooks/useSync.ts`
 
-## 目前最新狀態
+目前核心問題：
 
-最新已推送 commit：
+- UI、sync、recovery、analytics 讀取資料的入口分散。
+- `dailyStats` / `market totals` 是 projection cache，可能和 `events` 不一致。
+- `deal_deleted` / `interaction_deleted` 是 tombstone，需要統一套用。
+- Staff sync 會 sanitize，再 replay。若 event 已存在但 projection 沒更新，後續 sync 可能 skip，不會修正。
+- 不應再靠單點修補。應逐步建立 active event service、projection service、view model。
 
-```txt
-64f8e38 test(events): cover deal closed product handler regression
-0f67546 docs: update deal item projection progress
-c0e285a test(events): cover deal closed item projection helpers
-997022a docs: update manual deal projection progress
-bb97027 refactor(events): centralize manual deal projection reads
-```
+## 二、工作模式
 
-已完成：
+每次任務都必須遵守：
 
-- `deal_closed` 手動補登分支已改用 `getDealClosedManualProjection()`。
-- `deal_closed` 商品項目 projection helper 已建立並有測試。
-- Step 4A：新增 5 個 handler-level regression tests，鎖住現有 handler 行為。
-- **重要發現**：handler 直接信任 `event.payload.totalAmount`，不從 items 重新計算 revenue。items loop 只負責 cost 計算、庫存扣減、快照寫回、productsSold 累加。
-- **`getDealClosedItemsProjection()` 與 handler 不等價**：helper 從 items 推導 revenue，handler 以 payload.totalAmount 為 source of truth。
-- **不可直接接入 handler**。若要前進，需先決定 revenue source of truth 策略。
+- 先分析，再實作。
+- 每次只做一件事。
+- 不混入不相關檔案。
+- 不碰使用者未提交的變更。
+- 不做大規模重構。
+- 不修改 Supabase schema / RLS / RPC，除非任務明確要求。
+- 不刪除 events。
+- 不直接修改雲端資料。
+- 不新增 debug window API，正式修復入口放 `/recovery`。
 
-## 絕對禁止事項
-
-除非使用者明確同意，不要做以下事情：
-
-- 不要修改 Supabase schema / migration / RLS。
-- 不要大幅重寫 `lib/db/events.ts`。
-- 不要修改 `deal_deleted`。
-- 不要修改庫存扣減邏輯。
-- 不要改 event immutability 或移除 handler 內的 payload item 快照寫回。
-- 不要刪除或重寫 events。
-- 不要混入 UI 文案調整、登入流程、分析頁重構等非本任務內容。
-- 不要一次 commit 多個功能區。
-
-## 工作規則
-
-每次只做一個最小任務。每個任務完成後必須通過：
+每個實作任務完成後執行：
 
 ```powershell
 npm.cmd test
@@ -65,162 +47,415 @@ npm.cmd run build
 git diff --check
 ```
 
-通過後才可以 commit。每個 commit 必須是單一目的。
+純分析 / 文件任務至少執行：
 
-若有任何檢查未通過，不要 commit，先回報失敗原因與建議。
+```powershell
+git diff --check
+```
 
-## Step 4 分析已完成
+Commit 前必須回報：
 
-分析目標：評估是否能把 `lib/db/events.ts` 中 `deal_closed` 商品模式的「商品讀取與 projection 計算」小範圍接入 `getDealClosedItemsProjection()`。
+- 修改檔案
+- 行為變更
+- 測試結果
+- `git status -sb`
+- 是否有未處理的 unstaged changes
 
-**分析結論：不可直接接入，原因：**
+## 三、目前建議任務順序
 
-1. **Revenue source of truth 不同**：
-   - Handler 直接信任 `event.payload.totalAmount`（由 UI 計算後寫入），items loop 不重新計算 revenue
-   - Helper `getDealClosedItemsProjection()` 從 items 的 `price * quantity` 推導 revenue
-2. **Items loop 職責**：僅處理 cost 計算（從 `product.cost`）、庫存扣減、快照寫回、`productsSold` 累加
-3. **Payload 寫回耦合**：handler 在同一 loop 內寫入 `price_at_time_of_sale`、`cost_at_time_of_sale`、`product_name`，pure function helper 無法替代
-4. **NaN quantity 處理不同**：handler 無 finiteNumber 保護，helper 有
-5. **Blank product id productsSold shape 不同**
+### Task C2.14A：資料存取盤點
 
-**Step 4A 已完成**：新增 5 個 handler-level regression tests，鎖住現有 handler 行為。確認 helper 與 handler 不等價，不可直接接入。
+任務類型：只分析 / 文件
+允許修改：只允許新增或更新 `docs/DATA_ACCESS_AUDIT.md`
+禁止修改：程式碼、測試、Supabase、RLS、UI
 
-## 下一步可行方向（需使用者決定）
+目標：
 
-Step 4 分析確認不可直接接入 helper。若要前進，需先回答 revenue source of truth 策略：
+盤點專案中所有資料讀取路徑，找出 raw DB access、projection access、active event filtering、tombstone handling 的位置。
 
-**選項 A**：維持 handler 現有行為（`payload.totalAmount` 為 source of truth）
-- Helper 繼續作為 UI / analytics / repair 的讀取層
-- Handler 不改動
-- 下一步：鎖住現有行為即可，結束 handler 收斂
+請檢查：
 
-**選項 B**：修改 handler 以 items 為 revenue source of truth
-- 需要重新設計 `recordEvent` 層，在寫入前從 items 計算 totalAmount
-- 風險較高，需完整 regression 測試
-- 會影響所有現有成交事件的 semantics
+- `app/markets/[id]/page.tsx`
+- `components/markets/DailyRevenueStats.tsx`
+- `components/markets/DailyDealsModal.tsx`
+- `components/markets/DailyTransactionLog.tsx`
+- `components/markets/DealDetailModal.tsx`
+- `app/analytics/*`
+- `lib/db/hooks.ts`
+- `lib/db/event-tombstones.ts`
+- `lib/events/event-read-model.ts`
+- `hooks/useSync.ts`
+- `/recovery` 相關元件與 services
 
-**選項 C**：提供等價 helper（接受 `totalAmount` 作為 input）
-- Helper 包裝 handler 的實際邏輯：`revenue = totalAmount`，`cost` 從 items 計算
-- 可在 analytics / repair 讀取層使用，但不等同於「接入 handler」
+文件需包含表格：
 
-**目前建議**：選項 A（維持現狀），因為：
-- Handler 行為已有 regression tests 保護
-- Helper 在讀取層（UI、分析、repair）已可使用
-- Revenue source of truth 改動風險過高
+```markdown
+| 功能 | 檔案 | 目前資料來源 | 是否直接讀 db | 是否處理 tombstone | 風險 | 建議收斂方向 |
+|---|---|---|---:|---:|---|---|
+```
 
-以下為歷史記錄，保留供參考：
+完成條件：
 
-
-### 歷史：當時允許的修改範圍
-
-- `lib/db/events.ts`
-- `tests/event-handlers.test.ts`
-- 必要時 `lib/db/deal-closed-projection.ts`
-- 必要時 `tests/deal-closed-projection.test.ts`
-
-### 允許的行為改動
-
-只替換商品模式中的讀取與計算：
-
-- 商品 ID 讀取。
-- 商品名稱讀取。
-- 交易價格讀取。
-- 交易成本讀取。
-- 商品模式 `totalAmount` / `totalCost` / `productsSold` 計算。
-
-### 不允許的行為改動
-
-- 不改庫存扣減。
-- 不改超賣檢查。
-- 不改 `db.products.update()`。
-- 不改 `deal_deleted`。
-- 不改 event payload 寫回。
-- 不改 `recordEvent()`。
-- 不改 sync 流程。
-
-### 必須新增或更新的測試
-
-至少補上 handler-level regression：
-
-1. camelCase item：
-   - `productId`
-   - `price`
-   - `quantity`
-2. snake_case item：
-   - `product_id`
-   - `price_at_time_of_sale`
-   - `cost_at_time_of_sale`
-3. product snapshot fallback：
-   - item 缺價格時使用 product price。
-   - item 缺成本時使用 product cost。
-4. 不扣庫存的補登：
-   - `isBackfill` / `is_backfill` 不應扣 stock。
-5. 正常交易仍需檢查庫存不足。
-6. `productsSold` 應維持相同 shape：
-   - `{ productId, quantity, revenue }`
+- 文件能回答「哪個畫面讀 events，哪個畫面讀 dailyStats，哪個畫面讀 market totals」。
+- 文件列出 C2.15 / C2.16 要抽出的 service。
+- 不改程式碼。
 
 建議 commit：
 
-```txt
-refactor(events): centralize deal item projection reads
+```text
+docs: audit data access paths
 ```
 
-## 不要急著做的任務
+### Task C2.15A：設計 Active Event Service
 
-以下任務先不要做，除非使用者明確要求：
+任務類型：先分析，不實作
+允許修改：可更新 `docs/DATA_ACCESS_AUDIT.md` 或新增 `docs/ACTIVE_EVENT_SERVICE_DESIGN.md`
+禁止修改：程式碼、測試
 
-- `dailyStats.productsSold` normalization helper。
-- `owner-revenue-gap-repair` 內部再收斂。
-- `deal_deleted` handler 重構。
-- 全面 event immutability。
-- rebuildSnapshots 大重構。
-- Supabase migration / RLS。
+目標：
 
-## 完成後需要更新文件
+設計統一 active events 讀取服務，明確 API 和 tombstone 規則。
 
-若完成 Step 4 實作，請更新：
+需回答：
 
-- `docs/DATA_CONVERGENCE_PLAN.md`
-- `docs/EVENT_HANDLER_CONVERGENCE_ANALYSIS.md`
+- `getActiveDealEvents()` 是否保留或包裝？
+- semantic tombstone fallback 是否應拆為可測純函式？
+- full backfill / simple backfill / normal deal 是否共用同一套判斷？
+- UI 要改讀哪些 API？
 
-更新內容需包含：
+建議 API：
 
-- 新 commit hash。
-- 已完成範圍。
-- 明確列出未觸碰項目，例如庫存、`deal_deleted`、event immutability。
-- 整體進度可從 88% 調整到 89% 或 90%，視實際範圍而定。
-
-文件 commit 建議另開：
-
-```txt
-docs: update deal item handler convergence progress
+```ts
+getActiveDealEventsForMarket(marketId: string)
+getActiveDealEventsForDate(marketId: string, date: string)
+getActiveInteractionEventsForMarket(marketId: string)
+getDealSummaryFromEvents(marketId: string)
 ```
 
-## 回報格式
+完成條件：
 
-每次任務完成後請回報：
+- 產出可實作設計。
+- 列出測試案例。
+- 不改程式碼。
 
-1. 修改檔案。
-2. 是否碰到禁止事項。
-3. 行為是否與舊 handler 等價。
-4. 測試新增或修改內容。
-5. 驗證結果：
-   - `npm.cmd test`
-   - `npx.cmd tsc --noEmit`
-   - `npm.cmd run lint`
-   - `npm.cmd run build`
-   - `git diff --check`
-6. commit hash。
-7. 是否已 push。
+### Task C2.15B：實作 Active Event Service
 
-## 最重要提醒
+任務類型：小型實作
+允許修改：
 
-這個階段的目標是「收斂讀取規則」，不是「重寫事件系統」。
+- `lib/events/active-event-service.ts`
+- `tests/active-event-service.test.ts`
+- `package.json` 測試指令
 
-只要遇到以下狀況，請停止並回報，不要硬改：
+禁止修改：
 
-- helper 行為與 handler 現有行為不等價。
-- 需要修改庫存邏輯才可接入。
-- 需要修改 `deal_deleted` 才可接入。
-- 測試需要大量 mock 才能通過。
-- 改動超過單一 handler 分支。
+- UI
+- sync
+- Supabase
+- `lib/db/events.ts`
+
+必要測試：
+
+- 正常 deal_closed 會出現。
+- deal_deleted target id 存在時會隱藏 target。
+- deal_deleted target id 不存在時 semantic fallback 只隱藏一筆相同語意成交。
+- 不同 revenue/date/market 不會被誤藏。
+- full backfill 會被視為 active deal。
+- simple manual backfill 會被視為 active deal。
+
+建議 commit：
+
+```text
+refactor(events): add active event service
+test(events): cover active deal tombstones
+```
+
+### Task C2.16A：設計 Market Projection Service
+
+任務類型：先分析，不實作
+允許修改：新增 `docs/MARKET_PROJECTION_SERVICE_DESIGN.md`
+禁止修改：程式碼、測試
+
+目標：
+
+設計「從 active events 重建單一 market projection」的 service。
+
+需回答：
+
+- 哪些欄位重建？
+- 是否重建商品庫存？答案應為否。
+- 如何處理 cost 被 staff sanitizer 移除？
+- 如何處理 missing product？
+- 如何處理 tombstone target missing？
+
+建議 API：
+
+```ts
+compareMarketProjectionWithEvents(marketId: string)
+rebuildMarketStatsFromEvents(marketId: string)
+```
+
+### Task C2.16B：實作 Market Projection Service
+
+任務類型：中型實作
+允許修改：
+
+- `lib/projections/market-projection-service.ts`
+- `tests/market-projection-service.test.ts`
+- `package.json`
+
+禁止修改：
+
+- sync
+- UI
+- Supabase
+- `lib/db/events.ts`
+
+重建範圍：
+
+- `market.totalRevenue`
+- `market.totalDeals`
+- `market.totalInteractions`
+- `dailyStats`
+
+不重建：
+
+- product stock
+- product totalSold
+- cloud records
+- events
+
+必要測試：
+
+- normal deal
+- manual backfill
+- full backfill
+- deal_deleted
+- interaction_recorded
+- interaction_deleted
+- projection already correct
+- projection double counted
+
+建議 commit：
+
+```text
+refactor(projections): add market projection rebuild service
+test(projections): cover market stats rebuild
+```
+
+### Task C2.17A：Recovery 接入 Projection Rebuild
+
+任務類型：UI + service 接入
+允許修改：
+
+- `/recovery` 頁面
+- 新增 projection repair panel
+- 相關 service import
+
+禁止修改：
+
+- sync
+- Supabase
+- debug tools
+
+功能要求：
+
+- owner-only guard
+- dry-run
+- confirm
+- execute only dry-run result
+- 清楚說明只修本機 projection，不改雲端、不刪 events
+
+建議 commit：
+
+```text
+fix(recovery): add projection rebuild repair panel
+```
+
+### Task C2.18A：Sync 後 Reconciliation 設計
+
+任務類型：只分析
+允許修改：新增 `docs/SYNC_RECONCILIATION_DESIGN.md`
+禁止修改：程式碼、測試
+
+目標：
+
+設計 sync 完成後如何只針對 touched market ids 做 projection comparison / rebuild。
+
+需回答：
+
+- Owner `pullAllEvents` 如何收集 market ids？
+- Owner `pullIncrementalEvents` 如何收集 market ids？
+- Staff `syncEventsToIndexedDB` 如何收集 market ids？
+- existing event skip 時是否仍要加入 touched market ids？
+- reconciliation 失敗是否阻斷 sync？
+
+原則：
+
+- 不全量掃描所有 markets。
+- 不重跑所有 events。
+- reconciliation error 應回報，但不應讓登入卡死。
+
+### Task C2.18B：實作 Sync 後 Reconciliation
+
+任務類型：高風險，小步實作
+允許修改：
+
+- `hooks/useSync.ts`
+- projection service
+- tests if service 可測
+
+禁止修改：
+
+- Supabase
+- RLS
+- UI 大改
+
+建議拆三個 commit：
+
+```text
+refactor(sync): collect touched market ids during event import
+fix(sync): reconcile touched market projections after owner sync
+fix(sync): reconcile touched market projections after staff sync
+```
+
+### Task C2.19A：UI View Model 設計
+
+任務類型：只分析
+目標：設計市集詳情 UI 的穩定 view model。
+
+建議輸出：
+
+```text
+docs/MARKET_DETAIL_VIEW_MODEL_DESIGN.md
+```
+
+### Task C2.19B：市集詳情成交列表改讀 View Model
+
+任務類型：小型 UI refactor
+優先範圍：
+
+- 每日成交 modal
+- DailyTransactionLog
+
+禁止：
+
+- 改樣式大重構
+- 改 sync
+
+## 四、特別注意的已知風險
+
+### 1. full backfill 有 dailyStats 但成交列表空白
+
+可能原因：
+
+- `deal_closed` event 不存在。
+- `deal_closed` event 被 tombstone semantic fallback 隱藏。
+- `dealDate` / `market_id` 不符合 UI 篩選。
+
+不要用 UI hack 修。應透過 active event service 診斷。
+
+### 2. Owner 刪除後 Staff 還看到補登
+
+可能原因：
+
+- Staff view 沒撈到 `deal_deleted`。
+- Staff 本機有 `deal_deleted`，但 projection 沒 replay 成功。
+- Staff sync 因 event id 已存在而 skip，不再重跑 handler。
+
+不要直接刪 staff 本機 events。應用 projection reconciliation 修。
+
+### 3. 收入 double / triple
+
+可能原因：
+
+- snapshot projection 已含收入，後續 events 又 replay。
+- projection cache 被重複累加。
+- cloud snapshot 曾含污染 projection。
+
+不要用 cutoff 猜舊市集。應從 active events 重建 projection。
+
+## 五、每次回報格式
+
+請用以下格式回報：
+
+```markdown
+回報
+
+修改檔案：
+- path：變更摘要
+
+行為變更：
+- ...
+
+測試：
+- npm test：pass/fail
+- npx tsc --noEmit：pass/fail
+- npm run lint：pass/fail
+- npm run build：pass/fail
+- git diff --check：pass/fail
+
+git status -sb：
+```text
+...
+```
+
+是否有未處理風險：
+- ...
+
+是否已 commit：
+- 是 / 否
+- commit hash:
+```
+
+## 六、可直接貼給 Cursor 的下一個 Prompt
+
+```text
+請執行 C2.14A：資料存取盤點。
+
+重要：
+- 只分析，不修改程式碼。
+- 只允許新增或更新 docs/DATA_ACCESS_AUDIT.md。
+- 不要新增測試。
+- 不要更新其他文件。
+- 不要 commit，除非我確認。
+- 不要修改 Supabase / RLS / migration。
+
+請閱讀：
+- docs/DATA_CONVERGENCE_PLAN.md
+- app/markets/[id]/page.tsx
+- components/markets/DailyRevenueStats.tsx
+- components/markets/DailyDealsModal.tsx
+- components/markets/DailyTransactionLog.tsx
+- components/markets/DealDetailModal.tsx
+- lib/db/event-tombstones.ts
+- lib/events/event-read-model.ts
+- lib/db/hooks.ts
+- hooks/useSync.ts
+- app/recovery/page.tsx
+
+請在 docs/DATA_ACCESS_AUDIT.md 中建立表格：
+
+| 功能 | 檔案 | 目前資料來源 | 是否直接讀 db | 是否處理 tombstone | 風險 | 建議收斂方向 |
+
+必須回答：
+1. 哪些 UI 讀 dailyStats？
+2. 哪些 UI 讀 db.events？
+3. 哪些 UI 讀 market.totalRevenue / totalDeals？
+4. 哪些地方處理 deal_deleted / interaction_deleted？
+5. Owner sync 和 Staff sync 的資料流差異？
+6. 哪些地方可能造成 dailyStats 與 events 不一致？
+7. 下一步應抽出的 active event service API 清單。
+8. 下一步應抽出的 market projection service API 清單。
+
+完成後只執行：
+- git diff --check
+- git status -sb
+
+回報：
+- 修改檔案
+- 主要發現
+- 建議下一步
+- git diff --check 結果
+- git status -sb
+```
