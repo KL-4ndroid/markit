@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Edit, ChevronDown, ChevronUp, Sparkles, LogOut, Eye, Edit3 } from 'lucide-react';
+import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Edit, ChevronDown, ChevronUp, LogOut, Eye, Edit3 } from 'lucide-react';
 import { getInteractionButtons, resetInteractionButtons, isInteractionSetupComplete, type InteractionButton } from '@/lib/interaction-buttons-store';
 import { InteractionSetupWizard } from '@/components/settings/InteractionSetupWizard';
 import { StaffManagement } from '@/components/settings/StaffManagement';
@@ -489,71 +489,6 @@ export default function SettingsPage() {
                     </ul>
                   </div>
                 </div>
-              </div>
-
-              {/* 優化數據（生成快照） */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-5 h-5 text-[#7B9FA6]" />
-                  <h3 className="text-base font-medium text-[#3A3A3A]">
-                    優化數據
-                  </h3>
-                </div>
-                
-                <div className="bg-gradient-to-br from-[#E8F0F8] to-[#E8F3E8] rounded-xl p-4 mb-3">
-                  <p className="text-sm text-[#3A3A3A] mb-2 font-medium">
-                    📸 生成數據快照
-                  </p>
-                  <ul className="text-xs text-[#6B6B6B] space-y-1 mb-3">
-                    <li>• 將當前數據狀態保存為快照</li>
-                    <li>• 加速新設備的首次同步（提升 95%+）</li>
-                    <li>• 自動壓縮，節省 60-80% 存儲空間</li>
-                    <li>• 系統會在 1000 個事件後自動生成</li>
-                  </ul>
-                  <div className="bg-white rounded-lg p-3 border border-[#7B9FA6]/10">
-                    <p className="text-xs text-[#3A3A3A] font-medium mb-1">
-                      💡 適用場景：
-                    </p>
-                    <ul className="text-xs text-[#6B6B6B] space-y-0.5">
-                      <li>• 準備在新設備上登入</li>
-                      <li>• 累積大量事件後手動優化</li>
-                      <li>• 提升多設備同步速度</li>
-                      <li>• 減少雲端存儲成本</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <button
-                  onClick={async () => {
-                    if (!user) {
-                      toast.error('請先登入 Supabase 帳號');
-                      return;
-                    }
-
-                    const toastId = toast.loading('正在生成快照...');
-                    
-                    try {
-                      const { createSnapshot } = await import('@/lib/db/snapshot');
-                      const snapshotId = await createSnapshot(user.id);
-                      
-                      toast.success('✅ 快照已生成', {
-                        id: toastId,
-                        description: '新設備同步速度將大幅提升',
-                      });
-                    } catch (error: any) {
-                      console.error('生成快照失敗:', error);
-                      toast.error('生成失敗', {
-                        id: toastId,
-                        description: error.message || '請稍後再試',
-                      });
-                    }
-                  }}
-                  disabled={!user}
-                  className="w-full px-4 py-3 rounded-2xl bg-gradient-to-br from-[#7B9FA6] to-[#6A8E95] text-white hover:opacity-90 transition-opacity font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {user ? '生成快照' : '請先登入 Supabase'}
-                </button>
               </div>
 
               {/* 分隔線 */}

@@ -1,7 +1,7 @@
 ﻿# Markit 資料存取收斂計畫
 
 更新日期：2026-06-12
-狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已降級為只偵測不自動修復；C2.18B Projection rebuild 已加入本機事件完整性防護；C2.18C owner revenue gap repair 已從 snapshot sync 移除，僅允許 /recovery 手動 dry-run 後執行；C2.18D snapshot sync 已補回安全明細事件 hydration，僅保存缺失 events、不 replay、不改 projection；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理
+狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已降級為只偵測不自動修復；C2.18B Projection rebuild 已加入本機事件完整性防護；C2.18C owner revenue gap repair 已從 snapshot sync 移除，僅允許 /recovery 手動 dry-run 後執行；C2.18D snapshot hydration 曾嘗試補齊明細 events，但已由 C2.18E 取代；C2.18E snapshot sync / auto-create / manual create 已暫停，Owner/Staff 均回到事件同步路徑；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理
 目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂，讓 UI、同步、修復工具都透過一致的資料讀取與投影規則運作。
 
 ## 一、問題摘要
@@ -12,7 +12,7 @@
 
 - 市集每日收入卡片讀 `dailyStats`，但點日期後的成交記錄讀 `deal_closed events`。
 - `deal_deleted` 是 tombstone，但有些 UI 讀 active events，有些 UI 讀 projection cache。
-- Owner sync 和 Staff sync 來源不同，Owner 讀 `events` / snapshots，Staff 讀 `staff_accessible_*` views。
+- Owner sync 和 Staff sync 來源不同；目前 Owner 不再讀 snapshots，Owner 讀 `events`，Staff 讀 `staff_accessible_*` views。
 - Staff sync 會 sanitize，再 replay handler，若 event 已存在但 projection 沒正確更新，後續 sync 會 skip existing event，不會重跑 handler。
 - 本機修復工具只修 local projection，若 sync 再次 replay 或 cloud snapshot 有舊 projection，問題可能復發。
 - `marketId` / `market_id`、`eventId` / `event_id`、`totalAmount` / `total_amount` 已逐步 canonicalize，但仍需要統一入口避免新舊格式再次分裂。
@@ -20,7 +20,7 @@
 核心方向：
 
 ```text
-Cloud events / snapshots / staff views
+Cloud events / staff views
         ↓
 sync import
         ↓
@@ -60,7 +60,8 @@ UI 不應直接自行判斷資料真相；它應該讀取穩定的 view model。
 | C2.18 | Sync 後 Reconciliation | sync 完成後檢查 touched markets，但不在 sync 中自動重建 projection | sync reconciliation hook | 中高 | 已降級為 observation-only |
 | C2.18B | Projection Rebuild 完整性防護 | 只有明顯 2x/3x 重複累加時才允許本機 events 重建 projection；疑似 partial events 時跳過 | projection service + repair tests | 中高 | 已完成 |
 | C2.18C | Owner Revenue Gap Repair 手動化 | 移除 snapshot sync 中的自動 revenue repair，避免登入/同步時以不完整 events 覆寫 projection | useSync snapshot path | 高 | 已完成 |
-| C2.18D | Snapshot 明細事件 Hydration | snapshot 只含 projection、不含 events；同步後安全補齊缺失成交明細 events，但不 replay、不改統計 | owner detail hydration | 中高 | 已完成 |
+| C2.18D | Snapshot 明細事件 Hydration | 曾嘗試在 snapshot 後補齊缺失成交明細 events，但仍保留 snapshot projection-only 風險 | owner detail hydration | 中高 | 已由 C2.18E 取代 |
+| C2.18E | Snapshot 功能暫停 | 停用 snapshot load、auto-create、beforeunload create 與設定頁手動 create；底層 snapshot module 暫留供未來重新設計 | useSync + settings | 中 | 已完成 |
 | C2.19 | UI View Model 收斂 | 市集詳情、每日成交、分析頁改讀 view model | `market-detail-view-model.ts` 等 | 中 | 市集詳情、每日收入、每日記錄、分析頁 active events 已接入 |
 | C2.20 | Staff Data Flow 加固 | 確保 Staff tombstone / sanitized events 可正確 replay | tests + service guard | 中高 | sanitizer 欄位保護已測，staff view SQL 已整理待線上驗證 |
 | C2.21 | 舊資料雲端一致性審查 | 確認 cloud events / snapshots / projection 是否仍有污染 | SQL 診斷報告 | 中 | SQL 已整理，待線上執行 |
@@ -230,6 +231,8 @@ components/common/*ProjectionRepairPanel.tsx
 2026-06-12 追加 C2.18C：`repairOwnerRevenueGaps()` 已從 snapshot sync path 移除。此工具只能由 `/recovery` 以 dry-run / confirm 方式手動執行。原因是 snapshot path 可能先載入正確 projection，但本機 events 還不是完整歷史；若在此時自動 replay 或 reset projection，會讓舊市集收入被 partial local events 覆寫。
 
 2026-06-12 追加 C2.18D：snapshot sync 重新加入「安全明細事件 hydration」。這不是 repair：只有在本機 market / dailyStats projection 已經等於雲端 totals、但本機缺少部分 `deal_closed` 明細 events 時，才把缺失 events 存進 IndexedDB。此流程不執行 event handler、不重建 projection、不修改雲端，目的只是讓每日收入明細能點開看到成交記錄。
+
+2026-06-12 追加 C2.18E：snapshot 功能已先暫停。原因是目前 snapshot 主要保存 projection tables，缺少完整 event history，容易造成「畫面總額正確但明細 events 不完整」或「載入 projection 後再 replay partial events」的資料分裂。正式流程已停用 snapshot load、auto-create、beforeunload create 與設定頁手動 create；`lib/db/snapshot.ts` 暫時保留，未來若重新設計，必須以完整 events 或可驗證 hydration 為前提。
 
 建議做法：
 

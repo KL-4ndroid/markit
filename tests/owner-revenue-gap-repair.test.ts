@@ -1014,7 +1014,7 @@ runTest('hydrates missing detail events without replaying existing projections',
   }
 });
 
-runTest('useSync does not auto-run owner revenue repair during snapshot sync', async () => {
+runTest('useSync does not auto-run snapshot repair or hydration paths', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const useSyncSrc = fs.readFileSync(
@@ -1023,7 +1023,11 @@ runTest('useSync does not auto-run owner revenue repair during snapshot sync', a
   );
 
   assert.doesNotMatch(useSyncSrc, /repairOwnerRevenueGaps\(\{\s*ownerId:\s*userId\s*\}\)/);
-  assert.match(useSyncSrc, /hydrateOwnerMissingDetailEvents\(\{\s*ownerId:\s*userId\s*\}\)/);
+  assert.doesNotMatch(useSyncSrc, /hydrateOwnerMissingDetailEvents/);
+  assert.doesNotMatch(useSyncSrc, /pullEventsWithSnapshot/);
+  assert.doesNotMatch(useSyncSrc, /autoCreateSnapshot/);
+  assert.doesNotMatch(useSyncSrc, /loadSnapshot/);
+  assert.doesNotMatch(useSyncSrc, /getLatestSnapshot/);
 });
 
 // ---------------------------------------------------------------------------

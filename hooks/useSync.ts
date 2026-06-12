@@ -16,14 +16,12 @@ import { recordEvent } from '@/lib/db/events';
 import { canonicalizeEvent } from '@/lib/db/data-canonicalization';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
-import { hydrateOwnerMissingDetailEvents } from '@/lib/sync/owner-revenue-gap-repair';
 import {
   collectProjectionMarketId,
   reconcileTouchedMarketProjections,
   type ProjectionReconciliationContext,
 } from '@/lib/sync/projection-reconciliation';
 import { getEventMarketId } from '@/lib/events/event-read-model';
-import { getLatestSnapshot, loadSnapshot, autoCreateSnapshot } from '@/lib/db/snapshot';
 import {
   marketAccessRowToLocal,
   marketRowToLocal,
@@ -94,7 +92,7 @@ async function reconcileSyncedProjectionMarkets(
   if (marketIds.size === 0) return;
 
   try {
-    // Sync may see only a partial local event set, especially after snapshot loads,
+    // Sync may see only a partial local event set after role-scoped pulls,
     // staff-view imports, or historical backfills. In that state an "inflated"
     // comparison can be a false positive and rebuilding would destroy valid
     // projection totals. Keep sync reconciliation observational until event
@@ -205,7 +203,7 @@ interface SyncState {
   pendingCount: number;
   error: string | null;
   uploadProgress?: { current: number; total: number; currentItem?: string };
-  downloadProgress?: { current: number; total: number; currentItem?: string; phase?: 'snapshot' | 'incremental' };
+  downloadProgress?: { current: number; total: number; currentItem?: string; phase?: 'incremental' };
 }
 
 /**
@@ -233,9 +231,7 @@ export function useSync(options: UseSyncOptions = {}) {
 
   const syncTimeoutRef = useRef<NodeJS.Timeout>();
   const intervalRef = useRef<NodeJS.Timeout>();
-  const snapshotCheckIntervalRef = useRef<NodeJS.Timeout>();
   const isSyncingRef = useRef(false);
-  const lastSnapshotCheckFailedRef = useRef(false);
   const syncFnRef = useRef<() => Promise<void>>();
   const throttledSyncFnRef = useRef<() => void>();
   /** ✅ 只允許 force_initial_sync 消耗一次的本地標記（不受 module-level 重置影響） */
@@ -261,7 +257,6 @@ export function useSync(options: UseSyncOptions = {}) {
 
     activeSyncIdentity = syncIdentity;
     forceSyncExecutedRef.current = false;
-    lastSnapshotCheckFailedRef.current = false;
     resetSyncRuntimeState();
   }, [syncIdentity]);
 
@@ -334,16 +329,17 @@ export function useSync(options: UseSyncOptions = {}) {
     }));
 
     try {
-      // 1. Push: 上傳本地未同步的事件
-      const uploadedCount = await pushEvents(user.id, (current, total, currentItem) => {
+      // 1. Push local pending events.
+      await pushEvents(user.id, (current, total, currentItem) => {
         updateGlobalState(prev => ({
           ...prev,
           uploadProgress: { current, total, currentItem },
         }));
       });
 
-      // 2. Pull: 下載雲端新事件（使用快照優化）
-      const usedSnapshot = await pullEventsWithSnapshot(user.id, (current, total, currentItem, phase) => {
+      // 2. Pull cloud events directly. Snapshot sync is disabled until it can be redesigned around
+      // complete event history rather than projection-only tables.
+      await pullAllEvents(user.id, (current, total, currentItem, phase) => {
         updateGlobalState(prev => ({
           ...prev,
           downloadProgress: { current, total, currentItem, phase },
@@ -366,28 +362,6 @@ export function useSync(options: UseSyncOptions = {}) {
         downloadProgress: undefined,
       }));
 
-      // 4. 混合快照生成策略：
-      // 策略 1（主要）：事件驅動 - 有上傳事件時立即檢查
-      // 策略 2（備用）：定期檢查 - 每小時兜底一次（在 useEffect 中設置）
-      // 策略 3（保險）：頁面關閉時強制檢查（在 beforeunload 中設置）
-      
-      if (usedSnapshot) {
-        lastSnapshotCheckFailedRef.current = false;
-      } else if (uploadedCount === 0 && !lastSnapshotCheckFailedRef.current) {
-        // 沒有上傳新事件，跳過快照生成
-      } else {
-        // 延遲 3 秒，確保 UI 已更新
-        setTimeout(() => {
-          autoCreateSnapshot(user.id)
-            .then(() => {
-              lastSnapshotCheckFailedRef.current = false;
-            })
-            .catch(err => {
-              console.error('後台生成快照失敗:', err);
-              lastSnapshotCheckFailedRef.current = true; // 標記失敗，下次重試
-            });
-        }, 3000);
-      }
     } catch (error: any) {
       console.error('❌ 同步失敗:', error);
       
@@ -500,6 +474,7 @@ export function useSync(options: UseSyncOptions = {}) {
     }
 
     // 策略 1: 定期檢查待同步事件（每 5 分鐘）
+    // Check local pending events periodically.
     intervalRef.current = setInterval(async () => {
       const pendingCount = await db.events
         .where('sync_status')
@@ -511,35 +486,10 @@ export function useSync(options: UseSyncOptions = {}) {
       }
     }, interval);
 
-    // 策略 2: 定期快照檢查（每小時兜底一次）
-    snapshotCheckIntervalRef.current = setInterval(() => {
-      autoCreateSnapshot(user.id)
-        .then(() => {
-          lastSnapshotCheckFailedRef.current = false;
-        })
-        .catch(err => {
-          console.error('定期快照檢查失敗:', err);
-          lastSnapshotCheckFailedRef.current = true;
-        });
-    }, 60 * 60 * 1000);
-
-    // 策略 3: 頁面關閉時強制檢查
-    const handleBeforeUnload = () => {
-      autoCreateSnapshot(user.id).catch(err => {
-        console.error('頁面關閉時快照檢查失敗:', err);
-      });
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      if (snapshotCheckIntervalRef.current) {
-        clearInterval(snapshotCheckIntervalRef.current);
-      }
-      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [enabled, isConfigured, user, interval, syncIdentity]);
 
@@ -824,100 +774,6 @@ async function pushEvents(
   return uploadedCount;
 }
 
-/**
- * Pull: 下載雲端新事件（使用快照優化）
- * 
- * 優化邏輯：
- * 1. ✅ 檢查是否為員工模式（員工模式不使用快照，直接從視圖拉取）
- * 2. 檢查本地是否為空（新設備）
- * 3. 如果是新設備，嘗試載入快照 + 增量事件
- * 4. 如果快照載入失敗，降級到全量同步
- * 5. 如果不是新設備，只下載增量事件
- * 
- * @returns 是否使用了快照同步（true = 使用快照，false = 全量同步）
- */
-async function pullEventsWithSnapshot(
-  userId: string,
-  onProgress: (current: number, total: number, currentItem?: string, phase?: 'snapshot' | 'incremental') => void,
-  effectiveStaffMode: boolean
-): Promise<boolean> {
-  try {
-    // ✅ 步驟 0: 檢查是否為員工模式
-    // 員工模式不使用快照，因為快照不包含權限信息
-    if (effectiveStaffMode) {
-      console.log('👥 員工模式：跳過快照，直接從視圖拉取');
-      await pullAllEvents(userId, onProgress, effectiveStaffMode);
-      return false; // ❌ 沒有使用快照
-    }
-    
-    // 步驟 1: 檢查本地是否為空（新設備）
-    const hasLocalData = await db.markets.count() > 0;
-
-    if (!hasLocalData) {
-      // 🚀 新設備：嘗試使用快照
-      try {
-        // 查詢最新快照
-        const snapshot = await getLatestSnapshot(userId);
-        
-        if (snapshot) {
-          // 步驟 2a: 載入快照
-          if (onProgress) {
-            onProgress(0, 1, '載入快照...', 'snapshot');
-          }
-          
-          await loadSnapshot(snapshot);
-          
-          if (onProgress) {
-            onProgress(1, 1, '快照載入完成', 'snapshot');
-          }
-          
-          console.log('✅ 快照載入完成');
-          
-          // 步驟 2b: 下載快照之後的增量事件
-          await pullIncrementalEvents(
-            userId, 
-            snapshot.snapshot_at,
-            (current, total, currentItem) => {
-              if (onProgress) {
-                onProgress(current, total, currentItem, 'incremental');
-              }
-            }
-          );
-
-          // Projection repair is intentionally manual-only. Snapshot sync can load
-          // projection tables before the complete local event history is available,
-          // so automatic repair here may overwrite correct legacy revenue with
-          // partial local event totals. Hydration below only persists missing detail
-          // events when existing local projections already match cloud totals; it
-          // does not replay handlers or modify markets/dailyStats.
-          try {
-            const hydrateResult = await hydrateOwnerMissingDetailEvents({ ownerId: userId });
-            if (hydrateResult.repaired.length > 0) {
-              console.log('[useSync] snapshot detail event hydration completed', hydrateResult);
-            }
-          } catch (hydrateError) {
-            console.warn('[useSync] snapshot detail event hydration skipped:', hydrateError);
-          }
-
-          return true; // ✅ 使用了快照
-        }
-      } catch (snapshotError) {
-        console.error('⚠️ 快照載入失敗，切換至全量同步:', snapshotError);
-      }
-    }
-    
-    // 降級：沒有快照或已有本地數據，使用原邏輯
-    await pullAllEvents(userId, onProgress, effectiveStaffMode);
-    return false; // ❌ 沒有使用快照
-    
-  } catch (error) {
-    console.error('❌ 快照同步失敗，切換至全量同步:', error);
-    // 最終降級方案
-    await pullAllEvents(userId, onProgress, effectiveStaffMode);
-    return false; // ❌ 沒有使用快照
-  }
-}
-
 // ==================== Owner event pull marketIds helper ====================
 
 /**
@@ -940,79 +796,6 @@ async function getOwnerAccessibleMarketIds(userId: string): Promise<string[]> {
   const ownedIds = (ownedMarkets || []).map(m => m.id).filter(Boolean);
 
   return Array.from(new Set([...memberIds, ...ownedIds]));
-}
-
-// ==================== 下載增量事件（快照之後的事件）====================
-
-/**
- * 下載增量事件（快照之後的事件）
- */
-async function pullIncrementalEvents(
-  userId: string,
-  snapshotAt: string,
-  onProgress?: (current: number, total: number, currentItem?: string) => void
-): Promise<void> {
-  const marketIds = await getOwnerAccessibleMarketIds(userId);
-
-  // ✅ 修復：查詢團隊成員的用戶 ID（包括老闆和員工）
-  let teamMemberIds: string[] = [userId]; // 至少包含自己
-  
-  if (marketIds.length > 0) {
-    // 查詢所有團隊成員
-    const { data: teamMembers } = await supabase
-      .from('market_members')
-      .select('user_id')
-      .in('market_id', marketIds);
-    
-    if (teamMembers && teamMembers.length > 0) {
-      // 去重
-      teamMemberIds = Array.from(new Set([userId, ...teamMembers.map(m => m.user_id)]));
-    }
-  }
-
-  // 查詢快照之後的新事件
-  let query = supabase
-    .from('events')
-    .select('*')
-    .gt('timestamp', snapshotAt)
-    .order('timestamp', { ascending: true });
-
-  // ✅ 過濾條件：市集事件 OR 團隊成員的全局事件（包括商品）
-  if (marketIds.length > 0) {
-    query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.in.(${teamMemberIds.join(',')}),market_id.is.null)`);
-  } else {
-    query = query.eq('actor_id', userId).is('market_id', null);
-  }
-
-  const { data: incrementalEvents, error: eventsError } = await query;
-
-  if (eventsError) throw eventsError;
-
-  const incrementalCount = incrementalEvents?.length || 0;
-
-  if (incrementalCount === 0) {
-    return;
-  }
-
-  const touchedMarketIds = new Set<string>();
-  for (const event of incrementalEvents || []) {
-    collectProjectionMarketId(touchedMarketIds, event);
-  }
-
-  // 重放增量事件
-  await replayEvents(incrementalEvents, onProgress);
-  await reconcileSyncedProjectionMarkets(touchedMarketIds, 'snapshot');
-
-  // 更新最後同步時間（使用 max(created_at)）
-  const validCreatedAt = (incrementalEvents || [])
-    .map(e => new Date(e.created_at).getTime())
-    .filter(ts => Number.isFinite(ts));
-
-  if (validCreatedAt.length > 0) {
-    await updateLastSyncTimestamp(Math.max(...validCreatedAt));
-  } else {
-    console.warn('[useSync] pullIncrementalEvents: no event has valid created_at, refusing to advance cursor');
-  }
 }
 
 /**
@@ -1089,7 +872,7 @@ async function replayEvents(
  */
 async function pullAllEvents(
   userId: string,
-  onProgress: (current: number, total: number, currentItem?: string, phase?: 'snapshot' | 'incremental') => void,
+  onProgress: (current: number, total: number, currentItem?: string, phase?: 'incremental') => void,
   effectiveStaffMode: boolean
 ): Promise<void> {
   // ✅ 檢查是否啟用員工模式
@@ -1367,16 +1150,6 @@ async function ensureMarketMember(userId: string, marketId: string): Promise<boo
 }
 
 /**
- * 檢查是否需要生成快照（帶時間維度）
- * 條件：1000 個事件 OR 7 天，先到先生成
- */
-async function shouldCreateSnapshotWithTime(userId: string): Promise<boolean> {
-  // 這個函數已經移到 snapshot.ts 中，這裡保留是為了向後兼容
-  const { shouldCreateSnapshot } = await import('@/lib/db/snapshot');
-  return shouldCreateSnapshot(userId);
-}
-
-/**
  * 確保用戶 profile 存在
  * 如果不存在則創建一個基本的 profile
  */
@@ -1488,7 +1261,7 @@ async function handlePermissionSyncError(error: any, userId: string): Promise<vo
  */
 async function pullEventsFromViews(
   userId: string,
-  onProgress?: (current: number, total: number, currentItem?: string, phase?: 'snapshot' | 'incremental') => void
+  onProgress?: (current: number, total: number, currentItem?: string, phase?: 'incremental') => void
 ): Promise<void> {
   console.log('📊 從員工視圖拉取數據（完整同步，不使用 lastSyncAt）...', {
     userId: userId.substring(0, 8),
