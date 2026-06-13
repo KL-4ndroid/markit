@@ -222,6 +222,10 @@ export async function getDealSummaryFromEvents(marketId: string): Promise<DealSu
   return buildDealSummaryFromActiveEvents(marketId, events);
 }
 
+/**
+ * @deprecated Internal use only. Does not apply tombstone filtering.
+ *   Use getActiveDealEventsForMarket() instead, which correctly excludes deleted deals.
+ */
 export async function getRawDealEventsForMarket(
   marketId: string
 ): Promise<Event<DealClosedPayload>[]> {
