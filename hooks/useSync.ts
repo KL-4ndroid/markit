@@ -1796,8 +1796,39 @@ interface ConflictResolution {
 }
 
 /**
+ * 脫敏衝突解決路徑上的寫入 payload。
+ *
+ * 衝突解決的三條路徑（'remote'、'merge'、'local'）都會用雲端資料觸及本地，
+ * 其中 'remote' 和 'merge' 必須在寫入前依 infoLevel 移除敏感欄位。
+ *
+ * 設計成純函數（無 Dexie/Supabase 副作用）方便測試：
+ * - 老闆（Level 3）→ 原樣返回
+ * - 員工（Level 0-2）→ 移除對應等級的敏感欄位
+ *
+ * @param tableName - 'markets' | 'products'
+ * @param data - 經 mapper 轉成 camelCase 的物件
+ * @param infoLevel - 角色資訊揭露層級
+ */
+function sanitizeWritePayload(
+  tableName: 'markets' | 'products',
+  data: Market | Product,
+  infoLevel: InfoLevel
+): Record<string, unknown> {
+  if (infoLevel >= 3) return data as unknown as Record<string, unknown>;
+  if (tableName === 'markets') {
+    return createPermissionGate({ infoLevel, entity: 'market' })
+      .sanitizeMarketProjection(data as unknown as Record<string, unknown>);
+  }
+  return sanitizeWithLevel(
+    data as unknown as Record<string, unknown>,
+    'product',
+    infoLevel
+  );
+}
+
+/**
  * 解決市集數據衝突
- * 
+ *
  * @param localData - 本地數據
  * @param remoteData - 雲端數據
  * @returns 衝突解決策略
@@ -1849,43 +1880,51 @@ async function resolveMarketConflict(
 
 /**
  * 執行市集數據合併
- * 
- * @param localData - 本地數據
- * @param remoteData - 雲端數據
- * @returns 合併後的數據
+ *
+ * 員工視角下，`normalizedRemote` 會先過 PermissionGate 脫敏再參與 Math.max，
+ * 避免「員工不該看到的 totalRevenue」污染合併結果的基準值。
+ *
+ * @param localData - 本地數據（呼叫方需保證已是員工視角的脫敏版本）
+ * @param remoteData - 雲端原始資料（snake_case）
+ * @param infoLevel - 角色資訊揭露層級（3=老闆, 0-2=員工）
  */
 async function mergeMarketData(
   localData: any,
-  remoteData: any
+  remoteData: any,
+  infoLevel: InfoLevel = 3
 ): Promise<any> {
   console.log(`🔀 合併市集數據: ${localData.id?.substring(0, 8)}...`);
-  const normalizedRemote = marketRowToLocal(remoteData as Record<string, unknown>);
-  
+  const sanitizedRemote = sanitizeWritePayload(
+    'markets',
+    marketRowToLocal(remoteData as Record<string, unknown>),
+    infoLevel
+  );
+  // 合併結果已是脫敏版本（員工視角），不需再過一次 gate
   return {
-    ...normalizedRemote, // 基礎數據使用雲端
-    
+    ...sanitizedRemote, // 基礎數據使用雲端（脫敏後）
+
     // 統計欄位使用較大值（避免數據丟失）
     totalRevenue: Math.max(
-      localData.totalRevenue || 0,
-      normalizedRemote.totalRevenue || 0
+      Number(localData.totalRevenue) || 0,
+      Number(sanitizedRemote.totalRevenue) || 0
     ),
     totalProfit: Math.max(
-      localData.totalProfit || 0,
-      normalizedRemote.totalProfit || 0
+      Number(localData.totalProfit) || 0,
+      Number(sanitizedRemote.totalProfit) || 0
     ),
     totalDeals: Math.max(
-      localData.totalDeals || 0,
-      normalizedRemote.totalDeals || 0
+      Number(localData.totalDeals) || 0,
+      Number(sanitizedRemote.totalDeals) || 0
     ),
     totalInteractions: Math.max(
-      localData.totalInteractions || 0,
-      normalizedRemote.totalInteractions || 0
+      Number(localData.totalInteractions) || 0,
+      Number(sanitizedRemote.totalInteractions) || 0
     ),
-    
+
     // 時間戳使用較新的
     updatedAt: Math.max(
-      localData.updatedAt || 0,
-      normalizedRemote.updatedAt || 0
+      Number(localData.updatedAt) || 0,
+      Number(sanitizedRemote.updatedAt) || 0
     ),
   };
 }
@@ -1951,99 +1990,123 @@ async function resolveProductConflict(
  */
 async function mergeProductData(
   localData: any,
-  remoteData: any
+  remoteData: any,
+  infoLevel: InfoLevel = 3
 ): Promise<any> {
   console.log(`🔀 合併商品數據: ${localData.id?.substring(0, 8)}...`);
-  const normalizedRemote = productRowToLocal(remoteData as Record<string, unknown>);
-  
+  const sanitizedRemote = sanitizeWritePayload(
+    'products',
+    productRowToLocal(remoteData as Record<string, unknown>),
+    infoLevel
+  );
+
   // 對於商品，庫存使用較小值（保守策略，避免超賣）
   // 銷售統計使用較大值（避免數據丟失）
+  //
+  // 員工視角下 stock 是敏感欄位，脫敏後為 undefined；
+  // 若用 Math.min 合併會把 undefined 算成 0，破壞脫敏語意。
+  // 改用「保留脫敏後的雲端值」，對應的本地殘留值則被忽略。
   return {
-    ...normalizedRemote, // 基礎數據使用雲端
-    
-    // 庫存使用較小值（保守策略）
-    stock: Math.min(
-      localData.stock || 0,
-      normalizedRemote.stock || 0
-    ),
-    
+    ...sanitizedRemote, // 基礎數據使用雲端（脫敏後）
+
+    // 庫存使用較小值（保守策略）—— 僅老闆視角
+    ...(infoLevel >= 3
+      ? {
+          stock: Math.min(
+            Number(localData.stock) || 0,
+            Number(sanitizedRemote.stock) || 0
+          ),
+        }
+      : { stock: sanitizedRemote.stock }),
+
     // 銷售統計使用較大值
     totalSold: Math.max(
-      localData.totalSold || 0,
-      normalizedRemote.totalSold || 0
+      Number(localData.totalSold) || 0,
+      Number(sanitizedRemote.totalSold) || 0
     ),
-    
+
     // 時間戳使用較新的
     updatedAt: Math.max(
-      localData.updatedAt || 0,
-      normalizedRemote.updatedAt || 0
+      Number(localData.updatedAt) || 0,
+      Number(sanitizedRemote.updatedAt) || 0
     ),
   };
 }
 
 /**
  * 檢測並解決衝突（通用函數）
- * 
+ *
  * 使用場景：
  * 1. Pull 時發現本地和雲端數據不一致
  * 2. 多設備同時編輯同一筆數據
- * 
+ *
+ * 員工視角下，'remote' 和 'merge' 策略的寫入 payload 會在寫入前過
+ * PermissionGate 脫敏，確保 IndexedDB 不會殘留員工不該看到的
+ * totalRevenue / totalCost / profitMargin 等敏感欄位。
+ *
  * @param tableName - 表名
  * @param localData - 本地數據
  * @param remoteData - 雲端數據
+ * @param infoLevel - 角色資訊揭露層級（3=老闆, 0-2=員工；預設 3 向後相容）
  * @returns 是否發生衝突並已解決
  */
 export async function detectAndResolveConflict(
   tableName: 'markets' | 'products',
   localData: any,
-  remoteData: any
+  remoteData: any,
+  infoLevel: InfoLevel = 3
 ): Promise<boolean> {
   try {
     let resolution: ConflictResolution;
-    
+
     // 根據表名選擇衝突解決策略
     if (tableName === 'markets') {
       resolution = await resolveMarketConflict(localData, remoteData);
     } else {
       resolution = await resolveProductConflict(localData, remoteData);
     }
-    
+
     console.log(`🔍 衝突檢測: ${tableName} (${localData.id?.substring(0, 8)}...) - ${resolution.strategy} (${resolution.reason})`);
-    
+
     // 執行策略
     switch (resolution.strategy) {
       case 'local':
         // 保留本地數據，不做任何操作
         return false;
-      
-      case 'remote':
-        // 使用雲端數據，更新本地
+
+      case 'remote': {
+        // 使用雲端數據（脫敏後）更新本地
+        const remote = sanitizeWritePayload(
+          tableName,
+          tableName === 'markets'
+            ? marketRowToLocal(remoteData as Record<string, unknown>)
+            : productRowToLocal(remoteData as Record<string, unknown>),
+          infoLevel
+        );
         if (tableName === 'markets') {
-          await db.markets.update(localData.id, {
-            ...marketRowToLocal(remoteData as Record<string, unknown>),
-          });
+          await db.markets.update(localData.id, remote as unknown as Partial<Market>);
         } else {
-          await db.products.update(localData.id, {
-            ...productRowToLocal(remoteData as Record<string, unknown>),
-          });
+          await db.products.update(localData.id, remote as unknown as Partial<Product>);
         }
         return true;
-      
-      case 'merge':
-        // 合併數據
+      }
+
+      case 'merge': {
+        // 合併數據（merge 函數內部已用 infoLevel 脫敏雲端基準值）
         let mergedData: any;
-        
+
         if (tableName === 'markets') {
-          mergedData = await mergeMarketData(localData, remoteData);
-          await db.markets.update(localData.id, mergedData);
+          mergedData = await mergeMarketData(localData, remoteData, infoLevel);
+          await db.markets.update(localData.id, mergedData as unknown as Partial<Market>);
         } else {
-          mergedData = await mergeProductData(localData, remoteData);
-          await db.products.update(localData.id, mergedData);
+          mergedData = await mergeProductData(localData, remoteData, infoLevel);
+          await db.products.update(localData.id, mergedData as unknown as Partial<Product>);
         }
-        
+
         console.log(`✅ 衝突已合併: ${tableName} (${localData.id?.substring(0, 8)}...)`);
         return true;
-      
+      }
+
       default:
         return false;
     }
