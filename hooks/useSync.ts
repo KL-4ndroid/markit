@@ -871,6 +871,84 @@ async function replayEvents(
  * Pull: 下載雲端新事件（全量同步 - 降級方案）
  * ✅ 支援員工模式：從視圖拉取數據
  */
+
+/**
+ * Hydrate missing markets from Cloud before replaying events.
+ *
+ * During Owner pull, events may reference markets not yet written to local IndexedDB
+ * (e.g., first login, cross-device login, cache reset). Replaying handlers for such
+ * events would fail because db.markets.get(marketId) returns undefined.
+ *
+ * This function batch-fetches missing markets from Supabase and writes them to local cache
+ * before the event replay loop begins.
+ *
+ * @param marketIds - Set of market IDs referenced by incoming events
+ * @returns hydrated: markets successfully written; missing: markets not found in Cloud
+ */
+async function batchHydrateMarkets(
+  marketIds: Set<string>
+): Promise<{ hydrated: Set<string>; missing: Set<string>; failed: Set<string> }> {
+  const hydrated = new Set<string>();
+  const missing = new Set<string>();
+  const failed = new Set<string>();
+
+  const toFetch = [...marketIds];
+  if (toFetch.length === 0) {
+    return { hydrated, missing, failed };
+  }
+
+  // Filter out markets already present in local cache
+  const notYetLocal: string[] = [];
+  for (const marketId of toFetch) {
+    const exists = await db.markets.get(marketId);
+    if (!exists) {
+      notYetLocal.push(marketId);
+    } else {
+      hydrated.add(marketId);
+    }
+  }
+
+  if (notYetLocal.length === 0) {
+    return { hydrated, missing, failed };
+  }
+
+  // Batch fetch from Cloud
+  const { data: markets, error } = await supabase
+    .from('markets')
+    .select('*')
+    .in('id', notYetLocal);
+
+  if (error) {
+    console.error('[hydration] Failed to fetch markets from Cloud:', error);
+    for (const id of notYetLocal) failed.add(id);
+    return { hydrated, missing, failed };
+  }
+
+  const foundIds = new Set<string>();
+  if (markets) {
+    for (const market of markets) {
+      foundIds.add(market.id);
+      const localMarket = marketRowToLocal(market);
+      await db.markets.put(localMarket);
+      hydrated.add(market.id);
+    }
+  }
+
+  for (const id of notYetLocal) {
+    if (!foundIds.has(id)) missing.add(id);
+  }
+
+  if (missing.size > 0) {
+    console.warn(`[hydration] Markets not found in Cloud (deleted or unauthorized): ${[...missing].join(', ')}`);
+  }
+
+  if (hydrated.size > 0) {
+    console.log(`[hydration] Hydrated ${hydrated.size} markets from Cloud`);
+  }
+
+  return { hydrated, missing, failed };
+}
+
 async function pullAllEvents(
   userId: string,
   onProgress: (current: number, total: number, currentItem?: string, phase?: 'incremental') => void,
@@ -945,6 +1023,12 @@ async function pullAllEvents(
     collectProjectionMarketId(touchedMarketIds, event);
   }
 
+  // ✅ Hydrate markets from Cloud before replaying events.
+  // Without this, handler replay fails if the market has never been written to local IndexedDB
+  // (e.g., first login, cross-device, or cache reset).
+  const { hydrated: hydratedMarketIds, missing: missingMarketIds } = await batchHydrateMarkets(touchedMarketIds);
+  void hydratedMarketIds; // logged inside batchHydrateMarkets
+
   // ✅ 先批次檢查哪些事件已存在，避免重複日誌
   const existingIds = new Set<string>();
   const eventIds = newEvents.map(e => e.id);
@@ -953,6 +1037,7 @@ async function pullAllEvents(
 
   // 過濾出真正需要處理的新事件
   const eventsToProcess: any[] = [];
+  let skippedByMissingMarket = 0;
   let semanticDuplicateCount = 0;
   for (const event of newEvents) {
     if (existingIds.has(event.id)) continue;
@@ -962,7 +1047,19 @@ async function pullAllEvents(
       continue;
     }
 
+    // Skip events whose market is missing from Cloud (deleted or unauthorized)
+    const eventMarketId = event.market_id ?? event.payload?.market_id ?? event.payload?.marketId;
+    if (eventMarketId && missingMarketIds.has(eventMarketId)) {
+      skippedByMissingMarket++;
+      console.warn(`[hydration] Skipping event ${event.type} (${event.id?.slice(0, 8)}) because market ${eventMarketId} not found in Cloud`);
+      continue;
+    }
+
     eventsToProcess.push(event);
+  }
+
+  if (skippedByMissingMarket > 0) {
+    console.warn(`[hydration] Skipped ${skippedByMissingMarket} events because their market is missing from Cloud`);
   }
   
   if (eventsToProcess.length === 0) {
