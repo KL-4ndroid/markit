@@ -67,12 +67,15 @@ export default function MarketsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
-  const { userRole, isStaff } = useUserRole(); // ✅ 員工權限檢查
+  const { userRole, isStaff, isLoading: isRoleLoading } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 獲取當前用戶
 
   // 初始化資料庫（使用安全初始化）
   useEffect(() => {
-    initializeDatabaseSafely()
+    if (isRoleLoading) return;
+
+    setDbStatus(null);
+    initializeDatabaseSafely({ profile: isStaff ? 'staff_scoped' : 'owner_full' })
       .then((result) => setDbStatus(result))
       .catch((error) => {
         console.error('資料庫初始化失敗：', error);
@@ -82,7 +85,7 @@ export default function MarketsPage() {
           recoverable: true,
         });
       });
-  }, []);
+  }, [isRoleLoading, isStaff]);
 
   // ✅ 根據用戶身份過濾市集（權限控制）
   const currentOwnerId = isStaff ? userRole.ownerId : user?.id;

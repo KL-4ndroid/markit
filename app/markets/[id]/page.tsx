@@ -78,7 +78,7 @@ export default function MarketDetailPage({ params }: PageProps) {
   const routeParams = useParams<{ id?: string | string[] }>();
   const marketId = normalizeMarketRouteId(routeParams?.id ?? params?.id) ?? ''; // UUID 字符串，不需要 parseInt
   const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
-  const { isStaff, canViewSensitiveData } = useUserRole(); // ✅ 員工權限檢查
+  const { isStaff, canViewSensitiveData, isLoading: isRoleLoading } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 檢查是否已登入
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -279,7 +279,10 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // 初始化資料庫（使用安全初始化）
   useEffect(() => {
-    initializeDatabaseSafely()
+    if (isRoleLoading) return;
+
+    setDbStatus(null);
+    initializeDatabaseSafely({ profile: isStaff ? 'staff_scoped' : 'owner_full' })
       .then((result) => setDbStatus(result))
       .catch((error) => {
         console.error('資料庫初始化失敗：', error);
@@ -289,7 +292,7 @@ export default function MarketDetailPage({ params }: PageProps) {
           recoverable: true,
         });
       });
-  }, []);
+  }, [isRoleLoading, isStaff]);
 
   // 確保只在客戶端渲染
   useEffect(() => {

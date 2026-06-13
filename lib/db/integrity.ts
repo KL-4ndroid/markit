@@ -16,6 +16,12 @@ export interface IntegrityResult {
   warnings: string[];
 }
 
+export type IntegrityProfile = 'owner_full' | 'staff_scoped';
+
+export interface IntegrityCheckOptions {
+  profile?: IntegrityProfile;
+}
+
 const SUPPORTED_BACKUP_VERSIONS = new Set([1]);
 const EVENT_TYPES: ReadonlySet<string> = new Set<EventType>([
   'market_created',
@@ -427,7 +433,49 @@ export function parseBackupData(jsonData: string): BackupData {
   return data as BackupData;
 }
 
-export function checkBackupIntegrity(data: BackupData): IntegrityResult {
+function isStaffScopedReferenceError(error: string): boolean {
+  return (
+    /^events\[\d+\].*market_id/.test(error) ||
+    /^events\[\d+\].*references missing market/.test(error) ||
+    /^events\[\d+\].*\.items\[\d+\] references missing product/.test(error) ||
+    /^events\[\d+\].*cannot replay because market is unavailable/.test(error) ||
+    /^events\[\d+\].*cannot replay because product is unavailable/.test(error) ||
+    /^events\[\d+\].*\.items\[\d+\] cannot replay because product is unavailable/.test(error) ||
+    /^products\[\d+\].*market_id/.test(error) ||
+    /^dailyStats\[\d+\].*marketId/.test(error)
+  );
+}
+
+export function applyIntegrityProfile(
+  result: IntegrityResult,
+  profile: IntegrityProfile = 'owner_full'
+): IntegrityResult {
+  if (profile !== 'staff_scoped') {
+    return result;
+  }
+
+  const errors: string[] = [];
+  const warnings = [...result.warnings];
+
+  for (const error of result.errors) {
+    if (isStaffScopedReferenceError(error)) {
+      warnings.push(`[staff_scoped] ${error}`);
+    } else {
+      errors.push(error);
+    }
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
+export function checkBackupIntegrity(
+  data: BackupData,
+  options: IntegrityCheckOptions = {}
+): IntegrityResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -539,9 +587,9 @@ export function checkBackupIntegrity(data: BackupData): IntegrityResult {
     if (!isNumber(setting.updatedAt)) errors.push(`settings[${index}] updatedAt 無效`);
   });
 
-  return {
+  return applyIntegrityProfile({
     ok: errors.length === 0,
     errors,
     warnings,
-  };
+  }, options.profile);
 }

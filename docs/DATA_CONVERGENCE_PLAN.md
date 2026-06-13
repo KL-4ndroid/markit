@@ -1,7 +1,7 @@
 ﻿# Markit 資料存取收斂計畫
 
 更新日期：2026-06-12
-狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已降級為只偵測不自動修復；C2.18B Projection rebuild 已加入本機事件完整性防護；C2.18C owner revenue gap repair 已從 snapshot sync 移除，僅允許 /recovery 手動 dry-run 後執行；C2.18D snapshot hydration 曾嘗試補齊明細 events，但已由 C2.18E 取代；C2.18E snapshot sync / auto-create / manual create 已暫停，Owner/Staff 均回到事件同步路徑；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理；C2.23 Owner / Staff revenue hardening 已建立子計畫並開始執行
+狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已降級為只偵測不自動修復；C2.18B Projection rebuild 已加入本機事件完整性防護；C2.18C owner revenue gap repair 已從 snapshot sync 移除，僅允許 /recovery 手動 dry-run 後執行；C2.18D snapshot hydration 曾嘗試補齊明細 events，但已由 C2.18E 取代；C2.18E snapshot sync / auto-create / manual create 已暫停，Owner/Staff 均回到事件同步路徑；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理；C2.23 Owner / Staff revenue hardening 已建立子計畫並開始執行；C2.30A Integrity Profile 基礎層已開始接入
 目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂，讓 UI、同步、修復工具都透過一致的資料讀取與投影規則運作。
 
 ## 一、問題摘要
@@ -67,6 +67,7 @@ UI 不應直接自行判斷資料真相；它應該讀取穩定的 view model。
 | C2.21 | 舊資料雲端一致性審查 | 確認 cloud events / snapshots / projection 是否仍有污染 | SQL 診斷報告 | 中 | SQL 已整理，待線上執行 |
 | C2.22 | 完整文件與操作手冊 | 建立未來維護規範 | docs | 低 | P2 |
 | C2.23 | Owner / Staff 收入權限加固 | 將外部加固需求併入主收斂計畫，先處理 deal mode flags、Staff 刪除入口、成交筆數與敏感欄位 | `OWNER_STAFF_REVENUE_HARDENING_PLAN.md` | 中 | 進行中 |
+| C2.30A | Integrity Profile 基礎層 | 將 owner full data 與 staff scoped data 的完整性檢查分流；staff 局部資料的 out-of-scope references 不再當作 fatal | `integrity.ts`, high-risk pages | 中 | 進行中 |
 
 ## 四、詳細執行順序
 
@@ -364,6 +365,37 @@ docs/CLOUD_DATA_CONSISTENCY_AUDIT.md
 ```text
 docs/CLOUD_DATA_CONSISTENCY_AUDIT.md
 ```
+
+### C2.30A：Integrity Profile 基礎層
+
+目的：避免把「Owner 完整備份」與「Staff 授權範圍資料」套用同一套 fatal integrity 規則。
+
+背景：
+
+- `events[x] 指向不存在的 market_id` 對 Owner full backup 是嚴重錯誤。
+- 但對 Staff scoped dataset，這可能代表該事件的 market/product 不在目前授權範圍或尚未同步完成。
+- `deal_deleted references event not in snapshot` 已經是 warning，不能讓這類 tombstone warning 阻斷員工進入頁面。
+
+Profile 規則：
+
+| Profile | 用途 | out-of-scope market/product reference |
+|---|---|---|
+| `owner_full` | 匯入、完整備份、Owner 完整資料庫 | error |
+| `staff_scoped` | Staff 本機 DB、Staff sync 後頁面初始化 | warning |
+
+已完成項目：
+
+- `checkBackupIntegrity(data, { profile })` 支援 `owner_full` / `staff_scoped`。
+- 預設 profile 仍是 `owner_full`，避免降低匯入與完整備份安全性。
+- `initializeDatabaseSafely({ profile })` 與 `checkCurrentDatabaseIntegrity({ profile })` 支援 profile。
+- 市集列表、商品列表、市集詳情已等角色判斷完成後，以 Staff 身分使用 `staff_scoped` 初始化。
+- 新增 `tests/integrity-profile.test.ts`。
+
+下一步：
+
+- 評估商品詳情是否也需要 role-aware initialization。
+- Recovery 頁可增加 profile 顯示，讓使用者知道哪些是 fatal errors、哪些是 scoped warnings。
+- Staff sync preflight 應在寫入前檢查 orphan events，避免 handler replay 直接失敗。
 
 ### C2.22：文件與維護規範
 

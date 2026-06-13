@@ -18,6 +18,7 @@ import {
   checkBackupIntegrity,
   parseBackupData,
   validateBackupReplayReadiness,
+  type IntegrityCheckOptions,
   type BackupData,
   type IntegrityResult,
 } from './integrity';
@@ -339,7 +340,9 @@ export async function exportData(): Promise<string> {
   }
 }
 
-export async function checkCurrentDatabaseIntegrity(): Promise<IntegrityResult> {
+export async function checkCurrentDatabaseIntegrity(
+  options: IntegrityCheckOptions = {}
+): Promise<IntegrityResult> {
   return checkBackupIntegrity({
     version: 1,
     exportedAt: Date.now(),
@@ -348,10 +351,12 @@ export async function checkCurrentDatabaseIntegrity(): Promise<IntegrityResult> 
     products: await db.products.toArray(),
     dailyStats: await db.dailyStats.toArray(),
     settings: await db.settings.toArray(),
-  });
+  }, options);
 }
 
-export async function initializeDatabaseSafely(): Promise<DatabaseInitResult> {
+export async function initializeDatabaseSafely(
+  options: IntegrityCheckOptions = {}
+): Promise<DatabaseInitResult> {
   try {
     await initializeDatabase();
 
@@ -359,7 +364,7 @@ export async function initializeDatabaseSafely(): Promise<DatabaseInitResult> {
       throw new Error('Database did not open after initialization');
     }
 
-    const integrity = await checkCurrentDatabaseIntegrity();
+    const integrity = await checkCurrentDatabaseIntegrity(options);
     if (!integrity.ok) {
       return {
         ok: false,

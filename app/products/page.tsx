@@ -26,12 +26,15 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
-  const { isStaff, userRole } = useUserRole(); // ✅ 員工權限檢查
+  const { isStaff, userRole, isLoading: isRoleLoading } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 獲取當前用戶
 
   // 初始化資料庫（使用安全初始化）
   useEffect(() => {
-    initializeDatabaseSafely()
+    if (isRoleLoading) return;
+
+    setDbStatus(null);
+    initializeDatabaseSafely({ profile: isStaff ? 'staff_scoped' : 'owner_full' })
       .then((result) => setDbStatus(result))
       .catch((error) => {
         console.error('資料庫初始化失敗：', error);
@@ -41,7 +44,7 @@ export default function ProductsPage() {
           recoverable: true,
         });
       });
-  }, []);
+  }, [isRoleLoading, isStaff]);
 
   // ✅ 根據身份查詢商品：員工看老闆的商品，老闆看自己的商品
   const effectiveOwnerId = isStaff ? userRole.ownerId : user?.id;
