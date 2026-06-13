@@ -89,7 +89,7 @@ Commit 前必須回報：
 
 ## 三、目前建議任務順序
 
-> 重要：C2.14～C2.30B 已全部完成；C2.13A Bug Fixes 已完成並推送（commit 86569d8）；C3.1A Cloud-first Cache Boundary Audit 已完成（`docs/CLOUD_FIRST_CACHE_AUDIT.md`）；**C3.2A Login/Role Switch Cache Reset 設計已完成（`docs/LOGIN_CACHE_RESET_DESIGN.md`）**。後續請優先執行 C3.2A 實作或 C3.3A。
+> 重要：C2.14～C2.30B 已全部完成；C2.13A Bug Fixes 已完成並推送（commit 86569d8）；C3.1A Cloud-first Cache Boundary Audit 已完成（`docs/CLOUD_FIRST_CACHE_AUDIT.md`）；C3.2A Login/Role Switch Cache Reset 設計已完成（`docs/LOGIN_CACHE_RESET_DESIGN.md`）；**C3.3A Owner Missing Market Hydration 設計已完成（`docs/OWNER_MARKET_HYDRATION_DESIGN.md`）**。後續請優先執行 C3.2A 實作、C3.3A 實作或 C2.14A。
 
 ### Task C3.1A：Cloud-first Cache Boundary 盤點
 
@@ -181,31 +181,25 @@ docs: audit cloud-first cache boundaries
 ### Task C3.3A：Owner Missing Market Hydration 設計
 
 任務類型：先分析，再等確認後實作
+允許修改：初次任務只允許文件
+禁止修改：程式碼、測試、Supabase、RLS、UI
+**狀態：✅ 設計已完成，見 `docs/OWNER_MARKET_HYDRATION_DESIGN.md`**
 
 目標：
 
-解決 owner_full integrity 的 `events 指向不存在的 market_id`，但不降低 owner_full 嚴格性。
+設計「Owner pull 時，確保事件 replay 前 market 已寫入本地 cache」的安全方案。
 
-最小安全設計：
+**設計產出：**
 
-```text
-incoming/local event market ids
-  ↓
-missing in db.markets
-  ↓
-fetch from Supabase markets
-  ↓
-if authorized and found: put into local cache
-  ↓
-if not found: keep fatal integrity error
-```
+- `docs/OWNER_MARKET_HYDRATION_DESIGN.md`（已產出）
+- 核心：方案 B — `batchHydrateMarkets(marketIds)` 在 replay loop 前批次補寫 market
+- 缺口分析：`pullAllEvents` 的 handler replay 依賴 market 存在於 `db.markets`
 
-禁止：
+完成條件：
 
-- 不刪 events。
-- 不修改雲端。
-- 不把 owner_full error 改 warning。
-- 不自動重建收入。
+- 產出 C3.3 實作計畫。
+- 列出 commit 切法與測試清單。
+- 不修改程式碼，等使用者確認。
 
 ### Task C2.14A：資料存取盤點
 
@@ -555,7 +549,7 @@ git status -sb：
 ## 六、可直接貼給 Cursor 的下一個 Prompt（C3.2A 實作）
 
 ```text
-請執行 C3.2A：Login / Role Switch Cache Reset 實作。
+請執行 C3.3A：Owner Missing Market Hydration 實作。
 
 重要：
 - 只修改 docs/LOGIN_CACHE_RESET_DESIGN.md 中指定的檔案
@@ -569,19 +563,19 @@ git status -sb：
 - 不要把 owner_full integrity missing market 降級成 warning
 
 請閱讀：
-- docs/LOGIN_CACHE_RESET_DESIGN.md
-- lib/db/clear-user-data.ts
-- lib/supabase/auth-context.tsx
+- docs/OWNER_MARKET_HYDRATION_DESIGN.md
+- hooks/useSync.ts
+- lib/data-mappers.ts
 
 實作：
-1. 在 lib/db/clear-user-data.ts 新增 resetAuthenticatedCache(scope, userId?)
-2. 在 lib/supabase/auth-context.tsx 的 3 個清除接入點呼叫新函式
-3. 對 clearOtherUsersData() 加上 @deprecated 標記
+1. 在 hooks/useSync.ts 新增 batchHydrateMarkets(marketIds) 函式
+2. 在 pullAllEvents 的 replay loop 前呼叫 batchHydrateMarkets
+3. 對 hydration-missing 的事件記錄 warning，但繼續處理其他事件
 4. 執行 npm test、npx tsc --noEmit、npm run lint、npm run build
 5. 執行 git diff --check
 
 完成後報告：
 - 修改的檔案
-- 行為變更（登出和身份切換的清除範圍變化）
+- 行為變更（首次同步或跨設備登入的市場 hydration 行為）
 - 測試結果
 ```
