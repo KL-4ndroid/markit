@@ -21,6 +21,7 @@ import { formatCurrency } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { deleteDealEventById, deleteInteractionEventById } from '@/lib/markets/event-deletion-service';
 import { canDeleteDailyLogEntry } from '@/lib/markets/daily-log-permissions';
+import { summarizeDailyDealEvents } from '@/lib/markets/daily-transaction-log-summary';
 import {
   getDealEventCount,
   getDealEventRevenue,
@@ -107,11 +108,10 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
       });
 
       // 添加成交記錄
-      let revenue = 0;
+      const dealSummary = summarizeDailyDealEvents(deals);
       deals.forEach(event => {
         const time = new Date(event.timestamp);
         const amount = getDealEventRevenue(event);
-        revenue += amount;
         
         // 獲取商品資訊
         let description = '成交';
@@ -139,8 +139,8 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
       logEntries.sort((a, b) => b.timestamp - a.timestamp);
 
       setLogs(logEntries);
-      setTotalRevenue(revenue);
-      setTotalDeals(deals.length);
+      setTotalRevenue(dealSummary.revenue);
+      setTotalDeals(dealSummary.dealCount);
       setTotalInteractions(interactions.length);
     } catch (error) {
       console.error('載入當日流水帳失敗：', error);
