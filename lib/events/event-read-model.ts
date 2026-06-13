@@ -48,6 +48,18 @@ export function getTombstoneTargetEventId(event: Pick<EventLike, 'payload'>): st
 }
 
 export function getDealEventDate(event: EventLike): string {
+  // For deletion tombstones, prefer the stored dealDate to avoid using the deletion
+  // timestamp (which reflects when the delete was recorded, not the original deal date).
+  // Only fall back to timestamp when dealDate is genuinely absent — e.g. a Cloud
+  // tombstone created before this fix was applied.
+  if (event.type === 'deal_deleted' || event.type === 'interaction_deleted') {
+    return (
+      event.payload?.dealDate ??
+      event.payload?.deal_date ??
+      getLocalDateStringFromTimestamp(event.timestamp) ??
+      ''
+    );
+  }
   return (
     event.payload?.dealDate ??
     event.payload?.deal_date ??

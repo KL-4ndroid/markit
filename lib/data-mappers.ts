@@ -88,7 +88,7 @@ export function normalizeEventPayloadForLocal<T>(payload: T): T {
   }
 
   const marketId = pickMarketId(record);
-  if (!marketId || 'marketId' in record) return payload;
+  if ('marketId' in record || !marketId) return payload;
 
   return {
     ...record,

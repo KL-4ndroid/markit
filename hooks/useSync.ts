@@ -1558,7 +1558,40 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
       const existing = await db.events.get(event.id);
       
       if (existing) {
-        skippedCount++;
+        // Fix C2.13A Symptom B: If the incoming tombstone event carries eventId but the
+        // locally-stored version is missing it (stale local write from a partial schema),
+        // augment the local record so that tombstone key matching via getTombstoneTargetEventId
+        // works correctly. Re-run the handler after the update so dailyStats reflects the
+        // deletion.
+        if (
+          (event.type === 'deal_deleted' || event.type === 'interaction_deleted') &&
+          event.payload?.eventId &&
+          !existing.payload?.eventId
+        ) {
+          const updated = {
+            ...existing,
+            payload: { ...existing.payload, eventId: event.payload.eventId },
+          };
+          await db.events.put(updated);
+          
+          const { eventHandlers } = await import('@/lib/db/events');
+          const handler = eventHandlers[event.type as keyof typeof eventHandlers];
+          if (handler) {
+            const processedPayload = normalizeEventPayloadForLocal(updated.payload);
+            await handler({
+              id: updated.id,
+              type: updated.type,
+              payload: processedPayload,
+              timestamp: updated.timestamp,
+              actor_id: updated.actor_id,
+              market_id: updated.market_id,
+            } as Event, db);
+            await sanitizeStaffProjectionsAfterReplay(updated);
+          }
+          processedCount++;
+        } else {
+          skippedCount++;
+        }
         continue;
       }
 

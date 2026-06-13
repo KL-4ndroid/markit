@@ -100,7 +100,7 @@ async function main(): Promise<void> {
         payload: {
           totalAmount: 700,
           manualRevenue: 700,
-          manualDealCount: 2,
+          manualDealCount: 1,
         },
       }),
     ],
@@ -121,7 +121,7 @@ async function main(): Promise<void> {
   assert.deepEqual(
     activeBySnakeCaseSemanticFallback.map(event => event.id),
     ['snake-local-copy-2'],
-    'snake_case semantic tombstone should remove one matching local deal',
+    'snake_case semantic tombstone should remove the deal with matching dealCount=2',
   );
 
   const originalWhere = db.events.where.bind(db.events);
