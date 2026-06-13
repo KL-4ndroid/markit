@@ -7,6 +7,7 @@ import {
   createRecoveryBackup,
   getDatabaseRecoveryStatus,
   repairInvalidDailyStats,
+  repairProductReferenceErrors,
   retryDatabaseRecovery,
   type DatabaseRecoveryStatus,
 } from '@/lib/db/recovery';
@@ -29,6 +30,7 @@ export function DatabaseRecoveryPanel() {
   const [isChecking, setIsChecking] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isRepairing, setIsRepairing] = useState(false);
+  const [isRepairingProducts, setIsRepairingProducts] = useState(false);
 
   const handleCheck = async () => {
     setIsChecking(true);
@@ -93,11 +95,40 @@ export function DatabaseRecoveryPanel() {
     }
   };
 
+  const handleRepairProducts = async () => {
+    setIsRepairingProducts(true);
+    try {
+      const result = await repairProductReferenceErrors();
+      downloadJson(result.backup.filename, result.backup.content);
+      const nextStatus = await getDatabaseRecoveryStatus();
+      setStatus(nextStatus);
+
+      if (result.repairedProducts === 0) {
+        toast.info('沒有需要修復的商品缺口');
+      } else if (result.integrity.ok) {
+        toast.success(
+          `已修復 ${result.repairedProducts} 個商品（雲端 ${result.fromCloud.length} 個、佔位 ${result.asPlaceholder.length} 個），並已下載修復前備份`
+        );
+      } else {
+        toast.warning(
+          `已修復 ${result.repairedProducts} 個商品，但仍有其他項目需要檢查`
+        );
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '商品修復失敗');
+    } finally {
+      setIsRepairingProducts(false);
+    }
+  };
+
   const isHealthy = status?.state === 'healthy';
   const errors = status?.state === 'unhealthy' ? status.integrity?.errors || [] : [];
   const warnings = status?.integrity?.warnings || [];
   const hasDailyStatsNumericErrors = errors.some((error) =>
     /^dailyStats\[\d+\] (touchCount|inquiryCount|dealCount|revenue|cost|profit|productsSold|updatedAt)/.test(error)
+  );
+  const hasProductReferenceErrors = errors.some((error) =>
+    /references missing product|cannot replay because product is unavailable/.test(error)
   );
 
   return (
@@ -156,7 +187,16 @@ export function DatabaseRecoveryPanel() {
             className="inline-flex h-10 items-center gap-2 rounded-md bg-[#D4A574] px-3 text-sm font-medium text-white disabled:opacity-50"
           >
             <Wrench size={16} />
-            修復
+            修復統計
+          </button>
+          <button
+            type="button"
+            onClick={handleRepairProducts}
+            disabled={isRepairingProducts || !hasProductReferenceErrors}
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-[#D4A574] px-3 text-sm font-medium text-white disabled:opacity-50"
+          >
+            <Wrench size={16} />
+            修復商品
           </button>
         </div>
       </div>
@@ -165,7 +205,12 @@ export function DatabaseRecoveryPanel() {
         <div className="mt-4 space-y-2 border-t border-[#F0ECE4] pt-3 text-sm">
           {hasDailyStatsNumericErrors && (
             <p className="text-[#3A3A3A]">
-              發現每日統計快取欄位異常。可先按「備份」，再按「修復」將無效數值正規化。
+              發現每日統計快取欄位異常。可先按「備份」，再按「修復統計」將無效數值正規化。
+            </p>
+          )}
+          {hasProductReferenceErrors && (
+            <p className="text-[#3A3A3A]">
+              發現成交記錄引用了已刪除或不存在的商品。可先按「備份」，再按「修復商品」從雲端補回或建立佔位商品。
             </p>
           )}
           {errors.slice(0, 4).map((error) => (

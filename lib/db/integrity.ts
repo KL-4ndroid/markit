@@ -433,6 +433,57 @@ export function parseBackupData(jsonData: string): BackupData {
   return data as BackupData;
 }
 
+/**
+ * 定義哪些 error pattern 在 App 日常初始化時應該降為 warning（而非 fatal）。
+ * 這些代表歷史刪除或未同步的 product，不應阻斷 Owner 使用 App。
+ * 此清單比 staff_scoped 更廣，涵蓋 product_updated / deal_closed items 兩層。
+ */
+function isGracefulProductReferenceError(error: string): boolean {
+  return (
+    /^events\[\d+\].*\.items\[\d+\] references missing product/.test(error) ||
+    /^events\[\d+\].*\.items\[\d+\] cannot replay because product is unavailable/.test(error) ||
+    /^events\[\d+\] product_updated references missing product/.test(error) ||
+    /^events\[\d+\] product_updated cannot replay because product is unavailable/.test(error)
+  );
+}
+
+/**
+ * 將 App 日常初始化中的 product reference 錯誤降為 warning。
+ * 不改變備份匯入/匯出的嚴格行為（仍使用 checkBackupIntegrity）。
+ * 用於讓 Owner 不因歷史刪除商品而完全無法使用 App。
+ */
+export function applyAppIntegrityDemotion(result: IntegrityResult): IntegrityResult {
+  const errors: string[] = [];
+  const warnings = [...result.warnings];
+
+  for (const error of result.errors) {
+    if (isGracefulProductReferenceError(error)) {
+      warnings.push(`[app_demoted] ${error}`);
+    } else {
+      errors.push(error);
+    }
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings,
+  };
+}
+
+/**
+ * App 日常初始化專用的 integrity check。
+ * 包含 product reference demotion，讓 Owner 不因歷史刪除商品而阻斷。
+ * 備份匯入/匯出請使用 checkBackupIntegrity()（不做 demotion）。
+ */
+export function checkAppIntegrity(
+  data: BackupData,
+  options: IntegrityCheckOptions = {}
+): IntegrityResult {
+  const result = checkBackupIntegrity(data, options);
+  return applyAppIntegrityDemotion(result);
+}
+
 function isStaffScopedReferenceError(error: string): boolean {
   return (
     /^events\[\d+\].*market_id/.test(error) ||

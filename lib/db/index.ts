@@ -15,6 +15,7 @@ import type {
   Settings,
 } from '@/types/db';
 import {
+  checkAppIntegrity,
   checkBackupIntegrity,
   parseBackupData,
   validateBackupReplayReadiness,
@@ -354,6 +355,25 @@ export async function checkCurrentDatabaseIntegrity(
   }, options);
 }
 
+/**
+ * App 日常初始化專用的 integrity check。
+ * 會 demote product reference 錯誤為 warning，讓 Owner 不因歷史刪除商品而阻斷操作。
+ * 備份匯入/匯出請使用 checkCurrentDatabaseIntegrity()（不做 demotion）。
+ */
+export async function checkAppDatabaseIntegrity(
+  options: IntegrityCheckOptions = {}
+): Promise<IntegrityResult> {
+  return checkAppIntegrity({
+    version: 1,
+    exportedAt: Date.now(),
+    events: await db.events.toArray(),
+    markets: await db.markets.toArray(),
+    products: await db.products.toArray(),
+    dailyStats: await db.dailyStats.toArray(),
+    settings: await db.settings.toArray(),
+  }, options);
+}
+
 export async function initializeDatabaseSafely(
   options: IntegrityCheckOptions = {}
 ): Promise<DatabaseInitResult> {
@@ -364,7 +384,7 @@ export async function initializeDatabaseSafely(
       throw new Error('Database did not open after initialization');
     }
 
-    const integrity = await checkCurrentDatabaseIntegrity(options);
+    const integrity = await checkAppDatabaseIntegrity(options);
     if (!integrity.ok) {
       return {
         ok: false,
