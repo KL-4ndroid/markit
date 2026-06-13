@@ -1,7 +1,7 @@
 ﻿# Markit 資料存取收斂計畫
 
 更新日期：2026-06-13
-狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已降級為只偵測不自動修復；C2.18B Projection rebuild 已加入本機事件完整性防護；C2.18C owner revenue gap repair 已從 snapshot sync 移除，僅允許 /recovery 手動 dry-run 後執行；C2.18D snapshot hydration 曾嘗試補齊明細 events，但已由 C2.18E 取代；C2.18E snapshot sync / auto-create / manual create 已暫停，Owner/Staff 均回到事件同步路徑；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理；C2.23 Owner / Staff revenue hardening 已建立子計畫並開始執行；C2.30A Integrity Profile 基礎層已完成；C2.30B Staff sync preflight 已接入；C3 Cloud-first Authenticated Cache 成為後續主線
+狀態：C2.14～C2.30B 已完成；C2.13A Bug Fixes 已完成（commit 86569d8）；C3.1A Cloud-first Cache Boundary Audit 已完成；C3 Cloud-first Authenticated Cache 成為後續主線
 目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂。2026-06-13 起，後續主方向調整為：Supabase 是唯一長期真相來源，IndexedDB 降級為登入後可丟棄的本機快取與短暫操作緩衝，不再擴大本機長期資料庫責任。
 
 ## 一、問題摘要
@@ -101,7 +101,7 @@ IndexedDB 不再應承擔：
 | C2.23 | Owner / Staff 收入權限加固 | 將外部加固需求併入主收斂計畫，先處理 deal mode flags、Staff 刪除入口、成交筆數與敏感欄位 | `OWNER_STAFF_REVENUE_HARDENING_PLAN.md` | 中 | 進行中 |
 | C2.30A | Integrity Profile 基礎層 | 將 owner full data 與 staff scoped data 的完整性檢查分流；staff 局部資料的 out-of-scope references 不再當作 fatal | `integrity.ts`, high-risk pages | 中 | 已完成 |
 | C2.30B | Staff Sync Preflight | Staff sync 寫入與 replay 前先檢查本機 scoped dataset 是否具備必要 market/product，避免 orphan event 造成 handler fatal | `staff-event-preflight.ts`, `useSync.ts` | 中 | 已完成 |
-| C3.1 | Cloud-first 架構決策落地 | 明確禁止繼續擴大 IndexedDB 長期真相責任，將本機資料改為 authenticated cache | docs + sync design | 低 | 下一步 |
+| C3.1 | Cloud-first 架構決策落地 | 明確禁止繼續擴大 IndexedDB 長期真相責任，將本機資料改為 authenticated cache | docs + sync design | 低 | ✅ 已完成（見 CLOUD_FIRST_CACHE_AUDIT.md）；C3.2/C3.3/C3.4/C3.5/C3.6 待實作 |
 | C3.2 | Login / account switch cache reset | 登入、登出、切換 Owner/Staff 時清空不屬於目前使用者的 local cache，避免跨帳號殘留 | auth/sync boundary | 中 | P0 |
 | C3.3 | Full cloud pull → replace cache | Owner / Staff 從雲端拉授權資料後，以 replace-cache 方式寫入本機，而非和舊本機資料長期 merge | `useSync.ts` / cache service | 高 | P0 |
 | C3.4 | Owner missing market hydration | Owner events 匯入前確保對應 markets 存在；若雲端也不存在才視為 fatal | sync preflight/service | 中 | P0 |
