@@ -89,7 +89,7 @@ Commit 前必須回報：
 
 ## 三、目前建議任務順序
 
-> 重要：C2.14～C2.30B 已全部完成；C2.13A Bug Fixes 已完成並推送（commit 86569d8）；C3.1A Cloud-first Cache Boundary Audit 已完成（`docs/CLOUD_FIRST_CACHE_AUDIT.md`）；C3.2A Login/Role Switch Cache Reset 設計已完成（`docs/LOGIN_CACHE_RESET_DESIGN.md`）；**C3.3A Owner Missing Market Hydration 設計已完成（`docs/OWNER_MARKET_HYDRATION_DESIGN.md`）**。後續請優先執行 C3.2A 實作、C3.3A 實作或 C2.14A。
+> 重要：C2.14～C2.30B 已全部完成；C2.13A Bug Fixes 已完成並推送（commit 86569d8）；C3.1A Cloud-first Cache Boundary Audit 已完成（`docs/CLOUD_FIRST_CACHE_AUDIT.md`）；**C3.2A Login/Role Switch Cache Reset 已完成並推送（commit 31816d8）**；C3.3A Owner Missing Market Hydration 設計已完成（`docs/OWNER_MARKET_HYDRATION_DESIGN.md`）。後續請優先執行 C3.3A 實作、C2.14A 或 C3.5A。
 
 ### Task C3.1A：Cloud-first Cache Boundary 盤點
 
@@ -149,7 +149,7 @@ docs: audit cloud-first cache boundaries
 任務類型：先分析，再等確認後實作
 允許修改：初次任務只允許文件
 禁止修改：程式碼、測試、Supabase、RLS、UI
-**狀態：✅ 設計已完成，見 `docs/LOGIN_CACHE_RESET_DESIGN.md`**
+**狀態：✅ 實作已完成並推送（commit 31816d8），見 `docs/LOGIN_CACHE_RESET_DESIGN.md`**
 
 目標：
 
