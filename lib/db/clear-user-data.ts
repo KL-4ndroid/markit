@@ -125,10 +125,74 @@ export async function clearUserData(
 }
 
 /**
- * 清除非當前用戶的數據
- * 僅用於明確的帳號切換/登出流程；一般同步流程不得呼叫，避免誤刪可恢復資料。
- * 
- * @param currentUserId - 當前用戶 ID
+ * Authenticated cache reset scope.
+ * Defines which data should be cleared when identity changes.
+ */
+export type AuthCacheResetScope =
+  /** Full clear: all authenticated tables + all cache (登出時) */
+  | 'full'
+  /** Role switch: all authenticated tables + sync cursors (身份切換時) */
+  | 'role_switch';
+
+/**
+ * Reset authenticated cache based on scope.
+ *
+ * - 'full': clears all tables + all cache keys (sign-out path)
+ * - 'role_switch': clears authenticated tables + sync cursors, preserves user preferences
+ *
+ * This replaces the current `clearOtherUsersData` logic for role switches.
+ * The existing `clearAllData` function in `lib/db/index.ts` is preserved for
+ * backwards compatibility.
+ *
+ * @param scope - Which scope of data to reset
+ * @param userId - Current authenticated user ID (for logging only)
+ */
+export async function resetAuthenticatedCache(
+  scope: AuthCacheResetScope,
+  userId?: string
+): Promise<void> {
+  console.log(`🔒 resetAuthenticatedCache(scope=${scope}, userId=${userId?.slice(0, 8) ?? 'none'})`);
+
+  // Always clear authenticated tables
+  await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats], async () => {
+    await db.events.clear();
+    await db.markets.clear();
+    await db.products.clear();
+    await db.dailyStats.clear();
+  });
+
+  // Clear sync-related in-memory state
+  if (typeof window !== 'undefined') {
+    // Sync cursors
+    localStorage.removeItem('lastSyncAt');
+    localStorage.removeItem('hasCompletedInitialSync');
+    // Role cache (always cleared on role switch)
+    localStorage.removeItem('user_role_cache');
+    // Pause flags
+    localStorage.removeItem('sync_pause_until');
+    sessionStorage.clear();
+
+    // 'full' scope additionally clears user preferences
+    if (scope === 'full') {
+      localStorage.removeItem('logout_history');
+    }
+  }
+
+  // Reset in-process sync identity guard (useSync.ts)
+  try {
+    const { resetInitialSyncFlag } = await import('@/hooks/useSync');
+    resetInitialSyncFlag();
+  } catch {
+    // useSync may not be available (e.g., during initial render)
+  }
+
+  console.log(`✅ resetAuthenticatedCache(${scope}) complete`);
+}
+
+/**
+ * @deprecated Use resetAuthenticatedCache('role_switch') instead.
+ *   clearOtherUsersData only clears other users' data, not the full
+ *   authenticated cache, leaving stale data from the previous role.
  */
 export async function clearOtherUsersData(currentUserId: string): Promise<void> {
   console.log('🧹 清除其他用戶的數據...', {

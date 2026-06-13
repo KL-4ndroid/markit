@@ -12,8 +12,8 @@ import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './client';
 import { initializeUserSettings } from './settings';
+import { resetAuthenticatedCache } from '@/lib/db/clear-user-data';
 import { pullQuickActionButtonsFromCloud } from '@/lib/quick-actions-store';
-import { resetInitialSyncFlag } from '@/hooks/useSync';
 
 interface AuthContextType {
   user: User | null;
@@ -173,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         // ✅ 被動登出時也清除數據
-        clearUserDataRef.current('passive_signout').catch(error => {
+        resetAuthenticatedCache('full').catch(error => {
           console.error('被動登出清除數據失敗:', error);
         });
         
@@ -217,11 +217,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             to: newUserId.substring(0, 8),
           });
           
-          // ✅ 清除前一個用戶的數據
+          // ✅ 清除前一個用戶的數據（全量 authenticated cache reset）
           try {
-            const { clearOtherUsersData } = await import('@/lib/db/clear-user-data');
-            await clearOtherUsersData(newUserId);
-            console.log('✅ 已清除前一個用戶的數據');
+            await resetAuthenticatedCache('role_switch', newUserId);
+            console.log('✅ 已清除前一個用戶的數據（role_switch scope）');
           } catch (error) {
             console.error('❌ 清除前一個用戶數據失敗:', error);
           }
@@ -286,56 +285,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   /**
-   * ✅ 統一的清除數據函數
-   * 無論是主動登出還是被動登出，都調用此函數
+   * 清除用戶數據（由 handleSignOut 呼叫）
+   * 現在由 resetAuthenticatedCache('full') 統一處理
    */
   const clearUserData = async (reason: string) => {
-    console.log(`🔒 清除用戶數據 (原因: ${reason})`, {
-      userId: user?.id,
-      timestamp: new Date().toISOString(),
-    });
-    
-    try {
-      // 1. 清除本地資料庫（完整清除，不保留任何用戶數據）
-      const { clearAllData } = await import('@/lib/db');
-      await clearAllData();
-      console.log('✅ 本地資料庫已清除');
-    } catch (dbError) {
-      console.error('清除本地資料庫失敗:', dbError);
-    }
-    
-    try {
-      // 2. 重置初始同步標記
-      resetInitialSyncFlag();
-      
-      // 3. 清除角色緩存
-      const { clearRoleCache } = await import('@/hooks/useUserRole');
-      clearRoleCache();
-      
-      // 4. 清除 localStorage（包括員工模式標記）
-      const keysToRemove = [
-        'user_role_cache',
-        'logout_history',
-        'hasCompletedInitialSync',
-        'staff_mode_enabled',  // ✅ 清除員工模式標記
-        'lastSyncAt',          // ✅ 清除同步時間戳
-      ];
-      
-      keysToRemove.forEach(key => {
-        try {
-          localStorage.removeItem(key);
-        } catch (e) {
-          console.error(`清除 ${key} 失敗:`, e);
-        }
-      });
-      
-      // 5. 清除 sessionStorage
-      sessionStorage.clear();
-      
-      console.log('✅ 所有緩存已清除');
-    } catch (error) {
-      console.error('清除緩存失敗:', error);
-    }
+    console.log(`🔒 清除用戶數據 (原因: ${reason})`);
+    await resetAuthenticatedCache('full');
   };
 
   syncUserSettingsRef.current = syncUserSettings;
