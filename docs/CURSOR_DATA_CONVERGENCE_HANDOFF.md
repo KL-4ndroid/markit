@@ -89,7 +89,7 @@ Commit 前必須回報：
 
 ## 三、目前建議任務順序
 
-> 重要：C2.14～C2.30B 已全部完成；C2.13A Bug Fixes 已完成並推送（commit 86569d8）；C3.1A Cloud-first Cache Boundary Audit 已完成（`docs/CLOUD_FIRST_CACHE_AUDIT.md`）；C3.2A Login/Role Switch Cache Reset 已完成並推送（commit 31816d8）；C3.3A Owner Missing Market Hydration 已完成並推送（commit b420068）；C2.14A 資料存取盤點已完成（`docs/DATA_ACCESS_AUDIT.md`）；C2.15A Active Event Service 設計已完成（`docs/ACTIVE_EVENT_SERVICE_DESIGN.md`）；**C2.15B Active Event Service 實作已完成並推送（commit da69556）；**C2.16A Market Projection Cache 設計已完成（`docs/MARKET_PROJECTION_CACHE_DESIGN.md`）**。後續請優先執行 C2.16B（Market Projection Cache 實作）或 C3.5A（UI View Model）。
+> 重要：C2.14～C2.30B 已全部完成；C2.13A Bug Fixes 已完成並推送（commit 86569d8）；C3.1A Cloud-first Cache Boundary Audit 已完成（`docs/CLOUD_FIRST_CACHE_AUDIT.md`）；C3.2A Login/Role Switch Cache Reset 已完成並推送（commit 31816d8）；C3.3A Owner Missing Market Hydration 已完成並推送（commit b420068）；C2.14A 資料存取盤點已完成（`docs/DATA_ACCESS_AUDIT.md`）；C2.15A Active Event Service 設計已完成（`docs/ACTIVE_EVENT_SERVICE_DESIGN.md`）；**C2.15B Active Event Service 實作已完成並推送（commit da69556）；C2.16A Market Projection Cache 設計已完成（`docs/MARKET_PROJECTION_CACHE_DESIGN.md`）；**C2.16B Market Projection Cache 實作已完成並推送（commit 8773e47）**。後續請優先執行 C3.5A（UI View Model）或 C2.17A。
 
 ### Task C3.1A：Cloud-first Cache Boundary 盤點
 
@@ -336,6 +336,8 @@ rebuildMarketStatsFromEvents(marketId: string)
 ```
 
 ### Task C2.16B：實作 Market Projection Service
+
+**狀態：✅ DailyRevenueStats 統一讀取來源已完成並推送（commit 8773e47）**
 
 任務類型：中型實作
 允許修改：
