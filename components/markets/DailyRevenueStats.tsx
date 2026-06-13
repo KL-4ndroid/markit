@@ -1,13 +1,11 @@
 'use client';
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { Calendar, DollarSign, TrendingUp, Plus } from 'lucide-react';
 import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
-import { getActiveInteractionEventsForMarket } from '@/lib/events/active-event-service';
-import { getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
-import type { Market, Event, InteractionRecordedPayload } from '@/types/db';
+import type { Market } from '@/types/db';
 
 interface DailyRevenueStatsProps {
   market: Market;
@@ -23,62 +21,9 @@ interface DailyRevenueStatsProps {
  */
 export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRevenueStatsProps) {
   const stats = useDateRangeStats(market.startDate, market.endDate);
-  const [interactionEvents, setInteractionEvents] = useState<Event<InteractionRecordedPayload>[]>([]);
-  const [interactionButtons, setInteractionButtons] = useState<Array<{ id: string; label: string; emoji: string }>>([]);
 
-  // 載入互動事件和按鈕配置
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        if (!market.id) {
-          setInteractionEvents([]);
-          return;
-        }
-
-        // 載入互動按鈕配置
-        const buttons = getInteractionButtons();
-        setInteractionButtons(buttons);
-
-        // ✅ 修復：使用 dates 陣列或降級到連續日期範圍
-        const marketDates = market.dates && market.dates.length > 0 
-          ? market.dates 
-          : (() => {
-              // 降級：生成連續日期範圍
-              const dates: string[] = [];
-              const start = new Date(market.startDate);
-              const end = new Date(market.endDate);
-              for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                dates.push(dateStr);
-              }
-              return dates;
-            })();
-
-        // 獲取互動事件 - 只篩選在 marketDates 中的日期
-        const interactions = (await getActiveInteractionEventsForMarket(market.id))
-          .filter(e => {
-            return marketDates.includes(getLocalDateStringFromTimestamp(e.timestamp));
-          });
-
-        setInteractionEvents(interactions);
-      } catch (error) {
-        console.error('載入互動數據失敗：', error);
-      }
-    };
-
-    loadData();
-
-    // 監聽互動記錄事件，重新載入數據
-    const handleInteractionRecorded = () => {
-      loadData();
-    };
-
-    window.addEventListener('interaction-recorded', handleInteractionRecorded);
-
-    return () => {
-      window.removeEventListener('interaction-recorded', handleInteractionRecorded);
-    };
-  }, [market.id, market.startDate, market.endDate, market.dates]);
+  // 互動按鈕配置（從 store 讀取，computed per render）
+  const interactionButtons = useMemo(() => getInteractionButtons(), []);
   
   // 生成市集日期範圍內的所有日期
   const dateRange = useMemo(() => {
@@ -146,27 +91,14 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
       }
     });
 
-    // ✅ 統計每日的互動次數（從事件記錄）
-    interactionEvents.forEach(event => {
-      const dateStr = getLocalDateStringFromTimestamp(event.timestamp);
-
-      const dayData = dataMap.get(dateStr);
-      if (dayData) {
-        const type = getInteractionType(event);
-        if (!type) return;
-        // 初始化該類型（如果尚未初始化）
-        if (dayData.interactions[type] === undefined) {
-          dayData.interactions[type] = 0;
-        }
-        dayData.interactions[type]++;
-      }
-    });
+    // ✅ 統計每日的互動次數（從 dailyStats.extraInteractions 讀取，取代 raw events 查詢）
+    // 此邏輯已在上方的 stats?.forEach 中透過 stat.extraInteractions 合併
 
     return Array.from(dataMap.entries()).map(([date, data]) => ({
       date,
       ...data,
     }));
-  }, [stats, dateRange, market.id, interactionEvents, interactionButtons]);
+  }, [stats, dateRange, market.id, interactionButtons]);
   
   // 判斷是否為單日市集
   const isSingleDay = market.startDate === market.endDate;

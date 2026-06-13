@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
-import type { Event, DealClosedPayload } from '../types/db';
+import type { Event } from '../types/db';
 
 const TS = new Date('2026-06-12T12:00:00+08:00').getTime();
 
 function deal(
   id: string,
-  overrides: Omit<Partial<Event<DealClosedPayload>>, 'payload'> & {
-    payload?: Partial<DealClosedPayload> & Record<string, unknown>;
+  overrides: Omit<Partial<Event<Record<string, unknown>>>, 'payload'> & {
+    payload?: Partial<Record<string, unknown>>;
   } = {}
-): Event<DealClosedPayload> {
+): Event<Record<string, unknown>> {
   const { payload: payloadOverrides, ...eventOverrides } = overrides;
   return {
     id,
@@ -25,7 +25,7 @@ function deal(
       totalAmount: 500,
       dealCount: 1,
       ...payloadOverrides,
-    } as DealClosedPayload,
+    },
     ...eventOverrides,
   };
 }
@@ -240,7 +240,7 @@ runTest('getDealTombstoneKey: NaN revenue returns undefined', () => {
  */
 function matchSemanticDeal(
   tombstone: Event<Record<string, unknown>>,
-  deal: Event<DealClosedPayload>
+  deal: Event<Record<string, unknown>>
 ): boolean {
   const tombPayload = tombstone.payload ?? {};
   const dealPayload = deal.payload ?? {};
@@ -276,7 +276,7 @@ function matchSemanticDeal(
   );
 }
 
-function getDealTombstoneKey(event: Event<DealClosedPayload> | Event<Record<string, unknown>>): string | undefined {
+function getDealTombstoneKey(event: Event<Record<string, unknown>>): string | undefined {
   const payload = event.payload ?? {};
   const marketId =
     (event as unknown as { market_id?: string }).market_id ??
