@@ -11,7 +11,7 @@ import { createContext, useContext, ReactNode } from 'react';
 import { useSync, SyncStatus } from '@/hooks/useSync';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
-import { resolveRoleMode } from '@/lib/auth/role-mode';
+import { resolveInfoLevel } from '@/lib/data-sanitization';
 
 interface SyncContextType {
   status: SyncStatus;
@@ -22,7 +22,8 @@ interface SyncContextType {
   downloadProgress?: { current: number; total: number; currentItem?: string; phase?: 'snapshot' | 'incremental' };
   sync: () => void;
   isOnline: boolean;
-  isDataSanitized: boolean; // ✅ 新增：標記資料是否已脫敏
+  isDataSanitized: boolean;
+  infoLevel: number;
 }
 
 const SyncContext = createContext<SyncContextType | null>(null);
@@ -31,23 +32,23 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const { user, isConfigured } = useAuth();
   const { userRole, isLoading: isRoleLoading } = useUserRole();
 
-  // ✅ Phase 3: 解析角色模式並傳入 useSync
-  // resolveRoleMode 對 userRole 尚未載入（isStaff=false, ownerId=undefined）時回傳 'owner'
-  const roleMode = resolveRoleMode(userRole);
+  // ✅ 解析角色資訊揭露層級（3=老闆，0-2=員工）
+  const infoLevel = resolveInfoLevel(userRole);
 
-  // ✅ 只創建一個 useSync 實例
+  // ✅ 只創建一個 useSync 實例，傳入 infoLevel
   const syncState = useSync({
     enabled: !!user && isConfigured && !isRoleLoading,
-    roleMode,
+    roleInfoLevel: infoLevel,
   });
 
-  // ✅ 標記資料是否已脫敏（員工身分時為 true）
-  const isDataSanitized = userRole.isStaff;
+  // ✅ 標記資料是否已脫敏（infoLevel < 3 表示員工）
+  const isDataSanitized = infoLevel < 3;
 
   // ✅ 在 Context 中提供脫敏狀態
   const contextValue = {
     ...syncState,
     isDataSanitized,
+    infoLevel,
   };
 
   return (
