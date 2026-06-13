@@ -1,6 +1,6 @@
 ﻿# Cursor / Codex 資料收斂任務交接手冊
 
-更新日期：2026-06-12
+更新日期：2026-06-13
 用途：讓 Cursor 或 Codex 可隨時接手 Markit 資料收斂計畫，並以低風險、可驗證、可回滾的方式逐步完成。
 
 ## 一、接手前必讀
@@ -21,7 +21,26 @@
 - `dailyStats` / `market totals` 是 projection cache，可能和 `events` 不一致。
 - `deal_deleted` / `interaction_deleted` 是 tombstone，需要統一套用。
 - Staff sync 會 sanitize，再 replay。若 event 已存在但 projection 沒更新，後續 sync 可能 skip，不會修正。
-- 不應再靠單點修補。應逐步建立 active event service、projection service、view model。
+- 2026-06-13 起，後續主線改為 Cloud-first Authenticated Cache：Supabase 是唯一長期真相來源，IndexedDB 只作為登入後可丟棄快取與短暫 pending 操作緩衝。
+- 不應再靠單點修補，也不應繼續擴大 IndexedDB 的長期資料庫責任。
+
+新的架構決策：
+
+```text
+Supabase canonical source
+  ↓
+role-aware cloud pull
+  ↓
+normalize / sanitize / canonicalize
+  ↓
+replace authenticated local cache
+  ↓
+view models
+  ↓
+UI
+```
+
+請勿再新增 snapshot / long-lived local DB 功能。現有 IndexedDB 在過渡期保留，是為了讓 Dexie hooks 和既有 UI 可運作，不代表它仍是長期真相。
 
 ## 二、工作模式
 
@@ -36,6 +55,10 @@
 - 不刪除 events。
 - 不直接修改雲端資料。
 - 不新增 debug window API，正式修復入口放 `/recovery`。
+- 不把 `owner_full` integrity 的 missing market 降級成 warning。
+- 不使用市集日期 cutoff 猜測哪些資料要修。
+- 不再恢復 snapshot sync / auto-create / manual create。
+- 不在 sync 中自動用 partial local events 重建 revenue projection。
 
 每個實作任務完成後執行：
 
@@ -62,6 +85,116 @@ Commit 前必須回報：
 - 是否有未處理的 unstaged changes
 
 ## 三、目前建議任務順序
+
+> 重要：C2.14～C2.30B 多數已完成或已有基礎服務。除非使用者明確要求回頭修補，後續請優先執行 C3 Cloud-first Authenticated Cache 主線。
+
+### Task C3.1A：Cloud-first Cache Boundary 盤點
+
+任務類型：只分析 / 文件
+允許修改：`docs/DATA_CONVERGENCE_PLAN.md`、`docs/CURSOR_DATA_CONVERGENCE_HANDOFF.md`、可新增 `docs/CLOUD_FIRST_CACHE_AUDIT.md`
+禁止修改：程式碼、測試、Supabase、RLS、UI
+
+目標：
+
+盤點目前哪些流程仍把 IndexedDB 當作長期真相資料庫，並設計最小改造順序，讓 IndexedDB 逐步降級為 authenticated cache。
+
+必須檢查：
+
+- `hooks/useSync.ts`
+- `lib/db/clear-user-data.ts`
+- `lib/db/hooks.ts`
+- `lib/db/index.ts`
+- `lib/sync/*`
+- `app/markets/page.tsx`
+- `app/markets/[id]/page.tsx`
+- `app/products/page.tsx`
+- `app/recovery/page.tsx`
+- `lib/supabase/auth-context.tsx`
+- `hooks/useUserRole.ts`
+
+必須輸出：
+
+```markdown
+| 流程 | 目前是否依賴長期 IndexedDB | 風險 | Cloud-first 改造建議 | 優先級 |
+|---|---:|---|---|---|
+```
+
+必須回答：
+
+1. 登入 / 登出 / 切換帳號目前是否清理 authenticated cache？
+2. 哪些表應在 user/role 改變時清空？
+3. `lastSyncAt` 是否應跟 cache 一起 reset？
+4. Owner pull 是否可能先寫 events、但缺 markets？
+5. Staff pull 是否仍可能留下上一身份資料？
+6. 哪些 UI 仍會把 stale local cache 當真相？
+7. 最小 C3.2 實作應碰哪些檔案？
+
+完成條件：
+
+- 不改程式碼。
+- 文件足以讓下一個任務直接實作 C3.2。
+- 驗證：`git diff --check`。
+
+建議 commit：
+
+```text
+docs: audit cloud-first cache boundaries
+```
+
+### Task C3.2A：Login / Account Switch Cache Reset 設計
+
+任務類型：先分析，再等確認後實作
+允許修改：初次任務只允許文件
+禁止修改：程式碼、測試、Supabase、RLS、UI
+
+目標：
+
+設計「身份改變時清空並重建 authenticated cache」的最小安全方案。
+
+必須設計：
+
+- 如何偵測 `previousUserId !== currentUserId`
+- 如何偵測 `previousRoleMode !== currentRoleMode`
+- 清理哪些 Dexie tables
+- 是否保留 pending local events
+- 如何 reset `settings.lastSyncAt`
+- 清理後何時觸發 sync
+- 同一使用者 refresh 時不可每次清空
+
+完成條件：
+
+- 產出 C3.2 實作計畫。
+- 列出 commit 切法與測試清單。
+- 不修改程式碼，等使用者確認。
+
+### Task C3.3A：Owner Missing Market Hydration 設計
+
+任務類型：先分析，再等確認後實作
+
+目標：
+
+解決 owner_full integrity 的 `events 指向不存在的 market_id`，但不降低 owner_full 嚴格性。
+
+最小安全設計：
+
+```text
+incoming/local event market ids
+  ↓
+missing in db.markets
+  ↓
+fetch from Supabase markets
+  ↓
+if authorized and found: put into local cache
+  ↓
+if not found: keep fatal integrity error
+```
+
+禁止：
+
+- 不刪 events。
+- 不修改雲端。
+- 不把 owner_full error 改 warning。
+- 不自動重建收入。
 
 ### Task C2.14A：資料存取盤點
 
@@ -411,42 +544,54 @@ git status -sb：
 ## 六、可直接貼給 Cursor 的下一個 Prompt
 
 ```text
-請執行 C2.14A：資料存取盤點。
+請執行 C3.1A：Cloud-first Cache Boundary 盤點。
 
 重要：
 - 只分析，不修改程式碼。
-- 只允許新增或更新 docs/DATA_ACCESS_AUDIT.md。
+- 允許新增 docs/CLOUD_FIRST_CACHE_AUDIT.md。
+- 允許更新 docs/DATA_CONVERGENCE_PLAN.md 與 docs/CURSOR_DATA_CONVERGENCE_HANDOFF.md。
 - 不要新增測試。
-- 不要更新其他文件。
 - 不要 commit，除非我確認。
 - 不要修改 Supabase / RLS / migration。
+- 不要恢復 snapshot 功能。
+- 不要刪除 IndexedDB / Dexie。
+- 不要把 owner_full integrity missing market 降級成 warning。
 
 請閱讀：
 - docs/DATA_CONVERGENCE_PLAN.md
-- app/markets/[id]/page.tsx
-- components/markets/DailyRevenueStats.tsx
-- components/markets/DailyDealsModal.tsx
-- components/markets/DailyTransactionLog.tsx
-- components/markets/DealDetailModal.tsx
-- lib/db/event-tombstones.ts
-- lib/events/event-read-model.ts
-- lib/db/hooks.ts
+- docs/CURSOR_DATA_CONVERGENCE_HANDOFF.md
 - hooks/useSync.ts
+- lib/db/clear-user-data.ts
+- lib/db/hooks.ts
+- lib/db/index.ts
+- lib/sync/*
+- lib/supabase/auth-context.tsx
+- hooks/useUserRole.ts
+- app/markets/page.tsx
+- app/markets/[id]/page.tsx
+- app/products/page.tsx
 - app/recovery/page.tsx
 
-請在 docs/DATA_ACCESS_AUDIT.md 中建立表格：
+請在 docs/CLOUD_FIRST_CACHE_AUDIT.md 中建立表格：
 
-| 功能 | 檔案 | 目前資料來源 | 是否直接讀 db | 是否處理 tombstone | 風險 | 建議收斂方向 |
+| 流程 | 檔案 | 目前是否依賴長期 IndexedDB | 身份切換風險 | Cloud-first 改造建議 | 優先級 |
 
 必須回答：
-1. 哪些 UI 讀 dailyStats？
-2. 哪些 UI 讀 db.events？
-3. 哪些 UI 讀 market.totalRevenue / totalDeals？
-4. 哪些地方處理 deal_deleted / interaction_deleted？
-5. Owner sync 和 Staff sync 的資料流差異？
-6. 哪些地方可能造成 dailyStats 與 events 不一致？
-7. 下一步應抽出的 active event service API 清單。
-8. 下一步應抽出的 market projection service API 清單。
+1. 登入 / 登出 / 切換帳號目前是否清理 authenticated cache？
+2. 哪些 Dexie tables 應在 userId 或 roleMode 改變時清空？
+3. settings.lastSyncAt 是否應在 cache reset 時清除？
+4. Owner pull 是否可能先寫 events、但本機缺 markets？
+5. Staff pull 是否可能保留上一身份的資料？
+6. 哪些 UI 仍會把 stale local cache 當真相？
+7. 最小 C3.2A 設計應碰哪些檔案？
+8. 最小 C3.3A owner missing market hydration 應碰哪些檔案？
+9. 哪些事情絕對不能做（例如刪雲端、恢復 snapshot、放寬 owner_full）？
+
+請提出下一步建議，但不要實作：
+- C3.2A Login / Account Switch Cache Reset 設計
+- C3.3A Owner Missing Market Hydration 設計
+- 兩者的建議先後順序
+- 每一步的測試清單與 commit 切法
 
 完成後只執行：
 - git diff --check

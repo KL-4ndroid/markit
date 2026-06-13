@@ -1,12 +1,12 @@
 ﻿# Markit 資料存取收斂計畫
 
-更新日期：2026-06-12
-狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已降級為只偵測不自動修復；C2.18B Projection rebuild 已加入本機事件完整性防護；C2.18C owner revenue gap repair 已從 snapshot sync 移除，僅允許 /recovery 手動 dry-run 後執行；C2.18D snapshot hydration 曾嘗試補齊明細 events，但已由 C2.18E 取代；C2.18E snapshot sync / auto-create / manual create 已暫停，Owner/Staff 均回到事件同步路徑；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理；C2.23 Owner / Staff revenue hardening 已建立子計畫並開始執行；C2.30A Integrity Profile 基礎層已完成；C2.30B Staff sync preflight 已接入
-目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂，讓 UI、同步、修復工具都透過一致的資料讀取與投影規則運作。
+更新日期：2026-06-13
+狀態：C2.14 資料存取盤點已完成；C2.15 Active Event Service 已建立；C2.16 Market Projection Service 正式入口已建立；C2.17 Recovery 已接入 projection service；C2.18 Sync Reconciliation 已降級為只偵測不自動修復；C2.18B Projection rebuild 已加入本機事件完整性防護；C2.18C owner revenue gap repair 已從 snapshot sync 移除，僅允許 /recovery 手動 dry-run 後執行；C2.18D snapshot hydration 曾嘗試補齊明細 events，但已由 C2.18E 取代；C2.18E snapshot sync / auto-create / manual create 已暫停，Owner/Staff 均回到事件同步路徑；C2.19 主要 UI active event 讀取已接入；C2.20 Staff tombstone sanitizer replay 欄位測試已補齊，Staff view 唯讀審查 SQL 已整理；C2.21 Cloud data consistency 唯讀審查 SQL 已整理；C2.23 Owner / Staff revenue hardening 已建立子計畫並開始執行；C2.30A Integrity Profile 基礎層已完成；C2.30B Staff sync preflight 已接入；C3 Cloud-first Authenticated Cache 成為後續主線
+目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂。2026-06-13 起，後續主方向調整為：Supabase 是唯一長期真相來源，IndexedDB 降級為登入後可丟棄的本機快取與短暫操作緩衝，不再擴大本機長期資料庫責任。
 
 ## 一、問題摘要
 
-目前專案已經具備事件溯源與本機 IndexedDB projection 架構，但資料存取路徑逐步分散，導致同一個業務事實可能從不同地方取得不同結果。
+目前專案已經具備事件溯源與本機 IndexedDB projection 架構，但資料存取路徑逐步分散，導致同一個業務事實可能從不同地方取得不同結果。實際產品使用情境已更接近「登入後從雲端取得資料；沒有網路時無法完整使用」，因此不應再把 IndexedDB 當作長期真相資料庫繼續擴張。
 
 典型問題：
 
@@ -17,7 +17,7 @@
 - 本機修復工具只修 local projection，若 sync 再次 replay 或 cloud snapshot 有舊 projection，問題可能復發。
 - `marketId` / `market_id`、`eventId` / `event_id`、`totalAmount` / `total_amount` 已逐步 canonicalize，但仍需要統一入口避免新舊格式再次分裂。
 
-核心方向：
+舊 C2 核心方向：
 
 ```text
 Cloud events / staff views
@@ -39,15 +39,47 @@ UI
 
 UI 不應直接自行判斷資料真相；它應該讀取穩定的 view model。
 
+新 C3 核心方向：
+
+```text
+Supabase canonical data
+        ↓
+authenticated pull by role
+        ↓
+normalize / sanitize / canonicalize
+        ↓
+replace local authenticated cache
+        ↓
+view model services
+        ↓
+UI
+```
+
+IndexedDB 的角色改為：
+
+- 登入後快取授權資料。
+- 讓 Dexie live query / 現有 UI 在過渡期可繼續工作。
+- 儲存短暫 pending local operations。
+- 可被清空並從雲端重新建立。
+
+IndexedDB 不再應承擔：
+
+- 跨帳號長期真相。
+- 舊 snapshot projection 回放。
+- 以 partial local events 自動修正雲端資料。
+- 在沒有雲端確認時維護永久歷史。
+
 ## 二、收斂原則
 
-1. Events 是歷史事實，projection 是可重建快取。
-2. `dailyStats`、`market.totalRevenue`、`market.totalDeals` 不應被當作唯一真相。
-3. UI 不直接處理 tombstone，不直接拼 raw payload。
-4. Owner / Staff 可有不同雲端來源，但進入 IndexedDB 後應走同一套 canonical event model。
-5. Staff sanitizer 不應破壞 replay 必要欄位。
-6. 修復工具優先重建 projection，不刪 events、不改雲端。
-7. 每個階段只做一件事，小 commit，小測試，小風險。
+1. Supabase 是唯一長期真相來源。
+2. IndexedDB 是 authenticated cache，不是跨登入、跨帳號的長期資料庫。
+3. 登入 / 切換帳號後，本機 cache 必須可安全清空並重建。
+4. `dailyStats`、`market.totalRevenue`、`market.totalDeals` 是 projection / summary cache，不應被當作唯一真相。
+5. UI 不直接處理 tombstone，不直接拼 raw payload。
+6. Owner / Staff 可有不同雲端來源，但進入本機 cache 前必須 canonicalize / sanitize。
+7. Staff sanitizer 不應破壞 replay 或顯示必要欄位。
+8. 修復工具優先修本機 cache，不刪 events、不改雲端；雲端修正必須由獨立 SQL/RPC 任務處理。
+9. 每個階段只做一件事，小 commit，小測試，小風險。
 
 ## 三、整體階段表
 
@@ -69,6 +101,12 @@ UI 不應直接自行判斷資料真相；它應該讀取穩定的 view model。
 | C2.23 | Owner / Staff 收入權限加固 | 將外部加固需求併入主收斂計畫，先處理 deal mode flags、Staff 刪除入口、成交筆數與敏感欄位 | `OWNER_STAFF_REVENUE_HARDENING_PLAN.md` | 中 | 進行中 |
 | C2.30A | Integrity Profile 基礎層 | 將 owner full data 與 staff scoped data 的完整性檢查分流；staff 局部資料的 out-of-scope references 不再當作 fatal | `integrity.ts`, high-risk pages | 中 | 已完成 |
 | C2.30B | Staff Sync Preflight | Staff sync 寫入與 replay 前先檢查本機 scoped dataset 是否具備必要 market/product，避免 orphan event 造成 handler fatal | `staff-event-preflight.ts`, `useSync.ts` | 中 | 已完成 |
+| C3.1 | Cloud-first 架構決策落地 | 明確禁止繼續擴大 IndexedDB 長期真相責任，將本機資料改為 authenticated cache | docs + sync design | 低 | 下一步 |
+| C3.2 | Login / account switch cache reset | 登入、登出、切換 Owner/Staff 時清空不屬於目前使用者的 local cache，避免跨帳號殘留 | auth/sync boundary | 中 | P0 |
+| C3.3 | Full cloud pull → replace cache | Owner / Staff 從雲端拉授權資料後，以 replace-cache 方式寫入本機，而非和舊本機資料長期 merge | `useSync.ts` / cache service | 高 | P0 |
+| C3.4 | Owner missing market hydration | Owner events 匯入前確保對應 markets 存在；若雲端也不存在才視為 fatal | sync preflight/service | 中 | P0 |
+| C3.5 | Cloud summary view model | UI 優先讀雲端已授權 summary 或本機 normalized cache，不再依賴不完整 local replay 自動修 projection | view model services | 中高 | P1 |
+| C3.6 | Pending local operations boundary | 若未來保留離線/弱網操作，只允許 pending operations 暫存；成功 push 後由 cloud pull 重建 cache | operation queue | 中高 | P1 |
 
 ## 四、詳細執行順序
 
@@ -427,6 +465,167 @@ Preflight 規則：
 
 - 若 staff view 後續改為完全 SQL 層過濾，preflight 仍可保留作為本機安全網。
 - 若未來 product tombstone 需要在缺 product 時仍匯入，必須先確認 handler 不會 fatal，並補測試。
+
+### C3.1：Cloud-first 架構決策落地
+
+目的：停止把 IndexedDB 當成長期真相資料庫繼續補強，改成「Supabase canonical source + authenticated local cache」。
+
+決策：
+
+- 沒網路時不承諾完整使用。
+- 本機資料可被清空並從雲端重新建立。
+- Local projection repair 只處理暫時 cache，不代表雲端真相已被修正。
+- 未來若要恢復 PWA 離線啟動，必須另開計畫，不能混入本收斂主線。
+
+允許：
+
+- 新增文件與小型 service 邊界。
+- 將登入 / 登出 / 切換帳號與 cache lifecycle 明確化。
+- 將 UI 文案從「離線優先」改為「本機儲存 / 登入後雲端備份」。
+
+禁止：
+
+- 直接刪除雲端資料。
+- 直接移除 IndexedDB / Dexie。
+- 一次重寫 `useSync.ts`。
+- 把 owner_full integrity missing market 降級為 warning。
+
+完成條件：
+
+- `docs/DATA_CONVERGENCE_PLAN.md` 和 `docs/CURSOR_DATA_CONVERGENCE_HANDOFF.md` 明確標示 C3 是後續主線。
+- 後續任務不再新增 snapshot / long-lived local DB 功能。
+
+### C3.2：Login / Account Switch Cache Reset
+
+目的：解決「老闆登出後登入員工、或員工登出後登入老闆，本機仍殘留上一個身份資料」的根本風險。
+
+建議流程：
+
+```text
+auth user changes
+  ↓
+detect previousUserId / previousRoleMode
+  ↓
+if identity changed:
+  clear authenticated cache tables
+  reset sync cursor
+  pull authorized cloud data
+  render
+```
+
+應清理：
+
+- `markets`
+- `products`
+- `events`
+- `dailyStats`
+- `settings.lastSyncAt` 或與 sync cursor 相關欄位
+- role cache 只可依既有 `invalidateRoleCache()` 規則處理，不要亂清所有 localStorage。
+
+不應清理：
+
+- app theme / UI preference，除非已證明與資料身份有關。
+- pending operations，除非已有安全 push / discard 設計。
+
+測試需求：
+
+- Owner → Staff：不保留 owner-only markets/events。
+- Staff → Owner：不保留 staff-sanitized projection 污染 owner cache。
+- Same user refresh：不可每次都清空，避免不必要 loading。
+
+### C3.3：Full Cloud Pull → Replace Cache
+
+目的：避免本機舊資料與雲端資料長期 merge，造成 orphan events、missing markets、projection stale。
+
+方向：
+
+```text
+fetch authorized markets/products/events
+  ↓
+normalize / sanitize
+  ↓
+validate cloud response shape
+  ↓
+transaction replace local cache
+  ↓
+compute / hydrate view model
+```
+
+Owner：
+
+- Source: Supabase `markets`, `products`, `events` with owner/team scope.
+- 必須先寫 `markets` / `products`，再寫 `events`。
+- events 匯入前檢查 market 是否存在；缺 market 時先嘗試 hydration。
+
+Staff：
+
+- Source: `staff_accessible_markets`, `staff_accessible_products`, `staff_accessible_events`。
+- 保留 sanitizer。
+- 保留 staff preflight。
+- 不以 staff local cache 反推雲端真相。
+
+完成條件：
+
+- 新增小型 cache replace service，而不是在 `useSync.ts` 裡散落清表與 put。
+- 先做 dry-run / tests，確認 replace scope 只限目前 authenticated user。
+
+### C3.4：Owner Missing Market Hydration
+
+目的：修正 owner_full integrity 中「events 指向不存在 market_id」的本機 cache 缺口，不降低 owner_full 嚴格性。
+
+流程：
+
+```text
+collect event.market_id from local events or incoming cloud events
+  ↓
+find ids missing in local db.markets
+  ↓
+fetch those markets from Supabase
+  ↓
+if found and authorized: put into db.markets
+  ↓
+if missing in cloud: keep fatal integrity error
+```
+
+安全規則：
+
+- 不刪 events。
+- 不修改雲端。
+- 不自動重建收入。
+- 不把 owner_full missing market 改成 warning。
+
+完成條件：
+
+- Owner 市集列表不再因「本機 events 比 markets 先存在」而卡住。
+- 若雲端真的沒有該 market，仍保留錯誤並引導 `/recovery`。
+
+### C3.5：Cloud Summary View Model
+
+目的：逐步減少 UI 對本機 projection cache 的依賴。
+
+優先頁面：
+
+1. 市集列表卡片收入 / 成交數。
+2. 市集詳情總收入。
+3. 每日收入明細。
+4. 分析頁。
+
+策略：
+
+- 先使用本機 normalized cache 對齊雲端 summary。
+- 若 cloud 提供可靠 summary view，UI view model 可直接以 cloud summary 為主。
+- active event 明細仍由 active event service 處理 tombstone。
+
+### C3.6：Pending Local Operations Boundary
+
+目的：保留未來弱網/短暫離線操作可能性，但不讓 pending 本機資料變成長期真相。
+
+規則：
+
+- 本機新操作先進 pending queue。
+- push 成功後，不直接相信本機 projection。
+- push 成功後由 cloud pull / replace cache 取得最新狀態。
+- push 失敗時顯示明確 pending/error 狀態。
 
 ### C2.22：文件與維護規範
 
