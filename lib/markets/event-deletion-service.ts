@@ -35,8 +35,18 @@ export interface DeleteDealResult extends DeleteEventResult {
   productsSold: DailyStats['productsSold'];
 }
 
+export interface DeleteEventPermissionOptions {
+  allowDelete?: boolean;
+}
+
 export type ProductCostResolver = (productId: string) => Promise<number | undefined>;
 export type EventRecorder = typeof recordEvent;
+
+export function assertEventDeletionAllowed(options?: DeleteEventPermissionOptions): void {
+  if (options?.allowDelete !== true) {
+    throw new Error('Event deletion is not allowed for this context');
+  }
+}
 
 export function assertEventCanBeDeleted(eventId: string | undefined, deletedEventIds: Set<string>): string {
   if (!eventId) {
@@ -109,7 +119,12 @@ export async function resolveDealDeletionResult(
   };
 }
 
-export async function deleteDealEvent(event: Event<DealClosedPayload>): Promise<DeleteDealResult> {
+export async function deleteDealEvent(
+  event: Event<DealClosedPayload>,
+  options?: DeleteEventPermissionOptions
+): Promise<DeleteDealResult> {
+  assertEventDeletionAllowed(options);
+
   const result = await resolveDealDeletionResult(event);
   await assertNotAlreadyDeleted(result.deletedEventId);
 
@@ -134,7 +149,12 @@ export async function recordDealDeletedEvent(
   });
 }
 
-export async function deleteDealEventById(eventId: string): Promise<DeleteDealResult> {
+export async function deleteDealEventById(
+  eventId: string,
+  options?: DeleteEventPermissionOptions
+): Promise<DeleteDealResult> {
+  assertEventDeletionAllowed(options);
+
   if (!eventId) {
     throw new Error('Cannot delete a deal event without an event id');
   }
@@ -147,10 +167,15 @@ export async function deleteDealEventById(eventId: string): Promise<DeleteDealRe
     throw new Error(`Event is not a deal_closed event: ${eventId}`);
   }
 
-  return deleteDealEvent(event);
+  return deleteDealEvent(event, options);
 }
 
-export async function deleteInteractionEvent(event: Event<InteractionRecordedPayload>): Promise<DeleteEventResult> {
+export async function deleteInteractionEvent(
+  event: Event<InteractionRecordedPayload>,
+  options?: DeleteEventPermissionOptions
+): Promise<DeleteEventResult> {
+  assertEventDeletionAllowed(options);
+
   if (!event.id) {
     throw new Error('Cannot delete an interaction event without an event id');
   }
@@ -174,7 +199,12 @@ export async function deleteInteractionEvent(event: Event<InteractionRecordedPay
   };
 }
 
-export async function deleteInteractionEventById(eventId: string): Promise<DeleteEventResult> {
+export async function deleteInteractionEventById(
+  eventId: string,
+  options?: DeleteEventPermissionOptions
+): Promise<DeleteEventResult> {
+  assertEventDeletionAllowed(options);
+
   if (!eventId) {
     throw new Error('Cannot delete an interaction event without an event id');
   }
@@ -187,5 +217,5 @@ export async function deleteInteractionEventById(eventId: string): Promise<Delet
     throw new Error(`Event is not an interaction_recorded event: ${eventId}`);
   }
 
-  return deleteInteractionEvent(event);
+  return deleteInteractionEvent(event, options);
 }

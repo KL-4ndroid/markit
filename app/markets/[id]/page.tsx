@@ -922,7 +922,7 @@ export default function MarketDetailPage({ params }: PageProps) {
   const handleDeleteDeal = useCallback(async (deal: Event<DealClosedPayload>) => {
     if (dbStatus?.ok === false) return;
     try {
-      const result = await deleteDealEvent(deal);
+      const result = await deleteDealEvent(deal, { allowDelete: !isStaff });
 
       setDealEvents(prev => prev.filter(d => d.id !== deal.id));
 
@@ -940,7 +940,7 @@ export default function MarketDetailPage({ params }: PageProps) {
       const updatedDeals = await getActiveDealEventsForMarket(marketId);
       setDealEvents(updatedDeals);
     }
-  }, [marketId, selectedDeal, dbStatus]);
+  }, [marketId, selectedDeal, dbStatus, isStaff]);
   // ✅ 防止 hydration 錯誤：在客戶端掛載前不渲染任何內容
   if (!isMounted) {
     return null;

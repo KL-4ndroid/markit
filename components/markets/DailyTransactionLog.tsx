@@ -177,9 +177,9 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
 
     try {
       if (selectedLog.type === 'deal') {
-        await deleteDealEventById(selectedLog.id);
+        await deleteDealEventById(selectedLog.id, { allowDelete });
       } else {
-        await deleteInteractionEventById(selectedLog.id);
+        await deleteInteractionEventById(selectedLog.id, { allowDelete });
       }
       setShowDeleteConfirm(false);
       setSelectedLog(null);

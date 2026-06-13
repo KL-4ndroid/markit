@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {
+  assertEventDeletionAllowed,
   assertEventCanBeDeleted,
+  deleteDealEvent,
   recordDealDeletedEvent,
   resolveDealDeletionResult,
 } from '../lib/markets/event-deletion-service';
@@ -172,6 +174,18 @@ async function main(): Promise<void> {
   assert.throws(
     () => assertEventCanBeDeleted(undefined, new Set()),
     /without an event id/
+  );
+
+  assert.doesNotThrow(() => assertEventDeletionAllowed({ allowDelete: true }));
+
+  assert.throws(
+    () => assertEventDeletionAllowed(),
+    /not allowed/
+  );
+
+  await assert.rejects(
+    () => deleteDealEvent(dealEvent()),
+    /not allowed/
   );
 
   console.log('PASS event deletion service payload calculation');

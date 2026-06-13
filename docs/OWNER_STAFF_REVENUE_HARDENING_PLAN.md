@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | C2.23 | Deal mode flags 明確化 | `deal_closed` 一律寫入明確 `isBackfill` / `isManualEntry` boolean，避免補登與正常成交語意模糊 | `lib/db/hooks.ts`, `tests/deal-mode-flags.test.ts` | 已完成 |
 | C2.24A | Staff 刪除入口封鎖 | Staff 不顯示成交 / 互動刪除入口；`DailyTransactionLog` 預設唯讀，只有明確 `allowDelete` 才顯示刪除 | `DailyTransactionLog`, `daily-log-permissions` | 已完成 |
-| C2.24B | 刪除 service 權限防護 | service 層加入明確 role / permission guard，避免非 UI 入口誤觸發 tombstone | `event-deletion-service` | 待分析 |
+| C2.24B | 刪除 service 權限防護 | service 層加入明確 role / permission guard，避免非 UI 入口誤觸發 tombstone | `event-deletion-service` | 已完成 |
 | C2.25 | DailyTransactionLog 成交筆數修正 | 成交筆數使用 `getDealEventCount()`，支援 `manualDealCount` | `components/markets/DailyTransactionLog.tsx` | 待開始 |
 | C2.26 | Staff 敏感財務欄位 UI 審查 | Staff 不顯示成本、利潤、毛利率、費用、供應商資訊 | Staff detail / sales UI | 待開始 |
 | C2.27 | Staff local-first detail 檢查 | Staff 詳情頁優先使用已 sanitize 的本機資料，避免 remote row 曝露敏感欄位 | market detail / staff view | 待分析 |
@@ -67,3 +67,7 @@
 - 新增 `canDeleteDailyLogEntry()`，`DailyTransactionLog` 預設不顯示刪除入口。
 - StaffMarketDetailView 使用 `DailyTransactionLog` 時未傳 `allowDelete`，因此 Staff 只能查看流水帳，不能刪除成交或互動記錄。
 - 新增 `tests/daily-log-permissions.test.ts`。
+- C2.24B 已完成。
+- `event-deletion-service` 的刪除入口現在需要明確 `allowDelete: true`，未授權呼叫會在讀取 DB 或寫入 tombstone 前被拒絕。
+- Owner 市集詳情頁呼叫 `deleteDealEvent()` 時傳入 `allowDelete: !isStaff`；`DailyTransactionLog` 也會把 `allowDelete` 傳入 service。
+- `tests/event-deletion-service.test.ts` 已補上 permission guard 測試。
