@@ -535,6 +535,93 @@ export async function updateSettings(updates: Partial<Settings>): Promise<void> 
   await recordEvent('settings_updated', updates);
 }
 
+// ==================== 市場統計 Projection Hook ====================
+
+function getDateRange(startDate: string, endDate: string): string[] {
+  const dates: string[] = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  }
+  return dates;
+}
+
+export interface MarketStatsFromProjection {
+  totalRevenue: number;
+  totalDeals: number;
+  totalInteractions: number;
+  source: 'projection' | 'market_field';
+  projectionRevenue: number;
+  projectionDeals: number;
+  projectionInteractions: number;
+  hasMismatch: boolean;
+}
+
+/**
+ * 從 dailyStats projection cache 讀取市場統計
+ *
+ * 用途：市場詳情頁的「即時統計」區塊，取代直接讀取
+ * market.totalRevenue / market.totalDeals / market.totalInteractions。
+ * 當 projection 與 market 欄位不一致時，會標記 hasMismatch。
+ *
+ * C2.16B 確認 interaction 統計已統一至 dailyStats.extraInteractions，
+ * 此 Hook 進一步將 revenue / deals 也統一至 dailyStats projection。
+ */
+export function useMarketStatsFromProjection(market: Market | null | undefined): MarketStatsFromProjection | undefined {
+  return useLiveQuery(async () => {
+    const fallback: MarketStatsFromProjection = {
+      totalRevenue: market?.totalRevenue ?? 0,
+      totalDeals: market?.totalDeals ?? 0,
+      totalInteractions: market?.totalInteractions ?? 0,
+      source: 'market_field',
+      projectionRevenue: 0,
+      projectionDeals: 0,
+      projectionInteractions: 0,
+      hasMismatch: false,
+    };
+
+    if (!market?.id) return fallback;
+
+    const dates = market.dates && market.dates.length > 0
+      ? market.dates
+      : getDateRange(market.startDate, market.endDate);
+
+    if (dates.length === 0) return fallback;
+
+    const stats = await db.dailyStats
+      .where('marketId')
+      .equals(market.id)
+      .toArray();
+
+    const filteredStats = stats.filter(s => dates.includes(s.date));
+
+    const projectionRevenue = filteredStats.reduce((sum, s) => sum + (s.revenue ?? 0), 0);
+    const projectionDeals = filteredStats.reduce((sum, s) => sum + (s.dealCount ?? 0), 0);
+    const projectionInteractions = filteredStats.reduce((sum, s) => {
+      const extra = s.extraInteractions
+        ? Object.values(s.extraInteractions).reduce((a, b) => a + b, 0)
+        : 0;
+      return sum + (s.touchCount ?? 0) + (s.inquiryCount ?? 0) + extra;
+    }, 0);
+
+    const hasMismatch =
+      projectionRevenue !== (market.totalRevenue ?? 0) ||
+      projectionDeals !== (market.totalDeals ?? 0);
+
+    return {
+      totalRevenue: projectionRevenue,
+      totalDeals: projectionDeals,
+      totalInteractions: projectionInteractions,
+      source: 'projection',
+      projectionRevenue,
+      projectionDeals,
+      projectionInteractions,
+      hasMismatch,
+    };
+  }, [market?.id, market?.startDate, market?.endDate, JSON.stringify(market?.dates), market?.totalRevenue, market?.totalDeals]);
+}
+
 // ==================== 事件歷史 Hooks ====================
 
 /**

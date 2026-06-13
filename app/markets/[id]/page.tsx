@@ -29,7 +29,7 @@ import {
   Circle,
   Package
 } from 'lucide-react';
-import { useMarket, updateMarketStatus, startMarket, endMarket } from '@/lib/db/hooks';
+import { useMarket, updateMarketStatus, startMarket, endMarket, useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import {
@@ -219,6 +219,9 @@ export default function MarketDetailPage({ params }: PageProps) {
   // ✅ 根據模式選擇數據源（優先順序：員工 Supabase > 本地 > 降級 Supabase）
   const effectiveLocalMarket = localMarket ?? directLocalMarket;
   const market = selectMarketDetailRecord(supabaseMarket, effectiveLocalMarket);
+  // ✅ 從 dailyStats projection 讀取市場統計（C2.19B）
+  // Staff 模式下 projection 可能為空，保持 undefined 不影響顯示
+  const stats = useMarketStatsFromProjection(effectiveLocalMarket ?? undefined);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPending, startTransition] = useTransition(); // 用於非阻塞更新
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1545,7 +1548,7 @@ export default function MarketDetailPage({ params }: PageProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-[#7B9FA6]/10 rounded-xl p-4">
               <div className="text-2xl font-medium text-[#7B9FA6]">
-                {formatCurrency(market.totalRevenue || 0)}
+                {formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0)}
               </div>
               <div className="text-sm text-[#6B6B6B] mt-1">總收入</div>
             </div>
@@ -1567,7 +1570,7 @@ export default function MarketDetailPage({ params }: PageProps) {
             </div>
             <div className="bg-[#D4A574]/10 rounded-xl p-4">
               <div className="text-2xl font-medium text-[#D4A574]">
-                {market.totalDeals || 0}
+                {stats?.totalDeals ?? market.totalDeals ?? 0}
               </div>
               <div className="text-sm text-[#6B6B6B] mt-1">成交數</div>
             </div>
@@ -1588,8 +1591,8 @@ export default function MarketDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* 互動次數統計 */}
-          {interactionEvents.length > 0 && (
+          {/* 互動次數統計（C2.19B：從 dailyStats projection 讀取） */}
+          {(stats?.totalInteractions ?? interactionEvents.length) > 0 && (
             <div className="mt-4 pt-4 border-t border-[#7B9FA6]/10">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp className="w-4 h-4 text-[#7B9FA6]" />
