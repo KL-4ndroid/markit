@@ -1,330 +1,303 @@
-# Markit 資料存取盤點
-
-更新日期：2026-06-12
-階段：C2.14A
-狀態：完成第一輪盤點
-
-## 一、盤點目的
-
-本文件盤點目前 Markit 專案中 UI、同步、修復工具與分析功能如何讀取資料，目標是找出資料分裂來源，並為後續 Active Event Service、Market Projection Service、View Model 收斂建立邊界。
-
-目前核心問題不是單一 bug，而是同一個業務事實存在多個讀取入口：
-
-- `events`：事件歷史與 tombstone。
-- `dailyStats`：每日統計 projection。
-- `markets.totalRevenue` / `markets.totalDeals`：市集總計 projection。
-- Supabase `events` / snapshots / staff views：雲端來源。
-- UI component 內部自行 filter / reduce / 組資料。
-
-這些入口沒有完全統一，導致：
-
-- 每日收入卡片有金額，但成交列表空白。
-- 本機修復後正常，下一次同步又重新累加。
-- Owner 刪除成交後 Staff 仍看到補登記錄。
-- Staff recovery 出現 `deal_deleted invalid totalCost` 或 deleted target missing。
-
-## 二、主要資料來源分類
-
-| 資料來源 | 角色 | 是否真相來源 | 主要用途 | 風險 |
-|---|---|---:|---|---|
-| `db.events` | local event store | 是 | 成交、互動、刪除 tombstone、replay | 若 UI 各自 filter，容易口徑不一 |
-| `db.dailyStats` | local projection | 否 | 每日收入、成交數、分析資料 | 可能 stale、重複累加、缺 tombstone 扣除 |
-| `db.markets.totalRevenue` / `totalDeals` | local projection | 否 | 市集卡片、詳情總計、分析 | 可能和 events 不一致 |
-| `db.products` | local snapshot | 部分 | 商品列表、成交 item 補資訊、庫存 | Staff sanitizer 可能移除成本，product_deleted replay 可能缺商品 |
-| Supabase `events` | cloud event store | 是 | Owner sync、push/pull | backfilled timestamp / created_at cursor 曾造成漏拉 |
-| Supabase snapshots | cloud projection snapshot | 否 | Owner 快速載入 | 若 snapshot projection 污染，會把錯誤帶回本機 |
-| `staff_accessible_*` views | staff cloud view | 派生 | Staff 全量拉取授權資料 | view 若漏 tombstone，Staff projection 不會扣除 |
-
-## 三、功能讀取路徑盤點
-
-| 功能 | 檔案 | 目前資料來源 | 是否直接讀 db | 是否處理 tombstone | 風險 | 建議收斂方向 |
-|---|---|---|---:|---:|---|---|
-| 首頁統計 | `app/page.tsx` | `useMarkets()` / `useMonthlyStats()` | 間接 | 否 | 讀 `market.totalRevenue` projection，若 projection stale 會顯示錯誤 | 改讀 summary view model，必要時標示 projection status |
-| 市集列表卡片 | `app/markets/page.tsx`, `components/markets/MarketCard.tsx` | `useMarkets()` + market totals | 間接 | 否 | 列表收入依賴 `market.totalRevenue` | 後續可改讀 market list view model |
-| 市集詳情總計 | `app/markets/[id]/page.tsx` | `useMarket()` / `market.totalRevenue` / `market.totalDeals` | 間接 | 否 | projection stale 時總計錯誤 | 改由 market detail view model 提供 |
-| 市集詳情互動 / 成交事件 | `app/markets/[id]/page.tsx` | `getActiveInteractionEvents()` / `getActiveDealEvents()` | 間接 | 是 | component 內自行再 filter market/date，可能與其他 UI 口徑不同 | 改讀 active event service |
-| 每日收入卡片 | `components/markets/DailyRevenueStats.tsx` | `useDateRangeStats()` + `market.totalRevenue` | 間接 | 部分，只對互動讀 active events | 收入讀 `dailyStats`，成交列表讀 events，可能分裂 | 改讀 projection/view model，同一來源產生 daily rows 和 deal list |
-| 每日成交 Modal | `components/markets/DailyDealsModal.tsx` | 父層傳入 active deals | 否 | 父層處理 | 若父層 active deals 被 tombstone fallback 誤藏，Modal 會空白 | 改由 `getActiveDealEventsForDate()` 直接產生資料 |
-| 每日交易流水 | `components/markets/DailyTransactionLog.tsx` | `getActiveDealEvents()` / `getActiveInteractionEvents()` | 間接 | 是 | 與 `DailyRevenueStats` 分開讀，可能 dailyStats 有金額但流水缺 event | 改讀同一 daily transaction view model |
-| 成交詳情 | `components/markets/DealDetailModal.tsx` | `DealClosedPayload` + read model helper | 否 | 否 | 依賴上游傳入 active deal；若上游缺 event 就無法顯示 | 保留，但輸入應來自 active event service |
-| 補登收入 | `components/markets/AddRevenueDialog.tsx` | `recordDeal()` | 間接寫入 | 否 | 寫入 events 後 projection 由 handler 更新；若 replay/sync 後重複，projection 可能加倍 | 後續由 sync reconciliation 防止復發 |
-| 刪除成交 | `app/markets/[id]/page.tsx`, `lib/markets/event-deletion-service.ts` | `deleteDealEvent()` -> `deal_deleted` | 間接寫入 | 建立 tombstone | Owner local 會扣 projection；Staff 若 tombstone 未 replay 或已存在 skip，會不一致 | sync 後 reconciliation 必須覆蓋 |
-| 分析頁總覽 | `app/analytics/page.tsx` | `useMarkets()` / `useProducts()` / `getActiveDealEvents()` / `db.dailyStats` | 是 | 部分 | 同頁混用 market totals、events、dailyStats，分析口徑可能不一致 | 建立 analytics view model |
-| Analytics detail list | `components/analytics/MarketDetailList.tsx` | `db.events` + market totals | 是 | 不明確 | 可能未套用 active tombstone | 改讀 active event service 或 analytics view model |
-| Analytics engines | `lib/analytics/*` | 多數讀 market totals / dailyStats / productsSold | 部分 | 多數否 | 若 projection stale，建議會被污染 | 以 projection comparison 或 active event summary 作為輸入 |
-| Live metrics | `components/sales/LiveMetrics.tsx`, `lib/sales/live-metrics.ts` | active deal helpers | 間接 | 是 | 較接近正確口徑，但仍不統一於 projection service | 後續接 active event service |
-| Quick interaction / transaction | `components/sales/*` | `recordEvent` / `recordDeal` / `useProducts` | 間接 | 否 | 寫入後依賴 handler 更新 projection | 保留寫入入口，但 sync 後需 reconciliation |
-| Recovery integrity | `components/common/DatabaseRecoveryPanel.tsx` | integrity / recovery services | 間接 | 視 service | 目前多為資料修補，非統一 projection rebuild | 改用 projection service |
-| Local projection repair | `components/common/LocalProjectionRepairPanel.tsx` | 本機 events / dailyStats / markets | 間接 | 依 service | 已接近目標，但需確認是否使用統一 active event rules | 重構為 Market Projection Service UI |
-| Owner revenue gap repair | `lib/sync/owner-revenue-gap-repair.ts` | Supabase events + local db | 是 | 部分 | 針對特定 gap，非通用 projection rebuild | 保留為特殊修復，避免取代通用 service |
-| Data canonicalization | `components/settings/DataCanonicalizationPanel.tsx`, `lib/db/data-canonicalization.ts` | events / dailyStats | 是 | 否 | 格式收斂有幫助，但不解 projection stale | 保留，作為 import/sync 前後格式修正 |
-| Snapshot load | `lib/db/snapshot.ts` | Supabase snapshot tables | 是 | 否 | snapshot projection 若污染，會導入錯誤 totals | load 後需 reconciliation |
-| Owner sync | `hooks/useSync.ts` | Supabase `events` / snapshots | 是 | replay handler | `created_at` cursor 已修漏拉，但 snapshot + incremental 仍需 projection check | 加 touched market reconciliation |
-| Staff sync | `hooks/useSync.ts` | `staff_accessible_markets/products/events` | 是 | replay handler | existing event skip 不重跑 handler；sanitize 後 cost 欄位缺失 | 加 tombstone-safe reconciliation |
+# Market Pulse - Data Access Audit
+
+> **Audit Date**: 2026-06-13  
+> **Project**: Market Pulse (Local-First Event Sourcing Architecture)  
+> **Purpose**: Comprehensive audit of all data READ paths, identifying service candidates for extraction
+
+---
+
+## 1. Executive Summary
+
+This audit documents all data read paths in the Market Pulse application, categorizing them by data source, read mechanism, and tombstone handling. The codebase follows a **Local-First architecture** with Dexie.js (IndexedDB) as the primary data source and Supabase as a backup/sync layer.
+
+### Key Findings
+
+| Category | Count | Notes |
+|----------|-------|-------|
+| Pages reading from Dexie | 4 | markets, products, recovery, market detail |
+| Components with direct DB access | 12+ | Including modals, charts, analytics |
+| Custom Hooks (useLiveQuery) | 8 | useMarkets, useProducts, useMarket, useDailyStats, etc. |
+| Service functions | 5+ | getMarketDetail, getActiveDealEvents, getActiveInteractionEvents |
+| Projection cache reads (dailyStats) | 3 | DailyRevenueStats, useDateRangeStats, useDailyStats |
+| Raw events reads | 4 | active-event-service, market detail page, analytics dashboard |
 
-## 四、目前直接讀取 `dailyStats` 的位置
+---
 
-主要用途：
+## 2. Data Access Matrix
+
+| 功能 | 檔案 | 資料來源 | 讀取方式 | 處理 Tombstone | 風險 | 建議 |
+|---|---|---|---|---|---|---|
+| 市集列表 | `app/markets/page.tsx` | `db.markets` | `useMarkets` (useLiveQuery) | 否 (過濾 `isDeleted`) | 低 | 已遵循 Local-First |
+| 單一市集詳情 | `app/markets/[id]/page.tsx` | `db.markets`, `db.events` | `useMarket`, `getMarketDetail`, `getActiveDealEventsForMarket`, `getActiveInteractionEventsForMarket` | 部分 (events 走 active-event-service) | 中 | 混合降級 Supabase 查詢，需注意 |
+| 商品列表 | `app/products/page.tsx` | `db.products` | `useProducts` (useLiveQuery) | 否 | 低 | 已遵循 Local-First |
+| 資料修復頁 | `app/recovery/page.tsx` | 面板組件 | 面板內部查詢 | N/A | 低 | 僅用於維修操作 |
+| 每日收入統計 | `components/markets/DailyRevenueStats.tsx` | `db.dailyStats` | `useDateRangeStats` (useLiveQuery) | 否 | 中 | 依賴 Projection Cache，需確保同步 |
+| 日期成交記錄 | `components/markets/DailyDealsModal.tsx` | `db.events` (props 傳入) | 由父組件過濾 | 由父組件處理 | 低 | Props-driven，職責清晰 |
+| 成交詳情彈窗 | `components/markets/DealDetailModal.tsx` | `db.events` (props 傳入) | 由父組件過濾 | 由父組件處理 | 低 | Props-driven，無直接 DB 存取 |
+| 當日流水帳 | `components/markets/DailyTransactionLog.tsx` | `db.events` | `getActiveDealEventsForDate`, `getActiveInteractionEventsForDate` | 是 (由 active-event-service 處理) | 低 | 已正確處理 Tombstone |
+| 互動偏好圖 | `components/analytics/InteractionPreferenceChart.tsx` | `db.events` (props 傳入) | 由父組件過濾 | 由父組件處理 | 低 | Props-driven |
+| 時序熱力圖 | `components/analytics/InteractionTimeHeatmap.tsx` | `db.events` (props 傳入) | 由父組件過濾 | 由父組件處理 | 低 | Props-driven |
+| 智能洞察卡片 | `components/analytics/BehaviorInsightCard.tsx` | Props (已計算) | 無 | N/A | 低 | 純展示組件 |
+| 分析儀表板 | `components/analytics/AnalyticsDashboard.tsx` | `db.markets`, `db.events` | 直接 `db.markets.get`, `computeMarketAnalytics` | 部分 (analytics service) | 中 | 需確保 analytics service 正確處理刪除事件 |
+| KPI 卡片 | `components/analytics/KPICards.tsx` | Props (已計算) | 無 | N/A | 低 | 純展示組件 |
+| 每日收入圖 | `components/analytics/DailyRevenueChart.tsx` | Props (Map) | 無 | N/A | 低 | 純展示組件 |
+| 成交項目 | `components/markets/DealItem.tsx` | Props (Event) | 無 | 由父組件處理 | 低 | 純展示組件 |
 
-- 每日收入明細。
-- 分析資料。
-- recovery / integrity。
-- sync 後 staff projection sanitization。
+---
 
-重要檔案：
+## 3. Deep Dive Analysis
 
-- `components/markets/DailyRevenueStats.tsx`
-- `lib/db/hooks.ts` 的 `useDailyStats()` / `useDateRangeStats()`
-- `app/analytics/page.tsx`
-- `lib/db/recovery.ts`
-- `lib/db/integrity.ts`
-- `hooks/useSync.ts` 的 `sanitizeStaffProjectionsAfterReplay()`
-- `components/common/LocalProjectionRepairPanel.tsx`
+### 3.1 Pages Reading from `db.dailyStats` vs `db.events`
 
-風險：
+#### Reading from `db.dailyStats` (Projection Cache)
 
-`dailyStats` 是 projection，不是事件真相。若 `deal_closed` 被 replay 多次、或 `deal_deleted` 沒 replay，`dailyStats` 會變成錯誤快取。任何 UI 若只看 `dailyStats`，會誤以為資料正確。
+| 組件/位置 | Hook/函數 | 用途 |
+|---------|----------|------|
+| `components/markets/DailyRevenueStats.tsx` | `useDateRangeStats()` | 顯示每日收入、利潤、成交數 |
+| `lib/db/hooks.ts` - `useDateRangeStats()` | useLiveQuery → `db.dailyStats.where('date').between()` | 查詢日期範圍內的每日統計 |
+| `lib/db/hooks.ts` - `useDailyStats()` | useLiveQuery → `db.dailyStats.where('[date+marketId]')` | 查詢特定市集特定日期的統計 |
 
-## 五、目前直接或間接讀取 `db.events` 的位置
+#### Reading from `db.events` directly
 
-主要用途：
+| 組件/位置 | 函數 | 用途 |
+|---------|------|------|
+| `app/markets/[id]/page.tsx` | `getActiveDealEventsForMarket()` | 載入互動事件和成交事件 |
+| `components/markets/DailyTransactionLog.tsx` | `getActiveDealEventsForDate()`, `getActiveInteractionEventsForDate()` | 當日流水帳 |
+| `lib/events/active-event-service.ts` | `getActiveDealEventsForMarket()` 等 | 過濾已刪除事件的核心服務 |
+| `components/analytics/AnalyticsDashboard.tsx` | `db.markets.toArray()`, `computeMarketAnalytics()` | 分析計算 |
 
-- active deals / interactions。
-- analytics。
-- sync import/export。
-- tombstone 判斷。
-- recovery / projection repair。
+---
 
-重要檔案：
+### 3.2 Components Dependent on `useLiveQuery` from Dexie
 
-- `lib/db/event-tombstones.ts`
-- `app/markets/[id]/page.tsx`
-- `components/markets/DailyTransactionLog.tsx`
-- `app/analytics/page.tsx`
-- `components/analytics/MarketDetailList.tsx`
-- `hooks/useSync.ts`
-- `lib/db/snapshot.ts`
-- `lib/db/data-canonicalization.ts`
-- `lib/sync/owner-revenue-gap-repair.ts`
+The following custom hooks are built on `useLiveQuery` and provide reactive data to components:
 
-風險：
+| Hook | 返回類型 | 主要使用者 |
+|------|---------|----------|
+| `useMarkets(options?)` | `Market[]` | `app/markets/page.tsx`, `app/analytics/page.tsx` |
+| `useMarket(id)` | `Market \| undefined` | `app/markets/[id]/page.tsx` |
+| `useProducts(options?)` | `Product[]` | `app/products/page.tsx` |
+| `useProduct(id)` | `Product \| undefined` | (ProductCard 等) |
+| `useUpcomingMarkets(limit)` | `Market[]` | (Home dashboard 等) |
+| `useDailyStats(date, marketId)` | `DailyStat \| undefined` | (Stats components) |
+| `useDateRangeStats(startDate, endDate)` | `DailyStat[]` | `DailyRevenueStats` |
+| `useMonthlyStats(ownerId)` | `MonthlySummary` | (Stats components) |
+| `useSettings()` | `Settings \| undefined` | (Settings page) |
+| `useEvents()` | `Event[]` | (Event history components) |
+| `useRecentEvents(limit)` | `Event[]` | (Activity feed) |
+| `useMarketEvents(marketId)` | `Event[]` | (Market event log) |
+| `useDatabaseStats()` | `DatabaseStats` | (Recovery page) |
 
-不同地方對 events 的 filter 條件不完全一致。部分讀 active events，部分直接讀 raw events，會導致刪除 tombstone 套用不一致。
+---
 
-## 六、目前讀取 `market.totalRevenue` / `market.totalDeals` 的位置
+### 3.3 Services Providing Pre-Aggregated Data
 
-主要用途：
+These service modules abstract complex data transformations and provide computed results:
 
-- 首頁。
-- 市集列表卡片。
-- 市集詳情總計。
-- Staff 市集詳情。
-- 分析頁與 analytics engine。
+#### Core Event Services
 
-重要檔案：
+| 服務檔案 | 函數 | 輸出 |
+|---------|------|------|
+| `lib/events/active-event-service.ts` | `getActiveDealEventsForMarket(marketId)` | `Event<DealClosedPayload>[]` (已過濾 Tombstones) |
+| | `getActiveDealEventsForDate(marketId, date)` | 當日成交事件 |
+| | `getActiveInteractionEventsForMarket(marketId)` | 市集互動事件 (已過濾) |
+| | `getActiveInteractionEventsForDate(marketId, date)` | 當日互動事件 |
+| | `getDealSummaryFromEvents(marketId)` | `DealSummary` (包含按日期分組) |
 
-- `app/page.tsx`
-- `app/markets/page.tsx`
-- `components/markets/MarketCard.tsx`
-- `app/markets/[id]/page.tsx`
-- `components/markets/StaffMarketDetailView.tsx`
-- `components/markets/DailyRevenueStats.tsx`
-- `app/analytics/page.tsx`
-- `lib/analytics/*`
-- `lib/export-utils.ts`
+#### Market Detail Services
 
-風險：
+| 服務檔案 | 函數 | 輸出 |
+|---------|------|------|
+| `lib/markets/detail-service.ts` | `getMarketDetail(marketId)` | `Market \| undefined` |
+| `lib/markets/event-deletion-service.ts` | `deleteDealEvent()`, `deleteInteractionEventById()` | 刪除並更新投影 |
 
-`market.totalRevenue` / `totalDeals` 是 projection cache。若 cloud snapshot 或 local replay 污染，它會在多個 UI 位置被放大使用。
+#### Analytics Services
 
-## 七、Tombstone 處理路徑
+| 服務檔案 | 函數 | 輸出 |
+|---------|------|------|
+| `lib/analytics/` | `computeMarketAnalytics(market, options)` | `MarketAnalytics` (含 metrics, healthScore, diagnosis) |
+| | `calculateProductAffinity(markets, db)` | `ProductPair[]` |
 
-目前 tombstone event types：
+#### Tombstone Handling
 
-- `deal_deleted`
-- `interaction_deleted`
+| 服務檔案 | 函數 | 用途 |
+|---------|------|------|
+| `lib/db/event-tombstones.ts` | `getDeletedEventIds()` | 獲取所有刪除事件 ID |
+| | `getActiveDealEvents()` | 過濾已刪除的成交事件 |
+| | `getActiveInteractionEvents()` | 過濾已刪除的互動事件 |
+| | `withoutDeletedDealEvents()` | 語義刪除邏輯 (semantic delete) |
 
-集中讀取：
+---
 
-- `lib/db/event-tombstones.ts`
+### 3.4 C2.15 / C2.16 Service Candidates
 
-寫入：
+Based on the audit, the following service extractions are recommended:
 
-- `lib/markets/event-deletion-service.ts`
+#### C2.15: Market Events Read Model Service
 
-handler projection：
+**Current Location**: `lib/events/active-event-service.ts`, `app/markets/[id]/page.tsx`
 
-- `lib/db/events.ts`
+**Current Problem**: Market detail page directly calls multiple event services and manually filters/transforms data.
 
-主要風險：
+**Recommended Extraction**:
 
-1. `withoutDeletedDealEvents()` 在 target id 不存在時使用 semantic fallback。
-2. Semantic fallback key 是 `marketId | date | revenue | dealCount`。
-3. 如果舊 tombstone target missing，且剛好有同日期同金額同筆數的補登，它可能隱藏一筆 active deal。
-4. Staff sync 若已經把 tombstone 寫入 local `db.events`，但 handler 當次失敗，之後 sync 會因 event id 已存在而 skip，不會重跑 projection。
-
-## 八、Owner Sync 與 Staff Sync 差異
-
-| 項目 | Owner | Staff | 風險 |
-|---|---|---|---|
-| 雲端來源 | Supabase `events` / snapshots | `staff_accessible_*` views | 來源不同，欄位可能不同 |
-| cursor | `created_at` for normal event sync；snapshot incremental 用 `timestamp` | staff views 全量拉取 | Staff 每次全量但 existing event skip |
-| canonicalize | `createCanonicalSyncedEvent()` | `sanitizeEvents()` 後 `createCanonicalSyncedEvent()` | Staff sanitizer 可能移除 replay 需要的成本欄位 |
-| projection | handler replay | handler replay + projection sanitizer | Staff projection 更容易因 sanitize / skip 變 stale |
-| existing event | skip | skip | 若 event 已存在但 projection 未套用，錯誤會留住 |
-| tombstone | 從 cloud events 進來 | 從 staff view 進來 | view 若漏 `deal_deleted`，Staff 永遠不會扣除 |
-
-## 九、目前最大資料分裂風險
-
-### 1. 收入卡片與成交明細來源不同
-
-每日收入卡片讀 `dailyStats`，成交明細讀 active `deal_closed` events。
-
-結果：
-
-- `dailyStats` 有收入，但 events 被 tombstone 隱藏，成交列表會空白。
-- events 正確，但 `dailyStats` stale，卡片會顯示錯誤金額。
-
-### 2. Projection 被當成真相
-
-多個 UI 和 analytics engine 直接讀 `market.totalRevenue` / `dailyStats.revenue`。
-
-結果：
-
-- double / triple revenue 會被所有分析與卡片放大。
-- projection 修復後，如果 sync 再 replay，仍可能復發。
-
-### 3. Staff sync existing event skip
-
-Staff sync 先寫 event，再跑 handler。若 handler 曾失敗，後續看到 event 已存在就 skip。
-
-結果：
-
-- local event store 有 tombstone。
-- projection 沒扣除。
-- UI 仍顯示刪除前統計。
-
-### 4. Staff sanitizer 與 replay 欄位衝突
-
-Staff sanitizer 會移除成本欄位，這對隱私正確，但不能讓 integrity 或 replay fatal。
-
-結果：
-
-- `deal_deleted invalid totalCost`
-- `dailyStats cost 無效`
-- Staff recovery 顯示錯誤但資料可能只是被脫敏。
-
-### 5. Snapshot projection 污染
-
-Owner 首次或重新登入可能載入 snapshot projection。如果 snapshot 內 totals 已被污染，即使 events 正確，本機也會先得到錯誤 projection。
-
-結果：
-
-- 無痕或新裝置同步後再次看到 double revenue。
-- 本機 repair 只能暫時修正。
-
-## 十、下一階段 Service 邊界建議
-
-### C2.15 Active Event Service
-
-建議檔案：
-
-```text
-lib/events/active-event-service.ts
-tests/active-event-service.test.ts
+```typescript
+// lib/services/market-events-read-model.ts
+export class MarketEventsReadModel {
+  constructor(private db: Dexie) {}
+  
+  async getMarketDeals(marketId: string): Promise<DealEvent[]> { ... }
+  async getMarketInteractions(marketId: string): Promise<InteractionEvent[]> { ... }
+  async getDealsByDate(marketId: string, date: string): Promise<DealEvent[]> { ... }
+  async getInteractionsByDate(marketId: string, date: string): Promise<InteractionEvent[]> { ... }
+  async getDealSummary(marketId: string): Promise<DealSummary> { ... }
+  async getDailySummary(marketId: string, date: string): Promise<DailySummary> { ... }
+}
 ```
 
-建議 API：
+#### C2.16: Market Projection Cache Service
 
-```ts
-getActiveDealEventsForMarket(marketId: string): Promise<Event<DealClosedPayload>[]>
-getActiveDealEventsForDate(marketId: string, date: string): Promise<Event<DealClosedPayload>[]>
-getActiveInteractionEventsForMarket(marketId: string): Promise<Event<InteractionRecordedPayload>[]>
-getActiveInteractionEventsForDate(marketId: string, date: string): Promise<Event<InteractionRecordedPayload>[]>
-getDealSummaryFromEvents(marketId: string): Promise<{
-  dealCount: number;
-  revenue: number;
-  byDate: Array<{ date: string; dealCount: number; revenue: number }>;
-}>
+**Current Location**: `lib/db/hooks.ts` (useDateRangeStats, useDailyStats), `components/markets/DailyRevenueStats.tsx`
+
+**Current Problem**: Components directly query `db.dailyStats` without validation against raw events.
+
+**Recommended Extraction**:
+
+```typescript
+// lib/services/market-projection-cache.ts
+export class MarketProjectionCache {
+  constructor(private db: Dexie) {}
+  
+  async getDateRangeStats(startDate: string, endDate: string): Promise<DailyStat[]> { ... }
+  async getDailyStats(date: string, marketId: string): Promise<DailyStat \| undefined> { ... }
+  
+  // Projection validation
+  async validateProjectionIntegrity(marketId: string): Promise<ProjectionGap[]> { ... }
+  async repairProjection(marketId: string): Promise<void> { ... }
+}
 ```
 
-規則：
+#### Additional Service Candidates
 
-- 所有 deal / interaction UI 都經由此 service。
-- 不讓 UI 自己處理 tombstone。
-- 保留既有 `event-read-model.ts` 作為 payload 讀取底層。
+| 候選服務 | 當前位置 | 職責 |
+|---------|---------|------|
+| `MarketAnalyticsComputeService` | `lib/analytics/`, `AnalyticsDashboard` | 封裝 `computeMarketAnalytics` 邏輯 |
+| `DailyTransactionLogService` | `DailyTransactionLog.tsx` | 流水帳資料聚合邏輯 |
+| `InteractionStatsService` | `app/markets/[id]/page.tsx` | 互動統計計算 |
 
-### C2.16 Market Projection Service
+---
 
-建議檔案：
+## 4. Tombstone Handling Analysis
 
-```text
-lib/projections/market-projection-service.ts
-tests/market-projection-service.test.ts
-```
+### 4.1 Current Implementation
 
-建議 API：
+The codebase implements **event sourcing with tombstones** for soft-delete semantics:
 
-```ts
-compareMarketProjectionWithEvents(marketId: string): Promise<ProjectionComparison>
-rebuildMarketStatsFromEvents(marketId: string): Promise<ProjectionRebuildResult>
-rebuildMarketDailyStatsFromEvents(marketId: string): Promise<DailyStatsRebuildResult>
-```
+| 刪除類型 | Tombstone Event | 過濾位置 |
+|---------|-----------------|---------|
+| 成交刪除 | `deal_deleted` | `lib/db/event-tombstones.ts` - `getActiveDealEvents()` |
+| 互動刪除 | `interaction_deleted` | `lib/db/event-tombstones.ts` - `getActiveInteractionEvents()` |
+| 市集刪除 | `isDeleted` flag | `useMarkets()` hook 內過濾 |
+| 商品刪除 | `isActive` flag | `useProducts()` hook 內過濾 |
 
-規則：
+### 4.2 Components Correctly Handling Tombstones
 
-- 只重建 `market` totals 與 `dailyStats`。
-- 不修改 events。
-- 不修改 cloud。
-- 不修改 product stock / totalSold。
-- 使用 Active Event Service 作為唯一事件輸入。
+- `DailyTransactionLog.tsx` - Uses `getActiveDealEventsForDate`, `getActiveInteractionEventsForDate`
+- `app/markets/[id]/page.tsx` - Uses `getActiveDealEventsForMarket`, `getActiveInteractionEventsForMarket`
+- `AnalyticsDashboard.tsx` - Relies on analytics service which reads events
 
-### C2.18 Sync Reconciliation
+### 4.3 Components NOT Handling Tombstones (Risk)
 
-建議接入點：
+| 組件 | 問題 | 建議 |
+|-----|------|------|
+| `DailyRevenueStats.tsx` | 直接讀 `db.dailyStats`，依賴 Projection Cache | 需驗證 Projection 同步 |
+| `useDateRangeStats()` | 同上 | 需提供 Projection 驗證 Hook |
 
-- Owner `pullAllEvents`
-- Owner `pullIncrementalEvents`
-- Staff `syncEventsToIndexedDB`
-- Snapshot load 後
+---
 
-規則：
+## 5. Risk Assessment
 
-- 收集 touched market ids。
-- sync 完成後 compare projection。
-- mismatch 時 rebuild projection。
-- reconciliation 失敗不應讓登入卡死，但要記錄錯誤並可在 recovery 顯示。
+### 5.1 High Priority Risks
 
-## 十一、建議優先修正順序
+| 風險 | 描述 | 緩解建議 |
+|-----|------|---------|
+| Projection Cache Staleness | `dailyStats` projection 可能落後於 raw events | 添加 `validateProjectionIntegrity()` 方法 |
+| Supabase Fallback | 員工模式直接讀 Supabase，不走 Local-First | 統一資料流經 Dexie |
+| Missing Tombstone in Stats | `DailyRevenueStats` 不處理刪除的成交 | 驗證或修復 Projection |
 
-1. C2.15A：設計 active event service。
-2. C2.15B：實作 active event service 與 tombstone tests。
-3. C2.16A：設計 market projection service。
-4. C2.16B：實作 projection rebuild service。
-5. C2.17A：Recovery 接入 projection rebuild。
-6. C2.18A：設計 sync reconciliation。
-7. C2.18B：Owner sync reconciliation。
-8. C2.18C：Staff sync reconciliation。
-9. C2.19：UI view model 收斂。
+### 5.2 Medium Priority Risks
 
-## 十二、目前不建議做的事
+| 風險 | 描述 | 緩解建議 |
+|-----|------|---------|
+| Analytics Computation | `computeMarketAnalytics` 需確保讀取已過濾事件 | 檢查 analytics service 實作 |
+| Dual Data Source | 市集詳情頁混合 `useMarket` 和 `getMarketDetail` | 統一為一個 Hook |
 
-- 不建議用日期 cutoff 修舊資料。
-- 不建議在 UI 裡針對特定 market 補判斷。
-- 不建議直接刪除 local events。
-- 不建議直接修改 cloud events。
-- 不建議一次大改 `hooks/useSync.ts`。
-- 不建議在沒有 active event service 前改多個 UI。
+---
 
-## 十三、C2.14 結論
+## 6. Recommendations
 
-資料分裂的主因是：
+### 6.1 Immediate Actions
 
-```text
-UI read model 不統一
-+ projection cache 被當成真相
-+ tombstone 套用位置分散
-+ Owner / Staff sync 進入 IndexedDB 後缺少 projection reconciliation
-```
+1. **Extract `MarketEventsReadModel` Service** (C2.15)
+   - Move event filtering logic from page component to service
+   - Ensure consistent tombstone handling
 
-下一步應先建立 Active Event Service，讓所有成交與互動資料的讀取口徑收斂；再建立 Market Projection Service，讓 projection 可以從 active events 穩定重建。此順序風險最低，也最能阻止同類問題反覆發生。
+2. **Extract `MarketProjectionCache` Service** (C2.16)
+   - Add projection validation methods
+   - Provide cache repair capabilities
+
+3. **Unify Market Detail Data Access**
+   - Replace `useMarket` + `getMarketDetail` hybrid with single source
+
+### 6.2 Long-term Architecture
+
+1. **Event Read Model Pattern**
+   - All event reads should go through read model services
+   - Read models handle tombstone filtering automatically
+
+2. **Projection Validation**
+   - Add integrity check between projection cache and raw events
+   - Provide automatic repair mechanisms
+
+3. **Local-First Enforcement**
+   - Remove Supabase direct reads from UI components
+   - All data should flow through Dexie
+
+---
+
+## 7. Appendix: File Reference
+
+### Core Database Files
+
+| 檔案 | 描述 |
+|------|------|
+| `lib/db/index.ts` | Dexie 資料庫定義 |
+| `lib/db/hooks.ts` | React Hooks 封裝 |
+| `lib/db/events.ts` | Event sourcing 寫入邏輯 |
+| `lib/db/event-tombstones.ts` | Tombstone 過濾邏輯 |
+
+### Service Files
+
+| 檔案 | 描述 |
+|------|------|
+| `lib/events/active-event-service.ts` | 活躍事件讀取服務 |
+| `lib/markets/detail-service.ts` | 市集詳情服務 |
+| `lib/markets/event-deletion-service.ts` | 事件刪除服務 |
+| `lib/markets/event-view-utils.ts` | 事件視圖工具函數 |
+
+### Key Pages
+
+| 檔案 | 資料讀取模式 |
+|------|-------------|
+| `app/markets/page.tsx` | `useMarkets()` |
+| `app/markets/[id]/page.tsx` | `useMarket()` + `getMarketDetail()` + `getActiveDealEventsForMarket()` |
+| `app/products/page.tsx` | `useProducts()` |
+| `app/recovery/page.tsx` | Recovery panels |
+
+### Key Components
+
+| 檔案 | 資料讀取模式 |
+|------|-------------|
+| `DailyRevenueStats.tsx` | `useDateRangeStats()` (Projection Cache) |
+| `DailyTransactionLog.tsx` | `getActiveDealEventsForDate()` (Events) |
+| `AnalyticsDashboard.tsx` | `db.markets.get()` + `computeMarketAnalytics()` |
