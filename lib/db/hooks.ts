@@ -622,6 +622,74 @@ export function useMarketStatsFromProjection(market: Market | null | undefined):
   }, [market?.id, market?.startDate, market?.endDate, JSON.stringify(market?.dates), market?.totalRevenue, market?.totalDeals]);
 }
 
+/**
+ * 批次從 dailyStats projection cache 讀取多個市場的統計
+ *
+ * 用途：C3.5 — 市場列表頁的 MarketCard，避免每張卡片單獨呼叫
+ * useMarketStatsFromProjection 而產生 N 次 dailyStats 查詢。
+ * 一次查詢所有市場的 dailyStats，再依 marketId + dates 過濾。
+ *
+ * 與 useMarketStatsFromProjection 的差異：
+ * - 單一市場查詢（useMarketStatsFromProjection）：适合詳情頁
+ * - 批次查詢（本 Hook）：適合列表頁，減少 DB 查詢次數
+ *
+ * 當 market.totalRevenue === projectionRevenue 時，視為一致；
+ * 否則顯示 projection 數值並標記 hasMismatch。
+ */
+export interface MarketBatchStatsMap {
+  [marketId: string]: MarketStatsFromProjection;
+}
+
+export function useMarketStatsBatch(markets: Market[] | undefined): MarketBatchStatsMap | undefined {
+  return useLiveQuery(async () => {
+    if (!markets || markets.length === 0) return undefined;
+
+    const marketIds = markets.map(m => m.id).filter(Boolean) as string[];
+    const allStats = await db.dailyStats
+      .where('marketId')
+      .anyOf(marketIds)
+      .toArray();
+
+    const statsMap: MarketBatchStatsMap = {};
+
+    for (const market of markets) {
+      if (!market.id) continue;
+
+      const dates = market.dates && market.dates.length > 0
+        ? market.dates
+        : getDateRange(market.startDate, market.endDate);
+
+      const filteredStats = allStats.filter(s => dates.includes(s.date));
+
+      const projectionRevenue = filteredStats.reduce((sum, s) => sum + (s.revenue ?? 0), 0);
+      const projectionDeals = filteredStats.reduce((sum, s) => sum + (s.dealCount ?? 0), 0);
+      const projectionInteractions = filteredStats.reduce((sum, s) => {
+        const extra = s.extraInteractions
+          ? Object.values(s.extraInteractions).reduce((a, b) => a + b, 0)
+          : 0;
+        return sum + (s.touchCount ?? 0) + (s.inquiryCount ?? 0) + extra;
+      }, 0);
+
+      const hasMismatch =
+        projectionRevenue !== (market.totalRevenue ?? 0) ||
+        projectionDeals !== (market.totalDeals ?? 0);
+
+      statsMap[market.id] = {
+        totalRevenue: projectionRevenue,
+        totalDeals: projectionDeals,
+        totalInteractions: projectionInteractions,
+        source: 'projection',
+        projectionRevenue,
+        projectionDeals,
+        projectionInteractions,
+        hasMismatch,
+      };
+    }
+
+    return statsMap;
+  }, [markets?.length, JSON.stringify(markets?.map(m => m.id).sort())]);
+}
+
 // ==================== 事件歷史 Hooks ====================
 
 /**

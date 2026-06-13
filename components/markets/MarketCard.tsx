@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Calendar, MapPin, DollarSign, Table, Armchair, Umbrella, Target, Users, TrendingUp, Clock, Play, Shield, Lock, AlertCircle } from 'lucide-react';
 import type { Market, MarketStatus } from '@/types/db';
+import type { MarketStatsFromProjection } from '@/lib/db/hooks';
 import { formatDate, formatCurrency, formatDateRanges, filterCurrentWeekDates } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
 import { getShadowClass, getBorderClass } from '@/lib/theme-config';
@@ -11,7 +12,14 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 
 interface MarketCardProps {
   market: Market;
-  variant?: 'default' | 'home' | 'upcoming'; // 新增 upcoming 變體
+  variant?: 'default' | 'home' | 'upcoming';
+  /**
+   * Optional stats from projection cache. When provided, the card uses
+   * projection revenue/deals instead of market.totalRevenue/totalDeals.
+   * Falls back to market fields if omitted.
+   * C3.5: enables cloud-first summary view model.
+   */
+  stats?: MarketStatsFromProjection;
 }
 
 /**
@@ -26,7 +34,7 @@ interface MarketCardProps {
  * 
  * @param variant - 'default': 完整版（市集頁面）, 'home': 首頁今日市集（顯示完整資訊）, 'upcoming': 即將到來（隱藏收入/利潤/互動/成交）
  */
-export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
+export function MarketCard({ market, variant = 'default', stats }: MarketCardProps) {
   const router = useRouter();
   const [showNotesModal, setShowNotesModal] = useState(false);
   
@@ -106,10 +114,12 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
     return { status: 'not_started', label: '尚未開始', color: 'bg-[#6B6B6B]/10 text-[#6B6B6B]' };
   };
 
-  // 計算轉換率
+  // 計算轉換率（C3.5：優先使用 projection 數值）
   const getConversionRate = () => {
-    if (!market.totalInteractions || market.totalInteractions === 0) return '0.0';
-    const rate = ((market.totalDeals || 0) / market.totalInteractions) * 100;
+    const interactions = stats?.totalInteractions ?? market.totalInteractions ?? 0;
+    const deals = stats?.totalDeals ?? market.totalDeals ?? 0;
+    if (!interactions || interactions === 0) return '0.0';
+    const rate = (deals / interactions) * 100;
     return rate.toFixed(1);
   };
 
@@ -315,7 +325,7 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
               )}
             </div>
             <div className="font-bold text-lg text-[#7B9FA6] tabular-nums">
-              {formatCurrency(market.totalRevenue || 0)}
+              {formatCurrency(stats?.totalRevenue ?? (market.totalRevenue || 0))}
             </div>
           </div>
           
@@ -344,7 +354,7 @@ export function MarketCard({ market, variant = 'default' }: MarketCardProps) {
               成交次數
             </div>
             <div className="font-bold text-lg text-[#D4A574] tabular-nums">
-              {market.totalDeals || 0} <span className="text-sm font-normal">筆</span>
+              {stats?.totalDeals ?? (market.totalDeals || 0)} <span className="text-sm font-normal">筆</span>
             </div>
           </div>
           {!isStaff && (

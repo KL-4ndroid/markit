@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Plus, AlertCircle } from 'lucide-react';
-import { useMarkets } from '@/lib/db/hooks';
+import { useMarkets, useMarketStatsBatch } from '@/lib/db/hooks';
 import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { MarketCard } from '@/components/markets/MarketCard';
 import { AddMarketForm } from '@/components/markets/AddMarketForm';
@@ -127,6 +127,7 @@ export default function MarketsPage() {
   };
 
   const filteredMarkets = getFilteredMarkets();
+  const batchStats = useMarketStatsBatch(allMarkets);
 
   // 處理新增成功
   const handleAddSuccess = () => {
@@ -274,8 +275,9 @@ export default function MarketsPage() {
           <div className="space-y-4 pb-6">
             {filteredMarkets.map((market) => (
               <MarketCard
-                key={market.id}
+                key={market.id ?? `${market.name}-${market.startDate}`}
                 market={market}
+                stats={market.id ? batchStats?.[market.id] : undefined}
               />
             ))}
           </div>
