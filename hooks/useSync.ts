@@ -16,6 +16,7 @@ import { recordEvent } from '@/lib/db/events';
 import { canonicalizeEvent } from '@/lib/db/data-canonicalization';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
+import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
 import {
   collectProjectionMarketId,
   reconcileTouchedMarketProjections,
@@ -1571,6 +1572,22 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
       }
 
       const localEvent = createCanonicalSyncedEvent(event);
+
+      const preflight = await preflightStaffEventImport(localEvent, {
+        hasMarket: async (marketId) => Boolean(await db.markets.get(marketId)),
+        hasProduct: async (productId) => Boolean(await db.products.get(productId)),
+      });
+
+      if (!preflight.shouldImport) {
+        skippedCount++;
+        console.warn('[useSync] Skipping staff event outside local scoped dataset', {
+          eventId: event.id,
+          eventType: event.type,
+          reason: preflight.reason,
+          referenceId: preflight.referenceId,
+        });
+        continue;
+      }
       
       // 插入事件
       await db.events.add(localEvent);
