@@ -89,7 +89,7 @@ Commit 前必須回報：
 
 ## 三、目前建議任務順序
 
-> 重要：C2.14～C2.30B 已全部完成；C2.13A Bug Fixes 已完成並推送（commit 86569d8）；C3.1A Cloud-first Cache Boundary Audit 已完成（`docs/CLOUD_FIRST_CACHE_AUDIT.md`）。後續請優先執行 C3.2A 或 C3.3A。
+> 重要：C2.14～C2.30B 已全部完成；C2.13A Bug Fixes 已完成並推送（commit 86569d8）；C3.1A Cloud-first Cache Boundary Audit 已完成（`docs/CLOUD_FIRST_CACHE_AUDIT.md`）；**C3.2A Login/Role Switch Cache Reset 設計已完成（`docs/LOGIN_CACHE_RESET_DESIGN.md`）**。後續請優先執行 C3.2A 實作或 C3.3A。
 
 ### Task C3.1A：Cloud-first Cache Boundary 盤點
 
@@ -149,6 +149,7 @@ docs: audit cloud-first cache boundaries
 任務類型：先分析，再等確認後實作
 允許修改：初次任務只允許文件
 禁止修改：程式碼、測試、Supabase、RLS、UI
+**狀態：✅ 設計已完成，見 `docs/LOGIN_CACHE_RESET_DESIGN.md`**
 
 目標：
 
@@ -163,6 +164,13 @@ docs: audit cloud-first cache boundaries
 - 如何 reset `settings.lastSyncAt`
 - 清理後何時觸發 sync
 - 同一使用者 refresh 時不可每次清空
+- scope-based reset 函式設計
+
+**設計產出：**
+
+- `docs/LOGIN_CACHE_RESET_DESIGN.md`（已產出）
+- 核心：`resetAuthenticatedCache(scope: 'full' | 'role_switch')` 統一所有清除場景
+- 接入點：被動登出、主動登出、用戶切換共用同一函式
 
 完成條件：
 
@@ -544,66 +552,36 @@ git status -sb：
 - commit hash:
 ```
 
-## 六、可直接貼給 Cursor 的下一個 Prompt
+## 六、可直接貼給 Cursor 的下一個 Prompt（C3.2A 實作）
 
 ```text
-請執行 C3.1A：Cloud-first Cache Boundary 盤點。
+請執行 C3.2A：Login / Role Switch Cache Reset 實作。
 
 重要：
-- 只分析，不修改程式碼。
-- 允許新增 docs/CLOUD_FIRST_CACHE_AUDIT.md。
-- 允許更新 docs/DATA_CONVERGENCE_PLAN.md 與 docs/CURSOR_DATA_CONVERGENCE_HANDOFF.md。
-- 不要新增測試。
-- 不要 commit，除非我確認。
-- 不要修改 Supabase / RLS / migration。
-- 不要恢復 snapshot 功能。
-- 不要刪除 IndexedDB / Dexie。
-- 不要把 owner_full integrity missing market 降級成 warning。
+- 只修改 docs/LOGIN_CACHE_RESET_DESIGN.md 中指定的檔案
+- 允許修改 lib/db/clear-user-data.ts 和 lib/supabase/auth-context.tsx
+- 不要修改 hooks/useSync.ts
+- 不要新增測試
+- 不要 commit，等我確認
+- 不要修改 Supabase / RLS / migration
+- 不要恢復 snapshot 功能
+- 不要刪除 IndexedDB / Dexie
+- 不要把 owner_full integrity missing market 降級成 warning
 
 請閱讀：
-- docs/DATA_CONVERGENCE_PLAN.md
-- docs/CURSOR_DATA_CONVERGENCE_HANDOFF.md
-- hooks/useSync.ts
+- docs/LOGIN_CACHE_RESET_DESIGN.md
 - lib/db/clear-user-data.ts
-- lib/db/hooks.ts
-- lib/db/index.ts
-- lib/sync/*
 - lib/supabase/auth-context.tsx
-- hooks/useUserRole.ts
-- app/markets/page.tsx
-- app/markets/[id]/page.tsx
-- app/products/page.tsx
-- app/recovery/page.tsx
 
-請在 docs/CLOUD_FIRST_CACHE_AUDIT.md 中建立表格：
+實作：
+1. 在 lib/db/clear-user-data.ts 新增 resetAuthenticatedCache(scope, userId?)
+2. 在 lib/supabase/auth-context.tsx 的 3 個清除接入點呼叫新函式
+3. 對 clearOtherUsersData() 加上 @deprecated 標記
+4. 執行 npm test、npx tsc --noEmit、npm run lint、npm run build
+5. 執行 git diff --check
 
-| 流程 | 檔案 | 目前是否依賴長期 IndexedDB | 身份切換風險 | Cloud-first 改造建議 | 優先級 |
-
-必須回答：
-1. 登入 / 登出 / 切換帳號目前是否清理 authenticated cache？
-2. 哪些 Dexie tables 應在 userId 或 roleMode 改變時清空？
-3. settings.lastSyncAt 是否應在 cache reset 時清除？
-4. Owner pull 是否可能先寫 events、但本機缺 markets？
-5. Staff pull 是否可能保留上一身份的資料？
-6. 哪些 UI 仍會把 stale local cache 當真相？
-7. 最小 C3.2A 設計應碰哪些檔案？
-8. 最小 C3.3A owner missing market hydration 應碰哪些檔案？
-9. 哪些事情絕對不能做（例如刪雲端、恢復 snapshot、放寬 owner_full）？
-
-請提出下一步建議，但不要實作：
-- C3.2A Login / Account Switch Cache Reset 設計
-- C3.3A Owner Missing Market Hydration 設計
-- 兩者的建議先後順序
-- 每一步的測試清單與 commit 切法
-
-完成後只執行：
-- git diff --check
-- git status -sb
-
-回報：
-- 修改檔案
-- 主要發現
-- 建議下一步
-- git diff --check 結果
-- git status -sb
+完成後報告：
+- 修改的檔案
+- 行為變更（登出和身份切換的清除範圍變化）
+- 測試結果
 ```
