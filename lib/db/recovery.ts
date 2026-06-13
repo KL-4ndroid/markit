@@ -10,6 +10,7 @@ import type { DailyStats, Product } from '@/types/db';
 import type { IntegrityResult } from './integrity';
 import { supabase } from '@/lib/supabase/client';
 import { productRowToLocal } from '@/lib/data-mappers';
+import { sanitizeWithLevel, type InfoLevel } from '@/lib/permissions/PermissionGate';
 
 export type DatabaseRecoveryStatus =
   | {
@@ -198,11 +199,24 @@ function extractMissingProductIds(errors: string[]): string[] {
  * 策略：
  * 1. 從 integrity errors 找出缺失的 productId 清單
  * 2. 先查 Supabase，若雲端存在，backfill 到本機 products 表
- * 3. 若雲端也沒有，建立 name="已刪除商品" 的 placeholder
+ * 3. 經 PermissionGate 脫敏（依 infoLevel 移除敏感欄位）
+ * 4. 若雲端也沒有，建立 name="已刪除商品" 的 placeholder
  *
  * 這讓 integrity check 完全乾淨，並與 C3.3 replace-cache 方向一致。
+ *
+ * ## 脫敏說明
+ *
+ * 員工視角下：
+ * - Supabase RLS 只限制 row 級別，不限制 column
+ * - `cost`、`supplier_info`、`profitMargin` 等敏感欄位都會被讀出來
+ * - 必須在寫入 IndexedDB 前脫敏，否則員工本地會有完整敏感資料
+ *
+ * @param infoLevel - 資訊揭露層級（3=老闆, 0-2=員工）
+ *                    預設 3（老闆），向後相容
  */
-export async function repairProductReferenceErrors(): Promise<ProductReferenceRepairResult> {
+export async function repairProductReferenceErrors(
+  infoLevel: InfoLevel = 3
+): Promise<ProductReferenceRepairResult> {
   const backup = await createRecoveryBackup();
 
   const integrityBefore = await checkCurrentDatabaseIntegrity();
@@ -231,8 +245,13 @@ export async function repairProductReferenceErrors(): Promise<ProductReferenceRe
 
   if (!cloudError && cloudRows && cloudRows.length > 0) {
     const localProducts: Product[] = cloudRows
-      .filter((row) => !row.deleted_at)
-      .map((row) => productRowToLocal(row as unknown as Record<string, unknown>));
+      // 修正：products 表用 is_active (boolean)，不是 deleted_at
+      .filter((row) => row.is_active !== false)
+      .map((row) => {
+        const local = productRowToLocal(row as unknown as Record<string, unknown>);
+        // 經 PermissionGate 脫敏（員工視角下 cost 等敏感欄位會被移除）
+        return sanitizeWithLevel<Product>(local, 'product', infoLevel);
+      });
 
     await db.transaction('rw', [db.products], async () => {
       for (const product of localProducts) {

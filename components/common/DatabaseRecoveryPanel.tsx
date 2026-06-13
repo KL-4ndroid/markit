@@ -11,6 +11,8 @@ import {
   retryDatabaseRecovery,
   type DatabaseRecoveryStatus,
 } from '@/lib/db/recovery';
+import { useUserRole } from '@/hooks/useUserRole';
+import { resolveInfoLevel } from '@/lib/permissions/PermissionGate';
 
 function downloadJson(filename: string, content: string): void {
   const blob = new Blob([content], { type: 'application/json' });
@@ -31,6 +33,8 @@ export function DatabaseRecoveryPanel() {
   const [isExporting, setIsExporting] = useState(false);
   const [isRepairing, setIsRepairing] = useState(false);
   const [isRepairingProducts, setIsRepairingProducts] = useState(false);
+  const { userRole } = useUserRole();
+  const infoLevel = resolveInfoLevel(userRole);
 
   const handleCheck = async () => {
     setIsChecking(true);
@@ -98,7 +102,8 @@ export function DatabaseRecoveryPanel() {
   const handleRepairProducts = async () => {
     setIsRepairingProducts(true);
     try {
-      const result = await repairProductReferenceErrors();
+      // 傳入 infoLevel 讓從雲端補回的商品依權限脫敏
+      const result = await repairProductReferenceErrors(infoLevel);
       downloadJson(result.backup.filename, result.backup.content);
       const nextStatus = await getDatabaseRecoveryStatus();
       setStatus(nextStatus);

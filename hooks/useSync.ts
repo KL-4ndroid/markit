@@ -32,10 +32,15 @@ import {
   productAccessRowToLocal,
   productRowToLocal,
 } from '@/lib/data-mappers';
-import { sanitizeObject, sanitizeEvents, sanitizeStats } from '@/lib/data-sanitization';
+import {
+  sanitizeWithLevel,
+  sanitizeArrayWithLevel,
+  sanitizeEventsWithLevel,
+  createPermissionGate,
+  type InfoLevel,
+} from '@/lib/data-sanitization';
 import type { Market, DailyStats, Product } from '@/types/db';
 import type { Event } from '@/types/db';
-import type { RoleMode } from '@/lib/auth/role-mode';
 
 /**
  * 同步狀態
@@ -195,7 +200,7 @@ interface UseSyncOptions {
   enabled?: boolean;       // 是否啟用同步
   interval?: number;       // 同步間隔（毫秒）
   throttle?: number;       // 節流延遲（毫秒）
-  roleMode?: RoleMode;    // 角色模式
+  roleInfoLevel?: InfoLevel;  // 角色資訊揭露層級（3=老闆, 0-2=員工）
 }
 
 interface SyncState {
@@ -213,16 +218,17 @@ interface SyncState {
 export function useSync(options: UseSyncOptions = {}) {
   const {
     enabled = true,
-    interval = 30000,      // 預設 30 秒
-    throttle = 5000,       // 預設 5 秒節流
-    roleMode,
+    interval = 30000,
+    throttle = 5000,
+    roleInfoLevel,
   } = options;
 
   const { user, isConfigured } = useAuth();
 
-  // ✅ Phase 3: 角色模式 helper
-  // 完全由 SyncProvider 傳入的 roleMode 決定，不 fallback 到 localStorage
-  const effectiveStaffMode = roleMode === 'staff';
+  // ✅ 解析角色資訊揭露層級
+  // 預設為 Level 3（老闆），由 SyncProvider 傳入精確值
+  const effectiveInfoLevel = roleInfoLevel ?? 3;
+  const effectiveStaffMode = effectiveInfoLevel < 3;
   const syncIdentity = enabled && isConfigured && user
     ? `${user.id}:${effectiveStaffMode ? 'staff' : 'owner'}`
     : null;
@@ -345,7 +351,7 @@ export function useSync(options: UseSyncOptions = {}) {
           ...prev,
           downloadProgress: { current, total, currentItem, phase },
         }));
-      }, effectiveStaffMode);
+      }, effectiveInfoLevel);
 
       // 3. 更新狀態
       const pendingCount = await db.events
@@ -882,11 +888,19 @@ async function replayEvents(
  * This function batch-fetches missing markets from Supabase and writes them to local cache
  * before the event replay loop begins.
  *
+ * ## 脫敏說明
+ *
+ * 員工視角下：
+ * - Supabase RLS 只限制 row 級別，不限制 column
+ * - `totalCost`、`profitMargin`、`boothCost` 等敏感欄位都會被讀出來
+ * - 必須在寫入 IndexedDB 前脫敏
+ *
  * @param marketIds - Set of market IDs referenced by incoming events
- * @returns hydrated: markets successfully written; missing: markets not found in Cloud
+ * @param infoLevel - 資訊揭露層級（3=老闆, 0-2=員工）
  */
 async function batchHydrateMarkets(
-  marketIds: Set<string>
+  marketIds: Set<string>,
+  infoLevel: InfoLevel
 ): Promise<{ hydrated: Set<string>; missing: Set<string>; failed: Set<string> }> {
   const hydrated = new Set<string>();
   const missing = new Set<string>();
@@ -929,7 +943,11 @@ async function batchHydrateMarkets(
     for (const market of markets) {
       foundIds.add(market.id);
       const localMarket = marketRowToLocal(market);
-      await db.markets.put(localMarket);
+      // 經 PermissionGate 脫敏（員工視角下 cost/profit 等敏感欄位會被移除）
+      const sanitized = marketGateForLevel(infoLevel).sanitizeMarketProjection(
+        localMarket as unknown as Record<string, unknown>
+      );
+      await db.markets.put(sanitized as unknown as typeof localMarket);
       hydrated.add(market.id);
     }
   }
@@ -949,21 +967,28 @@ async function batchHydrateMarkets(
   return { hydrated, missing, failed };
 }
 
+/** 為指定 infoLevel 取得 market PermissionGate（包裝工廠） */
+function marketGateForLevel(infoLevel: InfoLevel) {
+  return createPermissionGate({ infoLevel, entity: 'market' });
+}
+
 async function pullAllEvents(
   userId: string,
   onProgress: (current: number, total: number, currentItem?: string, phase?: 'incremental') => void,
-  effectiveStaffMode: boolean
+  infoLevel: InfoLevel
 ): Promise<void> {
-  // ✅ 檢查是否啟用員工模式
-  if (effectiveStaffMode) {
+  // ✅ 檢查是否啟用員工模式（infoLevel < 3 表示員工）
+  if (infoLevel < 3) {
     try {
-      console.log('📊 員工模式已啟用，嘗試從視圖拉取數據...');
-      await pullEventsFromViews(userId, onProgress);
+      console.log('📊 員工模式已啟用（infoLevel=' + infoLevel + '），嘗試從視圖拉取數據...');
+      await pullEventsFromViews(userId, onProgress, infoLevel);
       console.log('✅ 視圖拉取成功');
-      return; // ✅ 成功，直接返回
+      return;
     } catch (error) {
-      console.warn('⚠️ 從視圖拉取失敗，降級到原邏輯:', error);
-      // 繼續執行原邏輯（降級）
+      // ⚠️ 降級漏洞已修補：員工模式下視圖失敗直接拋錯，不降級到老闆邏輯
+      // 否則員工可能短暫看到未脫敏資料
+      console.error('❌ 員工模式視圖拉取失敗，拒絕降級到老闆邏輯（安全策略）:', error);
+      throw error;
     }
   }
   
@@ -1026,7 +1051,7 @@ async function pullAllEvents(
   // ✅ Hydrate markets from Cloud before replaying events.
   // Without this, handler replay fails if the market has never been written to local IndexedDB
   // (e.g., first login, cross-device, or cache reset).
-  const { hydrated: hydratedMarketIds, missing: missingMarketIds } = await batchHydrateMarkets(touchedMarketIds);
+  const { hydrated: hydratedMarketIds, missing: missingMarketIds } = await batchHydrateMarkets(touchedMarketIds, infoLevel);
   void hydratedMarketIds; // logged inside batchHydrateMarkets
 
   // ✅ 先批次檢查哪些事件已存在，避免重複日誌
@@ -1359,7 +1384,8 @@ async function handlePermissionSyncError(error: any, userId: string): Promise<vo
  */
 async function pullEventsFromViews(
   userId: string,
-  onProgress?: (current: number, total: number, currentItem?: string, phase?: 'incremental') => void
+  onProgress: (current: number, total: number, currentItem?: string, phase?: 'incremental') => void,
+  infoLevel: InfoLevel
 ): Promise<void> {
   console.log('📊 從員工視圖拉取數據（完整同步，不使用 lastSyncAt）...', {
     userId: userId.substring(0, 8),
@@ -1429,10 +1455,10 @@ async function pullEventsFromViews(
       collectProjectionMarketId(touchedMarketIds, event);
     }
 
-    await syncMarketsToIndexedDB(marketsData || [], userId);
-    await syncProductsToIndexedDB(productsData || [], userId);
-    await syncEventsToIndexedDB(eventsData || []);
-    await reconcileSyncedProjectionMarkets(touchedMarketIds, 'staff-view');
+    await syncMarketsToIndexedDB(marketsData || [], userId, infoLevel);
+    await syncProductsToIndexedDB(productsData || [], userId, infoLevel);
+    await syncEventsToIndexedDB(eventsData || [], infoLevel);
+    await reconcileSyncedProjectionMarkets(touchedMarketIds, infoLevel < 3 ? 'staff-view' : 'owner-full');
     
     // 5. 更新最後同步時間
     // staff 模式不使用 lastSyncAt 作為 cursor，但更新它有助於記錄最後同步時間
@@ -1476,7 +1502,11 @@ async function pullEventsFromViews(
  * ✅ 合併視圖數據和本地數據
  * ✅ 只同步當前用戶可訪問的市集
  */
-async function syncMarketsToIndexedDB(markets: any[], currentUserId: string): Promise<void> {
+async function syncMarketsToIndexedDB(
+  markets: any[],
+  currentUserId: string,
+  infoLevel: InfoLevel
+): Promise<void> {
   console.log(`📝 同步 ${markets.length} 個市集到 IndexedDB...`, {
     currentUserId: currentUserId.substring(0, 8),
   });
@@ -1493,14 +1523,13 @@ async function syncMarketsToIndexedDB(markets: any[], currentUserId: string): Pr
     })));
   }
   
-  // ✅ Staff 資料脫敏：在寫入 IndexedDB 前移除敏感欄位
-  const staffRole = { isStaff: true };
-
+  // ✅ 脫敏：在寫入 IndexedDB 前根據 infoLevel 移除敏感欄位
+  // 老闆（infoLevel=3）不做任何脫敏；員工（infoLevel<3）統一 gate 處理
   for (const market of markets) {
     try {
       const existing = await db.markets.get(market.id);
       // ✅ 先 sanitize snake_case row，再交給 mapper
-      const sanitizedRow = sanitizeObject(market, 'market', staffRole);
+      const sanitizedRow = sanitizeWithLevel(market, 'market', infoLevel);
       const mappedMarket = marketAccessRowToLocal(sanitizedRow as Record<string, unknown>);
 
       // 準備市集數據（保留權限信息）
@@ -1514,10 +1543,8 @@ async function syncMarketsToIndexedDB(markets: any[], currentUserId: string): Pr
         operatingEndTime: mappedMarket.operatingEndTime ?? existing?.operatingEndTime,
       };
 
-      // ✅ Mapper 可能補出假 0 敏感欄位（如 boothCost: 0, registrationFee: 0）；
-      // ✅ Dexie update 不會刪除舊 key，故用 put 完全替換 record。
-      const sanitizedMarketData = sanitizeObject(marketData, 'market', staffRole);
-      await db.markets.put({ ...sanitizedMarketData, id: market.id } as Market);
+      // ✅ 合併寫入（mapper output 已被 sanitize，existing 保留本地未脫敏版本的部分欄位）
+      await db.markets.put({ ...marketData, id: market.id } as Market);
     } catch (error) {
       console.error(`❌ 同步市集失敗: ${market.id}`, error);
       // 繼續處理下一個
@@ -1533,7 +1560,11 @@ async function syncMarketsToIndexedDB(markets: any[], currentUserId: string): Pr
  * ✅ 只同步當前用戶可訪問的商品
  * ✅ 驗證 owner_id，防止數據混合
  */
-async function syncProductsToIndexedDB(products: any[], currentUserId: string): Promise<void> {
+async function syncProductsToIndexedDB(
+  products: any[],
+  currentUserId: string,
+  infoLevel: InfoLevel
+): Promise<void> {
   console.log(`📝 同步 ${products.length} 個商品到 IndexedDB...`, {
     currentUserId: currentUserId.substring(0, 8),
   });
@@ -1551,15 +1582,11 @@ async function syncProductsToIndexedDB(products: any[], currentUserId: string): 
   
   let syncedCount = 0;
   let skippedCount = 0;
-  
-  // ✅ Staff 資料脫敏：在寫入 IndexedDB 前移除敏感欄位
-  const staffRole = { isStaff: true };
 
+  // ✅ 脫敏：根據 infoLevel 移除敏感欄位
   for (const product of products) {
     try {
       // ✅ 驗證：確保商品屬於當前用戶或當前用戶可訪問
-      // 1. 如果是 owner 模式，owner_id 必須是當前用戶
-      // 2. 如果是 staff 模式，relationship_owner_id 必須存在
       const isOwner = product.access_type === 'owner' && product.owner_id === currentUserId;
       const isStaff = product.access_type === 'staff' && product.relationship_owner_id;
 
@@ -1569,21 +1596,19 @@ async function syncProductsToIndexedDB(products: any[], currentUserId: string): 
         continue;
       }
 
-      // ✅ 先 sanitize snake_case row，再交給 mapper
-      const sanitizedRow = sanitizeObject(product, 'product', staffRole);
+      // ✅ 一次脫敏：sanitize row 後交給 mapper
+      const sanitizedRow = sanitizeWithLevel(product, 'product', infoLevel);
       const mappedProduct = productAccessRowToLocal(sanitizedRow as Record<string, unknown>);
 
-      // 準備商品數據（保留權限信息）
+      // 準備商品數據
       const productData = {
         ...mappedProduct,
         unlimitedStock: mappedProduct.unlimitedStock ?? false,
         isActive: mappedProduct.isActive ?? true,
       };
 
-      // ✅ Mapper 可能補出假 0 敏感欄位（如 cost: 0）；
-      // ✅ Dexie update 不會刪除舊 key，故用 put 完全替換 record。
-      const sanitizedProductData = sanitizeObject(productData, 'product', staffRole);
-      await db.products.put({ ...sanitizedProductData, id: product.id } as Product);
+      // ✅ 寫入（mapper output 已被 sanitize，Dexie put 完全替換）
+      await db.products.put({ ...productData, id: product.id } as Product);
       
       syncedCount++;
     } catch (error) {
@@ -1597,52 +1622,52 @@ async function syncProductsToIndexedDB(products: any[], currentUserId: string): 
 }
 
 /**
- * 同步事件到 IndexedDB（保留權限）
+ * 同步事件到 IndexedDB（統一管道）
  * ✅ 重放事件以更新讀取模型
- * ✅ Staff 模式：事件寫入 IndexedDB 前執行脫敏
- * ✅ Staff 模式：handler replay 後清理衍生敏感 projection
+ * ✅ 根據 infoLevel 執行脫敏（老闆=3 無脫敏，員工=0-2 漸進脫敏）
+ * ✅ handler replay 後清理衍生敏感 projection（員工模式）
  */
 
 /** 會寫出敏感衍生資料的事件類型 */
 const PROJECTION_EVENT_TYPES = new Set(['deal_closed', 'deal_deleted']);
 
-const staffRole = { isStaff: true };
-
 /**
- * Staff sync 專用：handler replay 後，清理 markets 和 dailyStats 的敏感 projection。
- * handler 根據已脫敏的 event payload 寫入衍生資料，
- * 這些衍生資料（如 totalProfit、cost）必須在寫入後移除。
+ * 清理 event handler replay 後寫入的敏感衍生資料。
+ * 根據 infoLevel 移除 markets 和 dailyStats 中的敏感欄位。
  *
- * 注意：不使用 setter 設成 0，避免 analytics 誤判為真實 0 成本。
- * 直接刪除 key，使欄位變成 undefined。
+ * @param event - 已完成 replay 的事件
+ * @param infoLevel - 角色資訊揭露層級
  */
 async function sanitizeStaffProjectionsAfterReplay(
-  event: { type: string; market_id?: string; payload?: any }
+  event: { type: string; market_id?: string; payload?: any },
+  infoLevel: InfoLevel
 ): Promise<void> {
+  if (infoLevel === 3) return; // 老闆不需脫敏
   if (!PROJECTION_EVENT_TYPES.has(event.type)) return;
 
   const marketId = getEventMarketId(event);
   if (!marketId) return;
 
+  const marketGate = createPermissionGate({ infoLevel, entity: 'market' });
+  const statsGate = createPermissionGate({ infoLevel, entity: 'stats' });
+
   const existingMarket = await db.markets.get(marketId);
   if (existingMarket) {
-    const sanitized = sanitizeObject(existingMarket, 'market', staffRole);
-    // ✅ update 不刪除舊 key，改用 put 完全替換，確保敏感欄位確實消失
+    const sanitized = marketGate.sanitizeMarketProjection(existingMarket as unknown as Record<string, unknown>);
     await db.markets.put({ ...sanitized, id: marketId } as Market);
   }
 
   const dailyStats = await db.dailyStats.where('marketId').equals(marketId).toArray();
   for (const stat of dailyStats) {
     if (stat.id === undefined) continue;
-    const sanitized = sanitizeStats(stat, staffRole);
-    // ✅ update 不刪除舊 key，改用 put 完全替換，確保敏感欄位確實消失
+    const sanitized = statsGate.sanitizeDailyStatsProjection(stat as unknown as Record<string, unknown>);
     await db.dailyStats.put({ ...sanitized, id: stat.id } as DailyStats);
   }
 }
 
-async function syncEventsToIndexedDB(events: any[]): Promise<void> {
-  // ✅ Staff 資料脫敏：在寫入 IndexedDB 前移除敏感欄位
-  const sanitizedEvents = sanitizeEvents(events, staffRole);
+async function syncEventsToIndexedDB(events: any[], infoLevel: InfoLevel): Promise<void> {
+  // ✅ 脫敏：根據 infoLevel 過濾事件
+  const sanitizedEvents = sanitizeEventsWithLevel(events, infoLevel);
 
   console.log(`📝 同步 ${sanitizedEvents.length} 個事件到 IndexedDB...`);
   
@@ -1683,7 +1708,7 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
               actor_id: updated.actor_id,
               market_id: updated.market_id,
             } as Event, db);
-            await sanitizeStaffProjectionsAfterReplay(updated);
+            await sanitizeStaffProjectionsAfterReplay(updated, infoLevel);
           }
           processedCount++;
         } else {
@@ -1703,33 +1728,32 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
 
       const localEvent = createCanonicalSyncedEvent(event);
 
-      const preflight = await preflightStaffEventImport(localEvent, {
-        hasMarket: async (marketId) => Boolean(await db.markets.get(marketId)),
-        hasProduct: async (productId) => Boolean(await db.products.get(productId)),
-      });
-
-      if (!preflight.shouldImport) {
-        skippedCount++;
-        console.warn('[useSync] Skipping staff event outside local scoped dataset', {
-          eventId: event.id,
-          eventType: event.type,
-          reason: preflight.reason,
-          referenceId: preflight.referenceId,
+      // ✅ 員工模式：檢查事件是否在本地可訪問範圍內
+      if (infoLevel < 3) {
+        const preflight = await preflightStaffEventImport(localEvent, {
+          hasMarket: async (marketId) => Boolean(await db.markets.get(marketId)),
+          hasProduct: async (productId) => Boolean(await db.products.get(productId)),
         });
-        continue;
+
+        if (!preflight.shouldImport) {
+          skippedCount++;
+          console.warn('[useSync] Skipping event outside local scoped dataset', {
+            eventId: event.id,
+            eventType: event.type,
+            reason: preflight.reason,
+            referenceId: preflight.referenceId,
+          });
+          continue;
+        }
       }
-      
-      // 插入事件
+
       await db.events.add(localEvent);
-      
-      // 重放事件處理器（更新讀取模型）
+
       const { eventHandlers } = await import('@/lib/db/events');
       const handler = eventHandlers[event.type as keyof typeof eventHandlers];
-      
-      if (handler) {
-        // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式
-        const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
 
+      if (handler) {
+        const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
         await handler({
           id: localEvent.id,
           type: localEvent.type,
@@ -1739,20 +1763,16 @@ async function syncEventsToIndexedDB(events: any[]): Promise<void> {
           market_id: localEvent.market_id,
         } as Event, db);
 
-        // ✅ Staff 清理：handler replay 可能已寫入敏感 projection，隨即移除
-        await sanitizeStaffProjectionsAfterReplay(localEvent);
+        await sanitizeStaffProjectionsAfterReplay(localEvent, infoLevel);
       }
 
       processedCount++;
     } catch (error: any) {
-      // 如果是 ConstraintError（Key already exists），靜默跳過
       if (error.name === 'ConstraintError') {
         skippedCount++;
         continue;
       }
-
       console.error(`❌ 同步事件失敗: ${event.type} (${event.id?.substring(0, 8)}...)`, error);
-      // 繼續處理下一個
     }
   }
   
