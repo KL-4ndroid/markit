@@ -4,6 +4,8 @@
 > 階段表於 2026-06-14 補完（C2.26 透過 C2.30C 實質完成；C2.30C / C2.30D / C2.31 新增）。
 > 整體計畫單一權威入口見 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §4。
 > 本檔**保留維護**（C2.27-C2.29 仍待分析），格式應與 `DATA_CONVERGENCE_PLAN.md` 對齊。
+>
+> **2026-06-14 補充**：C3.4（Projection 二次累加修復計畫）已另開檔 [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) 追蹤，**不**併入本檔。理由：C3.4 是 sync/projection 收斂主線，與本檔「員工脫敏」主題不同。
 
 更新日期：2026-06-12
 

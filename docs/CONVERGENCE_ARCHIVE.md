@@ -67,6 +67,7 @@
 | C2.27 | Staff local-first detail 檢查 | 🟡 待分析 | — | hardening plan |
 | C2.28 | Role fail-closed 評估 | 🟡 待分析 | — | hardening plan |
 | C2.29 | Supabase view / RLS hardening 草稿 | 🟡 待分析 | — | hardening plan |
+| **C3.4** | **Projection 二次累加修復（水水市集問題）** | 🟡 **計畫完成，待實作** | — | [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) |
 
 ### 4.2 為什麼 C2.26 透過 C2.30C 實質完成
 
@@ -207,6 +208,7 @@ docs/
 ├── OWNER_STAFF_REVENUE_HARDENING_PLAN.md ← C2.23-C2.29 細節
 ├── CLOUD_DATA_CONSISTENCY_AUDIT.md   ← 線上 SQL 診斷（獨立工具）
 ├── STAFF_DATA_FLOW_AUDIT.md          ← Staff sanitizer 審查（已過時但保留）
+├── PROJECTION_DOUBLECOUNT_FIX_PLAN.md ← C3.4 Projection 二次累加修復計畫（待實作）
 │
 ├── EVENT_HANDLER_CONVERGENCE_ANALYSIS.md  [archived]
 ├── RECOVERY_PROJECTION_DESIGN.md         [archived]
