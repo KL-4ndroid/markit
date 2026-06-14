@@ -659,7 +659,12 @@ export function useMarketStatsBatch(markets: Market[] | undefined): MarketBatchS
         ? market.dates
         : getDateRange(market.startDate, market.endDate);
 
-      const filteredStats = allStats.filter(s => dates.includes(s.date));
+      // ✅ C3.4 防禦性補強：明確加上 marketId 過濾
+      // 雖然 allStats 已經由 anyOf(marketIds) 縮限為這批 markets 的 stats，
+      // 但若未來 allStats 來源改變（如全 markets 一次查），此 filter 就是 latent bug 的保險。
+      const filteredStats = allStats.filter(
+        s => s.marketId === market.id && dates.includes(s.date)
+      );
 
       const projectionRevenue = filteredStats.reduce((sum, s) => sum + (s.revenue ?? 0), 0);
       const projectionDeals = filteredStats.reduce((sum, s) => sum + (s.dealCount ?? 0), 0);
