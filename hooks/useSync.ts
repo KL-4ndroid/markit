@@ -20,9 +20,11 @@ import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
 import {
   collectProjectionMarketId,
   reconcileTouchedMarketProjections,
+  shouldAutoRepairForContext,
   type ProjectionReconciliationContext,
 } from '@/lib/sync/projection-reconciliation';
 import { getEventMarketId } from '@/lib/events/event-read-model';
+import { resetMarketProjectionFields, resetProductProjectionFields } from '@/lib/sync/projection-reset';
 import {
   marketAccessRowToLocal,
   marketRowToLocal,
@@ -98,15 +100,18 @@ async function reconcileSyncedProjectionMarkets(
   if (marketIds.size === 0) return;
 
   try {
-    // Sync may see only a partial local event set after role-scoped pulls,
-    // staff-view imports, or historical backfills. In that state an "inflated"
-    // comparison can be a false positive and rebuilding would destroy valid
-    // projection totals. Keep sync reconciliation observational until event
-    // completeness can be proven; recovery tools can still rebuild explicitly.
-    const result = await reconcileTouchedMarketProjections(marketIds, { context, dryRun: true });
+    // ✅ C3.4 修復：根據 context 決定是否 auto-repair。
+    // owner-full / owner-incremental / manual → events 較完整，可信 auto-repair。
+    // staff-view / snapshot → partial events 風險，保持 observation-only。
+    const dryRun = !shouldAutoRepairForContext(context);
+
+    const result = await reconcileTouchedMarketProjections(marketIds, { context, dryRun });
     const detectedInflated = result.skipped.some(item => item.reason === 'dry_run');
     if (detectedInflated || result.errors.length > 0) {
-      console.log('[useSync] projection reconciliation checked without auto-repair', result);
+      console.log(
+        `[useSync] projection reconciliation (context=${context}, dryRun=${dryRun})`,
+        result
+      );
     }
   } catch (error) {
     console.warn('[useSync] projection reconciliation skipped:', error);
@@ -947,7 +952,13 @@ async function batchHydrateMarkets(
       const sanitized = marketGateForLevel(infoLevel).sanitizeMarketProjection(
         localMarket as unknown as Record<string, unknown>
       );
-      await db.markets.put(sanitized as unknown as typeof localMarket);
+      // ✅ C3.4 修復：雲端 markets.total_* 是 handler 已累加過的 projection，
+      // 不可作為本地 IndexedDB 的初始值，否則後續 deal_closed events replay
+      // 會「+=」二次累加造成數倍膨脹。
+      const reset = resetMarketProjectionFields(
+        sanitized as unknown as typeof localMarket
+      );
+      await db.markets.put(reset as unknown as typeof localMarket);
       hydrated.add(market.id);
     }
   }
@@ -1541,6 +1552,9 @@ async function syncMarketsToIndexedDB(
         checkInTime: mappedMarket.checkInTime ?? existing?.checkInTime,
         operatingStartTime: mappedMarket.operatingStartTime ?? existing?.operatingStartTime,
         operatingEndTime: mappedMarket.operatingEndTime ?? existing?.operatingEndTime,
+        // ✅ C3.4 修復：staff 視角下雲端 markets.total_* 也不可作為本地初始值
+        // 理由同 batchHydrateMarkets（見 projection-reset.ts 檔頭說明）
+        ...resetMarketProjectionFields(mappedMarket as Market),
       };
 
       // ✅ 合併寫入（mapper output 已被 sanitize，existing 保留本地未脫敏版本的部分欄位）
@@ -1605,6 +1619,11 @@ async function syncProductsToIndexedDB(
         ...mappedProduct,
         unlimitedStock: mappedProduct.unlimitedStock ?? false,
         isActive: mappedProduct.isActive ?? true,
+        // ✅ C3.4 修復：雲端 products.total_sold 是 handler 已累加過的 projection，
+        // 不可作為本地 IndexedDB 的初始值。
+        // 注意：product.stock **不**重設（雲端 stock 是絕對剩餘量，是 truth source），
+        // stock 雙重扣減問題列為 P4 候選。
+        totalSold: 0,
       };
 
       // ✅ 寫入（mapper output 已被 sanitize，Dexie put 完全替換）
