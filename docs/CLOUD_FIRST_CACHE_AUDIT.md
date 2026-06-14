@@ -1,5 +1,11 @@
 # Cloud-first Cache Boundary Audit
 
+> **⚠️ ARCHIVED 2026-06-14**
+> 本文件為 C3.1A 審查定稿，**內容凍結**。
+> 單一權威入口已遷移至 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §2。
+> 架構決策（Supabase 為唯一長期真相、IndexedDB 為 authenticated cache）已寫入 [`docs/DATA_CONVERGENCE_PLAN.md`](./DATA_CONVERGENCE_PLAN.md) §一。
+> 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
+
 更新日期：2026-06-13
 狀態：C3.1A 審查完成
 目的：盤點目前哪些流程仍把 IndexedDB 當作長期真相資料庫，並定義最小改造順序。

@@ -1,5 +1,11 @@
 # Recovery 頁 Projection Rebuild 接入分析
 
+> **⚠️ ARCHIVED 2026-06-14**
+> 本文件為 C2.17A 設計覆核記錄，**內容凍結**。
+> 單一權威入口已遷移至 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §2。
+> 後續 C2.30+ 員工脫敏、C3.x Cloud-first Cache 等更新請看該檔。
+> 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
+
 更新日期：2026-06-13
 階段：C2.17A
 狀態：分析完成

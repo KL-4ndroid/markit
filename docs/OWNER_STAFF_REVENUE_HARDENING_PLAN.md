@@ -1,5 +1,10 @@
 # Owner / Staff 收入與權限加固計畫
 
+> **⚠️ 維護中（本檔仍在追蹤 C2.27-C2.29）**
+> 階段表於 2026-06-14 補完（C2.26 透過 C2.30C 實質完成；C2.30C / C2.30D / C2.31 新增）。
+> 整體計畫單一權威入口見 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §4。
+> 本檔**保留維護**（C2.27-C2.29 仍待分析），格式應與 `DATA_CONVERGENCE_PLAN.md` 對齊。
+
 更新日期：2026-06-12
 
 ## 目標
@@ -22,10 +27,13 @@
 | C2.24A | Staff 刪除入口封鎖 | Staff 不顯示成交 / 互動刪除入口；`DailyTransactionLog` 預設唯讀，只有明確 `allowDelete` 才顯示刪除 | `DailyTransactionLog`, `daily-log-permissions` | 已完成 |
 | C2.24B | 刪除 service 權限防護 | service 層加入明確 role / permission guard，避免非 UI 入口誤觸發 tombstone | `event-deletion-service` | 已完成 |
 | C2.25 | DailyTransactionLog 成交筆數修正 | 成交筆數使用 `getDealEventCount()`，支援 `manualDealCount` | `components/markets/DailyTransactionLog.tsx` | 已完成 |
-| C2.26 | Staff 敏感財務欄位 UI 審查 | Staff 不顯示成本、利潤、毛利率、費用、供應商資訊 | Staff detail / sales UI | 待開始 |
+| C2.26 | Staff 敏感財務欄位 UI 審查 | Staff 不顯示成本、利潤、毛利率、費用、供應商資訊 | `lib/permissions/PermissionGate.ts` + 各 UI 元件 | ✅ **透過 C2.30C PermissionGate 整合實質完成**（不再逐欄位判斷，改用統一脫敏閘） |
 | C2.27 | Staff local-first detail 檢查 | Staff 詳情頁優先使用已 sanitize 的本機資料，避免 remote row 曝露敏感欄位 | market detail / staff view | 待分析 |
 | C2.28 | Role fail-closed 評估 | role loading / error 不可 fallback 成 Owner UI | `useUserRole`, guarded UI | 待分析 |
 | C2.29 | Supabase view / RLS hardening 草稿 | 只產生 migration 草稿與驗證 SQL，不直接套用 | `supabase/migrations/*` | 待分析 |
+| C2.30C | PermissionGate 統一脫敏層 | 引入 `lib/permissions/PermissionGate.ts` 作為單一脫敏真相來源；`infoLevel`（0-2 員工漸進、3 老闆）取代散落 staff sanitizer | `lib/permissions/PermissionGate.ts`, components/* | ✅ 已完成（commit `4ab4b1a`） |
+| C2.30D | Cloud→local 補回脫敏 | 雲端補回 market/product 寫入 IndexedDB 前一律過 PermissionGate；同樣適用 recovery 路徑 | `useSync.ts` hydration, `recovery.ts` | ✅ 已完成（commit `342bed3` + `280c2fa`，11 個新測試） |
+| C2.31 | 衝突解決脫敏 | `detectAndResolveConflict` 的 remote/merge 策略寫入前脫敏；員工視角下以脫敏後雲端值做 Math.max，跳過 stock Math.min 保守合併 | `useSync.ts` conflict 路徑 | ✅ 已完成（commit `799b8ab` + `2fd23c8`，6 個新測試） |
 
 ## C2.23 詳細計畫
 
@@ -75,3 +83,15 @@
 - 新增 `summarizeDailyDealEvents()`，DailyTransactionLog 的總收入與成交筆數改由事件 read model 加總。
 - `totalDeals` 不再使用 `deals.length`，補登事件的 `manualDealCount` / `manual_deal_count` 會正確反映在每日交易流水的成交筆數。
 - 新增 `tests/daily-transaction-log-summary.test.ts`。
+
+### 2026-06-14
+
+- C2.26 狀態從「待開始」改為「✅ 透過 C2.30C PermissionGate 整合實質完成」。原計畫意圖（Staff 不顯示成本/利潤/毛利率/費用/供應商）以**統一脫敏閘**而非**逐欄位判斷**達成，更全面。
+- 新增 C2.30C / C2.30D / C2.31 三行至階段表（皆已完成 + commit hash）。
+- 整合入口新增：見 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §4 「C2.30+ 員工權限加固收斂」。
+- 為什麼 C2.26 不在原計畫但被 PermissionGate 一併達成：`PermissionGate.canViewSensitiveData()` 是**唯一**脫敏判斷入口，UI 元件呼叫 gate 而不是用 `if (isStaff)` 散落判斷。這語意比原計畫更強——未來新增 UI 元件也自動獲得保護。
+- 統一脫敏三層防線（見 `CONVERGENCE_ARCHIVE.md` §7）：
+  1. **第 1 層（補回脫敏）**：雲端補回寫入 IndexedDB 前
+  2. **第 2 層（衝突脫敏）**：conflict resolution 寫入前
+  3. **第 3 層（渲染脫敏）**：UI 元件呼叫 PermissionGate
+- C2.27 / C2.28 / C2.29 仍待分析，未來需獨立排程。

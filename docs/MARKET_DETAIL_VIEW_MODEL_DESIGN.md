@@ -1,5 +1,11 @@
 # Market Detail View Model 設計
 
+> **⚠️ ARCHIVED 2026-06-14**
+> 本文件為 C2.19A 設計定稿，**內容凍結**。
+> 單一權威入口已遷移至 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §2。
+> C2.19B（詳情頁接入 view model）與 C3.5（列表頁）已實作，詳見該檔。
+> 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
+
 更新日期：2026-06-13
 階段：C2.19A
 狀態：分析完成

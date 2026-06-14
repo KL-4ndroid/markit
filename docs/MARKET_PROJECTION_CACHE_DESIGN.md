@@ -1,5 +1,11 @@
 # C2.16A Market Projection Cache 設計覆核
 
+> **⚠️ ARCHIVED 2026-06-14**
+> 本文件為 C2.16A 設計覆核定稿，**內容凍結**。
+> 單一權威入口已遷移至 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §2。
+> C2.16B（DailyRevenueStats 統一讀 `dailyStats`）已實作，詳見該檔。
+> 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
+
 更新日期：2026-06-13
 任務類型：純分析 / 設計覆核
 狀態：分析完成，服務無需重構，現有 Hook 已足夠

@@ -1,5 +1,11 @@
 # C3.2A Login / Role Switch Cache Reset 設計
 
+> **⚠️ ARCHIVED 2026-06-14**
+> 本文件為 C3.2A 設計定稿，**內容凍結**。
+> `resetAuthenticatedCache(scope)` 已實作並接入 `auth-context.tsx`，commit `31816d8`。
+> 單一權威入口已遷移至 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §2。
+> 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
+
 更新日期：2026-06-13
 任務類型：純分析 / 設計
 狀態：設計完成，待使用者確認後實作

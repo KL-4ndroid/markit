@@ -1,5 +1,10 @@
 # Event Handler 收斂分析
 
+> **⚠️ ARCHIVED 2026-06-14**
+> 本文件為 C1 event handler 拆分分析，**內容凍結**（Step 1-2-C1 已完成，Step 4 仍待決定）。
+> 單一權威入口已遷移至 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §2。
+> 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
+
 更新日期：2026-06-11
 
 ## 分析範圍

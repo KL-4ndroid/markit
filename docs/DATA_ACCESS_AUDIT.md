@@ -1,5 +1,15 @@
 # Market Pulse - Data Access Audit
 
+> **⚠️ ARCHIVED 2026-06-14 (部分取代)**
+> 本文件為 C2.14A 資料讀取路徑盤點，**結構仍有效**但多項結論已被取代：
+> - 「Staff sanitizer 散落」→ 已統一為 `PermissionGate`（C2.30C, commit `4ab4b1a`）
+> - 「Market Detail 雙資料來源」→ 已由 C2.19B 統一（commit `8773e47`）
+> - 「Owner missing market hydration 風險」→ 已修復（commit `b420068`）
+> - 「Owner→Staff cache 切換殘留」→ 已修復（commit `31816d8`）
+>
+> 完整取代說明見 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §6。
+> 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
+
 > **Audit Date**: 2026-06-13  
 > **Project**: Market Pulse (Local-First Event Sourcing Architecture)  
 > **Purpose**: Comprehensive audit of all data READ paths, identifying service candidates for extraction

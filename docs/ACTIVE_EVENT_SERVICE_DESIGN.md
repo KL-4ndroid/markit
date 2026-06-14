@@ -1,5 +1,10 @@
 # C2.15A Active Event Service 設計覆核
 
+> **⚠️ ARCHIVED 2026-06-14**
+> 本文件為 C2.15A 設計覆核定稿，**內容凍結**。
+> 單一權威入口已遷移至 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §2。
+> 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
+
 更新日期：2026-06-13
 任務類型：純分析 / 設計覆核
 狀態：服務已存在，設計評估完成

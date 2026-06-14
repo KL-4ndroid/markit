@@ -1,5 +1,11 @@
 # C3.3A Owner Missing Market Hydration 設計
 
+> **⚠️ ARCHIVED 2026-06-14**
+> 本文件為 C3.3A 設計定稿，**內容凍結**。
+> 方案 B（Batch Hydration）已實作，commit `b420068`。
+> 單一權威入口已遷移至 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §2。
+> 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
+
 更新日期：2026-06-13
 任務類型：純分析 / 設計
 狀態：設計完成，待使用者確認後實作
