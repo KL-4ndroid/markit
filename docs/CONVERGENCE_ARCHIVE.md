@@ -1,6 +1,6 @@
 # Markit 資料收斂文件總檔（單一權威入口）
 
-更新日期：2026-06-14
+更新日期：2026-06-14（C3.4 修復完成 + 增設追蹤文件）
 建立目的：取代散落於 `docs/` 的 11 份歷史設計/覆核/審查文件，提供單一可搜尋的入口。
 
 ## 0. 如何閱讀
@@ -13,6 +13,7 @@
 | 員工權限加固細節（C2.23-C2.30） | [`docs/OWNER_STAFF_REVENUE_HARDENING_PLAN.md`](./OWNER_STAFF_REVENUE_HARDENING_PLAN.md) |
 | 線上 Supabase 資料診斷 SQL | [`docs/CLOUD_DATA_CONSISTENCY_AUDIT.md`](./CLOUD_DATA_CONSISTENCY_AUDIT.md) |
 | Staff sanitizer 欄位保護 | [`docs/STAFF_DATA_FLOW_AUDIT.md`](./STAFF_DATA_FLOW_AUDIT.md) |
+| **C3.4 出問題時的追蹤 / Troubleshooting**（症狀 → 測試 → commit → 修復點） | [`docs/C3.4_REGRESSION_TROUBLESHOOTING.md`](./C3.4_REGRESSION_TROUBLESHOOTING.md) |
 
 > **本文件不重複各 phase 的詳細設計/決策**——那些內容在原始 archive 文件中仍可讀，且內容凍結。
 > 若發現原始 archive 與現況矛盾，**以本文件為準**，並請回報修正。
@@ -67,7 +68,7 @@
 | C2.27 | Staff local-first detail 檢查 | 🟡 待分析 | — | hardening plan |
 | C2.28 | Role fail-closed 評估 | 🟡 待分析 | — | hardening plan |
 | C2.29 | Supabase view / RLS hardening 草稿 | 🟡 待分析 | — | hardening plan |
-| **C3.4** | **Projection 二次累加修復（水水市集問題）** | 🟡 **計畫完成，待實作** | — | [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) |
+| **C3.4** | **Projection 二次累加修復（水水市集問題）** | ✅ **完成**（2026-06-14） | `f7155fb` (P0) + `c6de385` (P1) + `7b6590f` (P2) + `89dec72` (P3) | [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) + [`docs/C3.4_REGRESSION_TROUBLESHOOTING.md`](./C3.4_REGRESSION_TROUBLESHOOTING.md) |
 
 ### 4.2 為什麼 C2.26 透過 C2.30C 實質完成
 
@@ -208,7 +209,8 @@ docs/
 ├── OWNER_STAFF_REVENUE_HARDENING_PLAN.md ← C2.23-C2.29 細節
 ├── CLOUD_DATA_CONSISTENCY_AUDIT.md   ← 線上 SQL 診斷（獨立工具）
 ├── STAFF_DATA_FLOW_AUDIT.md          ← Staff sanitizer 審查（已過時但保留）
-├── PROJECTION_DOUBLECOUNT_FIX_PLAN.md ← C3.4 Projection 二次累加修復計畫（待實作）
+├── PROJECTION_DOUBLECOUNT_FIX_PLAN.md ← C3.4 計畫（為什麼這樣改）
+├── C3.4_REGRESSION_TROUBLESHOOTING.md ← C3.4 追蹤（出問題時怎麼查 / 怎麼修）
 │
 ├── EVENT_HANDLER_CONVERGENCE_ANALYSIS.md  [archived]
 ├── RECOVERY_PROJECTION_DESIGN.md         [archived]

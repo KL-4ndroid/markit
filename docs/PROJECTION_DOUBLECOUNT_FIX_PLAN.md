@@ -2,7 +2,9 @@
 
 更新日期：2026-06-14
 任務類型：設計 + 實作
-狀態：分析完成，待使用者確認後實作
+狀態：✅ **完成**（2026-06-14，4 個 commit + 36 個新測試）
+
+> **出問題時怎麼查**：見 [`docs/C3.4_REGRESSION_TROUBLESHOOTING.md`](./C3.4_REGRESSION_TROUBLESHOOTING.md)（症狀速查表、commit 對照、行號、修復指引一條龍）。
 
 ## 一、問題陳述
 
@@ -517,3 +519,79 @@ P0-P3 實作時**不要**：
 **P1 已涵蓋**：`batchHydrateMarkets` reset `totalInteractions = 0` 解決 owner 端。
 **Staff 端**：`syncMarketsToIndexedDB` P1 修好後也 reset。
 **`interaction_deleted` handler**（L928-929）扣 `Math.max(0, totalInteractions - 1)` —— 對稱行為，不會變 negative。
+
+---
+
+## 十、實作對照（計畫 → Commit 對應）
+
+> 本節為 2026-06-14 實作完成後補上，**對應** §三的計畫 → 實際 commit hash。
+
+### 10.1 Commit 對照
+
+| Phase | 計畫書 § | 計畫檔案（計畫） | 實際 commit | 實際檔案（實作） | 與計畫差異 |
+|---|---|---|---|---|---|
+| **P0** | §3.2 P0 | `components/markets/DailyRevenueStats.tsx` | `f7155fb` | 同計畫 + 新增 `lib/ui/daily-revenue-totals.ts` | 把 reduce 邏輯抽成純函式更易測試 |
+| **P1** | §3.2 P1 | `hooks/useSync.ts` (3 處) | `c6de385` | 同計畫 + 新增 `lib/sync/projection-reset.ts` | 把 reset 邏輯抽成純函式 + 白名單常數 |
+| **P2** | §3.2 P2 | `hooks/useSync.ts` | `7b6590f` | `hooks/useSync.ts` + `lib/sync/projection-reconciliation.ts` | 抽出 `shouldAutoRepairForContext` 純函式更易測試；`manual` context 也列為可 repair（為 Recovery 預留） |
+| **P3** | §3.2 P3 | `lib/db/hooks.ts` | `89dec72` | 同計畫 | 完全照計畫 |
+
+### 10.2 測試對照
+
+| Phase | 計畫書 § | 計畫測試檔 | 實際測試檔 | 場景數 |
+|---|---|---|---|---|
+| **P0** | §4.1 | `tests/daily-revenue-stats-totals.test.ts` | `tests/daily-revenue-totals.test.ts`（改名） | 5 |
+| **P1** | §4.2 | `tests/sync-hydration-resets-projection.test.ts` + `tests/batch-hydrate-markets.test.ts` | `tests/projection-reset.test.ts`（合併 2 檔為 1，純函式測試） | 12 |
+| **P2** | §4.3 | `tests/sync-reconciliation-context-dryrun.test.ts` | `tests/projection-repair-context.test.ts`（改名 + 補 integration 場景） | 15 |
+| **P3** | §4.4 | 整合到 `tests/daily-stats-repair.test.ts` | `tests/use-market-stats-batch-filter.test.ts`（新建獨立檔） | 4 |
+| **總計** | — | — | — | **36 個新測試** |
+
+### 10.3 與計畫的差異說明
+
+1. **`lib/ui/daily-revenue-totals.ts`（計畫外新增）**
+   - 原因：純函式比 inline useMemo 易測試
+   - 影響：零風險，多 1 個新檔
+
+2. **`lib/sync/projection-reset.ts`（計畫外新增）**
+   - 原因：同 P0，純函式易測試
+   - 影響：把 `MARKET_ACCUMULATIVE_PROJECTION_FIELDS` / `PRODUCT_ACCUMULATIVE_PROJECTION_FIELDS` 抽成白名單常數，**未來新增累加型欄位只需改 1 個常數**
+
+3. **`shouldAutoRepairForContext` 把 `manual` 列為可 repair**
+   - 計畫書只說「`owner-full` / `owner-incremental` repair」
+   - 實作把 `manual` 也列為可 repair（Recovery 工具用戶明確觸發 → 應修）
+   - 理由：Recovery 頁是「用戶明確要求修」的情境，與 owner auto-repair 同性質
+
+4. **測試檔命名簡化**
+   - 計畫書寫 4 個檔，實作合併成 4 個但**檔名簡化**（`sync-hydration-resets-projection` → `projection-reset`；`batch-hydrate-markets` 與 P1 合併；`sync-reconciliation-context-dryrun` → `projection-repair-context`；`use-market-stats-batch-filter` P3 獨立）
+   - 影響：純命名，不影響測試覆蓋
+
+### 10.4 驗證結果
+
+```text
+npx tsc --noEmit                     → exit 0
+npm test                              → exit 0（41 個現有測試全綠）
+npx tsx tests/daily-revenue-totals.test.ts                  → 5 passed
+npx tsx tests/projection-reset.test.ts                      → 12 passed
+npx tsx tests/projection-repair-context.test.ts             → 15 passed
+npx tsx tests/use-market-stats-batch-filter.test.ts         → 4 passed
+git diff --check                      → exit 0
+```
+
+### 10.5 對水水市集截圖的預期
+
+| 截圖 | 修好後 |
+|---|---|
+| 列表卡片 $100,376 / 6 筆 | 不變（仍由 `useMarketStatsBatch` 算） |
+| 詳情頁每日卡片 4/11 = $6,450 | 不變 |
+| 詳情頁下方總計 $12,900 / 2 筆 | ✅ **改為 $100,376 / 6 筆**（從 `dailyData.reduce`） |
+| 同步後數字膨脹 | ✅ 不再膨脹（P1 reset） |
+| 老用戶升級後既有污染 | ✅ Owner 端 auto-rebuild（P2） |
+| 同日跨市集計算污染 | ✅ 防禦性過濾（P3） |
+| 員工端 partial events 破壞 | ✅ 保持 observation-only（P2 安全網） |
+
+---
+
+## 十一、相關追蹤文件
+
+- [`docs/C3.4_REGRESSION_TROUBLESHOOTING.md`](./C3.4_REGRESSION_TROUBLESHOOTING.md) — 追蹤 / Troubleshooting（**出問題時第一個看這份**）
+- [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §4.1 — C3.4 階段對照
+- [`docs/OWNER_STAFF_REVENUE_HARDENING_PLAN.md`](./OWNER_STAFF_REVENUE_HARDENING_PLAN.md) — 員工脫敏主軸（與 C3.4 互補）
