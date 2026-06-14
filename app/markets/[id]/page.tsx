@@ -143,27 +143,10 @@ export default function MarketDetailPage({ params }: PageProps) {
     };
   }, [marketId, dbStatus]);
 
-  // ✅ 員工模式：從 Supabase 獲取實時數據
-  useEffect(() => {
-    if (isStaff && marketId) {
-      setIsLoadingSupabase(true);
-      import('@/lib/supabase/markets').then(({ getAccessibleMarket }) => {
-        getAccessibleMarket(marketId)
-          .then(data => {
-            if (data) {
-              // getAccessibleMarket already normalizes Supabase rows through the shared mapper.
-              setSupabaseMarket(data);
-            }
-          })
-          .catch(error => {
-            console.error('獲取 Supabase 市集數據失敗:', error);
-          })
-          .finally(() => {
-            setIsLoadingSupabase(false);
-          });
-      });
-    }
-  }, [isStaff, marketId]);
+  // ✅ 員工模式：完全由 IndexedDB + useMarketStatsFromProjection 推動
+  // （StaffMarketDetailView 已內部處理 dailyStats 與 dailyStats-derived 數據）
+  // 不再 async fetch Supabase — 避免 C3.4 reset 後的污染欄位污染員工 UI
+  // 註：getAccessibleMarket 在 lib/supabase/markets.ts 仍保留（owner fallback 仍會用到）
 
   // ✅ 混合降級策略：當本地查不到但用戶已登入時，嘗試從 Supabase 獲取
   useEffect(() => {
