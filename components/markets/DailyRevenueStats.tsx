@@ -5,6 +5,7 @@ import { Calendar, DollarSign, TrendingUp, Plus } from 'lucide-react';
 import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
+import { computeDailyTotals } from '@/lib/ui/daily-revenue-totals';
 import type { Market } from '@/types/db';
 
 interface DailyRevenueStatsProps {
@@ -99,7 +100,12 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
       ...data,
     }));
   }, [stats, dateRange, market.id, interactionButtons]);
-  
+
+  // ✅ C3.4 修復：總計必須來自每日卡片加總，**不**直接讀 market.total*
+  // 否則可能出現「下方總計 ≠ 每日卡片加總」的 UI 內部矛盾
+  // （水水市集案例：dailyStats 算 100,376，但 market.totalRevenue 已被污染為 12,900）。
+  const dailyTotals = useMemo(() => computeDailyTotals(dailyData), [dailyData]);
+
   // 判斷是否為單日市集
   const isSingleDay = market.startDate === market.endDate;
   
@@ -235,21 +241,21 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
               <div className="text-xl font-bold text-[#7B9FA6]">
-                {formatCurrency(market.totalRevenue || 0)}
+                {formatCurrency(dailyTotals.totalRevenue)}
               </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">總利潤</div>
               <div className={`text-xl font-bold ${
-                (market.totalProfit || 0) >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'
+                dailyTotals.totalProfit >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'
               }`}>
-                {formatCurrency(market.totalProfit || 0)}
+                {formatCurrency(dailyTotals.totalProfit)}
               </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">總成交</div>
               <div className="text-xl font-bold text-[#D4A574]">
-                {market.totalDeals || 0}
+                {dailyTotals.totalDeals}
               </div>
             </div>
           </div>
