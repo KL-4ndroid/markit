@@ -12,6 +12,14 @@ interface DailyRevenueStatsProps {
   market: Market;
   onAddRevenue: (date: string) => void;
   onDateClick: (date: string) => void;  // ✅ 新增：點擊日期查看成交記錄
+  /**
+   * 物理隱藏「利潤」相關 UI（每日卡片的「利潤」格 + 多日市集總計的「總利潤」格）。
+   * 用途：員工模式（hideProfit=true）只顯示「收入 / 成交」總計，不顯示利潤。
+   * 預設 false：老闆模式維持原本 3 格（收入 / 利潤 / 成交）。
+   * 注意：這是 UI 層脫敏，底層 dailyStats.profit 仍存在（可由 DevTools 讀到），
+   * 資料層脫敏由 C2.30C PermissionGate 統一處理。
+   */
+  hideProfit?: boolean;
 }
 
 /**
@@ -20,7 +28,7 @@ interface DailyRevenueStatsProps {
  * 顯示多天市集的每日收入明細
  * 支持補登收入功能
  */
-export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRevenueStatsProps) {
+export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfit = false }: DailyRevenueStatsProps) {
   const stats = useDateRangeStats(market.startDate, market.endDate);
 
   // 互動按鈕配置（從 store 讀取，computed per render）
@@ -180,21 +188,23 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
                 )}
               </div>
               
-              <div className="grid grid-cols-3 gap-3">
+              <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
                 <div className="text-center">
                   <div className="text-xs text-[#6B6B6B] mb-1">收入</div>
                   <div className="text-lg font-medium text-[#7B9FA6]">
                     {formatCurrency(day.revenue)}
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1">利潤</div>
-                  <div className={`text-lg font-medium ${
-                    day.profit >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'
-                  }`}>
-                    {formatCurrency(day.profit)}
+                {hideProfit ? null : (
+                  <div className="text-center">
+                    <div className="text-xs text-[#6B6B6B] mb-1">利潤</div>
+                    <div className={`text-lg font-medium ${
+                      day.profit >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'
+                    }`}>
+                      {formatCurrency(day.profit)}
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="text-center">
                   <div className="text-xs text-[#6B6B6B] mb-1">成交</div>
                   <div className="text-lg font-medium text-[#D4A574]">
@@ -237,21 +247,23 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick }: DailyRe
       {/* 總計 */}
       {!isSingleDay && (
         <div className="mt-4 pt-4 border-t border-[#7B9FA6]/10">
-          <div className="grid grid-cols-3 gap-3">
+          <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
               <div className="text-xl font-bold text-[#7B9FA6]">
                 {formatCurrency(dailyTotals.totalRevenue)}
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-xs text-[#6B6B6B] mb-1">總利潤</div>
-              <div className={`text-xl font-bold ${
-                dailyTotals.totalProfit >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'
-              }`}>
-                {formatCurrency(dailyTotals.totalProfit)}
+            {hideProfit ? null : (
+              <div className="text-center">
+                <div className="text-xs text-[#6B6B6B] mb-1">總利潤</div>
+                <div className={`text-xl font-bold ${
+                  dailyTotals.totalProfit >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'
+                }`}>
+                  {formatCurrency(dailyTotals.totalProfit)}
+                </div>
               </div>
-            </div>
+            )}
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">總成交</div>
               <div className="text-xl font-bold text-[#D4A574]">
