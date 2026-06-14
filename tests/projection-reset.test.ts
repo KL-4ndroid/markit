@@ -190,6 +190,57 @@ runTest('(integration) two consecutive sync cycles do not inflate totals', () =>
   assert.equal(afterSecondSync, 1000, '重複 sync 不應倍增');
 });
 
+runTest('user-supplied scenario: cloud total 69822 + events total 69822 → replay 後仍是 69822 (不可 139644)', () => {
+  // 還原使用者截圖的真實情境
+  // 5/22 (15348) + 5/23 (54474) = 69822
+  // 假設雲端 markets.total_revenue = 69822（雲端 handler 已累加）
+  // 雲端有兩筆 deal_closed，總額也是 69822
+  //
+  // 修好前：hydrate 帶入 69822 → replay 69822 → 69822 + 69822 = 139,644（倍增）
+  // 修好前另一條路：hydrate 帶入 69822（已污染）→ 不 replay → 仍是 69822 → 但與 dailyStats 不一致
+  // 修好後：hydrate 帶入 0 → replay 69822 → 69822（正確）
+  const cloudMarket: Market = {
+    ...baseMarket,
+    totalRevenue: 69822,
+    totalDeals: 2,
+  };
+  const hydrated = resetMarketProjectionFields(cloudMarket);
+
+  // 模擬 2 筆 deal_closed replay
+  // 為簡化：把 2 筆合併成單一 totalAmount = 69822
+  const eventsTotalAmount = 69822;
+  const eventsTotalDealCount = 2;
+  const replayedTotalRevenue = (hydrated.totalRevenue || 0) + eventsTotalAmount;
+  const replayedTotalDeals = (hydrated.totalDeals || 0) + eventsTotalDealCount;
+
+  assert.equal(replayedTotalRevenue, 69822, 'replay 後應等於雲端累積值（不能 139644）');
+  assert.equal(replayedTotalDeals, 2, 'replay 後應等於雲端累積值');
+  assert.notEqual(replayedTotalRevenue, 139644, '絕對不能倍增');
+  assert.notEqual(replayedTotalRevenue, 146246, '絕對不能等於使用者截圖的 146246（已污染值）');
+});
+
+runTest('user-supplied scenario: 修好後本地修復後再 sync 不再污染', () => {
+  // 還原使用者「本地修復可以暫時修正，但每一次重新抓取雲端資料後又會再次發生」症狀
+  // 修好前：sync → hydrate 帶入雲端污染值 → 倍增 → 污染復發
+  // 修好後：sync → hydrate reset 0 → replay 正確值 → 始終是雲端 events 累加值
+  const cloudMarketPolluted: Market = {
+    ...baseMarket,
+    // 模擬雲端 markets 表本身有污染（owner 之前手動污染或多次 sync 累積）
+    totalRevenue: 200000,
+    totalDeals: 5,
+  };
+  const hydrated = resetMarketProjectionFields(cloudMarketPolluted);
+
+  // 模擬雲端 events 真實累積是 69822
+  const eventsTotalAmount = 69822;
+  const eventsTotalDealCount = 2;
+  const replayedTotalRevenue = (hydrated.totalRevenue || 0) + eventsTotalAmount;
+
+  assert.equal(replayedTotalRevenue, 69822, '即使雲端本身污染，本地仍應是 events 真實累積值');
+  assert.notEqual(replayedTotalRevenue, 200000, '不應被雲端污染值覆蓋');
+  assert.notEqual(replayedTotalRevenue, 269822, '不應雲端 200000 + events 69822 累加');
+});
+
 async function main() {
   let passed = 0;
   let failed = 0;
