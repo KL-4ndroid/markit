@@ -1,8 +1,8 @@
 ﻿# Markit 資料存取收斂計畫
 
-更新日期：2026-06-13
-狀態：C2.14～C2.30B 已完成；C2.13A Bug Fixes 已完成（commit 86569d8）；C3.1A Cloud-first Cache Boundary Audit 已完成；C3 Cloud-first Authenticated Cache 成為後續主線
-目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂。2026-06-13 起，後續主方向調整為：Supabase 是唯一長期真相來源，IndexedDB 降級為登入後可丟棄的本機快取與短暫操作緩衝，不再擴大本機長期資料庫責任。
+更新日期：2026-06-14
+狀態：C2.14～C2.30B 已完成；C2.13A Bug Fixes 已完成（commit 86569d8）；C3.1A～C3.5B 已完成；**C2.30C PermissionGate 整合已完成（commit 4ab4b1a）**；**C2.30D Cloud→local 補回脫敏已完成（commit 342bed3 + 280c2fa）**；**C2.31 衝突解決脫敏已完成（commit 799b8ab + 2fd23c8）**；C3.6 Pending Local Operations 待評估
+目標：逐步消除 Owner / Staff、events / dailyStats / market totals、tombstone / projection 之間的資料分裂。2026-06-13 起，後續主方向調整為：Supabase 是唯一長期真相來源，IndexedDB 降級為登入後可丟棄的本機快取與短暫操作緩衝，不再擴大本機長期資料庫責任。2026-06-14 起，C2.30+ 員工權限加固成為本收斂主線的子計畫，與 C3 Cloud-first Cache 並行推進。
 
 ## 一、問題摘要
 
@@ -98,15 +98,18 @@ IndexedDB 不再應承擔：
 | C2.20 | Staff Data Flow 加固 | 確保 Staff tombstone / sanitized events 可正確 replay | tests + service guard | 中高 | sanitizer 欄位保護已測，staff view SQL 已整理待線上驗證 |
 | C2.21 | 舊資料雲端一致性審查 | 確認 cloud events / snapshots / projection 是否仍有污染 | SQL 診斷報告 | 中 | SQL 已整理，待線上執行 |
 | C2.22 | 完整文件與操作手冊 | 建立未來維護規範 | docs | 低 | P2 |
-| C2.23 | Owner / Staff 收入權限加固 | 將外部加固需求併入主收斂計畫，先處理 deal mode flags、Staff 刪除入口、成交筆數與敏感欄位 | `OWNER_STAFF_REVENUE_HARDENING_PLAN.md` | 中 | 進行中 |
+| C2.23 | Owner / Staff 收入權限加固 | 將外部加固需求併入主收斂計畫，先處理 deal mode flags、Staff 刪除入口、成交筆數與敏感欄位 | `OWNER_STAFF_REVENUE_HARDENING_PLAN.md` | 中 | 進行中（C2.23 / C2.24A / C2.24B / C2.25 已完成；C2.26 透過 C2.30C PermissionGate 整合實質完成；C2.27 / C2.28 / C2.29 仍待分析） |
 | C2.30A | Integrity Profile 基礎層 | 將 owner full data 與 staff scoped data 的完整性檢查分流；staff 局部資料的 out-of-scope references 不再當作 fatal | `integrity.ts`, high-risk pages | 中 | 已完成 |
 | C2.30B | Staff Sync Preflight | Staff sync 寫入與 replay 前先檢查本機 scoped dataset 是否具備必要 market/product，避免 orphan event 造成 handler fatal | `staff-event-preflight.ts`, `useSync.ts` | 中 | 已完成 |
-| C3.1 | Cloud-first 架構決策落地 | 明確禁止繼續擴大 IndexedDB 長期真相責任，將本機資料改為 authenticated cache | docs + sync design | 低 | ✅ 已完成（見 CLOUD_FIRST_CACHE_AUDIT.md）；C3.2/C3.3/C3.4/C3.5/C3.6 待實作 |
-| C3.2 | Login / account switch cache reset | 登入、登出、切換 Owner/Staff 時清空不屬於目前使用者的 local cache，避免跨帳號殘留 | auth/sync boundary | 中 | P0 |
-| C3.3 | Full cloud pull → replace cache | Owner / Staff 從雲端拉授權資料後，以 replace-cache 方式寫入本機，而非和舊本機資料長期 merge | `useSync.ts` / cache service | 高 | P0 |
-| C3.4 | Owner missing market hydration | Owner events 匯入前確保對應 markets 存在；若雲端也不存在才視為 fatal | sync preflight/service | 中 | P0 |
-| C3.5 | Cloud summary view model | UI 優先讀雲端已授權 summary 或本機 normalized cache，不再依賴不完整 local replay 自動修 projection | view model services | 中高 | P1 |
-| C3.6 | Pending local operations boundary | 若未來保留離線/弱網操作，只允許 pending operations 暫存；成功 push 後由 cloud pull 重建 cache | operation queue | 中高 | P1 |
+| C2.30C | PermissionGate 統一脫敏層 | 引入 `lib/permissions/PermissionGate.ts` 作為單一脫敏真相來源；`infoLevel`（0-2 = 員工漸進，3 = 老闆）取代各處散落的 staff sanitizer | `lib/permissions/PermissionGate.ts` | 中 | ✅ 已完成（commit 4ab4b1a） |
+| C2.30D | Cloud→local 補回脫敏 | 雲端補回的 market / product 寫入 IndexedDB 前一律過 PermissionGate，避免 staff local cache 殘留敏感欄位 | `useSync.ts` hydration、`recovery.ts` | 中高 | ✅ 已完成（commit 342bed3 + 280c2fa，11 個新測試） |
+| C2.31 | 衝突解決脫敏 | `detectAndResolveConflict` 的 remote/merge 策略寫入前脫敏；`mergeMarketData` / `mergeProductData` 員工視角下以脫敏後的雲端值做 Math.max，員工視角下跳過 stock Math.min 保守合併 | `useSync.ts` conflict 路徑 | 中 | ✅ 已完成（commit 799b8ab + 2fd23c8，6 個新測試） |
+| C3.1 | Cloud-first 架構決策落地 | 明確禁止繼續擴大 IndexedDB 長期真相責任，將本機資料改為 authenticated cache | docs + sync design | 低 | ✅ 已完成（見 CLOUD_FIRST_CACHE_AUDIT.md） |
+| C3.2 | Login / account switch cache reset | 登入、登出、切換 Owner/Staff 時清空不屬於目前使用者的 local cache，避免跨帳號殘留 | auth/sync boundary | 中 | ✅ 已完成（commit 31816d8；見 LOGIN_CACHE_RESET_DESIGN.md） |
+| C3.3 | Full cloud pull → replace cache | Owner / Staff 從雲端拉授權資料後，以 replace-cache 方式寫入本機，而非和舊本機資料長期 merge | `useSync.ts` / cache service | 高 | ⚠️ 部分完成：Owner missing market hydration 已實作（commit b420068），但 full replace cache 流程尚未實作 |
+| C3.4 | Owner missing market hydration | Owner events 匯入前確保對應 markets 存在；若雲端也不存在才視為 fatal | sync preflight/service | 中 | ✅ 已完成（commit b420068；見 OWNER_MARKET_HYDRATION_DESIGN.md） |
+| C3.5 | Cloud summary view model | UI 優先讀雲端已授權 summary 或本機 normalized cache，不再依賴不完整 local replay 自動修 projection | view model services | 中高 | ✅ 已完成（C2.19B 詳情頁 + C3.5 列表頁：commits 8773e47、a92a348、e8f317d） |
+| C3.6 | Pending local operations boundary | 若未來保留離線/弱網操作，只允許 pending operations 暫存；成功 push 後由 cloud pull 重建 cache | operation queue | 中高 | 未開始 |
 
 ## 四、詳細執行順序
 
