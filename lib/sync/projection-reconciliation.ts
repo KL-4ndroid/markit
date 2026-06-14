@@ -11,6 +11,29 @@ export type ProjectionReconciliationContext =
   | 'snapshot'
   | 'manual';
 
+/**
+ * ✅ C3.4 修復：哪些 context 應允許 auto-repair（dryRun=false）？
+ *
+ * 規則：
+ * - `owner-full` / `owner-incremental`：
+ *     owner 從雲端拉全部 events（lastSyncAt 篩選可能 miss 一些但大多數完整），
+ *     可信 local events 為完整 → 偵測到 inflated 可 auto-repair。
+ * - `manual`：
+ *     Recovery 頁工具用戶明確觸發 → 應 auto-repair。
+ * - `staff-view`：
+ *     staff 視角只看到 filtered events（partial set），
+ *     若直接 auto-rebuild，會用 local 看到的部分 events 覆蓋真實的雲端累積值 → 破壞資料。
+ *     保持 observation-only，由 Recovery 工具判斷後手動修。
+ * - `snapshot`：
+ *     snapshot 載入直接覆寫 markets / dailyStats，
+ *     邏輯複雜、partial event 風險高 → 保持 observation-only。
+ */
+export function shouldAutoRepairForContext(
+  context: ProjectionReconciliationContext
+): boolean {
+  return context === 'owner-full' || context === 'owner-incremental' || context === 'manual';
+}
+
 export type ProjectionReconciliationSkipReason =
   | 'blank_market_id'
   | 'consistent'
