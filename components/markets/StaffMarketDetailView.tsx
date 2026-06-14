@@ -1,28 +1,45 @@
 /**
  * 員工模式市集詳情頁面
- * 
- * 簡化版的市集詳情，只顯示員工需要的資訊：
+ *
+ * 與老闆模式（市集詳情頁）對齊的員工版，提供員工所需資訊：
  * - 市集基本資訊（名稱、日期、地點）
  * - 營業狀態和時間軸
- * - 成交統計（不含利潤）
- * - 租賃設備資訊
- * 
- * 隱藏的功能：
+ * - 每日收入明細（物理隱藏利潤，與老闆的 DailyRevenueStats 結構一致）
+ * - 租賃設備資訊（攤位費、設備、保證金）
+ * - 員工核心工作功能（互動記錄、快速新增收入、快速交易、流水帳）
+ *
+ * 隱藏的功能（與老闆差異）：
  * - 編輯按鈕
- * - 成本明細
+ * - 成本明細（攤位費仍可見於「費用資訊」）
  * - 報名狀態管理
  * - 刪除/取消功能
- * - 顧客行為分析
+ * - 顧客行為分析（互動偏好圖表）
+ * - 互動次數總計
+ * - 4 格總計統計（被 DailyRevenueStats 底部總計取代）
+ * - 2 格成交統計（被 DailyRevenueStats 取代）
+ * - 補登收入 / 每日成交記錄彈窗（透過 DailyRevenueStats 觸發）
+ *
+ * 資料來源：
+ * - `useMarketStatsFromProjection(market)` 從 `db.dailyStats` 算出總計
+ *   （員工路徑下 `db.markets.total*` 已被 C3.4 reset 為 0，不可直接讀）
+ * - `useDateRangeStats` 由 DailyRevenueStats 內部呼叫
+ *   （同樣從 `db.dailyStats` 查，員工呼叫 OK）
+ *
+ * 權限脫敏：
+ * - UI 層：DailyRevenueStats `hideProfit={true}` 物理隱藏利潤
+ * - 資料層：C2.30C/D/31 已實作（PermissionGate 統一閘）
+ * - 注意：`db.dailyStats.profit` 仍可由 DevTools 讀到
+ *   （這是 UI 層脫敏，與 C2.30C 第 3 層「UI 顯示」一致）
  */
 
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  MapPin, 
+import {
+  ArrowLeft,
+  Calendar,
+  MapPin,
   Clock,
   Store,
   Moon,
@@ -42,8 +59,14 @@ import { InteractionButtons } from '@/components/sales/InteractionButtons';
 import { QuickInteractionButtons } from '@/components/sales/QuickInteractionButtons';
 import { QuickTransactionGrid } from '@/components/sales/QuickTransactionGrid';
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
+import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
+import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
+import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
-import type { Market } from '@/types/db';
+import { useMarketStatsFromProjection } from '@/lib/db/hooks';
+import { getActiveDealEventsForMarket } from '@/lib/events/active-event-service';
+import { getDealEventDate } from '@/lib/markets/event-view-utils';
+import type { Market, Event, DealClosedPayload } from '@/types/db';
 
 interface StaffMarketDetailViewProps {
   market: Market;
@@ -134,6 +157,67 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
 
   const operatingStatus = getOperatingStatus();
   const isOperating = operatingStatus.status === 'operating';
+
+  // ✅ 員工核心工作功能：補登收入 / 每日成交記錄彈窗
+  const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
+  const [showDailyDealsModal, setShowDailyDealsModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
+
+  // ✅ 載入成交事件（從 db.events 讀取，員工呼叫 OK）
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const allDeals = await getActiveDealEventsForMarket(marketId);
+        // 篩選在市集日期範圍內的 deals
+        const marketDates = market.dates && market.dates.length > 0
+          ? market.dates
+          : (() => {
+              const dates: string[] = [];
+              const start = new Date(market.startDate);
+              const end = new Date(market.endDate);
+              for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                dates.push(dateStr);
+              }
+              return dates;
+            })();
+        if (!cancelled) {
+          const filtered = allDeals.filter(e => marketDates.includes(getDealEventDate(e)));
+          setDealEvents(filtered);
+        }
+      } catch (error) {
+        console.error('員工詳情頁載入成交事件失敗:', error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [marketId, market.dates, market.startDate, market.endDate]);
+
+  const getDealsByDate = (date: string) => {
+    return dealEvents.filter(deal => getDealEventDate(deal) === date);
+  };
+
+  const handleOpenAddRevenue = (date: string) => {
+    setSelectedDate(date);
+    setShowAddRevenueDialog(true);
+  };
+  const handleCloseAddRevenue = () => {
+    setShowAddRevenueDialog(false);
+    setSelectedDate('');
+  };
+  const handleDateClick = (date: string) => {
+    setSelectedDate(date);
+    setShowDailyDealsModal(true);
+  };
+  const handleCloseDailyDeals = () => {
+    setShowDailyDealsModal(false);
+    setSelectedDate('');
+  };
+
+  // ✅ 員工端總計改用 dailyStats 算出（C3.4 reset 過的 market.total* 為 0）
+  // useMarketStatsFromProjection 從 db.dailyStats 加總，與老闆頁同來源
+  useMarketStatsFromProjection(market);
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-20">
@@ -343,27 +427,13 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           )}
         </div>
 
-        {/* 成交統計 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#8B7BA6]/10 p-6 mb-6">
-          <h2 className="text-lg font-medium text-[#3A3A3A] mb-4">成交統計</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#F0E8F3] rounded-xl p-4">
-              <div className="text-2xl font-medium text-[#8B7BA6]">
-                {market.totalDeals || 0}
-              </div>
-              <div className="text-sm text-[#6B6B6B] mt-1 flex items-center gap-1">
-                <Target className="w-4 h-4" />
-                成交次數
-              </div>
-            </div>
-            <div className="bg-[#F0E8F3] rounded-xl p-4">
-              <div className="text-2xl font-medium text-[#8B7BA6]">
-                {formatCurrency(market.totalRevenue || 0)}
-              </div>
-              <div className="text-sm text-[#6B6B6B] mt-1">總收入</div>
-            </div>
-          </div>
-        </div>
+        {/* 每日收入明細 - 與老闆頁 DailyRevenueStats 同結構，物理隱藏利潤 */}
+        <DailyRevenueStats
+          market={market}
+          hideProfit={true}
+          onAddRevenue={handleOpenAddRevenue}
+          onDateClick={handleDateClick}
+        />
 
         {/* 費用資訊 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#8B7BA6]/10 p-6 mb-6">
@@ -460,6 +530,26 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           </p>
         </div>
       </div>
+
+      {/* 補登收入對話框（透過 DailyRevenueStats 觸發） */}
+      <AddRevenueDialog
+        isOpen={showAddRevenueDialog}
+        onClose={handleCloseAddRevenue}
+        marketId={marketId}
+        selectedDate={selectedDate}
+      />
+
+      {/* 每日成交記錄彈窗（透過 DailyRevenueStats 觸發） */}
+      <DailyDealsModal
+        isOpen={showDailyDealsModal}
+        onClose={handleCloseDailyDeals}
+        date={selectedDate}
+        deals={getDealsByDate(selectedDate)}
+        onDealClick={() => {
+          // 員工不開 DealDetailModal（刪除入口已被 C2.24A 封鎖）
+          // 如未來需要顯示詳情，可在這裡實作唯讀 modal
+        }}
+      />
     </div>
   );
 }
