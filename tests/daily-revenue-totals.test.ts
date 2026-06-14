@@ -68,6 +68,20 @@ runTest('computeDailyTotals ignores polluted market.totalRevenue (does not read 
   assert.equal(totals.totalDeals, 6);
 });
 
+runTest('user-supplied scenario: 5/22 + 5/23 + 5/24 = 69822 / 2 筆 / 總利潤 69822', () => {
+  // 還原使用者截圖的具體場景
+  const dailyData = [
+    day('2026-05-22', 15348, 15348, 1),
+    day('2026-05-23', 54474, 54474, 1),
+    day('2026-05-24', 0, 0, 0),
+  ];
+  assert.deepEqual(computeDailyTotals(dailyData), {
+    totalRevenue: 69822,
+    totalProfit: 69822,
+    totalDeals: 2,
+  });
+});
+
 runTest('computeDailyTotals does not double-count when the same day appears twice', () => {
   // 雖然 DailyRevenueStats 內 useMemo 已用 Map.set 確保單日單筆，
   // 純函式應仍按輸入順序加總（不去重）
