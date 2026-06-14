@@ -152,6 +152,30 @@ runTest('regression scenario: water market overlap with another market on 2026-0
   assert.equal(totalDeals, 6);
 });
 
+runTest('user-supplied scenario: market A (1000) and market B (2000) on 2026-05-22 must not mix', () => {
+  // 完全還原使用者驗收條件
+  // A 只能顯示 1000, B 只能顯示 2000, 不能都顯示 3000
+  const marketA: Market = {
+    id: 'market-A',
+    startDate: '2026-05-22',
+    endDate: '2026-05-22',
+  };
+  const marketB: Market = {
+    id: 'market-B',
+    startDate: '2026-05-22',
+    endDate: '2026-05-22',
+  };
+  const allStats: MinimalDailyStat[] = [
+    { marketId: 'market-A', date: '2026-05-22', revenue: 1000, dealCount: 1, touchCount: 0, inquiryCount: 0 },
+    { marketId: 'market-B', date: '2026-05-22', revenue: 2000, dealCount: 2, touchCount: 0, inquiryCount: 0 },
+  ];
+  const resultA = filterStatsForMarket(marketA, allStats);
+  const resultB = filterStatsForMarket(marketB, allStats);
+  assert.equal(resultA.reduce((sum, s) => sum + s.revenue, 0), 1000, 'A must show only 1000');
+  assert.equal(resultB.reduce((sum, s) => sum + s.revenue, 0), 2000, 'B must show only 2000');
+  assert.notEqual(resultA.reduce((sum, s) => sum + s.revenue, 0), 3000, 'A must NOT show 3000');
+});
+
 async function main() {
   let passed = 0;
   let failed = 0;
