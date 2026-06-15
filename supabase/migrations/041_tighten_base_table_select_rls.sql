@@ -16,10 +16,38 @@
 --   3. events: drop both legacy SELECT policies
 --      - "用戶可以查看自己的事件和市集事件" (015, uses market_members)
 --      - "users_can_view_events" (online-only, simplified)
---      Replace with events_select_owner_only (actor_id self OR market_id in
---      markets owned by auth.uid()).
+--      Replace with events_select_owner_only that is STRICTLY owner-only:
+--        - market_id IN (owned markets)  --  owner 旗下市集事件
+--        - market_id IS NULL AND actor_id = auth.uid()
+--          AND EXISTS (markets.owner_id = auth.uid())  --  owner 自己寫的全局事件
+--      Note: actor_id = auth.uid() alone is REMOVED — staff who wrote
+--      an event (e.g. via the 025 staff_relationships insert path) would
+--      otherwise still be able to SELECT events directly with
+--      actor_id = auth.uid(). The new condition ties global events to
+--      the actor being an owner of at least one market.
 --      → Staff SELECT events = 0 row.
 --      → Staff must go through staff_accessible_events view.
+--
+-- Helper format reminder:
+--   current_user_owned_market_ids()  returns  TABLE(id UUID)
+--   (per 035_fix_p0_rls_security.sql line 60-70)
+--   → market_id IN (SELECT id FROM public.current_user_owned_market_ids())
+--   The alternate form SELECT * also works but is less explicit.
+--
+-- View security mode reminder (CRITICAL):
+--   staff_accessible_* views must be SECURITY DEFINER for 041 to work
+--   as designed. If they are SECURITY INVOKER, the view's internal
+--   queries inherit the caller's RLS context, and 041 will break
+--   staff_accessible_* in the following ways:
+--     - Staff reading staff_accessible_markets will see 0 rows (the
+--       view's JOIN to markets will hit markets_select_owner_only
+--       which requires owner_id = auth.uid()).
+--     - Owner reading staff_accessible_events Branch 3
+--       (actor_id = auth.uid()) will miss market_id IS NULL events
+--       because the new events policy requires actor IS owner.
+--   Run the preflight in STEP 0 before applying. If any view is
+--   INVOKER, STOP and add 042 to fix view ownership first
+--   (out of scope for 041).
 --
 -- Does NOT touch:
 --   - staff_accessible_markets / products / events views (039 + 040)
@@ -45,6 +73,84 @@
 --     review and the pre-apply checklist in
 --     docs/C2.29B-2_1_RLS_MIGRATION_DRAFT_2026_06_16.md
 -- ============================================================
+
+-- ============================================================
+-- STEP 0: Preflight — verify view security mode + helper format
+-- Refuses to proceed if any staff_accessible_* view is SECURITY INVOKER.
+-- Run each query manually, then if all pass, mark a session variable
+-- to acknowledge the preflight. The DO block below checks for that
+-- acknowledgment and RAISES otherwise.
+-- ============================================================
+
+-- P0.1: Helper return type
+-- Expected: TABLE (id uuid)
+SELECT pg_get_function_result('public.current_user_owned_market_ids()'::regprocedure) AS owned_market_ids_return_type;
+-- If this returns 'TABLE (id uuid)' → OK.
+-- If it returns 'SETOF uuid' → use SELECT * instead of SELECT id (both work
+-- for TABLE return; for SETOF they are equivalent; current code uses
+-- SELECT id which is correct for the current 035 implementation).
+
+-- P0.2: Helper is SECURITY DEFINER
+SELECT p.prosecdef AS is_security_definer
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public' AND p.proname = 'current_user_owned_market_ids';
+-- Expected: t
+
+-- P0.3: View security mode
+--   In PostgreSQL 15+, CREATE OR REPLACE VIEW preserves the existing
+--   view's security_invoker flag. If a view was created on PG14 as
+--   SECURITY DEFINER (the PG14 default) and never re-created with
+--   security_invoker = true, it stays DEFINER. We need DEFINER for
+--   041 to work.
+SELECT
+  c.relname AS view_name,
+  CASE
+    WHEN c.reloptions IS NULL THEN 'security_definer (default for PG14-created views)'
+    WHEN c.reloptions::text LIKE '%security_invoker%' THEN 'SECURITY INVOKER (BREAKS 041)'
+    ELSE 'security_definer (custom options)'
+  END AS security_mode,
+  c.reloptions
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND c.relname IN (
+    'staff_accessible_markets',
+    'staff_accessible_products',
+    'staff_accessible_events'
+  )
+ORDER BY c.relname;
+-- Expected: all 3 rows show security_definer.
+-- If any row shows "SECURITY INVOKER (BREAKS 041)" → STOP, do not apply.
+--   The user must run a follow-up migration to flip the view to DEFINER
+--   (out of scope for 041).
+
+-- P0.4: Hard gate — refuse to run STEP 2-5 if any view is INVOKER.
+DO $$
+DECLARE
+  v_invoker_count int;
+BEGIN
+  SELECT count(*) INTO v_invoker_count
+  FROM pg_class c
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname = 'public'
+    AND c.relname IN (
+      'staff_accessible_markets',
+      'staff_accessible_products',
+      'staff_accessible_events'
+    )
+    AND c.reloptions IS NOT NULL
+    AND c.reloptions::text LIKE '%security_invoker%';
+
+  IF v_invoker_count > 0 THEN
+    RAISE EXCEPTION
+      'Preflight P0.4 failed: % staff_accessible_* view(s) are SECURITY INVOKER. 041 will break staff views. Aborting. Fix view security mode first (out of scope for 041).',
+      v_invoker_count;
+  END IF;
+
+  RAISE NOTICE 'Preflight P0.4 passed: all staff_accessible_* views are SECURITY DEFINER (or default).';
+END;
+$$;
 
 -- ============================================================
 -- STEP 1: Helper function (no parameters, prevents injection)
@@ -162,15 +268,21 @@ CREATE POLICY "events_select_owner_only"
 ON public.events FOR SELECT
 TO authenticated
 USING (
-  -- 自己的事件 (包含 market_id IS NULL 的全局事件)
-  actor_id = auth.uid()
-  OR
-  -- 自己市集的事件 (透過 markets.owner_id 嚴格 owner 判斷)
+  -- 自己市集的事件（透過 markets.owner_id 嚴格 owner 判斷）
   market_id IN (SELECT id FROM public.current_user_owned_market_ids())
+  OR
+  -- 自己建立的全局事件（market_id IS NULL），且自己必須是某個市集的 owner
+  -- 為何要 EXISTS：單純 actor_id = auth.uid() 會讓 staff 透過 025
+  -- staff_relationships 寫入的事件仍可 SELECT；加 EXISTS 限縮為 owner。
+  (
+    market_id IS NULL
+    AND actor_id = auth.uid()
+    AND EXISTS (SELECT 1 FROM public.markets m WHERE m.owner_id = auth.uid())
+  )
 );
 
 COMMENT ON POLICY "events_select_owner_only" ON public.events IS
-  'Owner-only direct SELECT. Staff must use staff_accessible_events view. Replaces "用戶可以查看自己的事件和市集事件" (015) and "users_can_view_events" (online-only) which let staff read events via market_members.';
+  'Owner-only direct SELECT. Staff must use staff_accessible_events view. Replaces "用戶可以查看自己的事件和市集事件" (015) and "users_can_view_events" (online-only) which let staff read events via market_members. Global events (market_id IS NULL) require the actor to be an owner of at least one market — pure actor_id = auth.uid() is intentionally not used to avoid staff bypass via the 025 staff_relationships insert path.';
 
 -- ============================================================
 -- STEP 5: Note about INSERT / UPDATE / DELETE (intentionally untouched)
@@ -206,12 +318,14 @@ FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'products' AND cmd = 'SELECT';
 -- Expected: 1 row named 'products_select_owner_only', qual contains 'owner_id = auth.uid()'
 
--- V3: events has exactly one SELECT policy, owner-only
+-- V3: events has exactly one SELECT policy, owner-only (no naked actor_id)
 SELECT policyname, qual::text
 FROM pg_policies
 WHERE schemaname = 'public' AND tablename = 'events' AND cmd = 'SELECT';
 -- Expected: 1 row named 'events_select_owner_only', qual contains
---           'actor_id = auth.uid()' and 'current_user_owned_market_ids'
+--           'current_user_owned_market_ids' AND 'EXISTS' AND
+--           'market_id IS NULL'
+-- qual must NOT contain a bare 'actor_id = auth.uid()' without EXISTS.
 
 -- V4: All legacy staff-friendly SELECT policies are gone
 SELECT tablename, policyname FROM pg_policies
@@ -340,4 +454,8 @@ ROLLBACK;
 --     re-introducing staff → base-table queries)
 --   - C2.29B-2.3: Full chain E1-E5 verification (re-run E1-E3 from
 --     C2.29 + add E4 base-table direct SELECT + E5 build-time guard)
+--   - Conditional 042: ONLY if STEP 0 P0.3 reports any view as
+--     SECURITY INVOKER, create a follow-up migration to flip that
+--     view to SECURITY DEFINER before re-applying 041. Out of scope
+--     for 041 (do not create 042 proactively).
 -- ============================================================
