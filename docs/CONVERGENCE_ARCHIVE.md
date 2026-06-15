@@ -66,7 +66,7 @@
 | C2.30D | Cloud→local 補回脫敏 | ✅ | `342bed3`, `280c2fa` | 見本文件 §6 |
 | C2.31 | 衝突解決脫敏 | ✅ | `799b8ab`, `2fd23c8` | 見本文件 §6 |
 | C2.27 | Staff local-first detail 檢查 | ✅ **已透過 StaffMarketDetailView 重構 + 三層防線實質完成**（2026-06-15） | `ed79a23`, `727de49`, `c5cacfa` | [`docs/C2.27_REANALYSIS_2026_06_15.md`](./C2.27_REANALYSIS_2026_06_15.md) |
-| C2.28 | Role fail-closed 評估 | 🟡 待分析 | — | hardening plan |
+| C2.28 | Role fail-closed 評估 | 🟡 **已分析，P0 fail-closed 修補中**（2026-06-15：sync-context + role error；頁面 render guard 待 C2.28B） | `94f9fc5` | [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md) |
 | C2.29 | Supabase view / RLS hardening 草稿 | 🟡 待分析 | — | hardening plan |
 | **C3.4** | **Projection 二次累加修復（水水市集問題）** | ✅ **完成**（2026-06-14） | `f7155fb` (P0) + `c6de385` (P1) + `7b6590f` (P2) + `89dec72` (P3) | [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) + [`docs/C3.4_REGRESSION_TROUBLESHOOTING.md`](./C3.4_REGRESSION_TROUBLESHOOTING.md) |
 
