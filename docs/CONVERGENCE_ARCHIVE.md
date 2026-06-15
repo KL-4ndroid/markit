@@ -67,7 +67,7 @@
 | C2.31 | 衝突解決脫敏 | ✅ | `799b8ab`, `2fd23c8` | 見本文件 §6 |
 | C2.27 | Staff local-first detail 檢查 | ✅ **已透過 StaffMarketDetailView 重構 + 三層防線實質完成**（2026-06-15） | `ed79a23`, `727de49`, `c5cacfa` | [`docs/C2.27_REANALYSIS_2026_06_15.md`](./C2.27_REANALYSIS_2026_06_15.md) |
 | C2.28 | Role fail-closed 評估 | 🟡 **已分析，P0 fail-closed 修補中**（2026-06-15：sync-context + role error；頁面 render guard 待 C2.28B） | `94f9fc5` | [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md) |
-| C2.29 | Supabase view / RLS hardening 草稿 | 🟡 待分析 | — | hardening plan |
+| C2.29 | Supabase view / RLS hardening 草稿 | 🟡 **已分析（2026-06-15）：發現 4 個 fail-open 攻擊面（view 仍回傳 m.* / p.* / e.*），草稿 + 驗證 SQL 已備；套用待 C2.29B** | — | [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) |
 | **C3.4** | **Projection 二次累加修復（水水市集問題）** | ✅ **完成**（2026-06-14） | `f7155fb` (P0) + `c6de385` (P1) + `7b6590f` (P2) + `89dec72` (P3) | [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) + [`docs/C3.4_REGRESSION_TROUBLESHOOTING.md`](./C3.4_REGRESSION_TROUBLESHOOTING.md) |
 
 ### 4.2 為什麼 C2.26 透過 C2.30C 實質完成
@@ -195,7 +195,7 @@ remote/merge 策略寫入前脫敏         │                          │
 
 1. **新 phase** 開工時：在 `DATA_CONVERGENCE_PLAN.md` 加 phase 編號 + 在本文件 §2 加 archive 列
 2. **archive 文件**只讀不寫，發現錯誤請用新文件記錄
-3. **`OWNER_STAFF_REVENUE_HARDENING_PLAN.md`** 仍在維護（C2.27-C2.29 待分析），但格式應與 `DATA_CONVERGENCE_PLAN.md` 對齊
+3. **`OWNER_STAFF_REVENUE_HARDENING_PLAN.md`** 仍在維護（C2.27 ✅ / C2.28 ✅ / C2.28B ✅ / C2.29 🟡 已分析待套用），但格式應與 `DATA_CONVERGENCE_PLAN.md` 對齊
 4. **`CLOUD_DATA_CONSISTENCY_AUDIT.md`** 是 SQL 工具，未來若新增診斷場景直接加章節
 5. **每次 phase 完成**需跑： `npm test` + `npx tsc --noEmit` + `npm run lint` + `npm run build` + `git diff --check`
 

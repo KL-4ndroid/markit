@@ -32,7 +32,7 @@
 | C2.26 | Staff 敏感財務欄位 UI 審查 | Staff 不顯示成本、利潤、毛利率、費用、供應商資訊 | `lib/permissions/PermissionGate.ts` + 各 UI 元件 | ✅ **透過 C2.30C PermissionGate 整合實質完成**（不再逐欄位判斷，改用統一脫敏閘） |
 | C2.27 | Staff local-first detail 檢查 | Staff 詳情頁優先使用已 sanitize 的本機資料，避免 remote row 曝露敏感欄位 | `components/markets/StaffMarketDetailView.tsx` + 三層防線 | ✅ **已透過 StaffMarketDetailView 重構 + 三層防線實質完成**（不再需要大改 production code，僅剩文件收尾與小型測試補強；詳見 [`docs/C2.27_REANALYSIS_2026_06_15.md`](./C2.27_REANALYSIS_2026_06_15.md)） |
 | C2.28 | Role fail-closed 評估 | role loading / error / unknown 期間不可視為 owner；infoLevel 必須是 0 | `useUserRole`, `sync-context`, PermissionGate | 🟡 **已分析，已完成 sync-context / role error fail-closed 最小修補，頁面 render guard 待 C2.28B**（詳見 [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md)，commit `94f9fc5`） |
-| C2.29 | Supabase view / RLS hardening 草稿 | 只產生 migration 草稿與驗證 SQL，不直接套用 | `supabase/migrations/*` | 待分析 |
+| C2.29 | Supabase view / RLS hardening 草稿 | 只產生 migration 草稿與驗證 SQL，不直接套用 | `supabase/migrations/*` | 🟡 **已分析（2026-06-15）：發現 4 個 fail-open 攻擊面，草稿見 [docs/C2.29_REANALYSIS_2026_06_15.md](./C2.29_REANALYSIS_2026_06_15.md)**。套用待 C2.29B |
 | C2.30C | PermissionGate 統一脫敏層 | 引入 `lib/permissions/PermissionGate.ts` 作為單一脫敏真相來源；`infoLevel`（0-2 員工漸進、3 老闆）取代散落 staff sanitizer | `lib/permissions/PermissionGate.ts`, components/* | ✅ 已完成（commit `4ab4b1a`） |
 | C2.30D | Cloud→local 補回脫敏 | 雲端補回 market/product 寫入 IndexedDB 前一律過 PermissionGate；同樣適用 recovery 路徑 | `useSync.ts` hydration, `recovery.ts` | ✅ 已完成（commit `342bed3` + `280c2fa`，11 個新測試） |
 | C2.31 | 衝突解決脫敏 | `detectAndResolveConflict` 的 remote/merge 策略寫入前脫敏；員工視角下以脫敏後雲端值做 Math.max，跳過 stock Math.min 保守合併 | `useSync.ts` conflict 路徑 | ✅ 已完成（commit `799b8ab` + `2fd23c8`，6 個新測試） |
@@ -98,4 +98,4 @@
   3. **第 3 層（渲染脫敏）**：UI 元件呼叫 PermissionGate
 - C2.27 已透過 StaffMarketDetailView 重構 + 三層防線實質完成（不再需要大改 production code），詳見 [`docs/C2.27_REANALYSIS_2026_06_15.md`](./C2.27_REANALYSIS_2026_06_15.md)。
 - C2.28 已完成 P0 fail-closed 最小修補（`hooks/useUserRole.ts` + `lib/sync-context.tsx`），頁面 render guard 留待 C2.28B；詳見 [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md)。
-- C2.29 仍待分析，未來需獨立排程。
+- C2.29 已完成只讀分析（2026-06-15），發現 4 個 Supabase view / RLS fail-open 攻擊面（staff_accessible_* view 仍回傳 m.* / p.* / e.*），詳見 [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md)。套用待 C2.29B（仍只做只讀）。
