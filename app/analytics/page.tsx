@@ -10,6 +10,7 @@ import { useMarkets, useProducts } from '@/lib/db/hooks';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { db } from '@/lib/db';
+import { RoleLoadingFallback } from '@/components/auth/RoleLoadingFallback';
 import {
   getActiveDealEventsForMarkets,
   getActiveInteractionEventsForMarkets,
@@ -60,7 +61,7 @@ import type { ProductPair, MarketHealthScore } from '@/lib/analytics';
 export default function AnalyticsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { userRole, isStaff } = useUserRole();
+  const { userRole, isStaff, isLoading: isRoleLoading, roleError } = useUserRole();
   const [dateRange, setDateRange] = useState<AnalyticsRange>('all');
   const [selectedMarketId, setSelectedMarketId] = useState<string>('');
   const [showInfoTooltip, setShowInfoTooltip] = useState(false); // ✅ 控制ROI說明提示框
@@ -479,6 +480,12 @@ export default function AnalyticsPage() {
   const dataReliability = useMemo(() => {
     return getDataReliability(validMarketCount);
   }, [validMarketCount]);
+
+  // ✅ C2.28B：fail-closed render guard（必須在所有 hook 之後）
+  // Analytics 完全是 owner-only，loading 期間必須完全阻擋
+  if (isRoleLoading || roleError) {
+    return <RoleLoadingFallback />;
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">

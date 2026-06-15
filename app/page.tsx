@@ -11,6 +11,7 @@ import { SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
 import { useSyncContext } from '@/lib/sync-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
+import { RoleLoadingFallback } from '@/components/auth/RoleLoadingFallback';
 import { 
   Cloud, 
   CloudOff, 
@@ -89,7 +90,7 @@ export default function HomePage() {
   const router = useRouter();
   
   const { user, signOut, isConfigured } = useAuth();
-  const { userRole, isStaff } = useUserRole();
+  const { userRole, isStaff, isLoading: isRoleLoading, roleError } = useUserRole();
   
   // ✅ 根據用戶身份過濾市集（權限控制）
   // - 員工：只顯示老闆的市集（userRole.ownerId）
@@ -108,6 +109,12 @@ export default function HomePage() {
   
   const [showSyncTooltip, setShowSyncTooltip] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // ✅ C2.28B：fail-closed render guard（必須在所有 hook 之後）
+  // 首頁在 loading 期間不可渲染 owner-only stats / owner overview
+  if (isRoleLoading || roleError) {
+    return <RoleLoadingFallback />;
+  }
   
   // TODO: 從實際訂閱狀態獲取
   const currentPlan: 'free' | 'pro' | 'enterprise' = 'free';

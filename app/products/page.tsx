@@ -14,6 +14,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context'; // ✅ 導入 useAuth
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
+import { RoleLoadingFallback } from '@/components/auth/RoleLoadingFallback';
 import type { ProductCategory } from '@/types/db';
 
 type TabType = 'all' | ProductCategory;
@@ -26,7 +27,7 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
-  const { isStaff, userRole, isLoading: isRoleLoading } = useUserRole(); // ✅ 員工權限檢查
+  const { isStaff, userRole, isLoading: isRoleLoading, roleError } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 獲取當前用戶
 
   // 初始化資料庫（使用安全初始化）
@@ -78,6 +79,11 @@ export default function ProductsPage() {
   };
 
   const filteredProducts = getFilteredProducts();
+
+  // ✅ C2.28B：fail-closed render guard（必須在所有 hook 之後）
+  if (isRoleLoading || roleError) {
+    return <RoleLoadingFallback />;
+  }
 
   // 計算每個分類的商品數量
   const getCategoryCount = (category: ProductCategory) => {

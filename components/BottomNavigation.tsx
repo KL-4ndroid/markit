@@ -14,7 +14,11 @@ export function BottomNavigation() {
   const router = useRouter();
   const [isNavVisible, setIsNavVisible] = useState(true);
   const { setNavigation } = useNavigation();
-  const { isStaff } = useUserRole(); // ✅ 員工權限檢查
+  const { isStaff, isLoading: isRoleLoading, roleError } = useUserRole(); // ✅ 員工權限檢查
+
+  // ✅ C2.28B：fail-closed：loading/error 期間把 analytics 視為禁用（保守處理）
+  // 即使是 owner，loading 期間也不允許點擊 analytics，避免 race condition
+  const isRoleUnresolved = isRoleLoading || roleError != null;
 
   // 訂閱全局導航狀態
   useEffect(() => {
@@ -91,7 +95,7 @@ export function BottomNavigation() {
   // ✅ 處理導航點擊（員工模式下禁用分析功能）
   const handleNavClick = (e: React.MouseEvent, item: typeof navItems[0]) => {
     // 員工模式下禁用分析功能
-    if (isStaff && item.id === 'analytics') {
+    if ((isStaff || isRoleUnresolved) && item.id === 'analytics') {
       e.preventDefault();
       toast.error('此功能僅供老闆使用', {
         description: '員工無權限查看數據分析',
@@ -99,7 +103,7 @@ export function BottomNavigation() {
       });
       return;
     }
-    
+
     setNavigation(currentIndex, item.index);
   };
 
@@ -114,7 +118,8 @@ export function BottomNavigation() {
             const isActive = pathname === item.path;
 
             // ✅ 員工模式下禁用分析功能
-            const isDisabled = isStaff && item.id === 'analytics';
+            // ✅ C2.28B：loading 期間也禁用，避免 race condition
+            const isDisabled = (isStaff || isRoleUnresolved) && item.id === 'analytics';
             
             return (
               <Link

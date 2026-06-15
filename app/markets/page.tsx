@@ -13,6 +13,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
+import { RoleLoadingFallback } from '@/components/auth/RoleLoadingFallback';
 import type { MarketStatus } from '@/types/db';
 import MarketsLoading from './loading';
 
@@ -67,7 +68,7 @@ export default function MarketsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
-  const { userRole, isStaff, isLoading: isRoleLoading } = useUserRole(); // ✅ 員工權限檢查
+  const { userRole, isStaff, isLoading: isRoleLoading, roleError } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 獲取當前用戶
 
   // 初始化資料庫（使用安全初始化）
@@ -128,6 +129,12 @@ export default function MarketsPage() {
 
   const filteredMarkets = getFilteredMarkets();
   const batchStats = useMarketStatsBatch(allMarkets);
+
+  // ✅ C2.28B：fail-closed render guard（必須在所有 hook 之後）
+  // 角色查詢未確認前，不可渲染 owner-only / staff-only UI
+  if (isRoleLoading || roleError) {
+    return <RoleLoadingFallback />;
+  }
 
   // 處理新增成功
   const handleAddSuccess = () => {

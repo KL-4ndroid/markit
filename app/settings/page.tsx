@@ -16,6 +16,7 @@ import { StaffPermissionCard } from '@/components/staff/StaffPermissionCard';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { DataCanonicalizationPanel } from '@/components/settings/DataCanonicalizationPanel';
+import { RoleLoadingFallback } from '@/components/auth/RoleLoadingFallback';
 
 async function clearLocalAppData(): Promise<void> {
   const { clearAllData, db } = await import('@/lib/db');
@@ -79,12 +80,18 @@ export default function SettingsPage() {
   const [isInteractionExpanded, setIsInteractionExpanded] = useState(false);
   const [isDatabaseExpanded, setIsDatabaseExpanded] = useState(false);
   const { user, signOut } = useAuth();
-  const { userRole, isStaff } = useUserRole();
+  const { userRole, isStaff, isLoading: isRoleLoading, roleError } = useUserRole();
 
   useEffect(() => {
     setButtons(getInteractionButtons());
     setIsSetupComplete(isInteractionSetupComplete());
   }, []);
+
+  // ✅ C2.28B：fail-closed render guard（必須在所有 hook 之後）
+  // Settings 含有大量 owner-only / staff-only 不同 UI，loading 期間不可預測
+  if (isRoleLoading || roleError) {
+    return <RoleLoadingFallback />;
+  }
 
   const handleResetInteraction = () => {
     if (confirm('確定要重置互動設定嗎？重置後需要重新設定。')) {
