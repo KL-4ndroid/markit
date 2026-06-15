@@ -7,7 +7,7 @@
 >
 > **2026-06-14 補充**：C3.4（Projection 二次累加修復計畫）已另開檔 [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) 追蹤，**不**併入本檔。理由：C3.4 是 sync/projection 收斂主線，與本檔「員工脫敏」主題不同。
 
-更新日期：2026-06-15（C2.29B-1 套用紀錄）
+更新日期：2026-06-16（C2.29B-1.1 套用紀錄 + C2.29B-2 藍圖建立）
 
 ## 目標
 
@@ -32,7 +32,7 @@
 | C2.26 | Staff 敏感財務欄位 UI 審查 | Staff 不顯示成本、利潤、毛利率、費用、供應商資訊 | `lib/permissions/PermissionGate.ts` + 各 UI 元件 | ✅ **透過 C2.30C PermissionGate 整合實質完成**（不再逐欄位判斷，改用統一脫敏閘） |
 | C2.27 | Staff local-first detail 檢查 | Staff 詳情頁優先使用已 sanitize 的本機資料，避免 remote row 曝露敏感欄位 | `components/markets/StaffMarketDetailView.tsx` + 三層防線 | ✅ **已透過 StaffMarketDetailView 重構 + 三層防線實質完成**（不再需要大改 production code，僅剩文件收尾與小型測試補強；詳見 [`docs/C2.27_REANALYSIS_2026_06_15.md`](./C2.27_REANALYSIS_2026_06_15.md)） |
 | C2.28 | Role fail-closed 評估 | role loading / error / unknown 期間不可視為 owner；infoLevel 必須是 0 | `useUserRole`, `sync-context`, PermissionGate | 🟡 **已分析，已完成 sync-context / role error fail-closed 最小修補，頁面 render guard 待 C2.28B**（詳見 [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md)，commit `94f9fc5`） |
-| C2.29 | Supabase view / RLS hardening 草稿 | 只產生 migration 草稿與驗證 SQL，不直接套用 | `supabase/migrations/*` | ✅ **C2.29B-1 已套用 Supabase，驗證通過**（view 層脫敏，5 個驗證 block 全部通過）。⚠️ **C2.29B-1 只修 staff_accessible_* view 層**；E2 已證明 Staff 仍可能透過底表 RLS 直接 SELECT markets 取得敏感欄位，**C2.29B-2 仍需處理底表 RLS tightening / 前端查詢路徑收斂**。詳見 [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) §C2.29B-1 Apply Result + §9.8 |
+| C2.29 | Supabase view / RLS hardening 草稿 | 只產生 migration 草稿與驗證 SQL，不直接套用 | `supabase/migrations/*` | ✅ **C2.29B-1 已套用 Supabase，驗證通過**（view 層脫敏，5 個驗證 block 全部通過）。✅ **C2.29B-1.1（040）已套用 Supabase，驗證通過**（view scope 修補：owner branch scope leak / deleted markets / branch 重複 3 個攻擊面消除）。⚠️ **C2.29B-1.1 仍只修 view 層**；E2 證明 Staff 仍可能透過底表 RLS 直接 SELECT markets 取得敏感欄位。🟡 **C2.29B-2 已完成藍圖規劃**（`docs/C2.29B-2_PLAN_2026_06_16.md`），**待用戶明確啟動實作**。詳見 [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) §C2.29B-1 Apply Result + §C2.29B-1.1 Apply Result + §9.8 |
 | C2.30C | PermissionGate 統一脫敏層 | 引入 `lib/permissions/PermissionGate.ts` 作為單一脫敏真相來源；`infoLevel`（0-2 員工漸進、3 老闆）取代散落 staff sanitizer | `lib/permissions/PermissionGate.ts`, components/* | ✅ 已完成（commit `4ab4b1a`） |
 | C2.30D | Cloud→local 補回脫敏 | 雲端補回 market/product 寫入 IndexedDB 前一律過 PermissionGate；同樣適用 recovery 路徑 | `useSync.ts` hydration, `recovery.ts` | ✅ 已完成（commit `342bed3` + `280c2fa`，11 個新測試） |
 | C2.31 | 衝突解決脫敏 | `detectAndResolveConflict` 的 remote/merge 策略寫入前脫敏；員工視角下以脫敏後雲端值做 Math.max，跳過 stock Math.min 保守合併 | `useSync.ts` conflict 路徑 | ✅ 已完成（commit `799b8ab` + `2fd23c8`，6 個新測試） |
@@ -121,3 +121,66 @@
   2. 前端查詢路徑收斂（改走 `staff_accessible_*` view 或 owner-only view）
   3. 或全面改走 SECURITY DEFINER RPC
 - 詳細紀錄見 [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) §C2.29B-1 Apply Result。
+
+### 2026-06-16（C2.29B-1.1 套用紀錄 + C2.29B-2 藍圖）
+
+- **C2.29B-1.1 套用結果**：🟢 **已套用 Supabase，驗證通過**。
+- 套用對象：`supabase/migrations/040_fix_staff_accessible_view_scope.sql`。
+- 套用 commit：`8ff6b09`（`db(c2): draft staff accessible view scope fix`）。
+- 套用方式：Supabase SQL Editor，**transactional apply**（`BEGIN;` ... `COMMIT;`）。
+- 套用者：用戶（手動）。
+- Staff 驗證（攻擊面 #A / #B / #C 全部消除）：
+  - `staff_accessible_markets` 不再出現 `access_type = 'owner'`
+  - `staff_accessible_markets` 不再有同一 market id 重複 staff / owner branch
+  - `staff_accessible_markets` 不再包含 `is_deleted = true`（`COALESCE(m.is_deleted, false) = false` 過濾生效）
+  - `staff_accessible_events` 不再出現 `access_type = 'owner'`（Branch 4 scope leak 修好）
+  - Staff events payload 仍為 scrubbed（`boothCost` / `cost` / `supplierInfo` 等敏感 key 全部不存在；`items[]` 巢狀已脫敏）
+- Owner 驗證（無 regression）：
+  - Owner 仍可看到 `access_type = 'owner'`
+  - Owner 仍可看到完整 financial fields
+  - Owner 仍可看到完整 `events.payload`
+- **040 解決**：
+  - staff accessible view owner-branch bypass（用 `m.owner_id` 取代 `mm.user_id`）
+  - deleted markets 進入 staff view（加 `is_deleted` 過濾）
+  - staff / owner branch duplicated rows（owner branch 條件嚴格化後，UNION ALL 重複命中自動消失）
+- **040 尚未解決**：
+  - Staff 透過 DevTools 直接 SELECT 底表 `markets` / `products` / `events` 的 RLS 攻擊面（C2.29B-2.1 處理）
+  - `market_id IS NULL` 的 global product events 是否應進 Staff events view（C2.29B-2 評估）
+  - Staff 到底應該看 owner 旗下全部未刪除市集，還是只看指派 / 近期 / 有效場次（C2.29B-2 評估）
+  - Staff full sync / replay 過量事件問題（C2.29B-2 / 性能優化評估）
+- ⚠️ **C2.29B-1.1 範圍限制**：
+  - 只修 `staff_accessible_*` view 結構（owner branch 條件 + is_deleted 過濾）
+  - **沒修底表 RLS**（攻擊面 #4 仍存在）
+  - **沒改前端查詢路徑**
+  - **沒動 `staff_accessible_products`**（無 scope bug）
+  - **沒刪除任何 view branch**（保守做法）
+  - **沒新增 trigger / function / RPC**
+
+- **C2.29B-2 藍圖建立**：🟡 **規劃中**（**未實作**）。
+- 規劃文件：`docs/C2.29B-2_PLAN_2026_06_16.md`（715 行、14 章節）。
+- 規劃 commit：`80ee8bb`（`docs(c2): add C2.29B-2 base table RLS plan`）。
+- 3 個 Sub-Phase 階段式規劃：
+  1. **C2.29B-2.1** 收緊底表 SELECT RLS（員工 SELECT 底表 = 0 row）
+  2. **C2.29B-2.2** 前端查詢路徑收斂（Type-level guard，編譯期阻擋）
+  3. **C2.29B-2.3** 全鏈路驗證 E1-E5
+- 5 個關鍵決策：
+  1. Owner 判斷式：`m.owner_id = auth.uid()`（不依賴 trigger）
+  2. Staff SELECT 底表：完全拒絕（員工只能走 view）
+  3. 前端路徑守衛：Type-level guard（編譯期阻擋，未來好維護）
+  4. is_collaborative 場景：先試 `m.owner_id`，破壞則改 `mm.role = 'owner'`
+  5. Service / Repair 程式碼：標註 Owner only + 顯式分流
+
+- **C2.29B-2 前置條件**（同步更新）：
+  ```text
+  ✅ C2.29B-1.1 040 已套用並驗證通過
+  ⏳ C2.29B-2.1 可進入實作規劃 / migration 草稿階段
+  ```
+- ⚠️ **C2.29B-2.1 尚未實作**。
+- ⚠️ **尚未新增 041 migration**。
+- ⚠️ **尚未改 RLS**。
+- ⚠️ **尚未改前端**。
+
+- 詳細紀錄見：
+  - [`docs/C2.29B_VIEW_SCOPE_AUDIT_2026_06_15.md`](./C2.29B_VIEW_SCOPE_AUDIT_2026_06_15.md) §13（C2.29B-1.1 Apply Result）
+  - [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) `C2.29B-1.1 Apply Result` 章節 + §9.8（C2.29B-2 狀態）
+  - [`docs/C2.29B-2_PLAN_2026_06_16.md`](./C2.29B-2_PLAN_2026_06_16.md)（C2.29B-2 完整藍圖）
