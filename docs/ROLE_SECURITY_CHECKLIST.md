@@ -198,7 +198,7 @@
 |---|---|---|---|
 | 角色快取 TTL 為 5 分鐘 | `hooks/useUserRole.ts` | 通過 | Phase 5B-1 |
 | 同步遇到 permission error 後停止 10 分鐘 | `hooks/useSync.ts` | 通過 | 防止 revoked 員工繼續同步 |
-| `removeStaff()` 未呼叫 `invalidateRoleCache()` | `lib/supabase/staff.ts` | 待修正 | 老闆端無法主動清除員工快取 |
+| `removeStaff()` 未呼叫 `invalidateRoleCache()` | `lib/supabase/staff.ts` | **✅ 已修法（C3.6 v2）** | 員工端 `useStaffStatusMonitor` 180 秒 Polling 偵測 + 自動清理 |
 
 > ⚠️ **待修正**：老闆端無法直接清除員工裝置上的 localStorage role cache。目前靠 5 分鐘 TTL 被動失效，未來可考慮 Supabase Realtime 推送失效訊息。
 
@@ -272,7 +272,7 @@
 
 | # | 項目 | 說明 | 建議 |
 |---|---|---|---|
-| 1 | `removeStaff()` 未呼叫 `invalidateRoleCache()` | 老闆端無法主動使員工快取失效 | 考慮 Supabase Realtime 推送或同步時主動 revalidate |
+| ~~1~~ | ~~`removeStaff()` 未呼叫 `invalidateRoleCache()`~~ | ~~老闆端無法主動使員工快取失效~~ | **✅ C3.6 v2 已修法**：員工端 180 秒 Polling 偵測 + 自動清空（避免 Realtime 連線成本）。詳見 `docs/C3.6_LEAVE_TEAM_CLEANUP_AUDIT.md` §9 |
 
 ### 待確認項目（P1/P2 安全清理，仍需驗證）
 

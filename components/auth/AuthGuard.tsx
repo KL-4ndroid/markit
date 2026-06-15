@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { GlobalLoadingSkeleton } from './GlobalLoadingSkeleton';
 import { WelcomeScreen } from './WelcomeScreen';
 import { OfflineBanner } from './OfflineBanner';
+import { StaffStatusMonitor } from './StaffStatusMonitor';
 
 // ✅ 白名單路由：無需登入即可訪問
 const PUBLIC_ROUTES = ['/privacy', '/terms', '/about'];
@@ -126,6 +127,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
         {/* 離線橫幅 */}
         <OfflineBanner />
         {children}
+        {/* ✅ C3.6：員工狀態監控（只在已登入時掛載）
+            偵測到老闆撤銷員工權限時自動清空本地資料 */}
+        <StaffStatusMonitor />
       </>
     );
   }
