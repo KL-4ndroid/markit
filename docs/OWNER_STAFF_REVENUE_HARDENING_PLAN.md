@@ -7,7 +7,7 @@
 >
 > **2026-06-14 補充**：C3.4（Projection 二次累加修復計畫）已另開檔 [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) 追蹤，**不**併入本檔。理由：C3.4 是 sync/projection 收斂主線，與本檔「員工脫敏」主題不同。
 
-更新日期：2026-06-12
+更新日期：2026-06-15（C2.29B-1 套用紀錄）
 
 ## 目標
 
@@ -32,7 +32,7 @@
 | C2.26 | Staff 敏感財務欄位 UI 審查 | Staff 不顯示成本、利潤、毛利率、費用、供應商資訊 | `lib/permissions/PermissionGate.ts` + 各 UI 元件 | ✅ **透過 C2.30C PermissionGate 整合實質完成**（不再逐欄位判斷，改用統一脫敏閘） |
 | C2.27 | Staff local-first detail 檢查 | Staff 詳情頁優先使用已 sanitize 的本機資料，避免 remote row 曝露敏感欄位 | `components/markets/StaffMarketDetailView.tsx` + 三層防線 | ✅ **已透過 StaffMarketDetailView 重構 + 三層防線實質完成**（不再需要大改 production code，僅剩文件收尾與小型測試補強；詳見 [`docs/C2.27_REANALYSIS_2026_06_15.md`](./C2.27_REANALYSIS_2026_06_15.md)） |
 | C2.28 | Role fail-closed 評估 | role loading / error / unknown 期間不可視為 owner；infoLevel 必須是 0 | `useUserRole`, `sync-context`, PermissionGate | 🟡 **已分析，已完成 sync-context / role error fail-closed 最小修補，頁面 render guard 待 C2.28B**（詳見 [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md)，commit `94f9fc5`） |
-| C2.29 | Supabase view / RLS hardening 草稿 | 只產生 migration 草稿與驗證 SQL，不直接套用 | `supabase/migrations/*` | 🟡 **已分析（2026-06-15）：發現 4 個 fail-open 攻擊面，草稿見 [docs/C2.29_REANALYSIS_2026_06_15.md](./C2.29_REANALYSIS_2026_06_15.md)**。套用待 C2.29B |
+| C2.29 | Supabase view / RLS hardening 草稿 | 只產生 migration 草稿與驗證 SQL，不直接套用 | `supabase/migrations/*` | ✅ **C2.29B-1 已套用 Supabase，驗證通過**（view 層脫敏，5 個驗證 block 全部通過）。⚠️ **C2.29B-1 只修 staff_accessible_* view 層**；E2 已證明 Staff 仍可能透過底表 RLS 直接 SELECT markets 取得敏感欄位，**C2.29B-2 仍需處理底表 RLS tightening / 前端查詢路徑收斂**。詳見 [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) §C2.29B-1 Apply Result + §9.8 |
 | C2.30C | PermissionGate 統一脫敏層 | 引入 `lib/permissions/PermissionGate.ts` 作為單一脫敏真相來源；`infoLevel`（0-2 員工漸進、3 老闆）取代散落 staff sanitizer | `lib/permissions/PermissionGate.ts`, components/* | ✅ 已完成（commit `4ab4b1a`） |
 | C2.30D | Cloud→local 補回脫敏 | 雲端補回 market/product 寫入 IndexedDB 前一律過 PermissionGate；同樣適用 recovery 路徑 | `useSync.ts` hydration, `recovery.ts` | ✅ 已完成（commit `342bed3` + `280c2fa`，11 個新測試） |
 | C2.31 | 衝突解決脫敏 | `detectAndResolveConflict` 的 remote/merge 策略寫入前脫敏；員工視角下以脫敏後雲端值做 Math.max，跳過 stock Math.min 保守合併 | `useSync.ts` conflict 路徑 | ✅ 已完成（commit `799b8ab` + `2fd23c8`，6 個新測試） |
@@ -99,3 +99,25 @@
 - C2.27 已透過 StaffMarketDetailView 重構 + 三層防線實質完成（不再需要大改 production code），詳見 [`docs/C2.27_REANALYSIS_2026_06_15.md`](./C2.27_REANALYSIS_2026_06_15.md)。
 - C2.28 已完成 P0 fail-closed 最小修補（`hooks/useUserRole.ts` + `lib/sync-context.tsx`），頁面 render guard 留待 C2.28B；詳見 [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md)。
 - C2.29 已完成只讀分析（2026-06-15），發現 4 個 Supabase view / RLS fail-open 攻擊面（staff_accessible_* view 仍回傳 m.* / p.* / e.*），詳見 [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md)。套用待 C2.29B（仍只做只讀）。
+
+### 2026-06-15（C2.29B-1 套用紀錄）
+
+- **C2.29B-1 套用結果**：🟢 **已套用 Supabase，驗證通過**。
+- 套用 commit：`439f97f`（`supabase/migrations/039_staff_view_hardening.sql`）。
+- 套用方式：Supabase SQL Editor，**整段包進 transaction**（`BEGIN;` ... `COMMIT;`）。
+- 套用過程遇到的小問題：草稿用 `NULL::numeric` 通用型別，與線上 `numeric(10,2)` / `numeric(5,2)` 精確 typmod 不對齊 → 已在 `439f97f` 修正（9 處 NULL cast）。
+- Staff 驗證（攻擊面 #1-#3 全部消除）：
+  - `staff_accessible_markets`：`booth_cost` / `commission_rate` / `total_profit` / 4 個 rental / `registration_fee` 全部為 NULL
+  - `staff_accessible_products`：`cost` 為 NULL
+  - `staff_accessible_events.payload`：top-level 敏感 key（`boothCost` / `cost` / `supplierInfo` / `profitMargin` / `totalProfit` 等）全部不存在；`items[]` 巢狀結構敏感 key 也已脫敏
+  - Tombstone（`deal_deleted` / `interaction_deleted`）仍可見
+- Owner 驗證（無 regression）：Owner 仍可看到完整 financial fields / `cost` / 完整 `payload`。
+- ⚠️ **C2.29B-1 範圍限制**：
+  - 只修 `staff_accessible_*` view 層（3 個攻擊面 #1/#2/#3 消除）
+  - **沒修底表 RLS**（攻擊面 #4 仍存在：E2 證明 Staff 透過底表 RLS 直接 SELECT `markets` 仍可拉到 `booth_cost` / `total_profit`）
+  - **沒改前端查詢路徑**（員工 DevTools 仍可繞過 view 攻擊底表）
+- **C2.29B-2 待辦**（仍**未實作**）：
+  1. 底表 RLS 收緊（草稿 B 見 `C2.29_REANALYSIS_2026_06_15.md` §7.2）
+  2. 前端查詢路徑收斂（改走 `staff_accessible_*` view 或 owner-only view）
+  3. 或全面改走 SECURITY DEFINER RPC
+- 詳細紀錄見 [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) §C2.29B-1 Apply Result。
