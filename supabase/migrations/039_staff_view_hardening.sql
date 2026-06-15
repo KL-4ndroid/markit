@@ -41,6 +41,45 @@
 --   - 確認無錯誤後跑驗證 SQL
 --   - 確認 owner / staff 查詢結果符合預期
 --
+-- -----------------------------------------------------------------------------
+-- 🚦 正式套用建議（transactional safety）
+-- -----------------------------------------------------------------------------
+--
+-- 建議正式套用時使用 transaction，所有 migration body + 驗證 SQL 一次貼到
+-- SQL Editor，整段包進 BEGIN ... COMMIT，讓套用與驗證在同一個交易裡。
+-- 任何驗證失敗 → ROLLBACK 一次性還原，不會留下半套 view。
+--
+-- 標準流程：
+--
+--   BEGIN;
+--   -- (1) 貼上 Section 1 ~ 4 的 migration body
+--   --     (sanitize_staff_event_payload + 3 個 view 重建)
+--
+--   -- (2) 立即跑 Staff 驗證 SQL（見 Section 5）
+--   --     預期：booth_cost / cost / payload 敏感 key 全部 NULL / 缺漏
+--
+--   -- (3) 跑 Owner 驗證 SQL
+--   --     預期：booth_cost / cost / payload 仍為真實值
+--
+--   -- (4) 跑 tombstone 驗證 SQL
+--   --     預期：deal_deleted / interaction_deleted 仍可見
+--
+--   -- (5) 全部通過：
+--   COMMIT;
+--   --     (6) 任一失敗：
+--   --     ROLLBACK;
+--
+-- 提醒：
+--   - 不要在未驗證前 COMMIT。
+--   - 驗證順序：先 Staff branch → 再 Owner branch → 最後 tombstone。
+--   - 驗證完成後再記錄套用結果（建議在 docs/C2.29_REANALYSIS_2026_06_15.md
+--     補上套用日期 + commit hash）。
+--
+-- 為何要用 transaction：
+--   - CREATE OR REPLACE VIEW / FUNCTION 不會自動 rollback 既有 session 的暫存
+--   - 套用後若 Owner 端查詢結果異常，需要一次性還原 3 個 view
+--   - Supabase SQL Editor 對 BEGIN/COMMIT 支援完善
+--
 -- Rollback 方式（人工）:
 --   - 參考 docs/C2.29_VIEW_BACKUP_2026_06_15.md §1.1 / §2.1 / §3.1
 --   - 禁止自動 rollback，需人工確認
@@ -428,9 +467,17 @@ COMMENT ON VIEW public.staff_accessible_events IS
 -- 套用本 migration 後，在 Supabase SQL Editor 跑以下驗證 SQL。
 -- 預期：staff 查詢敏感欄位為 NULL，owner 查詢完整。
 --
--- ⚠️ 驗證前需用 psql 或 pgAdmin 切換 role，模擬員工身份：
+-- ⚠️ 驗證 SQL 全部用 transaction 包住：
+--
+--   BEGIN;
 --   SET LOCAL ROLE authenticated;
---   SET LOCAL request.jwt.claim.sub TO 'STAFF_USER_UUID';
+--   SELECT set_config('request.jwt.claim.sub', 'STAFF_USER_UUID', true);
+--   -- verification query
+--   ROLLBACK;
+--
+-- - BEGIN/ROLLBACK 確保驗證結束後 role 與 jwt claim 不會污染 session。
+-- - 每個驗證 block 各自一個 transaction（不要混用）。
+-- - 驗證順序：先 Staff（1-4）→ 再 Owner（5）。
 --
 -- =============================================================================
 
@@ -438,8 +485,10 @@ COMMENT ON VIEW public.staff_accessible_events IS
 -- 驗證 1: Staff 查 staff_accessible_markets（敏感欄位應為 NULL）
 -- -----------------------------------------------------------------------------
 /*
+BEGIN;
+
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claim.sub TO '5e92b457-1eaf-49eb-9295-ba47b5a3e575';  -- 換成實際 staff UUID
+SELECT set_config('request.jwt.claim.sub', '5e92b457-1eaf-49eb-9295-ba47b5a3e575', true);  -- 換成實際 staff UUID
 
 SELECT
     name,
@@ -458,15 +507,17 @@ SELECT
 FROM staff_accessible_markets
 LIMIT 1;
 
-RESET ROLE;
+ROLLBACK;
 */
 
 -- -----------------------------------------------------------------------------
 -- 驗證 2: Staff 查 staff_accessible_products（cost 應為 NULL）
 -- -----------------------------------------------------------------------------
 /*
+BEGIN;
+
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claim.sub TO '5e92b457-1eaf-49eb-9295-ba47b5a3e575';
+SELECT set_config('request.jwt.claim.sub', '5e92b457-1eaf-49eb-9295-ba47b5a3e575', true);
 
 SELECT
     name,
@@ -477,15 +528,17 @@ SELECT
 FROM staff_accessible_products
 LIMIT 1;
 
-RESET ROLE;
+ROLLBACK;
 */
 
 -- -----------------------------------------------------------------------------
 -- 驗證 3: Staff 查 staff_accessible_events.payload（敏感 key 應被移除）
 -- -----------------------------------------------------------------------------
 /*
+BEGIN;
+
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claim.sub TO '5e92b457-1eaf-49eb-9295-ba47b5a3e575';
+SELECT set_config('request.jwt.claim.sub', '5e92b457-1eaf-49eb-9295-ba47b5a3e575', true);
 
 -- 3a. 檢查 top-level 敏感 key 不存在
 SELECT
@@ -512,15 +565,17 @@ WHERE type = 'deal_closed'
 LIMIT 5;
 -- 預期：每個 item 內的 cost / costAtTimeOfSale / supplierInfo / profit 等 key 不存在
 
-RESET ROLE;
+ROLLBACK;
 */
 
 -- -----------------------------------------------------------------------------
 -- 驗證 4: Staff 仍應看到 tombstone 事件
 -- -----------------------------------------------------------------------------
 /*
+BEGIN;
+
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claim.sub TO '5e92b457-1eaf-49eb-9295-ba47b5a3e575';
+SELECT set_config('request.jwt.claim.sub', '5e92b457-1eaf-49eb-9295-ba47b5a3e575', true);
 
 SELECT type, count(*)
 FROM staff_accessible_events
@@ -528,15 +583,17 @@ WHERE type IN ('deal_deleted', 'interaction_deleted')
 GROUP BY type;
 -- 預期：deal_deleted / interaction_deleted 各有 row（tombstone 仍可見）
 
-RESET ROLE;
+ROLLBACK;
 */
 
 -- -----------------------------------------------------------------------------
 -- 驗證 5: Owner 查詢仍保留完整資料
 -- -----------------------------------------------------------------------------
 /*
+BEGIN;
+
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claim.sub TO 'OWNER_USER_UUID';  -- 換成實際 owner UUID
+SELECT set_config('request.jwt.claim.sub', 'OWNER_USER_UUID', true);  -- 換成實際 owner UUID
 
 -- 5a. Owner 看市集
 SELECT name, booth_cost, total_profit, commission_rate
@@ -556,7 +613,7 @@ FROM staff_accessible_events
 LIMIT 1;
 -- 預期：payload 是完整 JSONB
 
-RESET ROLE;
+ROLLBACK;
 */
 
 
