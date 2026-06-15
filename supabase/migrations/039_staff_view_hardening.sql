@@ -208,20 +208,20 @@ SELECT
     m.check_in_time,
     m.operating_start_time,
     m.operating_end_time,
-    NULL::numeric                  AS registration_fee,    -- 🛡️ 脫敏
-    NULL::numeric                  AS booth_cost,          -- 🛡️ 脫敏
+    NULL::numeric(10,2)                  AS registration_fee,    -- 🛡️ 脫敏
+    NULL::numeric(10,2)                  AS booth_cost,          -- 🛡️ 脫敏
     m.deposit,                                                 -- 🟢 保留（保證金提醒）
-    NULL::numeric                  AS table_rental,        -- 🛡️ 脫敏
-    NULL::numeric                  AS chair_rental,        -- 🛡️ 脫敏
-    NULL::numeric                  AS umbrella_rental,     -- 🛡️ 脫敏
-    NULL::numeric                  AS tablecloth_rental,   -- 🛡️ 脫敏
-    NULL::numeric                  AS commission_rate,     -- 🛡️ 脫敏
+    NULL::numeric(10,2)                  AS table_rental,        -- 🛡️ 脫敏
+    NULL::numeric(10,2)                  AS chair_rental,        -- 🛡️ 脫敏
+    NULL::numeric(10,2)                  AS umbrella_rental,     -- 🛡️ 脫敏
+    NULL::numeric(10,2)                  AS tablecloth_rental,   -- 🛡️ 脫敏
+    NULL::numeric(5,2)                   AS commission_rate,     -- 🛡️ 脫敏
     m.table_free,
     m.chair_free,
     m.umbrella_free,
     m.tablecloth_free,
     m.total_revenue,
-    NULL::numeric                  AS total_profit,        -- 🛡️ 脫敏
+    NULL::numeric(10,2)                  AS total_profit,        -- 🛡️ 脫敏
     m.total_interactions,
     m.total_deals,
     m.notes,
@@ -312,7 +312,7 @@ SELECT
     p.name,
     p.category,
     p.price,
-    NULL::numeric                  AS cost,                -- 🛡️ 脫敏
+    NULL::numeric(10,2)                  AS cost,                -- 🛡️ 脫敏
     p.icon_name,
     p.color_code,
     p.stock,
