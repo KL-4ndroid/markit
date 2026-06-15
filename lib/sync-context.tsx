@@ -11,7 +11,7 @@ import { createContext, useContext, ReactNode } from 'react';
 import { useSync, SyncStatus } from '@/hooks/useSync';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
-import { resolveInfoLevel } from '@/lib/data-sanitization';
+import { deriveSafeInfoLevel } from '@/lib/permissions/role-fail-closed';
 
 interface SyncContextType {
   status: SyncStatus;
@@ -30,19 +30,33 @@ const SyncContext = createContext<SyncContextType | null>(null);
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { user, isConfigured } = useAuth();
-  const { userRole, isLoading: isRoleLoading } = useUserRole();
+  const { userRole, isLoading: isRoleLoading, roleError } = useUserRole();
 
-  // ✅ 解析角色資訊揭露層級（3=老闆，0-2=員工）
-  const infoLevel = resolveInfoLevel(userRole);
+  // ✅ C2.28：fail-closed infoLevel
+  // - 角色載入中 → 0（最嚴格，不可寫入敏感欄位）
+  // - 角色查詢錯誤 → 0
+  // - 角色未確認 → 0
+  // - 已確認 owner → 3
+  // - 已確認 staff → permissions.infoLevel ?? 2
+  const safeInfoLevel = deriveSafeInfoLevel({
+    userRole,
+    isLoading: isRoleLoading,
+    roleError,
+  });
+  // 保留舊變數以維持向後相容
+  const infoLevel = safeInfoLevel;
 
   // ✅ 只創建一個 useSync 實例，傳入 infoLevel
+  // isRoleLoading 期間 useSync 仍 disabled（由 enabled 控制）
   const syncState = useSync({
     enabled: !!user && isConfigured && !isRoleLoading,
-    roleInfoLevel: infoLevel,
+    roleInfoLevel: safeInfoLevel,
   });
 
-  // ✅ 標記資料是否已脫敏（infoLevel < 3 表示員工）
-  const isDataSanitized = infoLevel < 3;
+  // ✅ C2.28：isDataSanitized 跟著 safeInfoLevel 走
+  // - loading / error → safeInfoLevel=0 → isDataSanitized=true
+  // - owner → safeInfoLevel=3 → isDataSanitized=false
+  const isDataSanitized = safeInfoLevel < 3;
 
   // ✅ 在 Context 中提供脫敏狀態
   const contextValue = {

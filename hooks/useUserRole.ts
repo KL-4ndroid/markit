@@ -10,6 +10,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
+import { deriveRolePermissions } from '@/lib/permissions/role-fail-closed';
 
 export interface UserRole {
   isStaff: boolean;
@@ -104,6 +105,8 @@ export function useUserRole() {
   });
   
   const [isLoading, setIsLoading] = useState(true);
+  // ✅ C2.28：明確追蹤角色查詢錯誤，確保 fail-closed 行為
+  const [roleError, setRoleError] = useState<Error | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -115,6 +118,7 @@ export function useUserRole() {
         clearRoleCache();
         if (isMounted) {
           setUserRole({ isStaff: false });
+          setRoleError(null);
           setIsLoading(false);
         }
         return;
@@ -123,6 +127,7 @@ export function useUserRole() {
       try {
         if (isMounted) {
           setIsLoading(true);
+          setRoleError(null);
         }
 
         // ✅ 檢查是否已被取消
@@ -179,10 +184,13 @@ export function useUserRole() {
       } catch (error: any) {
         // ✅ 忽略已取消的請求錯誤
         if (abortController.signal.aborted || !isMounted) return;
-        
+
         console.error('檢查用戶身份失敗:', error);
         if (isMounted) {
-          setUserRole({ isStaff: false });
+          // ✅ C2.28：fail-closed —— 記錄錯誤並保持 userRole 為員工預設值
+          // （不再 fallback 成 owner）讓 isOwner / canEdit / canViewSensitiveData 全部回傳 false
+          setRoleError(error instanceof Error ? error : new Error(String(error)));
+          setUserRole({ isStaff: true, permissions: { can_view: false, can_edit: false } });
         }
       } finally {
         if (isMounted) {
@@ -199,12 +207,16 @@ export function useUserRole() {
     };
   }, [user]);
 
+  // ✅ C2.28：fail-closed 權限計算（loading / error / 未登入 → 全部鎖住）
+  const permissions = deriveRolePermissions({ userRole, isLoading, roleError });
+
 return {
-    userRole,
-    isLoading,
-    isStaff: userRole.isStaff,
-    isOwner: !userRole.isStaff,
-    canEdit: !userRole.isStaff, // ✅ 只有老闆可以編輯，員工固定不能編輯
-    canViewSensitiveData: !userRole.isStaff, // 只有老闆可以查看敏感數據
-  };
+  userRole,
+  isLoading,
+  roleError, // ✅ C2.28：新增錯誤狀態出口
+  isStaff: userRole.isStaff, // ✅ 保留向後相容：語意維持「從 userRole 讀」
+  isOwner: permissions.isOwner,
+  canEdit: permissions.canEdit,
+  canViewSensitiveData: permissions.canViewSensitiveData,
+};
 }
