@@ -184,6 +184,76 @@ runTest('員工頁不直接讀 market.totalInteractions（已由 useMarketStatsF
   );
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// C2.27 收尾補強（2026-06-15）：租金 / 攤位費金額不渲染
+// 員工仍可在「承租設備」卡片看到「已承租 / 免費提供 / 自備」標籤，
+// 但不可看到具體金額。理由：租金與攤位費是純粹成本資訊，
+// 對員工現場工作無關；保證金則仍可看到（產品決策選項 A）。
+// ─────────────────────────────────────────────────────────────────────────────
+
+runTest('員工頁不渲染攤位費金額（boothCost）', () => {
+  // commit c5cacfa 已將 boothCost 完全移出 StaffMarketDetailView
+  assert.ok(
+    !/market\.boothCost/.test(source),
+    'StaffMarketDetailView 不應出現 market.boothCost（員工不看攤位費金額）'
+  );
+  assert.ok(
+    !/formatCurrency\(market\.boothCost/.test(source),
+    'StaffMarketDetailView 不應呼叫 formatCurrency(market.boothCost)'
+  );
+});
+
+runTest('員工頁不渲染桌子租金金額（tableRental 金額）', () => {
+  // 員工只看到「已承租/免費提供/自備」標籤，不可看到金額
+  // tableRental 仍可用於條件判斷（> 0 判定是否承租）
+  assert.ok(
+    !/formatCurrency\(market\.tableRental/.test(source),
+    'StaffMarketDetailView 不應呼叫 formatCurrency(market.tableRental)'
+  );
+});
+
+runTest('員工頁不渲染椅子租金金額（chairRental 金額）', () => {
+  assert.ok(
+    !/formatCurrency\(market\.chairRental/.test(source),
+    'StaffMarketDetailView 不應呼叫 formatCurrency(market.chairRental)'
+  );
+});
+
+runTest('員工頁不渲染傘架租金金額（umbrellaRental 金額）', () => {
+  assert.ok(
+    !/formatCurrency\(market\.umbrellaRental/.test(source),
+    'StaffMarketDetailView 不應呼叫 formatCurrency(market.umbrellaRental)'
+  );
+});
+
+runTest('員工頁不渲染 totalCost', () => {
+  assert.ok(
+    !/market\.totalCost/.test(source),
+    'StaffMarketDetailView 不應出現 market.totalCost'
+  );
+});
+
+runTest('員工頁仍可看到保證金金額（產品決策選項 A）', () => {
+  // 員工需要知道保證金存在以避免誤處置（不退還給客人、當收入計入）
+  // 詳見 docs/C2.27_REANALYSIS_2026_06_15.md §3
+  assert.match(
+    source,
+    /formatCurrency\(market\.deposit\)/,
+    'StaffMarketDetailView 應仍渲染保證金金額（選項 A：Staff 可看保證金提醒）'
+  );
+});
+
+runTest('「承租設備」標題與註解一致', () => {
+  // 確保沒有遺留「費用資訊」孤兒註解
+  assert.match(source, /承租設備/, '應出現「承租設備」標題');
+  // 「費用資訊」字串不應在 JSX 渲染區出現（已改為「承租設備」）
+  const sourceWithoutHeader = source.replace(/\/\*\*[\s\S]*?\*\//g, '');
+  assert.ok(
+    !/費用資訊/.test(sourceWithoutHeader),
+    'StaffMarketDetailView JSX 不應出現「費用資訊」（已改為「承租設備」）'
+  );
+});
+
 let passed = 0;
 let failed = 0;
 

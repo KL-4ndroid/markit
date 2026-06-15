@@ -435,9 +435,9 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           onDateClick={handleDateClick}
         />
 
-        {/* 費用資訊 */}
+        {/* 承租設備 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#8B7BA6]/10 p-6 mb-6">
-          <h2 className="text-lg font-medium text-[#3A3A3A] mb-4">費用資訊</h2>
+          <h2 className="text-lg font-medium text-[#3A3A3A] mb-4">承租設備</h2>
           <div className="space-y-3">
             {/* 保證金 */}
             {market.deposit && market.deposit > 0 && (
