@@ -439,17 +439,6 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#8B7BA6]/10 p-6 mb-6">
           <h2 className="text-lg font-medium text-[#3A3A3A] mb-4">費用資訊</h2>
           <div className="space-y-3">
-            {/* 攤位費 */}
-            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#F0E8F3]">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-[#8B7BA6]" />
-                <span className="text-[#3A3A3A]">攤位費</span>
-              </div>
-              <span className="text-sm font-medium text-[#3A3A3A]">
-                {formatCurrency(market.boothCost || 0)}
-              </span>
-            </div>
-
             {/* 保證金 */}
             {market.deposit && market.deposit > 0 && (
               <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#FFF8E7]">
@@ -476,7 +465,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
                 {market.tableFree ? (
                   <span className="text-[#8B7BA6]">免費提供</span>
                 ) : market.tableRental && market.tableRental > 0 ? (
-                  <span className="text-[#3A3A3A]">{formatCurrency(market.tableRental)}</span>
+                  <span className="text-[#8B7BA6]">已承租</span>
                 ) : (
                   <span className="text-[#6B6B6B]">自備</span>
                 )}
@@ -493,7 +482,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
                 {market.chairFree ? (
                   <span className="text-[#8B7BA6]">免費提供</span>
                 ) : market.chairRental && market.chairRental > 0 ? (
-                  <span className="text-[#3A3A3A]">{formatCurrency(market.chairRental)}</span>
+                  <span className="text-[#8B7BA6]">已承租</span>
                 ) : (
                   <span className="text-[#6B6B6B]">自備</span>
                 )}
@@ -510,7 +499,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
                 {market.umbrellaFree ? (
                   <span className="text-[#8B7BA6]">免費提供</span>
                 ) : market.umbrellaRental && market.umbrellaRental > 0 ? (
-                  <span className="text-[#3A3A3A]">{formatCurrency(market.umbrellaRental)}</span>
+                  <span className="text-[#8B7BA6]">已承租</span>
                 ) : (
                   <span className="text-[#6B6B6B]">自備</span>
                 )}
