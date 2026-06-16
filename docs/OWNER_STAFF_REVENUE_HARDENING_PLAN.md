@@ -7,7 +7,7 @@
 >
 > **2026-06-14 補充**：C3.4（Projection 二次累加修復計畫）已另開檔 [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) 追蹤，**不**併入本檔。理由：C3.4 是 sync/projection 收斂主線，與本檔「員工脫敏」主題不同。
 
-更新日期：2026-06-16（C2.29B-2.1 + 2.2 + 2.3 全部完成；C2.29 收斂 100% 達標）
+更新日期：2026-06-17（C2.30A 員工資料污染 auto-reset；C2.29 收斂 100% 達標）
 
 ## 目標
 

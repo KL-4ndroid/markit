@@ -1487,13 +1487,26 @@ async function pullEventsFromViews(
       onProgress(5, 5, '完成同步...', 'incremental');
     }
     
-    // ✅ 驗證數據隔離性；同步流程只記錄，不自動刪除本地資料。
+    // ✅ 驗證數據隔離性
+    // 員工 session 發現違規時自動 reset（auth-context 的切換 trigger 沒覆蓋的場景，
+    // 例如同 session 重新整理、跨團隊污染、廣播失敗等）
+    // Owner session 維持「只記錄不清理」（避免誤刪 Owner 自己資料）
     try {
-      const { validateDataIsolation } = await import('@/lib/db/clear-user-data');
+      const { validateDataIsolation, resetAuthenticatedCache } = await import('@/lib/db/clear-user-data');
       const validation = await validateDataIsolation(userId);
-      
+
       if (!validation.isValid) {
-        console.warn('⚠️ 本地存在非當前用戶資料，已保留並僅記錄:', validation.violations);
+        console.warn('⚠️ 本地存在非當前用戶資料:', validation.violations);
+
+        // ✅ 員工 session 自動重置（強制從雲端重建 cache）
+        if (infoLevel < 3) {
+          console.warn('🧹 員工 session 偵測到資料污染，自動觸發 role_switch cache reset...');
+          await resetAuthenticatedCache('role_switch', userId);
+          console.log('✅ 已重置 authenticated cache；下次 sync 將從雲端重建');
+        } else {
+          // Owner session：保留資料（避免誤刪 Owner 剛 sync 完但還沒上傳的 pending data）
+          console.warn('⚠️ Owner session 偵測到資料污染，已保留並僅記錄（避免誤刪 Owner 自己資料）');
+        }
       } else {
         console.log('✅ 數據隔離性驗證通過');
       }
