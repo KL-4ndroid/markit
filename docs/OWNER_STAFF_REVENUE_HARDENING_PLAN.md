@@ -7,7 +7,7 @@
 >
 > **2026-06-14 補充**：C3.4（Projection 二次累加修復計畫）已另開檔 [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) 追蹤，**不**併入本檔。理由：C3.4 是 sync/projection 收斂主線，與本檔「員工脫敏」主題不同。
 
-更新日期：2026-06-16（C2.29B-2.1 已套用並驗證通過）
+更新日期：2026-06-16（C2.29B-2.1 已套用 + C2.28B 收尾文件）
 
 ## 目標
 
@@ -31,7 +31,7 @@
 | C2.25 | DailyTransactionLog 成交筆數修正 | 成交筆數使用 `getDealEventCount()`，支援 `manualDealCount` | `components/markets/DailyTransactionLog.tsx` | 已完成 |
 | C2.26 | Staff 敏感財務欄位 UI 審查 | Staff 不顯示成本、利潤、毛利率、費用、供應商資訊 | `lib/permissions/PermissionGate.ts` + 各 UI 元件 | ✅ **透過 C2.30C PermissionGate 整合實質完成**（不再逐欄位判斷，改用統一脫敏閘） |
 | C2.27 | Staff local-first detail 檢查 | Staff 詳情頁優先使用已 sanitize 的本機資料，避免 remote row 曝露敏感欄位 | `components/markets/StaffMarketDetailView.tsx` + 三層防線 | ✅ **已透過 StaffMarketDetailView 重構 + 三層防線實質完成**（不再需要大改 production code，僅剩文件收尾與小型測試補強；詳見 [`docs/C2.27_REANALYSIS_2026_06_15.md`](./C2.27_REANALYSIS_2026_06_15.md)） |
-| C2.28 | Role fail-closed 評估 | role loading / error / unknown 期間不可視為 owner；infoLevel 必須是 0 | `useUserRole`, `sync-context`, PermissionGate | 🟡 **已分析，已完成 sync-context / role error fail-closed 最小修補，頁面 render guard 待 C2.28B**（詳見 [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md)，commit `94f9fc5`） |
+| C2.28 | Role fail-closed 評估 | role loading / error / unknown 期間不可視為 owner；infoLevel 必須是 0 | `useUserRole`, `sync-context`, PermissionGate | ✅ **C2.28 P0 fail-closed 修補 + C2.28B 頁面 render guard 已完成**（5 個 page + BottomNavigation 已實作）。詳見 [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md) + [`docs/C2.28B_RENDER_GUARD_2026_06_16.md`](./C2.28B_RENDER_GUARD_2026_06_16.md)（commit `94f9fc5`） |
 | C2.29 | Supabase view / RLS hardening 草稿 | ✅ **C2.29B-1 已套用 Supabase，驗證通過**（view 層脫敏）。✅ **C2.29B-1.1（040）已套用 Supabase，驗證通過**（view scope 修補）。✅ **C2.29B-2.1（041）已套用 Supabase，驗證通過**（底表 SELECT RLS 收緊：Staff direct SELECT = 0，Owner 不 regression）。⚠️ C2.29B-2.2（type-level guard）和 C2.29B-2.3（E1-E5）仍待實作。詳見 [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) §C2.29B-1 Apply Result + §C2.29B-1.1 Apply Result + §C2.29B-2.1 Apply Result + [`docs/C2.29B-2_1_RLS_MIGRATION_DRAFT_2026_06_16.md`](./C2.29B-2_1_RLS_MIGRATION_DRAFT_2026_06_16.md) |
 | C2.30C | PermissionGate 統一脫敏層 | 引入 `lib/permissions/PermissionGate.ts` 作為單一脫敏真相來源；`infoLevel`（0-2 員工漸進、3 老闆）取代散落 staff sanitizer | `lib/permissions/PermissionGate.ts`, components/* | ✅ 已完成（commit `4ab4b1a`） |
 | C2.30D | Cloud→local 補回脫敏 | 雲端補回 market/product 寫入 IndexedDB 前一律過 PermissionGate；同樣適用 recovery 路徑 | `useSync.ts` hydration, `recovery.ts` | ✅ 已完成（commit `342bed3` + `280c2fa`，11 個新測試） |
