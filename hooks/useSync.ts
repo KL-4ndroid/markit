@@ -1488,24 +1488,22 @@ async function pullEventsFromViews(
     }
     
     // ✅ 驗證數據隔離性
-    // 員工 session 發現違規時自動 reset（auth-context 的切換 trigger 沒覆蓋的場景，
-    // 例如同 session 重新整理、跨團隊污染、廣播失敗等）
-    // Owner session 維持「只記錄不清理」（避免誤刪 Owner 自己資料）
+    // 注意：員工 session 的市集必然有 owner_id !== currentUserId（因為員工看的是 Owner 的市集），
+    // 這是正確設計，不是污染。validateDataIsolation 在員工 session 容易誤報，
+    // 因此員工 session 只記錄警告，不自動 reset。
+    // Owner session 同樣只記錄不清理（避免誤刪 Owner 自己資料）。
+    // 真正的用戶切換清理由 auth-context.tsx 觸發 resetAuthenticatedCache('role_switch') 負責。
     try {
-      const { validateDataIsolation, resetAuthenticatedCache } = await import('@/lib/db/clear-user-data');
+      const { validateDataIsolation } = await import('@/lib/db/clear-user-data');
       const validation = await validateDataIsolation(userId);
 
       if (!validation.isValid) {
-        console.warn('⚠️ 本地存在非當前用戶資料:', validation.violations);
-
-        // ✅ 員工 session 自動重置（強制從雲端重建 cache）
-        if (infoLevel < 3) {
-          console.warn('🧹 員工 session 偵測到資料污染，自動觸發 role_switch cache reset...');
-          await resetAuthenticatedCache('role_switch', userId);
-          console.log('✅ 已重置 authenticated cache；下次 sync 將從雲端重建');
+        // 員工 session 看到的市集 owner_id 必然 != 自己（員工看 Owner 的市集），
+        // 這不是污染。只有 Owner session 時的 violations 才是值得關注的。
+        if (infoLevel >= 3) {
+          console.warn('⚠️ Owner session 偵測到資料污染（請檢查 IndexedDB 是否殘留其他用戶資料）:', validation.violations);
         } else {
-          // Owner session：保留資料（避免誤刪 Owner 剛 sync 完但還沒上傳的 pending data）
-          console.warn('⚠️ Owner session 偵測到資料污染，已保留並僅記錄（避免誤刪 Owner 自己資料）');
+          console.log(`ℹ️ 員工 session：本地 ${validation.violations.length} 項「非當前用戶」資料為預期（員工看的市集 owner_id 必然為 Owner），已保留。`);
         }
       } else {
         console.log('✅ 數據隔離性驗證通過');

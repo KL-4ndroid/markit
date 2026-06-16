@@ -78,14 +78,13 @@ const BASE_FIELDS: Record<EntityType, string[]> = {
     'boothCost', 'booth_cost',
     'registrationFee', 'registration_fee',
     'deposit',
-    'tableRental', 'table_rental',
-    'chairRental', 'chair_rental',
-    'umbrellaRental', 'umbrella_rental',
-    'tableclothRental', 'tablecloth_rental',
     'commissionRate', 'commission_rate',
     'costBreakdown', 'cost_breakdown',
     'averageCost', 'average_cost',
     'costPerItem', 'cost_per_item',
+    // ✅ 設備 rental 欄位（tableRental / chairRental / umbrellaRental / tableclothRental）
+    // 不視為敏感：員工需要知道「此市集有租設備」才能評估自備或免費提供。
+    // 真實的 rental 成本會反映在 deal_closed 的 totalCost，由 PermissionGate 依 Level 控制揭露。
   ],
   product: [
     'cost', 'supplierInfo', 'supplier_info',

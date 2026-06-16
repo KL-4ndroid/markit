@@ -146,23 +146,23 @@ assert.equal(
 );
 assert.equal(
   sanitizedSnakeMarket.table_rental,
-  undefined,
-  'snake market: table_rental must be removed'
+  300,
+  'snake market: table_rental should be preserved for staff (設備狀態非成本)'
 );
 assert.equal(
   sanitizedSnakeMarket.chair_rental,
-  undefined,
-  'snake market: chair_rental must be removed'
+  100,
+  'snake market: chair_rental should be preserved for staff (設備狀態非成本)'
 );
 assert.equal(
   sanitizedSnakeMarket.umbrella_rental,
-  undefined,
-  'snake market: umbrella_rental must be removed'
+  200,
+  'snake market: umbrella_rental should be preserved for staff (設備狀態非成本)'
 );
 assert.equal(
   sanitizedSnakeMarket.tablecloth_rental,
-  undefined,
-  'snake market: tablecloth_rental must be removed'
+  50,
+  'snake market: tablecloth_rental should be preserved for staff (設備狀態非成本)'
 );
 assert.equal(
   sanitizedSnakeMarket.total_revenue,
@@ -220,23 +220,23 @@ assert.equal(
 );
 assert.equal(
   sanitizedCamelMarket.tableRental,
-  undefined,
-  'camel market: tableRental must be removed'
+  300,
+  'camel market: tableRental should be preserved for staff (設備狀態非成本)'
 );
 assert.equal(
   sanitizedCamelMarket.chairRental,
-  undefined,
-  'camel market: chairRental must be removed'
+  100,
+  'camel market: chairRental should be preserved for staff (設備狀態非成本)'
 );
 assert.equal(
   sanitizedCamelMarket.umbrellaRental,
-  undefined,
-  'camel market: umbrellaRental must be removed'
+  200,
+  'camel market: umbrellaRental should be preserved for staff (設備狀態非成本)'
 );
 assert.equal(
   sanitizedCamelMarket.tableclothRental,
-  undefined,
-  'camel market: tableclothRental must be removed'
+  50,
+  'camel market: tableclothRental should be preserved for staff (設備狀態非成本)'
 );
 assert.equal(
   sanitizedCamelMarket.totalRevenue,
