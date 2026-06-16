@@ -307,7 +307,8 @@ async function testRoleSwitchScopeDoesNotDeleteLogoutHistoryByCode(): Promise<vo
   );
 
   // 確認該 removeItem 在 'if (scope === \'full\')' 區塊內
-  const fullScopeBlock = source.match(/if\s*\(\s*scope\s*===\s*['"]full['"]\s*\)\s*\{[^}]*localStorage\.removeItem\(['"]logout_history['"]\)/s);
+  // 使用 [\s\S] 替代 . 配合 s flag（避免舊 target es2015 不支援 s flag）
+  const fullScopeBlock = source.match(/if\s*\(\s*scope\s*===\s*['"]full['"]\s*\)\s*\{[\s\S]*?localStorage\.removeItem\(['"]logout_history['"]\)/);
   assert.ok(
     fullScopeBlock !== null,
     "logout_history removeItem must be inside `if (scope === 'full')` block (not in role_switch path)",
