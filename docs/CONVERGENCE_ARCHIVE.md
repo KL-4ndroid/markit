@@ -1,6 +1,6 @@
 # Markit 資料收斂文件總檔（單一權威入口）
 
-更新日期：2026-06-16（C2.29B-1.1 套用紀錄 + C2.29B-2 藍圖建立）
+更新日期：2026-06-16（C2.29B-2.1 已套用並驗證通過）
 建立目的：取代散落於 `docs/` 的 11 份歷史設計/覆核/審查文件，提供單一可搜尋的入口。
 
 ## 0. 如何閱讀
@@ -67,7 +67,7 @@
 | C2.31 | 衝突解決脫敏 | ✅ | `799b8ab`, `2fd23c8` | 見本文件 §6 |
 | C2.27 | Staff local-first detail 檢查 | ✅ **已透過 StaffMarketDetailView 重構 + 三層防線實質完成**（2026-06-15） | `ed79a23`, `727de49`, `c5cacfa` | [`docs/C2.27_REANALYSIS_2026_06_15.md`](./C2.27_REANALYSIS_2026_06_15.md) |
 | C2.28 | Role fail-closed 評估 | 🟡 **已分析，P0 fail-closed 修補中**（2026-06-15：sync-context + role error；頁面 render guard 待 C2.28B） | `94f9fc5` | [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md) |
-| C2.29 | Supabase view / RLS hardening 草稿 | ✅ **C2.29B-1 view 層已套用並驗證通過（2026-06-15）**。✅ **C2.29B-1.1（040）已套用並驗證通過（2026-06-16）**（view scope 修補：owner branch scope leak / deleted markets / branch 重複 3 個攻擊面消除）。⚠️ C2.29B-1.1 仍只修 `staff_accessible_*` view 層；E2 證明 Staff 仍可透過底表 RLS 直接 SELECT `markets` 取得敏感欄位（攻擊面 #4 仍存在）。🟡 **C2.29B-2 已完成藍圖規劃**（`docs/C2.29B-2_PLAN_2026_06_16.md`），**待用戶明確啟動實作** | `439f97f`（039 套用）+ `8ff6b09`（040 套用）| [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) §C2.29B-1 Apply Result + `C2.29B-1.1 Apply Result` 章節 + §9.8 |
+| C2.29 | Supabase view / RLS hardening 草稿 | ✅ **C2.29B-1 view 層已套用並驗證通過（2026-06-15）**。✅ **C2.29B-1.1（040）已套用並驗證通過（2026-06-16）**（view scope 修補）。✅ **C2.29B-2.1（041）已套用並驗證通過（2026-06-16）**（底表 SELECT RLS 收緊：Staff direct SELECT = 0，Owner 不 regression）。⚠️ C2.29B-2.2（type-level guard）和 C2.29B-2.3（E1-E5）仍待實作 | `439f97f`（039）+ `8ff6b09`（040）+ `54ac823`（041）| [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) §C2.29B-1/1.1 Apply + [`docs/C2.29B-2_1_RLS_MIGRATION_DRAFT_2026_06_16.md`](./C2.29B-2_1_RLS_MIGRATION_DRAFT_2026_06_16.md) |
 | **C3.4** | **Projection 二次累加修復（水水市集問題）** | ✅ **完成**（2026-06-14） | `f7155fb` (P0) + `c6de385` (P1) + `7b6590f` (P2) + `89dec72` (P3) | [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) + [`docs/C3.4_REGRESSION_TROUBLESHOOTING.md`](./C3.4_REGRESSION_TROUBLESHOOTING.md) |
 
 ### 4.2 為什麼 C2.26 透過 C2.30C 實質完成
