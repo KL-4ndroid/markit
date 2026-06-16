@@ -13,9 +13,9 @@ interface GlobalLoadingSkeletonProps {
 
 export function GlobalLoadingSkeleton({ message }: GlobalLoadingSkeletonProps) {
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* 頂部區域骨架 */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#9BB9C0] px-6 pt-12 pb-8">
+      <div className="bg-gradient-to-br from-primary to-[#9BB9C0] px-6 pt-12 pb-8">
         {/* 標題骨架 */}
         <div className="h-8 w-32 bg-white/20 rounded-xl mb-6 animate-pulse" />
         
@@ -52,7 +52,7 @@ export function GlobalLoadingSkeleton({ message }: GlobalLoadingSkeletonProps) {
       <div className="px-6 space-y-4">
         <div className="h-6 w-32 bg-gray-200 rounded-lg animate-pulse mb-4" />
         {message && (
-          <p className="text-sm text-[#6B6B6B]">{message}</p>
+          <p className="text-sm text-muted-foreground">{message}</p>
         )}
         
         <MarketCardSkeleton />

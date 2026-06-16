@@ -117,7 +117,7 @@ export function AddProductFormExample() {
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-[#7B9FA6] focus:outline-none"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-primary focus:outline-none"
             placeholder="請輸入產品名稱"
           />
         </div>
@@ -131,7 +131,7 @@ export function AddProductFormExample() {
             type="number"
             value={formData.price}
             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-[#7B9FA6] focus:outline-none"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-primary focus:outline-none"
             placeholder="0"
           />
         </div>
@@ -145,7 +145,7 @@ export function AddProductFormExample() {
             type="number"
             value={formData.cost}
             onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-[#7B9FA6] focus:outline-none"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-primary focus:outline-none"
             placeholder="0"
           />
         </div>
@@ -158,7 +158,7 @@ export function AddProductFormExample() {
           <textarea
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-[#7B9FA6] focus:outline-none"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-primary focus:outline-none"
             placeholder="請輸入產品描述"
             rows={4}
           />
@@ -168,7 +168,7 @@ export function AddProductFormExample() {
         <div className="flex gap-3">
           <button
             type="submit"
-            className="flex-1 bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+            className="flex-1 bg-primary text-white py-3 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
           >
             新增產品
           </button>
@@ -192,8 +192,8 @@ export function AddProductFormExample() {
       </form>
 
       {/* 說明 */}
-      <div className="mt-6 bg-[#FFF8E7] rounded-2xl p-4">
-        <p className="text-sm text-[#6B6B6B]">
+      <div className="mt-6 bg-soft-yellow rounded-2xl p-4">
+        <p className="text-sm text-muted-foreground">
           💡 <strong>自動暫存：</strong>您的表單資料會自動保存。
           即使 Session 過期或意外關閉頁面，資料也不會丟失。
         </p>
@@ -254,7 +254,7 @@ export function QuickDealFormExample() {
           <select
             value={formData.productId}
             onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-[#7B9FA6] focus:outline-none"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-primary focus:outline-none"
           >
             <option value="">請選擇產品</option>
             <option value="1">產品 A</option>
@@ -270,7 +270,7 @@ export function QuickDealFormExample() {
             type="number"
             value={formData.quantity}
             onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-[#7B9FA6] focus:outline-none"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-primary focus:outline-none"
             placeholder="0"
           />
         </div>
@@ -283,14 +283,14 @@ export function QuickDealFormExample() {
             type="number"
             value={formData.totalAmount}
             onChange={(e) => setFormData({ ...formData, totalAmount: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-[#7B9FA6] focus:outline-none"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-300 focus:border-primary focus:outline-none"
             placeholder="0"
           />
         </div>
 
         <button
           type="submit"
-          className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+          className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
         >
           記錄交易
         </button>

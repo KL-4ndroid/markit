@@ -124,14 +124,14 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
     }
     
     if (!isMarketDay) {
-      return { status: 'not_started', label: '尚未開始', color: 'bg-[#FFF8E7] text-[#D4A574]' };
+      return { status: 'not_started', label: '尚未開始', color: 'bg-soft-yellow text-secondary' };
     }
     
     // ✅ 修復：檢查狀態是否為「已繳費」或「如期舉行」
     const isStatusReady = market.status === 'paid' || market.status === 'ongoing';
     
     if (!isStatusReady) {
-      return { status: 'not_started', label: '尚未開始', color: 'bg-[#FFF8E7] text-[#D4A574]' };
+      return { status: 'not_started', label: '尚未開始', color: 'bg-soft-yellow text-secondary' };
     }
     
     // ✅ 修復：使用分鐘數比較時間
@@ -140,7 +140,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
       const endMinutes = timeToMinutes(market.operatingEndTime);
       
       if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
-        return { status: 'operating', label: '營業中', color: 'bg-[#8B7BA6] text-white' };
+        return { status: 'operating', label: '營業中', color: 'bg-primary text-white' };
       }
     }
     
@@ -148,11 +148,11 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
       const endMinutes = timeToMinutes(market.operatingEndTime);
       
       if (currentMinutes >= endMinutes) {
-        return { status: 'closed', label: '已結束', color: 'bg-gray-100 text-[#6B6B6B]' };
+        return { status: 'closed', label: '已結束', color: 'bg-gray-100 text-muted-foreground' };
       }
     }
     
-    return { status: 'not_started', label: '尚未開始', color: 'bg-[#FFF8E7] text-[#D4A574]' };
+    return { status: 'not_started', label: '尚未開始', color: 'bg-soft-yellow text-secondary' };
   };
 
   const operatingStatus = getOperatingStatus();
@@ -220,9 +220,9 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   useMarketStatsFromProjection(market);
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-20">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header - 員工模式紫色漸變 */}
-      <div className="bg-gradient-to-br from-[#8B7BA6] to-[#A6B4D4] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="bg-gradient-to-br from-primary to-primary/80 pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3 flex-1">
@@ -268,12 +268,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         {isOperating && (
           <>
             {/* 1. 互動記錄按鈕 */}
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#8B7BA6]/10 mb-6">
-              <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A] mb-4">
-                <TrendingUp className="w-5 h-5 text-[#8B7BA6]" />
+            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
+              <h2 className="text-lg font-medium flex items-center gap-2 text-foreground mb-4">
+                <TrendingUp className="w-5 h-5 text-primary" />
                 記錄互動
               </h2>
-              <p className="text-sm text-[#6B6B6B] mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 記錄顧客互動行為，幫助分析顧客偏好
               </p>
               <InteractionButtons 
@@ -286,17 +286,17 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
             </div>
 
             {/* 2. 新增收入（簡化版：直接輸入金額） */}
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#8B7BA6]/10 mb-6">
+            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
               {/* Header with toggle */}
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
-                  <DollarSign className="w-5 h-5 text-[#8B7BA6]" />
+                <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
+                  <DollarSign className="w-5 h-5 text-primary" />
                   快速新增收入
                 </h2>
                 <button
                   onClick={handleToggleQuickRevenue}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    isQuickRevenueExpanded ? 'bg-[#8B7BA6]' : 'bg-gray-300'
+                    isQuickRevenueExpanded ? 'bg-primary' : 'bg-gray-300'
                   }`}
                 >
                   <span
@@ -330,9 +330,9 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         )}
         
         {/* 營業狀態卡片 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#8B7BA6]/10 p-6 mb-6">
+        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-[#3A3A3A]">營業狀態</h2>
+            <h2 className="text-lg font-medium text-foreground">營業狀態</h2>
             <div className={`px-4 py-2 rounded-full flex items-center gap-2 font-medium text-sm ${operatingStatus.color}`}>
               {operatingStatus.status === 'operating' ? (
                 <Store className="w-5 h-5" />
@@ -352,12 +352,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
               {market.earlyEntryEnabled && market.earlyEntryTime && (
                 <div className="flex items-center gap-3">
                   <Circle className="w-6 h-6 text-gray-300 flex-shrink-0" />
-                  <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl bg-[#F0E8F3]/30 border border-[#8B7BA6]/10">
+                  <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl bg-primary/10/30 border border-primary/10">
                     <div className="flex items-center gap-3">
-                      <DoorOpen className="w-5 h-5 text-[#8B7BA6]" />
+                      <DoorOpen className="w-5 h-5 text-primary" />
                       <div>
-                        <div className="font-medium text-[#3A3A3A]">提前進場</div>
-                        <div className="text-sm text-[#6B6B6B]">{market.earlyEntryTime}</div>
+                        <div className="font-medium text-foreground">提前進場</div>
+                        <div className="text-sm text-muted-foreground">{market.earlyEntryTime}</div>
                       </div>
                     </div>
                   </div>
@@ -368,12 +368,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
               {market.checkInTime && (
                 <div className="flex items-center gap-3">
                   <Circle className="w-6 h-6 text-gray-300 flex-shrink-0" />
-                  <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl bg-[#F0E8F3]/30 border border-[#8B7BA6]/10">
+                  <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl bg-primary/10/30 border border-primary/10">
                     <div className="flex items-center gap-3">
-                      <ClipboardCheck className="w-5 h-5 text-[#8B7BA6]" />
+                      <ClipboardCheck className="w-5 h-5 text-primary" />
                       <div>
-                        <div className="font-medium text-[#3A3A3A]">報到</div>
-                        <div className="text-sm text-[#6B6B6B]">{market.checkInTime}</div>
+                        <div className="font-medium text-foreground">報到</div>
+                        <div className="text-sm text-muted-foreground">{market.checkInTime}</div>
                       </div>
                     </div>
                   </div>
@@ -384,12 +384,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
               {market.operatingStartTime && market.operatingEndTime && (
                 <div className="flex items-center gap-3">
                   <Circle className="w-6 h-6 text-gray-300 flex-shrink-0" />
-                  <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl bg-[#F0E8F3]/30 border border-[#8B7BA6]/10">
+                  <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl bg-primary/10/30 border border-primary/10">
                     <div className="flex items-center gap-3">
-                      <Store className="w-5 h-5 text-[#8B7BA6]" />
+                      <Store className="w-5 h-5 text-primary" />
                       <div>
-                        <div className="font-medium text-[#3A3A3A]">營業中</div>
-                        <div className="text-sm text-[#6B6B6B]">
+                        <div className="font-medium text-foreground">營業中</div>
+                        <div className="text-sm text-muted-foreground">
                           {market.operatingStartTime} - {market.operatingEndTime}
                         </div>
                       </div>
@@ -402,12 +402,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
               {market.operatingEndTime && (
                 <div className="flex items-center gap-3">
                   <Circle className="w-6 h-6 text-gray-300 flex-shrink-0" />
-                  <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl bg-[#F0E8F3]/30 border border-[#8B7BA6]/10">
+                  <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl bg-primary/10/30 border border-primary/10">
                     <div className="flex items-center gap-3">
-                      <Moon className="w-5 h-5 text-[#8B7BA6]" />
+                      <Moon className="w-5 h-5 text-primary" />
                       <div>
-                        <div className="font-medium text-[#3A3A3A]">營業結束</div>
-                        <div className="text-sm text-[#6B6B6B]">{market.operatingEndTime}</div>
+                        <div className="font-medium text-foreground">營業結束</div>
+                        <div className="text-sm text-muted-foreground">{market.operatingEndTime}</div>
                       </div>
                     </div>
                   </div>
@@ -415,12 +415,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
               )}
             </div>
           ) : (
-            <div className="bg-[#F0E8F3] border border-[#8B7BA6]/20 rounded-xl p-4 text-center">
-              <Clock className="w-8 h-8 text-[#8B7BA6] mx-auto mb-2 opacity-50" />
-              <p className="text-sm text-[#3A3A3A] font-medium mb-1">
+            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
+              <Clock className="w-8 h-8 text-primary mx-auto mb-2 opacity-50" />
+              <p className="text-sm text-foreground font-medium mb-1">
                 尚未設定時間資訊
               </p>
-              <p className="text-xs text-[#6B6B6B]">
+              <p className="text-xs text-muted-foreground">
                 請聯繫老闆設定市集時間
               </p>
             </div>
@@ -436,72 +436,72 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         />
 
         {/* 承租設備 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#8B7BA6]/10 p-6 mb-6">
-          <h2 className="text-lg font-medium text-[#3A3A3A] mb-4">承租設備</h2>
+        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+          <h2 className="text-lg font-medium text-foreground mb-4">承租設備</h2>
           <div className="space-y-3">
             {/* 保證金 */}
             {market.deposit && market.deposit > 0 && (
-              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#FFF8E7]">
+              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-soft-yellow">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-[#D4A574]" />
+                  <DollarSign className="w-5 h-5 text-secondary" />
                   <div>
-                    <span className="text-[#3A3A3A]">保證金</span>
-                    <span className="text-xs text-[#D4A574] ml-2">(需退款)</span>
+                    <span className="text-foreground">保證金</span>
+                    <span className="text-xs text-secondary ml-2">(需退款)</span>
                   </div>
                 </div>
-                <span className="text-sm font-medium text-[#D4A574]">
+                <span className="text-sm font-medium text-secondary">
                   {formatCurrency(market.deposit)}
                 </span>
               </div>
             )}
 
             {/* 桌子 */}
-            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#FAFAF8]">
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-background">
               <div className="flex items-center gap-2">
-                <Table className="w-5 h-5 text-[#8B7BA6]" />
-                <span className="text-[#3A3A3A]">桌子</span>
+                <Table className="w-5 h-5 text-primary" />
+                <span className="text-foreground">桌子</span>
               </div>
               <span className="text-sm font-medium">
                 {market.tableFree ? (
-                  <span className="text-[#8B7BA6]">免費提供</span>
+                  <span className="text-primary">免費提供</span>
                 ) : market.tableRental && market.tableRental > 0 ? (
-                  <span className="text-[#8B7BA6]">已承租</span>
+                  <span className="text-primary">已承租</span>
                 ) : (
-                  <span className="text-[#6B6B6B]">自備</span>
+                  <span className="text-muted-foreground">自備</span>
                 )}
               </span>
             </div>
 
             {/* 椅子 */}
-            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#FAFAF8]">
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-background">
               <div className="flex items-center gap-2">
-                <Armchair className="w-5 h-5 text-[#8B7BA6]" />
-                <span className="text-[#3A3A3A]">椅子</span>
+                <Armchair className="w-5 h-5 text-primary" />
+                <span className="text-foreground">椅子</span>
               </div>
               <span className="text-sm font-medium">
                 {market.chairFree ? (
-                  <span className="text-[#8B7BA6]">免費提供</span>
+                  <span className="text-primary">免費提供</span>
                 ) : market.chairRental && market.chairRental > 0 ? (
-                  <span className="text-[#8B7BA6]">已承租</span>
+                  <span className="text-primary">已承租</span>
                 ) : (
-                  <span className="text-[#6B6B6B]">自備</span>
+                  <span className="text-muted-foreground">自備</span>
                 )}
               </span>
             </div>
 
             {/* 傘架 */}
-            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#FAFAF8]">
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-background">
               <div className="flex items-center gap-2">
-                <Umbrella className="w-5 h-5 text-[#8B7BA6]" />
-                <span className="text-[#3A3A3A]">傘架</span>
+                <Umbrella className="w-5 h-5 text-primary" />
+                <span className="text-foreground">傘架</span>
               </div>
               <span className="text-sm font-medium">
                 {market.umbrellaFree ? (
-                  <span className="text-[#8B7BA6]">免費提供</span>
+                  <span className="text-primary">免費提供</span>
                 ) : market.umbrellaRental && market.umbrellaRental > 0 ? (
-                  <span className="text-[#8B7BA6]">已承租</span>
+                  <span className="text-primary">已承租</span>
                 ) : (
-                  <span className="text-[#6B6B6B]">自備</span>
+                  <span className="text-muted-foreground">自備</span>
                 )}
               </span>
             </div>
@@ -509,12 +509,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         </div>
 
         {/* 提示卡片 */}
-        <div className="bg-[#F0E8F3] border border-[#8B7BA6]/20 rounded-[1.5rem] p-6 text-center">
-          <AlertCircle className="w-12 h-12 text-[#8B7BA6] mx-auto mb-3 opacity-50" />
-          <p className="text-sm text-[#3A3A3A] font-medium mb-1">
+        <div className="bg-primary/10 border border-primary/20 rounded-[1.5rem] p-6 text-center">
+          <AlertCircle className="w-12 h-12 text-primary mx-auto mb-3 opacity-50" />
+          <p className="text-sm text-foreground font-medium mb-1">
             員工模式
           </p>
-          <p className="text-xs text-[#6B6B6B]">
+          <p className="text-xs text-muted-foreground">
             您正在以員工身份查看此市集，部分功能和數據已隱藏
           </p>
         </div>

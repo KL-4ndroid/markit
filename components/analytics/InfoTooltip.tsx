@@ -37,8 +37,8 @@ export default function InfoTooltip({
           inline-flex items-center justify-center
           w-5 h-5 rounded-full
           transition-all duration-200
-          bg-[#F5F5F3] text-[#6B6B6B] hover:bg-[#7B9FA6] hover:text-white
-          focus:outline-none focus:ring-2 focus:ring-[#7B9FA6] focus:ring-offset-2
+          bg-[#F5F5F3] text-muted-foreground hover:bg-primary hover:text-white
+          focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
         `}
         aria-label={`查看 ${title} 說明`}
       >
@@ -92,13 +92,13 @@ export default function InfoTooltip({
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">💡</span>
-                        <Dialog.Title className="text-lg font-bold text-[#3A3A3A]">
+                        <Dialog.Title className="text-lg font-bold text-foreground">
                           {title}
                         </Dialog.Title>
                       </div>
                       <button
                         onClick={() => setIsOpen(false)}
-                        className="text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <X className="w-5 h-5" />
                       </button>
@@ -114,10 +114,10 @@ export default function InfoTooltip({
                     {/* 計算公式 */}
                     {formula && (
                       <div className="mb-4 p-3 bg-[#F5F5F3] rounded-lg border border-[#E8E8E6]">
-                        <p className="text-xs font-semibold text-[#3A3A3A] mb-2">
+                        <p className="text-xs font-semibold text-foreground mb-2">
                           📐 計算公式
                         </p>
-                        <code className="text-xs text-[#6B6B6B] font-mono block whitespace-pre-wrap leading-relaxed">
+                        <code className="text-xs text-muted-foreground font-mono block whitespace-pre-wrap leading-relaxed">
                           {formula}
                         </code>
                       </div>
@@ -125,8 +125,8 @@ export default function InfoTooltip({
 
                     {/* 範例 */}
                     {example && (
-                      <div className="mb-4 p-3 bg-[#E8F3E8] rounded-lg border border-[#D4E8D4]">
-                        <p className="text-xs font-semibold text-[#3A3A3A] mb-2">
+                      <div className="mb-4 p-3 bg-soft-green rounded-lg border border-[#D4E8D4]">
+                        <p className="text-xs font-semibold text-foreground mb-2">
                           📝 範例
                         </p>
                         <p className="text-xs text-[#5A5A5A] leading-relaxed">
@@ -137,8 +137,8 @@ export default function InfoTooltip({
 
                     {/* 如何解讀 */}
                     {interpretation && (
-                      <div className="p-3 bg-[#FFF8E7] rounded-lg border border-[#F5E6D3]">
-                        <p className="text-xs font-semibold text-[#3A3A3A] mb-2">
+                      <div className="p-3 bg-soft-yellow rounded-lg border border-[#F5E6D3]">
+                        <p className="text-xs font-semibold text-foreground mb-2">
                           🎯 如何解讀
                         </p>
                         <p className="text-xs text-[#5A5A5A] leading-relaxed whitespace-pre-line">
@@ -149,10 +149,10 @@ export default function InfoTooltip({
                   </div>
 
                   {/* 底部按鈕 */}
-                  <div className="bg-[#FAFAF8] px-6 py-4 border-t border-[#E8E8E6]">
+                  <div className="bg-background px-6 py-4 border-t border-[#E8E8E6]">
                     <button
                       onClick={() => setIsOpen(false)}
-                      className="w-full bg-[#7B9FA6] text-white py-2.5 rounded-lg hover:bg-[#6A8E95] transition-colors font-medium text-sm"
+                      className="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary/85 transition-colors font-medium text-sm"
                     >
                       知道了
                     </button>

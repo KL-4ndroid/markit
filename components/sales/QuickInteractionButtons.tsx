@@ -130,14 +130,14 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
       {/* ✅ 成功動畫（+1 效果） */}
       {showSuccessAnimation && (
         <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
-          <div className="bg-[#E8F3E8] text-[#3A3A3A] px-4 py-2 rounded-full shadow-lg font-bold text-lg">
+          <div className="bg-soft-green text-foreground px-4 py-2 rounded-full shadow-lg font-bold text-lg">
             +NT$ {lastDealAmount.toLocaleString()} 🎉
           </div>
         </div>
       )}
 
       {/* 顯示框 */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#6A8E95] rounded-2xl p-4 mb-3 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-primary to-primary/85 rounded-2xl p-4 mb-3 relative overflow-hidden">
         <div className="absolute inset-0 bg-white/5"></div>
         <div className="relative flex items-center justify-between">
           <div className="text-3xl font-bold text-white tabular-nums">
@@ -186,7 +186,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
           <button
             key={num}
             onClick={() => handleNumberClick(num)}
-            className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-[#3A3A3A] text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+            className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
           >
             {num}
           </button>
@@ -197,7 +197,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
           <button
             key={num}
             onClick={() => handleNumberClick(num)}
-            className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-[#3A3A3A] text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+            className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
           >
             {num}
           </button>
@@ -208,7 +208,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
           <button
             key={num}
             onClick={() => handleNumberClick(num)}
-            className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-[#3A3A3A] text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+            className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
           >
             {num}
           </button>
@@ -222,13 +222,13 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
               return prev + '00';
             });
           }}
-          className="bg-[#E8F0F8] hover:bg-[#D8E0E8] active:scale-95 text-[#7B9FA6] text-lg font-bold py-4 rounded-xl transition-all shadow-sm"
+          className="bg-[#E8F0F8] hover:bg-[#D8E0E8] active:scale-95 text-primary text-lg font-bold py-4 rounded-xl transition-all shadow-sm"
         >
           00
         </button>
         <button
           onClick={() => handleNumberClick(0)}
-          className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-[#3A3A3A] text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+          className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
         >
           0
         </button>
@@ -239,7 +239,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
               return prev.slice(0, -1);
             });
           }}
-          className="bg-[#FFF8E7] hover:bg-[#EFE8D7] active:scale-95 text-[#D4A574] text-xl font-bold py-4 rounded-xl transition-all shadow-sm flex items-center justify-center"
+          className="bg-soft-yellow hover:bg-[#EFE8D7] active:scale-95 text-secondary text-xl font-bold py-4 rounded-xl transition-all shadow-sm flex items-center justify-center"
           aria-label="刪除最後一位數字"
         >
           ⌫
@@ -251,28 +251,28 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
         <button
           onClick={() => handleQuickDeal('cash')}
           disabled={isProcessing || parseInt(displayAmount) <= 0}
-          className="bg-[#E8F3E8] hover:bg-[#D8E3D8] active:scale-95 text-[#3A3A3A] py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-soft-green hover:bg-soft-green/80 active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           💵 現金
         </button>
         <button
           onClick={() => handleQuickDeal('mobile')}
           disabled={isProcessing || parseInt(displayAmount) <= 0}
-          className="bg-[#E8F0F8] hover:bg-[#D8E0E8] active:scale-95 text-[#3A3A3A] py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-[#E8F0F8] hover:bg-[#D8E0E8] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           📱 電子支付
         </button>
         <button
           onClick={() => handleQuickDeal('card')}
           disabled={isProcessing || parseInt(displayAmount) <= 0}
-          className="bg-[#FFF8E7] hover:bg-[#EFE8D7] active:scale-95 text-[#3A3A3A] py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-soft-yellow hover:bg-[#EFE8D7] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           🏦 轉帳
         </button>
         <button
           onClick={() => handleQuickDeal('other')}
           disabled={isProcessing || parseInt(displayAmount) <= 0}
-          className="bg-[#F8E8F0] hover:bg-[#E8D8E0] active:scale-95 text-[#3A3A3A] py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-[#F8E8F0] hover:bg-[#E8D8E0] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           💳 其他
         </button>

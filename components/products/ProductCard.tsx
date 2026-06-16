@@ -38,19 +38,19 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
   const getCategoryStyle = (category: ProductCategory) => {
     const styles = {
       handmade: {
-        bg: 'bg-[#F5E6E8]',      // 柔粉色
+        bg: 'bg-soft-pink',      // 柔粉色
         icon: Package,
         emoji: '🖐️',
         text: '手作',
       },
       food: {
-        bg: 'bg-[#FFF8E7]',      // 柔黃色
+        bg: 'bg-soft-yellow',      // 柔黃色
         icon: Utensils,
         emoji: '🍰',
         text: '食品',
       },
       accessory: {
-        bg: 'bg-[#E8F3E8]',      // 柔綠色
+        bg: 'bg-soft-green',      // 柔綠色
         icon: Gem,
         emoji: '💎',
         text: '飾品',
@@ -117,7 +117,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
   return (
     <div
       onClick={handleClick}
-      className={`bg-white rounded-[1.5rem] overflow-hidden shadow-md shadow-[#7B9FA6]/5 ${
+      className={`bg-white rounded-[1.5rem] overflow-hidden shadow-md shadow-primary/5 ${
         isStaff(productAccessItem) ? 'cursor-default' : 'cursor-pointer hover:shadow-lg'
       } transition-shadow`}
     >
@@ -127,21 +127,21 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
         
         {/* 分類標籤 */}
         <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full">
-          <span className="text-xs text-[#6B6B6B]">{categoryStyle.text}</span>
+          <span className="text-xs text-muted-foreground">{categoryStyle.text}</span>
         </div>
         
         {/* ✅ 員工模式標籤 - 只在有權限欄位且為員工時顯示 */}
         {hasPermissions && isStaff(productAccessItem) && (
           <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
-            <Shield className="w-3 h-3 text-[#7B9FA6]" />
-            <span className="text-xs text-[#6B6B6B]">員工</span>
+            <Shield className="w-3 h-3 text-primary" />
+            <span className="text-xs text-muted-foreground">員工</span>
           </div>
         )}
 
         {/* 停用標記 */}
         {!product.isActive && (
           <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-            <span className="bg-white/90 px-3 py-1 rounded-full text-xs text-[#6B6B6B]">
+            <span className="bg-white/90 px-3 py-1 rounded-full text-xs text-muted-foreground">
               已停用
             </span>
           </div>
@@ -151,31 +151,31 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
       {/* 資訊區域 */}
       <div className="p-4">
         {/* 商品名稱 */}
-        <h3 className="text-base font-medium text-[#3A3A3A] mb-2 line-clamp-1">
+        <h3 className="text-base font-medium text-foreground mb-2 line-clamp-1">
           {product.name}
         </h3>
 
         {/* 價格與成本 */}
         <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-xl font-medium text-[#7B9FA6] tabular-nums">
+          <span className="text-xl font-medium text-primary tabular-nums">
             {formatCurrency(product.price)}
           </span>
           {/* ✅ 成本只有老闆可見（向後兼容：沒有權限欄位時顯示） */}
           {product.cost && (!hasPermissions || canViewSensitiveData(productAccessItem)) && (
-            <span className="text-xs text-[#6B6B6B] line-through tabular-nums">
+            <span className="text-xs text-muted-foreground line-through tabular-nums">
               成本 {formatCurrency(product.cost)}
             </span>
           )}
         </div>
 
         {/* 統計資訊 */}
-        <div className="flex items-center justify-between text-xs text-[#6B6B6B]">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-3">
             {/* 庫存 */}
             {product.unlimitedStock ? (
-              <span className="text-[#7B9FA6] font-medium">庫存 ∞</span>
+              <span className="text-primary font-medium">庫存 ∞</span>
             ) : product.stock !== undefined ? (
-              <span className={product.stock === 0 ? 'text-[#d4183d]' : ''}>
+              <span className={product.stock === 0 ? 'text-danger' : ''}>
                 庫存 {product.stock}
               </span>
             ) : null}
@@ -188,7 +188,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
 
           {/* ✅ 利潤率只有老闆可見（向後兼容：沒有權限欄位時顯示） */}
           {profitMargin !== null && (!hasPermissions || canViewSensitiveData(productAccessItem)) && (
-            <span className={`font-medium ${profitMargin > 50 ? 'text-[#7B9FA6]' : 'text-[#D4A574]'}`}>
+            <span className={`font-medium ${profitMargin > 50 ? 'text-primary' : 'text-secondary'}`}>
               {profitMargin}%
             </span>
           )}
@@ -196,7 +196,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
 
         {/* 描述 */}
         {product.description && (
-          <p className="text-xs text-[#6B6B6B] mt-2 line-clamp-2">
+          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
             {product.description}
           </p>
         )}

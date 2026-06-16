@@ -182,10 +182,10 @@ export function LoginModal({
         <DialogPanel className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <DialogTitle className="text-2xl font-medium text-[#3A3A3A] mb-2">
+              <DialogTitle className="text-2xl font-medium text-foreground mb-2">
                 {isSignup ? '建立 Markit 帳號' : '登入 Markit'}
               </DialogTitle>
-              <p className="text-sm text-[#6B6B6B] leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {isSignup
                   ? '建立帳號後即可同步資料。若你是透過邀請連結加入團隊，註冊後會自動加入。'
                   : '登入後可同步雲端資料，並在不同裝置使用。'}
@@ -193,21 +193,21 @@ export function LoginModal({
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-[#F5E6E8] rounded-full transition-colors"
+              className="p-2 hover:bg-soft-pink rounded-full transition-colors"
               aria-label="關閉"
               disabled={isLoading}
             >
-              <X className="w-5 h-5 text-[#6B6B6B]" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-[#6B6B6B] mb-2">
+              <label className="block text-sm text-muted-foreground mb-2">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7B9FA6]" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                 <input
                   type="email"
                   value={email}
@@ -217,7 +217,7 @@ export function LoginModal({
                   }}
                   placeholder="your@email.com"
                   autoComplete="email"
-                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-[#7B9FA6]/20 focus:border-[#7B9FA6] focus:outline-none transition-colors"
+                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-primary/20 focus:border-primary focus:outline-none transition-colors"
                   disabled={isLoading}
                 />
               </div>
@@ -225,7 +225,7 @@ export function LoginModal({
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm text-[#6B6B6B]">
+                <label className="block text-sm text-muted-foreground">
                   密碼
                 </label>
                 {isSignup && (
@@ -233,7 +233,7 @@ export function LoginModal({
                 )}
               </div>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7B9FA6]" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -243,13 +243,13 @@ export function LoginModal({
                   }}
                   placeholder="輸入密碼"
                   autoComplete={isSignup ? 'new-password' : 'current-password'}
-                  className="w-full pl-12 pr-12 py-3 rounded-2xl border border-[#7B9FA6]/20 focus:border-[#7B9FA6] focus:outline-none transition-colors"
+                  className="w-full pl-12 pr-12 py-3 rounded-2xl border border-primary/20 focus:border-primary focus:outline-none transition-colors"
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6B6B] hover:text-[#7B9FA6]"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
                   aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}
                   disabled={isLoading}
                 >
@@ -265,12 +265,12 @@ export function LoginModal({
                   id="rememberMe"
                   checked={rememberMe}
                   onChange={(event) => setRememberMe(event.target.checked)}
-                  className="w-4 h-4 rounded border-[#7B9FA6]/20 text-[#7B9FA6] focus:ring-[#7B9FA6] focus:ring-offset-0 cursor-pointer"
+                  className="w-4 h-4 rounded border-primary/20 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
                   disabled={isLoading}
                 />
                 <label
                   htmlFor="rememberMe"
-                  className="text-sm text-[#6B6B6B] cursor-pointer select-none"
+                  className="text-sm text-muted-foreground cursor-pointer select-none"
                 >
                   記住 Email
                 </label>
@@ -287,7 +287,7 @@ export function LoginModal({
             )}
 
             {isSlowAuth && !authError && (
-              <div className="rounded-2xl border border-[#D4A574]/30 bg-[#FFF8E7] px-4 py-3 text-sm leading-relaxed text-[#6B6B6B]">
+              <div className="rounded-2xl border border-secondary/30 bg-soft-yellow px-4 py-3 text-sm leading-relaxed text-muted-foreground">
                 正在等待伺服器回應。若持續太久，請確認網路連線後再試一次。
               </div>
             )}
@@ -295,7 +295,7 @@ export function LoginModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+              className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
             >
               {isLoading ? (
                 <>
@@ -314,15 +314,15 @@ export function LoginModal({
                 setAuthError('');
                 setMode(isSignup ? 'login' : 'signup');
               }}
-              className="text-[#7B9FA6] hover:text-[#6A8E95] transition-colors text-sm"
+              className="text-primary hover:text-primary/85 transition-colors text-sm"
               disabled={isLoading}
             >
               {isSignup ? '已有帳號？登入' : '還沒有帳號？建立帳號'}
             </button>
           </div>
 
-          <div className="mt-6 p-4 bg-[#FFF8E7] rounded-2xl">
-            <p className="text-xs text-[#6B6B6B] leading-relaxed">
+          <div className="mt-6 p-4 bg-soft-yellow rounded-2xl">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               {isSignup
                 ? '註冊後，資料會綁定到此 Email 帳號。請使用你之後會固定登入的信箱。'
                 : '登入後，系統會自動同步你的雲端資料。若此裝置已有本機資料，系統會先詢問你如何處理。'}

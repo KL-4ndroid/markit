@@ -109,7 +109,7 @@ export function BottomNavigation() {
 
   return (
     <>
-      <nav className={`fixed left-0 right-0 bg-white border-t border-[#7B9FA6]/20 px-4 py-3 z-50 ease-in-out hardware-accelerated ${
+      <nav className={`fixed left-0 right-0 bg-white border-t border-primary/20 px-4 py-3 z-50 ease-in-out hardware-accelerated ${
         isNavVisible ? 'bottom-0 translate-y-0' : '-bottom-24 translate-y-24'
       }`}>
         <div className="max-w-lg mx-auto flex justify-around items-center">
@@ -134,17 +134,17 @@ export function BottomNavigation() {
                 <div
                   className={`p-2.5 rounded-2xl transition-all hardware-accelerated ${
                     isActive
-                      ? 'bg-[#7B9FA6] text-white'
+                      ? 'bg-primary text-white'
                       : isDisabled
-                      ? 'bg-transparent text-[#6B6B6B]'
-                      : 'bg-transparent text-[#6B6B6B] hover:bg-[#F5E6E8]'
+                      ? 'bg-transparent text-muted-foreground'
+                      : 'bg-transparent text-muted-foreground hover:bg-soft-pink'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
                 </div>
                 <span
                   className={`text-xs transition-colors ${
-                    isActive ? 'text-[#7B9FA6] font-medium' : 'text-[#6B6B6B]'
+                    isActive ? 'text-primary font-medium' : 'text-muted-foreground'
                   }`}
                 >
                   {item.label}

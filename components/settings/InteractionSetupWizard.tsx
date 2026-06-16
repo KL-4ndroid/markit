@@ -37,20 +37,20 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
   const renderIntro = () => (
     <div className="text-center py-8">
       <div className="mb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] rounded-full mx-auto mb-4 flex items-center justify-center">
+        <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full mx-auto mb-4 flex items-center justify-center">
           <span className="text-3xl">📊</span>
         </div>
-        <h2 className="text-2xl font-medium text-[#3A3A3A] mb-3">
+        <h2 className="text-2xl font-medium text-foreground mb-3">
           記錄顧客互動
         </h2>
-        <p className="text-[#6B6B6B] text-base leading-relaxed max-w-md mx-auto">
+        <p className="text-muted-foreground text-base leading-relaxed max-w-md mx-auto">
           讓你知道哪一場市集效果最好
         </p>
       </div>
 
       <button
         onClick={() => setStep('select-type')}
-        className="bg-[#7B9FA6] text-white px-8 py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors text-lg font-medium"
+        className="bg-primary text-white px-8 py-4 rounded-2xl hover:bg-primary/85 transition-colors text-lg font-medium"
       >
         開始設定
       </button>
@@ -60,7 +60,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
   // Step 1: 選擇攤位類型
   const renderSelectType = () => (
     <div className="py-6">
-      <h2 className="text-xl font-medium text-[#3A3A3A] mb-6 text-center">
+      <h2 className="text-xl font-medium text-foreground mb-6 text-center">
         你 ﹝主要﹞ 產品是什麼？
       </h2>
 
@@ -73,10 +73,10 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
               setButtons(DEFAULT_SCENARIOS[type.id]);
               setStep('preview');
             }}
-            className="flex items-center gap-4 p-5 rounded-2xl border-2 border-[#7B9FA6]/20 hover:border-[#7B9FA6] hover:bg-[#7B9FA6]/5 transition-all"
+            className="flex items-center gap-4 p-5 rounded-2xl border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all"
           >
             <div className="text-4xl">{type.emoji}</div>
-            <div className="text-lg font-medium text-[#3A3A3A]">{type.label}</div>
+            <div className="text-lg font-medium text-foreground">{type.label}</div>
           </button>
         ))}
       </div>
@@ -86,23 +86,23 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
   // Step 2: 預覽預設組
   const renderPreview = () => (
     <div className="py-6">
-      <h2 className="text-xl font-medium text-[#3A3A3A] mb-2 text-center">
+      <h2 className="text-xl font-medium text-foreground mb-2 text-center">
         我們幫你準備了一組互動方式
       </h2>
-      <p className="text-sm text-[#6B6B6B] mb-6 text-center">
+      <p className="text-sm text-muted-foreground mb-6 text-center">
         記錄顧客從「有興趣」到獲得初步「成果」的過程
       </p>
 
       {/* 預覽三個按鈕 */}
-      <div className="bg-[#FAFAF8] rounded-2xl p-6 mb-6">
+      <div className="bg-background rounded-2xl p-6 mb-6">
         <div className="grid grid-cols-3 gap-3">
           {buttons.map((button, index) => (
             <div
               key={button.id}
-              className="bg-white rounded-xl p-4 text-center border-2 border-[#7B9FA6]/20"
+              className="bg-white rounded-xl p-4 text-center border-2 border-primary/20"
             >
               <div className="text-3xl mb-2">{button.emoji}</div>
-              <div className="text-sm font-medium text-[#3A3A3A]">
+              <div className="text-sm font-medium text-foreground">
                 {button.label}
               </div>
             </div>
@@ -115,13 +115,13 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
         <button
           onClick={() => handleSave()}
           disabled={isSaving}
-          className="flex-1 bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium disabled:opacity-50"
+          className="flex-1 bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium disabled:opacity-50"
         >
           {isSaving ? '儲存中...' : '✅ 就用這組'}
         </button>
         <button
           onClick={() => setStep('customize-1')}
-          className="flex-1 bg-white text-[#3A3A3A] py-4 rounded-2xl border-2 border-[#7B9FA6]/20 hover:bg-[#FAFAF8] transition-colors font-medium"
+          className="flex-1 bg-white text-foreground py-4 rounded-2xl border-2 border-primary/20 hover:bg-background transition-colors font-medium"
         >
           ✏️ 我想調整
         </button>
@@ -133,32 +133,32 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
   const renderCustomize1 = () => (
     <div className="py-6">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-[#7B9FA6] text-white rounded-full mb-3">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-primary text-white rounded-full mb-3">
           <span className="text-xl font-bold">1</span>
         </div>
-        <h2 className="text-xl font-medium text-[#3A3A3A] mb-2">
+        <h2 className="text-xl font-medium text-foreground mb-2">
           第一個：有興趣
         </h2>
-        <p className="text-sm text-[#6B6B6B]">
+        <p className="text-sm text-muted-foreground">
           顧客停下來看、拿起、試試看
         </p>
       </div>
 
       {/* 說明卡片 */}
-      <div className="bg-[#E8F3E8] rounded-2xl p-5 mb-6">
-        <p className="text-[#3A3A3A] mb-2 leading-relaxed">
+      <div className="bg-soft-green rounded-2xl p-5 mb-6">
+        <p className="text-foreground mb-2 leading-relaxed">
           代表他對你的商品有興趣
         </p>
-        <p className="text-xs text-[#6B6B6B]">
+        <p className="text-xs text-muted-foreground">
           例如：試吃 / 拿起 / 翻看
         </p>
       </div>
 
       {/* 調整欄位 */}
-      <div className="bg-[#FAFAF8] rounded-2xl p-5 mb-6">
+      <div className="bg-background rounded-2xl p-5 mb-6">
         <div className="grid grid-cols-[1fr_auto] gap-3">
           <div>
-            <label className="block text-xs text-[#6B6B6B] mb-1">
+            <label className="block text-xs text-muted-foreground mb-1">
               顯示名稱
             </label>
             <input
@@ -170,11 +170,11 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={4}
-              className="w-full px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+              className="w-full px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
           <div>
-            <label className="block text-xs text-[#6B6B6B] mb-1">
+            <label className="block text-xs text-muted-foreground mb-1">
               圖示
             </label>
             <input
@@ -186,7 +186,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={2}
-              className="w-16 px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-center text-xl"
+              className="w-16 px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center text-xl"
             />
           </div>
         </div>
@@ -195,7 +195,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
       {/* 按鈕 */}
       <button
         onClick={() => setStep('customize-2')}
-        className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+        className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
       >
         下一個
       </button>
@@ -206,32 +206,32 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
   const renderCustomize2 = () => (
     <div className="py-6">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-[#D4A574] text-white rounded-full mb-3">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-secondary text-white rounded-full mb-3">
           <span className="text-xl font-bold">2</span>
         </div>
-        <h2 className="text-xl font-medium text-[#3A3A3A] mb-2">
+        <h2 className="text-xl font-medium text-foreground mb-2">
           第二個：有互動
         </h2>
-        <p className="text-sm text-[#6B6B6B]">
+        <p className="text-sm text-muted-foreground">
           顧客開始跟你說話、問問題
         </p>
       </div>
 
       {/* 說明卡片 */}
-      <div className="bg-[#FFF8E7] rounded-2xl p-5 mb-6">
-        <p className="text-[#3A3A3A] mb-2 leading-relaxed">
+      <div className="bg-soft-yellow rounded-2xl p-5 mb-6">
+        <p className="text-foreground mb-2 leading-relaxed">
           代表他有購買或了解的意圖
         </p>
-        <p className="text-xs text-[#6B6B6B]">
+        <p className="text-xs text-muted-foreground">
           例如：詢問價格 / 聊材質 / 問來源
         </p>
       </div>
 
       {/* 調整欄位 */}
-      <div className="bg-[#FAFAF8] rounded-2xl p-5 mb-6">
+      <div className="bg-background rounded-2xl p-5 mb-6">
         <div className="grid grid-cols-[1fr_auto] gap-3">
           <div>
-            <label className="block text-xs text-[#6B6B6B] mb-1">
+            <label className="block text-xs text-muted-foreground mb-1">
               顯示名稱
             </label>
             <input
@@ -243,11 +243,11 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={4}
-              className="w-full px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+              className="w-full px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
           <div>
-            <label className="block text-xs text-[#6B6B6B] mb-1">
+            <label className="block text-xs text-muted-foreground mb-1">
               圖示
             </label>
             <input
@@ -259,7 +259,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={2}
-              className="w-16 px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-center text-xl"
+              className="w-16 px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center text-xl"
             />
           </div>
         </div>
@@ -268,7 +268,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
       {/* 按鈕 */}
       <button
         onClick={() => setStep('customize-3')}
-        className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+        className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
       >
         下一個
       </button>
@@ -279,37 +279,37 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
   const renderCustomize3 = () => (
     <div className="py-6">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-[#D4A574] text-white rounded-full mb-3">
+        <div className="inline-flex items-center justify-center w-12 h-12 bg-secondary text-white rounded-full mb-3">
           <span className="text-xl font-bold">3</span>
         </div>
-        <h2 className="text-xl font-medium text-[#3A3A3A] mb-2">
+        <h2 className="text-xl font-medium text-foreground mb-2">
           第三個：轉換
         </h2>
-        <p className="text-sm text-[#6B6B6B]">
+        <p className="text-sm text-muted-foreground">
           顧客完成你想要的下一步
         </p>
       </div>
 
       {/* 說明卡片 */}
-      <div className="bg-[#F5E6E8] rounded-2xl p-5 mb-6">
-        <p className="text-[#3A3A3A] mb-2 leading-relaxed">
+      <div className="bg-soft-pink rounded-2xl p-5 mb-6">
+        <p className="text-foreground mb-2 leading-relaxed">
           代表關係往前走了一格
         </p>
-        <p className="text-xs text-[#6B6B6B] mb-3">
+        <p className="text-xs text-muted-foreground mb-3">
           例如：加 IG / 加 Line / 留下聯絡 / 加入追蹤
         </p>
-        <div className="bg-white/80 rounded-lg p-3 border border-[#D4A574]/20">
-          <p className="text-xs text-[#D4A574] font-medium">
+        <div className="bg-white/80 rounded-lg p-3 border border-secondary/20">
+          <p className="text-xs text-secondary font-medium">
             ⚠️ 這裡記錄的是「有價值的互動結果」，實際銷售、成交使用「商品交易」功能
           </p>
         </div>
       </div>
 
       {/* 調整欄位 */}
-      <div className="bg-[#FAFAF8] rounded-2xl p-5 mb-6">
+      <div className="bg-background rounded-2xl p-5 mb-6">
         <div className="grid grid-cols-[1fr_auto] gap-3">
           <div>
-            <label className="block text-xs text-[#6B6B6B] mb-1">
+            <label className="block text-xs text-muted-foreground mb-1">
               顯示名稱
             </label>
             <input
@@ -321,11 +321,11 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={4}
-              className="w-full px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+              className="w-full px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
           <div>
-            <label className="block text-xs text-[#6B6B6B] mb-1">
+            <label className="block text-xs text-muted-foreground mb-1">
               圖示
             </label>
             <input
@@ -337,7 +337,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={2}
-              className="w-16 px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-lg focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-center text-xl"
+              className="w-16 px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center text-xl"
             />
           </div>
         </div>
@@ -347,7 +347,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
       <button
         onClick={() => handleSave()}
         disabled={isSaving}
-        className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium disabled:opacity-50"
+        className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium disabled:opacity-50"
       >
         {isSaving ? '儲存中...' : '完成設定'}
       </button>
@@ -405,7 +405,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
             >
               <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-[2rem] bg-white shadow-xl transition-all">
                 {/* Header */}
-                <div className="sticky top-0 bg-white border-b border-[#7B9FA6]/10 px-6 py-4 flex items-center justify-between">
+                <div className="sticky top-0 bg-white border-b border-primary/10 px-6 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {step !== 'intro' && (
                       <button
@@ -416,7 +416,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                           else if (step === 'customize-2') setStep('customize-1');
                           else if (step === 'customize-3') setStep('customize-2');
                         }}
-                        className="text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
                       >
                         ← 上一步
                       </button>
@@ -424,7 +424,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                   </div>
                   <button
                     onClick={onClose}
-                    className="text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <X className="w-6 h-6" />
                   </button>

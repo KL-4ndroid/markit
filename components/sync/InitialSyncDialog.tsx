@@ -167,22 +167,22 @@ export function InitialSyncDialog() {
                   {/* 圖示 */}
                   <div className={`mb-6 p-5 rounded-full ${
                     status === SyncStatus.SUCCESS 
-                      ? 'bg-[#E8F3E8]' 
+                      ? 'bg-soft-green' 
                       : status === SyncStatus.ERROR
-                      ? 'bg-[#F5E6E8]'
-                      : 'bg-gradient-to-br from-[#7B9FA6]/10 to-[#D4A574]/10'
+                      ? 'bg-soft-pink'
+                      : 'bg-gradient-to-br from-primary/10 to-secondary/10'
                   }`}>
                     {status === SyncStatus.SUCCESS ? (
-                      <CheckCircle className="w-12 h-12 text-[#7B9FA6]" />
+                      <CheckCircle className="w-12 h-12 text-primary" />
                     ) : status === SyncStatus.ERROR ? (
-                      <Cloud className="w-12 h-12 text-[#d4183d]" />
+                      <Cloud className="w-12 h-12 text-danger" />
                     ) : (
-                      <Loader2 className="w-12 h-12 text-[#7B9FA6] animate-spin" />
+                      <Loader2 className="w-12 h-12 text-primary animate-spin" />
                     )}
                   </div>
 
                   {/* 標題 */}
-                  <Dialog.Title className="text-xl font-medium text-[#3A3A3A] mb-3 text-center">
+                  <Dialog.Title className="text-xl font-medium text-foreground mb-3 text-center">
                     {status === SyncStatus.SUCCESS 
                       ? '歡迎回來！' 
                       : status === SyncStatus.ERROR
@@ -192,7 +192,7 @@ export function InitialSyncDialog() {
                   </Dialog.Title>
 
                   {/* 描述 */}
-                  <p className="text-sm text-[#6B6B6B] mb-6 text-center">
+                  <p className="text-sm text-muted-foreground mb-6 text-center">
                     {getPhaseDescription()}
                   </p>
 
@@ -201,11 +201,11 @@ export function InitialSyncDialog() {
                     <div className="w-full mb-6">
                       <div className="w-full bg-gray-200 rounded-full h-2 mb-3 overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-[#7B9FA6] to-[#D4A574] transition-all duration-300"
+                          className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300"
                           style={{ width: `${progressInfo.percentage}%` }}
                         />
                       </div>
-                      <p className="text-xs text-[#6B6B6B] text-center">
+                      <p className="text-xs text-muted-foreground text-center">
                         {progressInfo.text}
                       </p>
                     </div>
@@ -216,15 +216,15 @@ export function InitialSyncDialog() {
                     <div className="w-full flex items-center gap-2 mb-4">
                       <div className={`flex-1 h-1 rounded-full ${
                         downloadProgress.phase === 'snapshot' || downloadProgress.phase === 'incremental'
-                          ? 'bg-[#7B9FA6]' 
+                          ? 'bg-primary' 
                           : 'bg-gray-200'
                       }`} />
-                      <span className="text-xs text-[#6B6B6B] font-medium">
+                      <span className="text-xs text-muted-foreground font-medium">
                         {downloadProgress.phase === 'snapshot' ? '1/2' : '2/2'}
                       </span>
                       <div className={`flex-1 h-1 rounded-full ${
                         downloadProgress.phase === 'incremental'
-                          ? 'bg-[#7B9FA6]' 
+                          ? 'bg-primary' 
                           : 'bg-gray-200'
                       }`} />
                     </div>
@@ -233,7 +233,7 @@ export function InitialSyncDialog() {
                   {/* 提示文字 */}
                   {status === SyncStatus.SYNCING && (
                     <div className="bg-[#E8F0F8] rounded-xl p-4 w-full">
-                      <p className="text-xs text-[#6B6B6B] text-center">
+                      <p className="text-xs text-muted-foreground text-center">
                         {downloadProgress?.phase === 'snapshot' 
                           ? '正在快速載入數據快照...' 
                           : downloadProgress?.phase === 'incremental'
@@ -246,8 +246,8 @@ export function InitialSyncDialog() {
 
                   {/* 成功提示 */}
                   {status === SyncStatus.SUCCESS && (
-                    <div className="bg-[#E8F3E8] rounded-xl p-4 w-full">
-                      <p className="text-sm text-[#7B9FA6] text-center font-medium">
+                    <div className="bg-soft-green rounded-xl p-4 w-full">
+                      <p className="text-sm text-primary text-center font-medium">
                         ✓ 數據已同步完成
                       </p>
                     </div>
@@ -255,8 +255,8 @@ export function InitialSyncDialog() {
 
                   {/* 錯誤提示 */}
                   {status === SyncStatus.ERROR && (
-                    <div className="bg-[#F5E6E8] rounded-xl p-4 w-full">
-                      <p className="text-sm text-[#d4183d] text-center">
+                    <div className="bg-soft-pink rounded-xl p-4 w-full">
+                      <p className="text-sm text-danger text-center">
                         無法連接到雲端，將使用本地數據
                       </p>
                     </div>

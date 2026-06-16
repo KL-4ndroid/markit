@@ -25,7 +25,7 @@ export function UpgradePrompt({
   if (!isVisible) return null;
 
   return (
-    <div className="bg-gradient-to-r from-[#7B9FA6] to-[#D4A574] text-white">
+    <div className="bg-gradient-to-r from-primary to-secondary text-white">
       <div className="max-w-lg mx-auto px-6 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-1">
           <Sparkles className="w-5 h-5 flex-shrink-0" />

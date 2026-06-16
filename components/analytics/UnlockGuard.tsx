@@ -42,27 +42,27 @@ export function UnlockGuard({
           {/* 鎖頭圖示 */}
           <div className="mb-4 flex justify-center">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#D4A574] to-[#B8935F] rounded-full blur-xl opacity-50 animate-pulse"></div>
-              <div className="relative bg-gradient-to-br from-[#D4A574] to-[#B8935F] p-4 rounded-full shadow-lg">
+              <div className="absolute inset-0 bg-gradient-to-br from-secondary to-[#B8935F] rounded-full blur-xl opacity-50 animate-pulse"></div>
+              <div className="relative bg-gradient-to-br from-secondary to-[#B8935F] p-4 rounded-full shadow-lg">
                 <Lock className="w-8 h-8 text-white" />
               </div>
             </div>
           </div>
 
           {/* 標題 */}
-          <h3 className="text-lg font-medium text-[#3A3A3A] mb-2">
+          <h3 className="text-lg font-medium text-foreground mb-2">
             {featureName}
           </h3>
 
           {/* 提示文字 */}
-          <p className="text-sm text-[#6B6B6B] mb-4">
-            還差 <span className="font-bold text-[#D4A574]">{remaining}</span> 場數據即可解鎖
+          <p className="text-sm text-muted-foreground mb-4">
+            還差 <span className="font-bold text-secondary">{remaining}</span> 場數據即可解鎖
           </p>
 
           {/* 進度條 */}
-          <div className="w-full bg-[#E5E5E5] rounded-full h-3 overflow-hidden shadow-inner">
+          <div className="w-full bg-muted rounded-full h-3 overflow-hidden shadow-inner">
             <div
-              className="h-full bg-gradient-to-r from-[#7B9FA6] to-[#D4A574] rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+              className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-700 ease-out relative overflow-hidden"
               style={{ width: `${progress}%` }}
             >
               {/* 動畫光澤效果 */}
@@ -71,7 +71,7 @@ export function UnlockGuard({
           </div>
 
           {/* 進度百分比 */}
-          <p className="text-xs text-[#6B6B6B] mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             {currentCount} / {requiredCount} 場 ({progress.toFixed(0)}%)
           </p>
         </div>

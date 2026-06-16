@@ -7,7 +7,7 @@
 
 export default function AnalyticsLoading() {
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
+    <div className="min-h-screen bg-background">
       {/* Header Skeleton - 純灰階 */}
       <div className="bg-gradient-to-br from-gray-300 to-gray-400 pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">

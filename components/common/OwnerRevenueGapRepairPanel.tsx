@@ -157,26 +157,26 @@ export function OwnerRevenueGapRepairPanel() {
         <div className="flex items-start gap-3">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-              hasRepairs ? 'bg-[#E8F3E8] text-[#4D7F87]' : 'bg-[#F0ECE4] text-[#6B6B6B]'
+              hasRepairs ? 'bg-soft-green text-[#4D7F87]' : 'bg-[#F0ECE4] text-muted-foreground'
             }`}
           >
             {hasRepairs ? <Zap size={20} /> : <RefreshCw size={20} />}
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-[#3A3A3A]">收入差距修復</h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">
+            <h2 className="text-base font-semibold text-foreground">收入差距修復</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               用於新裝置或重新登入後，本機收入低於雲端 deal_closed 事件的情況。工具會先預覽可修復市場，執行時只重建本機資料，不修改雲端。
             </p>
           </div>
         </div>
 
         {hasPreview && previewResult && (
-          <div className="space-y-2 rounded-md border border-[#E8E3D8] bg-[#FAFAF8] p-3 text-sm">
+          <div className="space-y-2 rounded-md border border-[#E8E3D8] bg-background p-3 text-sm">
             {previewResult.repaired.length > 0 && (
               <div>
                 <p className="mb-1 font-medium text-[#4D7F87]">可修復 ({previewResult.repaired.length})</p>
                 {previewResult.repaired.map(r => (
-                  <div key={r.marketId} className="pl-2 text-[#6B6B6B]">
+                  <div key={r.marketId} className="pl-2 text-muted-foreground">
                     {r.marketId.slice(0, 8)}... 收入 {formatMoney(r.localRevenueBefore)} → {formatMoney(r.localRevenueAfter)}，
                     重放 {r.replayedEvents} 筆事件
                   </div>
@@ -185,7 +185,7 @@ export function OwnerRevenueGapRepairPanel() {
             )}
             {previewResult.skipped.length > 0 && (
               <div>
-                <p className="mb-1 font-medium text-[#6B6B6B]">略過 ({previewResult.skipped.length})</p>
+                <p className="mb-1 font-medium text-muted-foreground">略過 ({previewResult.skipped.length})</p>
                 {previewResult.skipped.slice(0, 5).map(s => (
                   <div key={s.marketId} className="pl-2 text-[#9B9B9B]">
                     {s.marketId.slice(0, 8)}... — {s.reason}
@@ -214,7 +214,7 @@ export function OwnerRevenueGapRepairPanel() {
               type="button"
               onClick={handleDryRun}
               disabled={isBlocked}
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F3EE] disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE] disabled:opacity-50"
             >
               <Eye size={16} />
               預覽修復範圍
@@ -231,7 +231,7 @@ export function OwnerRevenueGapRepairPanel() {
                 <button
                   type="button"
                   onClick={handleExecute}
-                  className="inline-flex h-10 items-center gap-2 rounded-md bg-[#D4A574] px-3 text-sm font-medium text-white hover:bg-[#C4935F] disabled:opacity-50"
+                  className="inline-flex h-10 items-center gap-2 rounded-md bg-secondary px-3 text-sm font-medium text-white hover:bg-[#C4935F] disabled:opacity-50"
                 >
                   <Zap size={16} />
                   執行修復 ({previewResult.repaired.length})
@@ -240,7 +240,7 @@ export function OwnerRevenueGapRepairPanel() {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F3EE]"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
               >
                 取消
               </button>
@@ -271,13 +271,13 @@ function BlockedPanel({
     <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm opacity-70">
       <div className="flex items-start gap-3">
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-          danger ? 'bg-[#F5E6E8] text-[#B85C5C]' : 'bg-[#F0ECE4] text-[#6B6B6B]'
+          danger ? 'bg-soft-pink text-[#B85C5C]' : 'bg-[#F0ECE4] text-muted-foreground'
         }`}>
           {icon}
         </div>
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-[#3A3A3A]">{title}</h2>
-          <p className="mt-1 text-sm text-[#6B6B6B]">{message}</p>
+          <h2 className="text-base font-semibold text-foreground">{title}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{message}</p>
         </div>
       </div>
     </section>
@@ -291,8 +291,8 @@ function BusyButton({ label, filled = false }: { label: string; filled?: boolean
       disabled
       className={`inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-medium opacity-50 ${
         filled
-          ? 'bg-[#D4A574] text-white'
-          : 'border border-[#D8D0C3] text-[#6B6B6B]'
+          ? 'bg-secondary text-white'
+          : 'border border-[#D8D0C3] text-muted-foreground'
       }`}
     >
       <RefreshCw size={16} className="animate-spin" />

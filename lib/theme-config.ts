@@ -1,7 +1,19 @@
 /**
- * 主題配置
- * 
- * 根據用戶角色（老闆/員工）提供不同的配色方案
+ * 主題配置 — 出攤本 BoothBook VI 對齊版本
+ *
+ * 對應文件：docs/brand/VI_DESIGN_SYSTEM.md（2026-06-16）
+ *
+ * 色票對應（從「Market Pulse」內部色票 → 「出攤本 BoothBook」對外品牌色）：
+ *   霧藍  #7B9FA6 → 霧松綠  #6F8F86
+ *   暖木  #D4A574 → 暖杏橘  #D9A66A
+ *   米白  #FAFAF8 → 奶油米白 #F7F3EA
+ *
+ * 員工模式決策（2026-06-17）：
+ *   原本員工使用紫灰 #8B7BA6 + 淺藍紫 #A6B4D4 + 淺紫 #F0E8F3
+ *   VI 框架未指定員工變體，決策沿用主色 + 透明度區分（staff-tint），
+ *   不再維護獨立紫灰色票，避免兩套品牌色並行。
+ *
+ * 所有 hex 已改為 Tailwind token class name，色值在 app/globals.css + tailwind.config.ts。
  */
 
 export interface ThemeColors {
@@ -15,23 +27,24 @@ export interface ThemeColors {
 }
 
 export const ownerTheme: ThemeColors = {
-  primary: '#7B9FA6',      // 青綠色
-  secondary: '#D4A574',    // 金棕色
-  accent: '#E8F3E8',       // 淺綠
-  gradient: 'from-[#7B9FA6] to-[#D4A574]',
-  shadow: 'shadow-[#7B9FA6]/10',
-  light: 'bg-[#E8F3E8]',
-  border: 'border-[#7B9FA6]/20',
+  primary: 'text-primary',                              // 霧松綠
+  secondary: 'text-secondary',                          // 暖杏橘
+  accent: 'bg-soft-green',                              // 淺綠
+  gradient: 'bg-gradient-to-br from-primary to-secondary',
+  shadow: 'shadow-primary/10',
+  light: 'bg-soft-green',
+  border: 'border-primary/20',
 };
 
 export const staffTheme: ThemeColors = {
-  primary: '#8B7BA6',      // 紫灰色
-  secondary: '#A6B4D4',    // 淺藍紫
-  accent: '#F0E8F3',       // 淺紫
-  gradient: 'from-[#8B7BA6] to-[#A6B4D4]',
-  shadow: 'shadow-[#8B7BA6]/10',
-  light: 'bg-[#F0E8F3]',
-  border: 'border-[#8B7BA6]/20',
+  // 員工模式沿用主色，僅在背景以透明度區分（VI 框架未指定員工變體）
+  primary: 'text-primary',
+  secondary: 'text-primary/80',                         // 同色但略淡
+  accent: 'bg-primary/10',                              // 主色 10% 透明
+  gradient: 'bg-gradient-to-br from-primary/80 to-primary/60',
+  shadow: 'shadow-primary/10',
+  light: 'bg-primary/10',
+  border: 'border-primary/15',
 };
 
 /**
@@ -45,42 +58,42 @@ export function getTheme(isStaff: boolean): ThemeColors {
  * 獲取漸變背景類名
  */
 export function getGradientClass(isStaff: boolean): string {
-  return isStaff 
-    ? 'bg-gradient-to-br from-[#8B7BA6] to-[#A6B4D4]'
-    : 'bg-gradient-to-br from-[#7B9FA6] to-[#D4A574]';
+  return isStaff
+    ? 'bg-gradient-to-br from-primary/80 to-primary/60'
+    : 'bg-gradient-to-br from-primary to-secondary';
 }
 
 /**
  * 獲取主色調類名
  */
 export function getPrimaryClass(isStaff: boolean): string {
-  return isStaff ? 'text-[#8B7BA6]' : 'text-[#7B9FA6]';
+  return 'text-primary';
 }
 
 /**
  * 獲取背景色類名
  */
 export function getPrimaryBgClass(isStaff: boolean): string {
-  return isStaff ? 'bg-[#8B7BA6]' : 'bg-[#7B9FA6]';
+  return 'bg-primary';
 }
 
 /**
  * 獲取淺色背景類名
  */
 export function getLightBgClass(isStaff: boolean): string {
-  return isStaff ? 'bg-[#F0E8F3]' : 'bg-[#E8F3E8]';
+  return isStaff ? 'bg-primary/10' : 'bg-soft-green';
 }
 
 /**
  * 獲取陰影類名
  */
 export function getShadowClass(isStaff: boolean): string {
-  return isStaff ? 'shadow-[#8B7BA6]/10' : 'shadow-[#7B9FA6]/10';
+  return 'shadow-primary/10';
 }
 
 /**
  * 獲取邊框類名
  */
 export function getBorderClass(isStaff: boolean): string {
-  return isStaff ? 'border-[#8B7BA6]/20' : 'border-[#7B9FA6]/20';
+  return isStaff ? 'border-primary/15' : 'border-primary/20';
 }

@@ -92,8 +92,8 @@ export function MarketDetailList({ markets }: MarketDetailListProps) {
   };
 
   return (
-    <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10">
-      <h3 className="text-[#3A3A3A] text-lg font-medium mb-4">市集明細</h3>
+    <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
+      <h3 className="text-foreground text-lg font-medium mb-4">市集明細</h3>
       <div className="space-y-3">
         {markets.map((market) => {
           const details = interactionDetails[market.id!] || [];
@@ -101,25 +101,25 @@ export function MarketDetailList({ markets }: MarketDetailListProps) {
           return (
             <div
               key={market.id}
-              className="border border-[#7B9FA6]/15 rounded-xl overflow-hidden"
+              className="border border-primary/15 rounded-xl overflow-hidden"
             >
               <button
                 onClick={() => router.push(`/markets/${market.id}`)}
-                className="block w-full p-4 hover:bg-[#FAFAF8] transition-colors text-left"
+                className="block w-full p-4 hover:bg-background transition-colors text-left"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
-                    <h4 className="font-medium text-[#3A3A3A]">{market.name}</h4>
-                    <p className="text-sm text-[#6B6B6B]">{market.startDate}</p>
+                    <h4 className="font-medium text-foreground">{market.name}</h4>
+                    <p className="text-sm text-muted-foreground">{market.startDate}</p>
                   </div>
                   <div className="text-right">
-                    <div className={`font-medium ${(market.totalProfit || 0) >= 0 ? 'text-[#7B9FA6]' : 'text-[#d4183d]'}`}>
+                    <div className={`font-medium ${(market.totalProfit || 0) >= 0 ? 'text-primary' : 'text-danger'}`}>
                       {formatCurrency(market.totalProfit || 0)}
                     </div>
-                    <div className="text-xs text-[#6B6B6B]">淨利潤</div>
+                    <div className="text-xs text-muted-foreground">淨利潤</div>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-xs text-[#6B6B6B]">
+                <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
                   <div>收入: {formatCurrency(market.totalRevenue || 0)}</div>
                   <div>成交: {market.totalDeals || 0}</div>
                   <div>轉換: {getConversionRate(market)}%</div>
@@ -128,8 +128,8 @@ export function MarketDetailList({ markets }: MarketDetailListProps) {
               
               {/* ✅ 互動詳情直接顯示（不折疊） */}
               {details.length > 0 && (
-                <div className="px-4 py-3 bg-[#FAFAF8] border-t border-[#7B9FA6]/10">
-                  <div className="text-xs text-[#6B6B6B] mb-2 font-medium">互動詳情</div>
+                <div className="px-4 py-3 bg-background border-t border-primary/10">
+                  <div className="text-xs text-muted-foreground mb-2 font-medium">互動詳情</div>
                   <div className="grid grid-cols-2 gap-2">
                     {details.map((detail) => (
                       <div
@@ -138,9 +138,9 @@ export function MarketDetailList({ markets }: MarketDetailListProps) {
                       >
                         <div className="flex items-center gap-2">
                           <span className="text-lg">{detail.emoji}</span>
-                          <span className="text-sm text-[#3A3A3A]">{detail.label}</span>
+                          <span className="text-sm text-foreground">{detail.label}</span>
                         </div>
-                        <span className="text-sm font-medium text-[#7B9FA6]">
+                        <span className="text-sm font-medium text-primary">
                           {detail.count}
                         </span>
                       </div>

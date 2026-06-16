@@ -46,7 +46,7 @@ export function MarketROICard({
       case 3:
         return 'bg-gradient-to-br from-[#CD7F32] to-[#B8860B] text-white';
       default:
-        return 'bg-[#7B9FA6] text-white';
+        return 'bg-primary text-white';
     }
   };
 
@@ -60,23 +60,23 @@ export function MarketROICard({
 
   // ROI 狀態顏色
   const getROIColor = (roi: number) => {
-    if (roi >= 200) return 'text-[#7B9FA6]'; // 優秀
-    if (roi >= 100) return 'text-[#D4A574]'; // 良好
-    if (roi >= 50) return 'text-[#3A3A3A]'; // 普通
-    return 'text-[#d4183d]'; // 需改善
+    if (roi >= 200) return 'text-primary'; // 優秀
+    if (roi >= 100) return 'text-secondary'; // 良好
+    if (roi >= 50) return 'text-foreground'; // 普通
+    return 'text-danger'; // 需改善
   };
 
   // 利潤狀態顏色
   const getProfitColor = (profit: number) => {
-    if (profit > 0) return 'text-[#7B9FA6]';
-    if (profit === 0) return 'text-[#6B6B6B]';
-    return 'text-[#d4183d]';
+    if (profit > 0) return 'text-primary';
+    if (profit === 0) return 'text-muted-foreground';
+    return 'text-danger';
   };
 
   return (
     <div 
       onClick={handleClick}
-      className="bg-[#FAFAF8] rounded-xl p-3 hover:bg-[#F0F0EE] transition-all cursor-pointer border border-[#7B9FA6]/10 hover:border-[#7B9FA6]/30"
+      className="bg-background rounded-xl p-3 hover:bg-[#F0F0EE] transition-all cursor-pointer border border-primary/10 hover:border-primary/30"
     >
       {/* Header: 排名徽章 + 市集名稱（橫向，左對齊） */}
       <div className="flex items-center gap-3 mb-3">
@@ -84,12 +84,12 @@ export function MarketROICard({
           {getRankIcon(rank)}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className={`font-medium ${rank === 1 ? 'text-base' : 'text-sm'} text-[#3A3A3A] truncate`}>
+          <h3 className={`font-medium ${rank === 1 ? 'text-base' : 'text-sm'} text-foreground truncate`}>
             {market.name}
           </h3>
-          <div className="flex items-center gap-2 text-xs text-[#6B6B6B]">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="truncate">{market.location}</span>
-            <span className="text-[#7B9FA6]">•</span>
+            <span className="text-primary">•</span>
             <span className="flex-shrink-0">
               {market.dates && market.dates.length > 0 
                 ? market.dates.length === 1 
@@ -109,8 +109,8 @@ export function MarketROICard({
         {/* 淨利潤 */}
         <div className="bg-white rounded-lg p-2">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <DollarSign className="w-3 h-3 text-[#7B9FA6]" />
-            <span className="text-[10px] text-[#6B6B6B]">淨利</span>
+            <DollarSign className="w-3 h-3 text-primary" />
+            <span className="text-[10px] text-muted-foreground">淨利</span>
           </div>
           <div className={`text-xs font-bold tabular-nums text-center ${getProfitColor(netProfit)}`}>
             {formatCurrency(Math.round(netProfit))}
@@ -120,8 +120,8 @@ export function MarketROICard({
         {/* 每小時淨利 */}
         <div className="bg-white rounded-lg p-2">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <Clock className="w-3 h-3 text-[#D4A574]" />
-            <span className="text-[10px] text-[#6B6B6B]">投報率</span>
+            <Clock className="w-3 h-3 text-secondary" />
+            <span className="text-[10px] text-muted-foreground">投報率</span>
           </div>
           <div className={`text-xs font-bold tabular-nums text-center ${getProfitColor(hourlyProfit)}`}>
             {formatCurrency(Math.round(hourlyProfit))}
@@ -131,15 +131,15 @@ export function MarketROICard({
         {/* 攤位費回收率 */}
         <div className="bg-white rounded-lg p-2">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <TrendingUp className="w-3 h-3 text-[#D4A574]" />
-            <span className="text-[10px] text-[#6B6B6B]">回收率</span>
+            <TrendingUp className="w-3 h-3 text-secondary" />
+            <span className="text-[10px] text-muted-foreground">回收率</span>
           </div>
           {boothCost > 0 ? (
             <div className={`text-xs font-bold tabular-nums text-center ${getROIColor(boothROI)}`}>
               {Math.round(boothROI)}%
             </div>
           ) : (
-            <div className="text-[10px] text-[#6B6B6B] font-medium text-center">
+            <div className="text-[10px] text-muted-foreground font-medium text-center">
               不適用
             </div>
           )}

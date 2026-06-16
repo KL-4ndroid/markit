@@ -17,14 +17,14 @@ function ProgressBar({ progress }: { progress: CanonicalizationProgress | null }
     : 0;
 
   return (
-    <div className="mt-4 rounded-xl border border-[#7B9FA6]/20 bg-white p-3">
-      <div className="mb-2 flex items-center justify-between text-xs text-[#6B6B6B]">
+    <div className="mt-4 rounded-xl border border-primary/20 bg-white p-3">
+      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
         <span>{progress.message}</span>
         <span>{percentage}%</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-[#E8F0F8]">
         <div
-          className="h-full rounded-full bg-[#7B9FA6] transition-all"
+          className="h-full rounded-full bg-primary transition-all"
           style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
         />
       </div>
@@ -36,20 +36,20 @@ function SummaryGrid({ plan }: { plan: CanonicalizationPlan | CanonicalizationRe
   return (
     <div className="mt-4 grid grid-cols-2 gap-3">
       <div className="rounded-xl bg-white p-3">
-        <p className="text-xs text-[#6B6B6B]">掃描事件</p>
-        <p className="mt-1 text-lg font-semibold text-[#3A3A3A]">{plan.scanned.events}</p>
+        <p className="text-xs text-muted-foreground">掃描事件</p>
+        <p className="mt-1 text-lg font-semibold text-foreground">{plan.scanned.events}</p>
       </div>
       <div className="rounded-xl bg-white p-3">
-        <p className="text-xs text-[#6B6B6B]">需整理事件</p>
-        <p className="mt-1 text-lg font-semibold text-[#7B9FA6]">{plan.changes.events}</p>
+        <p className="text-xs text-muted-foreground">需整理事件</p>
+        <p className="mt-1 text-lg font-semibold text-primary">{plan.changes.events}</p>
       </div>
       <div className="rounded-xl bg-white p-3">
-        <p className="text-xs text-[#6B6B6B]">掃描統計</p>
-        <p className="mt-1 text-lg font-semibold text-[#3A3A3A]">{plan.scanned.dailyStats}</p>
+        <p className="text-xs text-muted-foreground">掃描統計</p>
+        <p className="mt-1 text-lg font-semibold text-foreground">{plan.scanned.dailyStats}</p>
       </div>
       <div className="rounded-xl bg-white p-3">
-        <p className="text-xs text-[#6B6B6B]">需整理統計</p>
-        <p className="mt-1 text-lg font-semibold text-[#7B9FA6]">{plan.changes.dailyStats}</p>
+        <p className="text-xs text-muted-foreground">需整理統計</p>
+        <p className="mt-1 text-lg font-semibold text-primary">{plan.changes.dailyStats}</p>
       </div>
     </div>
   );
@@ -118,23 +118,23 @@ export function DataCanonicalizationPanel() {
   };
 
   return (
-    <div className="mb-6 rounded-2xl border border-[#7B9FA6]/20 bg-[#F8FBFB] p-4">
+    <div className="mb-6 rounded-2xl border border-primary/20 bg-[#F8FBFB] p-4">
       <div className="flex items-start gap-3">
-        <div className="rounded-full bg-[#7B9FA6]/10 p-2">
-          <Database className="h-5 w-5 text-[#7B9FA6]" />
+        <div className="rounded-full bg-primary/10 p-2">
+          <Database className="h-5 w-5 text-primary" />
         </div>
         <div className="flex-1">
-          <h3 className="text-base font-medium text-[#3A3A3A]">本機資料格式整理</h3>
-          <p className="mt-1 text-sm leading-6 text-[#6B6B6B]">
+          <h3 className="text-base font-medium text-foreground">本機資料格式整理</h3>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
             將舊格式事件整理成目前穩定格式，例如補齊 market_id、eventId、dealDate、totalAmount 等相容欄位。
             此工具只整理本機資料，不修改雲端，不刪除事件。
           </p>
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl bg-white p-3 text-xs leading-5 text-[#6B6B6B]">
-        <div className="mb-2 flex items-center gap-2 font-medium text-[#3A3A3A]">
-          <ShieldCheck className="h-4 w-4 text-[#7B9FA6]" />
+      <div className="mt-4 rounded-xl bg-white p-3 text-xs leading-5 text-muted-foreground">
+        <div className="mb-2 flex items-center gap-2 font-medium text-foreground">
+          <ShieldCheck className="h-4 w-4 text-primary" />
           安全規則
         </div>
         <ul className="space-y-1">
@@ -148,9 +148,9 @@ export function DataCanonicalizationPanel() {
       {plan && <SummaryGrid plan={result ?? plan} />}
 
       {plan && plan.issues.length > 0 && (
-        <div className="mt-4 rounded-xl border border-[#D4A574]/30 bg-[#FFF8E7] p-3">
-          <p className="text-sm font-medium text-[#3A3A3A]">需要留意的資料</p>
-          <ul className="mt-2 max-h-28 space-y-1 overflow-y-auto text-xs text-[#6B6B6B]">
+        <div className="mt-4 rounded-xl border border-secondary/30 bg-soft-yellow p-3">
+          <p className="text-sm font-medium text-foreground">需要留意的資料</p>
+          <ul className="mt-2 max-h-28 space-y-1 overflow-y-auto text-xs text-muted-foreground">
             {plan.issues.slice(0, 8).map((issue, index) => (
               <li key={`${issue.table}-${issue.id}-${index}`}>
                 {issue.table}[{String(issue.id)}] - {issue.message}
@@ -165,11 +165,11 @@ export function DataCanonicalizationPanel() {
 
       {result && (
         <div className="mt-4 rounded-xl border border-[#A8D5BA]/30 bg-[#F0FAF3] p-3">
-          <div className="flex items-center gap-2 text-sm font-medium text-[#3A3A3A]">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <CheckCircle2 className="h-4 w-4 text-[#5AA06C]" />
             整理完成
           </div>
-          <p className="mt-1 text-xs text-[#6B6B6B]">
+          <p className="mt-1 text-xs text-muted-foreground">
             已整理 {result.changes.events} 筆事件、{result.changes.dailyStats} 筆統計。
             {result.integrityErrors.length === 0 ? ' 資料健康檢查沒有阻塞錯誤。' : ` 仍有 ${result.integrityErrors.length} 個錯誤需處理。`}
           </p>
@@ -186,7 +186,7 @@ export function DataCanonicalizationPanel() {
           type="button"
           onClick={handleAnalyze}
           disabled={isAnalyzing || isRunning}
-          className="flex items-center justify-center gap-2 rounded-2xl border border-[#7B9FA6]/30 bg-white px-4 py-3 text-sm font-medium text-[#3A3A3A] transition-colors hover:bg-[#EEF6F7] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-white px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-[#EEF6F7] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSearch className="h-4 w-4" />}
           分析資料格式
@@ -195,7 +195,7 @@ export function DataCanonicalizationPanel() {
           type="button"
           onClick={handleRun}
           disabled={!plan || !hasChanges || isAnalyzing || isRunning}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-[#7B9FA6] px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
           執行格式整理

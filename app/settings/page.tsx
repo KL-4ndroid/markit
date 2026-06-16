@@ -229,7 +229,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
@@ -262,59 +262,59 @@ export default function SettingsPage() {
             <StaffPermissionCard permissions={userRole.permissions} />
             
             {/* 離開團隊區塊 */}
-            <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#8B7BA6]/10 p-6">
+            <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">
               <div className="flex items-center gap-2 mb-2">
-                <LogOut className="w-5 h-5 text-[#8B7BA6]" />
-                <h2 className="text-lg font-medium text-[#3A3A3A]">離開團隊</h2>
+                <LogOut className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-medium text-foreground">離開團隊</h2>
               </div>
-              <p className="text-sm text-[#6B6B6B] mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 離開後將無法再訪問老闆的市集資料
               </p>
               {/* 離開團隊按鈕 */}
               <button
                 onClick={handleLeaveTeam}
-                className="w-full px-6 py-4 rounded-2xl bg-[#F5E6E8] text-[#d4183d] hover:bg-[#E5D6D8] transition-colors font-medium flex items-center justify-center gap-2"
+                className="w-full px-6 py-4 rounded-2xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors font-medium flex items-center justify-center gap-2"
               >
                 <LogOut className="w-5 h-5" />
                 離開團隊
               </button>
 
-              <p className="text-xs text-center text-[#6B6B6B] mt-3">
+              <p className="text-xs text-center text-muted-foreground mt-3">
                 離開後將清除本地數據，您可以重新開始使用自己的帳號
               </p>
             </div>
           </>
         ) : (
           /* 老闆：顯示員工管理（可折疊） */
-          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 overflow-hidden">
             <button
               onClick={() => setIsStaffManagementExpanded(!isStaffManagementExpanded)}
-              className="w-full p-6 text-left hover:bg-[#FAFAF8] transition-colors"
+              className="w-full p-6 text-left hover:bg-background transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <Eye className="w-5 h-5 text-[#7B9FA6]" />
-                    <h2 className="text-lg font-medium text-[#3A3A3A]">
+                    <Eye className="w-5 h-5 text-primary" />
+                    <h2 className="text-lg font-medium text-foreground">
                       員工管理
                     </h2>
                   </div>
-                  <p className="text-sm text-[#6B6B6B]">
+                  <p className="text-sm text-muted-foreground">
                     邀請員工協作，管理權限設定
                   </p>
                 </div>
                 <div className="ml-4">
                   {isStaffManagementExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-[#7B9FA6]" />
+                    <ChevronUp className="w-5 h-5 text-primary" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-[#7B9FA6]" />
+                    <ChevronDown className="w-5 h-5 text-primary" />
                   )}
                 </div>
               </div>
             </button>
 
             {isStaffManagementExpanded && (
-              <div className="border-t border-[#7B9FA6]/10">
+              <div className="border-t border-primary/10">
                 <StaffManagement />
               </div>
             )}
@@ -323,53 +323,53 @@ export default function SettingsPage() {
 
         {/* 互動按鈕設定 - 只有老闆可見（可折疊） */}
         {!isStaff && (
-          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 overflow-hidden">
             <button
               onClick={() => setIsInteractionExpanded(!isInteractionExpanded)}
-              className="w-full p-6 text-left hover:bg-[#FAFAF8] transition-colors"
+              className="w-full p-6 text-left hover:bg-background transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <Zap className="w-5 h-5 text-[#7B9FA6]" />
-                    <h2 className="text-lg font-medium text-[#3A3A3A]">
+                    <Zap className="w-5 h-5 text-primary" />
+                    <h2 className="text-lg font-medium text-foreground">
                       互動記錄設定
                     </h2>
                   </div>
-                  <p className="text-sm text-[#6B6B6B]">
+                  <p className="text-sm text-muted-foreground">
                     記錄顧客互動，了解哪一場市集效果最好
                   </p>
                 </div>
                 <div className="ml-4">
                   {isInteractionExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-[#7B9FA6]" />
+                    <ChevronUp className="w-5 h-5 text-primary" />
                   ) : (
-                    <ChevronDown className="w-5 h-5 text-[#7B9FA6]" />
+                    <ChevronDown className="w-5 h-5 text-primary" />
                   )}
                 </div>
               </div>
             </button>
 
             {isInteractionExpanded && (
-              <div className="px-6 pb-6 border-t border-[#7B9FA6]/10">
+              <div className="px-6 pb-6 border-t border-primary/10">
             {isSetupComplete ? (
               <>
                 {/* 已設定：顯示當前配置 */}
-                <div className="bg-[#FAFAF8] rounded-xl p-4 mb-4 mt-4">
-                  <div className="text-xs text-[#6B6B6B] mb-3 text-center">
+                <div className="bg-background rounded-xl p-4 mb-4 mt-4">
+                  <div className="text-xs text-muted-foreground mb-3 text-center">
                     當前設定
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     {buttons.map((button, index) => (
                       <div
                         key={button.id}
-                        className="bg-white rounded-xl p-3 text-center border border-[#7B9FA6]/10"
+                        className="bg-white rounded-xl p-3 text-center border border-primary/10"
                       >
                         <div className="text-2xl mb-1">{button.emoji}</div>
-                        <div className="text-xs font-medium text-[#3A3A3A] truncate">
+                        <div className="text-xs font-medium text-foreground truncate">
                           {button.label}
                         </div>
-                        <div className="text-xs text-[#6B6B6B] mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {index === 0 && '有興趣'}
                           {index === 1 && '有互動'}
                           {index === 2 && '轉換'}
@@ -382,14 +382,14 @@ export default function SettingsPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowWizard(true)}
-                    className="flex-1 px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium flex items-center justify-center gap-2"
                   >
                     <Edit className="w-4 h-4" />
                     重新設定
                   </button>
                   <button
                     onClick={handleResetInteraction}
-                    className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium flex items-center justify-center gap-2"
                   >
                     <RotateCcw className="w-4 h-4" />
                     重置
@@ -399,19 +399,19 @@ export default function SettingsPage() {
             ) : (
               <>
                 {/* 未設定：引導設定 */}
-                <div className="bg-gradient-to-br from-[#7B9FA6]/10 to-[#D4A574]/10 rounded-xl p-6 mb-4 mt-4 text-center">
+                <div className="bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl p-6 mb-4 mt-4 text-center">
                   <div className="text-4xl mb-3">📊</div>
-                  <p className="text-sm text-[#3A3A3A] mb-2">
+                  <p className="text-sm text-foreground mb-2">
                     尚未設定互動記錄方式
                   </p>
-                  <p className="text-xs text-[#6B6B6B]">
+                  <p className="text-xs text-muted-foreground">
                     設定後即可在營業時記錄顧客互動
                   </p>
                 </div>
 
                 <button
                   onClick={() => setShowWizard(true)}
-                  className="w-full px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium"
+                  className="w-full px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium"
                 >
                   開始設定
                 </button>
@@ -419,10 +419,10 @@ export default function SettingsPage() {
             )}
 
             <div className="mt-4 bg-gradient-to-br from-[#E8F0F8] to-[#FFF8E7] rounded-xl p-4">
-              <h3 className="text-sm font-medium text-[#3A3A3A] mb-2">
+              <h3 className="text-sm font-medium text-foreground mb-2">
                 💡 使用說明
               </h3>
-              <ul className="text-xs text-[#6B6B6B] space-y-1">
+              <ul className="text-xs text-muted-foreground space-y-1">
                 <li>• 記錄顧客從「有興趣」到「成交」的過程</li>
                 <li>• 不需要精準，只要直覺點擊</li>
                 <li>• 數據會顯示在市集分析報表中</li>
@@ -436,29 +436,29 @@ export default function SettingsPage() {
 
         {/* 資料庫管理 - 只有老闆可見 */}
         {!isStaff && (
-          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 overflow-hidden">
             {/* 標題區（始終顯示） */}
             <button
             onClick={() => setIsDatabaseExpanded(!isDatabaseExpanded)}
-            className="w-full p-6 text-left hover:bg-[#FAFAF8] transition-colors"
+            className="w-full p-6 text-left hover:bg-background transition-colors"
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <Database className="w-5 h-5 text-[#7B9FA6]" />
-                  <h2 className="text-lg font-medium text-[#3A3A3A]">
+                  <Database className="w-5 h-5 text-primary" />
+                  <h2 className="text-lg font-medium text-foreground">
                     資料庫管理
                   </h2>
                 </div>
-                <p className="text-sm text-[#6B6B6B]">
+                <p className="text-sm text-muted-foreground">
                   管理本地和雲端資料，請謹慎操作
                 </p>
               </div>
               <div className="ml-4">
                 {isDatabaseExpanded ? (
-                  <ChevronUp className="w-5 h-5 text-[#7B9FA6]" />
+                  <ChevronUp className="w-5 h-5 text-primary" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-[#7B9FA6]" />
+                  <ChevronDown className="w-5 h-5 text-primary" />
                 )}
               </div>
             </div>
@@ -466,30 +466,30 @@ export default function SettingsPage() {
 
           {/* 展開內容 */}
           {isDatabaseExpanded && (
-            <div className="px-6 pb-6 border-t border-[#7B9FA6]/10">
+            <div className="px-6 pb-6 border-t border-primary/10">
               <button
                 type="button"
                 onClick={() => router.push('/recovery')}
-                className="mt-4 mb-4 flex w-full items-center justify-between rounded-xl border border-[#7B9FA6]/20 bg-[#F8FBFB] p-4 text-left transition-colors hover:bg-[#EEF6F7]"
+                className="mt-4 mb-4 flex w-full items-center justify-between rounded-xl border border-primary/20 bg-[#F8FBFB] p-4 text-left transition-colors hover:bg-[#EEF6F7]"
               >
                 <span>
-                  <span className="block text-sm font-medium text-[#3A3A3A]">資料修復與救援備份</span>
-                  <span className="mt-1 block text-xs text-[#6B6B6B]">
+                  <span className="block text-sm font-medium text-foreground">資料修復與救援備份</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
                     檢查本機資料完整性，必要時先建立救援備份。
                   </span>
                 </span>
-                <Database className="h-5 w-5 shrink-0 text-[#7B9FA6]" />
+                <Database className="h-5 w-5 shrink-0 text-primary" />
               </button>
               <DataCanonicalizationPanel />
               {/* 總體說明 */}
-              <div className="bg-[#FFF8E7] border border-[#D4A574]/20 rounded-xl p-4 mt-4 mb-6">
+              <div className="bg-soft-yellow border border-secondary/20 rounded-xl p-4 mt-4 mb-6">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-5 h-5 text-[#D4A574] flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-5 h-5 text-secondary flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-[#3A3A3A] mb-2">
+                    <p className="text-sm font-medium text-foreground mb-2">
                       ⚠️ 重要提醒
                     </p>
-                    <ul className="text-xs text-[#6B6B6B] space-y-1">
+                    <ul className="text-xs text-muted-foreground space-y-1">
                       <li>• 所有清除操作都無法復原，請謹慎使用</li>
                       <li>• 建議在清除前先確認資料已備份</li>
                       <li>• 適用於解決資料同步問題或重新開始</li>
@@ -499,32 +499,32 @@ export default function SettingsPage() {
               </div>
 
               {/* 分隔線 */}
-              <div className="border-t border-[#7B9FA6]/10 my-6"></div>
+              <div className="border-t border-primary/10 my-6"></div>
 
               {/* 清除本地資料 */}
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
-                  <HardDrive className="w-5 h-5 text-[#7B9FA6]" />
-                  <h3 className="text-base font-medium text-[#3A3A3A]">
+                  <HardDrive className="w-5 h-5 text-primary" />
+                  <h3 className="text-base font-medium text-foreground">
                     清除本地資料
                   </h3>
                 </div>
                 
                 <div className="bg-[#E8F0F8] rounded-xl p-4 mb-3">
-                  <p className="text-sm text-[#3A3A3A] mb-2 font-medium">
+                  <p className="text-sm text-foreground mb-2 font-medium">
                     📱 本地資料（IndexedDB）
                   </p>
-                  <ul className="text-xs text-[#6B6B6B] space-y-1 mb-3">
+                  <ul className="text-xs text-muted-foreground space-y-1 mb-3">
                     <li>• 儲存位置：瀏覽器本地儲存空間</li>
                     <li>• 包含內容：所有市集、商品、統計、事件記錄</li>
                     <li>• 影響範圍：僅限當前瀏覽器</li>
                     <li>• 同步狀態：清除後可從雲端重新同步（如已登入）</li>
                   </ul>
-                  <div className="bg-white rounded-lg p-3 border border-[#7B9FA6]/10">
-                    <p className="text-xs text-[#3A3A3A] font-medium mb-1">
+                  <div className="bg-white rounded-lg p-3 border border-primary/10">
+                    <p className="text-xs text-foreground font-medium mb-1">
                       💡 適用場景：
                     </p>
-                    <ul className="text-xs text-[#6B6B6B] space-y-0.5">
+                    <ul className="text-xs text-muted-foreground space-y-0.5">
                       <li>• 資料庫結構升級後出現錯誤</li>
                       <li>• 本地資料損壞或不一致</li>
                       <li>• 想從雲端重新下載最新資料</li>
@@ -535,7 +535,7 @@ export default function SettingsPage() {
 
                 <button
                   onClick={handleClearLocalDatabase}
-                  className="w-full px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#d4183d] hover:bg-[#E5D6D8] transition-colors font-medium flex items-center justify-center gap-2"
+                  className="w-full px-4 py-3 rounded-2xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors font-medium flex items-center justify-center gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
                   清除本地資料
@@ -543,36 +543,36 @@ export default function SettingsPage() {
               </div>
 
               {/* 分隔線 */}
-              <div className="border-t border-[#7B9FA6]/10 my-6"></div>
+              <div className="border-t border-primary/10 my-6"></div>
 
               {/* 清除線上資料 */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Cloud className="w-5 h-5 text-[#7B9FA6]" />
-                  <h3 className="text-base font-medium text-[#3A3A3A]">
+                  <Cloud className="w-5 h-5 text-primary" />
+                  <h3 className="text-base font-medium text-foreground">
                     清除線上資料
                   </h3>
                 </div>
                 
                 <div className="bg-[#FFF0F0] rounded-xl p-4 mb-3">
-                  <p className="text-sm text-[#d4183d] mb-2 font-medium">
+                  <p className="text-sm text-danger mb-2 font-medium">
                     ☁️ 線上資料（Supabase）
                   </p>
-                  <ul className="text-xs text-[#6B6B6B] space-y-1 mb-3">
+                  <ul className="text-xs text-muted-foreground space-y-1 mb-3">
                     <li>• 儲存位置：Supabase 雲端資料庫</li>
                     <li>• 包含內容：所有市集、商品、統計、事件記錄</li>
                     <li>• 影響範圍：所有登入此帳號的設備</li>
                     <li>• 同步狀態：清除後無法恢復，除非有備份</li>
                   </ul>
-                  <div className="bg-white rounded-lg p-3 border border-[#d4183d]/20">
-                    <p className="text-xs text-[#d4183d] font-medium mb-1">
+                  <div className="bg-white rounded-lg p-3 border border-danger/20">
+                    <p className="text-xs text-danger font-medium mb-1">
                       ⚠️ 危險操作：
                     </p>
-                    <ul className="text-xs text-[#6B6B6B] space-y-0.5">
+                    <ul className="text-xs text-muted-foreground space-y-0.5">
                       <li>• 此操作會永久刪除雲端所有資料</li>
                       <li>• 所有設備的資料都會受影響</li>
                       <li>• 無法從雲端恢復資料</li>
-                      <li>• <strong className="text-[#d4183d]">本地資料也會同時清除</strong>（防止重新上傳）</li>
+                      <li>• <strong className="text-danger">本地資料也會同時清除</strong>（防止重新上傳）</li>
                       <li>• 建議先備份重要資料</li>
                     </ul>
                   </div>
@@ -581,7 +581,7 @@ export default function SettingsPage() {
                 <button
                   onClick={handleClearOnlineDatabase}
                   disabled={!user}
-                  className="w-full px-4 py-3 rounded-2xl bg-[#d4183d] text-white hover:bg-[#b01530] transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 rounded-2xl bg-danger text-white hover:bg-danger/80 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="w-4 h-4" />
                   {user ? '清除線上資料' : '請先登入 Supabase'}
@@ -590,30 +590,30 @@ export default function SettingsPage() {
 
               {/* 差異對比表 */}
               <div className="mt-6 bg-gradient-to-br from-[#E8F0F8] to-[#FFF8E7] rounded-xl p-4">
-                <p className="text-sm font-medium text-[#3A3A3A] mb-3">
+                <p className="text-sm font-medium text-foreground mb-3">
                   📊 功能對比
                 </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b border-[#7B9FA6]/20">
-                        <th className="text-left py-2 text-[#6B6B6B] font-medium">項目</th>
-                        <th className="text-center py-2 text-[#6B6B6B] font-medium">本地資料</th>
-                        <th className="text-center py-2 text-[#6B6B6B] font-medium">線上資料</th>
+                      <tr className="border-b border-primary/20">
+                        <th className="text-left py-2 text-muted-foreground font-medium">項目</th>
+                        <th className="text-center py-2 text-muted-foreground font-medium">本地資料</th>
+                        <th className="text-center py-2 text-muted-foreground font-medium">線上資料</th>
                       </tr>
                     </thead>
-                    <tbody className="text-[#3A3A3A]">
-                      <tr className="border-b border-[#7B9FA6]/10">
+                    <tbody className="text-foreground">
+                      <tr className="border-b border-primary/10">
                         <td className="py-2">儲存位置</td>
                         <td className="text-center">瀏覽器</td>
                         <td className="text-center">Supabase</td>
                       </tr>
-                      <tr className="border-b border-[#7B9FA6]/10">
+                      <tr className="border-b border-primary/10">
                         <td className="py-2">影響範圍</td>
                         <td className="text-center">當前設備</td>
                         <td className="text-center">所有設備</td>
                       </tr>
-                      <tr className="border-b border-[#7B9FA6]/10">
+                      <tr className="border-b border-primary/10">
                         <td className="py-2">可恢復性</td>
                         <td className="text-center text-green-600">可從雲端同步</td>
                         <td className="text-center text-red-600">無法恢復</td>

@@ -41,7 +41,7 @@ export function MarketAOVCard({
       case 3:
         return 'bg-gradient-to-br from-[#CD7F32] to-[#B8860B] text-white';
       default:
-        return 'bg-[#7B9FA6] text-white';
+        return 'bg-primary text-white';
     }
   };
 
@@ -56,7 +56,7 @@ export function MarketAOVCard({
   return (
     <div 
       onClick={handleClick}
-      className="bg-[#FAFAF8] rounded-xl p-3 hover:bg-[#F0F0EE] transition-all cursor-pointer border border-[#7B9FA6]/10 hover:border-[#7B9FA6]/30"
+      className="bg-background rounded-xl p-3 hover:bg-[#F0F0EE] transition-all cursor-pointer border border-primary/10 hover:border-primary/30"
     >
       {/* Header: 排名徽章 + 市集名稱（橫向，左對齊） */}
       <div className="flex items-center gap-3 mb-3">
@@ -64,12 +64,12 @@ export function MarketAOVCard({
           {getRankIcon(rank)}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className={`font-medium ${rank === 1 ? 'text-base' : 'text-sm'} text-[#3A3A3A] truncate`}>
+          <h3 className={`font-medium ${rank === 1 ? 'text-base' : 'text-sm'} text-foreground truncate`}>
             {market.name}
           </h3>
-          <div className="flex items-center gap-2 text-xs text-[#6B6B6B]">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="truncate">{market.location}</span>
-            <span className="text-[#7B9FA6]">•</span>
+            <span className="text-primary">•</span>
             <span className="flex-shrink-0">
               {market.dates && market.dates.length > 0 
                 ? market.dates.length === 1 
@@ -89,10 +89,10 @@ export function MarketAOVCard({
         {/* 客單價 */}
         <div className="bg-white rounded-lg p-2">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <DollarSign className="w-3 h-3 text-[#7B9FA6]" />
-            <span className="text-[10px] text-[#6B6B6B]">客單價</span>
+            <DollarSign className="w-3 h-3 text-primary" />
+            <span className="text-[10px] text-muted-foreground">客單價</span>
           </div>
-          <div className="text-xs font-bold tabular-nums text-center text-[#7B9FA6]">
+          <div className="text-xs font-bold tabular-nums text-center text-primary">
             {formatCurrency(Math.round(averageOrderValue))}
           </div>
         </div>
@@ -100,10 +100,10 @@ export function MarketAOVCard({
         {/* 總收入 */}
         <div className="bg-white rounded-lg p-2">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <TrendingUp className="w-3 h-3 text-[#D4A574]" />
-            <span className="text-[10px] text-[#6B6B6B]">總收入</span>
+            <TrendingUp className="w-3 h-3 text-secondary" />
+            <span className="text-[10px] text-muted-foreground">總收入</span>
           </div>
-          <div className="text-xs font-bold tabular-nums text-center text-[#3A3A3A]">
+          <div className="text-xs font-bold tabular-nums text-center text-foreground">
             {formatCurrency(Math.round(totalRevenue))}
           </div>
         </div>
@@ -111,10 +111,10 @@ export function MarketAOVCard({
         {/* 成交數 */}
         <div className="bg-white rounded-lg p-2">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <ShoppingCart className="w-3 h-3 text-[#D4A574]" />
-            <span className="text-[10px] text-[#6B6B6B]">成交數</span>
+            <ShoppingCart className="w-3 h-3 text-secondary" />
+            <span className="text-[10px] text-muted-foreground">成交數</span>
           </div>
-          <div className="text-xs font-bold tabular-nums text-center text-[#3A3A3A]">
+          <div className="text-xs font-bold tabular-nums text-center text-foreground">
             {totalDeals}
           </div>
         </div>

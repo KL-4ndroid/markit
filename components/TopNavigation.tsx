@@ -45,14 +45,14 @@ export function TopNavigation() {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-[#7B9FA6]/10 z-40">
+    <div className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-primary/10 z-40">
       <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo / Title */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] rounded-xl flex items-center justify-center">
+          <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center">
             <span className="text-white text-sm font-bold">市</span>
           </div>
-          <span className="text-sm font-medium text-[#3A3A3A]">市集誌</span>
+          <span className="text-sm font-medium text-foreground">市集誌</span>
         </div>
 
         {/* Right Side */}
@@ -65,14 +65,14 @@ export function TopNavigation() {
             <div className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 px-3 py-2 rounded-full bg-[#E8F3E8] hover:bg-[#D8E3D8] transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-full bg-soft-green hover:bg-soft-green/80 transition-colors"
               >
                 {userRole.isStaff ? (
-                  <Shield className="w-4 h-4 text-[#D4A574]" />
+                  <Shield className="w-4 h-4 text-secondary" />
                 ) : (
-                  <User className="w-4 h-4 text-[#7B9FA6]" />
+                  <User className="w-4 h-4 text-primary" />
                 )}
-                <span className="text-sm text-[#3A3A3A] max-w-[100px] truncate">
+                <span className="text-sm text-foreground max-w-[100px] truncate">
                   {user.email?.split('@')[0]}
                 </span>
               </button>
@@ -84,26 +84,26 @@ export function TopNavigation() {
                     className="fixed inset-0 z-40" 
                     onClick={() => setShowUserMenu(false)}
                   />
-                  <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-2 min-w-[240px] z-50 border border-[#7B9FA6]/10">
+                  <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-2 min-w-[240px] z-50 border border-primary/10">
                     {/* 用戶信息 */}
-                    <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
-                      <p className="text-xs text-[#6B6B6B]">登入為</p>
-                      <p className="text-sm font-medium text-[#3A3A3A] truncate">
+                    <div className="px-3 py-2 border-b border-primary/10">
+                      <p className="text-xs text-muted-foreground">登入為</p>
+                      <p className="text-sm font-medium text-foreground truncate">
                         {user.email}
                       </p>
                     </div>
 
                     {/* 訂閱狀態（僅老闆身份顯示） */}
                     {!userRole.isStaff && (
-                      <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
+                      <div className="px-3 py-2 border-b border-primary/10">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-[#6B6B6B]">目前方案</span>
+                          <span className="text-xs text-muted-foreground">目前方案</span>
                           {currentPlan === 'free' && (
-                            <Crown className="w-4 h-4 text-[#D4A574]" />
+                            <Crown className="w-4 h-4 text-secondary" />
                           )}
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-[#3A3A3A]">
+                          <span className="text-sm font-medium text-foreground">
                             {currentPlan === "free"
                               ? "免費版"
                               : currentPlan === "pro"
@@ -118,7 +118,7 @@ export function TopNavigation() {
                                 setShowUserMenu(false);
                                 router.push('/subscription');
                               }}
-                              className="text-xs text-[#7B9FA6] hover:underline"
+                              className="text-xs text-primary hover:underline"
                             >
                               升級
                             </button>
@@ -128,7 +128,7 @@ export function TopNavigation() {
                                 setShowUserMenu(false);
                                 router.push('/subscription');
                               }}
-                              className="text-xs text-[#7B9FA6] hover:underline"
+                              className="text-xs text-primary hover:underline"
                             >
                               管理
                             </button>
@@ -138,20 +138,20 @@ export function TopNavigation() {
                     )}
 
                     {/* 身份信息 */}
-                    <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
+                    <div className="px-3 py-2 border-b border-primary/10">
                       {userRole.isStaff ? (
                         <div>
                           <div className="flex items-center gap-2 mb-2">
-                            <Shield className="w-4 h-4 text-[#D4A574]" />
-                            <span className="text-sm font-medium text-[#3A3A3A]">
+                            <Shield className="w-4 h-4 text-secondary" />
+                            <span className="text-sm font-medium text-foreground">
                               員工身份
                             </span>
                           </div>
                           {/* 老闆信息 */}
                           {userRole.ownerEmail && (
-                            <div className="mb-2 p-2 bg-[#F0E8F3] rounded-lg">
-                              <p className="text-xs text-[#6B6B6B] mb-0.5">為以下老闆工作</p>
-                              <p className="text-sm font-medium text-[#3A3A3A] truncate">
+                            <div className="mb-2 p-2 bg-primary/10 rounded-lg">
+                              <p className="text-xs text-muted-foreground mb-0.5">為以下老闆工作</p>
+                              <p className="text-sm font-medium text-foreground truncate">
                                 {userRole.ownerEmail}
                               </p>
                             </div>
@@ -159,21 +159,21 @@ export function TopNavigation() {
                           <div className="flex items-center gap-2 text-xs">
                             {userRole.permissions?.can_edit ? (
                               <>
-                                <Edit3 className="w-3 h-3 text-[#7B9FA6]" />
-                                <span className="text-[#6B6B6B]">可編輯</span>
+                                <Edit3 className="w-3 h-3 text-primary" />
+                                <span className="text-muted-foreground">可編輯</span>
                               </>
                             ) : (
                               <>
-                                <Eye className="w-3 h-3 text-[#6B6B6B]" />
-                                <span className="text-[#6B6B6B]">僅查看</span>
+                                <Eye className="w-3 h-3 text-muted-foreground" />
+                                <span className="text-muted-foreground">僅查看</span>
                               </>
                             )}
                           </div>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-[#7B9FA6]" />
-                          <span className="text-sm font-medium text-[#3A3A3A]">
+                          <User className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium text-foreground">
                             老闆身份
                           </span>
                         </div>
@@ -183,10 +183,10 @@ export function TopNavigation() {
                     {/* 登出按鈕 */}
                     <button
                       onClick={handleSignOut}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#F5E6E8] transition-colors text-left"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-soft-pink transition-colors text-left"
                     >
-                      <LogOut className="w-4 h-4 text-[#d4183d]" />
-                      <span className="text-sm text-[#3A3A3A]">登出</span>
+                      <LogOut className="w-4 h-4 text-danger" />
+                      <span className="text-sm text-foreground">登出</span>
                     </button>
                   </div>
                 </>
@@ -195,7 +195,7 @@ export function TopNavigation() {
           ) : (
             <button
               onClick={handleLogin}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white hover:bg-primary/85 transition-colors"
             >
               <LogIn className="w-4 h-4" />
               <span className="text-sm font-medium">登入</span>

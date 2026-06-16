@@ -40,11 +40,11 @@ export function SensitiveDataMask({
   };
 
   return (
-    <div className={`bg-[#F0E8F3] rounded-xl ${sizeClasses[size]} relative overflow-hidden`}>
-      <div className="absolute inset-0 bg-gradient-to-r from-[#8B7BA6]/10 to-transparent"></div>
+    <div className={`bg-primary/10 rounded-xl ${sizeClasses[size]} relative overflow-hidden`}>
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent"></div>
       <div className="relative flex items-center justify-center gap-2">
-        <Icon className={`${iconSizes[size]} text-[#8B7BA6]`} />
-        <span className={`${textSizes[size]} text-[#6B6B6B] font-medium`}>
+        <Icon className={`${iconSizes[size]} text-primary`} />
+        <span className={`${textSizes[size]} text-muted-foreground font-medium`}>
           {label}
         </span>
       </div>

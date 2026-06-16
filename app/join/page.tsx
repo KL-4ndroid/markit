@@ -129,16 +129,16 @@ function JoinPageContent() {
     return (
       <JoinShell>
         <div className="text-center">
-          <WifiOff className="w-16 h-16 text-[#D4A574] mx-auto mb-4 opacity-60" />
-          <h2 className="text-xl font-medium text-[#3A3A3A] mb-2">
+          <WifiOff className="w-16 h-16 text-secondary mx-auto mb-4 opacity-60" />
+          <h2 className="text-xl font-medium text-foreground mb-2">
             需要網路連線
           </h2>
-          <p className="text-[#6B6B6B] text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             驗證邀請連結需要連線。請恢復網路後重新整理頁面。
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+            className="w-full bg-primary text-white py-3 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
           >
             重新整理
           </button>
@@ -155,16 +155,16 @@ function JoinPageContent() {
     return (
       <JoinShell>
         <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-[#d4183d] mx-auto mb-4 opacity-60" />
-          <h2 className="text-xl font-medium text-[#3A3A3A] mb-2">
+          <AlertCircle className="w-16 h-16 text-danger mx-auto mb-4 opacity-60" />
+          <h2 className="text-xl font-medium text-foreground mb-2">
             邀請連結無效
           </h2>
-          <p className="text-[#6B6B6B] text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             {error || '此邀請連結已過期或不存在，請聯繫邀請人重新發送。'}
           </p>
           <button
             onClick={() => router.push('/')}
-            className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+            className="w-full bg-primary text-white py-3 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
           >
             回到首頁
           </button>
@@ -176,48 +176,48 @@ function JoinPageContent() {
   return (
     <JoinShell>
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#E8F3E8] mb-4">
-          <CheckCircle className="w-8 h-8 text-[#7B9FA6]" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-soft-green mb-4">
+          <CheckCircle className="w-8 h-8 text-primary" />
         </div>
-        <h2 className="text-2xl font-medium text-[#3A3A3A] mb-2">
+        <h2 className="text-2xl font-medium text-foreground mb-2">
           加入市集團隊
         </h2>
-        <p className="text-[#6B6B6B] text-sm leading-relaxed">
-          <span className="font-medium text-[#7B9FA6]">{verification.owner_email}</span>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          <span className="font-medium text-primary">{verification.owner_email}</span>
           {' '}邀請你成為團隊員工，協助記錄市集資料。
         </p>
       </div>
 
-      <div className="bg-[#F0E8F3] rounded-2xl p-4 mb-6">
-        <h3 className="text-sm font-medium text-[#3A3A3A] mb-2">
+      <div className="bg-primary/10 rounded-2xl p-4 mb-6">
+        <h3 className="text-sm font-medium text-foreground mb-2">
           加入後你可以
         </h3>
-        <ul className="space-y-2 text-sm text-[#6B6B6B]">
+        <ul className="space-y-2 text-sm text-muted-foreground">
           <li>查看老闆授權的市集與商品資料</li>
           <li>協助記錄互動與成交</li>
           <li>同步你被授權範圍內的資料</li>
         </ul>
       </div>
 
-      <div className="bg-[#FFF8E7] rounded-2xl p-4 mb-6">
-        <h3 className="text-sm font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-[#D4A574]" />
+      <div className="bg-soft-yellow rounded-2xl p-4 mb-6">
+        <h3 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-secondary" />
           請確認帳號
         </h3>
         {user ? (
           <>
-            <p className="text-xs text-[#6B6B6B] mb-2">
+            <p className="text-xs text-muted-foreground mb-2">
               你目前登入的帳號是：
             </p>
-            <p className="text-sm font-medium text-[#3A3A3A] bg-white rounded-lg px-3 py-2 break-all">
+            <p className="text-sm font-medium text-foreground bg-white rounded-lg px-3 py-2 break-all">
               {user.email}
             </p>
-            <p className="text-xs text-[#6B6B6B] mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               你將用這個帳號加入 {verification.owner_email} 的團隊。
             </p>
           </>
         ) : (
-          <p className="text-xs text-[#6B6B6B] leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             請建立帳號後加入團隊。已有帳號的人，請先登入後再回到此邀請連結。
           </p>
         )}
@@ -228,7 +228,7 @@ function JoinPageContent() {
           <button
             onClick={handleAcceptInvitation}
             disabled={isAccepting || isSigningOut}
-            className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isAccepting ? (
               <>
@@ -246,7 +246,7 @@ function JoinPageContent() {
           <button
             onClick={handleSwitchAccount}
             disabled={isAccepting || isSigningOut}
-            className="w-full bg-[#F5E6E8] text-[#3A3A3A] py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-soft-pink text-foreground py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSigningOut ? '登出中...' : '不是這個帳號？登出切換'}
           </button>
@@ -255,13 +255,13 @@ function JoinPageContent() {
         <>
           <button
             onClick={handleRegister}
-            className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium flex items-center justify-center gap-2"
+            className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium flex items-center justify-center gap-2"
           >
             <Users className="w-5 h-5" />
             建立帳號並加入團隊
           </button>
 
-          <p className="text-xs text-center text-[#6B6B6B] mt-4">
+          <p className="text-xs text-center text-muted-foreground mt-4">
             註冊完成後會自動加入團隊，不需要額外設定。
           </p>
         </>
@@ -272,7 +272,7 @@ function JoinPageContent() {
 
 function JoinShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="max-w-md w-full bg-white rounded-[2rem] p-8 shadow-xl">
         {children}
       </div>

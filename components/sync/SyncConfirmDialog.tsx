@@ -83,31 +83,31 @@ export function SyncConfirmDialog({
             >
               <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="bg-[#7B9FA6]/10 p-3 rounded-full">
-                    <Cloud className="w-6 h-6 text-[#7B9FA6]" />
+                  <div className="bg-primary/10 p-3 rounded-full">
+                    <Cloud className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <Dialog.Title className="text-lg font-medium text-[#3A3A3A]">
+                    <Dialog.Title className="text-lg font-medium text-foreground">
                       資料同步設定
                     </Dialog.Title>
-                    <p className="text-sm text-[#6B6B6B]">
+                    <p className="text-sm text-muted-foreground">
                       選擇如何處理本地和雲端資料
                     </p>
                   </div>
                 </div>
 
                 {/* 資料統計 */}
-                <div className="bg-[#FAFAF8] rounded-xl p-4 mb-6">
+                <div className="bg-background rounded-xl p-4 mb-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-[#6B6B6B] mb-1">本地資料</p>
-                      <p className="text-2xl font-bold text-[#7B9FA6]">{localEventCount}</p>
-                      <p className="text-xs text-[#6B6B6B]">筆記錄</p>
+                      <p className="text-xs text-muted-foreground mb-1">本地資料</p>
+                      <p className="text-2xl font-bold text-primary">{localEventCount}</p>
+                      <p className="text-xs text-muted-foreground">筆記錄</p>
                     </div>
                     <div>
-                      <p className="text-xs text-[#6B6B6B] mb-1">雲端資料</p>
-                      <p className="text-2xl font-bold text-[#D4A574]">{cloudEventCount}</p>
-                      <p className="text-xs text-[#6B6B6B]">筆記錄</p>
+                      <p className="text-xs text-muted-foreground mb-1">雲端資料</p>
+                      <p className="text-2xl font-bold text-secondary">{cloudEventCount}</p>
+                      <p className="text-xs text-muted-foreground">筆記錄</p>
                     </div>
                   </div>
                 </div>
@@ -118,16 +118,16 @@ export function SyncConfirmDialog({
                   <button
                     onClick={() => handleAction('upload')}
                     disabled={isProcessing || localEventCount === 0}
-                    className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-[#7B9FA6]/20 hover:border-[#7B9FA6] hover:bg-[#7B9FA6]/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isProcessing && action === 'upload' ? (
-                      <Loader2 className="w-5 h-5 text-[#7B9FA6] animate-spin" />
+                      <Loader2 className="w-5 h-5 text-primary animate-spin" />
                     ) : (
-                      <Upload className="w-5 h-5 text-[#7B9FA6]" />
+                      <Upload className="w-5 h-5 text-primary" />
                     )}
                     <div className="flex-1 text-left">
-                      <p className="font-medium text-[#3A3A3A]">上傳本地資料到雲端</p>
-                      <p className="text-xs text-[#6B6B6B]">保留本地資料，同步到雲端</p>
+                      <p className="font-medium text-foreground">上傳本地資料到雲端</p>
+                      <p className="text-xs text-muted-foreground">保留本地資料，同步到雲端</p>
                     </div>
                   </button>
 
@@ -135,16 +135,16 @@ export function SyncConfirmDialog({
                   <button
                     onClick={() => handleAction('download')}
                     disabled={isProcessing || cloudEventCount === 0}
-                    className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-[#D4A574]/20 hover:border-[#D4A574] hover:bg-[#D4A574]/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-secondary/20 hover:border-secondary hover:bg-secondary/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isProcessing && action === 'download' ? (
-                      <Loader2 className="w-5 h-5 text-[#D4A574] animate-spin" />
+                      <Loader2 className="w-5 h-5 text-secondary animate-spin" />
                     ) : (
-                      <Download className="w-5 h-5 text-[#D4A574]" />
+                      <Download className="w-5 h-5 text-secondary" />
                     )}
                     <div className="flex-1 text-left">
-                      <p className="font-medium text-[#3A3A3A]">下載雲端資料到本地</p>
-                      <p className="text-xs text-[#6B6B6B]">合併雲端資料到本地</p>
+                      <p className="font-medium text-foreground">下載雲端資料到本地</p>
+                      <p className="text-xs text-muted-foreground">合併雲端資料到本地</p>
                     </div>
                   </button>
 
@@ -152,25 +152,25 @@ export function SyncConfirmDialog({
                   <button
                     onClick={() => handleAction('clear')}
                     disabled={isProcessing || localEventCount === 0}
-                    className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-[#d4183d]/20 hover:border-[#d4183d] hover:bg-[#d4183d]/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-danger/20 hover:border-danger hover:bg-danger/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isProcessing && action === 'clear' ? (
-                      <Loader2 className="w-5 h-5 text-[#d4183d] animate-spin" />
+                      <Loader2 className="w-5 h-5 text-danger animate-spin" />
                     ) : (
-                      <Trash2 className="w-5 h-5 text-[#d4183d]" />
+                      <Trash2 className="w-5 h-5 text-danger" />
                     )}
                     <div className="flex-1 text-left">
-                      <p className="font-medium text-[#3A3A3A]">清除本地資料</p>
-                      <p className="text-xs text-[#6B6B6B]">刪除本地資料，從雲端重新開始</p>
+                      <p className="font-medium text-foreground">清除本地資料</p>
+                      <p className="text-xs text-muted-foreground">刪除本地資料，從雲端重新開始</p>
                     </div>
                   </button>
                 </div>
 
                 {/* 警告提示 */}
-                <div className="bg-[#FFF8E7] border border-[#D4A574]/20 rounded-xl p-3 mb-4">
+                <div className="bg-soft-yellow border border-secondary/20 rounded-xl p-3 mb-4">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-[#D4A574] flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-[#3A3A3A]">
+                    <AlertCircle className="w-4 h-4 text-secondary flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-foreground">
                       <span className="font-medium">提示：</span>
                       建議先上傳本地資料，再下載雲端資料，以確保資料完整性。
                     </p>
@@ -181,7 +181,7 @@ export function SyncConfirmDialog({
                 <button
                   onClick={onClose}
                   disabled={isProcessing}
-                  className="w-full py-3 rounded-xl bg-[#F5F5F0] text-[#6B6B6B] hover:bg-[#ECECEC] transition-colors disabled:opacity-50"
+                  className="w-full py-3 rounded-xl bg-[#F5F5F0] text-muted-foreground hover:bg-[#ECECEC] transition-colors disabled:opacity-50"
                 >
                   稍後決定
                 </button>

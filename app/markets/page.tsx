@@ -183,8 +183,8 @@ export default function MarketsPage() {
   // DB 不健康
   if (dbStatus.ok === false) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8]">
-        <div className="bg-gradient-to-br from-[#D4A574] to-[#c49560] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="min-h-screen bg-background">
+        <div className="bg-gradient-to-br from-secondary to-secondary/85 pt-12 pb-8 px-6 rounded-b-[2rem]">
           <div className="max-w-lg mx-auto">
             <h1 className="text-2xl font-medium text-white opacity-90">
               資料庫異常
@@ -193,30 +193,30 @@ export default function MarketsPage() {
         </div>
 
         <div className="max-w-lg mx-auto px-6 -mt-4 pb-6">
-          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-[#D4A574]/10 text-center space-y-4">
+          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-secondary/10 text-center space-y-4">
             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
               <AlertCircle className="w-8 h-8 text-amber-600" />
             </div>
-            <h2 className="text-lg font-medium text-[#3A3A3A]">
+            <h2 className="text-lg font-medium text-foreground">
               本機資料庫無法正常存取
             </h2>
-            <p className="text-[#6B6B6B] text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               系統無法讀取本地資料庫，可能因瀏覽器儲存空間不足、隱私模式，或資料庫結構損壞。
             </p>
             {dbStatus.recoverable && (
-              <p className="text-[#6B6B6B] text-sm">
+              <p className="text-muted-foreground text-sm">
                 建議前往「資料修復」頁面嘗試還原資料庫。
               </p>
             )}
             <button
               onClick={() => router.push('/recovery')}
-              className="w-full bg-[#D4A574] text-white px-6 py-3 rounded-2xl hover:bg-[#c49560] transition-colors font-medium"
+              className="w-full bg-secondary text-white px-6 py-3 rounded-2xl hover:bg-secondary/85 transition-colors font-medium"
             >
               前往資料修復
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="w-full bg-[#F5E6E8] text-[#3A3A3A] px-6 py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors font-medium"
+              className="w-full bg-soft-pink text-foreground px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors font-medium"
             >
               重新整理頁面
             </button>
@@ -228,7 +228,7 @@ export default function MarketsPage() {
 
   // DB 健康，正常列表 UI
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
+    <div className="min-h-screen bg-background">
       {/* Header - ✅ 員工模式使用紫色漸變 */}
       <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
@@ -267,7 +267,7 @@ export default function MarketsPage() {
                 className={`px-2 py-2 rounded-xl text-xs font-medium transition-all ${
                   activeTab === tab.id
                     ? `${getPrimaryBgClass(isStaff)} text-white shadow-md`
-                    : 'text-[#6B6B6B] hover:bg-[#F5E6E8]'
+                    : 'text-muted-foreground hover:bg-soft-pink'
                 }`}
               >
                 <div>{tab.label}</div>
@@ -291,11 +291,11 @@ export default function MarketsPage() {
         ) : (
           /* 空狀態 - ✅ 員工模式使用紫色主題 */
           <div className={`bg-white rounded-[1.5rem] p-12 shadow-lg ${getShadowClass(isStaff)} text-center`}>
-            <Calendar className={`w-16 h-16 mx-auto mb-4 opacity-50 ${isStaff ? 'text-[#8B7BA6]' : 'text-[#7B9FA6]'}`} />
-            <h2 className="text-lg font-medium text-[#3A3A3A] mb-2">
+            <Calendar className={`w-16 h-16 mx-auto mb-4 opacity-50 ${isStaff ? 'text-primary' : 'text-primary'}`} />
+            <h2 className="text-lg font-medium text-foreground mb-2">
               {activeTab === 'all' ? (isStaff ? '目前沒有市集' : '尚未新增任何市集') : `沒有${tabs.find(t => t.id === activeTab)?.label}的市集`}
             </h2>
-            <p className="text-[#6B6B6B] text-sm mb-6">
+            <p className="text-muted-foreground text-sm mb-6">
               {activeTab === 'all' 
                 ? (isStaff ? '老闆尚未新增任何市集' : '點擊右上角的 + 按鈕開始新增您的第一個市集 ✨')
                 : '切換到其他分類查看更多市集'}

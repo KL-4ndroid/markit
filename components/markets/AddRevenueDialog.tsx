@@ -217,7 +217,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] p-6">
+          <div className="bg-gradient-to-br from-primary to-secondary p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-medium text-white">補登收入</h2>
@@ -240,7 +240,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                 onClick={() => setMode('simple')}
                 className={`flex-1 py-2 px-4 rounded-xl font-medium transition-all ${
                   mode === 'simple'
-                    ? 'bg-white text-[#7B9FA6] shadow-lg'
+                    ? 'bg-white text-primary shadow-lg'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
               >
@@ -250,7 +250,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                 onClick={() => setMode('full')}
                 className={`flex-1 py-2 px-4 rounded-xl font-medium transition-all ${
                   mode === 'full'
-                    ? 'bg-white text-[#7B9FA6] shadow-lg'
+                    ? 'bg-white text-primary shadow-lg'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
               >
@@ -266,8 +266,8 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
               <div className="space-y-4">
                 {/* 收入金額 */}
                 <div>
-                  <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                    收入金額 <span className="text-[#d4183d]">*</span>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    收入金額 <span className="text-danger">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -275,9 +275,9 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                       value={revenue}
                       onChange={(e) => setRevenue(e.target.value)}
                       placeholder="請輸入收入金額"
-                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 pr-12 text-lg focus:border-[#7B9FA6] focus:outline-none"
+                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 pr-12 text-lg focus:border-primary focus:outline-none"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6B6B]">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                       元
                     </span>
                   </div>
@@ -285,7 +285,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
 
                 {/* 成本金額 */}
                 <div>
-                  <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     成本金額（可選）
                   </label>
                   <div className="relative">
@@ -294,17 +294,17 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                       value={cost}
                       onChange={(e) => setCost(e.target.value)}
                       placeholder="請輸入成本金額"
-                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 pr-12 text-lg focus:border-[#7B9FA6] focus:outline-none"
+                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 pr-12 text-lg focus:border-primary focus:outline-none"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6B6B]">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                       元
                     </span>
                   </div>
                   {revenue && (
-                    <div className="mt-2 text-sm text-[#6B6B6B]">
+                    <div className="mt-2 text-sm text-muted-foreground">
                       → 利潤：
                       <span className={`font-medium ml-1 ${
-                        calculatedProfit >= 0 ? 'text-[#7B9FA6]' : 'text-[#d4183d]'
+                        calculatedProfit >= 0 ? 'text-primary' : 'text-danger'
                       }`}>
                         {formatCurrency(calculatedProfit)}
                       </span>
@@ -314,8 +314,8 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
 
                 {/* 成交次數 */}
                 <div>
-                  <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                    成交次數 <span className="text-[#d4183d]">*</span>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    成交次數 <span className="text-danger">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -323,9 +323,9 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                       value={dealCount}
                       onChange={(e) => setDealCount(e.target.value)}
                       min="1"
-                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 pr-12 text-lg focus:border-[#7B9FA6] focus:outline-none"
+                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 pr-12 text-lg focus:border-primary focus:outline-none"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B6B6B]">
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                       筆
                     </span>
                   </div>
@@ -333,22 +333,22 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
 
                 {/* 備註 */}
                 <div>
-                  <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     備註（可選）
                   </label>
                   <textarea
                     value={simpleNotes}
                     onChange={(e) => setSimpleNotes(e.target.value)}
                     placeholder="輸入備註..."
-                    className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 resize-none focus:border-[#7B9FA6] focus:outline-none"
+                    className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 resize-none focus:border-primary focus:outline-none"
                     rows={3}
                   />
                 </div>
 
                 {/* 提示 */}
-                <div className="bg-[#FFF8E7] border border-[#D4A574]/20 rounded-xl p-4 flex gap-3">
-                  <AlertCircle className="w-5 h-5 text-[#D4A574] flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-[#3A3A3A]">
+                <div className="bg-soft-yellow border border-secondary/20 rounded-xl p-4 flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-secondary flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-foreground">
                     <p className="font-semibold mb-1">💡 提示：</p>
                     <p>補登收入不會扣除商品庫存，僅用於記錄遺漏的收入資料。</p>
                   </div>
@@ -360,18 +360,18 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
               <div className="space-y-6">
                 {/* 商品選擇 */}
                 <div>
-                  <h3 className="text-sm font-medium text-[#3A3A3A] mb-3">選擇商品</h3>
+                  <h3 className="text-sm font-medium text-foreground mb-3">選擇商品</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {products?.map((product) => (
                       <button
                         key={product.id}
                         onClick={() => addToCart(product)}
-                        className="bg-[#F5F5F0] hover:bg-[#E8F3E8] rounded-xl p-3 text-left transition-colors"
+                        className="bg-[#F5F5F0] hover:bg-soft-green rounded-xl p-3 text-left transition-colors"
                       >
-                        <div className="text-sm font-medium text-[#3A3A3A] mb-1">
+                        <div className="text-sm font-medium text-foreground mb-1">
                           {product.name}
                         </div>
-                        <div className="text-xs text-[#7B9FA6]">
+                        <div className="text-xs text-primary">
                           {formatCurrency(product.price)}
                         </div>
                       </button>
@@ -382,7 +382,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                 {/* 購物車 */}
                 {cart.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-medium text-[#3A3A3A] mb-3">購物車</h3>
+                    <h3 className="text-sm font-medium text-foreground mb-3">購物車</h3>
                     <div className="space-y-3">
                       {cart.map((item) => (
                         <div
@@ -390,12 +390,12 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                           className="bg-white border-2 border-[#E8F3E8] rounded-xl p-4"
                         >
                           <div className="flex items-center justify-between mb-3">
-                            <div className="font-medium text-[#3A3A3A]">
+                            <div className="font-medium text-foreground">
                               {item.product.name}
                             </div>
                             <button
                               onClick={() => updateQuantity(item.product.id!, 0)}
-                              className="text-[#d4183d] text-sm hover:underline"
+                              className="text-danger text-sm hover:underline"
                             >
                               移除
                             </button>
@@ -404,11 +404,11 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                           <div className="grid grid-cols-2 gap-3">
                             {/* 數量 */}
                             <div>
-                              <label className="text-xs text-[#6B6B6B] mb-1 block">數量</label>
+                              <label className="text-xs text-muted-foreground mb-1 block">數量</label>
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => updateQuantity(item.product.id!, item.quantity - 1)}
-                                  className="w-8 h-8 rounded-lg bg-[#F5F5F0] hover:bg-[#E8F3E8] flex items-center justify-center"
+                                  className="w-8 h-8 rounded-lg bg-[#F5F5F0] hover:bg-soft-green flex items-center justify-center"
                                 >
                                   -
                                 </button>
@@ -420,7 +420,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                                 />
                                 <button
                                   onClick={() => updateQuantity(item.product.id!, item.quantity + 1)}
-                                  className="w-8 h-8 rounded-lg bg-[#F5F5F0] hover:bg-[#E8F3E8] flex items-center justify-center"
+                                  className="w-8 h-8 rounded-lg bg-[#F5F5F0] hover:bg-soft-green flex items-center justify-center"
                                 >
                                   +
                                 </button>
@@ -429,7 +429,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                             
                             {/* 單價 */}
                             <div>
-                              <label className="text-xs text-[#6B6B6B] mb-1 block">單價</label>
+                              <label className="text-xs text-muted-foreground mb-1 block">單價</label>
                               <input
                                 type="number"
                                 value={item.price}
@@ -440,8 +440,8 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                           </div>
                           
                           <div className="mt-3 pt-3 border-t border-[#E8F3E8] text-right">
-                            <span className="text-sm text-[#6B6B6B]">小計：</span>
-                            <span className="text-lg font-medium text-[#7B9FA6] ml-2">
+                            <span className="text-sm text-muted-foreground">小計：</span>
+                            <span className="text-lg font-medium text-primary ml-2">
                               {formatCurrency(item.price * item.quantity)}
                             </span>
                           </div>
@@ -454,7 +454,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                 {/* 支付方式 */}
                 {cart.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-medium text-[#3A3A3A] mb-3">支付方式</h3>
+                    <h3 className="text-sm font-medium text-foreground mb-3">支付方式</h3>
                     <div className="grid grid-cols-4 gap-2">
                       {[
                         { value: 'cash', label: '現金' },
@@ -467,8 +467,8 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                           onClick={() => setPaymentMethod(method.value as any)}
                           className={`py-2 rounded-xl text-sm font-medium transition-colors ${
                             paymentMethod === method.value
-                              ? 'bg-[#7B9FA6] text-white'
-                              : 'bg-[#F5F5F0] text-[#6B6B6B] hover:bg-[#E8F3E8]'
+                              ? 'bg-primary text-white'
+                              : 'bg-[#F5F5F0] text-muted-foreground hover:bg-soft-green'
                           }`}
                         >
                           {method.label}
@@ -481,21 +481,21 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                 {/* 備註 */}
                 {cart.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-medium text-[#3A3A3A] mb-3">備註（可選）</h3>
+                    <h3 className="text-sm font-medium text-foreground mb-3">備註（可選）</h3>
                     <textarea
                       value={fullNotes}
                       onChange={(e) => setFullNotes(e.target.value)}
                       placeholder="輸入備註..."
-                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 resize-none focus:border-[#7B9FA6] focus:outline-none"
+                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 resize-none focus:border-primary focus:outline-none"
                       rows={3}
                     />
                   </div>
                 )}
 
                 {/* 提示 */}
-                <div className="bg-[#FFF8E7] border border-[#D4A574]/20 rounded-xl p-4 flex gap-3">
-                  <AlertCircle className="w-5 h-5 text-[#D4A574] flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-[#3A3A3A]">
+                <div className="bg-soft-yellow border border-secondary/20 rounded-xl p-4 flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-secondary flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-foreground">
                     <p className="font-semibold mb-1">💡 提示：</p>
                     <p>補登收入不會扣除商品庫存，僅用於記錄遺漏的收入資料。</p>
                   </div>
@@ -510,8 +510,8 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
               {mode === 'simple' ? (
                 <>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-[#6B6B6B]">收入金額</span>
-                    <span className="text-2xl font-bold text-[#7B9FA6]">
+                    <span className="text-muted-foreground">收入金額</span>
+                    <span className="text-2xl font-bold text-primary">
                       {formatCurrency(parseFloat(revenue) || 0)}
                     </span>
                   </div>
@@ -519,7 +519,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                   <button
                     onClick={handleSimpleSubmit}
                     disabled={isSubmitting}
-                    className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors disabled:opacity-50 font-medium"
+                    className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors disabled:opacity-50 font-medium"
                   >
                     {isSubmitting ? '處理中...' : '確認補登'}
                   </button>
@@ -527,8 +527,8 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-[#6B6B6B]">總金額</span>
-                    <span className="text-2xl font-bold text-[#7B9FA6]">
+                    <span className="text-muted-foreground">總金額</span>
+                    <span className="text-2xl font-bold text-primary">
                       {formatCurrency(totalAmount)}
                     </span>
                   </div>
@@ -536,7 +536,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
                   <button
                     onClick={handleFullSubmit}
                     disabled={isSubmitting}
-                    className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors disabled:opacity-50 font-medium"
+                    className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors disabled:opacity-50 font-medium"
                   >
                     {isSubmitting ? '處理中...' : '確認補登'}
                   </button>

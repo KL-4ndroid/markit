@@ -139,19 +139,19 @@ export function LocalProjectionRepairPanel() {
             <Calculator size={20} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-[#3A3A3A]">本機統計投影修復</h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">
+            <h2 className="text-base font-semibold text-foreground">本機統計投影修復</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               用於本機已存在 deal_closed events，但 markets 或 dailyStats 被重複累加的情況。工具會用本機 events 重新計算統計，不修改雲端、不刪除 events。
             </p>
           </div>
         </div>
 
         {hasPreview && previewResult && (
-          <div className="space-y-3 rounded-md border border-[#E8E3D8] bg-[#FAFAF8] p-3 text-sm">
+          <div className="space-y-3 rounded-md border border-[#E8E3D8] bg-background p-3 text-sm">
             {previewResult.repaired.map(item => (
               <div key={item.marketId} className="space-y-1">
-                <p className="font-medium text-[#3A3A3A]">{item.marketId}</p>
-                <div className="grid gap-1 text-[#6B6B6B] sm:grid-cols-2">
+                <p className="font-medium text-foreground">{item.marketId}</p>
+                <div className="grid gap-1 text-muted-foreground sm:grid-cols-2">
                   <p>市場收入：{formatMoney(item.before.marketTotalRevenue)} → {formatMoney(item.after.marketTotalRevenue)}</p>
                   <p>市場成交：{item.before.marketTotalDeals} → {item.after.marketTotalDeals}</p>
                   <p>每日收入：{formatMoney(item.before.dailyStatsRevenue)} → {formatMoney(item.after.dailyStatsRevenue)}</p>
@@ -162,7 +162,7 @@ export function LocalProjectionRepairPanel() {
 
             {previewResult.skipped.length > 0 && (
               <div>
-                <p className="font-medium text-[#6B6B6B]">略過 ({previewResult.skipped.length})</p>
+                <p className="font-medium text-muted-foreground">略過 ({previewResult.skipped.length})</p>
                 {previewResult.skipped.slice(0, 8).map(item => (
                   <p key={`${item.marketId}-${item.reason}`} className="text-[#9B9B9B]">
                     {item.marketId}: {item.reason}
@@ -185,7 +185,7 @@ export function LocalProjectionRepairPanel() {
             <button
               type="button"
               onClick={handleDryRun}
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F3EE]"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
             >
               <Eye size={16} />
               預覽本機修復
@@ -196,7 +196,7 @@ export function LocalProjectionRepairPanel() {
             <button
               type="button"
               disabled
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-[#6B6B6B] opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-muted-foreground opacity-50"
             >
               <RefreshCw size={16} className="animate-spin" />
               {state === 'checking' ? '掃描中...' : '修復中...'}
@@ -209,7 +209,7 @@ export function LocalProjectionRepairPanel() {
                 <button
                   type="button"
                   onClick={handleExecute}
-                  className="inline-flex h-10 items-center gap-2 rounded-md bg-[#D4A574] px-3 text-sm font-medium text-white hover:bg-[#C4935F]"
+                  className="inline-flex h-10 items-center gap-2 rounded-md bg-secondary px-3 text-sm font-medium text-white hover:bg-[#C4935F]"
                 >
                   <Wrench size={16} />
                   執行本機修復 ({previewResult.repaired.length})
@@ -218,7 +218,7 @@ export function LocalProjectionRepairPanel() {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-[#3A3A3A] hover:bg-[#F5F3EE]"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
               >
                 取消
               </button>
@@ -245,13 +245,13 @@ function BlockedPanel({
     <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm opacity-70">
       <div className="flex items-start gap-3">
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-          danger ? 'bg-[#F5E6E8] text-[#B85C5C]' : 'bg-[#F0ECE4] text-[#6B6B6B]'
+          danger ? 'bg-soft-pink text-[#B85C5C]' : 'bg-[#F0ECE4] text-muted-foreground'
         }`}>
           {icon}
         </div>
         <div>
-          <h2 className="text-base font-semibold text-[#3A3A3A]">{title}</h2>
-          <p className="mt-1 text-sm text-[#6B6B6B]">{message}</p>
+          <h2 className="text-base font-semibold text-foreground">{title}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{message}</p>
         </div>
       </div>
     </section>

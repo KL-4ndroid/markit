@@ -46,9 +46,9 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
 
   // 分類選項
   const categories: { value: ProductCategory; label: string; emoji: string; color: string }[] = [
-    { value: 'handmade', label: '手作', emoji: '🖐️', color: 'bg-[#F5E6E8]' },
-    { value: 'food', label: '食品', emoji: '🍰', color: 'bg-[#FFF8E7]' },
-    { value: 'accessory', label: '飾品', emoji: '💎', color: 'bg-[#E8F3E8]' },
+    { value: 'handmade', label: '手作', emoji: '🖐️', color: 'bg-soft-pink' },
+    { value: 'food', label: '食品', emoji: '🍰', color: 'bg-soft-yellow' },
+    { value: 'accessory', label: '飾品', emoji: '💎', color: 'bg-soft-green' },
     { value: 'clothing', label: '服飾', emoji: '👕', color: 'bg-[#E8F0F8]' },
     { value: 'art', label: '藝術品', emoji: '🎨', color: 'bg-[#F8E8F0]' },
     { value: 'stationery', label: '文具', emoji: '📚', color: 'bg-[#FFF0E8]' },
@@ -120,9 +120,9 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
       <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
 
       <div className="fixed inset-0 z-50 flex justify-center p-4">
-        <div className="bg-[#FAFAF8] w-full h-[90vh] sm:h-auto rounded-[2rem] sm:max-h-[90vh] sm:max-w-lg sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
+        <div className="bg-background w-full h-[90vh] sm:h-auto rounded-[2rem] sm:max-h-[90vh] sm:max-w-lg sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
           {/* Header */}
-          <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] px-6 py-6 flex items-center justify-between">
+          <div className="bg-gradient-to-br from-primary to-secondary px-6 py-6 flex items-center justify-between">
             <h2 className="text-xl font-medium text-white">編輯商品</h2>
             <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
               <X className="w-5 h-5 text-white" />
@@ -134,24 +134,24 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
             <div className="space-y-5">
               {/* 商品名稱 */}
               <div>
-                <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                  商品名稱 <span className="text-[#d4183d]">*</span>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  商品名稱 <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
                   placeholder="例如：手工陶杯"
-                  className="w-full px-4 py-3 rounded-2xl border border-[#7B9FA6]/20 bg-white focus:outline-none focus:ring-2 focus:ring-[#7B9FA6]/50 text-[#3A3A3A]"
+                  className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                   required
                 />
               </div>
 
               {/* 分類選擇 */}
               <div>
-                <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                  <Tag className="w-4 h-4 inline mr-1 text-[#7B9FA6]" />
-                  分類 <span className="text-[#d4183d]">*</span>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <Tag className="w-4 h-4 inline mr-1 text-primary" />
+                  分類 <span className="text-danger">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {categories.map((cat) => (
@@ -161,13 +161,13 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                       onClick={() => handleChange('category', cat.value)}
                       className={`p-3 rounded-2xl border-2 transition-all ${
                         formData.category === cat.value
-                          ? 'border-[#7B9FA6] shadow-md'
+                          ? 'border-primary shadow-md'
                           : 'border-transparent'
                       } ${cat.color}`}
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{cat.emoji}</span>
-                        <span className="text-sm font-medium text-[#3A3A3A]">{cat.label}</span>
+                        <span className="text-sm font-medium text-foreground">{cat.label}</span>
                       </div>
                     </button>
                   ))}
@@ -177,9 +177,9 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
               {/* 價格與成本 */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                    <DollarSign className="w-4 h-4 inline mr-1 text-[#7B9FA6]" />
-                    售價 <span className="text-[#d4183d]">*</span>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    <DollarSign className="w-4 h-4 inline mr-1 text-primary" />
+                    售價 <span className="text-danger">*</span>
                   </label>
                   <input
                     type="number"
@@ -187,13 +187,13 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                     onChange={(e) => handleChange('price', Number(e.target.value))}
                     placeholder="0"
                     min="0"
-                    className="w-full px-4 py-3 rounded-2xl border border-[#7B9FA6]/20 bg-white focus:outline-none focus:ring-2 focus:ring-[#7B9FA6]/50 text-[#3A3A3A]"
+                    className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                    <DollarSign className="w-4 h-4 inline mr-1 text-[#D4A574]" />
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    <DollarSign className="w-4 h-4 inline mr-1 text-secondary" />
                     成本
                   </label>
                   <input
@@ -202,15 +202,15 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                     onChange={(e) => handleChange('cost', Number(e.target.value))}
                     placeholder="0"
                     min="0"
-                    className="w-full px-4 py-3 rounded-2xl border border-[#7B9FA6]/20 bg-white focus:outline-none focus:ring-2 focus:ring-[#7B9FA6]/50 text-[#3A3A3A]"
+                    className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                   />
                 </div>
               </div>
 
               {/* 庫存 */}
               <div>
-                <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                  <Package className="w-4 h-4 inline mr-1 text-[#7B9FA6]" />
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <Package className="w-4 h-4 inline mr-1 text-primary" />
                   庫存數量
                 </label>
                 
@@ -228,9 +228,9 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                           stock: unlimited ? 0 : prev.stock,
                         }));
                       }}
-                      className="w-4 h-4 rounded border-[#7B9FA6]/30 text-[#7B9FA6] focus:ring-[#7B9FA6]/50"
+                      className="w-4 h-4 rounded border-primary/30 text-primary focus:ring-primary/50"
                     />
-                    <span className="text-sm text-[#6B6B6B]">
+                    <span className="text-sm text-muted-foreground">
                       不限庫存（販售服務或接單訂製）
                     </span>
                   </label>
@@ -244,12 +244,12 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                     onChange={(e) => handleChange('stock', Number(e.target.value))}
                     placeholder="0"
                     min="0"
-                    className="w-full px-4 py-3 rounded-2xl border border-[#7B9FA6]/20 bg-white focus:outline-none focus:ring-2 focus:ring-[#7B9FA6]/50 text-[#3A3A3A]"
+                    className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                   />
                 )}
                 
                 {formData.unlimitedStock && (
-                  <div className="px-4 py-3 rounded-2xl border border-[#7B9FA6]/20 bg-[#F0F0F0] text-[#6B6B6B] text-center">
+                  <div className="px-4 py-3 rounded-2xl border border-primary/20 bg-[#F0F0F0] text-muted-foreground text-center">
                     ∞ 不限庫存
                   </div>
                 )}
@@ -257,8 +257,8 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
 
               {/* 描述 */}
               <div>
-                <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                  <FileText className="w-4 h-4 inline mr-1 text-[#7B9FA6]" />
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <FileText className="w-4 h-4 inline mr-1 text-primary" />
                   商品描述
                 </label>
                 <textarea
@@ -266,13 +266,13 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                   onChange={(e) => handleChange('description', e.target.value)}
                   placeholder="商品的詳細說明..."
                   rows={3}
-                  className="w-full px-4 py-3 rounded-2xl border border-[#7B9FA6]/20 bg-white focus:outline-none focus:ring-2 focus:ring-[#7B9FA6]/50 text-[#3A3A3A] resize-none"
+                  className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground resize-none"
                 />
               </div>
 
               {/* 停用/刪除區域 */}
-              <div className="pt-4 border-t border-[#7B9FA6]/10 space-y-3">
-                <p className="text-sm font-medium text-[#6B6B6B]">商品管理</p>
+              <div className="pt-4 border-t border-primary/10 space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">商品管理</p>
                 
                 {/* 停用/啟用按鈕 */}
                 <button
@@ -281,8 +281,8 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                   disabled={isSubmitting}
                   className={`w-full px-4 py-3 rounded-2xl transition-colors font-medium flex items-center justify-center gap-2 ${
                     formData.isActive
-                      ? 'bg-[#FFF8E7] text-[#D4A574] hover:bg-[#FFF0D4]'
-                      : 'bg-[#E8F3E8] text-[#7B9FA6] hover:bg-[#D8E3D8]'
+                      ? 'bg-soft-yellow text-secondary hover:bg-[#FFF0D4]'
+                      : 'bg-soft-green text-primary hover:bg-soft-green/80'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <Ban className="w-5 h-5" />
@@ -294,7 +294,7 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={isSubmitting}
-                  className="w-full px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#d4183d] hover:bg-[#E5D6D8] transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 rounded-2xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="w-5 h-5" />
                   刪除商品
@@ -304,12 +304,12 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
           </form>
 
           {/* 底部按鈕 - 固定在彈窗底部 */}
-          <div className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t border-[#7B9FA6]/10 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+          <div className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t border-primary/10 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium"
+                className="flex-1 px-6 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium"
               >
                 取消
               </button>
@@ -317,7 +317,7 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                 type="submit"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex-1 px-6 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? '更新中...' : '儲存變更'}
               </button>
@@ -355,25 +355,25 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel className="w-full max-w-sm transform overflow-hidden rounded-[1.5rem] bg-white p-6 shadow-xl transition-all">
-                  <Dialog.Title className="text-lg font-medium text-[#3A3A3A] mb-2">
+                  <Dialog.Title className="text-lg font-medium text-foreground mb-2">
                     確認刪除商品？
                   </Dialog.Title>
                   
-                  <Dialog.Description className="text-sm text-[#6B6B6B] mb-6">
+                  <Dialog.Description className="text-sm text-muted-foreground mb-6">
                     刪除後，此商品將被永久移除，此操作無法復原。
                   </Dialog.Description>
                   
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowDeleteConfirm(false)}
-                      className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors"
+                      className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors"
                     >
                       取消
                     </button>
                     <button
                       onClick={handleDelete}
                       disabled={isSubmitting}
-                      className="flex-1 px-4 py-3 rounded-2xl bg-[#d4183d] text-white hover:bg-[#c41739] transition-colors disabled:opacity-50"
+                      className="flex-1 px-4 py-3 rounded-2xl bg-danger text-white hover:bg-danger/85 transition-colors disabled:opacity-50"
                     >
                       {isSubmitting ? '刪除中...' : '確認刪除'}
                     </button>

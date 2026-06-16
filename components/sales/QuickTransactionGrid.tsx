@@ -34,13 +34,13 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
   // 分類樣式
   const getCategoryStyle = (category: string) => {
     const styles: Record<string, { bg: string; emoji: string }> = {
-      handmade: { bg: 'bg-[#FAFAF8]', emoji: '🧵' },
-      food: { bg: 'bg-[#FAFAF8]', emoji: '🍪' },
-      accessory: { bg: 'bg-[#FAFAF8]', emoji: '💎' },
-      clothing: { bg: 'bg-[#FAFAF8]', emoji: '👕' },
-      art: { bg: 'bg-[#FAFAF8]', emoji: '🎨' },
-      stationery: { bg: 'bg-[#FAFAF8]', emoji: '📚' },
-      other: { bg: 'bg-[#FAFAF8]', emoji: '📦' },
+      handmade: { bg: 'bg-background', emoji: '🧵' },
+      food: { bg: 'bg-background', emoji: '🍪' },
+      accessory: { bg: 'bg-background', emoji: '💎' },
+      clothing: { bg: 'bg-background', emoji: '👕' },
+      art: { bg: 'bg-background', emoji: '🎨' },
+      stationery: { bg: 'bg-background', emoji: '📚' },
+      other: { bg: 'bg-background', emoji: '📦' },
     };
     return styles[category] || styles.other;
   };
@@ -171,11 +171,11 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
   };
 
   return (
-    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
-          <ShoppingCart className="w-5 h-5 text-[#7B9FA6]" />
+        <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
+          <ShoppingCart className="w-5 h-5 text-primary" />
           商品銷售
         </h2>
         <div className="flex items-center gap-3">
@@ -183,7 +183,7 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
             <>
               <Link
                 href="/products"
-                className="text-sm text-[#7B9FA6] hover:underline font-medium"
+                className="text-sm text-primary hover:underline font-medium"
               >
                 管理商品
               </Link>
@@ -195,7 +195,7 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
             <button
               onClick={onToggle}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                isExpanded ? 'bg-[#7B9FA6]' : 'bg-gray-300'
+                isExpanded ? 'bg-primary' : 'bg-gray-300'
               }`}
             >
               <span
@@ -223,13 +223,13 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
                       <button
                         key={product.id}
                         onClick={() => addToCart(product)}
-                        className="bg-[#FAFAF8] hover:bg-[#7B9FA6]/10 border-2 border-[#7B9FA6]/15 rounded-[1.25rem] p-2 active:scale-95 transition-all"
+                        className="bg-background hover:bg-primary/10 border-2 border-primary/15 rounded-[1.25rem] p-2 active:scale-95 transition-all"
                       >
                         <div className="text-3xl mb-1">{categoryStyle.emoji}</div>
-                        <div className="text-xs font-medium mb-1 line-clamp-1 text-[#3A3A3A]">
+                        <div className="text-xs font-medium mb-1 line-clamp-1 text-foreground">
                           {product.name}
                         </div>
-                        <div className="text-xs text-[#7B9FA6] font-medium">
+                        <div className="text-xs text-primary font-medium">
                           ${product.price}
                         </div>
                       </button>
@@ -238,10 +238,10 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-sm text-[#6B6B6B] mb-2">尚無商品</p>
+                  <p className="text-sm text-muted-foreground mb-2">尚無商品</p>
                   <Link
                     href="/products"
-                    className="text-sm text-[#7B9FA6] hover:underline font-medium"
+                    className="text-sm text-primary hover:underline font-medium"
                   >
                     前往新增商品 →
                   </Link>
@@ -252,10 +252,10 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
 
           {/* 購物車區域 */}
           {cart.size > 0 && (
-            <div className="border-t border-[#7B9FA6]/10 pt-4 mt-4">
+            <div className="border-t border-primary/10 pt-4 mt-4">
               {/* 購物車標題 */}
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium text-[#3A3A3A]">購物車內容</h3>
+                <h3 className="font-medium text-foreground">購物車內容</h3>
                 <button
                   onClick={clearCart}
                   className="text-sm text-red-600 hover:text-red-700 font-medium"
@@ -272,15 +272,15 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
                   return (
                     <div
                       key={item.product.id}
-                      className="flex items-center justify-between bg-[#FAFAF8] rounded-xl p-3"
+                      className="flex items-center justify-between bg-background rounded-xl p-3"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{categoryStyle.emoji}</span>
                         <div>
-                          <div className="font-medium text-sm text-[#3A3A3A]">
+                          <div className="font-medium text-sm text-foreground">
                             {item.product.name}
                           </div>
-                          <div className="text-xs text-[#6B6B6B]">
+                          <div className="text-xs text-muted-foreground">
                             ${item.product.price}
                           </div>
                         </div>
@@ -288,16 +288,16 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => decreaseQuantity(item.product.id!)}
-                          className="bg-gray-300 hover:bg-gray-400 text-[#3A3A3A] w-7 h-7 rounded-full font-medium active:scale-95 transition-transform text-sm"
+                          className="bg-gray-300 hover:bg-gray-400 text-foreground w-7 h-7 rounded-full font-medium active:scale-95 transition-transform text-sm"
                         >
                           −
                         </button>
-                        <span className="w-6 text-center font-medium text-sm text-[#3A3A3A]">
+                        <span className="w-6 text-center font-medium text-sm text-foreground">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => increaseQuantity(item.product.id!)}
-                          className="bg-[#7B9FA6] hover:bg-[#7B9FA6]/90 text-white w-7 h-7 rounded-full font-medium active:scale-95 transition-transform text-sm"
+                          className="bg-primary hover:bg-primary/90 text-white w-7 h-7 rounded-full font-medium active:scale-95 transition-transform text-sm"
                         >
                           +
                         </button>
@@ -308,10 +308,10 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
               </div>
 
               {/* 總計 */}
-              <div className="bg-[#7B9FA6]/10 rounded-xl p-3 mb-3">
+              <div className="bg-primary/10 rounded-xl p-3 mb-3">
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-sm text-[#3A3A3A]">總計</span>
-                  <span className="text-xl font-medium text-[#7B9FA6]">
+                  <span className="font-medium text-sm text-foreground">總計</span>
+                  <span className="text-xl font-medium text-primary">
                     ${totalAmount.toLocaleString()}
                   </span>
                 </div>
@@ -322,28 +322,28 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
                 <button
                   onClick={() => handlePayment('cash')}
                   disabled={isProcessing}
-                  className="bg-[#E8F3E8] hover:bg-[#D8E3D8] active:scale-95 text-[#3A3A3A] py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-soft-green hover:bg-soft-green/80 active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   💵 現金
                 </button>
                 <button
                   onClick={() => handlePayment('mobile')}
                   disabled={isProcessing}
-                  className="bg-[#E8F0F8] hover:bg-[#D8E0E8] active:scale-95 text-[#3A3A3A] py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-[#E8F0F8] hover:bg-[#D8E0E8] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   📱 電子支付
                 </button>
                 <button
                   onClick={() => handlePayment('card')}
                   disabled={isProcessing}
-                  className="bg-[#FFF8E7] hover:bg-[#EFE8D7] active:scale-95 text-[#3A3A3A] py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-soft-yellow hover:bg-[#EFE8D7] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   🏦 轉帳
                 </button>
                 <button
                   onClick={() => handlePayment('other')}
                   disabled={isProcessing}
-                  className="bg-[#F8E8F0] hover:bg-[#E8D8E0] active:scale-95 text-[#3A3A3A] py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-[#F8E8F0] hover:bg-[#E8D8E0] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   💳 其他
                 </button>

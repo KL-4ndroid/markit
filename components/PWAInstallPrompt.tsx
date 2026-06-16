@@ -96,48 +96,48 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
       <div className="fixed inset-0 bg-black/50 z-[100] flex items-end sm:items-center sm:justify-center p-4 animate-fade-in">
         <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full max-w-md p-6 animate-slide-up">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-[#3A3A3A]">安裝市集誌到主畫面</h3>
+            <h3 className="text-lg font-medium text-foreground">安裝市集誌到主畫面</h3>
             <button
               onClick={handleDismiss}
-              className="p-2 rounded-full hover:bg-[#F5E6E8] transition-colors"
+              className="p-2 rounded-full hover:bg-soft-pink transition-colors"
             >
-              <X className="w-5 h-5 text-[#6B6B6B]" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
 
-          <p className="text-sm text-[#6B6B6B] mb-6">
+          <p className="text-sm text-muted-foreground mb-6">
             將市集誌加入主畫面，享受更快速的啟動和更好的使用體驗！
           </p>
 
           <div className="space-y-4 mb-6">
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#7B9FA6] text-white flex items-center justify-center text-sm font-medium">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">
                 1
               </div>
               <div className="flex-1">
-                <p className="text-sm text-[#3A3A3A]">
+                <p className="text-sm text-foreground">
                   點擊底部的 <Share className="w-4 h-4 inline text-[#007AFF]" /> <strong>分享</strong> 按鈕
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#7B9FA6] text-white flex items-center justify-center text-sm font-medium">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">
                 2
               </div>
               <div className="flex-1">
-                <p className="text-sm text-[#3A3A3A]">
+                <p className="text-sm text-foreground">
                   向下滾動並選擇 <strong>「加入主畫面」</strong>
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#7B9FA6] text-white flex items-center justify-center text-sm font-medium">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">
                 3
               </div>
               <div className="flex-1">
-                <p className="text-sm text-[#3A3A3A]">
+                <p className="text-sm text-foreground">
                   點擊右上角的 <strong>「加入」</strong> 完成安裝
                 </p>
               </div>
@@ -145,14 +145,14 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
           </div>
 
           <div className="bg-[#E8F0F8] rounded-xl p-4">
-            <p className="text-xs text-[#6B6B6B]">
+            <p className="text-xs text-muted-foreground">
               💡 安裝後，您可以像使用一般 App 一樣從主畫面啟動市集誌，享受更流暢的體驗！
             </p>
           </div>
 
           <button
             onClick={handleDismiss}
-            className="w-full mt-4 px-6 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium"
+            className="w-full mt-4 px-6 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium"
           >
             我知道了
           </button>
@@ -167,28 +167,28 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
       <div className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-[100] animate-slide-up">
         <div className="bg-white rounded-[1.5rem] p-6 shadow-xl">
           <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] flex items-center justify-center">
+            <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
               <Download className="w-6 h-6 text-white" />
             </div>
 
             <div className="flex-1">
-              <h3 className="text-base font-medium text-[#3A3A3A] mb-1">
+              <h3 className="text-base font-medium text-foreground mb-1">
                 安裝市集誌
               </h3>
-              <p className="text-sm text-[#6B6B6B] mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 安裝到您的裝置，享受更快速的啟動和離線使用！
               </p>
 
               <div className="flex gap-2">
                 <button
                   onClick={handleInstall}
-                  className="flex-1 px-4 py-2 rounded-xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium text-sm"
+                  className="flex-1 px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium text-sm"
                 >
                   立即安裝
                 </button>
                 <button
                   onClick={handleDismiss}
-                  className="px-4 py-2 rounded-xl bg-[#F5E6E8] text-[#6B6B6B] hover:bg-[#E5D6D8] transition-colors font-medium text-sm"
+                  className="px-4 py-2 rounded-xl bg-soft-pink text-muted-foreground hover:bg-soft-pink/80 transition-colors font-medium text-sm"
                 >
                   稍後
                 </button>
@@ -197,9 +197,9 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
 
             <button
               onClick={handleDismiss}
-              className="flex-shrink-0 p-1 rounded-full hover:bg-[#F5E6E8] transition-colors"
+              className="flex-shrink-0 p-1 rounded-full hover:bg-soft-pink transition-colors"
             >
-              <X className="w-5 h-5 text-[#6B6B6B]" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
         </div>

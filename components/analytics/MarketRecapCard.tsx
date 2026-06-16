@@ -13,10 +13,10 @@ const resultLabels = {
 } as const;
 
 const resultStyles = {
-  strong: 'bg-[#E8F3E8] text-[#3A3A3A]',
-  watch: 'bg-[#FFF8E7] text-[#3A3A3A]',
-  needs_adjustment: 'bg-[#FFF4E5] text-[#3A3A3A]',
-  not_enough_data: 'bg-[#F5F5F3] text-[#6B6B6B]',
+  strong: 'bg-soft-green text-foreground',
+  watch: 'bg-soft-yellow text-foreground',
+  needs_adjustment: 'bg-[#FFF4E5] text-foreground',
+  not_enough_data: 'bg-[#F5F5F3] text-muted-foreground',
 } as const;
 
 function TextList({ title, items }: { title: string; items: string[] }) {
@@ -24,11 +24,11 @@ function TextList({ title, items }: { title: string; items: string[] }) {
 
   return (
     <div>
-      <p className="text-xs font-medium text-[#6B6B6B] mb-2">{title}</p>
+      <p className="text-xs font-medium text-muted-foreground mb-2">{title}</p>
       <div className="space-y-2">
         {items.map((item, index) => (
-          <div key={`${title}-${index}`} className="flex gap-2 text-sm text-[#3A3A3A] leading-relaxed">
-            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#7B9FA6] flex-shrink-0" />
+          <div key={`${title}-${index}`} className="flex gap-2 text-sm text-foreground leading-relaxed">
+            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
             <span>{item}</span>
           </div>
         ))}
@@ -39,14 +39,14 @@ function TextList({ title, items }: { title: string; items: string[] }) {
 
 export function MarketRecapCard({ report }: MarketRecapCardProps) {
   return (
-    <section className="bg-white rounded-[1.5rem] p-5 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+    <section className="bg-white rounded-[1.5rem] p-5 shadow-lg shadow-primary/10 mb-6">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <p className="text-xs font-medium text-[#7B9FA6] mb-1">回顧報告</p>
-          <h2 className="text-xl font-semibold text-[#3A3A3A]">{report.title}</h2>
+          <p className="text-xs font-medium text-primary mb-1">回顧報告</p>
+          <h2 className="text-xl font-semibold text-foreground">{report.title}</h2>
         </div>
-        <div className="w-10 h-10 rounded-full bg-[#E8F3E8] flex items-center justify-center flex-shrink-0">
-          <ClipboardList className="w-5 h-5 text-[#7B9FA6]" />
+        <div className="w-10 h-10 rounded-full bg-soft-green flex items-center justify-center flex-shrink-0">
+          <ClipboardList className="w-5 h-5 text-primary" />
         </div>
       </div>
 
@@ -54,27 +54,27 @@ export function MarketRecapCard({ report }: MarketRecapCardProps) {
         <span className={`text-xs px-3 py-1 rounded-full ${resultStyles[report.resultLabel]}`}>
           {resultLabels[report.resultLabel]}
         </span>
-        <span className="text-xs px-3 py-1 rounded-full bg-[#F5F5F3] text-[#3A3A3A]">
+        <span className="text-xs px-3 py-1 rounded-full bg-[#F5F5F3] text-foreground">
           {report.confidence === 'high' ? '信心較高' : report.confidence === 'medium' ? '信心中等' : '信心較低'}
         </span>
       </div>
 
-      <p className="text-sm text-[#3A3A3A] leading-relaxed mb-5">{report.summary}</p>
+      <p className="text-sm text-foreground leading-relaxed mb-5">{report.summary}</p>
 
       <div className="space-y-5">
         <TextList title="主要發現" items={report.highlights} />
         <TextList title="可以改善的地方" items={report.opportunities} />
 
         {report.nextActions.length > 0 && (
-          <div className="bg-[#FAFAF8] rounded-xl p-4">
+          <div className="bg-background rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Target className="w-4 h-4 text-[#D4A574]" />
-              <p className="text-sm font-medium text-[#3A3A3A]">下次可以這樣做</p>
+              <Target className="w-4 h-4 text-secondary" />
+              <p className="text-sm font-medium text-foreground">下次可以這樣做</p>
             </div>
             <ol className="space-y-2">
               {report.nextActions.map((action, index) => (
-                <li key={action} className="flex gap-2 text-sm text-[#3A3A3A] leading-relaxed">
-                  <span className="font-semibold text-[#7B9FA6]">{index + 1}.</span>
+                <li key={action} className="flex gap-2 text-sm text-foreground leading-relaxed">
+                  <span className="font-semibold text-primary">{index + 1}.</span>
                   <span>{action}</span>
                 </li>
               ))}

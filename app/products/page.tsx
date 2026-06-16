@@ -161,10 +161,10 @@ export default function ProductsPage() {
   // 初始化中
   if (dbStatus === null) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#7B9FA6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#6B6B6B]">載入中...</p>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">載入中...</p>
         </div>
       </div>
     );
@@ -173,8 +173,8 @@ export default function ProductsPage() {
   // DB 不健康
   if (dbStatus.ok === false) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8]">
-        <div className="bg-gradient-to-br from-[#D4A574] to-[#c49560] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="min-h-screen bg-background">
+        <div className="bg-gradient-to-br from-secondary to-secondary/85 pt-12 pb-8 px-6 rounded-b-[2rem]">
           <div className="max-w-lg mx-auto">
             <h1 className="text-2xl font-medium text-white opacity-90">
               資料庫異常
@@ -183,30 +183,30 @@ export default function ProductsPage() {
         </div>
 
         <div className="max-w-lg mx-auto px-6 -mt-4 pb-6">
-          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-[#D4A574]/10 text-center space-y-4">
+          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-secondary/10 text-center space-y-4">
             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
               <AlertCircle className="w-8 h-8 text-amber-600" />
             </div>
-            <h2 className="text-lg font-medium text-[#3A3A3A]">
+            <h2 className="text-lg font-medium text-foreground">
               本機資料庫無法正常存取
             </h2>
-            <p className="text-[#6B6B6B] text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               系統無法讀取本地資料庫，可能因瀏覽器儲存空間不足、隱私模式，或資料庫結構損壞。
             </p>
             {dbStatus.recoverable && (
-              <p className="text-[#6B6B6B] text-sm">
+              <p className="text-muted-foreground text-sm">
                 建議前往「資料修復」頁面嘗試還原資料庫。
               </p>
             )}
             <button
               onClick={() => router.push('/recovery')}
-              className="w-full bg-[#D4A574] text-white px-6 py-3 rounded-2xl hover:bg-[#c49560] transition-colors font-medium"
+              className="w-full bg-secondary text-white px-6 py-3 rounded-2xl hover:bg-secondary/85 transition-colors font-medium"
             >
               前往資料修復
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="w-full bg-[#F5E6E8] text-[#3A3A3A] px-6 py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors font-medium"
+              className="w-full bg-soft-pink text-foreground px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors font-medium"
             >
               重新整理頁面
             </button>
@@ -219,7 +219,7 @@ export default function ProductsPage() {
   // DB 健康，正常列表 UI
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
+    <div className="min-h-screen bg-background">
       {/* Header - ✅ 員工模式使用紫色漸變 */}
       <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
@@ -251,15 +251,15 @@ export default function ProductsPage() {
         {/* 搜尋框 - ✅ 員工模式使用紫色主題 */}
         <div className={`bg-white rounded-[1.5rem] p-4 shadow-lg ${getShadowClass(isStaff)} mb-4`}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#6B6B6B]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜尋商品名稱或描述..."
-              className={`w-full pl-10 pr-4 py-2 rounded-xl bg-[#FAFAF8] focus:outline-none focus:ring-2 ${
-                isStaff ? 'focus:ring-[#8B7BA6]/50' : 'focus:ring-[#7B9FA6]/50'
-              } text-[#3A3A3A]`}
+              className={`w-full pl-10 pr-4 py-2 rounded-xl bg-background focus:outline-none focus:ring-2 ${
+                isStaff ? 'focus:ring-primary/50' : 'focus:ring-primary/50'
+              } text-foreground`}
             />
           </div>
         </div>
@@ -275,7 +275,7 @@ export default function ProductsPage() {
                   className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${
                     activeTab === tab.id
                       ? `${getPrimaryBgClass(isStaff)} text-white shadow-md`
-                      : 'text-[#6B6B6B] hover:bg-[#F5E6E8]'
+                      : 'text-muted-foreground hover:bg-soft-pink'
                   }`}
                 >
                   <span className="mr-1">{tab.emoji}</span>
@@ -300,11 +300,11 @@ export default function ProductsPage() {
         ) : (
           /* 空狀態 - ✅ 員工模式使用紫色主題 */
           <div className={`bg-white rounded-[1.5rem] p-12 shadow-lg ${getShadowClass(isStaff)} text-center`}>
-            <Package className={`w-16 h-16 mx-auto mb-4 opacity-50 ${isStaff ? 'text-[#8B7BA6]' : 'text-[#7B9FA6]'}`} />
-            <h2 className="text-lg font-medium text-[#3A3A3A] mb-2">
+            <Package className={`w-16 h-16 mx-auto mb-4 opacity-50 ${isStaff ? 'text-primary' : 'text-primary'}`} />
+            <h2 className="text-lg font-medium text-foreground mb-2">
               {searchQuery ? '找不到符合的商品' : activeTab === 'all' ? (isStaff ? '目前沒有商品' : '尚未新增任何商品') : `沒有${visibleTabs.find(t => t.id === activeTab)?.label}類商品`}
             </h2>
-            <p className="text-[#6B6B6B] text-sm mb-6">
+            <p className="text-muted-foreground text-sm mb-6">
               {searchQuery 
                 ? '試試其他關鍵字或清除搜尋'
                 : activeTab === 'all' 

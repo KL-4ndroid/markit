@@ -6,10 +6,10 @@
  * - 僅當 pendingEvents >= 5 時才顯示大彈窗
  * - 否則僅顯示小指示器
  * 
- * 顏色邏輯：
- * - 同步中且事件 < 5：#E8F3E8 (柔綠色) 呼吸閃爍
- * - 離線狀態：#D4A574 (溫暖木色) 靜態
- * - 同步失敗：#F5E6E8 (柔粉色) 警告圖示
+ * 顏色邏輯（使用 Tailwind token / CSS 變數）：
+ * - 同步中且事件 < 5：bg-soft-green 呼吸閃爍
+ * - 離線狀態：bg-secondary 靜態
+ * - 同步失敗：bg-soft-pink 警告圖示
  */
 
 'use client';
@@ -99,7 +99,7 @@ export function SyncStatusIndicator() {
     if (status === SyncStatusEnum.SYNCING) {
       console.log('🟢 [SyncStatusIndicator] 同步中:', { pendingCount, status });
       return {
-        bg: 'bg-[#E8F3E8]',
+        bg: 'bg-soft-green',
         ring: 'ring-[#E8F3E8]',
         animate: 'animate-pulse',
       };
@@ -109,8 +109,8 @@ export function SyncStatusIndicator() {
       // 離線狀態：溫暖木色靜態
       console.log('🟠 [SyncStatusIndicator] 離線模式:', { isOnline });
       return {
-        bg: 'bg-[#D4A574]',
-        ring: 'ring-[#D4A574]',
+        bg: 'bg-secondary',
+        ring: 'ring-secondary',
         animate: '',
       };
     }
@@ -119,7 +119,7 @@ export function SyncStatusIndicator() {
       // 同步失敗：柔粉色
       console.log('🔴 [SyncStatusIndicator] 錯誤模式:', { error });
       return {
-        bg: 'bg-[#F5E6E8]',
+        bg: 'bg-soft-pink',
         ring: 'ring-[#F5E6E8]',
         animate: '',
       };
@@ -127,7 +127,7 @@ export function SyncStatusIndicator() {
 
     // 成功或閒置：柔綠色靜態
     return {
-      bg: 'bg-[#E8F3E8]',
+      bg: 'bg-soft-green',
       ring: 'ring-[#E8F3E8]',
       animate: '',
     };
@@ -178,7 +178,7 @@ export function SyncStatusIndicator() {
 
         {/* 待同步數量徽章（僅當 > 0 時顯示） */}
         {pendingCount > 0 && (
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#7B9FA6] rounded-full flex items-center justify-center">
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full flex items-center justify-center">
             <span className="text-[8px] text-white font-bold">
               {pendingCount > 9 ? '9+' : pendingCount}
             </span>
@@ -187,7 +187,7 @@ export function SyncStatusIndicator() {
 
         {/* Hover Tooltip - 增加「點擊同步」提示 */}
         <div className="absolute top-full mt-2 right-0 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-          <div className="bg-[#3A3A3A] text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
+          <div className="bg-foreground text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
             {(status === SyncStatusEnum.SYNCING || isClickLocked) && `同步中 (${pendingCount} 個事件)`}
             {status === SyncStatusEnum.SUCCESS && !isClickLocked && '已同步 · 點擊重新同步'}
             {status === SyncStatusEnum.ERROR && !isClickLocked && '同步失敗 · 點擊重試'}
@@ -212,12 +212,12 @@ export function SyncStatusIndicator() {
 
             {/* 標題 */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
                 <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-[#3A3A3A]">正在同步資料</h3>
-                <p className="text-sm text-[#6B6B6B]">請稍候，資料同步中...</p>
+                <h3 className="text-lg font-medium text-foreground">正在同步資料</h3>
+                <p className="text-sm text-muted-foreground">請稍候，資料同步中...</p>
               </div>
             </div>
 
@@ -227,21 +227,21 @@ export function SyncStatusIndicator() {
               {uploadProgress && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-[#6B6B6B]">上傳事件</span>
-                    <span className="text-sm font-medium text-[#7B9FA6]">
+                    <span className="text-sm text-muted-foreground">上傳事件</span>
+                    <span className="text-sm font-medium text-primary">
                       {uploadProgress.current} / {uploadProgress.total}
                     </span>
                   </div>
                   <div className="h-2 bg-[#F0F0F0] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-[#7B9FA6] to-[#D4A574] transition-all duration-300"
+                      className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300"
                       style={{
                         width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
                       }}
                     />
                   </div>
                   {uploadProgress.currentItem && (
-                    <p className="text-xs text-[#6B6B6B] mt-1 truncate">
+                    <p className="text-xs text-muted-foreground mt-1 truncate">
                       {uploadProgress.currentItem}
                     </p>
                   )}
@@ -252,23 +252,23 @@ export function SyncStatusIndicator() {
               {downloadProgress && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-[#6B6B6B]">
+                    <span className="text-sm text-muted-foreground">
                       {downloadProgress.phase === 'snapshot' ? '載入快照' : '下載事件'}
                     </span>
-                    <span className="text-sm font-medium text-[#7B9FA6]">
+                    <span className="text-sm font-medium text-primary">
                       {downloadProgress.current} / {downloadProgress.total}
                     </span>
                   </div>
                   <div className="h-2 bg-[#F0F0F0] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-[#D4A574] to-[#7B9FA6] transition-all duration-300"
+                      className="h-full bg-gradient-to-r from-secondary to-primary transition-all duration-300"
                       style={{
                         width: `${(downloadProgress.current / downloadProgress.total) * 100}%`,
                       }}
                     />
                   </div>
                   {downloadProgress.currentItem && (
-                    <p className="text-xs text-[#6B6B6B] mt-1 truncate">
+                    <p className="text-xs text-muted-foreground mt-1 truncate">
                       {downloadProgress.currentItem}
                     </p>
                   )}
@@ -277,7 +277,7 @@ export function SyncStatusIndicator() {
             </div>
 
             {/* 提示文字 */}
-            <p className="text-xs text-[#6B6B6B] mt-4 text-center">
+            <p className="text-xs text-muted-foreground mt-4 text-center">
               💡 同步完成後會自動關閉
             </p>
           </div>

@@ -103,7 +103,7 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
           time: `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`,
           description: button?.label || interactionType,
           emoji: button?.emoji || '📝',
-          color: 'text-[#8B7BA6]',
+          color: 'text-primary',
         });
       });
 
@@ -131,7 +131,7 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
           description,
           amount,
           emoji: '💰',
-          color: 'text-[#7B9FA6]',
+          color: 'text-primary',
         });
       });
 
@@ -202,28 +202,28 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
-        <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A] mb-4">
-          <Clock className="w-5 h-5 text-[#7B9FA6]" />
+      <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+        <h2 className="text-lg font-medium flex items-center gap-2 text-foreground mb-4">
+          <Clock className="w-5 h-5 text-primary" />
           當日流水帳
         </h2>
         <div className="text-center py-8">
-          <div className="w-8 h-8 border-4 border-[#7B9FA6] border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-sm text-[#6B6B6B] mt-2">載入中...</p>
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-sm text-muted-foreground mt-2">載入中...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
-          <Clock className="w-5 h-5 text-[#7B9FA6]" />
+        <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
+          <Clock className="w-5 h-5 text-primary" />
           當日流水帳
         </h2>
-        <div className="text-xs text-[#6B6B6B]">
+        <div className="text-xs text-muted-foreground">
           {new Date(getTargetDate()).toLocaleDateString('zh-TW', { 
             month: 'long', 
             day: 'numeric' 
@@ -233,34 +233,34 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
 
       {/* 統計摘要 */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-[#7B9FA6]/10 rounded-xl p-3 text-center">
-          <div className="text-lg font-bold text-[#7B9FA6]">{totalDeals}</div>
-          <div className="text-xs text-[#6B6B6B] mt-1">成交</div>
+        <div className="bg-primary/10 rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-primary">{totalDeals}</div>
+          <div className="text-xs text-muted-foreground mt-1">成交</div>
         </div>
-        <div className="bg-[#E8F3E8] rounded-xl p-3 text-center">
-          <div className="text-lg font-bold text-[#3A3A3A]">{totalInteractions}</div>
-          <div className="text-xs text-[#6B6B6B] mt-1">互動</div>
+        <div className="bg-soft-green rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-foreground">{totalInteractions}</div>
+          <div className="text-xs text-muted-foreground mt-1">互動</div>
         </div>
-        <div className="bg-[#D4A574]/10 rounded-xl p-3 text-center">
-          <div className="text-lg font-bold text-[#D4A574]">{formatCurrency(totalRevenue)}</div>
-          <div className="text-xs text-[#6B6B6B] mt-1">收入</div>
+        <div className="bg-secondary/10 rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-secondary">{formatCurrency(totalRevenue)}</div>
+          <div className="text-xs text-muted-foreground mt-1">收入</div>
         </div>
       </div>
 
       {/* 流水帳列表 */}
       {logs.length === 0 ? (
-        <div className="bg-[#FAFAF8] rounded-xl p-8 text-center">
-          <Package className="w-12 h-12 text-[#7B9FA6] mx-auto mb-3 opacity-30" />
-          <p className="text-sm text-[#6B6B6B]">今日尚無交易記錄</p>
-          <p className="text-xs text-[#6B6B6B] mt-1">開始記錄互動和成交吧！</p>
+        <div className="bg-background rounded-xl p-8 text-center">
+          <Package className="w-12 h-12 text-primary mx-auto mb-3 opacity-30" />
+          <p className="text-sm text-muted-foreground">今日尚無交易記錄</p>
+          <p className="text-xs text-muted-foreground mt-1">開始記錄互動和成交吧！</p>
         </div>
       ) : (
         <div className="space-y-2 max-h-[400px] overflow-y-auto">
           {logs.map((log) => (
             <div
               key={log.id}
-              className={`group flex items-center justify-between p-3 rounded-xl transition-all hover:bg-[#FAFAF8] ${
-                log.type === 'deal' ? 'bg-[#7B9FA6]/5' : 'bg-white border border-[#7B9FA6]/10'
+              className={`group flex items-center justify-between p-3 rounded-xl transition-all hover:bg-background ${
+                log.type === 'deal' ? 'bg-primary/5' : 'bg-white border border-primary/10'
               }`}
             >
               <div className="flex items-center gap-3 flex-1">
@@ -269,7 +269,7 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
                   <div className={`font-medium ${log.color}`}>
                     {log.description}
                   </div>
-                  <div className="text-xs text-[#6B6B6B] flex items-center gap-1 mt-0.5">
+                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                     <Clock className="w-3 h-3" />
                     {log.time}
                   </div>
@@ -278,7 +278,7 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
               <div className="flex items-center gap-3">
                 {log.amount !== undefined && (
                   <div className="text-right">
-                    <div className="font-bold text-[#7B9FA6]">
+                    <div className="font-bold text-primary">
                       {formatCurrency(log.amount)}
                     </div>
                   </div>
@@ -300,8 +300,8 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
 
       {/* 底部提示 */}
       {logs.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-[#7B9FA6]/10">
-          <div className="flex items-center justify-between text-xs text-[#6B6B6B]">
+        <div className="mt-4 pt-4 border-t border-primary/10">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>共 {logs.length} 筆記錄</span>
             <span>實時更新</span>
           </div>
@@ -326,11 +326,11 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
               className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
+              <h3 className="text-lg font-medium text-foreground mb-2 flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-red-500" />
                 確認刪除記錄？
               </h3>
-              <p className="text-sm text-[#6B6B6B] mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 {selectedLog.type === 'deal' ? (
                   <>
                     刪除此成交記錄後，將會：
@@ -353,12 +353,12 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
               </p>
               
               {/* 記錄詳情 */}
-              <div className="bg-[#FAFAF8] rounded-xl p-3 mb-4">
+              <div className="bg-background rounded-xl p-3 mb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xl">{selectedLog.emoji}</span>
-                  <span className="font-medium text-[#3A3A3A]">{selectedLog.description}</span>
+                  <span className="font-medium text-foreground">{selectedLog.description}</span>
                 </div>
-                <div className="text-xs text-[#6B6B6B] flex items-center gap-1">
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {selectedLog.time}
                   {selectedLog.amount && (
@@ -376,7 +376,7 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
                     setShowDeleteConfirm(false);
                     setSelectedLog(null);
                   }}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors"
                   disabled={isDeleting}
                 >
                   取消

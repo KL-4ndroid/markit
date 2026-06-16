@@ -50,11 +50,11 @@ export function DailyDealsModal({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <div>
-              <DialogTitle className="text-xl font-medium text-[#3A3A3A] flex items-center gap-2">
+              <DialogTitle className="text-xl font-medium text-foreground flex items-center gap-2">
                 <span>🧾</span>
                 {formatDate(date)} 成交記錄
               </DialogTitle>
-              <p className="text-sm text-[#6B6B6B] mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 共 {deals.length} 筆 · 總收入 NT$ {totalRevenue.toLocaleString()}
               </p>
             </div>
@@ -62,7 +62,7 @@ export function DailyDealsModal({
               onClick={onClose}
               className="w-10 h-10 rounded-full bg-[#F5F5F0] hover:bg-[#ECECEC] transition-colors flex items-center justify-center"
             >
-              <X className="w-5 h-5 text-[#6B6B6B]" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
 
@@ -71,8 +71,8 @@ export function DailyDealsModal({
             {deals.length === 0 ? (
               <div className="text-center py-12">
                 <span className="text-4xl">📭</span>
-                <p className="mt-4 text-[#6B6B6B]">此日期尚無成交記錄</p>
-                <p className="mt-2 text-sm text-[#6B6B6B]">
+                <p className="mt-4 text-muted-foreground">此日期尚無成交記錄</p>
+                <p className="mt-2 text-sm text-muted-foreground">
                   可以使用「補登」功能新增記錄
                 </p>
               </div>
@@ -95,7 +95,7 @@ export function DailyDealsModal({
           <div className="p-6 border-t border-gray-100">
             <button
               onClick={onClose}
-              className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+              className="w-full bg-primary text-white py-3 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
             >
               關閉
             </button>

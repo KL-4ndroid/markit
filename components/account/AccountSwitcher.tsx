@@ -142,17 +142,17 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
   // 獲取帳號圖標
   const getAccountIcon = (type: 'owner' | 'staff') => {
     if (type === 'owner') {
-      return <Crown className="w-5 h-5 text-[#D4A574]" />;
+      return <Crown className="w-5 h-5 text-secondary" />;
     }
-    return <Shield className="w-5 h-5 text-[#8B7BA6]" />;
+    return <Shield className="w-5 h-5 text-primary" />;
   };
 
   // 獲取帳號顏色
   const getAccountColor = (type: 'owner' | 'staff') => {
     if (type === 'owner') {
-      return 'from-[#7B9FA6] to-[#D4A574]';
+      return 'from-primary to-secondary';
     }
-    return 'from-[#8B7BA6] to-[#B8A6C6]';
+    return 'from-primary to-[#B8A6C6]';
   };
 
   return (
@@ -187,14 +187,14 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
                 <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-6 shadow-2xl transition-all">
                   {/* 標題 */}
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-[#7B9FA6] to-[#D4A574]">
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-secondary">
                       <Users className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <Dialog.Title className="text-xl font-medium text-[#3A3A3A]">
+                      <Dialog.Title className="text-xl font-medium text-foreground">
                         切換帳號
                       </Dialog.Title>
-                      <p className="text-xs text-[#6B6B6B] mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         選擇要使用的帳號模式
                       </p>
                     </div>
@@ -203,8 +203,8 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
                   {/* 說明 */}
                   <div className="bg-[#E8F0F8] rounded-xl p-3 mb-4">
                     <div className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-[#7B9FA6] flex-shrink-0 mt-0.5" />
-                      <div className="text-xs text-[#6B6B6B]">
+                      <AlertCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="text-xs text-muted-foreground">
                         <p className="mb-1">
                           <strong>老闆模式：</strong>管理自己的市集和商品
                         </p>
@@ -217,13 +217,13 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
 
                   {/* 帳號列表 */}
                   {isLoading ? (
-                    <div className="text-center py-8 text-[#6B6B6B]">
+                    <div className="text-center py-8 text-muted-foreground">
                       載入中...
                     </div>
                   ) : accounts.length === 0 ? (
                     <div className="text-center py-8">
-                      <Database className="w-12 h-12 text-[#6B6B6B] mx-auto mb-3 opacity-50" />
-                      <p className="text-sm text-[#6B6B6B]">
+                      <Database className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                      <p className="text-sm text-muted-foreground">
                         沒有可用的帳號
                       </p>
                     </div>
@@ -234,8 +234,8 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
                           key={account.id}
                           className={`relative rounded-xl border-2 transition-all ${
                             account.isCurrent
-                              ? 'border-[#7B9FA6] bg-[#7B9FA6]/5'
-                              : 'border-transparent bg-[#FAFAF8] hover:border-[#7B9FA6]/30'
+                              ? 'border-primary bg-primary/5'
+                              : 'border-transparent bg-background hover:border-primary/30'
                           }`}
                         >
                           <button
@@ -251,24 +251,24 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
                             {/* 資訊 */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm font-medium text-[#3A3A3A] truncate">
+                                <span className="text-sm font-medium text-foreground truncate">
                                   {account.label}
                                 </span>
                                 {account.isCurrent && (
-                                  <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[#7B9FA6] text-white">
+                                  <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary text-white">
                                     <Check className="w-3 h-3" />
                                     使用中
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-[#6B6B6B]">
+                              <p className="text-xs text-muted-foreground">
                                 {account.dataCount} 筆數據
                               </p>
                             </div>
 
                             {/* 箭頭 */}
                             {!account.isCurrent && (
-                              <ChevronRight className="w-5 h-5 text-[#6B6B6B]" />
+                              <ChevronRight className="w-5 h-5 text-muted-foreground" />
                             )}
                           </button>
 
@@ -280,7 +280,7 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
                                 setAccountToDelete(account);
                                 setShowDeleteConfirm(true);
                               }}
-                              className="absolute top-3 right-3 p-2 rounded-lg bg-[#F5E6E8] text-[#d4183d] hover:bg-[#E5D6D8] transition-colors"
+                              className="absolute top-3 right-3 p-2 rounded-lg bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors"
                               title="刪除此帳號數據"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -294,7 +294,7 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
                   {/* 關閉按鈕 */}
                   <button
                     onClick={onClose}
-                    className="w-full mt-6 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium"
+                    className="w-full mt-6 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium"
                   >
                     關閉
                   </button>
@@ -337,20 +337,20 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
               >
                 <Dialog.Panel className="w-full max-w-sm transform overflow-hidden rounded-3xl bg-white p-6 shadow-2xl transition-all">
                   <div className="text-center mb-6">
-                    <div className="mx-auto w-12 h-12 rounded-full bg-[#F5E6E8] flex items-center justify-center mb-4">
-                      <Trash2 className="w-6 h-6 text-[#d4183d]" />
+                    <div className="mx-auto w-12 h-12 rounded-full bg-soft-pink flex items-center justify-center mb-4">
+                      <Trash2 className="w-6 h-6 text-danger" />
                     </div>
-                    <Dialog.Title className="text-lg font-medium text-[#3A3A3A] mb-2">
+                    <Dialog.Title className="text-lg font-medium text-foreground mb-2">
                       確認刪除帳號數據？
                     </Dialog.Title>
-                    <p className="text-sm text-[#6B6B6B]">
+                    <p className="text-sm text-muted-foreground">
                       將刪除「{accountToDelete?.label}」的所有本地數據
                     </p>
                   </div>
 
-                  <div className="bg-[#FFF8E7] border border-[#D4A574]/30 rounded-xl p-3 mb-6">
-                    <p className="text-xs text-[#6B6B6B]">
-                      <strong className="text-[#D4A574]">⚠️ 注意：</strong>
+                  <div className="bg-soft-yellow border border-secondary/30 rounded-xl p-3 mb-6">
+                    <p className="text-xs text-muted-foreground">
+                      <strong className="text-secondary">⚠️ 注意：</strong>
                       此操作無法復原，但雲端數據不受影響。
                     </p>
                   </div>
@@ -361,13 +361,13 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
                         setShowDeleteConfirm(false);
                         setAccountToDelete(null);
                       }}
-                      className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium"
+                      className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium"
                     >
                       取消
                     </button>
                     <button
                       onClick={handleDeleteAccount}
-                      className="flex-1 px-4 py-3 rounded-2xl bg-[#d4183d] text-white hover:bg-[#c41739] transition-colors font-medium"
+                      className="flex-1 px-4 py-3 rounded-2xl bg-danger text-white hover:bg-danger/85 transition-colors font-medium"
                     >
                       確認刪除
                     </button>

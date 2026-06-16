@@ -59,8 +59,8 @@ export function DailyRevenueChart({
   // ✅ 如果沒有數據，顯示灰色虛線基準線
   if (totalRevenue === 0) {
     return (
-      <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10">
-        <h2 className="text-xl font-medium text-[#3A3A3A] mb-4">
+      <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
+        <h2 className="text-xl font-medium text-foreground mb-4">
           每日收入趨勢
         </h2>
         
@@ -68,12 +68,12 @@ export function DailyRevenueChart({
         <div className="relative h-40 flex items-center justify-center">
           {/* 灰色虛線基準線 */}
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t-2 border-dashed border-[#6B6B6B]/20"></div>
+            <div className="w-full border-t-2 border-dashed border-muted-foreground/20"></div>
           </div>
           
           {/* 提示文字 */}
-          <div className="relative bg-white px-4 py-2 rounded-full border border-[#6B6B6B]/10">
-            <p className="text-sm text-[#6B6B6B] flex items-center gap-2">
+          <div className="relative bg-white px-4 py-2 rounded-full border border-muted-foreground/10">
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               等待首筆數據輸入...
             </p>
@@ -81,9 +81,9 @@ export function DailyRevenueChart({
         </div>
 
         {/* 引導說明 */}
-        <div className="mt-6 bg-[#FAFAF8] rounded-xl p-4">
-          <p className="text-xs text-[#6B6B6B] leading-relaxed">
-            <span className="font-medium text-[#3A3A3A]">💡 提示：</span>
+        <div className="mt-6 bg-background rounded-xl p-4">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <span className="font-medium text-foreground">💡 提示：</span>
             開始記錄市集交易後，這裡將顯示每日收入變化趨勢，幫助您掌握營業狀況。
           </p>
         </div>
@@ -106,11 +106,11 @@ export function DailyRevenueChart({
   };
 
   return (
-    <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10">
+    <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
       {/* 標題 */}
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-2">
-          <h2 className="text-xl font-medium text-[#3A3A3A]">
+          <h2 className="text-xl font-medium text-foreground">
             每日收入趨勢
           </h2>
           <MetricGuide
@@ -120,22 +120,22 @@ export function DailyRevenueChart({
             emoji="📈"
           />
         </div>
-        <p className="text-xs text-[#6B6B6B]">
+        <p className="text-xs text-muted-foreground">
           最近 {displayDates.length} 天的收入變化
         </p>
       </div>
 
       {/* 統計摘要 */}
       <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="bg-[#E8F3E8] rounded-xl p-3">
-          <p className="text-xs text-[#6B6B6B] mb-1">總收入</p>
-          <p className="text-lg font-medium text-[#3A3A3A] tabular-nums">
+        <div className="bg-soft-green rounded-xl p-3">
+          <p className="text-xs text-muted-foreground mb-1">總收入</p>
+          <p className="text-lg font-medium text-foreground tabular-nums">
             ${formatCurrency(totalRevenue)}
           </p>
         </div>
-        <div className="bg-[#FFF8E7] rounded-xl p-3">
-          <p className="text-xs text-[#6B6B6B] mb-1">日均收入</p>
-          <p className="text-lg font-medium text-[#3A3A3A] tabular-nums">
+        <div className="bg-soft-yellow rounded-xl p-3">
+          <p className="text-xs text-muted-foreground mb-1">日均收入</p>
+          <p className="text-lg font-medium text-foreground tabular-nums">
             ${formatCurrency(avgRevenue)}
           </p>
         </div>
@@ -145,10 +145,10 @@ export function DailyRevenueChart({
       <div className="relative">
         {/* 平均線 */}
         <div
-          className="absolute left-0 right-0 border-t border-dashed border-[#D4A574]/40 z-10"
+          className="absolute left-0 right-0 border-t border-dashed border-secondary/40 z-10"
           style={{ top: `${100 - (avgRevenue / maxRevenue) * 100}%` }}
         >
-          <span className="absolute -top-2 right-0 text-xs text-[#D4A574] bg-white px-1">
+          <span className="absolute -top-2 right-0 text-xs text-secondary bg-white px-1">
             平均
           </span>
         </div>
@@ -169,16 +169,16 @@ export function DailyRevenueChart({
                   <div
                     className={`w-full rounded-t-md transition-all ${
                       isHighlight
-                        ? 'bg-[#7B9FA6] hover:bg-[#6A8E95]'
-                        : 'bg-[#7B9FA6]/40 hover:bg-[#7B9FA6]/60'
+                        ? 'bg-primary hover:bg-primary/85'
+                        : 'bg-primary/40 hover:bg-primary/60'
                     }`}
                     style={{ height: `${heightPercent}%` }}
                   >
                     {/* Tooltip */}
                     {data.revenue > 0 && (
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-12 left-1/2 transform -translate-x-1/2 bg-[#3A3A3A] text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none z-20">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-12 left-1/2 transform -translate-x-1/2 bg-foreground text-white text-xs px-2 py-1 rounded whitespace-nowrap pointer-events-none z-20">
                         ${data.revenue.toLocaleString()}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-[#3A3A3A]"></div>
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-foreground"></div>
                       </div>
                     )}
                   </div>
@@ -186,7 +186,7 @@ export function DailyRevenueChart({
                 
                 {/* 日期標籤（每隔幾天顯示一次，避免擁擠） */}
                 {(displayDates.length <= 7 || index % Math.ceil(displayDates.length / 7) === 0) && (
-                  <span className="text-xs text-[#6B6B6B] mt-1 transform -rotate-45 origin-top-left whitespace-nowrap">
+                  <span className="text-xs text-muted-foreground mt-1 transform -rotate-45 origin-top-left whitespace-nowrap">
                     {formatDate(data.date)}
                   </span>
                 )}
@@ -197,13 +197,13 @@ export function DailyRevenueChart({
       </div>
 
       {/* 圖例 */}
-      <div className="mt-6 flex items-center justify-center gap-4 text-xs text-[#6B6B6B]">
+      <div className="mt-6 flex items-center justify-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-[#7B9FA6]"></div>
+          <div className="w-3 h-3 rounded bg-primary"></div>
           <span>高於平均</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-[#7B9FA6]/40"></div>
+          <div className="w-3 h-3 rounded bg-primary/40"></div>
           <span>低於平均</span>
         </div>
       </div>

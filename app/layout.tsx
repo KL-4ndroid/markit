@@ -42,7 +42,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#7B9FA6",
+  // PWA / 行動瀏覽器 chrome 主題色（出攤本霧松綠 #6F8F86）
+  themeColor: "#6F8F86",
 };
 
 export default function RootLayout({
@@ -62,8 +63,8 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         
         {/* Theme Color */}
-        <meta name="theme-color" content="#7B9FA6" />
-        <meta name="msapplication-TileColor" content="#7B9FA6" />
+        <meta name="theme-color" content="#6F8F86" />
+        <meta name="msapplication-TileColor" content="#6F8F86" />
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body>
@@ -81,7 +82,7 @@ export default function RootLayout({
               
               {/* ✅ 認證守衛 - 包裹所有受保護的內容 */}
               <AuthGuard>
-                <div className="min-h-screen bg-[#FAFAF8]">
+                <div className="min-h-screen bg-background">
                   {/* 頂部導航 - 已移至首頁 Header */}
                   {/* <TopNavigation /> */}
                   
@@ -109,13 +110,13 @@ export default function RootLayout({
                   <SyncProgressManager />
                   
                   {/* Toast 通知 */}
-                  <Toaster 
+                  <Toaster
                     position="top-center"
                     toastOptions={{
                       style: {
-                        background: '#FFFFFF',
-                        color: '#3A3A3A',
-                        border: '1px solid rgba(123, 159, 166, 0.2)',
+                        background: 'rgb(var(--brand-card))',
+                        color: 'rgb(var(--brand-foreground))',
+                        border: '1px solid rgb(var(--brand-primary) / 0.2)',
                         borderRadius: '1rem',
                         padding: '1rem',
                       },

@@ -83,43 +83,43 @@ export default function FeatureUnlockGuard({
       {/* 互動層：解鎖提示 (The CTA) */}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
         <div 
-          className="bg-white/95 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border-2 border-[#D4A574]/30 max-w-sm w-full animate-in fade-in zoom-in duration-500"
+          className="bg-white/95 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border-2 border-secondary/30 max-w-sm w-full animate-in fade-in zoom-in duration-500"
           style={{
             boxShadow: '0 8px 32px rgba(123, 159, 166, 0.15), 0 2px 8px rgba(212, 165, 116, 0.1)',
           }}
         >
           {/* 鎖頭圖示 */}
           <div className="relative mb-4">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#D4A574]/20 to-[#7B9FA6]/20 blur-xl rounded-full" />
-            <div className="relative bg-gradient-to-br from-[#D4A574] to-[#7B9FA6] p-3 rounded-full mx-auto w-fit">
+            <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-primary/20 blur-xl rounded-full" />
+            <div className="relative bg-gradient-to-br from-secondary to-primary p-3 rounded-full mx-auto w-fit">
               <Lock className="w-6 h-6 text-white" />
             </div>
           </div>
           
           {/* 標題 */}
-          <h3 className="font-bold text-lg text-[#3A3A3A] mb-2 text-center">
+          <h3 className="font-bold text-lg text-foreground mb-2 text-center">
             解鎖「{featureName}」
           </h3>
           
           {/* 描述 */}
           {featureDescription && (
-            <p className="text-xs text-[#6B6B6B] mb-4 text-center leading-relaxed">
+            <p className="text-xs text-muted-foreground mb-4 text-center leading-relaxed">
               {featureDescription}
             </p>
           )}
           
           {/* 激勵文字 */}
-          <div className="bg-gradient-to-r from-[#7B9FA6]/10 to-[#D4A574]/10 rounded-xl p-3 mb-4">
-            <p className="text-sm text-[#3A3A3A] text-center">
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-3 mb-4">
+            <p className="text-sm text-foreground text-center">
               {remaining === 1 ? (
                 <>
-                  <span className="font-bold text-[#D4A574]">再 1 場市集</span>，系統即可為您精準建模 🎯
+                  <span className="font-bold text-secondary">再 1 場市集</span>，系統即可為您精準建模 🎯
                 </>
               ) : (
                 <>
-                  還差 <span className="font-bold text-[#D4A574]">{remaining} 場市集</span>數據
+                  還差 <span className="font-bold text-secondary">{remaining} 場市集</span>數據
                   <br />
-                  <span className="text-xs text-[#6B6B6B]">系統需要足夠樣本才能提供準確分析</span>
+                  <span className="text-xs text-muted-foreground">系統需要足夠樣本才能提供準確分析</span>
                 </>
               )}
             </p>
@@ -128,8 +128,8 @@ export default function FeatureUnlockGuard({
           {/* 進度條 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-[#6B6B6B]">數據累積進度</span>
-              <span className="font-bold text-[#7B9FA6]">
+              <span className="text-muted-foreground">數據累積進度</span>
+              <span className="font-bold text-primary">
                 {currentCount} / {requiredCount}
               </span>
             </div>
@@ -140,7 +140,7 @@ export default function FeatureUnlockGuard({
               
               {/* 進度條填充 */}
               <div 
-                className="relative h-full bg-gradient-to-r from-[#7B9FA6] to-[#D4A574] transition-all duration-1000 ease-out rounded-full"
+                className="relative h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000 ease-out rounded-full"
                 style={{ width: `${progress}%` }}
               >
                 {/* 光澤效果 */}
@@ -150,7 +150,7 @@ export default function FeatureUnlockGuard({
             
             {/* 百分比顯示 */}
             <div className="text-center">
-              <span className="text-[10px] text-[#D4A574] font-bold">
+              <span className="text-[10px] text-secondary font-bold">
                 {progress.toFixed(0)}% 完成
               </span>
             </div>
@@ -158,7 +158,7 @@ export default function FeatureUnlockGuard({
           
           {/* 底部提示 */}
           <div className="mt-4 pt-4 border-t border-[#E8E8E8]">
-            <p className="text-[10px] text-[#6B6B6B] text-center leading-relaxed">
+            <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
               💡 繼續記錄市集數據，解鎖更多深度分析功能
             </p>
           </div>

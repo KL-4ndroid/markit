@@ -32,8 +32,8 @@ export default function FlickerTestPage() {
   // 內容類型
   const [contentType, setContentType] = useState<'text' | 'cards' | 'mixed'>('mixed');
 
-  // 背景色
-  const [backgroundColor, setBackgroundColor] = useState('#FAFAF8');
+  // 背景色（使用 CSS 變數以對齊 VI token：奶油米白 rgb(var(--brand-background))）
+  const [backgroundColor, setBackgroundColor] = useState('rgb(var(--brand-background))');
 
   // 應用動畫樣式
   const getAnimationStyle = () => {
@@ -87,7 +87,7 @@ export default function FlickerTestPage() {
     setSlideDuration(200);
     setFadeOpacity(0.8);
     setFadeDuration(100);
-    setBackgroundColor('#FAFAF8');
+    setBackgroundColor('rgb(var(--brand-background))');
   };
 
   // 導出參數
@@ -166,9 +166,9 @@ export default function FlickerTestPage() {
     if (contentType === 'text') {
       return (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-[#3A3A3A]">測試標題</h2>
-          <p className="text-[#6B6B6B]">這是一段測試文字，用於觀察閃爍效果。</p>
-          <p className="text-[#6B6B6B]">請仔細觀察動畫過程中是否有明顯的閃爍或跳動。</p>
+          <h2 className="text-2xl font-bold text-foreground">測試標題</h2>
+          <p className="text-muted-foreground">這是一段測試文字，用於觀察閃爍效果。</p>
+          <p className="text-muted-foreground">請仔細觀察動畫過程中是否有明顯的閃爍或跳動。</p>
         </div>
       );
     }
@@ -179,8 +179,8 @@ export default function FlickerTestPage() {
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="bg-white rounded-2xl p-6 shadow-lg">
               <div className="text-2xl mb-2">📦</div>
-              <div className="text-sm font-medium text-[#3A3A3A]">卡片 {i}</div>
-              <div className="text-xs text-[#6B6B6B] mt-1">測試內容</div>
+              <div className="text-sm font-medium text-foreground">卡片 {i}</div>
+              <div className="text-xs text-muted-foreground mt-1">測試內容</div>
             </div>
           ))}
         </div>
@@ -189,7 +189,7 @@ export default function FlickerTestPage() {
 
     return (
       <div className="space-y-6">
-        <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] rounded-2xl p-6 text-white">
+        <div className="bg-gradient-to-br from-primary to-secondary rounded-2xl p-6 text-white">
           <h2 className="text-xl font-bold mb-2">混合內容測試</h2>
           <p className="text-sm opacity-90">包含漸層背景、文字和卡片</p>
         </div>
@@ -198,18 +198,18 @@ export default function FlickerTestPage() {
           {[1, 2].map(i => (
             <div key={i} className="bg-white rounded-2xl p-4 shadow-lg">
               <div className="text-xl mb-1">🎪</div>
-              <div className="text-sm font-medium text-[#3A3A3A]">項目 {i}</div>
+              <div className="text-sm font-medium text-foreground">項目 {i}</div>
             </div>
           ))}
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-lg">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-[#6B6B6B]">總收入</span>
-            <span className="text-2xl font-bold text-[#7B9FA6]">NT$ 12,345</span>
+            <span className="text-sm text-muted-foreground">總收入</span>
+            <span className="text-2xl font-bold text-primary">NT$ 12,345</span>
           </div>
-          <div className="h-2 bg-[#E8F3E8] rounded-full overflow-hidden">
-            <div className="h-full bg-[#7B9FA6] w-3/4"></div>
+          <div className="h-2 bg-soft-green rounded-full overflow-hidden">
+            <div className="h-full bg-primary w-3/4"></div>
           </div>
         </div>
       </div>
@@ -259,9 +259,9 @@ export default function FlickerTestPage() {
   }, [slideDistance, slideOpacity, fadeDuration, fadeOpacity]);
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <button
@@ -297,8 +297,8 @@ export default function FlickerTestPage() {
             {/* 動畫類型選擇 */}
             <div className="bg-white rounded-2xl p-6 shadow-lg">
               <div className="flex items-center gap-2 mb-4">
-                <Zap className="w-5 h-5 text-[#7B9FA6]" />
-                <h3 className="text-lg font-medium text-[#3A3A3A]">動畫類型</h3>
+                <Zap className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-medium text-foreground">動畫類型</h3>
               </div>
               
               <div className="grid grid-cols-3 gap-2">
@@ -306,8 +306,8 @@ export default function FlickerTestPage() {
                   onClick={() => setAnimationType('slide-right')}
                   className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     animationType === 'slide-right'
-                      ? 'bg-[#7B9FA6] text-white'
-                      : 'bg-[#F5E6E8] text-[#3A3A3A]'
+                      ? 'bg-primary text-white'
+                      : 'bg-soft-pink text-foreground'
                   }`}
                 >
                   從右滑入
@@ -316,8 +316,8 @@ export default function FlickerTestPage() {
                   onClick={() => setAnimationType('slide-left')}
                   className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     animationType === 'slide-left'
-                      ? 'bg-[#7B9FA6] text-white'
-                      : 'bg-[#F5E6E8] text-[#3A3A3A]'
+                      ? 'bg-primary text-white'
+                      : 'bg-soft-pink text-foreground'
                   }`}
                 >
                   從左滑入
@@ -326,8 +326,8 @@ export default function FlickerTestPage() {
                   onClick={() => setAnimationType('fade')}
                   className={`px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     animationType === 'fade'
-                      ? 'bg-[#7B9FA6] text-white'
-                      : 'bg-[#F5E6E8] text-[#3A3A3A]'
+                      ? 'bg-primary text-white'
+                      : 'bg-soft-pink text-foreground'
                   }`}
                 >
                   淡入
@@ -338,14 +338,14 @@ export default function FlickerTestPage() {
             {/* 滑動動畫參數 */}
             {(animationType === 'slide-right' || animationType === 'slide-left') && (
               <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <h3 className="text-lg font-medium text-[#3A3A3A] mb-4">滑動動畫參數</h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">滑動動畫參數</h3>
                 
                 <div className="space-y-4">
                   {/* 滑動距離 */}
                   <div>
                     <div className="flex justify-between mb-2">
-                      <label className="text-sm text-[#6B6B6B]">滑動距離</label>
-                      <span className="text-sm font-medium text-[#7B9FA6]">{slideDistance}%</span>
+                      <label className="text-sm text-muted-foreground">滑動距離</label>
+                      <span className="text-sm font-medium text-primary">{slideDistance}%</span>
                     </div>
                     <input
                       type="range"
@@ -356,7 +356,7 @@ export default function FlickerTestPage() {
                       onChange={(e) => setSlideDistance(Number(e.target.value))}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-[#6B6B6B] mt-1">
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
                       <span>0%</span>
                       <span>50%</span>
                       <span>100%</span>
@@ -366,8 +366,8 @@ export default function FlickerTestPage() {
                   {/* 起始透明度 */}
                   <div>
                     <div className="flex justify-between mb-2">
-                      <label className="text-sm text-[#6B6B6B]">起始透明度</label>
-                      <span className="text-sm font-medium text-[#7B9FA6]">{slideOpacity.toFixed(2)}</span>
+                      <label className="text-sm text-muted-foreground">起始透明度</label>
+                      <span className="text-sm font-medium text-primary">{slideOpacity.toFixed(2)}</span>
                     </div>
                     <input
                       type="range"
@@ -378,7 +378,7 @@ export default function FlickerTestPage() {
                       onChange={(e) => setSlideOpacity(Number(e.target.value))}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-[#6B6B6B] mt-1">
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
                       <span>0 (完全透明)</span>
                       <span>0.5</span>
                       <span>1 (不透明)</span>
@@ -388,8 +388,8 @@ export default function FlickerTestPage() {
                   {/* 動畫時長 */}
                   <div>
                     <div className="flex justify-between mb-2">
-                      <label className="text-sm text-[#6B6B6B]">動畫時長</label>
-                      <span className="text-sm font-medium text-[#7B9FA6]">{slideDuration}ms</span>
+                      <label className="text-sm text-muted-foreground">動畫時長</label>
+                      <span className="text-sm font-medium text-primary">{slideDuration}ms</span>
                     </div>
                     <input
                       type="range"
@@ -400,7 +400,7 @@ export default function FlickerTestPage() {
                       onChange={(e) => setSlideDuration(Number(e.target.value))}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-[#6B6B6B] mt-1">
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
                       <span>50ms</span>
                       <span>250ms</span>
                       <span>500ms</span>
@@ -413,14 +413,14 @@ export default function FlickerTestPage() {
             {/* 淡入動畫參數 */}
             {animationType === 'fade' && (
               <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <h3 className="text-lg font-medium text-[#3A3A3A] mb-4">淡入動畫參數</h3>
+                <h3 className="text-lg font-medium text-foreground mb-4">淡入動畫參數</h3>
                 
                 <div className="space-y-4">
                   {/* 起始透明度 */}
                   <div>
                     <div className="flex justify-between mb-2">
-                      <label className="text-sm text-[#6B6B6B]">起始透明度</label>
-                      <span className="text-sm font-medium text-[#7B9FA6]">{fadeOpacity.toFixed(2)}</span>
+                      <label className="text-sm text-muted-foreground">起始透明度</label>
+                      <span className="text-sm font-medium text-primary">{fadeOpacity.toFixed(2)}</span>
                     </div>
                     <input
                       type="range"
@@ -431,7 +431,7 @@ export default function FlickerTestPage() {
                       onChange={(e) => setFadeOpacity(Number(e.target.value))}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-[#6B6B6B] mt-1">
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
                       <span>0 (完全透明)</span>
                       <span>0.5</span>
                       <span>1 (不透明)</span>
@@ -441,8 +441,8 @@ export default function FlickerTestPage() {
                   {/* 動畫時長 */}
                   <div>
                     <div className="flex justify-between mb-2">
-                      <label className="text-sm text-[#6B6B6B]">動畫時長</label>
-                      <span className="text-sm font-medium text-[#7B9FA6]">{fadeDuration}ms</span>
+                      <label className="text-sm text-muted-foreground">動畫時長</label>
+                      <span className="text-sm font-medium text-primary">{fadeDuration}ms</span>
                     </div>
                     <input
                       type="range"
@@ -453,7 +453,7 @@ export default function FlickerTestPage() {
                       onChange={(e) => setFadeDuration(Number(e.target.value))}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-xs text-[#6B6B6B] mt-1">
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
                       <span>50ms</span>
                       <span>250ms</span>
                       <span>500ms</span>
@@ -466,21 +466,21 @@ export default function FlickerTestPage() {
             {/* 其他設定 */}
             <div className="bg-white rounded-2xl p-6 shadow-lg">
               <div className="flex items-center gap-2 mb-4">
-                <Settings className="w-5 h-5 text-[#7B9FA6]" />
-                <h3 className="text-lg font-medium text-[#3A3A3A]">其他設定</h3>
+                <Settings className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-medium text-foreground">其他設定</h3>
               </div>
               
               <div className="space-y-4">
                 {/* 內容類型 */}
                 <div>
-                  <label className="text-sm text-[#6B6B6B] mb-2 block">測試內容</label>
+                  <label className="text-sm text-muted-foreground mb-2 block">測試內容</label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => setContentType('text')}
                       className={`px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                         contentType === 'text'
-                          ? 'bg-[#7B9FA6] text-white'
-                          : 'bg-[#F5E6E8] text-[#3A3A3A]'
+                          ? 'bg-primary text-white'
+                          : 'bg-soft-pink text-foreground'
                       }`}
                     >
                       純文字
@@ -489,8 +489,8 @@ export default function FlickerTestPage() {
                       onClick={() => setContentType('cards')}
                       className={`px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                         contentType === 'cards'
-                          ? 'bg-[#7B9FA6] text-white'
-                          : 'bg-[#F5E6E8] text-[#3A3A3A]'
+                          ? 'bg-primary text-white'
+                          : 'bg-soft-pink text-foreground'
                       }`}
                     >
                       卡片
@@ -499,8 +499,8 @@ export default function FlickerTestPage() {
                       onClick={() => setContentType('mixed')}
                       className={`px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                         contentType === 'mixed'
-                          ? 'bg-[#7B9FA6] text-white'
-                          : 'bg-[#F5E6E8] text-[#3A3A3A]'
+                          ? 'bg-primary text-white'
+                          : 'bg-soft-pink text-foreground'
                       }`}
                     >
                       混合
@@ -510,7 +510,7 @@ export default function FlickerTestPage() {
 
                 {/* 背景色 */}
                 <div>
-                  <label className="text-sm text-[#6B6B6B] mb-2 block">背景顏色</label>
+                  <label className="text-sm text-muted-foreground mb-2 block">背景顏色</label>
                   <div className="flex gap-2">
                     <input
                       type="color"
@@ -522,7 +522,7 @@ export default function FlickerTestPage() {
                       type="text"
                       value={backgroundColor}
                       onChange={(e) => setBackgroundColor(e.target.value)}
-                      className="flex-1 px-3 py-2 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-sm"
+                      className="flex-1 px-3 py-2 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
                     />
                   </div>
                 </div>
@@ -533,14 +533,14 @@ export default function FlickerTestPage() {
             <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={runTest}
-                className="col-span-2 px-6 py-4 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium flex items-center justify-center gap-2"
+                className="col-span-2 px-6 py-4 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium flex items-center justify-center gap-2"
               >
                 <Play className="w-5 h-5" />
                 執行測試
               </button>
               <button
                 onClick={resetParams}
-                className="px-6 py-4 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium flex items-center justify-center gap-2"
+                className="px-6 py-4 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium flex items-center justify-center gap-2"
               >
                 <RotateCcw className="w-5 h-5" />
               </button>
@@ -548,7 +548,7 @@ export default function FlickerTestPage() {
 
             <button
               onClick={exportParams}
-              className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] text-white hover:opacity-90 transition-opacity font-medium"
+              className="w-full px-6 py-4 rounded-2xl bg-gradient-to-br from-primary to-secondary text-white hover:opacity-90 transition-opacity font-medium"
             >
               📋 複製 CSS 參數
             </button>
@@ -558,7 +558,7 @@ export default function FlickerTestPage() {
           <div className="lg:sticky lg:top-6 lg:self-start">
             <div className="bg-white rounded-2xl p-6 shadow-lg">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-[#3A3A3A]">預覽區域</h3>
+                <h3 className="text-lg font-medium text-foreground">預覽區域</h3>
                 <div className={`px-3 py-1 rounded-full text-xs font-medium ${
                   isAnimating 
                     ? 'bg-green-100 text-green-700' 
@@ -580,11 +580,11 @@ export default function FlickerTestPage() {
               </div>
 
               {/* 提示 */}
-              <div className="mt-4 p-4 bg-[#FFF8E7] rounded-xl">
-                <p className="text-xs text-[#6B6B6B]">
+              <div className="mt-4 p-4 bg-soft-yellow rounded-xl">
+                <p className="text-xs text-muted-foreground">
                   💡 <strong>觀察重點：</strong>
                 </p>
-                <ul className="text-xs text-[#6B6B6B] mt-2 space-y-1 ml-4">
+                <ul className="text-xs text-muted-foreground mt-2 space-y-1 ml-4">
                   <li>• 動畫開始時是否有白屏閃爍？</li>
                   <li>• 內容是否平滑出現？</li>
                   <li>• 是否有跳動或抖動？</li>

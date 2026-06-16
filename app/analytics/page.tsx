@@ -488,9 +488,9 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-medium text-white opacity-90">數據分析</h1>
@@ -548,13 +548,13 @@ export default function AnalyticsPage() {
         </div>
 
         {/* 模式切換器 */}
-        <div className="bg-white rounded-[1.5rem] p-2 shadow-md shadow-[#7B9FA6]/10 mb-6 flex gap-2">
+        <div className="bg-white rounded-[1.5rem] p-2 shadow-md shadow-primary/10 mb-6 flex gap-2">
           <button
             onClick={() => setMode('quick')}
             className={`flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all ${
               mode === 'quick'
-                ? 'bg-gradient-to-r from-[#7B9FA6] to-[#6A8E95] text-white shadow-md'
-                : 'text-[#6B6B6B] hover:bg-[#F5F5F3]'
+                ? 'bg-gradient-to-r from-primary to-primary/85 text-white shadow-md'
+                : 'text-muted-foreground hover:bg-[#F5F5F3]'
             }`}
           >
             重點建議
@@ -563,8 +563,8 @@ export default function AnalyticsPage() {
             onClick={() => setMode('advanced')}
             className={`flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all ${
               mode === 'advanced'
-                ? 'bg-gradient-to-r from-[#7B9FA6] to-[#6A8E95] text-white shadow-md'
-                : 'text-[#6B6B6B] hover:bg-[#F5F5F3]'
+                ? 'bg-gradient-to-r from-primary to-primary/85 text-white shadow-md'
+                : 'text-muted-foreground hover:bg-[#F5F5F3]'
             }`}
           >
             進階分析
@@ -572,9 +572,9 @@ export default function AnalyticsPage() {
         </div>
 
         {mode === 'advanced' && (
-          <div className="bg-[#F5F5F3] border border-[#7B9FA6]/15 rounded-[1.25rem] p-4 mb-6">
-            <p className="text-sm font-medium text-[#3A3A3A] mb-1">進階分析是輔助判斷</p>
-            <p className="text-xs text-[#6B6B6B] leading-relaxed">
+          <div className="bg-[#F5F5F3] border border-primary/15 rounded-[1.25rem] p-4 mb-6">
+            <p className="text-sm font-medium text-foreground mb-1">進階分析是輔助判斷</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               下方圖表適合用來檢查細節；主要決策仍建議先看行動建議與市集回顧。
             </p>
           </div>
@@ -591,10 +591,10 @@ export default function AnalyticsPage() {
           <div className="flex items-center gap-3">
             <span className="text-2xl">{dataReliability.icon}</span>
             <div className="flex-1">
-              <p className="font-medium text-[#3A3A3A] text-sm">
+              <p className="font-medium text-foreground text-sm">
                 {dataReliability.label}
               </p>
-              <p className="text-xs text-[#6B6B6B] mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {dataReliability.description} ({validMarketCount} 場有效市集)
               </p>
             </div>
@@ -609,55 +609,55 @@ export default function AnalyticsPage() {
           <>
             {/* ✅ 市集總覽卡片（暫時註解） */}
             {/* {topMarketOverview && (
-              <div className="bg-gradient-to-br from-white to-[#F5F5F3] rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6 border-2 border-[#7B9FA6]/20">
+              <div className="bg-gradient-to-br from-white to-[#F5F5F3] rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6 border-2 border-primary/20">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-2xl">🟢</span>
-                  <h2 className="text-xl font-medium text-[#3A3A3A]">
+                  <h2 className="text-xl font-medium text-foreground">
                     本場市集：{topMarketOverview.summaryLabel}
                   </h2>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 mb-4 border border-[#7B9FA6]/10">
+                <div className="bg-white rounded-xl p-4 mb-4 border border-primary/10">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#6B6B6B]">健康分數</span>
+                    <span className="text-sm text-muted-foreground">健康分數</span>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-bold text-[#7B9FA6]">
+                      <span className="text-3xl font-bold text-primary">
                         {topMarketOverview.healthScore.toFixed(1)}
                       </span>
-                      <span className="text-lg text-[#6B6B6B]">/100</span>
+                      <span className="text-lg text-muted-foreground">/100</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-[#E8F3E8] rounded-xl p-3">
-                    <p className="text-xs text-[#6B6B6B] mb-1">人流品質</p>
-                    <p className="text-sm font-semibold text-[#3A3A3A]">
+                  <div className="bg-soft-green rounded-xl p-3">
+                    <p className="text-xs text-muted-foreground mb-1">人流品質</p>
+                    <p className="text-sm font-semibold text-foreground">
                       {topMarketOverview.diagnosisType}
                     </p>
                   </div>
 
-                  <div className="bg-[#FFF8E7] rounded-xl p-3">
-                    <p className="text-xs text-[#6B6B6B] mb-1">成交效率</p>
-                    <p className="text-sm font-semibold text-[#3A3A3A]">
+                  <div className="bg-soft-yellow rounded-xl p-3">
+                    <p className="text-xs text-muted-foreground mb-1">成交效率</p>
+                    <p className="text-sm font-semibold text-foreground">
                       {topMarketOverview.keyStats.conversionRate.toFixed(1)}%
                     </p>
                   </div>
 
-                  <div className="bg-[#F5E6E8] rounded-xl p-3">
-                    <p className="text-xs text-[#6B6B6B] mb-1">客單價</p>
-                    <p className="text-sm font-semibold text-[#3A3A3A]">
+                  <div className="bg-soft-pink rounded-xl p-3">
+                    <p className="text-xs text-muted-foreground mb-1">客單價</p>
+                    <p className="text-sm font-semibold text-foreground">
                       ${topMarketOverview.keyStats.aov.toFixed(0)}
                     </p>
                   </div>
                 </div>
 
-                <div className="bg-[#7B9FA6]/10 rounded-xl p-4">
+                <div className="bg-primary/10 rounded-xl p-4">
                   <div className="flex items-start gap-2">
                     <span className="text-lg">💡</span>
                     <div className="flex-1">
-                      <p className="text-xs text-[#6B6B6B] mb-1">建議</p>
-                      <p className="text-sm text-[#3A3A3A] leading-relaxed">
+                      <p className="text-xs text-muted-foreground mb-1">建議</p>
+                      <p className="text-sm text-foreground leading-relaxed">
                         {topMarketOverview.suggestion}
                       </p>
                     </div>
@@ -667,21 +667,21 @@ export default function AnalyticsPage() {
             )} */}
 
             {/* ✅ 最有價值市集（移到最上層，快速模式顯示） */}
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
               {/* 標題與說明 */}
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-medium text-[#3A3A3A]">
+                  <h2 className="text-xl font-medium text-foreground">
                     最有價值市集
                   </h2>
                   {/* 說明燈泡按鈕 */}
                   <button
                     onClick={() => setShowInfoTooltip(!showInfoTooltip)}
-                    className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                    className="relative bg-soft-yellow hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
                     aria-label="查看說明"
                   >
                     <svg 
-                      className="w-4 h-4 text-[#D4A574]" 
+                      className="w-4 h-4 text-secondary" 
                       fill="currentColor" 
                       viewBox="0 0 20 20"
                     >
@@ -719,73 +719,73 @@ export default function AnalyticsPage() {
                         leaveFrom="opacity-100 scale-100"
                         leaveTo="opacity-0 scale-95"
                       >
-                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all border border-[#7B9FA6]/10 relative">
+                        <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all border border-primary/10 relative">
                           {/* 關閉按鈕 */}
                           <button
                             onClick={() => setShowInfoTooltip(false)}
-                            className="absolute top-4 right-4 text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
                             aria-label="關閉"
                           >
                             <X className="w-5 h-5" />
                           </button>
 
-                          <Dialog.Title className="font-medium text-[#3A3A3A] mb-4 text-lg pr-8">
+                          <Dialog.Title className="font-medium text-foreground mb-4 text-lg pr-8">
                             💡 市集投資回報分析
                           </Dialog.Title>
                           
                           {/* 三個指標說明 */}
                           <div className="space-y-4 mb-6">
                             {/* 1. 淨利潤 */}
-                            <div className="bg-[#E8F3E8] rounded-xl p-4">
-                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                <span className="text-[#7B9FA6]">💰</span>
+                            <div className="bg-soft-green rounded-xl p-4">
+                              <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                <span className="text-primary">💰</span>
                                 淨利潤
                               </h4>
-                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
-                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                              <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+                                <span className="font-medium text-foreground">計算方式：</span>
                                 <br />
                                 總利潤 - 攤位費 - 報名費 - 設備租金 - 抽成
                               </p>
-                              <p className="text-xs text-[#6B6B6B]">
+                              <p className="text-xs text-muted-foreground">
                                 <span className="font-medium">意義：</span>扣除所有成本後的實際獲利
                               </p>
                             </div>
 
                             {/* 2. 每小時淨利 */}
-                            <div className="bg-[#FFF8E7] rounded-xl p-4">
-                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                <span className="text-[#D4A574]">⏱️</span>
+                            <div className="bg-soft-yellow rounded-xl p-4">
+                              <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                <span className="text-secondary">⏱️</span>
                                 每小時淨利
                               </h4>
-                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
-                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                              <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+                                <span className="font-medium text-foreground">計算方式：</span>
                                 <br />
                                 淨利潤 ÷ 總營業時數
                               </p>
-                              <p className="text-xs text-[#6B6B6B]">
+                              <p className="text-xs text-muted-foreground">
                                 <span className="font-medium">意義：</span>時間效益指標，數值越高代表時間投資報酬越好
                               </p>
                             </div>
 
                             {/* 3. 回收率 */}
-                            <div className="bg-[#F5E6E8] rounded-xl p-4">
-                              <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                <span className="text-[#D4A574]">📈</span>
+                            <div className="bg-soft-pink rounded-xl p-4">
+                              <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                <span className="text-secondary">📈</span>
                                 回收率
                               </h4>
-                              <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
-                                <span className="font-medium text-[#3A3A3A]">計算方式：</span>
+                              <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+                                <span className="font-medium text-foreground">計算方式：</span>
                                 <br />
                                 總收入 ÷ (攤位費 + 設備租賃費) × 100%
                               </p>
-                              <p className="text-xs text-[#6B6B6B]">
+                              <p className="text-xs text-muted-foreground">
                                 <span className="font-medium">意義：</span>固定成本回收倍數，200% 表示收入是成本的 2 倍
                               </p>
                             </div>
                           </div>
 
-                          <div className="bg-[#7B9FA6]/10 rounded-xl p-3 mb-4">
-                            <p className="text-xs text-[#3A3A3A] leading-relaxed">
+                          <div className="bg-primary/10 rounded-xl p-3 mb-4">
+                            <p className="text-xs text-foreground leading-relaxed">
                               <span className="font-medium">💡 排序規則：</span>
                               <br />
                               優先按「每小時淨利」排序，相同時再按「回收率」排序
@@ -794,7 +794,7 @@ export default function AnalyticsPage() {
 
                           <button
                             onClick={() => setShowInfoTooltip(false)}
-                            className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+                            className="w-full bg-primary text-white py-3 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
                           >
                             知道了
                           </button>
@@ -823,7 +823,7 @@ export default function AnalyticsPage() {
                   {/* 如果少於3個市集，顯示提示 */}
                   {marketROIData.length < 3 && (
                     <div className="mt-4 text-center">
-                      <p className="text-xs text-[#6B6B6B]">
+                      <p className="text-xs text-muted-foreground">
                         目前僅有 {marketROIData.length} 場符合條件的市集數據
                       </p>
                     </div>
@@ -831,7 +831,7 @@ export default function AnalyticsPage() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-sm text-[#6B6B6B]">
+                  <p className="text-sm text-muted-foreground">
                     目前沒有獲利的市集數據
                   </p>
                 </div>
@@ -840,21 +840,21 @@ export default function AnalyticsPage() {
 
             {/* ✅ 客單價最高市集（移到最上層，快速模式顯示） */}
             {marketAOVData.length > 0 && (
-              <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+              <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
                 {/* 標題與說明 */}
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-medium text-[#3A3A3A]">
+                    <h2 className="text-xl font-medium text-foreground">
                       客單價最高市集
                     </h2>
                     {/* 說明燈泡按鈕 */}
                     <button
                       onClick={() => setShowAOVInfoTooltip(!showAOVInfoTooltip)}
-                      className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                      className="relative bg-soft-yellow hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
                       aria-label="查看說明"
                     >
                       <svg 
-                        className="w-4 h-4 text-[#D4A574]" 
+                        className="w-4 h-4 text-secondary" 
                         fill="currentColor" 
                         viewBox="0 0 20 20"
                       >
@@ -892,64 +892,64 @@ export default function AnalyticsPage() {
                           leaveFrom="opacity-100 scale-100"
                           leaveTo="opacity-0 scale-95"
                         >
-                          <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all border border-[#7B9FA6]/10 relative">
+                          <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all border border-primary/10 relative">
                             {/* 關閉按鈕 */}
                             <button
                               onClick={() => setShowAOVInfoTooltip(false)}
-                              className="absolute top-4 right-4 text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+                              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
                               aria-label="關閉"
                             >
                               <X className="w-5 h-5" />
                             </button>
 
-                            <Dialog.Title className="font-medium text-[#3A3A3A] mb-4 text-lg pr-8">
+                            <Dialog.Title className="font-medium text-foreground mb-4 text-lg pr-8">
                               💡 客單價分析
                             </Dialog.Title>
                             
                             {/* 客單價說明 */}
                             <div className="space-y-4 mb-6">
                               {/* 計算方式 */}
-                              <div className="bg-[#E8F3E8] rounded-xl p-4">
-                                <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                  <span className="text-[#7B9FA6]">🧮</span>
+                              <div className="bg-soft-green rounded-xl p-4">
+                                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                  <span className="text-primary">🧮</span>
                                   計算方式
                                 </h4>
-                                <p className="text-sm text-[#6B6B6B] leading-relaxed">
-                                  <span className="font-medium text-[#3A3A3A]">客單價 = 總收入 ÷ 成交數</span>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                  <span className="font-medium text-foreground">客單價 = 總收入 ÷ 成交數</span>
                                 </p>
                               </div>
 
                               {/* 指標意義 */}
-                              <div className="bg-[#FFF8E7] rounded-xl p-4">
-                                <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                  <span className="text-[#D4A574]">📊</span>
+                              <div className="bg-soft-yellow rounded-xl p-4">
+                                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                  <span className="text-secondary">📊</span>
                                   指標意義
                                 </h4>
-                                <p className="text-sm text-[#6B6B6B] leading-relaxed mb-2">
+                                <p className="text-sm text-muted-foreground leading-relaxed mb-2">
                                   反映每筆交易的平均金額，是衡量顧客消費能力的重要指標。
                                 </p>
-                                <ul className="text-xs text-[#6B6B6B] space-y-1 ml-4">
+                                <ul className="text-xs text-muted-foreground space-y-1 ml-4">
                                   <li>• 客單價越高 → 顧客願意花更多錢</li>
                                   <li>• 可能原因：商品定價高、顧客購買多件、高價值商品受歡迎</li>
                                 </ul>
                               </div>
 
                               {/* 實際範例 */}
-                              <div className="bg-[#F5E6E8] rounded-xl p-4">
-                                <h4 className="font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                                  <span className="text-[#D4A574]">💡</span>
+                              <div className="bg-soft-pink rounded-xl p-4">
+                                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                                  <span className="text-secondary">💡</span>
                                   實際範例
                                 </h4>
-                                <div className="text-sm text-[#6B6B6B] leading-relaxed space-y-2">
+                                <div className="text-sm text-muted-foreground leading-relaxed space-y-2">
                                   <div className="bg-white rounded-lg p-3">
-                                    <p className="font-medium text-[#3A3A3A] mb-1">市集 A</p>
+                                    <p className="font-medium text-foreground mb-1">市集 A</p>
                                     <p className="text-xs">總收入：$10,000 ÷ 成交數：50 筆</p>
-                                    <p className="text-xs font-medium text-[#7B9FA6]">→ 客單價：$200</p>
+                                    <p className="text-xs font-medium text-primary">→ 客單價：$200</p>
                                   </div>
                                   <div className="bg-white rounded-lg p-3">
-                                    <p className="font-medium text-[#3A3A3A] mb-1">市集 B</p>
+                                    <p className="font-medium text-foreground mb-1">市集 B</p>
                                     <p className="text-xs">總收入：$10,000 ÷ 成交數：100 筆</p>
-                                    <p className="text-xs font-medium text-[#D4A574]">→ 客單價：$100</p>
+                                    <p className="text-xs font-medium text-secondary">→ 客單價：$100</p>
                                   </div>
                                   <p className="text-xs pt-2">
                                     市集 A 的客單價較高，表示顧客平均每次購買金額更多
@@ -958,8 +958,8 @@ export default function AnalyticsPage() {
                               </div>
                             </div>
 
-                            <div className="bg-[#7B9FA6]/10 rounded-xl p-3 mb-4">
-                              <p className="text-xs text-[#3A3A3A] leading-relaxed">
+                            <div className="bg-primary/10 rounded-xl p-3 mb-4">
+                              <p className="text-xs text-foreground leading-relaxed">
                                 <span className="font-medium">💡 提升客單價的方法：</span>
                                 <br />
                                 提高商品定價、推出組合優惠、引導顧客購買多件商品
@@ -968,7 +968,7 @@ export default function AnalyticsPage() {
 
                             <button
                               onClick={() => setShowAOVInfoTooltip(false)}
-                              className="w-full bg-[#7B9FA6] text-white py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium"
+                              className="w-full bg-primary text-white py-3 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
                             >
                               知道了
                             </button>
@@ -996,7 +996,7 @@ export default function AnalyticsPage() {
                     {/* 如果少於3個市集，顯示提示 */}
                     {marketAOVData.length < 3 && (
                       <div className="mt-4 text-center">
-                        <p className="text-xs text-[#6B6B6B]">
+                        <p className="text-xs text-muted-foreground">
                           目前僅有 {marketAOVData.length} 場有成交的市集數據
                         </p>
                       </div>
@@ -1004,7 +1004,7 @@ export default function AnalyticsPage() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-sm text-[#6B6B6B]">
+                    <p className="text-sm text-muted-foreground">
                       目前沒有成交記錄的市集數據
                     </p>
                   </div>
@@ -1028,11 +1028,11 @@ export default function AnalyticsPage() {
                   featureName="基礎診斷"
                 >
                   {marketHealthScores && marketHealthScores.length > 0 && (
-                    <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+                    <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
                       {/* 標題與說明 */}
                       <div className="flex items-center justify-between mb-5">
                         <div className="flex items-center gap-2">
-                          <h2 className="text-xl font-medium text-[#3A3A3A]">
+                          <h2 className="text-xl font-medium text-foreground">
                             市集綜合評分
                           </h2>
                           {/* 說明燈泡按鈕 */}
@@ -1043,11 +1043,11 @@ export default function AnalyticsPage() {
                                 duration: 6000,
                               });
                             }}
-                            className="relative bg-[#FFF8E7] hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                            className="relative bg-soft-yellow hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
                             aria-label="查看說明"
                           >
                             <svg 
-                              className="w-4 h-4 text-[#D4A574]" 
+                              className="w-4 h-4 text-secondary" 
                               fill="currentColor" 
                               viewBox="0 0 20 20"
                             >
@@ -1059,21 +1059,21 @@ export default function AnalyticsPage() {
 
                       {/* 評分統計摘要 */}
                       <div className="grid grid-cols-3 gap-3 mb-5">
-                        <div className="bg-[#E8F3E8] rounded-xl p-3 text-center">
-                          <p className="text-xs text-[#6B6B6B] mb-1">平均分數</p>
-                          <p className="text-xl font-bold text-[#3A3A3A]">
+                        <div className="bg-soft-green rounded-xl p-3 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">平均分數</p>
+                          <p className="text-xl font-bold text-foreground">
                             {(marketHealthScores.reduce((sum, s) => sum + s.healthScore, 0) / marketHealthScores.length).toFixed(1)}
                           </p>
                         </div>
-                        <div className="bg-[#FFF8E7] rounded-xl p-3 text-center">
-                          <p className="text-xs text-[#6B6B6B] mb-1">最高分</p>
+                        <div className="bg-soft-yellow rounded-xl p-3 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">最高分</p>
                           <p className="text-xl font-bold text-[#FFD700]">
                             {Math.max(...marketHealthScores.map(s => s.healthScore)).toFixed(1)}
                           </p>
                         </div>
-                        <div className="bg-[#F5E6E8] rounded-xl p-3 text-center">
-                          <p className="text-xs text-[#6B6B6B] mb-1">最低分</p>
-                          <p className="text-xl font-bold text-[#D4A574]">
+                        <div className="bg-soft-pink rounded-xl p-3 text-center">
+                          <p className="text-xs text-muted-foreground mb-1">最低分</p>
+                          <p className="text-xl font-bold text-secondary">
                             {Math.min(...marketHealthScores.map(s => s.healthScore)).toFixed(1)}
                           </p>
                         </div>
@@ -1101,7 +1101,7 @@ export default function AnalyticsPage() {
                           {/* 如果少於3個市集，顯示提示 */}
                           {marketHealthScores.length < 3 && (
                             <div className="mt-4 text-center">
-                              <p className="text-xs text-[#6B6B6B]">
+                              <p className="text-xs text-muted-foreground">
                                 目前僅有 {marketHealthScores.length} 場符合條件的市集數據
                               </p>
                             </div>
@@ -1109,7 +1109,7 @@ export default function AnalyticsPage() {
                         </div>
                       ) : (
                         <div className="text-center py-8">
-                          <p className="text-sm text-[#6B6B6B]">
+                          <p className="text-sm text-muted-foreground">
                             目前沒有符合評分條件的市集數據
                           </p>
                         </div>

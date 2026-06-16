@@ -117,8 +117,8 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
             disabled={isProcessing}
             className={`
               relative overflow-hidden
-              bg-white hover:bg-[#FAFAF8] 
-              border-2 border-[#7B9FA6]/20 rounded-xl p-4 
+              bg-white hover:bg-background 
+              border-2 border-primary/20 rounded-xl p-4 
               transition-all duration-200
               disabled:opacity-50 disabled:cursor-not-allowed 
               shadow-sm hover:shadow-md
@@ -128,12 +128,12 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
             {/* 光暈效果 */}
             {clickingButton === button.id && (
               <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-[#7B9FA6]/20 rounded-xl animate-ping" />
+                <div className="absolute inset-0 bg-primary/20 rounded-xl animate-ping" />
               </div>
             )}
             
             <div className="text-3xl mb-2 text-center relative z-10">{button.emoji}</div>
-            <div className="text-sm font-medium text-[#3A3A3A] text-center relative z-10">
+            <div className="text-sm font-medium text-foreground text-center relative z-10">
               {button.label}
             </div>
           </button>
@@ -152,7 +152,7 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
           }}
         >
           <div className="animate-float-up">
-            <div className="flex items-center gap-1 bg-[#7B9FA6] text-white px-3 py-1.5 rounded-full shadow-lg">
+            <div className="flex items-center gap-1 bg-primary text-white px-3 py-1.5 rounded-full shadow-lg">
               <span className="text-xl">{animation.emoji}</span>
               <span className="text-sm font-bold">+1</span>
             </div>

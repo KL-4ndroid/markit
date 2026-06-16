@@ -88,18 +88,36 @@ async function createMarket(data: MarketData) {
 
 ## 設計系統規範
 
-### 必須遵循的色彩
+### 必須遵循的色彩（出攤本 BoothBook VI 對齊版，2026-06-17）
+
+> 對應文件：`docs/brand/VI_DESIGN_SYSTEM.md` + `docs/brand/VI_DESIGN_TOKENS.md`
 
 #### 老闆模式（預設）
-- 主色：#7B9FA6 (霧藍)
-- 次色：#D4A574 (暖木)
-- 背景：#FAFAF8 (米白)
-- 輔助色：#F5E6E8 (柔粉)、#E8F3E8 (柔綠)、#FFF8E7 (柔黃)
+- 主色：霧松綠 `#6F8F86` → Tailwind `primary`
+- 次色：暖杏橘 `#D9A66A` → Tailwind `secondary`
+- 背景：奶油米白 `#F7F3EA` → Tailwind `background`
+- 文字主色：墨灰黑 `#2F3432` → Tailwind `foreground`
+- 輔助色：柔粉 `#F5E6E8`、柔綠 `#E8F3E8`、柔黃 `#FFF8E7`（**僅背景用**）
 
 #### 員工模式
-- 主色：#8B7BA6 (紫灰)
-- 次色：#A6B4D4 (淺藍紫)
-- 淺色背景：#F0E8F3 (淺紫)
+- 沿用主色 `primary`，以透明度區分：
+  - 主背景：`primary/10`（霧松綠 10% 透明）
+  - 漸層 header：`from-primary/80 to-primary/60`
+  - 邊框：`primary/15`
+- 不再使用紫灰（VI 框架未指定獨立色票）
+
+#### 功能色
+
+| 用途 | 色票 | Tailwind |
+|---|---|---|
+| 危險 / 刪除 | 乾燥玫瑰 `#C7776E` | `danger` |
+| 提醒 / 庫存不足 | 柔霧黃 `#E5C46B` | `warn` |
+| 資訊 / 說明 | 霧藍灰 `#7E9AA0` | `info` |
+| 中性分隔 | 淺霧灰 `#E8E2D8` | `muted` |
+| 次要標題 | 深灰綠 `#40504B` | `deep` |
+
+> ⚠️ **禁止在 `.tsx` 內直接寫 hex**（`bg-[#7B9FA6]`）。統一用 Tailwind token
+> （`bg-primary`）讓未來改色只需動 `app/globals.css` `:root` 一處。
 
 ### 圓角系統
 - 主卡片：rounded-[1.5rem] (24px)
@@ -168,6 +186,7 @@ export default function PageName() {
 ❌ 不在主執行緒執行同步操作（會阻塞 UI）
 
 ### 必須遵循
+✅ 使用 CSS 變數 + Tailwind token 色彩（不要寫 hex）
 ✅ 所有資料存於 IndexedDB (Dexie.js)
 ✅ 所有讀取使用 `useLiveQuery` 或自訂 Hooks
 ✅ 使用事件溯源模式

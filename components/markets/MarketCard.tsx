@@ -67,7 +67,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
     
     // 不在市集日期內
     if (!isMarketDay) {
-      return { status: 'not_started', label: '尚未開始', color: 'bg-[#6B6B6B]/10 text-[#6B6B6B]' };
+      return { status: 'not_started', label: '尚未開始', color: 'bg-muted-foreground/10 text-muted-foreground' };
     }
     
     // 在市集日期內，檢查時間
@@ -77,7 +77,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       const checkInMinutes = market.checkInTime ? timeToMinutes(market.checkInTime) : 570; // 預設 09:30
       
       if (currentMinutes >= earlyEntryMinutes && currentMinutes < checkInMinutes) {
-        return { status: 'early_entry', label: '提前進場中', color: 'bg-[#FFF8E7] text-[#D4A574]' };
+        return { status: 'early_entry', label: '提前進場中', color: 'bg-soft-yellow text-secondary' };
       }
     }
     
@@ -87,7 +87,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       const operatingStartMinutes = timeToMinutes(market.operatingStartTime);
       
       if (currentMinutes >= checkInMinutes && currentMinutes < operatingStartMinutes) {
-        return { status: 'check_in', label: '報到中', color: 'bg-[#E8F3E8] text-[#7B9FA6]' };
+        return { status: 'check_in', label: '報到中', color: 'bg-soft-green text-primary' };
       }
     }
     
@@ -97,7 +97,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       const operatingEndMinutes = timeToMinutes(market.operatingEndTime);
       
       if (currentMinutes >= operatingStartMinutes && currentMinutes < operatingEndMinutes) {
-        return { status: 'operating', label: '營業中', color: 'bg-[#7B9FA6] text-white' };
+        return { status: 'operating', label: '營業中', color: 'bg-primary text-white' };
       }
     }
     
@@ -106,12 +106,12 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       const operatingEndMinutes = timeToMinutes(market.operatingEndTime);
       
       if (currentMinutes >= operatingEndMinutes) {
-        return { status: 'closed', label: '已結束', color: 'bg-[#F5E6E8] text-[#6B6B6B]' };
+        return { status: 'closed', label: '已結束', color: 'bg-soft-pink text-muted-foreground' };
       }
     }
     
     // 預設：尚未開始（當天但還沒到時間）
-    return { status: 'not_started', label: '尚未開始', color: 'bg-[#6B6B6B]/10 text-[#6B6B6B]' };
+    return { status: 'not_started', label: '尚未開始', color: 'bg-muted-foreground/10 text-muted-foreground' };
   };
 
   // 計算轉換率（C3.5：優先使用 projection 數值）
@@ -126,13 +126,13 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
   // 根據狀態返回對應的樣式
   const getStatusStyle = (status: MarketStatus) => {
     const styles = {
-      registered: 'bg-[#FFF8E7] text-[#3A3A3A]',   // 柔黃色 - 已報名
-      accepted: 'bg-[#E8F3E8] text-[#3A3A3A]',     // 柔綠色 - 已錄取
-      paid: 'bg-[#E8F3E8] text-[#3A3A3A]',         // 柔綠色 - 已繳費
-      ongoing: 'bg-[#7B9FA6] text-white',          // 霧藍色 - 進行中
-      completed: 'bg-[#F5E6E8] text-[#3A3A3A]',    // 柔粉色 - 已完成
-      postponed: 'bg-[#F5E6E8] text-[#3A3A3A]',    // 柔粉色 - 已延期
-      cancelled: 'bg-[#F5E6E8] text-[#d4183d]',    // 柔粉色 + 紅字 - 已取消
+      registered: 'bg-soft-yellow text-foreground',   // 柔黃色 - 已報名
+      accepted: 'bg-soft-green text-foreground',     // 柔綠色 - 已錄取
+      paid: 'bg-soft-green text-foreground',         // 柔綠色 - 已繳費
+      ongoing: 'bg-primary text-white',          // 霧藍色 - 進行中
+      completed: 'bg-soft-pink text-foreground',    // 柔粉色 - 已完成
+      postponed: 'bg-soft-pink text-foreground',    // 柔粉色 - 已延期
+      cancelled: 'bg-soft-pink text-danger',    // 柔粉色 + 紅字 - 已取消
     };
     return styles[status] || styles.registered;
   };
@@ -248,15 +248,15 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
     <>
       <div
         onClick={handleClick}
-        className={`bg-white rounded-[1.5rem] p-5 shadow-lg shadow-[#7B9FA6]/10 cursor-pointer hover:shadow-xl transition-all relative ${
-          isOperating ? 'ring-4 ring-[#7B9FA6] ring-opacity-50' : ''
+        className={`bg-white rounded-[1.5rem] p-5 shadow-lg shadow-primary/10 cursor-pointer hover:shadow-xl transition-all relative ${
+          isOperating ? 'ring-4 ring-primary ring-opacity-50' : ''
         }`}
       >
         {/* 備註提醒圖示 - 右上角 */}
         {hasNotes && (
           <button
             onClick={handleNotesClick}
-            className="absolute top-4 right-4 bg-[#FFF8E7] hover:bg-[#FFE4A3] text-[#D4A574] rounded-full p-2 transition-colors z-10"
+            className="absolute top-4 right-4 bg-soft-yellow hover:bg-[#FFE4A3] text-secondary rounded-full p-2 transition-colors z-10"
             title="查看備註"
           >
             <AlertCircle className="w-5 h-5" />
@@ -274,7 +274,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
                 </span>
               )}
               
-              <h3 className="font-medium text-lg text-[#3A3A3A]">
+              <h3 className="font-medium text-lg text-foreground">
                 {market.name}
               </h3>
               {/* 營業狀態標籤 - 只在首頁今日市集顯示 */}
@@ -288,23 +288,23 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
             </div>
           <div className="flex flex-col gap-1">
             {/* 日期 - 根據 variant 決定是否換行 */}
-            <p className={`text-sm text-[#6B6B6B] flex items-start gap-1 ${variant === 'default' ? 'flex-wrap' : ''}`}>
-              <Calendar className="w-4 h-4 text-[#7B9FA6] flex-shrink-0 mt-0.5" />
+            <p className={`text-sm text-muted-foreground flex items-start gap-1 ${variant === 'default' ? 'flex-wrap' : ''}`}>
+              <Calendar className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
               <span className={variant === 'default' ? 'flex-1' : ''}>
                 {formatDateRange()}
               </span>
             </p>
 
             {/* 地點 */}
-            <p className="text-sm text-[#6B6B6B] flex items-center gap-1">
-              <MapPin className="w-4 h-4 text-[#D4A574]" />
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <MapPin className="w-4 h-4 text-secondary" />
               {market.location}
             </p>
 
             {/* 首頁今日市集顯示營業時間 */}
             {variant === 'home' && market.operatingStartTime && market.operatingEndTime && (
-              <p className="text-sm text-[#6B6B6B] flex items-center gap-1">
-                <Clock className="w-4 h-4 text-[#7B9FA6]" />
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <Clock className="w-4 h-4 text-primary" />
                 {market.operatingStartTime} - {market.operatingEndTime}
               </p>
             )}
@@ -316,28 +316,28 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       {/* ✅ 員工模式下完全隱藏敏感數據區塊 */}
       {variant !== 'upcoming' && !isStaff && (
         <div className="grid grid-cols-2 gap-3 mb-3">
-          <div className="bg-[#7B9FA6]/10 rounded-xl p-3">
-            <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
+          <div className="bg-primary/10 rounded-xl p-3">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
               <DollarSign className="w-3 h-3" />
               收入
               {market.startDate !== market.endDate && (
-                <span className="text-[10px] text-[#7B9FA6]">(總計)</span>
+                <span className="text-[10px] text-primary">(總計)</span>
               )}
             </div>
-            <div className="font-bold text-lg text-[#7B9FA6] tabular-nums">
+            <div className="font-bold text-lg text-primary tabular-nums">
               {formatCurrency(stats?.totalRevenue ?? (market.totalRevenue || 0))}
             </div>
           </div>
           
-          <div className="bg-[#E8F3E8] rounded-xl p-3">
-            <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
+          <div className="bg-soft-green rounded-xl p-3">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
               淨利潤
               {market.startDate !== market.endDate && (
-                <span className="text-[10px] text-[#3A3A3A]/60">(總計)</span>
+                <span className="text-[10px] text-foreground/60">(總計)</span>
               )}
             </div>
-            <div className={`font-bold text-lg tabular-nums ${(market.totalProfit || 0) >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'}`}>
+            <div className={`font-bold text-lg tabular-nums ${(market.totalProfit || 0) >= 0 ? 'text-foreground' : 'text-danger'}`}>
               {formatCurrency(market.totalProfit || 0)}
             </div>
           </div>
@@ -348,22 +348,22 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       {/* ✅ 員工模式下只顯示成交次數，隱藏攤位成本 */}
       {variant !== 'upcoming' && (
         <div className={`grid ${isStaff ? 'grid-cols-1' : 'grid-cols-2'} gap-3 mb-3`}>
-          <div className="bg-[#FFF8E7] rounded-xl p-3">
-            <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
+          <div className="bg-soft-yellow rounded-xl p-3">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
               <Target className="w-3 h-3" />
               成交次數
             </div>
-            <div className="font-bold text-lg text-[#D4A574] tabular-nums">
+            <div className="font-bold text-lg text-secondary tabular-nums">
               {stats?.totalDeals ?? (market.totalDeals || 0)} <span className="text-sm font-normal">筆</span>
             </div>
           </div>
           {!isStaff && (
-            <div className="bg-[#F5E6E8] rounded-xl p-3">
-              <div className="text-xs text-[#6B6B6B] mb-1 flex items-center gap-1">
+            <div className="bg-soft-pink rounded-xl p-3">
+              <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                 <DollarSign className="w-3 h-3" />
                 攤位成本
               </div>
-              <div className="font-bold text-lg text-[#3A3A3A] tabular-nums">
+              <div className="font-bold text-lg text-foreground tabular-nums">
                 {formatCurrency(
                   (market.boothCost || 0) +
                   (market.tableFree ? 0 : (market.tableRental || 0)) +
@@ -377,7 +377,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       )}
 
       {/* 租賃設備 - 所有變體都顯示 */}
-      <div className="flex gap-3 text-[#6B6B6B] bg-[#FAFAF8] rounded-xl p-3">
+      <div className="flex gap-3 text-muted-foreground bg-background rounded-xl p-3">
         <div className="flex items-center gap-1">
           <Table className="w-4 h-4" />
           <span className="text-xs">
@@ -421,10 +421,10 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       {/* 轉換率 - 只在市集頁面顯示 */}
       {/*variant === 'default' && (
         <div className="flex justify-center">
-          <div className="bg-[#7B9FA6]/5 rounded-xl px-4 py-2 inline-flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[#7B9FA6]" />
-            <span className="text-sm text-[#6B6B6B]">轉換率</span>
-            <span className="text-sm font-bold text-[#7B9FA6] tabular-nums">
+          <div className="bg-primary/5 rounded-xl px-4 py-2 inline-flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            <span className="text-sm text-muted-foreground">轉換率</span>
+            <span className="text-sm font-bold text-primary tabular-nums">
               {getConversionRate()}%
             </span>
           </div>
@@ -441,19 +441,19 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel className="bg-white rounded-[1.5rem] p-6 max-w-md w-full shadow-2xl">
           <div className="flex items-center gap-2 mb-4">
-            <AlertCircle className="w-5 h-5 text-[#D4A574]" />
-            <DialogTitle className="text-lg font-medium text-[#3A3A3A]">市集備註</DialogTitle>
+            <AlertCircle className="w-5 h-5 text-secondary" />
+            <DialogTitle className="text-lg font-medium text-foreground">市集備註</DialogTitle>
           </div>
           
-          <div className="bg-[#FFF8E7] rounded-xl p-4 mb-4">
-            <p className="text-sm text-[#3A3A3A] whitespace-pre-wrap">
+          <div className="bg-soft-yellow rounded-xl p-4 mb-4">
+            <p className="text-sm text-foreground whitespace-pre-wrap">
               {market.notes}
             </p>
           </div>
           
           <button
             onClick={() => setShowNotesModal(false)}
-            className="w-full bg-[#7B9FA6] text-white py-3 rounded-xl hover:bg-[#6A8E95] transition-colors font-medium"
+            className="w-full bg-primary text-white py-3 rounded-xl hover:bg-primary/85 transition-colors font-medium"
           >
             關閉
           </button>

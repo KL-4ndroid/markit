@@ -57,17 +57,17 @@ export function DealItem({ deal, onClick }: DealItemProps) {
   return (
     <div
       onClick={onClick}
-      className="flex items-center justify-between p-3 bg-[#FAFAF8] rounded-xl cursor-pointer hover:bg-[#F0F8F6] transition-colors active:scale-[0.98] transform"
+      className="flex items-center justify-between p-3 bg-background rounded-xl cursor-pointer hover:bg-[#F0F8F6] transition-colors active:scale-[0.98] transform"
     >
       {/* 左側：時間 */}
-      <div className="flex items-center gap-2 text-sm text-[#6B6B6B]">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <span>🕐</span>
         <span className="font-mono font-medium">{time}</span>
       </div>
 
       {/* 中間：金額 */}
       <div className="flex items-center gap-1">
-        <span className="text-lg font-bold text-[#7B9FA6] tabular-nums">
+        <span className="text-lg font-bold text-primary tabular-nums">
           NT$ {amount.toLocaleString()}
         </span>
       </div>
@@ -75,10 +75,10 @@ export function DealItem({ deal, onClick }: DealItemProps) {
       {/* 右側：支付方式 + 箭頭 */}
       <div className="flex items-center gap-2">
         <span className="text-sm">{paymentIcons[paymentMethod]}</span>
-        <span className="text-xs text-[#6B6B6B] hidden sm:inline">
+        <span className="text-xs text-muted-foreground hidden sm:inline">
           {paymentLabels[paymentMethod]}
         </span>
-        <ChevronRight className="w-4 h-4 text-[#6B6B6B]" />
+        <ChevronRight className="w-4 h-4 text-muted-foreground" />
       </div>
     </div>
   );

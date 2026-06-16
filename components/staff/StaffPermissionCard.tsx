@@ -34,24 +34,24 @@ export function StaffPermissionCard({ permissions }: StaffPermissionCardProps) {
   ];
 
   return (
-    <div className="bg-gradient-to-br from-[#F0E8F3] to-[#E8EAF3] rounded-xl p-4">
+    <div className="bg-gradient-to-br from-primary/10 to-[#E8EAF3] rounded-xl p-4">
       <div className="flex items-start gap-3">
-        <div className="bg-[#8B7BA6] p-2 rounded-lg flex-shrink-0">
+        <div className="bg-primary p-2 rounded-lg flex-shrink-0">
           <Shield className="w-4 h-4 text-white" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-medium text-[#3A3A3A] mb-2">
+          <p className="text-sm font-medium text-foreground mb-2">
             您的權限範圍
           </p>
           <ul className="space-y-1.5">
             {permissionList.map((permission, index) => (
               <li key={index} className="flex items-center gap-2 text-xs">
                 {permission.allowed ? (
-                  <Check className="w-3.5 h-3.5 text-[#8B7BA6] flex-shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                 ) : (
-                  <X className="w-3.5 h-3.5 text-[#6B6B6B] flex-shrink-0" />
+                  <X className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                 )}
-                <span className={permission.allowed ? 'text-[#3A3A3A]' : 'text-[#6B6B6B]'}>
+                <span className={permission.allowed ? 'text-foreground' : 'text-muted-foreground'}>
                   {permission.label}
                 </span>
               </li>

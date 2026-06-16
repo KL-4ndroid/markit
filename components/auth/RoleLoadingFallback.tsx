@@ -25,15 +25,15 @@
 
 export function RoleLoadingFallback() {
   return (
-    <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="max-w-lg mx-auto px-6 w-full">
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-12 text-center">
+        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-12 text-center">
           <div
-            className="w-12 h-12 mx-auto mb-4 border-4 border-[#7B9FA6]/30 border-t-[#7B9FA6] rounded-full animate-spin"
+            className="w-12 h-12 mx-auto mb-4 border-4 border-primary/30 border-t-primary rounded-full animate-spin"
             role="status"
             aria-label="正在載入"
           />
-          <p className="text-sm text-[#6B6B6B]">正在確認身分...</p>
+          <p className="text-sm text-muted-foreground">正在確認身分...</p>
         </div>
       </div>
     </div>

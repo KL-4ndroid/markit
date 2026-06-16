@@ -30,7 +30,7 @@ import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 function OverviewSkeleton() {
   return (
     <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-gray-100">
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#7B9FA6]/10">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-primary/10">
         <div>
           <div className="h-4 w-20 bg-gray-200 rounded skeleton-shimmer-dark mb-1" />
           <div className="h-3 w-28 bg-gray-100 rounded skeleton-shimmer" />
@@ -74,12 +74,12 @@ function MarketsSkeleton({ count = 2 }: { count?: number }) {
 // Empty state — only shown when markets have loaded and are empty
 function MarketsEmptyState({ hasToday }: { hasToday: boolean }) {
   return (
-    <div className="bg-white rounded-[1.5rem] p-8 shadow-md shadow-[#7B9FA6]/5 text-center">
-      <Calendar className="w-12 h-12 text-[#7B9FA6] mx-auto mb-3 opacity-50" />
-      <p className="text-[#6B6B6B] text-sm mb-2">
+    <div className="bg-white rounded-[1.5rem] p-8 shadow-md shadow-primary/5 text-center">
+      <Calendar className="w-12 h-12 text-primary mx-auto mb-3 opacity-50" />
+      <p className="text-muted-foreground text-sm mb-2">
         {hasToday ? '沒有即將到來的市集' : '尚未新增任何市集'}
       </p>
-      <p className="text-[#6B6B6B] text-xs">
+      <p className="text-muted-foreground text-xs">
         前往市集頁面新增您的市集
       </p>
     </div>
@@ -302,7 +302,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
@@ -347,26 +347,26 @@ export default function HomePage() {
                             className="fixed inset-0 z-40" 
                             onClick={() => setShowUserMenu(false)}
                           />
-                          <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-2 min-w-[240px] z-50 border border-[#7B9FA6]/10">
+                          <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-2 min-w-[240px] z-50 border border-primary/10">
                             {/* 用戶信息 */}
-                            <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
-                              <p className="text-xs text-[#6B6B6B]">登入為</p>
-                              <p className="text-sm font-medium text-[#3A3A3A] truncate">
+                            <div className="px-3 py-2 border-b border-primary/10">
+                              <p className="text-xs text-muted-foreground">登入為</p>
+                              <p className="text-sm font-medium text-foreground truncate">
                                 {user.email}
                               </p>
                             </div>
 
                             {/* 訂閱狀態（僅老闆身份顯示） */}
                             {!userRole.isStaff && (
-                              <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
+                              <div className="px-3 py-2 border-b border-primary/10">
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="text-xs text-[#6B6B6B]">目前方案</span>
+                                  <span className="text-xs text-muted-foreground">目前方案</span>
                                   {currentPlan === 'free' && (
-                                    <Crown className="w-4 h-4 text-[#D4A574]" />
+                                    <Crown className="w-4 h-4 text-secondary" />
                                   )}
                                 </div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-[#3A3A3A]">
+                                  <span className="text-sm font-medium text-foreground">
                                     {currentPlan === "free"
                                       ? "免費版"
                                       : currentPlan === "pro"
@@ -381,7 +381,7 @@ export default function HomePage() {
                                         setShowUserMenu(false);
                                         router.push('/subscription');
                                       }}
-                                      className="text-xs text-[#7B9FA6] hover:underline"
+                                      className="text-xs text-primary hover:underline"
                                     >
                                       升級
                                     </button>
@@ -391,7 +391,7 @@ export default function HomePage() {
                                         setShowUserMenu(false);
                                         router.push('/subscription');
                                       }}
-                                      className="text-xs text-[#7B9FA6] hover:underline"
+                                      className="text-xs text-primary hover:underline"
                                     >
                                       管理
                                     </button>
@@ -401,20 +401,20 @@ export default function HomePage() {
                             )}
 
                             {/* 身份信息 */}
-                            <div className="px-3 py-2 border-b border-[#7B9FA6]/10">
+                            <div className="px-3 py-2 border-b border-primary/10">
                               {userRole.isStaff ? (
                                 <div>
                                   <div className="flex items-center gap-2 mb-2">
-                                    <Shield className="w-4 h-4 text-[#D4A574]" />
-                                    <span className="text-sm font-medium text-[#3A3A3A]">
+                                    <Shield className="w-4 h-4 text-secondary" />
+                                    <span className="text-sm font-medium text-foreground">
                                       員工身份
                                     </span>
                                   </div>
                                   {/* 老闆信息 */}
                                   {userRole.ownerEmail && (
-                                    <div className="mb-2 p-2 bg-[#F0E8F3] rounded-lg">
-                                      <p className="text-xs text-[#6B6B6B] mb-0.5">為以下老闆工作</p>
-                                      <p className="text-sm font-medium text-[#3A3A3A] truncate">
+                                    <div className="mb-2 p-2 bg-primary/10 rounded-lg">
+                                      <p className="text-xs text-muted-foreground mb-0.5">為以下老闆工作</p>
+                                      <p className="text-sm font-medium text-foreground truncate">
                                         {userRole.ownerEmail}
                                       </p>
                                     </div>
@@ -422,21 +422,21 @@ export default function HomePage() {
                                   <div className="flex items-center gap-2 text-xs">
                                     {userRole.permissions?.can_edit ? (
                                       <>
-                                        <Edit3 className="w-3 h-3 text-[#7B9FA6]" />
-                                        <span className="text-[#6B6B6B]">可編輯</span>
+                                        <Edit3 className="w-3 h-3 text-primary" />
+                                        <span className="text-muted-foreground">可編輯</span>
                                       </>
                                     ) : (
                                       <>
-                                        <Eye className="w-3 h-3 text-[#6B6B6B]" />
-                                        <span className="text-[#6B6B6B]">僅查看</span>
+                                        <Eye className="w-3 h-3 text-muted-foreground" />
+                                        <span className="text-muted-foreground">僅查看</span>
                                       </>
                                     )}
                                   </div>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-2">
-                                  <User className="w-4 h-4 text-[#7B9FA6]" />
-                                  <span className="text-sm font-medium text-[#3A3A3A]">
+                                  <User className="w-4 h-4 text-primary" />
+                                  <span className="text-sm font-medium text-foreground">
                                     老闆身份
                                   </span>
                                 </div>
@@ -446,10 +446,10 @@ export default function HomePage() {
                             {/* 登出按鈕 */}
                             <button
                               onClick={handleSignOut}
-                              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#F5E6E8] transition-colors text-left"
+                              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-soft-pink transition-colors text-left"
                             >
-                              <LogOut className="w-4 h-4 text-[#d4183d]" />
-                              <span className="text-sm text-[#3A3A3A]">登出</span>
+                              <LogOut className="w-4 h-4 text-danger" />
+                              <span className="text-sm text-foreground">登出</span>
                             </button>
                           </div>
                         </>
@@ -483,18 +483,18 @@ export default function HomePage() {
           ) : (
             <div className={`bg-white rounded-[1.5rem] p-6 shadow-md ${getShadowClass(isStaff)}`}>
               {/* 標題區 */}
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#7B9FA6]/10">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-primary/10">
                 <div>
-                  <h3 className="text-base font-semibold text-[#3A3A3A] mb-0.5">
+                  <h3 className="text-base font-semibold text-foreground mb-0.5">
                     本月概覽
                   </h3>
-                  <p className="text-xs text-[#6B6B6B]">
+                  <p className="text-xs text-muted-foreground">
                     {now.getFullYear()} 年 {now.getMonth() + 1} 月統計
                   </p>
                 </div>
                 <button
                   onClick={() => router.push('/analytics')}
-                  className="text-xs text-[#7B9FA6] hover:text-[#6A8E95] transition-colors flex items-center gap-1"
+                  className="text-xs text-primary hover:text-primary/85 transition-colors flex items-center gap-1"
                 >
                   詳情
                   <ArrowRight className="w-3 h-3" />
@@ -504,50 +504,50 @@ export default function HomePage() {
               {/* 統計數據區 */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1.5">
+                  <div className="text-xs text-muted-foreground mb-1.5">
                     本月市集
                   </div>
-                  <div className="text-2xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
+                  <div className="text-2xl font-semibold text-primary tabular-nums mb-0.5">
                     {monthlyStats?.marketCount ?? 0}
                   </div>
-                  <div className="text-[10px] text-[#6B6B6B]">場次</div>
+                  <div className="text-[10px] text-muted-foreground">場次</div>
                 </div>
 
                 {/* 員工模式：隱藏總收入 */}
                 {isStaff ? (
                   <div className="text-center">
-                    <div className="text-xs text-[#6B6B6B] mb-1.5">
+                    <div className="text-xs text-muted-foreground mb-1.5">
                       本月收入
                     </div>
                     <SensitiveDataMask label="僅老闆可見" size="sm" />
                   </div>
                 ) : (
                   <div className="text-center">
-                    <div className="text-xs text-[#6B6B6B] mb-1.5">
+                    <div className="text-xs text-muted-foreground mb-1.5">
                       本月收入
                     </div>
-                    <div className="text-xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
+                    <div className="text-xl font-semibold text-primary tabular-nums mb-0.5">
                       {formatCurrency(monthlyStats?.totalRevenue ?? 0)}
                     </div>
-                    <div className="text-[10px] text-[#6B6B6B]">總收入</div>
+                    <div className="text-[10px] text-muted-foreground">總收入</div>
                   </div>
                 )}
 
                 <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1.5">
+                  <div className="text-xs text-muted-foreground mb-1.5">
                     本月成交
                   </div>
-                  <div className="text-2xl font-semibold text-[#7B9FA6] tabular-nums mb-0.5">
+                  <div className="text-2xl font-semibold text-primary tabular-nums mb-0.5">
                     {monthlyStats?.totalDeals ?? 0}
                   </div>
-                  <div className="text-[10px] text-[#6B6B6B]">筆數</div>
+                  <div className="text-[10px] text-muted-foreground">筆數</div>
                 </div>
               </div>
 
               {/* 提示文字 */}
               {monthlyStats && monthlyStats.marketCount === 0 && (
-                <div className="mt-4 pt-3 border-t border-[#7B9FA6]/10">
-                  <p className="text-xs text-center text-[#6B6B6B]">
+                <div className="mt-4 pt-3 border-t border-primary/10">
+                  <p className="text-xs text-center text-muted-foreground">
                     本月尚未有市集記錄
                   </p>
                 </div>
@@ -561,7 +561,7 @@ export default function HomePage() {
         {todayMarkets.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium text-[#3A3A3A]">
+              <h2 className="text-lg font-medium text-foreground">
                 今日市集 🎪
               </h2>
             </div>
@@ -581,13 +581,13 @@ export default function HomePage() {
         {/* 即將到來的市集 */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-[#3A3A3A]">
+            <h2 className="text-lg font-medium text-foreground">
               即將到來的市集
             </h2>
             {!marketsLoading && (todayMarkets.length > 0 || upcomingMarkets.length > 0) && (
               <button
                 onClick={() => router.push('/markets')}
-                className="text-[#7B9FA6] text-sm flex items-center gap-1 hover:gap-2 transition-all"
+                className="text-primary text-sm flex items-center gap-1 hover:gap-2 transition-all"
               >
                 查看全部
                 <ArrowRight className="w-4 h-4" />

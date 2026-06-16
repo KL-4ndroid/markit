@@ -107,9 +107,9 @@ export default function ProductDetailPage({ params }: PageProps) {
   // 分類樣式
   const getCategoryStyle = (category: ProductCategory) => {
     const styles = {
-      handmade: { bg: 'bg-[#F5E6E8]', emoji: '🖐️', text: '手作' },
-      food: { bg: 'bg-[#FFF8E7]', emoji: '🍰', text: '食品' },
-      accessory: { bg: 'bg-[#E8F3E8]', emoji: '💎', text: '飾品' },
+      handmade: { bg: 'bg-soft-pink', emoji: '🖐️', text: '手作' },
+      food: { bg: 'bg-soft-yellow', emoji: '🍰', text: '食品' },
+      accessory: { bg: 'bg-soft-green', emoji: '💎', text: '飾品' },
       clothing: { bg: 'bg-[#E8F0F8]', emoji: '👕', text: '服飾' },
       art: { bg: 'bg-[#F8E8F0]', emoji: '🎨', text: '藝術品' },
       stationery: { bg: 'bg-[#FFF0E8]', emoji: '📚', text: '文具' },
@@ -182,10 +182,10 @@ export default function ProductDetailPage({ params }: PageProps) {
   // 載入中（初始化中）
   if (dbStatus === null || !localProductLookupComplete) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#7B9FA6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#6B6B6B]">載入中...</p>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">載入中...</p>
         </div>
       </div>
     );
@@ -194,8 +194,8 @@ export default function ProductDetailPage({ params }: PageProps) {
   // DB 不健康
   if (dbStatus.ok === false) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8]">
-        <div className="bg-gradient-to-br from-[#D4A574] to-[#c49560] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="min-h-screen bg-background">
+        <div className="bg-gradient-to-br from-secondary to-secondary/85 pt-12 pb-8 px-6 rounded-b-[2rem]">
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push('/products')}
@@ -211,30 +211,30 @@ export default function ProductDetailPage({ params }: PageProps) {
         </div>
 
         <div className="max-w-lg mx-auto px-6 -mt-4 pb-6">
-          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-[#D4A574]/10 text-center space-y-4">
+          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-secondary/10 text-center space-y-4">
             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
               <AlertCircle className="w-8 h-8 text-amber-600" />
             </div>
-            <h2 className="text-lg font-medium text-[#3A3A3A]">
+            <h2 className="text-lg font-medium text-foreground">
               本機資料庫無法正常存取
             </h2>
-            <p className="text-[#6B6B6B] text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               系統無法讀取本地資料庫，可能因瀏覽器儲存空間不足、隱私模式，或資料庫結構損壞。
             </p>
             {dbStatus.recoverable && (
-              <p className="text-[#6B6B6B] text-sm">
+              <p className="text-muted-foreground text-sm">
                 建議前往「資料修復」頁面嘗試還原資料庫。
               </p>
             )}
             <button
               onClick={() => router.push('/recovery')}
-              className="w-full bg-[#D4A574] text-white px-6 py-3 rounded-2xl hover:bg-[#c49560] transition-colors font-medium"
+              className="w-full bg-secondary text-white px-6 py-3 rounded-2xl hover:bg-secondary/85 transition-colors font-medium"
             >
               前往資料修復
             </button>
             <button
               onClick={() => router.push('/products')}
-              className="w-full bg-[#F5E6E8] text-[#3A3A3A] px-6 py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors font-medium"
+              className="w-full bg-soft-pink text-foreground px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors font-medium"
             >
               返回商品列表
             </button>
@@ -247,8 +247,8 @@ export default function ProductDetailPage({ params }: PageProps) {
   // 找不到商品
   if (!product) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8]">
-        <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="min-h-screen bg-background">
+        <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push('/products')}
@@ -264,17 +264,17 @@ export default function ProductDetailPage({ params }: PageProps) {
         </div>
 
         <div className="max-w-lg mx-auto px-6 -mt-4">
-          <div className="bg-white rounded-[1.5rem] p-12 shadow-lg shadow-[#7B9FA6]/10 text-center">
-            <AlertCircle className="w-16 h-16 text-[#7B9FA6] mx-auto mb-4 opacity-50" />
-            <h2 className="text-lg font-medium text-[#3A3A3A] mb-2">
+          <div className="bg-white rounded-[1.5rem] p-12 shadow-lg shadow-primary/10 text-center">
+            <AlertCircle className="w-16 h-16 text-primary mx-auto mb-4 opacity-50" />
+            <h2 className="text-lg font-medium text-foreground mb-2">
               找不到此商品
             </h2>
-            <p className="text-[#6B6B6B] text-sm mb-6">
+            <p className="text-muted-foreground text-sm mb-6">
               此商品可能已被刪除或不存在
             </p>
             <button
               onClick={() => router.push('/products')}
-              className="bg-[#7B9FA6] text-white px-6 py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors"
+              className="bg-primary text-white px-6 py-3 rounded-2xl hover:bg-primary/85 transition-colors"
             >
               返回商品列表
             </button>
@@ -290,9 +290,9 @@ export default function ProductDetailPage({ params }: PageProps) {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
           <button
             onClick={() => router.push('/products')}
@@ -315,36 +315,36 @@ export default function ProductDetailPage({ params }: PageProps) {
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4 pb-6 space-y-4">
         {/* 商品圖示 */}
-        <div className={`${categoryStyle.bg} rounded-[1.5rem] p-12 flex items-center justify-center shadow-lg shadow-[#7B9FA6]/10`}>
+        <div className={`${categoryStyle.bg} rounded-[1.5rem] p-12 flex items-center justify-center shadow-lg shadow-primary/10`}>
           <div className="text-8xl">{categoryStyle.emoji}</div>
         </div>
 
         {/* 價格資訊 */}
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10">
-          <h2 className="text-lg font-medium text-[#3A3A3A] mb-4 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-[#D4A574]" />
+        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
+          <h2 className="text-lg font-medium text-foreground mb-4 flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-secondary" />
             價格資訊
           </h2>
           
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#E8F3E8] rounded-2xl p-4">
-              <div className="text-xs text-[#6B6B6B] mb-1">售價</div>
-              <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+            <div className="bg-soft-green rounded-2xl p-4">
+              <div className="text-xs text-muted-foreground mb-1">售價</div>
+              <div className="text-2xl font-medium text-foreground tabular-nums">
                 {formatCurrency(product.price)}
               </div>
             </div>
-            <div className="bg-[#FFF8E7] rounded-2xl p-4">
-              <div className="text-xs text-[#6B6B6B] mb-1">成本</div>
-              <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+            <div className="bg-soft-yellow rounded-2xl p-4">
+              <div className="text-xs text-muted-foreground mb-1">成本</div>
+              <div className="text-2xl font-medium text-foreground tabular-nums">
                 {product.cost ? formatCurrency(product.cost) : '-'}
               </div>
             </div>
           </div>
 
           {profitMargin !== null && (
-            <div className="mt-4 pt-4 border-t border-[#7B9FA6]/10 flex items-center justify-between">
-              <span className="text-sm text-[#6B6B6B]">利潤率</span>
-              <span className={`text-lg font-medium flex items-center gap-1 ${profitMargin > 50 ? 'text-[#7B9FA6]' : 'text-[#D4A574]'}`}>
+            <div className="mt-4 pt-4 border-t border-primary/10 flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">利潤率</span>
+              <span className={`text-lg font-medium flex items-center gap-1 ${profitMargin > 50 ? 'text-primary' : 'text-secondary'}`}>
                 {profitMargin}%
                 {profitMargin > 50 && <TrendingUp className="w-4 h-4" />}
               </span>
@@ -353,22 +353,22 @@ export default function ProductDetailPage({ params }: PageProps) {
         </div>
 
         {/* 庫存與銷售 */}
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10">
-          <h2 className="text-lg font-medium text-[#3A3A3A] mb-4 flex items-center gap-2">
-            <Package className="w-5 h-5 text-[#7B9FA6]" />
+        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
+          <h2 className="text-lg font-medium text-foreground mb-4 flex items-center gap-2">
+            <Package className="w-5 h-5 text-primary" />
             庫存與銷售
           </h2>
           
           <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-[#FAFAF8] rounded-2xl">
-              <div className="text-xs text-[#6B6B6B] mb-1">庫存數量</div>
-              <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+            <div className="text-center p-4 bg-background rounded-2xl">
+              <div className="text-xs text-muted-foreground mb-1">庫存數量</div>
+              <div className="text-2xl font-medium text-foreground tabular-nums">
                 {product.stock ?? '-'}
               </div>
             </div>
-            <div className="text-center p-4 bg-[#FAFAF8] rounded-2xl">
-              <div className="text-xs text-[#6B6B6B] mb-1">已售出</div>
-              <div className="text-2xl font-medium text-[#3A3A3A] tabular-nums">
+            <div className="text-center p-4 bg-background rounded-2xl">
+              <div className="text-xs text-muted-foreground mb-1">已售出</div>
+              <div className="text-2xl font-medium text-foreground tabular-nums">
                 {product.totalSold || 0}
               </div>
             </div>
@@ -377,9 +377,9 @@ export default function ProductDetailPage({ params }: PageProps) {
 
         {/* 商品描述 */}
         {product.description && (
-          <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10">
-            <h2 className="text-lg font-medium text-[#3A3A3A] mb-3">商品描述</h2>
-            <p className="text-[#6B6B6B] text-sm leading-relaxed">
+          <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
+            <h2 className="text-lg font-medium text-foreground mb-3">商品描述</h2>
+            <p className="text-muted-foreground text-sm leading-relaxed">
               {product.description}
             </p>
           </div>
@@ -392,8 +392,8 @@ export default function ProductDetailPage({ params }: PageProps) {
             disabled={isUpdating}
             className={`w-full px-6 py-3 rounded-2xl transition-colors flex items-center justify-center gap-2 font-medium ${
               product.isActive
-                ? 'bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8]'
-                : 'bg-[#E8F3E8] text-[#3A3A3A] hover:bg-[#D8E3D8]'
+                ? 'bg-soft-pink text-foreground hover:bg-soft-pink/80'
+                : 'bg-soft-green text-foreground hover:bg-soft-green/80'
             }`}
           >
             {product.isActive ? (
@@ -411,7 +411,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
           <button
             onClick={handleOpenEditForm}
-            className="w-full bg-[#7B9FA6] text-white px-6 py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors flex items-center justify-center gap-2 font-medium"
+            className="w-full bg-primary text-white px-6 py-3 rounded-2xl hover:bg-primary/85 transition-colors flex items-center justify-center gap-2 font-medium"
           >
             <Edit className="w-5 h-5" />
             編輯商品
@@ -419,7 +419,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="w-full bg-[#F5E6E8] text-[#d4183d] px-6 py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors flex items-center justify-center gap-2 font-medium"
+            className="w-full bg-soft-pink text-danger px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors flex items-center justify-center gap-2 font-medium"
           >
             <Trash2 className="w-5 h-5" />
             刪除商品
@@ -443,21 +443,21 @@ export default function ProductDetailPage({ params }: PageProps) {
           <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowDeleteConfirm(false)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
             <div className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl">
-              <h3 className="text-lg font-medium text-[#3A3A3A] mb-2">確認刪除商品？</h3>
-              <p className="text-sm text-[#6B6B6B] mb-6">
+              <h3 className="text-lg font-medium text-foreground mb-2">確認刪除商品？</h3>
+              <p className="text-sm text-muted-foreground mb-6">
                 刪除後，此商品將被標記為停用，此操作無法復原。
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors"
                 >
                   返回
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={isUpdating}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#d4183d] text-white hover:bg-[#c41739] transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-danger text-white hover:bg-danger/85 transition-colors disabled:opacity-50"
                 >
                   {isUpdating ? '處理中...' : '確認刪除'}
                 </button>

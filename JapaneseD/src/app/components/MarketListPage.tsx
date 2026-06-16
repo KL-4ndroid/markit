@@ -73,9 +73,9 @@ export function MarketListPage({ onNavigateToDetail }: MarketListPageProps) {
   const avgProfitRate = (totalProfit / totalRevenue * 100).toFixed(1);
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-white">市集列表</h1>
@@ -113,18 +113,18 @@ export function MarketListPage({ onNavigateToDetail }: MarketListPageProps) {
             <div
               key={market.id}
               onClick={() => onNavigateToDetail(market.id)}
-              className="bg-white rounded-[1.5rem] p-5 shadow-md shadow-[#7B9FA6]/5 hover:shadow-lg transition-shadow cursor-pointer"
+              className="bg-white rounded-[1.5rem] p-5 shadow-md shadow-primary/5 hover:shadow-lg transition-shadow cursor-pointer"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h3 className="text-[#3A3A3A] mb-2">{market.name}</h3>
+                  <h3 className="text-foreground mb-2">{market.name}</h3>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 text-[#6B6B6B] text-sm">
-                      <Calendar className="w-4 h-4 text-[#7B9FA6]" />
+                      <Calendar className="w-4 h-4 text-primary" />
                       <span>{market.date}</span>
                     </div>
                     <div className="flex items-center gap-2 text-[#6B6B6B] text-sm">
-                      <MapPin className="w-4 h-4 text-[#D4A574]" />
+                      <MapPin className="w-4 h-4 text-secondary" />
                       <span>{market.location}</span>
                     </div>
                   </div>
@@ -132,7 +132,7 @@ export function MarketListPage({ onNavigateToDetail }: MarketListPageProps) {
                 <span
                   className={`px-3 py-1 rounded-full text-xs whitespace-nowrap ${
                     market.status === "進行中"
-                      ? "bg-[#E8F3E8] text-[#3A3A3A]"
+                      ? "bg-[#E8F3E8] text-foreground"
                       : "bg-[#F5E6E8] text-[#6B6B6B]"
                   }`}
                 >
@@ -140,13 +140,13 @@ export function MarketListPage({ onNavigateToDetail }: MarketListPageProps) {
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-[#7B9FA6]/10">
+              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-primary/10">
                 <div>
                   <div className="flex items-center gap-1 text-xs text-[#6B6B6B] mb-1">
                     <DollarSign className="w-3 h-3" />
                     <span>收入</span>
                   </div>
-                  <div className="text-[#3A3A3A] tabular-nums">
+                  <div className="text-foreground tabular-nums">
                     ${market.revenue.toLocaleString()}
                   </div>
                 </div>
@@ -155,13 +155,13 @@ export function MarketListPage({ onNavigateToDetail }: MarketListPageProps) {
                     <TrendingUp className="w-3 h-3" />
                     <span>利潤</span>
                   </div>
-                  <div className="text-[#7B9FA6] tabular-nums">
+                  <div className="text-primary tabular-nums">
                     ${market.profit.toLocaleString()}
                   </div>
                 </div>
                 <div>
                   <div className="text-xs text-[#6B6B6B] mb-1">利潤率</div>
-                  <div className="text-[#D4A574] tabular-nums">{market.profitRate}%</div>
+                  <div className="text-secondary tabular-nums">{market.profitRate}%</div>
                 </div>
               </div>
             </div>

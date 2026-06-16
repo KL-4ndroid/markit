@@ -118,14 +118,14 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
   const isSingleDay = market.startDate === market.endDate;
   
   return (
-    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
-          <Calendar className="w-5 h-5 text-[#7B9FA6]" />
+        <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
+          <Calendar className="w-5 h-5 text-primary" />
           {isSingleDay ? '收入明細' : '每日收入明細'}
         </h2>
         {!isSingleDay && (
-          <div className="text-xs text-[#6B6B6B]">
+          <div className="text-xs text-muted-foreground">
             共 {dateRange.length} 天
           </div>
         )}
@@ -150,7 +150,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
                   : 'cursor-pointer hover:shadow-md hover:scale-[1.02]'
               } ${
                 isToday
-                  ? 'border-[#7B9FA6] bg-[#7B9FA6]/5'
+                  ? 'border-primary bg-primary/5'
                   : isFuture
                   ? ''
                   : 'border-[#E8F3E8] bg-white'
@@ -158,11 +158,11 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="text-sm font-medium text-[#3A3A3A]">
+                  <div className="text-sm font-medium text-foreground">
                     {formatDate(day.date)}
                   </div>
                   {isToday && (
-                    <span className="text-xs bg-[#7B9FA6] text-white px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-primary text-white px-2 py-0.5 rounded-full">
                       今天
                     </span>
                   )}
@@ -180,7 +180,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
                       e.stopPropagation();  // ✅ 阻止冒泡，避免觸發日期點擊
                       onAddRevenue(day.date);
                     }}
-                    className="flex items-center gap-1 text-xs text-[#7B9FA6] hover:text-[#6A8E95] transition-colors z-10 bg-white rounded-full px-2 py-1"
+                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/85 transition-colors z-10 bg-white rounded-full px-2 py-1"
                   >
                     <Plus className="w-4 h-4" />
                     補登
@@ -190,24 +190,24 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
               
               <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
                 <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1">收入</div>
-                  <div className="text-lg font-medium text-[#7B9FA6]">
+                  <div className="text-xs text-muted-foreground mb-1">收入</div>
+                  <div className="text-lg font-medium text-primary">
                     {formatCurrency(day.revenue)}
                   </div>
                 </div>
                 {hideProfit ? null : (
                   <div className="text-center">
-                    <div className="text-xs text-[#6B6B6B] mb-1">利潤</div>
+                    <div className="text-xs text-muted-foreground mb-1">利潤</div>
                     <div className={`text-lg font-medium ${
-                      day.profit >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'
+                      day.profit >= 0 ? 'text-foreground' : 'text-danger'
                     }`}>
                       {formatCurrency(day.profit)}
                     </div>
                   </div>
                 )}
                 <div className="text-center">
-                  <div className="text-xs text-[#6B6B6B] mb-1">成交</div>
-                  <div className="text-lg font-medium text-[#D4A574]">
+                  <div className="text-xs text-muted-foreground mb-1">成交</div>
+                  <div className="text-lg font-medium text-secondary">
                     {day.deals}
                   </div>
                 </div>
@@ -215,8 +215,8 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
 
               {/* 互動次數統計 */}
               {interactionButtons.length > 0 && !isFuture && (
-                <div className="mt-3 pt-3 border-t border-[#7B9FA6]/10">
-                  <div className="flex items-center gap-2 text-xs text-[#6B6B6B] flex-wrap">
+                <div className="mt-3 pt-3 border-t border-primary/10">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                     <TrendingUp className="w-3.5 h-3.5" />
                     <span>互動：</span>
                     {Object.values(day.interactions).some(count => count > 0) ? (
@@ -226,7 +226,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
                         .map((button, index, filteredArray) => {
                           const count = day.interactions[button.id] || 0;
                           return (
-                            <span key={button.id} className="text-[#3A3A3A]">
+                            <span key={button.id} className="text-foreground">
                               {button.label} <span className="font-medium">{count}</span>
                               {index < filteredArray.length - 1 && <span className="mx-1">•</span>}
                             </span>
@@ -234,7 +234,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
                         })
                     ) : (
                       // 無互動記錄：顯示提示
-                      <span className="text-[#6B6B6B] italic">當日無任何互動記錄</span>
+                      <span className="text-muted-foreground italic">當日無任何互動記錄</span>
                     )}
                   </div>
                 </div>
@@ -246,27 +246,27 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
       
       {/* 總計 */}
       {!isSingleDay && (
-        <div className="mt-4 pt-4 border-t border-[#7B9FA6]/10">
+        <div className="mt-4 pt-4 border-t border-primary/10">
           <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
             <div className="text-center">
-              <div className="text-xs text-[#6B6B6B] mb-1">總收入</div>
-              <div className="text-xl font-bold text-[#7B9FA6]">
+              <div className="text-xs text-muted-foreground mb-1">總收入</div>
+              <div className="text-xl font-bold text-primary">
                 {formatCurrency(dailyTotals.totalRevenue)}
               </div>
             </div>
             {hideProfit ? null : (
               <div className="text-center">
-                <div className="text-xs text-[#6B6B6B] mb-1">總利潤</div>
+                <div className="text-xs text-muted-foreground mb-1">總利潤</div>
                 <div className={`text-xl font-bold ${
-                  dailyTotals.totalProfit >= 0 ? 'text-[#3A3A3A]' : 'text-[#d4183d]'
+                  dailyTotals.totalProfit >= 0 ? 'text-foreground' : 'text-danger'
                 }`}>
                   {formatCurrency(dailyTotals.totalProfit)}
                 </div>
               </div>
             )}
             <div className="text-center">
-              <div className="text-xs text-[#6B6B6B] mb-1">總成交</div>
-              <div className="text-xl font-bold text-[#D4A574]">
+              <div className="text-xs text-muted-foreground mb-1">總成交</div>
+              <div className="text-xl font-bold text-secondary">
                 {dailyTotals.totalDeals}
               </div>
             </div>
@@ -275,7 +275,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
       )}
       
       {/* 提示 */}
-      <div className="mt-4 bg-[#FFF8E7] border border-[#D4A574]/20 rounded-xl p-3 text-xs text-[#3A3A3A]">
+      <div className="mt-4 bg-soft-yellow border border-secondary/20 rounded-xl p-3 text-xs text-foreground">
         <p className="font-semibold mb-1">💡 提示：</p>
         <p>
           {isSingleDay 

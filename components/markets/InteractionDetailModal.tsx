@@ -95,13 +95,13 @@ export function InteractionDetailModal({
             <div className="flex items-center gap-3">
               <div className="text-3xl">{emoji}</div>
               <div>
-                <DialogTitle className="text-lg font-medium text-[#3A3A3A]">{label}</DialogTitle>
-                <p className="text-sm text-[#6B6B6B]">共 {filteredEvents.length} 次互動</p>
+                <DialogTitle className="text-lg font-medium text-foreground">{label}</DialogTitle>
+                <p className="text-sm text-muted-foreground">共 {filteredEvents.length} 次互動</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-[#6B6B6B] hover:text-[#3A3A3A] transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -112,7 +112,7 @@ export function InteractionDetailModal({
             {filteredEvents.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-4xl mb-3 opacity-30">{emoji}</div>
-                <p className="text-[#6B6B6B]">尚無互動記錄</p>
+                <p className="text-muted-foreground">尚無互動記錄</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -120,11 +120,11 @@ export function InteractionDetailModal({
                   <div key={date}>
                     {/* 日期標題 */}
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="text-sm font-medium text-[#7B9FA6]">
+                      <div className="text-sm font-medium text-primary">
                         {formatDate(date)}
                       </div>
-                      <div className="flex-1 h-px bg-[#7B9FA6]/20"></div>
-                      <div className="text-xs text-[#6B6B6B]">
+                      <div className="flex-1 h-px bg-primary/20"></div>
+                      <div className="text-xs text-muted-foreground">
                         {events.length} 次
                       </div>
                     </div>
@@ -134,15 +134,15 @@ export function InteractionDetailModal({
                       {events.map((event, index) => (
                         <div
                           key={event.id || index}
-                          className="flex items-center gap-3 bg-[#FAFAF8] rounded-lg p-3 hover:bg-[#F5F5F0] transition-colors"
+                          className="flex items-center gap-3 bg-background rounded-lg p-3 hover:bg-[#F5F5F0] transition-colors"
                         >
-                          <Clock className="w-4 h-4 text-[#7B9FA6] flex-shrink-0" />
+                          <Clock className="w-4 h-4 text-primary flex-shrink-0" />
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-[#3A3A3A]">
+                            <div className="text-sm font-medium text-foreground">
                               {formatTime(event.timestamp)}
                             </div>
                             {event.payload.notes && (
-                              <div className="text-xs text-[#6B6B6B] mt-0.5">
+                              <div className="text-xs text-muted-foreground mt-0.5">
                                 {event.payload.notes}
                               </div>
                             )}
@@ -160,7 +160,7 @@ export function InteractionDetailModal({
           <div className="p-6 border-t border-gray-100">
             <button
               onClick={onClose}
-              className="w-full bg-[#7B9FA6] text-white px-4 py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors"
+              className="w-full bg-primary text-white px-4 py-3 rounded-2xl hover:bg-primary/85 transition-colors"
             >
               關閉
             </button>

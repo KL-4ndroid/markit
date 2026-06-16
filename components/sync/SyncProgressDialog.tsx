@@ -96,27 +96,27 @@ export function SyncProgressDialog({
                   {/* 圖示 */}
                   <div className={`mb-4 p-4 rounded-full ${
                     isComplete 
-                      ? 'bg-[#E8F3E8]' 
+                      ? 'bg-soft-green' 
                       : type === 'upload' 
-                      ? 'bg-[#7B9FA6]/10' 
-                      : 'bg-[#D4A574]/10'
+                      ? 'bg-primary/10' 
+                      : 'bg-secondary/10'
                   }`}>
                     {isComplete ? (
-                      <CheckCircle className="w-8 h-8 text-[#7B9FA6]" />
+                      <CheckCircle className="w-8 h-8 text-primary" />
                     ) : type === 'upload' ? (
-                      <Upload className="w-8 h-8 text-[#7B9FA6]" />
+                      <Upload className="w-8 h-8 text-primary" />
                     ) : (
-                      <Download className="w-8 h-8 text-[#D4A574]" />
+                      <Download className="w-8 h-8 text-secondary" />
                     )}
                   </div>
 
                   {/* 標題 */}
-                  <Dialog.Title className="text-lg font-medium text-[#3A3A3A] mb-2">
+                  <Dialog.Title className="text-lg font-medium text-foreground mb-2">
                     {title}
                   </Dialog.Title>
 
                   {/* 進度文字 */}
-                  <p className="text-sm text-[#6B6B6B] mb-6">
+                  <p className="text-sm text-muted-foreground mb-6">
                     {description}
                   </p>
 
@@ -125,15 +125,15 @@ export function SyncProgressDialog({
                     <div className="w-full mb-4 flex items-center gap-2">
                       <div className={`flex-1 h-1 rounded-full ${
                         phase === 'snapshot' || phase === 'incremental' 
-                          ? 'bg-[#7B9FA6]' 
+                          ? 'bg-primary' 
                           : 'bg-gray-200'
                       }`} />
-                      <span className="text-xs text-[#6B6B6B]">
+                      <span className="text-xs text-muted-foreground">
                         {phase === 'snapshot' ? '1/2' : '2/2'}
                       </span>
                       <div className={`flex-1 h-1 rounded-full ${
                         phase === 'incremental' 
-                          ? 'bg-[#7B9FA6]' 
+                          ? 'bg-primary' 
                           : 'bg-gray-200'
                       }`} />
                     </div>
@@ -144,25 +144,25 @@ export function SyncProgressDialog({
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         isComplete 
-                          ? 'bg-[#7B9FA6]' 
+                          ? 'bg-primary' 
                           : type === 'upload' 
-                          ? 'bg-[#7B9FA6]' 
-                          : 'bg-[#D4A574]'
+                          ? 'bg-primary' 
+                          : 'bg-secondary'
                       }`}
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
 
                   {/* 百分比 */}
-                  <p className="text-2xl font-bold text-[#3A3A3A] mb-4">
+                  <p className="text-2xl font-bold text-foreground mb-4">
                     {percentage}%
                   </p>
 
                   {/* 當前處理項目 */}
                   {!isComplete && currentItem && (
-                    <div className="w-full bg-[#FAFAF8] rounded-xl p-3 flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 text-[#7B9FA6] animate-spin flex-shrink-0" />
-                      <p className="text-xs text-[#6B6B6B] truncate">
+                    <div className="w-full bg-background rounded-xl p-3 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-primary animate-spin flex-shrink-0" />
+                      <p className="text-xs text-muted-foreground truncate">
                         {currentItem}
                       </p>
                     </div>
@@ -170,7 +170,7 @@ export function SyncProgressDialog({
 
                   {/* 完成提示 */}
                   {isComplete && (
-                    <p className="text-sm text-[#7B9FA6] mt-2">
+                    <p className="text-sm text-primary mt-2">
                       ✓ 所有資料已同步完成
                     </p>
                   )}

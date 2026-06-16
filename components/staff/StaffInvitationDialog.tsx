@@ -241,30 +241,30 @@ export function StaffInvitationDialog() {
               <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-3xl bg-white p-8 shadow-2xl transition-all">
                 {/* 圖標 */}
                 <div className="flex justify-center mb-6">
-                  <div className="p-4 rounded-full bg-gradient-to-br from-[#7B9FA6]/10 to-[#D4A574]/10">
-                    <Users className="w-12 h-12 text-[#7B9FA6]" />
+                  <div className="p-4 rounded-full bg-gradient-to-br from-primary/10 to-secondary/10">
+                    <Users className="w-12 h-12 text-primary" />
                   </div>
                 </div>
 
                 {/* 標題 */}
-                <Dialog.Title className="text-2xl font-medium text-[#3A3A3A] mb-3 text-center">
+                <Dialog.Title className="text-2xl font-medium text-foreground mb-3 text-center">
                   員工邀請
                 </Dialog.Title>
 
                 {/* 描述 */}
-                <p className="text-center text-[#6B6B6B] mb-6">
+                <p className="text-center text-muted-foreground mb-6">
                   <strong>{invitation.owner_email}</strong> 邀請您成為員工
                 </p>
 
                 {/* 權限信息 */}
-                <div className="bg-[#E8F3E8] rounded-2xl p-4 mb-6">
+                <div className="bg-soft-green rounded-2xl p-4 mb-6">
                   <div className="flex items-center gap-2 mb-2">
-                    <Shield className="w-5 h-5 text-[#7B9FA6]" />
-                    <span className="text-sm font-medium text-[#3A3A3A]">
+                    <Shield className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium text-foreground">
                       您將獲得的權限
                     </span>
                   </div>
-                  <ul className="text-sm text-[#6B6B6B] space-y-1">
+                  <ul className="text-sm text-muted-foreground space-y-1">
                     <li>✅ 可以查看老闆的市集和商品</li>
                     <li>✅ 可以記錄互動、成交</li>
                     <li>❌ 不能編輯商品、市集</li>
@@ -274,19 +274,19 @@ export function StaffInvitationDialog() {
                 </div>
 
                 {/* 警告信息 */}
-                <div className="bg-[#FFF8E7] border-2 border-[#D4A574]/30 rounded-2xl p-4 mb-6">
+                <div className="bg-soft-yellow border-2 border-secondary/30 rounded-2xl p-4 mb-6">
                   <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-6 h-6 text-[#D4A574] flex-shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-6 h-6 text-secondary flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-[#3A3A3A] mb-2">
+                      <p className="text-sm font-medium text-foreground mb-2">
                         ⚠️ 重要提醒
                       </p>
-                      <ul className="text-xs text-[#6B6B6B] space-y-1">
+                      <ul className="text-xs text-muted-foreground space-y-1">
                         <li>• <strong>您的本機快取資料將被清除</strong></li>
                         <li>• <strong>您的雲端個人資料不會在此流程中刪除</strong></li>
                         <li>• 您將無法再訪問自己原有的市集和商品</li>
                         <li>• 您只能訪問老闆的市集和商品</li>
-                        <li>• <strong className="text-[#d4183d]">接受後會切換為員工模式</strong></li>
+                        <li>• <strong className="text-danger">接受後會切換為員工模式</strong></li>
                       </ul>
                     </div>
                   </div>
@@ -294,10 +294,10 @@ export function StaffInvitationDialog() {
 
                 {/* 建議 */}
                 <div className="bg-[#E8F0F8] rounded-2xl p-4 mb-6">
-                  <p className="text-sm font-medium text-[#3A3A3A] mb-2">
+                  <p className="text-sm font-medium text-foreground mb-2">
                     💡 建議
                   </p>
-                  <ul className="text-xs text-[#6B6B6B] space-y-1">
+                  <ul className="text-xs text-muted-foreground space-y-1">
                     <li>• 如果您有重要數據，請先備份</li>
                     <li>• 如果您想保留自己的市集，請拒絕邀請</li>
                     <li>• 如果您只是想協助老闆，接受邀請是最佳選擇</li>
@@ -309,7 +309,7 @@ export function StaffInvitationDialog() {
                   <button
                     onClick={handleReject}
                     disabled={isProcessing}
-                    className="flex-1 px-6 py-4 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-4 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <X className="w-5 h-5" />
                     拒絕邀請
@@ -317,7 +317,7 @@ export function StaffInvitationDialog() {
                   <button
                     onClick={handleAccept}
                     disabled={isProcessing}
-                    className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-br from-[#7B9FA6] to-[#6A8E95] text-white hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-br from-primary to-primary/85 text-white hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <CheckCircle className="w-5 h-5" />
                     接受邀請
@@ -325,7 +325,7 @@ export function StaffInvitationDialog() {
                 </div>
 
                 {/* 提示 */}
-                <p className="text-xs text-center text-[#6B6B6B] mt-4">
+                <p className="text-xs text-center text-muted-foreground mt-4">
                   請仔細閱讀上述說明後再做決定
                 </p>
               </Dialog.Panel>

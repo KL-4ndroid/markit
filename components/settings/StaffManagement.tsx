@@ -190,16 +190,16 @@ export function StaffManagement() {
 
   if (!user) {
     return (
-      <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
+      <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">
         <div className="flex items-center gap-2 mb-2">
-          <Users className="w-5 h-5 text-[#7B9FA6]" />
-          <h2 className="text-lg font-medium text-[#3A3A3A]">員工管理</h2>
+          <Users className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-medium text-foreground">員工管理</h2>
         </div>
-        <p className="text-sm text-[#6B6B6B] mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
         邀請員工協助管理市集，員工可以訪問您所有進行中的市集
         </p>
-        <div className="bg-[#FFF8E7] rounded-xl p-4 text-center">
-          <p className="text-sm text-[#6B6B6B]">
+        <div className="bg-soft-yellow rounded-xl p-4 text-center">
+          <p className="text-sm text-muted-foreground">
             請先登入 Supabase 帳號才能使用此功能
           </p>
         </div>
@@ -208,18 +208,18 @@ export function StaffManagement() {
   }
 
   return (
-    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 overflow-hidden">
+    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 overflow-hidden">
       <div className="p-6">
 
         {/* 說明區塊 */}
         <div className="bg-gradient-to-br from-[#E8F0F8] to-[#E8F3E8] rounded-xl p-4 mb-4">
           <div className="flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 text-[#7B9FA6] flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-[#3A3A3A] mb-2">
+              <p className="text-sm font-medium text-foreground mb-2">
                 💡 員工權限說明
               </p>
-              <ul className="text-xs text-[#6B6B6B] space-y-1">
+              <ul className="text-xs text-muted-foreground space-y-1">
                 <li>• <strong>可以做的事</strong>：查看市集和商品、記錄互動、記錄成交</li>
                 <li>• <strong>不能做的事</strong>：編輯市集、編輯商品、新增商品、新增市集</li>
                 <li>• <strong>敏感數據保護</strong>：員工無法查看成本、利潤、總收入</li>
@@ -232,16 +232,16 @@ export function StaffManagement() {
 
         {/* 員工列表 */}
         {isLoading ? (
-          <div className="text-center py-8 text-[#6B6B6B]">
+          <div className="text-center py-8 text-muted-foreground">
             載入中...
           </div>
         ) : staffList.length === 0 ? (
-          <div className="bg-[#FAFAF8] rounded-xl p-6 text-center mb-4">
+          <div className="bg-background rounded-xl p-6 text-center mb-4">
             <div className="text-4xl mb-3">👥</div>
-            <p className="text-sm text-[#3A3A3A] mb-2">
+            <p className="text-sm text-foreground mb-2">
               尚未邀請任何員工
             </p>
-            <p className="text-xs text-[#6B6B6B]">
+            <p className="text-xs text-muted-foreground">
               點擊下方按鈕邀請您的第一位員工
             </p>
           </div>
@@ -250,34 +250,34 @@ export function StaffManagement() {
             {staffList.map(staff => (
               <div
                 key={staff.id}
-                className="bg-[#FAFAF8] rounded-xl p-4 flex items-center justify-between"
+                className="bg-background rounded-xl p-4 flex items-center justify-between"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <Mail className="w-4 h-4 text-[#7B9FA6]" />
-                    <span className="text-sm font-medium text-[#3A3A3A]">
+                    <Mail className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-foreground">
                       {staff.email}
                     </span>
                     {staff.status === 'pending' && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-[#FFF8E7] text-[#D4A574] font-medium">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-soft-yellow text-secondary font-medium">
                         待接受
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Shield className="w-3 h-3 text-[#6B6B6B]" />
-                    <span className="text-xs text-[#6B6B6B] flex items-center gap-1">
+                    <Shield className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Eye className="w-3 h-3" />
                       可查看與記錄
                     </span>
-                    <span className="text-xs text-[#6B6B6B]">
+                    <span className="text-xs text-muted-foreground">
                       • {staff.status === 'pending' ? '邀請於' : '加入於'} {new Date(staff.joined_at).toLocaleDateString('zh-TW')}
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={() => handleRemove(staff.id, staff.email)}
-                  className="ml-4 p-2 rounded-xl bg-[#F5E6E8] text-[#d4183d] hover:bg-[#E5D6D8] transition-colors"
+                  className="ml-4 p-2 rounded-xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors"
                   title={staff.status === 'pending' ? '取消邀請' : '移除員工'}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -291,14 +291,14 @@ export function StaffManagement() {
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setShowInviteDialog(true)}
-            className="px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium flex items-center justify-center gap-2"
+            className="px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium flex items-center justify-center gap-2"
           >
             <Mail className="w-4 h-4" />
             Email 邀請
           </button>
           <button
             onClick={() => setShowInvitationsSection(!showInvitationsSection)}
-            className="px-4 py-3 rounded-2xl bg-[#E8F3E8] text-[#3A3A3A] hover:bg-[#D8E3D8] transition-colors font-medium flex items-center justify-center gap-2"
+            className="px-4 py-3 rounded-2xl bg-soft-green text-foreground hover:bg-soft-green/80 transition-colors font-medium flex items-center justify-center gap-2"
           >
             <Link2 className="w-4 h-4" />
             邀請連結
@@ -307,33 +307,33 @@ export function StaffManagement() {
 
         {/* 邀請連結區塊 */}
         {showInvitationsSection && (
-          <div className="mt-4 pt-4 border-t border-[#E5E5E5]">
+          <div className="mt-4 pt-4 border-t border-muted">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-[#3A3A3A] flex items-center gap-2">
-                <Link2 className="w-4 h-4 text-[#7B9FA6]" />
+              <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-primary" />
                 邀請連結管理
               </h3>
               <button
                 onClick={handleCreateInvitation}
                 disabled={creatingInvitation}
-                className="px-3 py-1.5 bg-[#7B9FA6] text-white rounded-lg hover:bg-[#6A8E95] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+                className="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
               >
                 {creatingInvitation ? '建立中...' : '產生新連結'}
               </button>
             </div>
 
-            <p className="text-xs text-[#6B6B6B] mb-3">
+            <p className="text-xs text-muted-foreground mb-3">
               產生邀請連結後，新用戶可透過連結註冊並自動加入您的團隊。每個連結有效期為 3 天，可重複使用。
             </p>
 
             {loadingInvitations ? (
-              <div className="text-center py-4 text-xs text-[#6B6B6B]">
+              <div className="text-center py-4 text-xs text-muted-foreground">
                 載入中...
               </div>
             ) : invitations.length === 0 ? (
-              <div className="bg-[#FAFAF8] rounded-xl p-4 text-center">
-                <Link2 className="w-8 h-8 text-[#7B9FA6] mx-auto mb-2 opacity-50" />
-                <p className="text-xs text-[#6B6B6B]">
+              <div className="bg-background rounded-xl p-4 text-center">
+                <Link2 className="w-8 h-8 text-primary mx-auto mb-2 opacity-50" />
+                <p className="text-xs text-muted-foreground">
                   尚未建立邀請連結
                 </p>
               </div>
@@ -346,7 +346,7 @@ export function StaffManagement() {
                   return (
                     <div
                       key={invitation.id}
-                      className={`bg-[#FAFAF8] rounded-xl p-3 ${
+                      className={`bg-background rounded-xl p-3 ${
                         expired ? 'opacity-50' : ''
                       }`}
                     >
@@ -355,21 +355,21 @@ export function StaffManagement() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             {expired ? (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#F5E6E8] text-[#d4183d]">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-soft-pink text-danger">
                                 已過期
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#E8F3E8] text-[#3A3A3A]">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-soft-green text-foreground">
                                 有效
                               </span>
                             )}
-                            <div className="flex items-center gap-1 text-xs text-[#6B6B6B]">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Clock className="w-3 h-3" />
                               {expired ? '已過期' : `剩餘 ${formatRemainingTime(invitation.expires_at)}`}
                             </div>
                           </div>
-                          <div className="bg-white rounded-lg p-2 border border-[#E5E5E5]">
-                            <p className="text-xs text-[#6B6B6B] font-mono break-all">
+                          <div className="bg-white rounded-lg p-2 border border-muted">
+                            <p className="text-xs text-muted-foreground font-mono break-all">
                               {url}
                             </p>
                           </div>
@@ -381,7 +381,7 @@ export function StaffManagement() {
                         <button
                           onClick={() => handleCopyLink(invitation.token)}
                           disabled={expired}
-                          className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-[#7B9FA6] text-white rounded-lg hover:bg-[#6A8E95] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+                          className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
                         >
                           <Copy className="w-3 h-3" />
                           複製
@@ -389,14 +389,14 @@ export function StaffManagement() {
                         <button
                           onClick={() => setShowQRCode(showQRCode === invitation.token ? null : invitation.token)}
                           disabled={expired}
-                          className="flex items-center justify-center gap-1 px-3 py-1.5 bg-[#E8F3E8] text-[#3A3A3A] rounded-lg hover:bg-[#D8E3D8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+                          className="flex items-center justify-center gap-1 px-3 py-1.5 bg-soft-green text-foreground rounded-lg hover:bg-soft-green/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
                         >
                           <QrCode className="w-3 h-3" />
                           QR
                         </button>
                         <button
                           onClick={() => handleDeleteInvitation(invitation.id)}
-                          className="flex items-center justify-center px-3 py-1.5 bg-[#F5E6E8] text-[#d4183d] rounded-lg hover:bg-[#F5E6E8]/80 transition-colors text-xs font-medium"
+                          className="flex items-center justify-center px-3 py-1.5 bg-soft-pink text-danger rounded-lg hover:bg-soft-pink/80 transition-colors text-xs font-medium"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -404,9 +404,9 @@ export function StaffManagement() {
 
                       {/* QR Code 顯示 */}
                       {showQRCode === invitation.token && !expired && (
-                        <div className="mt-3 pt-3 border-t border-[#E5E5E5]">
+                        <div className="mt-3 pt-3 border-t border-muted">
                           <div className="bg-white rounded-lg p-3 flex flex-col items-center">
-                            <p className="text-xs font-medium text-[#3A3A3A] mb-2">
+                            <p className="text-xs font-medium text-foreground mb-2">
                               掃描 QR Code 加入團隊
                             </p>
                             <QRCodeSVG
@@ -415,7 +415,7 @@ export function StaffManagement() {
                               level="H"
                               includeMargin={true}
                             />
-                            <p className="text-xs text-[#6B6B6B] mt-2 text-center">
+                            <p className="text-xs text-muted-foreground mt-2 text-center">
                               員工可使用手機掃描此 QR Code 快速註冊
                             </p>
                           </div>
@@ -460,21 +460,21 @@ export function StaffManagement() {
               >
                 <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-6 shadow-2xl transition-all">
                   <div className="flex items-center justify-between mb-4">
-                    <Dialog.Title className="text-lg font-medium text-[#3A3A3A]">
+                    <Dialog.Title className="text-lg font-medium text-foreground">
                       邀請員工
                     </Dialog.Title>
                     <button
                       onClick={() => setShowInviteDialog(false)}
-                      className="p-2 rounded-xl hover:bg-[#FAFAF8] transition-colors"
+                      className="p-2 rounded-xl hover:bg-background transition-colors"
                     >
-                      <X className="w-5 h-5 text-[#6B6B6B]" />
+                      <X className="w-5 h-5 text-muted-foreground" />
                     </button>
                   </div>
 
                   <div className="space-y-4">
                     {/* Email 輸入 */}
                     <div>
-                      <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         員工 Email
                       </label>
                       <input
@@ -482,24 +482,24 @@ export function StaffManagement() {
                         value={inviteEmail}
                         onChange={(e) => setInviteEmail(e.target.value)}
                         placeholder="example@email.com"
-                        className="w-full px-4 py-3 rounded-2xl border border-[#7B9FA6]/20 focus:border-[#7B9FA6] focus:outline-none transition-colors"
+                        className="w-full px-4 py-3 rounded-2xl border border-primary/20 focus:border-primary focus:outline-none transition-colors"
                       />
-                      <p className="text-xs text-[#6B6B6B] mt-2">
+                      <p className="text-xs text-muted-foreground mt-2">
                         請輸入已註冊用戶的 email
                       </p>
                     </div>
 
                     {/* 權限說明（固定） */}
                     <div>
-                      <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         員工權限
                       </label>
-                      <div className="p-4 rounded-xl border border-[#7B9FA6]/20 bg-[#E8F0F8]">
+                      <div className="p-4 rounded-xl border border-primary/20 bg-[#E8F0F8]">
                         <div className="flex items-center gap-2 mb-2">
-                          <Eye className="w-5 h-5 text-[#7B9FA6]" />
-                          <span className="text-sm font-medium text-[#3A3A3A]">固定權限</span>
+                          <Eye className="w-5 h-5 text-primary" />
+                          <span className="text-sm font-medium text-foreground">固定權限</span>
                         </div>
-                        <ul className="text-xs text-[#6B6B6B] space-y-1">
+                        <ul className="text-xs text-muted-foreground space-y-1">
                           <li>✅ 可以查看市集和商品</li>
                           <li>✅ 可以記錄互動、成交</li>
                           <li>❌ 不能編輯商品</li>
@@ -514,14 +514,14 @@ export function StaffManagement() {
                     <div className="flex gap-3 pt-2">
                       <button
                         onClick={() => setShowInviteDialog(false)}
-                        className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium"
+                        className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium"
                       >
                         取消
                       </button>
                       <button
                         onClick={handleInvite}
                         disabled={isInviting || !inviteEmail.trim()}
-                        className="flex-1 px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isInviting ? '邀請中...' : '確認邀請'}
                       </button>

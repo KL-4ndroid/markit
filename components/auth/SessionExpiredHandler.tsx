@@ -101,22 +101,22 @@ export function SessionExpiredHandler() {
           </div>
 
           {/* 標題 */}
-          <DialogTitle className="text-2xl font-semibold text-[#3A3A3A] text-center mb-4">
+          <DialogTitle className="text-2xl font-semibold text-foreground text-center mb-4">
             登入已過期
           </DialogTitle>
 
           {/* 說明 */}
           <div className="text-center mb-6">
-            <p className="text-[#6B6B6B] leading-relaxed mb-3">
+            <p className="text-muted-foreground leading-relaxed mb-3">
               您的登入狀態已過期，請重新登入以繼續使用。
             </p>
             
             {savedFormsCount > 0 && (
-              <div className="bg-[#E8F3E8] rounded-2xl p-4 text-sm">
-                <p className="text-[#3A3A3A] font-medium mb-1">
+              <div className="bg-soft-green rounded-2xl p-4 text-sm">
+                <p className="text-foreground font-medium mb-1">
                   ✅ 您的表單資料已自動保存
                 </p>
-                <p className="text-[#6B6B6B]">
+                <p className="text-muted-foreground">
                   重新登入後將自動恢復 {savedFormsCount} 個表單的內容
                 </p>
               </div>
@@ -126,14 +126,14 @@ export function SessionExpiredHandler() {
           {/* 按鈕 */}
           <button
             onClick={triggerLogin}
-            className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors font-medium flex items-center justify-center gap-2"
+            className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium flex items-center justify-center gap-2"
           >
             <RefreshCw className="w-5 h-5" />
             重新登入
           </button>
 
           {/* 提示 */}
-          <p className="text-center text-xs text-[#6B6B6B] mt-4">
+          <p className="text-center text-xs text-muted-foreground mt-4">
             為了您的資料安全，我們會定期要求重新驗證身分
           </p>
         </DialogPanel>

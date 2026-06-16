@@ -101,7 +101,7 @@ export function StatsExample() {
         {/* 總收入（所有人可見） */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <p className="text-sm text-gray-600 mb-1">總收入</p>
-          <p className="text-2xl font-bold text-[#7B9FA6]">
+          <p className="text-2xl font-bold text-primary">
             ${stats.total_revenue.toLocaleString()}
           </p>
         </div>
@@ -109,7 +109,7 @@ export function StatsExample() {
         {/* 銷售數量（所有人可見） */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <p className="text-sm text-gray-600 mb-1">銷售數量</p>
-          <p className="text-2xl font-bold text-[#7B9FA6]">
+          <p className="text-2xl font-bold text-primary">
             {stats.items_sold}
           </p>
         </div>

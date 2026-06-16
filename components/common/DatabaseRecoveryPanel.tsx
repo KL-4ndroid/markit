@@ -146,10 +146,10 @@ export function DatabaseRecoveryPanel() {
             {isHealthy ? <ShieldCheck size={20} /> : <AlertTriangle size={20} />}
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-[#3A3A3A]">
+            <h2 className="text-base font-semibold text-foreground">
               {isHealthy ? '資料庫狀態正常' : '資料庫健康檢查'}
             </h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">
+            <p className="mt-1 text-sm text-muted-foreground">
               {isHealthy
                 ? '本機資料完整性檢查已通過。'
                 : '檢查本機 IndexedDB 是否有格式錯誤或統計快取異常。修復前會自動下載備份。'}
@@ -162,7 +162,7 @@ export function DatabaseRecoveryPanel() {
             type="button"
             onClick={handleCheck}
             disabled={isChecking}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-[#3A3A3A] disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground disabled:opacity-50"
           >
             <ShieldCheck size={16} />
             檢查
@@ -171,7 +171,7 @@ export function DatabaseRecoveryPanel() {
             type="button"
             onClick={handleRetry}
             disabled={isChecking}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-[#3A3A3A] disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground disabled:opacity-50"
           >
             <RefreshCw size={16} />
             重試
@@ -180,7 +180,7 @@ export function DatabaseRecoveryPanel() {
             type="button"
             onClick={handleExport}
             disabled={isExporting}
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-[#7B9FA6] px-3 text-sm font-medium text-white disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-white disabled:opacity-50"
           >
             <Download size={16} />
             備份
@@ -189,7 +189,7 @@ export function DatabaseRecoveryPanel() {
             type="button"
             onClick={handleRepairDailyStats}
             disabled={isRepairing || !hasDailyStatsNumericErrors}
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-[#D4A574] px-3 text-sm font-medium text-white disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-secondary px-3 text-sm font-medium text-white disabled:opacity-50"
           >
             <Wrench size={16} />
             修復統計
@@ -198,7 +198,7 @@ export function DatabaseRecoveryPanel() {
             type="button"
             onClick={handleRepairProducts}
             disabled={isRepairingProducts || !hasProductReferenceErrors}
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-[#D4A574] px-3 text-sm font-medium text-white disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-secondary px-3 text-sm font-medium text-white disabled:opacity-50"
           >
             <Wrench size={16} />
             修復商品
@@ -209,12 +209,12 @@ export function DatabaseRecoveryPanel() {
       {(errors.length > 0 || warnings.length > 0) && (
         <div className="mt-4 space-y-2 border-t border-[#F0ECE4] pt-3 text-sm">
           {hasDailyStatsNumericErrors && (
-            <p className="text-[#3A3A3A]">
+            <p className="text-foreground">
               發現每日統計快取欄位異常。可先按「備份」，再按「修復統計」將無效數值正規化。
             </p>
           )}
           {hasProductReferenceErrors && (
-            <p className="text-[#3A3A3A]">
+            <p className="text-foreground">
               發現成交記錄引用了已刪除或不存在的商品。可先按「備份」，再按「修復商品」從雲端補回或建立佔位商品。
             </p>
           )}

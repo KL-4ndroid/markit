@@ -35,7 +35,7 @@ const planConfig: Record<PlanType, PlanConfig> = {
     price: 0,
     period: '',
     icon: Sparkles,
-    color: 'from-[#6B6B6B] to-[#8B8B8B]',
+    color: 'from-muted-foreground to-muted-foreground/60',
     features: [
       '單一市集管理',
       '基礎商品管理（最多 20 個）',
@@ -54,9 +54,9 @@ const planConfig: Record<PlanType, PlanConfig> = {
     price: 199,
     period: '/月',
     icon: Crown,
-    color: 'from-[#7B9FA6] to-[#D4A574]',
+    color: 'from-primary to-secondary',
     badge: '最受歡迎',
-    badgeColor: 'bg-[#D4A574]',
+    badgeColor: 'bg-secondary',
     features: [
       '無限市集數量',
       '無限商品管理',
@@ -73,9 +73,9 @@ const planConfig: Record<PlanType, PlanConfig> = {
     price: 499,
     period: '/月',
     icon: Building2,
-    color: 'from-[#8B7BA6] to-[#A6B4D4]',
+    color: 'from-primary to-primary/80',
     badge: '完整功能',
-    badgeColor: 'bg-[#8B7BA6]',
+    badgeColor: 'bg-primary',
     features: [
       '專業版所有功能',
       '無限員工協作',
@@ -97,7 +97,7 @@ export function PricingCard({ plan, isCurrentPlan = false, onSelect }: PricingCa
     <div
       className={`relative bg-white rounded-[1.5rem] p-6 shadow-lg transition-all ${
         isCurrentPlan
-          ? 'ring-2 ring-[#7B9FA6] shadow-[#7B9FA6]/20'
+          ? 'ring-2 ring-primary shadow-primary/20'
           : 'hover:shadow-xl hover:-translate-y-1'
       }`}
     >
@@ -110,7 +110,7 @@ export function PricingCard({ plan, isCurrentPlan = false, onSelect }: PricingCa
 
       {/* 當前方案標記 */}
       {isCurrentPlan && (
-        <div className="absolute -top-3 right-4 bg-[#7B9FA6] text-white text-xs font-medium px-3 py-1 rounded-full shadow-md">
+        <div className="absolute -top-3 right-4 bg-primary text-white text-xs font-medium px-3 py-1 rounded-full shadow-md">
           目前方案
         </div>
       )}
@@ -121,20 +121,20 @@ export function PricingCard({ plan, isCurrentPlan = false, onSelect }: PricingCa
       </div>
 
       {/* 方案名稱 */}
-      <h3 className="text-xl font-bold text-[#3A3A3A] mb-2">{config.name}</h3>
+      <h3 className="text-xl font-bold text-foreground mb-2">{config.name}</h3>
 
       {/* 價格 */}
       <div className="mb-6">
         <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-bold text-[#3A3A3A] tabular-nums">
+          <span className="text-4xl font-bold text-foreground tabular-nums">
             NT$ {config.price}
           </span>
           {config.period && (
-            <span className="text-[#6B6B6B] text-sm">{config.period}</span>
+            <span className="text-muted-foreground text-sm">{config.period}</span>
           )}
         </div>
         {plan === 'free' && (
-          <p className="text-[#6B6B6B] text-sm mt-1">永久免費</p>
+          <p className="text-muted-foreground text-sm mt-1">永久免費</p>
         )}
       </div>
 
@@ -142,22 +142,22 @@ export function PricingCard({ plan, isCurrentPlan = false, onSelect }: PricingCa
       <div className="space-y-3 mb-6">
         {config.features.map((feature, index) => (
           <div key={index} className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-[#E8F3E8] flex items-center justify-center mt-0.5">
-              <Check className="w-3 h-3 text-[#7B9FA6]" />
+            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-soft-green flex items-center justify-center mt-0.5">
+              <Check className="w-3 h-3 text-primary" />
             </div>
-            <span className="text-sm text-[#3A3A3A]">{feature}</span>
+            <span className="text-sm text-foreground">{feature}</span>
           </div>
         ))}
 
         {/* 限制項目（僅免費版） */}
         {config.limitations && (
-          <div className="pt-3 border-t border-[#7B9FA6]/10">
+          <div className="pt-3 border-t border-primary/10">
             {config.limitations.map((limitation, index) => (
               <div key={index} className="flex items-start gap-3 opacity-50">
-                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-[#F5E6E8] flex items-center justify-center mt-0.5">
-                  <span className="text-xs text-[#6B6B6B]">✕</span>
+                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-soft-pink flex items-center justify-center mt-0.5">
+                  <span className="text-xs text-muted-foreground">✕</span>
                 </div>
-                <span className="text-sm text-[#6B6B6B]">{limitation}</span>
+                <span className="text-sm text-muted-foreground">{limitation}</span>
               </div>
             ))}
           </div>
@@ -168,7 +168,7 @@ export function PricingCard({ plan, isCurrentPlan = false, onSelect }: PricingCa
       {isCurrentPlan ? (
         <button
           disabled
-          className="w-full py-3 rounded-xl bg-[#E8F3E8] text-[#7B9FA6] font-medium text-sm cursor-not-allowed"
+          className="w-full py-3 rounded-xl bg-soft-green text-primary font-medium text-sm cursor-not-allowed"
         >
           目前使用中
         </button>
@@ -177,7 +177,7 @@ export function PricingCard({ plan, isCurrentPlan = false, onSelect }: PricingCa
           onClick={onSelect}
           className={`w-full py-3 rounded-xl font-medium text-sm transition-all ${
             plan === 'free'
-              ? 'bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E8D8DA]'
+              ? 'bg-soft-pink text-foreground hover:bg-[#E8D8DA]'
               : `bg-gradient-to-r ${config.color} text-white hover:shadow-lg hover:scale-[1.02]`
           }`}
         >

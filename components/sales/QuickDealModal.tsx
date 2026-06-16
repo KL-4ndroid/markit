@@ -77,15 +77,15 @@ export function QuickDealModal({ isOpen, onClose, marketId, onSuccess }: QuickDe
         <DialogPanel className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <DialogTitle className="text-lg font-medium text-[#3A3A3A] flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
+            <DialogTitle className="text-lg font-medium text-foreground flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-primary" />
               快速成交
             </DialogTitle>
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-[#F5E6E8] transition-colors"
+              className="p-2 rounded-full hover:bg-soft-pink transition-colors"
             >
-              <X className="w-5 h-5 text-[#6B6B6B]" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
 
@@ -93,11 +93,11 @@ export function QuickDealModal({ isOpen, onClose, marketId, onSuccess }: QuickDe
           <div>
             {/* 金額輸入 */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                成交金額 <span className="text-[#d4183d]">*</span>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                成交金額 <span className="text-danger">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B6B6B] text-lg">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-lg">
                   $
                 </span>
                 <input
@@ -107,7 +107,7 @@ export function QuickDealModal({ isOpen, onClose, marketId, onSuccess }: QuickDe
                   placeholder="0"
                   min="0"
                   step="1"
-                  className="w-full pl-8 pr-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-lg font-medium"
+                  className="w-full pl-8 pr-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-lg font-medium"
                   autoFocus
                 />
               </div>
@@ -115,7 +115,7 @@ export function QuickDealModal({ isOpen, onClose, marketId, onSuccess }: QuickDe
 
             {/* 支付方式 - 點擊直接提交 */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 選擇支付方式完成交易
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -125,16 +125,16 @@ export function QuickDealModal({ isOpen, onClose, marketId, onSuccess }: QuickDe
                     type="button"
                     onClick={() => handlePaymentMethodSelect(method.value)}
                     disabled={isSubmitting || !amount}
-                    className="p-3 rounded-xl border-2 border-[#7B9FA6]/15 hover:border-[#7B9FA6] hover:bg-[#7B9FA6]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    className="p-3 rounded-xl border-2 border-primary/15 hover:border-primary hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
                   >
                     <div className="text-2xl mb-1">{method.emoji}</div>
-                    <div className="text-sm font-medium text-[#3A3A3A]">
+                    <div className="text-sm font-medium text-foreground">
                       {method.label}
                     </div>
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-[#6B6B6B] mt-2 text-center">
+              <p className="text-xs text-muted-foreground mt-2 text-center">
                 💡 點擊支付方式即可完成交易
               </p>
             </div>

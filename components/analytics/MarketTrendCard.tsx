@@ -13,10 +13,10 @@ const directionLabels: Record<MarketTrendDirection, string> = {
 };
 
 const directionStyles: Record<MarketTrendDirection, string> = {
-  improving: 'bg-[#E8F3E8] text-[#3A3A3A]',
-  declining: 'bg-[#FFF4E5] text-[#3A3A3A]',
-  flat: 'bg-[#F5F5F3] text-[#3A3A3A]',
-  not_enough_data: 'bg-[#F5F5F3] text-[#6B6B6B]',
+  improving: 'bg-soft-green text-foreground',
+  declining: 'bg-[#FFF4E5] text-foreground',
+  flat: 'bg-[#F5F5F3] text-foreground',
+  not_enough_data: 'bg-[#F5F5F3] text-muted-foreground',
 };
 
 function getDirectionIcon(direction: MarketTrendDirection) {
@@ -34,14 +34,14 @@ export function MarketTrendCard({ trend }: MarketTrendCardProps) {
   const recentPoints = trend.points.slice(-3).reverse();
 
   return (
-    <section className="bg-white rounded-[1.5rem] p-5 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+    <section className="bg-white rounded-[1.5rem] p-5 shadow-lg shadow-primary/10 mb-6">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <p className="text-xs font-medium text-[#7B9FA6] mb-1">場次趨勢</p>
-          <h2 className="text-xl font-semibold text-[#3A3A3A]">最近市集有變好嗎？</h2>
+          <p className="text-xs font-medium text-primary mb-1">場次趨勢</p>
+          <h2 className="text-xl font-semibold text-foreground">最近市集有變好嗎？</h2>
         </div>
-        <div className="w-10 h-10 rounded-full bg-[#E8F3E8] flex items-center justify-center flex-shrink-0">
-          <BarChart3 className="w-5 h-5 text-[#7B9FA6]" />
+        <div className="w-10 h-10 rounded-full bg-soft-green flex items-center justify-center flex-shrink-0">
+          <BarChart3 className="w-5 h-5 text-primary" />
         </div>
       </div>
 
@@ -50,30 +50,30 @@ export function MarketTrendCard({ trend }: MarketTrendCardProps) {
           <DirectionIcon className="w-3.5 h-3.5" />
           {directionLabels[trend.direction]}
         </span>
-        <span className="text-xs px-3 py-1 rounded-full bg-[#F5F5F3] text-[#3A3A3A]">
+        <span className="text-xs px-3 py-1 rounded-full bg-[#F5F5F3] text-foreground">
           {trend.points.length} 場有收入紀錄
         </span>
       </div>
 
-      <p className="text-sm text-[#3A3A3A] leading-relaxed mb-4">{trend.summary}</p>
+      <p className="text-sm text-foreground leading-relaxed mb-4">{trend.summary}</p>
 
       {recentPoints.length > 0 && (
         <div className="space-y-2 mb-4">
           {recentPoints.map((point) => (
-            <div key={point.marketId} className="bg-[#FAFAF8] rounded-xl p-3">
+            <div key={point.marketId} className="bg-background rounded-xl p-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#3A3A3A] truncate">{point.marketName}</p>
-                  <p className="text-xs text-[#6B6B6B] mt-1">{point.date}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{point.marketName}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{point.date}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xs text-[#6B6B6B]">淨利估算</p>
-                  <p className={`text-sm font-semibold ${point.netProfit >= 0 ? 'text-[#3A3A3A]' : 'text-[#B45F5F]'}`}>
+                  <p className="text-xs text-muted-foreground">淨利估算</p>
+                  <p className={`text-sm font-semibold ${point.netProfit >= 0 ? 'text-foreground' : 'text-[#B45F5F]'}`}>
                     ${formatMoney(point.netProfit)}
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-[#6B6B6B]">
+              <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-muted-foreground">
                 <span>營收 ${formatMoney(point.revenue)}</span>
                 <span>固定成本 ${formatMoney(point.fixedCost)}</span>
               </div>
@@ -82,9 +82,9 @@ export function MarketTrendCard({ trend }: MarketTrendCardProps) {
         </div>
       )}
 
-      <div className="bg-[#FFF8E7] rounded-xl p-4">
-        <p className="text-xs font-medium text-[#3A3A3A] mb-1">下一步</p>
-        <p className="text-sm text-[#3A3A3A] leading-relaxed">{trend.nextAction}</p>
+      <div className="bg-soft-yellow rounded-xl p-4">
+        <p className="text-xs font-medium text-foreground mb-1">下一步</p>
+        <p className="text-sm text-foreground leading-relaxed">{trend.nextAction}</p>
       </div>
     </section>
   );

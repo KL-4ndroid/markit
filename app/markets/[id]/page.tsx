@@ -532,13 +532,13 @@ export default function MarketDetailPage({ params }: PageProps) {
   // 狀態顏色映射
   const getStatusColor = (status: MarketStatus) => {
     const colors = {
-      registered: 'bg-[#FFF8E7] text-[#3A3A3A]',
-      accepted: 'bg-[#E8F3E8] text-[#3A3A3A]',
-      paid: 'bg-[#E8F3E8] text-[#3A3A3A]',
-      ongoing: 'bg-[#7B9FA6] text-white',
-      completed: 'bg-[#F5E6E8] text-[#3A3A3A]',
-      postponed: 'bg-[#F5E6E8] text-[#3A3A3A]',
-      cancelled: 'bg-[#F5E6E8] text-[#d4183d]',
+      registered: 'bg-soft-yellow text-foreground',
+      accepted: 'bg-soft-green text-foreground',
+      paid: 'bg-soft-green text-foreground',
+      ongoing: 'bg-primary text-white',
+      completed: 'bg-soft-pink text-foreground',
+      postponed: 'bg-soft-pink text-foreground',
+      cancelled: 'bg-soft-pink text-danger',
     };
     return colors[status] || colors.registered;
   };
@@ -945,10 +945,10 @@ export default function MarketDetailPage({ params }: PageProps) {
     isLoadingSupabase,
   })) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#7B9FA6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#6B6B6B]">載入中...</p>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">載入中...</p>
         </div>
       </div>
     );
@@ -957,8 +957,8 @@ export default function MarketDetailPage({ params }: PageProps) {
   // DB 不健康
   if (dbStatus?.ok === false) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8]">
-        <div className="bg-gradient-to-br from-[#D4A574] to-[#c49560] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="min-h-screen bg-background">
+        <div className="bg-gradient-to-br from-secondary to-secondary/85 pt-12 pb-8 px-6 rounded-b-[2rem]">
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push('/markets')}
@@ -974,30 +974,30 @@ export default function MarketDetailPage({ params }: PageProps) {
         </div>
 
         <div className="max-w-lg mx-auto px-6 -mt-4 pb-6">
-          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-[#D4A574]/10 text-center space-y-4">
+          <div className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-secondary/10 text-center space-y-4">
             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
               <AlertCircle className="w-8 h-8 text-amber-600" />
             </div>
-            <h2 className="text-lg font-medium text-[#3A3A3A]">
+            <h2 className="text-lg font-medium text-foreground">
               本機資料庫無法正常存取
             </h2>
-            <p className="text-[#6B6B6B] text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               系統無法讀取本地資料庫，可能因瀏覽器儲存空間不足、隱私模式，或資料庫結構損壞。
             </p>
             {dbStatus.recoverable && (
-              <p className="text-[#6B6B6B] text-sm">
+              <p className="text-muted-foreground text-sm">
                 建議前往「資料修復」頁面嘗試還原資料庫。
               </p>
             )}
             <button
               onClick={() => router.push('/recovery')}
-              className="w-full bg-[#D4A574] text-white px-6 py-3 rounded-2xl hover:bg-[#c49560] transition-colors font-medium"
+              className="w-full bg-secondary text-white px-6 py-3 rounded-2xl hover:bg-secondary/85 transition-colors font-medium"
             >
               前往資料修復
             </button>
             <button
               onClick={() => router.push('/markets')}
-              className="w-full bg-[#F5E6E8] text-[#3A3A3A] px-6 py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors font-medium"
+              className="w-full bg-soft-pink text-foreground px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors font-medium"
             >
               返回市集列表
             </button>
@@ -1010,9 +1010,9 @@ export default function MarketDetailPage({ params }: PageProps) {
   // 找不到市集
   if (!market) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8]">
+      <div className="min-h-screen bg-background">
         {/* Header */}
-        <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+        <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push('/markets')}
@@ -1029,17 +1029,17 @@ export default function MarketDetailPage({ params }: PageProps) {
 
         {/* Content */}
         <div className="max-w-lg mx-auto px-6 -mt-4">
-          <div className="bg-white rounded-[1.5rem] p-12 shadow-lg shadow-[#7B9FA6]/10 text-center">
-            <AlertCircle className="w-16 h-16 text-[#7B9FA6] mx-auto mb-4 opacity-50" />
-            <h2 className="text-lg font-medium text-[#3A3A3A] mb-2">
+          <div className="bg-white rounded-[1.5rem] p-12 shadow-lg shadow-primary/10 text-center">
+            <AlertCircle className="w-16 h-16 text-primary mx-auto mb-4 opacity-50" />
+            <h2 className="text-lg font-medium text-foreground mb-2">
               找不到此市集
             </h2>
-            <p className="text-[#6B6B6B] text-sm mb-6">
+            <p className="text-muted-foreground text-sm mb-6">
               此市集可能已被刪除或不存在
             </p>
             <button
               onClick={() => router.push('/markets')}
-              className="bg-[#7B9FA6] text-white px-6 py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors"
+              className="bg-primary text-white px-6 py-3 rounded-2xl hover:bg-primary/85 transition-colors"
             >
               返回市集列表
             </button>
@@ -1060,7 +1060,7 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // ✅ 老闆模式：使用完整功能視圖
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-20">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <div className="gradient-header pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
@@ -1122,12 +1122,12 @@ export default function MarketDetailPage({ params }: PageProps) {
         {isOperating && (
           <>
             {/* 1. 互動記錄按鈕 */}
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
-              <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A] mb-4">
-                <TrendingUp className="w-5 h-5 text-[#7B9FA6]" />
+            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
+              <h2 className="text-lg font-medium flex items-center gap-2 text-foreground mb-4">
+                <TrendingUp className="w-5 h-5 text-primary" />
                 記錄互動
               </h2>
-              <p className="text-sm text-[#6B6B6B] mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 記錄顧客互動行為，幫助分析顧客偏好
               </p>
               <InteractionButtons 
@@ -1140,17 +1140,17 @@ export default function MarketDetailPage({ params }: PageProps) {
             </div>
 
             {/* 2. 新增收入（簡化版：直接輸入金額） */}
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
               {/* Header with toggle */}
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
-                  <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
+                <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
+                  <DollarSign className="w-5 h-5 text-primary" />
                   快速新增收入
                 </h2>
                 <button
                   onClick={handleToggleQuickRevenue}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    isQuickRevenueExpanded ? 'bg-[#7B9FA6]' : 'bg-gray-300'
+                    isQuickRevenueExpanded ? 'bg-primary' : 'bg-gray-300'
                   }`}
                 >
                   <span
@@ -1183,14 +1183,14 @@ export default function MarketDetailPage({ params }: PageProps) {
 
         {/* 3. 營業狀態卡片 - 自動判斷（折疊）- 營業中時隱藏 */}
         {operatingPhase !== 'operating' && (
-          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
             <button
               onClick={() => setIsOperatingStatusCollapsed(!isOperatingStatusCollapsed)}
               className="w-full flex items-center justify-between mb-4"
             >
               <div className="flex-1 text-left">
-                <h2 className="text-lg font-medium text-[#3A3A3A]">營業狀態</h2>
-                <p className="text-xs text-[#6B6B6B] mt-1">
+                <h2 className="text-lg font-medium text-foreground">營業狀態</h2>
+                <p className="text-xs text-muted-foreground mt-1">
                   根據時間自動判斷
                 </p>
               </div>
@@ -1199,8 +1199,8 @@ export default function MarketDetailPage({ params }: PageProps) {
               <div className="flex items-center gap-2">
                 <div className={`px-4 py-2.5 rounded-full flex items-center gap-2 font-medium text-sm transition-all ${
                   operatingPhase === 'not-started'
-                    ? 'bg-[#FFF8E7] text-[#D4A574] border border-[#D4A574]/30'
-                    : 'bg-gray-100 text-[#6B6B6B]'
+                    ? 'bg-soft-yellow text-secondary border border-secondary/30'
+                    : 'bg-gray-100 text-muted-foreground'
                 }`}>
                   {operatingPhase === 'not-started' ? (
                     <>
@@ -1214,7 +1214,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                     </>
                   )}
                 </div>
-                <div className={`text-[#6B6B6B] transition-transform ${isOperatingStatusCollapsed ? '' : 'rotate-180'}`}>
+                <div className={`text-muted-foreground transition-transform ${isOperatingStatusCollapsed ? '' : 'rotate-180'}`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1226,12 +1226,12 @@ export default function MarketDetailPage({ params }: PageProps) {
             {!isOperatingStatusCollapsed && (
               <>
                 {/* 營業時段說明 */}
-                <div className="bg-[#7B9FA6]/10 border border-[#7B9FA6]/20 rounded-xl p-3">
+                <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
                   <div className="flex items-start gap-2">
-                    <Clock className="w-4 h-4 text-[#7B9FA6] flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 text-sm text-[#3A3A3A]">
+                    <Clock className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 text-sm text-foreground">
                       <p className="font-medium mb-1">自動營業時段：</p>
-                      <p className="text-xs text-[#6B6B6B]">
+                      <p className="text-xs text-muted-foreground">
                         開始：{market.operatingStartTime ? (() => {
                           const [hour, minute] = market.operatingStartTime.split(':').map(Number);
                           const startWithBuffer = new Date();
@@ -1275,9 +1275,9 @@ export default function MarketDetailPage({ params }: PageProps) {
                   
                   if (!isStatusReady) {
                     return (
-                      <div className="bg-[#FFF8E7] border border-[#FFF8E7] rounded-xl p-3 mt-3">
-                        <p className="text-sm text-[#3A3A3A] whitespace-pre-line flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4 text-[#D4A574] flex-shrink-0" />
+                      <div className="bg-soft-yellow border border-[#FFF8E7] rounded-xl p-3 mt-3">
+                        <p className="text-sm text-foreground whitespace-pre-line flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-secondary flex-shrink-0" />
                           <span>需將狀態更新為「已繳費」或「如期舉行」才能自動營業</span>
                         </p>
                       </div>
@@ -1286,9 +1286,9 @@ export default function MarketDetailPage({ params }: PageProps) {
                   
                   if (!isWithinMarketPeriod) {
                     return (
-                      <div className="bg-[#FFF8E7] border border-[#FFF8E7] rounded-xl p-3 mt-3">
-                        <p className="text-sm text-[#3A3A3A] whitespace-pre-line flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4 text-[#D4A574] flex-shrink-0" />
+                      <div className="bg-soft-yellow border border-[#FFF8E7] rounded-xl p-3 mt-3">
+                        <p className="text-sm text-foreground whitespace-pre-line flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-secondary flex-shrink-0" />
                           <span>僅限市集日期自動營業（{dateRangeText}）</span>
                         </p>
                       </div>
@@ -1298,9 +1298,9 @@ export default function MarketDetailPage({ params }: PageProps) {
                   // 根據營業階段顯示不同提示
                   if (operatingPhase === 'not-started') {
                     return (
-                      <div className="bg-[#E8F3E8] border border-[#7B9FA6]/20 rounded-xl p-3 mt-3">
-                        <p className="text-sm text-[#3A3A3A] whitespace-pre-line flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-[#7B9FA6] flex-shrink-0" />
+                      <div className="bg-soft-green border border-primary/20 rounded-xl p-3 mt-3">
+                        <p className="text-sm text-foreground whitespace-pre-line flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-primary flex-shrink-0" />
                           <span>等待營業時間到達，系統將自動切換為「營業中」</span>
                         </p>
                       </div>
@@ -1308,7 +1308,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                   } else if (operatingPhase === 'ended') {
                     return (
                       <div className="bg-gray-100 border border-gray-200 rounded-xl p-3 mt-3">
-                        <p className="text-sm text-[#6B6B6B] whitespace-pre-line flex items-center gap-2">
+                        <p className="text-sm text-muted-foreground whitespace-pre-line flex items-center gap-2">
                           <Moon className="w-4 h-4 flex-shrink-0" />
                           <span>今日營業已結束，感謝您的辛勞！</span>
                         </p>
@@ -1325,9 +1325,9 @@ export default function MarketDetailPage({ params }: PageProps) {
 
         {/* 4. 報名狀態 Stepper - 營業中時完全隱藏 */}
         {!isOperating && (
-          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-[#3A3A3A]">報名狀態</h2>
+            <h2 className="text-lg font-medium text-foreground">報名狀態</h2>
           </div>
           <div className="space-y-4">
             <div className="relative">
@@ -1343,9 +1343,9 @@ export default function MarketDetailPage({ params }: PageProps) {
                       }}
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
                         market.status === 'registered'
-                          ? 'ring-4 ring-offset-2 ring-[#7B9FA6]/30 scale-110 bg-[#D4A574] text-white cursor-default'
+                          ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
                           : ['accepted', 'paid', 'ongoing', 'completed'].includes(market.status)
-                          ? 'bg-[#7B9FA6] text-white hover:scale-105 cursor-pointer'
+                          ? 'bg-primary text-white hover:scale-105 cursor-pointer'
                           : 'bg-gray-200 text-gray-400 hover:scale-105 cursor-pointer'
                       }`}
                     >
@@ -1354,13 +1354,13 @@ export default function MarketDetailPage({ params }: PageProps) {
                       )}
                     </button>
                     <span className={`mt-2 text-xs font-medium text-center whitespace-nowrap ${
-                      market.status === 'registered' ? 'text-[#7B9FA6] font-bold' : 'text-[#3A3A3A]'
+                      market.status === 'registered' ? 'text-primary font-bold' : 'text-foreground'
                     }`}>
                       已報名
                     </span>
                   </div>
                   <div className={`h-1 flex-1 mx-2 transition-all duration-300 rounded-full ${
-                    ['accepted', 'paid', 'ongoing', 'completed'].includes(market.status) ? 'bg-[#7B9FA6]' : 'bg-gray-200'
+                    ['accepted', 'paid', 'ongoing', 'completed'].includes(market.status) ? 'bg-primary' : 'bg-gray-200'
                   }`}></div>
                 </div>
 
@@ -1375,9 +1375,9 @@ export default function MarketDetailPage({ params }: PageProps) {
                       }}
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
                         market.status === 'accepted'
-                          ? 'ring-4 ring-offset-2 ring-[#7B9FA6]/30 scale-110 bg-[#D4A574] text-white cursor-default'
+                          ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
                           : ['paid', 'ongoing', 'completed'].includes(market.status)
-                          ? 'bg-[#7B9FA6] text-white hover:scale-105 cursor-pointer'
+                          ? 'bg-primary text-white hover:scale-105 cursor-pointer'
                           : 'bg-gray-200 text-gray-400 hover:scale-105 cursor-pointer'
                       }`}
                     >
@@ -1386,13 +1386,13 @@ export default function MarketDetailPage({ params }: PageProps) {
                       )}
                     </button>
                     <span className={`mt-2 text-xs font-medium text-center whitespace-nowrap ${
-                      market.status === 'accepted' ? 'text-[#7B9FA6] font-bold' : market.status === 'registered' ? 'text-gray-400' : 'text-[#3A3A3A]'
+                      market.status === 'accepted' ? 'text-primary font-bold' : market.status === 'registered' ? 'text-gray-400' : 'text-foreground'
                     }`}>
                       已錄取
                     </span>
                   </div>
                   <div className={`h-1 flex-1 mx-2 transition-all duration-300 rounded-full ${
-                    ['paid', 'ongoing', 'completed'].includes(market.status) ? 'bg-[#7B9FA6]' : 'bg-gray-200'
+                    ['paid', 'ongoing', 'completed'].includes(market.status) ? 'bg-primary' : 'bg-gray-200'
                   }`}></div>
                 </div>
 
@@ -1407,9 +1407,9 @@ export default function MarketDetailPage({ params }: PageProps) {
                       }}
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
                         market.status === 'paid'
-                          ? 'ring-4 ring-offset-2 ring-[#7B9FA6]/30 scale-110 bg-[#D4A574] text-white cursor-default'
+                          ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
                           : ['ongoing', 'completed'].includes(market.status)
-                          ? 'bg-[#7B9FA6] text-white hover:scale-105 cursor-pointer'
+                          ? 'bg-primary text-white hover:scale-105 cursor-pointer'
                           : 'bg-gray-200 text-gray-400 hover:scale-105 cursor-pointer'
                       }`}
                     >
@@ -1418,13 +1418,13 @@ export default function MarketDetailPage({ params }: PageProps) {
                       )}
                     </button>
                     <span className={`mt-2 text-xs font-medium text-center whitespace-nowrap ${
-                      market.status === 'paid' ? 'text-[#7B9FA6] font-bold' : ['registered', 'accepted'].includes(market.status) ? 'text-gray-400' : 'text-[#3A3A3A]'
+                      market.status === 'paid' ? 'text-primary font-bold' : ['registered', 'accepted'].includes(market.status) ? 'text-gray-400' : 'text-foreground'
                     }`}>
                       已繳費
                     </span>
                   </div>
                   <div className={`h-1 flex-1 mx-2 transition-all duration-300 rounded-full ${
-                    ['ongoing', 'completed'].includes(market.status) ? 'bg-[#7B9FA6]' : 'bg-gray-200'
+                    ['ongoing', 'completed'].includes(market.status) ? 'bg-primary' : 'bg-gray-200'
                   }`}></div>
                 </div>
 
@@ -1439,9 +1439,9 @@ export default function MarketDetailPage({ params }: PageProps) {
                       }}
                       className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
                         market.status === 'ongoing'
-                          ? 'ring-4 ring-offset-2 ring-[#7B9FA6]/30 scale-110 bg-[#D4A574] text-white cursor-default'
+                          ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
                           : market.status === 'completed'
-                          ? 'bg-[#7B9FA6] text-white hover:scale-105 cursor-pointer'
+                          ? 'bg-primary text-white hover:scale-105 cursor-pointer'
                           : 'bg-gray-200 text-gray-400 hover:scale-105 cursor-pointer'
                       }`}
                     >
@@ -1450,7 +1450,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                       )}
                     </button>
                     <span className={`mt-2 text-xs font-medium text-center whitespace-nowrap ${
-                      market.status === 'ongoing' ? 'text-[#7B9FA6] font-bold' : ['registered', 'accepted', 'paid'].includes(market.status) ? 'text-gray-400' : 'text-[#3A3A3A]'
+                      market.status === 'ongoing' ? 'text-primary font-bold' : ['registered', 'accepted', 'paid'].includes(market.status) ? 'text-gray-400' : 'text-foreground'
                     }`}>
                       如期舉行
                     </span>
@@ -1461,13 +1461,13 @@ export default function MarketDetailPage({ params }: PageProps) {
 
             {/* 延期/取消按鈕 */}
             <div className="flex items-center justify-center gap-4 pt-2">
-              <div className="text-xs text-[#6B6B6B]">或</div>
+              <div className="text-xs text-muted-foreground">或</div>
               <button
                 onClick={() => handleStatusChangeRequest('postponed')}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                   market.status === 'postponed'
-                    ? 'bg-[#F5E6E8] text-[#3A3A3A] ring-2 ring-[#D4A574]'
-                    : 'bg-[#F5F5F0] text-[#6B6B6B] hover:bg-[#ECECEC] cursor-pointer'
+                    ? 'bg-soft-pink text-foreground ring-2 ring-secondary'
+                    : 'bg-[#F5F5F0] text-muted-foreground hover:bg-[#ECECEC] cursor-pointer'
                 }`}
               >
                 已延期
@@ -1478,8 +1478,8 @@ export default function MarketDetailPage({ params }: PageProps) {
                 }}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                   market.status === 'cancelled'
-                    ? 'bg-[#F5E6E8] text-[#d4183d] ring-2 ring-[#d4183d]'
-                    : 'bg-[#F5F5F0] text-[#6B6B6B] hover:bg-[#ECECEC] cursor-pointer'
+                    ? 'bg-soft-pink text-danger ring-2 ring-danger'
+                    : 'bg-[#F5F5F0] text-muted-foreground hover:bg-[#ECECEC] cursor-pointer'
                 }`}
               >
                 已取消
@@ -1487,7 +1487,7 @@ export default function MarketDetailPage({ params }: PageProps) {
             </div>
 
             {/* 提示 */}
-            <div className="bg-[#7B9FA6]/10 border border-[#7B9FA6]/20 rounded-xl p-3 text-xs text-[#3A3A3A]">
+            <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 text-xs text-foreground">
               <p className="font-semibold mb-1">💡 提示：</p>
               <p>
                 點擊任意狀態可快速切換。需設定為「已繳費」或「如期舉行」才能自動營業。
@@ -1505,14 +1505,14 @@ export default function MarketDetailPage({ params }: PageProps) {
         />
 
         {/* 6. 即時統計 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
-              <BarChart3 className="w-5 h-5 text-[#7B9FA6]" />
+            <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
+              <BarChart3 className="w-5 h-5 text-primary" />
               {market.startDate === market.endDate ? '即時統計' : '總計統計'}
             </h2>
             {market.startDate !== market.endDate && (
-              <div className="text-xs text-[#6B6B6B]">
+              <div className="text-xs text-muted-foreground">
                 {(() => {
                   // ✅ 修復：使用 dates 陣列的實際天數，而非計算 startDate 到 endDate 的天數
                   const actualDays = market.dates && market.dates.length > 0 
@@ -1529,14 +1529,14 @@ export default function MarketDetailPage({ params }: PageProps) {
             )}
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#7B9FA6]/10 rounded-xl p-4">
-              <div className="text-2xl font-medium text-[#7B9FA6]">
+            <div className="bg-primary/10 rounded-xl p-4">
+              <div className="text-2xl font-medium text-primary">
                 {formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0)}
               </div>
-              <div className="text-sm text-[#6B6B6B] mt-1">總收入</div>
+              <div className="text-sm text-muted-foreground mt-1">總收入</div>
             </div>
-            <div className="bg-[#E8F3E8] rounded-xl p-4">
-              <div className="text-2xl font-medium text-[#3A3A3A]">
+            <div className="bg-soft-green rounded-xl p-4">
+              <div className="text-2xl font-medium text-foreground">
                 {formatCurrency((() => {
                   // ✅ 計算淨利潤：總利潤 - 攤位費 - 設備租賃費用
                   const totalProfit = market.totalProfit || 0;
@@ -1549,16 +1549,16 @@ export default function MarketDetailPage({ params }: PageProps) {
                   return totalProfit - boothCost - equipmentCost;
                 })())}
               </div>
-              <div className="text-sm text-[#6B6B6B] mt-1">淨利潤</div>
+              <div className="text-sm text-muted-foreground mt-1">淨利潤</div>
             </div>
-            <div className="bg-[#D4A574]/10 rounded-xl p-4">
-              <div className="text-2xl font-medium text-[#D4A574]">
+            <div className="bg-secondary/10 rounded-xl p-4">
+              <div className="text-2xl font-medium text-secondary">
                 {stats?.totalDeals ?? market.totalDeals ?? 0}
               </div>
-              <div className="text-sm text-[#6B6B6B] mt-1">成交數</div>
+              <div className="text-sm text-muted-foreground mt-1">成交數</div>
             </div>
-            <div className="bg-[#F5E6E8] rounded-xl p-4">
-              <div className="text-2xl font-medium text-[#3A3A3A]">
+            <div className="bg-soft-pink rounded-xl p-4">
+              <div className="text-2xl font-medium text-foreground">
                 {formatCurrency((() => {
                   // ✅ 總支出：攤位費 + 設備租賃費用
                   const boothCost = market.boothCost || 0;
@@ -1570,17 +1570,17 @@ export default function MarketDetailPage({ params }: PageProps) {
                   return boothCost + equipmentCost;
                 })())}
               </div>
-              <div className="text-sm text-[#6B6B6B] mt-1">總支出</div>
+              <div className="text-sm text-muted-foreground mt-1">總支出</div>
             </div>
           </div>
 
           {/* 互動次數統計（C2.19B：從 dailyStats projection 讀取） */}
           {(stats?.totalInteractions ?? interactionEvents.length) > 0 && (
-            <div className="mt-4 pt-4 border-t border-[#7B9FA6]/10">
+            <div className="mt-4 pt-4 border-t border-primary/10">
               <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-4 h-4 text-[#7B9FA6]" />
-                <span className="text-sm font-medium text-[#3A3A3A]">互動次數總計</span>
-                <span className="text-xs text-[#6B6B6B]">（點擊查看詳情）</span>
+                <TrendingUp className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">互動次數總計</span>
+                <span className="text-xs text-muted-foreground">（點擊查看詳情）</span>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {(() => {
@@ -1600,11 +1600,11 @@ export default function MarketDetailPage({ params }: PageProps) {
                       <button
                         key={button.id}
                         onClick={() => handleInteractionClick(button.id, button.label, button.emoji)}
-                        className="bg-[#FAFAF8] rounded-xl p-3 text-center hover:bg-[#F5F5F0] hover:scale-105 transition-all cursor-pointer active:scale-95"
+                        className="bg-background rounded-xl p-3 text-center hover:bg-[#F5F5F0] hover:scale-105 transition-all cursor-pointer active:scale-95"
                       >
                         <div className="text-xl mb-1">{button.emoji}</div>
-                        <div className="text-lg font-medium text-[#3A3A3A]">{count}</div>
-                        <div className="text-xs text-[#6B6B6B] mt-0.5">{button.label}</div>
+                        <div className="text-lg font-medium text-foreground">{count}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{button.label}</div>
                       </button>
                     );
                   });
@@ -1618,68 +1618,68 @@ export default function MarketDetailPage({ params }: PageProps) {
 
         {/* 8. 成本明細 - ✅ 員工模式下隱藏 */}
         {!isStaff && (
-          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
-            <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-[#3A3A3A]">
-              <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
+          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+            <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-foreground">
+              <DollarSign className="w-5 h-5 text-primary" />
               成本明細
             </h2>
           <div className="space-y-2 text-sm">
             {/* 攤位費 */}
             <div className="flex justify-between">
-              <span className="text-[#6B6B6B]">攤位費</span>
-              <span className="font-medium text-[#3A3A3A]">
+              <span className="text-muted-foreground">攤位費</span>
+              <span className="font-medium text-foreground">
                 {formatCurrency(market.boothCost || 0)}
               </span>
             </div>
             
             {/* 設備租賃 - 始終顯示 */}
-            <div className="space-y-1 pl-4 py-2 bg-[#FAFAF8] rounded-xl">
-              <div className="text-xs font-medium text-[#6B6B6B] mb-1">設備租賃：</div>
+            <div className="space-y-1 pl-4 py-2 bg-background rounded-xl">
+              <div className="text-xs font-medium text-muted-foreground mb-1">設備租賃：</div>
               
               {/* 桌子 */}
               <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1 text-[#6B6B6B]">
+                <span className="flex items-center gap-1 text-muted-foreground">
                   <Table className="w-4 h-4" />
                   桌子
                 </span>
-                <span className="font-medium text-[#3A3A3A]">
+                <span className="font-medium text-foreground">
                   {market.tableFree 
-                    ? <span className="text-[#7B9FA6]">免費提供</span>
+                    ? <span className="text-primary">免費提供</span>
                     : (market.tableRental && market.tableRental > 0)
                     ? formatCurrency(market.tableRental)
-                    : <span className="text-[#6B6B6B]">自備</span>
+                    : <span className="text-muted-foreground">自備</span>
                   }
                 </span>
               </div>
               
               {/* 椅子 */}
               <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1 text-[#6B6B6B]">
+                <span className="flex items-center gap-1 text-muted-foreground">
                   <Armchair className="w-4 h-4" />
                   椅子
                 </span>
-                <span className="font-medium text-[#3A3A3A]">
+                <span className="font-medium text-foreground">
                   {market.chairFree 
-                    ? <span className="text-[#7B9FA6]">免費提供</span>
+                    ? <span className="text-primary">免費提供</span>
                     : (market.chairRental && market.chairRental > 0)
                     ? formatCurrency(market.chairRental)
-                    : <span className="text-[#6B6B6B]">自備</span>
+                    : <span className="text-muted-foreground">自備</span>
                   }
                 </span>
               </div>
               
               {/* 傘架 */}
               <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1 text-[#6B6B6B]">
+                <span className="flex items-center gap-1 text-muted-foreground">
                   <Umbrella className="w-4 h-4" />
                   傘架
                 </span>
-                <span className="font-medium text-[#3A3A3A]">
+                <span className="font-medium text-foreground">
                   {market.umbrellaFree 
-                    ? <span className="text-[#7B9FA6]">免費提供</span>
+                    ? <span className="text-primary">免費提供</span>
                     : (market.umbrellaRental && market.umbrellaRental > 0)
                     ? formatCurrency(market.umbrellaRental)
-                    : <span className="text-[#6B6B6B]">自備</span>
+                    : <span className="text-muted-foreground">自備</span>
                   }
                 </span>
               </div>
@@ -1687,10 +1687,10 @@ export default function MarketDetailPage({ params }: PageProps) {
 
             {/* 抽成 */}
             <div className="flex justify-between">
-              <span className="text-[#6B6B6B]">
+              <span className="text-muted-foreground">
                 抽成 ({market.commissionRate || 0}%)
               </span>
-              <span className="font-medium text-[#3A3A3A]">
+              <span className="font-medium text-foreground">
                 {formatCurrency(
                   ((market.totalRevenue || 0) * (market.commissionRate || 0)) / 100
                 )}
@@ -1699,12 +1699,12 @@ export default function MarketDetailPage({ params }: PageProps) {
             
             {/* 保證金 - 不計入成本，僅作提醒 */}
             {market.deposit && market.deposit > 0 && (
-              <div className="flex justify-between items-center bg-[#FFF8E7] px-3 py-2 rounded-lg">
-                <span className="text-[#6B6B6B] flex items-center gap-1">
+              <div className="flex justify-between items-center bg-soft-yellow px-3 py-2 rounded-lg">
+                <span className="text-muted-foreground flex items-center gap-1">
                   保證金
-                  <span className="text-xs text-[#D4A574]">(需退款)</span>
+                  <span className="text-xs text-secondary">(需退款)</span>
                 </span>
-                <span className="font-medium text-[#D4A574]">
+                <span className="font-medium text-secondary">
                   {formatCurrency(market.deposit)}
                 </span>
               </div>
@@ -1713,9 +1713,9 @@ export default function MarketDetailPage({ params }: PageProps) {
             
             
             {/* 固定成本總計 */}
-            <div className="border-t border-[#7B9FA6]/10 pt-2 flex justify-between font-medium">
-              <span className="text-[#3A3A3A]">固定成本總計</span>
-              <span className="text-[#D4A574]">
+            <div className="border-t border-primary/10 pt-2 flex justify-between font-medium">
+              <span className="text-foreground">固定成本總計</span>
+              <span className="text-secondary">
                 {formatCurrency(
                   (market.boothCost || 0) +
                   (market.tableFree ? 0 : (market.tableRental || 0)) +
@@ -1729,16 +1729,16 @@ export default function MarketDetailPage({ params }: PageProps) {
         )}
 
         {/* 5. 今日時間軸（折疊） */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
+        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
           <button
             onClick={() => setIsTimelineCollapsed(!isTimelineCollapsed)}
             className="w-full flex items-center justify-between"
           >
-            <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
-              <Clock className="w-5 h-5 text-[#7B9FA6]" />
+            <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
+              <Clock className="w-5 h-5 text-primary" />
               今日時間軸
             </h2>
-            <div className={`text-[#6B6B6B] transition-transform ${isTimelineCollapsed ? '' : 'rotate-180'}`}>
+            <div className={`text-muted-foreground transition-transform ${isTimelineCollapsed ? '' : 'rotate-180'}`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -1747,9 +1747,9 @@ export default function MarketDetailPage({ params }: PageProps) {
 
           {/* 倒數提示 - 始終顯示，不受折疊影響 */}
           {countdown !== '--' && countdown !== '已開始' && (
-            <div className="bg-[#E8F3E8] border border-[#7B9FA6]/20 rounded-xl p-3 text-center mt-4">
-              <p className="text-sm text-[#3A3A3A]">
-                <span className="font-bold text-lg text-[#7B9FA6]">{countdown}</span>
+            <div className="bg-soft-green border border-primary/20 rounded-xl p-3 text-center mt-4">
+              <p className="text-sm text-foreground">
+                <span className="font-bold text-lg text-primary">{countdown}</span>
               </p>
             </div>
           )}
@@ -1758,12 +1758,12 @@ export default function MarketDetailPage({ params }: PageProps) {
           <div className="space-y-4 mt-4">
             {/* 檢查是否有任何時間設定 */}
             {!market.checkInTime && !market.operatingStartTime && !market.operatingEndTime && !(market.earlyEntryEnabled && market.earlyEntryTime) ? (
-              <div className="bg-[#FFF8E7] border border-[#D4A574]/30 rounded-xl p-4 text-center">
-                <Clock className="w-8 h-8 text-[#D4A574] mx-auto mb-2 opacity-50" />
-                <p className="text-sm text-[#3A3A3A] font-medium mb-1">
+              <div className="bg-soft-yellow border border-secondary/30 rounded-xl p-4 text-center">
+                <Clock className="w-8 h-8 text-secondary mx-auto mb-2 opacity-50" />
+                <p className="text-sm text-foreground font-medium mb-1">
                   尚未設定時間資訊
                 </p>
-                <p className="text-xs text-[#6B6B6B]">
+                <p className="text-xs text-muted-foreground">
                   請點擊右上角「編輯」按鈕，設定報到時間、營業開始時間和營業結束時間
                 </p>
               </div>
@@ -1779,7 +1779,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                       <div className="flex-shrink-0">
                         <Circle className="w-6 h-6 text-gray-300" />
                       </div>
-                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-[#F5E6E8]/30 text-[#6B6B6B] border-[#F5E6E8]">
+                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-pink/30 text-muted-foreground border-[#F5E6E8]">
                         <div className="flex items-center gap-3">
                           <DoorOpen className="w-5 h-5" />
                           <div>
@@ -1808,7 +1808,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                       <div className="flex-shrink-0">
                         <Circle className="w-6 h-6 text-gray-300" />
                       </div>
-                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-[#E8F3E8]/30 text-[#6B6B6B] border-[#E8F3E8]">
+                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-green/30 text-muted-foreground border-[#E8F3E8]">
                         <div className="flex items-center gap-3">
                           <ClipboardCheck className="w-5 h-5" />
                           <div>
@@ -1837,7 +1837,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                       <div className="flex-shrink-0">
                         <Circle className="w-6 h-6 text-gray-300" />
                       </div>
-                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-[#E8F3E8]/30 text-[#6B6B6B] border-[#E8F3E8]">
+                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-green/30 text-muted-foreground border-[#E8F3E8]">
                         <div className="flex items-center gap-3">
                           <Store className="w-5 h-5" />
                           <div>
@@ -1872,7 +1872,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                     <div className="flex-shrink-0">
                       <Circle className="w-6 h-6 text-gray-300" />
                     </div>
-                    <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-[#FFF8E7]/30 text-[#6B6B6B] border-[#FFF8E7]">
+                    <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-yellow/30 text-muted-foreground border-[#FFF8E7]">
                       <div className="flex items-center gap-3">
                         <Moon className="w-5 h-5" />
                         <div>
@@ -1889,9 +1889,9 @@ export default function MarketDetailPage({ params }: PageProps) {
             {/* 統計摘要 */}
             {market.operatingStartTime && market.operatingEndTime && (
               <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="bg-[#E8F3E8] rounded-xl p-3 text-center">
-                  <p className="text-xs text-[#6B6B6B] mb-1">營業時長</p>
-                  <p className="text-lg font-bold text-[#7B9FA6]">
+                <div className="bg-soft-green rounded-xl p-3 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">營業時長</p>
+                  <p className="text-lg font-bold text-primary">
                     {(() => {
                       const start = market.operatingStartTime.split(':');
                       const end = market.operatingEndTime.split(':');
@@ -1902,9 +1902,9 @@ export default function MarketDetailPage({ params }: PageProps) {
                     })()}
                   </p>
                 </div>
-                <div className="bg-[#F5E6E8] rounded-xl p-3 text-center">
-                  <p className="text-xs text-[#6B6B6B] mb-1">總時長</p>
-                  <p className="text-lg font-bold text-[#D4A574]">
+                <div className="bg-soft-pink rounded-xl p-3 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">總時長</p>
+                  <p className="text-lg font-bold text-secondary">
                     {(() => {
                       const checkIn = market.checkInTime?.split(':') || market.operatingStartTime.split(':');
                       const end = market.operatingEndTime.split(':');
@@ -1929,10 +1929,10 @@ export default function MarketDetailPage({ params }: PageProps) {
         {interactionEvents.length > 0 && (
           <>
             <div className="mb-4">
-              <h2 className="text-xl font-medium text-[#3A3A3A] flex items-center gap-2">
+              <h2 className="text-xl font-medium text-foreground flex items-center gap-2">
                 📈 顧客行為分析
               </h2>
-              <p className="text-sm text-[#6B6B6B] mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 本場市集的顧客互動模式與偏好
               </p>
             </div>
@@ -1965,7 +1965,7 @@ export default function MarketDetailPage({ params }: PageProps) {
           <div className="space-y-2">
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-full bg-[#F5E6E8] text-[#d4183d] px-6 py-3 rounded-2xl hover:bg-[#E5D6D8] transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-soft-pink text-danger px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors flex items-center justify-center gap-2"
             >
               <Trash2 className="w-5 h-5" />
               刪除記錄
@@ -1992,22 +1992,22 @@ export default function MarketDetailPage({ params }: PageProps) {
               className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-medium text-[#3A3A3A] mb-2 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-[#D4A574]" />
+              <h3 className="text-lg font-medium text-foreground mb-2 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-secondary" />
                 確認變更狀態？
               </h3>
-              <p className="text-sm text-[#6B6B6B] mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 您即將變更狀態為「{getStatusText(pendingStatus)}」
               </p>
               
               {/* 警告提示 */}
               {isOperating && (
-                <div className="bg-[#FFF8E7] border border-[#D4A574]/30 rounded-xl p-3 mb-4">
-                  <p className="text-sm text-[#3A3A3A] font-medium mb-1">
+                <div className="bg-soft-yellow border border-secondary/30 rounded-xl p-3 mb-4">
+                  <p className="text-sm text-foreground font-medium mb-1">
                     ⚠️ 重要提示
                   </p>
-                  <p className="text-xs text-[#6B6B6B]">
-                    此變更將會<span className="font-bold text-[#d4183d]">立即結束營業狀態</span>，快速互動和快速交易功能將被隱藏。
+                  <p className="text-xs text-muted-foreground">
+                    此變更將會<span className="font-bold text-danger">立即結束營業狀態</span>，快速互動和快速交易功能將被隱藏。
                   </p>
                 </div>
               )}
@@ -2018,14 +2018,14 @@ export default function MarketDetailPage({ params }: PageProps) {
                     setShowStatusChangeConfirm(false);
                     setPendingStatus(null);
                   }}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors"
                 >
                   取消
                 </button>
                 <button
                   onClick={() => executeStatusChange(pendingStatus)}
                   disabled={isUpdating}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors disabled:opacity-50"
                 >
                   {isUpdating ? '處理中...' : '確認變更'}
                 </button>
@@ -2051,21 +2051,21 @@ export default function MarketDetailPage({ params }: PageProps) {
               className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-medium text-[#3A3A3A] mb-2">確認取消市集？</h3>
-              <p className="text-sm text-[#6B6B6B] mb-6">
+              <h3 className="text-lg font-medium text-foreground mb-2">確認取消市集？</h3>
+              <p className="text-sm text-muted-foreground mb-6">
                 取消後，市集狀態將變更為「已取消」，此操作無法復原。
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowCancelConfirm(false)}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors"
                 >
                   返回
                 </button>
                 <button
                   onClick={handleCancelMarket}
                   disabled={isUpdating}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#d4183d] text-white hover:bg-[#c41739] transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-danger text-white hover:bg-danger/85 transition-colors disabled:opacity-50"
                 >
                   {isUpdating ? '處理中...' : '確認取消'}
                 </button>
@@ -2091,23 +2091,23 @@ export default function MarketDetailPage({ params }: PageProps) {
               className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-medium text-[#3A3A3A] mb-2">確認刪除記錄？</h3>
-              <p className="text-sm text-[#6B6B6B] mb-6">
+              <h3 className="text-lg font-medium text-foreground mb-2">確認刪除記錄？</h3>
+              <p className="text-sm text-muted-foreground mb-6">
                 刪除後，此市集將不再顯示在列表中，但數據仍會保留。
                 <br />
-                <span className="text-[#D4A574] font-medium">提示：如果只是市集取消，建議使用「已取消」狀態。</span>
+                <span className="text-secondary font-medium">提示：如果只是市集取消，建議使用「已取消」狀態。</span>
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors"
                 >
                   返回
                 </button>
                 <button
                   onClick={handleDeleteMarket}
                   disabled={isUpdating}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-[#d4183d] text-white hover:bg-[#c41739] transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-danger text-white hover:bg-danger/85 transition-colors disabled:opacity-50"
                 >
                   {isUpdating ? '處理中...' : '確認刪除'}
                 </button>

@@ -156,8 +156,8 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
     <>
       <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex justify-center">
-      <div className="bg-[#FAFAF8] w-[94vw] h-[90dvh] sm:max-w-lg rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative shadow-2xl pointer-events-auto">          {/* Header */}
-          <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] px-6 py-6 flex items-center justify-between flex-shrink-0">
+      <div className="bg-background w-[94vw] h-[90dvh] sm:max-w-lg rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative shadow-2xl pointer-events-auto">          {/* Header */}
+          <div className="bg-gradient-to-br from-primary to-secondary px-6 py-6 flex items-center justify-between flex-shrink-0">
             <h2 className="text-xl font-medium text-white">編輯市集</h2>
             <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
               <X className="w-5 h-5 text-white" />
@@ -168,49 +168,49 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pb-24">
             <div className="px-6 py-6 space-y-6">
               {/* 基本資訊 */}
-              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
-                <h2 className="text-lg font-medium mb-4 text-[#3A3A3A] flex items-center gap-2">
-                  <Package className="w-5 h-5 text-[#7B9FA6]" />
+              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">
+                <h2 className="text-lg font-medium mb-4 text-foreground flex items-center gap-2">
+                  <Package className="w-5 h-5 text-primary" />
                   基本資訊
                 </h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       市集名稱 <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleChange('name', e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+                      className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       地點 <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={formData.location}
                       onChange={(e) => handleChange('location', e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+                      className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                       required
                     />
                   </div>
                   {/* 日期 - 多選模式 */}
                   <div>
-                    <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       市集日期 <span className="text-red-500">*</span>
                     </label>
                     <DateMultiPicker
                       value={formData.dates}
                       onChange={(value) => handleChange('dates', value)}
-                      className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] font-medium"
+                      className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground font-medium"
                       placeholder="選擇市集日期（可選擇多個日期）"
                       required
                     />
-                    <p className="text-xs text-[#6B6B6B] mt-2">
+                    <p className="text-xs text-muted-foreground mt-2">
                       💡 提示：可以選擇多個不連續的日期（例如：只選週六、週日）
                     </p>
                   </div>
@@ -218,105 +218,105 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
               </div>
 
               {/* 市集時間軸 */}
-              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
+              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-[#7B9FA6]" />
-                    <h3 className="text-lg font-semibold text-[#3A3A3A]">市集時間軸</h3>
+                    <Clock className="w-5 h-5 text-primary" />
+                    <h3 className="text-lg font-semibold text-foreground">市集時間軸</h3>
                   </div>
                 </div>
 
-                <div className="bg-white border-2 border-[#7B9FA6]/15 rounded-[1.5rem] p-4">
+                <div className="bg-white border-2 border-primary/15 rounded-[1.5rem] p-4">
                   <div className="space-y-4">
                     {/* 提前進場 */}
                     {!noEarlyEntry && (
                       <>
                         <div>
                           <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-[#F5E6E8] text-[#D4A574] border-[#D4A574]/30">
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-soft-pink text-secondary border-secondary/30">
                               <DoorOpen className="w-5 h-5" />
                               <span className="font-medium text-sm">提前進場</span>
                             </div>
                             <TimePicker
                               value={formData.earlyEntryTime}
                               onChange={(value) => handleChange('earlyEntryTime', value)}
-                              className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                              className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-base font-semibold tracking-wide"
                               placeholder="選擇時間"
                             />
                           </div>
                           <div className="ml-6 my-2">
-                            <div className="w-0.5 h-4 bg-[#7B9FA6]/20"></div>
+                            <div className="w-0.5 h-4 bg-primary/20"></div>
                           </div>
                         </div>
                       </>
                     )}
 
                     {/* 不提前進場 Checkbox */}
-                    <div className="bg-[#F5E6E8]/30 rounded-xl p-3">
+                    <div className="bg-soft-pink/30 rounded-xl p-3">
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={noEarlyEntry}
                           onChange={(e) => setNoEarlyEntry(e.target.checked)}
-                          className="w-5 h-5 text-[#D4A574] border-[#7B9FA6]/30 rounded focus:ring-[#D4A574]"
+                          className="w-5 h-5 text-secondary border-primary/30 rounded focus:ring-secondary"
                         />
-                        <span className="text-[#3A3A3A] font-medium">不提前進場</span>
+                        <span className="text-foreground font-medium">不提前進場</span>
                       </label>
                     </div>
 
                     {/* 報到 */}
                     <div>
                       <div className="flex flex-col gap-3">
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-[#E8F3E8] text-[#7B9FA6] border-[#7B9FA6]/30">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-soft-green text-primary border-primary/30">
                           <ClipboardCheck className="w-5 h-5" />
                           <span className="font-medium text-sm">報到</span>
                         </div>
                         <TimePicker
                           value={formData.checkInTime}
                           onChange={(value) => handleChange('checkInTime', value)}
-                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                          className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-base font-semibold tracking-wide"
                           placeholder="選擇時間"
                         />
                       </div>
                       <div className="ml-6 my-2">
-                        <div className="w-0.5 h-4 bg-[#7B9FA6]/20"></div>
+                        <div className="w-0.5 h-4 bg-primary/20"></div>
                       </div>
                     </div>
 
                     {/* 營業中 */}
                     <div>
                       <div className="flex flex-col gap-3">
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-[#E8F3E8] text-[#7B9FA6] border-[#7B9FA6]/30">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-soft-green text-primary border-primary/30">
                           <Store className="w-5 h-5" />
                           <span className="font-medium text-sm">營業中</span>
                         </div>
                         <TimePicker
                           value={formData.operatingStartTime}
                           onChange={(value) => handleChange('operatingStartTime', value)}
-                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                          className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-base font-semibold tracking-wide"
                           placeholder="選擇時間"
                         />
-                        <div className="flex items-center gap-2 text-sm text-[#6B6B6B] px-2">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground px-2">
                           <span>→</span>
                           <span className="font-medium">{calculateDuration(formData.operatingStartTime || '10:00', formData.operatingEndTime || '18:00')}</span>
                         </div>
                       </div>
                       <div className="ml-6 my-2">
-                        <div className="w-0.5 h-4 bg-[#7B9FA6]/20"></div>
+                        <div className="w-0.5 h-4 bg-primary/20"></div>
                       </div>
                     </div>
 
                     {/* 營業結束 */}
                     <div>
                       <div className="flex flex-col gap-3">
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-[#FFF8E7] text-[#D4A574] border-[#D4A574]/30">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 bg-soft-yellow text-secondary border-secondary/30">
                           <Moon className="w-5 h-5" />
                           <span className="font-medium text-sm">營業結束</span>
                         </div>
                         <TimePicker
                           value={formData.operatingEndTime}
                           onChange={(value) => handleChange('operatingEndTime', value)}
-                          className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all text-[#3A3A3A] text-base font-semibold tracking-wide"
+                          className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground text-base font-semibold tracking-wide"
                           placeholder="選擇時間"
                         />
                       </div>
@@ -324,17 +324,17 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                   </div>
 
                   {/* 時長統計 */}
-                  <div className="mt-6 pt-6 border-t-2 border-[#7B9FA6]/10">
+                  <div className="mt-6 pt-6 border-t-2 border-primary/10">
                     <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="bg-[#E8F3E8] rounded-xl p-3">
-                        <p className="text-[#6B6B6B] mb-1 text-xs">營業時長</p>
-                        <p className="text-lg font-bold text-[#7B9FA6]">
+                      <div className="bg-soft-green rounded-xl p-3">
+                        <p className="text-muted-foreground mb-1 text-xs">營業時長</p>
+                        <p className="text-lg font-bold text-primary">
                           {calculateDuration(formData.operatingStartTime || '10:00', formData.operatingEndTime || '18:00')}
                         </p>
                       </div>
-                      <div className="bg-[#F5E6E8] rounded-xl p-3">
-                        <p className="text-[#6B6B6B] mb-1 text-xs">總時長</p>
-                        <p className="text-lg font-bold text-[#D4A574]">
+                      <div className="bg-soft-pink rounded-xl p-3">
+                        <p className="text-muted-foreground mb-1 text-xs">總時長</p>
+                        <p className="text-lg font-bold text-secondary">
                           {calculateTotalDuration()}
                         </p>
                       </div>
@@ -344,9 +344,9 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
               </div>
 
               {/* 成本資訊 */}
-              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
-                <h2 className="text-lg font-medium mb-4 text-[#3A3A3A] flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
+              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">
+                <h2 className="text-lg font-medium mb-4 text-foreground flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-primary" />
                   成本資訊
                 </h2>
                 <div className="space-y-4">
@@ -358,7 +358,7 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                         value={formData.boothCost}
                         onChange={(e) => handleChange('boothCost', Number(e.target.value))}
                         min="0"
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+                        className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                       />
                     </div>
                     <div>
@@ -368,13 +368,13 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                         value={formData.deposit}
                         onChange={(e) => handleChange('deposit', Number(e.target.value))}
                         min="0"
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+                        className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                       />
                     </div>
                   </div>
 
-                  <div className="bg-[#FAFAF8] rounded-xl p-4 space-y-3">
-                    <h3 className="text-sm font-medium text-[#3A3A3A]">設備租賃</h3>
+                  <div className="bg-background rounded-xl p-4 space-y-3">
+                    <h3 className="text-sm font-medium text-foreground">設備租賃</h3>
                     <div>
                       <label className="block text-sm font-medium mb-2">桌子租金 (NT$)</label>
                       <input
@@ -383,16 +383,16 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                         onChange={(e) => handleChange('tableRental', Number(e.target.value))}
                         min="0"
                         disabled={tableFree}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all disabled:bg-gray-100"
+                        className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-gray-100"
                       />
                       <label className="flex items-center gap-2 mt-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={tableFree}
                           onChange={(e) => setTableFree(e.target.checked)}
-                          className="w-4 h-4 text-[#7B9FA6] border-[#7B9FA6]/30 rounded"
+                          className="w-4 h-4 text-primary border-primary/30 rounded"
                         />
-                        <span className="text-sm text-[#6B6B6B]">免費提供</span>
+                        <span className="text-sm text-muted-foreground">免費提供</span>
                       </label>
                     </div>
                     <div>
@@ -403,16 +403,16 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                         onChange={(e) => handleChange('chairRental', Number(e.target.value))}
                         min="0"
                         disabled={chairFree}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all disabled:bg-gray-100"
+                        className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-gray-100"
                       />
                       <label className="flex items-center gap-2 mt-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={chairFree}
                           onChange={(e) => setChairFree(e.target.checked)}
-                          className="w-4 h-4 text-[#7B9FA6] border-[#7B9FA6]/30 rounded"
+                          className="w-4 h-4 text-primary border-primary/30 rounded"
                         />
-                        <span className="text-sm text-[#6B6B6B]">免費提供</span>
+                        <span className="text-sm text-muted-foreground">免費提供</span>
                       </label>
                     </div>
                     <div>
@@ -423,16 +423,16 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                         onChange={(e) => handleChange('umbrellaRental', Number(e.target.value))}
                         min="0"
                         disabled={umbrellaFree}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all disabled:bg-gray-100"
+                        className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-gray-100"
                       />
                       <label className="flex items-center gap-2 mt-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={umbrellaFree}
                           onChange={(e) => setUmbrellaFree(e.target.checked)}
-                          className="w-4 h-4 text-[#7B9FA6] border-[#7B9FA6]/30 rounded"
+                          className="w-4 h-4 text-primary border-primary/30 rounded"
                         />
-                        <span className="text-sm text-[#6B6B6B]">免費提供</span>
+                        <span className="text-sm text-muted-foreground">免費提供</span>
                       </label>
                     </div>
                   </div>
@@ -446,35 +446,35 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                       min="0"
                       max="100"
                       step="0.1"
-                      className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
+                      className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                     />
                   </div>
                 </div>
               </div>
 
               {/* 備註 */}
-              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
-                <h2 className="text-lg font-medium mb-4 text-[#3A3A3A] flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-[#7B9FA6]" />
+              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">
+                <h2 className="text-lg font-medium mb-4 text-foreground flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
                   備註
                 </h2>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => handleChange('notes', e.target.value)}
                   rows={4}
-                  className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all resize-none"
+                  className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
                 />
               </div>
             </div>
           </form>
 
           {/* 底部按鈕 - 固定在彈窗底部 */}
-          <div className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t border-[#7B9FA6]/10 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+          <div className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t border-primary/10 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium"
+                className="flex-1 px-6 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium"
               >
                 取消
               </button>
@@ -482,7 +482,7 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                 type="submit"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex-1 px-6 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium disabled:opacity-50"
+                className="flex-1 px-6 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium disabled:opacity-50"
               >
                 {isSubmitting ? '更新中...' : '儲存變更'}
               </button>
