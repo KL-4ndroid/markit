@@ -1,6 +1,6 @@
 # Markit 資料收斂文件總檔（單一權威入口）
 
-更新日期：2026-06-16（C2.29B-2.1 已套用 + C2.28B 收尾文件）
+更新日期：2026-06-16（C2.29B-2.1 + 2.2 + 2.3 全部完成；C2.29 收斂 100% 達標）
 建立目的：取代散落於 `docs/` 的 11 份歷史設計/覆核/審查文件，提供單一可搜尋的入口。
 
 ## 0. 如何閱讀
@@ -67,7 +67,7 @@
 | C2.31 | 衝突解決脫敏 | ✅ | `799b8ab`, `2fd23c8` | 見本文件 §6 |
 | C2.27 | Staff local-first detail 檢查 | ✅ **已透過 StaffMarketDetailView 重構 + 三層防線實質完成**（2026-06-15） | `ed79a23`, `727de49`, `c5cacfa` | [`docs/C2.27_REANALYSIS_2026_06_15.md`](./C2.27_REANALYSIS_2026_06_15.md) |
 | C2.28 | Role fail-closed 評估 | 🟡 **已分析，P0 fail-closed 修補中**（2026-06-15：sync-context + role error；頁面 render guard 待 C2.28B） | `94f9fc5` | [`docs/C2.28_REANALYSIS_2026_06_15.md`](./C2.28_REANALYSIS_2026_06_15.md) |
-| C2.29 | Supabase view / RLS hardening 草稿 | ✅ **C2.29B-1 view 層已套用並驗證通過（2026-06-15）**。✅ **C2.29B-1.1（040）已套用並驗證通過（2026-06-16）**（view scope 修補）。✅ **C2.29B-2.1（041）已套用並驗證通過（2026-06-16）**（底表 SELECT RLS 收緊：Staff direct SELECT = 0，Owner 不 regression）。⚠️ C2.29B-2.2（type-level guard）和 C2.29B-2.3（E1-E5）仍待實作 | `439f97f`（039）+ `8ff6b09`（040）+ `54ac823`（041）| [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) §C2.29B-1/1.1 Apply + [`docs/C2.29B-2_1_RLS_MIGRATION_DRAFT_2026_06_16.md`](./C2.29B-2_1_RLS_MIGRATION_DRAFT_2026_06_16.md) |
+| C2.29 | Supabase view / RLS hardening 草稿 | ✅ **C2.29 收斂 100% 達標**（2026-06-16）：C2.29B-1 + 1.1 + 2.1 + 2.2 + 2.3 全部完成。8 個攻擊面全部消除，E1-E5 全部通過 | `439f97f`（039）+ `8ff6b09`（040）+ `54ac823`（041）| [`docs/C2.29_REANALYSIS_2026_06_15.md`](./C2.29_REANALYSIS_2026_06_15.md) §C2.29B-1/1.1 Apply + [`docs/C2.29B-2_1_RLS_MIGRATION_DRAFT_2026_06_16.md`](./C2.29B-2_1_RLS_MIGRATION_DRAFT_2026_06_16.md) + [`docs/C2.29B-2.2_STAFF_TYPED_CLIENT_2026_06_16.md`](./C2.29B-2.2_STAFF_TYPED_CLIENT_2026_06_16.md) + [`docs/C2.29B-2_VERIFICATION_2026_06_16.md`](./C2.29B-2_VERIFICATION_2026_06_16.md) |
 | **C3.4** | **Projection 二次累加修復（水水市集問題）** | ✅ **完成**（2026-06-14） | `f7155fb` (P0) + `c6de385` (P1) + `7b6590f` (P2) + `89dec72` (P3) | [`docs/PROJECTION_DOUBLECOUNT_FIX_PLAN.md`](./PROJECTION_DOUBLECOUNT_FIX_PLAN.md) + [`docs/C3.4_REGRESSION_TROUBLESHOOTING.md`](./C3.4_REGRESSION_TROUBLESHOOTING.md) |
 
 ### 4.2 為什麼 C2.26 透過 C2.30C 實質完成
@@ -195,7 +195,7 @@ remote/merge 策略寫入前脫敏         │                          │
 
 1. **新 phase** 開工時：在 `DATA_CONVERGENCE_PLAN.md` 加 phase 編號 + 在本文件 §2 加 archive 列
 2. **archive 文件**只讀不寫，發現錯誤請用新文件記錄
-3. **`OWNER_STAFF_REVENUE_HARDENING_PLAN.md`** 仍在維護（C2.27 ✅ / C2.28 ✅ / C2.28B ✅ / **C2.29B-1 view 層 ✅ / C2.29B-1.1 view scope ✅ / C2.29B-2 藍圖已建立 ⏸ 實作待用戶授權**），但格式應與 `DATA_CONVERGENCE_PLAN.md` 對齊
+3. **`OWNER_STAFF_REVENUE_HARDENING_PLAN.md`** 仍在維護（C2.27 ✅ / C2.28 ✅ / C2.28B ✅ / **C2.29B-1 view 層 ✅ / C2.29B-1.1 view scope ✅ / C2.29B-2 全部完成 ✅**），但格式應與 `DATA_CONVERGENCE_PLAN.md` 對齊
 4. **`CLOUD_DATA_CONSISTENCY_AUDIT.md`** 是 SQL 工具，未來若新增診斷場景直接加章節
 5. **每次 phase 完成**需跑： `npm test` + `npx tsc --noEmit` + `npm run lint` + `npm run build` + `git diff --check`
 
