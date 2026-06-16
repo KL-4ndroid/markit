@@ -24,8 +24,8 @@ function formatDateTime(value: string): string {
 }
 
 export const APP_METADATA = {
-  name: 'Market Pulse',
-  displayName: '市集誌',
+  name: 'BoothBook',
+  displayName: '出攤本',
   version: appVersion,
   commitSha: appCommitSha,
   versionLabel: appVersionLabel,

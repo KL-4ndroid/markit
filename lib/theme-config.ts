@@ -3,7 +3,7 @@
  *
  * 對應文件：docs/brand/VI_DESIGN_SYSTEM.md（2026-06-16）
  *
- * 色票對應（從「Market Pulse」內部色票 → 「出攤本 BoothBook」對外品牌色）：
+ * 色票對應（從「BoothBook」內部色票 → 「出攤本 BoothBook」對外品牌色）：
  *   霧藍  #7B9FA6 → 霧松綠  #6F8F86
  *   暖木  #D4A574 → 暖杏橘  #D9A66A
  *   米白  #FAFAF8 → 奶油米白 #F7F3EA

@@ -6,7 +6,7 @@ Status: analytics data completeness, actionable insight service, first action ca
 
 ## 1. Product Direction
 
-Market Pulse should not treat analytics as a generic chart dashboard. The target user is a market vendor who needs practical answers:
+BoothBook should not treat analytics as a generic chart dashboard. The target user is a market vendor who needs practical answers:
 
 - Which markets are worth joining again?
 - Which products should I restock, reduce, or promote?

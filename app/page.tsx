@@ -311,7 +311,7 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <div>
                 <h1 className="text-xl font-medium text-white">
-                  市集誌 - Markit
+                  出攤本 - BoothBook
                 </h1>
               </div>
             </div>

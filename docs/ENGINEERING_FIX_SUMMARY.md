@@ -4,7 +4,7 @@ Last updated: 2026-05-26
 
 ## Current Status
 
-Market Pulse has completed the main data-safety hardening pass. The app now has stronger event typing, safer import behavior, recovery-mode tooling, tombstone-based deletion, daily-stat repair support, and more conservative sync behavior.
+BoothBook has completed the main data-safety hardening pass. The app now has stronger event typing, safer import behavior, recovery-mode tooling, tombstone-based deletion, daily-stat repair support, and more conservative sync behavior.
 
 The project is in a substantially safer state than the original review target. The remaining work is mainly test depth, legacy fixture coverage, support documentation, and careful extraction of complex page-level mutation logic.
 

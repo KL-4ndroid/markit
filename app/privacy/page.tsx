@@ -14,7 +14,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">資料收集</h2>
             <p className="text-muted-foreground leading-relaxed">
-              市集誌僅收集您主動提供的資料，包括註冊時的電子郵件地址、市集資料、銷售記錄等。
+              出攤本僅收集您主動提供的資料，包括註冊時的電子郵件地址、市集資料、銷售記錄等。
               我們不會收集任何與您業務無關的個人資訊。
             </p>
           </section>

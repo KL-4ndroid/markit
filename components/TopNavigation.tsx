@@ -52,7 +52,7 @@ export function TopNavigation() {
           <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center">
             <span className="text-white text-sm font-bold">市</span>
           </div>
-          <span className="text-sm font-medium text-foreground">市集誌</span>
+          <span className="text-sm font-medium text-foreground">出攤本</span>
         </div>
 
         {/* Right Side */}

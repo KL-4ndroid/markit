@@ -1,5 +1,5 @@
 /**
- * Market Pulse - Dexie 資料庫定義
+ * BoothBook - Dexie 資料庫定義
  * 
  * 本檔案定義 IndexedDB 資料庫結構
  * 使用 Dexie.js 作為 IndexedDB 的封裝層

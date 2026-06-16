@@ -1,5 +1,5 @@
 /**
- * Market Pulse - 資料庫 React Hooks
+ * BoothBook - 資料庫 React Hooks
  * 
  * 本檔案提供 React Hooks 供組件使用
  * 使用 Dexie React Hooks 實現響應式資料查詢

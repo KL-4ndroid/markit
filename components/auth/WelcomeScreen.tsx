@@ -22,7 +22,7 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
           </div>
 
           <h1 className="text-4xl font-serif text-[#3F3A37] tracking-[0.15em] mb-3">
-            市集誌
+            出攤本
           </h1>
 
           <p className="text-xs text-[#8A867D] tracking-[0.4em]">

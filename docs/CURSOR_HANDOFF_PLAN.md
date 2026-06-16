@@ -2,7 +2,7 @@
 
 Last updated: 2026-05-26
 
-This file is the handoff guide for continuing the Market Pulse / markit stability work in Cursor with Claude Opus.
+This file is the handoff guide for continuing the 出攤本 BoothBook / markit stability work in Cursor with Claude Opus.
 
 The goal is not to rewrite the app. The goal is to continue the current stabilization plan safely, in small verified steps, without causing data loss or breaking Vercel deployment.
 

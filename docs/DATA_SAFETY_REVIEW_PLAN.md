@@ -4,7 +4,7 @@ Last updated: 2026-05-26
 
 ## Purpose
 
-This document tracks the data-safety review for Market Pulse. The project is an offline-first app built around IndexedDB, Dexie, event records, projection tables, backup import/export, and optional Supabase sync. The main safety goal is to prevent irreversible user-data loss or silent data drift.
+This document tracks the data-safety review for BoothBook. The project is an offline-first app built around IndexedDB, Dexie, event records, projection tables, backup import/export, and optional Supabase sync. The main safety goal is to prevent irreversible user-data loss or silent data drift.
 
 ## Current Verdict
 

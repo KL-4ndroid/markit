@@ -1,4 +1,4 @@
-# Market Pulse - Data Access Audit
+# BoothBook - Data Access Audit
 
 > **⚠️ ARCHIVED 2026-06-14 (部分取代)**
 > 本文件為 C2.14A 資料讀取路徑盤點，**結構仍有效**但多項結論已被取代：
@@ -11,14 +11,14 @@
 > 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
 
 > **Audit Date**: 2026-06-13  
-> **Project**: Market Pulse (Local-First Event Sourcing Architecture)  
+> **Project**: BoothBook (Local-First Event Sourcing Architecture)  
 > **Purpose**: Comprehensive audit of all data READ paths, identifying service candidates for extraction
 
 ---
 
 ## 1. Executive Summary
 
-This audit documents all data read paths in the Market Pulse application, categorizing them by data source, read mechanism, and tombstone handling. The codebase follows a **Local-First architecture** with Dexie.js (IndexedDB) as the primary data source and Supabase as a backup/sync layer.
+This audit documents all data read paths in the BoothBook application, categorizing them by data source, read mechanism, and tombstone handling. The codebase follows a **Local-First architecture** with Dexie.js (IndexedDB) as the primary data source and Supabase as a backup/sync layer.
 
 ### Key Findings
 

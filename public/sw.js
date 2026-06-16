@@ -1,4 +1,4 @@
-// Service Worker for Market Pulse PWA
+// Service Worker for BoothBook PWA
 // Version: 2.0.0
 // 功能：僅提供 PWA 基礎功能（安裝到主畫面、推送通知）
 // 已移除：離線快取功能
@@ -121,7 +121,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('市集誌', options)
+    self.registration.showNotification('出攤本', options)
   );
 });
 

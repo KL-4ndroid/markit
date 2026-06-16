@@ -93,7 +93,7 @@ export function PWAUpdatePrompt() {
 
           {/* 描述 */}
           <p className="text-sm text-muted-foreground text-center mb-6">
-            市集誌有新版本可用，包含功能改進和錯誤修復。
+            出攤本有新版本可用，包含功能改進和錯誤修復。
             <br />
             建議立即更新以獲得最佳體驗。
           </p>

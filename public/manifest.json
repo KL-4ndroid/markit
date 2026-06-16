@@ -1,11 +1,11 @@
 {
-  "name": "市集誌 - Market Pulse",
-  "short_name": "市集誌",
+  "name": "出攤本 - BoothBook",
+  "short_name": "出攤本",
   "description": "市集攤販數位管理系統 - 輕鬆管理銷售、統計數據、追蹤成本",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAFAF8",
-  "theme_color": "#7B9FA6",
+  "background_color": "#F7F3EA",
+  "theme_color": "#6F8F86",
   "orientation": "portrait",
   "scope": "/",
   "icons": [

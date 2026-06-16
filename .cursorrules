@@ -1,7 +1,8 @@
-# Market Pulse - Cursor AI 開發規則
+# 出攤本 BoothBook - Cursor AI 開發規則
 
 ## 專案概述
-Market Pulse 是一個專為市集攤販設計的 **Local-First（本地優先）** 數位助手。
+出攤本 BoothBook 是一個專為市集攤販設計的 **Local-First（本地優先）** 數位助手。
+（內部代號：Markit）
 核心原則：3秒操作、本地優先、日系美學。
 
 ## 🎯 Local-First 架構原則

@@ -1,8 +1,8 @@
 {
   "name": "market-pulse",
   "version": "1.0.1",
-  "description": "市集誌 - 市集攤販數位管理系統",
-  "author": "Market Pulse Team",
+  "description": "出攤本 - 市集攤販數位管理系統",
+  "author": "BoothBook Team",
   "license": "MIT",
   "repository": {
     "type": "git",

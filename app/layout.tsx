@@ -18,13 +18,13 @@ import { InitialSyncDialog } from "@/components/sync/InitialSyncDialog";
 import { StaffInvitationDialog } from "@/components/staff/StaffInvitationDialog";
 
 export const metadata: Metadata = {
-  title: "市集誌 - Market Pulse",
+  title: "出攤本 - BoothBook",
   description: "市集攤販數位管理系統 - 輕鬆管理銷售、統計數據、追蹤成本",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "市集誌",
+    title: "出攤本",
   },
   icons: {
     icon: [
@@ -59,7 +59,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="市集誌" />
+        <meta name="apple-mobile-web-app-title" content="出攤本" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         
         {/* Theme Color */}

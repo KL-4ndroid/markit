@@ -1,5 +1,5 @@
 /**
- * Market Pulse - UUID 生成輔助函數
+ * BoothBook - UUID 生成輔助函數
  * 
  * 本檔案提供 UUID 生成相關的輔助函數
  * 用於支援離線建立資料與多人協作

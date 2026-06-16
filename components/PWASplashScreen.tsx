@@ -57,7 +57,7 @@ export function PWASplashScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-gradient-to-br from-primary via-[#8AACB3] to-[#9BB9C0] flex items-center justify-center transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[9999] bg-gradient-to-br from-primary via-primary/85 to-secondary flex items-center justify-center transition-opacity duration-300 ${
         isAnimatingOut ? 'opacity-0' : 'opacity-100'
       }`}
     >
@@ -77,11 +77,11 @@ export function PWASplashScreen() {
 
         {/* 標題 */}
         <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">
-          市集誌
+          出攤本
         </h1>
         
         <p className="text-xl text-white/90 font-light mb-8">
-          Market Pulse
+          BoothBook
         </p>
 
         {/* 載入動畫 */}
