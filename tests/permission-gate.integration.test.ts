@@ -326,6 +326,36 @@ async function main(): Promise<void> {
     assert.equal(payload.revenue, 8000, '保留 revenue（Level 2）');
   });
 
+  // C2.30A-1.1：rental 欄位在 event payload 中保留金額（員工可看金額）
+  // 員工 sync events replay 時需讀取 tableRental 寫入市集 snapshot
+  await runTest('[sync] sanitizeEvent: market_created 保留 rental 金額（員工可見）', () => {
+    const event = {
+      id: 'event-mc-rental',
+      type: 'market_created',
+      market_id: 'market-rental-1',
+      actor_id: 'owner-1',
+      timestamp: Date.now(),
+      payload: {
+        name: '南軟市集',
+        location: '台北',
+        tableRental: 500,
+        chairRental: 200,
+        umbrellaRental: 100,
+        tableclothRental: 50,
+      },
+    };
+
+    const gate = createPermissionGate({ infoLevel: 2, entity: 'event' });
+    const result = gate.sanitizeEvent(event as unknown as { type: string; payload?: unknown });
+    const payload = result.payload as Record<string, unknown>;
+
+    // 員工需保留 rental 金額（> 0 = 已承租），金額本身不脫敏
+    assert.equal(payload.tableRental, 500, '保留 event payload.tableRental 金額給 events replay');
+    assert.equal(payload.chairRental, 200, '保留 event payload.chairRental');
+    assert.equal(payload.umbrellaRental, 100, '保留 event payload.umbrellaRental');
+    assert.equal(payload.tableclothRental, 50, '保留 event payload.tableclothRental');
+  });
+
   await runTest('[sync] sanitizeEventsWithLevel: 過濾+脫敏完整流程', () => {
     const events = [
       cloudEvent('cost_added', { cost: 500 }),

@@ -83,8 +83,9 @@ const BASE_FIELDS: Record<EntityType, string[]> = {
     'averageCost', 'average_cost',
     'costPerItem', 'cost_per_item',
     // ✅ 設備 rental 欄位（tableRental / chairRental / umbrellaRental / tableclothRental）
-    // 不視為敏感：員工需要知道「此市集有租設備」才能評估自備或免費提供。
-    // 真實的 rental 成本會反映在 deal_closed 的 totalCost，由 PermissionGate 依 Level 控制揭露。
+    // 不視為敏感，金額保留：員工需知道自己是否要帶設備（> 0 = 已承租、0 = 自備）。
+    // 配合 supabase/migrations/042_preserve_staff_rental_existence.sql：
+    // staff_accessible_markets view 員工 branch 已直接回傳 m.table_rental 原始金額。
   ],
   product: [
     'cost', 'supplierInfo', 'supplier_info',
@@ -109,14 +110,14 @@ const BASE_FIELDS: Record<EntityType, string[]> = {
     'boothCost', 'booth_cost',
     'registrationFee', 'registration_fee',
     'deposit',
-    'tableRental', 'table_rental',
-    'chairRental', 'chair_rental',
-    'umbrellaRental', 'umbrella_rental',
-    'tableclothRental', 'tablecloth_rental',
     'commissionRate', 'commission_rate',
     'costBreakdown', 'cost_breakdown',
     'averageCost', 'average_cost',
     'costPerItem', 'cost_per_item',
+    // ✅ 設備 rental 欄位（tableRental / chairRental / umbrellaRental / tableclothRental）
+    // 不視為敏感，金額保留：員工需在 events replay 時保留設備租金金額。
+    // 配合 supabase/migrations/042_preserve_staff_rental_existence.sql，
+    // staff_accessible_markets view 員工 branch 已直接回傳 m.table_rental 原始金額。
   ],
   stats: [
     'totalCost', 'total_cost',
