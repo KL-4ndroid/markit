@@ -2,7 +2,7 @@
 
 import { useState, useMemo, Fragment, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, TrendingUp, XCircle, AlertTriangle, CheckCircle, type LucideIcon } from 'lucide-react';
+import { X, TrendingUp, XCircle, AlertTriangle, CheckCircle, Lightbulb, BarChart3, DollarSign, Timer, Calculator, type LucideIcon } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { toast } from 'sonner';
@@ -527,7 +527,7 @@ export default function AnalyticsPage() {
               </button>
               
               <div className="bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full">
-                <span className="text-white text-sm">📊</span>
+                <BarChart3 className="w-4 h-4 text-white" strokeWidth={1.75} aria-label="分析" />
               </div>
             </div>
           </div>
@@ -735,8 +735,9 @@ export default function AnalyticsPage() {
                             <X className="w-5 h-5" />
                           </button>
 
-                          <Dialog.Title className="font-medium text-foreground mb-4 text-lg pr-8">
-                            💡 市集投資回報分析
+                          <Dialog.Title className="font-medium text-foreground mb-4 text-lg pr-8 flex items-center gap-2">
+                            <Lightbulb className="w-5 h-5 text-secondary" strokeWidth={1.75} />
+                            市集投資回報分析
                           </Dialog.Title>
                           
                           {/* 三個指標說明 */}
@@ -744,7 +745,7 @@ export default function AnalyticsPage() {
                             {/* 1. 淨利潤 */}
                             <div className="bg-soft-green rounded-xl p-4">
                               <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                                <span className="text-primary">💰</span>
+                                <DollarSign className="w-4 h-4 text-primary" strokeWidth={1.75} />
                                 淨利潤
                               </h4>
                               <p className="text-sm text-muted-foreground leading-relaxed mb-2">
@@ -760,7 +761,7 @@ export default function AnalyticsPage() {
                             {/* 2. 每小時淨利 */}
                             <div className="bg-soft-yellow rounded-xl p-4">
                               <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                                <span className="text-secondary">⏱️</span>
+                                <Timer className="w-4 h-4 text-secondary" strokeWidth={1.75} />
                                 每小時淨利
                               </h4>
                               <p className="text-sm text-muted-foreground leading-relaxed mb-2">
@@ -776,7 +777,7 @@ export default function AnalyticsPage() {
                             {/* 3. 回收率 */}
                             <div className="bg-soft-pink rounded-xl p-4">
                               <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                                <span className="text-secondary">📈</span>
+                                <TrendingUp className="w-4 h-4 text-secondary" strokeWidth={1.75} />
                                 回收率
                               </h4>
                               <p className="text-sm text-muted-foreground leading-relaxed mb-2">
@@ -791,10 +792,13 @@ export default function AnalyticsPage() {
                           </div>
 
                           <div className="bg-primary/10 rounded-xl p-3 mb-4">
-                            <p className="text-xs text-foreground leading-relaxed">
-                              <span className="font-medium">💡 排序規則：</span>
-                              <br />
-                              優先按「每小時淨利」排序，相同時再按「回收率」排序
+                            <p className="text-xs text-foreground leading-relaxed flex items-start gap-2">
+                              <Lightbulb className="w-4 h-4 mt-0.5 shrink-0 text-secondary" strokeWidth={1.75} />
+                              <span>
+                                <span className="font-medium">排序規則：</span>
+                                <br />
+                                優先按「每小時淨利」排序，相同時再按「回收率」排序
+                              </span>
                             </p>
                           </div>
 
@@ -908,8 +912,9 @@ export default function AnalyticsPage() {
                               <X className="w-5 h-5" />
                             </button>
 
-                            <Dialog.Title className="font-medium text-foreground mb-4 text-lg pr-8">
-                              💡 客單價分析
+                            <Dialog.Title className="font-medium text-foreground mb-4 text-lg pr-8 flex items-center gap-2">
+                              <Lightbulb className="w-5 h-5 text-secondary" strokeWidth={1.75} />
+                              客單價分析
                             </Dialog.Title>
                             
                             {/* 客單價說明 */}
@@ -917,7 +922,7 @@ export default function AnalyticsPage() {
                               {/* 計算方式 */}
                               <div className="bg-soft-green rounded-xl p-4">
                                 <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                                  <span className="text-primary">🧮</span>
+                                  <Calculator className="w-4 h-4 text-primary" strokeWidth={1.75} />
                                   計算方式
                                 </h4>
                                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -928,7 +933,7 @@ export default function AnalyticsPage() {
                               {/* 指標意義 */}
                               <div className="bg-soft-yellow rounded-xl p-4">
                                 <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                                  <span className="text-secondary">📊</span>
+                                  <BarChart3 className="w-4 h-4 text-secondary" strokeWidth={1.75} />
                                   指標意義
                                 </h4>
                                 <p className="text-sm text-muted-foreground leading-relaxed mb-2">
@@ -943,7 +948,7 @@ export default function AnalyticsPage() {
                               {/* 實際範例 */}
                               <div className="bg-soft-pink rounded-xl p-4">
                                 <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                                  <span className="text-secondary">💡</span>
+                                  <Lightbulb className="w-4 h-4 text-secondary" strokeWidth={1.75} />
                                   實際範例
                                 </h4>
                                 <div className="text-sm text-muted-foreground leading-relaxed space-y-2">
@@ -965,10 +970,13 @@ export default function AnalyticsPage() {
                             </div>
 
                             <div className="bg-primary/10 rounded-xl p-3 mb-4">
-                              <p className="text-xs text-foreground leading-relaxed">
-                                <span className="font-medium">💡 提升客單價的方法：</span>
-                                <br />
-                                提高商品定價、推出組合優惠、引導顧客購買多件商品
+                              <p className="text-xs text-foreground leading-relaxed flex items-start gap-2">
+                                <Lightbulb className="w-4 h-4 mt-0.5 shrink-0 text-secondary" strokeWidth={1.75} />
+                                <span>
+                                  <span className="font-medium">提升客單價的方法：</span>
+                                  <br />
+                                  提高商品定價、推出組合優惠、引導顧客購買多件商品
+                                </span>
                               </p>
                             </div>
 
