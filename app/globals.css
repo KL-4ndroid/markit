@@ -107,7 +107,14 @@ body {
   }
 }
 
-/* 頁面切換過渡效果 - 移除所有動畫 */
+/* 頁面切換過渡效果 - 2026-06-17 復原
+   設計意圖：
+   - 200ms 短動畫：符合 3 秒操作原則，不延遲用戶操作
+   - 0.98 → 1 透明度微動：避免「黑屏再淡入」造成的閃爍感
+   - translateX(8px) 微滑：比全寬滑入更不容易察覺
+   - transform 動畫：硬體加速，不影響版面
+   - 配 reduced-motion：尊重無障礙設定
+*/
 .page-transition {
   /* 強制硬體加速 */
   transform: translateZ(0);
@@ -119,19 +126,34 @@ body {
   contain: layout style paint;
 }
 
-/* 移除淡入動畫 - 直接顯示 */
+/* 淺入：預設 / 非導航列切換 */
 .fade-in {
-  /* 無動畫 */
+  animation: page-fade-in 200ms ease-out;
 }
 
-/* 移除從右滑入動畫 - 直接顯示 */
+/* 從右滑入：使用者往「右」導航（例如 首頁→設定，索引增加）*/
 .slide-from-right {
-  /* 無動畫 */
+  animation: page-slide-from-right 200ms ease-out;
 }
 
-/* 移除從左滑入動畫 - 直接顯示 */
+/* 從左滑入：使用者往「左」導航（例如 設定→首頁，索引減少）*/
 .slide-from-left {
-  /* 無動畫 */
+  animation: page-slide-from-left 200ms ease-out;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0.98; }
+  to   { opacity: 1; }
+}
+
+@keyframes page-slide-from-right {
+  from { transform: translateX(8px); opacity: 0.98; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes page-slide-from-left {
+  from { transform: translateX(-8px); opacity: 0.98; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
 
 /* 尊重用戶的動畫偏好設定 */
