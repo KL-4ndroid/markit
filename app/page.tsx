@@ -11,9 +11,8 @@ import { SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
 import { useSyncContext } from '@/lib/sync-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
-import { RoleLoadingFallback } from '@/components/auth/RoleLoadingFallback';
-import { 
-  Cloud, 
+import {
+  Cloud,
   CloudOff, 
   Loader2, 
   CheckCircle, 
@@ -110,12 +109,11 @@ export default function HomePage() {
   const [showSyncTooltip, setShowSyncTooltip] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // ✅ C2.28B：fail-closed render guard（必須在所有 hook 之後）
-  // 首頁在 loading 期間不可渲染 owner-only stats / owner overview
-  if (isRoleLoading || roleError) {
-    return <RoleLoadingFallback />;
-  }
-  
+  // ✅ 角色守衛（RoleGuard）已由 layout 級別統一處理（C2.28B）
+  //   - 這裡不需要再寫 if (isRoleLoading || roleError) return <RoleLoadingFallback />
+  //   - 到這層時角色必定已載入
+  //   - fail-closed 仍由 useUserRole 的 deriveRolePermissions 提供雙層保護
+
   // TODO: 從實際訂閱狀態獲取
   const currentPlan: 'free' | 'pro' | 'enterprise' = 'free';
 

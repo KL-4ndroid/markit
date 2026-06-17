@@ -16,7 +16,6 @@ import { StaffPermissionCard } from '@/components/staff/StaffPermissionCard';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { DataCanonicalizationPanel } from '@/components/settings/DataCanonicalizationPanel';
-import { RoleLoadingFallback } from '@/components/auth/RoleLoadingFallback';
 
 async function clearLocalAppData(): Promise<void> {
   const { clearAllData, db } = await import('@/lib/db');
@@ -87,11 +86,10 @@ export default function SettingsPage() {
     setIsSetupComplete(isInteractionSetupComplete());
   }, []);
 
-  // ✅ C2.28B：fail-closed render guard（必須在所有 hook 之後）
-  // Settings 含有大量 owner-only / staff-only 不同 UI，loading 期間不可預測
-  if (isRoleLoading || roleError) {
-    return <RoleLoadingFallback />;
-  }
+  // ✅ 角色守衛（RoleGuard）已由 layout 級別統一處理（C2.28B）
+  //   - 這裡不需要再寫 if (isRoleLoading || roleError) return <RoleLoadingFallback />
+  //   - 到這層時角色必定已載入
+  //   - fail-closed 仍由 useUserRole 的 deriveRolePermissions 提供雙層保護
 
   const handleResetInteraction = () => {
     if (confirm('確定要重置互動設定嗎？重置後需要重新設定。')) {

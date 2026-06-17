@@ -10,7 +10,6 @@ import { useMarkets, useProducts } from '@/lib/db/hooks';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { db } from '@/lib/db';
-import { RoleLoadingFallback } from '@/components/auth/RoleLoadingFallback';
 import {
   getActiveDealEventsForMarkets,
   getActiveInteractionEventsForMarkets,
@@ -481,11 +480,10 @@ export default function AnalyticsPage() {
     return getDataReliability(validMarketCount);
   }, [validMarketCount]);
 
-  // ✅ C2.28B：fail-closed render guard（必須在所有 hook 之後）
-  // Analytics 完全是 owner-only，loading 期間必須完全阻擋
-  if (isRoleLoading || roleError) {
-    return <RoleLoadingFallback />;
-  }
+  // ✅ 角色守衛（RoleGuard）已由 layout 級別統一處理（C2.28B）
+  //   - 這裡不需要再寫 if (isRoleLoading || roleError) return <RoleLoadingFallback />
+  //   - 到這層時角色必定已載入
+  //   - fail-closed 仍由 useUserRole 的 deriveRolePermissions 提供雙層保護
 
   return (
     <div className="min-h-screen bg-background pb-24">

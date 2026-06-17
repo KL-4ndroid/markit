@@ -13,7 +13,6 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
-import { RoleLoadingFallback } from '@/components/auth/RoleLoadingFallback';
 import type { MarketStatus } from '@/types/db';
 import MarketsLoading from './loading';
 
@@ -130,11 +129,10 @@ export default function MarketsPage() {
   const filteredMarkets = getFilteredMarkets();
   const batchStats = useMarketStatsBatch(allMarkets);
 
-  // ✅ C2.28B：fail-closed render guard（必須在所有 hook 之後）
-  // 角色查詢未確認前，不可渲染 owner-only / staff-only UI
-  if (isRoleLoading || roleError) {
-    return <RoleLoadingFallback />;
-  }
+  // ✅ 角色守衛（RoleGuard）已由 layout 級別統一處理（C2.28B）
+  //   - 這裡不需要再寫 if (isRoleLoading || roleError) return <RoleLoadingFallback />
+  //   - 到這層時角色必定已載入
+  //   - fail-closed 仍由 useUserRole 的 deriveRolePermissions 提供雙層保護
 
   // 處理新增成功
   const handleAddSuccess = () => {

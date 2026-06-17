@@ -14,8 +14,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context'; // ✅ 導入 useAuth
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
-import { RoleLoadingFallback } from '@/components/auth/RoleLoadingFallback';
 import type { ProductCategory } from '@/types/db';
+import ProductsLoading from './loading';
 
 type TabType = 'all' | ProductCategory;
 
@@ -80,10 +80,10 @@ export default function ProductsPage() {
 
   const filteredProducts = getFilteredProducts();
 
-  // ✅ C2.28B：fail-closed render guard（必須在所有 hook 之後）
-  if (isRoleLoading || roleError) {
-    return <RoleLoadingFallback />;
-  }
+  // ✅ 角色守衛（RoleGuard）已由 layout 級別統一處理（C2.28B）
+  //   - 這裡不需要再寫 if (isRoleLoading || roleError) return <RoleLoadingFallback />
+  //   - 到這層時角色必定已載入
+  //   - fail-closed 仍由 useUserRole 的 deriveRolePermissions 提供雙層保護
 
   // 計算每個分類的商品數量
   const getCategoryCount = (category: ProductCategory) => {
@@ -158,16 +158,9 @@ export default function ProductsPage() {
 
 
 
-  // 初始化中
+  // 初始化中：與其他 segment 統一使用骨架屏（markets 頁同款模式）
   if (dbStatus === null) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">載入中...</p>
-        </div>
-      </div>
-    );
+    return <ProductsLoading />;
   }
 
   // DB 不健康

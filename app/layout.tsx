@@ -11,6 +11,7 @@ import { AuthProvider } from "@/lib/supabase/auth-context";
 import { SyncProvider } from "@/lib/sync-context";
 import { AuthManager } from "@/components/auth/AuthManager";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 import { SessionExpiredHandler } from "@/components/auth/SessionExpiredHandler";
 import { NavigationProvider } from "@/lib/navigation-context";
 import { SyncProgressManager } from "@/components/sync/SyncProgressManager";
@@ -82,6 +83,9 @@ export default function RootLayout({
               
               {/* ✅ 認證守衛 - 包裹所有受保護的內容 */}
               <AuthGuard>
+                {/* ✅ 角色守衛 - 在 layout 級別統一處理角色載入狀態
+                    避免每個頁面重複 isRoleLoading || roleError 判斷 */}
+                <RoleGuard>
                 <div className="min-h-screen bg-background">
                   {/* 頂部導航 - 已移至首頁 Header */}
                   {/* <TopNavigation /> */}
@@ -123,6 +127,7 @@ export default function RootLayout({
                     }}
                   />
                 </div>
+                </RoleGuard>
               </AuthGuard>
               
               {/* 認證管理（登入/遷移對話框）- 放在 AuthGuard 外層 */}
