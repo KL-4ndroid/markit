@@ -1,3 +1,4 @@
+import { MapPin, Calendar, Timer, TrendingUp, Target, CreditCard, Trophy, Medal } from 'lucide-react';
 import { Market } from '@/types/db';
 import { MarketHealthScore } from '@/lib/analytics';
 
@@ -13,7 +14,8 @@ interface MarketHealthScoreCardProps {
  */
 export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScoreCardProps) {
   // 排名徽章
-  const rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉';
+  const RankIcon = rank === 1 ? Trophy : Medal;
+  const rankColor = rank === 1 ? 'text-amber-500' : rank === 2 ? 'text-slate-400' : 'text-amber-700';
   
   // 評級顏色
   const gradeColors = {
@@ -61,13 +63,19 @@ export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScore
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-2xl">{rankBadge}</span>
+            <RankIcon className={`w-6 h-6 shrink-0 ${rankColor}`} strokeWidth={1.75} fill="currentColor" />
             <h3 className="font-medium text-foreground text-lg">{market.name}</h3>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>📍 {market.location}</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
+              {market.location}
+            </span>
             <span>•</span>
-            <span>📅 {formatDate(market)}</span>
+            <span className="inline-flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
+              {formatDate(market)}
+            </span>
           </div>
         </div>
         
@@ -95,7 +103,10 @@ export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScore
       <div className="grid grid-cols-2 gap-3">
         {/* 每小時淨利 */}
         <div className="bg-soft-green rounded-xl p-3">
-          <p className="text-xs text-muted-foreground mb-1">⏱️ 每小時淨利</p>
+          <p className="text-xs text-muted-foreground mb-1 inline-flex items-center gap-1">
+            <Timer className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
+            每小時淨利
+          </p>
           <p className="text-lg font-semibold text-foreground">
             ${score.metrics.hourlyProfit.toFixed(0)}
           </p>
@@ -106,7 +117,10 @@ export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScore
 
         {/* 攤位費回收率 */}
         <div className="bg-soft-yellow rounded-xl p-3">
-          <p className="text-xs text-muted-foreground mb-1">📈 回收率</p>
+          <p className="text-xs text-muted-foreground mb-1 inline-flex items-center gap-1">
+            <TrendingUp className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
+            回收率
+          </p>
           <p className="text-lg font-semibold text-foreground">
             {score.metrics.boothROI.toFixed(0)}%
           </p>
@@ -117,7 +131,10 @@ export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScore
 
         {/* 轉換率 */}
         <div className="bg-soft-pink rounded-xl p-3">
-          <p className="text-xs text-muted-foreground mb-1">🎯 轉換率</p>
+          <p className="text-xs text-muted-foreground mb-1 inline-flex items-center gap-1">
+            <Target className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
+            轉換率
+          </p>
           <p className="text-lg font-semibold text-foreground">
             {score.metrics.conversionRate.toFixed(1)}%
           </p>
@@ -128,7 +145,10 @@ export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScore
 
         {/* 客單價 */}
         <div className="bg-[#E8F0F8] rounded-xl p-3">
-          <p className="text-xs text-muted-foreground mb-1">💳 客單價</p>
+          <p className="text-xs text-muted-foreground mb-1 inline-flex items-center gap-1">
+            <CreditCard className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
+            客單價
+          </p>
           <p className="text-lg font-semibold text-foreground">
             ${score.metrics.aov.toFixed(0)}
           </p>

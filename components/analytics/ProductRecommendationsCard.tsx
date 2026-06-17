@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { Gift, Lightbulb, Target } from 'lucide-react';
 import type { ProductPair } from '@/lib/analytics';
 import InfoTooltip, { tooltipContent } from './InfoTooltip';
 
@@ -25,20 +26,21 @@ export default function ProductRecommendationsCard({
   if (strongPairs.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-xl font-bold text-gray-800">
-            🎁 黃金組合推薦
-          </h3>
-          <InfoTooltip {...tooltipContent.productAffinity} />
-        </div>
-        <div className="text-center py-8">
-          <p className="text-gray-500">
-            暫無足夠數據分析商品關聯性
-          </p>
-          <p className="text-sm text-gray-400 mt-2">
-            需要至少 20 筆成交記錄
-          </p>
-        </div>
+      <div className="flex items-center gap-2 mb-4">
+        <Gift className="w-5 h-5 text-secondary shrink-0" strokeWidth={1.75} />
+        <h3 className="text-xl font-bold text-gray-800">
+          黃金組合推薦
+        </h3>
+        <InfoTooltip {...tooltipContent.productAffinity} />
+      </div>
+      <div className="text-center py-8">
+        <p className="text-gray-500">
+          暫無足夠數據分析商品關聯性
+        </p>
+        <p className="text-sm text-gray-400 mt-2">
+          需要至少 20 筆成交記錄
+        </p>
+      </div>
       </div>
     );
   }
@@ -47,8 +49,9 @@ export default function ProductRecommendationsCard({
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
+          <Gift className="w-5 h-5 text-secondary shrink-0" strokeWidth={1.75} />
           <h3 className="text-xl font-bold text-gray-800">
-            🎁 黃金組合推薦
+            黃金組合推薦
           </h3>
           <InfoTooltip {...tooltipContent.productAffinity} />
         </div>
@@ -97,10 +100,11 @@ export default function ProductRecommendationsCard({
               </div>
 
               <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-3">
-                <p className="text-sm text-gray-700 mb-2">
-                  💡 買 <span className="font-medium">{pair.productA}</span> 的客人，
-                  有 <span className="font-bold text-green-700">{liftMultiplier} 倍</span> 機率也會買 
-                  <span className="font-medium"> {pair.productB}</span>
+                <p className="text-sm text-gray-700 mb-2 inline-flex items-start gap-1.5">
+                  <Lightbulb className="w-4 h-4 mt-0.5 shrink-0 text-secondary" strokeWidth={1.75} />
+                  <span>買 <span className="font-medium">{pair.productA}</span> 的客人，
+                  有 <span className="font-bold text-green-700">{liftMultiplier} 倍</span> 機率也會買
+                  <span className="font-medium"> {pair.productB}</span></span>
                 </p>
                 <div className="flex items-center gap-4 text-xs text-gray-600">
                   <span>信心度：{confidencePercent}%</span>
@@ -109,8 +113,9 @@ export default function ProductRecommendationsCard({
               </div>
 
               <div className="mt-3 pt-3 border-t border-gray-200">
-                <p className="text-sm font-medium text-gray-700 mb-2">
-                  🎯 建議行動：
+                <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                  <Target className="w-4 h-4 text-secondary shrink-0" strokeWidth={1.75} />
+                  建議行動：
                 </p>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• 做成組合包，優惠價 ${calculateBundlePrice(pair)}</li>

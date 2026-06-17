@@ -9,6 +9,7 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { db } from '@/lib/db';
 import { computeMarketAnalytics, calculateProductAffinity } from '@/lib/analytics';
+import { Frown, Lightbulb, HardDrive, RefreshCw } from 'lucide-react';
 import type { MarketAnalytics, ProductPair } from '@/lib/analytics';
 import type { Market } from '@/types/db';
 
@@ -83,7 +84,7 @@ export default function AnalyticsDashboard({ marketId }: AnalyticsDashboardProps
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <span className="text-6xl mb-4 block">😕</span>
+          <Frown className="w-16 h-16 mx-auto mb-4 text-muted-foreground/60" strokeWidth={1.5} />
           <p className="text-gray-600 mb-4">{error || '無法載入分析資料'}</p>
           <button
             onClick={loadAnalytics}
@@ -137,7 +138,7 @@ export default function AnalyticsDashboard({ marketId }: AnalyticsDashboardProps
         {/* 底部說明 */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
           <div className="flex items-start gap-3">
-            <span className="text-2xl">💡</span>
+            <Lightbulb className="w-6 h-6 shrink-0 text-secondary mt-0.5" strokeWidth={1.75} />
             <div>
               <h3 className="font-semibold text-gray-800 mb-2">
                 如何使用這份報告？
@@ -148,8 +149,9 @@ export default function AnalyticsDashboard({ marketId }: AnalyticsDashboardProps
                 <li>• <strong>看處方箋</strong>：按照建議行動，下次表現會更好</li>
                 <li>• <strong>看商品推薦</strong>：做成組合包，提升客單價</li>
               </ul>
-              <p className="text-sm text-gray-600 mt-3">
-                💾 建議：每次市集結束後都來看一次，持續優化你的策略
+              <p className="text-sm text-gray-600 mt-3 inline-flex items-center gap-1.5">
+                <HardDrive className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                <span><strong>建議</strong>：每次市集結束後都來看一次，持續優化你的策略</span>
               </p>
             </div>
           </div>
@@ -160,9 +162,10 @@ export default function AnalyticsDashboard({ marketId }: AnalyticsDashboardProps
           <p>數據更新時間：{new Date().toLocaleString('zh-TW')}</p>
           <button
             onClick={loadAnalytics}
-            className="mt-2 text-blue-600 hover:text-blue-700 font-medium"
+            className="mt-2 text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1.5"
           >
-            🔄 重新整理
+            <RefreshCw className="w-4 h-4" strokeWidth={1.75} />
+            重新整理
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Target } from 'lucide-react';
 
 interface InteractionPreferenceChartProps {
   data: {
@@ -33,8 +34,9 @@ export function InteractionPreferenceChart({ data }: InteractionPreferenceChartP
 
   return (
     <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
-      <h3 className="text-lg font-medium text-foreground mb-4">
-        🎯 互動偏好佔比
+      <h3 className="text-lg font-medium text-foreground mb-4 flex items-center gap-2">
+        <Target className="w-5 h-5 text-secondary" strokeWidth={1.75} />
+        互動偏好佔比
       </h3>
       <p className="text-xs text-muted-foreground mb-4">
         顧客最常進行的互動類型分布

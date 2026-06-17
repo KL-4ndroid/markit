@@ -1,6 +1,7 @@
 'use client';
 
 import { ComposedChart, Bar, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Clock } from 'lucide-react';
 
 interface InteractionTimeHeatmapProps {
   data: {
@@ -17,8 +18,9 @@ interface InteractionTimeHeatmapProps {
 export function InteractionTimeHeatmap({ data }: InteractionTimeHeatmapProps) {
   return (
     <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
-      <h3 className="text-lg font-medium text-foreground mb-4">
-        ⏰ 互動時序熱力圖
+      <h3 className="text-lg font-medium text-foreground mb-4 flex items-center gap-2">
+        <Clock className="w-5 h-5 text-secondary" strokeWidth={1.75} />
+        互動時序熱力圖
       </h3>
       <p className="text-xs text-muted-foreground mb-4">
         人氣高峰與金流高峰的時段分布
