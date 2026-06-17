@@ -6,7 +6,7 @@
 
 'use client';
 
-import { ShoppingBag, Lightbulb } from 'lucide-react';
+import { ShoppingBag, Lightbulb, Sparkles, Trophy, Medal } from 'lucide-react';
 import type { ProductPair } from '@/lib/analytics';
 import { MetricGuide } from './MetricGuide';
 
@@ -48,16 +48,20 @@ export function ProductAffinityCard({ pairs, isLoading }: ProductAffinityCardPro
             尚無連帶銷售數據
           </h3>
           
-          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-            建議在成交時記錄多樣商品，系統將自動分析哪些商品經常一起被購買 ✨
+          <p className="text-sm text-muted-foreground mb-4 leading-relaxed flex items-center justify-center gap-1.5">
+            <span>建議在成交時記錄多樣商品，系統將自動分析哪些商品經常一起被購買</span>
+            <Sparkles className="w-4 h-4 shrink-0" strokeWidth={1.75} />
           </p>
 
           {/* 小提示 */}
           <div className="bg-white/60 rounded-lg p-3 text-left">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              <span className="font-medium text-foreground">💡 小技巧：</span>
-              <br />
-              當顧客同時購買多件商品時，在成交頁面一起記錄，系統會自動分析商品之間的關聯性，幫助您優化商品擺放和組合優惠策略。
+            <p className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
+              <Lightbulb className="w-3.5 h-3.5 mt-0.5 shrink-0 text-foreground" strokeWidth={1.75} />
+              <span>
+                <span className="font-medium text-foreground">小技巧：</span>
+                <br />
+                當顧客同時購買多件商品時，在成交頁面一起記錄，系統會自動分析商品之間的關聯性，幫助您優化商品擺放和組合優惠策略。
+              </span>
             </p>
           </div>
         </div>
@@ -97,9 +101,13 @@ export function ProductAffinityCard({ pairs, isLoading }: ProductAffinityCardPro
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-lg">
-                  {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                </span>
+                {index === 0 ? (
+                  <Trophy className="w-5 h-5 shrink-0 text-amber-500" strokeWidth={1.75} />
+                ) : index === 1 ? (
+                  <Medal className="w-5 h-5 shrink-0 text-slate-400" strokeWidth={1.75} />
+                ) : (
+                  <Medal className="w-5 h-5 shrink-0 text-amber-700" strokeWidth={1.75} />
+                )}
                 <span className="text-xs font-medium text-primary">
                   第 {index + 1} 名
                 </span>
@@ -140,11 +148,11 @@ export function ProductAffinityCard({ pairs, isLoading }: ProductAffinityCardPro
       {/* 推薦建議 */}
       <div className="bg-soft-yellow rounded-xl p-4 flex gap-3">
         <div className="flex-shrink-0">
-          <Lightbulb className="w-5 h-5 text-secondary" />
+          <Lightbulb className="w-5 h-5 text-secondary" strokeWidth={1.75} />
         </div>
         <div>
           <p className="text-sm font-medium text-foreground mb-1">
-            💡 經營建議
+            經營建議
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed">
             建議將這些商品擺在一起展示，或推出組合優惠價，提升連帶銷售機會。

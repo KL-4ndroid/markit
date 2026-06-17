@@ -6,7 +6,7 @@
 
 'use client';
 
-import { TrendingUp, Calendar } from 'lucide-react';
+import { TrendingUp, Calendar, Lightbulb } from 'lucide-react';
 import { MetricGuide } from './MetricGuide';
 
 interface DailyRevenueChartProps {
@@ -82,9 +82,12 @@ export function DailyRevenueChart({
 
         {/* 引導說明 */}
         <div className="mt-6 bg-background rounded-xl p-4">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            <span className="font-medium text-foreground">💡 提示：</span>
-            開始記錄市集交易後，這裡將顯示每日收入變化趨勢，幫助您掌握營業狀況。
+          <p className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
+            <Lightbulb className="w-3.5 h-3.5 mt-0.5 shrink-0 text-foreground" strokeWidth={1.75} />
+            <span>
+              <span className="font-medium text-foreground">提示：</span>
+              開始記錄市集交易後，這裡將顯示每日收入變化趨勢，幫助您掌握營業狀況。
+            </span>
           </p>
         </div>
       </div>

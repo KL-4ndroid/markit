@@ -12,7 +12,7 @@
 
 import { useRouter } from 'next/navigation';
 import type { Market } from '@/types/db';
-import { TrendingUp, Target, Eye, Sparkles } from 'lucide-react';
+import { TrendingUp, Target, Eye, Sparkles, Calendar, Lightbulb } from 'lucide-react';
 import { MetricGuide } from './MetricGuide';
 
 interface QuadrantGridProps {
@@ -79,8 +79,9 @@ export function QuadrantGrid({
             <Sparkles className="w-10 h-10 text-primary/40" />
           </div>
           
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            ✨ 開始記錄互動數據
+          <h3 className="text-lg font-medium text-foreground mb-2 flex items-center justify-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" strokeWidth={1.75} />
+            開始記錄互動數據
           </h3>
           
           <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto leading-relaxed">
@@ -126,8 +127,9 @@ export function QuadrantGrid({
             <div className="font-medium line-clamp-1">
               {index + 1}. {market.name}
             </div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">
-              📅 {formatMarketDate(market)}
+            <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+              <Calendar className="w-3 h-3 shrink-0" strokeWidth={1.75} />
+              <span>{formatMarketDate(market)}</span>
             </div>
           </div>
         ))}
@@ -229,9 +231,12 @@ export function QuadrantGrid({
 
       {/* 說明文字 */}
       <div className="mt-4 bg-primary/5 rounded-xl p-3">
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          💡 <span className="font-medium text-foreground">象限解讀：</span>
-          明星市集值得重複參加；潛力市集需優化成交技巧；精準市集客群明確；觀察市集需評估是否繼續參加。
+        <p className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
+          <Lightbulb className="w-4 h-4 mt-0.5 shrink-0 text-primary" strokeWidth={1.75} />
+          <span>
+            <span className="font-medium text-foreground">象限解讀：</span>
+            明星市集值得重複參加；潛力市集需優化成交技巧；精準市集客群明確；觀察市集需評估是否繼續參加。
+          </span>
         </p>
       </div>
     </div>
