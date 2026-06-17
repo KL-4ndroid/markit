@@ -242,7 +242,12 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
       {/* 攤位費回收 */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-3xl">🎪</span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon 已是預優化小圖，不需要 next/image 額外處理 */}
+          <img
+            src="/icons/icon-192x192.png"
+            alt="出攤本"
+            className="w-12 h-12 object-contain"
+          />
           <div className="flex items-center gap-2">
             <h3 className="text-xl font-bold text-gray-800">攤位費划算嗎？</h3>
             <InfoTooltip {...tooltipContent.boothROI} />

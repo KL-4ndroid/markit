@@ -53,8 +53,13 @@ export function TopNavigation() {
       <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo / Title */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center">
-            <span className="text-white text-sm font-bold">市</span>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon 已是預優化小圖，不需要 next/image 額外處理 */}
+            <img
+              src="/icons/icon-192x192.png"
+              alt="出攤本"
+              className="w-full h-full object-contain"
+            />
           </div>
           <span className="text-sm font-medium text-foreground">出攤本</span>
         </div>

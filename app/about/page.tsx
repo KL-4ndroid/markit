@@ -5,8 +5,13 @@ export default function AboutPage() {
     <div className="min-h-screen bg-background py-12 px-6">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary to-primary/70 rounded-3xl shadow-xl mb-6">
-            <span className="text-4xl">🎪</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl shadow-xl mb-6 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon 已是預優化小圖，不需要 next/image 額外處理 */}
+            <img
+              src="/icons/icon-192x192.png"
+              alt="出攤本"
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">出攤本</h1>
           <p className="text-lg text-muted-foreground">BoothBook</p>

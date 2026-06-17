@@ -71,8 +71,13 @@ export function PWASplashScreen() {
       {/* 主要內容 */}
       <div className="relative flex flex-col items-center">
         {/* Logo */}
-        <div className="w-32 h-32 bg-white rounded-[2.5rem] shadow-2xl flex items-center justify-center mb-8 animate-bounce-slow">
-          <span className="text-6xl">🎪</span>
+        <div className="w-32 h-32 bg-white rounded-[2.5rem] shadow-2xl flex items-center justify-center mb-8 animate-bounce-slow p-4">
+          {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon 已是預優化小圖，不需要 next/image 額外處理 */}
+          <img
+            src="/icons/icon-192x192.png"
+            alt="出攤本"
+            className="w-full h-full object-contain"
+          />
         </div>
 
         {/* 標題 */}
