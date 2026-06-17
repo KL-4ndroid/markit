@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Edit, ChevronDown, ChevronUp, LogOut, Eye, Edit3, Settings as SettingsIcon, User as UserIcon } from 'lucide-react';
+import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Edit, ChevronDown, ChevronUp, LogOut, Eye, Edit3, Settings } from 'lucide-react';
 import { getInteractionButtons, resetInteractionButtons, isInteractionSetupComplete, type InteractionButton } from '@/lib/interaction-buttons-store';
 import { InteractionSetupWizard } from '@/components/settings/InteractionSetupWizard';
 import { StaffManagement } from '@/components/settings/StaffManagement';
@@ -231,7 +231,8 @@ export default function SettingsPage() {
       {/* Header */}
       <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
-          <h1 className="text-2xl font-medium text-white opacity-90 mb-2">
+          <h1 className="text-2xl font-medium text-white opacity-90 mb-2 flex items-center gap-2">
+            <Settings className="w-5 h-5" />
             設定
           </h1>
           <p className="text-white/80 text-sm">

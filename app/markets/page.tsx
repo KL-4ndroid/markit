@@ -231,7 +231,8 @@ export default function MarketsPage() {
       <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-medium text-white opacity-90">
+            <h1 className="text-2xl font-medium text-white opacity-90 flex items-center gap-2">
+              <Store className="w-6 h-6" />
               {isStaff ? '市集列表' : '我的市集'}
             </h1>
             {/* 新增按鈕 - ✅ 員工模式下隱藏 */}
