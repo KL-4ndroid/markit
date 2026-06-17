@@ -41,6 +41,12 @@
   --brand-warn: 229 196 107;             /* #E5C46B 柔霧黃（舊 #FFF8E7 柔黃） */
   --brand-info: 126 154 160;             /* #7E9AA0 霧藍灰 */
 
+  /* === 階段一新增：商品分類柔色（從現有 hex 提煉） === */
+  --brand-cat-clothing: 232 240 248;     /* #E8F0F8 柔藍（服飾） */
+  --brand-cat-art: 248 232 240;          /* #F8E8F0 柔紫（藝術） */
+  --brand-cat-stationery: 255 240 232;   /* #FFF0E8 柔橘（文具） */
+  --brand-cat-other: 240 240 240;        /* #F0F0F0 淺灰（其他） */
+
   /* 圓角系統 */
   --radius: 1.25rem;
   --radius-sm: 0.75rem;

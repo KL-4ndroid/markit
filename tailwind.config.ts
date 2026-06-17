@@ -47,6 +47,12 @@ const config: Config = {
         info: "rgb(var(--brand-info) / <alpha-value>)",
         // 員工區分（沿用主色 + 透明度，不另設獨立色票）
         'staff-tint': "rgb(var(--brand-primary) / <alpha-value>)",
+
+        // 階段一新增：商品分類柔色（從既有 hex 提煉）
+        'cat-clothing': "rgb(var(--brand-cat-clothing) / <alpha-value>)",
+        'cat-art': "rgb(var(--brand-cat-art) / <alpha-value>)",
+        'cat-stationery': "rgb(var(--brand-cat-stationery) / <alpha-value>)",
+        'cat-other': "rgb(var(--brand-cat-other) / <alpha-value>)",
       },
       borderRadius: {
         'xl': '1rem',
