@@ -560,7 +560,7 @@ export default function AnalyticsPage() {
             className={`flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all ${
               mode === 'quick'
                 ? 'bg-gradient-to-r from-primary to-primary/85 text-white shadow-md'
-                : 'text-muted-foreground hover:bg-[#F5F5F3]'
+                : 'text-muted-foreground hover:bg-muted'
             }`}
           >
             重點建議
@@ -570,7 +570,7 @@ export default function AnalyticsPage() {
             className={`flex-1 py-2.5 px-4 rounded-xl font-medium text-sm transition-all ${
               mode === 'advanced'
                 ? 'bg-gradient-to-r from-primary to-primary/85 text-white shadow-md'
-                : 'text-muted-foreground hover:bg-[#F5F5F3]'
+                : 'text-muted-foreground hover:bg-muted'
             }`}
           >
             進階分析
@@ -578,7 +578,7 @@ export default function AnalyticsPage() {
         </div>
 
         {mode === 'advanced' && (
-          <div className="bg-[#F5F5F3] border border-primary/15 rounded-[1.25rem] p-4 mb-6">
+          <div className="bg-muted border border-primary/15 rounded-[1.25rem] p-4 mb-6">
             <p className="text-sm font-medium text-foreground mb-1">進階分析是輔助判斷</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               下方圖表適合用來檢查細節；主要決策仍建議先看行動建議與市集回顧。
