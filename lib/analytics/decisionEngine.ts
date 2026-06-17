@@ -632,15 +632,27 @@ export function getDecisionColor(decision: DecisionType): string {
 }
 
 /**
- * 取得趨勢圖示
+ * 取得趨勢圖示的語意 key（由 UI 層負責對應到 Lucide icon）
  */
-export function getTrendIcon(trend: TrendType): string {
-  const icons: Record<TrendType, string> = {
-    UP: '📈',
-    STABLE: '➡️',
-    DOWN: '📉',
+export function getTrendIconKey(trend: TrendType): 'up' | 'stable' | 'down' {
+  const keys: Record<TrendType, 'up' | 'stable' | 'down'> = {
+    UP: 'up',
+    STABLE: 'stable',
+    DOWN: 'down',
   };
-  return icons[trend];
+  return keys[trend];
+}
+
+/**
+ * 取得最終決策圖示的語意 key（由 UI 層負責對應到 Lucide icon）
+ */
+export function getFinalDecisionIconKey(decision: FinalDecisionType): 'recommend' | 'consider' | 'avoid' {
+  const keys: Record<FinalDecisionType, 'recommend' | 'consider' | 'avoid'> = {
+    GO: 'recommend',
+    CONSIDER: 'consider',
+    SKIP: 'avoid',
+  };
+  return keys[decision];
 }
 
 /**
@@ -665,18 +677,6 @@ export function getFinalDecisionColor(decision: FinalDecisionType): string {
     SKIP: 'text-red-600',
   };
   return colors[decision];
-}
-
-/**
- * 取得最終決策圖示
- */
-export function getFinalDecisionIcon(decision: FinalDecisionType): string {
-  const icons: Record<FinalDecisionType, string> = {
-    GO: '✅',
-    CONSIDER: '🤔',
-    SKIP: '❌',
-  };
-  return icons[decision];
 }
 
 /**

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, Fragment, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, TrendingUp } from 'lucide-react';
+import { X, TrendingUp, XCircle, AlertTriangle, CheckCircle, type LucideIcon } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { toast } from 'sonner';
@@ -480,6 +480,14 @@ export default function AnalyticsPage() {
     return getDataReliability(validMarketCount);
   }, [validMarketCount]);
 
+  // 數據可信度 icon 對照（lib 層只回傳語意 key，UI 層決定實際 icon）
+  const reliabilityIconMap: Record<'insufficient' | 'medium' | 'high', LucideIcon> = {
+    insufficient: XCircle,
+    medium: AlertTriangle,
+    high: CheckCircle,
+  };
+  const ReliabilityIcon = reliabilityIconMap[dataReliability.iconKey];
+
   // ✅ 角色守衛（RoleGuard）已由 layout 級別統一處理（C2.28B）
   //   - 這裡不需要再寫 if (isRoleLoading || roleError) return <RoleLoadingFallback />
   //   - 到這層時角色必定已載入
@@ -587,7 +595,7 @@ export default function AnalyticsPage() {
             : 'bg-green-50 border-2 border-green-200'
         }`}>
           <div className="flex items-center gap-3">
-            <span className="text-2xl">{dataReliability.icon}</span>
+            <ReliabilityIcon className="w-6 h-6 text-muted-foreground" strokeWidth={1.75} />
             <div className="flex-1">
               <p className="font-medium text-foreground text-sm">
                 {dataReliability.label}

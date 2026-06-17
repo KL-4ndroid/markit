@@ -82,38 +82,38 @@ export function getUnlockStatus(marketCount: number): Record<FeatureType, Unlock
 
 /**
  * 取得數據可信度等級
- * 
+ *
  * @param marketCount - 當前市集場次數量
- * @returns 可信度資訊
+ * @returns 可信度資訊（iconKey 由 UI 層對應到 Lucide icon）
  */
 export function getDataReliability(marketCount: number): {
   level: 'insufficient' | 'medium' | 'high';
   label: string;
-  icon: string;
+  iconKey: 'insufficient' | 'medium' | 'high';
   description: string;
 } {
   if (marketCount < 3) {
     return {
       level: 'insufficient',
       label: '數據不足',
-      icon: '❌',
+      iconKey: 'insufficient',
       description: '數據蒐集預熱中',
     };
   }
-  
+
   if (marketCount < 5) {
     return {
       level: 'medium',
       label: '可信度：中',
-      icon: '⚠️',
+      iconKey: 'medium',
       description: '試點診斷模式',
     };
   }
-  
+
   return {
     level: 'high',
     label: '可信度：高',
-    icon: '✅',
+    iconKey: 'high',
     description: '專業建模模式',
   };
 }
