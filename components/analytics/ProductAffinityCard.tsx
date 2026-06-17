@@ -80,7 +80,7 @@ export function ProductAffinityCard({ pairs, isLoading }: ProductAffinityCardPro
             title="商品親和力分析"
             content="分析哪些商品組合最常被同時購買，找出顧客的購買偏好與商品之間的關聯性。"
             value="用於設計「加價購」或「套餐」方案，有效拉高每位客人的消費金額（客單價），提升整體營收表現。"
-            emoji="🛍️"
+            icon={<ShoppingBag className="w-6 h-6 text-primary" strokeWidth={1.75} />}
           />
         </div>
         <p className="text-xs text-muted-foreground">

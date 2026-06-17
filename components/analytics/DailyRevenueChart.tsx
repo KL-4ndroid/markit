@@ -117,7 +117,7 @@ export function DailyRevenueChart({
             title="收入趨勢分析"
             content="顯示過去 30 天的每日營收波動與平均線，讓您清楚看見收入的起伏變化。"
             value="觀察品牌成長週期，判斷哪些日期是銷售旺季，以便提前規劃庫存、調整參展策略，把握最佳商機。"
-            emoji="📈"
+            icon={<TrendingUp className="w-6 h-6 text-primary" strokeWidth={1.75} />}
           />
         </div>
         <p className="text-xs text-muted-foreground">

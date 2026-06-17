@@ -30,7 +30,7 @@ export function KPICards({ avgConversionRate, topPair }: KPICardsProps) {
               title="轉換率分析"
               content="每一百個互動的客人中，有多少人最終下單。這是衡量銷售效率的關鍵指標。"
               value="反映商品吸引力與銷售力。若互動高但轉換低，可能需重新檢視定價、商品展示或銷售話術。"
-              emoji="💯"
+              icon={<Percent className="w-6 h-6 text-primary" strokeWidth={1.75} />}
             />
           </div>
         </div>

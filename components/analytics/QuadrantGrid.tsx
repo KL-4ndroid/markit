@@ -65,7 +65,7 @@ export function QuadrantGrid({
               title="市集象限分析"
               content="透過「互動熱度」與「成交轉化」兩個維度將市集分類，幫助您快速識別不同類型的市集表現。"
               value="幫您辨識哪些是「明星市集」（值得深耕），哪些是「潛力市集」（需調整話術或商品展示），讓您的參展策略更精準。"
-              emoji="🎯"
+              icon={<Target className="w-6 h-6 text-primary" strokeWidth={1.75} />}
             />
           </div>
           <p className="text-xs text-muted-foreground">
