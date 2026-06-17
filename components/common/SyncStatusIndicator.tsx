@@ -19,6 +19,7 @@ import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { HardDrive, Lightbulb, RefreshCw } from 'lucide-react';
 
 export function SyncStatusIndicator() {
   const { user, isConfigured } = useAuth();
@@ -26,12 +27,12 @@ export function SyncStatusIndicator() {
   const [showLargeDialog, setShowLargeDialog] = useState(false);
   const [hasShownOfflineToast, setHasShownOfflineToast] = useState(false);
   
-  // ✅ 本地防抖鎖：防止快速連續點擊
+  // 本地防抖鎖：防止快速連續點擊
   const [isClickLocked, setIsClickLocked] = useState(false);
   const clickLockTimeoutRef = useRef<NodeJS.Timeout>();
   const shouldShowLargeDialog = pendingCount >= 5 && status === SyncStatusEnum.SYNCING;
 
-  // ✅ 清理防抖鎖的 timeout
+  // 清理防抖鎖的 timeout
   useEffect(() => {
     return () => {
       if (clickLockTimeoutRef.current) {
@@ -40,7 +41,7 @@ export function SyncStatusIndicator() {
     };
   }, []);
 
-  // ✅ 當同步完成時，解除點擊鎖
+  // 當同步完成時，解除點擊鎖
   useEffect(() => {
     if (status !== SyncStatusEnum.SYNCING && isClickLocked) {
       // 延遲 500ms 解鎖，避免同步完成瞬間再次點擊
@@ -50,9 +51,9 @@ export function SyncStatusIndicator() {
     }
   }, [status, isClickLocked]);
 
-  // ✅ Debug Log：追蹤彈窗顯示邏輯
+  // [SyncStatusIndicator] Debug Log：追蹤彈窗顯示邏輯
   useEffect(() => {
-    console.log('🔍 [SyncStatusIndicator] 狀態檢查:', {
+    console.log('[SyncStatusIndicator] 狀態檢查:', {
       pendingCount,
       status,
       shouldShowLargeDialog,
@@ -63,11 +64,11 @@ export function SyncStatusIndicator() {
   // 當 pendingCount >= 5 且正在同步時，顯示大彈窗
   useEffect(() => {
     if (shouldShowLargeDialog) {
-      console.log('📱 [SyncStatusIndicator] 顯示大彈窗:', { pendingCount, status });
+      console.log('[SyncStatusIndicator] 顯示大彈窗:', { pendingCount, status });
       setShowLargeDialog(true);
     } else {
       if (showLargeDialog) {
-        console.log('✅ [SyncStatusIndicator] 關閉大彈窗:', { pendingCount, status });
+        console.log('[SyncStatusIndicator] 關閉大彈窗:', { pendingCount, status });
       }
       setShowLargeDialog(false);
     }
@@ -76,9 +77,11 @@ export function SyncStatusIndicator() {
   // 當同步失敗且有待同步事件時，顯示 Toast
   useEffect(() => {
     if (status === SyncStatusEnum.ERROR && pendingCount > 0 && !hasShownOfflineToast) {
-      toast.info('部分數據暫存於本地，將在連網後更新', {
+      toast.info('部分數據暫存於本地', {
+        description: '將在連網後更新',
+        icon: <HardDrive className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} />,
         duration: 3000,
-        icon: '💾',
+        id: 'sync-offline',
       });
       setHasShownOfflineToast(true);
     }
@@ -95,9 +98,9 @@ export function SyncStatusIndicator() {
   }
 
   const getIndicatorStyle = () => {
-    // ✅ 同步中：柔綠色呼吸閃爍（不論 pendingCount，員工模式也會顯示）
+    // 同步中：柔綠色呼吸閃爍（不論 pendingCount，員工模式也會顯示）
     if (status === SyncStatusEnum.SYNCING) {
-      console.log('🟢 [SyncStatusIndicator] 同步中:', { pendingCount, status });
+      console.log('[SyncStatusIndicator] 同步中:', { pendingCount, status });
       return {
         bg: 'bg-soft-green',
         ring: 'ring-[#E8F3E8]',
@@ -107,7 +110,7 @@ export function SyncStatusIndicator() {
 
     if (status === SyncStatusEnum.OFFLINE || !isOnline) {
       // 離線狀態：溫暖木色靜態
-      console.log('🟠 [SyncStatusIndicator] 離線模式:', { isOnline });
+      console.log('[SyncStatusIndicator] 離線模式:', { isOnline });
       return {
         bg: 'bg-secondary',
         ring: 'ring-secondary',
@@ -117,7 +120,7 @@ export function SyncStatusIndicator() {
 
     if (status === SyncStatusEnum.ERROR) {
       // 同步失敗：柔粉色
-      console.log('🔴 [SyncStatusIndicator] 錯誤模式:', { error });
+      console.log('[SyncStatusIndicator] 錯誤模式:', { error });
       return {
         bg: 'bg-soft-pink',
         ring: 'ring-[#F5E6E8]',
@@ -140,20 +143,22 @@ export function SyncStatusIndicator() {
       {/* 小指示器（始終顯示，可點擊手動同步） */}
       <button
         onClick={() => {
-          // ✅ 多重防護：防止連續點擊
+          // 多重防護：防止連續點擊
           if (status === SyncStatusEnum.SYNCING || isClickLocked) {
-            console.log('⏸️ 同步進行中或點擊鎖定，忽略點擊');
+            console.log('[SyncStatusIndicator] 同步進行中或點擊鎖定，忽略點擊');
             return;
           }
 
-          // ✅ 立即設置點擊鎖，防止快速連續點擊
+          // 立即設置點擊鎖，防止快速連續點擊
           setIsClickLocked(true);
 
-          console.log('🔄 [SyncStatusIndicator] 手動觸發同步');
+          console.log('[SyncStatusIndicator] 手動觸發同步');
           sync();
-          toast.info('開始同步資料...', {
+          toast.info('正在同步資料', {
+            description: '請稍候，正在更新本地資料',
+            icon: <RefreshCw className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} />,
             duration: 2000,
-            icon: '🔄',
+            id: 'sync-manual',
           });
         }}
         disabled={status === SyncStatusEnum.SYNCING || isClickLocked}
@@ -169,7 +174,7 @@ export function SyncStatusIndicator() {
           className={`w-3 h-3 rounded-full ${indicatorStyle.bg} ${indicatorStyle.animate} transition-all`}
         />
 
-        {/* 擴散動畫（呼吸燈）- ✅ 同步中時始終顯示，不論 pendingCount */}
+        {/* 擴散動畫（呼吸燈）- 同步中時始終顯示，不論 pendingCount */}
         {status === SyncStatusEnum.SYNCING && (
           <div
             className={`absolute inset-0 w-3 h-3 rounded-full ${indicatorStyle.bg} opacity-50 animate-ping`}
@@ -269,8 +274,9 @@ export function SyncStatusIndicator() {
             </div>
 
             {/* 提示文字 */}
-            <p className="text-xs text-muted-foreground mt-4 text-center">
-              💡 同步完成後會自動關閉
+            <p className="text-xs text-muted-foreground mt-4 text-center flex items-center justify-center gap-1.5">
+              <Lightbulb className="w-3.5 h-3.5" strokeWidth={1.75} />
+              同步完成後會自動關閉
             </p>
           </div>
         </div>
