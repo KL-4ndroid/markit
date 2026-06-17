@@ -202,24 +202,16 @@ export function SyncStatusIndicator() {
       {showLargeDialog && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center px-6">
           <div className="bg-white rounded-[1.5rem] p-6 shadow-2xl max-w-sm w-full">
-            {/* ✅ Debug 資訊 */}
-            <div className="mb-2 p-2 bg-yellow-100 rounded text-xs">
-              <div>pendingCount: {pendingCount}</div>
-              <div>status: {status}</div>
-              <div>uploadProgress: {uploadProgress ? `${uploadProgress.current}/${uploadProgress.total}` : 'null'}</div>
-              <div>downloadProgress: {downloadProgress ? `${downloadProgress.current}/${downloadProgress.total}` : 'null'}</div>
-            </div>
-
-            {/* 標題 */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
-                <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-foreground">正在同步資料</h3>
-                <p className="text-sm text-muted-foreground">請稍候，資料同步中...</p>
-              </div>
-            </div>
+        {/* 標題 */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
+            <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-lg font-medium text-foreground">正在同步資料</h3>
+            <p className="text-sm text-muted-foreground">請稍候，資料同步中...</p>
+          </div>
+        </div>
 
             {/* 進度條 */}
             <div className="space-y-3">
