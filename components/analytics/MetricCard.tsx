@@ -8,37 +8,53 @@ interface MetricCardProps {
   label: string;
   value: number;
   format: 'currency' | 'number' | 'percentage' | 'percent';
-  color: 'blue' | 'green' | 'wood' | 'pink';
+  /**
+   * 色調（對應設計 token）
+   * - primary / secondary: 品牌色
+   * - success / warn / danger: 語意色
+   * - muted: 中性色
+   */
+  color: 'primary' | 'secondary' | 'success' | 'warn' | 'danger' | 'muted';
   change?: number; // 與上期相比的變化百分比
 }
 
 /**
  * 關鍵指標卡片組件
- * 
+ *
  * 顯示單一關鍵指標，支援貨幣、數字、百分比格式
  */
 export function MetricCard({ icon: Icon, label, value, format, color, change }: MetricCardProps) {
-  // 顏色映射
+  // 顏色映射（全部使用 Tailwind token，無硬編碼 hex）
   const colorMap = {
-    blue: {
-      bg: 'bg-[#E8F0F8]',
+    primary: {
+      bg: 'bg-primary/10',
       icon: 'text-primary',
       text: 'text-primary',
     },
-    green: {
+    secondary: {
+      bg: 'bg-secondary/10',
+      icon: 'text-secondary',
+      text: 'text-secondary',
+    },
+    success: {
       bg: 'bg-soft-green',
       icon: 'text-primary',
       text: 'text-primary',
     },
-    wood: {
-      bg: 'bg-[#FFF0E8]',
+    warn: {
+      bg: 'bg-soft-yellow',
       icon: 'text-secondary',
       text: 'text-secondary',
     },
-    pink: {
+    danger: {
       bg: 'bg-soft-pink',
-      icon: 'text-secondary',
-      text: 'text-secondary',
+      icon: 'text-danger',
+      text: 'text-danger',
+    },
+    muted: {
+      bg: 'bg-muted',
+      icon: 'text-muted-foreground',
+      text: 'text-foreground',
     },
   };
 
