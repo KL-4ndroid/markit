@@ -61,7 +61,7 @@ export function getTheme(isStaff: boolean): ThemeColors {
  */
 export function getGradientClass(isStaff: boolean): string {
   return isStaff
-    ? 'bg-gradient-to-br from-primary/80 to-primary/60'
+    ? 'bg-gradient-to-br from-primary to-primary/80'
     : 'bg-gradient-to-br from-primary to-secondary';
 }
 
