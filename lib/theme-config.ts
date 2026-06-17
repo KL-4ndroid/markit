@@ -43,8 +43,10 @@ export const staffTheme: ThemeColors = {
   accent: 'bg-primary/10',                              // 主色 10% 透明
   gradient: 'bg-gradient-to-br from-primary/80 to-primary/60',
   shadow: 'shadow-primary/10',
-  light: 'bg-primary/10',
-  border: 'border-primary/15',
+  // ✅ TopNav 背景：員工模式用主色 18% 透明 + 模糊，遮住底下主畫面的奶油米白
+  //   避免「半透明疊半透明」造成看起來像透明的問題
+  light: 'bg-primary/18',
+  border: 'border-primary/20',
 };
 
 /**

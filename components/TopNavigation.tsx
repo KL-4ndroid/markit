@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
+import { getTheme } from '@/lib/theme-config';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { LogIn, LogOut, User, Shield, Eye, Edit3, Crown } from 'lucide-react';
 import { toast } from 'sonner';
@@ -20,6 +21,9 @@ export function TopNavigation() {
   const { userRole } = useUserRole();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const router = useRouter();
+
+  // ✅ 依角色套用主題（員工模式沿用主色 + 透明度，避免兩套品牌色並行）
+  const theme = getTheme(userRole.isStaff);
   
   // TODO: 從實際訂閱狀態獲取
   const currentPlan: 'free' | 'pro' | 'enterprise' = 'free';
@@ -45,7 +49,7 @@ export function TopNavigation() {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md border-b border-primary/10 z-40">
+    <div className={`fixed top-0 left-0 right-0 backdrop-blur-md ${theme.light} ${theme.border} border-b z-40`}>
       <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo / Title */}
         <div className="flex items-center gap-2">
