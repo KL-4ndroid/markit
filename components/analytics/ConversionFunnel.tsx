@@ -1,12 +1,21 @@
 'use client';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Hand, MessageCircle, DollarSign, Lightbulb } from 'lucide-react';
 
 interface ConversionFunnelProps {
   touchCount: number;
   inquiryCount: number;
   dealCount: number;
 }
+
+type FunnelIconKey = 'greeting' | 'conversation' | 'purchase';
+
+const funnelIconMap: Record<FunnelIconKey, typeof Hand> = {
+  greeting: Hand,
+  conversation: MessageCircle,
+  purchase: DollarSign,
+};
 
 /**
  * 轉換漏斗圖組件
@@ -27,21 +36,21 @@ export function ConversionFunnel({ touchCount, inquiryCount, dealCount }: Conver
       value: touchCount,
       color: 'rgb(var(--brand-soft-green))',       // 柔綠底
       textColor: 'rgb(var(--brand-primary))',       // 霧松綠
-      emoji: '👋',
+      iconKey: 'greeting' as const,
     },
     {
       name: '詢問',
       value: inquiryCount,
       color: 'rgb(var(--brand-soft-yellow))',      // 柔黃底
       textColor: 'rgb(var(--brand-secondary))',     // 暖杏橘
-      emoji: '💬',
+      iconKey: 'conversation' as const,
     },
     {
       name: '成交',
       value: dealCount,
       color: 'rgb(var(--brand-soft-green))',
       textColor: 'rgb(var(--brand-primary))',
-      emoji: '💰',
+      iconKey: 'purchase' as const,
     },
   ];
 
@@ -49,10 +58,12 @@ export function ConversionFunnel({ touchCount, inquiryCount, dealCount }: Conver
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      const Icon = funnelIconMap[data.iconKey as FunnelIconKey];
       return (
         <div className="bg-white rounded-xl p-3 shadow-lg border border-primary/20">
-          <p className="text-sm font-medium text-foreground mb-1">
-            {data.emoji} {data.name}
+          <p className="text-sm font-medium text-foreground mb-1 flex items-center gap-1.5">
+            {Icon && <Icon className="w-4 h-4 text-primary" strokeWidth={1.75} />}
+            <span>{data.name}</span>
           </p>
           <p className="text-xs text-muted-foreground">
             數量：{data.value} 次
@@ -131,15 +142,18 @@ export function ConversionFunnel({ touchCount, inquiryCount, dealCount }: Conver
       {/* 洞察提示 */}
       {conversionRate > 0 && (
         <div className="mt-4 p-3 bg-soft-yellow rounded-xl">
-          <p className="text-xs text-muted-foreground">
-            💡 <span className="font-medium">洞察：</span>
-            {conversionRate >= 20 ? (
-              '轉換率表現優秀！繼續保持良好的客戶互動。'
-            ) : conversionRate >= 10 ? (
-              '轉換率良好，可以嘗試提升詢問客戶的成交率。'
-            ) : (
-              '轉換率有提升空間，建議加強產品展示和客戶溝通。'
-            )}
+          <p className="text-xs text-muted-foreground flex items-start gap-2">
+            <Lightbulb className="w-4 h-4 mt-0.5 shrink-0 text-secondary" strokeWidth={1.75} />
+            <span>
+              <span className="font-medium">洞察：</span>
+              {conversionRate >= 20 ? (
+                '轉換率表現優秀！繼續保持良好的客戶互動。'
+              ) : conversionRate >= 10 ? (
+                '轉換率良好，可以嘗試提升詢問客戶的成交率。'
+              ) : (
+                '轉換率有提升空間，建議加強產品展示和客戶溝通。'
+              )}
+            </span>
           </p>
         </div>
       )}

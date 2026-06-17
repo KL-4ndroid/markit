@@ -1,15 +1,25 @@
 /**
  * Comparison Chart - 對比圖表
- * 
+ *
  * 視覺化顯示你 vs 平均的對比
  */
 
 import React from 'react';
 import type { MarketAnalytics } from '@/lib/analytics';
+import { Clock, Coins, Banknote, Tent, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react';
 
 interface ComparisonChartProps {
   analytics: MarketAnalytics;
 }
+
+type ComparisonIconKey = 'hourly' | 'revenue' | 'averageOrder' | 'boothFee';
+
+const comparisonIconMap: Record<ComparisonIconKey, typeof Clock> = {
+  hourly: Clock,
+  revenue: Coins,
+  averageOrder: Banknote,
+  boothFee: Tent,
+};
 
 export default function ComparisonChart({ analytics }: ComparisonChartProps) {
   const { metrics, healthScore } = analytics;
@@ -18,7 +28,7 @@ export default function ComparisonChart({ analytics }: ComparisonChartProps) {
   const comparisons = [
     {
       label: '時薪',
-      icon: '⏰',
+      iconKey: 'hourly' as const,
       yourValue: metrics.hourlyProfit,
       avgValue: healthScore.metrics.hourlyProfit,
       unit: '$',
@@ -26,7 +36,7 @@ export default function ComparisonChart({ analytics }: ComparisonChartProps) {
     },
     {
       label: '成交率',
-      icon: '💰',
+      iconKey: 'revenue' as const,
       yourValue: metrics.conversionRate * 100,
       avgValue: healthScore.metrics.conversionRate,
       unit: '',
@@ -34,7 +44,7 @@ export default function ComparisonChart({ analytics }: ComparisonChartProps) {
     },
     {
       label: '客單價',
-      icon: '💵',
+      iconKey: 'averageOrder' as const,
       yourValue: metrics.aov,
       avgValue: healthScore.metrics.aov,
       unit: '$',
@@ -42,7 +52,7 @@ export default function ComparisonChart({ analytics }: ComparisonChartProps) {
     },
     {
       label: '攤位費回收',
-      icon: '🎪',
+      iconKey: 'boothFee' as const,
       yourValue: metrics.boothROI,
       avgValue: healthScore.metrics.boothROI,
       unit: '',
@@ -52,8 +62,9 @@ export default function ComparisonChart({ analytics }: ComparisonChartProps) {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-xl font-bold text-gray-800 mb-6">
-        📈 關鍵指標對比
+      <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+        <TrendingUp className="w-5 h-5 text-primary" strokeWidth={1.75} />
+        關鍵指標對比
       </h3>
 
       <div className="space-y-6">
@@ -61,12 +72,13 @@ export default function ComparisonChart({ analytics }: ComparisonChartProps) {
           const percentage = (item.yourValue / item.avgValue) * 100;
           const diff = ((item.yourValue - item.avgValue) / item.avgValue) * 100;
           const isGood = diff > 0;
+          const ItemIcon = comparisonIconMap[item.iconKey];
 
           return (
             <div key={index}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{item.icon}</span>
+                  {ItemIcon && <ItemIcon className="w-5 h-5 text-primary" strokeWidth={1.75} />}
                   <span className="text-sm font-medium text-gray-700">
                     {item.label}
                   </span>
@@ -93,10 +105,15 @@ export default function ComparisonChart({ analytics }: ComparisonChartProps) {
                   />
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`text-sm font-bold ${
+                  <span className={`text-sm font-bold inline-flex items-center gap-1 ${
                     percentage > 50 ? 'text-white' : 'text-gray-700'
                   }`}>
-                    {isGood ? '✅' : '⚠️'} {diff > 0 ? '+' : ''}{diff.toFixed(0)}%
+                    {isGood ? (
+                      <CheckCircle className="w-4 h-4" strokeWidth={1.75} />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4" strokeWidth={1.75} />
+                    )}
+                    {diff > 0 ? '+' : ''}{diff.toFixed(0)}%
                   </span>
                 </div>
               </div>
