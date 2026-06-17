@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DollarSign, Delete } from 'lucide-react';
+import { DollarSign, Delete, Banknote, Smartphone, Landmark, CreditCard, CheckCircle2 } from 'lucide-react';
 import { recordInteraction, recordDeal } from '@/lib/db/hooks';
 import { toast } from 'sonner';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
@@ -130,8 +130,9 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
       {/* ✅ 成功動畫（+1 效果） */}
       {showSuccessAnimation && (
         <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
-          <div className="bg-soft-green text-foreground px-4 py-2 rounded-full shadow-lg font-bold text-lg">
-            +NT$ {lastDealAmount.toLocaleString()} 🎉
+          <div className="bg-soft-green text-foreground px-4 py-2 rounded-full shadow-lg font-bold text-lg flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5" strokeWidth={2} />
+            <span>+NT$ {lastDealAmount.toLocaleString()}</span>
           </div>
         </div>
       )}
@@ -251,30 +252,34 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
         <button
           onClick={() => handleQuickDeal('cash')}
           disabled={isProcessing || parseInt(displayAmount) <= 0}
-          className="bg-soft-green hover:bg-soft-green/80 active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-soft-green hover:bg-soft-green/80 active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
         >
-          💵 現金
+          <Banknote className="w-4 h-4" strokeWidth={1.75} />
+          現金
         </button>
         <button
           onClick={() => handleQuickDeal('mobile')}
           disabled={isProcessing || parseInt(displayAmount) <= 0}
-          className="bg-[#E8F0F8] hover:bg-[#D8E0E8] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-cat-clothing hover:bg-cat-clothing/80 active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
         >
-          📱 電子支付
+          <Smartphone className="w-4 h-4" strokeWidth={1.75} />
+          電子支付
         </button>
         <button
           onClick={() => handleQuickDeal('card')}
           disabled={isProcessing || parseInt(displayAmount) <= 0}
-          className="bg-soft-yellow hover:bg-[#EFE8D7] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-soft-yellow hover:bg-soft-yellow/80 active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
         >
-          🏦 轉帳
+          <Landmark className="w-4 h-4" strokeWidth={1.75} />
+          轉帳
         </button>
         <button
           onClick={() => handleQuickDeal('other')}
           disabled={isProcessing || parseInt(displayAmount) <= 0}
-          className="bg-[#F8E8F0] hover:bg-[#E8D8E0] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="bg-cat-art hover:bg-cat-art/80 active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
         >
-          💳 其他
+          <CreditCard className="w-4 h-4" strokeWidth={1.75} />
+          其他
         </button>
       </div>
     </div>

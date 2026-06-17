@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Package, DollarSign, Tag, FileText } from 'lucide-react';
+import { X, Package, DollarSign, Tag, FileText, Hand, Cookie, Gem, Shirt, Palette, BookOpen, MoreHorizontal } from 'lucide-react';
 import { createProduct } from '@/lib/db/hooks';
 import type { ProductCreatedPayload, ProductCategory } from '@/types/db';
 
@@ -26,15 +26,15 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
     description: '',
   });
 
-  // 分類選項
-  const categories: { value: ProductCategory; label: string; emoji: string; color: string }[] = [
-    { value: 'handmade', label: '手作', emoji: '🖐️', color: 'bg-soft-pink' },
-    { value: 'food', label: '食品', emoji: '🍰', color: 'bg-soft-yellow' },
-    { value: 'accessory', label: '飾品', emoji: '💎', color: 'bg-soft-green' },
-    { value: 'clothing', label: '服飾', emoji: '👕', color: 'bg-[#E8F0F8]' },
-    { value: 'art', label: '藝術品', emoji: '🎨', color: 'bg-[#F8E8F0]' },
-    { value: 'stationery', label: '文具', emoji: '📚', color: 'bg-[#FFF0E8]' },
-    { value: 'other', label: '其他', emoji: '📦', color: 'bg-[#F0F0F0]' },
+  // 分類選項（icon 為 Lucide 元件引用，搭配 cat-* token 顏色）
+  const categories: { value: ProductCategory; label: string; icon: typeof Package; color: string }[] = [
+    { value: 'handmade', label: '手作', icon: Hand, color: 'bg-soft-pink' },
+    { value: 'food', label: '食品', icon: Cookie, color: 'bg-soft-yellow' },
+    { value: 'accessory', label: '飾品', icon: Gem, color: 'bg-soft-green' },
+    { value: 'clothing', label: '服飾', icon: Shirt, color: 'bg-cat-clothing' },
+    { value: 'art', label: '藝術品', icon: Palette, color: 'bg-cat-art' },
+    { value: 'stationery', label: '文具', icon: BookOpen, color: 'bg-cat-stationery' },
+    { value: 'other', label: '其他', icon: MoreHorizontal, color: 'bg-cat-other' },
   ];
 
   const handleChange = (field: keyof ProductCreatedPayload, value: string | number) => {
@@ -120,7 +120,9 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
                   分類 <span className="text-danger">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {categories.map((cat) => (
+                  {categories.map((cat) => {
+                    const Icon = cat.icon;
+                    return (
                     <button
                       key={cat.value}
                       type="button"
@@ -132,11 +134,12 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
                       } ${cat.color}`}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">{cat.emoji}</span>
+                        <Icon className="w-5 h-5 text-foreground/70" strokeWidth={1.75} />
                         <span className="text-sm font-medium text-foreground">{cat.label}</span>
                       </div>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

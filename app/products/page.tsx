@@ -232,7 +232,7 @@ export default function ProductsPage() {
             )}
           </div>
           <p className="text-white/80 text-sm">
-            {isStaff ? '查看所有商品 📦' : '管理您的商品清單 📦'}
+            {isStaff ? '查看所有商品' : '管理您的商品清單'}
           </p>
         </div>
       </div>

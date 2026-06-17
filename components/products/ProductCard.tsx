@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Package, Utensils, Gem, Shirt, Palette, BookOpen, MoreHorizontal, Shield } from 'lucide-react';
+import { Package, Utensils, Gem, Shirt, Palette, BookOpen, MoreHorizontal, Shield, Hand, Cookie } from 'lucide-react';
 import type { Product, ProductCategory } from '@/types/db';
 import { formatCurrency } from '@/lib/utils';
 import { useStaffPermissions } from '@/hooks/useStaffPermissions';
@@ -36,47 +36,40 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
 
   // 根據分類返回對應的背景色和圖標
   const getCategoryStyle = (category: ProductCategory) => {
-    const styles = {
+    const styles: Record<ProductCategory, { bg: string; icon: typeof Package; text: string }> = {
       handmade: {
         bg: 'bg-soft-pink',      // 柔粉色
-        icon: Package,
-        emoji: '🖐️',
+        icon: Hand,
         text: '手作',
       },
       food: {
         bg: 'bg-soft-yellow',      // 柔黃色
-        icon: Utensils,
-        emoji: '🍰',
+        icon: Cookie,
         text: '食品',
       },
       accessory: {
         bg: 'bg-soft-green',      // 柔綠色
         icon: Gem,
-        emoji: '💎',
         text: '飾品',
       },
       clothing: {
-        bg: 'bg-[#E8F0F8]',      // 柔藍色
+        bg: 'bg-cat-clothing',    // 柔藍色（cat-clothing token）
         icon: Shirt,
-        emoji: '👕',
         text: '服飾',
       },
       art: {
-        bg: 'bg-[#F8E8F0]',      // 柔紫色
+        bg: 'bg-cat-art',         // 柔紫色（cat-art token）
         icon: Palette,
-        emoji: '🎨',
         text: '藝術品',
       },
       stationery: {
-        bg: 'bg-[#FFF0E8]',      // 柔橘色
+        bg: 'bg-cat-stationery',  // 柔橘色（cat-stationery token）
         icon: BookOpen,
-        emoji: '📚',
         text: '文具',
       },
       other: {
-        bg: 'bg-[#F0F0F0]',      // 柔灰色
+        bg: 'bg-cat-other',       // 淺灰色（cat-other token）
         icon: MoreHorizontal,
-        emoji: '📦',
         text: '其他',
       },
     };
@@ -123,7 +116,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
     >
       {/* 圖標區域 */}
       <div className={`${categoryStyle.bg} p-6 flex items-center justify-center relative`}>
-        <div className="text-5xl">{categoryStyle.emoji}</div>
+        <Icon className="w-12 h-12 text-foreground/70" strokeWidth={1.5} />
         
         {/* 分類標籤 */}
         <div className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-full">

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Calendar, ArrowRight, User, UserCircle, LogOut, Shield, Eye, Edit3, Crown, LogIn } from 'lucide-react';
+import { Calendar, ArrowRight, User, UserCircle, LogOut, Shield, Eye, Edit3, Crown, LogIn, Store } from 'lucide-react';
 import { useMarkets, useMonthlyStats } from '@/lib/db/hooks';
 import { formatCurrency } from '@/lib/utils';
 import { MarketCard } from '@/components/markets/MarketCard';
@@ -559,8 +559,9 @@ export default function HomePage() {
         {todayMarkets.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium text-foreground">
-                今日市集 🎪
+              <h2 className="text-lg font-medium text-foreground flex items-center gap-2">
+                <Store className="w-5 h-5 text-primary" />
+                今日市集
               </h2>
             </div>
             

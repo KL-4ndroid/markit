@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Plus, AlertCircle } from 'lucide-react';
+import { Calendar, Plus, AlertCircle, Store } from 'lucide-react';
 import { useMarkets, useMarketStatsBatch } from '@/lib/db/hooks';
 import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { MarketCard } from '@/components/markets/MarketCard';
@@ -246,7 +246,7 @@ export default function MarketsPage() {
             )}
           </div>
           <p className="text-white/80 text-sm">
-            {isStaff ? '' : '管理您的市集場次 🎪'}
+            {isStaff ? '' : '管理您的市集場次'}
           </p>
         </div>
       </div>

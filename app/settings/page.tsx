@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Edit, ChevronDown, ChevronUp, LogOut, Eye, Edit3 } from 'lucide-react';
+import { Zap, RotateCcw, Database, Trash2, Cloud, HardDrive, AlertTriangle, Edit, ChevronDown, ChevronUp, LogOut, Eye, Edit3, Settings as SettingsIcon, User as UserIcon } from 'lucide-react';
 import { getInteractionButtons, resetInteractionButtons, isInteractionSetupComplete, type InteractionButton } from '@/lib/interaction-buttons-store';
 import { InteractionSetupWizard } from '@/components/settings/InteractionSetupWizard';
 import { StaffManagement } from '@/components/settings/StaffManagement';
@@ -235,7 +235,7 @@ export default function SettingsPage() {
             設定
           </h1>
           <p className="text-white/80 text-sm">
-            {isStaff ? '員工設定與權限管理 👤' : '個人化您的使用體驗 ⚙️'}
+            {isStaff ? '員工設定與權限管理' : '個人化您的使用體驗'}
           </p>
         </div>
       </div>
