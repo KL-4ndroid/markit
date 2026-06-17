@@ -5,6 +5,33 @@
  */
 
 import React from 'react';
+import {
+  Star,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  Footprints,
+  Target,
+  Megaphone,
+  Palette,
+  Eye,
+  MessageCircle,
+  DollarSign,
+  Gift,
+  ShoppingCart,
+  Package,
+  ArrowUp,
+  BarChart3,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  Scale,
+  Minus,
+  Lightbulb,
+  Clock,
+  Banknote,
+  type LucideIcon,
+} from 'lucide-react';
 import type { MarketAnalytics } from '@/lib/analytics';
 import InfoTooltip, { tooltipContent } from './InfoTooltip';
 
@@ -21,78 +48,84 @@ interface DiagnosticCardsProps {
  * 取得評級資訊
  */
 function getGradeInfo(grade: string) {
-  const gradeMap = {
-    'S': { label: '金牌市集', icon: '🌟', color: 'text-yellow-500', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
-    'A': { label: '優質市集', icon: '⭐', color: 'text-green-500', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
-    'B': { label: '穩定市集', icon: '✅', color: 'text-blue-500', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
-    'C': { label: '待改善市集', icon: '⚠️', color: 'text-orange-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
-    'D': { label: '不推薦市集', icon: '❌', color: 'text-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
+  const gradeMap: Record<string, { label: string; icon: LucideIcon; color: string; bgColor: string; borderColor: string }> = {
+    'S': { label: '金牌市集', icon: Star, color: 'text-yellow-500', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
+    'A': { label: '優質市集', icon: Star, color: 'text-green-500', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
+    'B': { label: '穩定市集', icon: CheckCircle, color: 'text-blue-500', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
+    'C': { label: '待改善市集', icon: AlertTriangle, color: 'text-orange-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
+    'D': { label: '不推薦市集', icon: XCircle, color: 'text-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
   };
-  return gradeMap[grade as keyof typeof gradeMap] || gradeMap['C'];
+  return gradeMap[grade] || gradeMap['C'];
 }
 
 /**
  * 取得診斷資訊
  */
 function getDiagnosisInfo(type: string) {
-  const diagnosisMap = {
+  const diagnosisMap: Record<string, {
+    icon: LucideIcon;
+    color: string;
+    problem: string;
+    prescriptions: { icon: LucideIcon; text: string }[];
+    effect: string;
+  }> = {
     '流量不足': {
-      icon: '🚶',
+      icon: Footprints,
       color: 'text-orange-600',
       problem: '人流量太少',
       prescriptions: [
-        { icon: '🎯', text: '換個人多的位置（靠近入口或美食區）' },
-        { icon: '📢', text: '提前在社群宣傳（FB/IG 發文）' },
-        { icon: '🎨', text: '攤位布置更吸睛（大海報、燈光）' },
+        { icon: Target, text: '換個人多的位置（靠近入口或美食區）' },
+        { icon: Megaphone, text: '提前在社群宣傳（FB/IG 發文）' },
+        { icon: Palette, text: '攤位布置更吸睛（大海報、燈光）' },
       ],
       effect: '人流量提升 2-3 倍',
     },
     '轉換不足': {
-      icon: '👀',
+      icon: Eye,
       color: 'text-blue-600',
       problem: '人很多，但不買單',
       prescriptions: [
-        { icon: '💬', text: '改善銷售話術（主動介紹、試用）' },
-        { icon: '💰', text: '調整定價策略（組合優惠、限時折扣）' },
-        { icon: '🎁', text: '增加誘因（買一送一、集點卡）' },
+        { icon: MessageCircle, text: '改善銷售話術（主動介紹、試用）' },
+        { icon: DollarSign, text: '調整定價策略（組合優惠、限時折扣）' },
+        { icon: Gift, text: '增加誘因（買一送一、集點卡）' },
       ],
       effect: '成交率提升到 20-25%',
     },
     '客單價偏低': {
-      icon: '🛒',
+      icon: ShoppingCart,
       color: 'text-purple-600',
       problem: '客人買太少',
       prescriptions: [
-        { icon: '📦', text: '推組合包（買 A 送 B，省 $100）' },
-        { icon: '⬆️', text: '向上銷售（「要不要加購這個？」）' },
-        { icon: '🎯', text: '設定門檻（滿 $500 送贈品）' },
+        { icon: Package, text: '推組合包（買 A 送 B，省 $100）' },
+        { icon: ArrowUp, text: '向上銷售（「要不要加購這個？」）' },
+        { icon: Target, text: '設定門檻（滿 $500 送贈品）' },
       ],
       effect: '客單價提升到 $350-400',
     },
     '精準高效': {
-      icon: '🎯',
+      icon: Target,
       color: 'text-green-600',
       problem: '小而美，精準客群',
       prescriptions: [
-        { icon: '📢', text: '擴大曝光（讓更多精準客戶知道你）' },
-        { icon: '📦', text: '增加備貨（避免賣光）' },
-        { icon: '💰', text: '提高定價（客人願意付更多）' },
+        { icon: Megaphone, text: '擴大曝光（讓更多精準客戶知道你）' },
+        { icon: Package, text: '增加備貨（避免賣光）' },
+        { icon: DollarSign, text: '提高定價（客人願意付更多）' },
       ],
       effect: '營收翻倍（人流 × 2）',
     },
     '均衡穩定': {
-      icon: '⚖️',
+      icon: Scale,
       color: 'text-gray-600',
       problem: '表現穩定，中規中矩',
       prescriptions: [
-        { icon: '📊', text: '持續觀察（記錄每次數據）' },
-        { icon: '🔄', text: '小幅優化（測試不同話術）' },
-        { icon: '📈', text: '設定目標（下次提升 10%）' },
+        { icon: BarChart3, text: '持續觀察（記錄每次數據）' },
+        { icon: RefreshCw, text: '小幅優化（測試不同話術）' },
+        { icon: TrendingUp, text: '設定目標（下次提升 10%）' },
       ],
       effect: '維持穩定，逐步成長',
     },
   };
-  return diagnosisMap[type as keyof typeof diagnosisMap] || diagnosisMap['均衡穩定'];
+  return diagnosisMap[type] || diagnosisMap['均衡穩定'];
 }
 
 /**
@@ -109,16 +142,16 @@ function calculatePercentile(zScore: number): number {
  * 取得趨勢
  */
 function getTrend(current: number, previous?: number) {
-  if (!previous) return { icon: '➡️', text: '持平', color: 'text-gray-500' };
-  
+  if (!previous) return { icon: Minus, text: '持平', color: 'text-gray-500' };
+
   const change = ((current - previous) / previous) * 100;
-  
+
   if (change > 5) {
-    return { icon: '📈', text: `↑ ${change.toFixed(0)}%`, color: 'text-green-500' };
+    return { icon: TrendingUp, text: `↑ ${change.toFixed(0)}%`, color: 'text-green-500' };
   } else if (change < -5) {
-    return { icon: '📉', text: `↓ ${Math.abs(change).toFixed(0)}%`, color: 'text-red-500' };
+    return { icon: TrendingDown, text: `↓ ${Math.abs(change).toFixed(0)}%`, color: 'text-red-500' };
   } else {
-    return { icon: '➡️', text: '持平', color: 'text-gray-500' };
+    return { icon: Minus, text: '持平', color: 'text-gray-500' };
   }
 }
 
@@ -143,7 +176,10 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
       <div className={`rounded-lg border-2 ${gradeInfo.borderColor} ${gradeInfo.bgColor} p-6`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <span className="text-4xl">{gradeInfo.icon}</span>
+            {(() => {
+              const GradeIcon = gradeInfo.icon;
+              return <GradeIcon className="w-10 h-10" strokeWidth={1.75} />;
+            })()}
             <div>
               <div className="flex items-center gap-2">
                 <h3 className={`text-2xl font-bold ${gradeInfo.color}`}>
@@ -157,8 +193,9 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
             </div>
           </div>
           {metrics.confidenceLevel === '低' && (
-            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full">
-              ⚠️ 數據量偏少
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full inline-flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4" strokeWidth={1.75} />
+              數據量偏少
             </span>
           )}
         </div>
@@ -180,8 +217,9 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
         </p>
         
         <div className="mt-4 pt-4 border-t border-gray-200">
-          <p className="text-sm text-gray-600">
-            💡 建議：<span className="font-medium">{overview.summaryLabel}</span>
+          <p className="text-sm text-gray-600 flex items-center gap-1.5">
+            <Lightbulb className="w-4 h-4 text-secondary shrink-0" strokeWidth={1.75} />
+            <span>建議：<span className="font-medium">{overview.summaryLabel}</span></span>
           </p>
         </div>
       </div>
@@ -190,7 +228,7 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* 時薪分析 */}
         <MetricCard
-          icon="⏰"
+          icon={Clock}
           title="時薪分析"
           value={`$${metrics.hourlyProfit.toFixed(0)}/小時`}
           comparison={{
@@ -206,7 +244,7 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
 
         {/* 成交效率 */}
         <MetricCard
-          icon="💰"
+          icon={DollarSign}
           title="成交效率"
           value={`${(metrics.conversionRate * 100).toFixed(0)}%`}
           subtitle={`每 10 個客人，${Math.round(metrics.conversionRate * 10)} 個買單`}
@@ -223,7 +261,7 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
 
         {/* 客單價分析 */}
         <MetricCard
-          icon="💵"
+          icon={Banknote}
           title="客單價分析"
           value={`$${metrics.aov.toFixed(0)}`}
           subtitle="平均每筆訂單"
@@ -276,8 +314,23 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
           <p className="text-3xl font-bold text-green-600">
             {metrics.boothROI.toFixed(0)}%
           </p>
-          <p className="text-sm text-gray-700 mt-2">
-            {metrics.boothROI > 200 ? '✅ 很划算' : metrics.boothROI > 100 ? '✅ 有賺' : '⚠️ 需改善'}
+          <p className="text-sm text-gray-700 mt-2 inline-flex items-center flex-wrap gap-1.5">
+            {metrics.boothROI > 200 ? (
+              <>
+                <CheckCircle className="w-4 h-4 text-green-600 shrink-0" strokeWidth={1.75} />
+                很划算
+              </>
+            ) : metrics.boothROI > 100 ? (
+              <>
+                <CheckCircle className="w-4 h-4 text-green-600 shrink-0" strokeWidth={1.75} />
+                有賺
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0" strokeWidth={1.75} />
+                需改善
+              </>
+            )}
             ，賺了 {(metrics.boothROI / 100).toFixed(1)} 倍
           </p>
         </div>
@@ -286,7 +339,10 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
       {/* 診斷處方箋 */}
       <div className="bg-white rounded-lg border-2 border-blue-200 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-3xl">{diagnosisInfo.icon}</span>
+          {(() => {
+            const DiagnosisIcon = diagnosisInfo.icon;
+            return <DiagnosisIcon className="w-8 h-8 shrink-0" strokeWidth={1.75} />;
+          })()}
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-bold text-gray-800">診斷處方箋</h3>
@@ -313,7 +369,10 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
                 key={index}
                 className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
               >
-                <span className="text-xl flex-shrink-0">{prescription.icon}</span>
+                {(() => {
+                  const PrescriptionIcon = prescription.icon;
+                  return <PrescriptionIcon className="w-5 h-5 text-primary shrink-0" strokeWidth={1.75} />;
+                })()}
                 <p className="text-sm text-gray-700">{prescription.text}</p>
               </div>
             ))}
@@ -332,7 +391,7 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
       {metrics.confidenceLevel !== '高' && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-3xl">📊</span>
+            <BarChart3 className="w-8 h-8 text-secondary shrink-0" strokeWidth={1.75} />
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-bold text-gray-800">
                 數據可靠度：{metrics.confidenceLevel}
@@ -340,31 +399,38 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
               <InfoTooltip {...tooltipContent.confidenceScore} />
             </div>
           </div>
-          
+
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">互動數：</span>
-              <span className="font-medium">
+              <span className="font-medium inline-flex items-center gap-1.5">
                 {metrics.uniqueEngaged} 次
                 {metrics.uniqueEngaged < 50 && (
-                  <span className="ml-2 text-yellow-600">⚠️ 建議至少 50 次</span>
+                  <span className="text-yellow-600 inline-flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    建議至少 50 次
+                  </span>
                 )}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">成交數：</span>
-              <span className="font-medium">
+              <span className="font-medium inline-flex items-center gap-1.5">
                 {metrics.totalDeals} 筆
                 {metrics.totalDeals < 20 && (
-                  <span className="ml-2 text-yellow-600">⚠️ 建議至少 20 筆</span>
+                  <span className="text-yellow-600 inline-flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    建議至少 20 筆
+                  </span>
                 )}
               </span>
             </div>
           </div>
-          
+
           <div className="mt-4 pt-4 border-t border-yellow-200">
-            <p className="text-sm text-gray-700">
-              💡 建議：多參加幾次市集，累積更多數據後，評估會更準確
+            <p className="text-sm text-gray-700 flex items-start gap-2">
+              <Lightbulb className="w-4 h-4 mt-0.5 text-secondary shrink-0" strokeWidth={1.75} />
+              <span>建議：多參加幾次市集，累積更多數據後，評估會更準確</span>
             </p>
           </div>
         </div>
@@ -376,7 +442,7 @@ export default function DiagnosticCards({ analytics, previousAnalytics }: Diagno
 // ==================== 子組件 ====================
 
 interface MetricCardProps {
-  icon: string;
+  icon: LucideIcon;
   title: string;
   value: string;
   subtitle?: string;
@@ -385,7 +451,7 @@ interface MetricCardProps {
     value: string;
   };
   trend: {
-    icon: string;
+    icon: LucideIcon;
     text: string;
     color: string;
   };
@@ -408,9 +474,16 @@ function MetricCard({ icon, title, value, subtitle, comparison, trend, percentil
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-3xl">{icon}</span>
-        <span className={`text-sm font-medium ${trend.color}`}>
-          {trend.icon} {trend.text}
+        {(() => {
+          const CardIcon = icon;
+          return <CardIcon className="w-7 h-7 text-primary" strokeWidth={1.75} />;
+        })()}
+        <span className={`text-sm font-medium inline-flex items-center gap-1 ${trend.color}`}>
+          {(() => {
+            const TrendIcon = trend.icon;
+            return <TrendIcon className="w-3.5 h-3.5" strokeWidth={1.75} />;
+          })()}
+          {trend.text}
         </span>
       </div>
       
@@ -436,8 +509,17 @@ function MetricCard({ icon, title, value, subtitle, comparison, trend, percentil
               style={{ width: `${Math.min(percentile, 100)}%` }}
             />
           </div>
-          <span className={`text-xs font-medium ${isGood ? 'text-green-600' : 'text-orange-600'}`}>
-            {isGood ? '✅' : '⚠️'} {percentile.toFixed(0)}%
+          <span
+            className={`text-xs font-medium inline-flex items-center gap-1 ${
+              isGood ? 'text-green-600' : 'text-orange-600'
+            }`}
+          >
+            {isGood ? (
+              <CheckCircle className="w-3.5 h-3.5" strokeWidth={1.75} />
+            ) : (
+              <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} />
+            )}
+            {percentile.toFixed(0)}%
           </span>
         </div>
       </div>
