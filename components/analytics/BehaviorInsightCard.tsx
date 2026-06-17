@@ -21,8 +21,9 @@ export function BehaviorInsightCard({ insights }: BehaviorInsightCardProps) {
           <Lightbulb className="w-5 h-5 text-secondary" />
         </div>
         <div className="flex-1">
-          <h3 className="text-base font-medium text-foreground mb-3">
-            💡 智能洞察
+          <h3 className="text-base font-medium text-foreground mb-3 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-secondary" strokeWidth={1.75} />
+            智能洞察
           </h3>
           <div className="space-y-2">
             {insights.map((insight, index) => (

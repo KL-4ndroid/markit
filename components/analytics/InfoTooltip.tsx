@@ -9,7 +9,7 @@
 
 import React, { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { X } from 'lucide-react';
+import { Lightbulb, Ruler, FileText, Target, X } from 'lucide-react';
 
 interface InfoTooltipProps {
   title: string;
@@ -91,7 +91,7 @@ export default function InfoTooltip({
                     {/* 標題與關閉按鈕 */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">💡</span>
+                        <Lightbulb className="w-6 h-6 text-secondary" strokeWidth={1.75} />
                         <Dialog.Title className="text-lg font-bold text-foreground">
                           {title}
                         </Dialog.Title>
@@ -114,8 +114,9 @@ export default function InfoTooltip({
                     {/* 計算公式 */}
                     {formula && (
                       <div className="mb-4 p-3 bg-[#F5F5F3] rounded-lg border border-[#E8E8E6]">
-                        <p className="text-xs font-semibold text-foreground mb-2">
-                          📐 計算公式
+                        <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                          <Ruler className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          計算公式
                         </p>
                         <code className="text-xs text-muted-foreground font-mono block whitespace-pre-wrap leading-relaxed">
                           {formula}
@@ -126,8 +127,9 @@ export default function InfoTooltip({
                     {/* 範例 */}
                     {example && (
                       <div className="mb-4 p-3 bg-soft-green rounded-lg border border-[#D4E8D4]">
-                        <p className="text-xs font-semibold text-foreground mb-2">
-                          📝 範例
+                        <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          範例
                         </p>
                         <p className="text-xs text-[#5A5A5A] leading-relaxed">
                           {example}
@@ -138,8 +140,9 @@ export default function InfoTooltip({
                     {/* 如何解讀 */}
                     {interpretation && (
                       <div className="p-3 bg-soft-yellow rounded-lg border border-[#F5E6D3]">
-                        <p className="text-xs font-semibold text-foreground mb-2">
-                          🎯 如何解讀
+                        <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                          <Target className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          如何解讀
                         </p>
                         <p className="text-xs text-[#5A5A5A] leading-relaxed whitespace-pre-line">
                           {interpretation}

@@ -13,7 +13,7 @@
  */
 
 import React from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, Target, Lightbulb } from 'lucide-react';
 
 // ==================== 解鎖里程碑定義 ====================
 
@@ -112,9 +112,11 @@ export default function FeatureUnlockGuard({
           <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl p-3 mb-4">
             <p className="text-sm text-foreground text-center">
               {remaining === 1 ? (
-                <>
-                  <span className="font-bold text-secondary">再 1 場市集</span>，系統即可為您精準建模 🎯
-                </>
+                <span className="inline-flex items-center gap-1.5 justify-center flex-wrap">
+                  <span className="font-bold text-secondary">再 1 場市集</span>
+                  <span>，系統即可為您精準建模</span>
+                  <Target className="w-4 h-4 text-secondary" strokeWidth={1.75} />
+                </span>
               ) : (
                 <>
                   還差 <span className="font-bold text-secondary">{remaining} 場市集</span>數據
@@ -158,8 +160,9 @@ export default function FeatureUnlockGuard({
           
           {/* 底部提示 */}
           <div className="mt-4 pt-4 border-t border-[#E8E8E8]">
-            <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
-              💡 繼續記錄市集數據，解鎖更多深度分析功能
+            <p className="text-[10px] text-muted-foreground text-center leading-relaxed inline-flex items-center gap-1.5 justify-center w-full">
+              <Lightbulb className="w-3 h-3 shrink-0" strokeWidth={1.75} />
+              <span>繼續記錄市集數據，解鎖更多深度分析功能</span>
             </p>
           </div>
         </div>

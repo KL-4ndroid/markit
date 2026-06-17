@@ -1,6 +1,7 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { BarChart3 } from 'lucide-react';
 import type { Product, DailyStats, ProductCategory } from '@/types/db';
 import { formatCurrency } from '@/lib/utils';
 
@@ -74,7 +75,7 @@ export function CategoryPieChart({ products, stats }: CategoryPieChartProps) {
       <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-primary/5">
         <h3 className="text-base font-medium text-foreground mb-4">分類銷售佔比</h3>
         <div className="flex flex-col items-center justify-center py-8">
-          <div className="text-4xl mb-2">📊</div>
+          <BarChart3 className="w-10 h-10 text-muted-foreground/60 mb-2" strokeWidth={1.5} />
           <p className="text-sm text-muted-foreground">尚無銷售數據</p>
         </div>
       </div>

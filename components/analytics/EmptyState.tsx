@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Sparkles } from 'lucide-react';
 
 /**
  * 空狀態組件
@@ -28,8 +28,9 @@ export function EmptyState() {
         </h3>
 
         {/* 描述 */}
-        <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-          開始記錄您的市集活動，系統將自動生成精美的數據分析報表 ✨
+        <p className="text-sm text-muted-foreground mb-6 max-w-xs inline-flex items-start gap-1.5">
+          <Sparkles className="w-4 h-4 mt-0.5 shrink-0" strokeWidth={1.75} />
+          <span>開始記錄您的市集活動，系統將自動生成精美的數據分析報表</span>
         </p>
 
         {/* 引導步驟 */}
