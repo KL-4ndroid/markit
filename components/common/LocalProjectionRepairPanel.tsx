@@ -164,12 +164,12 @@ export function LocalProjectionRepairPanel() {
               <div>
                 <p className="font-medium text-muted-foreground">略過 ({previewResult.skipped.length})</p>
                 {previewResult.skipped.slice(0, 8).map(item => (
-                  <p key={`${item.marketId}-${item.reason}`} className="text-[#9B9B9B]">
+                  <p key={`${item.marketId}-${item.reason}`} className="text-muted-foreground">
                     {item.marketId}: {item.reason}
                   </p>
                 ))}
                 {previewResult.skipped.length > 8 && (
-                  <p className="text-[#9B9B9B]">...還有 {previewResult.skipped.length - 8} 個</p>
+                  <p className="text-muted-foreground">...還有 {previewResult.skipped.length - 8} 個</p>
                 )}
               </div>
             )}
