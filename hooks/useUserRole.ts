@@ -11,11 +11,20 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { deriveRolePermissions } from '@/lib/permissions/role-fail-closed';
+import type { StaffRole } from '@/types/staff';
 
 export interface UserRole {
   isStaff: boolean;
   ownerId?: string;
   ownerEmail?: string;
+  /**
+   * ✅ P5-2: read-only exposure of staff_relationships.role.
+   * - owner: null (owner is NOT a StaffRole enum value, see R10).
+   * - staff: 'viewer' | 'operator' | 'manager' as stored in DB.
+   * - loading initial / fail-closed: undefined / null respectively.
+   * - No UI consumer is allowed in P5-2.
+   */
+  staffRole?: StaffRole | null;
   permissions?: {
     can_view: boolean;
     can_edit: boolean;
@@ -136,7 +145,7 @@ export function useUserRole() {
         // 查詢是否為員工
         const { data, error } = await supabase
           .from('staff_relationships')
-          .select('owner_id, permissions')
+          .select('owner_id, permissions, role')
           .eq('staff_id', user.id)
           .eq('status', 'active')
           .limit(1);
@@ -163,6 +172,7 @@ export function useUserRole() {
             isStaff: true,
             ownerId: data[0].owner_id,
             ownerEmail: ownerProfile?.email || '未知',
+            staffRole: data[0].role ?? null,
             permissions: data[0].permissions,
           };
 
@@ -173,7 +183,7 @@ export function useUserRole() {
           }
         } else {
           // 是老闆
-          const role: UserRole = { isStaff: false };
+          const role: UserRole = { isStaff: false, staffRole: null };
           
           if (isMounted) {
             setUserRole(role);
@@ -190,7 +200,7 @@ export function useUserRole() {
           // ✅ C2.28：fail-closed —— 記錄錯誤並保持 userRole 為員工預設值
           // （不再 fallback 成 owner）讓 isOwner / canEdit / canViewSensitiveData 全部回傳 false
           setRoleError(error instanceof Error ? error : new Error(String(error)));
-          setUserRole({ isStaff: true, permissions: { can_view: false, can_edit: false } });
+          setUserRole({ isStaff: true, staffRole: null, permissions: { can_view: false, can_edit: false } });
         }
       } finally {
         if (isMounted) {

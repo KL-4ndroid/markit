@@ -6,8 +6,11 @@
 // 訪問類型：老闆或員工
 export type AccessType = 'owner' | 'staff';
 
-// 員工角色（P2：純型別，DB 欄位由 supabase/migrations/043_staff_role_foundation.sql 提供，
-// production DB 尚未確認套用，因此所有 role 欄位為 optional，且 runtime 不讀取）
+// 員工角色（P5-2：對應 staff_relationships.role。
+// P5-2 起 useUserRole 會 read-only SELECT 此欄位，但不接 UI、不改權限行為。
+// 既有 DB 欄位由 supabase/migrations/043_staff_role_foundation.sql 提供，
+// production 已套用 043 / 045 / 046；
+// owner 不在 StaffRole union，owner capability 由 isOwner boolean 推導。）
 export type StaffRole = 'viewer' | 'operator' | 'manager';
 
 // 員工權限設定
@@ -95,7 +98,7 @@ export interface StaffRelationship {
   staff_email: string;        // 員工的 Email
   status: 'pending' | 'active' | 'revoked';  // 狀態
   permissions: StaffPermissions;  // 權限設定
-  role?: StaffRole;           // ✅ P2：optional，待 production DB 套用 043 後才可被讀取
+  role?: StaffRole;           // ✅ P5-2：optional；DB 欄位 043 已套用，useUserRole 開始 read-only 讀取（userRole.staffRole 出口）
   invited_at?: string;        // ✅ 邀請時間
   accepted_at?: string;       // 接受時間
   created_at: string;

@@ -1573,4 +1573,22 @@ v0.2  2026-06-19  P5-1a amendment (audit follow-up)
                   PermissionGate stays at data sanitization boundary
                   B1 Dexie downgrade cache risk must be solved first
                 - Hard rules in §11.1 unchanged
+
+v0.3  2026-06-19  P5-2 implementation
+                - hooks/useUserRole.ts:
+                  * .select adds 'role' field (additive, no condition / limit change)
+                  * UserRole interface adds staffRole?: StaffRole | null
+                  * staff branch: staffRole = data[0].role ?? null
+                  * owner branch: staffRole = null (owner NOT in StaffRole enum)
+                  * fail-closed branch: staffRole = null (kept fail-closed)
+                - types/staff.ts:
+                  * StaffRole comment updated to reflect P5-2 read-only usage
+                  * StaffRelationship.role comment updated
+                - No component / app / lib/permissions / useSync / Dexie change
+                - No migration added
+                - No UI consumes staffRole yet (grep gate enforced)
+                - No canEdit / canViewSensitiveData / infoLevel / PermissionGate
+                  / role-fail-closed / useSync behavior change
+                - Owner is represented by isOwner, not by StaffRole
+                - Hard rules in §11.1 unchanged
 ```
