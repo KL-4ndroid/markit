@@ -27,7 +27,18 @@ import {
   type StaffInvitation,
 } from '@/lib/supabase/staff-invitations';
 import { getMyStaffMembers, type StaffMember, inviteStaff, removeStaff } from '@/lib/supabase/staff';
+import type { StaffRole } from '@/types/staff';
 import { RoleBadge } from '@/components/staff/RoleBadge';
+
+// P3b-alt：員工角色輔助文案
+// 對應 staff_relationships.role 欄位
+// 純文案，不影響任何 runtime 權限行為
+const ROLE_HELPER_COPY: Record<StaffRole | 'undefined', string | null> = {
+  viewer: '僅用於查看必要資訊',
+  operator: '適合現場協助記錄',
+  manager: '適合協助管理基本資料',
+  undefined: '使用預設員工權限',
+};
 
 export function StaffManagement() {
   const { user } = useAuth();
@@ -276,6 +287,11 @@ export function StaffManagement() {
                       • {staff.status === 'pending' ? '邀請於' : '加入於'} {new Date(staff.joined_at).toLocaleDateString('zh-TW')}
                     </span>
                   </div>
+                  {ROLE_HELPER_COPY[staff.role ?? 'undefined'] && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {ROLE_HELPER_COPY[staff.role ?? 'undefined']}
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={() => handleRemove(staff.id, staff.email)}
