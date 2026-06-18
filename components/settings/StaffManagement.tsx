@@ -13,7 +13,7 @@
 
 import { useCallback, useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { Users, Mail, Shield, Trash2, Plus, X, Eye, Edit3, AlertCircle, Link2, Copy, QrCode, Clock } from 'lucide-react';
+import { Users, Mail, Shield, Trash2, Plus, X, Eye, Edit3, AlertCircle, Link2, Copy, QrCode, Clock, Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
@@ -26,7 +26,7 @@ import {
   formatRemainingTime,
   type StaffInvitation,
 } from '@/lib/supabase/staff-invitations';
-import { getMyStaffMembers, type StaffMember, inviteStaff, removeStaff } from '@/lib/supabase/staff';
+import { getMyStaffMembers, type StaffMember, inviteStaff, removeStaff, updateStaffRole } from '@/lib/supabase/staff';
 import type { StaffRole } from '@/types/staff';
 import { RoleBadge } from '@/components/staff/RoleBadge';
 
@@ -38,6 +38,21 @@ const ROLE_HELPER_COPY: Record<StaffRole | 'undefined', string | null> = {
   operator: '適合現場協助記錄',
   manager: '適合協助管理基本資料',
   undefined: '使用預設員工權限',
+};
+
+// P4c-2：角色修改 Dialog 文案
+// 對應 staff_relationships.role
+// 純文案，不影響任何 runtime 權限行為
+const ROLE_LABEL: Record<StaffRole, string> = {
+  viewer: '查看者',
+  operator: '出攤助手',
+  manager: '管理員',
+};
+
+const ROLE_DIALOG_COPY: Record<StaffRole, string> = {
+  viewer: '僅可查看必要資訊，適合一般協助查看。',
+  operator: '適合現場協助記錄與查看較完整的市集資訊。',
+  manager: '適合協助管理基本資料；敏感財務資料仍不開放。',
 };
 
 export function StaffManagement() {
@@ -54,6 +69,12 @@ export function StaffManagement() {
   const [creatingInvitation, setCreatingInvitation] = useState(false);
   const [showQRCode, setShowQRCode] = useState<string | null>(null);
   const [showInvitationsSection, setShowInvitationsSection] = useState(false);
+
+  // P4c-2：角色修改 Dialog 狀態
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [selectedRole, setSelectedRole] = useState<StaffRole>('viewer');
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
   // 載入員工列表和邀請連結
   const loadStaffList = useCallback(async () => {
@@ -200,6 +221,62 @@ export function StaffManagement() {
     }
   };
 
+  // P4c-2：開啟角色修改 Dialog
+  const openRoleDialog = (staff: StaffMember) => {
+    setEditingStaff(staff);
+    setSelectedRole(staff.role ?? 'viewer');
+    setShowRoleDialog(true);
+  };
+
+  // P4c-2：關閉角色修改 Dialog
+  // 若正在送出，鎖住避免 race condition
+  const closeRoleDialog = () => {
+    if (isUpdatingRole) return;
+    setShowRoleDialog(false);
+    setEditingStaff(null);
+    setSelectedRole('viewer');
+  };
+
+  // P4c-2：送出角色修改
+  const handleUpdateRole = async () => {
+    if (!editingStaff) return;
+
+    if (!editingStaff.relationship_id) {
+      toast.error('缺少員工關係識別碼，請重新整理後再試');
+      return;
+    }
+
+    // no-op 防呆：role 沒變就不送 RPC
+    if (selectedRole === editingStaff.role) {
+      return;
+    }
+
+    setIsUpdatingRole(true);
+    try {
+      await updateStaffRole(editingStaff.relationship_id, selectedRole);
+
+      toast.success('已更新員工角色', {
+        description: `${editingStaff.email} 已設定為 ${ROLE_LABEL[selectedRole]}`,
+      });
+
+      // 重新載入列表（讓 RoleBadge 立即反映新 role）
+      await loadStaffList();
+
+      // 成功才關 dialog
+      closeRoleDialog();
+    } catch (error: any) {
+      console.error('更新員工角色失敗:', error);
+      // updateStaffRole wrapper 內已透過 mapStaffRoleUpdateError 轉中文
+      // 不重複 map，直接用 error.message
+      toast.error('修改角色失敗', {
+        description: error?.message ?? '修改角色失敗，請稍後再試',
+      });
+      // 故意不關 dialog、不 reset selectedRole，讓使用者重試
+    } finally {
+      setIsUpdatingRole(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">
@@ -293,13 +370,29 @@ export function StaffManagement() {
                     </p>
                   )}
                 </div>
-                <button
-                  onClick={() => handleRemove(staff.id, staff.email)}
-                  className="ml-4 p-2 rounded-xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors"
-                  title={staff.status === 'pending' ? '取消邀請' : '移除員工'}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1 ml-4">
+                  <button
+                    onClick={() => openRoleDialog(staff)}
+                    disabled={staff.status !== 'active' || !staff.relationship_id}
+                    title={
+                      staff.status !== 'active'
+                        ? '員工接受邀請後才能修改角色'
+                        : !staff.relationship_id
+                        ? '資料異常，請重新整理'
+                        : '修改員工角色'
+                    }
+                    className="p-2 rounded-xl bg-soft-green text-primary hover:bg-soft-green/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleRemove(staff.id, staff.email)}
+                    className="p-2 rounded-xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors"
+                    title={staff.status === 'pending' ? '取消邀請' : '移除員工'}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -542,6 +635,130 @@ export function StaffManagement() {
                         className="flex-1 px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isInviting ? '邀請中...' : '確認邀請'}
+                      </button>
+                    </div>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* P4c-2：修改員工角色 Dialog */}
+      <Transition appear show={showRoleDialog} as={Fragment}>
+        <Dialog as="div" className="relative z-[10000]" onClose={closeRoleDialog}>
+          {/* 背景遮罩 */}
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+          </Transition.Child>
+
+          {/* 對話框容器 */}
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-6 shadow-2xl transition-all">
+                  <div className="flex items-center justify-between mb-1">
+                    <Dialog.Title className="text-lg font-medium text-foreground">
+                      修改員工角色
+                    </Dialog.Title>
+                    <button
+                      onClick={closeRoleDialog}
+                      disabled={isUpdatingRole}
+                      className="p-2 rounded-xl hover:bg-background transition-colors disabled:opacity-50"
+                    >
+                      <X className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                  </div>
+
+                  {editingStaff && (
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {editingStaff.email}
+                    </p>
+                  )}
+
+                  <div className="space-y-4">
+                    {/* 影響說明 */}
+                    <div className="bg-[#E8F0F8] rounded-xl p-3">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground">
+                          角色會影響員工可查看的資料範圍，儲存後會在員工下次重新整理或登入時生效。
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 角色選項（button group） */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        選擇角色
+                      </label>
+                      <div className="space-y-2">
+                        {(['viewer', 'operator', 'manager'] as const).map(role => {
+                          const isSelected = selectedRole === role;
+                          return (
+                            <button
+                              key={role}
+                              type="button"
+                              onClick={() => setSelectedRole(role)}
+                              disabled={isUpdatingRole}
+                              className={
+                                'w-full p-3 rounded-xl border-2 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
+                                (isSelected
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-muted hover:border-primary/30')
+                              }
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-sm font-medium text-foreground">
+                                  {ROLE_LABEL[role]}
+                                </span>
+                                {isSelected && <Check className="w-4 h-4 text-primary" />}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {ROLE_DIALOG_COPY[role]}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 按鈕 */}
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        onClick={closeRoleDialog}
+                        disabled={isUpdatingRole}
+                        className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        取消
+                      </button>
+                      <button
+                        onClick={handleUpdateRole}
+                        disabled={
+                          isUpdatingRole ||
+                          !editingStaff?.relationship_id ||
+                          selectedRole === editingStaff?.role
+                        }
+                        className="flex-1 px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isUpdatingRole ? '儲存中...' : '儲存角色'}
                       </button>
                     </div>
                   </div>
