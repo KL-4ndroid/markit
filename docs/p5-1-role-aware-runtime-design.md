@@ -1282,7 +1282,270 @@ This is the P5-1 seal.
 
 ---
 
-## 13. Change Log
+## 14. Phase Numbering Crosswalk (P5-1a Amendment)
+
+This section is a follow-up to P5-1 audit. It clarifies that the P5 phase
+numbering in `docs/staff-role-matrix.md` and this document are not the same
+split, but the content does not conflict.
+
+| `staff-role-matrix.md` P5 phase | `p5-1-role-aware-runtime-design.md` section | Implementation mapping |
+|---|---|---|
+| P5-1 PermissionGate Design | §3 / §7 | completed in P5-1 design |
+| P5-2 Operator Action Scope | §4 / §5.2 | future: maps to P5-5a / P5-5b |
+| P5-3 Manager Action Scope | §4 / §5.3 | future: maps to P5-6a / P5-6b |
+| P5-4 Sync / Dexie Safety Review | §8.3 / §9 | future: maps to P5-4 |
+
+Why the numbering differs:
+
+```text
+staff-role-matrix.md P5 phases are a product-side split:
+  - P5-1 PermissionGate Design     (data sanitization boundary)
+  - P5-2 Operator Action Scope     (capability surface for operator)
+  - P5-3 Manager Action Scope      (capability surface for manager)
+  - P5-4 Sync / Dexie Safety Review (B1 / cache downgrade)
+
+p5-1-role-aware-runtime-design.md P5 phases are a technical contract split:
+  - P5-2 useUserRole reads role     (no UI change)
+  - P5-3 role-capabilities helper   (no UI wiring)
+  - P5-4 Sync / Dexie downgrade safety design (B1)
+  - P5-5 operator write paths       (interaction / deal / field note)
+  - P5-6 manager write paths        (market / product basic edit)
+  - P5-7 StaffPermissionCard role-aware
+```
+
+The two numbering systems overlap on **P5-4** (Sync / Dexie safety), which
+is the only phase where the work is concretely named the same way.
+
+```text
+Resolution rule:
+  When phase numbers appear to differ, defer to the concrete stage name
+  and the risk gate, not the number.
+  Sealed role docs (matrix.md + permissions.md) remain the product source
+  of truth for role / permission semantics.
+  p5-1-role-aware-runtime-design.md remains the technical contract for
+  runtime implementation.
+```
+
+This crosswalk is part of the v0.2 amendment of this document. It does not
+change the design; it only clarifies how to read both documents together.
+
+---
+
+## 15. P5-2 Preflight Checklist (P5-1a Amendment)
+
+This section is a follow-up to P5-1 audit. It pins the exact P5-2 scope
+so that P5-2 cannot accidentally widen the change surface.
+
+### 15.1 P5-2 is allowed to do (only)
+
+```text
+- useUserRole: SELECT staff_relationships.role (additive, no removal)
+- UserRole type: add a `role: StaffRole | null` (or equivalent) read-only field
+- No new export shape change for isStaff / isOwner / canEdit / canViewSensitiveData
+- No change to deriveRolePermissions semantics
+- No change to deriveSafeInfoLevel semantics
+- No change to PermissionGate boundary
+- No change to role-fail-closed logic
+- No change to useSync / Dexie / hydration / recovery
+- No new capability helper (role-capabilities.ts is P5-3, not P5-2)
+- No component is allowed to consume the new role field in P5-2
+```
+
+### 15.2 P5-2 is NOT allowed to do
+
+```text
+❌ Open any operator / manager write capability
+❌ Change canEdit semantics
+❌ Change canViewSensitiveData semantics
+❌ Change infoLevel derivation
+❌ Add new method to PermissionGate
+❌ Add new method to role-fail-closed.ts
+❌ Add helper to useSync.ts
+❌ Add helper to lib/db/*
+❌ Add component changes
+❌ Add capability matrix code (P5-3 scope)
+❌ Add a fail-closed wrapper for capabilities (P5-3 scope)
+```
+
+### 15.3 P5-2 preflight gate (must all pass before P5-2 starts)
+
+```text
+- [ ] Audit useUserRole relationship selection: confirm whether
+      `limit(1)` produces ambiguous result when one auth user has
+      multiple staff_relationships (see R9)
+- [ ] Confirm new `role` field is purely additive: no consumer is added
+      in the same PR; consumer wiring is forbidden in P5-2
+- [ ] Confirm existing isStaff / isOwner / canEdit / canViewSensitiveData
+      return values are byte-identical before and after the P5-2 PR
+      (covered by existing tests in tests/role-fail-closed.test.ts)
+- [ ] Confirm no component import the new `role` field (grep gate)
+- [ ] Confirm no migration is added
+- [ ] `npm run build` passes
+- [ ] `npm run lint` passes
+- [ ] Production P4 role change feature has been observed for ≥ 7 days
+      with no P0/P1 incidents (see §11.1)
+- [ ] At least 1 owner has used the P4c role change flow against a
+      real staff in production
+```
+
+If any of the above is not satisfied, P5-2 must not start.
+
+---
+
+## 16. Deferred Decisions (P5-1a Amendment)
+
+This section is a follow-up to P5-1 audit. It explicitly defers three
+decisions to a later phase with a clear trigger.
+
+### 16.1 canRecordDeal for operator
+
+```text
+Status:  deferred
+Current:  §4.3 / §5.2 mark this as future / gated
+Trigger:  P5-5a start
+Required: explicit user confirmation before P5-5a begins
+Risk:     Medium if opened without further review
+```
+
+### 16.2 canManageChecklist for manager
+
+```text
+Status:  deferred
+Current:  §4.2 introduces this capability, but sealed role docs
+          (matrix.md / permissions.md) do not list "checklist" as
+          a manager-scoped feature.
+Trigger:  P5-6a start
+Required:
+  1. Explicit user confirmation that checklist is a manager scope.
+  2. Sealed role docs updated and re-sealed to add checklist to
+     manager's permission matrix.
+  3. P5-6a migration / RLS / audit cannot start before both above.
+Risk:     High if opened without re-sealing role docs
+```
+
+### 16.3 Basic edit whitelist for manager
+
+```text
+Status:  deferred
+Current:  canEditMarketBasic / canEditProductBasic are named but
+          the "Basic" boundary is not defined anywhere.
+Trigger:  P5-6a start
+Required:
+  1. Explicit whitelist of editable market fields
+  2. Explicit whitelist of editable product fields
+  3. Explicit blacklist of owner-only fields (cost / margin / boothCost / etc.)
+  4. Edit API must reject any write to a non-whitelisted field, even
+     if the caller passes it in the payload
+Risk:     High if a manager write accidentally writes to cost / margin
+```
+
+---
+
+## 17. Risk Addendum R8 ~ R11 (P5-1a Amendment)
+
+This section is a follow-up to P5-1 audit. It extends the risk
+assessment in §10 with four additional risks that were surfaced by
+the audit.
+
+### R8. Offline write after role change
+
+```text
+Description:
+  A staff is offline and still holds the old role in the local role
+  cache. The owner has already demoted the staff on the server. The
+  staff may attempt to write actions that are no longer allowed.
+
+Severity:  High (after P5-5 ships operator writes)
+Likelihood: Medium (depends on offline frequency and role change rate)
+
+Affected:  P5-4, P5-5
+
+Mitigation:
+  - P5-4 must design an explicit offline write policy.
+  - Staff write actions must fail closed or queue with revalidation
+    when the role is stale or the staff is offline.
+  - P5-5b MUST NOT ship before P5-4.
+  - The role cache 5-minute TTL is acceptable for P5-2 / P5-3 but
+    must be reconsidered in P5-4 (see §9.3 Q3).
+```
+
+### R9. Multiple owner / multiple staff relationship ambiguity
+
+```text
+Description:
+  A single auth user can be associated with multiple owners through
+  multiple staff_relationships. If useUserRole uses limit(1) without
+  an explicit ordering, the runtime may read the wrong relationship.
+
+Severity:  Medium
+Likelihood: Low today (rare multi-owner case), increases with P5-2
+
+Affected:  P5-2
+
+Mitigation:
+  - P5-2 must audit useUserRole's relationship selection before
+    starting (see §15.3).
+  - P5-2 only ADDS a role field; it MUST NOT change the existing
+    relationship selection behavior.
+  - If ambiguity is found, file a separate design / bugfix.
+    It must not be mixed into P5-2.
+  - The existing C3.6.1 cost-and-bug audit notes this is an
+    existing useUserRole issue, not introduced by P5-1.
+```
+
+### R10. Owner is not a StaffRole enum value
+
+```text
+Description:
+  owner is intentionally NOT in the StaffRole enum (§4.1). This
+  creates a TypeScript narrowing risk: future code may mistakenly
+  treat owner as a staff role, or attempt to derive a capability
+  for an owner that is actually a separate identity.
+
+Severity:  Low (TypeScript-level risk, caught at compile time)
+Likelihood: Medium (likely to surface in P5-3 implementation)
+
+Affected:  P5-3
+
+Mitigation:
+  - StaffRole MUST be limited to 'viewer' | 'operator' | 'manager'.
+  - owner capabilities MUST be derived from the isOwner boolean,
+    not from a role value.
+  - deriveRoleCapabilities input MUST explicitly include both
+    isOwner: boolean and role: StaffRole | null (see §4.5).
+  - P5-3 PR review must reject any narrowing that treats owner
+    as a StaffRole.
+```
+
+### R11. PermissionGate helper and role-capabilities helper duplication
+
+```text
+Description:
+  canViewSensitiveData (PermissionGate UI helper) and the future
+  role-capabilities layer both compute booleans from UserRole. If
+  both are used in the same component, a single user could see
+  different answers from the two helpers if the input contract
+  drifts.
+
+Severity:  Medium
+Likelihood: Low (currently no such duplication)
+
+Affected:  P5-3, P5-7
+
+Mitigation:
+  - PermissionGate is responsible for data visibility / sanitization only.
+  - role-capabilities is responsible for operation permission only.
+  - Owner finance visibility is still decided by PermissionGate / infoLevel.
+  - UI operation ability reads named capabilities only.
+  - When both helpers would be needed in one component, prefer:
+      1. Read infoLevel / canViewSensitiveData for display.
+      2. Read named capabilities for action gating.
+    Do not chain the helpers (no `hasCapability(caps, 'X') && canViewSensitiveData(...)`).
+```
+
+---
+
+## 18. Change Log (Updated)
 
 ```text
 v0.1  2026-06-19  P5-1 design draft, sealed
@@ -1290,4 +1553,24 @@ v0.1  2026-06-19  P5-1 design draft, sealed
                 - Capability matrix as design contract
                 - Hard rule: no P5-2 until P4 production observation
                 - B1 questions deferred to P5-4
+
+v0.2  2026-06-19  P5-1a amendment (audit follow-up)
+                - §14 Phase Numbering Crosswalk (matrix.md P5 phases
+                  vs this document P5 phases)
+                - §15 P5-2 Preflight Checklist (P5-2 allowed / not
+                  allowed / preflight gate)
+                - §16 Deferred Decisions (canRecordDeal operator /
+                  canManageChecklist manager / Basic edit whitelist)
+                - §17 Risk Addendum R8 ~ R11
+                  R8  Offline write after role change
+                  R9  Multiple owner / multiple staff relationship ambiguity
+                  R10 Owner is not a StaffRole enum value
+                  R11 PermissionGate helper and role-capabilities helper duplication
+                - Original design conclusions preserved:
+                  canEdit stays owner-only
+                  no global canEdit widening for operator / manager
+                  new operations go through named capabilities
+                  PermissionGate stays at data sanitization boundary
+                  B1 Dexie downgrade cache risk must be solved first
+                - Hard rules in §11.1 unchanged
 ```
