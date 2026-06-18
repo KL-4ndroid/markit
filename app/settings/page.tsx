@@ -284,7 +284,7 @@ export default function SettingsPage() {
             </div>
           </>
         ) : (
-          /* 老闆：顯示員工管理（可折疊） */
+          /* 老闆：顯示團隊與權限（可折疊） */
           <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 overflow-hidden">
             <button
               onClick={() => setIsStaffManagementExpanded(!isStaffManagementExpanded)}
@@ -292,17 +292,20 @@ export default function SettingsPage() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-1">
                     <Eye className="w-5 h-5 text-primary" />
                     <h2 className="text-lg font-medium text-foreground">
-                      員工管理
+                      團隊與權限
                     </h2>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    邀請員工協作，管理權限設定
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    邀請員工加入團隊，設定成員可查看或操作的範圍
                   </p>
                 </div>
-                <div className="ml-4">
+                <div className="ml-4 flex items-center gap-2">
+                  <span className="text-xs text-primary/60 font-medium">
+                    {isStaffManagementExpanded ? '收合' : '展開'}
+                  </span>
                   {isStaffManagementExpanded ? (
                     <ChevronUp className="w-5 h-5 text-primary" />
                   ) : (
