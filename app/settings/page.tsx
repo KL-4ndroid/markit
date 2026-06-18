@@ -299,7 +299,7 @@ export default function SettingsPage() {
                     </h2>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    邀請員工加入團隊，設定成員可查看或操作的範圍
+                    邀請員工加入團隊，查看成員與目前權限狀態。
                   </p>
                 </div>
                 <div className="ml-4 flex items-center gap-2">
