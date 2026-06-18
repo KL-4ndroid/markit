@@ -1591,4 +1591,33 @@ v0.3  2026-06-19  P5-2 implementation
                   / role-fail-closed / useSync behavior change
                 - Owner is represented by isOwner, not by StaffRole
                 - Hard rules in §11.1 unchanged
+
+v0.4  2026-06-19  P5-3 implementation
+                - Added lib/permissions/role-capabilities.ts as an isolated pure helper.
+                - RoleCapabilities / StaffCapability / DeriveRoleCapabilitiesInput
+                  type definitions added.
+                - deriveRoleCapabilities maps (isOwner, staffRole) to 15 named capabilities.
+                - hasCapability(caps, key) pure boolean reader added.
+                - Capability matrix:
+                  * owner     → 全部 true（owner 忽略 staffRole）
+                  * viewer    → 全部 false
+                  * operator  → 僅 canRecordInteraction = true
+                  * manager   → 6 個 manager 能力 = true
+                                 (canRecordInteraction, canRecordDeal,
+                                  canCreateFieldNote, canEditMarketBasic,
+                                  canEditProductBasic, canManageChecklist)
+                  * unknown   → 全部 false（fail-closed）
+                - Mutation safety: 每次 deriveRoleCapabilities 回傳新 object
+                  (用 spread copy OWNER/NONE/VIEWER/OPERATOR/MANAGER_CAPABILITIES)
+                - Added tests/role-capabilities.test.ts (25 cases, all green).
+                - No UI / app / hook consumes role-capabilities yet.
+                - No canEdit / canViewSensitiveData / infoLevel / PermissionGate
+                  / role-fail-closed / useSync behavior change.
+                - P5-3 does NOT open any operator / manager runtime actions;
+                  canManageChecklist 等 manager 能力雖 helper 回傳 true，
+                  但本階段沒有任何 UI / runtime gate 消費。
+                - canManageChecklist 已在 P5-1a Deferred Decisions 標記，
+                  P5-6a 前仍需 user 確認並同步 sealed role docs。
+                - Hard rules in §11.1 unchanged.
+                - P5-4 / P5-5 gates unchanged.
 ```
