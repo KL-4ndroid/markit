@@ -27,6 +27,7 @@ import {
   type StaffInvitation,
 } from '@/lib/supabase/staff-invitations';
 import { getMyStaffMembers, type StaffMember, inviteStaff, removeStaff } from '@/lib/supabase/staff';
+import { RoleBadge } from '@/components/staff/RoleBadge';
 
 export function StaffManagement() {
   const { user } = useAuth();
@@ -263,6 +264,7 @@ export function StaffManagement() {
                         待接受
                       </span>
                     )}
+                    <RoleBadge role={staff.role} />
                   </div>
                   <div className="flex items-center gap-2">
                     <Shield className="w-3 h-3 text-muted-foreground" />

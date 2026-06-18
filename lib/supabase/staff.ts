@@ -5,7 +5,7 @@
  */
 
 import { supabase } from './client';
-import type { StaffRelationship, StaffInviteForm, StaffPermissions } from '@/types/staff';
+import type { StaffRelationship, StaffInviteForm, StaffPermissions, StaffRole } from '@/types/staff';
 
 /**
  * 員工列表 UI 顯示型別
@@ -19,6 +19,7 @@ export interface StaffMember {
     can_view: boolean;
     can_edit: boolean;
   };
+  role?: StaffRole;
   joined_at: string;
 }
 
@@ -59,6 +60,7 @@ export async function getMyStaffMembers(): Promise<StaffMember[]> {
     email: s.staff_email || '未知',
     status: s.status,
     permissions: s.permissions || { can_view: true, can_edit: false },
+    role: s.role,
     joined_at: s.created_at || new Date().toISOString(),
   }));
 }
