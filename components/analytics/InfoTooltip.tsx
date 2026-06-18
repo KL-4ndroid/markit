@@ -106,14 +106,14 @@ export default function InfoTooltip({
 
                     {/* 說明 */}
                     <div className="mb-4">
-                      <p className="text-sm text-[#5A5A5A] leading-relaxed">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
                         {description}
                       </p>
                     </div>
 
                     {/* 計算公式 */}
                     {formula && (
-                      <div className="mb-4 p-3 bg-[#F5F5F3] rounded-lg border border-[#E8E8E6]">
+                      <div className="mb-4 p-3 bg-[#F5F5F3] rounded-lg border border-muted">
                         <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
                           <Ruler className="w-3.5 h-3.5" strokeWidth={1.75} />
                           計算公式
@@ -126,12 +126,12 @@ export default function InfoTooltip({
 
                     {/* 範例 */}
                     {example && (
-                      <div className="mb-4 p-3 bg-soft-green rounded-lg border border-[#D4E8D4]">
+                      <div className="mb-4 p-3 bg-soft-green rounded-lg border border-soft-green">
                         <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
                           <FileText className="w-3.5 h-3.5" strokeWidth={1.75} />
                           範例
                         </p>
-                        <p className="text-xs text-[#5A5A5A] leading-relaxed">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
                           {example}
                         </p>
                       </div>
@@ -139,12 +139,12 @@ export default function InfoTooltip({
 
                     {/* 如何解讀 */}
                     {interpretation && (
-                      <div className="p-3 bg-soft-yellow rounded-lg border border-[#F5E6D3]">
+                      <div className="p-3 bg-soft-yellow rounded-lg border border-soft-yellow">
                         <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
                           <Target className="w-3.5 h-3.5" strokeWidth={1.75} />
                           如何解讀
                         </p>
-                        <p className="text-xs text-[#5A5A5A] leading-relaxed whitespace-pre-line">
+                        <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
                           {interpretation}
                         </p>
                       </div>
@@ -152,7 +152,7 @@ export default function InfoTooltip({
                   </div>
 
                   {/* 底部按鈕 */}
-                  <div className="bg-background px-6 py-4 border-t border-[#E8E8E6]">
+                  <div className="bg-background px-6 py-4 border-t border-muted">
                     <button
                       onClick={() => setIsOpen(false)}
                       className="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary/85 transition-colors font-medium text-sm"
