@@ -11,9 +11,15 @@ export type AccessType = 'owner' | 'staff';
 export type StaffRole = 'viewer' | 'operator' | 'manager';
 
 // 員工權限設定
+// 046 起：infoLevel 為選填 runtime 欄位，由 update_staff_role RPC 同步
+//   viewer   → infoLevel=0
+//   operator → infoLevel=2
+//   manager  → infoLevel=2
+// 不直接 import lib/permissions/PermissionGate 的 InfoLevel 以避免循環依賴
 export type StaffPermissions = {
   can_view: boolean;
   can_edit: boolean;
+  infoLevel?: 0 | 1 | 2 | 3;
 };
 
 // 帶有訪問權限的市集類型（匹配 staff_accessible_markets 視圖）

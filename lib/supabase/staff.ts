@@ -174,7 +174,7 @@ export async function inviteStaff(inviteData: StaffInviteForm): Promise<StaffRel
           status: 'pending',
           accepted_at: null,
           staff_email: inviteData.staff_email.toLowerCase(),
-          permissions: inviteData.permissions || { can_view: true, can_edit: false },
+          permissions: inviteData.permissions || { can_view: true, can_edit: false, infoLevel: 0 },
         })
         .eq('id', record.id)
         .select()
@@ -200,7 +200,7 @@ export async function inviteStaff(inviteData: StaffInviteForm): Promise<StaffRel
       staff_id: userData.id,
       staff_email: inviteData.staff_email.toLowerCase(),
       status: 'pending',
-      permissions: inviteData.permissions || { can_view: true, can_edit: false },
+      permissions: inviteData.permissions || { can_view: true, can_edit: false, infoLevel: 0 },
     })
     .select()
     .single();
