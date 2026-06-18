@@ -187,12 +187,12 @@ export function OwnerRevenueGapRepairPanel() {
               <div>
                 <p className="mb-1 font-medium text-muted-foreground">略過 ({previewResult.skipped.length})</p>
                 {previewResult.skipped.slice(0, 5).map(s => (
-                  <div key={s.marketId} className="pl-2 text-[#9B9B9B]">
+                  <div key={s.marketId} className="pl-2 text-muted-foreground">
                     {s.marketId.slice(0, 8)}... — {s.reason}
                   </div>
                 ))}
                 {previewResult.skipped.length > 5 && (
-                  <div className="pl-2 text-[#9B9B9B]">
+                  <div className="pl-2 text-muted-foreground">
                     ...還有 {previewResult.skipped.length - 5} 個
                   </div>
                 )}
