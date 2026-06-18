@@ -24,6 +24,7 @@ owner    = 完整管理
 * `role` 控制未來可開放的操作範圍。
 * operator 與 manager 目前同為 L2，但未來操作權限不同。
 * 成本、利潤、淨利、員工管理、角色管理、刪除、系統設定永遠只給 owner。
+* `permissions.can_edit` 是 DB 過渡欄位，用來記錄 operator / manager 具備可寫入的語意；但目前前端實際操作權限仍需透過 P5 的 role-aware gate 設計逐步接上，不能只因 `can_edit=true` 就視為已開放所有編輯能力。換句話說：`can_edit=true` 不是「完整編輯權限」。
 
 ---
 
@@ -166,11 +167,13 @@ operator 是出攤助手，核心任務是現場協助記錄。
 * 不可編輯市集
 * 不可修改成本
 * 不可查看利潤
+* 不可查看淨利
 * 不可刪除資料
 * 不可管理員工
 * 不可修改角色
 * 不可進系統設定
 * 不可使用資料維修工具
+* 不可使用批次匯入 / 匯出
 
 ---
 
@@ -256,6 +259,8 @@ owner 是資料與權限的唯一完整管理者。
 * 批次匯入 / 匯出
 * 完整分析報表
 
+> 注意：owner 不是 `staff_relationships.role` 的 enum 值。owner 指的是 auth 使用者本人作為資料擁有者，也就是 `staff_relationships.owner_id` 對應的帳號。在 `useUserRole` / `PermissionGate` 中以「是否為 owner」獨立判斷。
+
 ---
 
 ## 8. Current Implementation Status
@@ -287,6 +292,10 @@ owner 是資料與權限的唯一完整管理者。
 ## 9. P5 Implementation Direction
 
 P5 不應一次開放所有權限。
+
+> 進入 P5 前，仍需參考 `docs/staff-role-matrix.md` 的 P5 Boundary 與進入條件。P5 屬於 Red risk，不能因為本文件列出實作方向就直接開始實作。
+>
+> P5 開始前至少需要完成 P5-0 audit review，並確認 production P4 role change 功能穩定。
 
 建議順序：
 
