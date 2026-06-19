@@ -64,8 +64,7 @@ import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
 import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { EditMarketForm } from '@/components/markets/EditMarketForm';
-import { FieldNotesPanel } from '@/components/markets/FieldNotesPanel';
-import { ChecklistPanel } from '@/components/markets/ChecklistPanel';
+import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -385,17 +384,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           />
         )}
 
-        <div className="mb-6 space-y-4">
-          <FieldNotesPanel
-            marketId={marketId}
-            canManage={canManageFieldNotes}
-          />
-          <ChecklistPanel
-            marketId={marketId}
-            canManage={canManageChecklist}
-            canToggle={canToggleChecklistItem}
-          />
-        </div>
+        <MarketFieldOpsSection
+          marketId={marketId}
+          canManageFieldNotes={canManageFieldNotes}
+          canManageChecklist={canManageChecklist}
+          canToggleChecklistItem={canToggleChecklistItem}
+        />
         
         {/* 營業狀態卡片 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">

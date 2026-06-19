@@ -55,8 +55,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { InteractionDetailModal } from '@/components/markets/InteractionDetailModal';
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
-import { FieldNotesPanel } from '@/components/markets/FieldNotesPanel';
-import { ChecklistPanel } from '@/components/markets/ChecklistPanel';
+import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -1506,17 +1505,12 @@ export default function MarketDetailPage({ params }: PageProps) {
           onDateClick={handleDateClick}
         />
 
-        <div className="mb-6 space-y-4">
-          <FieldNotesPanel
-            marketId={marketId}
-            canManage={true}
-          />
-          <ChecklistPanel
-            marketId={marketId}
-            canManage={true}
-            canToggle={true}
-          />
-        </div>
+        <MarketFieldOpsSection
+          marketId={marketId}
+          canManageFieldNotes={true}
+          canManageChecklist={true}
+          canToggleChecklistItem={true}
+        />
 
         {/* 6. 即時統計 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">

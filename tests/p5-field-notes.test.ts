@@ -26,6 +26,10 @@ const fieldNotesPanelSource = readFileSync(
   'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/markets/FieldNotesPanel.tsx',
   'utf-8'
 );
+const marketFieldOpsSectionSource = readFileSync(
+  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/markets/MarketFieldOpsSection.tsx',
+  'utf-8'
+);
 const staffMarketDetailSource = readFileSync(
   'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/markets/StaffMarketDetailView.tsx',
   'utf-8'
@@ -78,10 +82,12 @@ runTest('staff sync preflight treats field notes as market-scoped', () => {
 });
 
 runTest('staff market detail renders FieldNotesPanel with capability gates', () => {
-  assert.match(staffMarketDetailSource, /import \{ FieldNotesPanel \}/);
+  assert.match(staffMarketDetailSource, /import \{ MarketFieldOpsSection \}/);
   assert.match(staffMarketDetailSource, /canManageFieldNotes/);
-  assert.match(staffMarketDetailSource, /<FieldNotesPanel/);
-  assert.match(staffMarketDetailSource, /canManage=\{canManageFieldNotes\}/);
+  assert.match(staffMarketDetailSource, /<MarketFieldOpsSection/);
+  assert.match(staffMarketDetailSource, /canManageFieldNotes=\{canManageFieldNotes\}/);
+  assert.match(marketFieldOpsSectionSource, /import \{ FieldNotesPanel \}/);
+  assert.match(marketFieldOpsSectionSource, /<FieldNotesPanel[\s\S]*canManage=\{canManageFieldNotes\}/);
   assert.doesNotMatch(staffMarketDetailSource, /canManageFieldNotes\s*\|\|\s*canEditOwnRecord/);
 });
 

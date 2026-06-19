@@ -26,6 +26,10 @@ const checklistPanelSource = readFileSync(
   'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/markets/ChecklistPanel.tsx',
   'utf-8'
 );
+const marketFieldOpsSectionSource = readFileSync(
+  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/markets/MarketFieldOpsSection.tsx',
+  'utf-8'
+);
 const staffMarketDetailSource = readFileSync(
   'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/markets/StaffMarketDetailView.tsx',
   'utf-8'
@@ -65,12 +69,14 @@ runTest('staff sync preflight treats checklist events as market-scoped', () => {
 });
 
 runTest('staff market detail renders ChecklistPanel with manager gate', () => {
-  assert.match(staffMarketDetailSource, /import \{ ChecklistPanel \}/);
+  assert.match(staffMarketDetailSource, /import \{ MarketFieldOpsSection \}/);
   assert.match(staffMarketDetailSource, /canManageChecklist/);
   assert.match(staffMarketDetailSource, /canToggleChecklistItem/);
-  assert.match(staffMarketDetailSource, /<ChecklistPanel/);
-  assert.match(staffMarketDetailSource, /canManage=\{canManageChecklist\}/);
-  assert.match(staffMarketDetailSource, /canToggle=\{canToggleChecklistItem\}/);
+  assert.match(staffMarketDetailSource, /<MarketFieldOpsSection/);
+  assert.match(staffMarketDetailSource, /canManageChecklist=\{canManageChecklist\}/);
+  assert.match(staffMarketDetailSource, /canToggleChecklistItem=\{canToggleChecklistItem\}/);
+  assert.match(marketFieldOpsSectionSource, /import \{ ChecklistPanel \}/);
+  assert.match(marketFieldOpsSectionSource, /<ChecklistPanel[\s\S]*canManage=\{canManageChecklist\}[\s\S]*canToggle=\{canToggleChecklistItem\}/);
   assert.doesNotMatch(staffMarketDetailSource, /canManageChecklist\s*\|\|\s*canToggleChecklistItem/);
 });
 
