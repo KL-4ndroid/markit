@@ -25,6 +25,7 @@ import {
 } from '@/lib/sync/projection-reconciliation';
 import { getEventMarketId } from '@/lib/events/event-read-model';
 import { resetMarketProjectionFields, resetProductProjectionFields } from '@/lib/sync/projection-reset';
+import { getLastSyncTimestamp, updateLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
 import {
   marketAccessRowToLocal,
   marketRowToLocal,
@@ -1183,40 +1184,6 @@ async function pullAllEvents(
     } else {
       console.warn('[useSync] pullAllEvents: no event has valid created_at, refusing to advance cursor');
     }
-  }
-}
-
-/**
- * 獲取最後同步時間戳
- */
-async function getLastSyncTimestamp(): Promise<number | null> {
-  try {
-    const settings = await db.settings.toArray();
-    return settings[0]?.lastSyncAt || null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * 更新最後同步時間戳
- * @param lastSyncedCreatedAt 本次實際處理的最後一筆事件的 created_at（Unix ms）
- *                           若不傳入則拋出錯誤，避免 caller 意外用 Date.now() 推進錯誤 cursor
- */
-async function updateLastSyncTimestamp(lastSyncedCreatedAt: number): Promise<void> {
-  if (lastSyncedCreatedAt == null || !Number.isFinite(lastSyncedCreatedAt)) {
-    console.error('[useSync] updateLastSyncTimestamp: invalid lastSyncedCreatedAt, refusing to advance cursor');
-    return;
-  }
-  try {
-    const settings = await db.settings.toArray();
-    if (settings[0]) {
-      await db.settings.update(settings[0].id!, {
-        lastSyncAt: lastSyncedCreatedAt,
-      });
-    }
-  } catch (error) {
-    console.error('更新同步時間戳失敗:', error);
   }
 }
 
