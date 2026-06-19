@@ -11,6 +11,7 @@ import type { Market } from '@/types/db';
 interface DailyRevenueStatsProps {
   market: Market;
   onAddRevenue: (date: string) => void;
+  canAddRevenue?: boolean;
   onDateClick: (date: string) => void;  // ✅ 新增：點擊日期查看成交記錄
   /**
    * 物理隱藏「利潤」相關 UI（每日卡片的「利潤」格 + 多日市集總計的「總利潤」格）。
@@ -28,7 +29,7 @@ interface DailyRevenueStatsProps {
  * 顯示多天市集的每日收入明細
  * 支持補登收入功能
  */
-export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfit = false }: DailyRevenueStatsProps) {
+export function DailyRevenueStats({ market, onAddRevenue, onDateClick, canAddRevenue = true, hideProfit = false }: DailyRevenueStatsProps) {
   const stats = useDateRangeStats(market.startDate, market.endDate);
 
   // 互動按鈕配置（從 store 讀取，computed per render）
@@ -174,7 +175,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, hideProfi
                 </div>
                 
                 {/* 補登按鈕 - 只在過去或今天顯示 */}
-                {!isFuture && (
+                {!isFuture && canAddRevenue && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();  // ✅ 阻止冒泡，避免觸發日期點擊

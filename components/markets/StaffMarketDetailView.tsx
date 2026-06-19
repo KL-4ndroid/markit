@@ -63,9 +63,11 @@ import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
 import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { getActiveDealEventsForMarket } from '@/lib/events/active-event-service';
 import { getDealEventDate } from '@/lib/markets/event-view-utils';
+import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 import type { Market, Event, DealClosedPayload } from '@/types/db';
 
 interface StaffMarketDetailViewProps {
@@ -75,6 +77,15 @@ interface StaffMarketDetailViewProps {
 export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   const router = useRouter();
   const marketId = market.id!;
+  const { userRole, isOwner, isLoading: isRoleLoading } = useUserRole();
+  const roleCapabilities = deriveRoleCapabilities({
+    isOwner,
+    staffRole: userRole.staffRole,
+  });
+  const canRecordInteraction =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canRecordInteraction');
+  // P5-5 only enables canRecordInteraction. Deal/revenue write entry points stay closed.
+  const canRecordDeal = false;
   
   // ✅ 新增：交易功能區塊的展開/折疊狀態（互斥）
   const [isQuickRevenueExpanded, setIsQuickRevenueExpanded] = useState(true);  // 快速新增收入（預設展開）
@@ -199,6 +210,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   };
 
   const handleOpenAddRevenue = (date: string) => {
+    if (!canRecordDeal) return;
     setSelectedDate(date);
     setShowAddRevenueDialog(true);
   };
@@ -268,59 +280,65 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         {isOperating && (
           <>
             {/* 1. 互動記錄按鈕 */}
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
-              <h2 className="text-lg font-medium flex items-center gap-2 text-foreground mb-4">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                記錄互動
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                記錄顧客互動行為，幫助分析顧客偏好
-              </p>
-              <InteractionButtons 
-                marketId={marketId}
-                onInteractionRecorded={() => {
-                  // 重新載入互動數據
-                  window.dispatchEvent(new Event('interaction-recorded'));
-                }}
-              />
-            </div>
+            {canRecordInteraction && (
+              <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
+                <h2 className="text-lg font-medium flex items-center gap-2 text-foreground mb-4">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  記錄互動
+                </h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  記錄顧客互動行為，幫助分析顧客偏好
+                </p>
+                <InteractionButtons
+                  marketId={marketId}
+                  onInteractionRecorded={() => {
+                    // 重新載入互動數據
+                    window.dispatchEvent(new Event('interaction-recorded'));
+                  }}
+                />
+              </div>
+            )}
 
             {/* 2. 新增收入（簡化版：直接輸入金額） */}
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
-              {/* Header with toggle */}
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
-                  <DollarSign className="w-5 h-5 text-primary" />
-                  快速新增收入
-                </h2>
-                <button
-                  onClick={handleToggleQuickRevenue}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    isQuickRevenueExpanded ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      isQuickRevenueExpanded ? 'translate-x-6' : 'translate-x-1'
+            {canRecordDeal && (
+              <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
+                {/* Header with toggle */}
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
+                    <DollarSign className="w-5 h-5 text-primary" />
+                    快速新增收入
+                  </h2>
+                  <button
+                    onClick={handleToggleQuickRevenue}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      isQuickRevenueExpanded ? 'bg-primary' : 'bg-gray-300'
                     }`}
-                  ></span>
-                </button>
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        isQuickRevenueExpanded ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    ></span>
+                  </button>
+                </div>
+                
+                {/* Content */}
+                {isQuickRevenueExpanded && (
+                  <QuickInteractionButtons 
+                    marketId={marketId}
+                  />
+                )}
               </div>
-              
-              {/* Content */}
-              {isQuickRevenueExpanded && (
-                <QuickInteractionButtons 
-                  marketId={marketId}
-                />
-              )}
-            </div>
+            )}
             
             {/* 3. 快速交易（完整版：選擇商品） */}
-            <QuickTransactionGrid 
-              marketId={marketId}
-              isExpanded={isQuickTransactionExpanded}
-              onToggle={handleToggleQuickTransaction}
-            />
+            {canRecordDeal && (
+              <QuickTransactionGrid
+                marketId={marketId}
+                isExpanded={isQuickTransactionExpanded}
+                onToggle={handleToggleQuickTransaction}
+              />
+            )}
           </>
         )}
         
@@ -433,6 +451,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           hideProfit={true}
           onAddRevenue={handleOpenAddRevenue}
           onDateClick={handleDateClick}
+          canAddRevenue={canRecordDeal}
         />
 
         {/* 承租設備 */}
