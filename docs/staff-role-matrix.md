@@ -11,6 +11,31 @@
 - Repair tools remain owner-only. `/recovery` must not load repair panels for staff users.
 - New market and new product creation remain owner-only for now.
 
+## 2026-06-20 Field Notes / Checklist Runtime Update
+
+- Field notes and checklist are now first-class market-scoped events:
+  - `field_note_created`
+  - `field_note_updated`
+  - `field_note_deleted`
+  - `checklist_item_created`
+  - `checklist_item_updated`
+  - `checklist_item_deleted`
+- Supabase migration source `047_add_note_checklist_event_types.sql` updates only `events_type_check`; it does not change RLS policies, grants, or staff base-table SELECT access.
+- Staff and owner market detail pages share the same `FieldNotesPanel` and `ChecklistPanel` components.
+- Owner and manager can create, edit, and delete field notes.
+- Owner and manager can create, edit, delete, and toggle checklist items.
+- Operator can read field notes and checklist, and can only toggle checklist completion.
+- Viewer can read field notes and checklist only.
+- Repair tools, staff management, new market creation, new product creation, market deletion, product deletion, deal editing, and owner finance surfaces remain unchanged.
+
+| Feature | owner | manager | operator | viewer |
+|---|---:|---:|---:|---:|
+| Field notes read | yes | yes | yes | yes |
+| Field notes create/edit/delete | yes | yes | no | no |
+| Checklist read | yes | yes | yes | yes |
+| Checklist create/edit/delete text | yes | yes | no | no |
+| Checklist toggle completed | yes | yes | yes | no |
+
 > 對齊 production 狀態（2026-06-18）
 > 對齊對象：042 / 043 / 044 / 045 / 046 / P4a / P4c
 > 風險等級：Green（本文件為文件，無 runtime 變更）

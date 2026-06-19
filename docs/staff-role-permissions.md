@@ -1,5 +1,26 @@
 # Staff Role Permissions
 
+## 2026-06-20 Field Notes / Checklist Permission Update
+
+Field notes and checklist are shared market-detail features for owner and staff views. They are stored as market-scoped events and shown through shared reusable panels.
+
+| Role | Field notes | Checklist |
+|---|---|---|
+| `owner` | read, create, edit, delete | read, create, edit text, delete, toggle |
+| `manager` | read, create, edit, delete | read, create, edit text, delete, toggle |
+| `operator` | read-only | read and toggle completed only |
+| `viewer` | read-only | read-only |
+
+Implementation notes:
+
+- `canManageFieldNotes` gates all field note writes.
+- `canManageChecklist` gates checklist create/edit text/delete.
+- `canToggleChecklistItem` gates completed-only checklist updates.
+- `checklist_item_updated` with only `completed` is treated as a toggle; if the payload includes `text`, it requires `canManageChecklist`.
+- Owner market detail passes full management props to the shared panels.
+- Staff market detail always renders both panels; controls are enabled or disabled by role capability.
+- No RLS policy, repair tool, owner finance, market deletion, product deletion, new market, or new product permission was broadened by this update.
+
 ## 2026-06-19 Decision Update
 
 - `operator` and `manager` can write deal/revenue records through `canRecordDeal`.

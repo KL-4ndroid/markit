@@ -2,7 +2,20 @@
 
 Date: 2026-06-19
 
-Status: planning document only. Do not treat any phase as implemented until its checklist is completed and committed.
+Status: implemented through Phase 7 on 2026-06-20; Phase 8 verification/docs is in progress in the final rollout commit.
+
+Implemented commits:
+
+- `3975221 docs(staff): add note checklist execution plan`
+- `20ffd51 fix(events): support note and checklist event types`
+- `aa829e5 fix(supabase): allow note and checklist events`
+- `bcf522c feat(staff): refine note and checklist permissions`
+- `d8c95f5 feat(markets): separate checklist toggle from management`
+- `f0d6fa7 refactor(markets): make note and checklist panels reusable`
+- `1ff4f32 feat(staff): wire shared note and checklist permissions`
+- `aba884e feat(owner): show market notes and checklist`
+
+Production Supabase note: migration `047_add_note_checklist_event_types.sql` has been added to source control only. Applying it to production remains a manual gate.
 
 ## 0. Goal
 
@@ -451,4 +464,3 @@ The project goal is complete only when:
 - Staff market detail exposes the correct role-specific controls.
 - Reload/sync/build/lint all pass.
 - Documentation is updated in `docs/staff-role-matrix.md` and `docs/staff-role-permissions.md`.
-
