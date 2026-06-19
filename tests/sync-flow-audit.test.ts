@@ -66,6 +66,8 @@ const hookSource = readSource(useSyncPath);
 const syncSources = readSyncSources();
 
 runTest('useSync keeps push before pull in the main sync cycle', () => {
+  assert.match(hookSource, /import \{ pushEvents \} from ['"]@\/lib\/sync\/sync-push-service['"]/);
+  assert.doesNotMatch(hookSource, /from ['"]@\/lib\/sync\/event-sync-service['"]/);
   assertBefore(hookSource, 'await pushEvents(user.id', 'await pullAllEvents(user.id');
   assert.match(hookSource, /\.where\(['"]sync_status['"]\)[\s\S]*\.anyOf\(\[['"]pending['"],\s*['"]local_only['"]\]\)/);
 });
@@ -90,6 +92,31 @@ runTest('pushEvents is idempotent and downgrades unpushable writes to local-only
   assert.match(body, /insertError\.code\s*===\s*['"]23503['"][\s\S]*events_market_id_fkey[\s\S]*await markEventLocalOnly\(event\.id!\)/);
   assert.match(body, /insertError\.code\s*===\s*['"]42501['"][\s\S]*event\.type\s*===\s*['"]market_created['"][\s\S]*ensureMarketMember\(userId,\s*cloudEvent\.market_id\)/);
   assert.match(body, /insertError\.code\s*===\s*['"]PGRST301['"][\s\S]*insertError\.code\s*===\s*['"]42501['"][\s\S]*policy[\s\S]*await markEventLocalOnly\(event\.id!\)/);
+});
+
+runTest('pushEvents market member helper preserves owner membership insert contract', () => {
+  const body = findFunctionBody(syncSources, 'ensureMarketMember');
+
+  assert.match(body, /if\s*\(checkError\)\s*\{[\s\S]*return false/);
+  assert.match(body, /market_id:\s*marketId/);
+  assert.match(body, /user_id:\s*userId/);
+  assert.match(body, /role:\s*['"]owner['"]/);
+  assert.match(body, /joined_at:\s*new Date\(\)\.toISOString\(\)/);
+  assert.match(body, /insertError\.code\s*===\s*['"]23505['"][\s\S]*return true/);
+  assert.match(body, /insertError\.code\s*===\s*['"]23503['"][\s\S]*return false/);
+});
+
+runTest('pushEvents profile helper preserves profile creation contract', () => {
+  const body = findFunctionBody(syncSources, 'ensureUserProfile');
+
+  assert.match(body, /\.from\(['"]profiles['"]\)[\s\S]*\.select\(['"]id['"]\)[\s\S]*\.eq\(['"]id['"],\s*userId\)[\s\S]*\.single\(\)/);
+  assert.match(body, /checkError\.code\s*!==\s*['"]PGRST116['"][\s\S]*throw checkError/);
+  assert.match(body, /supabase\.auth\.getUser\(\)/);
+  assert.match(body, /id:\s*userId/);
+  assert.match(body, /email:\s*userData\.user\.email\s*\|\|\s*`\$\{userId\}@local\.app`/);
+  assert.match(body, /created_at:\s*new Date\(\)\.toISOString\(\)/);
+  assert.match(body, /updated_at:\s*new Date\(\)\.toISOString\(\)/);
+  assert.match(body, /insertError\.code\s*===\s*['"]23505['"][\s\S]*return/);
 });
 
 runTest('pullAllEvents sends staff sessions to view pull and refuses owner fallback', () => {
