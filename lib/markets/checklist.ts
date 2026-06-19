@@ -25,6 +25,13 @@ function assertText(text: string): string {
   return trimmed;
 }
 
+async function assertChecklistItemExists(marketId: string, itemId: string): Promise<void> {
+  const existing = (await getActiveChecklistItemsForMarket(marketId)).find(item => item.id === itemId);
+  if (!existing) {
+    throw new Error('Checklist item not found');
+  }
+}
+
 function isChecklistEvent(event: Event<Record<string, unknown>>): boolean {
   return (
     event.type === CHECKLIST_ITEM_CREATED ||
@@ -109,6 +116,8 @@ export async function updateChecklistItem(
   itemId: string,
   updates: { text?: string; completed?: boolean }
 ): Promise<void> {
+  await assertChecklistItemExists(marketId, itemId);
+
   const payload: Record<string, unknown> = {
     market_id: marketId,
     itemId,
@@ -124,7 +133,23 @@ export async function updateChecklistItem(
   await recordEvent(CHECKLIST_ITEM_UPDATED, payload);
 }
 
+export async function toggleChecklistItem(
+  marketId: string,
+  itemId: string,
+  completed: boolean
+): Promise<void> {
+  await assertChecklistItemExists(marketId, itemId);
+
+  await recordEvent(CHECKLIST_ITEM_UPDATED, {
+    market_id: marketId,
+    itemId,
+    completed,
+  } as Record<string, unknown>);
+}
+
 export async function deleteChecklistItem(marketId: string, itemId: string): Promise<void> {
+  await assertChecklistItemExists(marketId, itemId);
+
   await recordEvent(CHECKLIST_ITEM_DELETED, {
     market_id: marketId,
     itemId,

@@ -30,12 +30,9 @@ function assertText(text: string): string {
   return trimmed;
 }
 
-function assertOwnNote(note: FieldNote | undefined, userId?: string): FieldNote {
+function assertFieldNoteExists(note: FieldNote | undefined): FieldNote {
   if (!note) {
     throw new Error('Field note not found');
-  }
-  if (userId && note.actorId !== userId) {
-    throw new Error('Only the note creator can edit or delete this field note');
   }
   return note;
 }
@@ -110,10 +107,10 @@ export async function updateFieldNote(
   marketId: string,
   noteId: string,
   text: string,
-  options?: { userId?: string }
+  _options?: { userId?: string }
 ): Promise<void> {
   const existing = (await getActiveFieldNotesForMarket(marketId)).find(note => note.id === noteId);
-  assertOwnNote(existing, options?.userId);
+  assertFieldNoteExists(existing);
 
   await recordEvent(FIELD_NOTE_UPDATED, {
     market_id: marketId,
@@ -125,10 +122,10 @@ export async function updateFieldNote(
 export async function deleteFieldNote(
   marketId: string,
   noteId: string,
-  options?: { userId?: string }
+  _options?: { userId?: string }
 ): Promise<void> {
   const existing = (await getActiveFieldNotesForMarket(marketId)).find(note => note.id === noteId);
-  assertOwnNote(existing, options?.userId);
+  assertFieldNoteExists(existing);
 
   await recordEvent(FIELD_NOTE_DELETED, {
     market_id: marketId,

@@ -8,6 +8,7 @@ import {
   createChecklistItem,
   deleteChecklistItem,
   getActiveChecklistItemsForMarket,
+  toggleChecklistItem,
   updateChecklistItem,
   type ChecklistItem,
 } from '@/lib/markets/checklist';
@@ -50,7 +51,7 @@ export function ChecklistPanel({ marketId, canManage }: ChecklistPanelProps) {
     if (!canManage || isSaving) return;
     setIsSaving(true);
     try {
-      await updateChecklistItem(marketId, item.id, { completed: !item.completed });
+      await toggleChecklistItem(marketId, item.id, !item.completed);
     } catch (error) {
       console.error('toggle checklist item failed:', error);
       toast.error('更新 checklist 失敗');

@@ -58,10 +58,11 @@ runTest('field note service records event-sourced create/update/delete events', 
   assert.match(fieldNotesSource, /recordEvent\(FIELD_NOTE_DELETED/);
 });
 
-runTest('field note update/delete checks original actor', () => {
-  assert.match(fieldNotesSource, /assertOwnNote/);
-  assert.match(fieldNotesSource, /note\.actorId !== userId/);
-  assert.match(fieldNotesSource, /Only the note creator can edit or delete/);
+runTest('field note update/delete checks existence without own-record bypass', () => {
+  assert.match(fieldNotesSource, /assertFieldNoteExists/);
+  assert.match(fieldNotesSource, /Field note not found/);
+  assert.doesNotMatch(fieldNotesSource, /note\.actorId !== userId/);
+  assert.doesNotMatch(fieldNotesSource, /Only the note creator can edit or delete/);
 });
 
 runTest('role freshness maps field note events to field-note management', () => {
