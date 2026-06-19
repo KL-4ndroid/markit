@@ -13,9 +13,9 @@
 import { db } from '@/lib/db';
 import { supabase } from '@/lib/supabase/client';
 import { eventHandlers } from '@/lib/db/events';
-import { canonicalizeEvent } from '@/lib/db/data-canonicalization';
 import { normalizeEventPayloadForLocal } from '@/lib/data-mappers';
 import { getDealEventCount, getDealEventRevenue } from '@/lib/events/event-read-model';
+import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
 import type { Event, Market } from '@/types/db';
 
 // Re-exported result shapes for callers
@@ -131,21 +131,6 @@ function isOwnerMarket(market: Market, ownerId: string): boolean {
   if (!market.owner_id && !market.access_type) return true;
   if (market.access_type !== 'staff') return true;
   return false;
-}
-
-function createCanonicalSyncedEvent(rawEvent: Record<string, unknown>): Event {
-  const localEvent = {
-    id: rawEvent.id as string,
-    type: rawEvent.type as Event['type'],
-    payload: rawEvent.payload as Event['payload'],
-    actor_id: rawEvent.actor_id as string | undefined,
-    market_id: rawEvent.market_id as string | undefined,
-    timestamp: new Date(rawEvent.timestamp as string).getTime(),
-    sync_status: 'synced',
-    metadata: rawEvent.metadata as Event['metadata'],
-  } as Event;
-
-  return canonicalizeEvent(localEvent).event;
 }
 
 /**

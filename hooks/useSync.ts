@@ -13,7 +13,6 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
-import { canonicalizeEvent } from '@/lib/db/data-canonicalization';
 import { markEventSynced, markEventLocalOnly, bindEventActor, markEventBlocked } from '@/lib/sync/event-sync-service';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
 import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
@@ -26,6 +25,7 @@ import {
 import { getEventMarketId } from '@/lib/events/event-read-model';
 import { resetMarketProjectionFields, resetProductProjectionFields } from '@/lib/sync/projection-reset';
 import { getLastSyncTimestamp, updateLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
+import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
 import {
   marketAccessRowToLocal,
   marketRowToLocal,
@@ -78,21 +78,6 @@ let activeSyncIdentity: string | null = null;
 const SYNC_PAUSE_UNTIL_KEY = 'sync_pause_until';
 const SYNC_PERMISSION_ERROR_LOG_KEY = 'sync_permission_error_history';
 const PERMISSION_ERROR_PAUSE_MS = 10 * 60 * 1000;
-
-function createCanonicalSyncedEvent(event: any): Event {
-  const localEvent = {
-    id: event.id,
-    type: event.type,
-    payload: event.payload,
-    actor_id: event.actor_id,
-    market_id: event.market_id,
-    timestamp: new Date(event.timestamp).getTime(),
-    sync_status: 'synced',
-    metadata: event.metadata,
-  } as Event;
-
-  return canonicalizeEvent(localEvent).event;
-}
 
 async function reconcileSyncedProjectionMarkets(
   marketIds: Set<string>,
