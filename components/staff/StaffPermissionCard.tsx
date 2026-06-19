@@ -59,7 +59,7 @@ export function StaffPermissionCard({
     {
       label: '管理 checklist',
       allowed: resolvedCapabilities.canManageChecklist,
-      note: '下一階段開放',
+      note: 'manager 可用',
     },
     {
       label: '修改自己建立的紀錄',

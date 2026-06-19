@@ -65,6 +65,7 @@ import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { FieldNotesPanel } from '@/components/markets/FieldNotesPanel';
+import { ChecklistPanel } from '@/components/markets/ChecklistPanel';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -93,6 +94,8 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
     !isRoleLoading && hasCapability(roleCapabilities, 'canEditMarketBasic');
   const canCreateFieldNote =
     !isRoleLoading && hasCapability(roleCapabilities, 'canCreateFieldNote');
+  const canManageChecklist =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canManageChecklist');
   const canEditOwnRecord =
     !isRoleLoading && hasCapability(roleCapabilities, 'canEditOwnSameDayRecord');
   const canDeleteOwnRecord =
@@ -377,12 +380,16 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         )}
 
         {(canCreateFieldNote || canEditOwnRecord || canDeleteOwnRecord) && (
-          <div className="mb-6">
+          <div className="mb-6 space-y-4">
             <FieldNotesPanel
               marketId={marketId}
               canCreate={canCreateFieldNote}
               canEditOwn={canEditOwnRecord}
               canDeleteOwn={canDeleteOwnRecord}
+            />
+            <ChecklistPanel
+              marketId={marketId}
+              canManage={canManageChecklist}
             />
           </div>
         )}

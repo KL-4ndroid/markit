@@ -52,6 +52,9 @@ const EVENT_CAPABILITY: Partial<Record<string, StaffCapability>> = {
   field_note_created: 'canCreateFieldNote',
   field_note_updated: 'canEditOwnSameDayRecord',
   field_note_deleted: 'canDeleteOwnSameDayRecord',
+  checklist_item_created: 'canManageChecklist',
+  checklist_item_updated: 'canManageChecklist',
+  checklist_item_deleted: 'canManageChecklist',
 };
 
 const STAFF_OWNER_ONLY_EVENTS = new Set<EventType>([

@@ -779,6 +779,9 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
 registerEventHandler('field_note_created' as EventType, async () => {});
 registerEventHandler('field_note_updated' as EventType, async () => {});
 registerEventHandler('field_note_deleted' as EventType, async () => {});
+registerEventHandler('checklist_item_created' as EventType, async () => {});
+registerEventHandler('checklist_item_updated' as EventType, async () => {});
+registerEventHandler('checklist_item_deleted' as EventType, async () => {});
 
 /**
  * 處理「成交」事件（UUID 版本 + 交易快照 + 每日收入記錄 + 補登支持）
