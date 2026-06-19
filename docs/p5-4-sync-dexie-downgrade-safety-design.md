@@ -245,6 +245,35 @@ T4   5 分鐘後 role cache TTL 過期
       ⚠️ 但 Dexie L2 投影仍存在於本地，直到下次 pull 才會被新 infoLevel 重新 sanitize
 ```
 
+## P5-4c Implementation Addendum
+
+Date: 2026-06-19
+Author: Codex
+
+Scope: clear staff-scoped local projections on role downgrade.
+
+Changed:
+- `lib/db/clear-user-data.ts`
+  - Added `clearStaffLocalProjections()`.
+  - Deletes staff-marked `markets` / `products` plus related `events` / `dailyStats`.
+  - Preserves `settings` and `syncQueue`.
+  - Does not call `deleteDatabase`, reload the page, or full-wipe Dexie.
+- `hooks/useStaffStatusMonitor.ts`
+  - Downgrade path now invalidates role cache, clears staff projections, then dispatches the existing `trigger-sync` event for re-pull.
+  - Revoke path remains unchanged: full cleanup + reload.
+- `tests/p5-4c-dexie-projection-cleanup.test.ts`
+  - Adds predicate and static boundary tests.
+
+Not changed:
+- `useSync` behavior.
+- `PermissionGate` / `role-fail-closed` / `role-capabilities`.
+- `canEdit` / `canViewSensitiveData` / `infoLevel` semantics.
+- operator / manager write actions.
+- migrations.
+- UI.
+
+Next: P5-4c post-implementation audit, then P5-4d freshness gate.
+
 **風險**：
 - 在 T0 → T4 之間（最長 5 分鐘），員工仍可看到 L2 投影
 - 若 useStaffStatusMonitor 是唯一的「role change」偵測器，它**完全不會**觸發（D1 情境）

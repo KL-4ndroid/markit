@@ -6,6 +6,132 @@
  */
 
 import { db } from './index';
+import type { Event, Market, Product } from '@/types/db';
+
+export interface ClearStaffLocalProjectionsOptions {
+  staffUserId: string;
+  ownerId?: string;
+}
+
+export interface ClearStaffLocalProjectionsResult {
+  markets: number;
+  products: number;
+  events: number;
+  dailyStats: number;
+}
+
+type StaffProjectionRecord = {
+  access_type?: unknown;
+  relationship_owner_id?: unknown;
+  owner_id?: unknown;
+};
+
+export function isStaffLocalProjectionRecord(
+  record: StaffProjectionRecord | null | undefined,
+  ownerId?: string
+): boolean {
+  if (!record) return false;
+  if (record.access_type !== 'staff') return false;
+  if (!ownerId) return true;
+  return record.relationship_owner_id === ownerId || record.owner_id === ownerId;
+}
+
+function getEventProjectionMarketId(event: Event): string | undefined {
+  const payload = event.payload;
+  if (event.market_id) return event.market_id;
+  if (payload && typeof payload === 'object') {
+    const record = payload as { market_id?: unknown; marketId?: unknown };
+    if (typeof record.market_id === 'string') return record.market_id;
+    if (typeof record.marketId === 'string') return record.marketId;
+  }
+  return undefined;
+}
+
+/**
+ * Clear staff-scoped local projection rows after a role downgrade.
+ *
+ * P5-4c intentionally avoids a full database wipe:
+ * - clears staff projection rows from markets / products
+ * - clears events and dailyStats tied to those staff markets
+ * - preserves settings and syncQueue
+ * - does not delete the IndexedDB database or reload the page
+ */
+export async function clearStaffLocalProjections(
+  options: ClearStaffLocalProjectionsOptions
+): Promise<ClearStaffLocalProjectionsResult> {
+  const { staffUserId, ownerId } = options;
+  const deleted: ClearStaffLocalProjectionsResult = {
+    markets: 0,
+    products: 0,
+    events: 0,
+    dailyStats: 0,
+  };
+
+  console.log('[clearStaffLocalProjections] clearing staff local projections', {
+    staffUserId: staffUserId.slice(0, 8),
+    ownerId: ownerId?.slice(0, 8),
+  });
+
+  await db.transaction('rw', [db.markets, db.products, db.events, db.dailyStats], async () => {
+    const staffMarkets = await db.markets
+      .filter((market: Market) => isStaffLocalProjectionRecord(market, ownerId))
+      .toArray();
+    const staffMarketIds = new Set(
+      staffMarkets
+        .map((market) => market.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    );
+
+    const staffProducts = await db.products
+      .filter((product: Product) => {
+        if (isStaffLocalProjectionRecord(product, ownerId)) return true;
+        return Boolean(product.market_id && staffMarketIds.has(product.market_id));
+      })
+      .toArray();
+
+    const staffEvents = await db.events
+      .filter((event: Event) => {
+        const marketId = getEventProjectionMarketId(event);
+        return Boolean(marketId && staffMarketIds.has(marketId));
+      })
+      .toArray();
+
+    const staffStats = await db.dailyStats
+      .filter((stat) => Boolean(stat.marketId && staffMarketIds.has(stat.marketId)))
+      .toArray();
+
+    for (const event of staffEvents) {
+      if (event.id) {
+        await db.events.delete(event.id);
+        deleted.events++;
+      }
+    }
+
+    for (const stat of staffStats) {
+      if (stat.id !== undefined) {
+        await db.dailyStats.delete(stat.id);
+        deleted.dailyStats++;
+      }
+    }
+
+    for (const product of staffProducts) {
+      if (product.id) {
+        await db.products.delete(product.id);
+        deleted.products++;
+      }
+    }
+
+    for (const market of staffMarkets) {
+      if (market.id) {
+        await db.markets.delete(market.id);
+        deleted.markets++;
+      }
+    }
+  });
+
+  console.log('[clearStaffLocalProjections] complete', deleted);
+  return deleted;
+}
 
 /**
  * 清除特定用戶的數據

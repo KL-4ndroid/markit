@@ -50,7 +50,7 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole, invalidateRoleCache } from '@/hooks/useUserRole';
-import { resetAuthenticatedCache } from '@/lib/db/clear-user-data';
+import { clearStaffLocalProjections, resetAuthenticatedCache } from '@/lib/db/clear-user-data';
 import { resetInitialSyncFlag } from '@/hooks/useSync';
 import type { StaffRole } from '@/types/staff';
 
@@ -446,6 +446,26 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
       }
     };
 
+    const handleDowngrade = async (from: StaffRole, to: StaffRole) => {
+      try {
+        invalidateRoleCache();
+        const result = await clearStaffLocalProjections({
+          staffUserId: user.id,
+          ownerId: userRole.ownerId!,
+        });
+        console.warn('[StaffStatusMonitor] staff role downgrade projection cleanup complete', {
+          from,
+          to,
+          result,
+        });
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('trigger-sync'));
+        }
+      } catch (error) {
+        console.error('[StaffStatusMonitor] staff role downgrade projection cleanup failed:', error);
+      }
+    };
+
     /**
      * Polling 邏輯
      * 每 180 秒檢查一次員工狀態
@@ -511,8 +531,8 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
           currentRole,
           currentInfoLevel,
           persist: (cache) => writeKnownRoleCache(cache),
-          onDowngrade: (_from, _to) => {
-            invalidateRoleCache();
+          onDowngrade: (from, to) => {
+            void handleDowngrade(from, to);
           },
         });
       } catch (error) {
