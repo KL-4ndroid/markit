@@ -82,6 +82,7 @@ runTest('staff market detail renders FieldNotesPanel with capability gates', () 
   assert.match(staffMarketDetailSource, /canManageFieldNotes/);
   assert.match(staffMarketDetailSource, /<FieldNotesPanel/);
   assert.match(staffMarketDetailSource, /canManage=\{canManageFieldNotes\}/);
+  assert.doesNotMatch(staffMarketDetailSource, /canManageFieldNotes\s*\|\|\s*canEditOwnRecord/);
 });
 
 runTest('field note panel calls create/update/delete service functions', () => {

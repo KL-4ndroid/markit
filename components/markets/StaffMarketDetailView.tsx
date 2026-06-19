@@ -385,19 +385,17 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           />
         )}
 
-        {(canManageFieldNotes || canEditOwnRecord || canDeleteOwnRecord) && (
-          <div className="mb-6 space-y-4">
-            <FieldNotesPanel
-              marketId={marketId}
-              canManage={canManageFieldNotes}
-            />
-            <ChecklistPanel
-              marketId={marketId}
-              canManage={canManageChecklist}
-              canToggle={canToggleChecklistItem}
-            />
-          </div>
-        )}
+        <div className="mb-6 space-y-4">
+          <FieldNotesPanel
+            marketId={marketId}
+            canManage={canManageFieldNotes}
+          />
+          <ChecklistPanel
+            marketId={marketId}
+            canManage={canManageChecklist}
+            canToggle={canToggleChecklistItem}
+          />
+        </div>
         
         {/* 營業狀態卡片 */}
         <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">

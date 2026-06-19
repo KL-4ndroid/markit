@@ -71,6 +71,7 @@ runTest('staff market detail renders ChecklistPanel with manager gate', () => {
   assert.match(staffMarketDetailSource, /<ChecklistPanel/);
   assert.match(staffMarketDetailSource, /canManage=\{canManageChecklist\}/);
   assert.match(staffMarketDetailSource, /canToggle=\{canToggleChecklistItem\}/);
+  assert.doesNotMatch(staffMarketDetailSource, /canManageChecklist\s*\|\|\s*canToggleChecklistItem/);
 });
 
 runTest('checklist service separates toggle from text management', () => {
