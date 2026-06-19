@@ -52,7 +52,8 @@ import {
   ClipboardCheck,
   AlertCircle,
   TrendingUp,
-  DollarSign
+  DollarSign,
+  Edit
 } from 'lucide-react';
 import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
 import { InteractionButtons } from '@/components/sales/InteractionButtons';
@@ -62,6 +63,7 @@ import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
 import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
+import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useMarketStatsFromProjection } from '@/lib/db/hooks';
@@ -84,8 +86,11 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   });
   const canRecordInteraction =
     !isRoleLoading && hasCapability(roleCapabilities, 'canRecordInteraction');
-  // P5-5 only enables canRecordInteraction. Deal/revenue write entry points stay closed.
+  const canEditMarketBasic =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canEditMarketBasic');
+  // P5-6 keeps deal/revenue writes closed while allowing manager basic edits.
   const canRecordDeal = false;
+  const [showEditMarketForm, setShowEditMarketForm] = useState(false);
   
   // ✅ 新增：交易功能區塊的展開/折疊狀態（互斥）
   const [isQuickRevenueExpanded, setIsQuickRevenueExpanded] = useState(true);  // 快速新增收入（預設展開）
@@ -268,8 +273,19 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
               </div>
             </div>
             
-            {/* ✅ 同步狀態指示器 */}
-            <SyncStatusIndicator />
+            <div className="flex items-center gap-2">
+              {/* ✅ 同步狀態指示器 */}
+              <SyncStatusIndicator />
+              {canEditMarketBasic && (
+                <button
+                  onClick={() => setShowEditMarketForm(true)}
+                  className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1 text-white backdrop-blur-sm"
+                >
+                  <Edit className="w-4 h-4" />
+                  編輯
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -557,6 +573,14 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           // 員工不開 DealDetailModal（刪除入口已被 C2.24A 封鎖）
           // 如未來需要顯示詳情，可在這裡實作唯讀 modal
         }}
+      />
+
+      <EditMarketForm
+        isOpen={showEditMarketForm}
+        onClose={() => setShowEditMarketForm(false)}
+        market={market}
+        mode="manager"
+        onSuccess={() => setShowEditMarketForm(false)}
       />
     </div>
   );

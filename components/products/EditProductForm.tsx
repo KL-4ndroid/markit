@@ -11,12 +11,14 @@ interface EditProductFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  mode?: 'owner' | 'manager';
 }
 
 /**
  * 編輯商品表單組件
  */
-export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditProductFormProps) {
+export function EditProductForm({ product, isOpen, onClose, onSuccess, mode = 'owner' }: EditProductFormProps) {
+  const isManagerMode = mode === 'manager';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -62,7 +64,7 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || formData.price! <= 0) {
+    if ((!isManagerMode && !formData.name) || formData.price! <= 0) {
       alert('請填寫商品名稱和價格');
       return;
     }
@@ -70,7 +72,15 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
     setIsSubmitting(true);
 
     try {
-      await updateProduct(product.id!, formData);
+      const managerUpdates: Partial<Product> = {
+        price: formData.price,
+        stock: formData.unlimitedStock ? 0 : formData.stock,
+        unlimitedStock: formData.unlimitedStock,
+        description: formData.description,
+        isActive: formData.isActive,
+      };
+
+      await updateProduct(product.id!, isManagerMode ? managerUpdates : formData);
       
       onClose();
       onSuccess?.();
@@ -133,6 +143,8 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 pb-24">
             <div className="space-y-5">
               {/* 商品名稱 */}
+              {!isManagerMode && (
+                <>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   商品名稱 <span className="text-danger">*</span>
@@ -176,9 +188,11 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                   })}
                 </div>
               </div>
+                </>
+              )}
 
               {/* 價格與成本 */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid ${isManagerMode ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     <DollarSign className="w-4 h-4 inline mr-1 text-primary" />
@@ -194,6 +208,7 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                     required
                   />
                 </div>
+                {!isManagerMode && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     <DollarSign className="w-4 h-4 inline mr-1 text-secondary" />
@@ -208,6 +223,7 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                     className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
                   />
                 </div>
+                )}
               </div>
 
               {/* 庫存 */}
@@ -292,16 +308,17 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess }: EditPro
                   {formData.isActive ? '停用商品' : '啟用商品'}
                 </button>
 
-                {/* 刪除按鈕 */}
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={isSubmitting}
-                  className="w-full px-4 py-3 rounded-2xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Trash2 className="w-5 h-5" />
-                  刪除商品
-                </button>
+                {!isManagerMode && (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 rounded-2xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    刪除商品
+                  </button>
+                )}
               </div>
             </div>
           </form>

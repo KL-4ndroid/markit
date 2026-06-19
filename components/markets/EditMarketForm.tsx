@@ -13,12 +13,14 @@ interface EditMarketFormProps {
   onClose: () => void;
   market: Market;
   onSuccess?: () => void;
+  mode?: 'owner' | 'manager';
 }
 
 /**
  * 編輯市集表單組件
  */
-export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarketFormProps) {
+export function EditMarketForm({ isOpen, onClose, market, onSuccess, mode = 'owner' }: EditMarketFormProps) {
+  const isManagerMode = mode === 'manager';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tableFree, setTableFree] = useState(market.tableFree || false);
   const [chairFree, setChairFree] = useState(market.chairFree || false);
@@ -107,7 +109,7 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
     e.preventDefault();
     
     // ✅ 驗證必填欄位（改為檢查 dates 陣列）
-    if (!formData.name || !formData.location || !formData.dates || formData.dates.length === 0) {
+    if ((!isManagerMode && (!formData.name || !formData.location)) || !formData.dates || formData.dates.length === 0) {
       toast.error('請填寫所有必填欄位並選擇至少一個日期');
       return;
     }
@@ -116,7 +118,19 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
 
     try {
       // ✅ 使用 updateMarket 函數記錄事件，而不是直接更新資料庫
-      await updateMarket(market.id!, {
+      const managerUpdates = {
+        dates: formData.dates,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        earlyEntryEnabled: !noEarlyEntry,
+        earlyEntryTime: formData.earlyEntryTime,
+        checkInTime: formData.checkInTime,
+        operatingStartTime: formData.operatingStartTime,
+        operatingEndTime: formData.operatingEndTime,
+        notes: formData.notes,
+      };
+
+      const ownerUpdates = {
         name: formData.name,
         location: formData.location,
         dates: formData.dates,  // ✅ 保存日期陣列
@@ -137,7 +151,9 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
         umbrellaFree,
         commissionRate: formData.commissionRate,
         notes: formData.notes,
-      });
+      };
+
+      await updateMarket(market.id!, isManagerMode ? managerUpdates : ownerUpdates);
 
       toast.success('市集資訊已更新');
       onClose();
@@ -174,30 +190,34 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                   基本資訊
                 </h2>
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      市集名稱 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleChange('name', e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      地點 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => handleChange('location', e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                      required
-                    />
-                  </div>
+                  {!isManagerMode && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          市集名稱 <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) => handleChange('name', e.target.value)}
+                          className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          地點 <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.location}
+                          onChange={(e) => handleChange('location', e.target.value)}
+                          className="w-full px-4 py-3 border-2 border-primary/15 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
                   {/* 日期 - 多選模式 */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
@@ -344,6 +364,7 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
               </div>
 
               {/* 成本資訊 */}
+              {!isManagerMode && (
               <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">
                 <h2 className="text-lg font-medium mb-4 text-foreground flex items-center gap-2">
                   <DollarSign className="w-5 h-5 text-primary" />
@@ -451,6 +472,7 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
                   </div>
                 </div>
               </div>
+              )}
 
               {/* 備註 */}
               <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">

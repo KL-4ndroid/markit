@@ -9,6 +9,7 @@ import { useStaffPermissions } from '@/hooks/useStaffPermissions';
 interface ProductCardProps {
   product: Product;
   onEdit?: (product: Product) => void;
+  canEdit?: boolean;
 }
 
 /**
@@ -22,7 +23,7 @@ interface ProductCardProps {
  * - 員工模式下隱藏敏感數據（成本、利潤率）
  * - 員工模式下禁用編輯功能
  */
-export function ProductCard({ product, onEdit }: ProductCardProps) {
+export function ProductCard({ product, onEdit, canEdit = false }: ProductCardProps) {
   const router = useRouter();
   
   // ✅ 員工權限檢查
@@ -82,7 +83,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
   // ✅ 點擊卡片觸發編輯（員工模式下禁用）
   const handleClick = () => {
     // 員工模式下不允許編輯
-    if (isStaff(productAccessItem)) {
+    if (isStaff(productAccessItem) && !canEdit) {
       return;
     }
     
@@ -111,7 +112,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
     <div
       onClick={handleClick}
       className={`bg-white rounded-[1.5rem] overflow-hidden shadow-md shadow-primary/5 ${
-        isStaff(productAccessItem) ? 'cursor-default' : 'cursor-pointer hover:shadow-lg'
+        isStaff(productAccessItem) && !canEdit ? 'cursor-default' : 'cursor-pointer hover:shadow-lg'
       } transition-shadow`}
     >
       {/* 圖標區域 */}

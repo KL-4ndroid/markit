@@ -340,6 +340,7 @@ export async function recordEvent(
       assertFreshStaffCapability({
         userId: authenticatedUserId,
         eventType: type,
+        payload,
       });
     }
 

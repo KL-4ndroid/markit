@@ -14,6 +14,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context'; // ✅ 導入 useAuth
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
+import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 import type { ProductCategory } from '@/types/db';
 import ProductsLoading from './loading';
 
@@ -27,8 +28,14 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
-  const { isStaff, userRole, isLoading: isRoleLoading, roleError } = useUserRole(); // ✅ 員工權限檢查
+  const { isStaff, userRole, isOwner, isLoading: isRoleLoading, roleError } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 獲取當前用戶
+  const roleCapabilities = deriveRoleCapabilities({
+    isOwner,
+    staffRole: userRole.staffRole,
+  });
+  const canEditProductBasic =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canEditProductBasic');
 
   // 初始化資料庫（使用安全初始化）
   useEffect(() => {
@@ -135,6 +142,7 @@ export default function ProductsPage() {
 
   // 處理編輯商品
   const handleEditProduct = (product: any) => {
+    if (isStaff && !canEditProductBasic) return;
     if (dbStatus?.ok === false) return;
     setEditingProduct(product);
     setIsEditFormOpen(true);
@@ -288,6 +296,7 @@ export default function ProductsPage() {
                 key={product.id} 
                 product={product}
                 onEdit={handleEditProduct}
+                canEdit={canEditProductBasic}
               />
             ))}
           </div>
@@ -331,6 +340,7 @@ export default function ProductsPage() {
           isOpen={isEditFormOpen}
           onClose={handleCloseEditForm}
           product={editingProduct}
+          mode={isStaff ? 'manager' : 'owner'}
           onSuccess={handleEditSuccess}
         />
       )}

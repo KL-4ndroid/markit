@@ -13,7 +13,8 @@ export type RoleFreshnessErrorCode =
   | 'staff_role_cache_missing'
   | 'staff_role_cache_stale'
   | 'staff_role_cache_invalid'
-  | 'staff_role_capability_denied';
+  | 'staff_role_capability_denied'
+  | 'staff_write_field_denied';
 
 export class RoleFreshnessError extends Error {
   constructor(
@@ -48,12 +49,72 @@ const EVENT_CAPABILITY: Partial<Record<EventType, StaffCapability>> = {
   product_updated: 'canEditProductBasic',
 };
 
+const STAFF_OWNER_ONLY_EVENTS = new Set<EventType>([
+  'market_created',
+  'market_status_changed',
+  'market_started',
+  'market_ended',
+  'market_deleted',
+  'product_created',
+  'product_deleted',
+  'settings_updated',
+]);
+
+export const MANAGER_MARKET_UPDATE_FIELDS = [
+  'dates',
+  'startDate',
+  'endDate',
+  'earlyEntryEnabled',
+  'earlyEntryTime',
+  'checkInTime',
+  'operatingStartTime',
+  'operatingEndTime',
+  'notes',
+] as const;
+
+export const MANAGER_PRODUCT_UPDATE_FIELDS = [
+  'price',
+  'stock',
+  'unlimitedStock',
+  'description',
+  'isActive',
+] as const;
+
+const MANAGER_MARKET_UPDATE_FIELD_SET = new Set<string>(MANAGER_MARKET_UPDATE_FIELDS);
+const MANAGER_PRODUCT_UPDATE_FIELD_SET = new Set<string>(MANAGER_PRODUCT_UPDATE_FIELDS);
+
 function isStaffRole(value: unknown): value is StaffRole {
   return value === 'viewer' || value === 'operator' || value === 'manager';
 }
 
 export function getRequiredCapabilityForEvent(type: EventType): StaffCapability | null {
   return EVENT_CAPABILITY[type] ?? null;
+}
+
+function getPayloadUpdates(payload: unknown): Record<string, unknown> | null {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const updates = (payload as { updates?: unknown }).updates;
+  if (!updates || typeof updates !== 'object' || Array.isArray(updates)) return null;
+
+  return updates as Record<string, unknown>;
+}
+
+function assertAllowedUpdateFields(args: {
+  eventType: EventType;
+  payload: unknown;
+  allowedFields: Set<string>;
+}): void {
+  const updates = getPayloadUpdates(args.payload);
+  if (!updates) return;
+
+  const deniedFields = Object.keys(updates).filter((field) => !args.allowedFields.has(field));
+  if (deniedFields.length === 0) return;
+
+  throw new RoleFreshnessError(
+    'staff_write_field_denied',
+    `Staff write blocked because ${args.eventType} cannot update: ${deniedFields.join(', ')}.`
+  );
 }
 
 export function parseCachedRoleSnapshot(raw: string | null): CachedRoleSnapshot | null {
@@ -84,6 +145,7 @@ export function parseCachedRoleSnapshot(raw: string | null): CachedRoleSnapshot 
 export function assertFreshStaffCapability(args: {
   userId: string;
   eventType: EventType;
+  payload?: unknown;
   now?: number;
   maxAgeMs?: number;
   rawCache?: string | null;
@@ -91,13 +153,15 @@ export function assertFreshStaffCapability(args: {
   const {
     userId,
     eventType,
+    payload,
     now = Date.now(),
     maxAgeMs = ROLE_FRESHNESS_MAX_AGE_MS,
     rawCache = typeof localStorage === 'undefined' ? null : localStorage.getItem(ROLE_CACHE_KEY),
   } = args;
 
   const requiredCapability = getRequiredCapabilityForEvent(eventType);
-  if (!requiredCapability) return;
+  const isStaffOwnerOnlyEvent = STAFF_OWNER_ONLY_EVENTS.has(eventType);
+  if (!requiredCapability && !isStaffOwnerOnlyEvent) return;
 
   const snapshot = parseCachedRoleSnapshot(rawCache);
   if (!snapshot) {
@@ -109,6 +173,13 @@ export function assertFreshStaffCapability(args: {
   }
 
   if (!snapshot.isStaff) return;
+
+  if (isStaffOwnerOnlyEvent) {
+    throw new RoleFreshnessError(
+      'staff_role_capability_denied',
+      `Staff write blocked because ${eventType} is owner-only.`
+    );
+  }
 
   const age = now - snapshot.timestamp;
   if (age < 0 || age > maxAgeMs) {
@@ -123,10 +194,26 @@ export function assertFreshStaffCapability(args: {
     staffRole: snapshot.staffRole,
   });
 
-  if (!capabilities[requiredCapability]) {
+  if (requiredCapability && !capabilities[requiredCapability]) {
     throw new RoleFreshnessError(
       'staff_role_capability_denied',
       `Staff write blocked because ${String(snapshot.staffRole)} cannot ${requiredCapability}.`
     );
+  }
+
+  if (eventType === 'market_updated') {
+    assertAllowedUpdateFields({
+      eventType,
+      payload,
+      allowedFields: MANAGER_MARKET_UPDATE_FIELD_SET,
+    });
+  }
+
+  if (eventType === 'product_updated') {
+    assertAllowedUpdateFields({
+      eventType,
+      payload,
+      allowedFields: MANAGER_PRODUCT_UPDATE_FIELD_SET,
+    });
   }
 }
