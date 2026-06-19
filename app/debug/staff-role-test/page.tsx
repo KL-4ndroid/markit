@@ -30,9 +30,11 @@ const ACTIONS: ActionScenario[] = [
   { label: '記錄成交 / 收入', allowed: (capabilities) => capabilities.canRecordDeal },
   { label: '編輯成交紀錄', allowed: () => false, note: '尚未開放' },
   { label: '建立 field note', allowed: (capabilities) => capabilities.canCreateFieldNote },
+  { label: '管理 field notes', allowed: (capabilities) => capabilities.canManageFieldNotes },
   { label: '編輯市集基本資料', allowed: (capabilities) => capabilities.canEditMarketBasic },
   { label: '編輯商品基本資料', allowed: (capabilities) => capabilities.canEditProductBasic },
   { label: '管理 checklist', allowed: (capabilities) => capabilities.canManageChecklist },
+  { label: '切換 checklist', allowed: (capabilities) => capabilities.canToggleChecklistItem },
   {
     label: '刪除自己同日紀錄',
     allowed: (capabilities) => capabilities.canDeleteOwnSameDayRecord,

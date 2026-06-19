@@ -50,10 +50,12 @@ runTest('checklist service records event-sourced create/update/delete events', (
   assert.match(checklistSource, /recordEvent\(CHECKLIST_ITEM_DELETED/);
 });
 
-runTest('role freshness maps checklist events to canManageChecklist', () => {
+runTest('role freshness maps checklist management and toggle capabilities', () => {
   assert.match(roleFreshnessSource, /checklist_item_created:\s*['"]canManageChecklist['"]/);
   assert.match(roleFreshnessSource, /checklist_item_updated:\s*['"]canManageChecklist['"]/);
   assert.match(roleFreshnessSource, /checklist_item_deleted:\s*['"]canManageChecklist['"]/);
+  assert.match(roleFreshnessSource, /canToggleChecklistItem/);
+  assert.match(roleFreshnessSource, /isChecklistCompletedOnlyUpdate/);
 });
 
 runTest('staff sync preflight treats checklist events as market-scoped', () => {

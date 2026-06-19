@@ -86,6 +86,12 @@ runTest('required event capabilities are explicit', () => {
   assert.equal(getRequiredCapabilityForEvent('deal_closed'), 'canRecordDeal');
   assert.equal(getRequiredCapabilityForEvent('market_updated'), 'canEditMarketBasic');
   assert.equal(getRequiredCapabilityForEvent('product_updated'), 'canEditProductBasic');
+  assert.equal(getRequiredCapabilityForEvent('field_note_created'), 'canManageFieldNotes');
+  assert.equal(getRequiredCapabilityForEvent('field_note_updated'), 'canManageFieldNotes');
+  assert.equal(getRequiredCapabilityForEvent('field_note_deleted'), 'canManageFieldNotes');
+  assert.equal(getRequiredCapabilityForEvent('checklist_item_created'), 'canManageChecklist');
+  assert.equal(getRequiredCapabilityForEvent('checklist_item_updated'), 'canManageChecklist');
+  assert.equal(getRequiredCapabilityForEvent('checklist_item_deleted'), 'canManageChecklist');
   assert.equal(getRequiredCapabilityForEvent('settings_updated'), null);
 });
 
@@ -166,6 +172,90 @@ runTest('operator can record fresh deal', () => {
     eventType: 'deal_closed',
     now,
     rawCache: roleCache({ isStaff: true, staffRole: 'operator', timestamp: now }),
+    });
+  });
+});
+
+runTest('operator can toggle checklist completed only', () => {
+  assert.doesNotThrow(() => {
+    assertFreshStaffCapability({
+      userId: 'user-A',
+      eventType: 'checklist_item_updated',
+      payload: { market_id: 'market-1', itemId: 'item-1', completed: true },
+      now,
+      rawCache: roleCache({ isStaff: true, staffRole: 'operator', timestamp: now }),
+    });
+  });
+});
+
+assertThrowsCode(
+  'operator cannot edit checklist text',
+  () => assertFreshStaffCapability({
+    userId: 'user-A',
+    eventType: 'checklist_item_updated',
+    payload: { market_id: 'market-1', itemId: 'item-1', text: 'Pack bags' },
+    now,
+    rawCache: roleCache({ isStaff: true, staffRole: 'operator', timestamp: now }),
+  }),
+  'staff_role_capability_denied'
+);
+
+assertThrowsCode(
+  'operator cannot mix checklist toggle with text edit',
+  () => assertFreshStaffCapability({
+    userId: 'user-A',
+    eventType: 'checklist_item_updated',
+    payload: { market_id: 'market-1', itemId: 'item-1', text: 'Pack bags', completed: true },
+    now,
+    rawCache: roleCache({ isStaff: true, staffRole: 'operator', timestamp: now }),
+  }),
+  'staff_role_capability_denied'
+);
+
+assertThrowsCode(
+  'operator cannot create checklist item',
+  () => assertFreshStaffCapability({
+    userId: 'user-A',
+    eventType: 'checklist_item_created',
+    payload: { market_id: 'market-1', itemId: 'item-1', text: 'Pack bags' },
+    now,
+    rawCache: roleCache({ isStaff: true, staffRole: 'operator', timestamp: now }),
+  }),
+  'staff_role_capability_denied'
+);
+
+assertThrowsCode(
+  'operator cannot write field notes',
+  () => assertFreshStaffCapability({
+    userId: 'user-A',
+    eventType: 'field_note_created',
+    payload: { market_id: 'market-1', noteId: 'note-1', text: 'Watch rain' },
+    now,
+    rawCache: roleCache({ isStaff: true, staffRole: 'operator', timestamp: now }),
+  }),
+  'staff_role_capability_denied'
+);
+
+runTest('manager can manage field notes and checklist items', () => {
+  const rawCache = roleCache({ isStaff: true, staffRole: 'manager', timestamp: now });
+
+  assert.doesNotThrow(() => {
+    assertFreshStaffCapability({
+      userId: 'user-A',
+      eventType: 'field_note_updated',
+      payload: { market_id: 'market-1', noteId: 'note-1', text: 'Watch rain' },
+      now,
+      rawCache,
+    });
+  });
+
+  assert.doesNotThrow(() => {
+    assertFreshStaffCapability({
+      userId: 'user-A',
+      eventType: 'checklist_item_updated',
+      payload: { market_id: 'market-1', itemId: 'item-1', text: 'Pack bags' },
+      now,
+      rawCache,
     });
   });
 });

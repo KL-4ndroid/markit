@@ -58,9 +58,19 @@ export function StaffPermissionCard({
       note: 'manager 可用',
     },
     {
+      label: '管理 field notes',
+      allowed: resolvedCapabilities.canManageFieldNotes,
+      note: 'owner / manager',
+    },
+    {
       label: '管理 checklist',
       allowed: resolvedCapabilities.canManageChecklist,
       note: 'manager 可用',
+    },
+    {
+      label: '切換 checklist',
+      allowed: resolvedCapabilities.canToggleChecklistItem,
+      note: 'owner / manager / operator',
     },
     {
       label: '修改自己建立的紀錄',

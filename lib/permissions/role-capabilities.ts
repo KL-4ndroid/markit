@@ -29,11 +29,13 @@ export type RoleCapabilities = {
   canRecordInteraction: boolean;
   canRecordDeal: boolean;
   canCreateFieldNote: boolean;
+  canManageFieldNotes: boolean;
 
   // 基本資料管理（manager）
   canEditMarketBasic: boolean;
   canEditProductBasic: boolean;
   canManageChecklist: boolean;
+  canToggleChecklistItem: boolean;
 
   // 員工自己當日紀錄（manager，future / gated）
   canEditOwnSameDayRecord: boolean;
@@ -64,9 +66,11 @@ const OWNER_CAPABILITIES: RoleCapabilities = {
   canRecordInteraction: true,
   canRecordDeal: true,
   canCreateFieldNote: true,
+  canManageFieldNotes: true,
   canEditMarketBasic: true,
   canEditProductBasic: true,
   canManageChecklist: true,
+  canToggleChecklistItem: true,
   canEditOwnSameDayRecord: true,
   canDeleteOwnSameDayRecord: true,
   canManageStaff: true,
@@ -82,9 +86,11 @@ const NONE_CAPABILITIES: RoleCapabilities = {
   canRecordInteraction: false,
   canRecordDeal: false,
   canCreateFieldNote: false,
+  canManageFieldNotes: false,
   canEditMarketBasic: false,
   canEditProductBasic: false,
   canManageChecklist: false,
+  canToggleChecklistItem: false,
   canEditOwnSameDayRecord: false,
   canDeleteOwnSameDayRecord: false,
   canManageStaff: false,
@@ -102,6 +108,7 @@ const OPERATOR_CAPABILITIES: RoleCapabilities = {
   ...NONE_CAPABILITIES,
   canRecordInteraction: true,
   canRecordDeal: true,
+  canToggleChecklistItem: true,
   canEditOwnSameDayRecord: true,
   canDeleteOwnSameDayRecord: true,
 };
@@ -111,9 +118,11 @@ const MANAGER_CAPABILITIES: RoleCapabilities = {
   canRecordInteraction: true,
   canRecordDeal: true,
   canCreateFieldNote: true,
+  canManageFieldNotes: true,
   canEditMarketBasic: true,
   canEditProductBasic: true,
   canManageChecklist: true,
+  canToggleChecklistItem: true,
   canEditOwnSameDayRecord: true,
   canDeleteOwnSameDayRecord: true,
 };

@@ -49,9 +49,9 @@ const EVENT_CAPABILITY: Partial<Record<string, StaffCapability>> = {
   deal_deleted: 'canDeleteOwnSameDayRecord',
   market_updated: 'canEditMarketBasic',
   product_updated: 'canEditProductBasic',
-  field_note_created: 'canCreateFieldNote',
-  field_note_updated: 'canEditOwnSameDayRecord',
-  field_note_deleted: 'canDeleteOwnSameDayRecord',
+  field_note_created: 'canManageFieldNotes',
+  field_note_updated: 'canManageFieldNotes',
+  field_note_deleted: 'canManageFieldNotes',
   checklist_item_created: 'canManageChecklist',
   checklist_item_updated: 'canManageChecklist',
   checklist_item_deleted: 'canManageChecklist',
@@ -97,6 +97,30 @@ function isStaffRole(value: unknown): value is StaffRole {
 
 export function getRequiredCapabilityForEvent(type: EventType): StaffCapability | null {
   return EVENT_CAPABILITY[type] ?? null;
+}
+
+function isChecklistCompletedOnlyUpdate(payload: unknown): boolean {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
+
+  const payloadRecord = payload as Record<string, unknown>;
+  const keys = Object.keys(payloadRecord).filter((key) => key !== 'market_id' && key !== 'itemId');
+
+  return (
+    keys.length === 1 &&
+    keys[0] === 'completed' &&
+    typeof payloadRecord.completed === 'boolean'
+  );
+}
+
+function getRequiredCapabilityForEventPayload(
+  type: EventType,
+  payload: unknown
+): StaffCapability | null {
+  if (type === 'checklist_item_updated' && isChecklistCompletedOnlyUpdate(payload)) {
+    return 'canToggleChecklistItem';
+  }
+
+  return getRequiredCapabilityForEvent(type);
 }
 
 function getPayloadUpdates(payload: unknown): Record<string, unknown> | null {
@@ -173,11 +197,11 @@ export function assertFreshStaffCapability(args: {
     rawCache = typeof localStorage === 'undefined' ? null : localStorage.getItem(ROLE_CACHE_KEY),
   } = args;
 
-  const requiredCapability = getRequiredCapabilityForEvent(eventType);
+  const requiredCapability = getRequiredCapabilityForEventPayload(eventType, payload);
   const interactionType = getInteractionTypeFromPayload(payload);
   const effectiveRequiredCapability: StaffCapability | null =
     eventType === 'interaction_recorded' && interactionType === 'field_note'
-      ? 'canCreateFieldNote'
+      ? 'canManageFieldNotes'
       : requiredCapability;
   const isStaffOwnerOnlyEvent = STAFF_OWNER_ONLY_EVENTS.has(eventType);
   if (!effectiveRequiredCapability && !isStaffOwnerOnlyEvent) return;

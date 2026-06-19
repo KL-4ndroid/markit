@@ -64,10 +64,10 @@ runTest('field note update/delete checks original actor', () => {
   assert.match(fieldNotesSource, /Only the note creator can edit or delete/);
 });
 
-runTest('role freshness maps field note events to manager and own-record capabilities', () => {
-  assert.match(roleFreshnessSource, /field_note_created:\s*['"]canCreateFieldNote['"]/);
-  assert.match(roleFreshnessSource, /field_note_updated:\s*['"]canEditOwnSameDayRecord['"]/);
-  assert.match(roleFreshnessSource, /field_note_deleted:\s*['"]canDeleteOwnSameDayRecord['"]/);
+runTest('role freshness maps field note events to field-note management', () => {
+  assert.match(roleFreshnessSource, /field_note_created:\s*['"]canManageFieldNotes['"]/);
+  assert.match(roleFreshnessSource, /field_note_updated:\s*['"]canManageFieldNotes['"]/);
+  assert.match(roleFreshnessSource, /field_note_deleted:\s*['"]canManageFieldNotes['"]/);
 });
 
 runTest('staff sync preflight treats field notes as market-scoped', () => {

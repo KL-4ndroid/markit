@@ -41,9 +41,11 @@ const ALL_CAPABILITIES: StaffCapability[] = [
   'canRecordInteraction',
   'canRecordDeal',
   'canCreateFieldNote',
+  'canManageFieldNotes',
   'canEditMarketBasic',
   'canEditProductBasic',
   'canManageChecklist',
+  'canToggleChecklistItem',
   'canEditOwnSameDayRecord',
   'canDeleteOwnSameDayRecord',
   'canManageStaff',
@@ -131,6 +133,7 @@ runTest('operator: 只 canRecordInteraction = true，其他全 false', () => {
   const truthy: StaffCapability[] = [
     'canRecordInteraction',
     'canRecordDeal',
+    'canToggleChecklistItem',
     'canEditOwnSameDayRecord',
     'canDeleteOwnSameDayRecord',
   ];
@@ -144,9 +147,11 @@ runTest('operator: 明確驗證 manager 範圍能力全 false', () => {
   const caps = deriveRoleCapabilities({ isOwner: false, staffRole: 'operator' });
   assert.equal(caps.canRecordDeal, true, 'canRecordDeal = true');
   assert.equal(caps.canCreateFieldNote, false, 'canCreateFieldNote 仍 gated');
+  assert.equal(caps.canManageFieldNotes, false, 'canManageFieldNotes = false');
   assert.equal(caps.canEditMarketBasic, false, 'canEditMarketBasic = false');
   assert.equal(caps.canEditProductBasic, false, 'canEditProductBasic = false');
   assert.equal(caps.canManageChecklist, false, 'canManageChecklist = false');
+  assert.equal(caps.canToggleChecklistItem, true, 'canToggleChecklistItem = true');
 });
 
 runTest('operator: 明確驗證 owner-only 全 false', () => {
@@ -164,9 +169,11 @@ runTest('manager: 6 個 manager 能力 = true', () => {
     'canRecordInteraction',
     'canRecordDeal',
     'canCreateFieldNote',
+    'canManageFieldNotes',
     'canEditMarketBasic',
     'canEditProductBasic',
     'canManageChecklist',
+    'canToggleChecklistItem',
     'canEditOwnSameDayRecord',
     'canDeleteOwnSameDayRecord',
   ];

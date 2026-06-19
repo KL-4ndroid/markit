@@ -56,6 +56,8 @@ runTest('StaffPermissionCard is role-aware and capability-driven', () => {
   assert.match(cardSource, /canEditProductBasic/);
   assert.match(cardSource, /canManageChecklist/);
   assert.match(cardSource, /canCreateFieldNote/);
+  assert.match(cardSource, /canManageFieldNotes/);
+  assert.match(cardSource, /canToggleChecklistItem/);
   assert.doesNotMatch(cardSource, /permissions\?:\s*\{/);
 });
 
