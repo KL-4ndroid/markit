@@ -91,13 +91,18 @@ runTest('field note panel calls create/update/delete service functions', () => {
   assert.match(fieldNotesPanelSource, /user\?\.id === note\.actorId/);
 });
 
-runTest('staff daily log deletion is scoped to own events', () => {
+runTest('staff daily log deletion is scoped by actor and same-day rules', () => {
   assert.match(eventDeletionSource, /ownActorId\?:\s*string/);
+  assert.match(eventDeletionSource, /sameDayOnly\?:\s*boolean/);
   assert.match(eventDeletionSource, /assertOwnEventDeletionAllowed/);
   assert.match(eventDeletionSource, /Only the creator can delete this event/);
+  assert.match(eventDeletionSource, /Only same-day events can be deleted in this context/);
   assert.match(dailyTransactionLogSource, /deleteActorId\?:\s*string/);
+  assert.match(dailyTransactionLogSource, /deleteSameDayOnly\?:\s*boolean/);
   assert.match(dailyTransactionLogSource, /ownActorId:\s*deleteActorId/);
-  assert.match(staffMarketDetailSource, /deleteActorId=\{user\?\.id\}/);
+  assert.match(dailyTransactionLogSource, /sameDayOnly:\s*deleteSameDayOnly/);
+  assert.match(staffMarketDetailSource, /deleteActorId=\{deleteActorId\}/);
+  assert.match(staffMarketDetailSource, /deleteSameDayOnly=\{canDeleteOwnRecord\}/);
 });
 
 console.log(`\n=== ${passed} passed, ${failed} failed ===`);

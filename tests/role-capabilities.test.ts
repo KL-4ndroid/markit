@@ -176,7 +176,7 @@ runTest('manager: 6 個 manager 能力 = true', () => {
   assertSubset(caps, truthy, falsy);
 });
 
-runTest('manager: 明確驗證 own-same-day record 全 false', () => {
+runTest('manager: 明確驗證 own-same-day record 能力為 true', () => {
   const caps = deriveRoleCapabilities({ isOwner: false, staffRole: 'manager' });
   assert.equal(caps.canEditOwnSameDayRecord, true);
   assert.equal(caps.canDeleteOwnSameDayRecord, true);

@@ -60,6 +60,17 @@ runTest('StaffMarketDetailView opens deal writes through capability and keeps pr
   assert.match(staffMarketViewSource, /<QuickInteractionButtons[\s\S]*hideProfit=\{true\}/);
 });
 
+runTest('StaffMarketDetailView scopes same-day deletion by role', () => {
+  assert.match(staffMarketViewSource, /const isManagerRole = userRole\.staffRole === ['"]manager['"]/);
+  assert.match(
+    staffMarketViewSource,
+    /const deleteActorId = canDeleteOwnRecord && !isManagerRole \? user\?\.id : undefined/
+  );
+  assert.match(staffMarketViewSource, /allowDelete=\{canDeleteOwnRecord\}/);
+  assert.match(staffMarketViewSource, /deleteActorId=\{deleteActorId\}/);
+  assert.match(staffMarketViewSource, /deleteSameDayOnly=\{canDeleteOwnRecord\}/);
+});
+
 async function main(): Promise<void> {
   let failed = 0;
 

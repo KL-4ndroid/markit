@@ -42,6 +42,10 @@ const settingsSource = readFileSync(
   'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/app/settings/page.tsx',
   'utf-8'
 );
+const recoverySource = readFileSync(
+  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/app/recovery/page.tsx',
+  'utf-8'
+);
 
 console.log('\n=== P5-4e / P5-7 role UI ===');
 
@@ -85,9 +89,26 @@ runTest('debug staff role test page is mock-only', () => {
   assert.match(debugPageSource, /不連 Supabase、不寫 IndexedDB/);
   assert.match(debugPageSource, /deriveRoleCapabilities/);
   assert.match(debugPageSource, /dispatchRoleStatusEvent/);
+  assert.match(debugPageSource, /記錄成交 \/ 收入/);
+  assert.match(debugPageSource, /編輯成交紀錄/);
+  assert.match(debugPageSource, /allowed:\s*\(\)\s*=>\s*false/);
+  assert.match(debugPageSource, /刪除別人同日紀錄/);
+  assert.match(debugPageSource, /role === 'manager' && capabilities\.canDeleteOwnSameDayRecord/);
+  assert.match(debugPageSource, /使用修復工具/);
+  assert.match(debugPageSource, /capabilities\.canUseRepairTools/);
   assert.doesNotMatch(debugPageSource, /recordEvent\(/);
   assert.doesNotMatch(debugPageSource, /supabase/);
   assert.doesNotMatch(debugPageSource, /db\./);
+});
+
+runTest('recovery route keeps repair tools owner-only', () => {
+  assert.match(recoverySource, /deriveRoleCapabilities/);
+  assert.match(recoverySource, /hasCapability\(roleCapabilities,\s*['"]canUseRepairTools['"]\)/);
+  assert.match(recoverySource, /if \(!canUseRepairTools\)/);
+  assert.match(recoverySource, /修復工具僅限 owner 使用/);
+  assert.match(recoverySource, /<DatabaseRecoveryPanel \/>/);
+  assert.match(recoverySource, /<OwnerRevenueGapRepairPanel \/>/);
+  assert.match(recoverySource, /<LocalProjectionRepairPanel \/>/);
 });
 
 console.log(`\n=== ${passed} passed, ${failed} failed ===`);

@@ -184,6 +184,11 @@ async function main(): Promise<void> {
     { allowDelete: true, ownActorId: 'staff-1', now: timestamp }
   ));
 
+  assert.doesNotThrow(() => assertOwnEventDeletionAllowed(
+    dealEvent({ actor_id: 'staff-2', timestamp }),
+    { allowDelete: true, sameDayOnly: true, now: timestamp }
+  ));
+
   assert.throws(
     () => assertOwnEventDeletionAllowed(
       dealEvent({ actor_id: 'staff-2', timestamp }),
@@ -196,6 +201,14 @@ async function main(): Promise<void> {
     () => assertOwnEventDeletionAllowed(
       dealEvent({ actor_id: 'staff-1', timestamp }),
       { allowDelete: true, ownActorId: 'staff-1', now: timestamp + 24 * 60 * 60 * 1000 }
+    ),
+    /same-day/
+  );
+
+  assert.throws(
+    () => assertOwnEventDeletionAllowed(
+      dealEvent({ actor_id: 'staff-2', timestamp }),
+      { allowDelete: true, sameDayOnly: true, now: timestamp + 24 * 60 * 60 * 1000 }
     ),
     /same-day/
   );

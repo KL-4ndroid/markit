@@ -102,6 +102,8 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
     !isRoleLoading && hasCapability(roleCapabilities, 'canDeleteOwnSameDayRecord');
   const canRecordDeal =
     !isRoleLoading && hasCapability(roleCapabilities, 'canRecordDeal');
+  const isManagerRole = userRole.staffRole === 'manager';
+  const deleteActorId = canDeleteOwnRecord && !isManagerRole ? user?.id : undefined;
   const [showEditMarketForm, setShowEditMarketForm] = useState(false);
   
   // ✅ 新增：交易功能區塊的展開/折疊狀態（互斥）
@@ -376,7 +378,8 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           <DailyTransactionLog
             marketId={marketId}
             allowDelete={canDeleteOwnRecord}
-            deleteActorId={user?.id}
+            deleteActorId={deleteActorId}
+            deleteSameDayOnly={canDeleteOwnRecord}
           />
         )}
 

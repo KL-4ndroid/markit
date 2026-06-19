@@ -39,6 +39,7 @@ export interface DeleteDealResult extends DeleteEventResult {
 export interface DeleteEventPermissionOptions {
   allowDelete?: boolean;
   ownActorId?: string;
+  sameDayOnly?: boolean;
   now?: number;
 }
 
@@ -55,15 +56,16 @@ export function assertOwnEventDeletionAllowed(
   event: Pick<Event, 'actor_id' | 'timestamp'>,
   options?: DeleteEventPermissionOptions
 ): void {
-  if (!options?.ownActorId) return;
-  if (event.actor_id !== options.ownActorId) {
+  if (options?.ownActorId && event.actor_id !== options.ownActorId) {
     throw new Error('Only the creator can delete this event');
   }
+
+  if (!options?.sameDayOnly && !options?.ownActorId) return;
 
   const today = timestampToLocalDateString(options.now ?? Date.now());
   const eventDate = timestampToLocalDateString(event.timestamp);
   if (eventDate !== today) {
-    throw new Error('Only same-day events can be deleted by the creator');
+    throw new Error('Only same-day events can be deleted in this context');
   }
 }
 

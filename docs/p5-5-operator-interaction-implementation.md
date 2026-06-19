@@ -46,7 +46,15 @@ interaction_recorded -> canRecordInteraction
 deal_closed -> canRecordDeal
 ```
 
-Staff stale role cache is therefore fail-closed for these write surfaces. Staff delete remains limited to own same-day records.
+Staff stale role cache is therefore fail-closed for these write surfaces.
+
+Current transaction-log delete scope:
+
+- operator: delete own same-day deal/interaction records
+- manager: delete same-day deal/interaction records, including records created by other staff
+- owner: full owner delete behavior
+
+Deal record editing is still not opened for staff.
 
 ## Tests
 

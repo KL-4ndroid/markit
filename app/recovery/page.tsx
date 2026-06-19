@@ -1,12 +1,67 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, Database } from 'lucide-react';
+import { ArrowLeft, Database, ShieldAlert } from 'lucide-react';
 import { DatabaseRecoveryPanel } from '@/components/common/DatabaseRecoveryPanel';
 import { LocalProjectionRepairPanel } from '@/components/common/LocalProjectionRepairPanel';
 import { OwnerRevenueGapRepairPanel } from '@/components/common/OwnerRevenueGapRepairPanel';
+import { useUserRole } from '@/hooks/useUserRole';
+import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 
 export default function RecoveryPage() {
+  const { userRole, isOwner, isLoading: isRoleLoading } = useUserRole();
+  const roleCapabilities = deriveRoleCapabilities({
+    isOwner,
+    staffRole: userRole.staffRole,
+  });
+  const canUseRepairTools =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canUseRepairTools');
+
+  if (isRoleLoading) {
+    return (
+      <div className="min-h-screen bg-background px-4 py-6">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground"
+          >
+            <ArrowLeft size={16} />
+            返回設定
+          </Link>
+          <section className="border border-[#E8E3D8] bg-white px-4 py-5 text-sm text-muted-foreground shadow-sm">
+            正在確認修復工具權限...
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canUseRepairTools) {
+    return (
+      <div className="min-h-screen bg-background px-4 py-6">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground"
+          >
+            <ArrowLeft size={16} />
+            返回設定
+          </Link>
+          <section className="border border-[#E8E3D8] bg-white px-4 py-5 text-sm text-muted-foreground shadow-sm">
+            <div className="mb-3 flex items-center gap-3 text-foreground">
+              <ShieldAlert className="h-5 w-5 text-danger" />
+              <h1 className="text-lg font-semibold">修復工具僅限 owner 使用</h1>
+            </div>
+            <p>
+              這些工具會重建本機統計或修補收入資料。為避免 staff scoped cache
+              或不完整事件資料造成誤修復，員工帳號不會載入修復面板。
+            </p>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background px-4 py-6">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">

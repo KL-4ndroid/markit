@@ -1,5 +1,16 @@
 # Staff Role Permissions
 
+## 2026-06-19 Decision Update
+
+- `operator` and `manager` can write deal/revenue records through `canRecordDeal`.
+- Staff deal record editing remains closed for now.
+- Transaction-log deletion scope:
+  - `operator`: own same-day deal/interaction records only.
+  - `manager`: same-day deal/interaction records, including records created by other staff.
+  - `owner`: unchanged owner delete behavior.
+- Repair tools remain owner-only; staff users must not load `/recovery` repair panels.
+- New market and new product creation remain owner-only for now.
+
 本文件是 BoothBook 員工角色權限分布的主要查閱文件。
 
 未來任何與 staff role、資料可見度、操作權限、PermissionGate、useUserRole、sync / Dexie 權限行為有關的修改，都需要同步更新本文件。

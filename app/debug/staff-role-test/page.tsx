@@ -12,6 +12,11 @@ import {
 import type { StaffRole } from '@/types/staff';
 
 type TestRole = StaffRole | 'owner';
+type ActionScenario = {
+  label: string;
+  allowed: (capabilities: RoleCapabilities, role: TestRole, isOwner: boolean) => boolean;
+  note?: string;
+};
 
 const ROLE_OPTIONS: Array<{ value: TestRole; label: string }> = [
   { value: 'viewer', label: 'Viewer' },
@@ -20,17 +25,27 @@ const ROLE_OPTIONS: Array<{ value: TestRole; label: string }> = [
   { value: 'owner', label: 'Owner' },
 ];
 
-const ACTIONS: Array<{ label: string; capability: keyof RoleCapabilities }> = [
-  { label: '記錄互動', capability: 'canRecordInteraction' },
-  { label: '記錄成交', capability: 'canRecordDeal' },
-  { label: '建立 field note', capability: 'canCreateFieldNote' },
-  { label: '編輯市集基本資料', capability: 'canEditMarketBasic' },
-  { label: '編輯商品基本資料', capability: 'canEditProductBasic' },
-  { label: '管理 checklist', capability: 'canManageChecklist' },
-  { label: '修改自己紀錄', capability: 'canEditOwnSameDayRecord' },
-  { label: '刪除自己紀錄', capability: 'canDeleteOwnSameDayRecord' },
-  { label: '管理員工', capability: 'canManageStaff' },
-  { label: '刪除市集', capability: 'canDeleteMarket' },
+const ACTIONS: ActionScenario[] = [
+  { label: '記錄互動', allowed: (capabilities) => capabilities.canRecordInteraction },
+  { label: '記錄成交 / 收入', allowed: (capabilities) => capabilities.canRecordDeal },
+  { label: '編輯成交紀錄', allowed: () => false, note: '尚未開放' },
+  { label: '建立 field note', allowed: (capabilities) => capabilities.canCreateFieldNote },
+  { label: '編輯市集基本資料', allowed: (capabilities) => capabilities.canEditMarketBasic },
+  { label: '編輯商品基本資料', allowed: (capabilities) => capabilities.canEditProductBasic },
+  { label: '管理 checklist', allowed: (capabilities) => capabilities.canManageChecklist },
+  {
+    label: '刪除自己同日紀錄',
+    allowed: (capabilities) => capabilities.canDeleteOwnSameDayRecord,
+  },
+  {
+    label: '刪除別人同日紀錄',
+    allowed: (capabilities, role, isOwner) =>
+      isOwner || (role === 'manager' && capabilities.canDeleteOwnSameDayRecord),
+    note: 'manager 同日限定',
+  },
+  { label: '使用修復工具', allowed: (capabilities) => capabilities.canUseRepairTools },
+  { label: '管理員工', allowed: (capabilities) => capabilities.canManageStaff },
+  { label: '刪除市集', allowed: (capabilities) => capabilities.canDeleteMarket },
 ];
 
 export default function StaffRoleTestPage() {
@@ -87,13 +102,18 @@ export default function StaffRoleTestPage() {
           <p className="mb-3 text-sm font-medium text-foreground">動作矩陣</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {ACTIONS.map((action) => {
-              const allowed = capabilities[action.capability];
+              const allowed = action.allowed(capabilities, role, isOwner);
               return (
                 <div
-                  key={action.capability}
-                  className="flex items-center justify-between rounded-lg border border-primary/10 px-3 py-2 text-sm"
+                  key={action.label}
+                  className="flex min-h-12 items-center justify-between gap-3 rounded-lg border border-primary/10 px-3 py-2 text-sm"
                 >
-                  <span className="text-foreground">{action.label}</span>
+                  <span className="min-w-0 text-foreground">
+                    {action.label}
+                    {action.note && (
+                      <span className="ml-2 text-xs text-muted-foreground">{action.note}</span>
+                    )}
+                  </span>
                   <span
                     className={`inline-flex items-center gap-1 text-xs font-medium ${
                       allowed ? 'text-primary' : 'text-muted-foreground'

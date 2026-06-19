@@ -35,6 +35,7 @@ interface DailyTransactionLogProps {
   marketId: string;
   allowDelete?: boolean;
   deleteActorId?: string;
+  deleteSameDayOnly?: boolean;
   date?: string; // 可選：指定日期，預設為今天
 }
 
@@ -54,6 +55,7 @@ export function DailyTransactionLog({
   date,
   allowDelete,
   deleteActorId,
+  deleteSameDayOnly,
 }: DailyTransactionLogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -183,9 +185,17 @@ export function DailyTransactionLog({
 
     try {
       if (selectedLog.type === 'deal') {
-        await deleteDealEventById(selectedLog.id, { allowDelete, ownActorId: deleteActorId });
+        await deleteDealEventById(selectedLog.id, {
+          allowDelete,
+          ownActorId: deleteActorId,
+          sameDayOnly: deleteSameDayOnly,
+        });
       } else {
-        await deleteInteractionEventById(selectedLog.id, { allowDelete, ownActorId: deleteActorId });
+        await deleteInteractionEventById(selectedLog.id, {
+          allowDelete,
+          ownActorId: deleteActorId,
+          sameDayOnly: deleteSameDayOnly,
+        });
       }
       setShowDeleteConfirm(false);
       setSelectedLog(null);

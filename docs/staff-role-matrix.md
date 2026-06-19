@@ -1,5 +1,16 @@
 # Staff Role Matrix
 
+## 2026-06-19 Decision Update
+
+- Deal/revenue writes are open to `operator` and `manager` through `canRecordDeal`.
+- Deal record editing is not opened to staff yet.
+- Transaction-log deletion scope is role-specific:
+  - `operator`: own same-day deal/interaction records only.
+  - `manager`: same-day deal/interaction records, including records created by other staff.
+  - `owner`: unchanged owner delete behavior.
+- Repair tools remain owner-only. `/recovery` must not load repair panels for staff users.
+- New market and new product creation remain owner-only for now.
+
 > 對齊 production 狀態（2026-06-18）
 > 對齊對象：042 / 043 / 044 / 045 / 046 / P4a / P4c
 > 風險等級：Green（本文件為文件，無 runtime 變更）
