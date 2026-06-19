@@ -1299,4 +1299,68 @@ v0.2  2026-06-19  P5-4a: Downgrade Detection 設計
                 - 不修 limit(1) ambiguity（屬 R9 既有 bug）
                 - 不開 operator / manager 寫入（屬 P5-5+）
                 - 後續：等待 user review + 批准 P5-4b
+
+v0.3  2026-06-19  P5-4b: Role Cache Invalidation Revalidate
+                - Author: Cursor (kl-4ndroid 委託)
+                - Scope: 讓 invalidateRoleCache 通知已 mounted useUserRole
+                - 變更：
+                  * hooks/useUserRole.ts
+                    - 新增 ROLE_CACHE_INVALIDATED_EVENT constant:
+                        'boothbook:role-cache-invalidated'
+                    - 新增 dispatchRoleCacheInvalidatedEvent() 內部 helper
+                      （SSR 守衛 + try/catch）
+                    - 新增 subscribeToRoleCacheInvalidation() exported helper
+                      （SSR 守衛 + 回傳 unsubscribe function）
+                    - invalidateRoleCache() 仍清 localStorage，額外 dispatch event
+                    - 抽出 loadUserRole 為 stable function（從 useEffect 內部 closure）
+                    - 新增第二個 useEffect 監聽 invalidation event
+                      * 收到 event 後觸發 revalidate
+                      * revalidationInFlightRef 防止重複查詢
+                    - 既有 useEffect [user] 行為完全不變
+                    - 既有 fail-closed catch 行為完全不變
+                    - 既有 canEdit / canViewSensitiveData / isOwner 行為完全不變
+                    - deriveRolePermissions / deriveSafeInfoLevel 行為完全不變
+                - 新增：tests/p5-4b-role-cache-invalidation.test.ts
+                  （27 個 case 全綠）
+                - 不變更：
+                  * hooks/useStaffStatusMonitor.ts（P5-4a 已呼叫 invalidateRoleCache；
+                    P5-4b 從 invalidateRoleCache 內部擴充，不動 monitor）
+                  * hooks/useSync.ts
+                  * hooks/useStaffPermissions.ts
+                  * lib/permissions/PermissionGate.ts
+                  * lib/permissions/role-fail-closed.ts
+                  * lib/permissions/role-capabilities.ts
+                  * lib/db/*
+                  * lib/supabase/*
+                  * components/*
+                  * app/*
+                  * types/*
+                  * supabase/migrations/*
+                - 不變更行為：
+                  * canEdit
+                  * canViewSensitiveData
+                  * infoLevel 推導（deriveSafeInfoLevel）
+                  * PermissionGate 脫敏
+                  * role-fail-closed fail-closed 規則
+                  * useSync / Dexie
+                  * 既有 revoke 流程
+                  * 既有 owner profile 查詢
+                - 不做的事：
+                  * 不清 Dexie
+                  * 不 reload
+                  * 不接 UI
+                  * 不新增 callback
+                  * 不新增 React Context / global store
+                  * 不修 limit(1) ambiguity
+                  * 不開 operator / manager 寫入
+                  * 不使用 storage event
+                  * 不使用 BroadcastChannel
+                - P5-4b 純靠：
+                  * boothbook:role-cache-invalidated custom event
+                - revalidate 期間 fail-closed：
+                  * setIsLoading(true) → deriveSafeInfoLevel 自動回傳 0
+                  * useSync enabled 變 false（sync-context.tsx line 52）
+                  * canEdit / canViewSensitiveData / isOwner 全 false
+                - revalidate 失敗走既有 fail-closed catch
+                - 後續：等待 user review + 批准 P5-4c
 ```
