@@ -27,6 +27,12 @@ import { resetMarketProjectionFields, resetProductProjectionFields } from '@/lib
 import { getLastSyncTimestamp, updateLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
 import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
 import {
+  clearSyncPause,
+  getSyncPauseUntil,
+  pauseSyncTemporarily,
+  recordSyncPermissionError,
+} from '@/lib/sync/sync-permission-pause-service';
+import {
   marketAccessRowToLocal,
   marketRowToLocal,
   normalizeEventForCloud,
@@ -74,10 +80,6 @@ let hasSetupIntervals = false;
  */
 let isSyncLocked = false;
 let activeSyncIdentity: string | null = null;
-
-const SYNC_PAUSE_UNTIL_KEY = 'sync_pause_until';
-const SYNC_PERMISSION_ERROR_LOG_KEY = 'sync_permission_error_history';
-const PERMISSION_ERROR_PAUSE_MS = 10 * 60 * 1000;
 
 async function reconcileSyncedProjectionMarkets(
   marketIds: Set<string>,
@@ -151,40 +153,8 @@ export function resetInitialSyncFlag() {
   activeSyncIdentity = null;
   resetSyncRuntimeState();
   // ✅ 重置全局同步鎖
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.removeItem(SYNC_PAUSE_UNTIL_KEY);
-    } catch (error) {
-      console.error('清除同步暫停標記失敗:', error);
-    }
-  }
+  clearSyncPause();
   // ✅ 重置全局狀態
-}
-
-function getSyncPauseUntil(): number {
-  if (typeof window === 'undefined') return 0;
-
-  try {
-    const value = Number(localStorage.getItem(SYNC_PAUSE_UNTIL_KEY) || '0');
-    return Number.isFinite(value) ? value : 0;
-  } catch (error) {
-    console.error('讀取同步暫停標記失敗:', error);
-    return 0;
-  }
-}
-
-function pauseSyncTemporarily(): number {
-  const pauseUntil = Date.now() + PERMISSION_ERROR_PAUSE_MS;
-
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(SYNC_PAUSE_UNTIL_KEY, String(pauseUntil));
-    } catch (error) {
-      console.error('保存同步暫停標記失敗:', error);
-    }
-  }
-
-  return pauseUntil;
 }
 
 interface UseSyncOptions {
@@ -1297,30 +1267,7 @@ async function ensureUserProfile(userId: string): Promise<void> {
  */
 async function handlePermissionSyncError(error: any, userId: string): Promise<void> {
   const pauseUntil = pauseSyncTemporarily();
-  const permissionErrorLog = {
-    event: 'sync_permission_error',
-    timestamp: new Date().toISOString(),
-    reason: '403_forbidden_or_policy_violation',
-    userId,
-    errorCode: error?.code,
-    errorMessage: error?.message,
-    pauseUntil,
-  };
-
-  console.error('🚫 同步權限錯誤，已保留本地資料並暫停同步:', permissionErrorLog);
-
-  try {
-    if (typeof window !== 'undefined') {
-      const history = JSON.parse(localStorage.getItem(SYNC_PERMISSION_ERROR_LOG_KEY) || '[]');
-      history.push(permissionErrorLog);
-      if (history.length > 10) {
-        history.shift();
-      }
-      localStorage.setItem(SYNC_PERMISSION_ERROR_LOG_KEY, JSON.stringify(history));
-    }
-  } catch (storageError) {
-    console.error('保存同步權限錯誤記錄失敗:', storageError);
-  }
+  recordSyncPermissionError(error, userId, pauseUntil);
 
   updateGlobalState(prev => ({
     ...prev,
