@@ -16,6 +16,7 @@ import { recordEvent } from '@/lib/db/events';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
 import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
 import { pushEvents } from '@/lib/sync/sync-push-service';
+import { getOwnerAccessibleMarketIds } from '@/lib/sync/owner-market-access-service';
 import {
   collectProjectionMarketId,
   reconcileTouchedMarketProjections,
@@ -510,30 +511,6 @@ export async function getCloudEventCount(userId: string): Promise<number> {
   } catch {
     return 0;
   }
-}
-
-// ==================== Owner event pull marketIds helper ====================
-
-/**
- * 取得 owner 可訪問的所有 market IDs（用於事件同步查詢）
- *
- * owner 可能沒有自己的 market_members record（如新設備 sync），
- * 因此 owner-owned markets 必須直接從 markets 表納入。
- */
-async function getOwnerAccessibleMarketIds(userId: string): Promise<string[]> {
-  const [{ data: memberMarkets, error: memberError }, { data: ownedMarkets, error: ownedError }] =
-    await Promise.all([
-      supabase.from('market_members').select('market_id').eq('user_id', userId),
-      supabase.from('markets').select('id').eq('owner_id', userId),
-    ]);
-
-  if (memberError) throw memberError;
-  if (ownedError) throw ownedError;
-
-  const memberIds = (memberMarkets || []).map(m => m.market_id).filter(Boolean);
-  const ownedIds = (ownedMarkets || []).map(m => m.id).filter(Boolean);
-
-  return Array.from(new Set([...memberIds, ...ownedIds]));
 }
 
 /**

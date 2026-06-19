@@ -138,6 +138,16 @@ runTest('owner pull uses created_at cursor and owner projection reconciliation',
   assert.match(body, /await reconcileSyncedProjectionMarkets\(touchedMarketIds,\s*['"]owner-full['"]\)/);
 });
 
+runTest('owner market access helper includes member and owner-owned markets', () => {
+  const body = findFunctionBody(syncSources, 'getOwnerAccessibleMarketIds');
+
+  assert.match(body, /supabase\.from\(['"]market_members['"]\)\.select\(['"]market_id['"]\)\.eq\(['"]user_id['"],\s*userId\)/);
+  assert.match(body, /supabase\.from\(['"]markets['"]\)\.select\(['"]id['"]\)\.eq\(['"]owner_id['"],\s*userId\)/);
+  assert.match(body, /if\s*\(memberError\)\s*throw memberError/);
+  assert.match(body, /if\s*\(ownedError\)\s*throw ownedError/);
+  assert.match(body, /Array\.from\(new Set\(\[\.\.\.memberIds,\s*\.\.\.ownedIds\]\)\)/);
+});
+
 runTest('staff pull reads authorized views as a full pull without lastSyncAt filtering', () => {
   const body = findFunctionBody(syncSources, 'pullEventsFromViews');
 
