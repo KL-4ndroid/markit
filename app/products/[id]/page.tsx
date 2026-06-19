@@ -22,6 +22,8 @@ import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { EditProductForm } from '@/components/products/EditProductForm';
 import { normalizeRouteId } from '@/lib/markets/detail-loading';
 import { getProductDetail } from '@/lib/products/detail-service';
+import { useUserRole } from '@/hooks/useUserRole';
+import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 import type { Product, ProductCategory } from '@/types/db';
 
 interface PageProps {
@@ -42,10 +44,29 @@ export default function ProductDetailPage({ params }: PageProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const {
+    isStaff,
+    isOwner,
+    userRole,
+    canViewSensitiveData,
+    isLoading: isRoleLoading,
+  } = useUserRole();
+  const roleCapabilities = deriveRoleCapabilities({
+    isOwner,
+    staffRole: userRole.staffRole,
+  });
+  const canEditProductBasic =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canEditProductBasic');
+  const canShowSensitiveProductData = !isRoleLoading && canViewSensitiveData;
+  const canEditProductActions = isOwner || canEditProductBasic;
+  const canDeleteProductAction = isOwner;
 
   // 初始化資料庫（使用安全初始化）
   useEffect(() => {
-    initializeDatabaseSafely()
+    if (isRoleLoading) return;
+
+    setDbStatus(null);
+    initializeDatabaseSafely({ profile: isStaff ? 'staff_scoped' : 'owner_full' })
       .then((result) => setDbStatus(result))
       .catch((error) => {
         console.error('資料庫初始化失敗：', error);
@@ -55,7 +76,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           recoverable: true,
         });
       });
-  }, []);
+  }, [isRoleLoading, isStaff]);
   useEffect(() => {
     let cancelled = false;
 
@@ -120,7 +141,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // 切換啟用狀態
   const handleToggleActive = async () => {
-    if (!product || dbStatus?.ok === false) return;
+    if (!product || dbStatus?.ok === false || !canEditProductActions) return;
 
     setIsUpdating(true);
 
@@ -140,7 +161,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // 刪除商品
   const handleDelete = async () => {
-    if (!product || dbStatus?.ok === false) return;
+    if (!product || dbStatus?.ok === false || !canDeleteProductAction) return;
 
     setIsUpdating(true);
 
@@ -168,7 +189,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // 處理打開編輯表單
   const handleOpenEditForm = () => {
-    if (dbStatus?.ok === false) return;
+    if (dbStatus?.ok === false || !canEditProductActions) return;
     setShowEditForm(true);
     hideNavigation(); // 隱藏導航列
   };
@@ -180,7 +201,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   };
 
   // 載入中（初始化中）
-  if (dbStatus === null || !localProductLookupComplete) {
+  if (isRoleLoading || dbStatus === null || !localProductLookupComplete) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -285,7 +306,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   }
 
   const categoryStyle = getCategoryStyle(product.category);
-  const profitMargin = product.cost && product.cost > 0 
+  const profitMargin = canShowSensitiveProductData && product.cost && product.cost > 0 
     ? Math.round(((product.price - product.cost) / product.price) * 100)
     : null;
 
@@ -326,19 +347,21 @@ export default function ProductDetailPage({ params }: PageProps) {
             價格資訊
           </h2>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid ${canShowSensitiveProductData ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
             <div className="bg-soft-green rounded-2xl p-4">
               <div className="text-xs text-muted-foreground mb-1">售價</div>
               <div className="text-2xl font-medium text-foreground tabular-nums">
                 {formatCurrency(product.price)}
               </div>
             </div>
-            <div className="bg-soft-yellow rounded-2xl p-4">
-              <div className="text-xs text-muted-foreground mb-1">成本</div>
-              <div className="text-2xl font-medium text-foreground tabular-nums">
-                {product.cost ? formatCurrency(product.cost) : '-'}
+            {canShowSensitiveProductData && (
+              <div className="bg-soft-yellow rounded-2xl p-4">
+                <div className="text-xs text-muted-foreground mb-1">成本</div>
+                <div className="text-2xl font-medium text-foreground tabular-nums">
+                  {product.cost ? formatCurrency(product.cost) : '-'}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {profitMargin !== null && (
@@ -387,43 +410,49 @@ export default function ProductDetailPage({ params }: PageProps) {
 
         {/* 操作按鈕 */}
         <div className="space-y-2">
-          <button
-            onClick={handleToggleActive}
-            disabled={isUpdating}
-            className={`w-full px-6 py-3 rounded-2xl transition-colors flex items-center justify-center gap-2 font-medium ${
-              product.isActive
-                ? 'bg-soft-pink text-foreground hover:bg-soft-pink/80'
-                : 'bg-soft-green text-foreground hover:bg-soft-green/80'
-            }`}
-          >
-            {product.isActive ? (
-              <>
-                <ToggleLeft className="w-5 h-5" />
-                停用商品
-              </>
-            ) : (
-              <>
-                <ToggleRight className="w-5 h-5" />
-                啟用商品
-              </>
-            )}
-          </button>
+          {canEditProductActions && (
+            <>
+              <button
+                onClick={handleToggleActive}
+                disabled={isUpdating}
+                className={`w-full px-6 py-3 rounded-2xl transition-colors flex items-center justify-center gap-2 font-medium ${
+                  product.isActive
+                    ? 'bg-soft-pink text-foreground hover:bg-soft-pink/80'
+                    : 'bg-soft-green text-foreground hover:bg-soft-green/80'
+                }`}
+              >
+                {product.isActive ? (
+                  <>
+                    <ToggleLeft className="w-5 h-5" />
+                    停用商品
+                  </>
+                ) : (
+                  <>
+                    <ToggleRight className="w-5 h-5" />
+                    啟用商品
+                  </>
+                )}
+              </button>
 
-          <button
-            onClick={handleOpenEditForm}
-            className="w-full bg-primary text-white px-6 py-3 rounded-2xl hover:bg-primary/85 transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            <Edit className="w-5 h-5" />
-            編輯商品
-          </button>
+              <button
+                onClick={handleOpenEditForm}
+                className="w-full bg-primary text-white px-6 py-3 rounded-2xl hover:bg-primary/85 transition-colors flex items-center justify-center gap-2 font-medium"
+              >
+                <Edit className="w-5 h-5" />
+                編輯商品
+              </button>
+            </>
+          )}
 
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="w-full bg-soft-pink text-danger px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors flex items-center justify-center gap-2 font-medium"
-          >
-            <Trash2 className="w-5 h-5" />
-            刪除商品
-          </button>
+          {canDeleteProductAction && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-full bg-soft-pink text-danger px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors flex items-center justify-center gap-2 font-medium"
+            >
+              <Trash2 className="w-5 h-5" />
+              刪除商品
+            </button>
+          )}
         </div>
       </div>
 
@@ -433,12 +462,13 @@ export default function ProductDetailPage({ params }: PageProps) {
           product={product}
           isOpen={showEditForm}
           onClose={handleCloseEditForm}
+          mode={isStaff ? 'manager' : 'owner'}
           onSuccess={handleEditSuccess}
         />
       )}
 
       {/* 刪除確認對話框 */}
-      {showDeleteConfirm && (
+      {canDeleteProductAction && showDeleteConfirm && (
         <>
           <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowDeleteConfirm(false)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
