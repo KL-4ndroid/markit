@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  checkAppIntegrity,
   checkBackupIntegrity,
   parseBackupData,
   validateBackupReplayReadiness,
@@ -90,6 +91,115 @@ runTest('accepts a valid minimal backup', () => {
 
   assert.equal(result.ok, true);
   assert.deepEqual(result.errors, []);
+});
+
+runTest('accepts field note events in app integrity checks', () => {
+  const result = checkAppIntegrity(backup({
+    events: [
+      event({
+        id: 'field-note-created-1',
+        type: 'field_note_created',
+        market_id: 'market-1',
+        payload: {
+          market_id: 'market-1',
+          noteId: 'note-1',
+          text: 'Bring extension cord',
+        },
+      }),
+      event({
+        id: 'field-note-updated-1',
+        type: 'field_note_updated',
+        market_id: 'market-1',
+        payload: {
+          market_id: 'market-1',
+          noteId: 'note-1',
+          text: 'Bring two extension cords',
+        },
+      }),
+      event({
+        id: 'field-note-deleted-1',
+        type: 'field_note_deleted',
+        market_id: 'market-1',
+        payload: {
+          market_id: 'market-1',
+          noteId: 'note-1',
+        },
+      }),
+    ],
+  }), { profile: 'staff_scoped' });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.errors, []);
+});
+
+runTest('accepts checklist events in app integrity checks', () => {
+  const result = checkAppIntegrity(backup({
+    events: [
+      event({
+        id: 'checklist-created-1',
+        type: 'checklist_item_created',
+        market_id: 'market-1',
+        payload: {
+          market_id: 'market-1',
+          itemId: 'item-1',
+          text: 'Set up banner',
+          completed: false,
+        },
+      }),
+      event({
+        id: 'checklist-updated-1',
+        type: 'checklist_item_updated',
+        market_id: 'market-1',
+        payload: {
+          market_id: 'market-1',
+          itemId: 'item-1',
+          completed: true,
+        },
+      }),
+      event({
+        id: 'checklist-deleted-1',
+        type: 'checklist_item_deleted',
+        market_id: 'market-1',
+        payload: {
+          market_id: 'market-1',
+          itemId: 'item-1',
+        },
+      }),
+    ],
+  }), { profile: 'staff_scoped' });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.errors, []);
+});
+
+runTest('rejects malformed note and checklist payloads', () => {
+  const result = checkBackupIntegrity(backup({
+    events: [
+      event({
+        id: 'bad-note-1',
+        type: 'field_note_created',
+        market_id: 'market-1',
+        payload: {
+          market_id: 'market-1',
+          noteId: 'note-1',
+          text: '',
+        },
+      }),
+      event({
+        id: 'bad-checklist-1',
+        type: 'checklist_item_updated',
+        market_id: 'market-1',
+        payload: {
+          market_id: 'market-1',
+          itemId: 'item-1',
+        },
+      }),
+    ],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes('events[0] field_note_created missing text'));
+  assert.ok(result.errors.includes('events[1] checklist_item_updated missing text or completed'));
 });
 
 runTest('rejects invalid daily stat numeric cache values', () => {

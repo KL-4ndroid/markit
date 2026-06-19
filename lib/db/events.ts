@@ -221,6 +221,44 @@ function validateEventPayload(type: EventType, payload: EventPayload): void {
       assertNumber(record.dealCount, 'dealCount', type);
       return;
 
+    case 'field_note_created':
+    case 'field_note_updated':
+      assertMarketId(record, type);
+      assertString(record.noteId, 'noteId', type);
+      assertString(record.text, 'text', type);
+      return;
+
+    case 'field_note_deleted':
+      assertMarketId(record, type);
+      assertString(record.noteId, 'noteId', type);
+      return;
+
+    case 'checklist_item_created':
+      assertMarketId(record, type);
+      assertString(record.itemId, 'itemId', type);
+      assertString(record.text, 'text', type);
+      if (record.completed !== undefined && typeof record.completed !== 'boolean') {
+        throw new Error(`Invalid ${type} payload: completed must be a boolean`);
+      }
+      return;
+
+    case 'checklist_item_updated':
+      assertMarketId(record, type);
+      assertString(record.itemId, 'itemId', type);
+      if (record.text !== undefined) assertString(record.text, 'text', type);
+      if (record.completed !== undefined && typeof record.completed !== 'boolean') {
+        throw new Error(`Invalid ${type} payload: completed must be a boolean`);
+      }
+      if (record.text === undefined && record.completed === undefined) {
+        throw new Error(`Invalid ${type} payload: text or completed is required`);
+      }
+      return;
+
+    case 'checklist_item_deleted':
+      assertMarketId(record, type);
+      assertString(record.itemId, 'itemId', type);
+      return;
+
     case 'settings_updated':
       return;
   }
@@ -776,12 +814,12 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
   console.log(`👋 互動已記錄：${type} (市集 ID: ${market_id})`);
 });
 
-registerEventHandler('field_note_created' as EventType, async () => {});
-registerEventHandler('field_note_updated' as EventType, async () => {});
-registerEventHandler('field_note_deleted' as EventType, async () => {});
-registerEventHandler('checklist_item_created' as EventType, async () => {});
-registerEventHandler('checklist_item_updated' as EventType, async () => {});
-registerEventHandler('checklist_item_deleted' as EventType, async () => {});
+registerEventHandler('field_note_created', async () => {});
+registerEventHandler('field_note_updated', async () => {});
+registerEventHandler('field_note_deleted', async () => {});
+registerEventHandler('checklist_item_created', async () => {});
+registerEventHandler('checklist_item_updated', async () => {});
+registerEventHandler('checklist_item_deleted', async () => {});
 
 /**
  * 處理「成交」事件（UUID 版本 + 交易快照 + 每日收入記錄 + 補登支持）

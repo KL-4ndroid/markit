@@ -37,6 +37,12 @@ const EVENT_TYPES: ReadonlySet<string> = new Set<EventType>([
   'interaction_deleted',
   'deal_closed',
   'deal_deleted',
+  'field_note_created',
+  'field_note_updated',
+  'field_note_deleted',
+  'checklist_item_created',
+  'checklist_item_updated',
+  'checklist_item_deleted',
   'settings_updated',
 ]);
 
@@ -180,6 +186,46 @@ function validateBackupEventPayload(event: Event, index: number): string[] {
       if (!isNumber(payload.totalAmount)) errors.push(`${label} invalid totalAmount`);
       if (payload.totalCost !== undefined && !isNumber(payload.totalCost)) errors.push(`${label} invalid totalCost`);
       if (!isNumber(payload.dealCount)) errors.push(`${label} invalid dealCount`);
+      break;
+
+    case 'field_note_created':
+    case 'field_note_updated':
+      requireMarketId();
+      if (!isNonEmptyString(payload.noteId)) errors.push(`${label} missing noteId`);
+      if (!isNonEmptyString(payload.text)) errors.push(`${label} missing text`);
+      break;
+
+    case 'field_note_deleted':
+      requireMarketId();
+      if (!isNonEmptyString(payload.noteId)) errors.push(`${label} missing noteId`);
+      break;
+
+    case 'checklist_item_created':
+      requireMarketId();
+      if (!isNonEmptyString(payload.itemId)) errors.push(`${label} missing itemId`);
+      if (!isNonEmptyString(payload.text)) errors.push(`${label} missing text`);
+      if (payload.completed !== undefined && typeof payload.completed !== 'boolean') {
+        errors.push(`${label} invalid completed`);
+      }
+      break;
+
+    case 'checklist_item_updated':
+      requireMarketId();
+      if (!isNonEmptyString(payload.itemId)) errors.push(`${label} missing itemId`);
+      if (payload.text !== undefined && !isNonEmptyString(payload.text)) {
+        errors.push(`${label} invalid text`);
+      }
+      if (payload.completed !== undefined && typeof payload.completed !== 'boolean') {
+        errors.push(`${label} invalid completed`);
+      }
+      if (payload.text === undefined && payload.completed === undefined) {
+        errors.push(`${label} missing text or completed`);
+      }
+      break;
+
+    case 'checklist_item_deleted':
+      requireMarketId();
+      if (!isNonEmptyString(payload.itemId)) errors.push(`${label} missing itemId`);
       break;
 
     case 'settings_updated':

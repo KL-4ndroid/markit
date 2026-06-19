@@ -28,6 +28,13 @@ export type EventType =
   | 'interaction_deleted'      // 刪除互動記錄
   | 'deal_closed'              // 成交
   | 'deal_deleted'             // 刪除成交記錄
+  // 現場交接相關事件
+  | 'field_note_created'       // 建立場次備註
+  | 'field_note_updated'       // 更新場次備註
+  | 'field_note_deleted'       // 刪除場次備註
+  | 'checklist_item_created'   // 建立場次待辦
+  | 'checklist_item_updated'   // 更新場次待辦
+  | 'checklist_item_deleted'   // 刪除場次待辦
   // 設定相關事件
   | 'settings_updated';        // 設定更新
 
@@ -449,6 +456,17 @@ export type InteractionRecordedEventPayload = InteractionRecordedPayload & {};
 
 export type DealClosedEventPayload = DealClosedPayload & {};
 
+export type FieldNoteEventPayload = MarketIdPayload & {
+  noteId: string;
+  text?: string;
+};
+
+export type ChecklistItemEventPayload = MarketIdPayload & {
+  itemId: string;
+  text?: string;
+  completed?: boolean;
+};
+
 export type EventPayloadMap = {
   market_created: MarketCreatedPayload & {
     market_id?: string;
@@ -469,6 +487,18 @@ export type EventPayloadMap = {
   interaction_deleted: InteractionDeletedPayload;
   deal_closed: DealClosedEventPayload;
   deal_deleted: DealDeletedPayload;
+  field_note_created: FieldNoteEventPayload & {
+    text: string;
+  };
+  field_note_updated: FieldNoteEventPayload & {
+    text: string;
+  };
+  field_note_deleted: FieldNoteEventPayload;
+  checklist_item_created: ChecklistItemEventPayload & {
+    text: string;
+  };
+  checklist_item_updated: ChecklistItemEventPayload;
+  checklist_item_deleted: ChecklistItemEventPayload;
   settings_updated: Partial<Settings>;
 };
 
