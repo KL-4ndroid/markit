@@ -11,6 +11,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 interface QuickInteractionButtonsProps {
   marketId: string;
   onInteractionRecorded?: () => void;
+  hideProfit?: boolean;
 }
 
 type PaymentMethod = 'cash' | 'mobile' | 'card' | 'other';
@@ -24,7 +25,7 @@ type PaymentMethod = 'cash' | 'mobile' | 'card' | 'other';
  * - 基於本地 Dexie 的 useLiveQuery，不等待 API 回傳
  * - 體感延遲趨近於 0
  */
-export function QuickInteractionButtons({ marketId, onInteractionRecorded }: QuickInteractionButtonsProps) {
+export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideProfit = false }: QuickInteractionButtonsProps) {
   const [displayAmount, setDisplayAmount] = useState<string>('0');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
@@ -156,7 +157,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
         {/* ✅ Optimistic UI：即時顯示市集統計 */}
         {market && (
           <div className="mt-3 pt-3 border-t border-white/20">
-            <div className="grid grid-cols-3 gap-2 text-white/80 text-xs">
+            <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} gap-2 text-white/80 text-xs`}>
               <div className="text-center">
                 <div className="font-medium tabular-nums">
                   {market.totalDeals || 0}
@@ -169,12 +170,14 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded }: Qui
                 </div>
                 <div className="opacity-70">收入</div>
               </div>
-              <div className="text-center">
-                <div className="font-medium tabular-nums">
-                  NT$ {(market.totalProfit || 0).toLocaleString()}
+              {!hideProfit && (
+                <div className="text-center">
+                  <div className="font-medium tabular-nums">
+                    NT$ {(market.totalProfit || 0).toLocaleString()}
+                  </div>
+                  <div className="opacity-70">利潤</div>
                 </div>
-                <div className="opacity-70">利潤</div>
-              </div>
+              )}
             </div>
           </div>
         )}

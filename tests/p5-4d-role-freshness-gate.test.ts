@@ -159,16 +159,16 @@ assertThrowsCode(
   'staff_role_capability_denied'
 );
 
-assertThrowsCode(
-  'operator cannot record deal',
-  () => assertFreshStaffCapability({
+runTest('operator can record fresh deal', () => {
+  assert.doesNotThrow(() => {
+    assertFreshStaffCapability({
     userId: 'user-A',
     eventType: 'deal_closed',
     now,
     rawCache: roleCache({ isStaff: true, staffRole: 'operator', timestamp: now }),
-  }),
-  'staff_role_capability_denied'
-);
+    });
+  });
+});
 
 console.log('\n=== P5-4d recordEvent static wiring ===');
 

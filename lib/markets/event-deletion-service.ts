@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { getDeletedEventIds } from '@/lib/db/event-tombstones';
+import { timestampToLocalDateString } from '@/lib/time-utils';
 import {
   getDealEventCost,
   getDealEventCount,
@@ -38,6 +39,7 @@ export interface DeleteDealResult extends DeleteEventResult {
 export interface DeleteEventPermissionOptions {
   allowDelete?: boolean;
   ownActorId?: string;
+  now?: number;
 }
 
 export type ProductCostResolver = (productId: string) => Promise<number | undefined>;
@@ -50,12 +52,18 @@ export function assertEventDeletionAllowed(options?: DeleteEventPermissionOption
 }
 
 export function assertOwnEventDeletionAllowed(
-  event: Pick<Event, 'actor_id'>,
+  event: Pick<Event, 'actor_id' | 'timestamp'>,
   options?: DeleteEventPermissionOptions
 ): void {
   if (!options?.ownActorId) return;
   if (event.actor_id !== options.ownActorId) {
     throw new Error('Only the creator can delete this event');
+  }
+
+  const today = timestampToLocalDateString(options.now ?? Date.now());
+  const eventDate = timestampToLocalDateString(event.timestamp);
+  if (eventDate !== today) {
+    throw new Error('Only same-day events can be deleted by the creator');
   }
 }
 

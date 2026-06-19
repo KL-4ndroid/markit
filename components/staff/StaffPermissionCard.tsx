@@ -41,6 +41,7 @@ export function StaffPermissionCard({
   const permissionList: PermissionRow[] = [
     { label: '查看市集與商品資料', allowed: isOwner || staffRole !== undefined && staffRole !== null },
     { label: '記錄現場互動', allowed: resolvedCapabilities.canRecordInteraction },
+    { label: '記錄成交 / 收入', allowed: resolvedCapabilities.canRecordDeal },
     {
       label: '編輯既有市集基本資料',
       allowed: resolvedCapabilities.canEditMarketBasic,

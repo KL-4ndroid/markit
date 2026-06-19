@@ -84,10 +84,11 @@ Coverage:
 - owner cache bypass
 - no-cache local/owner flow bypass
 - fresh operator can record interaction
+- fresh operator can record deal
 - fresh manager can record deal
 - stale staff cache blocks write
 - viewer cannot record interaction
-- operator cannot record deal
+- operator cannot bypass stale-role deal gate
 - `recordEvent()` is wired to the gate before event validation/write
 
 ## Regression Suite

@@ -4,15 +4,13 @@ Date: 2026-06-19
 
 ## Scope
 
-P5-5 opens the first staff write surface only:
+P5-5 opens staff on-site write surfaces:
 
 - `canRecordInteraction`
-
-The following write surfaces remain closed in staff UI:
-
 - `canRecordDeal`
-- backfill revenue / `AddRevenueDialog`
-- product transaction grid
+
+The following write surfaces were outside the original P5-5 change and are governed by later gates/docs:
+
 - field notes
 - manager market/product edits
 - owner-only actions
@@ -24,10 +22,11 @@ The following write surfaces remain closed in staff UI:
 - `useUserRole()`
 - `deriveRoleCapabilities({ isOwner, staffRole })`
 - `hasCapability(..., 'canRecordInteraction')`
+- `hasCapability(..., 'canRecordDeal')`
 
 The staff interaction recorder is gated by `canRecordInteraction`.
 
-Deal/revenue/transaction entry points are gated behind `canRecordDeal`, which is intentionally `false` for P5-5.
+Deal/revenue/transaction entry points are gated behind `canRecordDeal`.
 
 `components/markets/DailyRevenueStats.tsx` now accepts `canAddRevenue?: boolean` with default `true`, so owner behavior remains unchanged while staff P5-5 can hide the backfill revenue button.
 
@@ -37,15 +36,17 @@ The actual write still flows through:
 
 ```text
 InteractionButtons -> recordInteraction -> recordEvent('interaction_recorded')
+QuickInteractionButtons / QuickTransactionGrid / AddRevenueDialog -> recordDeal -> recordEvent('deal_closed')
 ```
 
 `recordEvent()` is already protected by the P5-4d role freshness gate:
 
 ```text
 interaction_recorded -> canRecordInteraction
+deal_closed -> canRecordDeal
 ```
 
-Staff stale/offline role cache is therefore fail-closed for this write surface.
+Staff stale role cache is therefore fail-closed for these write surfaces. Staff delete remains limited to own same-day records.
 
 ## Tests
 
@@ -59,6 +60,6 @@ It verifies:
 
 - staff view consumes role capabilities
 - interaction UI is gated by `canRecordInteraction`
-- deal/revenue/transaction UI writes remain closed
-- `DailyRevenueStats` can hide the add-revenue button
+- deal/revenue/transaction UI writes are gated by `canRecordDeal`
+- `DailyRevenueStats` can show the add-revenue button through `canRecordDeal`
 - interaction writes still route through the P5-4d freshness gate

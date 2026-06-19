@@ -101,6 +101,7 @@ const VIEWER_CAPABILITIES: RoleCapabilities = { ...NONE_CAPABILITIES };
 const OPERATOR_CAPABILITIES: RoleCapabilities = {
   ...NONE_CAPABILITIES,
   canRecordInteraction: true,
+  canRecordDeal: true,
   canEditOwnSameDayRecord: true,
   canDeleteOwnSameDayRecord: true,
 };

@@ -3,7 +3,7 @@
 > 對齊 production 狀態（2026-06-18）
 > 對齊對象：042 / 043 / 044 / 045 / 046 / P4a / P4c
 > 風險等級：Green（本文件為文件，無 runtime 變更）
-> P5 runtime update（2026-06-19）：operator 互動紀錄、manager 基本資料編輯、field note、checklist、role status test UI、direct-route staff guards 已接上。新增/刪除市集、新增/刪除商品、成交/收入寫入與成交紀錄刪改仍需高風險決策。
+> P5 runtime update（2026-06-19）：operator 互動紀錄、成交/收入寫入、manager 基本資料編輯、field note、checklist、role status test UI、direct-route staff guards 已接上。新增/刪除市集、新增/刪除商品、成交編輯、非本人/非同日成交刪除與 projection 管理仍需高風險決策。
 
 ## 1. Current Status
 
@@ -38,7 +38,8 @@
 
 - 新增市集、新增商品仍是 owner-only。
 - 刪除市集、刪除商品仍是 owner-only。
-- 成交/收入寫入、成交紀錄編輯/刪除、庫存/營收 projection 相關變更仍需獨立高風險決策。
+- 成交/收入寫入已開放給 operator / manager。
+- 成交編輯尚未實作；成交/互動刪除只開放「自己建立 + 同日」；庫存/營收 projection 管理仍需獨立高風險決策。
 
 ## 2. Role Matrix
 
@@ -68,8 +69,8 @@ can_edit    : false
 infoLevel   : 2
 can_edit    : true（DB 已寫入；runtime 操作以 role-capabilities gate 為準，不直接等同完整 canEdit）
 目前可見度  : 可查看較完整的市集資訊
-目前操作    : 可記錄互動；field note / 自己同日紀錄能力依 capability 開放
-仍需決策    : 成交/收入寫入、成交紀錄編輯/刪除、庫存/營收 projection 相關變更
+目前操作    : 可記錄互動、成交/收入；field note / 自己同日紀錄能力依 capability 開放
+仍需決策    : 成交編輯、非本人/非同日成交刪除、庫存/營收 projection 管理
 永遠不開放  : 成本、利潤、淨利、員工管理、角色管理、系統設定、刪除資料、資料維修、批次匯入 / 匯出
 ```
 
@@ -79,8 +80,8 @@ can_edit    : true（DB 已寫入；runtime 操作以 role-capabilities gate 為
 infoLevel   : 2
 can_edit    : true（DB 已寫入；runtime 操作以 role-capabilities gate 為準，不直接等同完整 canEdit）
 目前可見度  : 與 operator 接近，可查看較完整資訊
-目前操作    : 可編輯市集/商品基本資料白名單欄位，可使用 field note / checklist
-仍需決策    : 成交/收入寫入、成交紀錄編輯/刪除、庫存/營收 projection 相關變更
+目前操作    : 可記錄互動、成交/收入；可編輯市集/商品基本資料白名單欄位，可使用 field note / checklist
+仍需決策    : 成交編輯、非本人/非同日成交刪除、庫存/營收 projection 管理
 永遠不開放  : 成本、利潤、淨利、員工管理、角色管理、系統設定、刪除資料、資料維修、批次匯入 / 匯出
 ```
 

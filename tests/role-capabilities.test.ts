@@ -130,6 +130,7 @@ runTest('operator: 只 canRecordInteraction = true，其他全 false', () => {
   const caps = deriveRoleCapabilities({ isOwner: false, staffRole: 'operator' });
   const truthy: StaffCapability[] = [
     'canRecordInteraction',
+    'canRecordDeal',
     'canEditOwnSameDayRecord',
     'canDeleteOwnSameDayRecord',
   ];
@@ -141,7 +142,7 @@ runTest('operator: 只 canRecordInteraction = true，其他全 false', () => {
 
 runTest('operator: 明確驗證 manager 範圍能力全 false', () => {
   const caps = deriveRoleCapabilities({ isOwner: false, staffRole: 'operator' });
-  assert.equal(caps.canRecordDeal, false, 'canRecordDeal 仍 gated');
+  assert.equal(caps.canRecordDeal, true, 'canRecordDeal = true');
   assert.equal(caps.canCreateFieldNote, false, 'canCreateFieldNote 仍 gated');
   assert.equal(caps.canEditMarketBasic, false, 'canEditMarketBasic = false');
   assert.equal(caps.canEditProductBasic, false, 'canEditProductBasic = false');
@@ -271,11 +272,11 @@ runTest('mutation safety: viewer caps 被 mutate 不影響下次 viewer 結果',
 
 runTest('mutation safety: operator caps 被 mutate 不影響下次 operator 結果', () => {
   const caps1 = deriveRoleCapabilities({ isOwner: false, staffRole: 'operator' });
-  (caps1 as Record<string, boolean>).canRecordDeal = true; // 嘗試升級
+  (caps1 as Record<string, boolean>).canRecordDeal = false;
   (caps1 as Record<string, boolean>).canEditMarketBasic = true;
   const caps2 = deriveRoleCapabilities({ isOwner: false, staffRole: 'operator' });
   assert.equal(caps2.canRecordInteraction, true);
-  assert.equal(caps2.canRecordDeal, false);
+  assert.equal(caps2.canRecordDeal, true);
   assert.equal(caps2.canEditMarketBasic, false);
   assert.equal(caps2.canEditOwnSameDayRecord, true);
   assert.equal(caps2.canDeleteOwnSameDayRecord, true);

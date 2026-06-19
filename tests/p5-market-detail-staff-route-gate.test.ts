@@ -53,10 +53,11 @@ runTest('StaffMarketDetailView keeps manager edits scoped to manager mode', () =
   assert.match(staffMarketViewSource, /<EditMarketForm[\s\S]*mode=["']manager["']/);
 });
 
-runTest('StaffMarketDetailView keeps deal writes closed and profit hidden', () => {
-  assert.match(staffMarketViewSource, /const\s+canRecordDeal\s*=\s*false/);
+runTest('StaffMarketDetailView opens deal writes through capability and keeps profit hidden', () => {
+  assert.match(staffMarketViewSource, /hasCapability\(roleCapabilities,\s*['"]canRecordDeal['"]\)/);
   assert.match(staffMarketViewSource, /<DailyRevenueStats[\s\S]*hideProfit=\{true\}[\s\S]*canAddRevenue=\{canRecordDeal\}/);
   assert.match(staffMarketViewSource, /\{canRecordDeal\s*&&\s*\([\s\S]*?<QuickTransactionGrid/);
+  assert.match(staffMarketViewSource, /<QuickInteractionButtons[\s\S]*hideProfit=\{true\}/);
 });
 
 async function main(): Promise<void> {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   assertEventDeletionAllowed,
   assertEventCanBeDeleted,
+  assertOwnEventDeletionAllowed,
   deleteDealEvent,
   recordDealDeletedEvent,
   resolveDealDeletionResult,
@@ -177,6 +178,27 @@ async function main(): Promise<void> {
   );
 
   assert.doesNotThrow(() => assertEventDeletionAllowed({ allowDelete: true }));
+
+  assert.doesNotThrow(() => assertOwnEventDeletionAllowed(
+    dealEvent({ actor_id: 'staff-1', timestamp }),
+    { allowDelete: true, ownActorId: 'staff-1', now: timestamp }
+  ));
+
+  assert.throws(
+    () => assertOwnEventDeletionAllowed(
+      dealEvent({ actor_id: 'staff-2', timestamp }),
+      { allowDelete: true, ownActorId: 'staff-1', now: timestamp }
+    ),
+    /Only the creator/
+  );
+
+  assert.throws(
+    () => assertOwnEventDeletionAllowed(
+      dealEvent({ actor_id: 'staff-1', timestamp }),
+      { allowDelete: true, ownActorId: 'staff-1', now: timestamp + 24 * 60 * 60 * 1000 }
+    ),
+    /same-day/
+  );
 
   assert.throws(
     () => assertEventDeletionAllowed(),

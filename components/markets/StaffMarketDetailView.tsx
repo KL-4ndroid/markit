@@ -100,8 +100,8 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
     !isRoleLoading && hasCapability(roleCapabilities, 'canEditOwnSameDayRecord');
   const canDeleteOwnRecord =
     !isRoleLoading && hasCapability(roleCapabilities, 'canDeleteOwnSameDayRecord');
-  // P5-6 keeps deal/revenue writes closed while allowing manager basic edits.
-  const canRecordDeal = false;
+  const canRecordDeal =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canRecordDeal');
   const [showEditMarketForm, setShowEditMarketForm] = useState(false);
   
   // ✅ 新增：交易功能區塊的展開/折疊狀態（互斥）
@@ -354,6 +354,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
                 {isQuickRevenueExpanded && (
                   <QuickInteractionButtons 
                     marketId={marketId}
+                    hideProfit={true}
                   />
                 )}
               </div>

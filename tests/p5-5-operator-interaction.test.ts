@@ -64,10 +64,10 @@ runTest('staff interaction recorder is gated by canRecordInteraction', () => {
   );
 });
 
-runTest('P5-5 keeps staff deal/revenue/transaction writes closed', () => {
+runTest('P5-5 opens staff deal/revenue/transaction writes through canRecordDeal', () => {
   assert.match(
     staffViewSource,
-    /const\s+canRecordDeal\s*=\s*false\s*;/
+    /hasCapability\(roleCapabilities,\s*['"]canRecordDeal['"]\)/
   );
   assert.match(
     staffViewSource,
@@ -79,6 +79,7 @@ runTest('P5-5 keeps staff deal/revenue/transaction writes closed', () => {
   );
   assert.match(staffViewSource, /if\s*\(\s*!canRecordDeal\s*\)\s*return\s*;/);
   assert.match(staffViewSource, /canAddRevenue=\{canRecordDeal\}/);
+  assert.match(staffViewSource, /hideProfit=\{true\}/);
 });
 
 runTest('DailyRevenueStats can hide AddRevenue write entry point', () => {
