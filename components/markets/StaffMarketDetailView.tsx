@@ -92,10 +92,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
     !isRoleLoading && hasCapability(roleCapabilities, 'canRecordInteraction');
   const canEditMarketBasic =
     !isRoleLoading && hasCapability(roleCapabilities, 'canEditMarketBasic');
-  const canCreateFieldNote =
-    !isRoleLoading && hasCapability(roleCapabilities, 'canCreateFieldNote');
+  const canManageFieldNotes =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canManageFieldNotes');
   const canManageChecklist =
     !isRoleLoading && hasCapability(roleCapabilities, 'canManageChecklist');
+  const canToggleChecklistItem =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canToggleChecklistItem');
   const canEditOwnRecord =
     !isRoleLoading && hasCapability(roleCapabilities, 'canEditOwnSameDayRecord');
   const canDeleteOwnRecord =
@@ -383,17 +385,16 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           />
         )}
 
-        {(canCreateFieldNote || canEditOwnRecord || canDeleteOwnRecord) && (
+        {(canManageFieldNotes || canEditOwnRecord || canDeleteOwnRecord) && (
           <div className="mb-6 space-y-4">
             <FieldNotesPanel
               marketId={marketId}
-              canCreate={canCreateFieldNote}
-              canEditOwn={canEditOwnRecord}
-              canDeleteOwn={canDeleteOwnRecord}
+              canManage={canManageFieldNotes}
             />
             <ChecklistPanel
               marketId={marketId}
               canManage={canManageChecklist}
+              canToggle={canToggleChecklistItem}
             />
           </div>
         )}

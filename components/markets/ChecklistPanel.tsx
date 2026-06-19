@@ -16,9 +16,10 @@ import {
 interface ChecklistPanelProps {
   marketId: string;
   canManage: boolean;
+  canToggle: boolean;
 }
 
-export function ChecklistPanel({ marketId, canManage }: ChecklistPanelProps) {
+export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPanelProps) {
   const [text, setText] = useState('');
   const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null);
   const [editingText, setEditingText] = useState('');
@@ -30,6 +31,7 @@ export function ChecklistPanel({ marketId, canManage }: ChecklistPanelProps) {
     []
   );
 
+  const canToggleItems = canManage || canToggle;
   const remaining = items.filter(item => !item.completed).length;
 
   const handleCreate = async () => {
@@ -48,7 +50,7 @@ export function ChecklistPanel({ marketId, canManage }: ChecklistPanelProps) {
   };
 
   const handleToggle = async (item: ChecklistItem) => {
-    if (!canManage || isSaving) return;
+    if (!canToggleItems || isSaving) return;
     setIsSaving(true);
     try {
       await toggleChecklistItem(marketId, item.id, !item.completed);
@@ -94,8 +96,6 @@ export function ChecklistPanel({ marketId, canManage }: ChecklistPanelProps) {
       setIsSaving(false);
     }
   };
-
-  if (!canManage && items.length === 0) return null;
 
   return (
     <section className="rounded-xl bg-white p-4 shadow-sm shadow-primary/10">
@@ -173,7 +173,7 @@ export function ChecklistPanel({ marketId, canManage }: ChecklistPanelProps) {
                     <button
                       type="button"
                       onClick={() => handleToggle(item)}
-                      disabled={!canManage || isSaving}
+                      disabled={!canToggleItems || isSaving}
                       className={`mt-0.5 h-5 w-5 shrink-0 rounded border transition-colors ${
                         item.completed
                           ? 'border-primary bg-primary text-white'

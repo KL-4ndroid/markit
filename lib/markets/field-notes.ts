@@ -106,8 +106,7 @@ export async function createFieldNote(marketId: string, text: string): Promise<s
 export async function updateFieldNote(
   marketId: string,
   noteId: string,
-  text: string,
-  _options?: { userId?: string }
+  text: string
 ): Promise<void> {
   const existing = (await getActiveFieldNotesForMarket(marketId)).find(note => note.id === noteId);
   assertFieldNoteExists(existing);
@@ -121,8 +120,7 @@ export async function updateFieldNote(
 
 export async function deleteFieldNote(
   marketId: string,
-  noteId: string,
-  _options?: { userId?: string }
+  noteId: string
 ): Promise<void> {
   const existing = (await getActiveFieldNotesForMarket(marketId)).find(note => note.id === noteId);
   assertFieldNoteExists(existing);

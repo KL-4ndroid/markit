@@ -79,17 +79,19 @@ runTest('staff sync preflight treats field notes as market-scoped', () => {
 
 runTest('staff market detail renders FieldNotesPanel with capability gates', () => {
   assert.match(staffMarketDetailSource, /import \{ FieldNotesPanel \}/);
-  assert.match(staffMarketDetailSource, /canCreateFieldNote/);
-  assert.match(staffMarketDetailSource, /canEditOwnSameDayRecord/);
-  assert.match(staffMarketDetailSource, /canDeleteOwnSameDayRecord/);
+  assert.match(staffMarketDetailSource, /canManageFieldNotes/);
   assert.match(staffMarketDetailSource, /<FieldNotesPanel/);
+  assert.match(staffMarketDetailSource, /canManage=\{canManageFieldNotes\}/);
 });
 
 runTest('field note panel calls create/update/delete service functions', () => {
   assert.match(fieldNotesPanelSource, /createFieldNote/);
   assert.match(fieldNotesPanelSource, /updateFieldNote/);
   assert.match(fieldNotesPanelSource, /deleteFieldNote/);
-  assert.match(fieldNotesPanelSource, /user\?\.id === note\.actorId/);
+  assert.match(fieldNotesPanelSource, /canManage/);
+  assert.doesNotMatch(fieldNotesPanelSource, /useAuth/);
+  assert.doesNotMatch(fieldNotesPanelSource, /user\?\.id === note\.actorId/);
+  assert.doesNotMatch(fieldNotesPanelSource, /staffRole|isOwner/);
 });
 
 runTest('staff daily log deletion is scoped by actor and same-day rules', () => {

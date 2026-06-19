@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Edit3, FileText, Save, Trash2, X } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { toast } from 'sonner';
-import { useAuth } from '@/lib/supabase/auth-context';
 import {
   createFieldNote,
   deleteFieldNote,
@@ -15,18 +14,13 @@ import {
 
 interface FieldNotesPanelProps {
   marketId: string;
-  canCreate: boolean;
-  canEditOwn: boolean;
-  canDeleteOwn: boolean;
+  canManage: boolean;
 }
 
 export function FieldNotesPanel({
   marketId,
-  canCreate,
-  canEditOwn,
-  canDeleteOwn,
+  canManage,
 }: FieldNotesPanelProps) {
-  const { user } = useAuth();
   const [text, setText] = useState('');
   const [editingNote, setEditingNote] = useState<FieldNote | null>(null);
   const [editingText, setEditingText] = useState('');
@@ -39,7 +33,7 @@ export function FieldNotesPanel({
   );
 
   const handleCreate = async () => {
-    if (!canCreate || isSaving) return;
+    if (!canManage || isSaving) return;
     setIsSaving(true);
     try {
       await createFieldNote(marketId, text);
@@ -59,10 +53,10 @@ export function FieldNotesPanel({
   };
 
   const handleUpdate = async () => {
-    if (!editingNote || !canEditOwn || isSaving) return;
+    if (!editingNote || !canManage || isSaving) return;
     setIsSaving(true);
     try {
-      await updateFieldNote(marketId, editingNote.id, editingText, { userId: user?.id });
+      await updateFieldNote(marketId, editingNote.id, editingText);
       setEditingNote(null);
       setEditingText('');
       toast.success('Field note 已更新');
@@ -75,10 +69,10 @@ export function FieldNotesPanel({
   };
 
   const handleDelete = async (note: FieldNote) => {
-    if (!canDeleteOwn || isSaving) return;
+    if (!canManage || isSaving) return;
     setIsSaving(true);
     try {
-      await deleteFieldNote(marketId, note.id, { userId: user?.id });
+      await deleteFieldNote(marketId, note.id);
       toast.success('Field note 已刪除');
     } catch (error) {
       console.error('delete field note failed:', error);
@@ -95,7 +89,7 @@ export function FieldNotesPanel({
         <h2 className="text-base font-medium text-foreground">Field notes</h2>
       </div>
 
-      {canCreate && (
+      {canManage && (
         <div className="mb-4 space-y-2">
           <textarea
             value={text}
@@ -123,9 +117,6 @@ export function FieldNotesPanel({
           </p>
         ) : (
           notes.map((note) => {
-            const isOwn = user?.id === note.actorId;
-            const canEditThis = isOwn && canEditOwn;
-            const canDeleteThis = isOwn && canDeleteOwn;
             const isEditing = editingNote?.id === note.id;
 
             return (
@@ -173,7 +164,7 @@ export function FieldNotesPanel({
                         })}
                       </span>
                       <div className="flex gap-1">
-                        {canEditThis && (
+                        {canManage && (
                           <button
                             type="button"
                             onClick={() => startEditing(note)}
@@ -183,7 +174,7 @@ export function FieldNotesPanel({
                             <Edit3 className="h-4 w-4" />
                           </button>
                         )}
-                        {canDeleteThis && (
+                        {canManage && (
                           <button
                             type="button"
                             onClick={() => handleDelete(note)}

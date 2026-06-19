@@ -67,8 +67,10 @@ runTest('staff sync preflight treats checklist events as market-scoped', () => {
 runTest('staff market detail renders ChecklistPanel with manager gate', () => {
   assert.match(staffMarketDetailSource, /import \{ ChecklistPanel \}/);
   assert.match(staffMarketDetailSource, /canManageChecklist/);
+  assert.match(staffMarketDetailSource, /canToggleChecklistItem/);
   assert.match(staffMarketDetailSource, /<ChecklistPanel/);
   assert.match(staffMarketDetailSource, /canManage=\{canManageChecklist\}/);
+  assert.match(staffMarketDetailSource, /canToggle=\{canToggleChecklistItem\}/);
 });
 
 runTest('checklist service separates toggle from text management', () => {
@@ -83,6 +85,10 @@ runTest('checklist panel calls create/toggle/update/delete service functions', (
   assert.match(checklistPanelSource, /updateChecklistItem/);
   assert.match(checklistPanelSource, /deleteChecklistItem/);
   assert.match(checklistPanelSource, /canManage/);
+  assert.match(checklistPanelSource, /canToggle/);
+  assert.match(checklistPanelSource, /canToggleItems/);
+  assert.doesNotMatch(checklistPanelSource, /if \(!canManage && items\.length === 0\) return null/);
+  assert.doesNotMatch(checklistPanelSource, /staffRole|isOwner|useUserRole/);
 });
 
 console.log(`\n=== ${passed} passed, ${failed} failed ===`);
