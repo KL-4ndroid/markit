@@ -407,6 +407,29 @@ runTest('useUserRole has revalidationInFlightRef', () => {
   );
 });
 
+runTest('useUserRole guards async commits after unmount / stale user change', () => {
+  assert.match(
+    useUserRoleSource,
+    /mountedRef/,
+    'expected mountedRef guard for unmount safety'
+  );
+  assert.match(
+    useUserRoleSource,
+    /roleRequestIdRef/,
+    'expected request id guard for stale async result safety'
+  );
+  assert.match(
+    useUserRoleSource,
+    /currentUserIdRef/,
+    'expected current user guard for user-switch safety'
+  );
+  assert.match(
+    useUserRoleSource,
+    /shouldCommitRoleLoad/,
+    'expected shared commit guard around async state/cache writes'
+  );
+});
+
 runTest('useUserRole has new useEffect for event listener', () => {
   // 至少有兩個 useEffect：一個 [user]（既有），一個 event listener（P5-4b 新增）
   const useEffectCount = (useUserRoleSource.match(/useEffect\(/g) || []).length;

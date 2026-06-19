@@ -175,6 +175,19 @@ export function useUserRole() {
   // ✅ P5-4b：防止重複 revalidate（連續 invalidateRoleCache dispatch 時）
   // loadUserRole finally 區塊會釋放此旗標
   const revalidationInFlightRef = useRef(false);
+  const mountedRef = useRef(false);
+  const roleRequestIdRef = useRef(0);
+  const currentUserIdRef = useRef<string | null>(user?.id ?? null);
+
+  currentUserIdRef.current = user?.id ?? null;
+
+  const shouldCommitRoleLoad = (requestId: number, requestUserId: string | null): boolean => {
+    return (
+      mountedRef.current &&
+      roleRequestIdRef.current === requestId &&
+      currentUserIdRef.current === requestUserId
+    );
+  };
 
   /**
    * ✅ P5-4b：抽出 loadUserRole 為 stable function
@@ -190,30 +203,39 @@ export function useUserRole() {
    * - fail-closed catch 不變
    * - 寫 cache 行為不變
    */
-  const loadUserRole = async (): Promise<void> => {
+  const loadUserRole = async (requestUser = user): Promise<void> => {
+    const requestId = ++roleRequestIdRef.current;
+    const requestUserId = requestUser?.id ?? null;
+    revalidationInFlightRef.current = true;
+
     // ✅ 如果沒有用戶,立即清除緩存並返回
-    if (!user) {
+    if (!requestUser) {
       clearRoleCache();
-      setUserRole({ isStaff: false });
-      setRoleError(null);
-      setIsLoading(false);
-      revalidationInFlightRef.current = false;
+      if (shouldCommitRoleLoad(requestId, requestUserId)) {
+        setUserRole({ isStaff: false });
+        setRoleError(null);
+        setIsLoading(false);
+        revalidationInFlightRef.current = false;
+      }
       return;
     }
 
     try {
-      setIsLoading(true);
-      setRoleError(null);
+      if (shouldCommitRoleLoad(requestId, requestUserId)) {
+        setIsLoading(true);
+        setRoleError(null);
+      }
 
       // 查詢是否為員工
       const { data, error } = await supabase
         .from('staff_relationships')
         .select('owner_id, permissions, role')
-        .eq('staff_id', user.id)
+        .eq('staff_id', requestUser.id)
         .eq('status', 'active')
         .limit(1);
 
       if (error) throw error;
+      if (!shouldCommitRoleLoad(requestId, requestUserId)) return;
 
       if (data && data.length > 0) {
         // 是員工，獲取老闆的 email
@@ -224,6 +246,7 @@ export function useUserRole() {
           .single();
 
         if (ownerError) throw ownerError;
+        if (!shouldCommitRoleLoad(requestId, requestUserId)) return;
 
         const role: UserRole = {
           isStaff: true,
@@ -235,32 +258,43 @@ export function useUserRole() {
 
         setUserRole(role);
         // ✅ 保存到緩存
-        setCachedRole(user.id, role);
+        setCachedRole(requestUser.id, role);
       } else {
         // 是老闆
         const role: UserRole = { isStaff: false, staffRole: null };
 
         setUserRole(role);
         // ✅ 保存到緩存
-        setCachedRole(user.id, role);
+        setCachedRole(requestUser.id, role);
       }
     } catch (error: any) {
+      if (!shouldCommitRoleLoad(requestId, requestUserId)) return;
+
       console.error('檢查用戶身份失敗:', error);
       // ✅ C2.28：fail-closed —— 記錄錯誤並保持 userRole 為員工預設值
       // （不再 fallback 成 owner）讓 isOwner / canEdit / canViewSensitiveData 全部回傳 false
       setRoleError(error instanceof Error ? error : new Error(String(error)));
       setUserRole({ isStaff: true, staffRole: null, permissions: { can_view: false, can_edit: false } });
     } finally {
-      setIsLoading(false);
-      // ✅ P5-4b：釋放 revalidate in-flight 旗標
-      revalidationInFlightRef.current = false;
+      if (shouldCommitRoleLoad(requestId, requestUserId)) {
+        setIsLoading(false);
+        // ✅ P5-4b：釋放 revalidate in-flight 旗標
+        revalidationInFlightRef.current = false;
+      }
     }
   };
 
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      revalidationInFlightRef.current = false;
+    };
+  }, []);
+
   // ✅ 既有 user 變化時重新查（user 從 null 變 user / 切換帳號）
   useEffect(() => {
-    revalidationInFlightRef.current = true;
-    void loadUserRole();
+    void loadUserRole(user);
     // 依賴 [user]：user 變化時自動重查
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
@@ -290,8 +324,7 @@ export function useUserRole() {
       if (revalidationInFlightRef.current) {
         return;
       }
-      revalidationInFlightRef.current = true;
-      void loadUserRole();
+      void loadUserRole(user);
     });
 
     return unsubscribe;
