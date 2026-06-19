@@ -3,6 +3,7 @@
 > 對齊 production 狀態（2026-06-18）
 > 對齊對象：042 / 043 / 044 / 045 / 046 / P4a / P4c
 > 風險等級：Green（本文件為文件，無 runtime 變更）
+> P5 runtime update（2026-06-19）：operator 互動紀錄、manager 基本資料編輯、field note、checklist、role status test UI、direct-route staff guards 已接上。新增/刪除市集、新增/刪除商品、成交/收入寫入與成交紀錄刪改仍需高風險決策。
 
 ## 1. Current Status
 
@@ -19,6 +20,12 @@
 | P4c-1 | UI 計畫 | 本文件 + plan |
 | P4c-2 | 老闆端 role change Dialog | `components/settings/StaffManagement.tsx` |
 | P4c-3 | 本文件（docs） | `docs/staff-role-matrix.md` |
+| P5-4a~d | downgrade detection / role cache invalidation / Dexie cleanup / write freshness gate | `hooks/useStaffStatusMonitor.ts`, `hooks/useUserRole.ts`, `lib/db/clear-user-data.ts`, `lib/permissions/role-freshness.ts` |
+| P5-4e / P5-7 | role status banner + non-production role test UI + role-aware permission card | `components/staff/RoleStatusBanner.tsx`, `app/debug/staff-role-test/page.tsx`, `components/staff/StaffPermissionCard.tsx` |
+| P5-5 | operator interaction gate | `components/markets/StaffMarketDetailView.tsx`, `tests/p5-5-operator-interaction.test.ts` |
+| P5-6 | manager basic market/product edits | `components/markets/EditMarketForm.tsx`, `components/products/EditProductForm.tsx`, `tests/p5-6-manager-basic-edit.test.ts` |
+| P5 field ops | field notes + checklist | `components/markets/FieldNotesPanel.tsx`, `components/markets/ChecklistPanel.tsx` |
+| P5 route guards | direct `/products/[id]` and `/markets/[id]` staff route guards | `tests/p5-product-detail-staff-gate.test.ts`, `tests/p5-market-detail-staff-route-gate.test.ts` |
 
 ### 目前確認能力
 
@@ -27,9 +34,11 @@
 - ✅ 角色會同步寫入 `staff_relationships.permissions.infoLevel`
 - ✅ 老闆端 `StaffManagement` 顯示 `RoleBadge` + 角色 helper copy
 
-### 目前尚未開放
+### 目前仍保留 owner-only / high-risk decision
 
-- ❌ operator / manager 尚未開放完整操作權限（見 P5 Boundary）
+- 新增市集、新增商品仍是 owner-only。
+- 刪除市集、刪除商品仍是 owner-only。
+- 成交/收入寫入、成交紀錄編輯/刪除、庫存/營收 projection 相關變更仍需獨立高風險決策。
 
 ## 2. Role Matrix
 
@@ -38,8 +47,8 @@
 | Role | 中文 | infoLevel | can_edit (JSON) | 目前資料可見度 | 目前操作權限 |
 |---|---|---|---|---|---|
 | `owner` | 擁有者 | 3（或 owner full access） | true | 全部 | 完整管理 |
-| `manager` | 管理員 | 2 | true | 較完整（與 operator 接近） | 尚未開放管理能力 |
-| `operator` | 出攤助手 | 2 | true | 較完整市集資訊 | 尚未開放新增 / 編輯能力 |
+| `manager` | 管理員 | 2 | true | 較完整（與 operator 接近） | 基本資料編輯、field note、checklist；owner-only / high-risk 仍關閉 |
+| `operator` | 出攤助手 | 2 | true | 較完整市集資訊 | 互動紀錄、field note / 自己同日紀錄能力；owner-only / high-risk 仍關閉 |
 | `viewer` | 查看者 | 0 | false | 僅查看必要資訊 | 不可新增 / 編輯 / 刪除 |
 
 ### viewer（查看者）
@@ -57,10 +66,10 @@ can_edit    : false
 
 ```text
 infoLevel   : 2
-can_edit    : true（DB 已寫入，但目前前端尚未消費為 canEdit）
+can_edit    : true（DB 已寫入；runtime 操作以 role-capabilities gate 為準，不直接等同完整 canEdit）
 目前可見度  : 可查看較完整的市集資訊
-目前操作    : 尚未開放新增 / 編輯能力
-未來        : 可考慮開放現場記錄、互動、成交、備註
+目前操作    : 可記錄互動；field note / 自己同日紀錄能力依 capability 開放
+仍需決策    : 成交/收入寫入、成交紀錄編輯/刪除、庫存/營收 projection 相關變更
 永遠不開放  : 成本、利潤、淨利、員工管理、角色管理、系統設定、刪除資料、資料維修、批次匯入 / 匯出
 ```
 
@@ -68,10 +77,10 @@ can_edit    : true（DB 已寫入，但目前前端尚未消費為 canEdit）
 
 ```text
 infoLevel   : 2
-can_edit    : true（DB 已寫入，但目前前端尚未消費為 canEdit）
+can_edit    : true（DB 已寫入；runtime 操作以 role-capabilities gate 為準，不直接等同完整 canEdit）
 目前可見度  : 與 operator 接近，可查看較完整資訊
-目前操作    : 尚未開放管理能力
-未來        : 可考慮開放市集 / 商品基本資料協助管理
+目前操作    : 可編輯市集/商品基本資料白名單欄位，可使用 field note / checklist
+仍需決策    : 成交/收入寫入、成交紀錄編輯/刪除、庫存/營收 projection 相關變更
 永遠不開放  : 成本、利潤、淨利、員工管理、角色管理、系統設定、刪除資料、資料維修、批次匯入 / 匯出
 ```
 
@@ -103,12 +112,10 @@ can_edit    : true
 
 ### 常見誤解（重要）
 
-- ⚠️ 目前**不要把 `permissions.can_edit` 誤認為前端 `canEdit` 已開放**。
-- ⚠️ 目前 `useUserRole` / `PermissionGate` / `sync` / `Dexie` 尚未依
-  `staff_relationships.role` 做完整功能 gate。
-- ⚠️ `operator` / `manager` 雖然 DB 已寫入 `can_edit=true`，但 **runtime 端尚未消費**。
-- ⚠️ 員工 role 改完後，需員工端 **重新整理或登入** 才會看到對應的可見度變化
-  （runtime 依賴 Dexie 端 `permissions.infoLevel` cache，下次 sync 拉資料時更新）。
+- ⚠️ 不要把 `permissions.can_edit` 誤認為完整前端 `canEdit`。實際操作權限需看 `role-capabilities` 與各寫入 gate。
+- ⚠️ `useUserRole` / `PermissionGate` / `sync` / `Dexie` 仍負責資料可見度、fail-closed 與同步安全；按鈕與寫入流程需另外接 role-aware capability。
+- ⚠️ `operator` / `manager` 雖然 DB 已寫入 `can_edit=true`，但 runtime 只開放已接上 capability gate 的白名單功能。
+- ⚠️ 員工 role 改完後，P5 已有 role cache invalidation 與 status monitor；若網路或同步失敗，仍需以 fail-closed 與重新整理作為人工驗證手段。
 
 ### 角色文案來源
 

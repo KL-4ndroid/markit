@@ -6,6 +6,26 @@
 
 ---
 
+## 0. P5 Runtime Status Update - 2026-06-19
+
+目前 P5 已不再只是設計文件，以下 runtime gate 已接上並推送：
+
+* `role-capabilities` 已成為 operator / manager 實際操作權限的主要判斷來源。
+* operator 已開放 `canRecordInteraction`，可在 staff 市集頁記錄互動。
+* manager 已開放市集基本資料編輯，但不可改市集名稱、地點、財務欄位，也不可新增/刪除市集。
+* manager 已開放商品基本資料編輯，但不可改商品名稱、分類、成本，也不可新增/刪除商品。
+* manager 已開放 checklist；manager/operator 依 capability 可使用 field note 與自己建立的同日現場紀錄編輯/刪除能力。
+* staff direct-route guard 已補上：`/products/[id]` 會依 role 隱藏成本/毛利與 owner-only 操作；`/markets/[id]` staff 會先進入 `StaffMarketDetailView`。
+* P5 downgrade safety 已有 role cache invalidation、Dexie staff projection cleanup、write freshness gate、role status banner，以及 `/debug/staff-role-test` 非正式環境測試頁。
+
+仍刻意保持關閉或需要高風險決策的部分：
+
+* 新增市集、新增商品仍是 owner-only。
+* 刪除市集、刪除商品仍是 owner-only。
+* 成交/收入寫入、成交紀錄編輯/刪除、庫存/營收 projection 相關變更暫不擴權；任何調整都需要獨立決策。
+
+---
+
 ## 1. Role Design Principle
 
 BoothBook 的員工權限分成四個層級：
@@ -33,8 +53,8 @@ owner    = 完整管理
 | Role     | 中文名稱 | 定位       | 資料層級             | 目前操作能力         | 未來方向          |
 | -------- | ---- | -------- | ---------------- | -------------- | ------------- |
 | viewer   | 查看者  | 只看必要資訊   | L0               | 不可新增 / 編輯 / 刪除 | 維持純查看         |
-| operator | 出攤助手 | 現場協助記錄   | L2               | 尚未開放實際寫入       | 新增互動、成交、現場備註  |
-| manager  | 管理員  | 協作管理基本資料 | L2               | 尚未開放實際管理       | 編輯市集 / 商品基本資料 |
+| operator | 出攤助手 | 現場協助記錄   | L2               | 已開放互動紀錄；高風險寫入仍關閉 | 成交/收入需另行決策  |
+| manager  | 管理員  | 協作管理基本資料 | L2               | 已開放基本資料白名單、field note、checklist | 高風險管理需另行決策 |
 | owner    | 擁有者  | 完整管理     | L3 / full access | 完整管理           | 永遠保留最高權限      |
 
 ---
