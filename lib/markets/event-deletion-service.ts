@@ -37,6 +37,7 @@ export interface DeleteDealResult extends DeleteEventResult {
 
 export interface DeleteEventPermissionOptions {
   allowDelete?: boolean;
+  ownActorId?: string;
 }
 
 export type ProductCostResolver = (productId: string) => Promise<number | undefined>;
@@ -45,6 +46,16 @@ export type EventRecorder = typeof recordEvent;
 export function assertEventDeletionAllowed(options?: DeleteEventPermissionOptions): void {
   if (options?.allowDelete !== true) {
     throw new Error('Event deletion is not allowed for this context');
+  }
+}
+
+export function assertOwnEventDeletionAllowed(
+  event: Pick<Event, 'actor_id'>,
+  options?: DeleteEventPermissionOptions
+): void {
+  if (!options?.ownActorId) return;
+  if (event.actor_id !== options.ownActorId) {
+    throw new Error('Only the creator can delete this event');
   }
 }
 
@@ -166,6 +177,7 @@ export async function deleteDealEventById(
   if (event.type !== 'deal_closed') {
     throw new Error(`Event is not a deal_closed event: ${eventId}`);
   }
+  assertOwnEventDeletionAllowed(event, options);
 
   return deleteDealEvent(event, options);
 }
@@ -216,6 +228,7 @@ export async function deleteInteractionEventById(
   if (event.type !== 'interaction_recorded') {
     throw new Error(`Event is not an interaction_recorded event: ${eventId}`);
   }
+  assertOwnEventDeletionAllowed(event, options);
 
   return deleteInteractionEvent(event, options);
 }

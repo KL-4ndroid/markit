@@ -101,6 +101,8 @@ const VIEWER_CAPABILITIES: RoleCapabilities = { ...NONE_CAPABILITIES };
 const OPERATOR_CAPABILITIES: RoleCapabilities = {
   ...NONE_CAPABILITIES,
   canRecordInteraction: true,
+  canEditOwnSameDayRecord: true,
+  canDeleteOwnSameDayRecord: true,
 };
 
 const MANAGER_CAPABILITIES: RoleCapabilities = {
@@ -111,6 +113,8 @@ const MANAGER_CAPABILITIES: RoleCapabilities = {
   canEditMarketBasic: true,
   canEditProductBasic: true,
   canManageChecklist: true,
+  canEditOwnSameDayRecord: true,
+  canDeleteOwnSameDayRecord: true,
 };
 
 /**

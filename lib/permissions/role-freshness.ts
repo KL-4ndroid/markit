@@ -42,11 +42,16 @@ type CachedRoleEnvelope = {
   timestamp?: unknown;
 };
 
-const EVENT_CAPABILITY: Partial<Record<EventType, StaffCapability>> = {
+const EVENT_CAPABILITY: Partial<Record<string, StaffCapability>> = {
   interaction_recorded: 'canRecordInteraction',
+  interaction_deleted: 'canDeleteOwnSameDayRecord',
   deal_closed: 'canRecordDeal',
+  deal_deleted: 'canDeleteOwnSameDayRecord',
   market_updated: 'canEditMarketBasic',
   product_updated: 'canEditProductBasic',
+  field_note_created: 'canCreateFieldNote',
+  field_note_updated: 'canEditOwnSameDayRecord',
+  field_note_deleted: 'canDeleteOwnSameDayRecord',
 };
 
 const STAFF_OWNER_ONLY_EVENTS = new Set<EventType>([
@@ -117,6 +122,12 @@ function assertAllowedUpdateFields(args: {
   );
 }
 
+function getInteractionTypeFromPayload(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const value = (payload as { type?: unknown }).type;
+  return typeof value === 'string' ? value : null;
+}
+
 export function parseCachedRoleSnapshot(raw: string | null): CachedRoleSnapshot | null {
   if (!raw) return null;
 
@@ -160,8 +171,13 @@ export function assertFreshStaffCapability(args: {
   } = args;
 
   const requiredCapability = getRequiredCapabilityForEvent(eventType);
+  const interactionType = getInteractionTypeFromPayload(payload);
+  const effectiveRequiredCapability: StaffCapability | null =
+    eventType === 'interaction_recorded' && interactionType === 'field_note'
+      ? 'canCreateFieldNote'
+      : requiredCapability;
   const isStaffOwnerOnlyEvent = STAFF_OWNER_ONLY_EVENTS.has(eventType);
-  if (!requiredCapability && !isStaffOwnerOnlyEvent) return;
+  if (!effectiveRequiredCapability && !isStaffOwnerOnlyEvent) return;
 
   const snapshot = parseCachedRoleSnapshot(rawCache);
   if (!snapshot) {
@@ -194,10 +210,10 @@ export function assertFreshStaffCapability(args: {
     staffRole: snapshot.staffRole,
   });
 
-  if (requiredCapability && !capabilities[requiredCapability]) {
+  if (effectiveRequiredCapability && !capabilities[effectiveRequiredCapability]) {
     throw new RoleFreshnessError(
       'staff_role_capability_denied',
-      `Staff write blocked because ${String(snapshot.staffRole)} cannot ${requiredCapability}.`
+      `Staff write blocked because ${String(snapshot.staffRole)} cannot ${effectiveRequiredCapability}.`
     );
   }
 

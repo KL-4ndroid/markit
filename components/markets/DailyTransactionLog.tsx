@@ -33,8 +33,9 @@ import { toast } from 'sonner';
 
 interface DailyTransactionLogProps {
   marketId: string;
-  date?: string; // 可選：指定日期，預設為今天
   allowDelete?: boolean;
+  deleteActorId?: string;
+  date?: string; // 可選：指定日期，預設為今天
 }
 
 interface LogEntry {
@@ -48,7 +49,12 @@ interface LogEntry {
   color: string;
 }
 
-export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransactionLogProps) {
+export function DailyTransactionLog({
+  marketId,
+  date,
+  allowDelete,
+  deleteActorId,
+}: DailyTransactionLogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalDeals, setTotalDeals] = useState(0);
@@ -177,9 +183,9 @@ export function DailyTransactionLog({ marketId, date, allowDelete }: DailyTransa
 
     try {
       if (selectedLog.type === 'deal') {
-        await deleteDealEventById(selectedLog.id, { allowDelete });
+        await deleteDealEventById(selectedLog.id, { allowDelete, ownActorId: deleteActorId });
       } else {
-        await deleteInteractionEventById(selectedLog.id, { allowDelete });
+        await deleteInteractionEventById(selectedLog.id, { allowDelete, ownActorId: deleteActorId });
       }
       setShowDeleteConfirm(false);
       setSelectedLog(null);

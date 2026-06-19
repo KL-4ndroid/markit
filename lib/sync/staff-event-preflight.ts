@@ -30,6 +30,9 @@ const MARKET_SCOPED_EVENT_TYPES = new Set([
   'product_created',
   'interaction_recorded',
   'interaction_deleted',
+  'field_note_created',
+  'field_note_updated',
+  'field_note_deleted',
   'deal_closed',
   'deal_deleted',
 ]);

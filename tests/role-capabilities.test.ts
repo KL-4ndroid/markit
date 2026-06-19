@@ -56,8 +56,6 @@ const ALL_CAPABILITIES: StaffCapability[] = [
 ];
 
 const OWNER_ONLY: StaffCapability[] = [
-  'canEditOwnSameDayRecord',
-  'canDeleteOwnSameDayRecord',
   'canManageStaff',
   'canChangeStaffRole',
   'canViewOwnerFinance',
@@ -130,9 +128,13 @@ runTest('viewer: isOwner=false + staffRole=viewer → 全部 false', () => {
 
 runTest('operator: 只 canRecordInteraction = true，其他全 false', () => {
   const caps = deriveRoleCapabilities({ isOwner: false, staffRole: 'operator' });
-  const truthy: StaffCapability[] = ['canRecordInteraction'];
+  const truthy: StaffCapability[] = [
+    'canRecordInteraction',
+    'canEditOwnSameDayRecord',
+    'canDeleteOwnSameDayRecord',
+  ];
   const falsy: StaffCapability[] = ALL_CAPABILITIES.filter(
-    (k) => k !== 'canRecordInteraction'
+    (k) => !truthy.includes(k)
   );
   assertSubset(caps, truthy, falsy);
 });
@@ -164,6 +166,8 @@ runTest('manager: 6 個 manager 能力 = true', () => {
     'canEditMarketBasic',
     'canEditProductBasic',
     'canManageChecklist',
+    'canEditOwnSameDayRecord',
+    'canDeleteOwnSameDayRecord',
   ];
   const falsy: StaffCapability[] = ALL_CAPABILITIES.filter(
     (k) => !truthy.includes(k)
@@ -173,8 +177,8 @@ runTest('manager: 6 個 manager 能力 = true', () => {
 
 runTest('manager: 明確驗證 own-same-day record 全 false', () => {
   const caps = deriveRoleCapabilities({ isOwner: false, staffRole: 'manager' });
-  assert.equal(caps.canEditOwnSameDayRecord, false);
-  assert.equal(caps.canDeleteOwnSameDayRecord, false);
+  assert.equal(caps.canEditOwnSameDayRecord, true);
+  assert.equal(caps.canDeleteOwnSameDayRecord, true);
 });
 
 runTest('manager: 明確驗證 owner-only 全 false（含 canDeleteMarket / canDeleteProduct）', () => {
@@ -273,6 +277,8 @@ runTest('mutation safety: operator caps 被 mutate 不影響下次 operator 結�
   assert.equal(caps2.canRecordInteraction, true);
   assert.equal(caps2.canRecordDeal, false);
   assert.equal(caps2.canEditMarketBasic, false);
+  assert.equal(caps2.canEditOwnSameDayRecord, true);
+  assert.equal(caps2.canDeleteOwnSameDayRecord, true);
 });
 
 runTest('mutation safety: 兩次呼叫 owner 回傳不同 reference', () => {

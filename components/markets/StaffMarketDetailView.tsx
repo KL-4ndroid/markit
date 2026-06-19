@@ -64,8 +64,10 @@ import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
 import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { EditMarketForm } from '@/components/markets/EditMarketForm';
+import { FieldNotesPanel } from '@/components/markets/FieldNotesPanel';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/lib/supabase/auth-context';
 import { useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { getActiveDealEventsForMarket } from '@/lib/events/active-event-service';
 import { getDealEventDate } from '@/lib/markets/event-view-utils';
@@ -79,6 +81,7 @@ interface StaffMarketDetailViewProps {
 export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   const router = useRouter();
   const marketId = market.id!;
+  const { user } = useAuth();
   const { userRole, isOwner, isLoading: isRoleLoading } = useUserRole();
   const roleCapabilities = deriveRoleCapabilities({
     isOwner,
@@ -88,6 +91,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
     !isRoleLoading && hasCapability(roleCapabilities, 'canRecordInteraction');
   const canEditMarketBasic =
     !isRoleLoading && hasCapability(roleCapabilities, 'canEditMarketBasic');
+  const canCreateFieldNote =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canCreateFieldNote');
+  const canEditOwnRecord =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canEditOwnSameDayRecord');
+  const canDeleteOwnRecord =
+    !isRoleLoading && hasCapability(roleCapabilities, 'canDeleteOwnSameDayRecord');
   // P5-6 keeps deal/revenue writes closed while allowing manager basic edits.
   const canRecordDeal = false;
   const [showEditMarketForm, setShowEditMarketForm] = useState(false);
@@ -360,7 +369,22 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         
         {/* ✅ 當日流水帳 - 營業中或已結束時顯示 */}
         {(operatingStatus.status === 'operating' || operatingStatus.status === 'closed') && (
-          <DailyTransactionLog marketId={marketId} />
+          <DailyTransactionLog
+            marketId={marketId}
+            allowDelete={canDeleteOwnRecord}
+            deleteActorId={user?.id}
+          />
+        )}
+
+        {(canCreateFieldNote || canEditOwnRecord || canDeleteOwnRecord) && (
+          <div className="mb-6">
+            <FieldNotesPanel
+              marketId={marketId}
+              canCreate={canCreateFieldNote}
+              canEditOwn={canEditOwnRecord}
+              canDeleteOwn={canDeleteOwnRecord}
+            />
+          </div>
         )}
         
         {/* 營業狀態卡片 */}

@@ -776,6 +776,10 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
   console.log(`👋 互動已記錄：${type} (市集 ID: ${market_id})`);
 });
 
+registerEventHandler('field_note_created' as EventType, async () => {});
+registerEventHandler('field_note_updated' as EventType, async () => {});
+registerEventHandler('field_note_deleted' as EventType, async () => {});
+
 /**
  * 處理「成交」事件（UUID 版本 + 交易快照 + 每日收入記錄 + 補登支持）
  * 

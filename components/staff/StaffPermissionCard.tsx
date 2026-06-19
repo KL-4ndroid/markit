@@ -54,7 +54,7 @@ export function StaffPermissionCard({
     {
       label: '建立 field note',
       allowed: resolvedCapabilities.canCreateFieldNote,
-      note: '下一階段開放',
+      note: 'manager 可用',
     },
     {
       label: '管理 checklist',
