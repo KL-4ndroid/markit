@@ -486,6 +486,9 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
           .eq('staff_id', user.id)
           .eq('owner_id', userRole.ownerId!)
           .eq('status', 'active')
+          .order('updated_at', { ascending: false })
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
           .limit(1);
 
         if (error) {

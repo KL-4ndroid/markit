@@ -232,6 +232,9 @@ export function useUserRole() {
         .select('owner_id, permissions, role')
         .eq('staff_id', requestUser.id)
         .eq('status', 'active')
+        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(1);
 
       if (error) throw error;
