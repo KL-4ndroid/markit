@@ -1,0 +1,164 @@
+import assert from 'node:assert/strict';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+type TestFn = () => Promise<void> | void;
+
+const tests: Array<{ name: string; fn: TestFn }> = [];
+
+function runTest(name: string, fn: TestFn): void {
+  tests.push({ name, fn });
+}
+
+const projectRoot = join(__dirname, '..');
+const useSyncPath = join(projectRoot, 'hooks/useSync.ts');
+const syncDir = join(projectRoot, 'lib/sync');
+
+function readSource(path: string): string {
+  return readFileSync(path, 'utf-8');
+}
+
+function readSyncSources(): string {
+  const paths = [useSyncPath];
+
+  if (existsSync(syncDir)) {
+    for (const entry of readdirSync(syncDir)) {
+      if (entry.endsWith('.ts') || entry.endsWith('.tsx')) {
+        paths.push(join(syncDir, entry));
+      }
+    }
+  }
+
+  return paths.map(path => `\n/* ${path} */\n${readSource(path)}`).join('\n');
+}
+
+function findFunctionBody(source: string, functionName: string): string {
+  const match = new RegExp(`(?:export\\s+)?async\\s+function\\s+${functionName}\\s*\\(`).exec(source)
+    ?? new RegExp(`(?:export\\s+)?function\\s+${functionName}\\s*\\(`).exec(source);
+
+  assert.ok(match, `Expected to find function ${functionName}`);
+
+  const openBrace = source.indexOf('{', match.index);
+  assert.ok(openBrace >= 0, `Expected ${functionName} to have a function body`);
+
+  let depth = 0;
+  for (let index = openBrace; index < source.length; index++) {
+    const char = source[index];
+    if (char === '{') depth++;
+    if (char === '}') depth--;
+    if (depth === 0) {
+      return source.slice(openBrace, index + 1);
+    }
+  }
+
+  throw new Error(`Could not parse function body for ${functionName}`);
+}
+
+function assertBefore(source: string, earlier: string, later: string): void {
+  const earlierIndex = source.indexOf(earlier);
+  const laterIndex = source.indexOf(later);
+  assert.ok(earlierIndex >= 0, `Expected to find ${earlier}`);
+  assert.ok(laterIndex >= 0, `Expected to find ${later}`);
+  assert.ok(earlierIndex < laterIndex, `Expected ${earlier} to appear before ${later}`);
+}
+
+const hookSource = readSource(useSyncPath);
+const syncSources = readSyncSources();
+
+runTest('useSync keeps push before pull in the main sync cycle', () => {
+  assertBefore(hookSource, 'await pushEvents(user.id', 'await pullAllEvents(user.id');
+  assert.match(hookSource, /\.where\(['"]sync_status['"]\)[\s\S]*\.anyOf\(\[['"]pending['"],\s*['"]local_only['"]\]\)/);
+});
+
+runTest('pushEvents only uploads current-user or local events and blocks actor mismatches', () => {
+  const body = findFunctionBody(syncSources, 'pushEvents');
+
+  assert.match(body, /\.where\(['"]sync_status['"]\)[\s\S]*\.anyOf\(\[['"]pending['"],\s*['"]local_only['"]\]\)/);
+  assert.match(body, /event\.actor_id\s*===\s*userId[\s\S]*validEvents\.push\(event\)/);
+  assert.match(body, /event\.actor_id\s*===\s*['"]local['"][\s\S]*await bindEventActor\(event\.id!,\s*userId\)/);
+  assert.match(body, /event\.actor_id\s*=\s*userId[\s\S]*validEvents\.push\(event\)/);
+  assert.match(body, /invalidEvents\.push\(event\)/);
+  assert.match(body, /await markEventBlocked\(event\.id!,\s*['"]actor_id_mismatch['"],\s*event\.actor_id\)/);
+});
+
+runTest('pushEvents is idempotent and downgrades unpushable writes to local-only', () => {
+  const body = findFunctionBody(syncSources, 'pushEvents');
+
+  assert.match(body, /\.from\(['"]events['"]\)[\s\S]*\.select\(['"]id,\s*sync_status['"]\)[\s\S]*\.eq\(['"]id['"],\s*event\.id\)[\s\S]*\.maybeSingle\(\)/);
+  assert.match(body, /if\s*\(existing\)\s*\{[\s\S]*await markEventSynced\(event\.id!\)/);
+  assert.match(body, /insertError\.code\s*===\s*['"]23505['"][\s\S]*await markEventSynced\(event\.id!\)/);
+  assert.match(body, /insertError\.code\s*===\s*['"]23503['"][\s\S]*events_market_id_fkey[\s\S]*await markEventLocalOnly\(event\.id!\)/);
+  assert.match(body, /insertError\.code\s*===\s*['"]42501['"][\s\S]*event\.type\s*===\s*['"]market_created['"][\s\S]*ensureMarketMember\(userId,\s*cloudEvent\.market_id\)/);
+  assert.match(body, /insertError\.code\s*===\s*['"]PGRST301['"][\s\S]*insertError\.code\s*===\s*['"]42501['"][\s\S]*policy[\s\S]*await markEventLocalOnly\(event\.id!\)/);
+});
+
+runTest('pullAllEvents sends staff sessions to view pull and refuses owner fallback', () => {
+  const body = findFunctionBody(syncSources, 'pullAllEvents');
+
+  assert.match(body, /if\s*\(infoLevel\s*<\s*3\)\s*\{/);
+  assert.match(body, /await pullEventsFromViews\(userId,\s*onProgress,\s*infoLevel\)/);
+  assert.match(body, /throw error/);
+  assertBefore(body, 'if (infoLevel < 3)', 'const lastSyncAt = await getLastSyncTimestamp()');
+});
+
+runTest('owner pull uses created_at cursor and owner projection reconciliation', () => {
+  const body = findFunctionBody(syncSources, 'pullAllEvents');
+
+  assert.match(body, /const lastSyncAt\s*=\s*await getLastSyncTimestamp\(\)/);
+  assert.match(body, /\.gt\(['"]created_at['"],\s*new Date\(lastSyncAt\)\.toISOString\(\)\)/);
+  assert.match(body, /\.map\(e\s*=>\s*new Date\(e\.created_at\)\.getTime\(\)\)/);
+  assert.match(body, /await updateLastSyncTimestamp\(Math\.max\(\.\.\.validCreatedAt\)\)/);
+  assert.match(body, /await reconcileSyncedProjectionMarkets\(touchedMarketIds,\s*['"]owner-full['"]\)/);
+});
+
+runTest('staff pull reads authorized views as a full pull without lastSyncAt filtering', () => {
+  const body = findFunctionBody(syncSources, 'pullEventsFromViews');
+
+  assert.match(body, /\.from\(['"]staff_accessible_markets['"]\)[\s\S]*\.select\(['"]\*['"]\)/);
+  assert.match(body, /\.from\(['"]staff_accessible_products['"]\)[\s\S]*\.select\(['"]\*['"]\)/);
+  assert.match(body, /\.from\(['"]staff_accessible_events['"]\)[\s\S]*\.select\(['"]\*['"]\)[\s\S]*\.order\(['"]timestamp['"],\s*\{\s*ascending:\s*true\s*\}\)/);
+  assert.doesNotMatch(body, /getLastSyncTimestamp\(\)/);
+  assert.doesNotMatch(body, /\.gt\(['"]created_at['"]/);
+  assert.match(body, /await syncMarketsToIndexedDB\(marketsData\s*\|\|\s*\[\],\s*userId,\s*infoLevel\)/);
+  assert.match(body, /await syncProductsToIndexedDB\(productsData\s*\|\|\s*\[\],\s*userId,\s*infoLevel\)/);
+  assert.match(body, /await syncEventsToIndexedDB\(eventsData\s*\|\|\s*\[\],\s*infoLevel\)/);
+  assert.match(body, /await reconcileSyncedProjectionMarkets\(touchedMarketIds,\s*infoLevel\s*<\s*3\s*\?\s*['"]staff-view['"]\s*:\s*['"]owner-full['"]\)/);
+});
+
+runTest('staff cache writers sanitize data before writing to IndexedDB', () => {
+  const marketsBody = findFunctionBody(syncSources, 'syncMarketsToIndexedDB');
+  const productsBody = findFunctionBody(syncSources, 'syncProductsToIndexedDB');
+  const eventsBody = findFunctionBody(syncSources, 'syncEventsToIndexedDB');
+
+  assert.match(marketsBody, /sanitizeWithLevel\(market,\s*['"]market['"],\s*infoLevel\)/);
+  assert.match(marketsBody, /resetMarketProjectionFields\(mappedMarket as Market\)/);
+  assert.match(productsBody, /sanitizeWithLevel\(product,\s*['"]product['"],\s*infoLevel\)/);
+  assert.match(productsBody, /totalSold:\s*0/);
+  assert.match(eventsBody, /sanitizeEventsWithLevel\(events,\s*infoLevel\)/);
+  assert.match(eventsBody, /preflightStaffEventImport\(localEvent/);
+  assert.match(eventsBody, /await sanitizeStaffProjectionsAfterReplay\(localEvent,\s*infoLevel\)/);
+});
+
+async function main(): Promise<void> {
+  let failed = 0;
+
+  for (const test of tests) {
+    try {
+      await test.fn();
+      console.log(`PASS ${test.name}`);
+    } catch (error) {
+      failed++;
+      console.error(`FAIL ${test.name}`);
+      console.error(error);
+    }
+  }
+
+  if (failed > 0) {
+    throw new Error(`${failed} sync flow audit tests failed`);
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
