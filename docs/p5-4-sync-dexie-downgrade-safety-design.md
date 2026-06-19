@@ -274,6 +274,37 @@ Not changed:
 
 Next: P5-4c post-implementation audit, then P5-4d freshness gate.
 
+## P5-4d Implementation Addendum
+
+Date: 2026-06-19
+Author: Codex
+
+Scope: gate local staff writes on fresh cached role before an event can be queued.
+
+Changed:
+- `lib/permissions/role-freshness.ts`
+  - Added `assertFreshStaffCapability()`.
+  - Reads `user_role_cache` and applies a 180 second freshness window.
+  - Applies only when the cache confirms the current user is staff.
+  - Maps event types to role capabilities:
+    - `interaction_recorded` -> `canRecordInteraction`
+    - `deal_closed` -> `canRecordDeal`
+    - `market_updated` -> `canEditMarketBasic`
+    - `product_updated` -> `canEditProductBasic`
+- `lib/db/events.ts`
+  - `recordEvent()` now calls the freshness gate after resolving the authenticated user
+    and before queueing a local event.
+  - Owner/no-cache/local flows remain unchanged.
+- `tests/p5-4d-role-freshness-gate.test.ts`
+  - Covers stale cache, viewer denial, operator/manager capability checks,
+    owner/no-cache bypass, and static recordEvent wiring.
+
+Not changed:
+- No UI capability is enabled.
+- No operator / manager entry point is exposed.
+- No offline staff queueing policy is added beyond fail-closed stale-cache blocking.
+- No Supabase/RLS behavior is changed.
+
 **風險**：
 - 在 T0 → T4 之間（最長 5 分鐘），員工仍可看到 L2 投影
 - 若 useStaffStatusMonitor 是唯一的「role change」偵測器，它**完全不會**觸發（D1 情境）

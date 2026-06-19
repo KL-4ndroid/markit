@@ -14,6 +14,7 @@ import {
   checkBackupIntegrity,
   type BackupData,
 } from './integrity';
+import { assertFreshStaffCapability } from '@/lib/permissions/role-freshness';
 import {
   getDealClosedManualProjection,
   getDealClosedMode,
@@ -320,12 +321,14 @@ export async function recordEvent(
 
     // ✅ 獲取真實的用戶 ID（用於同步）
     let actor_id = 'local'; // 預設值
+    let authenticatedUserId: string | null = null;
     if (typeof window !== 'undefined') {
       try {
         const { supabase } = await import('@/lib/supabase/client');
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           actor_id = user.id;
+          authenticatedUserId = user.id;
         }
       } catch (error) {
         console.warn('⚠️ 無法獲取用戶 ID，使用預設值 "local"');
@@ -333,6 +336,13 @@ export async function recordEvent(
     }
 
     // ✅ 計算時間戳：只有補登交易使用指定日期的 23:59，正常交易使用當前時間
+    if (authenticatedUserId) {
+      assertFreshStaffCapability({
+        userId: authenticatedUserId,
+        eventType: type,
+      });
+    }
+
     validateEventPayload(type, payload);
 
     let timestamp = Date.now();
