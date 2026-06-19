@@ -1,5 +1,5 @@
 /**
- * 員工狀態監控 Hook（C3.6 修法 v2 — 成本優化版）
+ * 員工狀態監控 Hook（C3.6 修法 v2 — 成本優化版 + P5-4a role downgrade 偵測）
  *
  * 目的：解決「老闆踢人後，員工 B 端沒有即時清理」的問題
  *
@@ -33,7 +33,17 @@
  * 2. 刪除整個 IndexedDB 確保完全乾淨
  * 3. 強制重新載入頁面到首頁
  *
+ * P5-4a（2026-06-19）擴充：role downgrade 偵測
+ * - query 從 head:true 改為 select role/permissions（保留 count + .limit(1)）
+ * - 新增 localStorage 'staff_status_monitor_known_role' cache
+ *   （key 內含 userId + ownerId，避免跨 user 污染）
+ * - 偵測 operator/manager → viewer/operator 時 invalidateRoleCache
+ * - viewer → operator/manager 視為 upgrade，僅更新 cache 不觸發 invalidate
+ * - revoke 流程（handleRevoked）完全不變
+ * - 不清 Dexie、不 reload、不接 UI
+ *
  * @see docs/C3.6_LEAVE_TEAM_CLEANUP_AUDIT.md
+ * @see docs/p5-4-sync-dexie-downgrade-safety-design.md
  */
 
 import { useEffect, useRef } from 'react';
@@ -42,6 +52,249 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole, invalidateRoleCache } from '@/hooks/useUserRole';
 import { resetAuthenticatedCache } from '@/lib/db/clear-user-data';
 import { resetInitialSyncFlag } from '@/hooks/useSync';
+import type { StaffRole } from '@/types/staff';
+
+// ─── P5-4a 純 helper（top-level，方便測試） ─────────────────────────────────
+
+/**
+ * P5-4a localStorage key
+ *
+ * 儲存「上次 polling 看到的 staff role 快照」，
+ * 用於偵測 role downgrade / upgrade。
+ *
+ * 重要：key 內含 userId + ownerId 兩個隔離欄位（user 不存在於 P5-4a 規範，
+ * 但寫入時仍帶上以避免 useUserRole 與 useStaffStatusMonitor 互相耦合）。
+ *
+ * P5-4a 規範：useUserRole 不感知此 key；失效完全由 useStaffStatusMonitor 內部
+ * 維護。
+ */
+export const STAFF_STATUS_KNOWN_ROLE_KEY = 'staff_status_monitor_known_role';
+
+/**
+ * P5-4a known role 快照結構
+ */
+export type StaffStatusKnownRoleCache = {
+  userId: string;
+  ownerId: string;
+  role: StaffRole | null;
+  infoLevel: number | null;
+  timestamp: number;
+};
+
+/**
+ * Staff role 排序（純 helper，用於 classify 升/降權）
+ *
+ * viewer   = 0
+ * operator = 1
+ * manager  = 2
+ *
+ * owner 不在 StaffRole union（P5-1 §R10）；owner capability 由 isOwner 推導，
+ * 不會出現在本 classifier。
+ */
+export const STAFF_ROLE_RANK: Record<StaffRole, number> = {
+  viewer: 0,
+  operator: 1,
+  manager: 2,
+};
+
+/**
+ * 分類兩個 role 之間的變化
+ *
+ * 規則：
+ * - previous 或 current 任一為 null / undefined → 'unknown'
+ *   （視為 fail-closed / revoke-like，由 useStaffStatusMonitor 走既有 revoke flow）
+ * - rank 相同 → 'same'
+ * - current rank > previous rank → 'upgrade'
+ * - current rank < previous rank → 'downgrade'
+ *
+ * @example
+ *   classifyStaffRoleChange('operator', 'viewer')   // 'downgrade'
+ *   classifyStaffRoleChange('manager',  'operator') // 'downgrade'
+ *   classifyStaffRoleChange('viewer',   'operator') // 'upgrade'
+ *   classifyStaffRoleChange('operator', 'operator') // 'same'
+ *   classifyStaffRoleChange(null,       'operator') // 'unknown'
+ */
+export function classifyStaffRoleChange(
+  previousRole: StaffRole | null | undefined,
+  currentRole: StaffRole | null | undefined
+): 'same' | 'upgrade' | 'downgrade' | 'unknown' {
+  if (!previousRole || !currentRole) {
+    return 'unknown';
+  }
+  if (!(previousRole in STAFF_ROLE_RANK) || !(currentRole in STAFF_ROLE_RANK)) {
+    return 'unknown';
+  }
+  const prevRank = STAFF_ROLE_RANK[previousRole];
+  const currRank = STAFF_ROLE_RANK[currentRole];
+  if (prevRank === currRank) return 'same';
+  if (currRank > prevRank) return 'upgrade';
+  return 'downgrade';
+}
+
+/**
+ * 從 permissions 物件安全讀取 infoLevel（fail-closed）
+ *
+ * 支援既有 StaffPermissions.infoLevel: 0 | 1 | 2 | 3 與
+ * 任何合法 number；非法回傳 null。
+ */
+export function readInfoLevelFromPermissions(
+  permissions: unknown
+): number | null {
+  if (!permissions || typeof permissions !== 'object') return null;
+  const raw = (permissions as { infoLevel?: unknown }).infoLevel;
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  return null;
+}
+
+/**
+ * 讀取 localStorage known role cache
+ *
+ * 規則（全部 fail-closed）：
+ * - localStorage 不存在 → null
+ * - JSON parse 失敗 → null
+ * - userId 不一致 → null
+ * - ownerId 不一致 → null
+ * - role 不在 STAFF_ROLE_RANK 內 → null
+ *
+ * 不 throw，try/catch 全部吞掉。
+ */
+export function readKnownRoleCache(
+  userId: string,
+  ownerId: string
+): StaffStatusKnownRoleCache | null {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STAFF_STATUS_KNOWN_ROLE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StaffStatusKnownRoleCache> | null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    if (parsed.userId !== userId) return null;
+    if (parsed.ownerId !== ownerId) return null;
+    const role = parsed.role ?? null;
+    if (role !== null && !(role in STAFF_ROLE_RANK)) return null;
+    return {
+      userId: parsed.userId,
+      ownerId: parsed.ownerId,
+      role,
+      infoLevel:
+        typeof parsed.infoLevel === 'number' && Number.isFinite(parsed.infoLevel)
+          ? parsed.infoLevel
+          : null,
+      timestamp:
+        typeof parsed.timestamp === 'number' && Number.isFinite(parsed.timestamp)
+          ? parsed.timestamp
+          : Date.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 寫入 localStorage known role cache
+ *
+ * 規則：
+ * - try/catch 包住 localStorage.setItem
+ * - 寫入失敗只 console.warn
+ * - 不 throw
+ */
+export function writeKnownRoleCache(cache: StaffStatusKnownRoleCache): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(STAFF_STATUS_KNOWN_ROLE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.warn('[StaffStatusMonitor] 寫入 knownRoleCache 失敗：', error);
+  }
+}
+
+/**
+ * 處理 polling 結果，偵測 downgrade / upgrade。
+ *
+ * 純 helper，副作用僅透過傳入的 callback 觸發
+ * （persist 寫入 knownRoleCache、onDowngrade 呼叫 invalidateRoleCache）。
+ *
+ * 用途：方便測試隔離 React / supabase 依賴。
+ *
+ * @returns 'noop' | 'baseline' | 'same' | 'upgrade' | 'downgrade' | 'unknown'
+ *   - 'noop'：current 為 null（active relationship 消失 → 由 caller 走 revoke flow）
+ *   - 'baseline'：沒有 previous，僅寫入 baseline
+ *   - 'same'：role 相同，僅更新 timestamp
+ *   - 'upgrade'：升權，僅寫入新值
+ *   - 'downgrade'：降權，呼叫 onDowngrade + 寫入新值
+ *   - 'unknown'：previous/current 任一為 null 但不是 active 缺失
+ *     （應被視為 fail-closed；目前不觸發 revoke，僅寫入 baseline）
+ */
+export function handleRoleChangeDetection(args: {
+  userId: string;
+  ownerId: string;
+  previousRole: StaffRole | null | undefined;
+  currentRole: StaffRole | null;
+  currentInfoLevel: number | null;
+  /** 寫入 cache 的 callback（測試可注入 mock） */
+  persist: (cache: StaffStatusKnownRoleCache) => void;
+  /** downgrade 時觸發（測試可注入 mock，預設呼叫 invalidateRoleCache） */
+  onDowngrade?: (from: StaffRole, to: StaffRole) => void;
+  /** 注入 logger（測試可注入 mock，預設 console） */
+  logger?: {
+    info: (...args: unknown[]) => void;
+    warn: (...args: unknown[]) => void;
+  };
+}): 'noop' | 'baseline' | 'same' | 'upgrade' | 'downgrade' | 'unknown' {
+  const {
+    userId,
+    ownerId,
+    previousRole,
+    currentRole,
+    currentInfoLevel,
+    persist,
+    onDowngrade,
+    logger = console,
+  } = args;
+
+  // current 為 null → active relationship 消失，交給 caller 走 revoke flow
+  if (currentRole === null) {
+    return 'noop';
+  }
+
+  const now = Date.now();
+
+  // 沒有 baseline：寫入後離開
+  if (!previousRole) {
+    persist({ userId, ownerId, role: currentRole, infoLevel: currentInfoLevel, timestamp: now });
+    return 'baseline';
+  }
+
+  const classification = classifyStaffRoleChange(previousRole, currentRole);
+
+  switch (classification) {
+    case 'same':
+      persist({ userId, ownerId, role: currentRole, infoLevel: currentInfoLevel, timestamp: now });
+      return 'same';
+
+    case 'upgrade':
+      logger.info(
+        `[StaffStatusMonitor] 偵測到 staff role 升權（${previousRole} → ${currentRole}），僅更新 baseline`
+      );
+      persist({ userId, ownerId, role: currentRole, infoLevel: currentInfoLevel, timestamp: now });
+      return 'upgrade';
+
+    case 'downgrade':
+      logger.warn(
+        `⚠️ [StaffStatusMonitor] 偵測到 staff role 降權（${previousRole} → ${currentRole}），invalidateRoleCache`
+      );
+      if (onDowngrade) {
+        onDowngrade(previousRole, currentRole);
+      }
+      persist({ userId, ownerId, role: currentRole, infoLevel: currentInfoLevel, timestamp: now });
+      return 'downgrade';
+
+    case 'unknown':
+    default:
+      // 包含 previous 為 null 但 current 合法 → 寫入 baseline（不視為 downgrade）
+      persist({ userId, ownerId, role: currentRole, infoLevel: currentInfoLevel, timestamp: now });
+      return 'unknown';
+  }
+}
 
 // 員工狀態 Polling 預設間隔：180 秒（3 分鐘）
 //
@@ -197,16 +450,19 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
      * Polling 邏輯
      * 每 180 秒檢查一次員工狀態
      *
-     * 使用 head:true 只查存在性（COUNT 而非 SELECT 資料）
+     * P5-4a：除了偵測 active relationship 是否存在（count），
+     * 也取回 role / permissions 用於偵測 downgrade。
+     * 保留 .eq('staff_id' / 'owner_id' / 'status') + .limit(1) 既有條件。
+     *
      * 走 (staff_id, status) 複合索引，極輕量
      */
     const checkStaffStatus = async () => {
       if (!isMounted) return;
 
       try {
-        const { count, error } = await supabase
+        const { data, count, error } = await supabase
           .from('staff_relationships')
-          .select('*', { count: 'exact', head: true })
+          .select('role, permissions', { count: 'exact' })
           .eq('staff_id', user.id)
           .eq('owner_id', userRole.ownerId!)
           .eq('status', 'active')
@@ -220,7 +476,45 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
         // 找不到 active 記錄（count = 0）→ 員工被撤銷了
         if (count === 0) {
           await handleRevoked('poll');
+          return;
         }
+
+        // P5-4a：role downgrade 偵測
+        // - current role / infoLevel 從查詢結果推導
+        // - previous role 優先從 localStorage knownRoleCache 讀取
+        //   （若沒有則用目前 useUserRole 的 userRole.staffRole 作為 baseline）
+        // - 分類為 downgrade / upgrade / same
+        // - downgrade 觸發 invalidateRoleCache（不清 Dexie / 不 reload）
+        // - upgrade 僅更新 baseline
+        // - revoke 流程（count=0）已在上方 return，不會到這裡
+        const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+        const currentRole: StaffRole | null =
+          row && typeof row.role === 'string' && row.role in STAFF_ROLE_RANK
+            ? (row.role as StaffRole)
+            : null;
+        const currentInfoLevel = row ? readInfoLevelFromPermissions(row.permissions) : null;
+
+        // 1. 優先讀 knownRoleCache
+        const cached = readKnownRoleCache(user.id, userRole.ownerId!);
+        let previousRole: StaffRole | null | undefined = cached?.role;
+
+        // 2. 若無 cache，fallback 使用 useUserRole 載入的 staffRole 作為 baseline
+        if (!previousRole) {
+          previousRole = userRole.staffRole ?? undefined;
+        }
+
+        // 3. 處理 role 變化
+        handleRoleChangeDetection({
+          userId: user.id,
+          ownerId: userRole.ownerId!,
+          previousRole,
+          currentRole,
+          currentInfoLevel,
+          persist: (cache) => writeKnownRoleCache(cache),
+          onDowngrade: (_from, _to) => {
+            invalidateRoleCache();
+          },
+        });
       } catch (error) {
         console.error('[StaffStatusMonitor] Polling 發生錯誤:', error);
       }
@@ -241,5 +535,5 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
         clearInterval(pollInterval);
       }
     };
-  }, [enabled, user, isStaff, userRole.ownerId, pollIntervalMs]);
+  }, [enabled, user, isStaff, userRole.ownerId, userRole.staffRole, pollIntervalMs]);
 }

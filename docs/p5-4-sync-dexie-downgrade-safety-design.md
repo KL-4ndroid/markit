@@ -1251,4 +1251,52 @@ v0.1  2026-06-19  P5-4 initial design
                 - 不在範圍：runtime 實作、UI 改動、migration、P5-5+ 設計
                 - 硬規則：P5-1 §R8（Offline write after role change）+ §R10（Owner not in StaffRole enum）+ §R11（helper duplication）
                 - 後續：等待 user review + 批准 P5-4a
+
+v0.2  2026-06-19  P5-4a: Downgrade Detection 設計
+                - Author: Cursor (kl-4ndroid 委託)
+                - Scope: 在 useStaffStatusMonitor 內新增 role downgrade 偵測
+                - 變更：
+                  * hooks/useStaffStatusMonitor.ts
+                    - 新增 localStorage key: 'staff_status_monitor_known_role'
+                    - 新增 STAFF_ROLE_RANK + classifyStaffRoleChange 純 helper
+                    - 新增 readInfoLevelFromPermissions 純 helper
+                    - 新增 readKnownRoleCache / writeKnownRoleCache 純 helper
+                    - 新增 handleRoleChangeDetection 純 helper
+                      （含 persist / onDowngrade / logger callback 注入點）
+                    - checkStaffStatus 從 head:true 改為
+                        .select('role, permissions', { count: 'exact' })
+                      保留 .limit(1) 與既有三個 .eq 條件
+                    - count === 0 → handleRevoked('poll') 既有流程完全不變
+                - 新增：tests/p5-4a-downgrade-detection.test.ts（49 個 case 全綠）
+                - 不變更：
+                  * hooks/useUserRole.ts（保持零耦合）
+                  * hooks/useSync.ts
+                  * lib/permissions/PermissionGate.ts
+                  * lib/permissions/role-fail-closed.ts
+                  * lib/permissions/role-capabilities.ts
+                  * lib/db/*
+                  * lib/supabase/*
+                  * components/*
+                  * app/*
+                  * types/*
+                  * supabase/migrations/*
+                - 不變更行為：
+                  * canEdit
+                  * canViewSensitiveData
+                  * infoLevel 推導（deriveSafeInfoLevel）
+                  * handleRevoked revoke 流程（full wipe + reload）
+                  * useSync / Dexie
+                - downgrade path 不呼叫：
+                  * resetAuthenticatedCache
+                  * deleteDatabase
+                  * window.location.href
+                  * clearUserData
+                - downgrade path 只做：
+                  * invalidateRoleCache()
+                  * 寫入 knownRoleCache baseline
+                  * console.warn 記錄
+                - 不接 UI / 不新增 callback / 不改 public API
+                - 不修 limit(1) ambiguity（屬 R9 既有 bug）
+                - 不開 operator / manager 寫入（屬 P5-5+）
+                - 後續：等待 user review + 批准 P5-4b
 ```
