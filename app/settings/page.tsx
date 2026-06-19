@@ -258,7 +258,10 @@ export default function SettingsPage() {
             )}
             
             {/* 權限說明卡片 */}
-            <StaffPermissionCard permissions={userRole.permissions} />
+            <StaffPermissionCard
+              staffRole={userRole.staffRole}
+              ownerEmail={userRole.ownerEmail}
+            />
             
             {/* 離開團隊區塊 */}
             <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">

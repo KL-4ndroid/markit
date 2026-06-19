@@ -52,6 +52,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole, invalidateRoleCache } from '@/hooks/useUserRole';
 import { clearStaffLocalProjections, resetAuthenticatedCache } from '@/lib/db/clear-user-data';
 import { resetInitialSyncFlag } from '@/hooks/useSync';
+import { dispatchRoleStatusEvent } from '@/lib/permissions/role-status-events';
 import type { StaffRole } from '@/types/staff';
 
 // ─── P5-4a 純 helper（top-level，方便測試） ─────────────────────────────────
@@ -371,6 +372,10 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
         return;
       }
       cleanupInFlightRef.current = true;
+      dispatchRoleStatusEvent({
+        kind: 'revoked',
+        message: '你的員工關係已被解除，系統正在清除本機資料並重新載入。',
+      });
 
       console.warn(`⚠️ [StaffStatusMonitor] 偵測到員工權限被撤銷（${source}），開始清理本地資料...`);
 
@@ -422,6 +427,10 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
         // - reload 會讓 useUserRole 重新查 supabase（此時已是 revoked）
         // - 用戶會被導向首頁（不再看到殘留資料）
         console.error('[StaffStatusMonitor] 清理失敗，強制重整:', error);
+        dispatchRoleStatusEvent({
+          kind: 'projection-cleanup-failed',
+          message: '權限變更後的本機清理失敗，系統會嘗試重新載入以避免資料殘留。',
+        });
         cleanupInFlightRef.current = false;
 
         if (typeof window !== 'undefined') {
@@ -448,6 +457,12 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
 
     const handleDowngrade = async (from: StaffRole, to: StaffRole) => {
       try {
+        dispatchRoleStatusEvent({
+          kind: 'downgraded',
+          message: `你的角色已從 ${from} 變更為 ${to}，正在清理超出權限的本機資料。`,
+          fromRole: from,
+          toRole: to,
+        });
         invalidateRoleCache();
         const result = await clearStaffLocalProjections({
           staffUserId: user.id,
@@ -458,11 +473,23 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
           to,
           result,
         });
+        dispatchRoleStatusEvent({
+          kind: 'projection-cleanup-complete',
+          message: '角色變更後的本機資料清理已完成，系統會重新同步目前可見資料。',
+          fromRole: from,
+          toRole: to,
+        });
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('trigger-sync'));
         }
       } catch (error) {
         console.error('[StaffStatusMonitor] staff role downgrade projection cleanup failed:', error);
+        dispatchRoleStatusEvent({
+          kind: 'projection-cleanup-failed',
+          message: '角色變更後的本機資料清理失敗，請重新整理後再操作。',
+          fromRole: from,
+          toRole: to,
+        });
       }
     };
 
