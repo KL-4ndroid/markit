@@ -43,6 +43,16 @@ function formatMatches(paths: string[], pattern: RegExp): string {
     .join(', ');
 }
 
+function productionSyncFiles(): string[] {
+  return [
+    'hooks/useSync.ts',
+    'lib/sync/sync-push-service.ts',
+    'lib/sync/owner-pull-service.ts',
+    'lib/sync/staff-pull-service.ts',
+    'lib/sync/local-cache-writer.ts',
+  ].map(path => join(projectRoot, path));
+}
+
 runTest('Phase 3 guardrail: pending_operations is not introduced in migrations or production code', () => {
   const scannedRoots = ['supabase/migrations', 'app', 'components', 'hooks', 'lib']
     .map(path => join(projectRoot, path));
@@ -57,19 +67,25 @@ runTest('Phase 3 guardrail: pending_operations is not introduced in migrations o
 });
 
 runTest('Phase 4 guardrail: replace-cache is not connected to production sync paths', () => {
-  const productionSyncFiles = [
-    'hooks/useSync.ts',
-    'lib/sync/owner-pull-service.ts',
-    'lib/sync/staff-pull-service.ts',
-    'lib/sync/local-cache-writer.ts',
-  ].map(path => join(projectRoot, path));
-
-  const matches = formatMatches(productionSyncFiles, /replace[-_]?cache|replaceCache|previewReplace/i);
+  const matches = formatMatches(productionSyncFiles(), /replace[-_]?cache|replaceCache|previewReplace/i);
 
   assert.equal(
     matches,
     '',
     `replace-cache must stay out of production sync until explicit approval. Matches: ${matches}`
+  );
+});
+
+runTest('Gate D guardrail: production sync does not import pending operation or cache preview helpers', () => {
+  const matches = formatMatches(
+    productionSyncFiles(),
+    /pending-operation-model|cache-replacement-preview/
+  );
+
+  assert.equal(
+    matches,
+    '',
+    `Gate D helpers must stay out of production sync until explicit approval. Matches: ${matches}`
   );
 });
 
