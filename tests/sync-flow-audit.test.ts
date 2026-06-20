@@ -72,6 +72,21 @@ runTest('useSync keeps push before pull in the main sync cycle', () => {
   assert.match(hookSource, /\.where\(['"]sync_status['"]\)[\s\S]*\.anyOf\(\[['"]pending['"],\s*['"]local_only['"]\]\)/);
 });
 
+runTest('sync count service preserves local and cloud count contracts', () => {
+  const localBody = findFunctionBody(syncSources, 'getLocalPendingCount');
+  const cloudBody = findFunctionBody(syncSources, 'getCloudEventCount');
+
+  assert.match(hookSource, /export \{ getLocalPendingCount,\s*getCloudEventCount \} from ['"]@\/lib\/sync\/sync-count-service['"]/);
+  assert.match(localBody, /\.where\(['"]sync_status['"]\)[\s\S]*\.anyOf\(\[['"]pending['"],\s*['"]local_only['"]\]\)[\s\S]*\.count\(\)/);
+  assert.match(localBody, /catch\s*\{[\s\S]*return 0/);
+  assert.match(cloudBody, /\.from\(['"]market_members['"]\)[\s\S]*\.select\(['"]market_id['"]\)[\s\S]*\.eq\(['"]user_id['"],\s*userId\)/);
+  assert.match(cloudBody, /\.from\(['"]events['"]\)[\s\S]*\.select\(['"]id['"],\s*\{\s*count:\s*['"]exact['"],\s*head:\s*true\s*\}\)/);
+  assert.ok(cloudBody.includes("query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.eq.${userId},market_id.is.null)`);"));
+  assert.match(cloudBody, /query\.eq\(['"]actor_id['"],\s*userId\)\.is\(['"]market_id['"],\s*null\)/);
+  assert.match(cloudBody, /const \{ count \}\s*=\s*await query/);
+  assert.match(cloudBody, /return count \|\| 0/);
+});
+
 runTest('pushEvents only uploads current-user or local events and blocks actor mismatches', () => {
   const body = findFunctionBody(syncSources, 'pushEvents');
 

@@ -28,6 +28,7 @@ import { getEventMarketId } from '@/lib/events/event-read-model';
 import { resetMarketProjectionFields, resetProductProjectionFields } from '@/lib/sync/projection-reset';
 import { getLastSyncTimestamp, updateLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
 import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
+export { getLocalPendingCount, getCloudEventCount } from '@/lib/sync/sync-count-service';
 import {
   clearSyncPause,
   getSyncPauseUntil,
@@ -467,51 +468,6 @@ export function useSync(options: UseSyncOptions = {}) {
     sync: triggerSync,
     isOnline: navigator.onLine,
   }), [state, triggerSync]);
-}
-
-/**
- * 獲取本地待同步事件數量
- */
-export async function getLocalPendingCount(): Promise<number> {
-  try {
-    return await db.events
-      .where('sync_status')
-      .anyOf(['pending', 'local_only'])
-      .count();
-  } catch {
-    return 0;
-  }
-}
-
-/**
- * 獲取雲端事件數量（估算）
- */
-export async function getCloudEventCount(userId: string): Promise<number> {
-  try {
-    // 獲取用戶參與的市集
-    const { data: memberMarkets } = await supabase
-      .from('market_members')
-      .select('market_id')
-      .eq('user_id', userId);
-
-    const marketIds = memberMarkets?.map(m => m.market_id) || [];
-
-    // 查詢事件數量
-    let query = supabase
-      .from('events')
-      .select('id', { count: 'exact', head: true });
-
-    if (marketIds.length > 0) {
-      query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.eq.${userId},market_id.is.null)`);
-    } else {
-      query = query.eq('actor_id', userId).is('market_id', null);
-    }
-
-    const { count } = await query;
-    return count || 0;
-  } catch {
-    return 0;
-  }
 }
 
 /**
