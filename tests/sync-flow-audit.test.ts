@@ -218,6 +218,7 @@ runTest('owner market hydration preserves local-first fetch and sanitized cache 
 runTest('staff pull reads authorized views as a full pull without lastSyncAt filtering', () => {
   const body = findFunctionBody(syncSources, 'pullEventsFromViews');
 
+  assert.match(hookSource, /import \{ pullEventsFromViews \} from ['"]@\/lib\/sync\/staff-pull-service['"]/);
   assert.match(body, /\.from\(['"]staff_accessible_markets['"]\)[\s\S]*\.select\(['"]\*['"]\)/);
   assert.match(body, /\.from\(['"]staff_accessible_products['"]\)[\s\S]*\.select\(['"]\*['"]\)/);
   assert.match(body, /\.from\(['"]staff_accessible_events['"]\)[\s\S]*\.select\(['"]\*['"]\)[\s\S]*\.order\(['"]timestamp['"],\s*\{\s*ascending:\s*true\s*\}\)/);
@@ -234,7 +235,7 @@ runTest('staff cache writers sanitize data before writing to IndexedDB', () => {
   const productsBody = findFunctionBody(syncSources, 'syncProductsToIndexedDB');
   const eventsBody = findFunctionBody(syncSources, 'syncEventsToIndexedDB');
 
-  assert.match(hookSource, /import \{ syncEventsToIndexedDB,\s*syncMarketsToIndexedDB,\s*syncProductsToIndexedDB \} from ['"]@\/lib\/sync\/local-cache-writer['"]/);
+  assert.match(syncSources, /import \{\s*syncEventsToIndexedDB,\s*syncMarketsToIndexedDB,\s*syncProductsToIndexedDB,\s*\} from ['"]@\/lib\/sync\/local-cache-writer['"]/);
   assert.match(marketsBody, /sanitizeWithLevel\(market,\s*['"]market['"],\s*infoLevel\)/);
   assert.match(marketsBody, /resetMarketProjectionFields\(mappedMarket as Market\)/);
   assert.match(marketsBody, /earlyEntryEnabled:\s*mappedMarket\.earlyEntryEnabled\s*\?\?\s*existing\?\.earlyEntryEnabled\s*\?\?\s*false/);
