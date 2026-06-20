@@ -148,6 +148,23 @@ runTest('owner market access helper includes member and owner-owned markets', ()
   assert.match(body, /Array\.from\(new Set\(\[\.\.\.memberIds,\s*\.\.\.ownedIds\]\)\)/);
 });
 
+runTest('owner market hydration preserves local-first fetch and sanitized cache writes', () => {
+  const body = findFunctionBody(syncSources, 'batchHydrateMarkets');
+  const gateBody = findFunctionBody(syncSources, 'marketGateForLevel');
+
+  assert.match(body, /const exists\s*=\s*await db\.markets\.get\(marketId\)/);
+  assert.match(body, /notYetLocal\.push\(marketId\)/);
+  assert.match(body, /hydrated\.add\(marketId\)/);
+  assert.match(body, /\.from\(['"]markets['"]\)[\s\S]*\.select\(['"]\*['"]\)[\s\S]*\.in\(['"]id['"],\s*notYetLocal\)/);
+  assert.match(body, /if\s*\(error\)\s*\{[\s\S]*for\s*\(const id of notYetLocal\)\s*failed\.add\(id\)[\s\S]*return \{ hydrated, missing, failed \}/);
+  assert.match(body, /marketRowToLocal\(market\)/);
+  assert.match(body, /marketGateForLevel\(infoLevel\)\.sanitizeMarketProjection/);
+  assert.match(body, /resetMarketProjectionFields\(/);
+  assert.match(body, /await db\.markets\.put\(reset as unknown as typeof localMarket\)/);
+  assert.match(body, /if\s*\(!foundIds\.has\(id\)\)\s*missing\.add\(id\)/);
+  assert.match(gateBody, /createPermissionGate\(\{\s*infoLevel,\s*entity:\s*['"]market['"]\s*\}\)/);
+});
+
 runTest('staff pull reads authorized views as a full pull without lastSyncAt filtering', () => {
   const body = findFunctionBody(syncSources, 'pullEventsFromViews');
 

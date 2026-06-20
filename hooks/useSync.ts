@@ -17,6 +17,7 @@ import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-d
 import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
 import { pushEvents } from '@/lib/sync/sync-push-service';
 import { getOwnerAccessibleMarketIds } from '@/lib/sync/owner-market-access-service';
+import { batchHydrateMarkets } from '@/lib/sync/owner-market-hydration-service';
 import {
   collectProjectionMarketId,
   reconcileTouchedMarketProjections,
@@ -585,106 +586,6 @@ async function replayEvents(
  * Pull: 下載雲端新事件（全量同步 - 降級方案）
  * ✅ 支援員工模式：從視圖拉取數據
  */
-
-/**
- * Hydrate missing markets from Cloud before replaying events.
- *
- * During Owner pull, events may reference markets not yet written to local IndexedDB
- * (e.g., first login, cross-device login, cache reset). Replaying handlers for such
- * events would fail because db.markets.get(marketId) returns undefined.
- *
- * This function batch-fetches missing markets from Supabase and writes them to local cache
- * before the event replay loop begins.
- *
- * ## 脫敏說明
- *
- * 員工視角下：
- * - Supabase RLS 只限制 row 級別，不限制 column
- * - `totalCost`、`profitMargin`、`boothCost` 等敏感欄位都會被讀出來
- * - 必須在寫入 IndexedDB 前脫敏
- *
- * @param marketIds - Set of market IDs referenced by incoming events
- * @param infoLevel - 資訊揭露層級（3=老闆, 0-2=員工）
- */
-async function batchHydrateMarkets(
-  marketIds: Set<string>,
-  infoLevel: InfoLevel
-): Promise<{ hydrated: Set<string>; missing: Set<string>; failed: Set<string> }> {
-  const hydrated = new Set<string>();
-  const missing = new Set<string>();
-  const failed = new Set<string>();
-
-  const toFetch = [...marketIds];
-  if (toFetch.length === 0) {
-    return { hydrated, missing, failed };
-  }
-
-  // Filter out markets already present in local cache
-  const notYetLocal: string[] = [];
-  for (const marketId of toFetch) {
-    const exists = await db.markets.get(marketId);
-    if (!exists) {
-      notYetLocal.push(marketId);
-    } else {
-      hydrated.add(marketId);
-    }
-  }
-
-  if (notYetLocal.length === 0) {
-    return { hydrated, missing, failed };
-  }
-
-  // Batch fetch from Cloud
-  const { data: markets, error } = await supabase
-    .from('markets')
-    .select('*')
-    .in('id', notYetLocal);
-
-  if (error) {
-    console.error('[hydration] Failed to fetch markets from Cloud:', error);
-    for (const id of notYetLocal) failed.add(id);
-    return { hydrated, missing, failed };
-  }
-
-  const foundIds = new Set<string>();
-  if (markets) {
-    for (const market of markets) {
-      foundIds.add(market.id);
-      const localMarket = marketRowToLocal(market);
-      // 經 PermissionGate 脫敏（員工視角下 cost/profit 等敏感欄位會被移除）
-      const sanitized = marketGateForLevel(infoLevel).sanitizeMarketProjection(
-        localMarket as unknown as Record<string, unknown>
-      );
-      // ✅ C3.4 修復：雲端 markets.total_* 是 handler 已累加過的 projection，
-      // 不可作為本地 IndexedDB 的初始值，否則後續 deal_closed events replay
-      // 會「+=」二次累加造成數倍膨脹。
-      const reset = resetMarketProjectionFields(
-        sanitized as unknown as typeof localMarket
-      );
-      await db.markets.put(reset as unknown as typeof localMarket);
-      hydrated.add(market.id);
-    }
-  }
-
-  for (const id of notYetLocal) {
-    if (!foundIds.has(id)) missing.add(id);
-  }
-
-  if (missing.size > 0) {
-    console.warn(`[hydration] Markets not found in Cloud (deleted or unauthorized): ${[...missing].join(', ')}`);
-  }
-
-  if (hydrated.size > 0) {
-    console.log(`[hydration] Hydrated ${hydrated.size} markets from Cloud`);
-  }
-
-  return { hydrated, missing, failed };
-}
-
-/** 為指定 infoLevel 取得 market PermissionGate（包裝工廠） */
-function marketGateForLevel(infoLevel: InfoLevel) {
-  return createPermissionGate({ infoLevel, entity: 'market' });
-}
 
 async function pullAllEvents(
   userId: string,
