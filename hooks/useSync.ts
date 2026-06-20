@@ -15,110 +15,35 @@ import { pullOwnerEvents } from '@/lib/sync/owner-pull-service';
 import { pullEventsFromViews } from '@/lib/sync/staff-pull-service';
 import { handlePermissionSyncError } from '@/lib/sync/sync-error-policy';
 import { pushEvents } from '@/lib/sync/sync-push-service';
+import {
+  acquireSyncLock,
+  getActiveSyncIdentity,
+  getGlobalSyncState,
+  hasExecutedInitialSyncFlag,
+  hasSetupSyncIntervals,
+  markInitialSyncExecuted,
+  markSyncIntervalsSetup,
+  releaseSyncLock,
+  resetSyncRuntimeState,
+  setActiveSyncIdentity,
+  subscribeGlobalSyncState,
+  SyncStatus,
+  type SyncState,
+  updateGlobalState,
+} from '@/lib/sync/sync-runtime-state';
 export { getLocalPendingCount, getCloudEventCount } from '@/lib/sync/sync-count-service';
 export { detectAndResolveConflict } from '@/lib/sync/sync-conflict-resolution-service';
+export { resetInitialSyncFlag, SyncStatus } from '@/lib/sync/sync-runtime-state';
 import {
-  clearSyncPause,
   getSyncPauseUntil,
 } from '@/lib/sync/sync-permission-pause-service';
 import type { InfoLevel } from '@/lib/data-sanitization';
-
-/**
- * 同步狀態
- */
-export enum SyncStatus {
-  IDLE = 'idle',           // 閒置
-  SYNCING = 'syncing',     // 同步中
-  SUCCESS = 'success',     // 同步成功
-  ERROR = 'error',         // 同步失敗
-  OFFLINE = 'offline',     // 離線
-}
-
-/**
- * 全局標記：是否已執行初始同步
- * 使用模組級別變量，確保所有 useSync 實例共享同一個標記
- */
-let hasExecutedInitialSync = false;
-
-/**
- * 全局標記：是否已設置定期任務
- * 防止 React Strict Mode 導致的重複設置
- */
-let hasSetupIntervals = false;
-
-/**
- * ✅ 全局同步鎖：防止並發同步導致的競態條件
- * 確保同一時間只有一個同步在執行
- */
-let isSyncLocked = false;
-let activeSyncIdentity: string | null = null;
-
-
-/**
- * ✅ 全局共享狀態：確保所有 useSync 實例使用同一個狀態
- * 這樣可以避免 React Strict Mode 雙重渲染導致的狀態不同步
- */
-let globalSyncState: SyncState = {
-  status: SyncStatus.IDLE,
-  lastSyncAt: null,
-  pendingCount: 0,
-  error: null,
-  uploadProgress: undefined,
-  downloadProgress: undefined,
-};
-
-/**
- * ✅ 全局狀態更新監聽器
- */
-const globalStateListeners = new Set<(state: SyncState) => void>();
-
-/**
- * ✅ 更新全局狀態並通知所有監聽器
- */
-function updateGlobalState(updater: (prev: SyncState) => SyncState) {
-  globalSyncState = updater(globalSyncState);
-  globalStateListeners.forEach(listener => listener(globalSyncState));
-}
-
-function resetSyncRuntimeState() {
-  hasExecutedInitialSync = false;
-  hasSetupIntervals = false;
-  isSyncLocked = false;
-  updateGlobalState(() => ({
-    status: SyncStatus.IDLE,
-    lastSyncAt: null,
-    pendingCount: 0,
-    error: null,
-    uploadProgress: undefined,
-    downloadProgress: undefined,
-  }));
-}
-
-/**
- * 重置初始同步標記（用於測試或登出）
- */
-export function resetInitialSyncFlag() {
-  activeSyncIdentity = null;
-  resetSyncRuntimeState();
-  // ✅ 重置全局同步鎖
-  clearSyncPause();
-  // ✅ 重置全局狀態
-}
 
 interface UseSyncOptions {
   enabled?: boolean;       // 是否啟用同步
   interval?: number;       // 同步間隔（毫秒）
   throttle?: number;       // 節流延遲（毫秒）
   roleInfoLevel?: InfoLevel;  // 角色資訊揭露層級（3=老闆, 0-2=員工）
-}
-
-interface SyncState {
-  status: SyncStatus;
-  lastSyncAt: number | null;
-  pendingCount: number;
-  error: string | null;
-  uploadProgress?: { current: number; total: number; currentItem?: string };
-  downloadProgress?: { current: number; total: number; currentItem?: string; phase?: 'incremental' };
 }
 
 /**
@@ -143,7 +68,7 @@ export function useSync(options: UseSyncOptions = {}) {
     : null;
   
   // ✅ 使用全局狀態，並訂閱更新
-  const [state, setState] = useState<SyncState>(globalSyncState);
+  const [state, setState] = useState<SyncState>(getGlobalSyncState());
 
   const syncTimeoutRef = useRef<NodeJS.Timeout>();
   const intervalRef = useRef<NodeJS.Timeout>();
@@ -159,19 +84,15 @@ export function useSync(options: UseSyncOptions = {}) {
       setState(newState);
     };
     
-    globalStateListeners.add(listener);
-    
-    return () => {
-      globalStateListeners.delete(listener);
-    };
+    return subscribeGlobalSyncState(listener);
   }, []);
 
   useEffect(() => {
-    if (activeSyncIdentity === syncIdentity) {
+    if (getActiveSyncIdentity() === syncIdentity) {
       return;
     }
 
-    activeSyncIdentity = syncIdentity;
+    setActiveSyncIdentity(syncIdentity);
     forceSyncExecutedRef.current = false;
     resetSyncRuntimeState();
   }, [syncIdentity]);
@@ -216,15 +137,14 @@ export function useSync(options: UseSyncOptions = {}) {
     }
 
     // ✅ 原子操作：檢查並獲取全局同步鎖（防止並發同步）
-    if (isSyncLocked) {
+    if (!acquireSyncLock()) {
       console.log('⏸️ 同步已在進行中，跳過此次請求');
       return;
     }
-    isSyncLocked = true; // ✅ 立即設置鎖，避免 Race Condition
 
     // 檢查網路狀態
     if (!navigator.onLine) {
-      isSyncLocked = false; // ✅ 釋放鎖
+      releaseSyncLock();
       setState(prev => ({ ...prev, status: SyncStatus.OFFLINE }));
       return;
     }
@@ -321,7 +241,7 @@ export function useSync(options: UseSyncOptions = {}) {
       }));
     } finally {
       // ✅ 釋放全局同步鎖
-      isSyncLocked = false;
+      releaseSyncLock();
       isSyncingRef.current = false;
     }
   }, [enabled, isConfigured, user, effectiveStaffMode]);
@@ -385,15 +305,15 @@ export function useSync(options: UseSyncOptions = {}) {
     }
 
     // ✅ 防止重複設置（全局鎖）
-    if (hasSetupIntervals) {
+    if (hasSetupSyncIntervals()) {
       return;
     }
 
-    hasSetupIntervals = true;
+    markSyncIntervalsSetup();
 
     // ✅ 初始同步（只執行一次）
-    if (!hasExecutedInitialSync) {
-      hasExecutedInitialSync = true;
+    if (!hasExecutedInitialSyncFlag()) {
+      markInitialSyncExecuted();
       throttledSyncFnRef.current?.();
     }
 

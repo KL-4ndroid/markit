@@ -77,6 +77,29 @@ runTest('useSync does not keep an unused replayEvents helper', () => {
   assert.doesNotMatch(hookSource, /await replayEvents\(/);
 });
 
+runTest('sync runtime state service owns global state and lock contracts', () => {
+  const acquireBody = findFunctionBody(syncSources, 'acquireSyncLock');
+  const resetBody = findFunctionBody(syncSources, 'resetSyncRuntimeState');
+
+  assert.match(hookSource, /export \{ resetInitialSyncFlag,\s*SyncStatus \} from ['"]@\/lib\/sync\/sync-runtime-state['"]/);
+  assert.match(hookSource, /useState<SyncState>\(getGlobalSyncState\(\)\)/);
+  assert.match(hookSource, /return subscribeGlobalSyncState\(listener\)/);
+  assert.match(hookSource, /if\s*\(!acquireSyncLock\(\)\)/);
+  assert.match(hookSource, /releaseSyncLock\(\)[\s\S]*status:\s*SyncStatus\.OFFLINE/);
+  assert.match(hookSource, /finally\s*\{[\s\S]*releaseSyncLock\(\)/);
+  assert.match(hookSource, /if\s*\(hasSetupSyncIntervals\(\)\)/);
+  assert.match(hookSource, /markSyncIntervalsSetup\(\)/);
+  assert.match(hookSource, /if\s*\(!hasExecutedInitialSyncFlag\(\)\)/);
+  assert.match(hookSource, /markInitialSyncExecuted\(\)/);
+  assert.doesNotMatch(hookSource, /let\s+(hasExecutedInitialSync|hasSetupIntervals|isSyncLocked|activeSyncIdentity|globalSyncState)\b/);
+  assert.match(syncSources, /export enum SyncStatus/);
+  assert.match(acquireBody, /if\s*\(isSyncLocked\)\s*return false/);
+  assert.match(acquireBody, /isSyncLocked\s*=\s*true/);
+  assert.match(resetBody, /hasExecutedInitialSync\s*=\s*false/);
+  assert.match(resetBody, /hasSetupIntervals\s*=\s*false/);
+  assert.match(resetBody, /isSyncLocked\s*=\s*false/);
+});
+
 runTest('sync count service preserves local and cloud count contracts', () => {
   const localBody = findFunctionBody(syncSources, 'getLocalPendingCount');
   const cloudBody = findFunctionBody(syncSources, 'getCloudEventCount');
