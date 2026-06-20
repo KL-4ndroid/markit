@@ -63,7 +63,7 @@ Goal:
 - Prevent UI panels from importing sensitive sync, auth, role, or Supabase layers.
 
 Status:
-- In progress.
+- Completed.
 
 Exit criteria:
 - Tests confirm `FieldNotesPanel`, `ChecklistPanel`, and `MarketFieldOpsSection` stay prop-driven.
@@ -73,6 +73,9 @@ Exit criteria:
 
 Goal:
 - Keep loading, empty, saving, cancel, and trim behavior stable.
+
+Status:
+- Completed.
 
 Exit criteria:
 - Tests cover loading and empty copy.
@@ -85,6 +88,9 @@ Exit criteria:
 Goal:
 - Keep owner and staff details using shared Field Ops components without merging sensitive owner-only controls.
 
+Status:
+- Completed.
+
 Exit criteria:
 - Staff route continues to return before owner-only UI.
 - Owner route continues to pass full field-ops permissions.
@@ -94,6 +100,9 @@ Exit criteria:
 
 Goal:
 - Use test-only fixtures to understand cache replacement impact without production imports.
+
+Status:
+- Completed.
 
 Exit criteria:
 - Owner fixture includes add/update/keep/delete candidates.
@@ -111,6 +120,6 @@ Exit criteria:
 
 ## 3. Current Recommendation
 
-Continue with L1, L2, and L3 first.
+Review whether L5 should remain analysis-only or become a narrow implementation slice.
 
 Do not start Gate D until the user explicitly approves one narrow slice from `SYNC_GATE_D_PREFLIGHT_DECISION_PLAN.md`.

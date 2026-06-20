@@ -37,14 +37,14 @@ runTest('MarketDetailPage initializes Dexie with staff scoped profile', () => {
 
 runTest('MarketDetailPage routes staff to StaffMarketDetailView before owner UI', () => {
   const staffReturnIndex = marketDetailSource.indexOf('return <StaffMarketDetailView market={market} />');
-  const ownerReturnIndex = marketDetailSource.indexOf('// ✅ 老闆模式', staffReturnIndex);
   const ownerEditFormIndex = marketDetailSource.indexOf('<EditMarketForm', staffReturnIndex);
   const ownerDeleteModalIndex = marketDetailSource.indexOf('{showDeleteConfirm && isMounted && createPortal', staffReturnIndex);
+  const ownerFieldOpsIndex = marketDetailSource.indexOf('<MarketFieldOpsSection', staffReturnIndex);
 
   assert.ok(staffReturnIndex > 0, 'staff return must exist');
-  assert.ok(ownerReturnIndex > staffReturnIndex, 'owner view must be after staff return');
   assert.ok(ownerEditFormIndex > staffReturnIndex, 'owner edit form must be after staff return');
   assert.ok(ownerDeleteModalIndex > staffReturnIndex, 'owner delete modal must be after staff return');
+  assert.ok(ownerFieldOpsIndex > staffReturnIndex, 'owner field ops must be after staff return');
 });
 
 runTest('StaffMarketDetailView keeps manager edits scoped to manager mode', () => {
@@ -60,6 +60,20 @@ runTest('StaffMarketDetailView opens deal writes through capability and keeps pr
   assert.match(staffMarketViewSource, /<QuickInteractionButtons[\s\S]*hideProfit=\{true\}/);
 });
 
+runTest('StaffMarketDetailView passes Field Ops permissions from capabilities only', () => {
+  assert.match(staffMarketViewSource, /hasCapability\(roleCapabilities,\s*['"]canManageFieldNotes['"]\)/);
+  assert.match(staffMarketViewSource, /hasCapability\(roleCapabilities,\s*['"]canManageChecklist['"]\)/);
+  assert.match(staffMarketViewSource, /hasCapability\(roleCapabilities,\s*['"]canToggleChecklistItem['"]\)/);
+  assert.match(
+    staffMarketViewSource,
+    /<MarketFieldOpsSection[\s\S]*canManageFieldNotes=\{canManageFieldNotes\}[\s\S]*canManageChecklist=\{canManageChecklist\}[\s\S]*canToggleChecklistItem=\{canToggleChecklistItem\}/
+  );
+  assert.doesNotMatch(
+    staffMarketViewSource,
+    /<MarketFieldOpsSection[\s\S]*canManageFieldNotes=\{true\}|<MarketFieldOpsSection[\s\S]*canManageChecklist=\{true\}/
+  );
+});
+
 runTest('StaffMarketDetailView scopes same-day deletion by role', () => {
   assert.match(staffMarketViewSource, /const isManagerRole = userRole\.staffRole === ['"]manager['"]/);
   assert.match(
@@ -69,6 +83,18 @@ runTest('StaffMarketDetailView scopes same-day deletion by role', () => {
   assert.match(staffMarketViewSource, /allowDelete=\{canDeleteOwnRecord\}/);
   assert.match(staffMarketViewSource, /deleteActorId=\{deleteActorId\}/);
   assert.match(staffMarketViewSource, /deleteSameDayOnly=\{canDeleteOwnRecord\}/);
+});
+
+runTest('StaffMarketDetailView stays clear of owner-only market lifecycle and analytics controls', () => {
+  assert.doesNotMatch(staffMarketViewSource, /handleDeleteMarket|deleteMarket\(/);
+  assert.doesNotMatch(staffMarketViewSource, /updateMarketStatus|startMarket|endMarket/);
+  assert.doesNotMatch(staffMarketViewSource, /showDeleteConfirm|showCancelConfirm|showStatusChangeConfirm/);
+  assert.doesNotMatch(staffMarketViewSource, /^import .*CartDrawer/m);
+  assert.doesNotMatch(staffMarketViewSource, /^import .*DealDetailModal/m);
+  assert.doesNotMatch(staffMarketViewSource, /^import .*InteractionDetailModal/m);
+  assert.doesNotMatch(staffMarketViewSource, /^import .*BehaviorInsightCard/m);
+  assert.doesNotMatch(staffMarketViewSource, /^import .*InteractionPreferenceChart/m);
+  assert.doesNotMatch(staffMarketViewSource, /^import .*InteractionTimeHeatmap/m);
 });
 
 async function main(): Promise<void> {
