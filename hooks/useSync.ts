@@ -15,6 +15,7 @@ import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
 import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
+import { sanitizeStaffProjectionsAfterReplay } from '@/lib/sync/staff-projection-sanitizer';
 import { pushEvents } from '@/lib/sync/sync-push-service';
 import { getOwnerAccessibleMarketIds } from '@/lib/sync/owner-market-access-service';
 import { batchHydrateMarkets } from '@/lib/sync/owner-market-hydration-service';
@@ -41,10 +42,9 @@ import {
   sanitizeWithLevel,
   sanitizeArrayWithLevel,
   sanitizeEventsWithLevel,
-  createPermissionGate,
   type InfoLevel,
 } from '@/lib/data-sanitization';
-import type { Market, DailyStats, Product } from '@/types/db';
+import type { Market, Product } from '@/types/db';
 import type { Event } from '@/types/db';
 
 /**
@@ -942,43 +942,6 @@ async function syncProductsToIndexedDB(
  * ✅ 根據 infoLevel 執行脫敏（老闆=3 無脫敏，員工=0-2 漸進脫敏）
  * ✅ handler replay 後清理衍生敏感 projection（員工模式）
  */
-
-/** 會寫出敏感衍生資料的事件類型 */
-const PROJECTION_EVENT_TYPES = new Set(['deal_closed', 'deal_deleted']);
-
-/**
- * 清理 event handler replay 後寫入的敏感衍生資料。
- * 根據 infoLevel 移除 markets 和 dailyStats 中的敏感欄位。
- *
- * @param event - 已完成 replay 的事件
- * @param infoLevel - 角色資訊揭露層級
- */
-async function sanitizeStaffProjectionsAfterReplay(
-  event: { type: string; market_id?: string; payload?: any },
-  infoLevel: InfoLevel
-): Promise<void> {
-  if (infoLevel === 3) return; // 老闆不需脫敏
-  if (!PROJECTION_EVENT_TYPES.has(event.type)) return;
-
-  const marketId = getEventMarketId(event);
-  if (!marketId) return;
-
-  const marketGate = createPermissionGate({ infoLevel, entity: 'market' });
-  const statsGate = createPermissionGate({ infoLevel, entity: 'stats' });
-
-  const existingMarket = await db.markets.get(marketId);
-  if (existingMarket) {
-    const sanitized = marketGate.sanitizeMarketProjection(existingMarket as unknown as Record<string, unknown>);
-    await db.markets.put({ ...sanitized, id: marketId } as Market);
-  }
-
-  const dailyStats = await db.dailyStats.where('marketId').equals(marketId).toArray();
-  for (const stat of dailyStats) {
-    if (stat.id === undefined) continue;
-    const sanitized = statsGate.sanitizeDailyStatsProjection(stat as unknown as Record<string, unknown>);
-    await db.dailyStats.put({ ...sanitized, id: stat.id } as DailyStats);
-  }
-}
 
 async function syncEventsToIndexedDB(events: any[], infoLevel: InfoLevel): Promise<void> {
   // ✅ 脫敏：根據 infoLevel 過濾事件
