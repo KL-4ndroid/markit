@@ -1,8 +1,8 @@
 import { db } from '@/lib/db';
-import { marketAccessRowToLocal } from '@/lib/data-mappers';
+import { marketAccessRowToLocal, productAccessRowToLocal } from '@/lib/data-mappers';
 import { sanitizeWithLevel, type InfoLevel } from '@/lib/data-sanitization';
 import { resetMarketProjectionFields } from '@/lib/sync/projection-reset';
-import type { Market } from '@/types/db';
+import type { Market, Product } from '@/types/db';
 
 export async function syncMarketsToIndexedDB(
   markets: any[],
@@ -48,4 +48,58 @@ export async function syncMarketsToIndexedDB(
   }
 
   console.log('Market sync complete');
+}
+
+export async function syncProductsToIndexedDB(
+  products: any[],
+  currentUserId: string,
+  infoLevel: InfoLevel
+): Promise<void> {
+  console.log(`Syncing ${products.length} products to IndexedDB...`, {
+    currentUserId: currentUserId.substring(0, 8),
+  });
+
+  if (products.length > 0) {
+    console.log('Product sync sample:', products.slice(0, 3).map(p => ({
+      id: p.id?.substring(0, 8),
+      name: p.name,
+      owner_id: p.owner_id?.substring(0, 8),
+      access_type: p.access_type,
+      relationship_owner_id: p.relationship_owner_id?.substring(0, 8),
+    })));
+  }
+
+  let syncedCount = 0;
+  let skippedCount = 0;
+
+  for (const product of products) {
+    try {
+      const isOwner = product.access_type === 'owner' && product.owner_id === currentUserId;
+      const isStaff = product.access_type === 'staff' && product.relationship_owner_id;
+
+      if (!isOwner && !isStaff) {
+        console.warn(`Skipping inaccessible product: ${product.name} (owner: ${product.owner_id?.substring(0, 8)})`);
+        skippedCount++;
+        continue;
+      }
+
+      const sanitizedRow = sanitizeWithLevel(product, 'product', infoLevel);
+      const mappedProduct = productAccessRowToLocal(sanitizedRow as Record<string, unknown>);
+
+      const productData = {
+        ...mappedProduct,
+        unlimitedStock: mappedProduct.unlimitedStock ?? false,
+        isActive: mappedProduct.isActive ?? true,
+        totalSold: 0,
+      };
+
+      await db.products.put({ ...productData, id: product.id } as Product);
+      syncedCount++;
+    } catch (error) {
+      console.error(`Failed to sync product: ${product.id}`, error);
+      skippedCount++;
+    }
+  }
+
+  console.log(`Product sync complete: synced ${syncedCount}, skipped ${skippedCount}, total ${products.length}`);
 }

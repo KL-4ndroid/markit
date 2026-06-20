@@ -16,14 +16,13 @@ import { recordEvent } from '@/lib/db/events';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
 import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
 import { sanitizeStaffProjectionsAfterReplay } from '@/lib/sync/staff-projection-sanitizer';
-import { syncMarketsToIndexedDB } from '@/lib/sync/local-cache-writer';
+import { syncMarketsToIndexedDB, syncProductsToIndexedDB } from '@/lib/sync/local-cache-writer';
 import { pushEvents } from '@/lib/sync/sync-push-service';
 import { getOwnerAccessibleMarketIds } from '@/lib/sync/owner-market-access-service';
 import { batchHydrateMarkets } from '@/lib/sync/owner-market-hydration-service';
 import { collectProjectionMarketId } from '@/lib/sync/projection-reconciliation';
 import { reconcileSyncedProjectionMarkets } from '@/lib/sync/sync-projection-reconciliation-runner';
 import { getEventMarketId } from '@/lib/events/event-read-model';
-import { resetProductProjectionFields } from '@/lib/sync/projection-reset';
 import { getLastSyncTimestamp, updateLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
 import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
 export { getLocalPendingCount, getCloudEventCount } from '@/lib/sync/sync-count-service';
@@ -36,15 +35,12 @@ import {
 } from '@/lib/sync/sync-permission-pause-service';
 import {
   normalizeEventPayloadForLocal,
-  productAccessRowToLocal,
 } from '@/lib/data-mappers';
 import {
-  sanitizeWithLevel,
   sanitizeArrayWithLevel,
   sanitizeEventsWithLevel,
   type InfoLevel,
 } from '@/lib/data-sanitization';
-import type { Product } from '@/types/db';
 import type { Event } from '@/types/db';
 
 /**
@@ -802,78 +798,6 @@ async function pullEventsFromViews(
     console.error('❌ 視圖拉取失敗:', error);
     throw error; // 拋出錯誤，讓調用者處理降級
   }
-}
-
-/**
- * 同步商品到 IndexedDB（保留權限）
- * ✅ 合併視圖數據和本地數據
- * ✅ 只同步當前用戶可訪問的商品
- * ✅ 驗證 owner_id，防止數據混合
- */
-async function syncProductsToIndexedDB(
-  products: any[],
-  currentUserId: string,
-  infoLevel: InfoLevel
-): Promise<void> {
-  console.log(`📝 同步 ${products.length} 個商品到 IndexedDB...`, {
-    currentUserId: currentUserId.substring(0, 8),
-  });
-  
-  // ✅ 調試：打印前 3 個商品的詳細信息
-  if (products.length > 0) {
-    console.log('🔍 商品數據樣本（前3個）:', products.slice(0, 3).map(p => ({
-      id: p.id?.substring(0, 8),
-      name: p.name,
-      owner_id: p.owner_id?.substring(0, 8),
-      access_type: p.access_type,
-      relationship_owner_id: p.relationship_owner_id?.substring(0, 8),
-    })));
-  }
-  
-  let syncedCount = 0;
-  let skippedCount = 0;
-
-  // ✅ 脫敏：根據 infoLevel 移除敏感欄位
-  for (const product of products) {
-    try {
-      // ✅ 驗證：確保商品屬於當前用戶或當前用戶可訪問
-      const isOwner = product.access_type === 'owner' && product.owner_id === currentUserId;
-      const isStaff = product.access_type === 'staff' && product.relationship_owner_id;
-
-      if (!isOwner && !isStaff) {
-        console.warn(`⚠️ 跳過不屬於當前用戶的商品: ${product.name} (owner: ${product.owner_id?.substring(0, 8)})`);
-        skippedCount++;
-        continue;
-      }
-
-      // ✅ 一次脫敏：sanitize row 後交給 mapper
-      const sanitizedRow = sanitizeWithLevel(product, 'product', infoLevel);
-      const mappedProduct = productAccessRowToLocal(sanitizedRow as Record<string, unknown>);
-
-      // 準備商品數據
-      const productData = {
-        ...mappedProduct,
-        unlimitedStock: mappedProduct.unlimitedStock ?? false,
-        isActive: mappedProduct.isActive ?? true,
-        // ✅ C3.4 修復：雲端 products.total_sold 是 handler 已累加過的 projection，
-        // 不可作為本地 IndexedDB 的初始值。
-        // 注意：product.stock **不**重設（雲端 stock 是絕對剩餘量，是 truth source），
-        // stock 雙重扣減問題列為 P4 候選。
-        totalSold: 0,
-      };
-
-      // ✅ 寫入（mapper output 已被 sanitize，Dexie put 完全替換）
-      await db.products.put({ ...productData, id: product.id } as Product);
-      
-      syncedCount++;
-    } catch (error) {
-      console.error(`❌ 同步商品失敗: ${product.id}`, error);
-      skippedCount++;
-      // 繼續處理下一個
-    }
-  }
-  
-  console.log(`✅ 商品同步完成: 成功 ${syncedCount}，跳過 ${skippedCount}，總計 ${products.length}`);
 }
 
 /**
