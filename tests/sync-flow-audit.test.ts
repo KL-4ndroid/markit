@@ -153,6 +153,17 @@ runTest('owner pull uses created_at cursor and owner projection reconciliation',
   assert.match(body, /await reconcileSyncedProjectionMarkets\(touchedMarketIds,\s*['"]owner-full['"]\)/);
 });
 
+runTest('projection reconciliation runner preserves context dry-run policy', () => {
+  const body = findFunctionBody(syncSources, 'reconcileSyncedProjectionMarkets');
+
+  assert.match(body, /if\s*\(marketIds\.size\s*===\s*0\)\s*return/);
+  assert.match(body, /const dryRun\s*=\s*!shouldAutoRepairForContext\(context\)/);
+  assert.match(body, /await reconcileTouchedMarketProjections\(marketIds,\s*\{\s*context,\s*dryRun\s*\}\)/);
+  assert.match(body, /result\.skipped\.some\(item\s*=>\s*item\.reason\s*===\s*['"]dry_run['"]\)/);
+  assert.match(body, /result\.errors\.length\s*>\s*0/);
+  assert.match(body, /console\.warn\(['"]\[useSync\] projection reconciliation skipped:/);
+});
+
 runTest('owner market access helper includes member and owner-owned markets', () => {
   const body = findFunctionBody(syncSources, 'getOwnerAccessibleMarketIds');
 
