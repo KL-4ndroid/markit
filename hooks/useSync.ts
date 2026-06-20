@@ -442,78 +442,8 @@ export function useSync(options: UseSyncOptions = {}) {
 }
 
 /**
- * 重放事件到本地數據庫
+ * Pull cloud events, routing staff sessions through authorized views.
  */
-async function replayEvents(
-  events: any[],
-  onProgress?: (current: number, total: number, currentItem?: string) => void
-): Promise<void> {
-  const total = events.length;
-  let processedCount = 0;
-
-  for (let i = 0; i < events.length; i++) {
-    const event = events[i];
-    
-    if (onProgress) {
-      onProgress(i + 1, total, `${event.type} (${event.id?.substring(0, 8)}...)`);
-    }
-    
-    try {
-      // 檢查是否已存在
-      const existing = await db.events.get(event.id);
-      if (existing) {
-        continue;
-      }
-
-      if (await hasSemanticDuplicateDealClosedEvent(db, event)) {
-        console.warn('[useSync] Skipping semantic duplicate deal_closed event during replay', {
-          eventId: event.id,
-          marketId: getEventMarketId(event),
-        });
-        continue;
-      }
-
-      const localEvent = createCanonicalSyncedEvent(event);
-
-      // 插入事件
-      await db.events.add(localEvent);
-
-      // 重放事件處理器
-      const { eventHandlers } = await import('@/lib/db/events');
-      const handler = eventHandlers[event.type as keyof typeof eventHandlers];
-      
-      if (handler) {
-        // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式（用於本地事件處理器）
-        const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
-        
-        await handler({
-          id: localEvent.id,
-          type: localEvent.type,
-          payload: processedPayload,
-          timestamp: localEvent.timestamp,
-          actor_id: localEvent.actor_id,
-          market_id: localEvent.market_id,
-        } as Event, db);
-      }
-      
-      processedCount++;
-    } catch (error: any) {
-      if (error.name === 'ConstraintError') {
-        continue;
-      }
-      console.error(`❌ 重放事件失敗: ${event.type}`, error);
-      continue;
-    }
-  }
-
-  console.log(`✅ 重放完成：${processedCount}/${total} 個事件`);
-}
-
-/**
- * Pull: 下載雲端新事件（全量同步 - 降級方案）
- * ✅ 支援員工模式：從視圖拉取數據
- */
-
 async function pullAllEvents(
   userId: string,
   onProgress: (current: number, total: number, currentItem?: string, phase?: 'incremental') => void,

@@ -72,6 +72,11 @@ runTest('useSync keeps push before pull in the main sync cycle', () => {
   assert.match(hookSource, /\.where\(['"]sync_status['"]\)[\s\S]*\.anyOf\(\[['"]pending['"],\s*['"]local_only['"]\]\)/);
 });
 
+runTest('useSync does not keep an unused replayEvents helper', () => {
+  assert.doesNotMatch(hookSource, /async function replayEvents\(/);
+  assert.doesNotMatch(hookSource, /await replayEvents\(/);
+});
+
 runTest('sync count service preserves local and cloud count contracts', () => {
   const localBody = findFunctionBody(syncSources, 'getLocalPendingCount');
   const cloudBody = findFunctionBody(syncSources, 'getCloudEventCount');
