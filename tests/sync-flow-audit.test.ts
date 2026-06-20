@@ -87,6 +87,25 @@ runTest('sync count service preserves local and cloud count contracts', () => {
   assert.match(cloudBody, /return count \|\| 0/);
 });
 
+runTest('legacy conflict resolution stays sanitized behind useSync re-export', () => {
+  const sanitizeBody = findFunctionBody(syncSources, 'sanitizeWritePayload');
+  const detectBody = findFunctionBody(syncSources, 'detectAndResolveConflict');
+  const marketMergeBody = findFunctionBody(syncSources, 'mergeMarketData');
+  const productMergeBody = findFunctionBody(syncSources, 'mergeProductData');
+
+  assert.match(hookSource, /export \{ detectAndResolveConflict \} from ['"]@\/lib\/sync\/sync-conflict-resolution-service['"]/);
+  assert.match(sanitizeBody, /if\s*\(infoLevel\s*>=\s*3\)\s*return data as unknown as Record<string, unknown>/);
+  assert.match(sanitizeBody, /createPermissionGate\(\{\s*infoLevel,\s*entity:\s*['"]market['"]\s*\}\)[\s\S]*\.sanitizeMarketProjection/);
+  assert.match(sanitizeBody, /sanitizeWithLevel\([\s\S]*['"]product['"],\s*infoLevel/);
+  assert.match(detectBody, /const remote\s*=\s*sanitizeWritePayload\(/);
+  assert.match(detectBody, /await db\.markets\.update\(localData\.id,\s*remote as unknown as Partial<Market>\)/);
+  assert.match(detectBody, /await db\.products\.update\(localData\.id,\s*remote as unknown as Partial<Product>\)/);
+  assert.match(marketMergeBody, /const sanitizedRemote\s*=\s*sanitizeWritePayload\(/);
+  assert.match(marketMergeBody, /totalRevenue:\s*Math\.max\(/);
+  assert.match(productMergeBody, /infoLevel\s*>=\s*3[\s\S]*stock:\s*Math\.min\(/);
+  assert.match(productMergeBody, /:\s*\{\s*stock:\s*sanitizedRemote\.stock\s*\}/);
+});
+
 runTest('pushEvents only uploads current-user or local events and blocks actor mismatches', () => {
   const body = findFunctionBody(syncSources, 'pushEvents');
 
