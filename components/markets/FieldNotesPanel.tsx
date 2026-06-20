@@ -28,41 +28,52 @@ export function FieldNotesPanel({
 
   const notes = useLiveQuery(
     () => getActiveFieldNotesForMarket(marketId),
-    [marketId],
-    []
+    [marketId]
   );
 
+  const visibleNotes = notes ?? [];
+  const isLoading = notes === undefined;
+
+  const resetEditing = () => {
+    setEditingNote(null);
+    setEditingText('');
+  };
+
   const handleCreate = async () => {
-    if (!canManage || isSaving) return;
+    const trimmedText = text.trim();
+    if (!canManage || isSaving || trimmedText.length === 0) return;
+
     setIsSaving(true);
     try {
-      await createFieldNote(marketId, text);
+      await createFieldNote(marketId, trimmedText);
       setText('');
-      toast.success('Field note 已建立');
+      toast.success('備註已新增');
     } catch (error) {
       console.error('create field note failed:', error);
-      toast.error('建立 field note 失敗');
+      toast.error('新增備註失敗');
     } finally {
       setIsSaving(false);
     }
   };
 
   const startEditing = (note: FieldNote) => {
+    if (isSaving) return;
     setEditingNote(note);
     setEditingText(note.text);
   };
 
   const handleUpdate = async () => {
-    if (!editingNote || !canManage || isSaving) return;
+    const trimmedText = editingText.trim();
+    if (!editingNote || !canManage || isSaving || trimmedText.length === 0) return;
+
     setIsSaving(true);
     try {
-      await updateFieldNote(marketId, editingNote.id, editingText);
-      setEditingNote(null);
-      setEditingText('');
-      toast.success('Field note 已更新');
+      await updateFieldNote(marketId, editingNote.id, trimmedText);
+      resetEditing();
+      toast.success('備註已更新');
     } catch (error) {
       console.error('update field note failed:', error);
-      toast.error('更新 field note 失敗');
+      toast.error('更新備註失敗');
     } finally {
       setIsSaving(false);
     }
@@ -70,20 +81,24 @@ export function FieldNotesPanel({
 
   const handleDelete = async (note: FieldNote) => {
     if (!canManage || isSaving) return;
+
     setIsSaving(true);
     try {
       await deleteFieldNote(marketId, note.id);
-      toast.success('Field note 已刪除');
+      if (editingNote?.id === note.id) {
+        resetEditing();
+      }
+      toast.success('備註已刪除');
     } catch (error) {
       console.error('delete field note failed:', error);
-      toast.error('刪除 field note 失敗');
+      toast.error('刪除備註失敗');
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <section className="rounded-xl bg-white p-4 shadow-sm shadow-primary/10">
+    <section className="rounded-xl bg-white p-4 shadow-sm shadow-primary/10" aria-busy={isSaving}>
       <div className="mb-3 flex items-center gap-2">
         <FileText className="h-5 w-5 text-primary" />
         <h2 className="text-base font-medium text-foreground">Field notes</h2>
@@ -95,8 +110,9 @@ export function FieldNotesPanel({
             value={text}
             onChange={(event) => setText(event.target.value)}
             rows={3}
-            className="w-full resize-none rounded-lg border border-primary/15 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-            placeholder="記錄現場狀況、待辦提醒或交接事項"
+            disabled={isSaving}
+            className="w-full resize-none rounded-lg border border-primary/15 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+            placeholder="新增本場市集需要注意的事項"
           />
           <button
             type="button"
@@ -105,18 +121,22 @@ export function FieldNotesPanel({
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
-            新增 note
+            新增備註
           </button>
         </div>
       )}
 
       <div className="space-y-2">
-        {notes.length === 0 ? (
+        {isLoading ? (
           <p className="rounded-lg bg-background px-3 py-4 text-center text-sm text-muted-foreground">
-            尚無 field note
+            載入備註中...
+          </p>
+        ) : visibleNotes.length === 0 ? (
+          <p className="rounded-lg bg-background px-3 py-4 text-center text-sm text-muted-foreground">
+            尚無備註
           </p>
         ) : (
-          notes.map((note) => {
+          visibleNotes.map((note) => {
             const isEditing = editingNote?.id === note.id;
 
             return (
@@ -127,22 +147,24 @@ export function FieldNotesPanel({
                       value={editingText}
                       onChange={(event) => setEditingText(event.target.value)}
                       rows={3}
-                      className="w-full resize-none rounded-lg border border-primary/15 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                      disabled={isSaving}
+                      className="w-full resize-none rounded-lg border border-primary/15 bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
                     />
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={handleUpdate}
                         disabled={isSaving || editingText.trim().length === 0}
-                        className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+                        className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Save className="h-3.5 w-3.5" />
                         儲存
                       </button>
                       <button
                         type="button"
-                        onClick={() => setEditingNote(null)}
-                        className="inline-flex items-center gap-1 rounded-lg bg-background px-3 py-2 text-xs font-medium text-foreground"
+                        onClick={resetEditing}
+                        disabled={isSaving}
+                        className="inline-flex items-center gap-1 rounded-lg bg-background px-3 py-2 text-xs font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <X className="h-3.5 w-3.5" />
                         取消
@@ -163,28 +185,28 @@ export function FieldNotesPanel({
                           minute: '2-digit',
                         })}
                       </span>
-                      <div className="flex gap-1">
-                        {canManage && (
+                      {canManage && (
+                        <div className="flex gap-1">
                           <button
                             type="button"
                             onClick={() => startEditing(note)}
-                            className="rounded-md p-1.5 text-primary hover:bg-primary/10"
+                            disabled={isSaving}
+                            className="rounded-md p-1.5 text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-50"
                             aria-label="編輯 field note"
                           >
                             <Edit3 className="h-4 w-4" />
                           </button>
-                        )}
-                        {canManage && (
                           <button
                             type="button"
                             onClick={() => handleDelete(note)}
-                            className="rounded-md p-1.5 text-danger hover:bg-soft-pink"
+                            disabled={isSaving}
+                            className="rounded-md p-1.5 text-danger hover:bg-soft-pink disabled:cursor-not-allowed disabled:opacity-50"
                             aria-label="刪除 field note"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}

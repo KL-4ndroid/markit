@@ -96,6 +96,14 @@ runTest('field note panel calls create/update/delete service functions', () => {
   assert.match(fieldNotesPanelSource, /updateFieldNote/);
   assert.match(fieldNotesPanelSource, /deleteFieldNote/);
   assert.match(fieldNotesPanelSource, /canManage/);
+  assert.match(fieldNotesPanelSource, /const visibleNotes = notes \?\? \[\]/);
+  assert.match(fieldNotesPanelSource, /const isLoading = notes === undefined/);
+  assert.match(fieldNotesPanelSource, /aria-busy=\{isSaving\}/);
+  assert.match(fieldNotesPanelSource, /const trimmedText = text\.trim\(\)/);
+  assert.match(fieldNotesPanelSource, /const trimmedText = editingText\.trim\(\)/);
+  assert.match(fieldNotesPanelSource, /resetEditing/);
+  assert.match(fieldNotesPanelSource, /載入備註中/);
+  assert.match(fieldNotesPanelSource, /尚無備註/);
   assert.doesNotMatch(fieldNotesPanelSource, /useAuth/);
   assert.doesNotMatch(fieldNotesPanelSource, /user\?\.id === note\.actorId/);
   assert.doesNotMatch(fieldNotesPanelSource, /staffRole|isOwner/);
