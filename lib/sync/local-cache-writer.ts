@@ -1,8 +1,13 @@
 import { db } from '@/lib/db';
-import { marketAccessRowToLocal, productAccessRowToLocal } from '@/lib/data-mappers';
-import { sanitizeWithLevel, type InfoLevel } from '@/lib/data-sanitization';
+import { getEventMarketId } from '@/lib/events/event-read-model';
+import { marketAccessRowToLocal, normalizeEventPayloadForLocal, productAccessRowToLocal } from '@/lib/data-mappers';
+import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
+import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
+import { sanitizeStaffProjectionsAfterReplay } from '@/lib/sync/staff-projection-sanitizer';
+import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
+import { sanitizeEventsWithLevel, sanitizeWithLevel, type InfoLevel } from '@/lib/data-sanitization';
 import { resetMarketProjectionFields } from '@/lib/sync/projection-reset';
-import type { Market, Product } from '@/types/db';
+import type { Event, Market, Product } from '@/types/db';
 
 export async function syncMarketsToIndexedDB(
   markets: any[],
@@ -102,4 +107,110 @@ export async function syncProductsToIndexedDB(
   }
 
   console.log(`Product sync complete: synced ${syncedCount}, skipped ${skippedCount}, total ${products.length}`);
+}
+
+export async function syncEventsToIndexedDB(events: any[], infoLevel: InfoLevel): Promise<void> {
+  const sanitizedEvents = sanitizeEventsWithLevel(events, infoLevel);
+
+  console.log(`Syncing ${sanitizedEvents.length} events to IndexedDB...`);
+
+  let processedCount = 0;
+  let skippedCount = 0;
+
+  for (const event of sanitizedEvents) {
+    try {
+      const existing = await db.events.get(event.id);
+
+      if (existing) {
+        if (
+          (event.type === 'deal_deleted' || event.type === 'interaction_deleted') &&
+          event.payload?.eventId &&
+          !existing.payload?.eventId
+        ) {
+          const updated = {
+            ...existing,
+            payload: { ...existing.payload, eventId: event.payload.eventId },
+          };
+          await db.events.put(updated);
+
+          const { eventHandlers } = await import('@/lib/db/events');
+          const handler = eventHandlers[event.type as keyof typeof eventHandlers];
+          if (handler) {
+            const processedPayload = normalizeEventPayloadForLocal(updated.payload);
+            await handler({
+              id: updated.id,
+              type: updated.type,
+              payload: processedPayload,
+              timestamp: updated.timestamp,
+              actor_id: updated.actor_id,
+              market_id: updated.market_id,
+            } as Event, db);
+            await sanitizeStaffProjectionsAfterReplay(updated, infoLevel);
+          }
+          processedCount++;
+        } else {
+          skippedCount++;
+        }
+        continue;
+      }
+
+      if (await hasSemanticDuplicateDealClosedEvent(db, event)) {
+        skippedCount++;
+        console.warn('[useSync] Skipping semantic duplicate deal_closed event during staff sync', {
+          eventId: event.id,
+          marketId: getEventMarketId(event),
+        });
+        continue;
+      }
+
+      const localEvent = createCanonicalSyncedEvent(event);
+
+      if (infoLevel < 3) {
+        const preflight = await preflightStaffEventImport(localEvent, {
+          hasMarket: async (marketId) => Boolean(await db.markets.get(marketId)),
+          hasProduct: async (productId) => Boolean(await db.products.get(productId)),
+        });
+
+        if (!preflight.shouldImport) {
+          skippedCount++;
+          console.warn('[useSync] Skipping event outside local scoped dataset', {
+            eventId: event.id,
+            eventType: event.type,
+            reason: preflight.reason,
+            referenceId: preflight.referenceId,
+          });
+          continue;
+        }
+      }
+
+      await db.events.add(localEvent);
+
+      const { eventHandlers } = await import('@/lib/db/events');
+      const handler = eventHandlers[event.type as keyof typeof eventHandlers];
+
+      if (handler) {
+        const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
+        await handler({
+          id: localEvent.id,
+          type: localEvent.type,
+          payload: processedPayload,
+          timestamp: localEvent.timestamp,
+          actor_id: localEvent.actor_id,
+          market_id: localEvent.market_id,
+        } as Event, db);
+
+        await sanitizeStaffProjectionsAfterReplay(localEvent, infoLevel);
+      }
+
+      processedCount++;
+    } catch (error: any) {
+      if (error.name === 'ConstraintError') {
+        skippedCount++;
+        continue;
+      }
+      console.error(`Failed to sync event: ${event.type} (${event.id?.substring(0, 8)}...)`, error);
+    }
+  }
+
+  console.log(`Event sync complete: processed ${processedCount}, skipped ${skippedCount}, total ${events.length}`);
 }

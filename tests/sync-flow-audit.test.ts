@@ -234,7 +234,7 @@ runTest('staff cache writers sanitize data before writing to IndexedDB', () => {
   const productsBody = findFunctionBody(syncSources, 'syncProductsToIndexedDB');
   const eventsBody = findFunctionBody(syncSources, 'syncEventsToIndexedDB');
 
-  assert.match(hookSource, /import \{ syncMarketsToIndexedDB,\s*syncProductsToIndexedDB \} from ['"]@\/lib\/sync\/local-cache-writer['"]/);
+  assert.match(hookSource, /import \{ syncEventsToIndexedDB,\s*syncMarketsToIndexedDB,\s*syncProductsToIndexedDB \} from ['"]@\/lib\/sync\/local-cache-writer['"]/);
   assert.match(marketsBody, /sanitizeWithLevel\(market,\s*['"]market['"],\s*infoLevel\)/);
   assert.match(marketsBody, /resetMarketProjectionFields\(mappedMarket as Market\)/);
   assert.match(marketsBody, /earlyEntryEnabled:\s*mappedMarket\.earlyEntryEnabled\s*\?\?\s*existing\?\.earlyEntryEnabled\s*\?\?\s*false/);
@@ -249,7 +249,7 @@ runTest('staff cache writers sanitize data before writing to IndexedDB', () => {
 runTest('staff projection sanitizer preserves post-replay fail-closed behavior', () => {
   const body = findFunctionBody(syncSources, 'sanitizeStaffProjectionsAfterReplay');
 
-  assert.match(hookSource, /import \{ sanitizeStaffProjectionsAfterReplay \} from ['"]@\/lib\/sync\/staff-projection-sanitizer['"]/);
+  assert.match(syncSources, /import \{ sanitizeStaffProjectionsAfterReplay \} from ['"]@\/lib\/sync\/staff-projection-sanitizer['"]/);
   assert.match(syncSources, /const PROJECTION_EVENT_TYPES\s*=\s*new Set\(\[['"]deal_closed['"],\s*['"]deal_deleted['"]\]\)/);
   assert.match(body, /if\s*\(infoLevel\s*===\s*3\)\s*return/);
   assert.match(body, /if\s*\(!PROJECTION_EVENT_TYPES\.has\(event\.type\)\)\s*return/);

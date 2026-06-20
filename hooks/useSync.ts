@@ -14,15 +14,12 @@ import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
-import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
-import { sanitizeStaffProjectionsAfterReplay } from '@/lib/sync/staff-projection-sanitizer';
-import { syncMarketsToIndexedDB, syncProductsToIndexedDB } from '@/lib/sync/local-cache-writer';
+import { syncEventsToIndexedDB, syncMarketsToIndexedDB, syncProductsToIndexedDB } from '@/lib/sync/local-cache-writer';
 import { pushEvents } from '@/lib/sync/sync-push-service';
 import { getOwnerAccessibleMarketIds } from '@/lib/sync/owner-market-access-service';
 import { batchHydrateMarkets } from '@/lib/sync/owner-market-hydration-service';
 import { collectProjectionMarketId } from '@/lib/sync/projection-reconciliation';
 import { reconcileSyncedProjectionMarkets } from '@/lib/sync/sync-projection-reconciliation-runner';
-import { getEventMarketId } from '@/lib/events/event-read-model';
 import { getLastSyncTimestamp, updateLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
 import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
 export { getLocalPendingCount, getCloudEventCount } from '@/lib/sync/sync-count-service';
@@ -38,7 +35,6 @@ import {
 } from '@/lib/data-mappers';
 import {
   sanitizeArrayWithLevel,
-  sanitizeEventsWithLevel,
   type InfoLevel,
 } from '@/lib/data-sanitization';
 import type { Event } from '@/types/db';
@@ -798,125 +794,4 @@ async function pullEventsFromViews(
     console.error('❌ 視圖拉取失敗:', error);
     throw error; // 拋出錯誤，讓調用者處理降級
   }
-}
-
-/**
- * 同步事件到 IndexedDB（統一管道）
- * ✅ 重放事件以更新讀取模型
- * ✅ 根據 infoLevel 執行脫敏（老闆=3 無脫敏，員工=0-2 漸進脫敏）
- * ✅ handler replay 後清理衍生敏感 projection（員工模式）
- */
-
-async function syncEventsToIndexedDB(events: any[], infoLevel: InfoLevel): Promise<void> {
-  // ✅ 脫敏：根據 infoLevel 過濾事件
-  const sanitizedEvents = sanitizeEventsWithLevel(events, infoLevel);
-
-  console.log(`📝 同步 ${sanitizedEvents.length} 個事件到 IndexedDB...`);
-  
-  let processedCount = 0;
-  let skippedCount = 0;
-  
-  for (const event of sanitizedEvents) {
-    try {
-      // 檢查是否已存在
-      const existing = await db.events.get(event.id);
-      
-      if (existing) {
-        // Fix C2.13A Symptom B: If the incoming tombstone event carries eventId but the
-        // locally-stored version is missing it (stale local write from a partial schema),
-        // augment the local record so that tombstone key matching via getTombstoneTargetEventId
-        // works correctly. Re-run the handler after the update so dailyStats reflects the
-        // deletion.
-        if (
-          (event.type === 'deal_deleted' || event.type === 'interaction_deleted') &&
-          event.payload?.eventId &&
-          !existing.payload?.eventId
-        ) {
-          const updated = {
-            ...existing,
-            payload: { ...existing.payload, eventId: event.payload.eventId },
-          };
-          await db.events.put(updated);
-          
-          const { eventHandlers } = await import('@/lib/db/events');
-          const handler = eventHandlers[event.type as keyof typeof eventHandlers];
-          if (handler) {
-            const processedPayload = normalizeEventPayloadForLocal(updated.payload);
-            await handler({
-              id: updated.id,
-              type: updated.type,
-              payload: processedPayload,
-              timestamp: updated.timestamp,
-              actor_id: updated.actor_id,
-              market_id: updated.market_id,
-            } as Event, db);
-            await sanitizeStaffProjectionsAfterReplay(updated, infoLevel);
-          }
-          processedCount++;
-        } else {
-          skippedCount++;
-        }
-        continue;
-      }
-
-      if (await hasSemanticDuplicateDealClosedEvent(db, event)) {
-        skippedCount++;
-        console.warn('[useSync] Skipping semantic duplicate deal_closed event during staff sync', {
-          eventId: event.id,
-          marketId: getEventMarketId(event),
-        });
-        continue;
-      }
-
-      const localEvent = createCanonicalSyncedEvent(event);
-
-      // ✅ 員工模式：檢查事件是否在本地可訪問範圍內
-      if (infoLevel < 3) {
-        const preflight = await preflightStaffEventImport(localEvent, {
-          hasMarket: async (marketId) => Boolean(await db.markets.get(marketId)),
-          hasProduct: async (productId) => Boolean(await db.products.get(productId)),
-        });
-
-        if (!preflight.shouldImport) {
-          skippedCount++;
-          console.warn('[useSync] Skipping event outside local scoped dataset', {
-            eventId: event.id,
-            eventType: event.type,
-            reason: preflight.reason,
-            referenceId: preflight.referenceId,
-          });
-          continue;
-        }
-      }
-
-      await db.events.add(localEvent);
-
-      const { eventHandlers } = await import('@/lib/db/events');
-      const handler = eventHandlers[event.type as keyof typeof eventHandlers];
-
-      if (handler) {
-        const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
-        await handler({
-          id: localEvent.id,
-          type: localEvent.type,
-          payload: processedPayload,
-          timestamp: localEvent.timestamp,
-          actor_id: localEvent.actor_id,
-          market_id: localEvent.market_id,
-        } as Event, db);
-
-        await sanitizeStaffProjectionsAfterReplay(localEvent, infoLevel);
-      }
-
-      processedCount++;
-    } catch (error: any) {
-      if (error.name === 'ConstraintError') {
-        skippedCount++;
-        continue;
-      }
-      console.error(`❌ 同步事件失敗: ${event.type} (${event.id?.substring(0, 8)}...)`, error);
-    }
-  }
-  
-  console.log(`✅ 事件同步完成：處理 ${processedCount}，跳過 ${skippedCount}，總計 ${events.length}`);
 }
