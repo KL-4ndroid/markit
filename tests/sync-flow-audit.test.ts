@@ -234,8 +234,11 @@ runTest('staff cache writers sanitize data before writing to IndexedDB', () => {
   const productsBody = findFunctionBody(syncSources, 'syncProductsToIndexedDB');
   const eventsBody = findFunctionBody(syncSources, 'syncEventsToIndexedDB');
 
+  assert.match(hookSource, /import \{ syncMarketsToIndexedDB \} from ['"]@\/lib\/sync\/local-cache-writer['"]/);
   assert.match(marketsBody, /sanitizeWithLevel\(market,\s*['"]market['"],\s*infoLevel\)/);
   assert.match(marketsBody, /resetMarketProjectionFields\(mappedMarket as Market\)/);
+  assert.match(marketsBody, /earlyEntryEnabled:\s*mappedMarket\.earlyEntryEnabled\s*\?\?\s*existing\?\.earlyEntryEnabled\s*\?\?\s*false/);
+  assert.match(marketsBody, /operatingEndTime:\s*mappedMarket\.operatingEndTime\s*\?\?\s*existing\?\.operatingEndTime/);
   assert.match(productsBody, /sanitizeWithLevel\(product,\s*['"]product['"],\s*infoLevel\)/);
   assert.match(productsBody, /totalSold:\s*0/);
   assert.match(eventsBody, /sanitizeEventsWithLevel\(events,\s*infoLevel\)/);

@@ -16,13 +16,14 @@ import { recordEvent } from '@/lib/db/events';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
 import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
 import { sanitizeStaffProjectionsAfterReplay } from '@/lib/sync/staff-projection-sanitizer';
+import { syncMarketsToIndexedDB } from '@/lib/sync/local-cache-writer';
 import { pushEvents } from '@/lib/sync/sync-push-service';
 import { getOwnerAccessibleMarketIds } from '@/lib/sync/owner-market-access-service';
 import { batchHydrateMarkets } from '@/lib/sync/owner-market-hydration-service';
 import { collectProjectionMarketId } from '@/lib/sync/projection-reconciliation';
 import { reconcileSyncedProjectionMarkets } from '@/lib/sync/sync-projection-reconciliation-runner';
 import { getEventMarketId } from '@/lib/events/event-read-model';
-import { resetMarketProjectionFields, resetProductProjectionFields } from '@/lib/sync/projection-reset';
+import { resetProductProjectionFields } from '@/lib/sync/projection-reset';
 import { getLastSyncTimestamp, updateLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
 import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
 export { getLocalPendingCount, getCloudEventCount } from '@/lib/sync/sync-count-service';
@@ -34,7 +35,6 @@ import {
   recordSyncPermissionError,
 } from '@/lib/sync/sync-permission-pause-service';
 import {
-  marketAccessRowToLocal,
   normalizeEventPayloadForLocal,
   productAccessRowToLocal,
 } from '@/lib/data-mappers';
@@ -44,7 +44,7 @@ import {
   sanitizeEventsWithLevel,
   type InfoLevel,
 } from '@/lib/data-sanitization';
-import type { Market, Product } from '@/types/db';
+import type { Product } from '@/types/db';
 import type { Event } from '@/types/db';
 
 /**
@@ -802,66 +802,6 @@ async function pullEventsFromViews(
     console.error('❌ 視圖拉取失敗:', error);
     throw error; // 拋出錯誤，讓調用者處理降級
   }
-}
-
-/**
- * 同步市集到 IndexedDB（保留權限）
- * ✅ 合併視圖數據和本地數據
- * ✅ 只同步當前用戶可訪問的市集
- */
-async function syncMarketsToIndexedDB(
-  markets: any[],
-  currentUserId: string,
-  infoLevel: InfoLevel
-): Promise<void> {
-  console.log(`📝 同步 ${markets.length} 個市集到 IndexedDB...`, {
-    currentUserId: currentUserId.substring(0, 8),
-  });
-  
-  // ✅ 調試：打印前 3 個市集的詳細信息
-  if (markets.length > 0) {
-    console.log('🔍 市集數據樣本（前3個）:', markets.slice(0, 3).map(m => ({
-      id: m.id?.substring(0, 8),
-      name: m.name,
-      owner_id: m.owner_id?.substring(0, 8),
-      access_type: m.access_type,
-      status: m.status,
-      isDeleted: m.isDeleted,
-    })));
-  }
-  
-  // ✅ 脫敏：在寫入 IndexedDB 前根據 infoLevel 移除敏感欄位
-  // 老闆（infoLevel=3）不做任何脫敏；員工（infoLevel<3）統一 gate 處理
-  for (const market of markets) {
-    try {
-      const existing = await db.markets.get(market.id);
-      // ✅ 先 sanitize snake_case row，再交給 mapper
-      const sanitizedRow = sanitizeWithLevel(market, 'market', infoLevel);
-      const mappedMarket = marketAccessRowToLocal(sanitizedRow as Record<string, unknown>);
-
-      // 準備市集數據（保留權限信息）
-      const marketData = {
-        ...mappedMarket,
-        sync_status: 'synced' as const,
-        earlyEntryEnabled: mappedMarket.earlyEntryEnabled ?? existing?.earlyEntryEnabled ?? false,
-        earlyEntryTime: mappedMarket.earlyEntryTime ?? existing?.earlyEntryTime,
-        checkInTime: mappedMarket.checkInTime ?? existing?.checkInTime,
-        operatingStartTime: mappedMarket.operatingStartTime ?? existing?.operatingStartTime,
-        operatingEndTime: mappedMarket.operatingEndTime ?? existing?.operatingEndTime,
-        // ✅ C3.4 修復：staff 視角下雲端 markets.total_* 也不可作為本地初始值
-        // 理由同 batchHydrateMarkets（見 projection-reset.ts 檔頭說明）
-        ...resetMarketProjectionFields(mappedMarket as Market),
-      };
-
-      // ✅ 合併寫入（mapper output 已被 sanitize，existing 保留本地未脫敏版本的部分欄位）
-      await db.markets.put({ ...marketData, id: market.id } as Market);
-    } catch (error) {
-      console.error(`❌ 同步市集失敗: ${market.id}`, error);
-      // 繼續處理下一個
-    }
-  }
-  
-  console.log('✅ 市集同步完成');
 }
 
 /**
