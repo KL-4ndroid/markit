@@ -13,14 +13,13 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { db } from '@/lib/db';
 import { pullOwnerEvents } from '@/lib/sync/owner-pull-service';
 import { pullEventsFromViews } from '@/lib/sync/staff-pull-service';
+import { handlePermissionSyncError } from '@/lib/sync/sync-error-policy';
 import { pushEvents } from '@/lib/sync/sync-push-service';
 export { getLocalPendingCount, getCloudEventCount } from '@/lib/sync/sync-count-service';
 export { detectAndResolveConflict } from '@/lib/sync/sync-conflict-resolution-service';
 import {
   clearSyncPause,
   getSyncPauseUntil,
-  pauseSyncTemporarily,
-  recordSyncPermissionError,
 } from '@/lib/sync/sync-permission-pause-service';
 import type { InfoLevel } from '@/lib/data-sanitization';
 
@@ -303,7 +302,15 @@ export function useSync(options: UseSyncOptions = {}) {
           timestamp: new Date().toISOString(),
           userId: user.id,
         });
-        await handlePermissionSyncError(error, user.id);
+        await handlePermissionSyncError(error, user.id, () => {
+          updateGlobalState(prev => ({
+            ...prev,
+            status: SyncStatus.ERROR,
+            error: '同步因權限錯誤暫停，稍後會自動重試',
+            uploadProgress: undefined,
+            downloadProgress: undefined,
+          }));
+        });
         return;
       }
 
@@ -443,28 +450,6 @@ async function pullAllEvents(
   
   // ✅ 原邏輯（降級方案）
   await pullOwnerEvents(userId, onProgress, infoLevel);
-}
-
-/**
- * 處理同步權限錯誤（403 Forbidden）
- * 保留本地資料，暫停同步一段時間，避免把暫時性 RLS/網路狀態誤判成永久失權。
- */
-async function handlePermissionSyncError(error: any, userId: string): Promise<void> {
-  const pauseUntil = pauseSyncTemporarily();
-  recordSyncPermissionError(error, userId, pauseUntil);
-
-  updateGlobalState(prev => ({
-    ...prev,
-    status: SyncStatus.ERROR,
-    error: '同步因權限錯誤暫停，稍後會自動重試',
-    uploadProgress: undefined,
-    downloadProgress: undefined,
-  }));
-
-  if (typeof window !== 'undefined') {
-    const { toast } = await import('sonner');
-    toast.warning('同步暫時因權限檢查失敗而暫停；本地資料已保留，稍後會自動重試。');
-  }
 }
 
 // ==================== 員工模式：視圖拉取函數 ====================

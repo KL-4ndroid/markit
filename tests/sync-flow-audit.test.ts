@@ -158,6 +158,17 @@ runTest('pushEvents profile helper preserves profile creation contract', () => {
   assert.match(body, /insertError\.code\s*===\s*['"]23505['"][\s\S]*return/);
 });
 
+runTest('permission sync error policy preserves pause and state cleanup', () => {
+  const body = findFunctionBody(syncSources, 'handlePermissionSyncError');
+
+  assert.match(hookSource, /import \{ handlePermissionSyncError \} from ['"]@\/lib\/sync\/sync-error-policy['"]/);
+  assert.match(hookSource, /await handlePermissionSyncError\(error,\s*user\.id,\s*\(\)\s*=>\s*\{/);
+  assert.match(hookSource, /uploadProgress:\s*undefined/);
+  assert.match(hookSource, /downloadProgress:\s*undefined/);
+  assert.match(body, /const pauseUntil\s*=\s*pauseSyncTemporarily\(\)/);
+  assert.match(body, /recordSyncPermissionError\(error,\s*userId,\s*pauseUntil\)/);
+});
+
 runTest('pullAllEvents sends staff sessions to view pull and refuses owner fallback', () => {
   const body = findFunctionBody(syncSources, 'pullAllEvents');
 
