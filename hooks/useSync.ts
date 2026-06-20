@@ -10,18 +10,10 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
-import { recordEvent } from '@/lib/db/events';
-import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
+import { pullOwnerEvents } from '@/lib/sync/owner-pull-service';
 import { pullEventsFromViews } from '@/lib/sync/staff-pull-service';
 import { pushEvents } from '@/lib/sync/sync-push-service';
-import { getOwnerAccessibleMarketIds } from '@/lib/sync/owner-market-access-service';
-import { batchHydrateMarkets } from '@/lib/sync/owner-market-hydration-service';
-import { collectProjectionMarketId } from '@/lib/sync/projection-reconciliation';
-import { reconcileSyncedProjectionMarkets } from '@/lib/sync/sync-projection-reconciliation-runner';
-import { getLastSyncTimestamp, updateLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
-import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
 export { getLocalPendingCount, getCloudEventCount } from '@/lib/sync/sync-count-service';
 export { detectAndResolveConflict } from '@/lib/sync/sync-conflict-resolution-service';
 import {
@@ -30,14 +22,7 @@ import {
   pauseSyncTemporarily,
   recordSyncPermissionError,
 } from '@/lib/sync/sync-permission-pause-service';
-import {
-  normalizeEventPayloadForLocal,
-} from '@/lib/data-mappers';
-import {
-  sanitizeArrayWithLevel,
-  type InfoLevel,
-} from '@/lib/data-sanitization';
-import type { Event } from '@/types/db';
+import type { InfoLevel } from '@/lib/data-sanitization';
 
 /**
  * 同步狀態
@@ -457,186 +442,7 @@ async function pullAllEvents(
   }
   
   // ✅ 原邏輯（降級方案）
-  // 獲取本地最後同步時間
-  const lastSyncAt = await getLastSyncTimestamp();
-
-  const marketIds = await getOwnerAccessibleMarketIds(userId);
-
-  // ✅ 查詢新事件：包含市集事件 + 團隊成員的全局事件（如商品）
-  let query = supabase
-    .from('events')
-    .select('*')
-    .order('timestamp', { ascending: true });
-
-  // 只拉取新事件
-  if (lastSyncAt) {
-    query = query.gt('created_at', new Date(lastSyncAt).toISOString());
-  }
-
-  // ✅ 修復：查詢團隊成員的用戶 ID（包括老闆和員工）
-  let teamMemberIds: string[] = [userId]; // 至少包含自己
-  
-  if (marketIds.length > 0) {
-    // 查詢所有團隊成員
-    const { data: teamMembers } = await supabase
-      .from('market_members')
-      .select('user_id')
-      .in('market_id', marketIds);
-    
-    if (teamMembers && teamMembers.length > 0) {
-      // 去重
-      teamMemberIds = Array.from(new Set([userId, ...teamMembers.map(m => m.user_id)]));
-    }
-  }
-
-  // ✅ 過濾條件：市集事件 OR 團隊成員的全局事件（包括商品）
-  if (marketIds.length > 0) {
-    // 有市集：查詢市集事件 + 團隊成員的全局事件
-    query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.in.(${teamMemberIds.join(',')}),market_id.is.null)`);
-  } else {
-    // 沒有市集：只拉取自己的全局事件
-    query = query.eq('actor_id', userId).is('market_id', null);
-  }
-
-  const { data: newEvents, error: eventsError } = await query;
-
-  if (eventsError) throw eventsError;
-
-  if (!newEvents || newEvents.length === 0) {
-    return;
-  }
-
-  const total = newEvents.length;
-  const touchedMarketIds = new Set<string>();
-  for (const event of newEvents) {
-    collectProjectionMarketId(touchedMarketIds, event);
-  }
-
-  // ✅ Hydrate markets from Cloud before replaying events.
-  // Without this, handler replay fails if the market has never been written to local IndexedDB
-  // (e.g., first login, cross-device, or cache reset).
-  const { hydrated: hydratedMarketIds, missing: missingMarketIds } = await batchHydrateMarkets(touchedMarketIds, infoLevel);
-  void hydratedMarketIds; // logged inside batchHydrateMarkets
-
-  // ✅ 先批次檢查哪些事件已存在，避免重複日誌
-  const existingIds = new Set<string>();
-  const eventIds = newEvents.map(e => e.id);
-  const existingEvents = await db.events.where('id').anyOf(eventIds).toArray();
-  existingEvents.forEach(e => existingIds.add(e.id!));
-
-  // 過濾出真正需要處理的新事件
-  const eventsToProcess: any[] = [];
-  let skippedByMissingMarket = 0;
-  let semanticDuplicateCount = 0;
-  for (const event of newEvents) {
-    if (existingIds.has(event.id)) continue;
-
-    if (await hasSemanticDuplicateDealClosedEvent(db, event)) {
-      semanticDuplicateCount++;
-      continue;
-    }
-
-    // Skip events whose market is missing from Cloud (deleted or unauthorized)
-    const eventMarketId = event.market_id ?? event.payload?.market_id ?? event.payload?.marketId;
-    if (eventMarketId && missingMarketIds.has(eventMarketId)) {
-      skippedByMissingMarket++;
-      console.warn(`[hydration] Skipping event ${event.type} (${event.id?.slice(0, 8)}) because market ${eventMarketId} not found in Cloud`);
-      continue;
-    }
-
-    eventsToProcess.push(event);
-  }
-
-  if (skippedByMissingMarket > 0) {
-    console.warn(`[hydration] Skipped ${skippedByMissingMarket} events because their market is missing from Cloud`);
-  }
-  
-  if (eventsToProcess.length === 0) {
-    console.log(`✅ ${total} 個事件已全部存在，無需下載`);
-    if (semanticDuplicateCount > 0) {
-      console.warn('[useSync] Skipped semantic duplicate deal_closed events', {
-        semanticDuplicateCount,
-      });
-    }
-    await reconcileSyncedProjectionMarkets(touchedMarketIds, 'owner-full');
-    const validCreatedAt = newEvents
-      .map(e => new Date(e.created_at).getTime())
-      .filter(ts => Number.isFinite(ts));
-    if (validCreatedAt.length > 0) {
-      await updateLastSyncTimestamp(Math.max(...validCreatedAt));
-    } else {
-      console.warn('[useSync] pullAllEvents: no event has valid created_at, refusing to advance cursor');
-    }
-    return;
-  }
-
-  if (eventsToProcess.length < total) {
-    console.log(`ℹ️ ${total} 個事件中有 ${existingIds.size} 個已存在，將下載 ${eventsToProcess.length} 個新事件`);
-  }
-
-  // 重放事件到本地
-  let processedCount = 0;
-  for (let i = 0; i < eventsToProcess.length; i++) {
-    const event = eventsToProcess[i];
-    
-    // ✅ 更新進度（顯示實際處理進度）
-    if (onProgress) {
-      onProgress(i + 1, eventsToProcess.length, `${event.type} (${event.id?.substring(0, 8)}...)`, 'incremental');
-    }
-    
-    try {
-      const localEvent = createCanonicalSyncedEvent(event);
-
-      // 直接插入事件（不通過 recordEvent，避免重複處理）
-      await db.events.add(localEvent);
-
-      // 本地也需要更新讀取模型（重放事件）
-      const { eventHandlers } = await import('@/lib/db/events');
-      const handler = eventHandlers[event.type as keyof typeof eventHandlers];
-      
-      if (handler) {
-        // ✅ 修復：將 Supabase 的底線式 payload 轉換為駝峰式（用於本地事件處理器）
-        const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
-        
-        await handler({
-          id: localEvent.id,
-          type: localEvent.type,
-          payload: processedPayload,
-          timestamp: localEvent.timestamp,
-          actor_id: localEvent.actor_id,
-          market_id: localEvent.market_id,
-        } as Event, db);
-      }
-      
-      processedCount++;
-    } catch (error: any) {
-      // ✅ 如果是 ConstraintError（Key already exists），靜默跳過
-      if (error.name === 'ConstraintError') {
-        continue;
-      }
-      
-      console.error(`❌ 重放事件失敗: ${event.type} (${event.id?.substring(0, 8)}...)`, error);
-      // 繼續處理下一個事件，不中斷同步
-      continue;
-    }
-  }
-
-  console.log(`✅ 下載完成：成功處理 ${processedCount}/${eventsToProcess.length} 個新事件`);
-
-  // 更新最後同步時間（使用 max(created_at)，若事件皆已存在則不推進）
-  await reconcileSyncedProjectionMarkets(touchedMarketIds, 'owner-full');
-
-  if (eventsToProcess.length > 0) {
-    const validCreatedAt = newEvents
-      .map(e => new Date(e.created_at).getTime())
-      .filter(ts => Number.isFinite(ts));
-
-    if (validCreatedAt.length > 0) {
-      await updateLastSyncTimestamp(Math.max(...validCreatedAt));
-    } else {
-      console.warn('[useSync] pullAllEvents: no event has valid created_at, refusing to advance cursor');
-    }
-  }
+  await pullOwnerEvents(userId, onProgress, infoLevel);
 }
 
 /**

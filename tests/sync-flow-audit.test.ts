@@ -164,12 +164,14 @@ runTest('pullAllEvents sends staff sessions to view pull and refuses owner fallb
   assert.match(body, /if\s*\(infoLevel\s*<\s*3\)\s*\{/);
   assert.match(body, /await pullEventsFromViews\(userId,\s*onProgress,\s*infoLevel\)/);
   assert.match(body, /throw error/);
-  assertBefore(body, 'if (infoLevel < 3)', 'const lastSyncAt = await getLastSyncTimestamp()');
+  assert.match(body, /await pullOwnerEvents\(userId,\s*onProgress,\s*infoLevel\)/);
+  assertBefore(body, 'if (infoLevel < 3)', 'await pullOwnerEvents(userId, onProgress, infoLevel)');
 });
 
 runTest('owner pull uses created_at cursor and owner projection reconciliation', () => {
-  const body = findFunctionBody(syncSources, 'pullAllEvents');
+  const body = findFunctionBody(syncSources, 'pullOwnerEvents');
 
+  assert.match(hookSource, /import \{ pullOwnerEvents \} from ['"]@\/lib\/sync\/owner-pull-service['"]/);
   assert.match(body, /const lastSyncAt\s*=\s*await getLastSyncTimestamp\(\)/);
   assert.match(body, /\.gt\(['"]created_at['"],\s*new Date\(lastSyncAt\)\.toISOString\(\)\)/);
   assert.match(body, /\.map\(e\s*=>\s*new Date\(e\.created_at\)\.getTime\(\)\)/);
