@@ -40,6 +40,11 @@ Not allowed without explicit approval:
 Summary:
 - Add disabled-by-default feature flags for future pending-operation or cache-replacement pilots.
 
+Implementation status:
+- Completed as an inert shell only.
+- `lib/sync/sync-gate-d-flags.ts` defines disabled defaults.
+- `tests/sync-gate-d-feature-flags.test.ts` proves defaults stay off and production sync paths do not consume the flags.
+
 Risk:
 - Low to medium if flags are inert and covered by tests.
 
@@ -48,6 +53,18 @@ Required approval:
 - Default values.
 - Where flags may be read.
 - Confirmation that no production behavior changes while flags are off.
+
+Implemented flag names:
+- `cloudPendingOperationsStorage`
+- `pendingOperationWriteRouting`
+- `cacheReplacementExecute`
+
+Implemented restrictions:
+- No environment variable control.
+- No localStorage or sessionStorage control.
+- No Supabase or Dexie reads.
+- No production sync imports.
+- No schema, RLS, write routing, or cache replacement behavior.
 
 Rollback:
 - Remove flags and tests.
@@ -117,7 +134,7 @@ Rollback:
 ## 3. Recommended First Approval
 
 Recommended first slice:
-- Candidate A only: disabled feature flag shell.
+- Candidate A only: disabled feature flag shell. This shell has been implemented as inert infrastructure and does not approve B, C, or D.
 
 Why:
 - It creates a controlled switch point without changing schema, RLS, production writes, or cache behavior.
