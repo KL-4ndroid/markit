@@ -1,14 +1,20 @@
 # BoothBook Sync Gate D Pending Operation Drain Design
 
 Created: 2026-06-21
-Status: D3c-2 design only, not approved for implementation
+Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete
 
 ## 0. Purpose
 
 This document designs how a queued `pending_operations` row should become a final cloud event.
 
-This is intentionally design-only:
-- No migration is approved by this document.
+This document is the design record for the D3c drain path.
+
+D3c-2b implementation status:
+- `supabase/migrations/050_drain_checklist_toggle_pending_operation.sql` adds the single-operation drain RPC draft.
+- `tests/supabase-pending-operations-drain-rpc.test.ts` locks the SQL/static safety boundaries.
+- No runtime caller is connected yet.
+
+Still not approved:
 - No runtime drain/worker is approved by this document.
 - No feature flag default change is approved by this document.
 - No RLS policy change is approved by this document.
@@ -227,6 +233,10 @@ Allowed only after approval:
 - Add one SECURITY DEFINER RPC for `checklist_item_toggle`.
 - Add SQL/static tests for claim, permission re-check, idempotency, and statuses.
 - Do not connect runtime to call it in the same commit.
+
+Status:
+- Completed as `supabase/migrations/050_drain_checklist_toggle_pending_operation.sql`.
+- Runtime remains disconnected.
 
 ### D3c-2c: Runtime Drain Call Behind Flag
 

@@ -33,12 +33,13 @@ const productionFiles = [
 
 console.log('\n=== Sync Gate D write routing decision ===');
 
-runTest('decision record keeps D3c-1 approval narrow and blocks broader runtime work', () => {
-  assert.match(decisionSource, /Status: active Gate D decision record after D3c-1/);
+runTest('decision record keeps D3c-2b approval narrow and blocks broader runtime work', () => {
+  assert.match(decisionSource, /Status: active Gate D decision record after D3c-2b/);
   assert.match(decisionSource, /D3c-1 approved a dormant checklist-toggle RPC route behind a default-off flag/);
+  assert.match(decisionSource, /D3c-2b approved a single-operation checklist-toggle drain RPC draft/);
   assert.match(decisionSource, /No UI behavior change is approved/);
   assert.match(decisionSource, /No Supabase RLS change after 048 is approved/);
-  assert.match(decisionSource, /No pending-operation drain\/worker or final-event writer is approved/);
+  assert.match(decisionSource, /No runtime caller, UI, RLS, flag default/);
 });
 
 runTest('source-of-truth recommendation keeps existing event model primary', () => {
@@ -69,13 +70,15 @@ runTest('permission downgrade and idempotency decisions are explicit', () => {
   assert.match(decisionSource, /mark the operation `synced`, not create another event/);
 });
 
-runTest('D3c-2 design is complete and next approval boundary is D3c-2b only', () => {
-  assert.match(decisionSource, /D3b, D3c-0, D3c-1, and D3c-2 design are complete/);
-  assert.match(decisionSource, /next approval boundary is D3c-2b/);
+runTest('D3c-2b is complete and next approval boundary is D3c-2c only', () => {
+  assert.match(decisionSource, /D3b, D3c-0, D3c-1, D3c-2 design, and D3c-2b are complete/);
+  assert.match(decisionSource, /next approval boundary is D3c-2c/);
   assert.match(decisionSource, /Added `public\.enqueue_checklist_toggle_pending_operation`/);
   assert.match(decisionSource, /Only `toggleChecklistItem\(\)` passes the `checklist_toggle` routing hint/);
   assert.match(decisionSource, /D3c-2: Pending Operation Drain Design/);
-  assert.match(decisionSource, /single-operation SECURITY DEFINER drain RPC/);
+  assert.match(decisionSource, /D3c-2b: Single Operation Drain RPC Draft/);
+  assert.match(decisionSource, /Added `public\.drain_checklist_toggle_pending_operation`/);
+  assert.match(decisionSource, /The caller must be authenticated and must match `pending_operations\.actor_id`/);
   assert.match(decisionSource, /No direct client insert into `pending_operations` is used/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Direct client insert into `pending_operations`/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any change to 048 RLS/);

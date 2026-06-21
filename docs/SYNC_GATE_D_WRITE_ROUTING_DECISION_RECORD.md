@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Write Routing Decision Record
 
 Created: 2026-06-21
-Status: active Gate D decision record after D3c-1
+Status: active Gate D decision record after D3c-2b
 
 ## 0. Purpose
 
@@ -11,12 +11,13 @@ Current approvals:
 - D3b approved a disabled runtime adapter shell.
 - D3c-0 approved a narrow checklist-toggle enqueue RPC.
 - D3c-1 approved a dormant checklist-toggle RPC route behind a default-off flag.
+- D3c-2b approved a single-operation checklist-toggle drain RPC draft.
 
 Still not approved:
 - No UI behavior change is approved by this document.
 - No Supabase RLS change after 048 is approved by this document.
 - No cache replacement execute behavior is approved by this document.
-- No pending-operation drain/worker or final-event writer is approved by this document.
+- No connected runtime drain caller, broad worker, or production final-event writer is approved by this document.
 
 ## 1. Current State After 048
 
@@ -334,22 +335,44 @@ Implemented boundaries:
 - Existing event model remains the source of truth.
 - No migration, runtime drain, worker, UI, RLS, flag default, cache replacement, revenue, inventory, market, or product behavior was changed.
 
+### D3c-2b: Single Operation Drain RPC Draft
+
+Risk:
+- High because the RPC can create final cloud events from pending rows if explicitly called.
+
+Status:
+- Completed as a migration/RPC draft only.
+
+Implemented boundaries:
+- Added `public.drain_checklist_toggle_pending_operation`.
+- The RPC only accepts `p_operation_id`.
+- The caller must be authenticated and must match `pending_operations.actor_id`.
+- The RPC locks exactly one pending row with `FOR UPDATE`.
+- The RPC only processes `pending` or `failed_retryable` rows.
+- The RPC only drains `checklist_item_toggle` into `checklist_item_updated`.
+- The RPC re-checks live owner or active `operator`/`manager` permission.
+- The final event id is derived from `pending_operations.operation_id::UUID`.
+- Existing matching events mark the pending row `synced`; mismatches become `failed_permanent`.
+- Unexpected drain failures become `failed_retryable` and increment `retry_count`.
+- No runtime caller, UI, RLS, flag default, cache replacement, field note, checklist text, revenue, inventory, market, or product behavior was changed.
+
 ## 10. Current Recommendation
 
 Recommended manual approval:
-- D3b, D3c-0, D3c-1, and D3c-2 design are complete. The next approval boundary is D3c-2b.
+- D3b, D3c-0, D3c-1, D3c-2 design, and D3c-2b are complete. The next approval boundary is D3c-2c.
 
-Recommended decisions for D3c-2b:
+Recommended decisions for D3c-2c:
 - Source of truth: Option A, existing event model remains source of truth.
 - Pilot scope: checklist toggle only.
-- Drain shape: single-operation SECURITY DEFINER RPC, not a broad service-role batch worker.
-- Staff insert/RLS: use live permission re-checks inside the drain RPC; do not use direct client insert.
+- Drain shape: call the single-operation SECURITY DEFINER RPC only after enqueue.
+- Runtime gate: use a dedicated test/staging flag first; do not turn the production default on.
 - Error UX: diagnostics-only for now.
 - Rollback: feature flag off returns to direct event writes.
 
 Recommended next path:
-- Add the single-operation drain RPC draft and SQL/static tests, but do not connect runtime to call it in the same commit.
-- Enable `pendingOperationWriteRouting` only in a controlled test/staging harness after the drain RPC is proven.
+- Apply and verify migration 050 before any runtime drain call.
+- Add runtime drain call behind a dedicated test/staging flag, not the production default.
+- Keep `pendingOperationWriteRouting` default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:
 - Direct client insert into `pending_operations`.

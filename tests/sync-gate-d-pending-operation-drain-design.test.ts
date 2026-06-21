@@ -31,10 +31,14 @@ const productionFiles = [
 
 console.log('\n=== Sync Gate D pending operation drain design ===');
 
-runTest('D3c-2 drain design exists and is design-only', () => {
+runTest('D3c-2 drain design records D3c-2b completion without runtime approval', () => {
   assert.ok(existsSync(designPath));
-  assert.match(designSource, /Status: D3c-2 design only, not approved for implementation/);
-  assert.match(designSource, /No migration is approved by this document/);
+  assert.match(
+    designSource,
+    /Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete/
+  );
+  assert.match(designSource, /050_drain_checklist_toggle_pending_operation\.sql/);
+  assert.match(designSource, /No runtime caller is connected yet/);
   assert.match(designSource, /No runtime drain\/worker is approved by this document/);
   assert.match(designSource, /No feature flag default change is approved by this document/);
   assert.match(designSource, /No RLS policy change is approved by this document/);

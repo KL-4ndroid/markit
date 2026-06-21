@@ -240,9 +240,9 @@ Do not proceed directly to:
 - D4 cache execute.
 
 The next manual decision should choose one path:
-- D3c-2b single-operation drain RPC draft: add a narrow SECURITY DEFINER drain RPC for `checklist_item_toggle`, without runtime connection.
-- D3c-2c controlled enablement: turn the flag on only in a test/staging build or explicit local test harness after the drain RPC is proven.
+- D3c-2c controlled runtime drain call: call the drain RPC only behind a dedicated test/staging flag after `050` is applied and verified.
+- D3c-2c controlled enablement: turn `pendingOperationWriteRouting` on only in a test/staging build or explicit local test harness after the drain path is proven.
 
 Recommended:
 - Follow `docs/SYNC_GATE_D_PENDING_OPERATION_DRAIN_DESIGN.md`.
-- Implement the single-operation drain RPC before enabling the flag broadly, because D3c-1 only enqueues pending rows and keeps local events as the immediate source of truth.
+- Do not enable the flag broadly yet, because D3c-2b only adds the drain RPC draft and keeps runtime disconnected.
