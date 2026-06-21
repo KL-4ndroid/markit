@@ -163,6 +163,28 @@ Required before implementation:
 - Role downgrade tests.
 - Fallback-to-direct-write plan.
 
+### D3c-0: Enqueue RPC Draft
+
+Risk:
+- High because it adds a database function.
+
+Status:
+- Completed as a migration/RPC draft only.
+
+Implemented boundaries:
+- Added `public.enqueue_checklist_toggle_pending_operation`.
+- Scope is checklist toggle only.
+- Owner or active `operator`/`manager` permission is validated live from database tables.
+- `role_snapshot` is diagnostic evidence only; later event creation must re-check live permission.
+- Runtime/UI/sync code does not call the RPC yet.
+- No 048 policy was changed.
+
+Not included:
+- No field note routing.
+- No checklist text create/update/delete routing.
+- No revenue, inventory, market, or product routing.
+- No cache replacement execute behavior.
+
 ### D4: Cache Replacement Execute
 
 Risk:
@@ -180,15 +202,16 @@ Required before implementation:
 ## 4. Current Recommendation
 
 Next safest move:
-- D3c-0 RPC draft, but only after manual approval.
+- D3c-1 checklist toggle pilot behind flag, but only after manual approval.
 
 Do not proceed directly to:
-- D3c write pilot.
 - D4 cache execute.
 
-The next manual decision should confirm whether D3c-0 is approved with these limits:
-- SECURITY DEFINER enqueue RPC draft only,
-- checklist toggle scope only,
-- live permission validation,
-- no runtime connection in the same commit,
-- no UI behavior change.
+The next manual decision should confirm whether D3c-1 is approved with these limits:
+- checklist toggle only,
+- feature flag default off,
+- direct event fallback remains available,
+- RPC is called only when the flag is explicitly enabled,
+- duplicate/idempotency tests are added before runtime connection,
+- role downgrade/revoke behavior is tested,
+- no field note, checklist text, revenue, inventory, cache replacement, market, or product changes.

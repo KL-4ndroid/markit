@@ -59,14 +59,16 @@ function productionSyncFiles(): string[] {
   ].map(path => join(projectRoot, path));
 }
 
-runTest('Phase 3 guardrail: pending_operations only appears in approved D2a schema files', () => {
+runTest('Phase 3 guardrail: pending_operations only appears in approved Gate D migrations', () => {
   const scannedRoots = ['supabase/migrations', 'app', 'components', 'hooks', 'lib']
     .map(path => join(projectRoot, path));
   const files = scannedRoots.flatMap(root => collectFiles(root));
   const matches = matchingRelativePaths(files, /\bpending_operations\b/);
-  const unexpectedMatches = matches.filter(
-    path => path !== 'supabase/migrations/048_add_pending_operations_schema.sql'
-  );
+  const approvedMatches = new Set([
+    'supabase/migrations/048_add_pending_operations_schema.sql',
+    'supabase/migrations/049_enqueue_checklist_toggle_pending_operation.sql',
+  ]);
+  const unexpectedMatches = matches.filter(path => !approvedMatches.has(path));
 
   assert.deepEqual(
     unexpectedMatches,

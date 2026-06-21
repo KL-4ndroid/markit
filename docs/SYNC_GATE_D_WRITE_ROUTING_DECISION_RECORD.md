@@ -275,6 +275,17 @@ Allowed only after explicit approval:
 - Add SQL tests/static tests for live permission checks.
 - Do not connect UI/runtime in the same commit.
 
+Status:
+- Completed as a migration/RPC draft only.
+
+Implemented boundaries:
+- Added `public.enqueue_checklist_toggle_pending_operation`.
+- The RPC only accepts checklist toggle payloads.
+- The RPC validates owner or active `operator`/`manager` role live from database tables.
+- The RPC records `role_snapshot` for diagnostics, but future event creation must still re-check live permissions.
+- No runtime adapter, UI, or sync path calls the RPC yet.
+- No 048 policy was changed.
+
 ### D3c-1: Checklist Toggle Pilot Behind Flag
 
 Risk:
@@ -288,17 +299,17 @@ Allowed only after D3b and D3c-0 pass:
 ## 10. Current Recommendation
 
 Recommended manual approval:
-- Approve D3b only: disabled runtime adapter shell, flags off, no Supabase writes.
+- D3b and D3c-0 are complete. The next approval boundary is D3c-1: checklist toggle pilot behind flag.
 
-Recommended decisions for D3b:
+Recommended decisions for D3c-1:
 - Source of truth: Option A, existing event model remains source of truth.
-- Pilot scope: checklist toggle only, but not connected yet.
-- Staff insert/RLS: do not solve in D3b; defer to D3c-0 RPC draft.
+- Pilot scope: checklist toggle only.
+- Staff insert/RLS: use the D3c-0 narrow enqueue RPC; do not use direct client insert.
 - Error UX: diagnostics-only for now.
 - Rollback: feature flag off returns to direct event writes.
 
 Do not approve yet:
 - Direct client insert into `pending_operations`.
 - Any change to 048 RLS.
-- Any runtime Supabase write to `pending_operations`.
+- Any runtime Supabase write beyond the approved checklist-toggle RPC path.
 - Any cache replacement execute behavior.

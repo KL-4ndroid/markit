@@ -68,12 +68,18 @@ runTest('permission downgrade and idempotency decisions are explicit', () => {
   assert.match(decisionSource, /mark the operation `synced`, not create another event/);
 });
 
-runTest('next approved slice remains disabled adapter shell only', () => {
-  assert.match(decisionSource, /Approve D3b only: disabled runtime adapter shell/);
-  assert.match(decisionSource, /flags off, no Supabase writes/);
+runTest('D3c-0 is complete and next approval boundary is D3c-1 only', () => {
+  assert.match(decisionSource, /D3b and D3c-0 are complete/);
+  assert.match(decisionSource, /next approval boundary is D3c-1/);
+  assert.match(decisionSource, /Added `public\.enqueue_checklist_toggle_pending_operation`/);
+  assert.match(decisionSource, /No runtime adapter, UI, or sync path calls the RPC yet/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Direct client insert into `pending_operations`/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any change to 048 RLS/);
-  assert.match(decisionSource, /Do not approve yet:[\s\S]*Any runtime Supabase write to `pending_operations`/);
+  assert.match(
+    decisionSource,
+    /Do not approve yet:[\s\S]*Any runtime Supabase write beyond the approved checklist-toggle RPC path/
+  );
+  assert.match(decisionSource, /Do not approve yet:[\s\S]*Any cache replacement execute behavior/);
 });
 
 runTest('production runtime still does not import pending-operation write routing', () => {
