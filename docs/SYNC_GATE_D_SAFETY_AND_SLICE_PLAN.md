@@ -93,6 +93,9 @@ Risk:
 Goal:
 - Decide exactly how checklist/field-note writes would route later.
 
+Status:
+- Completed as `docs/SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD.md`.
+
 Must answer:
 - Does direct `recordEvent` remain the source of truth while pending operation is only an outbox?
 - Or does pending operation become the source of truth until drained?
@@ -104,6 +107,12 @@ Recommended answer:
 - Direct event write remains fallback.
 - First pilot should be feature-flagged and limited to field notes/checklist only.
 - Permission-blocked operations do not retry automatically.
+
+Implemented recommendation:
+- Source of truth: existing event model remains primary; `pending_operations` is delivery/retry state.
+- First pilot scope: checklist toggle only.
+- Staff write strategy: use a future SECURITY DEFINER enqueue RPC with live permission validation; do not loosen `markets` base-table visibility.
+- Next implementation slice: D3b disabled runtime adapter shell only, with flags off and no Supabase writes.
 
 ### D3b: Disabled Runtime Adapter Shell
 
@@ -162,13 +171,15 @@ Required before implementation:
 ## 4. Current Recommendation
 
 Next safest move:
-- D2b or D3a.
+- D3b, but only as a disabled runtime adapter shell after manual approval.
 
 Do not proceed directly to:
-- D3b runtime adapter shell.
 - D3c write pilot.
 - D4 cache execute.
 
-The next manual decision should choose between:
-- D2b: add local schema type mirror, or
-- D3a: write the detailed write-routing decision record.
+The next manual decision should confirm whether D3b is approved with these limits:
+- no Supabase writes,
+- feature flag default off,
+- direct event write remains active,
+- no UI behavior change,
+- no RLS or migration change.
