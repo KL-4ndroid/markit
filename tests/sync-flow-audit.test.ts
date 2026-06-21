@@ -72,6 +72,15 @@ runTest('useSync keeps push before pull in the main sync cycle', () => {
   assert.match(hookSource, /\.where\(['"]sync_status['"]\)[\s\S]*\.anyOf\(\[['"]pending['"],\s*['"]local_only['"]\]\)/);
 });
 
+runTest('useSync callback tracks infoLevel used by pull routing', () => {
+  assert.match(hookSource, /const effectiveInfoLevel = roleInfoLevel \?\? 3/);
+  assert.match(hookSource, /await pullAllEvents\(user\.id,[\s\S]*effectiveInfoLevel\)/);
+  assert.match(
+    hookSource,
+    /\}, \[enabled,\s*isConfigured,\s*user,\s*effectiveInfoLevel\]\);/
+  );
+});
+
 runTest('useSync does not keep an unused replayEvents helper', () => {
   assert.doesNotMatch(hookSource, /async function replayEvents\(/);
   assert.doesNotMatch(hookSource, /await replayEvents\(/);

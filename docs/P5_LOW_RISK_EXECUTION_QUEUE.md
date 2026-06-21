@@ -114,12 +114,27 @@ Exit criteria:
 Goal:
 - Review `hooks/useSync.ts` `effectiveInfoLevel` dependency warning without changing behavior casually.
 
+Status:
+- Completed.
+
+Safety analysis:
+- `sync` already passes `effectiveInfoLevel` into `pullAllEvents`.
+- Adding `effectiveInfoLevel` to the callback dependency list changes callback identity when the info level changes, so later calls through `syncFnRef` use the current visibility level.
+- This does not add a new sync trigger. Initial sync and interval setup still depend on the existing effects and `syncIdentity`.
+- `effectiveStaffMode` is not used inside the callback and was removed from that dependency list to satisfy `react-hooks/exhaustive-deps`.
+- Existing staff/owner route switching remains controlled by `syncIdentity` and `pullAllEvents(infoLevel)`.
+
 Exit criteria:
 - Document whether adding the dependency changes sync callback identity or execution timing.
 - Add or update audit tests before any hook change.
 
 ## 3. Current Recommendation
 
-Review whether L5 should remain analysis-only or become a narrow implementation slice.
+L1-L5 are complete. Do not continue into Gate D implementation without explicit approval.
+
+Recommended next low-risk work:
+- Add more static sync boundary tests if needed.
+- Prepare a Gate D decision record draft with no runtime imports, no migration, and no production behavior change.
+- Keep cache replacement and pending operations in preview/documentation mode only.
 
 Do not start Gate D until the user explicitly approves one narrow slice from `SYNC_GATE_D_PREFLIGHT_DECISION_PLAN.md`.
