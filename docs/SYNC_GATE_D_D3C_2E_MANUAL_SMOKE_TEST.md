@@ -1,7 +1,19 @@
 # BoothBook Sync Gate D D3c-2e Manual Smoke Test
 
 Created: 2026-06-21
-Status: manual cloud smoke test plan and guarded script ready; execution requires disposable test data
+Status: manual cloud smoke test completed once against disposable production checklist data; guarded script remains manual-only
+
+Last verified: 2026-06-22 Asia/Taipei
+
+Verification evidence:
+- Target type: `production-disposable`
+- Market id: `91af7db1-bab3-4d45-b2e3-95b07c268b9f`
+- Checklist item id: `0747e758-2f39-4aa2-bf31-60eba3d24771`
+- Operation id: `512d40e6-1192-45dd-ad03-3e437f3d562d`
+- Result: `pending_operations.status = 'synced'`
+- Final event: `checklist_item_updated`
+- Final completed value: `false`
+- Follow-up preflight: item remains active; only the synced audit row remains for this item.
 
 ## 0. Purpose
 
@@ -168,6 +180,8 @@ Expected:
 There is no automatic rollback, because the smoke test intentionally verifies durable event creation.
 
 If the chosen item was disposable, leave the generated pending row and event as audit evidence. If cleanup is required, make it a separate owner-approved data cleanup action. Do not add automatic deletion to this smoke test.
+
+The 2026-06-22 verification left the generated synced pending row and matching event in place as audit evidence.
 
 ## 7. Stop Conditions
 

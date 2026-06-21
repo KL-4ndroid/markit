@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Pending Operation Drain Design
 
 Created: 2026-06-21
-Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete; D3c-2c gated runtime drain call complete; D3c-2d controlled enablement complete
+Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete; D3c-2c gated runtime drain call complete; D3c-2d controlled enablement complete; D3c-2e manual cloud smoke completed once
 
 ## 0. Purpose
 
@@ -22,6 +22,12 @@ D3c-2d implementation status:
 - `setSyncGateDControlledTestFlags()` can enable the two checklist-toggle flags for controlled verification only.
 - The override rejects broad Gate D flags and unknown flags.
 - Production defaults remain disabled.
+
+D3c-2e implementation status:
+- One guarded manual smoke verification completed on 2026-06-22 Asia/Taipei.
+- Operation id `512d40e6-1192-45dd-ad03-3e437f3d562d` reached `synced`.
+- The final cloud event was `checklist_item_updated` for checklist item `0747e758-2f39-4aa2-bf31-60eba3d24771`.
+- A follow-up preflight confirmed the checklist item remains active and the synced audit row remains queryable.
 
 Still not approved:
 - No batch drain/worker is approved by this document.
@@ -285,7 +291,8 @@ Allowed only after D3c-2d passes:
 Status:
 - Manual smoke plan added as `docs/SYNC_GATE_D_D3C_2E_MANUAL_SMOKE_TEST.md`.
 - Guarded script added as `scripts/gate-d-checklist-toggle-smoke.mjs`.
-- Execution still requires manual selection of disposable or non-production checklist data.
+- One manual execution completed against disposable production checklist data.
+- Future executions still require manual selection of disposable or non-production checklist data.
 
 ### D3c-3: Batch Worker
 

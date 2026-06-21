@@ -72,9 +72,9 @@ runTest('smoke script rejects service-role-looking keys and text mutation', () =
   assert.match(scriptSource, /Final event payload must not include checklist text/);
 });
 
-runTest('decision record still treats D3c-2e as manual verification only', () => {
-  assert.match(decisionSource, /next approval boundary is D3c-2e/);
-  assert.match(decisionSource, /Pick one non-production or disposable checklist item/);
+runTest('decision record still treats D3c-2e as narrow manual verification only', () => {
+  assert.match(decisionSource, /one D3c-2e manual cloud smoke execution are complete/);
+  assert.match(decisionSource, /Run one owner test and one additional staff operator\/manager test if separate accounts are available/);
   assert.match(decisionSource, /Keep both flags default-off/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Turning `pendingOperationWriteRouting` on by default/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Turning `pendingOperationDrainAfterEnqueue` on by default/);

@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Write Routing Decision Record
 
 Created: 2026-06-21
-Status: active Gate D decision record after D3c-2d
+Status: active Gate D decision record after D3c-2e manual cloud smoke verification
 
 ## 0. Purpose
 
@@ -14,7 +14,7 @@ Current approvals:
 - D3c-2b approved a single-operation checklist-toggle drain RPC draft.
 - D3c-2c approved a gated runtime drain call after successful enqueue.
 - D3c-2d approved controlled test/staging enablement for the two checklist-toggle flags.
-- D3c-2e prepared a manual cloud smoke script and checklist; execution still requires disposable test data.
+- D3c-2e completed one manual cloud smoke verification against disposable production checklist data.
 
 Still not approved:
 - No UI behavior change is approved by this document.
@@ -401,7 +401,11 @@ Risk:
 
 Status:
 - Manual smoke plan and guarded script are ready.
-- Cloud execution has not been performed by this commit.
+- One manual cloud smoke verification completed on 2026-06-22 Asia/Taipei.
+- Verification operation id: `512d40e6-1192-45dd-ad03-3e437f3d562d`.
+- The generated pending row reached `synced` with no error code or error message.
+- A matching `checklist_item_updated` cloud event was created with the final completed value `false`.
+- A follow-up read-only preflight confirmed the checklist item remains active.
 
 Implemented boundaries:
 - Added `scripts/gate-d-checklist-toggle-smoke.mjs`.
@@ -416,10 +420,10 @@ Implemented boundaries:
 
 ## 10. Current Recommendation
 
-Recommended manual approval:
-- D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, D3c-2c, D3c-2d, and D3c-2e planning are complete. The next approval boundary is D3c-2e execution.
+Current status:
+- D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, D3c-2c, D3c-2d, D3c-2e planning, and one D3c-2e manual cloud smoke execution are complete.
 
-Recommended decisions for D3c-2e:
+Confirmed decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.
 - Pilot scope: checklist toggle only.
 - Runtime gate: enable both `pendingOperationWriteRouting` and `pendingOperationDrainAfterEnqueue` only for an explicit smoke test session.
@@ -427,9 +431,9 @@ Recommended decisions for D3c-2e:
 - Rollback: feature flag off returns to direct event writes.
 
 Recommended next path:
-- Pick one non-production or disposable checklist item for manual smoke verification.
-- Run one owner test and one staff operator/manager test if accounts are available.
-- Confirm one pending row reaches `synced` and one matching `checklist_item_updated` cloud event is created.
+- Keep the successful operation and event as audit evidence unless owner-approved cleanup is required.
+- Run one owner test and one additional staff operator/manager test if separate accounts are available.
+- Decide whether the next approved slice should be a second controlled app-runtime smoke test, owner-only diagnostics, or a narrow stuck-row recovery design.
 - Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:
