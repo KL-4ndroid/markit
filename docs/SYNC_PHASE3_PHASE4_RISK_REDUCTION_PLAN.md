@@ -29,6 +29,12 @@ Not allowed without explicit approval:
 - Change RLS policies, views, or security definer functions.
 - Change financial/inventory projection behavior as part of Phase 3/4.
 
+Current exception:
+- Gate D2a has been explicitly approved and completed as
+  `supabase/migrations/048_add_pending_operations_schema.sql`.
+- This exception covers schema, conservative RLS, indexes, tests, and documentation only.
+- It does not approve production write routing or cache replacement execute behavior.
+
 ## 2. Risk Areas
 
 ### 2.1 `pending_operations`
@@ -164,8 +170,8 @@ Exit criteria:
 ### Gate D: Manual Approval Before Any Real Write
 
 Any of the following requires manual approval:
-- Add a Supabase migration for `pending_operations`.
-- Add RLS policy for `pending_operations`.
+- Add another Supabase migration for `pending_operations` after 048.
+- Change RLS policy for `pending_operations` after 048.
 - Add replace-cache execute mode.
 - Import replace-cache into `staff-pull-service` or `owner-pull-service`.
 - Use replace-cache outside a test/debug-only path.

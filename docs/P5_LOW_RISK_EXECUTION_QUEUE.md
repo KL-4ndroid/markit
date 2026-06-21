@@ -236,4 +236,4 @@ Recommended next low-risk work:
 - Use `SYNC_GATE_D_DECISION_RECORD_DRAFT.md` for the next manual Gate D approval discussion.
 - Keep cache replacement and pending operations in preview/documentation mode only.
 
-Do not start Gate D until the user explicitly approves one narrow slice from `SYNC_GATE_D_PREFLIGHT_DECISION_PLAN.md`.
+Gate D2a has since been approved and completed as a schema/test/documentation slice only. Do not start any further Gate D runtime slice until the user explicitly approves one narrow slice from `SYNC_GATE_D_SAFETY_AND_SLICE_PLAN.md`.

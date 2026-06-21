@@ -15,10 +15,10 @@ Already completed:
 - Gate A: Phase 3/4 risk guardrails.
 - Gate B: local-only pending operation model.
 - Gate C: replace-cache preview-only helper.
+- Gate D2a: `pending_operations` schema draft, migration tests, and guardrail allowlist.
 
 Still not implemented:
-- No `pending_operations` Supabase table.
-- No `pending_operations` RLS policy.
+- No production write path uses the `pending_operations` table.
 - No production write path uses the pending operation model.
 - No owner/staff pull uses cache replacement execute behavior.
 - No local cache delete/overwrite behavior has changed.
@@ -31,7 +31,7 @@ Question:
 - Should BoothBook add a cloud `pending_operations` table?
 
 Recommended default:
-- Not yet. Keep using event writes for production until low-risk domains prove the model.
+- D2a only has been approved. Keep using event writes for production until low-risk domains prove the model.
 
 Approval must specify:
 - Table columns.
@@ -130,6 +130,10 @@ Exit criteria:
 - Migration test passes.
 - No production write path imports the pending operation service.
 
+Status:
+- Completed as D2a in `supabase/migrations/048_add_pending_operations_schema.sql`.
+- This does not approve production write routing.
+
 ### D3: Low-Risk Write Pilot
 
 If write routing is approved, pilot checklist/field-note operations only.
@@ -161,10 +165,10 @@ Stop and ask for manual confirmation if any implementation requires:
 
 ## 6. Current Recommendation
 
-Do not start Gate D implementation yet.
+Do not start Gate D production write routing yet.
 
 Recommended next low-risk work:
-- Keep Gate D as documentation and guardrails.
+- Keep Gate D runtime behavior behind documentation, guardrails, and disabled flags.
 - Gather one owner export and one staff scoped export for offline analysis.
 - Use the preview helper in tests only to model likely replacement impact.
-- Decide later whether the first real Gate D slice should be pending operations or debug-only cache replacement.
+- Decide later whether the first runtime Gate D slice should be a type mirror, write-routing design record, or disabled adapter shell.
