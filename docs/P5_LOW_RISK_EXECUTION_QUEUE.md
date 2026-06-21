@@ -187,9 +187,29 @@ Exit criteria:
 - Tests confirm services emit stable market-scoped payload fields.
 - Tests confirm checklist toggle stays completed-only.
 
+### L9: Gate D Model Isolation Guardrails
+
+Goal:
+- Keep pending operation and cache replacement helpers isolated as local-only / preview-only models until Gate D is explicitly approved.
+
+Status:
+- Completed.
+
+Safety analysis:
+- This is test-only plus documentation.
+- It does not change pending operation or cache replacement behavior.
+- It does not connect helpers to production sync, Supabase, Dexie, environment flags, or local cache writes.
+- It keeps cache delete candidates report-only.
+
+Exit criteria:
+- Tests confirm pending operation model is side-effect free.
+- Tests confirm cache replacement helper remains preview-only.
+- Tests confirm production sync does not import Gate D models or flags.
+- Tests confirm delete candidates are not executable behavior.
+
 ## 3. Current Recommendation
 
-L1-L8 are complete. Do not continue into Gate D implementation without explicit approval.
+L1-L9 are complete. Do not continue into Gate D implementation without explicit approval.
 
 Recommended next low-risk work:
 - Add more static sync boundary tests if needed.
