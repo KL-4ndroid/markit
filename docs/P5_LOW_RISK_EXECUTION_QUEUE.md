@@ -134,7 +134,7 @@ L1-L5 are complete. Do not continue into Gate D implementation without explicit 
 
 Recommended next low-risk work:
 - Add more static sync boundary tests if needed.
-- Prepare a Gate D decision record draft with no runtime imports, no migration, and no production behavior change.
+- Use `SYNC_GATE_D_DECISION_RECORD_DRAFT.md` for the next manual Gate D approval discussion.
 - Keep cache replacement and pending operations in preview/documentation mode only.
 
 Do not start Gate D until the user explicitly approves one narrow slice from `SYNC_GATE_D_PREFLIGHT_DECISION_PLAN.md`.
