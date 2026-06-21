@@ -282,6 +282,11 @@ Allowed only after D3c-2d passes:
 - Confirm drain creates one matching `checklist_item_updated` cloud event and marks the pending row `synced`.
 - Do not enable production defaults.
 
+Status:
+- Manual smoke plan added as `docs/SYNC_GATE_D_D3C_2E_MANUAL_SMOKE_TEST.md`.
+- Guarded script added as `scripts/gate-d-checklist-toggle-smoke.mjs`.
+- Execution still requires manual selection of disposable or non-production checklist data.
+
 ### D3c-3: Batch Worker
 
 Allowed only after the single-operation drain is proven:

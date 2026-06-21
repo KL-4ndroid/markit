@@ -14,6 +14,7 @@ Current approvals:
 - D3c-2b approved a single-operation checklist-toggle drain RPC draft.
 - D3c-2c approved a gated runtime drain call after successful enqueue.
 - D3c-2d approved controlled test/staging enablement for the two checklist-toggle flags.
+- D3c-2e prepared a manual cloud smoke script and checklist; execution still requires disposable test data.
 
 Still not approved:
 - No UI behavior change is approved by this document.
@@ -393,10 +394,30 @@ Implemented boundaries:
 - Production app surfaces do not import the controlled override API.
 - No UI, RLS, migration, cache replacement, field note, checklist text, revenue, inventory, market, or product behavior was changed.
 
+### D3c-2e: Manual Cloud Smoke Verification
+
+Risk:
+- High when executed because it intentionally creates one pending operation and one final checklist update event.
+
+Status:
+- Manual smoke plan and guarded script are ready.
+- Cloud execution has not been performed by this commit.
+
+Implemented boundaries:
+- Added `scripts/gate-d-checklist-toggle-smoke.mjs`.
+- Added `docs/SYNC_GATE_D_D3C_2E_MANUAL_SMOKE_TEST.md`.
+- The script is not wired to `npm test` or any `package.json` script.
+- The script requires explicit target and confirmation environment variables.
+- `production-disposable` requires an extra confirmation.
+- The script signs in as a normal user with the anon key and refuses service-role-looking keys.
+- The script calls only `enqueue_checklist_toggle_pending_operation` and `drain_checklist_toggle_pending_operation`.
+- The script does not call direct table insert, update, upsert, or delete methods.
+- No UI, RLS, migration, cache replacement, field note, checklist text, revenue, inventory, market, or product behavior was changed.
+
 ## 10. Current Recommendation
 
 Recommended manual approval:
-- D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, D3c-2c, and D3c-2d are complete. The next approval boundary is D3c-2e.
+- D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, D3c-2c, D3c-2d, and D3c-2e planning are complete. The next approval boundary is D3c-2e execution.
 
 Recommended decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.

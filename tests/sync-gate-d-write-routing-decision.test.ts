@@ -39,6 +39,7 @@ runTest('decision record keeps D3c-2d approval narrow and blocks broader runtime
   assert.match(decisionSource, /D3c-2b approved a single-operation checklist-toggle drain RPC draft/);
   assert.match(decisionSource, /D3c-2c approved a gated runtime drain call after successful enqueue/);
   assert.match(decisionSource, /D3c-2d approved controlled test\/staging enablement/);
+  assert.match(decisionSource, /D3c-2e prepared a manual cloud smoke script and checklist/);
   assert.match(decisionSource, /No UI behavior change is approved/);
   assert.match(decisionSource, /No Supabase RLS change after 048 is approved/);
   assert.match(decisionSource, /No broad worker, production flag default, or production-wide final-event writer/);
@@ -72,9 +73,9 @@ runTest('permission downgrade and idempotency decisions are explicit', () => {
   assert.match(decisionSource, /mark the operation `synced`, not create another event/);
 });
 
-runTest('D3c-2d is complete and next approval boundary is D3c-2e only', () => {
-  assert.match(decisionSource, /D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, D3c-2c, and D3c-2d are complete/);
-  assert.match(decisionSource, /next approval boundary is D3c-2e/);
+runTest('D3c-2e planning is complete and execution remains the next approval boundary', () => {
+  assert.match(decisionSource, /D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, D3c-2c, D3c-2d, and D3c-2e planning are complete/);
+  assert.match(decisionSource, /next approval boundary is D3c-2e execution/);
   assert.match(decisionSource, /Added `public\.enqueue_checklist_toggle_pending_operation`/);
   assert.match(decisionSource, /Only `toggleChecklistItem\(\)` passes the `checklist_toggle` routing hint/);
   assert.match(decisionSource, /D3c-2: Pending Operation Drain Design/);
@@ -87,6 +88,9 @@ runTest('D3c-2d is complete and next approval boundary is D3c-2e only', () => {
   assert.match(decisionSource, /D3c-2d: Controlled Test Or Staging Enablement/);
   assert.match(decisionSource, /setSyncGateDControlledTestFlags\(\)/);
   assert.match(decisionSource, /Production defaults remain false/);
+  assert.match(decisionSource, /D3c-2e: Manual Cloud Smoke Verification/);
+  assert.match(decisionSource, /scripts\/gate-d-checklist-toggle-smoke\.mjs/);
+  assert.match(decisionSource, /Cloud execution has not been performed by this commit/);
   assert.match(decisionSource, /No direct client insert into `pending_operations` is used/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Direct client insert into `pending_operations`/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any change to 048 RLS/);

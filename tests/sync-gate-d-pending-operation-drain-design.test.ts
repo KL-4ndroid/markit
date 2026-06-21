@@ -41,6 +41,8 @@ runTest('D3c-2 drain design records D3c-2d completion with controlled enablement
   assert.match(designSource, /pendingOperationDrainAfterEnqueue` is a dedicated drain flag and remains default-off/);
   assert.match(designSource, /`setSyncGateDControlledTestFlags\(\)` can enable the two checklist-toggle flags/);
   assert.match(designSource, /D3c-2e: Manual Cloud Smoke Verification/);
+  assert.match(designSource, /scripts\/gate-d-checklist-toggle-smoke\.mjs/);
+  assert.match(designSource, /Execution still requires manual selection/);
   assert.match(designSource, /No batch drain\/worker is approved by this document/);
   assert.match(designSource, /No feature flag default change is approved by this document/);
   assert.match(designSource, /No RLS policy change is approved by this document/);
