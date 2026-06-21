@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Owner Diagnostics Design
 
 Created: 2026-06-22
-Status: D3c-2g read-only owner diagnostics UI shell added; no mutation, RLS, worker, or repair implementation is approved by this document
+Status: D3c-2h stale processing recovery design added; no mutation, RLS, worker, or repair implementation is approved by this document
 
 ## 0. Purpose
 
@@ -32,6 +32,9 @@ Completed before this design:
   - `lib/sync/owner-pending-operation-diagnostics.ts`
   - mounted in owner-only `/recovery`
   - static guardrail tests in `tests/sync-gate-d-owner-diagnostics-ui.test.ts`
+- D3c-2h added stale `processing` recovery design:
+  - `docs/SYNC_GATE_D_STALE_PROCESSING_RECOVERY_DESIGN.md`
+  - design-only guardrails in `tests/sync-gate-d-stale-processing-recovery-design.test.ts`
 
 Still default-off:
 - `pendingOperationWriteRouting`
@@ -51,6 +54,7 @@ Recommended implementation path:
 - Add an owner-only read diagnostics design first. Completed.
 - Add an owner-only read diagnostics RPC draft with no UI/runtime caller. Completed as D3c-2f.
 - Add a read-only owner diagnostics UI shell in `/recovery`. Completed as D3c-2g.
+- Add a stale `processing` recovery design before any recovery action. Completed as D3c-2h.
 - Keep all mutation actions out of diagnostics UI.
 
 Why this is the safest next step:
@@ -264,12 +268,12 @@ Do not drop `pending_operations` while rows exist unless rows are exported, drai
 
 ## 11. Next Approval Boundary
 
-This document now records the D3c-2g read-only UI shell, but it still approves no diagnostics mutation action.
+This document now records the D3c-2h stale `processing` recovery design, but it still approves no diagnostics mutation action.
 
 The next high-risk decision is choosing one implementation slice:
-- D3c-2h: stale `processing` recovery design
 - D3c-2i: one-row diagnostics action design
+- D3c-2j: stale `processing` read-only indicator enhancement
 
 Recommended next slice:
-- D3c-2h stale `processing` recovery design.
-- Keep any future action design one-row, owner-confirmed, and separate from the read-only diagnostics UI shell.
+- D3c-2i single-row stale processing recovery RPC draft, if the owner approves mutation.
+- Keep any future action one-row, owner-confirmed, and separate from broad retry/drain behavior.

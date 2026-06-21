@@ -425,6 +425,7 @@ Current status:
 - Owner-only diagnostics has a design-only safety contract in `docs/SYNC_GATE_D_OWNER_DIAGNOSTICS_DESIGN.md`.
 - D3c-2f owner-only read diagnostics RPC draft is added as `051_list_owner_pending_operation_diagnostics.sql`; no UI/runtime caller is approved.
 - D3c-2g read-only owner diagnostics UI shell is added in `/recovery`; no mutation action is approved.
+- D3c-2h stale `processing` recovery design is added; no recovery implementation is approved.
 
 Confirmed decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.
@@ -436,7 +437,7 @@ Confirmed decisions for D3c-2e:
 Recommended next path:
 - Keep the successful operation and event as audit evidence unless owner-approved cleanup is required.
 - Run one owner test and one additional staff operator/manager test if separate accounts are available.
-- Decide whether the next approved implementation slice should be D3c-2h stale `processing` recovery design.
+- Decide whether the next approved implementation slice should be D3c-2i one-row stale processing recovery RPC draft.
 - Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:

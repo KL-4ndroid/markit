@@ -1,0 +1,189 @@
+# BoothBook Sync Gate D Stale Processing Recovery Design
+
+Created: 2026-06-22
+Status: D3c-2h design only; no RPC, UI action, worker, retry, drain, cleanup, or mutation implementation is approved by this document
+
+## 0. Purpose
+
+This document defines how BoothBook should reason about `pending_operations` rows that remain in `processing` too long.
+
+The goal is to avoid silent data loss or duplicate final events before any recovery action exists.
+
+This document does not approve implementation. It is a safety contract for future work.
+
+## 1. Current Context
+
+Completed before this design:
+- `048_add_pending_operations_schema.sql` created `pending_operations`.
+- `049_enqueue_checklist_toggle_pending_operation.sql` added the narrow checklist-toggle enqueue RPC.
+- `050_drain_checklist_toggle_pending_operation.sql` added the narrow single-operation drain RPC.
+- D3c-2e completed one manual cloud smoke verification.
+- D3c-2f added owner-only read diagnostics RPC.
+- D3c-2g added read-only owner diagnostics UI shell in `/recovery`.
+
+Still not approved:
+- Any automatic worker.
+- Any retry button.
+- Any reset button.
+- Any cleanup/delete action.
+- Any mutation from diagnostics UI.
+- Any broad service-role processor.
+
+## 2. What Counts As Stale
+
+Recommended first stale threshold:
+- `status = 'processing'`
+- `updated_at < now() - interval '15 minutes'`
+
+Why 15 minutes:
+- A normal single-operation drain should finish in seconds.
+- It leaves room for temporary network or database latency.
+- It is conservative enough for manual owner diagnostics without treating every brief in-flight row as broken.
+
+The threshold must be configurable only in reviewed server-side code if implemented later. It must not come from public env, localStorage, sessionStorage, or UI input in the first recovery slice.
+
+## 3. Why A Row Can Get Stuck
+
+Possible causes:
+- The request was interrupted after the row was marked `processing`.
+- The browser, network, or server connection died before the transaction completed.
+- A database statement failed in a way that prevented the error handler from marking `failed_retryable`.
+- A future worker crashes while holding or after releasing the claim.
+- A future manual action is interrupted mid-flight.
+
+Important note:
+- A stuck `processing` row does not prove the business action failed.
+- The final `events` row might already exist.
+- Recovery must inspect final event state before changing the pending row.
+
+## 4. Recovery Decision Tree
+
+Future recovery must process exactly one operation id at a time.
+
+For a selected stale `processing` row:
+
+1. Confirm the row is still `processing`.
+2. Confirm the row is stale by `updated_at`.
+3. Confirm the caller is the owner of the row's market.
+4. Inspect final event by `operation_id::uuid` only if the operation id is a valid UUID.
+5. If a matching final event exists:
+   - mark the pending row `synced`;
+   - clear transient errors;
+   - do not create another event.
+6. If a final event exists but does not match:
+   - mark the pending row `failed_permanent`;
+   - record `last_error_code = 'event_id_collision'` or a more specific mismatch code;
+   - do not retry automatically.
+7. If no final event exists:
+   - mark the pending row `failed_retryable`;
+   - increment `retry_count` once;
+   - record `last_error_code = 'stale_processing_reset'`;
+   - do not drain in the same action.
+
+Why not drain immediately:
+- Reset and drain are separate safety decisions.
+- Separating them prevents a diagnostics click from becoming an unreviewed event writer.
+- The existing drain path already re-checks live permission when a retry is explicitly approved later.
+
+## 5. Required Future RPC Shape
+
+If implemented later, prefer a single-operation SECURITY DEFINER RPC:
+
+```sql
+public.recover_stale_processing_pending_operation(p_operation_id TEXT)
+```
+
+Required behavior:
+- Authenticate with `auth.uid()`.
+- Verify caller owns the market for the pending row.
+- Lock exactly one row with `FOR UPDATE`.
+- Process only `status = 'processing'`.
+- Refuse non-stale rows.
+- Never process `pending`, `failed_retryable`, `blocked_permission`, `failed_permanent`, or `synced`.
+- Never create final events.
+- Never call `drain_checklist_toggle_pending_operation`.
+- Never call `enqueue_checklist_toggle_pending_operation`.
+- Never delete rows.
+- Never process more than one row.
+
+## 6. Owner Confirmation Boundary
+
+Any future UI action must require explicit owner confirmation.
+
+Minimum confirmation copy should communicate:
+- the operation id;
+- the current status is `processing`;
+- the row is stale;
+- the action will not create a final event;
+- the action may mark the row `synced`, `failed_permanent`, or `failed_retryable` depending on final-event inspection.
+
+The first UI must not offer batch selection.
+
+## 7. Staff Boundary
+
+Staff must not recover stale processing rows.
+
+Reason:
+- Recovery changes cloud delivery state.
+- Recovery can affect whether future retry/drain happens.
+- Even manager/operator roles should remain limited to business workflows, not sync repair.
+
+Allowed:
+- Staff may continue to use normal field notes/checklist behavior.
+
+Not allowed:
+- Staff diagnostics inbox.
+- Staff recovery action.
+- Staff direct pending-operation mutation.
+
+## 8. Retry Policy Boundary
+
+This design does not approve retry execution.
+
+Recommended future sequence:
+1. D3c-2h design only. Completed by this document.
+2. D3c-2i single-row stale processing recovery RPC draft.
+3. D3c-2j read-only UI can display recoverable stale rows with no action.
+4. D3c-2k owner-confirmed one-row recovery action.
+5. Only after those pass, discuss explicit retry/drain action.
+
+Retry remains a separate approval because it can eventually create final events through the drain path.
+
+## 9. Observability
+
+The existing owner diagnostics UI can show stale `processing` rows as `in_progress`.
+
+Future read-only enhancement may derive:
+- `is_stale_processing`
+- `stale_minutes`
+- `recoverable_state`
+
+These are display-only until a separate recovery implementation is approved.
+
+## 10. Prohibited In This Slice
+
+This design slice must not:
+- add a migration;
+- add an RPC;
+- add a UI action;
+- add a button;
+- call Supabase;
+- update `pending_operations`;
+- insert into `events`;
+- delete rows;
+- call drain;
+- call enqueue;
+- add a worker;
+- add a feature flag;
+- change RLS;
+- change cache replacement;
+- change revenue, inventory, product, market, or staff permissions.
+
+## 11. Rollback
+
+Because this slice is design-only, rollback is:
+- remove this document;
+- remove its guardrail test;
+- leave cloud rows and runtime behavior unchanged.
+
+If a future recovery action is implemented, it must define its own rollback or no-rollback statement.

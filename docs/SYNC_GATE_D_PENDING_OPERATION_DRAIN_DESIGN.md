@@ -33,6 +33,7 @@ Owner-only diagnostics status:
 - Design-only safety contract added in `docs/SYNC_GATE_D_OWNER_DIAGNOSTICS_DESIGN.md`.
 - D3c-2f read-only owner diagnostics RPC draft added in `051_list_owner_pending_operation_diagnostics.sql`.
 - D3c-2g read-only owner diagnostics UI shell added in `/recovery`.
+- D3c-2h stale `processing` recovery design added in `docs/SYNC_GATE_D_STALE_PROCESSING_RECOVERY_DESIGN.md`.
 - No mutation, RLS, worker, or repair implementation is approved by that design.
 
 Still not approved:
@@ -332,3 +333,16 @@ Status:
 - Completed as `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
 - Read service added as `lib/sync/owner-pending-operation-diagnostics.ts`.
 - Static UI guardrails added as `tests/sync-gate-d-owner-diagnostics-ui.test.ts`.
+
+### D3c-2h: Stale Processing Recovery Design
+
+Recommended before any stale-row mutation:
+- Define what counts as stale `processing`.
+- Require final-event inspection before changing pending state.
+- Separate recovery reset from drain/retry execution.
+- Keep recovery one-row, owner-confirmed, and non-automatic.
+
+Status:
+- Completed as `docs/SYNC_GATE_D_STALE_PROCESSING_RECOVERY_DESIGN.md`.
+- Guardrails added as `tests/sync-gate-d-stale-processing-recovery-design.test.ts`.
+- No RPC, UI action, worker, retry, drain, cleanup, or mutation implementation was added.
