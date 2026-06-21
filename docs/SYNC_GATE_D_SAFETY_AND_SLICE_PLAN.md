@@ -8,10 +8,11 @@ Status: active decision plan after D2a
 D2a is implemented:
 - `supabase/migrations/048_add_pending_operations_schema.sql`
 - `tests/supabase-pending-operations-migration.test.ts`
-- Guardrails allow `pending_operations` only in the approved migration, not production runtime.
+- Guardrails allow `pending_operations` only in approved migrations and the approved D3c-1 RPC adapter path.
 
 Still not approved:
-- Production write routing through `pending_operations`.
+- Enabling `pendingOperationWriteRouting` by default.
+- A pending-operation drain/worker that creates final cloud events.
 - Cache replacement execute mode.
 - Any owner/staff pull integration with replacement behavior.
 - Any financial or inventory projection rewrite.
@@ -38,6 +39,8 @@ Stop for manual approval if a slice needs:
 - RLS policy changes after 048.
 - Production import of `pending-operation-model`.
 - Production import of `cache-replacement-preview`.
+- Turning `pendingOperationWriteRouting` on by default.
+- Creating a pending-operation drain/worker or final-event writer.
 - Local cache delete, clear, or overwrite behavior.
 - Owner/staff capability definition changes.
 
@@ -131,9 +134,9 @@ Allowed only after approval:
 
 Implemented boundaries:
 - Field notes/checklist call `writeFieldOpsEvent`.
-- `writeFieldOpsEvent` currently has only one executable route: direct `recordEvent`.
-- The adapter reads the disabled `pendingOperationWriteRouting` flag but does not enqueue or write `pending_operations`.
-- No Supabase client, RPC, migration, UI, or RLS change is included.
+- With `pendingOperationWriteRouting` disabled, the executable route is direct `recordEvent`.
+- Later D3c-1 added a gated RPC route for checklist toggle only.
+- No UI or RLS change is included.
 
 Not allowed:
 - Supabase writes to `pending_operations`.
@@ -185,6 +188,33 @@ Not included:
 - No revenue, inventory, market, or product routing.
 - No cache replacement execute behavior.
 
+### D3c-1: Checklist Toggle Pilot Behind Flag
+
+Risk:
+- High because it adds a runtime RPC path, but the feature flag remains default-off.
+
+Status:
+- Completed as a dormant runtime route behind `pendingOperationWriteRouting`.
+
+Implemented boundaries:
+- Only `toggleChecklistItem()` passes the `checklist_toggle` routing hint.
+- `createChecklistItem`, `updateChecklistItem`, and `deleteChecklistItem` do not pass the pilot hint.
+- The adapter records the existing local event first.
+- The adapter calls `public.enqueue_checklist_toggle_pending_operation` only if:
+  - `pendingOperationWriteRouting` is explicitly enabled,
+  - the operation hint is `checklist_toggle`,
+  - the event type is `checklist_item_updated`,
+  - the payload has `market_id`, `itemId`, and boolean `completed`,
+  - the payload does not include checklist text.
+- RPC failure or missing Supabase configuration does not block the local checklist toggle.
+- No direct `.from('pending_operations')` insert/update/upsert/delete is used.
+
+Not included:
+- The flag is still default-off.
+- No pending-operation drain/worker is implemented.
+- No final cloud event writer is implemented.
+- No field note, checklist text, revenue, inventory, cache replacement, market, or product route is included.
+
 ### D4: Cache Replacement Execute
 
 Risk:
@@ -202,16 +232,16 @@ Required before implementation:
 ## 4. Current Recommendation
 
 Next safest move:
-- D3c-1 checklist toggle pilot behind flag, but only after manual approval.
+- Stop at D3c-1 unless the next high-risk decision is approved.
 
 Do not proceed directly to:
+- Turning `pendingOperationWriteRouting` on by default.
+- Creating a pending-operation drain/worker.
 - D4 cache execute.
 
-The next manual decision should confirm whether D3c-1 is approved with these limits:
-- checklist toggle only,
-- feature flag default off,
-- direct event fallback remains available,
-- RPC is called only when the flag is explicitly enabled,
-- duplicate/idempotency tests are added before runtime connection,
-- role downgrade/revoke behavior is tested,
-- no field note, checklist text, revenue, inventory, cache replacement, market, or product changes.
+The next manual decision should choose one path:
+- D3c-2 controlled enablement: turn the flag on only in a test/staging build or explicit local test harness.
+- D3c-2 drain design: design how pending rows become final cloud events with live permission re-check and idempotency.
+
+Recommended:
+- Design the drain/worker before enabling the flag broadly, because D3c-1 only enqueues pending rows and keeps local events as the immediate source of truth.

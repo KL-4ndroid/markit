@@ -20,20 +20,25 @@ const adapterSource = readProjectFile('lib/markets/field-ops-write-router.ts');
 const fieldNotesServiceSource = readProjectFile('lib/markets/field-notes.ts');
 const checklistServiceSource = readProjectFile('lib/markets/checklist.ts');
 
-console.log('\n=== Sync Gate D disabled adapter ===');
+console.log('\n=== Sync Gate D gated adapter ===');
 
-runTest('adapter shell reads the disabled write-routing flag but only returns direct event route', () => {
+runTest('adapter reads the disabled write-routing flag and keeps direct route as fallback', () => {
   assert.match(adapterSource, /isSyncGateDFlagEnabled\(['"]pendingOperationWriteRouting['"]\)/);
-  assert.match(adapterSource, /export type FieldOpsWriteRoute = ['"]direct_event['"]/);
+  assert.match(
+    adapterSource,
+    /export type FieldOpsWriteRoute = ['"]direct_event['"] \| ['"]checklist_toggle_pending_operation_rpc['"]/
+  );
   assert.match(adapterSource, /return ['"]direct_event['"]/);
-  assert.doesNotMatch(adapterSource, /pending_operations|pending-operation-model|enqueue/i);
+  assert.match(adapterSource, /return ['"]checklist_toggle_pending_operation_rpc['"]/);
+  assert.doesNotMatch(adapterSource, /pending-operation-model/);
 });
 
-runTest('adapter shell keeps direct recordEvent as the only executable write path', () => {
+runTest('adapter keeps direct recordEvent primary and only uses approved RPC for checklist toggle', () => {
   assert.match(adapterSource, /import \{ recordEvent \} from ['"]@\/lib\/db\/events['"]/);
   assert.match(adapterSource, /await recordEvent\(type,\s*payload\)/);
-  assert.doesNotMatch(adapterSource, /@\/lib\/supabase|supabase|\.from\(/);
-  assert.doesNotMatch(adapterSource, /insert\(|upsert\(|update\(|delete\(/);
+  assert.match(adapterSource, /supabase\.rpc\(['"]enqueue_checklist_toggle_pending_operation['"]/);
+  assert.doesNotMatch(adapterSource, /\.from\(['"]pending_operations['"]\)/);
+  assert.doesNotMatch(adapterSource, /\.insert\(|\.upsert\(|\.update\(|\.delete\(/);
 });
 
 runTest('field ops services call the adapter instead of reading Gate D flags directly', () => {

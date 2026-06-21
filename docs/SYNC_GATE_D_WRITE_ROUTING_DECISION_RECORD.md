@@ -1,17 +1,22 @@
 # BoothBook Sync Gate D Write Routing Decision Record
 
 Created: 2026-06-21
-Status: decision record draft, not approved for runtime implementation
+Status: active Gate D decision record after D3c-1
 
 ## 0. Purpose
 
 This document defines the decisions required before BoothBook routes any production write through `pending_operations`.
 
-It is intentionally documentation-only:
-- No runtime import is approved by this document.
+Current approvals:
+- D3b approved a disabled runtime adapter shell.
+- D3c-0 approved a narrow checklist-toggle enqueue RPC.
+- D3c-1 approved a dormant checklist-toggle RPC route behind a default-off flag.
+
+Still not approved:
 - No UI behavior change is approved by this document.
 - No Supabase RLS change after 048 is approved by this document.
 - No cache replacement execute behavior is approved by this document.
+- No pending-operation drain/worker or final-event writer is approved by this document.
 
 ## 1. Current State After 048
 
@@ -19,7 +24,9 @@ Completed:
 - `public.pending_operations` exists in cloud schema.
 - RLS is enabled.
 - The table supports field-note and checklist operation shapes.
-- Production code still does not read from or write to `pending_operations`.
+- `public.enqueue_checklist_toggle_pending_operation` exists as the only approved enqueue RPC.
+- Production code can call the RPC only from the field-ops adapter when `pendingOperationWriteRouting` is explicitly enabled.
+- The flag remains default-off, so default production behavior is still direct local event writes.
 
 Important safety finding:
 - The current staff insert policy may fail closed because it checks `public.markets`, while staff direct base-table SELECT is intentionally locked down after migration 041.
@@ -296,20 +303,37 @@ Allowed only after D3b and D3c-0 pass:
 - Keep direct event fallback.
 - Add duplicate retry and role downgrade tests.
 
+Status:
+- Completed as a dormant runtime route with `pendingOperationWriteRouting` still default-off.
+
+Implemented boundaries:
+- Only `toggleChecklistItem()` passes the `checklist_toggle` routing hint.
+- The adapter requires the checklist toggle hint, `checklist_item_updated`, completed-only payload, and no checklist text before choosing the RPC route.
+- The adapter records the local event first, preserving the existing read model and fallback behavior.
+- The adapter calls only `supabase.rpc('enqueue_checklist_toggle_pending_operation', ...)`.
+- RPC failure or missing Supabase configuration is non-blocking for the local toggle.
+- No direct client insert into `pending_operations` is used.
+- No UI, RLS, cache replacement, field note, checklist text, revenue, inventory, market, or product behavior is changed.
+
 ## 10. Current Recommendation
 
 Recommended manual approval:
-- D3b and D3c-0 are complete. The next approval boundary is D3c-1: checklist toggle pilot behind flag.
+- D3b, D3c-0, and D3c-1 are complete. The next approval boundary is D3c-2.
 
-Recommended decisions for D3c-1:
+Recommended decisions for D3c-2:
 - Source of truth: Option A, existing event model remains source of truth.
 - Pilot scope: checklist toggle only.
 - Staff insert/RLS: use the D3c-0 narrow enqueue RPC; do not use direct client insert.
 - Error UX: diagnostics-only for now.
 - Rollback: feature flag off returns to direct event writes.
 
+Recommended next path:
+- Design the pending-operation drain/worker before enabling the flag broadly.
+- If testing the runtime route first, enable `pendingOperationWriteRouting` only in a controlled test/staging harness after 049 is applied.
+
 Do not approve yet:
 - Direct client insert into `pending_operations`.
 - Any change to 048 RLS.
-- Any runtime Supabase write beyond the approved checklist-toggle RPC path.
+- Turning `pendingOperationWriteRouting` on by default.
+- A pending-operation drain/worker or final-event writer.
 - Any cache replacement execute behavior.

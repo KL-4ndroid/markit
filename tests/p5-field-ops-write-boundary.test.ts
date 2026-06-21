@@ -59,7 +59,10 @@ runTest('field ops services do not consume Gate D or pending operation infrastru
     assert.doesNotMatch(source, /cache-replacement-preview|replaceCache|previewReplace/i, label);
   }
   assert.match(fieldOpsWriteRouterSource, /isSyncGateDFlagEnabled\(['"]pendingOperationWriteRouting['"]\)/);
-  assert.doesNotMatch(fieldOpsWriteRouterSource, /pending-operation-model|PendingOperation|pending_operations/);
+  assert.match(fieldOpsWriteRouterSource, /enqueue_checklist_toggle_pending_operation/);
+  assert.doesNotMatch(fieldOpsWriteRouterSource, /pending-operation-model/);
+  assert.doesNotMatch(fieldOpsWriteRouterSource, /from ['"]@\/lib\/sync\/pending-operation-model['"]/);
+  assert.doesNotMatch(fieldOpsWriteRouterSource, /\.from\(['"]pending_operations['"]\)/);
 });
 
 runTest('field ops services do not bypass the event abstraction with cloud or sync imports', () => {
@@ -68,7 +71,9 @@ runTest('field ops services do not bypass the event abstraction with cloud or sy
     assert.doesNotMatch(source, /@\/hooks\/useSync|@\/lib\/sync\//, label);
     assert.doesNotMatch(source, /process\.env|NEXT_PUBLIC|localStorage|sessionStorage/, label);
   }
-  assert.doesNotMatch(fieldOpsWriteRouterSource, /@\/lib\/supabase|supabase/);
+  assert.match(fieldOpsWriteRouterSource, /@\/lib\/supabase\/client/);
+  assert.match(fieldOpsWriteRouterSource, /supabase\.rpc\(['"]enqueue_checklist_toggle_pending_operation['"]/);
+  assert.doesNotMatch(fieldOpsWriteRouterSource, /\.from\(/);
 });
 
 runTest('field ops panels call services rather than direct event writers', () => {

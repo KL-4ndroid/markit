@@ -33,11 +33,12 @@ const productionFiles = [
 
 console.log('\n=== Sync Gate D write routing decision ===');
 
-runTest('decision record is documentation-only and does not approve runtime implementation', () => {
-  assert.match(decisionSource, /Status: decision record draft, not approved for runtime implementation/);
-  assert.match(decisionSource, /No runtime import is approved/);
+runTest('decision record keeps D3c-1 approval narrow and blocks broader runtime work', () => {
+  assert.match(decisionSource, /Status: active Gate D decision record after D3c-1/);
+  assert.match(decisionSource, /D3c-1 approved a dormant checklist-toggle RPC route behind a default-off flag/);
   assert.match(decisionSource, /No UI behavior change is approved/);
   assert.match(decisionSource, /No Supabase RLS change after 048 is approved/);
+  assert.match(decisionSource, /No pending-operation drain\/worker or final-event writer is approved/);
 });
 
 runTest('source-of-truth recommendation keeps existing event model primary', () => {
@@ -68,17 +69,16 @@ runTest('permission downgrade and idempotency decisions are explicit', () => {
   assert.match(decisionSource, /mark the operation `synced`, not create another event/);
 });
 
-runTest('D3c-0 is complete and next approval boundary is D3c-1 only', () => {
-  assert.match(decisionSource, /D3b and D3c-0 are complete/);
-  assert.match(decisionSource, /next approval boundary is D3c-1/);
+runTest('D3c-1 is complete and next approval boundary is D3c-2 only', () => {
+  assert.match(decisionSource, /D3b, D3c-0, and D3c-1 are complete/);
+  assert.match(decisionSource, /next approval boundary is D3c-2/);
   assert.match(decisionSource, /Added `public\.enqueue_checklist_toggle_pending_operation`/);
-  assert.match(decisionSource, /No runtime adapter, UI, or sync path calls the RPC yet/);
+  assert.match(decisionSource, /Only `toggleChecklistItem\(\)` passes the `checklist_toggle` routing hint/);
+  assert.match(decisionSource, /No direct client insert into `pending_operations` is used/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Direct client insert into `pending_operations`/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any change to 048 RLS/);
-  assert.match(
-    decisionSource,
-    /Do not approve yet:[\s\S]*Any runtime Supabase write beyond the approved checklist-toggle RPC path/
-  );
+  assert.match(decisionSource, /Do not approve yet:[\s\S]*Turning `pendingOperationWriteRouting` on by default/);
+  assert.match(decisionSource, /Do not approve yet:[\s\S]*A pending-operation drain\/worker or final-event writer/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any cache replacement execute behavior/);
 });
 

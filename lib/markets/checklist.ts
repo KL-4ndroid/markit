@@ -144,7 +144,7 @@ export async function toggleChecklistItem(
     market_id: marketId,
     itemId,
     completed,
-  } as Record<string, unknown>);
+  } as Record<string, unknown>, { operation: 'checklist_toggle' });
 }
 
 export async function deleteChecklistItem(marketId: string, itemId: string): Promise<void> {

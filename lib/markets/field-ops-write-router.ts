@@ -1,24 +1,100 @@
 import { recordEvent } from '@/lib/db/events';
+import { generateUUID } from '@/lib/db';
 import { isSyncGateDFlagEnabled } from '@/lib/sync/sync-gate-d-flags';
 import type { EventType } from '@/types/db';
 
-export type FieldOpsWriteRoute = 'direct_event';
+export type FieldOpsWriteOperation = 'checklist_toggle';
+export type FieldOpsWriteRoute = 'direct_event' | 'checklist_toggle_pending_operation_rpc';
 
-export function getFieldOpsWriteRoute(): FieldOpsWriteRoute {
-  if (isSyncGateDFlagEnabled('pendingOperationWriteRouting')) {
-    return 'direct_event';
+export interface FieldOpsWriteOptions {
+  operation?: FieldOpsWriteOperation;
+}
+
+interface ChecklistTogglePayload {
+  marketId: string;
+  itemId: string;
+  completed: boolean;
+}
+
+function getStringPayloadValue(payload: Record<string, unknown>, key: string): string | null {
+  const value = payload[key];
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function getChecklistTogglePayload(
+  type: EventType,
+  payload: Record<string, unknown>,
+  options?: FieldOpsWriteOptions
+): ChecklistTogglePayload | null {
+  if (options?.operation !== 'checklist_toggle') return null;
+  if (type !== 'checklist_item_updated') return null;
+  if ('text' in payload) return null;
+
+  const marketId = getStringPayloadValue(payload, 'market_id');
+  const itemId = getStringPayloadValue(payload, 'itemId');
+  const { completed } = payload;
+
+  if (!marketId || !itemId || typeof completed !== 'boolean') {
+    return null;
+  }
+
+  return { marketId, itemId, completed };
+}
+
+export function getFieldOpsWriteRoute(
+  type: EventType,
+  payload: Record<string, unknown>,
+  options?: FieldOpsWriteOptions
+): FieldOpsWriteRoute {
+  if (
+    isSyncGateDFlagEnabled('pendingOperationWriteRouting') &&
+    getChecklistTogglePayload(type, payload, options)
+  ) {
+    return 'checklist_toggle_pending_operation_rpc';
   }
 
   return 'direct_event';
 }
 
+async function enqueueChecklistTogglePendingOperation(
+  payload: ChecklistTogglePayload
+): Promise<void> {
+  const { isSupabaseConfigured, supabase } = await import('@/lib/supabase/client');
+
+  if (!isSupabaseConfigured()) return;
+
+  const operationId = generateUUID();
+  const idempotencyKey = `checklist-toggle:${operationId}`;
+  const { error } = await supabase.rpc('enqueue_checklist_toggle_pending_operation', {
+    p_operation_id: operationId,
+    p_market_id: payload.marketId,
+    p_item_id: payload.itemId,
+    p_completed: payload.completed,
+    p_idempotency_key: idempotencyKey,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function writeFieldOpsEvent(
   type: EventType,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
+  options?: FieldOpsWriteOptions
 ): Promise<void> {
-  const route = getFieldOpsWriteRoute();
+  const route = getFieldOpsWriteRoute(type, payload, options);
 
-  if (route === 'direct_event') {
-    await recordEvent(type, payload);
+  await recordEvent(type, payload);
+
+  if (route === 'checklist_toggle_pending_operation_rpc') {
+    const checklistTogglePayload = getChecklistTogglePayload(type, payload, options);
+    if (!checklistTogglePayload) return;
+
+    try {
+      await enqueueChecklistTogglePendingOperation(checklistTogglePayload);
+    } catch (error) {
+      console.warn('[field-ops] checklist toggle pending operation enqueue failed', error);
+    }
   }
 }

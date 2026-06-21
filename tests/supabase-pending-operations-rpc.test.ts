@@ -131,7 +131,7 @@ runTest('049 migration does not change policies tables views or events', () => {
   }
 });
 
-runTest('RPC grants execute narrowly and remains disconnected from runtime', () => {
+runTest('RPC grants execute narrowly and runtime usage stays restricted to the approved adapter', () => {
   assert.match(
     migrationSource,
     /REVOKE ALL ON FUNCTION public\.enqueue_checklist_toggle_pending_operation\(TEXT, UUID, TEXT, BOOLEAN, TEXT\)[\s\S]*FROM PUBLIC, anon/
@@ -141,8 +141,13 @@ runTest('RPC grants execute narrowly and remains disconnected from runtime', () 
     /GRANT EXECUTE ON FUNCTION public\.enqueue_checklist_toggle_pending_operation\(TEXT, UUID, TEXT, BOOLEAN, TEXT\)[\s\S]*TO authenticated/
   );
 
-  const runtimeSources = [
-    'lib/markets/field-ops-write-router.ts',
+  const approvedAdapterSource = read('lib/markets/field-ops-write-router.ts');
+  assert.match(
+    approvedAdapterSource,
+    /supabase\.rpc\(['"]enqueue_checklist_toggle_pending_operation['"]/
+  );
+
+  const nonAdapterRuntimeSources = [
     'lib/markets/field-notes.ts',
     'lib/markets/checklist.ts',
     'components/markets/ChecklistPanel.tsx',
@@ -155,7 +160,7 @@ runTest('RPC grants execute narrowly and remains disconnected from runtime', () 
     .map(read)
     .join('\n');
 
-  assert.doesNotMatch(runtimeSources, /enqueue_checklist_toggle_pending_operation/);
+  assert.doesNotMatch(nonAdapterRuntimeSources, /enqueue_checklist_toggle_pending_operation/);
 });
 
 function main(): void {
