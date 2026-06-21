@@ -5,6 +5,7 @@ import { ArrowLeft, Database, ShieldAlert } from 'lucide-react';
 import { DatabaseRecoveryPanel } from '@/components/common/DatabaseRecoveryPanel';
 import { LocalProjectionRepairPanel } from '@/components/common/LocalProjectionRepairPanel';
 import { OwnerRevenueGapRepairPanel } from '@/components/common/OwnerRevenueGapRepairPanel';
+import { OwnerPendingOperationDiagnosticsPanel } from '@/components/common/OwnerPendingOperationDiagnosticsPanel';
 import { useUserRole } from '@/hooks/useUserRole';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 
@@ -89,6 +90,8 @@ export default function RecoveryPage() {
         </header>
 
         <DatabaseRecoveryPanel />
+
+        <OwnerPendingOperationDiagnosticsPanel />
 
         <OwnerRevenueGapRepairPanel />
 

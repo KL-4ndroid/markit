@@ -41,15 +41,19 @@ function readProjectFile(path: string): string {
 
 console.log('\n=== Sync Gate D owner diagnostics design ===');
 
-runTest('owner diagnostics design records D3c-2f while blocking runtime callers', () => {
+runTest('owner diagnostics design records D3c-2g while blocking mutation actions', () => {
   assert.ok(existsSync(designPath));
-  assert.match(designSource, /Status: D3c-2f owner-only read RPC draft added/);
-  assert.match(designSource, /no runtime, UI, RLS, or worker implementation is approved/);
+  assert.match(designSource, /Status: D3c-2g read-only owner diagnostics UI shell added/);
+  assert.match(designSource, /no mutation, RLS, worker, or repair implementation is approved/);
   assert.match(designSource, /051_list_owner_pending_operation_diagnostics\.sql/);
+  assert.match(designSource, /OwnerPendingOperationDiagnosticsPanel\.tsx/);
+  assert.match(designSource, /owner-pending-operation-diagnostics\.ts/);
+  assert.match(designSource, /tests\/sync-gate-d-owner-diagnostics-ui\.test\.ts/);
   assert.match(designSource, /tests\/supabase-pending-operations-diagnostics-rpc\.test\.ts/);
   assert.match(designSource, /The goal is observability, not repair/);
   assert.match(decisionSource, /Owner-only diagnostics has a design-only safety contract/);
   assert.match(decisionSource, /D3c-2f owner-only read diagnostics RPC draft is added/);
+  assert.match(decisionSource, /D3c-2g read-only owner diagnostics UI shell is added/);
   assert.match(drainDesignSource, /Owner-only diagnostics status/);
 });
 
@@ -110,17 +114,19 @@ runTest('design separates diagnostics from future repair approvals', () => {
   assert.match(designSource, /rollback or no-rollback statement/);
 });
 
-runTest('design recommends recovery placement without adding runtime wiring', () => {
+runTest('design recommends recovery placement with only the approved read-only shell', () => {
   assert.match(designSource, /owner-only `\/recovery` diagnostic panel/);
   assert.match(designSource, /First UI should be read-only/);
   assert.match(designSource, /no retry, drain, delete, or cleanup buttons/);
 
-  const matches = productionFiles.filter(file => {
+  const approvedMatches = new Set(['app/recovery/page.tsx']);
+  const unexpectedMatches = productionFiles.filter(file => {
     const source = readProjectFile(file);
-    return /list_owner_pending_operation_diagnostics|OwnerPendingOperationDiagnostics|pending operation diagnostics/i.test(source);
+    const hasDiagnostics = /list_owner_pending_operation_diagnostics|OwnerPendingOperationDiagnostics|pending operation diagnostics/i.test(source);
+    return hasDiagnostics && !approvedMatches.has(file);
   });
 
-  assert.deepEqual(matches, []);
+  assert.deepEqual(unexpectedMatches, []);
 });
 
 runTest('full test suite includes the owner diagnostics guardrail', () => {
