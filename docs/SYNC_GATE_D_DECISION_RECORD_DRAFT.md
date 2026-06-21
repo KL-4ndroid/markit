@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Decision Record Draft
 
 Created: 2026-06-21
-Status: draft only, not approved for implementation
+Status: D2a schema draft approved and implemented; production routing still not approved
 
 ## 0. Purpose
 
@@ -14,17 +14,20 @@ Gate D remains blocked until the owner explicitly approves one slice.
 ## 1. Current Decision
 
 Decision:
-- No Gate D implementation is approved yet.
+- D2a is approved and implemented as a schema/test/documentation slice only.
+- No production write routing is approved yet.
+- No cache replacement execute mode is approved yet.
 
 Allowed now:
 - Documentation.
 - Static guardrail tests.
 - Test-only preview fixtures.
 - Offline analysis with exported owner/staff data.
+- The approved `pending_operations` schema draft in `supabase/migrations/048_add_pending_operations_schema.sql`.
 
 Not allowed without explicit approval:
-- New Supabase table.
-- New or changed RLS policy.
+- Any additional Supabase table.
+- Any additional new or changed RLS policy.
 - Production import of `pending-operation-model`.
 - Production import of `cache-replacement-preview`.
 - Production write routing through pending operations.
@@ -78,6 +81,20 @@ Summary:
 Risk:
 - High, because schema and RLS are involved.
 
+Implementation status:
+- Completed as D2a only.
+- Added `supabase/migrations/048_add_pending_operations_schema.sql`.
+- Added `tests/supabase-pending-operations-migration.test.ts`.
+- Updated `tests/sync-phase3-phase4-guardrails.test.ts` so `pending_operations` is allowed only in the approved migration, not production code.
+
+Approved D2a boundaries:
+- Table shape, constraints, indexes, conservative RLS, and tests only.
+- No production write routing.
+- No UI changes.
+- No sync push/pull changes.
+- No cache replacement behavior.
+- No financial or inventory projection changes.
+
 Required approval:
 - Table columns.
 - RLS policies.
@@ -90,6 +107,10 @@ Required approval:
 Rollback:
 - Down migration or explicit forward-only disable plan.
 - Handling plan for queued rows if rollback happens after deployment.
+
+D2a rollback:
+- If no production writes have been enabled, drop `public.pending_operations`.
+- If future slices add queued rows, do not drop the table until rows are drained, exported, or intentionally ignored by a disabled feature flag.
 
 ### Candidate C: Checklist/Field Note Write Pilot
 

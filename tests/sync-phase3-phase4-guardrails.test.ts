@@ -43,6 +43,12 @@ function formatMatches(paths: string[], pattern: RegExp): string {
     .join(', ');
 }
 
+function matchingRelativePaths(paths: string[], pattern: RegExp): string[] {
+  return paths
+    .filter(path => pattern.test(read(path)))
+    .map(path => relative(projectRoot, path).replace(/\\/g, '/'));
+}
+
 function productionSyncFiles(): string[] {
   return [
     'hooks/useSync.ts',
@@ -53,16 +59,19 @@ function productionSyncFiles(): string[] {
   ].map(path => join(projectRoot, path));
 }
 
-runTest('Phase 3 guardrail: pending_operations is not introduced in migrations or production code', () => {
+runTest('Phase 3 guardrail: pending_operations only appears in approved D2a schema files', () => {
   const scannedRoots = ['supabase/migrations', 'app', 'components', 'hooks', 'lib']
     .map(path => join(projectRoot, path));
   const files = scannedRoots.flatMap(root => collectFiles(root));
-  const matches = formatMatches(files, /\bpending_operations\b/);
+  const matches = matchingRelativePaths(files, /\bpending_operations\b/);
+  const unexpectedMatches = matches.filter(
+    path => path !== 'supabase/migrations/048_add_pending_operations_schema.sql'
+  );
 
-  assert.equal(
-    matches,
-    '',
-    `pending_operations must stay design-only until explicit migration approval. Matches: ${matches}`
+  assert.deepEqual(
+    unexpectedMatches,
+    [],
+    `pending_operations must stay out of production code and unapproved migrations. Matches: ${matches.join(', ')}`
   );
 });
 
