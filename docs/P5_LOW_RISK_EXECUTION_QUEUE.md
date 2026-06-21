@@ -167,9 +167,29 @@ Exit criteria:
 - Tests confirm create/update/delete events are applied in timestamp order.
 - Tests confirm malformed or unrelated events are skipped.
 
+### L8: Field Ops Payload Contract Guardrails
+
+Goal:
+- Keep note/checklist event payload requirements stable across service writes, `recordEvent` validation, and backup integrity checks.
+
+Status:
+- Completed.
+
+Safety analysis:
+- This is test-only plus documentation.
+- It does not change event payloads or validators.
+- It does not add `pending_operations`, write routing, Gate D flag consumption, or cache replacement behavior.
+- It preserves checklist toggle as a completed-only payload so operator toggle remains separate from checklist text management.
+
+Exit criteria:
+- Tests confirm `recordEvent` validates note/checklist required fields.
+- Tests confirm integrity validation rejects malformed note/checklist payloads.
+- Tests confirm services emit stable market-scoped payload fields.
+- Tests confirm checklist toggle stays completed-only.
+
 ## 3. Current Recommendation
 
-L1-L7 are complete. Do not continue into Gate D implementation without explicit approval.
+L1-L8 are complete. Do not continue into Gate D implementation without explicit approval.
 
 Recommended next low-risk work:
 - Add more static sync boundary tests if needed.
