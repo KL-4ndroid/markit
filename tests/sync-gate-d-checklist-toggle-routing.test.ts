@@ -33,7 +33,8 @@ function functionBody(source: string, functionName: string): string {
 runTest('D3c-1 keeps the write-routing flag disabled by default', () => {
   assert.match(flagSource, /pendingOperationWriteRouting:\s*false/);
   assert.match(flagSource, /pendingOperationDrainAfterEnqueue:\s*false/);
-  assert.doesNotMatch(flagSource, /process\.env|NEXT_PUBLIC|localStorage|sessionStorage/);
+  assert.match(flagSource, /process\.env\.NODE_ENV === ['"]production['"]/);
+  assert.doesNotMatch(flagSource, /NEXT_PUBLIC|localStorage|sessionStorage/);
 });
 
 runTest('only checklist toggle gets the approved routing hint', () => {

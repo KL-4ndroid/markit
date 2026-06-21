@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Pending Operation Drain Design
 
 Created: 2026-06-21
-Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete; D3c-2c gated runtime drain call complete
+Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete; D3c-2c gated runtime drain call complete; D3c-2d controlled enablement complete
 
 ## 0. Purpose
 
@@ -17,6 +17,11 @@ D3c-2c implementation status:
 - `lib/markets/field-ops-write-router.ts` can call the drain RPC only after a successful checklist-toggle enqueue.
 - `pendingOperationDrainAfterEnqueue` is a dedicated drain flag and remains default-off.
 - Local event behavior remains primary and unchanged.
+
+D3c-2d implementation status:
+- `setSyncGateDControlledTestFlags()` can enable the two checklist-toggle flags for controlled verification only.
+- The override rejects broad Gate D flags and unknown flags.
+- Production defaults remain disabled.
 
 Still not approved:
 - No batch drain/worker is approved by this document.
@@ -259,6 +264,22 @@ Status:
 Allowed only after D3c-2c passes:
 - Enable the two flags only in a controlled test/staging harness.
 - Verify enqueue + drain against the already-applied 049/050 functions.
+- Do not enable production defaults.
+
+Status:
+- Completed in `lib/sync/sync-gate-d-flags.ts`.
+- The controlled override only allows `pendingOperationWriteRouting` and `pendingOperationDrainAfterEnqueue`.
+- The controlled override requires the approved D3c-2d reason string.
+- The controlled override rejects production builds.
+
+### D3c-2e: Manual Cloud Smoke Verification
+
+Allowed only after D3c-2d passes:
+- Use one disposable or non-production checklist item.
+- Enable both controlled flags only for the manual verification session.
+- Confirm the app writes the local event first.
+- Confirm enqueue creates one `pending_operations` row.
+- Confirm drain creates one matching `checklist_item_updated` cloud event and marks the pending row `synced`.
 - Do not enable production defaults.
 
 ### D3c-3: Batch Worker

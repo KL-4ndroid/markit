@@ -5,6 +5,8 @@ import {
   getSyncGateDFlags,
   isSyncGateDFlagEnabled,
   isSyncGateDFlagName,
+  resetSyncGateDControlledTestFlags,
+  setSyncGateDControlledTestFlags,
   SYNC_GATE_D_FLAGS,
 } from '../lib/sync/sync-gate-d-flags';
 
@@ -47,8 +49,9 @@ runTest('unknown Gate D flags fail closed', () => {
   assert.equal(isSyncGateDFlagEnabled('unknownGateDFlag'), false);
 });
 
-runTest('Gate D flags are inert and do not read external control planes', () => {
-  assert.doesNotMatch(flagSource, /process\.env|NEXT_PUBLIC|localStorage|sessionStorage/);
+runTest('Gate D flags avoid external control planes and guard controlled test overrides', () => {
+  assert.match(flagSource, /process\.env\.NODE_ENV === 'production'/);
+  assert.doesNotMatch(flagSource, /NEXT_PUBLIC|localStorage|sessionStorage/);
   assert.doesNotMatch(flagSource, /supabase|from\(|db\.|Dexie/);
 });
 
@@ -74,6 +77,59 @@ runTest('getSyncGateDFlags returns a copy', () => {
   assert.equal(SYNC_GATE_D_FLAGS.pendingOperationDrainAfterEnqueue, false);
   assert.equal(getSyncGateDFlags().pendingOperationWriteRouting, false);
   assert.equal(getSyncGateDFlags().pendingOperationDrainAfterEnqueue, false);
+});
+
+runTest('controlled test flags can enable only the approved D3c-2d pair and reset', () => {
+  const reset = setSyncGateDControlledTestFlags(
+    {
+      pendingOperationWriteRouting: true,
+      pendingOperationDrainAfterEnqueue: true,
+    },
+    'D3c-2d controlled runtime verification'
+  );
+
+  assert.equal(isSyncGateDFlagEnabled('pendingOperationWriteRouting'), true);
+  assert.equal(isSyncGateDFlagEnabled('pendingOperationDrainAfterEnqueue'), true);
+  assert.equal(isSyncGateDFlagEnabled('cloudPendingOperationsStorage'), false);
+  assert.equal(isSyncGateDFlagEnabled('cacheReplacementExecute'), false);
+
+  reset();
+
+  assert.equal(isSyncGateDFlagEnabled('pendingOperationWriteRouting'), false);
+  assert.equal(isSyncGateDFlagEnabled('pendingOperationDrainAfterEnqueue'), false);
+});
+
+runTest('controlled test flags reject broad storage cache and unapproved reasons', () => {
+  assert.throws(
+    () =>
+      setSyncGateDControlledTestFlags(
+        { pendingOperationWriteRouting: true },
+        'manual local testing'
+      ),
+    /approved D3c-2d reason/
+  );
+
+  assert.throws(
+    () =>
+      setSyncGateDControlledTestFlags(
+        { cloudPendingOperationsStorage: true },
+        'D3c-2d controlled runtime verification'
+      ),
+    /cannot be changed/
+  );
+
+  assert.throws(
+    () =>
+      setSyncGateDControlledTestFlags(
+        { cacheReplacementExecute: true },
+        'D3c-2d controlled runtime verification'
+      ),
+    /cannot be changed/
+  );
+
+  resetSyncGateDControlledTestFlags();
+  assert.equal(isSyncGateDFlagEnabled('pendingOperationWriteRouting'), false);
+  assert.equal(isSyncGateDFlagEnabled('pendingOperationDrainAfterEnqueue'), false);
 });
 
 function main(): void {

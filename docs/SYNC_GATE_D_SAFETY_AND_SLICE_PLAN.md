@@ -240,8 +240,8 @@ Do not proceed directly to:
 - D4 cache execute.
 
 The next manual decision should choose one path:
-- D3c-2d controlled enablement: turn both `pendingOperationWriteRouting` and `pendingOperationDrainAfterEnqueue` on only in a test/staging build or explicit local test harness after the drain path is proven.
+- D3c-2e manual cloud smoke verification: use the controlled D3c-2d flag override for one explicit test session against disposable or non-production checklist data.
 
 Recommended:
 - Follow `docs/SYNC_GATE_D_PENDING_OPERATION_DRAIN_DESIGN.md`.
-- Do not enable the flags broadly yet, because D3c-2c only adds a gated runtime drain call and keeps both flags default-off.
+- Do not enable the flags broadly yet, because D3c-2d only adds a controlled test override and keeps production defaults off.

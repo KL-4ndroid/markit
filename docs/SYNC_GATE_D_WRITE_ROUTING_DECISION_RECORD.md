@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Write Routing Decision Record
 
 Created: 2026-06-21
-Status: active Gate D decision record after D3c-2c
+Status: active Gate D decision record after D3c-2d
 
 ## 0. Purpose
 
@@ -13,6 +13,7 @@ Current approvals:
 - D3c-1 approved a dormant checklist-toggle RPC route behind a default-off flag.
 - D3c-2b approved a single-operation checklist-toggle drain RPC draft.
 - D3c-2c approved a gated runtime drain call after successful enqueue.
+- D3c-2d approved controlled test/staging enablement for the two checklist-toggle flags.
 
 Still not approved:
 - No UI behavior change is approved by this document.
@@ -373,20 +374,41 @@ Implemented boundaries:
 - Drain failures are non-blocking for the already-written local event and are logged through the existing adapter catch path.
 - No UI, RLS, migration, cache replacement, field note, checklist text, revenue, inventory, market, or product behavior was changed.
 
+### D3c-2d: Controlled Test Or Staging Enablement
+
+Risk:
+- High if the same mechanism were exposed through public env, UI, localStorage, or production defaults.
+
+Status:
+- Completed as a controlled test-only flag override surface.
+
+Implemented boundaries:
+- Added `setSyncGateDControlledTestFlags()` and `resetSyncGateDControlledTestFlags()`.
+- The controlled override can only affect `pendingOperationWriteRouting` and `pendingOperationDrainAfterEnqueue`.
+- The controlled override requires the exact reason `D3c-2d controlled runtime verification`.
+- The controlled override rejects `cloudPendingOperationsStorage`, `cacheReplacementExecute`, and unknown flags.
+- The controlled override throws in production builds.
+- The flag module still does not read `NEXT_PUBLIC`, `localStorage`, or `sessionStorage`.
+- Production defaults remain false.
+- Production app surfaces do not import the controlled override API.
+- No UI, RLS, migration, cache replacement, field note, checklist text, revenue, inventory, market, or product behavior was changed.
+
 ## 10. Current Recommendation
 
 Recommended manual approval:
-- D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, and D3c-2c are complete. The next approval boundary is D3c-2d.
+- D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, D3c-2c, and D3c-2d are complete. The next approval boundary is D3c-2e.
 
-Recommended decisions for D3c-2d:
+Recommended decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.
 - Pilot scope: checklist toggle only.
-- Runtime gate: enable both `pendingOperationWriteRouting` and `pendingOperationDrainAfterEnqueue` only in a controlled test/staging harness.
+- Runtime gate: enable both `pendingOperationWriteRouting` and `pendingOperationDrainAfterEnqueue` only for an explicit smoke test session.
 - Error UX: diagnostics-only for now.
 - Rollback: feature flag off returns to direct event writes.
 
 Recommended next path:
-- Add a controlled local/staging harness that can explicitly enable both flags for manual verification.
+- Pick one non-production or disposable checklist item for manual smoke verification.
+- Run one owner test and one staff operator/manager test if accounts are available.
+- Confirm one pending row reaches `synced` and one matching `checklist_item_updated` cloud event is created.
 - Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:
