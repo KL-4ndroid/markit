@@ -128,9 +128,28 @@ Exit criteria:
 - Document whether adding the dependency changes sync callback identity or execution timing.
 - Add or update audit tests before any hook change.
 
+### L6: Field Ops Write Boundary Guardrails
+
+Goal:
+- Keep field notes and checklist writes behind service contracts so future `pending_operations` routing can replace internals without rewriting UI.
+
+Status:
+- Completed.
+
+Safety analysis:
+- This is test-only plus documentation.
+- It does not change field-note or checklist runtime writes.
+- It does not import Gate D flags, pending operation models, cache replacement helpers, Supabase, or sync services into field ops write services.
+- It explicitly keeps panels calling service functions instead of direct event writers.
+
+Exit criteria:
+- Tests confirm field ops services remain direct-event services for now.
+- Tests confirm services do not consume Gate D infrastructure.
+- Tests confirm panels call service functions rather than `recordEvent`.
+
 ## 3. Current Recommendation
 
-L1-L5 are complete. Do not continue into Gate D implementation without explicit approval.
+L1-L6 are complete. Do not continue into Gate D implementation without explicit approval.
 
 Recommended next low-risk work:
 - Add more static sync boundary tests if needed.
