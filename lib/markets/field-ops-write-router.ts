@@ -58,19 +58,35 @@ export function getFieldOpsWriteRoute(
 
 async function enqueueChecklistTogglePendingOperation(
   payload: ChecklistTogglePayload
-): Promise<void> {
+): Promise<string | null> {
   const { isSupabaseConfigured, supabase } = await import('@/lib/supabase/client');
 
-  if (!isSupabaseConfigured()) return;
+  if (!isSupabaseConfigured()) return null;
 
   const operationId = generateUUID();
   const idempotencyKey = `checklist-toggle:${operationId}`;
-  const { error } = await supabase.rpc('enqueue_checklist_toggle_pending_operation', {
+  const { data, error } = await supabase.rpc('enqueue_checklist_toggle_pending_operation', {
     p_operation_id: operationId,
     p_market_id: payload.marketId,
     p_item_id: payload.itemId,
     p_completed: payload.completed,
     p_idempotency_key: idempotencyKey,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return typeof data === 'string' && data.trim().length > 0 ? data : operationId;
+}
+
+async function drainChecklistTogglePendingOperation(operationId: string): Promise<void> {
+  const { isSupabaseConfigured, supabase } = await import('@/lib/supabase/client');
+
+  if (!isSupabaseConfigured()) return;
+
+  const { error } = await supabase.rpc('drain_checklist_toggle_pending_operation', {
+    p_operation_id: operationId,
   });
 
   if (error) {
@@ -92,9 +108,12 @@ export async function writeFieldOpsEvent(
     if (!checklistTogglePayload) return;
 
     try {
-      await enqueueChecklistTogglePendingOperation(checklistTogglePayload);
+      const operationId = await enqueueChecklistTogglePendingOperation(checklistTogglePayload);
+      if (operationId && isSyncGateDFlagEnabled('pendingOperationDrainAfterEnqueue')) {
+        await drainChecklistTogglePendingOperation(operationId);
+      }
     } catch (error) {
-      console.warn('[field-ops] checklist toggle pending operation enqueue failed', error);
+      console.warn('[field-ops] checklist toggle pending operation route failed', error);
     }
   }
 }

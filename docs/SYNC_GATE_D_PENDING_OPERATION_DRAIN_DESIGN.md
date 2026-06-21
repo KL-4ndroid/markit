@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Pending Operation Drain Design
 
 Created: 2026-06-21
-Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete
+Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete; D3c-2c gated runtime drain call complete
 
 ## 0. Purpose
 
@@ -12,10 +12,14 @@ This document is the design record for the D3c drain path.
 D3c-2b implementation status:
 - `supabase/migrations/050_drain_checklist_toggle_pending_operation.sql` adds the single-operation drain RPC draft.
 - `tests/supabase-pending-operations-drain-rpc.test.ts` locks the SQL/static safety boundaries.
-- No runtime caller is connected yet.
+
+D3c-2c implementation status:
+- `lib/markets/field-ops-write-router.ts` can call the drain RPC only after a successful checklist-toggle enqueue.
+- `pendingOperationDrainAfterEnqueue` is a dedicated drain flag and remains default-off.
+- Local event behavior remains primary and unchanged.
 
 Still not approved:
-- No runtime drain/worker is approved by this document.
+- No batch drain/worker is approved by this document.
 - No feature flag default change is approved by this document.
 - No RLS policy change is approved by this document.
 - No UI, cache replacement, revenue, inventory, market, or product behavior is approved by this document.
@@ -244,6 +248,18 @@ Allowed only after D3c-2b passes:
 - Call the drain RPC after enqueue only when a dedicated test/staging flag is enabled.
 - Keep local event behavior unchanged.
 - Keep `pendingOperationWriteRouting` default-off unless explicitly approved.
+
+Status:
+- Completed in `lib/markets/field-ops-write-router.ts`.
+- Requires both the existing enqueue route and `pendingOperationDrainAfterEnqueue`.
+- Both flags remain default-off.
+
+### D3c-2d: Controlled Test Or Staging Enablement
+
+Allowed only after D3c-2c passes:
+- Enable the two flags only in a controlled test/staging harness.
+- Verify enqueue + drain against the already-applied 049/050 functions.
+- Do not enable production defaults.
 
 ### D3c-3: Batch Worker
 

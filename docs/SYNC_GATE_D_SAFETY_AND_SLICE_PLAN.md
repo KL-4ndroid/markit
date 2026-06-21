@@ -240,9 +240,8 @@ Do not proceed directly to:
 - D4 cache execute.
 
 The next manual decision should choose one path:
-- D3c-2c controlled runtime drain call: call the drain RPC only behind a dedicated test/staging flag after `050` is applied and verified.
-- D3c-2c controlled enablement: turn `pendingOperationWriteRouting` on only in a test/staging build or explicit local test harness after the drain path is proven.
+- D3c-2d controlled enablement: turn both `pendingOperationWriteRouting` and `pendingOperationDrainAfterEnqueue` on only in a test/staging build or explicit local test harness after the drain path is proven.
 
 Recommended:
 - Follow `docs/SYNC_GATE_D_PENDING_OPERATION_DRAIN_DESIGN.md`.
-- Do not enable the flag broadly yet, because D3c-2b only adds the drain RPC draft and keeps runtime disconnected.
+- Do not enable the flags broadly yet, because D3c-2c only adds a gated runtime drain call and keeps both flags default-off.

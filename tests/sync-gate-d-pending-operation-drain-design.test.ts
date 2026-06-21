@@ -31,15 +31,15 @@ const productionFiles = [
 
 console.log('\n=== Sync Gate D pending operation drain design ===');
 
-runTest('D3c-2 drain design records D3c-2b completion without runtime approval', () => {
+runTest('D3c-2 drain design records D3c-2c completion with default-off runtime gating', () => {
   assert.ok(existsSync(designPath));
   assert.match(
     designSource,
-    /Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete/
+    /Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete; D3c-2c gated runtime drain call complete/
   );
   assert.match(designSource, /050_drain_checklist_toggle_pending_operation\.sql/);
-  assert.match(designSource, /No runtime caller is connected yet/);
-  assert.match(designSource, /No runtime drain\/worker is approved by this document/);
+  assert.match(designSource, /pendingOperationDrainAfterEnqueue` is a dedicated drain flag and remains default-off/);
+  assert.match(designSource, /No batch drain\/worker is approved by this document/);
   assert.match(designSource, /No feature flag default change is approved by this document/);
   assert.match(designSource, /No RLS policy change is approved by this document/);
 });
@@ -99,13 +99,19 @@ runTest('design defines status and error classification boundaries', () => {
   assert.match(designSource, /Transient database errors/);
 });
 
-runTest('production runtime still has no drain worker or final-event writer', () => {
-  const matches = productionFiles.filter(file => {
+runTest('production sync still has no drain worker or broad final-event writer', () => {
+  const filesWithoutGatedAdapter = productionFiles.filter(
+    file => file !== 'lib/markets/field-ops-write-router.ts'
+  );
+  const matches = filesWithoutGatedAdapter.filter(file => {
     const source = readProjectFile(file);
     return /drain_checklist_toggle_pending_operation|pending-operation-drain|drainPendingOperation|processPendingOperation|pending operation drain/i.test(source);
   });
 
   assert.deepEqual(matches, []);
+  const adapterSource = readProjectFile('lib/markets/field-ops-write-router.ts');
+  assert.match(adapterSource, /isSyncGateDFlagEnabled\(['"]pendingOperationDrainAfterEnqueue['"]\)/);
+  assert.match(adapterSource, /supabase\.rpc\(['"]drain_checklist_toggle_pending_operation['"]/);
 });
 
 function main(): void {

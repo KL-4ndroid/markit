@@ -33,10 +33,12 @@ runTest('adapter reads the disabled write-routing flag and keeps direct route as
   assert.doesNotMatch(adapterSource, /pending-operation-model/);
 });
 
-runTest('adapter keeps direct recordEvent primary and only uses approved RPC for checklist toggle', () => {
+runTest('adapter keeps direct recordEvent primary and only uses approved RPCs for checklist toggle', () => {
   assert.match(adapterSource, /import \{ recordEvent \} from ['"]@\/lib\/db\/events['"]/);
   assert.match(adapterSource, /await recordEvent\(type,\s*payload\)/);
   assert.match(adapterSource, /supabase\.rpc\(['"]enqueue_checklist_toggle_pending_operation['"]/);
+  assert.match(adapterSource, /supabase\.rpc\(['"]drain_checklist_toggle_pending_operation['"]/);
+  assert.match(adapterSource, /isSyncGateDFlagEnabled\(['"]pendingOperationDrainAfterEnqueue['"]\)/);
   assert.doesNotMatch(adapterSource, /\.from\(['"]pending_operations['"]\)/);
   assert.doesNotMatch(adapterSource, /\.insert\(|\.upsert\(|\.update\(|\.delete\(/);
 });

@@ -106,7 +106,7 @@ runTest('RPC records metadata and classifies permanent retryable and synced outc
   assert.match(migrationSource, /last_error_message = SQLERRM/);
 });
 
-runTest('050 migration does not widen schema policies flags or runtime wiring', () => {
+runTest('050 migration does not widen schema policies flags or ungated runtime wiring', () => {
   for (const forbiddenSql of [
     /CREATE POLICY/i,
     /DROP POLICY/i,
@@ -131,8 +131,10 @@ runTest('050 migration does not widen schema policies flags or runtime wiring', 
     .map(read)
     .join('\n');
 
-  assert.doesNotMatch(runtimeSources, /drain_checklist_toggle_pending_operation/);
   assert.doesNotMatch(runtimeSources, /pendingOperationWriteRouting:\s*true/);
+  assert.doesNotMatch(runtimeSources, /pendingOperationDrainAfterEnqueue:\s*true/);
+  assert.match(runtimeSources, /drain_checklist_toggle_pending_operation/);
+  assert.match(runtimeSources, /isSyncGateDFlagEnabled\(['"]pendingOperationDrainAfterEnqueue['"]\)/);
 });
 
 runTest('RPC grants execute narrowly', () => {

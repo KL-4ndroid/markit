@@ -30,16 +30,19 @@ runTest('Gate D flags default to disabled', () => {
   assert.deepEqual(SYNC_GATE_D_FLAGS, {
     cloudPendingOperationsStorage: false,
     pendingOperationWriteRouting: false,
+    pendingOperationDrainAfterEnqueue: false,
     cacheReplacementExecute: false,
   });
 
   assert.equal(isSyncGateDFlagEnabled('cloudPendingOperationsStorage'), false);
   assert.equal(isSyncGateDFlagEnabled('pendingOperationWriteRouting'), false);
+  assert.equal(isSyncGateDFlagEnabled('pendingOperationDrainAfterEnqueue'), false);
   assert.equal(isSyncGateDFlagEnabled('cacheReplacementExecute'), false);
 });
 
 runTest('unknown Gate D flags fail closed', () => {
   assert.equal(isSyncGateDFlagName('pendingOperationWriteRouting'), true);
+  assert.equal(isSyncGateDFlagName('pendingOperationDrainAfterEnqueue'), true);
   assert.equal(isSyncGateDFlagName('unknownGateDFlag'), false);
   assert.equal(isSyncGateDFlagEnabled('unknownGateDFlag'), false);
 });
@@ -65,9 +68,12 @@ runTest('production sync paths do not consume Gate D flags yet', () => {
 runTest('getSyncGateDFlags returns a copy', () => {
   const flags = getSyncGateDFlags();
   flags.pendingOperationWriteRouting = true as false;
+  flags.pendingOperationDrainAfterEnqueue = true as false;
 
   assert.equal(SYNC_GATE_D_FLAGS.pendingOperationWriteRouting, false);
+  assert.equal(SYNC_GATE_D_FLAGS.pendingOperationDrainAfterEnqueue, false);
   assert.equal(getSyncGateDFlags().pendingOperationWriteRouting, false);
+  assert.equal(getSyncGateDFlags().pendingOperationDrainAfterEnqueue, false);
 });
 
 function main(): void {

@@ -1,6 +1,7 @@
 export const SYNC_GATE_D_FLAGS = Object.freeze({
   cloudPendingOperationsStorage: false,
   pendingOperationWriteRouting: false,
+  pendingOperationDrainAfterEnqueue: false,
   cacheReplacementExecute: false,
 } as const);
 

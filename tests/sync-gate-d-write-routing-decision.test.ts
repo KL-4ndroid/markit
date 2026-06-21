@@ -33,13 +33,14 @@ const productionFiles = [
 
 console.log('\n=== Sync Gate D write routing decision ===');
 
-runTest('decision record keeps D3c-2b approval narrow and blocks broader runtime work', () => {
-  assert.match(decisionSource, /Status: active Gate D decision record after D3c-2b/);
+runTest('decision record keeps D3c-2c approval narrow and blocks broader runtime work', () => {
+  assert.match(decisionSource, /Status: active Gate D decision record after D3c-2c/);
   assert.match(decisionSource, /D3c-1 approved a dormant checklist-toggle RPC route behind a default-off flag/);
   assert.match(decisionSource, /D3c-2b approved a single-operation checklist-toggle drain RPC draft/);
+  assert.match(decisionSource, /D3c-2c approved a gated runtime drain call after successful enqueue/);
   assert.match(decisionSource, /No UI behavior change is approved/);
   assert.match(decisionSource, /No Supabase RLS change after 048 is approved/);
-  assert.match(decisionSource, /No runtime caller, UI, RLS, flag default/);
+  assert.match(decisionSource, /No broad worker, production flag default, or production-wide final-event writer/);
 });
 
 runTest('source-of-truth recommendation keeps existing event model primary', () => {
@@ -70,20 +71,24 @@ runTest('permission downgrade and idempotency decisions are explicit', () => {
   assert.match(decisionSource, /mark the operation `synced`, not create another event/);
 });
 
-runTest('D3c-2b is complete and next approval boundary is D3c-2c only', () => {
-  assert.match(decisionSource, /D3b, D3c-0, D3c-1, D3c-2 design, and D3c-2b are complete/);
-  assert.match(decisionSource, /next approval boundary is D3c-2c/);
+runTest('D3c-2c is complete and next approval boundary is D3c-2d only', () => {
+  assert.match(decisionSource, /D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, and D3c-2c are complete/);
+  assert.match(decisionSource, /next approval boundary is D3c-2d/);
   assert.match(decisionSource, /Added `public\.enqueue_checklist_toggle_pending_operation`/);
   assert.match(decisionSource, /Only `toggleChecklistItem\(\)` passes the `checklist_toggle` routing hint/);
   assert.match(decisionSource, /D3c-2: Pending Operation Drain Design/);
   assert.match(decisionSource, /D3c-2b: Single Operation Drain RPC Draft/);
   assert.match(decisionSource, /Added `public\.drain_checklist_toggle_pending_operation`/);
   assert.match(decisionSource, /The caller must be authenticated and must match `pending_operations\.actor_id`/);
+  assert.match(decisionSource, /D3c-2c: Runtime Drain Call Behind Dedicated Flag/);
+  assert.match(decisionSource, /pendingOperationDrainAfterEnqueue/);
+  assert.match(decisionSource, /The adapter still writes the local event first/);
   assert.match(decisionSource, /No direct client insert into `pending_operations` is used/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Direct client insert into `pending_operations`/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any change to 048 RLS/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Turning `pendingOperationWriteRouting` on by default/);
-  assert.match(decisionSource, /Do not approve yet:[\s\S]*A connected runtime drain worker or final-event writer/);
+  assert.match(decisionSource, /Do not approve yet:[\s\S]*Turning `pendingOperationDrainAfterEnqueue` on by default/);
+  assert.match(decisionSource, /Do not approve yet:[\s\S]*A broad connected runtime drain worker or production-wide final-event writer/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*A broad service-role batch worker/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any cache replacement execute behavior/);
 });

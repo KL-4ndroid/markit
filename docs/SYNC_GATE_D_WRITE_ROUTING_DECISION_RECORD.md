@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Write Routing Decision Record
 
 Created: 2026-06-21
-Status: active Gate D decision record after D3c-2b
+Status: active Gate D decision record after D3c-2c
 
 ## 0. Purpose
 
@@ -12,12 +12,13 @@ Current approvals:
 - D3c-0 approved a narrow checklist-toggle enqueue RPC.
 - D3c-1 approved a dormant checklist-toggle RPC route behind a default-off flag.
 - D3c-2b approved a single-operation checklist-toggle drain RPC draft.
+- D3c-2c approved a gated runtime drain call after successful enqueue.
 
 Still not approved:
 - No UI behavior change is approved by this document.
 - No Supabase RLS change after 048 is approved by this document.
 - No cache replacement execute behavior is approved by this document.
-- No connected runtime drain caller, broad worker, or production final-event writer is approved by this document.
+- No broad worker, production flag default, or production-wide final-event writer is approved by this document.
 
 ## 1. Current State After 048
 
@@ -356,28 +357,43 @@ Implemented boundaries:
 - Unexpected drain failures become `failed_retryable` and increment `retry_count`.
 - No runtime caller, UI, RLS, flag default, cache replacement, field note, checklist text, revenue, inventory, market, or product behavior was changed.
 
+### D3c-2c: Runtime Drain Call Behind Dedicated Flag
+
+Risk:
+- High if enabled broadly because it can create cloud final events from pending rows.
+
+Status:
+- Completed as a dormant runtime call only.
+
+Implemented boundaries:
+- The adapter still writes the local event first.
+- The adapter enqueues checklist toggle pending operations only when `pendingOperationWriteRouting` is explicitly enabled.
+- The adapter calls `public.drain_checklist_toggle_pending_operation` only after enqueue succeeds and returns an operation id.
+- The drain call also requires `pendingOperationDrainAfterEnqueue`, a separate default-off flag.
+- Drain failures are non-blocking for the already-written local event and are logged through the existing adapter catch path.
+- No UI, RLS, migration, cache replacement, field note, checklist text, revenue, inventory, market, or product behavior was changed.
+
 ## 10. Current Recommendation
 
 Recommended manual approval:
-- D3b, D3c-0, D3c-1, D3c-2 design, and D3c-2b are complete. The next approval boundary is D3c-2c.
+- D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, and D3c-2c are complete. The next approval boundary is D3c-2d.
 
-Recommended decisions for D3c-2c:
+Recommended decisions for D3c-2d:
 - Source of truth: Option A, existing event model remains source of truth.
 - Pilot scope: checklist toggle only.
-- Drain shape: call the single-operation SECURITY DEFINER RPC only after enqueue.
-- Runtime gate: use a dedicated test/staging flag first; do not turn the production default on.
+- Runtime gate: enable both `pendingOperationWriteRouting` and `pendingOperationDrainAfterEnqueue` only in a controlled test/staging harness.
 - Error UX: diagnostics-only for now.
 - Rollback: feature flag off returns to direct event writes.
 
 Recommended next path:
-- Apply and verify migration 050 before any runtime drain call.
-- Add runtime drain call behind a dedicated test/staging flag, not the production default.
-- Keep `pendingOperationWriteRouting` default-off until controlled testing proves enqueue and drain together.
+- Add a controlled local/staging harness that can explicitly enable both flags for manual verification.
+- Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:
 - Direct client insert into `pending_operations`.
 - Any change to 048 RLS.
 - Turning `pendingOperationWriteRouting` on by default.
-- A connected runtime drain worker or final-event writer.
+- Turning `pendingOperationDrainAfterEnqueue` on by default.
+- A broad connected runtime drain worker or production-wide final-event writer.
 - A broad service-role batch worker.
 - Any cache replacement execute behavior.

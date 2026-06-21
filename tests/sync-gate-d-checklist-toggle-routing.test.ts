@@ -32,6 +32,7 @@ function functionBody(source: string, functionName: string): string {
 
 runTest('D3c-1 keeps the write-routing flag disabled by default', () => {
   assert.match(flagSource, /pendingOperationWriteRouting:\s*false/);
+  assert.match(flagSource, /pendingOperationDrainAfterEnqueue:\s*false/);
   assert.doesNotMatch(flagSource, /process\.env|NEXT_PUBLIC|localStorage|sessionStorage/);
 });
 
@@ -70,6 +71,17 @@ runTest('adapter uses the approved enqueue RPC and never inserts pending_operati
   assert.match(adapterSource, /const idempotencyKey = `checklist-toggle:\$\{operationId\}`/);
   assert.doesNotMatch(adapterSource, /\.from\(['"]pending_operations['"]\)/);
   assert.doesNotMatch(adapterSource, /\.insert\(|\.upsert\(|\.update\(|\.delete\(/);
+});
+
+runTest('adapter drains only after enqueue succeeds and the dedicated drain flag is enabled', () => {
+  assert.match(adapterSource, /const operationId = await enqueueChecklistTogglePendingOperation\(checklistTogglePayload\)/);
+  assert.match(
+    adapterSource,
+    /if \(operationId && isSyncGateDFlagEnabled\(['"]pendingOperationDrainAfterEnqueue['"]\)\)/
+  );
+  assert.match(adapterSource, /await drainChecklistTogglePendingOperation\(operationId\)/);
+  assert.match(adapterSource, /supabase\.rpc\(['"]drain_checklist_toggle_pending_operation['"]/);
+  assert.match(adapterSource, /p_operation_id:\s*operationId/);
 });
 
 runTest('direct local event write remains primary and RPC failure is non-blocking', () => {
