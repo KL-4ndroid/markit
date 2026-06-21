@@ -147,9 +147,29 @@ Exit criteria:
 - Tests confirm services do not consume Gate D infrastructure.
 - Tests confirm panels call service functions rather than `recordEvent`.
 
+### L7: Field Ops Read Boundary Guardrails
+
+Goal:
+- Keep field notes and checklist reads as local event read models so future write routing changes do not leak into display logic.
+
+Status:
+- Completed.
+
+Safety analysis:
+- This is test-only plus documentation.
+- It does not change read or write runtime behavior.
+- It does not add cloud reads, sync imports, Gate D flags, pending-operation imports, or cache replacement behavior.
+- It keeps field ops display derived from local market-scoped events.
+
+Exit criteria:
+- Tests confirm read models rebuild from `db.events`.
+- Tests confirm read models filter by market scope through `getEventMarketId`.
+- Tests confirm create/update/delete events are applied in timestamp order.
+- Tests confirm malformed or unrelated events are skipped.
+
 ## 3. Current Recommendation
 
-L1-L6 are complete. Do not continue into Gate D implementation without explicit approval.
+L1-L7 are complete. Do not continue into Gate D implementation without explicit approval.
 
 Recommended next low-risk work:
 - Add more static sync boundary tests if needed.
