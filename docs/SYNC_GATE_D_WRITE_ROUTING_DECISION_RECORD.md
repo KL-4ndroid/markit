@@ -422,6 +422,7 @@ Implemented boundaries:
 
 Current status:
 - D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, D3c-2c, D3c-2d, D3c-2e planning, and one D3c-2e manual cloud smoke execution are complete.
+- Owner-only diagnostics has a design-only safety contract in `docs/SYNC_GATE_D_OWNER_DIAGNOSTICS_DESIGN.md`.
 
 Confirmed decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.
@@ -433,7 +434,7 @@ Confirmed decisions for D3c-2e:
 Recommended next path:
 - Keep the successful operation and event as audit evidence unless owner-approved cleanup is required.
 - Run one owner test and one additional staff operator/manager test if separate accounts are available.
-- Decide whether the next approved slice should be a second controlled app-runtime smoke test, owner-only diagnostics, or a narrow stuck-row recovery design.
+- Decide whether the next approved implementation slice should be D3c-2f owner-only read RPC, D3c-2g read-only owner diagnostics UI shell, or D3c-2h stale `processing` recovery design.
 - Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:

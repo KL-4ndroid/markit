@@ -29,6 +29,10 @@ D3c-2e implementation status:
 - The final cloud event was `checklist_item_updated` for checklist item `0747e758-2f39-4aa2-bf31-60eba3d24771`.
 - A follow-up preflight confirmed the checklist item remains active and the synced audit row remains queryable.
 
+Owner-only diagnostics status:
+- Design-only safety contract added in `docs/SYNC_GATE_D_OWNER_DIAGNOSTICS_DESIGN.md`.
+- No runtime, UI, RPC, RLS, worker, or repair implementation is approved by that design.
+
 Still not approved:
 - No batch drain/worker is approved by this document.
 - No feature flag default change is approved by this document.
@@ -300,3 +304,11 @@ Allowed only after the single-operation drain is proven:
 - Consider a service-role batch worker.
 - Add owner-only diagnostics and recovery rules first.
 - Add stuck `processing` recovery policy before background retries.
+
+### D3c-2f: Owner-Only Read Diagnostics RPC Draft
+
+Recommended before any batch worker:
+- Add a read-only owner diagnostics RPC draft.
+- Return an explicit, redacted column list.
+- Do not connect UI/runtime in the same commit.
+- Do not add retry, drain, delete, cleanup, or recovery actions.
