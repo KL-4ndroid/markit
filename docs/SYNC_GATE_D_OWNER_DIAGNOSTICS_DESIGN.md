@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Owner Diagnostics Design
 
 Created: 2026-06-22
-Status: design and guardrail plan only; no runtime, UI, RPC, RLS, or worker implementation is approved by this document
+Status: D3c-2f owner-only read RPC draft added; no runtime, UI, RLS, or worker implementation is approved by this document
 
 ## 0. Purpose
 
@@ -23,6 +23,10 @@ Completed before this design:
   - operation id `512d40e6-1192-45dd-ad03-3e437f3d562d`
   - status `synced`
   - final event `checklist_item_updated`
+- D3c-2f added a read-only owner diagnostics RPC draft:
+  - `051_list_owner_pending_operation_diagnostics.sql`
+  - `public.list_owner_pending_operation_diagnostics(p_owner_id UUID default auth.uid())`
+  - static guardrail tests in `tests/supabase-pending-operations-diagnostics-rpc.test.ts`
 
 Still default-off:
 - `pendingOperationWriteRouting`
@@ -34,11 +38,13 @@ Still not approved:
 - Any cache replacement execute behavior.
 - Any staff diagnostics inbox.
 - Any owner UI that can mutate pending rows.
+- Any UI/runtime caller for the diagnostics RPC.
 
 ## 2. Recommendation
 
-Recommended next implementation slice:
-- Add an owner-only read diagnostics design first.
+Recommended implementation path:
+- Add an owner-only read diagnostics design first. Completed.
+- Add an owner-only read diagnostics RPC draft with no UI/runtime caller. Completed as D3c-2f.
 - If implemented later, prefer a read-only SECURITY DEFINER RPC or owner-scoped view over direct client table access.
 - Keep all mutation actions out of the first diagnostics UI.
 
@@ -253,13 +259,12 @@ Do not drop `pending_operations` while rows exist unless rows are exported, drai
 
 ## 11. Next Approval Boundary
 
-This document approves no implementation by itself.
+This document now records the D3c-2f RPC draft, but it still approves no UI/runtime caller by itself.
 
 The next high-risk decision is choosing one implementation slice:
-- D3c-2f: owner-only read RPC draft for diagnostics
 - D3c-2g: read-only owner diagnostics UI shell
 - D3c-2h: stale `processing` recovery design
 
 Recommended next slice:
-- D3c-2f owner-only read RPC draft, with static SQL tests and no UI/runtime caller.
-
+- D3c-2g read-only owner diagnostics UI shell, if the owner accepts showing diagnostics in `/recovery`.
+- Keep the UI read-only and do not add retry, drain, delete, cleanup, or recovery buttons.

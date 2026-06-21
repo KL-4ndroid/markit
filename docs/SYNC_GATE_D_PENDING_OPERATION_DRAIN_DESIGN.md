@@ -31,7 +31,8 @@ D3c-2e implementation status:
 
 Owner-only diagnostics status:
 - Design-only safety contract added in `docs/SYNC_GATE_D_OWNER_DIAGNOSTICS_DESIGN.md`.
-- No runtime, UI, RPC, RLS, worker, or repair implementation is approved by that design.
+- D3c-2f read-only owner diagnostics RPC draft added in `051_list_owner_pending_operation_diagnostics.sql`.
+- No runtime, UI, RLS, worker, or repair implementation is approved by that design.
 
 Still not approved:
 - No batch drain/worker is approved by this document.
@@ -312,3 +313,8 @@ Recommended before any batch worker:
 - Return an explicit, redacted column list.
 - Do not connect UI/runtime in the same commit.
 - Do not add retry, drain, delete, cleanup, or recovery actions.
+
+Status:
+- Completed as `supabase/migrations/051_list_owner_pending_operation_diagnostics.sql`.
+- Static SQL guardrails added as `tests/supabase-pending-operations-diagnostics-rpc.test.ts`.
+- The RPC requires `auth.uid()`, rejects owner impersonation, scopes rows through `markets.owner_id`, returns explicit columns, omits `payload` and `role_snapshot`, and does not mutate data.

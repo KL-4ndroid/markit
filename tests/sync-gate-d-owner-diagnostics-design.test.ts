@@ -41,12 +41,15 @@ function readProjectFile(path: string): string {
 
 console.log('\n=== Sync Gate D owner diagnostics design ===');
 
-runTest('owner diagnostics design exists and remains design-only', () => {
+runTest('owner diagnostics design records D3c-2f while blocking runtime callers', () => {
   assert.ok(existsSync(designPath));
-  assert.match(designSource, /Status: design and guardrail plan only/);
-  assert.match(designSource, /no runtime, UI, RPC, RLS, or worker implementation is approved/);
+  assert.match(designSource, /Status: D3c-2f owner-only read RPC draft added/);
+  assert.match(designSource, /no runtime, UI, RLS, or worker implementation is approved/);
+  assert.match(designSource, /051_list_owner_pending_operation_diagnostics\.sql/);
+  assert.match(designSource, /tests\/supabase-pending-operations-diagnostics-rpc\.test\.ts/);
   assert.match(designSource, /The goal is observability, not repair/);
   assert.match(decisionSource, /Owner-only diagnostics has a design-only safety contract/);
+  assert.match(decisionSource, /D3c-2f owner-only read diagnostics RPC draft is added/);
   assert.match(drainDesignSource, /Owner-only diagnostics status/);
 });
 
@@ -124,6 +127,10 @@ runTest('full test suite includes the owner diagnostics guardrail', () => {
   assert.match(
     packageJson.scripts.test,
     /tsx tests\/sync-gate-d-owner-diagnostics-design\.test\.ts/
+  );
+  assert.match(
+    packageJson.scripts.test,
+    /tsx tests\/supabase-pending-operations-diagnostics-rpc\.test\.ts/
   );
 });
 

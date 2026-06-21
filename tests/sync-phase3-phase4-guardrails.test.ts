@@ -68,6 +68,7 @@ runTest('Phase 3 guardrail: pending_operations only appears in approved Gate D m
     'supabase/migrations/048_add_pending_operations_schema.sql',
     'supabase/migrations/049_enqueue_checklist_toggle_pending_operation.sql',
     'supabase/migrations/050_drain_checklist_toggle_pending_operation.sql',
+    'supabase/migrations/051_list_owner_pending_operation_diagnostics.sql',
   ]);
   const unexpectedMatches = matches.filter(path => !approvedMatches.has(path));
 
