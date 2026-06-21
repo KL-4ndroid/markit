@@ -315,25 +315,46 @@ Implemented boundaries:
 - No direct client insert into `pending_operations` is used.
 - No UI, RLS, cache replacement, field note, checklist text, revenue, inventory, market, or product behavior is changed.
 
+### D3c-2: Pending Operation Drain Design
+
+Risk:
+- Low as completed because it is documentation and guardrail tests only.
+- High for future implementation because it creates final cloud events from pending rows.
+
+Status:
+- Completed as `docs/SYNC_GATE_D_PENDING_OPERATION_DRAIN_DESIGN.md`.
+
+Implemented boundaries:
+- Design recommends a single-operation SECURITY DEFINER drain RPC before any broad service-role batch worker.
+- First drain scope remains `checklist_item_toggle` only.
+- Final event type is `checklist_item_updated`.
+- The drain must re-check live owner/operator/manager permission.
+- `role_snapshot` remains evidence only, not authority.
+- The final event id should be derived from `pending_operations.operation_id::UUID`.
+- Existing event model remains the source of truth.
+- No migration, runtime drain, worker, UI, RLS, flag default, cache replacement, revenue, inventory, market, or product behavior was changed.
+
 ## 10. Current Recommendation
 
 Recommended manual approval:
-- D3b, D3c-0, and D3c-1 are complete. The next approval boundary is D3c-2.
+- D3b, D3c-0, D3c-1, and D3c-2 design are complete. The next approval boundary is D3c-2b.
 
-Recommended decisions for D3c-2:
+Recommended decisions for D3c-2b:
 - Source of truth: Option A, existing event model remains source of truth.
 - Pilot scope: checklist toggle only.
-- Staff insert/RLS: use the D3c-0 narrow enqueue RPC; do not use direct client insert.
+- Drain shape: single-operation SECURITY DEFINER RPC, not a broad service-role batch worker.
+- Staff insert/RLS: use live permission re-checks inside the drain RPC; do not use direct client insert.
 - Error UX: diagnostics-only for now.
 - Rollback: feature flag off returns to direct event writes.
 
 Recommended next path:
-- Design the pending-operation drain/worker before enabling the flag broadly.
-- If testing the runtime route first, enable `pendingOperationWriteRouting` only in a controlled test/staging harness after 049 is applied.
+- Add the single-operation drain RPC draft and SQL/static tests, but do not connect runtime to call it in the same commit.
+- Enable `pendingOperationWriteRouting` only in a controlled test/staging harness after the drain RPC is proven.
 
 Do not approve yet:
 - Direct client insert into `pending_operations`.
 - Any change to 048 RLS.
 - Turning `pendingOperationWriteRouting` on by default.
-- A pending-operation drain/worker or final-event writer.
+- A connected runtime drain worker or final-event writer.
+- A broad service-role batch worker.
 - Any cache replacement execute behavior.

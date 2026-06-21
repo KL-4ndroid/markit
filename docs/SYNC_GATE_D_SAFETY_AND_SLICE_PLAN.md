@@ -240,8 +240,9 @@ Do not proceed directly to:
 - D4 cache execute.
 
 The next manual decision should choose one path:
-- D3c-2 controlled enablement: turn the flag on only in a test/staging build or explicit local test harness.
-- D3c-2 drain design: design how pending rows become final cloud events with live permission re-check and idempotency.
+- D3c-2b single-operation drain RPC draft: add a narrow SECURITY DEFINER drain RPC for `checklist_item_toggle`, without runtime connection.
+- D3c-2c controlled enablement: turn the flag on only in a test/staging build or explicit local test harness after the drain RPC is proven.
 
 Recommended:
-- Design the drain/worker before enabling the flag broadly, because D3c-1 only enqueues pending rows and keeps local events as the immediate source of truth.
+- Follow `docs/SYNC_GATE_D_PENDING_OPERATION_DRAIN_DESIGN.md`.
+- Implement the single-operation drain RPC before enabling the flag broadly, because D3c-1 only enqueues pending rows and keeps local events as the immediate source of truth.

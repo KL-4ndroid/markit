@@ -69,16 +69,19 @@ runTest('permission downgrade and idempotency decisions are explicit', () => {
   assert.match(decisionSource, /mark the operation `synced`, not create another event/);
 });
 
-runTest('D3c-1 is complete and next approval boundary is D3c-2 only', () => {
-  assert.match(decisionSource, /D3b, D3c-0, and D3c-1 are complete/);
-  assert.match(decisionSource, /next approval boundary is D3c-2/);
+runTest('D3c-2 design is complete and next approval boundary is D3c-2b only', () => {
+  assert.match(decisionSource, /D3b, D3c-0, D3c-1, and D3c-2 design are complete/);
+  assert.match(decisionSource, /next approval boundary is D3c-2b/);
   assert.match(decisionSource, /Added `public\.enqueue_checklist_toggle_pending_operation`/);
   assert.match(decisionSource, /Only `toggleChecklistItem\(\)` passes the `checklist_toggle` routing hint/);
+  assert.match(decisionSource, /D3c-2: Pending Operation Drain Design/);
+  assert.match(decisionSource, /single-operation SECURITY DEFINER drain RPC/);
   assert.match(decisionSource, /No direct client insert into `pending_operations` is used/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Direct client insert into `pending_operations`/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any change to 048 RLS/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Turning `pendingOperationWriteRouting` on by default/);
-  assert.match(decisionSource, /Do not approve yet:[\s\S]*A pending-operation drain\/worker or final-event writer/);
+  assert.match(decisionSource, /Do not approve yet:[\s\S]*A connected runtime drain worker or final-event writer/);
+  assert.match(decisionSource, /Do not approve yet:[\s\S]*A broad service-role batch worker/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any cache replacement execute behavior/);
 });
 
