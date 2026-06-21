@@ -207,9 +207,29 @@ Exit criteria:
 - Tests confirm production sync does not import Gate D models or flags.
 - Tests confirm delete candidates are not executable behavior.
 
+### L10: Field Ops Route Boundary Guardrails
+
+Goal:
+- Keep owner and staff market detail routes composing field notes and checklist only through `MarketFieldOpsSection`.
+
+Status:
+- Completed.
+
+Safety analysis:
+- This is test-only plus documentation.
+- It does not change owner/staff route behavior.
+- It does not change component props, permissions, data reads, or writes.
+- It prevents route-level drift where owner/staff details directly import note/checklist panels or services.
+
+Exit criteria:
+- Tests confirm owner and staff details import `MarketFieldOpsSection`.
+- Tests confirm route/detail files do not import note/checklist panels or services directly.
+- Tests confirm owner and staff pass explicit permission props at the shared section boundary.
+- Tests confirm detail routes do not import Gate D models.
+
 ## 3. Current Recommendation
 
-L1-L9 are complete. Do not continue into Gate D implementation without explicit approval.
+L1-L10 are complete. Do not continue into Gate D implementation without explicit approval.
 
 Recommended next low-risk work:
 - Add more static sync boundary tests if needed.
