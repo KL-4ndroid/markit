@@ -49,9 +49,9 @@ runTest('checklist service records event-sourced create/update/delete events', (
   assert.match(checklistSource, /CHECKLIST_ITEM_CREATED\s*=\s*['"]checklist_item_created['"]/);
   assert.match(checklistSource, /CHECKLIST_ITEM_UPDATED\s*=\s*['"]checklist_item_updated['"]/);
   assert.match(checklistSource, /CHECKLIST_ITEM_DELETED\s*=\s*['"]checklist_item_deleted['"]/);
-  assert.match(checklistSource, /recordEvent\(CHECKLIST_ITEM_CREATED/);
-  assert.match(checklistSource, /recordEvent\(CHECKLIST_ITEM_UPDATED/);
-  assert.match(checklistSource, /recordEvent\(CHECKLIST_ITEM_DELETED/);
+  assert.match(checklistSource, /writeFieldOpsEvent\(CHECKLIST_ITEM_CREATED/);
+  assert.match(checklistSource, /writeFieldOpsEvent\(CHECKLIST_ITEM_UPDATED/);
+  assert.match(checklistSource, /writeFieldOpsEvent\(CHECKLIST_ITEM_DELETED/);
 });
 
 runTest('role freshness maps checklist management and toggle capabilities', () => {

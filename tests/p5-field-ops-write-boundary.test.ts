@@ -18,6 +18,7 @@ function readProjectFile(path: string): string {
 
 const fieldNotesServiceSource = readProjectFile('lib/markets/field-notes.ts');
 const checklistServiceSource = readProjectFile('lib/markets/checklist.ts');
+const fieldOpsWriteRouterSource = readProjectFile('lib/markets/field-ops-write-router.ts');
 const fieldNotesPanelSource = readProjectFile('components/markets/FieldNotesPanel.tsx');
 const checklistPanelSource = readProjectFile('components/markets/ChecklistPanel.tsx');
 const marketFieldOpsSectionSource = readProjectFile('components/markets/MarketFieldOpsSection.tsx');
@@ -36,8 +37,10 @@ const fieldOpsComponentSources = [
 console.log('\n=== P5 field ops write boundary ===');
 
 runTest('field ops services keep direct event writes behind a service boundary', () => {
-  assert.match(fieldNotesServiceSource, /import \{ recordEvent \} from ['"]@\/lib\/db\/events['"]/);
-  assert.match(checklistServiceSource, /import \{ recordEvent \} from ['"]@\/lib\/db\/events['"]/);
+  assert.match(fieldNotesServiceSource, /import \{ writeFieldOpsEvent \} from ['"]@\/lib\/markets\/field-ops-write-router['"]/);
+  assert.match(checklistServiceSource, /import \{ writeFieldOpsEvent \} from ['"]@\/lib\/markets\/field-ops-write-router['"]/);
+  assert.match(fieldOpsWriteRouterSource, /import \{ recordEvent \} from ['"]@\/lib\/db\/events['"]/);
+  assert.match(fieldOpsWriteRouterSource, /await recordEvent\(type,\s*payload\)/);
 
   assert.match(fieldNotesServiceSource, /export async function createFieldNote/);
   assert.match(fieldNotesServiceSource, /export async function updateFieldNote/);
@@ -55,6 +58,8 @@ runTest('field ops services do not consume Gate D or pending operation infrastru
     assert.doesNotMatch(source, /pending-operation-model|PendingOperation|pending_operations/, label);
     assert.doesNotMatch(source, /cache-replacement-preview|replaceCache|previewReplace/i, label);
   }
+  assert.match(fieldOpsWriteRouterSource, /isSyncGateDFlagEnabled\(['"]pendingOperationWriteRouting['"]\)/);
+  assert.doesNotMatch(fieldOpsWriteRouterSource, /pending-operation-model|PendingOperation|pending_operations/);
 });
 
 runTest('field ops services do not bypass the event abstraction with cloud or sync imports', () => {
@@ -63,6 +68,7 @@ runTest('field ops services do not bypass the event abstraction with cloud or sy
     assert.doesNotMatch(source, /@\/hooks\/useSync|@\/lib\/sync\//, label);
     assert.doesNotMatch(source, /process\.env|NEXT_PUBLIC|localStorage|sessionStorage/, label);
   }
+  assert.doesNotMatch(fieldOpsWriteRouterSource, /@\/lib\/supabase|supabase/);
 });
 
 runTest('field ops panels call services rather than direct event writers', () => {
@@ -85,7 +91,7 @@ runTest('field ops panels call services rather than direct event writers', () =>
 runTest('checklist toggle remains a completed-only service operation', () => {
   assert.match(
     checklistServiceSource,
-    /export async function toggleChecklistItem\([\s\S]*completed:\s*boolean[\s\S]*recordEvent\(CHECKLIST_ITEM_UPDATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*itemId,[\s\S]*completed,[\s\S]*\}/
+    /export async function toggleChecklistItem\([\s\S]*completed:\s*boolean[\s\S]*writeFieldOpsEvent\(CHECKLIST_ITEM_UPDATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*itemId,[\s\S]*completed,[\s\S]*\}/
   );
   assert.doesNotMatch(
     checklistServiceSource,
@@ -97,27 +103,27 @@ runTest('checklist toggle remains a completed-only service operation', () => {
 runTest('field note and checklist writes keep stable market-scoped event payloads', () => {
   assert.match(
     fieldNotesServiceSource,
-    /recordEvent\(FIELD_NOTE_CREATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*noteId,[\s\S]*text:\s*assertText\(text\)/
+    /writeFieldOpsEvent\(FIELD_NOTE_CREATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*noteId,[\s\S]*text:\s*assertText\(text\)/
   );
   assert.match(
     fieldNotesServiceSource,
-    /recordEvent\(FIELD_NOTE_UPDATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*noteId,[\s\S]*text:\s*assertText\(text\)/
+    /writeFieldOpsEvent\(FIELD_NOTE_UPDATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*noteId,[\s\S]*text:\s*assertText\(text\)/
   );
   assert.match(
     fieldNotesServiceSource,
-    /recordEvent\(FIELD_NOTE_DELETED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*noteId/
+    /writeFieldOpsEvent\(FIELD_NOTE_DELETED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*noteId/
   );
   assert.match(
     checklistServiceSource,
-    /recordEvent\(CHECKLIST_ITEM_CREATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*itemId,[\s\S]*text:\s*assertText\(text\),[\s\S]*completed/
+    /writeFieldOpsEvent\(CHECKLIST_ITEM_CREATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*itemId,[\s\S]*text:\s*assertText\(text\),[\s\S]*completed/
   );
   assert.match(
     checklistServiceSource,
-    /recordEvent\(CHECKLIST_ITEM_UPDATED,\s*payload\)/
+    /writeFieldOpsEvent\(CHECKLIST_ITEM_UPDATED,\s*payload\)/
   );
   assert.match(
     checklistServiceSource,
-    /recordEvent\(CHECKLIST_ITEM_DELETED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*itemId/
+    /writeFieldOpsEvent\(CHECKLIST_ITEM_DELETED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*itemId/
   );
 });
 

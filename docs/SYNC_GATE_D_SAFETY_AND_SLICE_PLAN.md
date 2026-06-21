@@ -122,9 +122,18 @@ Risk:
 Goal:
 - Add an adapter interface for future write routing, but keep direct-event behavior active while flags are off.
 
+Status:
+- Completed as a disabled adapter shell.
+
 Allowed only after approval:
 - A pure routing function that chooses `direct` while `pendingOperationWriteRouting` is false.
 - Tests proving production behavior remains direct with flags off.
+
+Implemented boundaries:
+- Field notes/checklist call `writeFieldOpsEvent`.
+- `writeFieldOpsEvent` currently has only one executable route: direct `recordEvent`.
+- The adapter reads the disabled `pendingOperationWriteRouting` flag but does not enqueue or write `pending_operations`.
+- No Supabase client, RPC, migration, UI, or RLS change is included.
 
 Not allowed:
 - Supabase writes to `pending_operations`.
@@ -171,15 +180,15 @@ Required before implementation:
 ## 4. Current Recommendation
 
 Next safest move:
-- D3b, but only as a disabled runtime adapter shell after manual approval.
+- D3c-0 RPC draft, but only after manual approval.
 
 Do not proceed directly to:
 - D3c write pilot.
 - D4 cache execute.
 
-The next manual decision should confirm whether D3b is approved with these limits:
-- no Supabase writes,
-- feature flag default off,
-- direct event write remains active,
-- no UI behavior change,
-- no RLS or migration change.
+The next manual decision should confirm whether D3c-0 is approved with these limits:
+- SECURITY DEFINER enqueue RPC draft only,
+- checklist toggle scope only,
+- live permission validation,
+- no runtime connection in the same commit,
+- no UI behavior change.

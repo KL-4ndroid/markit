@@ -1,6 +1,6 @@
 import { db, generateUUID } from '@/lib/db';
-import { recordEvent } from '@/lib/db/events';
 import { getEventMarketId } from '@/lib/events/event-read-model';
+import { writeFieldOpsEvent } from '@/lib/markets/field-ops-write-router';
 import type { Event, EventType } from '@/types/db';
 
 export const FIELD_NOTE_CREATED = 'field_note_created' as EventType;
@@ -95,7 +95,7 @@ export async function getActiveFieldNotesForMarket(marketId: string): Promise<Fi
 
 export async function createFieldNote(marketId: string, text: string): Promise<string> {
   const noteId = generateUUID();
-  await recordEvent(FIELD_NOTE_CREATED, {
+  await writeFieldOpsEvent(FIELD_NOTE_CREATED, {
     market_id: marketId,
     noteId,
     text: assertText(text),
@@ -111,7 +111,7 @@ export async function updateFieldNote(
   const existing = (await getActiveFieldNotesForMarket(marketId)).find(note => note.id === noteId);
   assertFieldNoteExists(existing);
 
-  await recordEvent(FIELD_NOTE_UPDATED, {
+  await writeFieldOpsEvent(FIELD_NOTE_UPDATED, {
     market_id: marketId,
     noteId,
     text: assertText(text),
@@ -125,7 +125,7 @@ export async function deleteFieldNote(
   const existing = (await getActiveFieldNotesForMarket(marketId)).find(note => note.id === noteId);
   assertFieldNoteExists(existing);
 
-  await recordEvent(FIELD_NOTE_DELETED, {
+  await writeFieldOpsEvent(FIELD_NOTE_DELETED, {
     market_id: marketId,
     noteId,
   } as Record<string, unknown>);

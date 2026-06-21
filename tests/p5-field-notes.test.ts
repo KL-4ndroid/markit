@@ -57,9 +57,9 @@ runTest('field note service records event-sourced create/update/delete events', 
   assert.match(fieldNotesSource, /FIELD_NOTE_CREATED\s*=\s*['"]field_note_created['"]/);
   assert.match(fieldNotesSource, /FIELD_NOTE_UPDATED\s*=\s*['"]field_note_updated['"]/);
   assert.match(fieldNotesSource, /FIELD_NOTE_DELETED\s*=\s*['"]field_note_deleted['"]/);
-  assert.match(fieldNotesSource, /recordEvent\(FIELD_NOTE_CREATED/);
-  assert.match(fieldNotesSource, /recordEvent\(FIELD_NOTE_UPDATED/);
-  assert.match(fieldNotesSource, /recordEvent\(FIELD_NOTE_DELETED/);
+  assert.match(fieldNotesSource, /writeFieldOpsEvent\(FIELD_NOTE_CREATED/);
+  assert.match(fieldNotesSource, /writeFieldOpsEvent\(FIELD_NOTE_UPDATED/);
+  assert.match(fieldNotesSource, /writeFieldOpsEvent\(FIELD_NOTE_DELETED/);
 });
 
 runTest('field note update/delete checks existence without own-record bypass', () => {

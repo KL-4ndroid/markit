@@ -80,15 +80,15 @@ runTest('integrity validates checklist payload requirements', () => {
 runTest('field ops services emit only the stable payload fields', () => {
   assert.match(
     fieldNotesServiceSource,
-    /recordEvent\(FIELD_NOTE_CREATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*noteId,[\s\S]*text:\s*assertText\(text\)[\s\S]*\}/
+    /writeFieldOpsEvent\(FIELD_NOTE_CREATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*noteId,[\s\S]*text:\s*assertText\(text\)[\s\S]*\}/
   );
   assert.match(
     fieldNotesServiceSource,
-    /recordEvent\(FIELD_NOTE_UPDATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*noteId,[\s\S]*text:\s*assertText\(text\)[\s\S]*\}/
+    /writeFieldOpsEvent\(FIELD_NOTE_UPDATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*noteId,[\s\S]*text:\s*assertText\(text\)[\s\S]*\}/
   );
   assert.match(
     checklistServiceSource,
-    /recordEvent\(CHECKLIST_ITEM_CREATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*itemId,[\s\S]*text:\s*assertText\(text\),[\s\S]*completed,[\s\S]*\}/
+    /writeFieldOpsEvent\(CHECKLIST_ITEM_CREATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*itemId,[\s\S]*text:\s*assertText\(text\),[\s\S]*completed,[\s\S]*\}/
   );
   assert.match(
     checklistServiceSource,
@@ -99,7 +99,7 @@ runTest('field ops services emit only the stable payload fields', () => {
 runTest('checklist toggle payload stays completed-only for operator capability separation', () => {
   assert.match(
     checklistServiceSource,
-    /export async function toggleChecklistItem\([\s\S]*recordEvent\(CHECKLIST_ITEM_UPDATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*itemId,[\s\S]*completed,[\s\S]*\}/
+    /export async function toggleChecklistItem\([\s\S]*writeFieldOpsEvent\(CHECKLIST_ITEM_UPDATED,\s*\{[\s\S]*market_id:\s*marketId,[\s\S]*itemId,[\s\S]*completed,[\s\S]*\}/
   );
   assert.doesNotMatch(
     checklistServiceSource,

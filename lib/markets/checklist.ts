@@ -1,6 +1,6 @@
 import { db, generateUUID } from '@/lib/db';
-import { recordEvent } from '@/lib/db/events';
 import { getEventMarketId } from '@/lib/events/event-read-model';
+import { writeFieldOpsEvent } from '@/lib/markets/field-ops-write-router';
 import type { Event, EventType } from '@/types/db';
 
 export const CHECKLIST_ITEM_CREATED = 'checklist_item_created' as EventType;
@@ -102,7 +102,7 @@ export async function createChecklistItem(
   completed = false
 ): Promise<string> {
   const itemId = generateUUID();
-  await recordEvent(CHECKLIST_ITEM_CREATED, {
+  await writeFieldOpsEvent(CHECKLIST_ITEM_CREATED, {
     market_id: marketId,
     itemId,
     text: assertText(text),
@@ -130,7 +130,7 @@ export async function updateChecklistItem(
     payload.completed = updates.completed;
   }
 
-  await recordEvent(CHECKLIST_ITEM_UPDATED, payload);
+  await writeFieldOpsEvent(CHECKLIST_ITEM_UPDATED, payload);
 }
 
 export async function toggleChecklistItem(
@@ -140,7 +140,7 @@ export async function toggleChecklistItem(
 ): Promise<void> {
   await assertChecklistItemExists(marketId, itemId);
 
-  await recordEvent(CHECKLIST_ITEM_UPDATED, {
+  await writeFieldOpsEvent(CHECKLIST_ITEM_UPDATED, {
     market_id: marketId,
     itemId,
     completed,
@@ -150,7 +150,7 @@ export async function toggleChecklistItem(
 export async function deleteChecklistItem(marketId: string, itemId: string): Promise<void> {
   await assertChecklistItemExists(marketId, itemId);
 
-  await recordEvent(CHECKLIST_ITEM_DELETED, {
+  await writeFieldOpsEvent(CHECKLIST_ITEM_DELETED, {
     market_id: marketId,
     itemId,
   } as Record<string, unknown>);
