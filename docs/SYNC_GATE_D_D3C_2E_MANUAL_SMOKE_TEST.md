@@ -12,6 +12,8 @@ This document defines the manual smoke test for the checklist-toggle pending-ope
 
 The smoke script verifies the cloud RPC path only. It does not replace the app runtime tests that prove local event write remains primary.
 
+Run the read-only preflight before the write smoke test. The preflight checks the chosen target and does not write cloud data.
+
 ## 1. Safety Boundary
 
 This smoke test is intentionally manual:
@@ -68,7 +70,31 @@ $env:GATE_D_SMOKE_PRODUCTION_CONFIRM='I am using disposable production checklist
 
 ## 3. Command
 
-Run this only after filling all inputs:
+### Read-Only Preflight
+
+Run this first after filling the preflight inputs:
+
+```powershell
+$env:GATE_D_PREFLIGHT_TARGET='production-disposable'
+$env:GATE_D_PREFLIGHT_CONFIRM='D3c-2e read-only preflight'
+$env:GATE_D_PREFLIGHT_PRODUCTION_CONFIRM='I am checking disposable production checklist data'
+$env:GATE_D_PREFLIGHT_EMAIL='test@example.com'
+$env:GATE_D_PREFLIGHT_PASSWORD='password'
+$env:GATE_D_PREFLIGHT_MARKET_ID='<market_id>'
+$env:GATE_D_PREFLIGHT_CHECKLIST_ITEM_ID='<itemId>'
+
+node .\scripts\gate-d-checklist-toggle-preflight.mjs
+```
+
+Expected preflight output:
+
+```text
+[gate-d-preflight] PASS read-only target validation completed.
+```
+
+### Write Smoke Test
+
+Run this only after the read-only preflight passes:
 
 ```powershell
 node .\scripts\gate-d-checklist-toggle-smoke.mjs

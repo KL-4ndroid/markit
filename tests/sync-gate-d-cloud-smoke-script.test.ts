@@ -18,6 +18,10 @@ const decisionSource = readFileSync(
   join(projectRoot, 'docs/SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD.md'),
   'utf8'
 );
+const smokeDocSource = readFileSync(
+  join(projectRoot, 'docs/SYNC_GATE_D_D3C_2E_MANUAL_SMOKE_TEST.md'),
+  'utf8'
+);
 
 console.log('\n=== Sync Gate D cloud smoke script ===');
 
@@ -74,6 +78,12 @@ runTest('decision record still treats D3c-2e as manual verification only', () =>
   assert.match(decisionSource, /Keep both flags default-off/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Turning `pendingOperationWriteRouting` on by default/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Turning `pendingOperationDrainAfterEnqueue` on by default/);
+});
+
+runTest('manual smoke documentation requires read-only preflight first', () => {
+  assert.match(smokeDocSource, /gate-d-checklist-toggle-preflight\.mjs/);
+  assert.match(smokeDocSource, /PASS read-only target validation completed/);
+  assert.match(smokeDocSource, /Run this only after the read-only preflight passes/);
 });
 
 function main(): void {
