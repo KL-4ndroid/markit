@@ -76,6 +76,26 @@ export async function listOwnerPendingOperationDiagnostics(
   return data.map(normalizeDiagnosticsRow);
 }
 
+export async function recoverStaleProcessingPendingOperation(operationId: string): Promise<string> {
+  if (!operationId) {
+    throw new Error('operationId is required');
+  }
+
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured');
+  }
+
+  const { data, error } = await supabase.rpc('recover_stale_processing_pending_operation', {
+    p_operation_id: operationId,
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Failed to recover stale processing operation');
+  }
+
+  return typeof data === 'string' ? data : '';
+}
+
 function normalizeDiagnosticsRow(row: RawDiagnosticsRow): OwnerPendingOperationDiagnosticsRow {
   return {
     operationId: readString(row.operation_id),

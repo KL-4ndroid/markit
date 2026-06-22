@@ -278,11 +278,19 @@ Do not drop `pending_operations` while rows exist unless rows are exported, drai
 
 ## 11. Next Approval Boundary
 
-This document now records the D3c-2j read-only stale `processing` UI indicator, but it still approves no diagnostics UI mutation action.
+This document now records the D3c-2k owner-confirmed one-row stale `processing` recovery UI action.
+
+Approved action boundary:
+- owner-only `/recovery`;
+- one stale `processing` row at a time;
+- explicit `window.confirm`;
+- calls only `recover_stale_processing_pending_operation`;
+- reloads diagnostics after completion.
 
 The next high-risk decision is choosing one implementation slice:
-- D3c-2k: owner-confirmed one-row recovery UI action
+- D3c-2l: manual cloud verification of one disposable stale `processing` row
+- D3c-2m: explicit retry/drain action design
 
 Recommended next slice:
-- D3c-2k owner-confirmed one-row recovery UI action only if explicitly approved.
-- Keep any future action one-row, owner-confirmed, and separate from broad retry/drain behavior.
+- D3c-2l manual cloud verification, using disposable or non-production pending-operation data.
+- Keep retry/drain action separate from stale recovery.

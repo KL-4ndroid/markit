@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Stale Processing Recovery Design
 
 Created: 2026-06-22
-Status: D3c-2j read-only stale processing UI indicator added; no UI action, worker, retry, drain, cleanup, batch recovery, or runtime caller is approved by this document
+Status: D3c-2k owner-confirmed one-row recovery UI action added; no worker, retry, drain, cleanup, batch recovery, RLS change, or feature-flag change is approved by this document
 
 ## 0. Purpose
 
@@ -9,7 +9,7 @@ This document defines how BoothBook should reason about `pending_operations` row
 
 The goal is to avoid silent data loss or duplicate final events before any recovery action exists.
 
-This document is the safety contract for stale `processing` recovery. The only approved implementation slice after this design is the narrow owner-only `052_recover_stale_processing_pending_operation.sql` RPC draft; it is not connected to UI or runtime.
+This document is the safety contract for stale `processing` recovery. D3c-2i approved the narrow owner-only `052_recover_stale_processing_pending_operation.sql` RPC draft, and D3c-2k approved a one-row owner-confirmed UI action that calls that RPC.
 
 ## 1. Current Context
 
@@ -23,6 +23,7 @@ Completed before this design:
 - D3c-2h added this stale `processing` recovery design.
 - D3c-2i added `052_recover_stale_processing_pending_operation.sql` as a single-row owner-only RPC draft.
 - D3c-2j added a read-only stale `processing` indicator to owner diagnostics UI.
+- D3c-2k added an owner-confirmed one-row recovery UI action.
 
 Still not approved:
 - Any automatic worker.
@@ -148,7 +149,7 @@ Recommended future sequence:
 1. D3c-2h design only. Completed by this document.
 2. D3c-2i single-row stale processing recovery RPC draft. Completed as `052_recover_stale_processing_pending_operation.sql`.
 3. D3c-2j read-only UI can display recoverable stale rows with no action. Completed in `OwnerPendingOperationDiagnosticsPanel`.
-4. D3c-2k owner-confirmed one-row recovery action.
+4. D3c-2k owner-confirmed one-row recovery action. Completed in `OwnerPendingOperationDiagnosticsPanel`.
 5. Only after those pass, discuss explicit retry/drain action.
 
 Retry remains a separate approval because it can eventually create final events through the drain path.
@@ -162,14 +163,14 @@ Future read-only enhancement may derive:
 - `stale_minutes`
 - `recoverable_state`
 
-These are display-only until a separate recovery implementation is approved.
+The stale indicator is display-only unless the owner explicitly confirms the one-row D3c-2k recovery action.
 
-## 10. Prohibited Outside The Approved D3c-2i RPC Draft
+## 10. Prohibited Outside The Approved D3c-2k Recovery Action
 
-D3c-2i must not:
-- add a UI action;
-- add a button;
-- call the recovery RPC from runtime;
+D3c-2k must not:
+- recover non-stale rows;
+- recover non-`processing` rows;
+- recover more than one row per click;
 - update `pending_operations` outside the single selected stale `processing` row;
 - insert into `events`;
 - delete rows;
@@ -192,5 +193,10 @@ Rollback for the D3c-2i RPC draft before manual execution is:
 - remove `052_recover_stale_processing_pending_operation.sql`;
 - remove its guardrail test;
 - leave runtime behavior unchanged.
+
+Rollback for the D3c-2k UI action is:
+- hide or remove the one-row recovery button;
+- leave the RPC in place unless a separate rollback removes 052;
+- leave existing pending rows unchanged.
 
 If a future recovery action is implemented, it must define its own rollback or no-rollback statement.

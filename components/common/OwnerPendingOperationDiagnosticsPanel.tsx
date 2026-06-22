@@ -7,6 +7,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
 import {
   listOwnerPendingOperationDiagnostics,
+  recoverStaleProcessingPendingOperation,
   type OwnerPendingOperationDiagnosticsRow,
   type PendingOperationDiagnosticsStateGroup,
 } from '@/lib/sync/owner-pending-operation-diagnostics';
@@ -34,6 +35,7 @@ export function OwnerPendingOperationDiagnosticsPanel() {
   const { isStaff, isLoading: isRoleLoading } = useUserRole();
   const [state, setState] = useState<PanelState>('idle');
   const [rows, setRows] = useState<OwnerPendingOperationDiagnosticsRow[]>([]);
+  const [recoveringOperationId, setRecoveringOperationId] = useState<string | null>(null);
 
   const isBlocked = !user || isRoleLoading || isStaff;
 
@@ -65,6 +67,40 @@ export function OwnerPendingOperationDiagnosticsPanel() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '讀取 diagnostics 失敗');
       setState('idle');
+    }
+  };
+
+  const handleRecover = async (row: OwnerPendingOperationDiagnosticsRow) => {
+    if (!user || isRoleLoading || isStaff || !isStaleProcessing(row)) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      [
+        'Recover one stale processing pending operation?',
+        '',
+        `Operation: ${row.operationId}`,
+        'This will not create a final event.',
+        'The RPC may mark the row as synced, failed_permanent, or failed_retryable after final-event inspection.',
+      ].join('\n')
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRecoveringOperationId(row.operationId);
+
+    try {
+      const result = await recoverStaleProcessingPendingOperation(row.operationId);
+      toast.success(`Recovery result: ${result || 'updated'}`);
+      const nextRows = await listOwnerPendingOperationDiagnostics(user.id);
+      setRows(nextRows);
+      setState('loaded');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to recover operation');
+    } finally {
+      setRecoveringOperationId(null);
     }
   };
 
@@ -155,7 +191,12 @@ export function OwnerPendingOperationDiagnosticsPanel() {
                   </thead>
                   <tbody className="divide-y divide-[#F0ECE4]">
                     {rows.map(row => (
-                      <DiagnosticsRow key={row.operationId} row={row} />
+                      <DiagnosticsRow
+                        key={row.operationId}
+                        row={row}
+                        isRecovering={recoveringOperationId === row.operationId}
+                        onRecover={handleRecover}
+                      />
                     ))}
                   </tbody>
                 </table>
@@ -168,7 +209,17 @@ export function OwnerPendingOperationDiagnosticsPanel() {
   );
 }
 
-function DiagnosticsRow({ row }: { row: OwnerPendingOperationDiagnosticsRow }) {
+function DiagnosticsRow({
+  row,
+  isRecovering,
+  onRecover,
+}: {
+  row: OwnerPendingOperationDiagnosticsRow;
+  isRecovering: boolean;
+  onRecover: (row: OwnerPendingOperationDiagnosticsRow) => void;
+}) {
+  const canRecover = isStaleProcessing(row);
+
   return (
     <tr className="align-top">
       <td className="px-3 py-3">
@@ -182,6 +233,17 @@ function DiagnosticsRow({ row }: { row: OwnerPendingOperationDiagnosticsRow }) {
             <Clock size={13} />
             stale {getStaleProcessingMinutes(row)}m
           </p>
+        )}
+        {canRecover && (
+          <button
+            type="button"
+            onClick={() => onRecover(row)}
+            disabled={isRecovering}
+            className="mt-2 inline-flex h-8 items-center gap-1 rounded-md border border-amber-300 px-2 text-xs font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+          >
+            {isRecovering && <RefreshCw size={12} className="animate-spin" />}
+            Recover
+          </button>
         )}
       </td>
       <td className="px-3 py-3">

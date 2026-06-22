@@ -25,10 +25,7 @@ const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), '
   scripts: Record<string, string>;
 };
 
-const runtimeFiles = [
-  'app/recovery/page.tsx',
-  'components/common/OwnerPendingOperationDiagnosticsPanel.tsx',
-  'lib/sync/owner-pending-operation-diagnostics.ts',
+const disallowedRuntimeFiles = [
   'lib/markets/field-ops-write-router.ts',
   'hooks/useSync.ts',
   'lib/sync/sync-push-service.ts',
@@ -43,20 +40,22 @@ function readProjectFile(path: string): string {
 
 console.log('\n=== Sync Gate D stale processing recovery design ===');
 
-runTest('stale processing recovery design records the approved D3c-2j UI indicator boundary', () => {
+runTest('stale processing recovery design records the approved D3c-2k recovery action boundary', () => {
   assert.ok(existsSync(designPath));
   assert.ok(existsSync(recoveryMigrationPath));
-  assert.match(designSource, /Status: D3c-2j read-only stale processing UI indicator added/);
-  assert.match(designSource, /no UI action, worker, retry, drain, cleanup, batch recovery, or runtime caller is approved/);
+  assert.match(designSource, /D3c-2k owner-confirmed one-row recovery UI action added/);
+  assert.match(designSource, /no worker, retry, drain, cleanup, batch recovery, RLS change, or feature-flag change is approved/);
   assert.match(designSource, /052_recover_stale_processing_pending_operation\.sql/);
   assert.match(diagnosticsDesignSource, /D3c-2h added stale `processing` recovery design/);
   assert.match(diagnosticsDesignSource, /D3c-2i added a single-row stale `processing` recovery RPC draft/);
   assert.match(drainDesignSource, /D3c-2h stale `processing` recovery design/);
   assert.match(drainDesignSource, /D3c-2i: Single-Row Stale Processing Recovery RPC Draft/);
   assert.match(drainDesignSource, /D3c-2j: Read-Only Stale Processing UI Indicator/);
+  assert.match(drainDesignSource, /D3c-2k: Owner-Confirmed One-Row Recovery UI Action/);
   assert.match(decisionSource, /D3c-2h stale `processing` recovery design is added/);
   assert.match(decisionSource, /D3c-2i single-row stale `processing` recovery RPC draft is added/);
   assert.match(decisionSource, /D3c-2j read-only stale `processing` UI indicator is added/);
+  assert.match(decisionSource, /D3c-2k owner-confirmed one-row stale `processing` recovery UI action is added/);
 });
 
 runTest('design defines stale processing threshold and server-side boundary', () => {
@@ -94,8 +93,8 @@ runTest('design prohibits automatic worker retry drain and cleanup behavior', ()
   }
 });
 
-runTest('no stale processing recovery implementation is wired into runtime', () => {
-  const matches = runtimeFiles.filter(file => {
+runTest('stale processing recovery is not wired into broad runtime paths', () => {
+  const matches = disallowedRuntimeFiles.filter(file => {
     const source = readProjectFile(file);
     return /recover_stale_processing_pending_operation|stale_processing_reset|stale processing recovery/i.test(source);
   });

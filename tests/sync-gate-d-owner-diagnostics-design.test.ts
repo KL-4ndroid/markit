@@ -41,10 +41,10 @@ function readProjectFile(path: string): string {
 
 console.log('\n=== Sync Gate D owner diagnostics design ===');
 
-runTest('owner diagnostics design records D3c-2g through D3c-2j while blocking UI mutation actions', () => {
+runTest('owner diagnostics design records D3c-2g through D3c-2k while blocking broad mutation actions', () => {
   assert.ok(existsSync(designPath));
-  assert.match(designSource, /Status: D3c-2j read-only stale processing UI indicator added/);
-  assert.match(designSource, /no UI mutation action, RLS, worker, retry, drain, cleanup, or runtime repair caller is approved/);
+  assert.match(designSource, /D3c-2k owner-confirmed one-row stale `processing` recovery UI action/);
+  assert.match(designSource, /calls only `recover_stale_processing_pending_operation`/);
   assert.match(designSource, /051_list_owner_pending_operation_diagnostics\.sql/);
   assert.match(designSource, /052_recover_stale_processing_pending_operation\.sql/);
   assert.match(designSource, /OwnerPendingOperationDiagnosticsPanel\.tsx/);
@@ -60,6 +60,7 @@ runTest('owner diagnostics design records D3c-2g through D3c-2j while blocking U
   assert.match(decisionSource, /D3c-2h stale `processing` recovery design is added/);
   assert.match(decisionSource, /D3c-2i single-row stale `processing` recovery RPC draft is added/);
   assert.match(decisionSource, /D3c-2j read-only stale `processing` UI indicator is added/);
+  assert.match(decisionSource, /D3c-2k owner-confirmed one-row stale `processing` recovery UI action is added/);
   assert.match(drainDesignSource, /Owner-only diagnostics status/);
 });
 

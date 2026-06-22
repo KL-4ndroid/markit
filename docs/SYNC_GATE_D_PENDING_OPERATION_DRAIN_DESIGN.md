@@ -376,3 +376,18 @@ Status:
 - Completed in `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
 - Guardrails updated in `tests/sync-gate-d-owner-diagnostics-ui.test.ts`.
 - No UI action, recovery RPC call, runtime repair caller, worker, retry, drain, cleanup, RLS, or feature-flag change was added.
+
+### D3c-2k: Owner-Confirmed One-Row Recovery UI Action
+
+Recommended before any retry/drain action:
+- Add a single-row owner-confirmed action in owner-only diagnostics.
+- Show the action only for stale `processing` rows.
+- Call only `recover_stale_processing_pending_operation`.
+- Refresh diagnostics after the RPC returns.
+- Keep retry and drain separate.
+
+Status:
+- Completed in `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
+- Service wrapper added in `lib/sync/owner-pending-operation-diagnostics.ts`.
+- Guardrails updated in `tests/sync-gate-d-owner-diagnostics-ui.test.ts`.
+- No batch action, worker, retry execution, drain, cleanup, RLS, or feature-flag change was added.

@@ -40,9 +40,10 @@ runTest('owner diagnostics UI shell exists and is mounted only on owner recovery
   assert.equal(blockedIndex >= 0 && panelIndex > blockedIndex, true);
 });
 
-runTest('diagnostics service calls only the approved read RPC', () => {
+runTest('diagnostics service calls only the approved read and single-row recovery RPCs', () => {
   assert.match(serviceSource, /supabase\.rpc\(['"]list_owner_pending_operation_diagnostics['"]/);
-  assert.doesNotMatch(serviceSource, /recover_stale_processing_pending_operation/);
+  assert.match(serviceSource, /supabase\.rpc\(['"]recover_stale_processing_pending_operation['"]/);
+  assert.match(serviceSource, /p_operation_id: operationId/);
   assert.doesNotMatch(serviceSource, /enqueue_checklist_toggle_pending_operation/);
   assert.doesNotMatch(serviceSource, /drain_checklist_toggle_pending_operation/);
   assert.doesNotMatch(serviceSource, /\.from\(/);
@@ -53,11 +54,15 @@ runTest('diagnostics service calls only the approved read RPC', () => {
   assert.doesNotMatch(serviceSource, /localStorage|sessionStorage|indexedDB|Dexie|db\./i);
 });
 
-runTest('diagnostics panel blocks staff and exposes read-only controls only', () => {
+runTest('diagnostics panel blocks staff and exposes only owner-confirmed one-row recovery', () => {
   assert.match(panelSource, /useUserRole/);
   assert.match(panelSource, /useAuth/);
   assert.match(panelSource, /if \(isStaff\)/);
   assert.match(panelSource, /listOwnerPendingOperationDiagnostics\(user\.id\)/);
+  assert.match(panelSource, /recoverStaleProcessingPendingOperation\(row\.operationId\)/);
+  assert.match(panelSource, /window\.confirm/);
+  assert.match(panelSource, /onRecover\(row\)/);
+  assert.match(panelSource, /const canRecover = isStaleProcessing\(row\)/);
   assert.match(panelSource, /STALE_PROCESSING_THRESHOLD_MS = 15 \* 60 \* 1000/);
   assert.match(panelSource, /function isStaleProcessing/);
   assert.match(panelSource, /row\.status !== 'processing'/);
@@ -65,7 +70,6 @@ runTest('diagnostics panel blocks staff and exposes read-only controls only', ()
 
   for (const forbidden of [
     /handleExecute/,
-    /window\.confirm/,
     /Wrench/,
     /修復/,
     /重試/,
@@ -73,7 +77,6 @@ runTest('diagnostics panel blocks staff and exposes read-only controls only', ()
     /清除/,
     /drain_checklist_toggle_pending_operation/,
     /enqueue_checklist_toggle_pending_operation/,
-    /recover_stale_processing_pending_operation/,
     /supabase\./,
   ]) {
     assert.doesNotMatch(panelSource, forbidden);

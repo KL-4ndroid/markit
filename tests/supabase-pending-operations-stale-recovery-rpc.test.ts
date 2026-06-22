@@ -108,10 +108,10 @@ runTest('052 migration does not widen schema policies flags cleanup or runtime b
     assert.doesNotMatch(migrationSource, forbiddenSql);
   }
 
-  const runtimeSources = [
-    'app/recovery/page.tsx',
-    'components/common/OwnerPendingOperationDiagnosticsPanel.tsx',
-    'lib/sync/owner-pending-operation-diagnostics.ts',
+  const ownerDiagnosticsService = read('lib/sync/owner-pending-operation-diagnostics.ts');
+  assert.match(ownerDiagnosticsService, /recover_stale_processing_pending_operation/);
+
+  const broadRuntimeSources = [
     'lib/markets/field-ops-write-router.ts',
     'hooks/useSync.ts',
     'lib/sync/sync-push-service.ts',
@@ -122,7 +122,7 @@ runTest('052 migration does not widen schema policies flags cleanup or runtime b
     .map(read)
     .join('\n');
 
-  assert.doesNotMatch(runtimeSources, /recover_stale_processing_pending_operation/);
+  assert.doesNotMatch(broadRuntimeSources, /recover_stale_processing_pending_operation/);
 });
 
 runTest('RPC grants execute narrowly', () => {
