@@ -34,7 +34,8 @@ Owner-only diagnostics status:
 - D3c-2f read-only owner diagnostics RPC draft added in `051_list_owner_pending_operation_diagnostics.sql`.
 - D3c-2g read-only owner diagnostics UI shell added in `/recovery`.
 - D3c-2h stale `processing` recovery design added in `docs/SYNC_GATE_D_STALE_PROCESSING_RECOVERY_DESIGN.md`.
-- No mutation, RLS, worker, or repair implementation is approved by that design.
+- D3c-2i single-row stale `processing` recovery RPC draft added in `052_recover_stale_processing_pending_operation.sql`.
+- No UI action, RLS, worker, retry, drain, cleanup, or runtime repair caller is approved by that design.
 
 Still not approved:
 - No batch drain/worker is approved by this document.
@@ -346,3 +347,18 @@ Status:
 - Completed as `docs/SYNC_GATE_D_STALE_PROCESSING_RECOVERY_DESIGN.md`.
 - Guardrails added as `tests/sync-gate-d-stale-processing-recovery-design.test.ts`.
 - No RPC, UI action, worker, retry, drain, cleanup, or mutation implementation was added.
+
+### D3c-2i: Single-Row Stale Processing Recovery RPC Draft
+
+Recommended before any UI recovery action:
+- Add an owner-only SECURITY DEFINER RPC.
+- Lock exactly one stale `processing` row with `FOR UPDATE`.
+- Inspect the final event before changing pending state.
+- Mark matching final event as `synced`.
+- Mark final event mismatch as `failed_permanent`.
+- Mark no final event as `failed_retryable` without draining.
+
+Status:
+- Completed as `supabase/migrations/052_recover_stale_processing_pending_operation.sql`.
+- Static SQL guardrails added as `tests/supabase-pending-operations-stale-recovery-rpc.test.ts`.
+- No UI action, runtime caller, worker, retry execution, drain, cleanup, RLS, or feature-flag change was added.

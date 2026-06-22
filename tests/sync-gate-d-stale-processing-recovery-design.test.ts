@@ -15,6 +15,7 @@ const designPath = join(projectRoot, 'docs/SYNC_GATE_D_STALE_PROCESSING_RECOVERY
 const diagnosticsDesignPath = join(projectRoot, 'docs/SYNC_GATE_D_OWNER_DIAGNOSTICS_DESIGN.md');
 const drainDesignPath = join(projectRoot, 'docs/SYNC_GATE_D_PENDING_OPERATION_DRAIN_DESIGN.md');
 const decisionPath = join(projectRoot, 'docs/SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD.md');
+const recoveryMigrationPath = join(projectRoot, 'supabase/migrations/052_recover_stale_processing_pending_operation.sql');
 
 const designSource = readFileSync(designPath, 'utf8');
 const diagnosticsDesignSource = readFileSync(diagnosticsDesignPath, 'utf8');
@@ -42,13 +43,18 @@ function readProjectFile(path: string): string {
 
 console.log('\n=== Sync Gate D stale processing recovery design ===');
 
-runTest('stale processing recovery design exists and remains design-only', () => {
+runTest('stale processing recovery design records the approved D3c-2i RPC boundary', () => {
   assert.ok(existsSync(designPath));
-  assert.match(designSource, /Status: D3c-2h design only/);
-  assert.match(designSource, /no RPC, UI action, worker, retry, drain, cleanup, or mutation implementation is approved/);
-  assert.match(diagnosticsDesignSource, /D3c-2h stale processing recovery design added/);
+  assert.ok(existsSync(recoveryMigrationPath));
+  assert.match(designSource, /Status: D3c-2i single-row RPC draft added separately/);
+  assert.match(designSource, /no UI action, worker, retry, drain, cleanup, batch recovery, or runtime caller is approved/);
+  assert.match(designSource, /052_recover_stale_processing_pending_operation\.sql/);
+  assert.match(diagnosticsDesignSource, /D3c-2h added stale `processing` recovery design/);
+  assert.match(diagnosticsDesignSource, /D3c-2i single-row stale `processing` recovery RPC draft/);
   assert.match(drainDesignSource, /D3c-2h stale `processing` recovery design/);
+  assert.match(drainDesignSource, /D3c-2i: Single-Row Stale Processing Recovery RPC Draft/);
   assert.match(decisionSource, /D3c-2h stale `processing` recovery design is added/);
+  assert.match(decisionSource, /D3c-2i single-row stale `processing` recovery RPC draft is added/);
 });
 
 runTest('design defines stale processing threshold and server-side boundary', () => {
@@ -95,10 +101,14 @@ runTest('no stale processing recovery implementation is wired into runtime', () 
   assert.deepEqual(matches, []);
 });
 
-runTest('full test suite includes the stale processing recovery design guardrail', () => {
+runTest('full test suite includes stale processing recovery guardrails', () => {
   assert.match(
     packageJson.scripts.test,
     /tsx tests\/sync-gate-d-stale-processing-recovery-design\.test\.ts/
+  );
+  assert.match(
+    packageJson.scripts.test,
+    /tsx tests\/supabase-pending-operations-stale-recovery-rpc\.test\.ts/
   );
 });
 

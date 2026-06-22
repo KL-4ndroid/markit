@@ -41,21 +41,24 @@ function readProjectFile(path: string): string {
 
 console.log('\n=== Sync Gate D owner diagnostics design ===');
 
-runTest('owner diagnostics design records D3c-2g and D3c-2h while blocking mutation actions', () => {
+runTest('owner diagnostics design records D3c-2g through D3c-2i while blocking UI mutation actions', () => {
   assert.ok(existsSync(designPath));
-  assert.match(designSource, /Status: D3c-2h stale processing recovery design added/);
-  assert.match(designSource, /no mutation, RLS, worker, or repair implementation is approved/);
+  assert.match(designSource, /Status: D3c-2i single-row stale processing recovery RPC draft added/);
+  assert.match(designSource, /no UI mutation action, RLS, worker, retry, drain, cleanup, or runtime repair caller is approved/);
   assert.match(designSource, /051_list_owner_pending_operation_diagnostics\.sql/);
+  assert.match(designSource, /052_recover_stale_processing_pending_operation\.sql/);
   assert.match(designSource, /OwnerPendingOperationDiagnosticsPanel\.tsx/);
   assert.match(designSource, /owner-pending-operation-diagnostics\.ts/);
   assert.match(designSource, /tests\/sync-gate-d-owner-diagnostics-ui\.test\.ts/);
   assert.match(designSource, /tests\/sync-gate-d-stale-processing-recovery-design\.test\.ts/);
+  assert.match(designSource, /tests\/supabase-pending-operations-stale-recovery-rpc\.test\.ts/);
   assert.match(designSource, /tests\/supabase-pending-operations-diagnostics-rpc\.test\.ts/);
   assert.match(designSource, /The goal is observability, not repair/);
   assert.match(decisionSource, /Owner-only diagnostics has a design-only safety contract/);
   assert.match(decisionSource, /D3c-2f owner-only read diagnostics RPC draft is added/);
   assert.match(decisionSource, /D3c-2g read-only owner diagnostics UI shell is added/);
   assert.match(decisionSource, /D3c-2h stale `processing` recovery design is added/);
+  assert.match(decisionSource, /D3c-2i single-row stale `processing` recovery RPC draft is added/);
   assert.match(drainDesignSource, /Owner-only diagnostics status/);
 });
 

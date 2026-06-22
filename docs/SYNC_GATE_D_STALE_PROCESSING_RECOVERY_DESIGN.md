@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Stale Processing Recovery Design
 
 Created: 2026-06-22
-Status: D3c-2h design only; no RPC, UI action, worker, retry, drain, cleanup, or mutation implementation is approved by this document
+Status: D3c-2i single-row RPC draft added separately; no UI action, worker, retry, drain, cleanup, batch recovery, or runtime caller is approved by this document
 
 ## 0. Purpose
 
@@ -9,7 +9,7 @@ This document defines how BoothBook should reason about `pending_operations` row
 
 The goal is to avoid silent data loss or duplicate final events before any recovery action exists.
 
-This document does not approve implementation. It is a safety contract for future work.
+This document is the safety contract for stale `processing` recovery. The only approved implementation slice after this design is the narrow owner-only `052_recover_stale_processing_pending_operation.sql` RPC draft; it is not connected to UI or runtime.
 
 ## 1. Current Context
 
@@ -20,6 +20,8 @@ Completed before this design:
 - D3c-2e completed one manual cloud smoke verification.
 - D3c-2f added owner-only read diagnostics RPC.
 - D3c-2g added read-only owner diagnostics UI shell in `/recovery`.
+- D3c-2h added this stale `processing` recovery design.
+- D3c-2i added `052_recover_stale_processing_pending_operation.sql` as a single-row owner-only RPC draft.
 
 Still not approved:
 - Any automatic worker.
@@ -27,6 +29,7 @@ Still not approved:
 - Any reset button.
 - Any cleanup/delete action.
 - Any mutation from diagnostics UI.
+- Any UI/runtime caller for the recovery RPC.
 - Any broad service-role processor.
 
 ## 2. What Counts As Stale
@@ -87,7 +90,7 @@ Why not drain immediately:
 
 ## 5. Required Future RPC Shape
 
-If implemented later, prefer a single-operation SECURITY DEFINER RPC:
+The approved D3c-2i database draft uses a single-operation SECURITY DEFINER RPC:
 
 ```sql
 public.recover_stale_processing_pending_operation(p_operation_id TEXT)
@@ -142,7 +145,7 @@ This design does not approve retry execution.
 
 Recommended future sequence:
 1. D3c-2h design only. Completed by this document.
-2. D3c-2i single-row stale processing recovery RPC draft.
+2. D3c-2i single-row stale processing recovery RPC draft. Completed as `052_recover_stale_processing_pending_operation.sql`.
 3. D3c-2j read-only UI can display recoverable stale rows with no action.
 4. D3c-2k owner-confirmed one-row recovery action.
 5. Only after those pass, discuss explicit retry/drain action.
@@ -160,15 +163,13 @@ Future read-only enhancement may derive:
 
 These are display-only until a separate recovery implementation is approved.
 
-## 10. Prohibited In This Slice
+## 10. Prohibited Outside The Approved D3c-2i RPC Draft
 
-This design slice must not:
-- add a migration;
-- add an RPC;
+D3c-2i must not:
 - add a UI action;
 - add a button;
-- call Supabase;
-- update `pending_operations`;
+- call the recovery RPC from runtime;
+- update `pending_operations` outside the single selected stale `processing` row;
 - insert into `events`;
 - delete rows;
 - call drain;
@@ -181,9 +182,14 @@ This design slice must not:
 
 ## 11. Rollback
 
-Because this slice is design-only, rollback is:
+Rollback for the D3c-2h design-only slice is:
 - remove this document;
+- remove its guardrail test.
+
+Rollback for the D3c-2i RPC draft before manual execution is:
+- drop `public.recover_stale_processing_pending_operation(TEXT)`;
+- remove `052_recover_stale_processing_pending_operation.sql`;
 - remove its guardrail test;
-- leave cloud rows and runtime behavior unchanged.
+- leave runtime behavior unchanged.
 
 If a future recovery action is implemented, it must define its own rollback or no-rollback statement.
