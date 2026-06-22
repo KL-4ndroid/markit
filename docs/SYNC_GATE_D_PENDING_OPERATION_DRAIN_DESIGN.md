@@ -35,6 +35,7 @@ Owner-only diagnostics status:
 - D3c-2g read-only owner diagnostics UI shell added in `/recovery`.
 - D3c-2h stale `processing` recovery design added in `docs/SYNC_GATE_D_STALE_PROCESSING_RECOVERY_DESIGN.md`.
 - D3c-2i single-row stale `processing` recovery RPC draft added in `052_recover_stale_processing_pending_operation.sql`.
+- D3c-2j read-only stale `processing` indicator added to owner diagnostics UI.
 - No UI action, RLS, worker, retry, drain, cleanup, or runtime repair caller is approved by that design.
 
 Still not approved:
@@ -362,3 +363,16 @@ Status:
 - Completed as `supabase/migrations/052_recover_stale_processing_pending_operation.sql`.
 - Static SQL guardrails added as `tests/supabase-pending-operations-stale-recovery-rpc.test.ts`.
 - No UI action, runtime caller, worker, retry execution, drain, cleanup, RLS, or feature-flag change was added.
+
+### D3c-2j: Read-Only Stale Processing UI Indicator
+
+Recommended before any recovery button:
+- Derive stale `processing` from the existing diagnostics row data.
+- Use the same 15-minute threshold as the recovery design.
+- Display the stale state without calling the recovery RPC.
+- Keep diagnostics read-only.
+
+Status:
+- Completed in `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
+- Guardrails updated in `tests/sync-gate-d-owner-diagnostics-ui.test.ts`.
+- No UI action, recovery RPC call, runtime repair caller, worker, retry, drain, cleanup, RLS, or feature-flag change was added.

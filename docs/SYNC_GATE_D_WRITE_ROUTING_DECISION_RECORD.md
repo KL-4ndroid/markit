@@ -427,6 +427,7 @@ Current status:
 - D3c-2g read-only owner diagnostics UI shell is added in `/recovery`; no mutation action is approved.
 - D3c-2h stale `processing` recovery design is added; no recovery implementation is approved.
 - D3c-2i single-row stale `processing` recovery RPC draft is added as `052_recover_stale_processing_pending_operation.sql`; no UI/runtime caller, worker, retry, drain, or cleanup action is approved.
+- D3c-2j read-only stale `processing` UI indicator is added; no recovery action is approved.
 
 Confirmed decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.
@@ -438,7 +439,7 @@ Confirmed decisions for D3c-2e:
 Recommended next path:
 - Keep the successful operation and event as audit evidence unless owner-approved cleanup is required.
 - Run one owner test and one additional staff operator/manager test if separate accounts are available.
-- Decide whether the next approved implementation slice should be D3c-2j stale `processing` read-only indicator enhancement.
+- Decide whether the next approved implementation slice should be D3c-2k owner-confirmed one-row recovery UI action.
 - Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:
@@ -449,4 +450,5 @@ Do not approve yet:
 - A broad connected runtime drain worker or production-wide final-event writer.
 - A broad service-role batch worker.
 - Any diagnostics mutation action before a separate recovery approval.
+- Any call to `recover_stale_processing_pending_operation` from UI/runtime before a separate recovery-action approval.
 - Any cache replacement execute behavior.
