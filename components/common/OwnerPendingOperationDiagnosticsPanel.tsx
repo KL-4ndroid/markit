@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Activity, AlertTriangle, Eye, Lock, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Activity, AlertTriangle, Clock, Eye, Lock, RefreshCw, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -12,6 +12,8 @@ import {
 } from '@/lib/sync/owner-pending-operation-diagnostics';
 
 type PanelState = 'idle' | 'loading' | 'loaded';
+
+const STALE_PROCESSING_THRESHOLD_MS = 15 * 60 * 1000;
 
 const STATE_LABELS: Record<PendingOperationDiagnosticsStateGroup, string> = {
   healthy: '正常',
@@ -175,6 +177,12 @@ function DiagnosticsRow({ row }: { row: OwnerPendingOperationDiagnosticsRow }) {
         >
           {STATE_LABELS[row.stateGroup]}
         </span>
+        {isStaleProcessing(row) && (
+          <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+            <Clock size={13} />
+            stale {getStaleProcessingMinutes(row)}m
+          </p>
+        )}
       </td>
       <td className="px-3 py-3">
         <p className="font-medium text-foreground">{row.operationType}</p>
@@ -236,7 +244,7 @@ function BlockedPanel({
       <div className="flex items-start gap-3">
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-            danger ? 'bg-soft-pink text-[#B85C5C]' : 'bg-[#F0ECE4] text-muted-foreground'
+            danger ? 'bg-feria-dangerSoft text-[#B85C5C]' : 'bg-[#F0ECE4] text-muted-foreground'
           }`}
         >
           {icon}
@@ -279,6 +287,28 @@ function summarizeRows(rows: OwnerPendingOperationDiagnosticsRow[]) {
     },
     { healthy: 0, needsAttention: 0, inProgress: 0 }
   );
+}
+
+function isStaleProcessing(row: OwnerPendingOperationDiagnosticsRow): boolean {
+  if (row.status !== 'processing') {
+    return false;
+  }
+
+  const updatedAtMs = new Date(row.updatedAt).getTime();
+  if (!Number.isFinite(updatedAtMs)) {
+    return false;
+  }
+
+  return Date.now() - updatedAtMs >= STALE_PROCESSING_THRESHOLD_MS;
+}
+
+function getStaleProcessingMinutes(row: OwnerPendingOperationDiagnosticsRow): number {
+  const updatedAtMs = new Date(row.updatedAt).getTime();
+  if (!Number.isFinite(updatedAtMs)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor((Date.now() - updatedAtMs) / 60000));
 }
 
 function shortId(value: string): string {

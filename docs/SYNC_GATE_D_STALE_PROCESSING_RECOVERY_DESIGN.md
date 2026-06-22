@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Stale Processing Recovery Design
 
 Created: 2026-06-22
-Status: D3c-2i single-row RPC draft added separately; no UI action, worker, retry, drain, cleanup, batch recovery, or runtime caller is approved by this document
+Status: D3c-2j read-only stale processing UI indicator added; no UI action, worker, retry, drain, cleanup, batch recovery, or runtime caller is approved by this document
 
 ## 0. Purpose
 
@@ -22,6 +22,7 @@ Completed before this design:
 - D3c-2g added read-only owner diagnostics UI shell in `/recovery`.
 - D3c-2h added this stale `processing` recovery design.
 - D3c-2i added `052_recover_stale_processing_pending_operation.sql` as a single-row owner-only RPC draft.
+- D3c-2j added a read-only stale `processing` indicator to owner diagnostics UI.
 
 Still not approved:
 - Any automatic worker.
@@ -146,7 +147,7 @@ This design does not approve retry execution.
 Recommended future sequence:
 1. D3c-2h design only. Completed by this document.
 2. D3c-2i single-row stale processing recovery RPC draft. Completed as `052_recover_stale_processing_pending_operation.sql`.
-3. D3c-2j read-only UI can display recoverable stale rows with no action.
+3. D3c-2j read-only UI can display recoverable stale rows with no action. Completed in `OwnerPendingOperationDiagnosticsPanel`.
 4. D3c-2k owner-confirmed one-row recovery action.
 5. Only after those pass, discuss explicit retry/drain action.
 
