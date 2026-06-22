@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Stale Processing Recovery Design
 
 Created: 2026-06-22
-Status: D3c-2m synthetic stale recovery test plan added; no production synthetic data, worker, retry, drain, cleanup, batch recovery, RLS change, or feature-flag change is approved by this document
+Status: D3c-2n retry/drain action design added; no retry/drain runtime code, production synthetic data, worker, cleanup, batch recovery, RLS change, or feature-flag change is approved by this document
 
 ## 0. Purpose
 
@@ -26,6 +26,7 @@ Completed before this design:
 - D3c-2k added an owner-confirmed one-row recovery UI action.
 - D3c-2l added a manual stale `processing` recovery smoke plan and guarded script.
 - D3c-2m added a local/staging-only synthetic stale `processing` recovery test plan.
+- D3c-2n added retry/drain action design.
 
 Still not approved:
 - Any automatic worker.
@@ -36,6 +37,7 @@ Still not approved:
 - Any UI/runtime caller for the recovery RPC outside owner-only `/recovery`.
 - Any broad service-role processor.
 - Any production synthetic stale `processing` row.
+- Any retry/drain runtime code before D3c-2m local/staging verification passes.
 
 ## 2. What Counts As Stale
 
@@ -155,7 +157,8 @@ Recommended future sequence:
 4. D3c-2k owner-confirmed one-row recovery action. Completed in `OwnerPendingOperationDiagnosticsPanel`.
 5. D3c-2l manual cloud verification of one disposable or non-production stale `processing` row. Plan and guarded script added; no execution has been performed by this slice.
 6. D3c-2m local/staging synthetic stale processing recovery test plan. Completed as `docs/SYNC_GATE_D_D3C_2M_SYNTHETIC_STALE_RECOVERY_TEST_PLAN.md`; no execution has been performed by this slice.
-7. Only after those pass, discuss explicit retry/drain action.
+7. D3c-2n retry/drain action design. Completed as `docs/SYNC_GATE_D_D3C_2N_RETRY_DRAIN_ACTION_DESIGN.md`; no runtime implementation has been performed by this slice.
+8. Only after D3c-2m passes, discuss explicit retry/drain implementation.
 
 Retry remains a separate approval because it can eventually create final events through the drain path.
 
@@ -213,6 +216,11 @@ Rollback for the D3c-2l smoke plan before manual execution is:
 Rollback for the D3c-2m test plan before local/staging execution is:
 - remove `docs/SYNC_GATE_D_D3C_2M_SYNTHETIC_STALE_RECOVERY_TEST_PLAN.md`;
 - remove `tests/sync-gate-d-synthetic-stale-recovery-test-plan.test.ts`;
+- leave runtime behavior and cloud data unchanged.
+
+Rollback for the D3c-2n design before implementation is:
+- remove `docs/SYNC_GATE_D_D3C_2N_RETRY_DRAIN_ACTION_DESIGN.md`;
+- remove `tests/sync-gate-d-retry-drain-action-design.test.ts`;
 - leave runtime behavior and cloud data unchanged.
 
 If a future retry, drain, worker, or cleanup action is implemented, it must define its own rollback or no-rollback statement.

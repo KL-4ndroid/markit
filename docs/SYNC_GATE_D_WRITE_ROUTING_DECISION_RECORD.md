@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Write Routing Decision Record
 
 Created: 2026-06-21
-Status: active Gate D decision record after D3c-2m synthetic stale recovery test plan
+Status: active Gate D decision record after D3c-2n retry/drain action design
 
 ## 0. Purpose
 
@@ -23,6 +23,7 @@ Current approvals:
 - D3c-2k approved an owner-confirmed one-row stale `processing` recovery UI action.
 - D3c-2l approved a manual stale `processing` recovery smoke verification plan and guarded script.
 - D3c-2m approved a local/staging-only synthetic stale `processing` recovery test plan.
+- D3c-2n approved retry/drain action design only.
 
 Still not approved:
 - No ordinary market-detail, staff workflow, revenue, inventory, product, or market UI behavior change is approved by this document.
@@ -442,6 +443,8 @@ Current status:
 - D3c-2m synthetic stale `processing` recovery test plan is added; no production execution, production synthetic data creation, runtime code, migration, RLS, worker, retry, drain, cleanup, or feature-flag change is approved.
 - No production synthetic data creation is approved.
 - No D3c-2m local or staging execution has been performed by this slice.
+- D3c-2n retry/drain action design is added.
+- No D3c-2n runtime code, UI button, service wrapper, migration, RLS, worker, production execution, or feature-flag change is approved.
 
 Confirmed decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.
@@ -456,6 +459,8 @@ Recommended next path:
 - If no stale `processing` row exists, stop and decide separately whether to create a synthetic test row; do not create one as part of the D3c-2l smoke script.
 - Run D3c-2l only as a manual verification session with normal owner credentials and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - If synthetic data is needed, follow D3c-2m only in local/staging and verify the missing-final-event path first.
+- Before any D3c-2n implementation, D3c-2m local/staging verification must pass.
+- The first D3c-2n implementation, if later approved, should be owner-only, single-row, and limited to owner-created `failed_retryable` checklist-toggle rows.
 - Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:
@@ -469,4 +474,6 @@ Do not approve yet:
 - Any batch call to `recover_stale_processing_pending_operation`.
 - Any production synthetic stale `processing` row.
 - Any production SQL insert/update for pending-operation recovery testing.
+- Any owner retry/drain action for staff-created pending rows.
+- Any D3c-2n runtime code before D3c-2m local/staging verification passes.
 - Any cache replacement execute behavior.

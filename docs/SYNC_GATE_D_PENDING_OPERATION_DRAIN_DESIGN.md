@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Pending Operation Drain Design
 
 Created: 2026-06-21
-Status: D3c-2 design complete through D3c-2m synthetic stale recovery test plan; no batch worker or production default enablement approved
+Status: D3c-2 design complete through D3c-2n retry/drain action design; no batch worker or production default enablement approved
 
 ## 0. Purpose
 
@@ -39,6 +39,7 @@ Owner-only diagnostics status:
 - D3c-2k owner-confirmed one-row stale `processing` recovery UI action added to owner diagnostics UI.
 - D3c-2l manual stale `processing` recovery smoke plan and guarded script added.
 - D3c-2m local/staging-only synthetic stale `processing` recovery test plan added.
+- D3c-2n retry/drain action design added.
 - No batch action, RLS, worker, retry, drain, cleanup, or automatic runtime repair caller is approved by that design.
 
 Still not approved:
@@ -427,3 +428,18 @@ Status:
 - Guardrails added as `tests/sync-gate-d-synthetic-stale-recovery-test-plan.test.ts`.
 - No D3c-2m local or staging execution has been performed by this slice.
 - No production synthetic data creation, event fixture, retry, drain, worker, cleanup, runtime code, migration, RLS, or feature-flag change was added.
+
+### D3c-2n: Retry/Drain Action Design
+
+Recommended before any retry/drain implementation:
+- Document the owner-only single-row retry/drain boundary.
+- Require D3c-2m local/staging verification before implementation.
+- Recognize that the existing drain RPC requires caller equals `pending_operations.actor_id`.
+- Limit the first future action to owner-created `failed_retryable` checklist-toggle rows.
+- Defer owner-on-behalf-of-staff drain semantics.
+
+Status:
+- Design added as `docs/SYNC_GATE_D_D3C_2N_RETRY_DRAIN_ACTION_DESIGN.md`.
+- Guardrails added as `tests/sync-gate-d-retry-drain-action-design.test.ts`.
+- No D3c-2n runtime code, UI button, service wrapper, migration, RLS, worker, production execution, or feature-flag change was added.
+- The next D3c-2n implementation slice is high risk because it may call the final-event-writing drain RPC.
