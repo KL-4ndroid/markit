@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Owner Diagnostics Design
 
 Created: 2026-06-22
-Status: D3c-2j read-only stale processing UI indicator added; no UI mutation action, RLS, worker, retry, drain, cleanup, or runtime repair caller is approved by this document
+Status: D3c-2i single-row stale processing recovery RPC draft added; no UI mutation action, RLS, worker, retry, drain, cleanup, or runtime repair caller is approved by this document
 
 ## 0. Purpose
 
@@ -39,10 +39,6 @@ Completed before this design:
   - `supabase/migrations/052_recover_stale_processing_pending_operation.sql`
   - SQL guardrails in `tests/supabase-pending-operations-stale-recovery-rpc.test.ts`
   - no UI action or runtime caller
-- D3c-2j added a read-only stale `processing` UI indicator:
-  - derived from existing diagnostics `status` and `updatedAt`
-  - fixed 15-minute threshold in UI code
-  - no call to `recover_stale_processing_pending_operation`
 
 Still default-off:
 - `pendingOperationWriteRouting`
@@ -64,7 +60,6 @@ Recommended implementation path:
 - Add a read-only owner diagnostics UI shell in `/recovery`. Completed as D3c-2g.
 - Add a stale `processing` recovery design before any recovery action. Completed as D3c-2h.
 - Add a single-row owner-only stale `processing` recovery RPC draft with no UI/runtime caller. Completed as D3c-2i.
-- Add a read-only stale `processing` indicator to owner diagnostics UI. Completed as D3c-2j.
 - Keep all mutation actions out of diagnostics UI.
 
 Why this is the safest next step:
@@ -278,11 +273,12 @@ Do not drop `pending_operations` while rows exist unless rows are exported, drai
 
 ## 11. Next Approval Boundary
 
-This document now records the D3c-2j read-only stale `processing` UI indicator, but it still approves no diagnostics UI mutation action.
+This document now records the D3c-2i single-row stale `processing` recovery RPC draft, but it still approves no diagnostics UI mutation action.
 
 The next high-risk decision is choosing one implementation slice:
+- D3c-2j: stale `processing` read-only indicator enhancement
 - D3c-2k: owner-confirmed one-row recovery UI action
 
 Recommended next slice:
-- D3c-2k owner-confirmed one-row recovery UI action only if explicitly approved.
+- D3c-2j stale `processing` read-only indicator enhancement.
 - Keep any future action one-row, owner-confirmed, and separate from broad retry/drain behavior.

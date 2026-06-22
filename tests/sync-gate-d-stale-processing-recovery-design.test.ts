@@ -43,20 +43,18 @@ function readProjectFile(path: string): string {
 
 console.log('\n=== Sync Gate D stale processing recovery design ===');
 
-runTest('stale processing recovery design records the approved D3c-2j UI indicator boundary', () => {
+runTest('stale processing recovery design records the approved D3c-2i RPC boundary', () => {
   assert.ok(existsSync(designPath));
   assert.ok(existsSync(recoveryMigrationPath));
-  assert.match(designSource, /Status: D3c-2j read-only stale processing UI indicator added/);
+  assert.match(designSource, /Status: D3c-2i single-row RPC draft added separately/);
   assert.match(designSource, /no UI action, worker, retry, drain, cleanup, batch recovery, or runtime caller is approved/);
   assert.match(designSource, /052_recover_stale_processing_pending_operation\.sql/);
   assert.match(diagnosticsDesignSource, /D3c-2h added stale `processing` recovery design/);
-  assert.match(diagnosticsDesignSource, /D3c-2i added a single-row stale `processing` recovery RPC draft/);
+  assert.match(diagnosticsDesignSource, /D3c-2i single-row stale `processing` recovery RPC draft/);
   assert.match(drainDesignSource, /D3c-2h stale `processing` recovery design/);
   assert.match(drainDesignSource, /D3c-2i: Single-Row Stale Processing Recovery RPC Draft/);
-  assert.match(drainDesignSource, /D3c-2j: Read-Only Stale Processing UI Indicator/);
   assert.match(decisionSource, /D3c-2h stale `processing` recovery design is added/);
   assert.match(decisionSource, /D3c-2i single-row stale `processing` recovery RPC draft is added/);
-  assert.match(decisionSource, /D3c-2j read-only stale `processing` UI indicator is added/);
 });
 
 runTest('design defines stale processing threshold and server-side boundary', () => {
