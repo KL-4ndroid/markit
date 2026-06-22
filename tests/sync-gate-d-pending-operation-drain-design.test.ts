@@ -31,11 +31,11 @@ const productionFiles = [
 
 console.log('\n=== Sync Gate D pending operation drain design ===');
 
-runTest('D3c-2 drain design records D3c-2d completion with controlled enablement', () => {
+runTest('D3c-2 drain design records progress through D3c-2l with controlled boundaries', () => {
   assert.ok(existsSync(designPath));
   assert.match(
     designSource,
-    /Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete; D3c-2c gated runtime drain call complete; D3c-2d controlled enablement complete; D3c-2e manual cloud smoke completed once/
+    /Status: D3c-2 design complete through D3c-2l stale recovery smoke plan; no batch worker or production default enablement approved/
   );
   assert.match(designSource, /050_drain_checklist_toggle_pending_operation\.sql/);
   assert.match(designSource, /pendingOperationDrainAfterEnqueue` is a dedicated drain flag and remains default-off/);
@@ -44,6 +44,10 @@ runTest('D3c-2 drain design records D3c-2d completion with controlled enablement
   assert.match(designSource, /scripts\/gate-d-checklist-toggle-smoke\.mjs/);
   assert.match(designSource, /One manual execution completed against disposable production checklist data/);
   assert.match(designSource, /Future executions still require manual selection/);
+  assert.match(designSource, /D3c-2l: Manual Stale Processing Recovery Smoke Verification/);
+  assert.match(designSource, /scripts\/gate-d-stale-processing-recovery-smoke\.mjs/);
+  assert.match(designSource, /tests\/sync-gate-d-stale-recovery-smoke-script\.test\.ts/);
+  assert.match(designSource, /No D3c-2l cloud recovery execution has been performed by this slice/);
   assert.match(designSource, /No batch drain\/worker is approved by this document/);
   assert.match(designSource, /No feature flag default change is approved by this document/);
   assert.match(designSource, /No RLS policy change is approved by this document/);

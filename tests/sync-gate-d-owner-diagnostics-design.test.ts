@@ -41,9 +41,10 @@ function readProjectFile(path: string): string {
 
 console.log('\n=== Sync Gate D owner diagnostics design ===');
 
-runTest('owner diagnostics design records D3c-2g through D3c-2k while blocking broad mutation actions', () => {
+runTest('owner diagnostics design records D3c-2g through D3c-2l while blocking broad mutation actions', () => {
   assert.ok(existsSync(designPath));
   assert.match(designSource, /D3c-2k owner-confirmed one-row stale `processing` recovery UI action/);
+  assert.match(designSource, /D3c-2l added a manual stale `processing` recovery smoke plan and guarded script/);
   assert.match(designSource, /calls only `recover_stale_processing_pending_operation`/);
   assert.match(designSource, /051_list_owner_pending_operation_diagnostics\.sql/);
   assert.match(designSource, /052_recover_stale_processing_pending_operation\.sql/);
@@ -51,9 +52,11 @@ runTest('owner diagnostics design records D3c-2g through D3c-2k while blocking b
   assert.match(designSource, /owner-pending-operation-diagnostics\.ts/);
   assert.match(designSource, /tests\/sync-gate-d-owner-diagnostics-ui\.test\.ts/);
   assert.match(designSource, /tests\/sync-gate-d-stale-processing-recovery-design\.test\.ts/);
+  assert.match(designSource, /manual stale `processing` recovery smoke plan/);
   assert.match(designSource, /tests\/supabase-pending-operations-stale-recovery-rpc\.test\.ts/);
   assert.match(designSource, /tests\/supabase-pending-operations-diagnostics-rpc\.test\.ts/);
-  assert.match(designSource, /The goal is observability, not repair/);
+  assert.match(designSource, /The primary goal is observability/);
+  assert.match(designSource, /only approved repair behavior is the D3c-2k owner-confirmed one-row stale `processing` recovery action/);
   assert.match(decisionSource, /Owner-only diagnostics has a design-only safety contract/);
   assert.match(decisionSource, /D3c-2f owner-only read diagnostics RPC draft is added/);
   assert.match(decisionSource, /D3c-2g read-only owner diagnostics UI shell is added/);
@@ -61,6 +64,7 @@ runTest('owner diagnostics design records D3c-2g through D3c-2k while blocking b
   assert.match(decisionSource, /D3c-2i single-row stale `processing` recovery RPC draft is added/);
   assert.match(decisionSource, /D3c-2j read-only stale `processing` UI indicator is added/);
   assert.match(decisionSource, /D3c-2k owner-confirmed one-row stale `processing` recovery UI action is added/);
+  assert.match(decisionSource, /D3c-2l manual stale `processing` recovery smoke verification plan and guarded script are added/);
   assert.match(drainDesignSource, /Owner-only diagnostics status/);
 });
 

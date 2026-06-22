@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Write Routing Decision Record
 
 Created: 2026-06-21
-Status: active Gate D decision record after D3c-2e manual cloud smoke verification
+Status: active Gate D decision record after D3c-2l stale processing recovery smoke plan
 
 ## 0. Purpose
 
@@ -15,9 +15,16 @@ Current approvals:
 - D3c-2c approved a gated runtime drain call after successful enqueue.
 - D3c-2d approved controlled test/staging enablement for the two checklist-toggle flags.
 - D3c-2e completed one manual cloud smoke verification against disposable production checklist data.
+- D3c-2f approved an owner-only read diagnostics RPC draft.
+- D3c-2g approved a read-only owner diagnostics UI shell in `/recovery`.
+- D3c-2h approved stale `processing` recovery design.
+- D3c-2i approved a single-row stale `processing` recovery RPC draft.
+- D3c-2j approved a read-only stale `processing` UI indicator.
+- D3c-2k approved an owner-confirmed one-row stale `processing` recovery UI action.
+- D3c-2l approved a manual stale `processing` recovery smoke verification plan and guarded script.
 
 Still not approved:
-- No UI behavior change is approved by this document.
+- No ordinary market-detail, staff workflow, revenue, inventory, product, or market UI behavior change is approved by this document.
 - No Supabase RLS change after 048 is approved by this document.
 - No cache replacement execute behavior is approved by this document.
 - No broad worker, production flag default, or production-wide final-event writer is approved by this document.
@@ -429,6 +436,8 @@ Current status:
 - D3c-2i single-row stale `processing` recovery RPC draft is added as `052_recover_stale_processing_pending_operation.sql`; no UI/runtime caller, worker, retry, drain, or cleanup action is approved.
 - D3c-2j read-only stale `processing` UI indicator is added; no recovery action is approved.
 - D3c-2k owner-confirmed one-row stale `processing` recovery UI action is added; no batch action, worker, retry, drain, cleanup, RLS, or feature-flag change is approved.
+- D3c-2l manual stale `processing` recovery smoke verification plan and guarded script are added; no automatic execution, row creation, batch action, worker, retry, drain, cleanup, RLS, or feature-flag change is approved.
+- No D3c-2l cloud recovery execution has been performed by this slice.
 
 Confirmed decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.
@@ -439,8 +448,9 @@ Confirmed decisions for D3c-2e:
 
 Recommended next path:
 - Keep the successful operation and event as audit evidence unless owner-approved cleanup is required.
-- Run one owner test and one additional staff operator/manager test if separate accounts are available.
-- Decide whether the next approved implementation slice should be D3c-2l manual cloud verification of one disposable stale `processing` row.
+- Choose one disposable or non-production stale `processing` pending operation before running D3c-2l manually.
+- If no stale `processing` row exists, stop and decide separately whether to create a synthetic test row; do not create one as part of the D3c-2l smoke script.
+- Run D3c-2l only as a manual verification session with normal owner credentials and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:

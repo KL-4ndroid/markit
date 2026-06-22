@@ -74,7 +74,8 @@ runTest('smoke script rejects service-role-looking keys and text mutation', () =
 
 runTest('decision record still treats D3c-2e as narrow manual verification only', () => {
   assert.match(decisionSource, /one D3c-2e manual cloud smoke execution are complete/);
-  assert.match(decisionSource, /Run one owner test and one additional staff operator\/manager test if separate accounts are available/);
+  assert.match(decisionSource, /Choose one disposable or non-production stale `processing` pending operation before running D3c-2l manually/);
+  assert.match(decisionSource, /No D3c-2l cloud recovery execution has been performed by this slice/);
   assert.match(decisionSource, /Keep both flags default-off/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Turning `pendingOperationWriteRouting` on by default/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Turning `pendingOperationDrainAfterEnqueue` on by default/);

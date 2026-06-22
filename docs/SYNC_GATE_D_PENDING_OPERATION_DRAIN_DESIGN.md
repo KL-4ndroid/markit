@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Pending Operation Drain Design
 
 Created: 2026-06-21
-Status: D3c-2 design complete; D3c-2b single-operation drain RPC draft complete; D3c-2c gated runtime drain call complete; D3c-2d controlled enablement complete; D3c-2e manual cloud smoke completed once
+Status: D3c-2 design complete through D3c-2l stale recovery smoke plan; no batch worker or production default enablement approved
 
 ## 0. Purpose
 
@@ -36,7 +36,9 @@ Owner-only diagnostics status:
 - D3c-2h stale `processing` recovery design added in `docs/SYNC_GATE_D_STALE_PROCESSING_RECOVERY_DESIGN.md`.
 - D3c-2i single-row stale `processing` recovery RPC draft added in `052_recover_stale_processing_pending_operation.sql`.
 - D3c-2j read-only stale `processing` indicator added to owner diagnostics UI.
-- No UI action, RLS, worker, retry, drain, cleanup, or runtime repair caller is approved by that design.
+- D3c-2k owner-confirmed one-row stale `processing` recovery UI action added to owner diagnostics UI.
+- D3c-2l manual stale `processing` recovery smoke plan and guarded script added.
+- No batch action, RLS, worker, retry, drain, cleanup, or automatic runtime repair caller is approved by that design.
 
 Still not approved:
 - No batch drain/worker is approved by this document.
@@ -391,3 +393,20 @@ Status:
 - Service wrapper added in `lib/sync/owner-pending-operation-diagnostics.ts`.
 - Guardrails updated in `tests/sync-gate-d-owner-diagnostics-ui.test.ts`.
 - No batch action, worker, retry execution, drain, cleanup, RLS, or feature-flag change was added.
+
+### D3c-2l: Manual Stale Processing Recovery Smoke Verification
+
+Recommended before any retry/drain action:
+- Verify the D3c-2k owner-confirmed recovery path with one disposable or non-production stale `processing` row.
+- Use a guarded script that requires explicit target classification and confirmation text.
+- Read the selected row before and after the RPC.
+- Call only `recover_stale_processing_pending_operation`.
+- Do not create a target row, create events, call drain, call enqueue, or direct-write tables.
+
+Status:
+- Manual smoke plan added as `docs/SYNC_GATE_D_D3C_2L_STALE_RECOVERY_SMOKE_TEST.md`.
+- Guarded script added as `scripts/gate-d-stale-processing-recovery-smoke.mjs`.
+- Guardrails added as `tests/sync-gate-d-stale-recovery-smoke-script.test.ts`.
+- The script is intentionally not wired to `package.json` scripts.
+- No D3c-2l cloud recovery execution has been performed by this slice.
+- If no disposable or non-production stale `processing` row exists, stop and decide separately whether to create synthetic test data.

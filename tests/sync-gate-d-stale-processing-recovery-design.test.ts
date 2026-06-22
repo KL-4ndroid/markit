@@ -40,10 +40,12 @@ function readProjectFile(path: string): string {
 
 console.log('\n=== Sync Gate D stale processing recovery design ===');
 
-runTest('stale processing recovery design records the approved D3c-2k recovery action boundary', () => {
+runTest('stale processing recovery design records the approved D3c-2k action and D3c-2l smoke boundary', () => {
   assert.ok(existsSync(designPath));
   assert.ok(existsSync(recoveryMigrationPath));
-  assert.match(designSource, /D3c-2k owner-confirmed one-row recovery UI action added/);
+  assert.match(designSource, /D3c-2l manual stale recovery smoke plan added/);
+  assert.match(designSource, /D3c-2k added an owner-confirmed one-row recovery UI action/);
+  assert.match(designSource, /D3c-2l added a manual stale `processing` recovery smoke plan and guarded script/);
   assert.match(designSource, /no worker, retry, drain, cleanup, batch recovery, RLS change, or feature-flag change is approved/);
   assert.match(designSource, /052_recover_stale_processing_pending_operation\.sql/);
   assert.match(diagnosticsDesignSource, /D3c-2h added stale `processing` recovery design/);
@@ -52,10 +54,12 @@ runTest('stale processing recovery design records the approved D3c-2k recovery a
   assert.match(drainDesignSource, /D3c-2i: Single-Row Stale Processing Recovery RPC Draft/);
   assert.match(drainDesignSource, /D3c-2j: Read-Only Stale Processing UI Indicator/);
   assert.match(drainDesignSource, /D3c-2k: Owner-Confirmed One-Row Recovery UI Action/);
+  assert.match(drainDesignSource, /D3c-2l: Manual Stale Processing Recovery Smoke Verification/);
   assert.match(decisionSource, /D3c-2h stale `processing` recovery design is added/);
   assert.match(decisionSource, /D3c-2i single-row stale `processing` recovery RPC draft is added/);
   assert.match(decisionSource, /D3c-2j read-only stale `processing` UI indicator is added/);
   assert.match(decisionSource, /D3c-2k owner-confirmed one-row stale `processing` recovery UI action is added/);
+  assert.match(decisionSource, /D3c-2l manual stale `processing` recovery smoke verification plan and guarded script are added/);
 });
 
 runTest('design defines stale processing threshold and server-side boundary', () => {

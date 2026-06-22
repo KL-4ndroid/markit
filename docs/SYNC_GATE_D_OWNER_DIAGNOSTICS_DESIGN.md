@@ -1,13 +1,13 @@
 # BoothBook Sync Gate D Owner Diagnostics Design
 
 Created: 2026-06-22
-Status: D3c-2j read-only stale processing UI indicator added; no UI mutation action, RLS, worker, retry, drain, cleanup, or runtime repair caller is approved by this document
+Status: D3c-2l manual stale recovery smoke plan added; no batch mutation action, RLS, worker, retry, drain, cleanup, or automatic runtime repair caller is approved by this document
 
 ## 0. Purpose
 
 This document defines the safety contract for a future owner-only diagnostics surface for `pending_operations`.
 
-The goal is observability, not repair:
+The primary goal is observability. The only approved repair behavior is the D3c-2k owner-confirmed one-row stale `processing` recovery action:
 - Let the owner inspect whether pending-operation delivery is healthy.
 - Make blocked or failed rows understandable.
 - Keep the existing event model as the source of truth.
@@ -43,6 +43,15 @@ Completed before this design:
   - derived from existing diagnostics `status` and `updatedAt`
   - fixed 15-minute threshold in UI code
   - no call to `recover_stale_processing_pending_operation`
+- D3c-2k added an owner-confirmed one-row stale `processing` recovery UI action:
+  - owner-only `/recovery`
+  - one stale `processing` row at a time
+  - explicit browser confirmation
+  - calls only `recover_stale_processing_pending_operation`
+- D3c-2l added a manual stale `processing` recovery smoke plan and guarded script:
+  - no automatic execution
+  - no target row creation
+  - no batch recovery
 
 Still default-off:
 - `pendingOperationWriteRouting`
@@ -53,8 +62,8 @@ Still not approved:
 - Any production flag default change.
 - Any cache replacement execute behavior.
 - Any staff diagnostics inbox.
-- Any owner UI that can mutate pending rows.
-- Any diagnostics mutation action.
+- Any owner UI mutation beyond the approved D3c-2k one-row recovery action.
+- Any diagnostics mutation outside stale `processing` recovery.
 
 ## 2. Recommendation
 
@@ -65,7 +74,9 @@ Recommended implementation path:
 - Add a stale `processing` recovery design before any recovery action. Completed as D3c-2h.
 - Add a single-row owner-only stale `processing` recovery RPC draft with no UI/runtime caller. Completed as D3c-2i.
 - Add a read-only stale `processing` indicator to owner diagnostics UI. Completed as D3c-2j.
-- Keep all mutation actions out of diagnostics UI.
+- Add an owner-confirmed one-row recovery action only after the RPC and indicator pass. Completed as D3c-2k.
+- Add manual smoke verification planning before any retry/drain action. Completed as D3c-2l.
+- Keep retry, drain, cleanup, batch, and worker actions out of diagnostics UI.
 
 Why this is the safest next step:
 - A successful smoke test proves the narrow enqueue/drain path once, but it does not prove broad operational handling.
@@ -278,7 +289,7 @@ Do not drop `pending_operations` while rows exist unless rows are exported, drai
 
 ## 11. Next Approval Boundary
 
-This document now records the D3c-2k owner-confirmed one-row stale `processing` recovery UI action.
+This document now records the D3c-2k owner-confirmed one-row stale `processing` recovery UI action and D3c-2l manual smoke verification plan.
 
 Approved action boundary:
 - owner-only `/recovery`;
@@ -288,9 +299,10 @@ Approved action boundary:
 - reloads diagnostics after completion.
 
 The next high-risk decision is choosing one implementation slice:
-- D3c-2l: manual cloud verification of one disposable stale `processing` row
-- D3c-2m: explicit retry/drain action design
+- manually execute D3c-2l against one disposable or non-production stale `processing` row
+- create synthetic stale `processing` test data if no suitable row exists
+- start D3c-2m explicit retry/drain action design
 
 Recommended next slice:
-- D3c-2l manual cloud verification, using disposable or non-production pending-operation data.
+- Execute D3c-2l manually only after choosing disposable or non-production pending-operation data.
 - Keep retry/drain action separate from stale recovery.

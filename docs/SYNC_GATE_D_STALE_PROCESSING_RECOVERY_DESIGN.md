@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Stale Processing Recovery Design
 
 Created: 2026-06-22
-Status: D3c-2k owner-confirmed one-row recovery UI action added; no worker, retry, drain, cleanup, batch recovery, RLS change, or feature-flag change is approved by this document
+Status: D3c-2l manual stale recovery smoke plan added; no worker, retry, drain, cleanup, batch recovery, RLS change, or feature-flag change is approved by this document
 
 ## 0. Purpose
 
@@ -24,14 +24,15 @@ Completed before this design:
 - D3c-2i added `052_recover_stale_processing_pending_operation.sql` as a single-row owner-only RPC draft.
 - D3c-2j added a read-only stale `processing` indicator to owner diagnostics UI.
 - D3c-2k added an owner-confirmed one-row recovery UI action.
+- D3c-2l added a manual stale `processing` recovery smoke plan and guarded script.
 
 Still not approved:
 - Any automatic worker.
 - Any retry button.
 - Any reset button.
 - Any cleanup/delete action.
-- Any mutation from diagnostics UI.
-- Any UI/runtime caller for the recovery RPC.
+- Any diagnostics mutation beyond the approved D3c-2k owner-confirmed one-row recovery action.
+- Any UI/runtime caller for the recovery RPC outside owner-only `/recovery`.
 - Any broad service-role processor.
 
 ## 2. What Counts As Stale
@@ -150,7 +151,8 @@ Recommended future sequence:
 2. D3c-2i single-row stale processing recovery RPC draft. Completed as `052_recover_stale_processing_pending_operation.sql`.
 3. D3c-2j read-only UI can display recoverable stale rows with no action. Completed in `OwnerPendingOperationDiagnosticsPanel`.
 4. D3c-2k owner-confirmed one-row recovery action. Completed in `OwnerPendingOperationDiagnosticsPanel`.
-5. Only after those pass, discuss explicit retry/drain action.
+5. D3c-2l manual cloud verification of one disposable or non-production stale `processing` row. Plan and guarded script added; no execution has been performed by this slice.
+6. Only after those pass, discuss explicit retry/drain action.
 
 Retry remains a separate approval because it can eventually create final events through the drain path.
 
@@ -199,4 +201,10 @@ Rollback for the D3c-2k UI action is:
 - leave the RPC in place unless a separate rollback removes 052;
 - leave existing pending rows unchanged.
 
-If a future recovery action is implemented, it must define its own rollback or no-rollback statement.
+Rollback for the D3c-2l smoke plan before manual execution is:
+- remove `docs/SYNC_GATE_D_D3C_2L_STALE_RECOVERY_SMOKE_TEST.md`;
+- remove `scripts/gate-d-stale-processing-recovery-smoke.mjs`;
+- remove `tests/sync-gate-d-stale-recovery-smoke-script.test.ts`;
+- leave runtime behavior and cloud data unchanged.
+
+If a future retry, drain, worker, or cleanup action is implemented, it must define its own rollback or no-rollback statement.
