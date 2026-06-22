@@ -31,11 +31,11 @@ const productionFiles = [
 
 console.log('\n=== Sync Gate D pending operation drain design ===');
 
-runTest('D3c-2 drain design records progress through D3c-2l with controlled boundaries', () => {
+runTest('D3c-2 drain design records progress through D3c-2m with controlled boundaries', () => {
   assert.ok(existsSync(designPath));
   assert.match(
     designSource,
-    /Status: D3c-2 design complete through D3c-2l stale recovery smoke plan; no batch worker or production default enablement approved/
+    /Status: D3c-2 design complete through D3c-2m synthetic stale recovery test plan; no batch worker or production default enablement approved/
   );
   assert.match(designSource, /050_drain_checklist_toggle_pending_operation\.sql/);
   assert.match(designSource, /pendingOperationDrainAfterEnqueue` is a dedicated drain flag and remains default-off/);
@@ -48,6 +48,10 @@ runTest('D3c-2 drain design records progress through D3c-2l with controlled boun
   assert.match(designSource, /scripts\/gate-d-stale-processing-recovery-smoke\.mjs/);
   assert.match(designSource, /tests\/sync-gate-d-stale-recovery-smoke-script\.test\.ts/);
   assert.match(designSource, /No D3c-2l cloud recovery execution has been performed by this slice/);
+  assert.match(designSource, /D3c-2m: Synthetic Stale Processing Recovery Test Plan/);
+  assert.match(designSource, /docs\/SYNC_GATE_D_D3C_2M_SYNTHETIC_STALE_RECOVERY_TEST_PLAN\.md/);
+  assert.match(designSource, /tests\/sync-gate-d-synthetic-stale-recovery-test-plan\.test\.ts/);
+  assert.match(designSource, /No D3c-2m local or staging execution has been performed by this slice/);
   assert.match(designSource, /No batch drain\/worker is approved by this document/);
   assert.match(designSource, /No feature flag default change is approved by this document/);
   assert.match(designSource, /No RLS policy change is approved by this document/);

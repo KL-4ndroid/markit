@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Owner Diagnostics Design
 
 Created: 2026-06-22
-Status: D3c-2l manual stale recovery smoke plan added; no batch mutation action, RLS, worker, retry, drain, cleanup, or automatic runtime repair caller is approved by this document
+Status: D3c-2m synthetic stale recovery test plan added; no production synthetic data, batch mutation action, RLS, worker, retry, drain, cleanup, or automatic runtime repair caller is approved by this document
 
 ## 0. Purpose
 
@@ -52,6 +52,11 @@ Completed before this design:
   - no automatic execution
   - no target row creation
   - no batch recovery
+- D3c-2m added a local/staging-only synthetic stale `processing` recovery test plan:
+  - no production synthetic data
+  - no runtime code
+  - no event fixture
+  - no retry/drain action
 
 Still default-off:
 - `pendingOperationWriteRouting`
@@ -76,6 +81,7 @@ Recommended implementation path:
 - Add a read-only stale `processing` indicator to owner diagnostics UI. Completed as D3c-2j.
 - Add an owner-confirmed one-row recovery action only after the RPC and indicator pass. Completed as D3c-2k.
 - Add manual smoke verification planning before any retry/drain action. Completed as D3c-2l.
+- Add local/staging-only synthetic stale recovery test planning if production has no natural disposable stale row. Completed as D3c-2m.
 - Keep retry, drain, cleanup, batch, and worker actions out of diagnostics UI.
 
 Why this is the safest next step:
@@ -289,7 +295,7 @@ Do not drop `pending_operations` while rows exist unless rows are exported, drai
 
 ## 11. Next Approval Boundary
 
-This document now records the D3c-2k owner-confirmed one-row stale `processing` recovery UI action and D3c-2l manual smoke verification plan.
+This document now records the D3c-2k owner-confirmed one-row stale `processing` recovery UI action, D3c-2l manual smoke verification plan, and D3c-2m local/staging synthetic stale recovery test plan.
 
 Approved action boundary:
 - owner-only `/recovery`;
@@ -300,9 +306,9 @@ Approved action boundary:
 
 The next high-risk decision is choosing one implementation slice:
 - manually execute D3c-2l against one disposable or non-production stale `processing` row
-- create synthetic stale `processing` test data if no suitable row exists
-- start D3c-2m explicit retry/drain action design
+- manually execute D3c-2m in local/staging with one synthetic stale `processing` row
+- start explicit retry/drain action design after stale recovery verification
 
 Recommended next slice:
-- Execute D3c-2l manually only after choosing disposable or non-production pending-operation data.
+- Execute D3c-2m manually in local/staging if no natural disposable stale row exists.
 - Keep retry/drain action separate from stale recovery.

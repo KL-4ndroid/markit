@@ -41,10 +41,11 @@ function readProjectFile(path: string): string {
 
 console.log('\n=== Sync Gate D owner diagnostics design ===');
 
-runTest('owner diagnostics design records D3c-2g through D3c-2l while blocking broad mutation actions', () => {
+runTest('owner diagnostics design records D3c-2g through D3c-2m while blocking broad mutation actions', () => {
   assert.ok(existsSync(designPath));
   assert.match(designSource, /D3c-2k owner-confirmed one-row stale `processing` recovery UI action/);
   assert.match(designSource, /D3c-2l added a manual stale `processing` recovery smoke plan and guarded script/);
+  assert.match(designSource, /D3c-2m added a local\/staging-only synthetic stale `processing` recovery test plan/);
   assert.match(designSource, /calls only `recover_stale_processing_pending_operation`/);
   assert.match(designSource, /051_list_owner_pending_operation_diagnostics\.sql/);
   assert.match(designSource, /052_recover_stale_processing_pending_operation\.sql/);
@@ -65,6 +66,7 @@ runTest('owner diagnostics design records D3c-2g through D3c-2l while blocking b
   assert.match(decisionSource, /D3c-2j read-only stale `processing` UI indicator is added/);
   assert.match(decisionSource, /D3c-2k owner-confirmed one-row stale `processing` recovery UI action is added/);
   assert.match(decisionSource, /D3c-2l manual stale `processing` recovery smoke verification plan and guarded script are added/);
+  assert.match(decisionSource, /D3c-2m synthetic stale `processing` recovery test plan is added/);
   assert.match(drainDesignSource, /Owner-only diagnostics status/);
 });
 

@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Pending Operation Drain Design
 
 Created: 2026-06-21
-Status: D3c-2 design complete through D3c-2l stale recovery smoke plan; no batch worker or production default enablement approved
+Status: D3c-2 design complete through D3c-2m synthetic stale recovery test plan; no batch worker or production default enablement approved
 
 ## 0. Purpose
 
@@ -38,6 +38,7 @@ Owner-only diagnostics status:
 - D3c-2j read-only stale `processing` indicator added to owner diagnostics UI.
 - D3c-2k owner-confirmed one-row stale `processing` recovery UI action added to owner diagnostics UI.
 - D3c-2l manual stale `processing` recovery smoke plan and guarded script added.
+- D3c-2m local/staging-only synthetic stale `processing` recovery test plan added.
 - No batch action, RLS, worker, retry, drain, cleanup, or automatic runtime repair caller is approved by that design.
 
 Still not approved:
@@ -410,3 +411,19 @@ Status:
 - The script is intentionally not wired to `package.json` scripts.
 - No D3c-2l cloud recovery execution has been performed by this slice.
 - If no disposable or non-production stale `processing` row exists, stop and decide separately whether to create synthetic test data.
+
+### D3c-2m: Synthetic Stale Processing Recovery Test Plan
+
+Recommended before creating any synthetic stale row:
+- Keep synthetic data out of production.
+- Use only local or staging Supabase with migrations 048 through 052 applied.
+- Test the missing-final-event path first.
+- Create one synthetic `processing` pending row at least 15 minutes old.
+- Recover it through the existing guarded D3c-2l script.
+- Expect `failed_retryable` with `last_error_code = 'stale_processing_reset'`.
+
+Status:
+- Plan added as `docs/SYNC_GATE_D_D3C_2M_SYNTHETIC_STALE_RECOVERY_TEST_PLAN.md`.
+- Guardrails added as `tests/sync-gate-d-synthetic-stale-recovery-test-plan.test.ts`.
+- No D3c-2m local or staging execution has been performed by this slice.
+- No production synthetic data creation, event fixture, retry, drain, worker, cleanup, runtime code, migration, RLS, or feature-flag change was added.

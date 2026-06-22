@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Write Routing Decision Record
 
 Created: 2026-06-21
-Status: active Gate D decision record after D3c-2l stale processing recovery smoke plan
+Status: active Gate D decision record after D3c-2m synthetic stale recovery test plan
 
 ## 0. Purpose
 
@@ -22,6 +22,7 @@ Current approvals:
 - D3c-2j approved a read-only stale `processing` UI indicator.
 - D3c-2k approved an owner-confirmed one-row stale `processing` recovery UI action.
 - D3c-2l approved a manual stale `processing` recovery smoke verification plan and guarded script.
+- D3c-2m approved a local/staging-only synthetic stale `processing` recovery test plan.
 
 Still not approved:
 - No ordinary market-detail, staff workflow, revenue, inventory, product, or market UI behavior change is approved by this document.
@@ -438,6 +439,9 @@ Current status:
 - D3c-2k owner-confirmed one-row stale `processing` recovery UI action is added; no batch action, worker, retry, drain, cleanup, RLS, or feature-flag change is approved.
 - D3c-2l manual stale `processing` recovery smoke verification plan and guarded script are added; no automatic execution, row creation, batch action, worker, retry, drain, cleanup, RLS, or feature-flag change is approved.
 - No D3c-2l cloud recovery execution has been performed by this slice.
+- D3c-2m synthetic stale `processing` recovery test plan is added; no production execution, production synthetic data creation, runtime code, migration, RLS, worker, retry, drain, cleanup, or feature-flag change is approved.
+- No production synthetic data creation is approved.
+- No D3c-2m local or staging execution has been performed by this slice.
 
 Confirmed decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.
@@ -451,6 +455,7 @@ Recommended next path:
 - Choose one disposable or non-production stale `processing` pending operation before running D3c-2l manually.
 - If no stale `processing` row exists, stop and decide separately whether to create a synthetic test row; do not create one as part of the D3c-2l smoke script.
 - Run D3c-2l only as a manual verification session with normal owner credentials and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- If synthetic data is needed, follow D3c-2m only in local/staging and verify the missing-final-event path first.
 - Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:
@@ -462,4 +467,6 @@ Do not approve yet:
 - A broad service-role batch worker.
 - Any diagnostics mutation action outside the approved single-row stale recovery action.
 - Any batch call to `recover_stale_processing_pending_operation`.
+- Any production synthetic stale `processing` row.
+- Any production SQL insert/update for pending-operation recovery testing.
 - Any cache replacement execute behavior.
