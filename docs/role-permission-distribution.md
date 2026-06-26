@@ -12,7 +12,7 @@
 
 `/demo` 是 Féria Demo Mode，僅使用 `lib/demo/*` 的靜態範例資料與 React local state。此路由不讀取正式市集、商品、銷售、成本、同步或角色資料。
 
-### Auth / Role boundary
+### Auth / Role / Navigation boundary
 
 為了讓 `/demo` 可作為對外展示頁，以下 guard 將 `/demo` 視為 public route：
 
@@ -20,6 +20,8 @@
 - `components/auth/RoleGuard.tsx`
 
 `RoleGuard` 對 public route 會直接 render children，不掛載 `ProtectedRoleGuard`，因此不會在 `/demo` 觸發 `useUserRole()` 查詢。
+
+`components/BottomNavigation.tsx` 會在 `/demo` 直接回傳 `null`，避免公開展示頁掛載正式 App 的底部導航與 role-dependent navigation behavior。
 
 ### Permission impact
 
