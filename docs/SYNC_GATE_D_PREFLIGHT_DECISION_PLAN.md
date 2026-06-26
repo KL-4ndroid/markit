@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Preflight Decision Plan
 
 Created: 2026-06-20
-Status: pre-implementation decision plan
+Status: historical pre-implementation decision plan; superseded for current execution by later Gate D decision records
 
 ## 0. Purpose
 
@@ -16,9 +16,11 @@ Already completed:
 - Gate B: local-only pending operation model.
 - Gate C: replace-cache preview-only helper.
 - Gate D2a: `pending_operations` schema draft, migration tests, and guardrail allowlist.
+- Later Gate D checklist-toggle slices through D3c-2n are recorded in `docs/SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD.md`.
+- D3c-2m local/staging synthetic stale recovery execution passed on 2026-06-26 Asia/Taipei.
 
 Still not implemented:
-- No production write path uses the `pending_operations` table.
+- No broad production write path uses the `pending_operations` table by default.
 - No production write path uses the pending operation model.
 - No owner/staff pull uses cache replacement execute behavior.
 - No local cache delete/overwrite behavior has changed.
@@ -31,7 +33,7 @@ Question:
 - Should BoothBook add a cloud `pending_operations` table?
 
 Recommended default:
-- D2a only has been approved. Keep using event writes for production until low-risk domains prove the model.
+- D2a was the first approval. Later narrow checklist-toggle Gate D slices were approved separately. Keep using event writes as the normal production source of truth until low-risk domains prove the model and a new explicit approval changes that boundary.
 
 Approval must specify:
 - Table columns.
@@ -165,10 +167,11 @@ Stop and ask for manual confirmation if any implementation requires:
 
 ## 6. Current Recommendation
 
-Do not start Gate D production write routing yet.
+Do not start any new Gate D production write routing yet.
 
 Recommended next low-risk work:
-- Keep Gate D runtime behavior behind documentation, guardrails, and disabled flags.
-- Gather one owner export and one staff scoped export for offline analysis.
-- Use the preview helper in tests only to model likely replacement impact.
-- Decide later whether the first runtime Gate D slice should be a type mirror, write-routing design record, or disabled adapter shell.
+- Treat D3c-2m as passed for the missing-final-event recovery path.
+- Treat D3c-2n-1 owner-only single-row service wrapper as complete.
+- Keep D3c-2n-2 owner UI button blocked until explicit high-risk approval.
+- Continue only documentation, static/audit tests, diagnostics design, and non-mutating preview work unless a new explicit high-risk decision supersedes this boundary.
+- Keep cache replacement preview-only.

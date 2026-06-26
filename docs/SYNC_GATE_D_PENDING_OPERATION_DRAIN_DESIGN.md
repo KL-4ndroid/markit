@@ -40,6 +40,7 @@ Owner-only diagnostics status:
 - D3c-2l manual stale `processing` recovery smoke plan and guarded script added.
 - D3c-2m local/staging-only synthetic stale `processing` recovery test plan added.
 - D3c-2n retry/drain action design added.
+- D3c-2m staging execution passed on 2026-06-26 Asia/Taipei with operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06`; no final event was created.
 - No batch action, RLS, worker, retry, drain, cleanup, or automatic runtime repair caller is approved by that design.
 
 Still not approved:
@@ -426,7 +427,8 @@ Recommended before creating any synthetic stale row:
 Status:
 - Plan added as `docs/SYNC_GATE_D_D3C_2M_SYNTHETIC_STALE_RECOVERY_TEST_PLAN.md`.
 - Guardrails added as `tests/sync-gate-d-synthetic-stale-recovery-test-plan.test.ts`.
-- No D3c-2m local or staging execution has been performed by this slice.
+- D3c-2m staging execution passed on 2026-06-26 Asia/Taipei.
+- Evidence operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06` recovered to `failed_retryable`, `retry_count = 1`, `last_error_code = 'stale_processing_reset'`, expected `last_error_message`, and final event count `0`.
 - No production synthetic data creation, event fixture, retry, drain, worker, cleanup, runtime code, migration, RLS, or feature-flag change was added.
 
 ### D3c-2n: Retry/Drain Action Design
@@ -441,5 +443,6 @@ Recommended before any retry/drain implementation:
 Status:
 - Design added as `docs/SYNC_GATE_D_D3C_2N_RETRY_DRAIN_ACTION_DESIGN.md`.
 - Guardrails added as `tests/sync-gate-d-retry-drain-action-design.test.ts`.
-- No D3c-2n runtime code, UI button, service wrapper, migration, RLS, worker, production execution, or feature-flag change was added.
-- The next D3c-2n implementation slice is high risk because it may call the final-event-writing drain RPC.
+- D3c-2n-1 service wrapper draft added as `retryDrainOwnerChecklistTogglePendingOperation()` in `lib/sync/owner-pending-operation-diagnostics.ts`.
+- No D3c-2n UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain was added.
+- The next D3c-2n implementation slice is D3c-2n-2 owner UI button and remains high risk because it may expose a final-event-writing drain RPC action.

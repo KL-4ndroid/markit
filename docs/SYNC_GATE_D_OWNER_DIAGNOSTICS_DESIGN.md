@@ -304,6 +304,8 @@ Do not drop `pending_operations` while rows exist unless rows are exported, drai
 
 This document now records the D3c-2k owner-confirmed one-row stale `processing` recovery UI action, D3c-2l manual smoke verification plan, D3c-2m local/staging synthetic stale recovery test plan, and D3c-2n retry/drain action design.
 
+D3c-2m staging execution passed on 2026-06-26 Asia/Taipei. The D3c-2m plan remains retained for future local/staging reuse, and the passed evidence is recorded in `docs/SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD.md`.
+
 Approved action boundary:
 - owner-only `/recovery`;
 - one stale `processing` row at a time;
@@ -317,5 +319,8 @@ The next high-risk decision is choosing one implementation slice:
 - implement D3c-2n service wrapper after D3c-2m passes
 
 Recommended next slice:
-- Execute D3c-2m manually in local/staging if no natural disposable stale row exists.
+- Treat D3c-2m as passed for the missing-final-event recovery path.
+- Treat D3c-2n-1 service wrapper draft as complete.
+- Continue only documentation alignment, static/audit tests, read-only diagnostics design, and other non-mutating guardrails until D3c-2n-2 is explicitly approved.
 - Keep retry/drain implementation separate from stale recovery and limited to owner-created rows unless a separate staff-row decision is approved.
+- Keep D3c-2n owner UI action blocked until explicit high-risk approval is given for the owner-only single-row retry/drain UI slice.

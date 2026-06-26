@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Decision Record Draft
 
 Created: 2026-06-21
-Status: D2a schema draft approved and implemented; production routing still not approved
+Status: historical D2a decision draft; superseded for current execution by `SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD.md`
 
 ## 0. Purpose
 
@@ -9,12 +9,13 @@ This draft turns the Gate D preflight plan into a decision record template.
 
 It does not approve any implementation. It exists so the next approval step can be narrow, explicit, and reversible.
 
-Gate D remains blocked until the owner explicitly approves one slice.
+Gate D later progressed through narrow approved slices. Use `SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD.md` for the current D3c-2m pass evidence and D3c-2n implementation approval boundary.
 
 ## 1. Current Decision
 
 Decision:
 - D2a is approved and implemented as a schema/test/documentation slice only.
+- Later narrow checklist-toggle, diagnostics, stale recovery, and retry/drain design slices were approved separately in later decision records.
 - No production write routing is approved yet.
 - No cache replacement execute mode is approved yet.
 
@@ -82,7 +83,7 @@ Risk:
 - High, because schema and RLS are involved.
 
 Implementation status:
-- Completed as D2a only.
+- Completed as the D2a slice.
 - Added `supabase/migrations/048_add_pending_operations_schema.sql`.
 - Added `tests/supabase-pending-operations-migration.test.ts`.
 - Updated `tests/sync-phase3-phase4-guardrails.test.ts` so `pending_operations` is allowed only in the approved migration, not production code.

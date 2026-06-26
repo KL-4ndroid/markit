@@ -432,19 +432,21 @@ Implemented boundaries:
 Current status:
 - D3b, D3c-0, D3c-1, D3c-2 design, D3c-2b, D3c-2c, D3c-2d, D3c-2e planning, and one D3c-2e manual cloud smoke execution are complete.
 - Owner-only diagnostics has a design-only safety contract in `docs/SYNC_GATE_D_OWNER_DIAGNOSTICS_DESIGN.md`.
-- D3c-2f owner-only read diagnostics RPC draft is added as `051_list_owner_pending_operation_diagnostics.sql`; no UI/runtime caller is approved.
+- D3c-2f owner-only read diagnostics RPC draft is added as `051_list_owner_pending_operation_diagnostics.sql`; its approved caller is the later D3c-2g read-only owner diagnostics UI shell.
 - D3c-2g read-only owner diagnostics UI shell is added in `/recovery`; no mutation action is approved.
-- D3c-2h stale `processing` recovery design is added; no recovery implementation is approved.
-- D3c-2i single-row stale `processing` recovery RPC draft is added as `052_recover_stale_processing_pending_operation.sql`; no UI/runtime caller, worker, retry, drain, or cleanup action is approved.
+- D3c-2h stale `processing` recovery design is added; later D3c-2i through D3c-2k approve only single-row owner-confirmed recovery.
+- D3c-2i single-row stale `processing` recovery RPC draft is added as `052_recover_stale_processing_pending_operation.sql`; its approved mutation caller is limited to the later D3c-2k owner-confirmed one-row recovery UI action.
 - D3c-2j read-only stale `processing` UI indicator is added; no recovery action is approved.
 - D3c-2k owner-confirmed one-row stale `processing` recovery UI action is added; no batch action, worker, retry, drain, cleanup, RLS, or feature-flag change is approved.
 - D3c-2l manual stale `processing` recovery smoke verification plan and guarded script are added; no automatic execution, row creation, batch action, worker, retry, drain, cleanup, RLS, or feature-flag change is approved.
 - No D3c-2l cloud recovery execution has been performed by this slice.
 - D3c-2m synthetic stale `processing` recovery test plan is added; no production execution, production synthetic data creation, runtime code, migration, RLS, worker, retry, drain, cleanup, or feature-flag change is approved.
 - No production synthetic data creation is approved.
-- No D3c-2m local or staging execution has been performed by this slice.
+- D3c-2m staging execution passed on 2026-06-26 Asia/Taipei after migration `052_recover_stale_processing_pending_operation.sql` was re-executed.
+- D3c-2m evidence: operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06` recovered to `failed_retryable`, `retry_count = 1`, `last_error_code = 'stale_processing_reset'`, expected `last_error_message`, and no final event was created.
 - D3c-2n retry/drain action design is added.
-- No D3c-2n runtime code, UI button, service wrapper, migration, RLS, worker, production execution, or feature-flag change is approved.
+- D3c-2n-1 owner-only single-row service wrapper draft is approved and implemented in `lib/sync/owner-pending-operation-diagnostics.ts`.
+- No D3c-2n UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain is approved.
 
 Confirmed decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.
@@ -458,9 +460,9 @@ Recommended next path:
 - Choose one disposable or non-production stale `processing` pending operation before running D3c-2l manually.
 - If no stale `processing` row exists, stop and decide separately whether to create a synthetic test row; do not create one as part of the D3c-2l smoke script.
 - Run D3c-2l only as a manual verification session with normal owner credentials and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-- If synthetic data is needed, follow D3c-2m only in local/staging and verify the missing-final-event path first.
-- Before any D3c-2n implementation, D3c-2m local/staging verification must pass.
-- The first D3c-2n implementation, if later approved, should be owner-only, single-row, and limited to owner-created `failed_retryable` checklist-toggle rows.
+- D3c-2m local/staging verification has passed for the missing-final-event path.
+- D3c-2n-1 owner-only single-row service wrapper is implemented.
+- The next D3c-2n step, if later approved, should be D3c-2n-2 owner UI button, still limited to owner-created `failed_retryable` checklist-toggle rows.
 - Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:
@@ -475,5 +477,5 @@ Do not approve yet:
 - Any production synthetic stale `processing` row.
 - Any production SQL insert/update for pending-operation recovery testing.
 - Any owner retry/drain action for staff-created pending rows.
-- Any D3c-2n runtime code before D3c-2m local/staging verification passes.
+- Any D3c-2n UI button, batch action, worker, production execution, staff-row drain, or feature-flag default change without explicit approval.
 - Any cache replacement execute behavior.

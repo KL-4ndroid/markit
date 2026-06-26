@@ -43,8 +43,8 @@ console.log('\n=== Sync Gate D retry drain action design ===');
 runTest('D3c-2n retry drain action design exists and is design-only', () => {
   assert.ok(existsSync(designPath));
   assert.match(designSource, /D3c-2n Retry\/Drain Action Design/);
-  assert.match(designSource, /Status: design only/);
-  assert.match(designSource, /no runtime code, UI button, service wrapper, migration, RLS, worker, production execution, or feature-flag change is approved/);
+  assert.match(designSource, /D3c-2n-1 service wrapper draft approved and implemented/);
+  assert.match(designSource, /no UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain is approved/);
 });
 
 runTest('design requires D3c-2m local or staging evidence before implementation', () => {
@@ -52,6 +52,18 @@ runTest('design requires D3c-2m local or staging evidence before implementation'
   assert.match(designSource, /one synthetic local\/staging `processing` row was recovered/);
   assert.match(designSource, /recovery returned `failed_retryable`/);
   assert.match(designSource, /no final event was created during recovery/);
+});
+
+runTest('D3c-2m passed and D3c-2n-1 is implemented while UI still requires approval', () => {
+  assert.match(designSource, /Passed on 2026-06-26 Asia\/Taipei after migration `052_recover_stale_processing_pending_operation\.sql` was re-executed/);
+  assert.match(designSource, /D3c-2n-1 approves only a service wrapper/);
+  assert.match(designSource, /D3c-2n-1: Service Wrapper Draft/);
+  assert.match(designSource, /Status:[\s\S]*Completed in `lib\/sync\/owner-pending-operation-diagnostics\.ts`/);
+  assert.match(designSource, /Operation id: `c466de02-d79a-4ae8-adc0-44b3fa0efd06`/);
+  assert.match(designSource, /Final event count for the operation id was `0`/);
+  assert.match(decisionSource, /D3c-2m staging execution passed on 2026-06-26 Asia\/Taipei/);
+  assert.match(decisionSource, /D3c-2n-1 owner-only single-row service wrapper draft is approved and implemented/);
+  assert.match(decisionSource, /No D3c-2n UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain is approved/);
 });
 
 runTest('design recognizes existing drain RPC actor scope and limits first action to owner actor rows', () => {
@@ -110,18 +122,28 @@ runTest('design defers owner-on-behalf-of-staff drain decisions', () => {
   assert.match(designSource, /whether owner can drain staff-created pending rows/);
 });
 
-runTest('no retry drain runtime implementation is added by this design slice', () => {
-  const matches = runtimeFiles.filter(file => {
+runTest('retry drain runtime implementation is limited to the service wrapper', () => {
+  const filesWithoutServiceWrapper = runtimeFiles.filter(
+    file => file !== 'lib/sync/owner-pending-operation-diagnostics.ts'
+  );
+  const matches = filesWithoutServiceWrapper.filter(file => {
     const source = readProjectFile(file);
     return /retryDrain|retryPendingOperation|drainPendingOperation|retry\/drain action/i.test(source);
   });
 
   assert.deepEqual(matches, []);
+
+  const serviceSource = readProjectFile('lib/sync/owner-pending-operation-diagnostics.ts');
+  assert.match(serviceSource, /retryDrainOwnerChecklistTogglePendingOperation/);
+  assert.match(serviceSource, /supabase\.rpc\(['"]drain_checklist_toggle_pending_operation['"]/);
+  assert.match(serviceSource, /diagnosticsRow\.status !== 'failed_retryable'/);
+  assert.match(serviceSource, /diagnosticsRow\.actorId !== currentUserId/);
 });
 
-runTest('decision records mention D3c-2n as design-only', () => {
+runTest('decision records mention D3c-2n-1 as service-wrapper-only', () => {
   assert.match(decisionSource, /D3c-2n retry\/drain action design is added/);
-  assert.match(decisionSource, /No D3c-2n runtime code, UI button, service wrapper, migration, RLS, worker, production execution, or feature-flag change is approved/);
+  assert.match(decisionSource, /D3c-2n-1 owner-only single-row service wrapper draft is approved and implemented/);
+  assert.match(decisionSource, /No D3c-2n UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain is approved/);
   assert.match(diagnosticsDesignSource, /D3c-2n retry\/drain action design/);
 });
 

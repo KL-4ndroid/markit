@@ -29,11 +29,13 @@ Not allowed without explicit approval:
 - Change RLS policies, views, or security definer functions.
 - Change financial/inventory projection behavior as part of Phase 3/4.
 
-Current exception:
+Current approved narrow exceptions:
 - Gate D2a has been explicitly approved and completed as
   `supabase/migrations/048_add_pending_operations_schema.sql`.
-- This exception covers schema, conservative RLS, indexes, tests, and documentation only.
-- It does not approve production write routing or cache replacement execute behavior.
+- D3c-0 through D3c-2n have since progressed only through the documented checklist-toggle pilot, drain RPC draft, default-off controlled routing, owner-only diagnostics, stale `processing` recovery planning/action, manual smoke scripts, and retry/drain action design.
+- D3c-2m local/staging synthetic stale recovery execution passed on 2026-06-26 Asia/Taipei.
+- D3c-2n-1 owner-only single-row service wrapper draft is implemented; D3c-2n-2 owner UI button remains blocked until explicit high-risk approval.
+- These exceptions do not approve broad production write routing, a worker, cache replacement execute behavior, RLS changes beyond the approved migrations, production synthetic data creation, or feature-flag default changes.
 
 ## 2. Risk Areas
 
@@ -179,9 +181,15 @@ Any of the following requires manual approval:
 
 ## 4. Recommended Next Step
 
-Start with Gate A only.
+Gate A, Gate B, Gate C preview work, and selected narrow Gate D checklist-toggle slices have already been completed under later decision records.
 
-After Gate A is committed and passing, proceed to Gate B as a local-only, test-only prototype. Do not start Gate C until Gate B is stable.
+The current next step is limited to:
+- Documentation alignment.
+- Static/audit guardrail tests.
+- Read-only diagnostics or design work.
+- Non-mutating preview work that is not imported by production sync.
+
+Do not proceed into D3c-2n-2 owner UI button until explicit high-risk approval is given for that slice.
 
 ## 5. Rollback Approach
 

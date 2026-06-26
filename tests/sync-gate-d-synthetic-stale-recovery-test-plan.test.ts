@@ -95,11 +95,13 @@ runTest('plan keeps event fixtures retry drain worker and runtime changes out of
   }
 });
 
-runTest('decision and drain design records mention D3c-2m as plan-only', () => {
+runTest('decision and drain design records mention D3c-2m as passed staging verification', () => {
   assert.match(decisionSource, /D3c-2m synthetic stale `processing` recovery test plan is added/);
   assert.match(decisionSource, /No production synthetic data creation is approved/);
+  assert.match(decisionSource, /D3c-2m staging execution passed on 2026-06-26 Asia\/Taipei/);
+  assert.match(decisionSource, /operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06` recovered to `failed_retryable`/);
   assert.match(drainDesignSource, /D3c-2m: Synthetic Stale Processing Recovery Test Plan/);
-  assert.match(drainDesignSource, /No D3c-2m local or staging execution has been performed by this slice/);
+  assert.match(drainDesignSource, /D3c-2m staging execution passed on 2026-06-26 Asia\/Taipei/);
 });
 
 runTest('full test suite includes the D3c-2m guardrail', () => {

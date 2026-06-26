@@ -1,18 +1,30 @@
 # BoothBook Sync Gate D Safety And Slice Plan
 
 Created: 2026-06-21
-Status: active decision plan after D2a
+Status: active decision plan after D3c-2n-1 service wrapper draft
 
 ## 0. Current State
 
-D2a is implemented:
+D2a through D3c-2n have progressed through narrow approved slices:
 - `supabase/migrations/048_add_pending_operations_schema.sql`
 - `tests/supabase-pending-operations-migration.test.ts`
-- Guardrails allow `pending_operations` only in approved migrations and the approved D3c-1 RPC adapter path.
+- `supabase/migrations/049_enqueue_checklist_toggle_pending_operation.sql`
+- `supabase/migrations/050_drain_checklist_toggle_pending_operation.sql`
+- `supabase/migrations/051_list_owner_pending_operation_diagnostics.sql`
+- `supabase/migrations/052_recover_stale_processing_pending_operation.sql`
+- Default-off checklist-toggle pending-operation routing and controlled smoke testing.
+- Owner-only diagnostics and single-row stale `processing` recovery.
+- D3c-2m local/staging synthetic stale recovery test plan and staging execution.
+- D3c-2n retry/drain action design.
+- D3c-2n-1 owner-only single-row service wrapper draft.
+
+D3c-2m staging verification passed on 2026-06-26 Asia/Taipei. D3c-2n-1 service wrapper is implemented. D3c-2n-2 owner UI button remains blocked until explicit high-risk approval.
 
 Still not approved:
 - Enabling `pendingOperationWriteRouting` by default.
-- A pending-operation drain/worker that creates final cloud events.
+- Enabling `pendingOperationDrainAfterEnqueue` by default.
+- Any new retry/drain runtime action beyond the already approved controlled checklist-toggle smoke path.
+- A broad pending-operation drain worker that creates final cloud events.
 - Cache replacement execute mode.
 - Any owner/staff pull integration with replacement behavior.
 - Any financial or inventory projection rewrite.
@@ -211,9 +223,37 @@ Implemented boundaries:
 
 Not included:
 - The flag is still default-off.
-- No pending-operation drain/worker is implemented.
-- No final cloud event writer is implemented.
+- At the D3c-1 exit, no pending-operation drain/worker was implemented.
+- At the D3c-1 exit, no final cloud event writer was implemented.
 - No field note, checklist text, revenue, inventory, cache replacement, market, or product route is included.
+
+### D3c-2: Drain, Diagnostics, and Recovery Follow-Up
+
+Risk:
+- High for runtime writes, low for documentation and guardrails.
+
+Status:
+- D3c-2b single-operation checklist-toggle drain RPC draft is complete.
+- D3c-2c default-off runtime drain call after successful enqueue is complete.
+- D3c-2d controlled test/staging enablement is complete.
+- D3c-2e one manual cloud smoke verification is complete.
+- D3c-2f through D3c-2k owner-only diagnostics and single-row stale `processing` recovery are complete.
+- D3c-2l manual stale recovery smoke plan and guarded script are complete.
+- D3c-2m synthetic stale recovery test plan and staging execution are complete.
+- D3c-2n retry/drain action design is complete.
+- D3c-2n-1 service wrapper draft is complete.
+
+Current allowed work:
+- Documentation alignment.
+- Static guardrail tests.
+- Read-only diagnostics planning.
+- Non-mutating design work.
+
+Not allowed before explicit D3c-2n-2 approval:
+- D3c-2n owner retry/drain UI button.
+- Any worker or batch drain.
+- Any production synthetic stale `processing` row.
+- Any feature-flag default change.
 
 ### D4: Cache Replacement Execute
 
@@ -232,16 +272,22 @@ Required before implementation:
 ## 4. Current Recommendation
 
 Next safest move:
-- Stop at D3c-1 unless the next high-risk decision is approved.
+- Treat D3c-2m as passed for the missing-final-event recovery path.
+- Treat D3c-2n-1 service wrapper draft as complete.
+- Decide whether to approve D3c-2n-2 owner UI button.
+- Continue only documentation alignment, static/audit guardrail tests, read-only diagnostics design, and non-mutating preview work until D3c-2n-2 is explicitly approved.
 
 Do not proceed directly to:
 - Turning `pendingOperationWriteRouting` on by default.
-- Creating a pending-operation drain/worker.
+- Turning `pendingOperationDrainAfterEnqueue` on by default.
+- Creating any retry/drain runtime action beyond the already approved controlled checklist-toggle smoke path.
+- Creating a broad pending-operation drain worker.
 - D4 cache execute.
 
 The next manual decision should choose one path:
-- D3c-2e manual cloud smoke verification: use the controlled D3c-2d flag override for one explicit test session against disposable or non-production checklist data.
+- Approve D3c-2n-2 owner-only single-row UI button.
+- Continue low-risk documentation/tests/diagnostics only.
 
 Recommended:
 - Follow `docs/SYNC_GATE_D_PENDING_OPERATION_DRAIN_DESIGN.md`.
-- Do not enable the flags broadly yet, because D3c-2d only adds a controlled test override and keeps production defaults off.
+- Do not enable the flags broadly, because controlled verification keeps production defaults off.

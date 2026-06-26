@@ -158,7 +158,8 @@ Recommended future sequence:
 5. D3c-2l manual cloud verification of one disposable or non-production stale `processing` row. Plan and guarded script added; no execution has been performed by this slice.
 6. D3c-2m local/staging synthetic stale processing recovery test plan. Completed as `docs/SYNC_GATE_D_D3C_2M_SYNTHETIC_STALE_RECOVERY_TEST_PLAN.md`; no execution has been performed by this slice.
 7. D3c-2n retry/drain action design. Completed as `docs/SYNC_GATE_D_D3C_2N_RETRY_DRAIN_ACTION_DESIGN.md`; no runtime implementation has been performed by this slice.
-8. Only after D3c-2m passes, discuss explicit retry/drain implementation.
+8. D3c-2m staging execution passed on 2026-06-26 Asia/Taipei; keep the plan retained as reusable local/staging verification documentation.
+9. Discuss explicit retry/drain implementation only as a separate high-risk D3c-2n approval.
 
 Retry remains a separate approval because it can eventually create final events through the drain path.
 

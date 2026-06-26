@@ -96,6 +96,75 @@ export async function recoverStaleProcessingPendingOperation(operationId: string
   return typeof data === 'string' ? data : '';
 }
 
+export type RetryDrainOwnerPendingOperationInput = {
+  operationId: string;
+  currentUserId: string;
+  diagnosticsRow: Pick<
+    OwnerPendingOperationDiagnosticsRow,
+    'operationId' | 'operationType' | 'entityType' | 'status' | 'actorId'
+  >;
+};
+
+export async function retryDrainOwnerChecklistTogglePendingOperation({
+  operationId,
+  currentUserId,
+  diagnosticsRow,
+}: RetryDrainOwnerPendingOperationInput): Promise<string> {
+  assertRetryDrainAllowed({ operationId, currentUserId, diagnosticsRow });
+
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured');
+  }
+
+  const { data, error } = await supabase.rpc('drain_checklist_toggle_pending_operation', {
+    p_operation_id: operationId,
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Failed to retry pending operation drain');
+  }
+
+  return typeof data === 'string' ? data : '';
+}
+
+function assertRetryDrainAllowed({
+  operationId,
+  currentUserId,
+  diagnosticsRow,
+}: RetryDrainOwnerPendingOperationInput): void {
+  if (!operationId) {
+    throw new Error('operationId is required');
+  }
+
+  if (!currentUserId) {
+    throw new Error('currentUserId is required');
+  }
+
+  if (!diagnosticsRow) {
+    throw new Error('diagnosticsRow is required');
+  }
+
+  if (diagnosticsRow.operationId !== operationId) {
+    throw new Error('diagnostics row does not match operationId');
+  }
+
+  if (diagnosticsRow.status !== 'failed_retryable') {
+    throw new Error('Only failed_retryable pending operations can be retried');
+  }
+
+  if (diagnosticsRow.actorId !== currentUserId) {
+    throw new Error('Only owner-created pending operations can be retried by this action');
+  }
+
+  if (diagnosticsRow.operationType !== 'checklist_item_toggle') {
+    throw new Error('Only checklist_item_toggle pending operations can be retried');
+  }
+
+  if (diagnosticsRow.entityType !== 'checklist_item') {
+    throw new Error('Only checklist_item pending operations can be retried');
+  }
+}
+
 function normalizeDiagnosticsRow(row: RawDiagnosticsRow): OwnerPendingOperationDiagnosticsRow {
   return {
     operationId: readString(row.operation_id),

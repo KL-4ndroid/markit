@@ -40,12 +40,12 @@ runTest('owner diagnostics UI shell exists and is mounted only on owner recovery
   assert.equal(blockedIndex >= 0 && panelIndex > blockedIndex, true);
 });
 
-runTest('diagnostics service calls only the approved read and single-row recovery RPCs', () => {
+runTest('diagnostics service calls only the approved read recovery and retry drain RPCs', () => {
   assert.match(serviceSource, /supabase\.rpc\(['"]list_owner_pending_operation_diagnostics['"]/);
   assert.match(serviceSource, /supabase\.rpc\(['"]recover_stale_processing_pending_operation['"]/);
+  assert.match(serviceSource, /supabase\.rpc\(['"]drain_checklist_toggle_pending_operation['"]/);
   assert.match(serviceSource, /p_operation_id: operationId/);
   assert.doesNotMatch(serviceSource, /enqueue_checklist_toggle_pending_operation/);
-  assert.doesNotMatch(serviceSource, /drain_checklist_toggle_pending_operation/);
   assert.doesNotMatch(serviceSource, /\.from\(/);
   assert.doesNotMatch(serviceSource, /\.insert\(/);
   assert.doesNotMatch(serviceSource, /\.upsert\(/);
@@ -54,12 +54,27 @@ runTest('diagnostics service calls only the approved read and single-row recover
   assert.doesNotMatch(serviceSource, /localStorage|sessionStorage|indexedDB|Dexie|db\./i);
 });
 
+runTest('retry drain wrapper is single-row owner-created checklist toggle only', () => {
+  assert.match(serviceSource, /retryDrainOwnerChecklistTogglePendingOperation/);
+  assert.match(serviceSource, /assertRetryDrainAllowed/);
+  assert.match(serviceSource, /diagnosticsRow\.operationId !== operationId/);
+  assert.match(serviceSource, /diagnosticsRow\.status !== 'failed_retryable'/);
+  assert.match(serviceSource, /diagnosticsRow\.actorId !== currentUserId/);
+  assert.match(serviceSource, /diagnosticsRow\.operationType !== 'checklist_item_toggle'/);
+  assert.match(serviceSource, /diagnosticsRow\.entityType !== 'checklist_item'/);
+  assert.doesNotMatch(serviceSource, /for\s*\(|forEach|while\s*\(/);
+  assert.doesNotMatch(serviceSource, /Promise\.all/);
+  assert.doesNotMatch(serviceSource, /setInterval|setTimeout/);
+});
+
 runTest('diagnostics panel blocks staff and exposes only owner-confirmed one-row recovery', () => {
   assert.match(panelSource, /useUserRole/);
   assert.match(panelSource, /useAuth/);
   assert.match(panelSource, /if \(isStaff\)/);
   assert.match(panelSource, /listOwnerPendingOperationDiagnostics\(user\.id\)/);
   assert.match(panelSource, /recoverStaleProcessingPendingOperation\(row\.operationId\)/);
+  assert.doesNotMatch(panelSource, /retryDrainOwnerChecklistTogglePendingOperation/);
+  assert.doesNotMatch(panelSource, /drain_checklist_toggle_pending_operation/);
   assert.match(panelSource, /window\.confirm/);
   assert.match(panelSource, /onRecover\(row\)/);
   assert.match(panelSource, /const canRecover = isStaleProcessing\(row\)/);
@@ -75,7 +90,6 @@ runTest('diagnostics panel blocks staff and exposes only owner-confirmed one-row
     /重試/,
     /刪除/,
     /清除/,
-    /drain_checklist_toggle_pending_operation/,
     /enqueue_checklist_toggle_pending_operation/,
     /supabase\./,
   ]) {

@@ -1,17 +1,28 @@
 # BoothBook Sync Gate D3c-2n Retry/Drain Action Design
 
 Created: 2026-06-22
-Status: design only; no runtime code, UI button, service wrapper, migration, RLS, worker, production execution, or feature-flag change is approved
+Status: D3c-2n-1 service wrapper draft approved and implemented; no UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain is approved.
 
 ## 0. Purpose
 
 This document defines the safest next boundary for retrying a `failed_retryable` pending operation after stale recovery has reset it.
 
-The next implementation would be high risk because it can call `drain_checklist_toggle_pending_operation`, which may create a final `events` row. This document does not approve that implementation.
+Retry/drain remains high risk because it can call `drain_checklist_toggle_pending_operation`, which may create a final `events` row. D3c-2n-1 approves only a service wrapper with strict local guards and no UI caller.
 
 ## 1. Required Prerequisite
 
 Do not implement or execute D3c-2n until D3c-2m has passed in local/staging.
+
+D3c-2m verification evidence:
+- Target: staging Supabase `https://tzhbirwchhqabkxhqjdl.supabase.co`.
+- Passed on 2026-06-26 Asia/Taipei after migration `052_recover_stale_processing_pending_operation.sql` was re-executed.
+- Operation id: `c466de02-d79a-4ae8-adc0-44b3fa0efd06`.
+- Market id: `eb1b6e94-b447-4042-9b33-1b859aaff5b3`.
+- Checklist item id: `55501713-700f-43e7-af04-9efa6bfbd919`.
+- Recovery returned `failed_retryable`.
+- Final row state: `status = 'failed_retryable'`, `retry_count = 1`, `last_error_code = 'stale_processing_reset'`, `last_error_message = 'Stale processing operation reset to retryable without draining'`.
+- Final event count for the operation id was `0`.
+- The synthetic row is intentionally retained as staging test evidence unless a later staging cleanup is approved.
 
 Required D3c-2m evidence:
 - one synthetic local/staging `processing` row was recovered;
@@ -45,17 +56,24 @@ Status:
 
 ### D3c-2n-1: Service Wrapper Draft
 
-Allowed only after D3c-2m passes and explicit approval:
-- add one client service function that calls `drain_checklist_toggle_pending_operation`;
-- accept one `operationId`;
-- require a caller-provided diagnostics row snapshot;
-- refuse unless:
+Status:
+- Completed in `lib/sync/owner-pending-operation-diagnostics.ts`.
+- Added `retryDrainOwnerChecklistTogglePendingOperation()`.
+- Guardrails updated in `tests/sync-gate-d-owner-diagnostics-ui.test.ts`.
+
+Implemented behavior:
+- calls only `drain_checklist_toggle_pending_operation`;
+- accepts one `operationId`;
+- requires `currentUserId`;
+- requires a caller-provided diagnostics row snapshot;
+- refuses unless:
   - `status = 'failed_retryable'`;
   - `actorId === currentUser.id`;
-  - operation is stale-recovered or otherwise retryable;
   - operation type is `checklist_item_toggle`;
   - entity type is `checklist_item`;
-- refresh diagnostics after completion.
+- uses no direct table insert/update/upsert/delete;
+- does not loop over operation ids;
+- does not use a feature flag or storage-based control plane.
 
 Not allowed:
 - UI button;
@@ -158,22 +176,27 @@ Any future D3c-2n implementation must prove:
 - no batch loop over operation ids;
 - no staff-visible retry UI.
 
+D3c-2n-1 implementation additionally proves:
+- service wrapper is isolated to `lib/sync/owner-pending-operation-diagnostics.ts`;
+- owner diagnostics panel does not import or call the retry/drain wrapper;
+- the wrapper fails closed before calling the RPC when row status, actor id, operation type, entity type, or operation id mismatch.
+
 ## 8. Stop Conditions
 
 Stop before implementation if:
-- D3c-2m has not passed in local/staging;
 - the desired first action includes staff-created rows;
 - the desired first action includes production disposable verification;
 - the desired first action requires new RPC semantics;
 - the desired first action would auto-drain in background.
+- the desired next action is D3c-2n-2 UI without explicit approval.
 
 These are high-risk decision points and require explicit approval before code.
 
 ## 9. Rollback
 
-Rollback for this design-only slice:
-- remove this document;
-- remove its guardrail test;
-- leave runtime behavior and cloud data unchanged.
+Rollback for D3c-2n-1:
+- remove `retryDrainOwnerChecklistTogglePendingOperation()` and its input type from `lib/sync/owner-pending-operation-diagnostics.ts`;
+- remove the D3c-2n-1 guardrail expectations from `tests/sync-gate-d-owner-diagnostics-ui.test.ts`;
+- leave cloud data unchanged.
 
-Rollback for future runtime code must be defined by that implementation slice.
+Rollback for future UI/runtime slices must be defined by that implementation slice.
