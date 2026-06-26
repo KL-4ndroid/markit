@@ -32,6 +32,7 @@
 
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useUserRole } from '@/hooks/useUserRole';
 import { RoleLoadingFallback } from './RoleLoadingFallback';
 
@@ -39,8 +40,17 @@ interface RoleGuardProps {
   children: React.ReactNode;
 }
 
+// ✅ 公開路由：不查詢角色狀態，避免 Demo / 法務頁依賴登入或權限資料。
+const PUBLIC_ROUTES = ['/privacy', '/terms', '/about', '/demo'];
+
 export function RoleGuard({ children }: RoleGuardProps) {
-  const { isLoading: isRoleLoading, roleError } = useUserRole();
+  const pathname = usePathname();
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname?.startsWith(route));
+  const { isLoading: isRoleLoading, roleError } = useUserRole({ enabled: !isPublicRoute });
+
+  if (isPublicRoute) {
+    return <>{children}</>;
+  }
 
   // 角色載入中或失敗時，顯示中性 skeleton（不洩漏 owner/staff 差異）
   if (isRoleLoading || roleError) {
