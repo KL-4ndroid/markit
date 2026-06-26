@@ -19,9 +19,11 @@
 - `components/auth/AuthGuard.tsx`
 - `components/auth/RoleGuard.tsx`
 
+`components/AppChrome.tsx` 會在 `/demo` 使用 standalone public chrome，只渲染 demo page 與 toast，不掛載正式 App 的 `AuthGuard`、`RoleGuard`、底部導航、PWA prompt、staff invitation、initial sync dialog 或 sync progress manager。
+
 `RoleGuard` 對 public route 會直接 render children，不掛載 `ProtectedRoleGuard`，因此不會在 `/demo` 觸發 `useUserRole()` 查詢。
 
-`components/BottomNavigation.tsx` 會在 `/demo` 直接回傳 `null`，避免公開展示頁掛載正式 App 的底部導航與 role-dependent navigation behavior。
+`components/BottomNavigation.tsx` 也會在 `/demo` 直接回傳 `null`，避免公開展示頁掛載正式 App 的底部導航與 role-dependent navigation behavior。
 
 ### Permission impact
 
