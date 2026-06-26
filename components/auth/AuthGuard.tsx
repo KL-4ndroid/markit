@@ -20,7 +20,8 @@ import { StaffStatusMonitor } from './StaffStatusMonitor';
 import { RoleStatusBanner } from './RoleStatusBanner';
 
 // ✅ 白名單路由：無需登入即可訪問
-const PUBLIC_ROUTES = ['/privacy', '/terms', '/about'];
+// /demo 是公開展示用 Demo Mode，只使用靜態範例資料，不讀取正式資料或權限資料。
+const PUBLIC_ROUTES = ['/privacy', '/terms', '/about', '/demo'];
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -39,6 +40,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   // ✅ 控制登入 Modal 的顯示
   const [shouldShowLogin, setShouldShowLogin] = useState(false);
+
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname?.startsWith(route));
 
   // ✅ 初始化完成檢測
   useEffect(() => {
@@ -76,13 +79,19 @@ export function AuthGuard({ children }: AuthGuardProps) {
       }
     };
 
+    // 公開路由不檢查離線資料，避免 Demo Mode 讀取正式 IndexedDB 狀態
+    if (isPublicRoute) {
+      setIsCheckingOfflineData(false);
+      return;
+    }
+
     // 只在未登入時檢查
     if (isInitialized && !user) {
       checkOfflineData();
     } else {
       setIsCheckingOfflineData(false);
     }
-  }, [isInitialized, user]);
+  }, [isInitialized, user, isPublicRoute]);
 
   // ✅ 處理「開始使用」按鈕點擊
   const handleGetStarted = () => {
@@ -116,7 +125,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   // 2️⃣ 檢查是否為白名單路由
-  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname?.startsWith(route));
   if (isPublicRoute) {
     return <>{children}</>;
   }
