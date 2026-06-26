@@ -30,12 +30,15 @@ function ProtectedBottomNavigation() {
 
   const isRoleUnresolved = isRoleLoading || roleError != null;
 
-  useEffect(() => {
-    const unsubscribe = navigationStore.subscribe((visible) => {
-      setIsNavVisible(visible);
-    });
-    return unsubscribe;
-  }, []);
+	useEffect(() => {
+	  const unsubscribe = navigationStore.subscribe((visible) => {
+		setIsNavVisible(visible);
+	  });
+
+	  return () => {
+		unsubscribe();
+	  };
+	}, []);
 
   useEffect(() => {
     const routesToPrefetch = ['/markets', '/products', '/analytics', '/settings'];

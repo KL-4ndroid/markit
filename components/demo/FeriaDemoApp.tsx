@@ -9,7 +9,7 @@ import {
   ClipboardList,
   Package,
   Plus,
-  ReceiptText,
+  Receipt,
   RefreshCw,
   Sparkles,
   Store,
@@ -54,7 +54,7 @@ const tabs: Array<{ key: DemoTabKey; label: string; icon: typeof Store }> = [
   { key: 'markets', label: '市集筆記', icon: CalendarDays },
   { key: 'products', label: '商品紀錄', icon: Package },
   { key: 'sales', label: '銷售整理', icon: CircleDollarSign },
-  { key: 'expenses', label: '成本筆記', icon: ReceiptText },
+  { key: 'expenses', label: '成本筆記', icon: Receipt },
   { key: 'review', label: '回顧分析', icon: BarChart3 },
 ];
 
