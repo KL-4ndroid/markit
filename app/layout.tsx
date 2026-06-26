@@ -1,31 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { BottomNavigation } from "@/components/BottomNavigation";
-import { TopNavigation } from "@/components/TopNavigation";
-import { Toaster } from "sonner";
-import { RegisterServiceWorker } from "./register-sw";
-import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
-import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
-import { PWASplashScreen } from "@/components/PWASplashScreen";
+import { AppChrome } from "@/components/AppChrome";
 import { AuthProvider } from "@/lib/supabase/auth-context";
 import { SyncProvider } from "@/lib/sync-context";
-import { AuthManager } from "@/components/auth/AuthManager";
-import { AuthGuard } from "@/components/auth/AuthGuard";
-import { RoleGuard } from "@/components/auth/RoleGuard";
-import { SessionExpiredHandler } from "@/components/auth/SessionExpiredHandler";
 import { NavigationProvider } from "@/lib/navigation-context";
-import { SyncProgressManager } from "@/components/sync/SyncProgressManager";
-import { InitialSyncDialog } from "@/components/sync/InitialSyncDialog";
-import { StaffInvitationDialog } from "@/components/staff/StaffInvitationDialog";
 
 export const metadata: Metadata = {
-  title: "出攤本 - BoothBook",
-  description: "市集攤販數位管理系統 - 輕鬆管理銷售、統計數據、追蹤成本",
+  title: "Féria｜出攤筆記",
+  description: "獨立品牌的市集經營筆記 - 記錄市集、商品、成本與成果",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "出攤本",
+    title: "Féria 出攤筆記",
   },
   icons: {
     icon: [
@@ -43,8 +30,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  // PWA / 行動瀏覽器 chrome 主題色（出攤本霧松綠 #6F8F86）
-  themeColor: "#6F8F86",
+  themeColor: "#24381F",
 };
 
 export default function RootLayout({
@@ -55,86 +41,21 @@ export default function RootLayout({
   return (
     <html lang="zh-TW">
       <head>
-        {/* PWA Meta Tags */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="出攤本" />
+        <meta name="apple-mobile-web-app-title" content="Féria 出攤筆記" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        
-        {/* Theme Color */}
-        <meta name="theme-color" content="#6F8F86" />
-        <meta name="msapplication-TileColor" content="#6F8F86" />
+        <meta name="theme-color" content="#24381F" />
+        <meta name="msapplication-TileColor" content="#24381F" />
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body>
-        {/* ✅ PWA Splash Screen - 啟動畫面 */}
-        <PWASplashScreen />
-        
-        {/* Auth Provider - 管理全域用戶狀態 */}
         <AuthProvider>
-          {/* Sync Provider - 管理全域同步狀態 */}
           <SyncProvider>
-            {/* Navigation Provider - 管理頁面切換方向 */}
             <NavigationProvider>
-              {/* Service Worker 註冊 */}
-              <RegisterServiceWorker />
-              
-              {/* ✅ 認證守衛 - 包裹所有受保護的內容 */}
-              <AuthGuard>
-                {/* ✅ 角色守衛 - 在 layout 級別統一處理角色載入狀態
-                    避免每個頁面重複 isRoleLoading || roleError 判斷 */}
-                <RoleGuard>
-                <div className="min-h-screen bg-background">
-                  {/* 頂部導航 - 已移至首頁 Header */}
-                  {/* <TopNavigation /> */}
-                  
-                  {/* 主要內容區域 */}
-                  <main className="pb-24">
-                    {children}
-                  </main>
-                  
-                  {/* 底部導航 */}
-                  <BottomNavigation />
-                  
-                  {/* PWA 安裝提示 */}
-                  <PWAInstallPrompt />
-                  
-                  {/* PWA 更新提示 */}
-                  <PWAUpdatePrompt />
-                  
-                  {/* 員工邀請對話框（優先級最高） */}
-                  <StaffInvitationDialog />
-                  
-                  {/* 初始同步對話框（登入後立即顯示） */}
-                  <InitialSyncDialog />
-                  
-                  {/* 同步進度管理 */}
-                  <SyncProgressManager />
-                  
-                  {/* Toast 通知 */}
-                  <Toaster
-                    position="top-center"
-                    toastOptions={{
-                      style: {
-                        background: 'rgb(var(--brand-card))',
-                        color: 'rgb(var(--brand-foreground))',
-                        border: '1px solid rgb(var(--brand-primary) / 0.2)',
-                        borderRadius: '1rem',
-                        padding: '1rem',
-                      },
-                    }}
-                  />
-                </div>
-                </RoleGuard>
-              </AuthGuard>
-              
-              {/* 認證管理（登入/遷移對話框）- 放在 AuthGuard 外層 */}
-              <AuthManager />
-              
-              {/* ✅ Session 過期處理器 */}
-              <SessionExpiredHandler />
+              <AppChrome>{children}</AppChrome>
             </NavigationProvider>
           </SyncProvider>
         </AuthProvider>
