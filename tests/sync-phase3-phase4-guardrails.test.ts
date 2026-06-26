@@ -11,6 +11,22 @@ function runTest(name: string, fn: TestFn): void {
 }
 
 const projectRoot = join(__dirname, '..');
+const phasePlanSource = readFileSync(
+  join(projectRoot, 'docs/SYNC_PHASE3_PHASE4_RISK_REDUCTION_PLAN.md'),
+  'utf8'
+);
+const safetyPlanSource = readFileSync(
+  join(projectRoot, 'docs/SYNC_GATE_D_SAFETY_AND_SLICE_PLAN.md'),
+  'utf8'
+);
+const preflightPlanSource = readFileSync(
+  join(projectRoot, 'docs/SYNC_GATE_D_PREFLIGHT_DECISION_PLAN.md'),
+  'utf8'
+);
+const decisionDraftSource = readFileSync(
+  join(projectRoot, 'docs/SYNC_GATE_D_DECISION_RECORD_DRAFT.md'),
+  'utf8'
+);
 
 function collectFiles(root: string, extensions = ['.ts', '.tsx', '.sql']): string[] {
   if (!existsSync(root)) return [];
@@ -101,6 +117,25 @@ runTest('Gate D guardrail: production sync does not import pending operation or 
     '',
     `Gate D helpers must stay out of production sync until explicit approval. Matches: ${matches}`
   );
+});
+
+runTest('planning docs keep explicit approval as the boundary before retry drain UI', () => {
+  assert.match(phasePlanSource, /D3c-2m local\/staging synthetic stale recovery execution passed on 2026-06-26 Asia\/Taipei/);
+  assert.match(phasePlanSource, /D3c-2n-1 owner-only single-row service wrapper draft is implemented/);
+  assert.match(phasePlanSource, /Do not proceed into D3c-2n-2 owner UI button until explicit high-risk approval/);
+
+  assert.match(safetyPlanSource, /Status: active decision plan after D3c-2n-1 service wrapper draft/);
+  assert.match(safetyPlanSource, /D3c-2m staging verification passed on 2026-06-26 Asia\/Taipei/);
+  assert.match(safetyPlanSource, /D3c-2n-1 service wrapper is implemented/);
+  assert.match(safetyPlanSource, /D3c-2n-2 owner UI button remains blocked until explicit high-risk approval/);
+
+  assert.match(preflightPlanSource, /historical pre-implementation decision plan/);
+  assert.match(preflightPlanSource, /D3c-2m local\/staging synthetic stale recovery execution passed on 2026-06-26 Asia\/Taipei/);
+  assert.match(preflightPlanSource, /Treat D3c-2n-1 owner-only single-row service wrapper as complete/);
+  assert.match(preflightPlanSource, /Keep D3c-2n-2 owner UI button blocked until explicit high-risk approval/);
+
+  assert.match(decisionDraftSource, /historical D2a decision draft/);
+  assert.match(decisionDraftSource, /Use `SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD\.md` for the current D3c-2m pass evidence/);
 });
 
 function main(): void {

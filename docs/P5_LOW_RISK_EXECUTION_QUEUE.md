@@ -229,11 +229,16 @@ Exit criteria:
 
 ## 3. Current Recommendation
 
-L1-L10 are complete. Do not continue into Gate D implementation without explicit approval.
+L1-L10 are complete. Do not continue into new Gate D implementation without explicit approval.
+
+Gate D has since progressed through a narrow pending-operation checklist-toggle pilot, owner-only diagnostics, stale `processing` recovery planning, D3c-2m staging verification, D3c-2n retry/drain action design, and D3c-2n-1 service wrapper draft.
 
 Recommended next low-risk work:
 - Add more static sync boundary tests if needed.
-- Use `SYNC_GATE_D_DECISION_RECORD_DRAFT.md` for the next manual Gate D approval discussion.
-- Keep cache replacement and pending operations in preview/documentation mode only.
+- Treat the D3c-2m prerequisite as satisfied for the missing-final-event recovery path.
+- Treat D3c-2n-1 service wrapper draft as complete.
+- Keep D3c-2n-2 owner UI button blocked until explicit high-risk approval.
+- Continue only design, documentation, diagnostics, static tests, or other non-mutating guardrails.
+- Keep cache replacement and pending operations in preview/documentation mode unless a previously approved narrow slice is already implemented and covered.
 
-Gate D2a has since been approved and completed as a schema/test/documentation slice only. Do not start any further Gate D runtime slice until the user explicitly approves one narrow slice from `SYNC_GATE_D_SAFETY_AND_SLICE_PLAN.md`.
+Do not start runtime retry/drain, worker, broad cache replacement execute, RLS changes, production synthetic data creation, or feature-flag default changes until a new explicit high-risk decision supersedes this boundary.

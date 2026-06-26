@@ -47,6 +47,8 @@ runTest('owner diagnostics design records D3c-2g through D3c-2n while blocking b
   assert.match(designSource, /D3c-2l added a manual stale `processing` recovery smoke plan and guarded script/);
   assert.match(designSource, /D3c-2m added a local\/staging-only synthetic stale `processing` recovery test plan/);
   assert.match(designSource, /D3c-2n added retry\/drain action design/);
+  assert.match(designSource, /D3c-2m staging execution passed on 2026-06-26 Asia\/Taipei/);
+  assert.match(designSource, /passed evidence is recorded/);
   assert.match(designSource, /calls only `recover_stale_processing_pending_operation`/);
   assert.match(designSource, /051_list_owner_pending_operation_diagnostics\.sql/);
   assert.match(designSource, /052_recover_stale_processing_pending_operation\.sql/);
@@ -127,6 +129,13 @@ runTest('design separates diagnostics from future repair approvals', () => {
   assert.match(designSource, /explicit owner confirmation/);
   assert.match(designSource, /one-row scope first/);
   assert.match(designSource, /rollback or no-rollback statement/);
+});
+
+runTest('design keeps explicit approval before diagnostics retry drain UI', () => {
+  assert.match(designSource, /Treat D3c-2m as passed for the missing-final-event recovery path/);
+  assert.match(designSource, /Treat D3c-2n-1 service wrapper draft as complete/);
+  assert.match(designSource, /Continue only documentation alignment, static\/audit tests, read-only diagnostics design, and other non-mutating guardrails until D3c-2n-2 is explicitly approved/);
+  assert.match(designSource, /Keep D3c-2n owner UI action blocked until explicit high-risk approval/);
 });
 
 runTest('design recommends recovery placement with only the approved read-only shell', () => {
