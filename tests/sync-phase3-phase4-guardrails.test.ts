@@ -128,6 +128,11 @@ runTest('planning docs keep explicit approval as the boundary before retry drain
   assert.match(safetyPlanSource, /D3c-2m staging verification passed on 2026-06-26 Asia\/Taipei/);
   assert.match(safetyPlanSource, /D3c-2n-1 service wrapper is implemented/);
   assert.match(safetyPlanSource, /D3c-2n-2 owner UI button remains blocked until explicit high-risk approval/);
+  assert.match(safetyPlanSource, /Plan Validation Before Further Execution/);
+  assert.match(safetyPlanSource, /Pre-execution validation required before any future D3c-2n-2 code/);
+  assert.match(safetyPlanSource, /Risk Decision Points Before D3c-2n-2/);
+  assert.match(safetyPlanSource, /Decision A: Should D3c-2n-2 owner UI button be approved/);
+  assert.match(safetyPlanSource, /Decision D: Should current completed work be committed before D3c-2n-2/);
 
   assert.match(preflightPlanSource, /historical pre-implementation decision plan/);
   assert.match(preflightPlanSource, /D3c-2m local\/staging synthetic stale recovery execution passed on 2026-06-26 Asia\/Taipei/);

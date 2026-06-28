@@ -291,3 +291,96 @@ The next manual decision should choose one path:
 Recommended:
 - Follow `docs/SYNC_GATE_D_PENDING_OPERATION_DRAIN_DESIGN.md`.
 - Do not enable the flags broadly, because controlled verification keeps production defaults off.
+
+## 5. Plan Validation Before Further Execution
+
+Current validated facts:
+- D3c-2m staging verification passed on 2026-06-26 Asia/Taipei.
+- D3c-2n-1 service wrapper exists and is isolated to `lib/sync/owner-pending-operation-diagnostics.ts`.
+- The owner diagnostics panel does not call the D3c-2n-1 retry/drain wrapper.
+- The D3c-2n-1 wrapper locally rejects mismatched operation ids, non-`failed_retryable` rows, non-owner actor rows, non-`checklist_item_toggle` rows, and non-`checklist_item` rows before calling the RPC.
+- `npm run build` passed after D3c-2n-1.
+- Full `npx tsc --noEmit` is not a reliable gate in this repo because existing unrelated test typing errors currently fail it.
+
+Plan assumptions that must remain true:
+- Direct event writes remain the normal production source of truth.
+- `pendingOperationWriteRouting` and `pendingOperationDrainAfterEnqueue` remain default-off.
+- D3c-2n retry/drain remains owner-only and single-row.
+- Staff-created pending rows remain diagnostics-only.
+- No batch worker, background retry, or page-load retry is introduced.
+- No production synthetic data is created.
+- No cache replacement execute mode is introduced.
+
+Pre-execution validation required before any future D3c-2n-2 code:
+- Review the exact UI eligibility predicate before implementation.
+- Confirm the UI button should be shown only for rows where:
+  - `status = 'failed_retryable'`;
+  - `operationType = 'checklist_item_toggle'`;
+  - `entityType = 'checklist_item'`;
+  - `actorId = currentUser.id`;
+  - current page is owner-only `/recovery`.
+- Confirm the confirmation text must state that the action may create a final cloud event.
+- Confirm the action reloads diagnostics after the RPC returns.
+- Confirm there is no cleanup, batch selection, staff-row action, automatic retry, worker, new RPC, migration, RLS change, or feature-flag default change.
+
+## 6. Risk Decision Points Before D3c-2n-2
+
+Decision A: Should D3c-2n-2 owner UI button be approved?
+
+Recommended answer:
+- Approve only after reviewing this section.
+- Scope must be owner-only, single-row, and limited to owner-created `failed_retryable` checklist-toggle rows.
+
+Risk:
+- The button can invoke a final-event-writing RPC through the D3c-2n-1 wrapper.
+- A successful drain may create a `checklist_item_updated` event.
+
+Risk controls:
+- No button for staff-created rows.
+- No button for `pending`, `processing`, `synced`, `failed_permanent`, or `blocked_permission`.
+- No batch selection.
+- No automatic execution.
+- Explicit `window.confirm`.
+- Diagnostics refresh after completion.
+
+Decision B: Should D3c-2n-3 local/staging manual verification be prepared now?
+
+Recommended answer:
+- Prepare the manual verification plan only after D3c-2n-2 UI code passes tests.
+- Do not run verification until the owner selects one disposable local/staging `failed_retryable` row.
+
+Risk:
+- The manual verification can create a final event in staging/local.
+
+Risk controls:
+- Use only local/staging.
+- Use one disposable row.
+- Verify no duplicate final event is created.
+- Keep production verification separate.
+
+Decision C: Should staging synthetic rows be cleaned up now?
+
+Recommended answer:
+- Defer cleanup until D3c-2n-2 and D3c-2n-3 decisions are settled.
+- Keep existing staging rows as evidence unless they interfere with diagnostics.
+
+Risk:
+- Cleanup requires direct SQL delete because authenticated clients do not have DELETE permission on `pending_operations`.
+
+Risk controls:
+- Cleanup must be staging-only.
+- Delete only rows with `idempotency_key like 'd3c-2m-synthetic-stale:%'`.
+- Do not add application cleanup code.
+
+Decision D: Should current completed work be committed before D3c-2n-2?
+
+Recommended answer:
+- Yes. Commit D3c-2m evidence, D3c-2n-1 service wrapper, and planning/test updates before adding UI.
+
+Risk:
+- Continuing into UI with a large uncommitted diff makes rollback and review harder.
+
+Risk controls:
+- Review changed files before commit.
+- Keep `supabase/bootstrap/` untracked unless explicitly approved.
+- Do not commit `.env.local`.
