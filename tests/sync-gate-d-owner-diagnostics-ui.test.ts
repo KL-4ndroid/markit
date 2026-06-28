@@ -67,20 +67,30 @@ runTest('retry drain wrapper is single-row owner-created checklist toggle only',
   assert.doesNotMatch(serviceSource, /setInterval|setTimeout/);
 });
 
-runTest('diagnostics panel blocks staff and exposes only owner-confirmed one-row recovery', () => {
+runTest('diagnostics panel blocks staff and exposes only owner-confirmed one-row recovery and retry drain', () => {
   assert.match(panelSource, /useUserRole/);
   assert.match(panelSource, /useAuth/);
   assert.match(panelSource, /if \(isStaff\)/);
   assert.match(panelSource, /listOwnerPendingOperationDiagnostics\(user\.id\)/);
   assert.match(panelSource, /recoverStaleProcessingPendingOperation\(row\.operationId\)/);
-  assert.doesNotMatch(panelSource, /retryDrainOwnerChecklistTogglePendingOperation/);
+  assert.match(panelSource, /retryDrainOwnerChecklistTogglePendingOperation/);
+  assert.match(panelSource, /retryDrainOwnerChecklistTogglePendingOperation\(\{\s*operationId: row\.operationId,\s*currentUserId: user\.id,\s*diagnosticsRow: row,\s*\}\)/);
   assert.doesNotMatch(panelSource, /drain_checklist_toggle_pending_operation/);
   assert.match(panelSource, /window\.confirm/);
   assert.match(panelSource, /onRecover\(row\)/);
+  assert.match(panelSource, /onRetryDrain\(row\)/);
   assert.match(panelSource, /const canRecover = isStaleProcessing\(row\)/);
+  assert.match(panelSource, /const canRetryDrain = isRetryDrainCandidate\(row, currentUserId\)/);
   assert.match(panelSource, /STALE_PROCESSING_THRESHOLD_MS = 15 \* 60 \* 1000/);
   assert.match(panelSource, /function isStaleProcessing/);
   assert.match(panelSource, /row\.status !== 'processing'/);
+  assert.match(panelSource, /function isRetryDrainCandidate/);
+  assert.match(panelSource, /row\.status !== 'failed_retryable'/);
+  assert.match(panelSource, /row\.operationType !== 'checklist_item_toggle'/);
+  assert.match(panelSource, /row\.entityType !== 'checklist_item'/);
+  assert.match(panelSource, /row\.actorId !== currentUserId/);
+  assert.match(panelSource, /may create one final checklist_item_updated cloud event/);
+  assert.match(panelSource, /Retry drain/);
   assert.match(panelSource, /讀取 diagnostics/);
 
   for (const forbidden of [
@@ -92,6 +102,8 @@ runTest('diagnostics panel blocks staff and exposes only owner-confirmed one-row
     /清除/,
     /enqueue_checklist_toggle_pending_operation/,
     /supabase\./,
+    /setInterval|setTimeout/,
+    /Promise\.all/,
   ]) {
     assert.doesNotMatch(panelSource, forbidden);
   }

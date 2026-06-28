@@ -231,14 +231,16 @@ Exit criteria:
 
 L1-L10 are complete. Do not continue into new Gate D implementation without explicit approval.
 
-Gate D has since progressed through a narrow pending-operation checklist-toggle pilot, owner-only diagnostics, stale `processing` recovery planning, D3c-2m staging verification, D3c-2n retry/drain action design, and D3c-2n-1 service wrapper draft.
+Gate D has since progressed through a narrow pending-operation checklist-toggle pilot, owner-only diagnostics, stale `processing` recovery planning, D3c-2m staging verification, D3c-2n retry/drain action design, D3c-2n-1 service wrapper draft, D3c-2n-2 owner-only single-row UI button, and D3c-2n-3 local/staging manual verification.
 
 Recommended next low-risk work:
 - Add more static sync boundary tests if needed.
 - Treat the D3c-2m prerequisite as satisfied for the missing-final-event recovery path.
 - Treat D3c-2n-1 service wrapper draft as complete.
-- Keep D3c-2n-2 owner UI button blocked until explicit high-risk approval.
+- Treat D3c-2n-2 owner UI button as complete.
+- Treat D3c-2n-3 local/staging manual verification as complete.
+- Keep D3c-2n-4 production disposable verification blocked until explicit high-risk approval and one disposable owner-created row are provided.
 - Continue only design, documentation, diagnostics, static tests, or other non-mutating guardrails.
 - Keep cache replacement and pending operations in preview/documentation mode unless a previously approved narrow slice is already implemented and covered.
 
-Do not start runtime retry/drain, worker, broad cache replacement execute, RLS changes, production synthetic data creation, or feature-flag default changes until a new explicit high-risk decision supersedes this boundary.
+Do not start D3c-2n-4 production verification, worker, automatic retry, broad cache replacement execute, RLS changes, production synthetic data creation, staff-row drain, or feature-flag default changes until a new explicit high-risk decision supersedes this boundary.

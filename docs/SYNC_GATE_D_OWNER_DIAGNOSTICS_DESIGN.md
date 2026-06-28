@@ -1,13 +1,13 @@
 # BoothBook Sync Gate D Owner Diagnostics Design
 
 Created: 2026-06-22
-Status: D3c-2n retry/drain action design added; no retry/drain runtime code, production synthetic data, batch mutation action, RLS, worker, cleanup, or automatic runtime repair caller is approved by this document
+Status: D3c-2n-3 local/staging manual retry/drain verification passed; no production synthetic data, batch mutation action, RLS, worker, cleanup, automatic runtime repair caller, or staff-row drain is approved by this document
 
 ## 0. Purpose
 
 This document defines the safety contract for a future owner-only diagnostics surface for `pending_operations`.
 
-The primary goal is observability. The only approved repair behavior is the D3c-2k owner-confirmed one-row stale `processing` recovery action:
+The primary goal is observability. The approved repair behavior is limited to the D3c-2k owner-confirmed one-row stale `processing` recovery action and the D3c-2n-2 owner-confirmed one-row retry/drain action for owner-created `failed_retryable` checklist-toggle rows:
 - Let the owner inspect whether pending-operation delivery is healthy.
 - Make blocked or failed rows understandable.
 - Keep the existing event model as the source of truth.
@@ -57,12 +57,13 @@ Completed before this design:
   - no runtime code
   - no event fixture
   - no retry/drain action
-- D3c-2n added retry/drain action design:
-  - no runtime code
-  - no UI button
-  - no service wrapper
+- D3c-2n added retry/drain action design.
+- D3c-2n-1 added the owner-only single-row service wrapper.
+- D3c-2n-2 added the owner-only single-row diagnostics UI button:
+  - no automatic retry
+  - no batch action
   - no owner-on-behalf-of-staff drain
-  - D3c-2m must pass before implementation
+  - D3c-2m passed before implementation
 
 Still default-off:
 - `pendingOperationWriteRouting`
@@ -73,8 +74,8 @@ Still not approved:
 - Any production flag default change.
 - Any cache replacement execute behavior.
 - Any staff diagnostics inbox.
-- Any owner UI mutation beyond the approved D3c-2k one-row recovery action.
-- Any diagnostics mutation outside stale `processing` recovery.
+- Any owner UI mutation beyond the approved D3c-2k one-row recovery action and D3c-2n-2 owner-created checklist-toggle retry/drain action.
+- Any diagnostics mutation outside stale `processing` recovery and owner-created failed-retryable checklist-toggle retry/drain.
 
 ## 2. Recommendation
 
@@ -89,7 +90,8 @@ Recommended implementation path:
 - Add manual smoke verification planning before any retry/drain action. Completed as D3c-2l.
 - Add local/staging-only synthetic stale recovery test planning if production has no natural disposable stale row. Completed as D3c-2m.
 - Add retry/drain action design before any event-writing owner action. Completed as D3c-2n.
-- Keep retry, drain, cleanup, batch, and worker actions out of diagnostics UI.
+- Add owner-only single-row retry/drain UI only after the service wrapper and explicit approval. Completed as D3c-2n-2.
+- Keep cleanup, batch, worker, automatic retry, staff-row drain, and production verification actions out of diagnostics UI.
 
 Why this is the safest next step:
 - A successful smoke test proves the narrow enqueue/drain path once, but it does not prove broad operational handling.
@@ -302,9 +304,9 @@ Do not drop `pending_operations` while rows exist unless rows are exported, drai
 
 ## 11. Next Approval Boundary
 
-This document now records the D3c-2k owner-confirmed one-row stale `processing` recovery UI action, D3c-2l manual smoke verification plan, D3c-2m local/staging synthetic stale recovery test plan, and D3c-2n retry/drain action design.
+This document now records the D3c-2k owner-confirmed one-row stale `processing` recovery UI action, D3c-2l manual smoke verification plan, D3c-2m local/staging synthetic stale recovery test plan, D3c-2n retry/drain action design, D3c-2n-1 service wrapper, D3c-2n-2 owner-only single-row retry/drain UI button, and D3c-2n-3 local/staging manual verification.
 
-D3c-2m staging execution passed on 2026-06-26 Asia/Taipei. The D3c-2m plan remains retained for future local/staging reuse, and the passed evidence is recorded in `docs/SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD.md`.
+D3c-2m staging execution passed on 2026-06-26 Asia/Taipei. D3c-2n-3 staging execution passed on 2026-06-29 Asia/Taipei with operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06`. The D3c-2m plan remains retained for future local/staging reuse, and the passed evidence is recorded in `docs/SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD.md`.
 
 Approved action boundary:
 - owner-only `/recovery`;
@@ -313,14 +315,27 @@ Approved action boundary:
 - calls only `recover_stale_processing_pending_operation`;
 - reloads diagnostics after completion.
 
-The next high-risk decision is choosing one implementation slice:
-- manually execute D3c-2l against one disposable or non-production stale `processing` row
-- manually execute D3c-2m in local/staging with one synthetic stale `processing` row
-- implement D3c-2n service wrapper after D3c-2m passes
+Approved D3c-2n-2 retry/drain boundary:
+- owner-only `/recovery`;
+- one owner-created `failed_retryable` checklist-toggle row at a time;
+- explicit `window.confirm`;
+- calls only `retryDrainOwnerChecklistTogglePendingOperation()`;
+- may create one final `checklist_item_updated` cloud event;
+- reloads diagnostics after completion;
+- no staff-row drain;
+- no batch selection;
+- no automatic retry.
+
+The next high-risk decision is D3c-2n-4 production disposable verification:
+- use one disposable production owner-created `failed_retryable` checklist-toggle row;
+- verify one final event is created or the row remains retryable with a clear error;
+- verify no duplicate final event is created.
 
 Recommended next slice:
 - Treat D3c-2m as passed for the missing-final-event recovery path.
 - Treat D3c-2n-1 service wrapper draft as complete.
-- Continue only documentation alignment, static/audit tests, read-only diagnostics design, and other non-mutating guardrails until D3c-2n-2 is explicitly approved.
+- Treat D3c-2n-2 owner-only single-row UI button as complete.
+- Treat D3c-2n-3 local/staging manual verification as complete.
+- Continue only documentation alignment, static/audit tests, read-only diagnostics design, and other non-mutating guardrails until D3c-2n-4 is explicitly approved.
 - Keep retry/drain implementation separate from stale recovery and limited to owner-created rows unless a separate staff-row decision is approved.
-- Keep D3c-2n owner UI action blocked until explicit high-risk approval is given for the owner-only single-row retry/drain UI slice.
+- Keep D3c-2n-4 production disposable verification blocked until explicit high-risk approval is given and one disposable owner-created row is selected.

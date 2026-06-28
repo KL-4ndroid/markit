@@ -119,20 +119,29 @@ runTest('Gate D guardrail: production sync does not import pending operation or 
   );
 });
 
-runTest('planning docs keep explicit approval as the boundary before retry drain UI', () => {
+runTest('planning docs keep explicit approval as the boundary before retry drain verification', () => {
   assert.match(phasePlanSource, /D3c-2m local\/staging synthetic stale recovery execution passed on 2026-06-26 Asia\/Taipei/);
   assert.match(phasePlanSource, /D3c-2n-1 owner-only single-row service wrapper draft is implemented/);
-  assert.match(phasePlanSource, /Do not proceed into D3c-2n-2 owner UI button until explicit high-risk approval/);
+  assert.match(phasePlanSource, /D3c-2n-2 owner UI button is implemented/);
+  assert.match(phasePlanSource, /D3c-2n-3 local\/staging manual verification passed on 2026-06-29 Asia\/Taipei/);
+  assert.match(phasePlanSource, /Do not proceed into D3c-2n-4 production disposable verification until explicit high-risk approval/);
 
-  assert.match(safetyPlanSource, /Status: active decision plan after D3c-2n-1 service wrapper draft/);
+  assert.match(safetyPlanSource, /Status: active decision plan after D3c-2n-3 local\/staging manual retry\/drain verification/);
   assert.match(safetyPlanSource, /D3c-2m staging verification passed on 2026-06-26 Asia\/Taipei/);
   assert.match(safetyPlanSource, /D3c-2n-1 service wrapper is implemented/);
-  assert.match(safetyPlanSource, /D3c-2n-2 owner UI button remains blocked until explicit high-risk approval/);
+  assert.match(safetyPlanSource, /D3c-2n-2 owner UI button is implemented/);
+  assert.match(safetyPlanSource, /D3c-2n-3 staging verification passed on 2026-06-29 Asia\/Taipei/);
   assert.match(safetyPlanSource, /Plan Validation Before Further Execution/);
-  assert.match(safetyPlanSource, /Pre-execution validation required before any future D3c-2n-2 code/);
-  assert.match(safetyPlanSource, /Risk Decision Points Before D3c-2n-2/);
-  assert.match(safetyPlanSource, /Decision A: Should D3c-2n-2 owner UI button be approved/);
-  assert.match(safetyPlanSource, /Decision D: Should current completed work be committed before D3c-2n-2/);
+  assert.match(safetyPlanSource, /Pre-execution validation required before any future D3c-2n-4 verification/);
+  assert.match(safetyPlanSource, /Risk Decision Points Before D3c-2n-4/);
+  assert.match(safetyPlanSource, /Decision A: Should D3c-2n-4 production disposable verification be approved/);
+  assert.match(safetyPlanSource, /Decision D: Should current completed work be committed before D3c-2n-4/);
+  assert.match(safetyPlanSource, /Future Reliable Outbox \/ Auto-Retry Plan/);
+  assert.match(safetyPlanSource, /Stable event\/operation id/);
+  assert.match(safetyPlanSource, /Idempotent drain RPC behavior/);
+  assert.match(safetyPlanSource, /retry state machine/);
+  assert.match(safetyPlanSource, /No automatic worker is approved by this future plan/);
+  assert.match(safetyPlanSource, /No revenue, inventory, product, market, cost, or `deal_closed` migration is approved/);
 
   assert.match(preflightPlanSource, /historical pre-implementation decision plan/);
   assert.match(preflightPlanSource, /D3c-2m local\/staging synthetic stale recovery execution passed on 2026-06-26 Asia\/Taipei/);

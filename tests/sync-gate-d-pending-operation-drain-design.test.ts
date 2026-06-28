@@ -35,11 +35,11 @@ const productionFiles = [
 
 console.log('\n=== Sync Gate D pending operation drain design ===');
 
-runTest('D3c-2 drain design records progress through D3c-2n with controlled boundaries', () => {
+runTest('D3c-2 drain design records progress through D3c-2n-3 with controlled boundaries', () => {
   assert.ok(existsSync(designPath));
   assert.match(
     designSource,
-    /Status: D3c-2 design complete through D3c-2n retry\/drain action design; no batch worker or production default enablement approved/
+    /Status: D3c-2 design complete through D3c-2n-3 local\/staging manual retry\/drain verification; no batch worker or production default enablement approved/
   );
   assert.match(designSource, /050_drain_checklist_toggle_pending_operation\.sql/);
   assert.match(designSource, /pendingOperationDrainAfterEnqueue` is a dedicated drain flag and remains default-off/);
@@ -61,7 +61,9 @@ runTest('D3c-2 drain design records progress through D3c-2n with controlled boun
   assert.match(designSource, /docs\/SYNC_GATE_D_D3C_2N_RETRY_DRAIN_ACTION_DESIGN\.md/);
   assert.match(designSource, /tests\/sync-gate-d-retry-drain-action-design\.test\.ts/);
   assert.match(designSource, /D3c-2n-1 service wrapper draft added as `retryDrainOwnerChecklistTogglePendingOperation\(\)`/);
-  assert.match(designSource, /No D3c-2n UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain was added/);
+  assert.match(designSource, /D3c-2n-2 owner-only single-row UI button added to owner diagnostics/);
+  assert.match(designSource, /D3c-2n-3 local\/staging manual verification passed on 2026-06-29 Asia\/Taipei/);
+  assert.match(designSource, /No D3c-2n-4 production verification, batch action, RLS, worker, cleanup, automatic runtime repair caller, or staff-row drain is approved/);
   assert.match(designSource, /No batch drain\/worker is approved by this document/);
   assert.match(designSource, /No feature flag default change is approved by this document/);
   assert.match(designSource, /No RLS policy change is approved by this document/);
@@ -71,9 +73,11 @@ runTest('low-risk queue records the passed D3c-2m boundary before later runtime 
   assert.match(lowRiskQueueSource, /D3c-2m staging verification/);
   assert.match(lowRiskQueueSource, /Treat the D3c-2m prerequisite as satisfied/);
   assert.match(lowRiskQueueSource, /Treat D3c-2n-1 service wrapper draft as complete/);
-  assert.match(lowRiskQueueSource, /Keep D3c-2n-2 owner UI button blocked until explicit high-risk approval/);
+  assert.match(lowRiskQueueSource, /Treat D3c-2n-2 owner UI button as complete/);
+  assert.match(lowRiskQueueSource, /Treat D3c-2n-3 local\/staging manual verification as complete/);
+  assert.match(lowRiskQueueSource, /Keep D3c-2n-4 production disposable verification blocked until explicit high-risk approval/);
   assert.match(lowRiskQueueSource, /Continue only design, documentation, diagnostics, static tests, or other non-mutating guardrails/);
-  assert.match(lowRiskQueueSource, /Do not start runtime retry\/drain, worker, broad cache replacement execute, RLS changes, production synthetic data creation, or feature-flag default changes/);
+  assert.match(lowRiskQueueSource, /Do not start D3c-2n-4 production verification, worker, automatic retry, broad cache replacement execute, RLS changes, production synthetic data creation, staff-row drain, or feature-flag default changes/);
 });
 
 runTest('design recommends a narrow single-operation drain RPC before broad workers', () => {

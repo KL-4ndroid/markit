@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Pending Operation Drain Design
 
 Created: 2026-06-21
-Status: D3c-2 design complete through D3c-2n retry/drain action design; no batch worker or production default enablement approved
+Status: D3c-2 design complete through D3c-2n-3 local/staging manual retry/drain verification; no batch worker or production default enablement approved
 
 ## 0. Purpose
 
@@ -41,13 +41,16 @@ Owner-only diagnostics status:
 - D3c-2m local/staging-only synthetic stale `processing` recovery test plan added.
 - D3c-2n retry/drain action design added.
 - D3c-2m staging execution passed on 2026-06-26 Asia/Taipei with operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06`; no final event was created.
-- No batch action, RLS, worker, retry, drain, cleanup, or automatic runtime repair caller is approved by that design.
+- D3c-2n-1 service wrapper draft added as `retryDrainOwnerChecklistTogglePendingOperation()`.
+- D3c-2n-2 owner-only single-row UI button added to owner diagnostics for owner-created `failed_retryable` checklist-toggle rows.
+- D3c-2n-3 local/staging manual verification passed on 2026-06-29 Asia/Taipei with operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06`; one `checklist_item_updated` final event was created and no duplicate final event was found.
+- No D3c-2n-4 production verification, batch action, RLS, worker, cleanup, automatic runtime repair caller, or staff-row drain is approved by that design.
 
 Still not approved:
 - No batch drain/worker is approved by this document.
 - No feature flag default change is approved by this document.
 - No RLS policy change is approved by this document.
-- No UI, cache replacement, revenue, inventory, market, or product behavior is approved by this document.
+- No cache replacement, revenue, inventory, market, or product behavior is approved by this document.
 
 ## 1. Recommendation
 
@@ -444,5 +447,7 @@ Status:
 - Design added as `docs/SYNC_GATE_D_D3C_2N_RETRY_DRAIN_ACTION_DESIGN.md`.
 - Guardrails added as `tests/sync-gate-d-retry-drain-action-design.test.ts`.
 - D3c-2n-1 service wrapper draft added as `retryDrainOwnerChecklistTogglePendingOperation()` in `lib/sync/owner-pending-operation-diagnostics.ts`.
-- No D3c-2n UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain was added.
-- The next D3c-2n implementation slice is D3c-2n-2 owner UI button and remains high risk because it may expose a final-event-writing drain RPC action.
+- D3c-2n-2 owner-only single-row UI button added in `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
+- D3c-2n-3 local/staging manual verification passed with operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06`.
+- The next D3c-2n implementation slice is D3c-2n-4 production disposable verification and remains high risk because it may invoke a final-event-writing drain RPC action against production data.
+- No D3c-2n-4 verification, migration, RLS, worker, feature-flag change, batch action, automatic retry, or staff-row drain was added.

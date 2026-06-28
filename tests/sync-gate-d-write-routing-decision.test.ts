@@ -34,7 +34,7 @@ const productionFiles = [
 console.log('\n=== Sync Gate D write routing decision ===');
 
 runTest('decision record keeps Gate D approvals narrow and blocks broader runtime work', () => {
-  assert.match(decisionSource, /Status: active Gate D decision record after D3c-2n retry\/drain action design/);
+  assert.match(decisionSource, /Status: active Gate D decision record after D3c-2n-3 local\/staging manual retry\/drain verification/);
   assert.match(decisionSource, /D3c-1 approved a dormant checklist-toggle RPC route behind a default-off flag/);
   assert.match(decisionSource, /D3c-2b approved a single-operation checklist-toggle drain RPC draft/);
   assert.match(decisionSource, /D3c-2c approved a gated runtime drain call after successful enqueue/);
@@ -43,9 +43,13 @@ runTest('decision record keeps Gate D approvals narrow and blocks broader runtim
   assert.match(decisionSource, /D3c-2l approved a manual stale `processing` recovery smoke verification plan and guarded script/);
   assert.match(decisionSource, /D3c-2m approved a local\/staging-only synthetic stale `processing` recovery test plan/);
   assert.match(decisionSource, /D3c-2n approved retry\/drain action design only/);
+  assert.match(decisionSource, /D3c-2n-1 approved an owner-only single-row service wrapper draft/);
+  assert.match(decisionSource, /D3c-2n-2 approved an owner-only single-row UI button in diagnostics/);
+  assert.match(decisionSource, /D3c-2n-3 completed local\/staging manual retry\/drain verification/);
   assert.match(decisionSource, /No ordinary market-detail, staff workflow, revenue, inventory, product, or market UI behavior change is approved/);
   assert.match(decisionSource, /No Supabase RLS change after 048 is approved/);
   assert.match(decisionSource, /No broad worker, production flag default, or production-wide final-event writer/);
+  assert.match(decisionSource, /No D3c-2n-4 production disposable verification, batch action, automatic retry, or staff-row drain is approved/);
 });
 
 runTest('source-of-truth recommendation keeps existing event model primary', () => {
@@ -103,9 +107,11 @@ runTest('D3c-2e through D3c-2n progress is recorded and broader gates remain clo
   assert.match(decisionSource, /D3c-2m staging execution passed on 2026-06-26 Asia\/Taipei/);
   assert.match(decisionSource, /operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06` recovered to `failed_retryable`/);
   assert.match(decisionSource, /D3c-2n-1 owner-only single-row service wrapper draft is approved and implemented/);
-  assert.match(decisionSource, /No D3c-2n UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain is approved/);
+  assert.match(decisionSource, /D3c-2n-2 owner-only single-row UI button is approved and implemented/);
+  assert.match(decisionSource, /D3c-2n-3 local\/staging manual verification passed on 2026-06-29 Asia\/Taipei/);
+  assert.match(decisionSource, /No D3c-2n-4 production verification, migration, RLS, worker, feature-flag change, batch action, automatic retry, or staff-row drain is approved/);
   assert.match(decisionSource, /D3c-2n retry\/drain action design is added/);
-  assert.match(decisionSource, /The next D3c-2n step, if later approved, should be D3c-2n-2 owner UI button/);
+  assert.match(decisionSource, /The next D3c-2n step, if later approved, should be D3c-2n-4 production disposable verification/);
   assert.match(decisionSource, /No direct client insert into `pending_operations` is used/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Direct client insert into `pending_operations`/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any change to 048 RLS/);
@@ -115,7 +121,7 @@ runTest('D3c-2e through D3c-2n progress is recorded and broader gates remain clo
   assert.match(decisionSource, /Do not approve yet:[\s\S]*A broad service-role batch worker/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any production synthetic stale `processing` row/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any owner retry\/drain action for staff-created pending rows/);
-  assert.match(decisionSource, /Do not approve yet:[\s\S]*Any D3c-2n UI button, batch action, worker, production execution, staff-row drain, or feature-flag default change without explicit approval/);
+  assert.match(decisionSource, /Do not approve yet:[\s\S]*Any D3c-2n-4 production verification, batch action, worker, staff-row drain, automatic retry, or feature-flag default change without explicit approval/);
   assert.match(decisionSource, /Do not approve yet:[\s\S]*Any cache replacement execute behavior/);
 });
 

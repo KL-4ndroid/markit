@@ -34,7 +34,7 @@ Current approved narrow exceptions:
   `supabase/migrations/048_add_pending_operations_schema.sql`.
 - D3c-0 through D3c-2n have since progressed only through the documented checklist-toggle pilot, drain RPC draft, default-off controlled routing, owner-only diagnostics, stale `processing` recovery planning/action, manual smoke scripts, and retry/drain action design.
 - D3c-2m local/staging synthetic stale recovery execution passed on 2026-06-26 Asia/Taipei.
-- D3c-2n-1 owner-only single-row service wrapper draft is implemented; D3c-2n-2 owner UI button remains blocked until explicit high-risk approval.
+- D3c-2n-1 owner-only single-row service wrapper draft is implemented; D3c-2n-2 owner UI button is implemented and remains limited to owner-created `failed_retryable` checklist-toggle rows; D3c-2n-3 local/staging manual verification passed on 2026-06-29 Asia/Taipei.
 - These exceptions do not approve broad production write routing, a worker, cache replacement execute behavior, RLS changes beyond the approved migrations, production synthetic data creation, or feature-flag default changes.
 
 ## 2. Risk Areas
@@ -189,7 +189,7 @@ The current next step is limited to:
 - Read-only diagnostics or design work.
 - Non-mutating preview work that is not imported by production sync.
 
-Do not proceed into D3c-2n-2 owner UI button until explicit high-risk approval is given for that slice.
+Do not proceed into D3c-2n-4 production disposable verification until explicit high-risk approval is given for that slice and one disposable owner-created production row is selected.
 
 ## 5. Rollback Approach
 

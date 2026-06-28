@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Safety And Slice Plan
 
 Created: 2026-06-21
-Status: active decision plan after D3c-2n-1 service wrapper draft
+Status: active decision plan after D3c-2n-3 local/staging manual retry/drain verification
 
 ## 0. Current State
 
@@ -17,14 +17,18 @@ D2a through D3c-2n have progressed through narrow approved slices:
 - D3c-2m local/staging synthetic stale recovery test plan and staging execution.
 - D3c-2n retry/drain action design.
 - D3c-2n-1 owner-only single-row service wrapper draft.
+- D3c-2n-2 owner-only single-row retry/drain UI button.
+- D3c-2n-3 local/staging manual retry/drain verification.
 
-D3c-2m staging verification passed on 2026-06-26 Asia/Taipei. D3c-2n-1 service wrapper is implemented. D3c-2n-2 owner UI button remains blocked until explicit high-risk approval.
+D3c-2m staging verification passed on 2026-06-26 Asia/Taipei. D3c-2n-1 service wrapper is implemented. D3c-2n-2 owner UI button is implemented and remains limited to owner-created `failed_retryable` checklist-toggle rows. D3c-2n-3 staging verification passed on 2026-06-29 Asia/Taipei with operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06`, which reached `synced` with exactly one `checklist_item_updated` final event.
 
 Still not approved:
 - Enabling `pendingOperationWriteRouting` by default.
 - Enabling `pendingOperationDrainAfterEnqueue` by default.
-- Any new retry/drain runtime action beyond the already approved controlled checklist-toggle smoke path.
+- D3c-2n-4 production disposable retry/drain verification.
+- Any new retry/drain runtime action beyond the owner-only single-row diagnostics button.
 - A broad pending-operation drain worker that creates final cloud events.
+- Automatic retry, page-load retry, or background retry.
 - Cache replacement execute mode.
 - Any owner/staff pull integration with replacement behavior.
 - Any financial or inventory projection rewrite.
@@ -242,6 +246,8 @@ Status:
 - D3c-2m synthetic stale recovery test plan and staging execution are complete.
 - D3c-2n retry/drain action design is complete.
 - D3c-2n-1 service wrapper draft is complete.
+- D3c-2n-2 owner-only single-row UI button is complete.
+- D3c-2n-3 local/staging manual verification is complete.
 
 Current allowed work:
 - Documentation alignment.
@@ -249,8 +255,9 @@ Current allowed work:
 - Read-only diagnostics planning.
 - Non-mutating design work.
 
-Not allowed before explicit D3c-2n-2 approval:
-- D3c-2n owner retry/drain UI button.
+Not allowed before explicit D3c-2n-4 approval:
+- D3c-2n-4 production disposable verification.
+- Any retry/drain action for rows outside the owner-created `failed_retryable` checklist-toggle scope.
 - Any worker or batch drain.
 - Any production synthetic stale `processing` row.
 - Any feature-flag default change.
@@ -274,18 +281,21 @@ Required before implementation:
 Next safest move:
 - Treat D3c-2m as passed for the missing-final-event recovery path.
 - Treat D3c-2n-1 service wrapper draft as complete.
-- Decide whether to approve D3c-2n-2 owner UI button.
-- Continue only documentation alignment, static/audit guardrail tests, read-only diagnostics design, and non-mutating preview work until D3c-2n-2 is explicitly approved.
+- Treat D3c-2n-2 owner UI button as complete.
+- Treat D3c-2n-3 local/staging manual verification as complete.
+- Prepare D3c-2n-4 production disposable verification only after explicit approval and one selected disposable production owner-created `failed_retryable` row.
+- Continue only documentation alignment, static/audit guardrail tests, read-only diagnostics design, and non-mutating preview work until D3c-2n-4 is explicitly approved.
 
 Do not proceed directly to:
 - Turning `pendingOperationWriteRouting` on by default.
 - Turning `pendingOperationDrainAfterEnqueue` on by default.
 - Creating any retry/drain runtime action beyond the already approved controlled checklist-toggle smoke path.
 - Creating a broad pending-operation drain worker.
+- Running retry/drain verification against production data.
 - D4 cache execute.
 
 The next manual decision should choose one path:
-- Approve D3c-2n-2 owner-only single-row UI button.
+- Approve D3c-2n-4 production disposable verification for one disposable owner-created `failed_retryable` checklist-toggle row.
 - Continue low-risk documentation/tests/diagnostics only.
 
 Recommended:
@@ -297,8 +307,10 @@ Recommended:
 Current validated facts:
 - D3c-2m staging verification passed on 2026-06-26 Asia/Taipei.
 - D3c-2n-1 service wrapper exists and is isolated to `lib/sync/owner-pending-operation-diagnostics.ts`.
-- The owner diagnostics panel does not call the D3c-2n-1 retry/drain wrapper.
+- The owner diagnostics panel calls the D3c-2n-1 retry/drain wrapper only from the D3c-2n-2 owner-confirmed single-row button.
 - The D3c-2n-1 wrapper locally rejects mismatched operation ids, non-`failed_retryable` rows, non-owner actor rows, non-`checklist_item_toggle` rows, and non-`checklist_item` rows before calling the RPC.
+- The D3c-2n-2 UI predicate shows retry/drain only for rows where `status = 'failed_retryable'`, `operationType = 'checklist_item_toggle'`, `entityType = 'checklist_item'`, and `actorId = currentUser.id`.
+- D3c-2n-3 staging verification passed on 2026-06-29 Asia/Taipei: operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06` reached `synced`, diagnostics reported `final_event_mismatch = false`, and final event count by operation id was `1`.
 - `npm run build` passed after D3c-2n-1.
 - Full `npx tsc --noEmit` is not a reliable gate in this repo because existing unrelated test typing errors currently fail it.
 
@@ -311,52 +323,53 @@ Plan assumptions that must remain true:
 - No production synthetic data is created.
 - No cache replacement execute mode is introduced.
 
-Pre-execution validation required before any future D3c-2n-2 code:
-- Review the exact UI eligibility predicate before implementation.
-- Confirm the UI button should be shown only for rows where:
+Pre-execution validation required before any future D3c-2n-4 verification:
+- Select exactly one disposable production owner-created pending row.
+- Confirm the row is visible in owner diagnostics and matches:
   - `status = 'failed_retryable'`;
   - `operationType = 'checklist_item_toggle'`;
   - `entityType = 'checklist_item'`;
   - `actorId = currentUser.id`;
   - current page is owner-only `/recovery`.
-- Confirm the confirmation text must state that the action may create a final cloud event.
-- Confirm the action reloads diagnostics after the RPC returns.
+- Confirm the expected result before clicking: one final `checklist_item_updated` event is created, or the row remains retryable with a clear error.
+- Confirm verification checks no duplicate final event is created.
 - Confirm there is no cleanup, batch selection, staff-row action, automatic retry, worker, new RPC, migration, RLS change, or feature-flag default change.
 
-## 6. Risk Decision Points Before D3c-2n-2
+## 6. Risk Decision Points Before D3c-2n-4
 
-Decision A: Should D3c-2n-2 owner UI button be approved?
+Decision A: Should D3c-2n-4 production disposable verification be approved?
 
 Recommended answer:
 - Approve only after reviewing this section.
-- Scope must be owner-only, single-row, and limited to owner-created `failed_retryable` checklist-toggle rows.
+- Scope must be production disposable data only, owner-only, single-row, and limited to one owner-created `failed_retryable` checklist-toggle row.
 
 Risk:
-- The button can invoke a final-event-writing RPC through the D3c-2n-1 wrapper.
-- A successful drain may create a `checklist_item_updated` event.
+- The production verification can invoke a final-event-writing RPC through the D3c-2n-1 wrapper.
+- A successful drain may create one `checklist_item_updated` event.
 
 Risk controls:
+- Use only explicitly disposable production test data.
+- Use one disposable row.
 - No button for staff-created rows.
 - No button for `pending`, `processing`, `synced`, `failed_permanent`, or `blocked_permission`.
 - No batch selection.
 - No automatic execution.
 - Explicit `window.confirm`.
 - Diagnostics refresh after completion.
+- Verify no duplicate final event is created.
 
-Decision B: Should D3c-2n-3 local/staging manual verification be prepared now?
+Decision B: Should broader automatic retry or worker design be prepared now?
 
 Recommended answer:
-- Prepare the manual verification plan only after D3c-2n-2 UI code passes tests.
-- Do not run verification until the owner selects one disposable local/staging `failed_retryable` row.
+- No.
+- Keep broader automatic retry as the future backlog in section 7.
 
 Risk:
-- The manual verification can create a final event in staging/local.
+- Automatic retry can create repeated write attempts, confuse audit evidence, or hide permission-blocked rows if idempotency and scheduling are incomplete.
 
 Risk controls:
-- Use only local/staging.
-- Use one disposable row.
-- Verify no duplicate final event is created.
-- Keep production verification separate.
+- Do not start worker or automatic retry in D3c-2n-4.
+- Require separate architecture, schema, and rollout approvals.
 
 Decision C: Should staging synthetic rows be cleaned up now?
 
@@ -372,15 +385,62 @@ Risk controls:
 - Delete only rows with `idempotency_key like 'd3c-2m-synthetic-stale:%'`.
 - Do not add application cleanup code.
 
-Decision D: Should current completed work be committed before D3c-2n-2?
+Decision D: Should current completed work be committed before D3c-2n-4?
 
 Recommended answer:
-- Yes. Commit D3c-2m evidence, D3c-2n-1 service wrapper, and planning/test updates before adding UI.
+- Yes. Commit D3c-2n-2 UI, D3c-2n-3 staging evidence, D3c-2n-1 service wrapper, and planning/test updates before any production verification.
 
 Risk:
-- Continuing into UI with a large uncommitted diff makes rollback and review harder.
+- Continuing into production verification with a large uncommitted diff makes rollback and review harder.
 
 Risk controls:
 - Review changed files before commit.
 - Keep `supabase/bootstrap/` untracked unless explicitly approved.
 - Do not commit `.env.local`.
+
+## 7. Future Reliable Outbox / Auto-Retry Plan
+
+Status:
+- Future backlog only.
+- This section records the desired long-term direction.
+- It does not approve implementation.
+
+Future goal:
+- Evolve `pending_operations` from the current checklist-toggle pilot into a reliable outbox for cloud delivery.
+- Preserve the existing event model as the business source of truth until a later explicit architecture decision changes it.
+- Let safe domains eventually auto-check and auto-retry failed uploads without duplicate cloud events.
+
+Current pilot boundary:
+- Only checklist toggle has enqueue and drain support.
+- Only owner-created `failed_retryable` checklist-toggle rows have a manual owner retry/drain UI.
+- Staff-created rows remain diagnostics-only.
+- Revenue, inventory, cost, product, market, and deal/transaction writes are not included.
+
+Required architecture before any automatic retry:
+- Stable event/operation id for every queued operation.
+- Stable idempotency key for enqueue and drain.
+- Idempotent drain RPC behavior: retrying the same operation must create at most one final event.
+- Live permission recheck at drain time.
+- A retry state machine with `pending`, `processing`, `synced`, `failed_retryable`, `failed_permanent`, and `blocked_permission`.
+- `next_retry_at`, retry count, max retry, and backoff policy before any worker exists.
+- Processing lease/timeout fields so abandoned `processing` rows can be recovered safely.
+- Clear distinction between retryable errors, permanent errors, and permission-blocked errors.
+- Owner diagnostics for blocked/permanent states before user-facing automation expands.
+- Audit metadata that records original actor, repair actor when applicable, operation id, idempotency key, and drain source.
+
+Future staged expansion:
+- F1: Architecture design for automatic retry and reliable outbox semantics.
+- F2: Schema proposal for retry scheduling, processing lease, and error classification.
+- F3: Local/staging-only worker prototype with feature flags default-off.
+- F4: Expand from checklist toggle to field notes and checklist text operations only after separate approval.
+- F5: Add diagnostics and repair UX for blocked/permanent rows.
+- F6: Evaluate high-sensitivity domains such as revenue, inventory, and `deal_closed` only after the low-risk domains are proven.
+
+Not approved by this future plan:
+- No automatic worker is approved by this future plan.
+- No broad event coverage is approved.
+- No production auto-retry is approved.
+- No revenue, inventory, product, market, cost, or `deal_closed` migration is approved.
+- No cache replacement execute behavior is approved.
+- No schema, RLS, or RPC change is approved by this section.
+- No staff-created row drain is approved.

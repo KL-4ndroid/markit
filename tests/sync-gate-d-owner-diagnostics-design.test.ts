@@ -47,7 +47,11 @@ runTest('owner diagnostics design records D3c-2g through D3c-2n while blocking b
   assert.match(designSource, /D3c-2l added a manual stale `processing` recovery smoke plan and guarded script/);
   assert.match(designSource, /D3c-2m added a local\/staging-only synthetic stale `processing` recovery test plan/);
   assert.match(designSource, /D3c-2n added retry\/drain action design/);
+  assert.match(designSource, /D3c-2n-1 service wrapper/);
+  assert.match(designSource, /D3c-2n-2 owner-only single-row retry\/drain UI button/);
+  assert.match(designSource, /D3c-2n-3 local\/staging manual verification/);
   assert.match(designSource, /D3c-2m staging execution passed on 2026-06-26 Asia\/Taipei/);
+  assert.match(designSource, /D3c-2n-3 staging execution passed on 2026-06-29 Asia\/Taipei/);
   assert.match(designSource, /passed evidence is recorded/);
   assert.match(designSource, /calls only `recover_stale_processing_pending_operation`/);
   assert.match(designSource, /051_list_owner_pending_operation_diagnostics\.sql/);
@@ -60,7 +64,7 @@ runTest('owner diagnostics design records D3c-2g through D3c-2n while blocking b
   assert.match(designSource, /tests\/supabase-pending-operations-stale-recovery-rpc\.test\.ts/);
   assert.match(designSource, /tests\/supabase-pending-operations-diagnostics-rpc\.test\.ts/);
   assert.match(designSource, /The primary goal is observability/);
-  assert.match(designSource, /only approved repair behavior is the D3c-2k owner-confirmed one-row stale `processing` recovery action/);
+  assert.match(designSource, /approved repair behavior is limited to the D3c-2k owner-confirmed one-row stale `processing` recovery action and the D3c-2n-2 owner-confirmed one-row retry\/drain action/);
   assert.match(decisionSource, /Owner-only diagnostics has a design-only safety contract/);
   assert.match(decisionSource, /D3c-2f owner-only read diagnostics RPC draft is added/);
   assert.match(decisionSource, /D3c-2g read-only owner diagnostics UI shell is added/);
@@ -84,15 +88,12 @@ runTest('design keeps diagnostics owner-only and read-only by default', () => {
   assert.match(designSource, /redacts or omits payload by default/);
 });
 
-runTest('design explicitly blocks first-slice mutation and worker behavior', () => {
+runTest('design explicitly blocks broad mutation and worker behavior', () => {
   for (const forbidden of [
-    'call `drain_checklist_toggle_pending_operation`',
     'call `enqueue_checklist_toggle_pending_operation`',
     'update `pending_operations`',
     'delete `pending_operations`',
     'insert into `events`',
-    'retry operations',
-    'reset `processing` rows',
     'create a batch worker',
     'expose service role credentials',
     'change sync cursors',
@@ -134,14 +135,19 @@ runTest('design separates diagnostics from future repair approvals', () => {
 runTest('design keeps explicit approval before diagnostics retry drain UI', () => {
   assert.match(designSource, /Treat D3c-2m as passed for the missing-final-event recovery path/);
   assert.match(designSource, /Treat D3c-2n-1 service wrapper draft as complete/);
-  assert.match(designSource, /Continue only documentation alignment, static\/audit tests, read-only diagnostics design, and other non-mutating guardrails until D3c-2n-2 is explicitly approved/);
-  assert.match(designSource, /Keep D3c-2n owner UI action blocked until explicit high-risk approval/);
+  assert.match(designSource, /Treat D3c-2n-2 owner-only single-row UI button as complete/);
+  assert.match(designSource, /Treat D3c-2n-3 local\/staging manual verification as complete/);
+  assert.match(designSource, /Continue only documentation alignment, static\/audit tests, read-only diagnostics design, and other non-mutating guardrails until D3c-2n-4 is explicitly approved/);
+  assert.match(designSource, /Keep D3c-2n-4 production disposable verification blocked until explicit high-risk approval/);
+  assert.match(designSource, /one owner-created `failed_retryable` checklist-toggle row at a time/);
+  assert.match(designSource, /calls only `retryDrainOwnerChecklistTogglePendingOperation\(\)`/);
 });
 
-runTest('design recommends recovery placement with only the approved read-only shell', () => {
+runTest('design recommends recovery placement with only the approved diagnostics shell and single-row actions', () => {
   assert.match(designSource, /owner-only `\/recovery` diagnostic panel/);
-  assert.match(designSource, /First UI should be read-only/);
-  assert.match(designSource, /no retry, drain, delete, or cleanup buttons/);
+  assert.match(designSource, /D3c-2n-2 owner-only single-row retry\/drain UI button/);
+  assert.match(designSource, /no staff-row drain/);
+  assert.match(designSource, /no automatic retry/);
 
   const approvedMatches = new Set(['app/recovery/page.tsx']);
   const unexpectedMatches = productionFiles.filter(file => {

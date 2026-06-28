@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import {
   listOwnerPendingOperationDiagnostics,
   recoverStaleProcessingPendingOperation,
+  retryDrainOwnerChecklistTogglePendingOperation,
   type OwnerPendingOperationDiagnosticsRow,
   type PendingOperationDiagnosticsStateGroup,
 } from '@/lib/sync/owner-pending-operation-diagnostics';
@@ -36,6 +37,7 @@ export function OwnerPendingOperationDiagnosticsPanel() {
   const [state, setState] = useState<PanelState>('idle');
   const [rows, setRows] = useState<OwnerPendingOperationDiagnosticsRow[]>([]);
   const [recoveringOperationId, setRecoveringOperationId] = useState<string | null>(null);
+  const [retryingOperationId, setRetryingOperationId] = useState<string | null>(null);
 
   const isBlocked = !user || isRoleLoading || isStaff;
 
@@ -101,6 +103,44 @@ export function OwnerPendingOperationDiagnosticsPanel() {
       toast.error(error instanceof Error ? error.message : 'Failed to recover operation');
     } finally {
       setRecoveringOperationId(null);
+    }
+  };
+
+  const handleRetryDrain = async (row: OwnerPendingOperationDiagnosticsRow) => {
+    if (!user || isRoleLoading || isStaff || !isRetryDrainCandidate(row, user.id)) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      [
+        'Retry drain one failed pending operation?',
+        '',
+        `Operation: ${row.operationId}`,
+        'This may create one final checklist_item_updated cloud event.',
+        'The action is limited to this single owner-created checklist toggle row.',
+      ].join('\n')
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRetryingOperationId(row.operationId);
+
+    try {
+      const result = await retryDrainOwnerChecklistTogglePendingOperation({
+        operationId: row.operationId,
+        currentUserId: user.id,
+        diagnosticsRow: row,
+      });
+      toast.success(`Retry drain result: ${result || 'updated'}`);
+      const nextRows = await listOwnerPendingOperationDiagnostics(user.id);
+      setRows(nextRows);
+      setState('loaded');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to retry drain operation');
+    } finally {
+      setRetryingOperationId(null);
     }
   };
 
@@ -194,8 +234,11 @@ export function OwnerPendingOperationDiagnosticsPanel() {
                       <DiagnosticsRow
                         key={row.operationId}
                         row={row}
+                        currentUserId={user.id}
                         isRecovering={recoveringOperationId === row.operationId}
+                        isRetrying={retryingOperationId === row.operationId}
                         onRecover={handleRecover}
+                        onRetryDrain={handleRetryDrain}
                       />
                     ))}
                   </tbody>
@@ -211,14 +254,21 @@ export function OwnerPendingOperationDiagnosticsPanel() {
 
 function DiagnosticsRow({
   row,
+  currentUserId,
   isRecovering,
+  isRetrying,
   onRecover,
+  onRetryDrain,
 }: {
   row: OwnerPendingOperationDiagnosticsRow;
+  currentUserId: string;
   isRecovering: boolean;
+  isRetrying: boolean;
   onRecover: (row: OwnerPendingOperationDiagnosticsRow) => void;
+  onRetryDrain: (row: OwnerPendingOperationDiagnosticsRow) => void;
 }) {
   const canRecover = isStaleProcessing(row);
+  const canRetryDrain = isRetryDrainCandidate(row, currentUserId);
 
   return (
     <tr className="align-top">
@@ -243,6 +293,17 @@ function DiagnosticsRow({
           >
             {isRecovering && <RefreshCw size={12} className="animate-spin" />}
             Recover
+          </button>
+        )}
+        {canRetryDrain && (
+          <button
+            type="button"
+            onClick={() => onRetryDrain(row)}
+            disabled={isRetrying}
+            className="mt-2 inline-flex h-8 items-center gap-1 rounded-md border border-sky-300 px-2 text-xs font-medium text-sky-800 hover:bg-sky-50 disabled:opacity-50"
+          >
+            {isRetrying && <RefreshCw size={12} className="animate-spin" />}
+            Retry drain
           </button>
         )}
       </td>
@@ -362,6 +423,29 @@ function isStaleProcessing(row: OwnerPendingOperationDiagnosticsRow): boolean {
   }
 
   return Date.now() - updatedAtMs >= STALE_PROCESSING_THRESHOLD_MS;
+}
+
+function isRetryDrainCandidate(
+  row: OwnerPendingOperationDiagnosticsRow,
+  currentUserId: string
+): boolean {
+  if (row.status !== 'failed_retryable') {
+    return false;
+  }
+
+  if (row.operationType !== 'checklist_item_toggle') {
+    return false;
+  }
+
+  if (row.entityType !== 'checklist_item') {
+    return false;
+  }
+
+  if (row.actorId !== currentUserId) {
+    return false;
+  }
+
+  return true;
 }
 
 function getStaleProcessingMinutes(row: OwnerPendingOperationDiagnosticsRow): number {

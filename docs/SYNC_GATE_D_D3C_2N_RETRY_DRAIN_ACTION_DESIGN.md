@@ -1,13 +1,13 @@
 # BoothBook Sync Gate D3c-2n Retry/Drain Action Design
 
 Created: 2026-06-22
-Status: D3c-2n-1 service wrapper draft approved and implemented; no UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain is approved.
+Status: D3c-2n-3 local/staging manual verification passed; no migration, RLS, worker, production execution, feature-flag change, batch action, automatic retry, or staff-row drain is approved.
 
 ## 0. Purpose
 
 This document defines the safest next boundary for retrying a `failed_retryable` pending operation after stale recovery has reset it.
 
-Retry/drain remains high risk because it can call `drain_checklist_toggle_pending_operation`, which may create a final `events` row. D3c-2n-1 approves only a service wrapper with strict local guards and no UI caller.
+Retry/drain remains high risk because it can call `drain_checklist_toggle_pending_operation`, which may create a final `events` row. D3c-2n-2 approves only one owner-only UI caller that delegates to the D3c-2n-1 service wrapper.
 
 ## 1. Required Prerequisite
 
@@ -87,13 +87,18 @@ Not allowed:
 
 ### D3c-2n-2: Owner UI Button
 
-Allowed only after D3c-2n-1 passes and explicit approval:
-- show a single-row action only in owner-only `/recovery`;
-- show only for `failed_retryable` rows where `actor_id = currentUser.id`;
-- require explicit `window.confirm`;
-- confirmation copy must say the action may create a final event;
-- call only the approved service wrapper;
-- refresh diagnostics after the RPC returns.
+Status:
+- Completed in `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
+- Guardrails updated in `tests/sync-gate-d-owner-diagnostics-ui.test.ts`.
+
+Implemented behavior:
+- shows a single-row action only in owner-only `/recovery`;
+- shows only for `failed_retryable` rows where `actor_id = currentUser.id`;
+- also requires `operation_type = 'checklist_item_toggle'` and `entity_type = 'checklist_item'`;
+- requires explicit `window.confirm`;
+- confirmation copy says the action may create one final `checklist_item_updated` cloud event;
+- calls only the approved `retryDrainOwnerChecklistTogglePendingOperation()` service wrapper;
+- refreshes diagnostics after the RPC returns.
 
 Not allowed:
 - show action for `processing`, `pending`, `synced`, `failed_permanent`, or `blocked_permission`;
@@ -104,11 +109,22 @@ Not allowed:
 
 ### D3c-2n-3: Local/Staging Manual Verification
 
-Allowed only after D3c-2n-2 passes and explicit approval:
-- use local/staging only;
-- use one owner-created `failed_retryable` pending row;
-- confirm final event is created or the row remains retryable with a clear error;
-- verify no duplicate event is created.
+Status:
+- Passed on 2026-06-29 Asia/Taipei against staging Supabase `https://tzhbirwchhqabkxhqjdl.supabase.co`.
+- Used one owner-created `failed_retryable` pending row.
+- Authenticated as the normal owner user with the publishable key; no service-role credential was used.
+
+Evidence:
+- Operation id: `c466de02-d79a-4ae8-adc0-44b3fa0efd06`.
+- Market id: `eb1b6e94-b447-4042-9b33-1b859aaff5b3`.
+- Checklist item id: `55501713-700f-43e7-af04-9efa6bfbd919`.
+- Actor id: `f2f259aa-5dcd-4ef5-a242-f0ed5410612e`.
+- Preflight diagnostics: `status = 'failed_retryable'`, `retry_count = 1`, `last_error_code = 'stale_processing_reset'`, `has_final_event = false`.
+- Drain result returned operation id `c466de02-d79a-4ae8-adc0-44b3fa0efd06`.
+- Post-drain diagnostics: `status = 'synced'`, `has_final_event = true`, `final_event_type = 'checklist_item_updated'`, `final_event_mismatch = false`.
+- Final event count by operation id was `1`.
+- Final event metadata included `source = 'pending_operations'` and `pendingOperationId = 'c466de02-d79a-4ae8-adc0-44b3fa0efd06'`.
+- Duplicate read check passed with exactly one final event.
 
 ### D3c-2n-4: Production Disposable Verification
 
@@ -178,8 +194,14 @@ Any future D3c-2n implementation must prove:
 
 D3c-2n-1 implementation additionally proves:
 - service wrapper is isolated to `lib/sync/owner-pending-operation-diagnostics.ts`;
-- owner diagnostics panel does not import or call the retry/drain wrapper;
 - the wrapper fails closed before calling the RPC when row status, actor id, operation type, entity type, or operation id mismatch.
+
+D3c-2n-2 implementation additionally proves:
+- owner diagnostics panel is the only UI caller;
+- the panel calls the service wrapper only after an owner confirmation;
+- the panel gates visibility with `isRetryDrainCandidate()`;
+- the panel does not call `supabase` directly;
+- the panel does not enqueue, loop, batch, or auto-run retry/drain.
 
 ## 8. Stop Conditions
 
@@ -188,7 +210,7 @@ Stop before implementation if:
 - the desired first action includes production disposable verification;
 - the desired first action requires new RPC semantics;
 - the desired first action would auto-drain in background.
-- the desired next action is D3c-2n-2 UI without explicit approval.
+- the desired next action is D3c-2n-4 production disposable verification without explicit approval and one selected disposable production row.
 
 These are high-risk decision points and require explicit approval before code.
 
@@ -199,4 +221,10 @@ Rollback for D3c-2n-1:
 - remove the D3c-2n-1 guardrail expectations from `tests/sync-gate-d-owner-diagnostics-ui.test.ts`;
 - leave cloud data unchanged.
 
-Rollback for future UI/runtime slices must be defined by that implementation slice.
+Rollback for D3c-2n-2:
+- remove the `retryDrainOwnerChecklistTogglePendingOperation()` import and `handleRetryDrain()` path from `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`;
+- remove the `Retry drain` button and `isRetryDrainCandidate()` helper from the panel;
+- restore guardrail expectations that no panel UI calls the retry/drain wrapper;
+- leave cloud data unchanged.
+
+Rollback for future runtime slices must be defined by that implementation slice.

@@ -1,7 +1,7 @@
 # BoothBook Sync Gate D Write Routing Decision Record
 
 Created: 2026-06-21
-Status: active Gate D decision record after D3c-2n retry/drain action design
+Status: active Gate D decision record after D3c-2n-3 local/staging manual retry/drain verification
 
 ## 0. Purpose
 
@@ -24,12 +24,16 @@ Current approvals:
 - D3c-2l approved a manual stale `processing` recovery smoke verification plan and guarded script.
 - D3c-2m approved a local/staging-only synthetic stale `processing` recovery test plan.
 - D3c-2n approved retry/drain action design only.
+- D3c-2n-1 approved an owner-only single-row service wrapper draft.
+- D3c-2n-2 approved an owner-only single-row UI button in diagnostics.
+- D3c-2n-3 completed local/staging manual retry/drain verification.
 
 Still not approved:
 - No ordinary market-detail, staff workflow, revenue, inventory, product, or market UI behavior change is approved by this document.
 - No Supabase RLS change after 048 is approved by this document.
 - No cache replacement execute behavior is approved by this document.
 - No broad worker, production flag default, or production-wide final-event writer is approved by this document.
+- No D3c-2n-4 production disposable verification, batch action, automatic retry, or staff-row drain is approved by this document.
 
 ## 1. Current State After 048
 
@@ -446,7 +450,9 @@ Current status:
 - D3c-2m evidence: operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06` recovered to `failed_retryable`, `retry_count = 1`, `last_error_code = 'stale_processing_reset'`, expected `last_error_message`, and no final event was created.
 - D3c-2n retry/drain action design is added.
 - D3c-2n-1 owner-only single-row service wrapper draft is approved and implemented in `lib/sync/owner-pending-operation-diagnostics.ts`.
-- No D3c-2n UI button, migration, RLS, worker, production execution, feature-flag change, batch action, or staff-row drain is approved.
+- D3c-2n-2 owner-only single-row UI button is approved and implemented in `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
+- D3c-2n-3 local/staging manual verification passed on 2026-06-29 Asia/Taipei with operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06`; the row reached `synced`, one `checklist_item_updated` final event was created, and duplicate read check found exactly one final event by operation id.
+- No D3c-2n-4 production verification, migration, RLS, worker, feature-flag change, batch action, automatic retry, or staff-row drain is approved.
 
 Confirmed decisions for D3c-2e:
 - Source of truth: Option A, existing event model remains source of truth.
@@ -462,7 +468,9 @@ Recommended next path:
 - Run D3c-2l only as a manual verification session with normal owner credentials and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - D3c-2m local/staging verification has passed for the missing-final-event path.
 - D3c-2n-1 owner-only single-row service wrapper is implemented.
-- The next D3c-2n step, if later approved, should be D3c-2n-2 owner UI button, still limited to owner-created `failed_retryable` checklist-toggle rows.
+- D3c-2n-2 owner UI button is implemented and remains limited to owner-created `failed_retryable` checklist-toggle rows.
+- D3c-2n-3 local/staging manual verification has passed.
+- The next D3c-2n step, if later approved, should be D3c-2n-4 production disposable verification with one selected disposable owner-created row.
 - Keep both flags default-off until controlled testing proves enqueue and drain together.
 
 Do not approve yet:
@@ -477,5 +485,5 @@ Do not approve yet:
 - Any production synthetic stale `processing` row.
 - Any production SQL insert/update for pending-operation recovery testing.
 - Any owner retry/drain action for staff-created pending rows.
-- Any D3c-2n UI button, batch action, worker, production execution, staff-row drain, or feature-flag default change without explicit approval.
+- Any D3c-2n-4 production verification, batch action, worker, staff-row drain, automatic retry, or feature-flag default change without explicit approval.
 - Any cache replacement execute behavior.
