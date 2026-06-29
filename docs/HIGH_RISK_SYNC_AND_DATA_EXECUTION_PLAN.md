@@ -201,11 +201,13 @@ Approved by current execution plan:
 - Add a cache replacement apply simulator that returns a report only and cannot execute.
 - Add pending-operation worker model helpers and tests without mounting a worker.
 - Add isolated fake IndexedDB rollback verification for `importData()` without touching browser/profile storage.
+- Add import recovery semantics design and static guardrails without changing runtime behavior.
 
 Not included:
 
 - Runtime behavior changes.
 - Browser/profile IndexedDB rollback verification.
+- Import rollback UI.
 - Supabase changes.
 - Production data changes.
 
@@ -290,3 +292,28 @@ Still not approved:
 - Import replacement behavior changes.
 - Import rollback UI.
 - Any automated production recovery path.
+
+## 9. Import Recovery Semantics Design Slice
+
+Status: completed as design and static guardrail work.
+
+Result record:
+
+- `docs/IMPORT_RECOVERY_SEMANTICS_PLAN_2026_06_29.md`
+
+Guardrails:
+
+- `tests/import-recovery-semantics-plan.test.ts`
+
+Safety result:
+
+- Import failure states are documented before any UI or runtime behavior changes.
+- The plan explicitly builds on existing `importData()` and `/recovery` behavior instead of creating a second recovery system.
+- Static tests keep Phase 2 UI and Phase 3 production recovery behavior out of scope.
+
+Still not approved:
+
+- Import rollback UI.
+- Browser/profile IndexedDB mutation tests.
+- Automatic restore or repair.
+- Any Supabase write or production recovery automation.

@@ -44,14 +44,16 @@ runTest('plan keeps high-risk execution blocked until explicit approval', () => 
   }
 });
 
-runTest('plan approves only documentation importData boundary simulator worker-model and isolated rollback work', () => {
+runTest('plan approves only documentation importData boundary simulator worker-model isolated rollback and semantics work', () => {
   assert.match(planSource, /Approved by current execution plan:[\s\S]*Add this plan document/);
   assert.match(planSource, /Approved by current execution plan:[\s\S]*Add `importData\(\)` rollback boundary tests/);
   assert.match(planSource, /Approved by current execution plan:[\s\S]*Add a cache replacement apply simulator/);
   assert.match(planSource, /Approved by current execution plan:[\s\S]*Add pending-operation worker model helpers and tests/);
   assert.match(planSource, /Approved by current execution plan:[\s\S]*Add isolated fake IndexedDB rollback verification/);
+  assert.match(planSource, /Approved by current execution plan:[\s\S]*Add import recovery semantics design and static guardrails/);
   assert.match(planSource, /Not included:[\s\S]*Runtime behavior changes/);
   assert.match(planSource, /Not included:[\s\S]*Browser\/profile IndexedDB rollback verification/);
+  assert.match(planSource, /Not included:[\s\S]*Import rollback UI/);
   assert.match(planSource, /Not included:[\s\S]*Supabase changes/);
   assert.match(planSource, /Not included:[\s\S]*Production data changes/);
 });
@@ -60,6 +62,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-indexeddb-rollback\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });
