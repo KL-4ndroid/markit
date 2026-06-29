@@ -667,12 +667,14 @@ Current findings:
 - Global tombstone completeness passed.
 - Relationship-scoped projection/tombstone event coverage is present.
 - Staff event payload sensitive-key check found `deposit` in 30 staff-visible event payloads.
+- C2.20-I confirmed those `deposit` payloads come from `market_created` events, with non-zero deposit values in sample rows. Local sanitizer rules treat `deposit` as sensitive for staff.
+- Corrected C2.20-F confirmed tombstone visibility, but sample output contains duplicate event ids.
 - Product `cost` redaction passed for the provided output.
 - C2.20-F initially failed because the verification SQL assumed `staff_accessible_events.created_at`; the deployed view does not expose that column. The SQL bundle now uses `timestamp`.
 
 Follow-up required before C2.29B:
 
-- Rerun corrected C2.20-F.
-- Provide C2.20-A view definition rows, not only the sanitizer function.
-- Provide the first C2.20-H market sensitive-column result set.
-- Run C2.20-I to classify staff-visible `deposit` payload rows.
+- Run C2.20-A1 for standalone staff view definitions.
+- Run C2.20-H1 for standalone market sensitive-column output.
+- Run C2.20-J to quantify duplicate event ids in `staff_accessible_events`.
+- Decide whether to draft a sanitizer/RLS/view migration to remove `deposit` from staff-visible event payloads.

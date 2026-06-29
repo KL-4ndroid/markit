@@ -72,6 +72,23 @@ JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname = 'public'
   AND p.proname = 'sanitize_staff_event_payload';
 
+-- C2.20-A1: Standalone view-definition query
+-- Purpose:
+--   Run this separately if Supabase SQL Editor only shows the final result set
+--   from C2.20-A.
+
+SELECT
+  table_name,
+  view_definition
+FROM information_schema.views
+WHERE table_schema = 'public'
+  AND table_name IN (
+    'staff_accessible_markets',
+    'staff_accessible_products',
+    'staff_accessible_events'
+  )
+ORDER BY table_name;
+
 -- ---------------------------------------------------------------------------
 -- C2.20-B: Tombstone root market id coverage
 -- Purpose:
@@ -304,5 +321,52 @@ SELECT
   count(*) AS total_products,
   count(*) FILTER (WHERE cost IS NULL) AS cost_null
 FROM public.staff_accessible_products;
+
+ROLLBACK;
+
+-- C2.20-H1: Standalone market sensitive-column query
+-- Purpose:
+--   Run this separately if Supabase SQL Editor only shows the final product
+--   result set from C2.20-H.
+
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '<STAFF_ID>', true);
+
+SELECT
+  count(*) AS total_markets,
+  count(*) FILTER (WHERE booth_cost IS NULL) AS booth_cost_null,
+  count(*) FILTER (WHERE total_profit IS NULL) AS total_profit_null,
+  count(*) FILTER (WHERE commission_rate IS NULL) AS commission_rate_null,
+  count(*) FILTER (WHERE registration_fee IS NULL) AS registration_fee_null
+FROM public.staff_accessible_markets;
+
+ROLLBACK;
+
+-- ---------------------------------------------------------------------------
+-- C2.20-J: Staff-session duplicate event id check
+-- Purpose:
+--   Run if C2.20-F or C2.20-E suggests duplicate rows from
+--   staff_accessible_events.
+-- Expected:
+--   Zero rows is ideal. Non-zero rows indicate view branch overlap or another
+--   duplicate source that must be classified before changing replay behavior.
+-- ---------------------------------------------------------------------------
+
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '<STAFF_ID>', true);
+
+SELECT
+  id,
+  type,
+  market_id,
+  COUNT(*) AS duplicate_count,
+  array_agg(timestamp ORDER BY timestamp DESC NULLS LAST) AS timestamps
+FROM public.staff_accessible_events
+GROUP BY id, type, market_id
+HAVING COUNT(*) > 1
+ORDER BY duplicate_count DESC, type, id
+LIMIT 100;
 
 ROLLBACK;
