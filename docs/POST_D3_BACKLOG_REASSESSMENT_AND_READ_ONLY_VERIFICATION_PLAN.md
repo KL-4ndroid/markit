@@ -761,3 +761,29 @@ Recommended next low-risk slice:
 - Move to Phase D preview/fixture expansion.
 - Prefer narrow event handler characterization tests or additional cache replacement preview fixtures.
 - Do not start production cache replacement execute, pending-operation worker, automatic retry, RLS changes, or data repair without a new explicit decision.
+
+### Phase D Event Handler Characterization
+
+Status: first narrow slice completed on 2026-06-29.
+
+Result record:
+
+- `docs/EVENT_HANDLER_INTERACTION_DELETED_CHARACTERIZATION_2026_06_29.md`
+
+Test coverage:
+
+- `tests/event-handler-interaction-deleted.test.ts`
+
+Result summary:
+
+- `interaction_deleted` handler registration is covered.
+- Existing market decrement behavior is locked, including clamp-at-zero.
+- Existing daily stat lookup by tombstone timestamp date is locked.
+- Existing `touch`, `inquiry`, and custom `extraInteractions` decrement behavior is locked.
+- Existing missing-daily-stat behavior is locked: the handler does not create a daily stat row.
+- Current camelCase payload contract is documented; snake_case fallback is not changed in this slice.
+
+Decision:
+
+- No production event-handler refactor is included or justified by this characterization slice.
+- Continue only with similarly narrow fixture/preview work unless a new decision approves handler behavior changes.
