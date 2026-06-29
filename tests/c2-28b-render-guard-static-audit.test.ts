@@ -1,0 +1,147 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+type TestFn = () => void;
+
+const tests: Array<{ name: string; fn: TestFn }> = [];
+
+function runTest(name: string, fn: TestFn): void {
+  tests.push({ name, fn });
+}
+
+const projectRoot = join(__dirname, '..');
+
+function readProjectFile(path: string): string {
+  return readFileSync(join(projectRoot, path), 'utf8');
+}
+
+const roleFailClosedSource = readProjectFile('lib/permissions/role-fail-closed.ts');
+const useUserRoleSource = readProjectFile('hooks/useUserRole.ts');
+const roleGuardSource = readProjectFile('components/auth/RoleGuard.tsx');
+const bottomNavigationSource = readProjectFile('components/BottomNavigation.tsx');
+const syncContextSource = readProjectFile('lib/sync-context.tsx');
+const marketFallbackSource = readProjectFile('lib/markets/detail-fallback.ts');
+const recoveryPageSource = readProjectFile('app/recovery/page.tsx');
+const diagnosticsPanelSource = readProjectFile('components/common/OwnerPendingOperationDiagnosticsPanel.tsx');
+const revenueRepairPanelSource = readProjectFile('components/common/OwnerRevenueGapRepairPanel.tsx');
+const projectionRepairPanelSource = readProjectFile('components/common/LocalProjectionRepairPanel.tsx');
+
+console.log('\n=== C2.28B render guard static audit ===');
+
+runTest('role permission derivation remains fail-closed for loading error and unresolved roles', () => {
+  assert.match(
+    roleFailClosedSource,
+    /const isResolved = !snapshot\.isLoading && !snapshot\.roleError && snapshot\.userRole != null/
+  );
+  assert.match(roleFailClosedSource, /const isOwner = isResolved && !isStaff/);
+  assert.match(roleFailClosedSource, /canEdit:\s*isOwner/);
+  assert.match(roleFailClosedSource, /canViewSensitiveData:\s*isOwner/);
+  assert.match(
+    roleFailClosedSource,
+    /if \(snapshot\.isLoading \|\| snapshot\.roleError \|\| snapshot\.userRole == null\)[\s\S]*return 0/
+  );
+});
+
+runTest('useUserRole exposes derived permissions and does not commit stale async role loads', () => {
+  assert.match(useUserRoleSource, /import \{ deriveRolePermissions \}/);
+  assert.match(useUserRoleSource, /const shouldCommitRoleLoad = \(requestId: number, requestUserId: string \| null\)/);
+  assert.match(useUserRoleSource, /mountedRef\.current &&[\s\S]*roleRequestIdRef\.current === requestId[\s\S]*currentUserIdRef\.current === requestUserId/);
+  assert.match(useUserRoleSource, /setRoleError\(error instanceof Error \? error : new Error\(String\(error\)\)\)/);
+  assert.match(
+    useUserRoleSource,
+    /setUserRole\(\{\s*isStaff:\s*true,\s*staffRole:\s*null,\s*permissions:\s*\{\s*can_view:\s*false,\s*can_edit:\s*false\s*\}\s*\}\)/
+  );
+  assert.match(useUserRoleSource, /isOwner:\s*permissions\.isOwner/);
+  assert.match(useUserRoleSource, /canEdit:\s*permissions\.canEdit/);
+  assert.match(useUserRoleSource, /canViewSensitiveData:\s*permissions\.canViewSensitiveData/);
+});
+
+runTest('RoleGuard blocks protected routes while role is loading or errored', () => {
+  assert.match(roleGuardSource, /const PUBLIC_ROUTES = \[[^\]]*['"]\/demo['"]/);
+  assert.match(roleGuardSource, /const \{ isLoading: isRoleLoading, roleError \} = useUserRole\(\)/);
+  assert.match(roleGuardSource, /if \(isRoleLoading \|\| roleError\)[\s\S]*return <RoleLoadingFallback \/>/);
+  assert.match(roleGuardSource, /return <ProtectedRoleGuard>\{children\}<\/ProtectedRoleGuard>/);
+});
+
+runTest('BottomNavigation treats unresolved role as staff-like for analytics access', () => {
+  assert.match(bottomNavigationSource, /const \{ isStaff, isLoading: isRoleLoading, roleError \} = useUserRole\(\)/);
+  assert.match(bottomNavigationSource, /const isRoleUnresolved = isRoleLoading \|\| roleError != null/);
+  assert.match(bottomNavigationSource, /if \(\(isStaff \|\| isRoleUnresolved\) && item\.id === ['"]analytics['"]\)/);
+  assert.match(bottomNavigationSource, /const isDisabled = \(isStaff \|\| isRoleUnresolved\) && item\.id === ['"]analytics['"]/);
+});
+
+runTest('SyncProvider derives sync info level through fail-closed role snapshot', () => {
+  assert.match(syncContextSource, /import \{ deriveSafeInfoLevel \}/);
+  assert.match(
+    syncContextSource,
+    /const safeInfoLevel = deriveSafeInfoLevel\(\{\s*userRole,\s*isLoading:\s*isRoleLoading,\s*roleError,\s*\}\)/
+  );
+  assert.match(syncContextSource, /enabled:\s*!!user && isConfigured && !isRoleLoading/);
+  assert.match(syncContextSource, /roleInfoLevel:\s*safeInfoLevel/);
+  assert.match(syncContextSource, /const isDataSanitized = safeInfoLevel < 3/);
+});
+
+runTest('market detail Supabase fallback is blocked for staff and unresolved staff status', () => {
+  assert.match(marketFallbackSource, /if \(ctx\.isStaff === undefined\)[\s\S]*staff_status_pending/);
+  assert.match(marketFallbackSource, /if \(ctx\.isStaff\)[\s\S]*staff_mode_active/);
+  assert.match(marketFallbackSource, /if \(!ctx\.isAuthenticated\)[\s\S]*user_not_authenticated/);
+});
+
+runTest('RecoveryPage gates all repair panels behind owner-only capability', () => {
+  assert.match(recoveryPageSource, /deriveRoleCapabilities\(\{\s*isOwner,\s*staffRole:\s*userRole\.staffRole,\s*\}\)/);
+  assert.match(
+    recoveryPageSource,
+    /const canUseRepairTools =\s*!isRoleLoading && hasCapability\(roleCapabilities,\s*['"]canUseRepairTools['"]\)/
+  );
+
+  const blockedIndex = recoveryPageSource.indexOf('if (!canUseRepairTools)');
+  assert.ok(blockedIndex > 0, 'RecoveryPage must block before rendering tools');
+
+  for (const marker of [
+    '<DatabaseRecoveryPanel />',
+    '<OwnerPendingOperationDiagnosticsPanel />',
+    '<OwnerRevenueGapRepairPanel />',
+    '<LocalProjectionRepairPanel />',
+  ]) {
+    const index = recoveryPageSource.indexOf(marker);
+    assert.ok(index > blockedIndex, `${marker} must render after owner-only guard`);
+  }
+});
+
+runTest('owner diagnostics and repair panels keep local staff/loading handler guards', () => {
+  assert.match(diagnosticsPanelSource, /const isBlocked = !user \|\| isRoleLoading \|\| isStaff/);
+  assert.match(diagnosticsPanelSource, /if \(isRoleLoading\)[\s\S]*<BlockedPanel/);
+  assert.match(diagnosticsPanelSource, /if \(isStaff\)[\s\S]*<BlockedPanel/);
+  assert.match(diagnosticsPanelSource, /if \(!user \|\| isRoleLoading \|\| isStaff \|\| !isStaleProcessing\(row\)\)/);
+  assert.match(diagnosticsPanelSource, /if \(!user \|\| isRoleLoading \|\| isStaff \|\| !isRetryDrainCandidate\(row, user\.id\)\)/);
+
+  assert.match(revenueRepairPanelSource, /const isBlocked = !isLoggedIn \|\| isRoleLoading \|\| isStaff/);
+  assert.match(revenueRepairPanelSource, /if \(isRoleLoading\)[\s\S]*return/);
+  assert.match(revenueRepairPanelSource, /if \(isStaff\)[\s\S]*return/);
+
+  assert.match(projectionRepairPanelSource, /const assertOwnerCanRun = \(\): boolean => \{/);
+  assert.match(projectionRepairPanelSource, /if \(isRoleLoading\)[\s\S]*return false/);
+  assert.match(projectionRepairPanelSource, /if \(isStaff\)[\s\S]*return false/);
+});
+
+function main(): void {
+  let failed = 0;
+
+  for (const test of tests) {
+    try {
+      test.fn();
+      console.log(`PASS ${test.name}`);
+    } catch (error) {
+      failed++;
+      console.error(`FAIL ${test.name}`);
+      console.error(error);
+    }
+  }
+
+  if (failed > 0) {
+    throw new Error(`${failed} C2.28B render guard static audit tests failed`);
+  }
+}
+
+main();

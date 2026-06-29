@@ -722,3 +722,42 @@ Decision:
 
 - No RLS/view/client repair is justified by the provided C2.29B output.
 - C2.29B no longer blocks the next low-risk planning or audit slice.
+
+### C2.28B Render Guard / Role Fail-Closed Static Audit
+
+Status: completed on 2026-06-29.
+
+Result record:
+
+- `docs/C2.28B_RENDER_GUARD_STATIC_AUDIT_2026_06_29.md`
+
+Test coverage:
+
+- `tests/c2-28b-render-guard-static-audit.test.ts`
+- `tests/role-fail-closed.test.ts`
+- `tests/role-capabilities.test.ts`
+- `tests/p5-market-detail-staff-route-gate.test.ts`
+- `tests/p5-product-detail-staff-gate.test.ts`
+- `tests/sync-gate-d-owner-diagnostics-ui.test.ts`
+
+Result summary:
+
+- Role permission derivation remains fail-closed for loading, errors, and unresolved role state.
+- `useUserRole()` exposes derived `isOwner`, `canEdit`, and `canViewSensitiveData`, and fail-closed catch does not fallback to owner.
+- `RoleGuard` blocks protected routes while role state is loading or errored.
+- `BottomNavigation` treats unresolved role state as staff-like for analytics access.
+- `SyncProvider` derives sync visibility from `deriveSafeInfoLevel()`.
+- Market detail Supabase fallback is blocked for staff and unresolved staff status.
+- `/recovery` and owner diagnostics/repair panels remain owner-only.
+- Market/product direct route staff guards remain covered by existing P5 tests.
+
+Decision:
+
+- No render guard, role capability, route, RLS, sync, or recovery-tool repair is justified by the static audit.
+- Phase C static boundary audit has completed its C2.28B slice.
+
+Recommended next low-risk slice:
+
+- Move to Phase D preview/fixture expansion.
+- Prefer narrow event handler characterization tests or additional cache replacement preview fixtures.
+- Do not start production cache replacement execute, pending-operation worker, automatic retry, RLS changes, or data repair without a new explicit decision.
