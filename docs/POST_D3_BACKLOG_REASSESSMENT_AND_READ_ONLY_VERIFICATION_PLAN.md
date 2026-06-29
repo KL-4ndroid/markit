@@ -638,7 +638,7 @@ Decision:
 
 ### C2.20 Staff Data Flow Read-Only Verification
 
-Status: prepared on 2026-06-29; waiting for Supabase SQL Editor output.
+Status: partial result recorded on 2026-06-29; waiting for C2.20 follow-up output.
 
 SQL source:
 
@@ -660,3 +660,19 @@ Boundary:
 
 - This is a read-only verification package only.
 - It does not approve RLS changes, view changes, sanitizer changes, data repair, or production writes.
+
+Current findings:
+
+- Active owner/staff pair selected: owner `0d21abfe-136f-4c42-987b-14928593f323`, staff `5e92b457-1eaf-49eb-9295-ba47b5a3e575`, role `operator`.
+- Global tombstone completeness passed.
+- Relationship-scoped projection/tombstone event coverage is present.
+- Staff event payload sensitive-key check found `deposit` in 30 staff-visible event payloads.
+- Product `cost` redaction passed for the provided output.
+- C2.20-F initially failed because the verification SQL assumed `staff_accessible_events.created_at`; the deployed view does not expose that column. The SQL bundle now uses `timestamp`.
+
+Follow-up required before C2.29B:
+
+- Rerun corrected C2.20-F.
+- Provide C2.20-A view definition rows, not only the sanitizer function.
+- Provide the first C2.20-H market sensitive-column result set.
+- Run C2.20-I to classify staff-visible `deposit` payload rows.

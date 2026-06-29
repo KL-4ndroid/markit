@@ -173,6 +173,34 @@ GROUP BY type
 ORDER BY type;
 
 ROLLBACK;
+
+-- ---------------------------------------------------------------------------
+-- C2.20-I: Staff-session deposit payload classification sample
+-- Purpose:
+--   Run only if C2.20-G reports has_deposit > 0.
+--   Classify whether `deposit` in staff-visible event payloads is an owner-only
+--   sensitive financial field or a non-sensitive operational field.
+-- Expected:
+--   Human classification. No automatic repair is approved.
+-- ---------------------------------------------------------------------------
+
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', '<STAFF_ID>', true);
+
+SELECT
+  id,
+  type,
+  market_id,
+  actor_id,
+  timestamp,
+  payload
+FROM public.staff_accessible_events
+WHERE payload ? 'deposit'
+ORDER BY timestamp DESC NULLS LAST
+LIMIT 30;
+
+ROLLBACK;
 -- ---------------------------------------------------------------------------
 -- C2.20-F: Staff-session tombstone visibility
 -- Purpose:
@@ -206,10 +234,10 @@ SELECT
   market_id,
   payload->>'eventId' AS payload_event_id_camel,
   payload->>'event_id' AS payload_event_id_snake,
-  created_at
+  timestamp
 FROM public.staff_accessible_events
 WHERE type IN ('deal_deleted', 'interaction_deleted')
-ORDER BY created_at DESC NULLS LAST
+ORDER BY timestamp DESC NULLS LAST
 LIMIT 20;
 
 ROLLBACK;
