@@ -20,6 +20,10 @@ function operationTypes(operations: Array<{ type: string }>): string[] {
   return operations.map(operation => operation.type);
 }
 
+function operationIds(operations: Array<{ id: string }>): string[] {
+  return operations.map(operation => operation.id);
+}
+
 console.log('\n=== Cache replacement apply simulator ===');
 
 runTest('simulator converts preview output into a non-executable operation report', () => {
@@ -105,6 +109,99 @@ runTest('simulator is side-effect free and preserves preview warnings', () => {
   ]);
   assert.deepEqual(operationTypes(simulation.operations), ['keep', 'delete_candidate']);
   assert.equal(simulation.canExecute, false);
+});
+
+runTest('owner fixture reports full cache impact while delete remains only a candidate', () => {
+  const preview = previewCacheReplacement({
+    scope: 'owner-full',
+    authorizedIds: [
+      'owner-add-market',
+      'owner-update-market',
+      'owner-keep-market',
+      'owner-delete-market',
+    ],
+    localRecords: [
+      { id: 'owner-update-market', name: 'Old', updated_at: '2026-06-18T00:00:00.000Z', sync_status: 'synced' },
+      { id: 'owner-keep-market', name: 'Same', updated_at: '2026-06-20T00:00:00.000Z', sync_status: 'synced' },
+      { id: 'owner-delete-market', name: 'Missing remotely', updated_at: '2026-06-17T00:00:00.000Z', sync_status: 'synced' },
+    ],
+    remoteRecords: [
+      { id: 'owner-add-market', name: 'New', updated_at: '2026-06-20T00:00:00.000Z' },
+      { id: 'owner-update-market', name: 'Cloud', updated_at: '2026-06-20T00:00:00.000Z' },
+      { id: 'owner-keep-market', name: 'Same', updated_at: '2026-06-20T00:00:00.000Z' },
+    ],
+  });
+
+  const simulation = simulateCacheReplacementApply(preview);
+
+  assert.deepEqual(operationTypes(simulation.operations), ['add', 'update', 'keep', 'delete_candidate']);
+  assert.deepEqual(operationIds(simulation.operations), [
+    'owner-add-market',
+    'owner-update-market',
+    'owner-keep-market',
+    'owner-delete-market',
+  ]);
+  assert.equal(simulation.canExecute, false);
+  assert.equal(simulation.destructiveOperationCount, 1);
+  assert.equal(
+    simulation.operations.find(operation => operation.id === 'owner-delete-market')?.type,
+    'delete_candidate'
+  );
+});
+
+runTest('staff fixture reports partial scope without allowing execution', () => {
+  const preview = previewCacheReplacement({
+    scope: 'staff-view',
+    authorizedIds: ['staff-visible-update', 'staff-visible-delete'],
+    localRecords: [
+      { id: 'staff-visible-update', updatedAt: '2026-06-19T00:00:00.000Z', sync_status: 'synced' },
+      { id: 'staff-visible-delete', updatedAt: '2026-06-18T00:00:00.000Z', sync_status: 'synced' },
+      { id: 'owner-only-local', updatedAt: '2026-06-20T00:00:00.000Z', sync_status: 'synced' },
+    ],
+    remoteRecords: [
+      { id: 'staff-visible-update', updatedAt: '2026-06-20T00:00:00.000Z' },
+      { id: 'owner-only-remote', updatedAt: '2026-06-20T00:00:00.000Z' },
+    ],
+  });
+
+  const simulation = simulateCacheReplacementApply(preview);
+
+  assert.equal(simulation.scope, 'staff-view');
+  assert.equal(simulation.canExecute, false);
+  assert.deepEqual(operationTypes(simulation.operations), ['update', 'delete_candidate']);
+  assert.deepEqual(simulation.warnings, [
+    'remote record owner-only-remote is outside authorized scope',
+    'staff-view preview ignored 1 local record(s) outside authorized scope',
+  ]);
+  assert.equal(simulation.destructiveOperationCount, 1);
+});
+
+runTest('protected records remain skip operations and are never destructive', () => {
+  const preview = previewCacheReplacement({
+    scope: 'owner-full',
+    authorizedIds: ['pending-1', 'local-only-1', 'blocked-1'],
+    localRecords: [
+      { id: 'pending-1', updatedAt: '2026-06-18T00:00:00.000Z', sync_status: 'pending' },
+      { id: 'local-only-1', updatedAt: '2026-06-18T00:00:00.000Z', sync_status: 'local_only' },
+      { id: 'blocked-1', updatedAt: '2026-06-18T00:00:00.000Z', metadata: { blocked_at: 1 } },
+    ],
+    remoteRecords: [
+      { id: 'pending-1', updatedAt: '2026-06-20T00:00:00.000Z' },
+      { id: 'local-only-1', updatedAt: '2026-06-20T00:00:00.000Z' },
+      { id: 'blocked-1', updatedAt: '2026-06-20T00:00:00.000Z' },
+    ],
+  });
+
+  const simulation = simulateCacheReplacementApply(preview);
+
+  assert.deepEqual(operationTypes(simulation.operations), [
+    'skip_pending',
+    'skip_local_only',
+    'skip_blocked',
+  ]);
+  assert.equal(simulation.destructiveOperationCount, 0);
+  assert.equal(simulation.operations.every(operation => !operation.destructive), true);
+  assert.equal(simulation.operations.every(operation => !operation.requiresApproval), true);
 });
 
 runTest('production sync paths do not import cache replacement apply simulator', () => {

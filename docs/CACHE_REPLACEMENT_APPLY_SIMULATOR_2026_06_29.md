@@ -40,3 +40,13 @@ Next possible low-risk work:
 - More simulator fixtures for owner/staff/report-only cases.
 - Static guardrails that keep production sync from importing simulator modules.
 - Design discussion before any execute implementation.
+
+## Fixture Expansion
+
+Additional low-risk fixtures cover:
+
+- Owner full-scope impact reports with add/update/keep/delete-candidate operations.
+- Staff partial-scope reports where outside-scope local and remote records remain warnings/report-only.
+- Protected `pending`, `local_only`, and blocked records staying skip operations.
+
+These fixtures still do not authorize or implement replace-cache execute/apply/delete.
