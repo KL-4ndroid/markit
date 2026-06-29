@@ -199,6 +199,7 @@ Approved by current execution plan:
 - Add this plan document.
 - Add `importData()` rollback boundary tests that are non-mutating and do not require live IndexedDB rollback.
 - Add a cache replacement apply simulator that returns a report only and cannot execute.
+- Add pending-operation worker model helpers and tests without mounting a worker.
 
 Not included:
 
@@ -232,3 +233,31 @@ Still not approved:
 - Any replace-cache execute/apply/delete path.
 - Any owner/staff pull-service integration.
 - Any IndexedDB mutation.
+
+## 7. Pending Operation Worker Model Slice
+
+Status: completed as pure model and static guardrail work.
+
+Result record:
+
+- `docs/PENDING_OPERATION_WORKER_MODEL_2026_06_29.md`
+
+Guardrails:
+
+- `tests/sync-pending-operation-worker-model.test.ts`
+- `tests/sync-gate-d-model-isolation.test.ts`
+
+Safety result:
+
+- Worker candidate classification is pure and local.
+- Deterministic final event id derivation is based on UUID `operationId`.
+- Only `failed_retryable` checklist-toggle rows below max retry count are eligible in the model.
+- Production files do not mount a pending-operation worker.
+
+Still not approved:
+
+- Any background worker.
+- Any automatic retry.
+- Any batch drain.
+- Any staff-row drain.
+- Any production default enablement.

@@ -44,10 +44,11 @@ runTest('plan keeps high-risk execution blocked until explicit approval', () => 
   }
 });
 
-runTest('plan approves only documentation importData boundary tests and non-mutating simulator work', () => {
+runTest('plan approves only documentation importData boundary simulator and worker-model work', () => {
   assert.match(planSource, /Approved by current execution plan:[\s\S]*Add this plan document/);
   assert.match(planSource, /Approved by current execution plan:[\s\S]*Add `importData\(\)` rollback boundary tests/);
   assert.match(planSource, /Approved by current execution plan:[\s\S]*Add a cache replacement apply simulator/);
+  assert.match(planSource, /Approved by current execution plan:[\s\S]*Add pending-operation worker model helpers and tests/);
   assert.match(planSource, /Not included:[\s\S]*Runtime behavior changes/);
   assert.match(planSource, /Not included:[\s\S]*Real IndexedDB rollback verification/);
   assert.match(planSource, /Not included:[\s\S]*Supabase changes/);
@@ -58,6 +59,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });
 
 function main(): void {

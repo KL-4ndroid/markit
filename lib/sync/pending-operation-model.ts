@@ -68,6 +68,26 @@ export type PendingOperationFailureInput = {
   now?: string;
 };
 
+export type PendingOperationWorkerCandidateReason =
+  | 'eligible'
+  | 'status_not_retryable'
+  | 'max_retry_exceeded'
+  | 'unsupported_operation'
+  | 'unsupported_entity'
+  | 'invalid_operation_id';
+
+export type PendingOperationWorkerCandidateDecision = {
+  eligible: boolean;
+  reason: PendingOperationWorkerCandidateReason;
+  finalEventId: string | null;
+};
+
+export type PendingOperationWorkerCandidateOptions = {
+  maxRetryCount?: number;
+};
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function requireNonBlank(value: string, fieldName: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) {
     throw new Error(`${fieldName} is required`);
@@ -200,4 +220,40 @@ export function shouldRetryPendingOperation(
   operation: LocalPendingOperation
 ): boolean {
   return operation.status === 'failed_retryable';
+}
+
+export function derivePendingOperationFinalEventId(
+  operation: Pick<LocalPendingOperation, 'operationId'>
+): string | null {
+  return UUID_PATTERN.test(operation.operationId) ? operation.operationId : null;
+}
+
+export function classifyPendingOperationWorkerCandidate(
+  operation: LocalPendingOperation,
+  options: PendingOperationWorkerCandidateOptions = {}
+): PendingOperationWorkerCandidateDecision {
+  const finalEventId = derivePendingOperationFinalEventId(operation);
+  const maxRetryCount = options.maxRetryCount ?? 3;
+
+  if (operation.status !== 'failed_retryable') {
+    return { eligible: false, reason: 'status_not_retryable', finalEventId };
+  }
+
+  if (operation.retryCount >= maxRetryCount) {
+    return { eligible: false, reason: 'max_retry_exceeded', finalEventId };
+  }
+
+  if (operation.operationType !== 'checklist_item_toggle') {
+    return { eligible: false, reason: 'unsupported_operation', finalEventId };
+  }
+
+  if (operation.entityType !== 'checklist_item') {
+    return { eligible: false, reason: 'unsupported_entity', finalEventId };
+  }
+
+  if (!finalEventId) {
+    return { eligible: false, reason: 'invalid_operation_id', finalEventId };
+  }
+
+  return { eligible: true, reason: 'eligible', finalEventId };
 }

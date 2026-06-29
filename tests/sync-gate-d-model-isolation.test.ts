@@ -35,6 +35,7 @@ runTest('pending operation model remains local-only and side-effect free', () =>
   assert.doesNotMatch(pendingOperationSource, /localStorage|sessionStorage|process\.env|NEXT_PUBLIC/);
   assert.doesNotMatch(pendingOperationSource, /fetch\(|XMLHttpRequest|navigator\.onLine/);
   assert.doesNotMatch(pendingOperationSource, /recordEvent\(|insert\(|update\(|delete\(/);
+  assert.doesNotMatch(pendingOperationSource, /setInterval|setTimeout|Worker\(|navigator\.serviceWorker/);
 });
 
 runTest('cache replacement preview remains preview-only and side-effect free', () => {
@@ -79,6 +80,15 @@ runTest('pending operation status lifecycle stays explicit', () => {
   assert.match(pendingOperationSource, /status:\s*['"]failed_permanent['"]/);
   assert.match(pendingOperationSource, /status:\s*['"]blocked_permission['"]/);
   assert.match(pendingOperationSource, /return operation\.status === ['"]failed_retryable['"]/);
+});
+
+runTest('pending operation worker model remains pure classification only', () => {
+  assert.match(pendingOperationSource, /derivePendingOperationFinalEventId/);
+  assert.match(pendingOperationSource, /classifyPendingOperationWorkerCandidate/);
+  assert.match(pendingOperationSource, /operation\.status !== ['"]failed_retryable['"]/);
+  assert.match(pendingOperationSource, /operation\.operationType !== ['"]checklist_item_toggle['"]/);
+  assert.match(pendingOperationSource, /operation\.entityType !== ['"]checklist_item['"]/);
+  assert.doesNotMatch(pendingOperationSource, /drain_checklist_toggle_pending_operation|retryDrainOwnerChecklistTogglePendingOperation/);
 });
 
 runTest('cache replacement preview keeps destructive candidates as report-only arrays', () => {
