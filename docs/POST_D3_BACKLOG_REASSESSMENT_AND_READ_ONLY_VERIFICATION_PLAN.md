@@ -669,12 +669,17 @@ Current findings:
 - Staff event payload sensitive-key check found `deposit` in 30 staff-visible event payloads.
 - C2.20-I confirmed those `deposit` payloads come from `market_created` events, with non-zero deposit values in sample rows. Local sanitizer rules treat `deposit` as sensitive for staff.
 - Corrected C2.20-F confirmed tombstone visibility, but sample output contains duplicate event ids.
+- C2.20-A1 confirmed deployed staff view definitions expose risk paths:
+  - `staff_accessible_markets` owner branch still uses `market_members.user_id = auth.uid()`;
+  - `staff_accessible_events` Branch 3 returns full payload where `e.actor_id = auth.uid()`.
+- C2.20-H1 confirmed market sensitive-column redaction fails for staff: only 46 of 87 rows have core sensitive fields nulled.
+- C2.20-J confirmed 9 duplicate event id rows in `staff_accessible_events`.
 - Product `cost` redaction passed for the provided output.
 - C2.20-F initially failed because the verification SQL assumed `staff_accessible_events.created_at`; the deployed view does not expose that column. The SQL bundle now uses `timestamp`.
 
-Follow-up required before C2.29B:
+Decision required before C2.29B:
 
-- Run C2.20-A1 for standalone staff view definitions.
-- Run C2.20-H1 for standalone market sensitive-column output.
-- Run C2.20-J to quantify duplicate event ids in `staff_accessible_events`.
-- Decide whether to draft a sanitizer/RLS/view migration to remove `deposit` from staff-visible event payloads.
+- C2.20 has confirmed deployed staff view/sanitizer issues.
+- See `docs/C2.20_STAFF_VIEW_REPAIR_DECISION_2026_06_29.md`.
+- Recommended next step is a separate approved migration draft for focused staff view/sanitizer repair.
+- Do not proceed to C2.29B until C2.20 passes after repair.
