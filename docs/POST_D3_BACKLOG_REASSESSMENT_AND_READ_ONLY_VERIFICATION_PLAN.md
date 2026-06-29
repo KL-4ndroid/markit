@@ -787,3 +787,29 @@ Decision:
 
 - No production event-handler refactor is included or justified by this characterization slice.
 - Continue only with similarly narrow fixture/preview work unless a new decision approves handler behavior changes.
+
+### Phase D Cache Replacement Preview Fixture Expansion
+
+Status: first additional preview fixture completed on 2026-06-29.
+
+Result record:
+
+- `docs/CACHE_REPLACEMENT_PREVIEW_FIXTURE_EXPANSION_2026_06_29.md`
+
+Test coverage:
+
+- `tests/sync-cache-replacement-preview.test.ts`
+
+Result summary:
+
+- Owner preview authorized scope normalization is covered.
+- Owner preview keeps authorized matching local records.
+- Owner preview adds authorized missing remote records.
+- Owner preview ignores local records outside the authorized scope.
+- Owner preview does not classify outside-scope local records as delete candidates.
+- No execute/apply/delete behavior is introduced.
+
+Decision:
+
+- Cache replacement remains preview-only.
+- Do not wire preview output into production pull/cache replacement without a new explicit decision.

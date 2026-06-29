@@ -112,6 +112,28 @@ runTest('preview protects pending local-only and blocked records', () => {
   assert.deepEqual(preview.wouldDeleteCandidates, []);
 });
 
+runTest('owner preview normalizes authorized scope and ignores local records outside it', () => {
+  const preview = previewCacheReplacement({
+    scope: 'owner-full',
+    authorizedIds: ['z-visible-1', 'a-visible-1', 'a-visible-1', ''],
+    localRecords: [
+      { id: 'a-visible-1', updatedAt: '2026-06-20T00:00:00.000Z', sync_status: 'synced' },
+      { id: 'local-outside-owner-scope-1', updatedAt: '2026-06-19T00:00:00.000Z', sync_status: 'synced' },
+    ],
+    remoteRecords: [
+      { id: 'a-visible-1', updatedAt: '2026-06-20T00:00:00.000Z' },
+      { id: 'z-visible-1', updatedAt: '2026-06-20T00:00:00.000Z' },
+    ],
+  });
+
+  assert.deepEqual(preview.authorizedIds, ['a-visible-1', 'z-visible-1']);
+  assert.deepEqual(ids(preview.wouldKeep), ['a-visible-1']);
+  assert.deepEqual(ids(preview.wouldAdd), ['z-visible-1']);
+  assert.deepEqual(preview.wouldUpdate, []);
+  assert.deepEqual(preview.wouldDeleteCandidates, []);
+  assert.deepEqual(preview.warnings, []);
+});
+
 runTest('staff preview is limited to authorized view scope', () => {
   const preview = previewCacheReplacement({
     scope: 'staff-view',
