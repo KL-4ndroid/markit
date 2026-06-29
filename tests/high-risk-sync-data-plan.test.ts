@@ -44,9 +44,10 @@ runTest('plan keeps high-risk execution blocked until explicit approval', () => 
   }
 });
 
-runTest('plan approves only plan documentation and importData boundary tests in this slice', () => {
+runTest('plan approves only documentation importData boundary tests and non-mutating simulator work', () => {
   assert.match(planSource, /Approved by current execution plan:[\s\S]*Add this plan document/);
   assert.match(planSource, /Approved by current execution plan:[\s\S]*Add `importData\(\)` rollback boundary tests/);
+  assert.match(planSource, /Approved by current execution plan:[\s\S]*Add a cache replacement apply simulator/);
   assert.match(planSource, /Not included:[\s\S]*Runtime behavior changes/);
   assert.match(planSource, /Not included:[\s\S]*Real IndexedDB rollback verification/);
   assert.match(planSource, /Not included:[\s\S]*Supabase changes/);
@@ -56,6 +57,7 @@ runTest('plan approves only plan documentation and importData boundary tests in 
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
 });
 
 function main(): void {

@@ -198,6 +198,7 @@ Approved by current execution plan:
 
 - Add this plan document.
 - Add `importData()` rollback boundary tests that are non-mutating and do not require live IndexedDB rollback.
+- Add a cache replacement apply simulator that returns a report only and cannot execute.
 
 Not included:
 
@@ -205,3 +206,29 @@ Not included:
 - Real IndexedDB rollback verification.
 - Supabase changes.
 - Production data changes.
+
+## 6. Cache Replacement Apply Simulator Slice
+
+Status: completed as non-mutating report-only work.
+
+Result record:
+
+- `docs/CACHE_REPLACEMENT_APPLY_SIMULATOR_2026_06_29.md`
+
+Guardrails:
+
+- `tests/sync-cache-replacement-apply-simulator.test.ts`
+- `tests/sync-gate-d-model-isolation.test.ts`
+
+Safety result:
+
+- The simulator converts preview output into operation records.
+- The simulator always returns `canExecute: false`.
+- Delete candidates remain destructive report-only operations.
+- Production sync paths do not import the simulator.
+
+Still not approved:
+
+- Any replace-cache execute/apply/delete path.
+- Any owner/staff pull-service integration.
+- Any IndexedDB mutation.

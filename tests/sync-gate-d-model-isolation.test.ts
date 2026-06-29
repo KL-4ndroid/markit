@@ -18,6 +18,7 @@ function readProjectFile(path: string): string {
 
 const pendingOperationSource = readProjectFile('lib/sync/pending-operation-model.ts');
 const cacheReplacementSource = readProjectFile('lib/sync/cache-replacement-preview.ts');
+const cacheReplacementSimulatorSource = readProjectFile('lib/sync/cache-replacement-apply-simulator.ts');
 const productionSyncFiles = [
   'hooks/useSync.ts',
   'lib/sync/sync-push-service.ts',
@@ -44,15 +45,26 @@ runTest('cache replacement preview remains preview-only and side-effect free', (
   assert.doesNotMatch(cacheReplacementSource, /put\(|bulkPut\(|delete\(|clear\(|transaction\(/);
 });
 
+runTest('cache replacement apply simulator remains report-only and side-effect free', () => {
+  assert.doesNotMatch(cacheReplacementSimulatorSource, /@\/lib\/supabase|supabase/);
+  assert.doesNotMatch(cacheReplacementSimulatorSource, /@\/lib\/db|db\.|Dexie|indexedDB/i);
+  assert.doesNotMatch(cacheReplacementSimulatorSource, /localStorage|sessionStorage|process\.env|NEXT_PUBLIC/);
+  assert.doesNotMatch(cacheReplacementSimulatorSource, /fetch\(|XMLHttpRequest|navigator\.onLine/);
+  assert.doesNotMatch(cacheReplacementSimulatorSource, /put\(|bulkPut\(|delete\(|clear\(|transaction\(/);
+  assert.match(cacheReplacementSimulatorSource, /canExecute:\s*false/);
+  assert.match(cacheReplacementSimulatorSource, /requiresExplicitExecuteApproval:\s*true/);
+});
+
 runTest('Gate D models do not import each other or feature flags', () => {
   assert.doesNotMatch(pendingOperationSource, /cache-replacement-preview|sync-gate-d-flags/);
   assert.doesNotMatch(cacheReplacementSource, /pending-operation-model|sync-gate-d-flags/);
+  assert.doesNotMatch(cacheReplacementSimulatorSource, /pending-operation-model|sync-gate-d-flags/);
 });
 
 runTest('production sync still does not consume Gate D models or flags', () => {
   const matches = productionSyncFiles.filter(file => {
     const source = readProjectFile(file);
-    return /pending-operation-model|cache-replacement-preview|sync-gate-d-flags/.test(source);
+    return /pending-operation-model|cache-replacement-preview|cache-replacement-apply-simulator|sync-gate-d-flags/.test(source);
   });
 
   assert.deepEqual(matches, []);
@@ -73,6 +85,13 @@ runTest('cache replacement preview keeps destructive candidates as report-only a
   assert.match(cacheReplacementSource, /wouldDeleteCandidates:\s*TLocal\[\]/);
   assert.match(cacheReplacementSource, /preview\.wouldDeleteCandidates\.push\(local\)/);
   assert.doesNotMatch(cacheReplacementSource, /executeCacheReplacement|applyCacheReplacement|deleteCandidates\(/);
+});
+
+runTest('cache replacement simulator keeps destructive candidates non-executable', () => {
+  assert.match(cacheReplacementSimulatorSource, /type:\s*'delete_candidate'/);
+  assert.match(cacheReplacementSimulatorSource, /destructive:\s*true/);
+  assert.match(cacheReplacementSimulatorSource, /requiresApproval:\s*true/);
+  assert.doesNotMatch(cacheReplacementSimulatorSource, /executeCacheReplacement|applyCacheReplacement|deleteCandidates\(/);
 });
 
 function main(): void {
