@@ -43,14 +43,14 @@ Allowed first slice:
 
 Not approved yet:
 
-- Real browser IndexedDB rollback verification.
+- Real browser/profile IndexedDB rollback verification.
 - Changing import replacement semantics.
 - Recovery UI changes.
 - Any test that mutates a real user profile database.
 
 Decision needed before next slice:
 
-- Whether to create a dedicated isolated IndexedDB database for true rollback verification.
+- Whether to create a dedicated browser-profile IndexedDB database for true rollback verification.
 - Whether to refactor import replacement into a small injectable service for stronger unit tests.
 
 ### B. Replace-cache execute
@@ -200,11 +200,12 @@ Approved by current execution plan:
 - Add `importData()` rollback boundary tests that are non-mutating and do not require live IndexedDB rollback.
 - Add a cache replacement apply simulator that returns a report only and cannot execute.
 - Add pending-operation worker model helpers and tests without mounting a worker.
+- Add isolated fake IndexedDB rollback verification for `importData()` without touching browser/profile storage.
 
 Not included:
 
 - Runtime behavior changes.
-- Real IndexedDB rollback verification.
+- Browser/profile IndexedDB rollback verification.
 - Supabase changes.
 - Production data changes.
 
@@ -261,3 +262,31 @@ Still not approved:
 - Any batch drain.
 - Any staff-row drain.
 - Any production default enablement.
+
+## 8. Isolated IndexedDB Rollback Verification Slice
+
+Status: completed as test-only isolated IndexedDB work.
+
+Result record:
+
+- `tests/import-data-indexeddb-rollback.test.ts`
+
+Guardrails:
+
+- The test uses `fake-indexeddb`, not a browser profile or production IndexedDB.
+- The test seeds an existing local state, calls the production `importData()` function, and forces a Dexie transaction failure with an invalid `settings.id` key.
+- The expected result is full restoration of the pre-import IndexedDB state.
+- The test deletes the isolated fake database after verification.
+
+Safety result:
+
+- No production import semantics were changed.
+- No recovery UI was changed.
+- No real browser IndexedDB or Supabase data is touched.
+
+Still not approved:
+
+- Browser/profile IndexedDB mutation tests.
+- Import replacement behavior changes.
+- Import rollback UI.
+- Any automated production recovery path.
