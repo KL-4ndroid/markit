@@ -638,7 +638,7 @@ Decision:
 
 ### C2.20 Staff Data Flow Read-Only Verification
 
-Status: partial result recorded on 2026-06-29; waiting for C2.20 follow-up output.
+Status: completed after focused 053 repair. User reported 053 was executed and verified.
 
 SQL source:
 
@@ -677,9 +677,13 @@ Current findings:
 - Product `cost` redaction passed for the provided output.
 - C2.20-F initially failed because the verification SQL assumed `staff_accessible_events.created_at`; the deployed view does not expose that column. The SQL bundle now uses `timestamp`.
 
-Decision required before C2.29B:
+Post-repair status:
 
-- C2.20 has confirmed deployed staff view/sanitizer issues.
-- See `docs/C2.20_STAFF_VIEW_REPAIR_DECISION_2026_06_29.md`.
-- Recommended next step is a separate approved migration draft for focused staff view/sanitizer repair.
-- Do not proceed to C2.29B until C2.20 passes after repair.
+- Focused migration: `supabase/migrations/053_repair_staff_accessible_view_sanitization.sql`.
+- User reported 053 was executed and verification completed.
+- Raw post-053 SQL rows were not pasted into this plan; row-level evidence should be stored if re-run.
+
+Next step:
+
+- Proceed to C2.29B Staff View / RLS read-only verification.
+- Do not approve data repair, replace-cache execute, snapshot rebuild, or broad RLS rewrites based on C2.20 alone.
