@@ -687,3 +687,38 @@ Next step:
 
 - Proceed to C2.29B Staff View / RLS read-only verification.
 - Do not approve data repair, replace-cache execute, snapshot rebuild, or broad RLS rewrites based on C2.20 alone.
+
+### C2.29B Staff View / RLS Read-Only Verification
+
+Status: completed on 2026-06-29.
+
+SQL sources:
+
+- `supabase/verification/c2_29b_staff_view_rls_read_only.sql`
+- `supabase/verification/c2_29b_staff_view_rls_read_only_followup.sql`
+
+Result record:
+
+- `docs/C2.29B_READ_ONLY_VERIFICATION_RESULT_2026_06_29.md`
+
+Verified owner/staff pair:
+
+- Owner: `0d21abfe-136f-4c42-987b-14928593f323`
+- Staff: `5e92b457-1eaf-49eb-9295-ba47b5a3e575`
+- Staff role: `operator`
+- Staff-accessible active market count: 30
+
+Result summary:
+
+- E0 active owner/staff relationship: passed.
+- E1 staff market view redaction/scope: passed.
+- E2 staff product cost redaction: passed.
+- E3 staff event payload redaction, tombstone visibility, and duplicate id check: passed.
+- E4 staff direct base-table SELECT blocked: passed.
+- E4 owner direct base-table regression: passed.
+- E5 type-level guard: passed locally with `npm.cmd run test:staff-types`.
+
+Decision:
+
+- No RLS/view/client repair is justified by the provided C2.29B output.
+- C2.29B no longer blocks the next low-risk planning or audit slice.
