@@ -17,6 +17,7 @@ function readProjectFile(path: string): string {
 }
 
 const sql = readProjectFile('supabase/verification/c2_29b_staff_view_rls_read_only.sql');
+const followupSql = readProjectFile('supabase/verification/c2_29b_staff_view_rls_read_only_followup.sql');
 const template = readProjectFile('docs/C2.29B_READ_ONLY_VERIFICATION_RESULT_TEMPLATE.md');
 
 console.log('\n=== C2.29B read-only verification SQL ===');
@@ -66,14 +67,27 @@ runTest('owner regression and local type guard are represented', () => {
 });
 
 runTest('verification SQL remains read-only and migration-free', () => {
-  assert.doesNotMatch(sql, /\bINSERT\s+INTO\b/i);
-  assert.doesNotMatch(sql, /\bUPDATE\s+/i);
-  assert.doesNotMatch(sql, /\bDELETE\s+FROM\b/i);
-  assert.doesNotMatch(sql, /\bUPSERT\b/i);
-  assert.doesNotMatch(sql, /\bALTER\s+TABLE\b/i);
-  assert.doesNotMatch(sql, /\bCREATE\s+(OR\s+REPLACE\s+)?(FUNCTION|VIEW|POLICY)\b/i);
-  assert.doesNotMatch(sql, /\bDROP\s+(FUNCTION|VIEW|POLICY|TABLE)\b/i);
-  assert.doesNotMatch(sql, /\bENABLE\s+ROW\s+LEVEL\s+SECURITY\b/i);
+  for (const source of [sql, followupSql]) {
+    assert.doesNotMatch(source, /\bINSERT\s+INTO\b/i);
+    assert.doesNotMatch(source, /\bUPDATE\s+/i);
+    assert.doesNotMatch(source, /\bDELETE\s+FROM\b/i);
+    assert.doesNotMatch(source, /\bUPSERT\b/i);
+    assert.doesNotMatch(source, /\bALTER\s+TABLE\b/i);
+    assert.doesNotMatch(source, /\bCREATE\s+(OR\s+REPLACE\s+)?(FUNCTION|VIEW|POLICY)\b/i);
+    assert.doesNotMatch(source, /\bDROP\s+(FUNCTION|VIEW|POLICY|TABLE)\b/i);
+    assert.doesNotMatch(source, /\bENABLE\s+ROW\s+LEVEL\s+SECURITY\b/i);
+  }
+});
+
+runTest('follow-up SQL collects missing C2.29B evidence as compact summaries', () => {
+  assert.match(followupSql, /total_markets/);
+  assert.match(followupSql, /duplicate_market_id_rows/);
+  assert.match(followupSql, /total_events/);
+  assert.match(followupSql, /duplicate_event_id_rows/);
+  assert.match(followupSql, /staff_markets_direct/);
+  assert.match(followupSql, /owner_markets_direct/);
+  assert.match(followupSql, /STAFF_USER_UUID/);
+  assert.match(followupSql, /OWNER_USER_UUID/);
 });
 
 function main(): void {
