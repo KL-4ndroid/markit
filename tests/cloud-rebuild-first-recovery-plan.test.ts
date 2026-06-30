@@ -60,6 +60,10 @@ runTest('plan defines the seven-step execution path with preview before execute'
   }
 
   assert.match(planSource, /Build a non-mutating preview/);
+  assert.match(planSource, /Step 1: Plan Update[\s\S]*Status: completed/);
+  assert.match(planSource, /Step 2: Clear Local And Resync Design[\s\S]*Status: completed as design and static guardrail work/);
+  assert.match(planSource, /docs\/CLEAR_LOCAL_AND_RESYNC_DESIGN_2026_06_30\.md/);
+  assert.match(planSource, /wiring the older `clearLocalDataAndPullFromCloud\(\)` migration path into `\/recovery`/);
   assert.match(planSource, /Not approved:[\s\S]*deleting local tables/);
   assert.match(planSource, /Not approved:[\s\S]*applying replace-cache/);
   assert.match(planSource, /Not approved:[\s\S]*changing sync pull behavior/);
@@ -100,6 +104,7 @@ runTest('import recovery plan is demoted to secondary emergency infrastructure',
 
 runTest('full test suite includes cloud rebuild first plan guardrail', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-first-recovery-plan\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
 });
 
 function main(): void {

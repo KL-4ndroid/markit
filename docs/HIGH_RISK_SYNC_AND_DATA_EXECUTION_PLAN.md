@@ -481,3 +481,29 @@ Still not approved:
 - Broadening `/recovery` tools to staff roles.
 - Exposing production import UI.
 - Exporting sensitive owner-only CSV / Excel fields to manager, operator, or viewer roles.
+
+## 15. Clear Local And Resync Design
+
+Status: completed as design and static guardrail work.
+
+Result record:
+
+- `docs/CLEAR_LOCAL_AND_RESYNC_DESIGN_2026_06_30.md`
+- `tests/clear-local-and-resync-design.test.ts`
+
+Safety result:
+
+- The future recovery flow is split into non-mutating preflight, non-mutating preview, and separately approved execute.
+- Initial execute policy is owner-only; manager may be considered for scoped preview only.
+- The design requires pending operations, local unsynced data, local-only writes, cloud read availability, role, session, and sync-idle checks before any future reset.
+- The design explicitly prevents the older `clearLocalDataAndPullFromCloud()` migration path from being wired into `/recovery` as-is.
+
+Still not approved:
+
+- Clearing local IndexedDB.
+- Calling `clearLocalDataAndPullFromCloud()` from UI.
+- Running replace-cache execute.
+- Automatic cloud rebuild after login.
+- Manager or staff execute.
+- Pending operation discard.
+- Supabase mutation.

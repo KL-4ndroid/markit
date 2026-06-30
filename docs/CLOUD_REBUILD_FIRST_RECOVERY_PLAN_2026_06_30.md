@@ -37,7 +37,7 @@ The new recovery direction is:
 
 ### Step 1: Plan Update
 
-Status: in progress.
+Status: completed.
 
 Goal:
 
@@ -47,6 +47,13 @@ Goal:
 No runtime code changes.
 
 ### Step 2: Clear Local And Resync Design
+
+Status: completed as design and static guardrail work.
+
+Result record:
+
+- `docs/CLEAR_LOCAL_AND_RESYNC_DESIGN_2026_06_30.md`
+- `tests/clear-local-and-resync-design.test.ts`
 
 Goal:
 
@@ -66,6 +73,7 @@ Not approved:
 - deleting IndexedDB;
 - clearing local data;
 - starting rebuild automatically.
+- wiring the older `clearLocalDataAndPullFromCloud()` migration path into `/recovery`.
 
 ### Step 3: Pending Operations Pre-Clear Check
 

@@ -108,6 +108,19 @@ runTest('plan records cloud rebuild first direction without approving destructiv
   assert.match(planSource, /Still not approved:[\s\S]*Exporting sensitive owner-only CSV \/ Excel fields/);
 });
 
+runTest('plan records clear local and resync design without approving execution', () => {
+  assert.match(planSource, /Clear Local And Resync Design/);
+  assert.match(planSource, /Status: completed as design and static guardrail work/);
+  assert.match(planSource, /docs\/CLEAR_LOCAL_AND_RESYNC_DESIGN_2026_06_30\.md/);
+  assert.match(planSource, /future recovery flow is split into non-mutating preflight, non-mutating preview, and separately approved execute/);
+  assert.match(planSource, /Initial execute policy is owner-only/);
+  assert.match(planSource, /pending operations, local unsynced data, local-only writes, cloud read availability, role, session, and sync-idle checks/);
+  assert.match(planSource, /prevents the older `clearLocalDataAndPullFromCloud\(\)` migration path from being wired into `\/recovery` as-is/);
+  assert.match(planSource, /Still not approved:[\s\S]*Clearing local IndexedDB/);
+  assert.match(planSource, /Still not approved:[\s\S]*Calling `clearLocalDataAndPullFromCloud\(\)` from UI/);
+  assert.match(planSource, /Still not approved:[\s\S]*Manager or staff execute/);
+});
+
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
@@ -118,6 +131,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/import-safety-status-ui\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-ui-classifier-integration-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-first-recovery-plan\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });
