@@ -1,10 +1,16 @@
 import { hasCapability, type RoleCapabilities } from '@/lib/permissions/role-capabilities';
+import type {
+  InsightConfidence,
+  InsightLimitation,
+  InsightLimitationCode,
+  InsightSignalStatus,
+} from '@/lib/analytics/insight-quality';
 import type { DailyStats, Market, Product } from '@/types/db';
 
 export type SettlementReportKind = 'weekly' | 'monthly';
-export type SettlementReportConfidence = 'high' | 'medium' | 'low';
+export type SettlementReportConfidence = InsightConfidence;
 export type SettlementReportGrade = 'A' | 'B' | 'C' | 'D';
-export type SettlementReportSignalStatus = 'available' | 'limited' | 'unavailable';
+export type SettlementReportSignalStatus = InsightSignalStatus;
 export type SettlementReportRecommendation =
   | 'strong_rejoin'
   | 'rejoin'
@@ -12,23 +18,7 @@ export type SettlementReportRecommendation =
   | 'caution'
   | 'avoid';
 
-export type SettlementReportLimitationCode =
-  | 'missing_daily_stats'
-  | 'missing_cost_data'
-  | 'missing_product_detail'
-  | 'missing_interaction_data'
-  | 'unsynced_data'
-  | 'no_markets_in_period'
-  | 'low_sample_size'
-  | 'excluded_inactive_market'
-  | 'ongoing_or_future_market'
-  | 'projection_mismatch'
-  | 'possible_duplicate_daily_stats'
-  | 'outlier_values'
-  | 'manual_entry_dominant'
-  | 'zero_or_missing_market_cost'
-  | 'cost_basis_estimated'
-  | 'partial_period_overlap';
+export type SettlementReportLimitationCode = InsightLimitationCode;
 
 export type SettlementReportPeriod = {
   kind: SettlementReportKind;
@@ -107,21 +97,7 @@ export type SettlementReportDataQuality = {
   notes: string[];
 };
 
-export type SettlementReportLimitation = {
-  code: SettlementReportLimitationCode;
-  severity: 'info' | 'warning';
-  affectedSections: Array<
-    | 'overall_score'
-    | 'profit'
-    | 'market_rejoin'
-    | 'product_ranking'
-    | 'product_actions'
-    | 'conversion'
-    | 'data_quality'
-  >;
-  message: string;
-  recommendation: string;
-};
+export type SettlementReportLimitation = InsightLimitation;
 
 export type SettlementReportAnalysisAvailability = {
   profitAnalysis: SettlementReportSignalStatus;

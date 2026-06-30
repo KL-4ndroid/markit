@@ -2,7 +2,7 @@
 
 Date: 2026-06-30
 
-Status: deferred implementation plan.
+Status: Slice B completed; Slice C and later remain deferred.
 
 Trigger: remind the user to implement this after the current settlement report original task is completed. The current original task means finishing the settlement report preview/spec work that depends on the report model and distortion-risk model.
 
@@ -110,6 +110,12 @@ Create the plan and a static test that locks:
 
 ### Slice B: Pure Type Extraction
 
+Status: completed as pure type extraction.
+
+Result record:
+
+- `lib/analytics/insight-quality.ts`
+
 After the current settlement report original task is complete, extract shared type aliases only:
 
 - `InsightSignalStatus`;
@@ -123,7 +129,13 @@ Settlement report types can alias or map these shared types.
 
 Risk: low.
 
-Stop condition: any type rename that forces broad app changes.
+Safety result:
+
+- `SettlementReportConfidence`, `SettlementReportSignalStatus`, `SettlementReportLimitationCode`, and `SettlementReportLimitation` now alias shared insight-quality types.
+- Existing settlement report public type names remain available.
+- No helper logic, scoring logic, runtime data source, analytics UI, report preview UI, PDF, Excel, Supabase, IndexedDB, recovery, or sync behavior was changed.
+
+Stop condition for further work: any type rename that forces broad app changes.
 
 ### Slice C: Pure Helper Extraction
 
