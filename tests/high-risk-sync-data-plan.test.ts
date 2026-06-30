@@ -186,13 +186,16 @@ runTest('plan records low-risk CSV helper without approving UI file generation o
 
 runTest('plan records owner settlement report model without approving PDF Excel UI or manager access', () => {
   assert.match(planSource, /Owner Settlement Report Model/);
-  assert.match(planSource, /Status: completed as pure data model and static guardrail work/);
+  assert.match(planSource, /Status: completed as pure data model, distortion-risk model, and static guardrail work/);
   assert.match(planSource, /docs\/SETTLEMENT_REPORT_MODEL_PLAN_2026_06_30\.md/);
+  assert.match(planSource, /docs\/SETTLEMENT_REPORT_DISTORTION_RISK_PLAN_2026_06_30\.md/);
   assert.match(planSource, /lib\/reporting\/settlement-report\.ts/);
   assert.match(planSource, /tests\/settlement-report-model\.test\.ts/);
   assert.match(planSource, /owner-only weekly\/monthly settlement report model/);
   assert.match(planSource, /explainable scoring components, overall grade, report recommendation, market rejoin decisions/);
   assert.match(planSource, /Incomplete data now degrades only the affected analysis section/);
+  assert.match(planSource, /Distortion risks now surface as explicit limitations/);
+  assert.match(planSource, /Projection mismatches, duplicate daily stats, outlier values/);
   assert.match(planSource, /Missing cost data disables confident profit scoring/);
   assert.match(planSource, /Missing product detail disables product ranking/);
   assert.match(planSource, /Missing interaction data disables conversion analysis/);
@@ -200,6 +203,7 @@ runTest('plan records owner settlement report model without approving PDF Excel 
   assert.match(planSource, /Still not approved:[\s\S]*PDF generation or visual template implementation/);
   assert.match(planSource, /Still not approved:[\s\S]*Excel generation/);
   assert.match(planSource, /Still not approved:[\s\S]*Manager report\/export access/);
+  assert.match(planSource, /Still not approved:[\s\S]*Data repair, projection rebuild, duplicate cleanup/);
 });
 
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {

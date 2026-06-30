@@ -11,6 +11,7 @@ const tests: Array<{ name: string; fn: TestFn }> = [];
 const projectRoot = join(__dirname, '..');
 const modelSource = readFileSync(join(projectRoot, 'lib/reporting/settlement-report.ts'), 'utf8');
 const modelPlanSource = readFileSync(join(projectRoot, 'docs/SETTLEMENT_REPORT_MODEL_PLAN_2026_06_30.md'), 'utf8');
+const distortionRiskPlanSource = readFileSync(join(projectRoot, 'docs/SETTLEMENT_REPORT_DISTORTION_RISK_PLAN_2026_06_30.md'), 'utf8');
 const cloudPlanSource = readFileSync(join(projectRoot, 'docs/CLOUD_REBUILD_FIRST_RECOVERY_PLAN_2026_06_30.md'), 'utf8');
 const highRiskPlanSource = readFileSync(join(projectRoot, 'docs/HIGH_RISK_SYNC_AND_DATA_EXECUTION_PLAN.md'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
@@ -285,6 +286,117 @@ runTest('item-level sales without product cost keeps product ranking but marks p
   );
 });
 
+runTest('surfaces distortion risks before preview or PDF work', () => {
+  const report = buildSettlementReportModel({
+    capabilities: ownerCapabilities(),
+    generatedAtDate: '2026-06-02',
+    period: {
+      kind: 'weekly',
+      startDate: '2026-06-01',
+      endDate: '2026-06-07',
+      label: '2026-W23',
+    },
+    markets: [
+      market({
+        id: 'market-partial',
+        name: 'Partial Market',
+        startDate: '2026-05-31',
+        endDate: '2026-06-02',
+        registrationFee: 0,
+        boothCost: 0,
+        tableRental: 0,
+        chairRental: 0,
+        commissionRate: 0,
+        totalRevenue: 500,
+        totalDeals: 2,
+      }),
+      market({
+        id: 'market-cancelled',
+        name: 'Cancelled Market',
+        status: 'cancelled',
+        totalRevenue: 9999,
+      }),
+      market({
+        id: 'market-ongoing',
+        name: 'Ongoing Market',
+        startDate: '2026-06-04',
+        endDate: '2026-06-05',
+        status: 'ongoing',
+        registrationFee: 0,
+        boothCost: 0,
+        tableRental: 0,
+        chairRental: 0,
+        commissionRate: 0,
+      }),
+    ],
+    dailyStats: [
+      dailyStat({
+        id: 11,
+        marketId: 'market-partial',
+        date: '2026-06-01',
+        revenue: 1000,
+        cost: 0,
+        profit: 1000,
+        dealCount: 3,
+        productsSold: [],
+      }),
+      dailyStat({
+        id: 12,
+        marketId: 'market-partial',
+        date: '2026-06-01',
+        revenue: 1000,
+        cost: 0,
+        profit: 1000,
+        dealCount: 3,
+        productsSold: [],
+      }),
+      dailyStat({
+        id: 13,
+        marketId: 'market-ongoing',
+        date: '2026-06-04',
+        revenue: 2_000_001,
+        cost: 100,
+        profit: 2_000_000,
+        dealCount: 2,
+        productsSold: [{ productId: 'product-1', quantity: 1, revenue: 500 }],
+      }),
+      dailyStat({
+        id: 14,
+        marketId: 'market-cancelled',
+        date: '2026-06-01',
+        revenue: 9999,
+        cost: 0,
+        profit: 9999,
+      }),
+    ],
+    products: [product({ cost: 50 })],
+  });
+
+  const codes = report.dataQuality.limitations.map(limitation => limitation.code);
+
+  assert.deepEqual(report.dataQuality.excludedMarketIds, ['market-cancelled']);
+  assert.equal(report.marketRows.some(row => row.marketId === 'market-cancelled'), false);
+  assert.equal(report.money.totalRevenue, 2_002_001);
+  assert.deepEqual(report.dataQuality.ongoingOrFutureMarketIds, ['market-ongoing']);
+  assert.deepEqual(report.dataQuality.projectionMismatchMarketIds.sort(), ['market-ongoing', 'market-partial']);
+  assert.deepEqual(report.dataQuality.possibleDuplicateDailyStatKeys, ['market-partial:2026-06-01']);
+  assert.deepEqual(report.dataQuality.outlierDailyStatIds, ['13']);
+  assert.deepEqual(report.dataQuality.manualEntryDominantMarketIds, ['market-partial']);
+  assert.deepEqual(report.dataQuality.zeroCostMarketIds.sort(), ['market-ongoing', 'market-partial']);
+  assert.deepEqual(report.dataQuality.costBasisEstimatedProductIds, ['product-1']);
+  assert.deepEqual(report.dataQuality.partialPeriodMarketIds, ['market-partial']);
+  assert.equal(codes.includes('excluded_inactive_market'), true);
+  assert.equal(codes.includes('ongoing_or_future_market'), true);
+  assert.equal(codes.includes('projection_mismatch'), true);
+  assert.equal(codes.includes('possible_duplicate_daily_stats'), true);
+  assert.equal(codes.includes('outlier_values'), true);
+  assert.equal(codes.includes('manual_entry_dominant'), true);
+  assert.equal(codes.includes('zero_or_missing_market_cost'), true);
+  assert.equal(codes.includes('cost_basis_estimated'), true);
+  assert.equal(codes.includes('partial_period_overlap'), true);
+  assert.equal(report.content.dataActions.some(action => action.includes('read-only projection audit')), true);
+});
+
 runTest('blocks manager operator viewer and fail-closed roles', () => {
   for (const capabilities of [
     deriveRoleCapabilities({ isOwner: false, staffRole: 'manager' }),
@@ -327,9 +439,18 @@ runTest('plan records settlement reports as owner-only PDF-first future directio
   assert.match(modelPlanSource, /This plan does not approve[\s\S]*Excel generation/);
   assert.match(modelPlanSource, /Missing cost data must lower profit confidence/);
   assert.match(modelPlanSource, /Missing product detail must disable product ranking/);
+  assert.match(modelPlanSource, /Distortion Risk Rules/);
+  assert.match(modelPlanSource, /SETTLEMENT_REPORT_DISTORTION_RISK_PLAN_2026_06_30/);
+  assert.match(distortionRiskPlanSource, /numbers may exist but the conclusion can still be wrong/);
+  assert.match(distortionRiskPlanSource, /Simple revenue entry is valid/);
+  assert.match(distortionRiskPlanSource, /Report Preview Spec must include visible UI states/);
+  assert.match(distortionRiskPlanSource, /This document does not approve report preview UI/);
+  assert.match(distortionRiskPlanSource, /Do not automatically repair duplicate projections/);
   assert.match(cloudPlanSource, /Step 7: Owner Settlement Report Model/);
+  assert.match(cloudPlanSource, /distortion-risk model/);
   assert.match(cloudPlanSource, /Designed PDF output later/);
   assert.match(highRiskPlanSource, /## 20\. Owner Settlement Report Model/);
+  assert.match(highRiskPlanSource, /Distortion risks now surface as explicit limitations/);
   assert.match(highRiskPlanSource, /PDF is now the preferred future presentation format/);
 });
 

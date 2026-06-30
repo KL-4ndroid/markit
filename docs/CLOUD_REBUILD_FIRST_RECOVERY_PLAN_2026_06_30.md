@@ -199,11 +199,12 @@ Not approved in this plan:
 
 ### Step 7: Owner Settlement Report Model
 
-Status: completed as pure data model and static guardrail work.
+Status: completed as pure data model, distortion-risk model, and static guardrail work.
 
 Result record:
 
 - `docs/SETTLEMENT_REPORT_MODEL_PLAN_2026_06_30.md`
+- `docs/SETTLEMENT_REPORT_DISTORTION_RISK_PLAN_2026_06_30.md`
 - `lib/reporting/settlement-report.ts`
 - `tests/settlement-report-model.test.ts`
 
@@ -227,6 +228,7 @@ Completed:
 - market rejoin decision rows;
 - owner-facing report content model;
 - section-level availability states for incomplete cost, product, interaction, sync, and daily-stats data;
+- model-level distortion warnings for inactive markets, ongoing/future markets, projection mismatch, duplicate daily stats, outliers, manual/simple entry dominance, zero market cost, estimated cost basis, and partial-period overlap;
 - static tests proving no runtime data source, UI, download, PDF, Excel, CSV, or sync integration.
 
 Not approved in this plan:

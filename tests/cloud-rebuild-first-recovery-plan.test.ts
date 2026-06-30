@@ -93,14 +93,16 @@ runTest('plan defines the eight-step execution path with preview before execute'
   assert.match(planSource, /owner-only `market_summary` CSV builder/);
   assert.match(planSource, /static tests proving no runtime data source, UI, download, Excel, or sync integration/);
   assert.match(planSource, /Not approved in this plan:[\s\S]*browser download\/file generation/);
-  assert.match(planSource, /Step 7: Owner Settlement Report Model[\s\S]*Status: completed as pure data model and static guardrail work/);
+  assert.match(planSource, /Step 7: Owner Settlement Report Model[\s\S]*Status: completed as pure data model, distortion-risk model, and static guardrail work/);
   assert.match(planSource, /docs\/SETTLEMENT_REPORT_MODEL_PLAN_2026_06_30\.md/);
+  assert.match(planSource, /docs\/SETTLEMENT_REPORT_DISTORTION_RISK_PLAN_2026_06_30\.md/);
   assert.match(planSource, /lib\/reporting\/settlement-report\.ts/);
   assert.match(planSource, /tests\/settlement-report-model\.test\.ts/);
   assert.match(planSource, /Designed PDF output later/);
   assert.match(planSource, /explainable score components/);
   assert.match(planSource, /market rejoin decision rows/);
   assert.match(planSource, /section-level availability states for incomplete cost, product, interaction, sync, and daily-stats data/);
+  assert.match(planSource, /model-level distortion warnings/);
   assert.match(planSource, /Not approved in this plan:[\s\S]*PDF generation/);
   assert.match(planSource, /Not approved in this plan:[\s\S]*manager report\/export access/);
 });

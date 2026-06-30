@@ -625,11 +625,12 @@ Still not approved:
 
 ## 20. Owner Settlement Report Model
 
-Status: completed as pure data model and static guardrail work.
+Status: completed as pure data model, distortion-risk model, and static guardrail work.
 
 Result record:
 
 - `docs/SETTLEMENT_REPORT_MODEL_PLAN_2026_06_30.md`
+- `docs/SETTLEMENT_REPORT_DISTORTION_RISK_PLAN_2026_06_30.md`
 - `lib/reporting/settlement-report.ts`
 - `tests/settlement-report-model.test.ts`
 
@@ -639,6 +640,9 @@ Safety result:
 - The model summarizes revenue, product cost, gross profit, fixed market cost, commission, net profit, deal count, interactions, average order value, market rankings, product rankings, and data-quality notes.
 - Added explainable scoring components, overall grade, report recommendation, market rejoin decisions, and owner-facing content sections.
 - Incomplete data now degrades only the affected analysis section instead of making the whole report useless.
+- Distortion risks now surface as explicit limitations before any preview UI or PDF design work.
+- Cancelled, postponed, or deleted markets are excluded from settlement totals and recorded as a limitation.
+- Projection mismatches, duplicate daily stats, outlier values, manual/simple entry dominance, zero market cost, estimated product cost basis, and partial-period overlaps are reported without running repair.
 - Missing cost data disables confident profit scoring while preserving revenue, deal count, average order value, and market-level guidance.
 - Missing product detail disables product ranking and product action advice while preserving market-level settlement analysis.
 - Missing interaction data disables conversion analysis while preserving financial and sales-volume analysis.
@@ -656,3 +660,4 @@ Still not approved:
 - Manager report/export access.
 - Supabase report queries.
 - Background report generation.
+- Data repair, projection rebuild, duplicate cleanup, or any sync/recovery behavior through settlement reporting.

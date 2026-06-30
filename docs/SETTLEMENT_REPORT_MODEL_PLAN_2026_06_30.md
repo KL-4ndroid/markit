@@ -101,6 +101,30 @@ Examples:
 
 The report must be explicit about these limitations so the owner knows which conclusions are reliable.
 
+## 5.1 Distortion Risk Rules
+
+The report must also handle cases where data exists but conclusions can still become misleading.
+
+The first-version distortion model is defined in:
+
+- `docs/SETTLEMENT_REPORT_DISTORTION_RISK_PLAN_2026_06_30.md`
+
+Additional required limitation codes:
+
+- no eligible markets in the report period;
+- low sample size;
+- cancelled, postponed, or deleted markets excluded from totals;
+- ongoing or future markets included in a draft report;
+- market projection totals differing from daily stats;
+- possible duplicate daily stats for the same market/date;
+- negative, extreme, or internally inconsistent values;
+- simple revenue/manual entry dominance;
+- zero market cost with revenue;
+- product profit based on current product cost rather than sale-time cost;
+- partial period overlap for multi-day markets.
+
+These risks must be presented as confidence and section-availability limitations. They do not approve data repair, projection rebuilds, duplicate cleanup, or report preview UI.
+
 ## 6. Data Source Policy
 
 Initial implementation is a pure function that receives already authorized local view-model data.
@@ -136,6 +160,7 @@ The first implementation must also include:
 - tests for simple revenue entry without cost;
 - tests for item-level sales without product cost;
 - tests proving product analysis is disabled when product detail is missing.
+- tests proving distortion risks are surfaced before report preview UI is designed.
 
 Still not approved:
 

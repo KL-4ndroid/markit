@@ -17,7 +17,18 @@ export type SettlementReportLimitationCode =
   | 'missing_cost_data'
   | 'missing_product_detail'
   | 'missing_interaction_data'
-  | 'unsynced_data';
+  | 'unsynced_data'
+  | 'no_markets_in_period'
+  | 'low_sample_size'
+  | 'excluded_inactive_market'
+  | 'ongoing_or_future_market'
+  | 'projection_mismatch'
+  | 'possible_duplicate_daily_stats'
+  | 'outlier_values'
+  | 'manual_entry_dominant'
+  | 'zero_or_missing_market_cost'
+  | 'cost_basis_estimated'
+  | 'partial_period_overlap';
 
 export type SettlementReportPeriod = {
   kind: SettlementReportKind;
@@ -75,6 +86,15 @@ export type SettlementReportDataQuality = {
   marketsWithoutDailyStats: string[];
   missingProductNames: string[];
   unsyncedMarketIds: string[];
+  excludedMarketIds: string[];
+  ongoingOrFutureMarketIds: string[];
+  projectionMismatchMarketIds: string[];
+  possibleDuplicateDailyStatKeys: string[];
+  outlierDailyStatIds: string[];
+  manualEntryDominantMarketIds: string[];
+  zeroCostMarketIds: string[];
+  costBasisEstimatedProductIds: string[];
+  partialPeriodMarketIds: string[];
   costTrackedRevenue: number;
   productDetailRevenue: number;
   interactionTrackedMarketCount: number;
@@ -176,6 +196,7 @@ export type BuildSettlementReportModelInput = {
   markets: Market[];
   dailyStats: DailyStats[];
   products?: Product[];
+  generatedAtDate?: string;
 };
 
 function finiteNumber(value: unknown): number {
@@ -212,6 +233,52 @@ function getFixedMarketCost(market: Market): number {
     umbrellaRental +
     tableclothRental
   );
+}
+
+function isInactiveSettlementMarket(market: Market): boolean {
+  return market.isDeleted === true || market.status === 'cancelled' || market.status === 'postponed';
+}
+
+function isOngoingOrFutureMarket(market: Market, generatedAtDate?: string): boolean {
+  if (market.status === 'ongoing') return true;
+  if (!generatedAtDate) return false;
+  return market.startDate > generatedAtDate || market.endDate > generatedAtDate;
+}
+
+function getDailyStatKey(stat: DailyStats): string {
+  return `${stat.marketId ?? ''}:${stat.date}`;
+}
+
+function getDailyStatId(stat: DailyStats): string {
+  return stat.id === undefined ? getDailyStatKey(stat) : String(stat.id);
+}
+
+function hasOutlierValues(stat: DailyStats): boolean {
+  const revenue = finiteNumber(stat.revenue);
+  const cost = finiteNumber(stat.cost);
+  const profit = finiteNumber(stat.profit);
+  const dealCount = finiteNumber(stat.dealCount);
+  const interactionCount = finiteNumber(stat.touchCount) + finiteNumber(stat.inquiryCount);
+
+  return (
+    revenue < 0 ||
+    cost < 0 ||
+    dealCount < 0 ||
+    interactionCount < 0 ||
+    Math.abs(profit) > Math.max(revenue + cost, 1) * 3 ||
+    revenue > 1_000_000 ||
+    dealCount > 1_000 ||
+    interactionCount > 10_000
+  );
+}
+
+function hasProjectionMismatch(market: Market, row: SettlementMarketRow): boolean {
+  const projectedRevenue = optionalFiniteNumber(market.totalRevenue);
+  const projectedDeals = optionalFiniteNumber(market.totalDeals);
+  const revenueMismatch = projectedRevenue !== null && Math.abs(projectedRevenue - row.revenue) > 1;
+  const dealMismatch = projectedDeals !== null && Math.abs(projectedDeals - row.dealCount) > 0.01;
+
+  return revenueMismatch || dealMismatch;
 }
 
 function getCommissionFee(market: Market, revenue: number): number {
@@ -307,11 +374,58 @@ function buildLimitations(input: {
   includedMarketCount: number;
   marketsWithoutDailyStats: string[];
   unsyncedMarketIds: string[];
+  excludedMarketIds: string[];
+  ongoingOrFutureMarketIds: string[];
+  projectionMismatchMarketIds: string[];
+  possibleDuplicateDailyStatKeys: string[];
+  outlierDailyStatIds: string[];
+  manualEntryDominantMarketIds: string[];
+  zeroCostMarketIds: string[];
+  costBasisEstimatedProductIds: string[];
+  partialPeriodMarketIds: string[];
   costCoverageRatio: number;
   productDetailCoverageRatio: number;
   interactionCoverageRatio: number;
 }): SettlementReportLimitation[] {
   const limitations: SettlementReportLimitation[] = [];
+
+  if (input.includedMarketCount === 0) {
+    limitations.push({
+      code: 'no_markets_in_period',
+      severity: 'warning',
+      affectedSections: ['overall_score', 'market_rejoin', 'data_quality'],
+      message: 'No eligible completed markets were found in this report period.',
+      recommendation: 'Choose a period with completed market records before using this report for rejoin decisions.',
+    });
+  } else if (input.includedMarketCount === 1) {
+    limitations.push({
+      code: 'low_sample_size',
+      severity: 'info',
+      affectedSections: ['overall_score', 'market_rejoin', 'data_quality'],
+      message: 'This report is based on one market, so ranking and trend conclusions are limited.',
+      recommendation: 'Use this as a single-market closing report; compare across more markets before making broader strategy decisions.',
+    });
+  }
+
+  if (input.excludedMarketIds.length > 0) {
+    limitations.push({
+      code: 'excluded_inactive_market',
+      severity: 'info',
+      affectedSections: ['market_rejoin', 'data_quality'],
+      message: 'Cancelled, postponed, or deleted markets were excluded from settlement totals.',
+      recommendation: 'Review excluded markets separately if cancellation fees, deposits, or sunk costs should be reported.',
+    });
+  }
+
+  if (input.ongoingOrFutureMarketIds.length > 0) {
+    limitations.push({
+      code: 'ongoing_or_future_market',
+      severity: 'warning',
+      affectedSections: ['overall_score', 'market_rejoin', 'data_quality'],
+      message: 'Some included markets are ongoing or future-dated, so this is not a final closing report.',
+      recommendation: 'Generate the report after those markets are completed for final settlement decisions.',
+    });
+  }
 
   if (input.marketsWithoutDailyStats.length > 0) {
     limitations.push({
@@ -333,6 +447,16 @@ function buildLimitations(input: {
     });
   }
 
+  if (input.zeroCostMarketIds.length > 0) {
+    limitations.push({
+      code: 'zero_or_missing_market_cost',
+      severity: 'info',
+      affectedSections: ['profit', 'market_rejoin', 'data_quality'],
+      message: 'Some markets with revenue have no recorded booth, registration, rental, or commission cost.',
+      recommendation: 'If those markets were not actually free, add market costs before relying on net profit and cost-pressure conclusions.',
+    });
+  }
+
   if (input.productDetailCoverageRatio < 0.75) {
     limitations.push({
       code: 'missing_product_detail',
@@ -340,6 +464,26 @@ function buildLimitations(input: {
       affectedSections: ['product_ranking', 'product_actions'],
       message: 'Product detail coverage is incomplete, so product ranking and restock advice are limited.',
       recommendation: 'Market-level sales analysis remains useful; record item-level sales when product decisions matter.',
+    });
+  }
+
+  if (input.manualEntryDominantMarketIds.length > 0) {
+    limitations.push({
+      code: 'manual_entry_dominant',
+      severity: 'info',
+      affectedSections: ['product_ranking', 'product_actions', 'data_quality'],
+      message: 'Simple revenue entry appears to dominate part of this report.',
+      recommendation: 'Revenue, deals, and average order value remain useful; product ranking should be hidden or marked unavailable for those markets.',
+    });
+  }
+
+  if (input.costBasisEstimatedProductIds.length > 0) {
+    limitations.push({
+      code: 'cost_basis_estimated',
+      severity: 'info',
+      affectedSections: ['profit', 'product_actions', 'data_quality'],
+      message: 'Some product profit estimates use the current product cost, not a recorded cost at time of sale.',
+      recommendation: 'Use product profit as directional unless sale-time cost is captured for those products.',
     });
   }
 
@@ -360,6 +504,46 @@ function buildLimitations(input: {
       affectedSections: ['overall_score', 'data_quality'],
       message: 'Some markets are not marked as synced, so cloud-confirmed reporting may differ.',
       recommendation: 'Sync before using this report as a final shared file.',
+    });
+  }
+
+  if (input.projectionMismatchMarketIds.length > 0) {
+    limitations.push({
+      code: 'projection_mismatch',
+      severity: 'warning',
+      affectedSections: ['overall_score', 'market_rejoin', 'data_quality'],
+      message: 'Some market projection totals differ from the period daily stats used by this report.',
+      recommendation: 'Run a read-only projection audit before using this report as a final financial record.',
+    });
+  }
+
+  if (input.possibleDuplicateDailyStatKeys.length > 0) {
+    limitations.push({
+      code: 'possible_duplicate_daily_stats',
+      severity: 'warning',
+      affectedSections: ['overall_score', 'market_rejoin', 'product_ranking', 'data_quality'],
+      message: 'Possible duplicate daily stat rows were detected for the same market and date.',
+      recommendation: 'Verify the source records before trusting totals, rankings, or product advice.',
+    });
+  }
+
+  if (input.outlierDailyStatIds.length > 0) {
+    limitations.push({
+      code: 'outlier_values',
+      severity: 'warning',
+      affectedSections: ['overall_score', 'profit', 'market_rejoin', 'conversion', 'data_quality'],
+      message: 'Unusual negative, extremely large, or internally inconsistent values were detected.',
+      recommendation: 'Review those source records before treating the score as final.',
+    });
+  }
+
+  if (input.partialPeriodMarketIds.length > 0) {
+    limitations.push({
+      code: 'partial_period_overlap',
+      severity: 'info',
+      affectedSections: ['profit', 'market_rejoin', 'data_quality'],
+      message: 'Some multi-day markets only partially overlap this report period.',
+      recommendation: 'Fixed market costs are counted once in this model; use a full market period when exact profit allocation matters.',
     });
   }
 
@@ -717,10 +901,16 @@ export function buildSettlementReportModel({
   markets,
   dailyStats,
   products = [],
+  generatedAtDate,
 }: BuildSettlementReportModelInput): SettlementReportModel {
   assertOwnerSettlementReportAllowed(capabilities);
 
-  const marketsInPeriod = markets.filter(isMarket => isMarketOverlappingPeriod(isMarket, period));
+  const overlappingMarkets = markets.filter(isMarket => isMarketOverlappingPeriod(isMarket, period));
+  const excludedMarketIds = overlappingMarkets
+    .filter(isInactiveSettlementMarket)
+    .map(getMarketId)
+    .filter(Boolean);
+  const marketsInPeriod = overlappingMarkets.filter(market => !isInactiveSettlementMarket(market));
   const marketById = new Map(marketsInPeriod.map(market => [getMarketId(market), market]));
   const productById = new Map(products.map(product => [product.id ?? '', product]));
   const statsInPeriod = dailyStats.filter(stat =>
@@ -769,6 +959,40 @@ export function buildSettlementReportModel({
     };
   }).sort((a, b) => b.netProfit - a.netProfit || b.revenue - a.revenue || a.marketName.localeCompare(b.marketName));
 
+  const marketRowById = new Map(marketRows.map(row => [row.marketId, row]));
+  const ongoingOrFutureMarketIds = marketsInPeriod
+    .filter(market => isOngoingOrFutureMarket(market, generatedAtDate))
+    .map(getMarketId)
+    .filter(Boolean);
+  const partialPeriodMarketIds = marketsInPeriod
+    .filter(market => market.startDate < period.startDate || market.endDate > period.endDate)
+    .map(getMarketId)
+    .filter(Boolean);
+  const projectionMismatchMarketIds = marketsInPeriod
+    .filter(market => {
+      const row = marketRowById.get(getMarketId(market));
+      return row !== undefined && hasProjectionMismatch(market, row);
+    })
+    .map(getMarketId)
+    .filter(Boolean);
+  const zeroCostMarketIds = marketRows
+    .filter(row => row.revenue > 0 && row.fixedMarketCost === 0 && row.commissionFee === 0)
+    .map(row => row.marketId);
+  const manualEntryDominantMarketIds = marketRows
+    .filter(row => row.revenue > 0 && (statsByMarketId.get(row.marketId) ?? []).every(stat => (stat.productsSold ?? []).length === 0))
+    .map(row => row.marketId);
+  const dailyStatKeyCounts = new Map<string, number>();
+  for (const stat of statsInPeriod) {
+    const key = getDailyStatKey(stat);
+    dailyStatKeyCounts.set(key, (dailyStatKeyCounts.get(key) ?? 0) + 1);
+  }
+  const possibleDuplicateDailyStatKeys = Array.from(dailyStatKeyCounts.entries())
+    .filter(([, count]) => count > 1)
+    .map(([key]) => key);
+  const outlierDailyStatIds = statsInPeriod
+    .filter(hasOutlierValues)
+    .map(getDailyStatId);
+
   const productTotals = new Map<string, { quantity: number; revenue: number }>();
   for (const stat of statsInPeriod) {
     for (const sold of stat.productsSold ?? []) {
@@ -800,6 +1024,9 @@ export function buildSettlementReportModel({
       estimatedGrossProfit: estimatedCost === null ? null : totals.revenue - estimatedCost,
     };
   }).sort((a, b) => b.revenue - a.revenue || b.quantity - a.quantity || a.productName.localeCompare(b.productName));
+  const costBasisEstimatedProductIds = productRows
+    .filter(row => row.estimatedCost !== null)
+    .map(row => row.productId);
 
   const marketsWithoutDailyStats = marketsInPeriod
     .filter(market => !statsByMarketId.has(getMarketId(market)))
@@ -833,6 +1060,15 @@ export function buildSettlementReportModel({
     includedMarketCount: marketsInPeriod.length,
     marketsWithoutDailyStats,
     unsyncedMarketIds,
+    excludedMarketIds,
+    ongoingOrFutureMarketIds,
+    projectionMismatchMarketIds,
+    possibleDuplicateDailyStatKeys,
+    outlierDailyStatIds,
+    manualEntryDominantMarketIds,
+    zeroCostMarketIds,
+    costBasisEstimatedProductIds,
+    partialPeriodMarketIds,
     costCoverageRatio,
     productDetailCoverageRatio,
     interactionCoverageRatio,
@@ -843,6 +1079,15 @@ export function buildSettlementReportModel({
     marketsWithoutDailyStats,
     missingProductNames,
     unsyncedMarketIds,
+    excludedMarketIds,
+    ongoingOrFutureMarketIds,
+    projectionMismatchMarketIds,
+    possibleDuplicateDailyStatKeys,
+    outlierDailyStatIds,
+    manualEntryDominantMarketIds,
+    zeroCostMarketIds,
+    costBasisEstimatedProductIds,
+    partialPeriodMarketIds,
     costTrackedRevenue,
     productDetailRevenue,
     interactionTrackedMarketCount,
