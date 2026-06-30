@@ -352,10 +352,41 @@ Completed low-risk continuation slice:
 - The classifier does not mount in UI.
 - The classifier defines how future code maps known import phases/errors into the documented outcome states.
 
-Deferred until a separate decision:
+Completed after separate approval:
 
 - `Import Safety Status` inside existing `/recovery`.
-- Any emergency-backup metadata display.
-- Any download affordance beyond existing backup/download behavior.
+- Emergency-backup metadata display.
+- Download affordance only when emergency backup content still exists in localStorage.
+
+Deferred until a separate decision:
+
+- Connecting the classifier to import UI.
 - Any production recovery behavior.
 - Browser/profile IndexedDB verification.
+
+## 11. Import Safety Status UI Shell
+
+Status: completed as owner-gated read-only UI work.
+
+Result record:
+
+- `components/common/ImportSafetyStatusPanel.tsx`
+- `lib/db/import-safety-status.ts`
+- `tests/import-safety-status-ui.test.ts`
+
+Safety result:
+
+- The panel is mounted only inside the existing `/recovery` page, behind the existing owner repair-tool gate.
+- The panel reads only emergency import backup metadata and optional backup content from browser localStorage.
+- The panel can download existing local emergency backup content.
+- The panel does not call `importData()`.
+- The panel does not restore, repair, or mutate IndexedDB.
+- The panel does not write Supabase.
+- The panel does not connect import error classification to UI.
+
+Still not approved:
+
+- Connecting the classifier to import UI.
+- Automatic rollback, restore, repair, or production recovery behavior.
+- Browser/profile IndexedDB mutation verification.
+- Any new repair action.

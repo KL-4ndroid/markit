@@ -68,8 +68,19 @@ runTest('plan records import recovery classifier completion and next boundary', 
   assert.match(planSource, /The classifier does not call `importData\(\)`/);
   assert.match(planSource, /The classifier does not read or write IndexedDB/);
   assert.match(planSource, /The classifier does not mount in UI/);
-  assert.match(planSource, /Deferred until a separate decision:[\s\S]*`Import Safety Status` inside existing `\/recovery`/);
+  assert.match(planSource, /Completed after separate approval:[\s\S]*`Import Safety Status` inside existing `\/recovery`/);
+  assert.match(planSource, /Completed after separate approval:[\s\S]*Emergency-backup metadata display/);
   assert.match(planSource, /Deferred until a separate decision:[\s\S]*Browser\/profile IndexedDB verification/);
+});
+
+runTest('plan records import safety status UI shell without approving recovery automation', () => {
+  assert.match(planSource, /Import Safety Status UI Shell/);
+  assert.match(planSource, /Status: completed as owner-gated read-only UI work/);
+  assert.match(planSource, /The panel is mounted only inside the existing `\/recovery` page/);
+  assert.match(planSource, /The panel does not call `importData\(\)`/);
+  assert.match(planSource, /The panel does not restore, repair, or mutate IndexedDB/);
+  assert.match(planSource, /The panel does not write Supabase/);
+  assert.match(planSource, /Still not approved:[\s\S]*Automatic rollback, restore, repair, or production recovery behavior/);
 });
 
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
@@ -78,6 +89,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-indexeddb-rollback\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-classifier\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/import-safety-status-ui\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });

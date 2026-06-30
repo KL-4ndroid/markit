@@ -56,9 +56,8 @@ runTest('plan defines explicit import outcome states', () => {
   assert.match(planSource, /post_import_validation_failed[\s\S]*highest-risk import failure state/);
 });
 
-runTest('plan keeps UI automation browser profile and production recovery out of phase 1', () => {
+runTest('plan keeps automation browser profile and production recovery out of approved low-risk phases', () => {
   for (const blocked of [
-    /Not included:[\s\S]*New UI/,
     /Not included:[\s\S]*New runtime services/,
     /Not included:[\s\S]*New automatic restore behavior/,
     /Not included:[\s\S]*Browser\/profile IndexedDB tests/,
@@ -70,6 +69,16 @@ runTest('plan keeps UI automation browser profile and production recovery out of
   ]) {
     assert.match(planSource, blocked);
   }
+});
+
+runTest('plan records read-only import safety status UI shell completion', () => {
+  assert.match(planSource, /Phase 2: Import Safety Status UI Shell[\s\S]*Status: completed as read-only UI shell/);
+  assert.match(planSource, /Show whether emergency backup metadata exists/);
+  assert.match(planSource, /Provide a download affordance only when the emergency backup content still exists in localStorage/);
+  assert.match(planSource, /Does not display import error classification/);
+  assert.match(planSource, /Does not call `importData\(\)`/);
+  assert.match(planSource, /Does not restore or repair data/);
+  assert.match(planSource, /Does not write Supabase/);
 });
 
 runTest('importData source order matches documented safety semantics', () => {
@@ -106,6 +115,7 @@ runTest('high-risk plan records semantics slice without approving runtime behavi
 
 runTest('full test suite includes import recovery semantics guardrail', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/import-safety-status-ui\.test\.ts/);
 });
 
 function main(): void {

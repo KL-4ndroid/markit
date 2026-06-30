@@ -63,18 +63,22 @@ Not included:
 
 ## 4. Phase 2: Import Safety Status UI Shell
 
-Status: candidate only; not approved by this document.
+Status: completed as read-only UI shell.
 
-Recommended shape if approved later:
+Completed shape:
 
 - Extend the existing `/recovery` page instead of creating a new recovery page.
 - Add a small read-only `Import Safety Status` area to the existing recovery surface.
 - Show whether emergency backup metadata exists.
 - Show emergency backup created time, size, and whether the backup was stored locally or downloaded.
-- Provide a download/export affordance for the emergency backup if available.
-- Display import error classification only after a dedicated classifier contract exists.
+- Provide a download affordance only when the emergency backup content still exists in localStorage.
+- Does not display import error classification.
+- Does not call `importData()`.
+- Does not restore or repair data.
+- Does not write IndexedDB.
+- Does not write Supabase.
 
-Hard boundaries:
+Remaining hard boundaries:
 
 - Do not add automatic restore.
 - Do not call `importData()` from the status panel.

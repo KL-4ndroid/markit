@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Database, ShieldAlert } from 'lucide-react';
 import { DatabaseRecoveryPanel } from '@/components/common/DatabaseRecoveryPanel';
+import { ImportSafetyStatusPanel } from '@/components/common/ImportSafetyStatusPanel';
 import { LocalProjectionRepairPanel } from '@/components/common/LocalProjectionRepairPanel';
 import { OwnerRevenueGapRepairPanel } from '@/components/common/OwnerRevenueGapRepairPanel';
 import { OwnerPendingOperationDiagnosticsPanel } from '@/components/common/OwnerPendingOperationDiagnosticsPanel';
@@ -90,6 +91,8 @@ export default function RecoveryPage() {
         </header>
 
         <DatabaseRecoveryPanel />
+
+        <ImportSafetyStatusPanel />
 
         <OwnerPendingOperationDiagnosticsPanel />
 
