@@ -107,6 +107,14 @@ Not approved:
 
 ### Step 4: Cloud Rebuild Preview
 
+Status: completed as pure model and static guardrail work.
+
+Result record:
+
+- `docs/CLOUD_REBUILD_PREVIEW_DESIGN_2026_06_30.md`
+- `lib/sync/cloud-rebuild-preview.ts`
+- `tests/cloud-rebuild-preview.test.ts`
+
 Goal:
 
 - Build a non-mutating preview that answers:
@@ -120,6 +128,9 @@ Not approved:
 - deleting local tables;
 - applying replace-cache;
 - changing sync pull behavior.
+- reading live Supabase or IndexedDB data;
+- wiring preview to `/recovery`;
+- adding a destructive button.
 
 ### Step 5: CSV Reporting Export Specification
 

@@ -535,3 +535,31 @@ Still not approved:
 - Local IndexedDB deletion.
 - Replace-cache execute.
 - Supabase mutation.
+
+## 17. Cloud Rebuild Preview
+
+Status: completed as pure model and static guardrail work.
+
+Result record:
+
+- `docs/CLOUD_REBUILD_PREVIEW_DESIGN_2026_06_30.md`
+- `lib/sync/cloud-rebuild-preview.ts`
+- `tests/cloud-rebuild-preview.test.ts`
+
+Safety result:
+
+- The preview model is pure and input-driven.
+- The model does not import Supabase, Dexie, `db`, React, hooks, or recovery UI components.
+- The model summarizes local tables, cloud sources, pending pre-clear status, protected local rows, and blocking reasons.
+- `canProceedToExecute` is always false in this slice.
+- Production sync and recovery UI paths do not import the preview model.
+
+Still not approved:
+
+- Reading live Supabase data for rebuild preview.
+- Reading IndexedDB for rebuild preview.
+- Wiring preview to `/recovery`.
+- Clearing local IndexedDB.
+- Running replace-cache execute.
+- Adding automatic rebuild.
+- Retrying, draining, resetting, or discarding pending operations.

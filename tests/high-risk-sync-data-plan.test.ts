@@ -137,6 +137,21 @@ runTest('plan records pending operations pre-clear design without approving muta
   assert.match(planSource, /Still not approved:[\s\S]*Local IndexedDB deletion/);
 });
 
+runTest('plan records cloud rebuild preview model without approving live data or execute wiring', () => {
+  assert.match(planSource, /Cloud Rebuild Preview/);
+  assert.match(planSource, /Status: completed as pure model and static guardrail work/);
+  assert.match(planSource, /docs\/CLOUD_REBUILD_PREVIEW_DESIGN_2026_06_30\.md/);
+  assert.match(planSource, /lib\/sync\/cloud-rebuild-preview\.ts/);
+  assert.match(planSource, /The preview model is pure and input-driven/);
+  assert.match(planSource, /does not import Supabase, Dexie, `db`, React, hooks, or recovery UI components/);
+  assert.match(planSource, /`canProceedToExecute` is always false/);
+  assert.match(planSource, /Production sync and recovery UI paths do not import the preview model/);
+  assert.match(planSource, /Still not approved:[\s\S]*Reading live Supabase data for rebuild preview/);
+  assert.match(planSource, /Still not approved:[\s\S]*Reading IndexedDB for rebuild preview/);
+  assert.match(planSource, /Still not approved:[\s\S]*Wiring preview to `\/recovery`/);
+  assert.match(planSource, /Still not approved:[\s\S]*Running replace-cache execute/);
+});
+
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
@@ -149,6 +164,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-first-recovery-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });
