@@ -27,7 +27,9 @@ console.log('\n=== Import UI classifier integration plan ===');
 
 runTest('plan exists and records current no-production-import-ui baseline', () => {
   assert.ok(existsSync(planPath));
+  assert.match(planSource, /phase-aware DB-layer runner completed; UI wiring not approved/);
   assert.match(planSource, /Production app UI does not currently call `importData\(\)`/);
+  assert.match(planSource, /The phase-aware import runner exists in `lib\/db\/import-runner\.ts`/);
   assert.match(planSource, /There is no mature import UI surface to attach classifier output to yet/);
   assert.match(planSource, /The next safe step is not UI wiring/);
 });
@@ -45,10 +47,11 @@ runTest('plan rejects brittle classifier integration paths', () => {
   assert.match(planSource, /Mount Classifier In `\/recovery` Immediately[\s\S]*Rejected/);
 });
 
-runTest('plan recommends phase-aware DB-layer orchestration before UI wiring', () => {
-  assert.match(planSource, /Extract import execution into a phase-aware internal service/);
+runTest('plan records phase-aware DB-layer orchestration before UI wiring', () => {
+  assert.match(planSource, /Keep import execution in the phase-aware DB-layer runner/);
   assert.match(planSource, /Keep the existing `importData\(jsonData\): Promise<void>` behavior compatible/);
-  assert.match(planSource, /add phase-aware import orchestration inside the DB layer, not UI/);
+  assert.match(planSource, /phase-aware import orchestration exists in the DB layer/);
+  assert.match(planSource, /add a UI-facing import wrapper around the completed DB-layer runner/);
   assert.match(planSource, /Only after that passes should a separate UI slice display classifier results/);
 });
 
@@ -62,7 +65,7 @@ runTest('plan keeps runtime mutation and browser profile verification out of thi
     /production recovery automation/,
     /Stop for explicit approval before:[\s\S]*adding a production import UI/,
     /Stop for explicit approval before:[\s\S]*changing `importData\(\)` runtime behavior/,
-    /Stop for explicit approval before:[\s\S]*introducing a phase-aware import runner/,
+    /Stop for explicit approval before:[\s\S]*introducing a UI-facing import wrapper/,
     /Stop for explicit approval before:[\s\S]*wiring classifier output into UI/,
   ]) {
     assert.match(planSource, blocked);
@@ -72,9 +75,11 @@ runTest('plan keeps runtime mutation and browser profile verification out of thi
 runTest('high-risk and import recovery plans record this design slice as complete', () => {
   assert.match(highRiskPlanSource, /Import UI Classifier Integration Design/);
   assert.match(highRiskPlanSource, /Status: completed as design and static guardrail work/);
+  assert.match(highRiskPlanSource, /Phase-Aware Import Runner[\s\S]*Status: completed as DB-layer runtime boundary work/);
   assert.match(highRiskPlanSource, /No production UI currently calls `importData\(\)`/);
   assert.match(importPlanSource, /Import UI Classifier Integration Design[\s\S]*Status: completed as design-only work/);
   assert.match(importPlanSource, /does not approve runtime UI wiring/);
+  assert.match(importPlanSource, /Phase-Aware Import Runner[\s\S]*Status: completed as DB-layer runtime boundary work/);
 });
 
 runTest('full test suite includes import UI classifier integration plan guardrail', () => {

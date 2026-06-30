@@ -2,7 +2,7 @@
 
 Date: 2026-06-30
 
-Status: design and guardrail slice only.
+Status: phase-aware DB-layer runner completed; UI wiring not approved.
 
 Scope: define how a future import UI may consume the import recovery outcome classifier without changing production import behavior now.
 
@@ -14,6 +14,7 @@ The current production codebase has these relevant pieces:
 
 - `importData(jsonData)` exists in `lib/db/index.ts`.
 - The import recovery outcome classifier exists in `lib/db/import-recovery-classifier.ts`.
+- The phase-aware import runner exists in `lib/db/import-runner.ts`.
 - The owner-only `/recovery` page has a read-only `Import Safety Status` panel.
 - Production app UI does not currently call `importData()`.
 - Current tests call `importData()` directly for rollback and boundary verification.
@@ -58,10 +59,10 @@ Therefore, a future UI must not classify outcomes by matching error strings.
 
 Recommended route when import UI is actually needed:
 
-1. Extract import execution into a phase-aware internal service.
+1. Keep import execution in the phase-aware DB-layer runner.
 2. Keep the existing `importData(jsonData): Promise<void>` behavior compatible for existing callers and tests.
-3. Add a new explicit result boundary for UI use, for example `runImportWithOutcome(jsonData)`.
-4. The new boundary should return or throw structured data containing:
+3. If a UI import surface is approved later, add a dedicated UI-facing wrapper around the runner.
+4. The UI-facing wrapper should return or throw structured data containing:
    - failed phase;
    - warning count;
    - original error;
@@ -103,27 +104,37 @@ Reason:
 - there is no active import operation context there;
 - showing classifier output without a real import attempt would be misleading.
 
-## 6. Safe Next Implementation Slice If Approved Later
+## 6. Completed Runtime Slice
+
+The first runtime slice is complete:
+
+- phase-aware import orchestration exists in the DB layer;
+- `importData()` still exposes the existing `Promise<void>` API;
+- existing callers still receive the original thrown error;
+- no UI consumes classifier output;
+- no import button or file picker was added;
+- no restore, repair, Supabase write, or production recovery automation was added.
+
+## 7. Safe Next Implementation Slice If Approved Later
 
 If a runtime slice is approved later, the smallest safe implementation should be:
 
-- add phase-aware import orchestration inside the DB layer, not UI;
+- add a UI-facing import wrapper around the completed DB-layer runner;
 - preserve the current `importData()` public behavior;
-- add tests for each phase failure mapping;
-- add source-order tests proving backup and transaction order is unchanged;
+- add tests proving each phase failure maps to UI-safe classifier output;
 - add static tests proving no UI import button is introduced in the same slice;
 - do not connect this to `/recovery` or settings UI yet.
 
 Only after that passes should a separate UI slice display classifier results.
 
-## 7. Decision Boundary
+## 8. Decision Boundary
 
 Stop for explicit approval before:
 
 - adding a production import UI;
 - changing `importData()` runtime behavior;
 - changing thrown error semantics;
-- introducing a phase-aware import runner;
+- introducing a UI-facing import wrapper;
 - wiring classifier output into UI;
 - testing against browser/profile IndexedDB;
 - adding rollback, restore, or repair automation.

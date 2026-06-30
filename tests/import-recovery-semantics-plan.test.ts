@@ -9,6 +9,7 @@ const projectRoot = join(__dirname, '..');
 const planPath = join(projectRoot, 'docs/IMPORT_RECOVERY_SEMANTICS_PLAN_2026_06_29.md');
 const highRiskPlanPath = join(projectRoot, 'docs/HIGH_RISK_SYNC_AND_DATA_EXECUTION_PLAN.md');
 const importSource = readFileSync(join(projectRoot, 'lib/db/index.ts'), 'utf8');
+const runnerSource = readFileSync(join(projectRoot, 'lib/db/import-runner.ts'), 'utf8');
 const recoveryPageSource = readFileSync(join(projectRoot, 'app/recovery/page.tsx'), 'utf8');
 const recoveryPanelSource = readFileSync(join(projectRoot, 'components/common/DatabaseRecoveryPanel.tsx'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
@@ -82,19 +83,48 @@ runTest('plan records read-only import safety status UI shell completion', () =>
 });
 
 runTest('importData source order matches documented safety semantics', () => {
-  const parseIndex = importSource.indexOf('const data: BackupData = parseBackupData(jsonData);');
-  const precheckIndex = importSource.indexOf('const preImportCheck = checkBackupIntegrity(data);');
-  const replayIndex = importSource.indexOf('const replayReadiness = validateBackupReplayReadiness(data);');
-  const backupIndex = importSource.indexOf('await createEmergencyBackupBeforeImport();');
-  const transactionIndex = importSource.indexOf("await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings], async () => {");
-  const postImportIndex = importSource.indexOf('const postImportData: BackupData');
+  assert.match(importSource, /await runPhaseAwareImport\(jsonData/);
 
-  assert.ok(parseIndex > -1, 'parseBackupData call must exist');
+  const parseIndex = runnerSource.indexOf("runPhase('parse'");
+  const precheckIndex = runnerSource.indexOf("runPhase('integrity_precheck'");
+  const replayIndex = runnerSource.indexOf("runPhase('replay_readiness'");
+  const backupIndex = runnerSource.indexOf("runPhase('emergency_backup'");
+  const transactionIndex = runnerSource.indexOf("runPhase('replacement_transaction'");
+  const postImportIndex = runnerSource.indexOf("runPhase('post_import_validation'");
+
+  assert.ok(parseIndex > -1, 'parse phase must exist');
   assert.ok(precheckIndex > parseIndex, 'integrity precheck must run after parse');
   assert.ok(replayIndex > precheckIndex, 'replay readiness must run after integrity precheck');
   assert.ok(backupIndex > replayIndex, 'emergency backup must run after prechecks');
   assert.ok(transactionIndex > backupIndex, 'replacement transaction must run after emergency backup');
   assert.ok(postImportIndex > transactionIndex, 'post-import validation must run after replacement transaction');
+});
+
+runTest('importData replacement transaction still stays inside one helper transaction block', () => {
+  const transactionIndex = importSource.indexOf("await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings], async () => {");
+
+  assert.ok(transactionIndex > -1, 'replacement transaction must exist');
+  for (const operation of [
+    'await db.events.clear();',
+    'await db.markets.clear();',
+    'await db.products.clear();',
+    'await db.dailyStats.clear();',
+    'await db.settings.clear();',
+    'await db.events.bulkAdd(data.events);',
+    'await db.markets.bulkAdd(data.markets);',
+    'await db.products.bulkAdd(data.products);',
+    'await db.dailyStats.bulkAdd(data.dailyStats);',
+    'await db.settings.bulkAdd(data.settings);',
+  ]) {
+    assert.match(importSource, new RegExp(operation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+});
+
+runTest('plan records phase-aware import runner completion without UI wiring', () => {
+  assert.match(planSource, /Phase-Aware Import Runner[\s\S]*Status: completed as DB-layer runtime boundary work/);
+  assert.match(planSource, /`importData\(jsonData\): Promise<void>` remains the public compatibility API/);
+  assert.match(planSource, /The runner is not mounted in UI/);
+  assert.match(planSource, /Still not approved:[\s\S]*Wiring classifier output into UI/);
 });
 
 runTest('existing recovery page remains the owner-gated recovery surface', () => {
@@ -115,6 +145,7 @@ runTest('high-risk plan records semantics slice without approving runtime behavi
 
 runTest('full test suite includes import recovery semantics guardrail', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/import-runner\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-safety-status-ui\.test\.ts/);
 });
 

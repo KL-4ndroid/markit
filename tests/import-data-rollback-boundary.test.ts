@@ -9,6 +9,7 @@ type TestFn = () => Promise<void> | void;
 const tests: Array<{ name: string; fn: TestFn }> = [];
 const projectRoot = join(__dirname, '..');
 const importSource = readFileSync(join(projectRoot, 'lib/db/index.ts'), 'utf8');
+const runnerSource = readFileSync(join(projectRoot, 'lib/db/import-runner.ts'), 'utf8');
 
 const now = 1_700_000_000_000;
 
@@ -171,8 +172,10 @@ runTest('import replacement clear and bulkAdd operations stay inside one transac
     assert.match(transactionBlock, new RegExp(operation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 
-  const postImportValidation = importSource.indexOf('const postImportData: BackupData', transactionEnd);
-  assert.ok(postImportValidation > transactionEnd, 'post-import validation should run after transaction completion');
+  const transactionPhase = runnerSource.indexOf("runPhase('replacement_transaction'");
+  const postImportValidationPhase = runnerSource.indexOf("runPhase('post_import_validation'");
+  assert.ok(transactionPhase > -1, 'replacement transaction phase should exist');
+  assert.ok(postImportValidationPhase > transactionPhase, 'post-import validation should run after transaction completion');
 });
 
 async function main(): Promise<void> {

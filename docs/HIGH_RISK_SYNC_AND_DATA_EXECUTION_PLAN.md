@@ -417,3 +417,30 @@ Still not approved:
 - Wiring classifier output into UI.
 - Browser/profile IndexedDB mutation verification.
 - Automatic rollback, restore, repair, or production recovery behavior.
+
+## 13. Phase-Aware Import Runner
+
+Status: completed as DB-layer runtime boundary work.
+
+Result record:
+
+- `lib/db/import-runner.ts`
+- `tests/import-runner.test.ts`
+
+Safety result:
+
+- The runner records explicit import phases for future classifier consumers.
+- Existing `importData(jsonData): Promise<void>` remains the public import API.
+- Existing `importData()` callers still receive the original thrown error instead of `ImportOutcomeError`.
+- Import replacement remains inside the existing Dexie transaction path.
+- No production UI calls the runner.
+- No production UI calls `importData()`.
+- No browser/profile IndexedDB mutation verification was added.
+- No Supabase write, restore, repair, or production recovery automation was added.
+
+Still not approved:
+
+- Adding a production import UI.
+- Wiring classifier output into UI.
+- Browser/profile IndexedDB mutation verification.
+- Automatic rollback, restore, repair, or production recovery behavior.

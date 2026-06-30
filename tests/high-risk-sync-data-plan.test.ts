@@ -83,12 +83,22 @@ runTest('plan records import safety status UI shell without approving recovery a
   assert.match(planSource, /Still not approved:[\s\S]*Automatic rollback, restore, repair, or production recovery behavior/);
 });
 
+runTest('plan records phase-aware import runner without approving UI wiring', () => {
+  assert.match(planSource, /Phase-Aware Import Runner/);
+  assert.match(planSource, /Status: completed as DB-layer runtime boundary work/);
+  assert.match(planSource, /Existing `importData\(jsonData\): Promise<void>` remains the public import API/);
+  assert.match(planSource, /Existing `importData\(\)` callers still receive the original thrown error instead of `ImportOutcomeError`/);
+  assert.match(planSource, /No production UI calls the runner/);
+  assert.match(planSource, /Still not approved:[\s\S]*Wiring classifier output into UI/);
+});
+
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-indexeddb-rollback\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-classifier\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/import-runner\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-safety-status-ui\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-ui-classifier-integration-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);

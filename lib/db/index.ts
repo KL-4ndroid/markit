@@ -23,6 +23,10 @@ import {
   type BackupData,
   type IntegrityResult,
 } from './integrity';
+import {
+  ImportOutcomeError,
+  runPhaseAwareImport,
+} from './import-runner';
 
 export type DatabaseInitResult =
   | { ok: true; integrity: IntegrityResult }
@@ -455,63 +459,84 @@ async function createEmergencyBackupBeforeImport(): Promise<void> {
 /**
  * 匯入資料庫資料（用於還原備份）
  */
+function runPreImportIntegrityCheck(data: BackupData): IntegrityResult {
+  const preImportCheck = checkBackupIntegrity(data);
+
+  if (!preImportCheck.ok) {
+    throw new Error(`備份資料完整性檢查失敗：\n${preImportCheck.errors.join('\n')}`);
+  }
+
+  return preImportCheck;
+}
+
+function runReplayReadinessCheck(data: BackupData): IntegrityResult {
+  const replayReadiness = validateBackupReplayReadiness(data);
+
+  if (!replayReadiness.ok) {
+    throw new Error(`Backup events are not safe to replay before import:\n${replayReadiness.errors.join('\n')}`);
+  }
+
+  return replayReadiness;
+}
+
+async function replaceImportedData(data: BackupData): Promise<void> {
+  // 清空現有資料並匯入
+  await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings], async () => {
+    await db.events.clear();
+    await db.markets.clear();
+    await db.products.clear();
+    await db.dailyStats.clear();
+    await db.settings.clear();
+    
+    await db.events.bulkAdd(data.events);
+    await db.markets.bulkAdd(data.markets);
+    await db.products.bulkAdd(data.products);
+    await db.dailyStats.bulkAdd(data.dailyStats);
+    await db.settings.bulkAdd(data.settings);
+  });
+}
+
+async function readPostImportData(data: BackupData): Promise<BackupData> {
+  return {
+    version: data.version,
+    exportedAt: data.exportedAt,
+    events: await db.events.toArray(),
+    markets: await db.markets.toArray(),
+    products: await db.products.toArray(),
+    dailyStats: await db.dailyStats.toArray(),
+    settings: await db.settings.toArray(),
+  };
+}
+
+function runPostImportIntegrityCheck(data: BackupData): IntegrityResult {
+  const postImportCheck = checkBackupIntegrity(data);
+  if (!postImportCheck.ok) {
+    throw new Error(`匯入後資料完整性檢查失敗：\n${postImportCheck.errors.join('\n')}`);
+  }
+
+  return postImportCheck;
+}
+
 export async function importData(jsonData: string): Promise<void> {
   try {
-    const data: BackupData = parseBackupData(jsonData);
-    const preImportCheck = checkBackupIntegrity(data);
-
-    if (!preImportCheck.ok) {
-      throw new Error(`備份資料完整性檢查失敗：\n${preImportCheck.errors.join('\n')}`);
-    }
-
-    const replayReadiness = validateBackupReplayReadiness(data);
-    if (!replayReadiness.ok) {
-      throw new Error(`Backup events are not safe to replay before import:\n${replayReadiness.errors.join('\n')}`);
-    }
-
-    await createEmergencyBackupBeforeImport();
-    
-    // 清空現有資料並匯入
-    await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings], async () => {
-      await db.events.clear();
-      await db.markets.clear();
-      await db.products.clear();
-      await db.dailyStats.clear();
-      await db.settings.clear();
-      
-      await db.events.bulkAdd(data.events);
-      await db.markets.bulkAdd(data.markets);
-      await db.products.bulkAdd(data.products);
-      await db.dailyStats.bulkAdd(data.dailyStats);
-      await db.settings.bulkAdd(data.settings);
+    await runPhaseAwareImport(jsonData, {
+      parseBackupData,
+      runPreImportIntegrityCheck,
+      runReplayReadinessCheck,
+      createEmergencyBackupBeforeImport,
+      replaceImportedData,
+      readPostImportData,
+      runPostImportIntegrityCheck,
+      onWarnings: (warnings) => {
+        console.warn('⚠️ 資料匯入完成，但有非阻擋警告:', warnings);
+      },
     });
-
-    const postImportData: BackupData = {
-      version: data.version,
-      exportedAt: data.exportedAt,
-      events: await db.events.toArray(),
-      markets: await db.markets.toArray(),
-      products: await db.products.toArray(),
-      dailyStats: await db.dailyStats.toArray(),
-      settings: await db.settings.toArray(),
-    };
-    const postImportCheck = checkBackupIntegrity(postImportData);
-    if (!postImportCheck.ok) {
-      throw new Error(`匯入後資料完整性檢查失敗：\n${postImportCheck.errors.join('\n')}`);
-    }
-    
-    if (preImportCheck.warnings.length > 0 || replayReadiness.warnings.length > 0 || postImportCheck.warnings.length > 0) {
-      console.warn('⚠️ 資料匯入完成，但有非阻擋警告:', [
-        ...preImportCheck.warnings,
-        ...replayReadiness.warnings,
-        ...postImportCheck.warnings,
-      ]);
-    }
 
     console.log('✅ 資料匯入完成，並已通過完整性檢查');
   } catch (error) {
-    console.error('❌ 匯入資料失敗：', error);
-    throw error;
+    const originalError = error instanceof ImportOutcomeError ? error.originalError : error;
+    console.error('❌ 匯入資料失敗：', originalError);
+    throw originalError;
   }
 }
 

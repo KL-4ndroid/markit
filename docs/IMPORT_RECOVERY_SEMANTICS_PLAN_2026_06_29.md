@@ -135,7 +135,7 @@ If approved later, the only acceptable setup is:
 
 Phase 1 and the first read-only Phase 2 shell are complete.
 
-The next runtime decision is whether to introduce phase-aware import orchestration for future UI use. That decision is not approved by this document.
+Phase-aware import orchestration now exists as a DB-layer runner. The next runtime decision is whether any UI should consume its classifier output. That decision is not approved by this document.
 
 ## 8. Pure Import Outcome Classifier
 
@@ -182,8 +182,31 @@ Safety boundaries:
 Still not approved:
 
 - Adding a production import UI.
-- Changing `importData()` runtime behavior.
-- Introducing a phase-aware import runner.
+- Wiring classifier output into UI.
+- Browser/profile IndexedDB mutation verification.
+- Automatic rollback, restore, repair, or production recovery behavior.
+
+## 10. Phase-Aware Import Runner
+
+Status: completed as DB-layer runtime boundary work.
+
+Result record:
+
+- `lib/db/import-runner.ts`
+- `tests/import-runner.test.ts`
+
+Safety boundaries:
+
+- The runner maps explicit import phases to classifier output.
+- `importData(jsonData): Promise<void>` remains the public compatibility API.
+- `importData()` unwraps runner errors and rethrows the original error for existing callers.
+- The runner is not mounted in UI.
+- The runner does not write Supabase.
+- The runner does not add restore or repair behavior.
+
+Still not approved:
+
+- Adding a production import UI.
 - Wiring classifier output into UI.
 - Browser/profile IndexedDB mutation verification.
 - Automatic rollback, restore, repair, or production recovery behavior.
