@@ -132,3 +132,30 @@ If approved later, the only acceptable setup is:
 Continue only with Phase 1 until explicitly approved otherwise.
 
 After Phase 1 passes, the next decision should be whether to implement a pure import-outcome classifier. That classifier should be tested before any UI consumes it.
+
+## 8. Pure Import Outcome Classifier
+
+Status: completed as non-runtime work.
+
+Result record:
+
+- `lib/db/import-recovery-classifier.ts`
+- `tests/import-recovery-classifier.test.ts`
+
+Safety boundaries:
+
+- The classifier accepts explicit import phases and outcome metadata.
+- The classifier does not parse error-message strings.
+- The classifier does not call `importData()`.
+- The classifier does not read or write IndexedDB.
+- The classifier does not write Supabase.
+- The classifier does not mount in UI.
+- The classifier never recommends automatic restore.
+
+Still not approved:
+
+- Connecting the classifier to import UI.
+- Showing import safety status in `/recovery`.
+- Reading emergency-backup metadata for UI display.
+- Browser/profile IndexedDB mutation verification.
+- Automatic rollback, restore, repair, or production recovery behavior.

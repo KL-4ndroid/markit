@@ -320,7 +320,7 @@ Still not approved:
 
 ## 10. Current Import/Recovery Continuation Decision
 
-Status: Phase 1 complete; continue only with a pure classifier design slice if explicitly approved.
+Status: Phase 1 complete; pure classifier design slice completed as non-runtime work.
 
 Current decision:
 
@@ -343,14 +343,14 @@ What is already complete:
   - `success`.
 - Existing `/recovery` remains the owner-only maintenance surface.
 
-Recommended next low-risk slice:
+Completed low-risk continuation slice:
 
-- Add a pure import-outcome classifier design and tests only.
-- The classifier must not call `importData()`.
-- The classifier must not read or write IndexedDB.
-- The classifier must not write Supabase.
-- The classifier must not mount in UI.
-- The classifier should define how future code maps known import phases/errors into the documented outcome states.
+- Added a pure import-outcome classifier design and tests only.
+- The classifier does not call `importData()`.
+- The classifier does not read or write IndexedDB.
+- The classifier does not write Supabase.
+- The classifier does not mount in UI.
+- The classifier defines how future code maps known import phases/errors into the documented outcome states.
 
 Deferred until a separate decision:
 

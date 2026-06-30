@@ -58,16 +58,16 @@ runTest('plan approves only documentation importData boundary simulator worker-m
   assert.match(planSource, /Not included:[\s\S]*Production data changes/);
 });
 
-runTest('plan records import recovery continuation boundary after Phase 1', () => {
+runTest('plan records import recovery classifier completion and next boundary', () => {
   assert.match(planSource, /Current Import\/Recovery Continuation Decision/);
-  assert.match(planSource, /Phase 1 complete; continue only with a pure classifier design slice if explicitly approved/);
+  assert.match(planSource, /Phase 1 complete; pure classifier design slice completed as non-runtime work/);
   assert.match(planSource, /reinforcement of the existing `importData\(\)` and `\/recovery` safety semantics/);
   assert.match(planSource, /Do not create a second backup, restore, import, or recovery system/);
   assert.match(planSource, /Do not add a new recovery page/);
-  assert.match(planSource, /Recommended next low-risk slice:[\s\S]*pure import-outcome classifier design and tests only/);
-  assert.match(planSource, /The classifier must not call `importData\(\)`/);
-  assert.match(planSource, /The classifier must not read or write IndexedDB/);
-  assert.match(planSource, /The classifier must not mount in UI/);
+  assert.match(planSource, /Completed low-risk continuation slice:[\s\S]*pure import-outcome classifier design and tests only/);
+  assert.match(planSource, /The classifier does not call `importData\(\)`/);
+  assert.match(planSource, /The classifier does not read or write IndexedDB/);
+  assert.match(planSource, /The classifier does not mount in UI/);
   assert.match(planSource, /Deferred until a separate decision:[\s\S]*`Import Safety Status` inside existing `\/recovery`/);
   assert.match(planSource, /Deferred until a separate decision:[\s\S]*Browser\/profile IndexedDB verification/);
 });
@@ -77,6 +77,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-indexeddb-rollback\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-classifier\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });
