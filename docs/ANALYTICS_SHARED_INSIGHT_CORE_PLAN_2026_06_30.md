@@ -2,7 +2,7 @@
 
 Date: 2026-06-30
 
-Status: Slice B completed; Slice C and later remain deferred.
+Status: Slice C completed; Slice D and later remain deferred.
 
 Trigger: remind the user to implement this after the current settlement report original task is completed. The current original task means finishing the settlement report preview/spec work that depends on the report model and distortion-risk model.
 
@@ -139,7 +139,14 @@ Stop condition for further work: any type rename that forces broad app changes.
 
 ### Slice C: Pure Helper Extraction
 
-Move safe pure helpers out of settlement report:
+Status: completed as pure helper extraction.
+
+Result record:
+
+- `lib/analytics/insight-quality.ts`
+- `tests/analytics-insight-quality.test.ts`
+
+Moved safe pure helpers out of settlement report:
 
 - finite number helpers;
 - ratio/clamp helpers;
@@ -152,7 +159,17 @@ Move safe pure helpers out of settlement report:
 
 Risk: low to medium.
 
-Stop condition: helper extraction starts changing model output.
+Safety result:
+
+- Numeric finite/clamp/ratio helpers are shared.
+- Market inactive, ongoing/future, partial-period helpers are shared.
+- Daily-stat key/id and outlier helpers are shared.
+- Projection mismatch helper is shared.
+- `settlement-report.ts` consumes the shared helpers through alias imports.
+- Settlement report tests still verify output equivalence.
+- No scoring logic, runtime data source, analytics UI, report preview UI, PDF, Excel, Supabase, IndexedDB, recovery, or sync behavior was changed.
+
+Stop condition for further work: helper extraction starts changing model output.
 
 ### Slice D: Shared Insight Quality Model
 

@@ -36,13 +36,15 @@ function runTest(name: string, fn: TestFn): void {
 
 console.log('\n=== Analytics shared insight core plan ===');
 
-runTest('plan records Slice B completion after settlement report original task', () => {
+runTest('plan records Slice C completion after settlement report original task', () => {
   assert.match(planSource, /# Analytics Shared Insight Core Plan/);
-  assert.match(planSource, /Status: Slice B completed; Slice C and later remain deferred/);
+  assert.match(planSource, /Status: Slice C completed; Slice D and later remain deferred/);
   assert.match(planSource, /Trigger: remind the user to implement this after the current settlement report original task is completed/);
   assert.match(planSource, /settlement report preview\/spec work/);
   assert.match(planSource, /Slice B: Pure Type Extraction[\s\S]*Status: completed as pure type extraction/);
+  assert.match(planSource, /Slice C: Pure Helper Extraction[\s\S]*Status: completed as pure helper extraction/);
   assert.match(planSource, /lib\/analytics\/insight-quality\.ts/);
+  assert.match(planSource, /tests\/analytics-insight-quality\.test\.ts/);
 });
 
 runTest('plan defines shared extraction without turning analytics into settlement report', () => {
@@ -75,13 +77,19 @@ runTest('plan requires equivalence and blocks runtime expansion', () => {
   assert.match(planSource, /Stop for approval before:[\s\S]*adding Supabase or IndexedDB reads/);
 });
 
-runTest('shared insight quality module contains only pure exported types', () => {
+runTest('shared insight quality module contains pure exported types and helpers', () => {
   assert.match(insightQualitySource, /export type InsightSignalStatus = 'available' \| 'limited' \| 'unavailable'/);
   assert.match(insightQualitySource, /export type InsightConfidence = 'high' \| 'medium' \| 'low'/);
   assert.match(insightQualitySource, /export type InsightLimitationSeverity = 'info' \| 'warning'/);
   assert.match(insightQualitySource, /export type InsightLimitationCode =/);
   assert.match(insightQualitySource, /export type InsightAffectedSection =/);
   assert.match(insightQualitySource, /export type InsightLimitation =/);
+  assert.match(insightQualitySource, /export function finiteInsightNumber/);
+  assert.match(insightQualitySource, /export function ratioInsightNumbers/);
+  assert.match(insightQualitySource, /export function isInactiveInsightMarket/);
+  assert.match(insightQualitySource, /export function hasOutlierDailyStatValues/);
+  assert.match(insightQualitySource, /export function hasMarketProjectionMismatch/);
+  assert.match(insightQualitySource, /export function isPartialPeriodInsightMarket/);
   assert.doesNotMatch(insightQualitySource, /from ['"]react|use[A-Z]|@\/lib\/db|Dexie|db\.|supabase|window\.|document\.|pdf|xlsx|csv/i);
 });
 
@@ -91,6 +99,9 @@ runTest('settlement report aliases shared types without renaming public report t
   assert.match(settlementReportSource, /export type SettlementReportSignalStatus = InsightSignalStatus/);
   assert.match(settlementReportSource, /export type SettlementReportLimitationCode = InsightLimitationCode/);
   assert.match(settlementReportSource, /export type SettlementReportLimitation = InsightLimitation/);
+  assert.match(settlementReportSource, /finiteInsightNumber as finiteNumber/);
+  assert.match(settlementReportSource, /hasMarketProjectionMismatch as hasProjectionMismatch/);
+  assert.match(settlementReportSource, /hasOutlierDailyStatValues as hasOutlierValues/);
 });
 
 runTest('settlement report plans remain the current original task before shared analytics extraction', () => {
@@ -103,6 +114,7 @@ runTest('settlement report plans remain the current original task before shared 
 
 runTest('full test suite includes analytics shared insight core plan guardrail', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/analytics-shared-insight-core-plan\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/analytics-insight-quality\.test\.ts/);
 });
 
 function main(): void {

@@ -1,9 +1,20 @@
 import { hasCapability, type RoleCapabilities } from '@/lib/permissions/role-capabilities';
-import type {
-  InsightConfidence,
-  InsightLimitation,
-  InsightLimitationCode,
-  InsightSignalStatus,
+import {
+  clampInsightNumber as clamp,
+  finiteInsightNumber as finiteNumber,
+  getDailyStatInsightId as getDailyStatId,
+  getDailyStatInsightKey as getDailyStatKey,
+  hasMarketProjectionMismatch as hasProjectionMismatch,
+  hasOutlierDailyStatValues as hasOutlierValues,
+  isInactiveInsightMarket as isInactiveSettlementMarket,
+  isOngoingOrFutureInsightMarket as isOngoingOrFutureMarket,
+  isPartialPeriodInsightMarket,
+  optionalFiniteInsightNumber as optionalFiniteNumber,
+  ratioInsightNumbers as ratio,
+  type InsightConfidence,
+  type InsightLimitation,
+  type InsightLimitationCode,
+  type InsightSignalStatus,
 } from '@/lib/analytics/insight-quality';
 import type { DailyStats, Market, Product } from '@/types/db';
 
@@ -175,14 +186,6 @@ export type BuildSettlementReportModelInput = {
   generatedAtDate?: string;
 };
 
-function finiteNumber(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
-}
-
-function optionalFiniteNumber(value: unknown): number | null {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
-
 function isDateInRange(date: string, startDate: string, endDate: string): boolean {
   return date >= startDate && date <= endDate;
 }
@@ -211,52 +214,6 @@ function getFixedMarketCost(market: Market): number {
   );
 }
 
-function isInactiveSettlementMarket(market: Market): boolean {
-  return market.isDeleted === true || market.status === 'cancelled' || market.status === 'postponed';
-}
-
-function isOngoingOrFutureMarket(market: Market, generatedAtDate?: string): boolean {
-  if (market.status === 'ongoing') return true;
-  if (!generatedAtDate) return false;
-  return market.startDate > generatedAtDate || market.endDate > generatedAtDate;
-}
-
-function getDailyStatKey(stat: DailyStats): string {
-  return `${stat.marketId ?? ''}:${stat.date}`;
-}
-
-function getDailyStatId(stat: DailyStats): string {
-  return stat.id === undefined ? getDailyStatKey(stat) : String(stat.id);
-}
-
-function hasOutlierValues(stat: DailyStats): boolean {
-  const revenue = finiteNumber(stat.revenue);
-  const cost = finiteNumber(stat.cost);
-  const profit = finiteNumber(stat.profit);
-  const dealCount = finiteNumber(stat.dealCount);
-  const interactionCount = finiteNumber(stat.touchCount) + finiteNumber(stat.inquiryCount);
-
-  return (
-    revenue < 0 ||
-    cost < 0 ||
-    dealCount < 0 ||
-    interactionCount < 0 ||
-    Math.abs(profit) > Math.max(revenue + cost, 1) * 3 ||
-    revenue > 1_000_000 ||
-    dealCount > 1_000 ||
-    interactionCount > 10_000
-  );
-}
-
-function hasProjectionMismatch(market: Market, row: SettlementMarketRow): boolean {
-  const projectedRevenue = optionalFiniteNumber(market.totalRevenue);
-  const projectedDeals = optionalFiniteNumber(market.totalDeals);
-  const revenueMismatch = projectedRevenue !== null && Math.abs(projectedRevenue - row.revenue) > 1;
-  const dealMismatch = projectedDeals !== null && Math.abs(projectedDeals - row.dealCount) > 0.01;
-
-  return revenueMismatch || dealMismatch;
-}
-
 function getCommissionFee(market: Market, revenue: number): number {
   return revenue * (finiteNumber(market.commissionRate) / 100);
 }
@@ -265,16 +222,8 @@ function sumNumbers(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0);
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
 function roundScore(value: number): number {
   return Math.round(clamp(value, 0, 100));
-}
-
-function ratio(numerator: number, denominator: number): number {
-  return denominator > 0 ? clamp(numerator / denominator, 0, 1) : 0;
 }
 
 function scoreFromThresholds(
@@ -941,7 +890,7 @@ export function buildSettlementReportModel({
     .map(getMarketId)
     .filter(Boolean);
   const partialPeriodMarketIds = marketsInPeriod
-    .filter(market => market.startDate < period.startDate || market.endDate > period.endDate)
+    .filter(market => isPartialPeriodInsightMarket(market, period.startDate, period.endDate))
     .map(getMarketId)
     .filter(Boolean);
   const projectionMismatchMarketIds = marketsInPeriod
