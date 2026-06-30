@@ -444,3 +444,40 @@ Still not approved:
 - Wiring classifier output into UI.
 - Browser/profile IndexedDB mutation verification.
 - Automatic rollback, restore, repair, or production recovery behavior.
+
+## 14. Cloud Rebuild First Recovery Direction
+
+Status: completed as plan update and static guardrail work.
+
+Result record:
+
+- `docs/CLOUD_REBUILD_FIRST_RECOVERY_PLAN_2026_06_30.md`
+- `tests/cloud-rebuild-first-recovery-plan.test.ts`
+
+Current product decision:
+
+- Cloud data is the primary trusted source.
+- Local IndexedDB is fast cache and offline temporary state.
+- Local backup is not a primary user-facing product feature.
+- Emergency local backup remains only as an internal guardrail before high-risk local mutation until cloud rebuild is proven safe.
+- If local data is corrupted, the preferred user-facing recovery direction is to clear local data and resync from cloud.
+- CSV / Excel export is a reporting feature, not a backup or recovery feature.
+
+Reclassified prior work:
+
+- Import recovery classifier remains useful for developer/emergency import safety.
+- Phase-aware import runner remains useful as structured emergency import infrastructure.
+- Import Safety Status remains secondary safety information in the owner-only recovery surface.
+- Pending operations diagnostics become a required pre-clear safety check before any local reset.
+- Cache replacement preview and apply simulator become the basis for cloud rebuild preview.
+- Replace-cache execute remains blocked.
+
+Still not approved:
+
+- Clearing local IndexedDB.
+- Running replace-cache execute.
+- Changing pull sync to replace local cache.
+- Adding automatic rebuild after login.
+- Broadening `/recovery` tools to staff roles.
+- Exposing production import UI.
+- Exporting sensitive owner-only CSV / Excel fields to manager, operator, or viewer roles.

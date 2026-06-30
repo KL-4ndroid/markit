@@ -137,6 +137,15 @@ Phase 1 and the first read-only Phase 2 shell are complete.
 
 Phase-aware import orchestration now exists as a DB-layer runner. The next runtime decision is whether any UI should consume its classifier output. That decision is not approved by this document.
 
+Updated product direction after the cloud-rebuild-first decision:
+
+- Import recovery remains secondary developer/emergency safety infrastructure.
+- Local emergency backup is not the primary user-facing recovery path.
+- The preferred user-facing recovery direction for corrupted local data is clear local data and resync from cloud, after pending operations and local-only data are checked.
+- CSV / Excel export is a reporting feature, not an import backup or recovery substitute.
+
+This document must not be used to justify a production import UI, automatic local restore, or a second backup/recovery system.
+
 ## 8. Pure Import Outcome Classifier
 
 Status: completed as non-runtime work.

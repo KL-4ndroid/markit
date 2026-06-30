@@ -92,6 +92,22 @@ runTest('plan records phase-aware import runner without approving UI wiring', ()
   assert.match(planSource, /Still not approved:[\s\S]*Wiring classifier output into UI/);
 });
 
+runTest('plan records cloud rebuild first direction without approving destructive recovery', () => {
+  assert.match(planSource, /Cloud Rebuild First Recovery Direction/);
+  assert.match(planSource, /Status: completed as plan update and static guardrail work/);
+  assert.match(planSource, /Cloud data is the primary trusted source/);
+  assert.match(planSource, /Local IndexedDB is fast cache and offline temporary state/);
+  assert.match(planSource, /Local backup is not a primary user-facing product feature/);
+  assert.match(planSource, /CSV \/ Excel export is a reporting feature, not a backup or recovery feature/);
+  assert.match(planSource, /Pending operations diagnostics become a required pre-clear safety check/);
+  assert.match(planSource, /Cache replacement preview and apply simulator become the basis for cloud rebuild preview/);
+  assert.match(planSource, /Replace-cache execute remains blocked/);
+  assert.match(planSource, /Still not approved:[\s\S]*Clearing local IndexedDB/);
+  assert.match(planSource, /Still not approved:[\s\S]*Running replace-cache execute/);
+  assert.match(planSource, /Still not approved:[\s\S]*Adding automatic rebuild after login/);
+  assert.match(planSource, /Still not approved:[\s\S]*Exporting sensitive owner-only CSV \/ Excel fields/);
+});
+
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
@@ -101,6 +117,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/import-runner\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-safety-status-ui\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-ui-classifier-integration-plan\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-first-recovery-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });
