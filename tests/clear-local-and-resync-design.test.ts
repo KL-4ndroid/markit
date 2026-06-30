@@ -123,8 +123,16 @@ runTest('cloud rebuild plan and high-risk plan record step 2 completion', () => 
   assert.match(highRiskPlanSource, /Still not approved:[\s\S]*Calling `clearLocalDataAndPullFromCloud\(\)` from UI/);
 });
 
+runTest('clear local design records pending operations pre-clear dependency', () => {
+  assert.match(designSource, /Step 3 Dependency/);
+  assert.match(designSource, /docs\/PENDING_OPERATIONS_PRE_CLEAR_CHECK_DESIGN_2026_06_30\.md/);
+  assert.match(designSource, /tests\/pending-operations-pre-clear-check-design\.test\.ts/);
+  assert.match(designSource, /A blocked or unknown pending-operation report blocks any future clear-local execute decision/);
+});
+
 runTest('full test suite includes clear local and resync design guardrail', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
 });
 
 function main(): void {

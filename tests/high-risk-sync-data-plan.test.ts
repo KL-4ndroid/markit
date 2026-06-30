@@ -121,6 +121,22 @@ runTest('plan records clear local and resync design without approving execution'
   assert.match(planSource, /Still not approved:[\s\S]*Manager or staff execute/);
 });
 
+runTest('plan records pending operations pre-clear design without approving mutation', () => {
+  assert.match(planSource, /Pending Operations Pre-Clear Check Design/);
+  assert.match(planSource, /Status: completed as design and static guardrail work/);
+  assert.match(planSource, /docs\/PENDING_OPERATIONS_PRE_CLEAR_CHECK_DESIGN_2026_06_30\.md/);
+  assert.match(planSource, /future pre-clear check is read-only/);
+  assert.match(planSource, /blocks local clear on unresolved, retryable, failed, blocked, unknown, missing-final-event, or final-event-mismatch pending rows/);
+  assert.match(planSource, /diagnostics can display rows, but pre-clear decides whether local reset is blocked/);
+  assert.match(planSource, /Owner pre-clear must include both owner-created and staff-created rows/);
+  assert.match(planSource, /Manager remains preview-only/);
+  assert.match(planSource, /A clean report only permits moving to cloud rebuild preview/);
+  assert.match(planSource, /Still not approved:[\s\S]*Pending operation discard/);
+  assert.match(planSource, /Still not approved:[\s\S]*Pending operation drain or retry/);
+  assert.match(planSource, /Still not approved:[\s\S]*Worker or automatic retry/);
+  assert.match(planSource, /Still not approved:[\s\S]*Local IndexedDB deletion/);
+});
+
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
@@ -132,6 +148,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/import-ui-classifier-integration-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-first-recovery-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });

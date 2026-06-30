@@ -507,3 +507,31 @@ Still not approved:
 - Manager or staff execute.
 - Pending operation discard.
 - Supabase mutation.
+
+## 16. Pending Operations Pre-Clear Check Design
+
+Status: completed as design and static guardrail work.
+
+Result record:
+
+- `docs/PENDING_OPERATIONS_PRE_CLEAR_CHECK_DESIGN_2026_06_30.md`
+- `tests/pending-operations-pre-clear-check-design.test.ts`
+
+Safety result:
+
+- The future pre-clear check is read-only and blocks local clear on unresolved, retryable, failed, blocked, unknown, missing-final-event, or final-event-mismatch pending rows.
+- The report is stricter than diagnostics: diagnostics can display rows, but pre-clear decides whether local reset is blocked.
+- Owner pre-clear must include both owner-created and staff-created rows in owned markets.
+- Manager remains preview-only and cannot approve clearing unrelated owner cache.
+- A clean report only permits moving to cloud rebuild preview; it does not approve deletion or replace-cache execute.
+
+Still not approved:
+
+- Pending operation discard.
+- Pending operation drain or retry.
+- Stale processing reset.
+- Cleanup.
+- Worker or automatic retry.
+- Local IndexedDB deletion.
+- Replace-cache execute.
+- Supabase mutation.

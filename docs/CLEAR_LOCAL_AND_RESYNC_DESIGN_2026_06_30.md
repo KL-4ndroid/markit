@@ -141,3 +141,12 @@ Still not approved:
 - manager/staff execute;
 - pending operation discard;
 - Supabase mutation.
+
+## 9. Step 3 Dependency
+
+The pending operations pre-clear check is now defined in:
+
+- `docs/PENDING_OPERATIONS_PRE_CLEAR_CHECK_DESIGN_2026_06_30.md`
+- `tests/pending-operations-pre-clear-check-design.test.ts`
+
+Clear-local-and-resync preview must treat that report as a required dependency. A blocked or unknown pending-operation report blocks any future clear-local execute decision.

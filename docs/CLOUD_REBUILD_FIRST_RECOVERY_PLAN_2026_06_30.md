@@ -77,6 +77,13 @@ Not approved:
 
 ### Step 3: Pending Operations Pre-Clear Check
 
+Status: completed as design and static guardrail work.
+
+Result record:
+
+- `docs/PENDING_OPERATIONS_PRE_CLEAR_CHECK_DESIGN_2026_06_30.md`
+- `tests/pending-operations-pre-clear-check-design.test.ts`
+
 Goal:
 
 - Define and later implement a read-only pre-clear report.
@@ -87,6 +94,16 @@ The report must block local clear if any of these exist:
 - pending operations in `queued`, `processing`, or retryable failure states;
 - local-only checklist, field note, deal, or interaction writes;
 - unknown operation types.
+
+Not approved:
+
+- discard;
+- drain;
+- retry;
+- stale reset;
+- cleanup;
+- worker;
+- local IndexedDB deletion.
 
 ### Step 4: Cloud Rebuild Preview
 
