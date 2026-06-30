@@ -58,6 +58,20 @@ runTest('plan approves only documentation importData boundary simulator worker-m
   assert.match(planSource, /Not included:[\s\S]*Production data changes/);
 });
 
+runTest('plan records import recovery continuation boundary after Phase 1', () => {
+  assert.match(planSource, /Current Import\/Recovery Continuation Decision/);
+  assert.match(planSource, /Phase 1 complete; continue only with a pure classifier design slice if explicitly approved/);
+  assert.match(planSource, /reinforcement of the existing `importData\(\)` and `\/recovery` safety semantics/);
+  assert.match(planSource, /Do not create a second backup, restore, import, or recovery system/);
+  assert.match(planSource, /Do not add a new recovery page/);
+  assert.match(planSource, /Recommended next low-risk slice:[\s\S]*pure import-outcome classifier design and tests only/);
+  assert.match(planSource, /The classifier must not call `importData\(\)`/);
+  assert.match(planSource, /The classifier must not read or write IndexedDB/);
+  assert.match(planSource, /The classifier must not mount in UI/);
+  assert.match(planSource, /Deferred until a separate decision:[\s\S]*`Import Safety Status` inside existing `\/recovery`/);
+  assert.match(planSource, /Deferred until a separate decision:[\s\S]*Browser\/profile IndexedDB verification/);
+});
+
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);

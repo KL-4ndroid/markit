@@ -317,3 +317,45 @@ Still not approved:
 - Browser/profile IndexedDB mutation tests.
 - Automatic restore or repair.
 - Any Supabase write or production recovery automation.
+
+## 10. Current Import/Recovery Continuation Decision
+
+Status: Phase 1 complete; continue only with a pure classifier design slice if explicitly approved.
+
+Current decision:
+
+- The direction remains valid only as a reinforcement of the existing `importData()` and `/recovery` safety semantics.
+- Do not create a second backup, restore, import, or recovery system.
+- Do not add a new recovery page.
+- Do not wire new UI to `importData()`.
+- Do not add automatic rollback, restore, or production recovery automation.
+
+What is already complete:
+
+- `importData()` safety order is documented and guarded.
+- Isolated `fake-indexeddb` rollback verification exists.
+- Import outcome states are documented:
+  - `precheck_failed`;
+  - `backup_failed`;
+  - `transaction_failed`;
+  - `post_import_validation_failed`;
+  - `success_with_warnings`;
+  - `success`.
+- Existing `/recovery` remains the owner-only maintenance surface.
+
+Recommended next low-risk slice:
+
+- Add a pure import-outcome classifier design and tests only.
+- The classifier must not call `importData()`.
+- The classifier must not read or write IndexedDB.
+- The classifier must not write Supabase.
+- The classifier must not mount in UI.
+- The classifier should define how future code maps known import phases/errors into the documented outcome states.
+
+Deferred until a separate decision:
+
+- `Import Safety Status` inside existing `/recovery`.
+- Any emergency-backup metadata display.
+- Any download affordance beyond existing backup/download behavior.
+- Any production recovery behavior.
+- Browser/profile IndexedDB verification.
