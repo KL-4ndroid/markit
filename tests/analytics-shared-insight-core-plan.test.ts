@@ -26,6 +26,14 @@ const settlementReportSource = readFileSync(
   join(projectRoot, 'lib/reporting/settlement-report.ts'),
   'utf8'
 );
+const insightQualityModelSource = readFileSync(
+  join(projectRoot, 'lib/analytics/insight-quality-model.ts'),
+  'utf8'
+);
+const insightQualityModelDesignSource = readFileSync(
+  join(projectRoot, 'docs/ANALYTICS_SHARED_INSIGHT_QUALITY_MODEL_DESIGN_2026_06_30.md'),
+  'utf8'
+);
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
@@ -36,15 +44,18 @@ function runTest(name: string, fn: TestFn): void {
 
 console.log('\n=== Analytics shared insight core plan ===');
 
-runTest('plan records Slice C completion after settlement report original task', () => {
+runTest('plan records Slice D design and model tests without adoption', () => {
   assert.match(planSource, /# Analytics Shared Insight Core Plan/);
-  assert.match(planSource, /Status: Slice C completed; Slice D and later remain deferred/);
+  assert.match(planSource, /Status: Slice D design\/model tests completed; adoption remains deferred/);
   assert.match(planSource, /Trigger: remind the user to implement this after the current settlement report original task is completed/);
   assert.match(planSource, /settlement report preview\/spec work/);
   assert.match(planSource, /Slice B: Pure Type Extraction[\s\S]*Status: completed as pure type extraction/);
   assert.match(planSource, /Slice C: Pure Helper Extraction[\s\S]*Status: completed as pure helper extraction/);
+  assert.match(planSource, /Slice D: Shared Insight Quality Model[\s\S]*Status: design and pure model tests completed; settlement report adoption remains deferred/);
   assert.match(planSource, /lib\/analytics\/insight-quality\.ts/);
   assert.match(planSource, /tests\/analytics-insight-quality\.test\.ts/);
+  assert.match(planSource, /lib\/analytics\/insight-quality-model\.ts/);
+  assert.match(planSource, /tests\/analytics-insight-quality-model\.test\.ts/);
 });
 
 runTest('plan defines shared extraction without turning analytics into settlement report', () => {
@@ -104,6 +115,16 @@ runTest('settlement report aliases shared types without renaming public report t
   assert.match(settlementReportSource, /hasOutlierDailyStatValues as hasOutlierValues/);
 });
 
+runTest('shared insight quality model is documented but not adopted by runtime yet', () => {
+  assert.match(insightQualityModelSource, /export function buildInsightQualityModel/);
+  assert.match(insightQualityModelSource, /InsightQualityModel/);
+  assert.match(insightQualityModelDesignSource, /Status: design and pure model tests completed/);
+  assert.match(insightQualityModelDesignSource, /does not approve settlement report adoption/);
+  assert.match(insightQualityModelDesignSource, /The next safe slice is settlement-report equivalence preparation/);
+  assert.doesNotMatch(settlementReportSource, /buildInsightQualityModel|insight-quality-model/);
+  assert.doesNotMatch(insightQualityModelSource, /from ['"]react|use[A-Z]|@\/lib\/db|Dexie|db\.|supabase|window\.|document\.|pdf|xlsx|csv|recovery|sync/i);
+});
+
 runTest('settlement report plans remain the current original task before shared analytics extraction', () => {
   assert.match(settlementPlanSource, /Settlement reports are the primary reporting experience/);
   assert.match(settlementPlanSource, /This plan does not approve PDF generation/);
@@ -115,6 +136,7 @@ runTest('settlement report plans remain the current original task before shared 
 runTest('full test suite includes analytics shared insight core plan guardrail', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/analytics-shared-insight-core-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/analytics-insight-quality\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/analytics-insight-quality-model\.test\.ts/);
 });
 
 function main(): void {
