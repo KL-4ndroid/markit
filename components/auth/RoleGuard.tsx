@@ -8,7 +8,7 @@ interface RoleGuardProps {
   children: React.ReactNode;
 }
 
-const PUBLIC_ROUTES = ['/privacy', '/terms', '/about', '/demo'];
+const PUBLIC_ROUTES = ['/privacy', '/terms', '/about', '/demo', '/join'];
 
 function ProtectedRoleGuard({ children }: RoleGuardProps) {
   const { isLoading: isRoleLoading, roleError } = useUserRole();

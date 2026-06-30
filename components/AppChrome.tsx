@@ -16,6 +16,7 @@ import { StaffInvitationDialog } from '@/components/staff/StaffInvitationDialog'
 import { RegisterServiceWorker } from '@/app/register-sw';
 
 const STANDALONE_PUBLIC_ROUTES = ['/demo'];
+const AUTH_FLOW_PUBLIC_ROUTES = ['/join'];
 
 function AppToaster() {
   return (
@@ -37,12 +38,24 @@ function AppToaster() {
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isStandalonePublicRoute = STANDALONE_PUBLIC_ROUTES.some(route => pathname?.startsWith(route));
+  const isAuthFlowPublicRoute = AUTH_FLOW_PUBLIC_ROUTES.some(route => pathname?.startsWith(route));
 
   if (isStandalonePublicRoute) {
     return (
       <>
         <main>{children}</main>
         <AppToaster />
+      </>
+    );
+  }
+
+  if (isAuthFlowPublicRoute) {
+    return (
+      <>
+        <main>{children}</main>
+        <AppToaster />
+        <AuthManager />
+        <SessionExpiredHandler />
       </>
     );
   }

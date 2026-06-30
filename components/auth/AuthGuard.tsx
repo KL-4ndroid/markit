@@ -21,7 +21,7 @@ import { RoleStatusBanner } from './RoleStatusBanner';
 
 // ✅ 白名單路由：無需登入即可訪問
 // /demo 是公開展示用 Demo Mode，只使用靜態範例資料，不讀取正式資料或權限資料。
-const PUBLIC_ROUTES = ['/privacy', '/terms', '/about', '/demo'];
+const PUBLIC_ROUTES = ['/privacy', '/terms', '/about', '/demo', '/join'];
 
 interface AuthGuardProps {
   children: React.ReactNode;

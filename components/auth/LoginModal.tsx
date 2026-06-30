@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (userId: string, email: string) => void;
+  onLoginSuccess: (userId: string, email: string, meta?: { invitationAccepted?: boolean }) => void;
   defaultMode?: 'login' | 'signup';
 }
 
@@ -133,6 +133,7 @@ export function LoginModal({
 
         if (data.user) {
           const invitationToken = sessionStorage.getItem('invitation_token');
+          let invitationAccepted = false;
 
           if (invitationToken) {
             try {
@@ -140,6 +141,9 @@ export function LoginModal({
               const result = await acceptInvitationAndBind(invitationToken, data.user.id);
 
               if (result.success) {
+                const { invalidateRoleCache } = await import('@/hooks/useUserRole');
+                invalidateRoleCache();
+                invitationAccepted = true;
                 toast.success('帳號已建立，並已加入團隊。');
                 sessionStorage.removeItem('invitation_token');
               } else {
@@ -157,7 +161,7 @@ export function LoginModal({
             toast.success('帳號建立成功。');
           }
 
-          onLoginSuccess(data.user.id, data.user.email || normalizedEmail);
+          onLoginSuccess(data.user.id, data.user.email || normalizedEmail, { invitationAccepted });
         } else {
           throw new Error('帳號建立失敗，請稍後再試。');
         }

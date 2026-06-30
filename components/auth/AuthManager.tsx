@@ -1,13 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { detectAnonymousData } from '@/lib/supabase/migration';
 import { LoginModal } from './LoginModal';
 import { MigrationModal } from './MigrationModal';
 
 type LoginMode = 'login' | 'signup';
+type LoginSuccessMeta = {
+  invitationAccepted?: boolean;
+};
 
 export function AuthManager() {
+  const router = useRouter();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>('login');
   const [showMigrationModal, setShowMigrationModal] = useState(false);
@@ -41,9 +46,14 @@ export function AuthManager() {
     };
   }, []);
 
-  const handleLoginSuccess = async (userId: string, email: string) => {
+  const handleLoginSuccess = async (userId: string, email: string, meta?: LoginSuccessMeta) => {
     setShowLoginModal(false);
     window.dispatchEvent(new CustomEvent('auth:login-success'));
+
+    if (meta?.invitationAccepted) {
+      router.replace('/');
+      return;
+    }
 
     const { hasAnonymousData, marketCount, eventCount } = await detectAnonymousData(userId);
 
