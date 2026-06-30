@@ -115,6 +115,10 @@ function JoinPageContent() {
     window.dispatchEvent(new CustomEvent('auth:open-login'));
   }
 
+  function handleLogin() {
+    window.dispatchEvent(new CustomEvent('auth:open-login', { detail: { mode: 'login' } }));
+  }
+
   async function handleSwitchAccount() {
     setIsSigningOut(true);
     try {
@@ -259,6 +263,13 @@ function JoinPageContent() {
           >
             <Users className="w-5 h-5" />
             建立帳號並加入團隊
+          </button>
+
+          <button
+            onClick={handleLogin}
+            className="mt-3 w-full bg-soft-green text-foreground py-3 rounded-2xl hover:bg-soft-green/80 transition-colors font-medium"
+          >
+            已有帳號？登入後加入團隊
           </button>
 
           <p className="text-xs text-center text-muted-foreground mt-4">

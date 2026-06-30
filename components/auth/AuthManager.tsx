@@ -9,6 +9,7 @@ import { MigrationModal } from './MigrationModal';
 type LoginMode = 'login' | 'signup';
 type LoginSuccessMeta = {
   invitationAccepted?: boolean;
+  invitationLogin?: boolean;
 };
 
 export function AuthManager() {
@@ -97,6 +98,11 @@ export function AuthManager() {
     if (meta?.invitationAccepted) {
       migrationDetectionRequestRef.current += 1;
       router.replace('/');
+      return;
+    }
+
+    if (meta?.invitationLogin) {
+      migrationDetectionRequestRef.current += 1;
       return;
     }
 

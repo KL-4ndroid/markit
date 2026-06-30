@@ -9,7 +9,11 @@ import { toast } from 'sonner';
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (userId: string, email: string, meta?: { invitationAccepted?: boolean }) => void;
+  onLoginSuccess: (
+    userId: string,
+    email: string,
+    meta?: { invitationAccepted?: boolean; invitationLogin?: boolean }
+  ) => void;
   defaultMode?: 'login' | 'signup';
 }
 
@@ -107,6 +111,7 @@ export function LoginModal({
         if (error) throw error;
 
         if (data.user) {
+          const invitationToken = sessionStorage.getItem('invitation_token');
           if (rememberMe) {
             localStorage.setItem('remembered_email', normalizedEmail);
           } else {
@@ -114,7 +119,11 @@ export function LoginModal({
           }
 
           toast.success('登入成功。');
-          onLoginSuccess(data.user.id, data.user.email || normalizedEmail);
+          onLoginSuccess(
+            data.user.id,
+            data.user.email || normalizedEmail,
+            invitationToken ? { invitationLogin: true } : undefined
+          );
         } else {
           throw new Error('登入失敗，請確認 Email 和密碼後再試一次。');
         }

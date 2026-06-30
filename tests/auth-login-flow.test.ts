@@ -22,10 +22,11 @@ const migrationSource = readProjectFile('lib/supabase/migration.ts');
 
 console.log('\n=== Auth login flow ===');
 
-runTest('normal login keeps the original success callback without invitation metadata', () => {
-  assert.ok(
-    loginModalSource.includes('onLoginSuccess(data.user.id, data.user.email || normalizedEmail);'),
-    'normal login should not pass invitation metadata'
+runTest('normal login passes no invitation metadata unless an invitation token exists', () => {
+  assert.match(loginModalSource, /const invitationToken = sessionStorage\.getItem\('invitation_token'\)/);
+  assert.match(
+    loginModalSource,
+    /onLoginSuccess\(\s*data\.user\.id,\s*data\.user\.email \|\| normalizedEmail,\s*invitationToken \? \{ invitationLogin: true \} : undefined\s*\)/
   );
 });
 
@@ -55,6 +56,19 @@ runTest('invitation success cancels stale scheduled anonymous-data detection bef
   assert.ok(cancelIndex > acceptedIndex, 'invitation success must invalidate pending migration detection');
   assert.ok(replaceIndex > cancelIndex, 'redirect should happen after invalidation');
   assert.ok(scheduleIndex > replaceIndex, 'normal-login schedule must remain outside invitation fast path');
+});
+
+runTest('invitation login skips anonymous-data detection without auto-accepting the invitation', () => {
+  const invitationLoginIndex = authManagerSource.indexOf('if (meta?.invitationLogin)');
+  const cancelIndex = authManagerSource.indexOf('migrationDetectionRequestRef.current += 1', invitationLoginIndex);
+  const returnIndex = authManagerSource.indexOf('return;', cancelIndex);
+  const scheduleIndex = authManagerSource.indexOf('scheduleAnonymousDataDetection(userId, email)', invitationLoginIndex);
+
+  assert.ok(invitationLoginIndex > 0, 'AuthManager must recognize invitation login metadata');
+  assert.ok(cancelIndex > invitationLoginIndex, 'invitation login must cancel pending migration detection');
+  assert.ok(returnIndex > cancelIndex, 'invitation login must stop before normal-login detection');
+  assert.ok(scheduleIndex > returnIndex, 'normal-login schedule must remain outside invitation-login fast path');
+  assert.doesNotMatch(authManagerSource, /acceptInvitationAndBind/);
 });
 
 runTest('detectAnonymousData counts records without materializing full tables', () => {

@@ -50,16 +50,22 @@ runTest('invitation signup invalidates role cache before reporting invitation su
   assert.ok(removeTokenIndex > acceptedIndex, 'token must be removed after invitation success is recorded');
 });
 
-runTest('only signup success passes invitation metadata to AuthManager', () => {
-  const loginSuccessCall = "onLoginSuccess(data.user.id, data.user.email || normalizedEmail);";
+runTest('signup success passes invitation-accepted metadata to AuthManager', () => {
   const signupSuccessCall = "onLoginSuccess(data.user.id, data.user.email || normalizedEmail, { invitationAccepted });";
 
-  assert.ok(loginModalSource.includes(loginSuccessCall), 'login branch must keep the original success callback');
   assert.ok(loginModalSource.includes(signupSuccessCall), 'signup branch must pass invitation metadata');
 });
 
+runTest('join page exposes an explicit existing-account login path', () => {
+  const joinSource = readProjectFile('app/join/page.tsx');
+
+  assert.match(joinSource, /function handleLogin\(\)/);
+  assert.match(joinSource, /new CustomEvent\('auth:open-login', \{ detail: \{ mode: 'login' \} \}\)/);
+  assert.match(joinSource, /onClick=\{handleLogin\}/);
+});
+
 runTest('accepted invitation signup skips anonymous-data scan and redirects home', () => {
-  assert.match(authManagerSource, /type LoginSuccessMeta = \{\s*invitationAccepted\?: boolean;\s*\}/);
+  assert.match(authManagerSource, /type LoginSuccessMeta = \{[\s\S]*invitationAccepted\?: boolean;[\s\S]*\}/);
 
   const acceptedIndex = authManagerSource.indexOf('if (meta?.invitationAccepted)');
   const replaceIndex = authManagerSource.indexOf("router.replace('/')", acceptedIndex);
