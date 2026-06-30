@@ -98,6 +98,9 @@ runTest('plan defines the eight-step execution path with preview before execute'
   assert.match(planSource, /lib\/reporting\/settlement-report\.ts/);
   assert.match(planSource, /tests\/settlement-report-model\.test\.ts/);
   assert.match(planSource, /Designed PDF output later/);
+  assert.match(planSource, /explainable score components/);
+  assert.match(planSource, /market rejoin decision rows/);
+  assert.match(planSource, /section-level availability states for incomplete cost, product, interaction, sync, and daily-stats data/);
   assert.match(planSource, /Not approved in this plan:[\s\S]*PDF generation/);
   assert.match(planSource, /Not approved in this plan:[\s\S]*manager report\/export access/);
 });

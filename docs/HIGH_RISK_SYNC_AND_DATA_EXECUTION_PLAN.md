@@ -637,6 +637,11 @@ Safety result:
 
 - Added an owner-only weekly/monthly settlement report model from caller-provided authorized local view-model data.
 - The model summarizes revenue, product cost, gross profit, fixed market cost, commission, net profit, deal count, interactions, average order value, market rankings, product rankings, and data-quality notes.
+- Added explainable scoring components, overall grade, report recommendation, market rejoin decisions, and owner-facing content sections.
+- Incomplete data now degrades only the affected analysis section instead of making the whole report useless.
+- Missing cost data disables confident profit scoring while preserving revenue, deal count, average order value, and market-level guidance.
+- Missing product detail disables product ranking and product action advice while preserving market-level settlement analysis.
+- Missing interaction data disables conversion analysis while preserving financial and sales-volume analysis.
 - Manager, operator, viewer, and fail-closed roles are blocked.
 - The model does not import Supabase, IndexedDB, React, browser download APIs, PDF libraries, Excel libraries, CSV helpers, sync services, or recovery UI.
 - PDF is now the preferred future presentation format, but no PDF generation is implemented in this slice.

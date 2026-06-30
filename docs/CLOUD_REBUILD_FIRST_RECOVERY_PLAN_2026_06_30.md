@@ -222,6 +222,11 @@ Completed:
 - market performance rows;
 - product performance rows;
 - data-quality notes;
+- explainable score components;
+- overall report grade and recommendation;
+- market rejoin decision rows;
+- owner-facing report content model;
+- section-level availability states for incomplete cost, product, interaction, sync, and daily-stats data;
 - static tests proving no runtime data source, UI, download, PDF, Excel, CSV, or sync integration.
 
 Not approved in this plan:

@@ -191,6 +191,11 @@ runTest('plan records owner settlement report model without approving PDF Excel 
   assert.match(planSource, /lib\/reporting\/settlement-report\.ts/);
   assert.match(planSource, /tests\/settlement-report-model\.test\.ts/);
   assert.match(planSource, /owner-only weekly\/monthly settlement report model/);
+  assert.match(planSource, /explainable scoring components, overall grade, report recommendation, market rejoin decisions/);
+  assert.match(planSource, /Incomplete data now degrades only the affected analysis section/);
+  assert.match(planSource, /Missing cost data disables confident profit scoring/);
+  assert.match(planSource, /Missing product detail disables product ranking/);
+  assert.match(planSource, /Missing interaction data disables conversion analysis/);
   assert.match(planSource, /PDF is now the preferred future presentation format/);
   assert.match(planSource, /Still not approved:[\s\S]*PDF generation or visual template implementation/);
   assert.match(planSource, /Still not approved:[\s\S]*Excel generation/);

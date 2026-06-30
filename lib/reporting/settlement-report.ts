@@ -2,6 +2,22 @@ import { hasCapability, type RoleCapabilities } from '@/lib/permissions/role-cap
 import type { DailyStats, Market, Product } from '@/types/db';
 
 export type SettlementReportKind = 'weekly' | 'monthly';
+export type SettlementReportConfidence = 'high' | 'medium' | 'low';
+export type SettlementReportGrade = 'A' | 'B' | 'C' | 'D';
+export type SettlementReportSignalStatus = 'available' | 'limited' | 'unavailable';
+export type SettlementReportRecommendation =
+  | 'strong_rejoin'
+  | 'rejoin'
+  | 'observe'
+  | 'caution'
+  | 'avoid';
+
+export type SettlementReportLimitationCode =
+  | 'missing_daily_stats'
+  | 'missing_cost_data'
+  | 'missing_product_detail'
+  | 'missing_interaction_data'
+  | 'unsynced_data';
 
 export type SettlementReportPeriod = {
   kind: SettlementReportKind;
@@ -59,16 +75,99 @@ export type SettlementReportDataQuality = {
   marketsWithoutDailyStats: string[];
   missingProductNames: string[];
   unsyncedMarketIds: string[];
+  costTrackedRevenue: number;
+  productDetailRevenue: number;
+  interactionTrackedMarketCount: number;
+  costCoverageRatio: number;
+  productDetailCoverageRatio: number;
+  interactionCoverageRatio: number;
+  syncCoverageRatio: number;
+  confidence: SettlementReportConfidence;
+  limitations: SettlementReportLimitation[];
   notes: string[];
+};
+
+export type SettlementReportLimitation = {
+  code: SettlementReportLimitationCode;
+  severity: 'info' | 'warning';
+  affectedSections: Array<
+    | 'overall_score'
+    | 'profit'
+    | 'market_rejoin'
+    | 'product_ranking'
+    | 'product_actions'
+    | 'conversion'
+    | 'data_quality'
+  >;
+  message: string;
+  recommendation: string;
+};
+
+export type SettlementReportAnalysisAvailability = {
+  profitAnalysis: SettlementReportSignalStatus;
+  productAnalysis: SettlementReportSignalStatus;
+  conversionAnalysis: SettlementReportSignalStatus;
+  marketRejoinAnalysis: SettlementReportSignalStatus;
+};
+
+export type SettlementReportScoreComponent = {
+  key:
+    | 'profit'
+    | 'revenue_deals'
+    | 'cost_pressure'
+    | 'average_order_value'
+    | 'conversion'
+    | 'product_fit';
+  label: string;
+  weight: number;
+  score: number | null;
+  status: SettlementReportSignalStatus;
+  reason: string;
+};
+
+export type SettlementMarketDecision = {
+  marketId: string;
+  marketName: string;
+  rejoinScore: number;
+  grade: SettlementReportGrade;
+  recommendation: SettlementReportRecommendation;
+  confidence: SettlementReportConfidence;
+  reasons: string[];
+  limitations: SettlementReportLimitationCode[];
+};
+
+export type SettlementReportDecision = {
+  overallScore: number;
+  grade: SettlementReportGrade;
+  recommendation: SettlementReportRecommendation;
+  confidence: SettlementReportConfidence;
+  summary: string;
+  scoreComponents: SettlementReportScoreComponent[];
+  analysisAvailability: SettlementReportAnalysisAvailability;
+};
+
+export type SettlementReportContent = {
+  cover: {
+    title: string;
+    primaryConclusion: string;
+    supportingSummary: string;
+  };
+  highlights: string[];
+  marketActions: string[];
+  productActions: string[];
+  dataActions: string[];
 };
 
 export type SettlementReportModel = {
   period: SettlementReportPeriod;
   money: SettlementReportMoneySummary;
   activity: SettlementReportActivitySummary;
+  decision: SettlementReportDecision;
   marketRows: SettlementMarketRow[];
+  marketDecisions: SettlementMarketDecision[];
   productRows: SettlementProductRow[];
   dataQuality: SettlementReportDataQuality;
+  content: SettlementReportContent;
 };
 
 export type BuildSettlementReportModelInput = {
@@ -123,6 +222,56 @@ function sumNumbers(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0);
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function roundScore(value: number): number {
+  return Math.round(clamp(value, 0, 100));
+}
+
+function ratio(numerator: number, denominator: number): number {
+  return denominator > 0 ? clamp(numerator / denominator, 0, 1) : 0;
+}
+
+function scoreFromThresholds(
+  value: number,
+  thresholds: Array<{ min: number; score: number }>,
+  fallback: number
+): number {
+  for (const threshold of thresholds) {
+    if (value >= threshold.min) return threshold.score;
+  }
+  return fallback;
+}
+
+function getGrade(score: number): SettlementReportGrade {
+  if (score >= 85) return 'A';
+  if (score >= 70) return 'B';
+  if (score >= 55) return 'C';
+  return 'D';
+}
+
+function getRecommendation(score: number): SettlementReportRecommendation {
+  if (score >= 85) return 'strong_rejoin';
+  if (score >= 70) return 'rejoin';
+  if (score >= 55) return 'observe';
+  if (score >= 40) return 'caution';
+  return 'avoid';
+}
+
+function getConfidence(score: number): SettlementReportConfidence {
+  if (score >= 0.75) return 'high';
+  if (score >= 0.45) return 'medium';
+  return 'low';
+}
+
+function getSignalStatus(coverage: number): SettlementReportSignalStatus {
+  if (coverage >= 0.75) return 'available';
+  if (coverage > 0) return 'limited';
+  return 'unavailable';
+}
+
 function assertOwnerSettlementReportAllowed(capabilities: RoleCapabilities): void {
   if (
     !hasCapability(capabilities, 'canImportExport') ||
@@ -147,7 +296,419 @@ function buildDataQualityNotes(dataQuality: Omit<SettlementReportDataQuality, 'n
     notes.push('Some included markets are not marked as synced.');
   }
 
+  for (const limitation of dataQuality.limitations) {
+    notes.push(limitation.message);
+  }
+
   return notes;
+}
+
+function buildLimitations(input: {
+  includedMarketCount: number;
+  marketsWithoutDailyStats: string[];
+  unsyncedMarketIds: string[];
+  costCoverageRatio: number;
+  productDetailCoverageRatio: number;
+  interactionCoverageRatio: number;
+}): SettlementReportLimitation[] {
+  const limitations: SettlementReportLimitation[] = [];
+
+  if (input.marketsWithoutDailyStats.length > 0) {
+    limitations.push({
+      code: 'missing_daily_stats',
+      severity: 'warning',
+      affectedSections: ['overall_score', 'market_rejoin', 'data_quality'],
+      message: 'Some markets do not have daily stats in this report period.',
+      recommendation: 'Add daily revenue/deal records for those markets before relying on market ranking.',
+    });
+  }
+
+  if (input.costCoverageRatio < 0.75) {
+    limitations.push({
+      code: 'missing_cost_data',
+      severity: input.costCoverageRatio === 0 ? 'warning' : 'info',
+      affectedSections: ['overall_score', 'profit', 'market_rejoin'],
+      message: 'Cost coverage is incomplete, so net profit and profit-margin analysis are estimates.',
+      recommendation: 'Revenue, deal count, and average order value remain useful; add product or manual cost when profit decisions matter.',
+    });
+  }
+
+  if (input.productDetailCoverageRatio < 0.75) {
+    limitations.push({
+      code: 'missing_product_detail',
+      severity: input.productDetailCoverageRatio === 0 ? 'warning' : 'info',
+      affectedSections: ['product_ranking', 'product_actions'],
+      message: 'Product detail coverage is incomplete, so product ranking and restock advice are limited.',
+      recommendation: 'Market-level sales analysis remains useful; record item-level sales when product decisions matter.',
+    });
+  }
+
+  if (input.interactionCoverageRatio < 0.75) {
+    limitations.push({
+      code: 'missing_interaction_data',
+      severity: input.interactionCoverageRatio === 0 ? 'warning' : 'info',
+      affectedSections: ['conversion'],
+      message: 'Interaction data is incomplete, so conversion analysis is limited.',
+      recommendation: 'Use revenue, deal count, and average order value first; add interaction tracking to judge booth attraction.',
+    });
+  }
+
+  if (input.unsyncedMarketIds.length > 0) {
+    limitations.push({
+      code: 'unsynced_data',
+      severity: 'warning',
+      affectedSections: ['overall_score', 'data_quality'],
+      message: 'Some markets are not marked as synced, so cloud-confirmed reporting may differ.',
+      recommendation: 'Sync before using this report as a final shared file.',
+    });
+  }
+
+  return limitations;
+}
+
+function scoreProfit(netProfit: number, totalRevenue: number): number {
+  if (totalRevenue <= 0) return 10;
+  const margin = netProfit / totalRevenue;
+  if (margin >= 0.3) return 95;
+  if (margin >= 0.2) return 85;
+  if (margin >= 0.1) return 70;
+  if (margin >= 0) return 55;
+  if (margin >= -0.1) return 40;
+  return 25;
+}
+
+function scoreRevenueAndDeals(totalRevenue: number, totalDeals: number): number {
+  const revenueScore = scoreFromThresholds(
+    totalRevenue,
+    [
+      { min: 30000, score: 90 },
+      { min: 15000, score: 75 },
+      { min: 5000, score: 60 },
+      { min: 1, score: 40 },
+    ],
+    10
+  );
+  const dealsScore = scoreFromThresholds(
+    totalDeals,
+    [
+      { min: 50, score: 90 },
+      { min: 20, score: 75 },
+      { min: 5, score: 60 },
+      { min: 1, score: 40 },
+    ],
+    10
+  );
+
+  return (revenueScore + dealsScore) / 2;
+}
+
+function scoreCostPressure(fixedMarketCost: number, commissionFee: number, totalRevenue: number): number {
+  if (totalRevenue <= 0) return 10;
+  const pressure = (fixedMarketCost + commissionFee) / totalRevenue;
+  if (pressure <= 0.2) return 90;
+  if (pressure <= 0.35) return 75;
+  if (pressure <= 0.5) return 55;
+  if (pressure <= 0.75) return 35;
+  return 20;
+}
+
+function scoreAverageOrderValue(averageOrderValue: number): number {
+  return scoreFromThresholds(
+    averageOrderValue,
+    [
+      { min: 800, score: 90 },
+      { min: 500, score: 75 },
+      { min: 250, score: 60 },
+      { min: 1, score: 40 },
+    ],
+    10
+  );
+}
+
+function scoreConversion(totalDeals: number, totalInteractions: number): number {
+  if (totalInteractions <= 0) return 0;
+  const conversion = totalDeals / totalInteractions;
+  if (conversion >= 0.3) return 90;
+  if (conversion >= 0.15) return 75;
+  if (conversion >= 0.05) return 60;
+  if (conversion > 0) return 40;
+  return 15;
+}
+
+function scoreProductFit(productRows: SettlementProductRow[], totalRevenue: number): number {
+  if (productRows.length === 0 || totalRevenue <= 0) return 0;
+  const topProductRevenue = productRows[0]?.revenue ?? 0;
+  const topShare = topProductRevenue / totalRevenue;
+  if (productRows.length >= 3 && topShare <= 0.65) return 85;
+  if (productRows.length >= 2 && topShare <= 0.8) return 75;
+  return 60;
+}
+
+function weightedScore(components: SettlementReportScoreComponent[]): number {
+  const available = components.filter(component => component.score !== null);
+  const activeWeight = sumNumbers(available.map(component => component.weight));
+  if (activeWeight <= 0) return 0;
+
+  return roundScore(
+    sumNumbers(available.map(component => (component.score ?? 0) * component.weight)) / activeWeight
+  );
+}
+
+function buildScoreComponents(input: {
+  money: SettlementReportMoneySummary;
+  activity: SettlementReportActivitySummary;
+  productRows: SettlementProductRow[];
+  dataQuality: Omit<SettlementReportDataQuality, 'notes'>;
+}): SettlementReportScoreComponent[] {
+  const profitStatus = getSignalStatus(input.dataQuality.costCoverageRatio);
+  const conversionStatus = getSignalStatus(input.dataQuality.interactionCoverageRatio);
+  const productStatus = getSignalStatus(input.dataQuality.productDetailCoverageRatio);
+
+  return [
+    {
+      key: 'profit',
+      label: 'Profit performance',
+      weight: 35,
+      score: profitStatus === 'unavailable'
+        ? null
+        : scoreProfit(input.money.netProfit, input.money.totalRevenue),
+      status: profitStatus,
+      reason: profitStatus === 'unavailable'
+        ? 'Cost data is missing, so profit score is not used.'
+        : 'Uses net profit after product cost, fixed market cost, and commission.',
+    },
+    {
+      key: 'revenue_deals',
+      label: 'Revenue and deal volume',
+      weight: 20,
+      score: scoreRevenueAndDeals(input.money.totalRevenue, input.activity.totalDeals),
+      status: input.money.totalRevenue > 0 || input.activity.totalDeals > 0 ? 'available' : 'unavailable',
+      reason: 'Uses total revenue and deal count for the report period.',
+    },
+    {
+      key: 'cost_pressure',
+      label: 'Market cost pressure',
+      weight: 15,
+      score: scoreCostPressure(input.money.fixedMarketCost, input.money.commissionFee, input.money.totalRevenue),
+      status: input.money.totalRevenue > 0 ? 'available' : 'unavailable',
+      reason: 'Uses fixed market costs and commission as a share of revenue.',
+    },
+    {
+      key: 'average_order_value',
+      label: 'Average order value',
+      weight: 10,
+      score: scoreAverageOrderValue(input.activity.averageOrderValue),
+      status: input.activity.totalDeals > 0 ? 'available' : 'unavailable',
+      reason: 'Uses revenue divided by deal count.',
+    },
+    {
+      key: 'conversion',
+      label: 'Interaction conversion',
+      weight: 10,
+      score: conversionStatus === 'unavailable'
+        ? null
+        : scoreConversion(input.activity.totalDeals, input.activity.totalInteractions),
+      status: conversionStatus,
+      reason: conversionStatus === 'unavailable'
+        ? 'Interaction data is missing, so conversion score is not used.'
+        : 'Uses deals divided by recorded interactions.',
+    },
+    {
+      key: 'product_fit',
+      label: 'Product fit',
+      weight: 10,
+      score: productStatus === 'unavailable'
+        ? null
+        : scoreProductFit(input.productRows, input.money.totalRevenue),
+      status: productStatus,
+      reason: productStatus === 'unavailable'
+        ? 'Product detail is missing, so product fit score is not used.'
+        : 'Uses product sales coverage and concentration.',
+    },
+  ];
+}
+
+function recommendationSummary(recommendation: SettlementReportRecommendation): string {
+  switch (recommendation) {
+    case 'strong_rejoin':
+      return 'Strong performance. Prioritize similar markets next time.';
+    case 'rejoin':
+      return 'Good performance. Rejoin is recommended if schedule and booth cost are acceptable.';
+    case 'observe':
+      return 'Mixed performance. Keep observing before making this a priority.';
+    case 'caution':
+      return 'Weak or uncertain performance. Rejoin only with a clear adjustment plan.';
+    case 'avoid':
+      return 'Poor performance. Do not prioritize similar markets unless conditions change.';
+  }
+}
+
+function buildOverallDecision(input: {
+  money: SettlementReportMoneySummary;
+  activity: SettlementReportActivitySummary;
+  productRows: SettlementProductRow[];
+  dataQuality: Omit<SettlementReportDataQuality, 'notes'>;
+}): SettlementReportDecision {
+  const scoreComponents = buildScoreComponents(input);
+  const overallScore = weightedScore(scoreComponents);
+  const recommendation = getRecommendation(overallScore);
+
+  return {
+    overallScore,
+    grade: getGrade(overallScore),
+    recommendation,
+    confidence: input.dataQuality.confidence,
+    summary: recommendationSummary(recommendation),
+    scoreComponents,
+    analysisAvailability: {
+      profitAnalysis: getSignalStatus(input.dataQuality.costCoverageRatio),
+      productAnalysis: getSignalStatus(input.dataQuality.productDetailCoverageRatio),
+      conversionAnalysis: getSignalStatus(input.dataQuality.interactionCoverageRatio),
+      marketRejoinAnalysis: input.dataQuality.includedDailyStatCount > 0 ? 'available' : 'unavailable',
+    },
+  };
+}
+
+function buildMarketDecisions(
+  marketRows: SettlementMarketRow[],
+  dataQuality: Omit<SettlementReportDataQuality, 'notes'>
+): SettlementMarketDecision[] {
+  return marketRows.map(row => {
+    const revenueDeals = scoreRevenueAndDeals(row.revenue, row.dealCount);
+    const costPressure = scoreCostPressure(row.fixedMarketCost, row.commissionFee, row.revenue);
+    const averageOrderValue = scoreAverageOrderValue(row.averageOrderValue);
+    const conversion = row.interactionCount > 0 ? scoreConversion(row.dealCount, row.interactionCount) : null;
+    const profit = dataQuality.costCoverageRatio > 0 ? scoreProfit(row.netProfit, row.revenue) : null;
+
+    const components: SettlementReportScoreComponent[] = [
+      {
+        key: 'profit',
+        label: 'Profit performance',
+        weight: 35,
+        score: profit,
+        status: profit === null ? 'unavailable' : getSignalStatus(dataQuality.costCoverageRatio),
+        reason: profit === null ? 'Cost data is missing.' : 'Uses market net profit.',
+      },
+      {
+        key: 'revenue_deals',
+        label: 'Revenue and deal volume',
+        weight: 25,
+        score: revenueDeals,
+        status: row.revenue > 0 || row.dealCount > 0 ? 'available' : 'unavailable',
+        reason: 'Uses market revenue and deal count.',
+      },
+      {
+        key: 'cost_pressure',
+        label: 'Market cost pressure',
+        weight: 20,
+        score: costPressure,
+        status: row.revenue > 0 ? 'available' : 'unavailable',
+        reason: 'Uses market fixed cost and commission pressure.',
+      },
+      {
+        key: 'average_order_value',
+        label: 'Average order value',
+        weight: 10,
+        score: averageOrderValue,
+        status: row.dealCount > 0 ? 'available' : 'unavailable',
+        reason: 'Uses market average order value.',
+      },
+      {
+        key: 'conversion',
+        label: 'Interaction conversion',
+        weight: 10,
+        score: conversion,
+        status: conversion === null ? 'unavailable' : getSignalStatus(dataQuality.interactionCoverageRatio),
+        reason: conversion === null ? 'Interaction data is missing.' : 'Uses market interaction conversion.',
+      },
+    ];
+
+    const rejoinScore = weightedScore(components);
+    const recommendation = getRecommendation(rejoinScore);
+    const limitations: SettlementReportLimitationCode[] = [];
+    if (profit === null || dataQuality.costCoverageRatio < 0.75) limitations.push('missing_cost_data');
+    if (conversion === null || dataQuality.interactionCoverageRatio < 0.75) limitations.push('missing_interaction_data');
+    if (row.syncStatus !== null && row.syncStatus !== 'synced') limitations.push('unsynced_data');
+
+    const reasons = [
+      `Revenue ${Math.round(row.revenue)} with ${Math.round(row.dealCount)} deals.`,
+      `Average order value ${Math.round(row.averageOrderValue)}.`,
+    ];
+
+    if (profit !== null) {
+      reasons.push(`Net profit estimate ${Math.round(row.netProfit)}.`);
+    }
+
+    if (conversion !== null) {
+      reasons.push(`Interaction conversion uses ${Math.round(row.interactionCount)} recorded interactions.`);
+    }
+
+    return {
+      marketId: row.marketId,
+      marketName: row.marketName,
+      rejoinScore,
+      grade: getGrade(rejoinScore),
+      recommendation,
+      confidence: getConfidence(
+        (dataQuality.costCoverageRatio * 0.35) +
+        (dataQuality.interactionCoverageRatio * 0.2) +
+        (dataQuality.syncCoverageRatio * 0.15) +
+        0.3
+      ),
+      reasons,
+      limitations,
+    };
+  });
+}
+
+function buildReportContent(input: {
+  period: SettlementReportPeriod;
+  money: SettlementReportMoneySummary;
+  activity: SettlementReportActivitySummary;
+  decision: SettlementReportDecision;
+  marketRows: SettlementMarketRow[];
+  marketDecisions: SettlementMarketDecision[];
+  productRows: SettlementProductRow[];
+  dataQuality: SettlementReportDataQuality;
+}): SettlementReportContent {
+  const bestMarket = input.marketDecisions[0];
+  const topProduct = input.productRows[0];
+  const highlights = [
+    `Total revenue ${Math.round(input.money.totalRevenue)} across ${input.activity.totalDeals} deals.`,
+    `Average order value ${Math.round(input.activity.averageOrderValue)}.`,
+  ];
+
+  if (bestMarket) {
+    highlights.push(`Best market candidate: ${bestMarket.marketName} (${bestMarket.grade}).`);
+  }
+
+  if (topProduct) {
+    highlights.push(`Top product by recorded revenue: ${topProduct.productName}.`);
+  }
+
+  const marketActions = input.marketDecisions.slice(0, 3).map(decision =>
+    `${decision.marketName}: ${recommendationSummary(decision.recommendation)}`
+  );
+
+  const productActions = input.productRows.length === 0
+    ? ['Product ranking is unavailable because item-level sales were not recorded.']
+    : input.productRows.slice(0, 3).map(product =>
+      `${product.productName}: recorded revenue ${Math.round(product.revenue)} from ${Math.round(product.quantity)} units.`
+    );
+
+  const dataActions = input.dataQuality.limitations.map(limitation => limitation.recommendation);
+
+  return {
+    cover: {
+      title: `${input.period.label} Settlement Report`,
+      primaryConclusion: input.decision.summary,
+      supportingSummary: `Overall grade ${input.decision.grade}, score ${input.decision.overallScore}, confidence ${input.decision.confidence}.`,
+    },
+    highlights,
+    marketActions,
+    productActions,
+    dataActions,
+  };
 }
 
 export function buildSettlementReportModel({
@@ -249,13 +810,6 @@ export function buildSettlementReportModel({
     .map(getMarketId)
     .filter(Boolean);
 
-  const baseDataQuality = {
-    includedDailyStatCount: statsInPeriod.length,
-    marketsWithoutDailyStats,
-    missingProductNames,
-    unsyncedMarketIds,
-  };
-
   const money: SettlementReportMoneySummary = {
     totalRevenue: sumNumbers(marketRows.map(row => row.revenue)),
     productCost: sumNumbers(marketRows.map(row => row.productCost)),
@@ -266,23 +820,84 @@ export function buildSettlementReportModel({
   };
 
   const totalDeals = sumNumbers(marketRows.map(row => row.dealCount));
+  const costTrackedRevenue = sumNumbers(statsInPeriod
+    .filter(stat => finiteNumber(stat.cost) > 0)
+    .map(stat => finiteNumber(stat.revenue)));
+  const productDetailRevenue = sumNumbers(productRows.map(row => finiteNumber(row.revenue)));
+  const interactionTrackedMarketCount = marketRows.filter(row => row.interactionCount > 0).length;
+  const costCoverageRatio = ratio(costTrackedRevenue, money.totalRevenue);
+  const productDetailCoverageRatio = ratio(productDetailRevenue, money.totalRevenue);
+  const interactionCoverageRatio = ratio(interactionTrackedMarketCount, marketsInPeriod.length);
+  const syncCoverageRatio = ratio(marketsInPeriod.length - unsyncedMarketIds.length, marketsInPeriod.length);
+  const limitations = buildLimitations({
+    includedMarketCount: marketsInPeriod.length,
+    marketsWithoutDailyStats,
+    unsyncedMarketIds,
+    costCoverageRatio,
+    productDetailCoverageRatio,
+    interactionCoverageRatio,
+  });
+
+  const baseDataQuality: Omit<SettlementReportDataQuality, 'notes'> = {
+    includedDailyStatCount: statsInPeriod.length,
+    marketsWithoutDailyStats,
+    missingProductNames,
+    unsyncedMarketIds,
+    costTrackedRevenue,
+    productDetailRevenue,
+    interactionTrackedMarketCount,
+    costCoverageRatio,
+    productDetailCoverageRatio,
+    interactionCoverageRatio,
+    syncCoverageRatio,
+    confidence: getConfidence(
+      (ratio(marketsInPeriod.length - marketsWithoutDailyStats.length, marketsInPeriod.length) * 0.3) +
+      (costCoverageRatio * 0.25) +
+      (productDetailCoverageRatio * 0.2) +
+      (interactionCoverageRatio * 0.15) +
+      (syncCoverageRatio * 0.1)
+    ),
+    limitations,
+  };
+
+  const activity: SettlementReportActivitySummary = {
+    totalDeals,
+    totalInteractions: sumNumbers(marketRows.map(row => row.interactionCount)),
+    averageOrderValue: totalDeals > 0 ? money.totalRevenue / totalDeals : 0,
+    includedMarketCount: marketsInPeriod.length,
+    marketsWithSalesCount: marketRows.filter(row => row.revenue > 0).length,
+  };
+  const decision = buildOverallDecision({
+    money,
+    activity,
+    productRows,
+    dataQuality: baseDataQuality,
+  });
+  const marketDecisions = buildMarketDecisions(marketRows, baseDataQuality);
+  const dataQuality: SettlementReportDataQuality = {
+    ...baseDataQuality,
+    notes: buildDataQualityNotes(baseDataQuality),
+  };
+  const content = buildReportContent({
+    period,
+    money,
+    activity,
+    decision,
+    marketRows,
+    marketDecisions,
+    productRows,
+    dataQuality,
+  });
 
   return {
     period,
     money,
-    activity: {
-      totalDeals,
-      totalInteractions: sumNumbers(marketRows.map(row => row.interactionCount)),
-      averageOrderValue: totalDeals > 0 ? money.totalRevenue / totalDeals : 0,
-      includedMarketCount: marketsInPeriod.length,
-      marketsWithSalesCount: marketRows.filter(row => row.revenue > 0).length,
-    },
+    activity,
+    decision,
     marketRows,
+    marketDecisions,
     productRows,
-    dataQuality: {
-      ...baseDataQuality,
-      notes: buildDataQualityNotes(baseDataQuality),
-    },
+    dataQuality,
+    content,
   };
 }
-

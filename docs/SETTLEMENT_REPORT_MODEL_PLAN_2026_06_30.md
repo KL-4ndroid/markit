@@ -74,7 +74,34 @@ The first model should include:
 - product performance rows: product quantity and revenue, with owner-only estimated cost/profit when product cost is available;
 - data-quality notes: missing daily stats, missing product names, unsynced local rows.
 
-## 5. Data Source Policy
+## 5. Data Completeness Rules
+
+Incomplete data must not make the whole report meaningless.
+
+Instead, each report section has its own availability state:
+
+- `available`: enough data for direct analysis;
+- `limited`: some useful signal exists, but conclusions must be softened;
+- `unavailable`: do not show a conclusion for this section.
+
+Required first-version exception handling:
+
+- Missing cost data must lower profit confidence and disable profit score when no cost coverage exists.
+- Missing product detail must disable product ranking and product restock/action advice when no item-level sales exist.
+- Missing interaction data must disable conversion analysis when no interaction records exist.
+- Unsynced market data must lower overall confidence and show a sync warning.
+- Missing daily stats must lower market ranking confidence.
+
+Examples:
+
+- A handmade brand that uses simple revenue entry without cost still gets revenue, deal count, average order value, and market-level guidance.
+- The same brand does not get a confident net-profit or margin conclusion until costs are recorded.
+- A brand with too many products to itemize still gets market-level performance and settlement totals.
+- The same brand does not get product ranking or restock recommendations until item-level sales are recorded.
+
+The report must be explicit about these limitations so the owner knows which conclusions are reliable.
+
+## 6. Data Source Policy
 
 Initial implementation is a pure function that receives already authorized local view-model data.
 
@@ -91,7 +118,7 @@ Daily stats are the preferred period source because weekly/monthly reports need 
 
 Market projection values remain useful for fixed costs, commission rate, market labels, and sync-status warnings.
 
-## 6. First Implementation Slice
+## 7. First Implementation Slice
 
 Approved now:
 
@@ -100,6 +127,15 @@ Approved now:
 - weekly/monthly period handling;
 - deterministic totals and ranking;
 - tests for permission, totals, date filtering, and purity.
+
+The first implementation must also include:
+
+- explainable scoring components;
+- owner-facing decision content model;
+- confidence and data-limitation outputs;
+- tests for simple revenue entry without cost;
+- tests for item-level sales without product cost;
+- tests proving product analysis is disabled when product detail is missing.
 
 Still not approved:
 
@@ -110,4 +146,3 @@ Still not approved:
 - manager access;
 - cloud-first report queries;
 - background generation jobs.
-

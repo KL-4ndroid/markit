@@ -146,7 +146,25 @@ runTest('builds owner weekly settlement report totals, rankings, and data qualit
   assert.deepEqual(report.dataQuality.marketsWithoutDailyStats, ['market-2']);
   assert.deepEqual(report.dataQuality.missingProductNames, ['product-2']);
   assert.deepEqual(report.dataQuality.unsyncedMarketIds, ['market-2']);
-  assert.equal(report.dataQuality.notes.length, 3);
+  assert.equal(report.decision.overallScore > 0, true);
+  assert.equal(report.decision.grade, 'B');
+  assert.equal(report.decision.recommendation, 'rejoin');
+  assert.equal(report.decision.confidence, 'medium');
+  assert.equal(report.decision.analysisAvailability.profitAnalysis, 'available');
+  assert.equal(report.decision.analysisAvailability.productAnalysis, 'limited');
+  assert.equal(report.decision.analysisAvailability.conversionAnalysis, 'limited');
+  assert.equal(report.marketDecisions[0].marketId, 'market-1');
+  assert.equal(report.content.cover.title, '2026-W23 Settlement Report');
+  assert.equal(report.content.marketActions.length > 0, true);
+  assert.equal(
+    report.dataQuality.limitations.some(limitation => limitation.code === 'missing_product_detail'),
+    true
+  );
+  assert.equal(
+    report.dataQuality.limitations.some(limitation => limitation.code === 'missing_interaction_data'),
+    true
+  );
+  assert.equal(report.dataQuality.notes.length >= report.dataQuality.limitations.length, true);
 });
 
 runTest('monthly report filters markets and daily stats by period', () => {
@@ -195,6 +213,78 @@ runTest('monthly report filters markets and daily stats by period', () => {
   assert.equal(report.dataQuality.includedDailyStatCount, 1);
 });
 
+runTest('simple revenue without cost still produces useful revenue analysis with profit limitations', () => {
+  const report = buildSettlementReportModel({
+    capabilities: ownerCapabilities(),
+    period: {
+      kind: 'weekly',
+      startDate: '2026-06-01',
+      endDate: '2026-06-07',
+      label: '2026-W23',
+    },
+    markets: [market({ tableRental: 0, chairRental: 0, commissionRate: 0 })],
+    dailyStats: [
+      dailyStat({
+        cost: 0,
+        profit: 5000,
+        productsSold: [],
+      }),
+    ],
+  });
+
+  assert.equal(report.money.totalRevenue, 5000);
+  assert.equal(report.activity.averageOrderValue, 1000);
+  assert.equal(report.decision.overallScore > 0, true);
+  assert.equal(report.decision.analysisAvailability.profitAnalysis, 'unavailable');
+  assert.equal(report.decision.analysisAvailability.productAnalysis, 'unavailable');
+  assert.equal(report.decision.scoreComponents.find(component => component.key === 'profit')?.score, null);
+  assert.equal(report.decision.scoreComponents.find(component => component.key === 'revenue_deals')?.status, 'available');
+  assert.equal(
+    report.dataQuality.limitations.some(limitation => limitation.code === 'missing_cost_data'),
+    true
+  );
+  assert.equal(
+    report.dataQuality.limitations.some(limitation => limitation.code === 'missing_product_detail'),
+    true
+  );
+  assert.deepEqual(report.content.productActions, [
+    'Product ranking is unavailable because item-level sales were not recorded.',
+  ]);
+  assert.equal(report.content.dataActions.some(action => action.includes('Revenue, deal count, and average order value remain useful')), true);
+});
+
+runTest('item-level sales without product cost keeps product ranking but marks profit estimate limited', () => {
+  const report = buildSettlementReportModel({
+    capabilities: ownerCapabilities(),
+    period: {
+      kind: 'weekly',
+      startDate: '2026-06-01',
+      endDate: '2026-06-07',
+      label: '2026-W23',
+    },
+    markets: [market({ tableRental: 0, chairRental: 0, commissionRate: 0 })],
+    dailyStats: [
+      dailyStat({
+        cost: 0,
+        profit: 5000,
+        productsSold: [{ productId: 'product-1', quantity: 10, revenue: 5000 }],
+      }),
+    ],
+    products: [product({ cost: undefined })],
+  });
+
+  assert.equal(report.productRows[0].productName, 'Signature Tea');
+  assert.equal(report.productRows[0].estimatedCost, null);
+  assert.equal(report.productRows[0].estimatedGrossProfit, null);
+  assert.equal(report.decision.analysisAvailability.productAnalysis, 'available');
+  assert.equal(report.decision.analysisAvailability.profitAnalysis, 'unavailable');
+  assert.equal(report.content.productActions[0].includes('Signature Tea'), true);
+  assert.equal(
+    report.dataQuality.limitations.some(limitation => limitation.code === 'missing_cost_data'),
+    true
+  );
+});
+
 runTest('blocks manager operator viewer and fail-closed roles', () => {
   for (const capabilities of [
     deriveRoleCapabilities({ isOwner: false, staffRole: 'manager' }),
@@ -235,6 +325,8 @@ runTest('plan records settlement reports as owner-only PDF-first future directio
   assert.match(modelPlanSource, /Manager:[\s\S]*no settlement report access in the initial implementation/);
   assert.match(modelPlanSource, /This plan does not approve PDF generation/);
   assert.match(modelPlanSource, /This plan does not approve[\s\S]*Excel generation/);
+  assert.match(modelPlanSource, /Missing cost data must lower profit confidence/);
+  assert.match(modelPlanSource, /Missing product detail must disable product ranking/);
   assert.match(cloudPlanSource, /Step 7: Owner Settlement Report Model/);
   assert.match(cloudPlanSource, /Designed PDF output later/);
   assert.match(highRiskPlanSource, /## 20\. Owner Settlement Report Model/);
