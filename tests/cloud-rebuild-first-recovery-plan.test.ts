@@ -78,6 +78,12 @@ runTest('plan defines the seven-step execution path with preview before execute'
   assert.match(planSource, /Not approved:[\s\S]*changing sync pull behavior/);
   assert.match(planSource, /Not approved:[\s\S]*reading live Supabase or IndexedDB data/);
   assert.match(planSource, /Not approved:[\s\S]*wiring preview to `\/recovery`/);
+  assert.match(planSource, /Step 5: CSV Reporting Export Specification[\s\S]*Status: completed as specification and static guardrail work/);
+  assert.match(planSource, /docs\/CSV_REPORTING_EXPORT_SPEC_2026_06_30\.md/);
+  assert.match(planSource, /tests\/csv-reporting-export-spec\.test\.ts/);
+  assert.match(planSource, /Not approved:[\s\S]*runtime export UI/);
+  assert.match(planSource, /Not approved:[\s\S]*manager capability changes/);
+  assert.match(planSource, /Not approved:[\s\S]*sensitive staff exports/);
 });
 
 runTest('plan blocks local deletion automatic rebuild and sensitive export until explicit approval', () => {
@@ -118,6 +124,7 @@ runTest('full test suite includes cloud rebuild first plan guardrail', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
 });
 
 function main(): void {

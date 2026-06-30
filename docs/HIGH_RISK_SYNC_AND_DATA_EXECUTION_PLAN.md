@@ -563,3 +563,32 @@ Still not approved:
 - Running replace-cache execute.
 - Adding automatic rebuild.
 - Retrying, draining, resetting, or discarding pending operations.
+
+## 18. CSV Reporting Export Specification
+
+Status: completed as specification and static guardrail work.
+
+Result record:
+
+- `docs/CSV_REPORTING_EXPORT_SPEC_2026_06_30.md`
+- `tests/csv-reporting-export-spec.test.ts`
+
+Safety result:
+
+- CSV / Excel export is explicitly classified as reporting, not backup, import, recovery, cloud rebuild, or cache repair.
+- Current `canImportExport` remains owner-only.
+- Manager export is only a future scoped/redacted candidate and requires a separate capability or route-gate approval.
+- Operator broad export and viewer export remain blocked.
+- Owner-only fields such as cost, profit, supplier, booth fee, commission, registration fee, deposit, and rental costs are forbidden in non-owner exports.
+- Initial implementation is limited to future narrow CSV helper planning; Excel and runtime export UI remain out of scope.
+
+Still not approved:
+
+- Runtime export UI.
+- File generation.
+- Manager export capability changes.
+- Operator own-activity export.
+- Excel generation.
+- Sensitive staff exports.
+- Supabase export queries.
+- Any backup, import, recovery, or cloud rebuild behavior through CSV / Excel.

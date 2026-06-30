@@ -152,6 +152,21 @@ runTest('plan records cloud rebuild preview model without approving live data or
   assert.match(planSource, /Still not approved:[\s\S]*Running replace-cache execute/);
 });
 
+runTest('plan records CSV reporting export spec without approving export runtime or staff-sensitive data', () => {
+  assert.match(planSource, /CSV Reporting Export Specification/);
+  assert.match(planSource, /Status: completed as specification and static guardrail work/);
+  assert.match(planSource, /docs\/CSV_REPORTING_EXPORT_SPEC_2026_06_30\.md/);
+  assert.match(planSource, /CSV \/ Excel export is explicitly classified as reporting, not backup, import, recovery, cloud rebuild, or cache repair/);
+  assert.match(planSource, /Current `canImportExport` remains owner-only/);
+  assert.match(planSource, /Manager export is only a future scoped\/redacted candidate/);
+  assert.match(planSource, /Operator broad export and viewer export remain blocked/);
+  assert.match(planSource, /Owner-only fields such as cost, profit, supplier, booth fee, commission, registration fee, deposit, and rental costs are forbidden in non-owner exports/);
+  assert.match(planSource, /Initial implementation is limited to future narrow CSV helper planning/);
+  assert.match(planSource, /Still not approved:[\s\S]*Runtime export UI/);
+  assert.match(planSource, /Still not approved:[\s\S]*Manager export capability changes/);
+  assert.match(planSource, /Still not approved:[\s\S]*Sensitive staff exports/);
+});
+
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
@@ -165,6 +180,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });

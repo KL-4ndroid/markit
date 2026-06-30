@@ -134,6 +134,13 @@ Not approved:
 
 ### Step 5: CSV Reporting Export Specification
 
+Status: completed as specification and static guardrail work.
+
+Result record:
+
+- `docs/CSV_REPORTING_EXPORT_SPEC_2026_06_30.md`
+- `tests/csv-reporting-export-spec.test.ts`
+
 Goal:
 
 - Design reporting exports separately from backup/recovery.
@@ -149,6 +156,15 @@ Initial low-risk format:
 
 - CSV first.
 - Excel multi-sheet export later.
+
+Not approved:
+
+- runtime export UI;
+- file generation;
+- manager capability changes;
+- operator own-activity export;
+- Excel generation;
+- sensitive staff exports.
 
 ### Step 6: Low-Risk CSV Export
 
