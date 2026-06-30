@@ -2,7 +2,7 @@
 
 Date: 2026-06-30
 
-Status: Slice D equivalence preparation completed; adoption remains deferred.
+Status: Slice D settlement report data-quality adoption completed; UI and analytics adoption remain deferred.
 
 Trigger: remind the user to implement this after the current settlement report original task is completed. The current original task means finishing the settlement report preview/spec work that depends on the report model and distortion-risk model.
 
@@ -173,12 +173,13 @@ Stop condition for further work: helper extraction starts changing model output.
 
 ### Slice D: Shared Insight Quality Model
 
-Status: design, pure model tests, and settlement-report equivalence preparation completed; settlement report adoption remains deferred.
+Status: design, pure model tests, settlement-report equivalence preparation, and settlement-report data-quality adoption completed; UI and analytics adoption remain deferred.
 
 Result record:
 
 - `docs/ANALYTICS_SHARED_INSIGHT_QUALITY_MODEL_DESIGN_2026_06_30.md`
 - `lib/analytics/insight-quality-model.ts`
+- `lib/reporting/settlement-report.ts`
 - `tests/analytics-insight-quality-model.test.ts`
 - `tests/settlement-report-insight-quality-equivalence.test.ts`
 
@@ -198,11 +199,13 @@ Safety result:
 - The model is pure and input-driven.
 - The model returns confidence, confidence score, confidence components, limitations, section availability, warning/info counts, next actions, and final-readiness.
 - The model does not read markets, daily stats, products, events, Supabase, IndexedDB, or browser state.
-- The model is not consumed by settlement report, report preview, or analytics page runtime yet.
+- The model is consumed by settlement report only for report-level data-quality confidence.
+- The model is not consumed by report preview or analytics page runtime yet.
 - Settlement-report equivalence preparation verifies the shared model can match current `dataQuality` confidence, limitations, next actions, counts, and representative section availability.
-- The next safe slice is settlement-report adoption behind equivalence tests.
+- Settlement report model tests still cover totals, scoring, recommendations, limitations, notes, content, and owner-only guard.
+- The next safe slice is report preview data contract and owner-only UI shell planning.
 
-Stop condition: analytics page runtime or settlement report runtime starts depending on it before settlement report output equivalence tests pass.
+Stop condition: analytics page runtime, report preview UI, PDF generation, Excel generation, Supabase reads, IndexedDB reads, or broader settlement report output changes start depending on it without a new approved slice.
 
 ### Slice E: Analytics Page Adoption
 

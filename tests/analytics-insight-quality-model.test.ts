@@ -136,13 +136,14 @@ runTest('clamps component scores and ignores zero-weight components', () => {
 });
 
 runTest('model and design stay pure and do not approve runtime adoption', () => {
-  assert.match(designSource, /Status: design, pure model tests, and settlement-report equivalence preparation completed/);
-  assert.match(designSource, /does not approve settlement report adoption/);
+  assert.match(designSource, /Status: design, pure model tests, settlement-report equivalence preparation, and settlement-report data-quality adoption completed/);
+  assert.match(designSource, /approves only settlement report data-quality adoption/);
+  assert.match(designSource, /does not approve settlement report output changes/);
   assert.match(designSource, /does not approve[\s\S]*analytics page adoption/);
   assert.match(designSource, /does not approve[\s\S]*Supabase reads/);
   assert.match(designSource, /does not approve[\s\S]*IndexedDB reads/);
-  assert.match(designSource, /Completed safe slice: settlement-report equivalence preparation/);
-  assert.match(designSource, /Next safe slice:[\s\S]*wire settlement report to consume `buildInsightQualityModel\(\)` only if equivalence remains green/);
+  assert.match(designSource, /Completed safe slices: settlement-report equivalence preparation and settlement-report data-quality adoption/);
+  assert.match(designSource, /Next safe slice:[\s\S]*owner-only report preview data contract and UI shell/);
   assert.doesNotMatch(modelSource, /from ['"]react|use[A-Z]|@\/lib\/db|Dexie|db\.|supabase|window\.|document\.|pdf|xlsx|csv|recovery|sync/i);
 });
 

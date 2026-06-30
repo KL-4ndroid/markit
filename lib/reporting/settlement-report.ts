@@ -16,6 +16,7 @@ import {
   type InsightLimitationCode,
   type InsightSignalStatus,
 } from '@/lib/analytics/insight-quality';
+import { buildInsightQualityModel, type InsightQualityModel } from '@/lib/analytics/insight-quality-model';
 import type { DailyStats, Market, Product } from '@/types/db';
 
 export type SettlementReportKind = 'weekly' | 'monthly';
@@ -262,6 +263,67 @@ function getSignalStatus(coverage: number): SettlementReportSignalStatus {
   if (coverage >= 0.75) return 'available';
   if (coverage > 0) return 'limited';
   return 'unavailable';
+}
+
+function buildSettlementInsightQualityModel(input: {
+  limitations: SettlementReportLimitation[];
+  includedMarketCount: number;
+  marketsWithoutDailyStats: string[];
+  costCoverageRatio: number;
+  productDetailCoverageRatio: number;
+  interactionCoverageRatio: number;
+  syncCoverageRatio: number;
+}): InsightQualityModel {
+  const dailyStatsCoverage = ratio(
+    input.includedMarketCount - input.marketsWithoutDailyStats.length,
+    input.includedMarketCount
+  );
+
+  return buildInsightQualityModel({
+    limitations: input.limitations,
+    confidenceComponents: [
+      {
+        key: 'daily_stats_coverage',
+        label: 'Daily stats coverage',
+        weight: 30,
+        score: dailyStatsCoverage,
+        status: getSignalStatus(dailyStatsCoverage),
+        reason: 'Measures how many included markets have daily stats in the report period.',
+      },
+      {
+        key: 'cost_coverage',
+        label: 'Cost coverage',
+        weight: 25,
+        score: input.costCoverageRatio,
+        status: getSignalStatus(input.costCoverageRatio),
+        reason: 'Measures how much report revenue has cost data.',
+      },
+      {
+        key: 'product_detail_coverage',
+        label: 'Product detail coverage',
+        weight: 20,
+        score: input.productDetailCoverageRatio,
+        status: getSignalStatus(input.productDetailCoverageRatio),
+        reason: 'Measures how much report revenue can be linked to product detail.',
+      },
+      {
+        key: 'interaction_coverage',
+        label: 'Interaction coverage',
+        weight: 15,
+        score: input.interactionCoverageRatio,
+        status: getSignalStatus(input.interactionCoverageRatio),
+        reason: 'Measures how many included markets have interaction data.',
+      },
+      {
+        key: 'sync_coverage',
+        label: 'Sync coverage',
+        weight: 10,
+        score: input.syncCoverageRatio,
+        status: getSignalStatus(input.syncCoverageRatio),
+        reason: 'Measures how many included markets are synced.',
+      },
+    ],
+  });
 }
 
 function assertOwnerSettlementReportAllowed(capabilities: RoleCapabilities): void {
@@ -998,6 +1060,15 @@ export function buildSettlementReportModel({
     productDetailCoverageRatio,
     interactionCoverageRatio,
   });
+  const reportInsightQuality = buildSettlementInsightQualityModel({
+    limitations,
+    includedMarketCount: marketsInPeriod.length,
+    marketsWithoutDailyStats,
+    costCoverageRatio,
+    productDetailCoverageRatio,
+    interactionCoverageRatio,
+    syncCoverageRatio,
+  });
 
   const baseDataQuality: Omit<SettlementReportDataQuality, 'notes'> = {
     includedDailyStatCount: statsInPeriod.length,
@@ -1020,13 +1091,7 @@ export function buildSettlementReportModel({
     productDetailCoverageRatio,
     interactionCoverageRatio,
     syncCoverageRatio,
-    confidence: getConfidence(
-      (ratio(marketsInPeriod.length - marketsWithoutDailyStats.length, marketsInPeriod.length) * 0.3) +
-      (costCoverageRatio * 0.25) +
-      (productDetailCoverageRatio * 0.2) +
-      (interactionCoverageRatio * 0.15) +
-      (syncCoverageRatio * 0.1)
-    ),
+    confidence: reportInsightQuality.confidence,
     limitations,
   };
 

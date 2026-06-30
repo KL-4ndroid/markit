@@ -15,6 +15,9 @@ type TestFn = () => void;
 const tests: Array<{ name: string; fn: TestFn }> = [];
 const projectRoot = join(__dirname, '..');
 const settlementReportSource = readFileSync(join(projectRoot, 'lib/reporting/settlement-report.ts'), 'utf8');
+const settlementReportImports = settlementReportSource
+  .match(/^import[\s\S]*?;$/gm)
+  ?.join('\n') ?? '';
 const designSource = readFileSync(
   join(projectRoot, 'docs/ANALYTICS_SHARED_INSIGHT_QUALITY_MODEL_DESIGN_2026_06_30.md'),
   'utf8'
@@ -323,10 +326,15 @@ runTest('shared quality model captures distortion-risk warnings from settlement 
   assert.equal(quality.isFinalReady, false);
 });
 
-runTest('equivalence preparation does not wire shared model into settlement runtime yet', () => {
-  assert.match(designSource, /settlement-report equivalence preparation/);
-  assert.match(designSource, /`buildSettlementReportModel\(\)` is not changed in this slice/);
-  assert.doesNotMatch(settlementReportSource, /buildInsightQualityModel|insight-quality-model/);
+runTest('settlement report uses shared model only for data-quality adoption', () => {
+  assert.match(designSource, /settlement-report data-quality adoption completed/);
+  assert.match(designSource, /only for report-level data-quality confidence/);
+  assert.match(settlementReportSource, /buildInsightQualityModel/);
+  assert.match(settlementReportSource, /confidence: reportInsightQuality\.confidence/);
+  assert.doesNotMatch(
+    settlementReportImports,
+    /from ['"](?:react|dexie|@\/lib\/db|@\/lib\/supabase|@\/lib\/.*(?:recovery|sync)|[^'"]*(?:pdf|xlsx|csv))/i
+  );
   assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-insight-quality-equivalence\.test\.ts/);
 });
 

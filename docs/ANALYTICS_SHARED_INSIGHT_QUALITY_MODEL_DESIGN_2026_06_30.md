@@ -2,11 +2,11 @@
 
 Date: 2026-06-30
 
-Status: design, pure model tests, and settlement-report equivalence preparation completed.
+Status: design, pure model tests, settlement-report equivalence preparation, and settlement-report data-quality adoption completed.
 
 Scope: define and test the first shared insight-quality model for BoothBook analytics/reporting reliability signals.
 
-This document does not approve settlement report adoption, analytics page adoption, report preview UI, PDF generation, Excel generation, Supabase reads, IndexedDB reads, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+This document approves only settlement report data-quality adoption of the shared insight-quality model. It does not approve settlement report output changes, analytics page adoption, report preview UI, PDF generation, Excel generation, Supabase reads, IndexedDB reads, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
 ## 1. Goal
 
@@ -91,31 +91,36 @@ Completed in this slice:
 - `tests/analytics-insight-quality-model.test.ts`;
 - static guardrails proving no runtime data source, UI, PDF, Excel, recovery, or sync imports.
 
+Completed in the follow-up adoption slice:
+
+- `buildSettlementReportModel()` uses `buildInsightQualityModel()` to derive report-level `dataQuality.confidence`;
+- settlement report totals, score, recommendation, limitations, notes, and content output remain covered by existing model tests.
+
 Not completed in this slice:
 
-- wiring settlement report to consume this model;
 - wiring report preview to consume this model;
 - wiring analytics page to consume this model.
 
 ## 8. Next Safe Slice
 
-Completed safe slice: settlement-report equivalence preparation.
+Completed safe slices: settlement-report equivalence preparation and settlement-report data-quality adoption.
 
 Result record:
 
 - `tests/settlement-report-insight-quality-equivalence.test.ts`
+- `lib/reporting/settlement-report.ts`
 
 Safety result:
 
 - Tests compare current settlement report `dataQuality` output to what the shared model would produce.
 - Tests verify confidence, limitation list, warning/info counts, next actions, and representative section availability.
-- `buildSettlementReportModel()` is not changed in this slice.
-- `settlement-report.ts` still does not import `buildInsightQualityModel()`.
+- `buildSettlementReportModel()` now consumes `buildInsightQualityModel()` only for report-level data-quality confidence.
+- Settlement report totals, scoring, recommendations, limitations, notes, content, and owner-only guard remain covered by existing tests.
 
 Next safe slice:
 
-- wire settlement report to consume `buildInsightQualityModel()` only if equivalence remains green;
-- keep settlement report totals, scoring, recommendations, and public output unchanged.
+- define the owner-only report preview data contract and UI shell;
+- keep PDF generation, Excel generation, analytics page adoption, Supabase reads, and IndexedDB reads deferred.
 
 ## 9. Stop Conditions
 
