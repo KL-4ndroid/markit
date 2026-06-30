@@ -98,14 +98,15 @@ runTest('plan records cloud rebuild first direction without approving destructiv
   assert.match(planSource, /Cloud data is the primary trusted source/);
   assert.match(planSource, /Local IndexedDB is fast cache and offline temporary state/);
   assert.match(planSource, /Local backup is not a primary user-facing product feature/);
-  assert.match(planSource, /CSV \/ Excel export is a reporting feature, not a backup or recovery feature/);
+  assert.match(planSource, /Settlement reports are the primary reporting feature/);
+  assert.match(planSource, /CSV \/ Excel export is a supporting reporting download feature, not a backup or recovery feature/);
   assert.match(planSource, /Pending operations diagnostics become a required pre-clear safety check/);
   assert.match(planSource, /Cache replacement preview and apply simulator become the basis for cloud rebuild preview/);
   assert.match(planSource, /Replace-cache execute remains blocked/);
   assert.match(planSource, /Still not approved:[\s\S]*Clearing local IndexedDB/);
   assert.match(planSource, /Still not approved:[\s\S]*Running replace-cache execute/);
   assert.match(planSource, /Still not approved:[\s\S]*Adding automatic rebuild after login/);
-  assert.match(planSource, /Still not approved:[\s\S]*Exporting sensitive owner-only CSV \/ Excel fields/);
+  assert.match(planSource, /Still not approved:[\s\S]*Exporting settlement report, PDF, CSV, or Excel data to manager, operator, or viewer roles/);
 });
 
 runTest('plan records clear local and resync design without approving execution', () => {
@@ -156,12 +157,13 @@ runTest('plan records CSV reporting export spec without approving export runtime
   assert.match(planSource, /CSV Reporting Export Specification/);
   assert.match(planSource, /Status: completed as specification and static guardrail work/);
   assert.match(planSource, /docs\/CSV_REPORTING_EXPORT_SPEC_2026_06_30\.md/);
-  assert.match(planSource, /CSV \/ Excel export is explicitly classified as reporting, not backup, import, recovery, cloud rebuild, or cache repair/);
+  assert.match(planSource, /CSV \/ Excel export is explicitly classified as supporting reporting download, not backup, import, recovery, cloud rebuild, or cache repair/);
+  assert.match(planSource, /Settlement reports are now the primary reporting product direction/);
   assert.match(planSource, /Current `canImportExport` remains owner-only/);
-  assert.match(planSource, /Manager export is only a future scoped\/redacted candidate/);
+  assert.match(planSource, /Manager report\/export access is cancelled for the initial implementation/);
   assert.match(planSource, /Operator broad export and viewer export remain blocked/);
   assert.match(planSource, /Owner-only fields such as cost, profit, supplier, booth fee, commission, registration fee, deposit, and rental costs are forbidden in non-owner exports/);
-  assert.match(planSource, /Initial implementation is limited to future narrow CSV helper planning/);
+  assert.match(planSource, /Runtime CSV UI is no longer the next product slice/);
   assert.match(planSource, /Still not approved:[\s\S]*Runtime export UI/);
   assert.match(planSource, /Still not approved:[\s\S]*Manager export capability changes/);
   assert.match(planSource, /Still not approved:[\s\S]*Sensitive staff exports/);
@@ -182,6 +184,19 @@ runTest('plan records low-risk CSV helper without approving UI file generation o
   assert.match(planSource, /Still not approved:[\s\S]*Staff-sensitive export/);
 });
 
+runTest('plan records owner settlement report model without approving PDF Excel UI or manager access', () => {
+  assert.match(planSource, /Owner Settlement Report Model/);
+  assert.match(planSource, /Status: completed as pure data model and static guardrail work/);
+  assert.match(planSource, /docs\/SETTLEMENT_REPORT_MODEL_PLAN_2026_06_30\.md/);
+  assert.match(planSource, /lib\/reporting\/settlement-report\.ts/);
+  assert.match(planSource, /tests\/settlement-report-model\.test\.ts/);
+  assert.match(planSource, /owner-only weekly\/monthly settlement report model/);
+  assert.match(planSource, /PDF is now the preferred future presentation format/);
+  assert.match(planSource, /Still not approved:[\s\S]*PDF generation or visual template implementation/);
+  assert.match(planSource, /Still not approved:[\s\S]*Excel generation/);
+  assert.match(planSource, /Still not approved:[\s\S]*Manager report\/export access/);
+});
+
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
@@ -197,6 +212,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-model\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });

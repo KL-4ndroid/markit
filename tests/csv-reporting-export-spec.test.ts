@@ -25,7 +25,8 @@ console.log('\n=== CSV reporting export specification ===');
 
 runTest('spec exists and classifies CSV Excel as reporting not recovery', () => {
   assert.ok(existsSync(specPath));
-  assert.match(specSource, /CSV \/ Excel export is a reporting feature/);
+  assert.match(specSource, /CSV \/ Excel export is a supporting reporting download feature/);
+  assert.match(specSource, /primary product direction is now settlement reports/);
   assert.match(specSource, /It is not:[\s\S]*a backup format/);
   assert.match(specSource, /It is not:[\s\S]*an import format/);
   assert.match(specSource, /It is not:[\s\S]*a recovery mechanism/);
@@ -43,8 +44,8 @@ runTest('spec preserves current owner-only import export baseline', () => {
 
 runTest('spec defines role policy without approving manager operator or viewer export', () => {
   assert.match(specSource, /Owner:[\s\S]*May export full reporting CSVs/);
-  assert.match(specSource, /Manager:[\s\S]*Future candidate for authorized market-scope CSV reports only/);
-  assert.match(specSource, /Manager:[\s\S]*Requires a separate capability or route gate before implementation/);
+  assert.match(specSource, /Manager:[\s\S]*No CSV, Excel, PDF, or settlement-report export in the initial implementation/);
+  assert.match(specSource, /Manager:[\s\S]*Any future authorized market-scope export requires a separate approval, capability, and redaction tests/);
   assert.match(specSource, /Operator:[\s\S]*No broad CSV export by default/);
   assert.match(specSource, /Viewer:[\s\S]*No export/);
 });
@@ -61,7 +62,7 @@ runTest('spec lists initial report candidates and recommends one narrow first im
   }
 
   assert.match(specSource, /Do not implement all report types at once/);
-  assert.match(specSource, /preferably `market_summary` or `daily_sales_summary`/);
+  assert.match(specSource, /pure owner-only settlement report data model/);
 });
 
 runTest('spec keeps sensitive finance and supplier fields owner-only', () => {
@@ -90,7 +91,8 @@ runTest('spec keeps sensitive finance and supplier fields owner-only', () => {
   }
 
   assert.match(specSource, /Snake-case equivalents are also owner-only/);
-  assert.match(specSource, /Manager, operator, and viewer exports must omit these fields, not mask them/);
+  assert.match(specSource, /Manager, operator, and viewer exports remain disabled for now/);
+  assert.match(specSource, /If a future non-owner export is approved, these fields must be omitted, not masked/);
 });
 
 runTest('spec defines manager redacted allowlist without approving implementation', () => {
@@ -166,7 +168,8 @@ runTest('cloud rebuild and high-risk plans record step 5 completion and stop lin
   assert.match(highRiskPlanSource, /CSV Reporting Export Specification/);
   assert.match(highRiskPlanSource, /Low-Risk CSV Export Helper/);
   assert.match(highRiskPlanSource, /The helper requires owner `canImportExport` and `canViewOwnerFinance` capabilities/);
-  assert.match(highRiskPlanSource, /Manager export is only a future scoped\/redacted candidate/);
+  assert.match(highRiskPlanSource, /Manager report\/export access is cancelled for the initial implementation/);
+  assert.match(highRiskPlanSource, /Settlement reports are now the primary reporting product direction/);
   assert.match(highRiskPlanSource, /Still not approved:[\s\S]*Runtime export UI/);
   assert.match(highRiskPlanSource, /Still not approved:[\s\S]*Sensitive staff exports/);
 });

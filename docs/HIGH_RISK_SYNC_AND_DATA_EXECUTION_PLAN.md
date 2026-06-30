@@ -461,7 +461,8 @@ Current product decision:
 - Local backup is not a primary user-facing product feature.
 - Emergency local backup remains only as an internal guardrail before high-risk local mutation until cloud rebuild is proven safe.
 - If local data is corrupted, the preferred user-facing recovery direction is to clear local data and resync from cloud.
-- CSV / Excel export is a reporting feature, not a backup or recovery feature.
+- Settlement reports are the primary reporting feature.
+- CSV / Excel export is a supporting reporting download feature, not a backup or recovery feature.
 
 Reclassified prior work:
 
@@ -480,7 +481,7 @@ Still not approved:
 - Adding automatic rebuild after login.
 - Broadening `/recovery` tools to staff roles.
 - Exposing production import UI.
-- Exporting sensitive owner-only CSV / Excel fields to manager, operator, or viewer roles.
+- Exporting settlement report, PDF, CSV, or Excel data to manager, operator, or viewer roles.
 
 ## 15. Clear Local And Resync Design
 
@@ -575,12 +576,13 @@ Result record:
 
 Safety result:
 
-- CSV / Excel export is explicitly classified as reporting, not backup, import, recovery, cloud rebuild, or cache repair.
+- CSV / Excel export is explicitly classified as supporting reporting download, not backup, import, recovery, cloud rebuild, or cache repair.
+- Settlement reports are now the primary reporting product direction.
 - Current `canImportExport` remains owner-only.
-- Manager export is only a future scoped/redacted candidate and requires a separate capability or route-gate approval.
+- Manager report/export access is cancelled for the initial implementation and requires a separate capability or route-gate approval if reconsidered later.
 - Operator broad export and viewer export remain blocked.
 - Owner-only fields such as cost, profit, supplier, booth fee, commission, registration fee, deposit, and rental costs are forbidden in non-owner exports.
-- Initial implementation is limited to future narrow CSV helper planning; Excel and runtime export UI remain out of scope.
+- Runtime CSV UI is no longer the next product slice; owner-only settlement report data modeling is the next approved direction.
 
 Still not approved:
 
@@ -620,3 +622,32 @@ Still not approved:
 - Excel generation.
 - Supabase export queries.
 - Staff-sensitive export.
+
+## 20. Owner Settlement Report Model
+
+Status: completed as pure data model and static guardrail work.
+
+Result record:
+
+- `docs/SETTLEMENT_REPORT_MODEL_PLAN_2026_06_30.md`
+- `lib/reporting/settlement-report.ts`
+- `tests/settlement-report-model.test.ts`
+
+Safety result:
+
+- Added an owner-only weekly/monthly settlement report model from caller-provided authorized local view-model data.
+- The model summarizes revenue, product cost, gross profit, fixed market cost, commission, net profit, deal count, interactions, average order value, market rankings, product rankings, and data-quality notes.
+- Manager, operator, viewer, and fail-closed roles are blocked.
+- The model does not import Supabase, IndexedDB, React, browser download APIs, PDF libraries, Excel libraries, CSV helpers, sync services, or recovery UI.
+- PDF is now the preferred future presentation format, but no PDF generation is implemented in this slice.
+- Excel remains a future detailed-download format, but no Excel generation is implemented in this slice.
+
+Still not approved:
+
+- Runtime report UI.
+- PDF generation or visual template implementation.
+- Browser download or file generation.
+- Excel generation.
+- Manager report/export access.
+- Supabase report queries.
+- Background report generation.

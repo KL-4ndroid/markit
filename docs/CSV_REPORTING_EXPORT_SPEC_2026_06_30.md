@@ -8,7 +8,9 @@ Scope: define reporting CSV / future Excel exports separately from backup, impor
 
 ## 1. Product Direction
 
-CSV / Excel export is a reporting feature.
+CSV / Excel export is a supporting reporting download feature.
+
+The primary product direction is now settlement reports: weekly and monthly owner-only report models that can later power designed PDF output. CSV remains useful for data exchange and Excel remains useful for deeper analysis, but neither should lead the user experience.
 
 It is not:
 
@@ -18,7 +20,7 @@ It is not:
 - a replacement for cloud rebuild;
 - a replacement for local cache repair.
 
-The export must be designed for owner and manager reporting workflows, while preserving existing staff data boundaries.
+The export must preserve existing staff data boundaries. Manager export was previously considered as a future candidate, but it is cancelled for now and must not be implemented without a separate approval.
 
 ## 2. Current Permission Baseline
 
@@ -38,11 +40,8 @@ Owner:
 
 Manager:
 
-- Future candidate for authorized market-scope CSV reports only.
-- Must not export unrelated owner cache or cross-market owner account data.
-- Must not export owner-only finance fields.
-- Must not export supplier or product cost fields.
-- Requires a separate capability or route gate before implementation.
+- No CSV, Excel, PDF, or settlement-report export in the initial implementation.
+- Any future authorized market-scope export requires a separate approval, capability, and redaction tests.
 
 Operator:
 
@@ -56,7 +55,7 @@ Viewer:
 
 ## 4. Initial CSV Report Types
 
-First low-risk CSV candidates:
+CSV candidates remain future supporting formats:
 
 | Report | Owner | Manager candidate | Operator | Viewer |
 | --- | --- | --- | --- | --- |
@@ -66,7 +65,7 @@ First low-risk CSV candidates:
 | `transaction_log` | full | scoped redacted | no | no |
 | `field_operations` | full | scoped redacted | no | no |
 
-Do not implement all report types at once. The first implementation should choose one narrow CSV, preferably `market_summary` or `daily_sales_summary`.
+Do not implement all report types at once. The next approved direction is not runtime CSV UI; it is the pure owner-only settlement report data model.
 
 ## 5. Sensitive Field Policy
 
@@ -96,11 +95,11 @@ These fields are owner-only in reporting exports:
 
 Snake-case equivalents are also owner-only.
 
-Manager, operator, and viewer exports must omit these fields, not mask them.
+Manager, operator, and viewer exports remain disabled for now. If a future non-owner export is approved, these fields must be omitted, not masked.
 
 ## 6. Manager Redacted Field Allowlist
 
-Manager candidate CSV exports may include only scoped operational/reporting fields such as:
+If manager export is reconsidered later, candidate CSV exports may include only scoped operational/reporting fields such as:
 
 - market id;
 - market name;
@@ -118,11 +117,11 @@ Manager candidate CSV exports may include only scoped operational/reporting fiel
 - checklist item title and completion state;
 - field note text for authorized markets.
 
-This allowlist is not approval to implement manager export. It defines the safe boundary for a future implementation.
+This allowlist is not approval to implement manager export. It defines only the safe boundary for a possible future discussion.
 
 ## 7. Data Source Policy
 
-First CSV implementation should use current authorized local view-model data where possible.
+First reporting implementation should use current authorized local view-model data where possible.
 
 It must not:
 
@@ -139,7 +138,7 @@ If the source includes local-only or pending rows, the CSV must either:
 
 ## 8. Output Format
 
-Initial format:
+Initial raw download format, when approved later:
 
 - CSV only;
 - UTF-8;
@@ -224,3 +223,24 @@ Still not approved:
 - Excel generation;
 - Supabase export queries;
 - staff-sensitive export.
+
+## 12. Direction Update: Settlement Reports First
+
+Status: approved direction, data-model phase only.
+
+Settlement reports supersede runtime CSV UI as the next product slice.
+
+Approved next:
+
+- owner-only weekly/monthly settlement report data model;
+- pure helper and tests;
+- data-quality notes that can later be displayed in a designed PDF.
+
+Still not approved:
+
+- PDF generation library or template;
+- Excel generation library;
+- download UI;
+- manager export/report access;
+- cloud export queries;
+- background report generation.

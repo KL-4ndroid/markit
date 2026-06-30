@@ -28,7 +28,8 @@ runTest('plan exists and records the new recovery product direction', () => {
   assert.match(planSource, /Local IndexedDB is fast cache and offline temporary state/);
   assert.match(planSource, /Local backup is not a primary user-facing product feature/);
   assert.match(planSource, /clear local data and resync from cloud/);
-  assert.match(planSource, /CSV \/ Excel export is a reporting feature, not a backup or recovery feature/);
+  assert.match(planSource, /Settlement reports are the primary reporting feature/);
+  assert.match(planSource, /CSV \/ Excel export is a supporting reporting download feature, not a backup or recovery feature/);
 });
 
 runTest('plan reclassifies previous import recovery and sync work without approving mutation', () => {
@@ -46,7 +47,7 @@ runTest('plan reclassifies previous import recovery and sync work without approv
   }
 });
 
-runTest('plan defines the seven-step execution path with preview before execute', () => {
+runTest('plan defines the eight-step execution path with preview before execute', () => {
   for (const expected of [
     /Step 1: Plan Update/,
     /Step 2: Clear Local And Resync Design/,
@@ -54,7 +55,8 @@ runTest('plan defines the seven-step execution path with preview before execute'
     /Step 4: Cloud Rebuild Preview/,
     /Step 5: CSV Reporting Export Specification/,
     /Step 6: Low-Risk CSV Export/,
-    /Step 7: Replace-Cache Execute Decision/,
+    /Step 7: Owner Settlement Report Model/,
+    /Step 8: Replace-Cache Execute Decision/,
   ]) {
     assert.match(planSource, expected);
   }
@@ -91,6 +93,13 @@ runTest('plan defines the seven-step execution path with preview before execute'
   assert.match(planSource, /owner-only `market_summary` CSV builder/);
   assert.match(planSource, /static tests proving no runtime data source, UI, download, Excel, or sync integration/);
   assert.match(planSource, /Not approved in this plan:[\s\S]*browser download\/file generation/);
+  assert.match(planSource, /Step 7: Owner Settlement Report Model[\s\S]*Status: completed as pure data model and static guardrail work/);
+  assert.match(planSource, /docs\/SETTLEMENT_REPORT_MODEL_PLAN_2026_06_30\.md/);
+  assert.match(planSource, /lib\/reporting\/settlement-report\.ts/);
+  assert.match(planSource, /tests\/settlement-report-model\.test\.ts/);
+  assert.match(planSource, /Designed PDF output later/);
+  assert.match(planSource, /Not approved in this plan:[\s\S]*PDF generation/);
+  assert.match(planSource, /Not approved in this plan:[\s\S]*manager report\/export access/);
 });
 
 runTest('plan blocks local deletion automatic rebuild and sensitive export until explicit approval', () => {
@@ -101,7 +110,7 @@ runTest('plan blocks local deletion automatic rebuild and sensitive export until
     /adding automatic rebuild after login/,
     /broadening `\/recovery` tools to staff roles/,
     /exposing import UI/,
-    /adding CSV\/Excel exports that include cost, profit, booth fee, supplier, or owner-only fields/,
+    /adding PDF\/CSV\/Excel exports that include cost, profit, booth fee, supplier, or owner-only fields for any non-owner role/,
   ]) {
     assert.match(planSource, blocked);
   }
@@ -133,6 +142,7 @@ runTest('full test suite includes cloud rebuild first plan guardrail', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-model\.test\.ts/);
 });
 
 function main(): void {

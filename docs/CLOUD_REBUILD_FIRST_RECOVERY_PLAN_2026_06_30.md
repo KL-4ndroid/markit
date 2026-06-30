@@ -17,7 +17,8 @@ The new recovery direction is:
 - Local backup is not a primary user-facing product feature.
 - Local backup may remain as an internal safety mechanism before high-risk operations until cloud rebuild is proven safe.
 - If local data is corrupted, the preferred user-facing direction is to clear local data and resync from cloud.
-- CSV / Excel export is a reporting feature, not a backup or recovery feature.
+- Settlement reports are the primary reporting feature.
+- CSV / Excel export is a supporting reporting download feature, not a backup or recovery feature.
 
 ## 2. Reclassification Of Existing Work
 
@@ -148,14 +149,16 @@ Goal:
 Recommended permissions:
 
 - Owner: full reporting exports.
-- Manager: authorized market scope reporting exports.
+- Manager: no settlement report, CSV, Excel, or PDF export in the initial implementation.
 - Operator: no broad export by default; optional own activity export only after approval.
 - Viewer: no export.
 
-Initial low-risk format:
+Initial reporting direction:
 
-- CSV first.
-- Excel multi-sheet export later.
+- Owner-only weekly/monthly settlement report data model first.
+- Designed PDF output later.
+- Excel multi-sheet export later as a detailed download format.
+- CSV remains a low-level supporting format, not the primary product surface.
 
 Not approved:
 
@@ -194,7 +197,43 @@ Not approved in this plan:
 - Excel generation;
 - background export jobs.
 
-### Step 7: Replace-Cache Execute Decision
+### Step 7: Owner Settlement Report Model
+
+Status: completed as pure data model and static guardrail work.
+
+Result record:
+
+- `docs/SETTLEMENT_REPORT_MODEL_PLAN_2026_06_30.md`
+- `lib/reporting/settlement-report.ts`
+- `tests/settlement-report-model.test.ts`
+
+Goal:
+
+- Build the first owner-only weekly/monthly settlement report data model.
+- Support future designed PDF output without choosing a PDF library yet.
+- Keep Excel as a future detailed-download format.
+- Cancel the previously discussed initial manager reporting/export access.
+
+Completed:
+
+- owner-only capability guard;
+- weekly/monthly period model;
+- summary KPIs;
+- market performance rows;
+- product performance rows;
+- data-quality notes;
+- static tests proving no runtime data source, UI, download, PDF, Excel, CSV, or sync integration.
+
+Not approved in this plan:
+
+- PDF generation;
+- Excel generation;
+- report download UI;
+- manager report/export access;
+- Supabase report queries;
+- background report generation.
+
+### Step 8: Replace-Cache Execute Decision
 
 Goal:
 
@@ -214,7 +253,7 @@ Stop for explicit approval before:
 - adding automatic rebuild after login;
 - broadening `/recovery` tools to staff roles;
 - exposing import UI;
-- adding CSV/Excel exports that include cost, profit, booth fee, supplier, or owner-only fields.
+- adding PDF/CSV/Excel exports that include cost, profit, booth fee, supplier, or owner-only fields for any non-owner role.
 
 ## 5. Current Recommendation
 

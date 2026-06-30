@@ -1,0 +1,113 @@
+# Settlement Report Model Plan
+
+Date: 2026-06-30
+
+Status: approved for pure data-model implementation only.
+
+Scope: define and test an owner-only weekly/monthly settlement report data model. This plan does not approve PDF generation, Excel generation, download UI, manager export/report permissions, Supabase reads, IndexedDB writes, or any recovery/sync behavior.
+
+## 1. Product Direction
+
+Settlement reports are the primary reporting experience.
+
+CSV and Excel are supporting download formats, not the main product surface.
+
+The report should answer the questions most market brand owners are likely to care about:
+
+- how much revenue the period produced;
+- how many deals happened;
+- what the average order value was;
+- which markets performed best;
+- which products sold best;
+- how fixed market fees and commission affected net profit;
+- whether the report is based on complete enough data.
+
+The first user-facing artifact should eventually be a designed PDF, because a polished report is more useful for sharing, archiving, and handing to partners than a raw spreadsheet.
+
+Excel remains a future detailed-download format for owners who want deeper operational analysis.
+
+## 2. Permission Policy
+
+Initial settlement reports are owner-only.
+
+Owner:
+
+- may build weekly and monthly settlement reports;
+- may include cost, booth fee, commission, gross profit, and net profit;
+- may later download designed PDF and Excel outputs after separate implementation approval.
+
+Manager:
+
+- no settlement report access in the initial implementation;
+- previous manager export/report candidate is cancelled for now;
+- any future manager-scoped report requires a new permission decision and redaction tests.
+
+Operator and viewer:
+
+- no settlement report access.
+
+## 3. Relationship To Analytics
+
+The analytics page and settlement reports should not compete.
+
+Analytics page:
+
+- interactive;
+- exploratory;
+- useful for trends, filtering, and operational decisions.
+
+Settlement report:
+
+- fixed period;
+- document-like;
+- designed for weekly/monthly closing;
+- suitable for PDF export and sharing;
+- contains a stable summary, rankings, and data-quality notes.
+
+## 4. Initial Model Shape
+
+The first model should include:
+
+- report period: `weekly` or `monthly`, `startDate`, `endDate`, display label;
+- summary KPIs: revenue, product cost, gross profit, fixed market cost, commission, net profit, deals, interactions, average order value;
+- market performance rows: per-market revenue, deals, interactions, gross profit, fixed cost, commission, net profit, average order value;
+- product performance rows: product quantity and revenue, with owner-only estimated cost/profit when product cost is available;
+- data-quality notes: missing daily stats, missing product names, unsynced local rows.
+
+## 5. Data Source Policy
+
+Initial implementation is a pure function that receives already authorized local view-model data.
+
+It must not:
+
+- read from IndexedDB;
+- query Supabase;
+- call sync services;
+- generate PDF, Excel, CSV, or browser downloads;
+- import React;
+- infer manager-safe output.
+
+Daily stats are the preferred period source because weekly/monthly reports need date filtering.
+
+Market projection values remain useful for fixed costs, commission rate, market labels, and sync-status warnings.
+
+## 6. First Implementation Slice
+
+Approved now:
+
+- pure TypeScript data model;
+- owner-only capability guard;
+- weekly/monthly period handling;
+- deterministic totals and ranking;
+- tests for permission, totals, date filtering, and purity.
+
+Still not approved:
+
+- PDF library choice;
+- PDF visual template;
+- Excel library choice;
+- report download UI;
+- manager access;
+- cloud-first report queries;
+- background generation jobs.
+
