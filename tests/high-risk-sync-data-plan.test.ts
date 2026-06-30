@@ -90,6 +90,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-classifier\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-safety-status-ui\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/import-ui-classifier-integration-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });

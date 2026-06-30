@@ -390,3 +390,30 @@ Still not approved:
 - Automatic rollback, restore, repair, or production recovery behavior.
 - Browser/profile IndexedDB mutation verification.
 - Any new repair action.
+
+## 12. Import UI Classifier Integration Design
+
+Status: completed as design and static guardrail work.
+
+Result record:
+
+- `docs/IMPORT_UI_CLASSIFIER_INTEGRATION_PLAN_2026_06_30.md`
+- `tests/import-ui-classifier-integration-plan.test.ts`
+
+Safety result:
+
+- No production UI currently calls `importData()`.
+- The design rejects parsing error-message strings to classify import outcomes.
+- The design rejects reimplementing the import flow in UI.
+- The design rejects mounting classifier output in `/recovery` without an active import operation context.
+- The recommended future runtime path is a separately approved phase-aware DB-layer orchestration boundary.
+- This slice does not change `importData()`, recovery UI behavior, IndexedDB mutation behavior, Supabase behavior, or import UI behavior.
+
+Still not approved:
+
+- Adding a production import UI.
+- Changing `importData()` runtime behavior or thrown error semantics.
+- Introducing a phase-aware import runner.
+- Wiring classifier output into UI.
+- Browser/profile IndexedDB mutation verification.
+- Automatic rollback, restore, repair, or production recovery behavior.

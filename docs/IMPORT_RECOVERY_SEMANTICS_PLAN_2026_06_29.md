@@ -133,9 +133,9 @@ If approved later, the only acceptable setup is:
 
 ## 7. Near-Term Recommendation
 
-Continue only with Phase 1 until explicitly approved otherwise.
+Phase 1 and the first read-only Phase 2 shell are complete.
 
-After Phase 1 passes, the next decision should be whether to implement a pure import-outcome classifier. That classifier should be tested before any UI consumes it.
+The next runtime decision is whether to introduce phase-aware import orchestration for future UI use. That decision is not approved by this document.
 
 ## 8. Pure Import Outcome Classifier
 
@@ -159,7 +159,31 @@ Safety boundaries:
 Still not approved:
 
 - Connecting the classifier to import UI.
-- Showing import safety status in `/recovery`.
-- Reading emergency-backup metadata for UI display.
+- Browser/profile IndexedDB mutation verification.
+- Automatic rollback, restore, repair, or production recovery behavior.
+
+## 9. Import UI Classifier Integration Design
+
+Status: completed as design-only work.
+
+Result record:
+
+- `docs/IMPORT_UI_CLASSIFIER_INTEGRATION_PLAN_2026_06_30.md`
+- `tests/import-ui-classifier-integration-plan.test.ts`
+
+Safety boundaries:
+
+- The design records that production app UI does not currently call `importData()`.
+- The design does not approve runtime UI wiring.
+- The design rejects parsing error-message strings to infer classifier state.
+- The design rejects reimplementing import replacement logic in UI.
+- The design recommends a separately approved phase-aware DB-layer orchestration boundary before any UI consumes classifier output.
+
+Still not approved:
+
+- Adding a production import UI.
+- Changing `importData()` runtime behavior.
+- Introducing a phase-aware import runner.
+- Wiring classifier output into UI.
 - Browser/profile IndexedDB mutation verification.
 - Automatic rollback, restore, repair, or production recovery behavior.
