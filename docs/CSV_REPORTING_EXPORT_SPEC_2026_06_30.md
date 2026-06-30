@@ -196,3 +196,31 @@ Still not approved:
 - sensitive staff exports;
 - Supabase export queries;
 - recovery or backup behavior.
+
+## 11. Step 6 Low-Risk Helper Slice
+
+Status: completed as pure helper and static guardrail work.
+
+Result record:
+
+- `lib/reporting/csv-export.ts`
+- `tests/csv-reporting-export.test.ts`
+
+Completed:
+
+- pure CSV escaping and serialization helper;
+- owner-only `market_summary` CSV builder;
+- stable header order;
+- formula-like text neutralization;
+- owner capability check requiring `canImportExport` and `canViewOwnerFinance`;
+- static tests proving no Supabase, IndexedDB, React, browser download, Excel, sync, or recovery UI dependency.
+
+Still not approved:
+
+- runtime export UI;
+- browser download/file generation;
+- manager export capability;
+- operator own-activity export;
+- Excel generation;
+- Supabase export queries;
+- staff-sensitive export.

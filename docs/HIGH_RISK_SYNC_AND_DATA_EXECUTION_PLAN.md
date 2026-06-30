@@ -592,3 +592,31 @@ Still not approved:
 - Sensitive staff exports.
 - Supabase export queries.
 - Any backup, import, recovery, or cloud rebuild behavior through CSV / Excel.
+
+## 19. Low-Risk CSV Export Helper
+
+Status: completed as pure helper and static guardrail work.
+
+Result record:
+
+- `lib/reporting/csv-export.ts`
+- `tests/csv-reporting-export.test.ts`
+
+Safety result:
+
+- Added pure CSV escaping and serialization.
+- Added owner-only `market_summary` CSV builder from caller-provided authorized rows.
+- The helper requires owner `canImportExport` and `canViewOwnerFinance` capabilities.
+- Manager, operator, viewer, and fail-closed roles are blocked.
+- The helper does not import Supabase, IndexedDB, React, browser download APIs, Excel libraries, sync services, or recovery UI.
+- Production UI and sync paths do not import the helper.
+
+Still not approved:
+
+- Runtime export UI.
+- Browser download or file generation.
+- Manager export capability.
+- Operator own-activity export.
+- Excel generation.
+- Supabase export queries.
+- Staff-sensitive export.

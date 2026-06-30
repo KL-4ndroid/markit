@@ -84,6 +84,13 @@ runTest('plan defines the seven-step execution path with preview before execute'
   assert.match(planSource, /Not approved:[\s\S]*runtime export UI/);
   assert.match(planSource, /Not approved:[\s\S]*manager capability changes/);
   assert.match(planSource, /Not approved:[\s\S]*sensitive staff exports/);
+  assert.match(planSource, /Step 6: Low-Risk CSV Export[\s\S]*Status: completed as pure helper and static guardrail work/);
+  assert.match(planSource, /lib\/reporting\/csv-export\.ts/);
+  assert.match(planSource, /tests\/csv-reporting-export\.test\.ts/);
+  assert.match(planSource, /pure CSV serialization helper/);
+  assert.match(planSource, /owner-only `market_summary` CSV builder/);
+  assert.match(planSource, /static tests proving no runtime data source, UI, download, Excel, or sync integration/);
+  assert.match(planSource, /Not approved in this plan:[\s\S]*browser download\/file generation/);
 });
 
 runTest('plan blocks local deletion automatic rebuild and sensitive export until explicit approval', () => {
@@ -125,6 +132,7 @@ runTest('full test suite includes cloud rebuild first plan guardrail', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export\.test\.ts/);
 });
 
 function main(): void {

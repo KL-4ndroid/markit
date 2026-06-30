@@ -141,13 +141,31 @@ runTest('spec keeps first implementation and future Excel narrowly bounded', () 
   assert.match(specSource, /Future Excel:[\s\S]*separate approval/);
 });
 
+runTest('spec records completed low-risk helper without approving runtime export', () => {
+  assert.match(specSource, /Step 6 Low-Risk Helper Slice/);
+  assert.match(specSource, /Status: completed as pure helper and static guardrail work/);
+  assert.match(specSource, /lib\/reporting\/csv-export\.ts/);
+  assert.match(specSource, /tests\/csv-reporting-export\.test\.ts/);
+  assert.match(specSource, /pure CSV escaping and serialization helper/);
+  assert.match(specSource, /owner-only `market_summary` CSV builder/);
+  assert.match(specSource, /owner capability check requiring `canImportExport` and `canViewOwnerFinance`/);
+  assert.match(specSource, /Still not approved:[\s\S]*runtime export UI/);
+  assert.match(specSource, /Still not approved:[\s\S]*browser download\/file generation/);
+  assert.match(specSource, /Still not approved:[\s\S]*manager export capability/);
+});
+
 runTest('cloud rebuild and high-risk plans record step 5 completion and stop lines', () => {
   assert.match(cloudPlanSource, /Step 5: CSV Reporting Export Specification[\s\S]*Status: completed as specification and static guardrail work/);
   assert.match(cloudPlanSource, /docs\/CSV_REPORTING_EXPORT_SPEC_2026_06_30\.md/);
   assert.match(cloudPlanSource, /tests\/csv-reporting-export-spec\.test\.ts/);
   assert.match(cloudPlanSource, /Not approved:[\s\S]*manager capability changes/);
   assert.match(cloudPlanSource, /Not approved:[\s\S]*sensitive staff exports/);
+  assert.match(cloudPlanSource, /Step 6: Low-Risk CSV Export[\s\S]*Status: completed as pure helper and static guardrail work/);
+  assert.match(cloudPlanSource, /lib\/reporting\/csv-export\.ts/);
+  assert.match(cloudPlanSource, /tests\/csv-reporting-export\.test\.ts/);
   assert.match(highRiskPlanSource, /CSV Reporting Export Specification/);
+  assert.match(highRiskPlanSource, /Low-Risk CSV Export Helper/);
+  assert.match(highRiskPlanSource, /The helper requires owner `canImportExport` and `canViewOwnerFinance` capabilities/);
   assert.match(highRiskPlanSource, /Manager export is only a future scoped\/redacted candidate/);
   assert.match(highRiskPlanSource, /Still not approved:[\s\S]*Runtime export UI/);
   assert.match(highRiskPlanSource, /Still not approved:[\s\S]*Sensitive staff exports/);
@@ -155,6 +173,7 @@ runTest('cloud rebuild and high-risk plans record step 5 completion and stop lin
 
 runTest('full test suite includes CSV reporting export spec guardrail', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export\.test\.ts/);
 });
 
 function main(): void {

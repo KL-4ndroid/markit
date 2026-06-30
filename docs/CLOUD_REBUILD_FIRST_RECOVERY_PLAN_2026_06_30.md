@@ -168,12 +168,28 @@ Not approved:
 
 ### Step 6: Low-Risk CSV Export
 
+Status: completed as pure helper and static guardrail work.
+
+Result record:
+
+- `lib/reporting/csv-export.ts`
+- `tests/csv-reporting-export.test.ts`
+
 Goal:
 
 - Implement narrowly scoped CSV export after the reporting specification is approved.
 
+Completed:
+
+- pure CSV serialization helper;
+- owner-only `market_summary` CSV builder;
+- static tests proving no runtime data source, UI, download, Excel, or sync integration.
+
 Not approved in this plan:
 
+- runtime export UI;
+- browser download/file generation;
+- manager capability changes;
 - exporting sensitive owner-only fields to manager/staff;
 - Excel generation;
 - background export jobs.

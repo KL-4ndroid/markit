@@ -167,6 +167,21 @@ runTest('plan records CSV reporting export spec without approving export runtime
   assert.match(planSource, /Still not approved:[\s\S]*Sensitive staff exports/);
 });
 
+runTest('plan records low-risk CSV helper without approving UI file generation or staff export', () => {
+  assert.match(planSource, /Low-Risk CSV Export Helper/);
+  assert.match(planSource, /Status: completed as pure helper and static guardrail work/);
+  assert.match(planSource, /lib\/reporting\/csv-export\.ts/);
+  assert.match(planSource, /tests\/csv-reporting-export\.test\.ts/);
+  assert.match(planSource, /Added pure CSV escaping and serialization/);
+  assert.match(planSource, /owner-only `market_summary` CSV builder from caller-provided authorized rows/);
+  assert.match(planSource, /requires owner `canImportExport` and `canViewOwnerFinance` capabilities/);
+  assert.match(planSource, /Manager, operator, viewer, and fail-closed roles are blocked/);
+  assert.match(planSource, /does not import Supabase, IndexedDB, React, browser download APIs, Excel libraries, sync services, or recovery UI/);
+  assert.match(planSource, /Still not approved:[\s\S]*Browser download or file generation/);
+  assert.match(planSource, /Still not approved:[\s\S]*Manager export capability/);
+  assert.match(planSource, /Still not approved:[\s\S]*Staff-sensitive export/);
+});
+
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
   assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
@@ -181,6 +196,7 @@ runTest('full test suite includes high-risk plan and importData boundary guardra
   assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
+  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
   assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });
