@@ -93,3 +93,11 @@ Stop for approval before:
 - repairing duplicate records;
 - rebuilding projections;
 - changing sync or recovery behavior.
+
+## 7. Deferred Follow-Up Reminder
+
+After the settlement report preview/spec original task is completed, remind the user to implement:
+
+- `docs/ANALYTICS_SHARED_INSIGHT_CORE_PLAN_2026_06_30.md`
+
+The purpose is to reuse the report model's insight-quality and distortion-risk logic in the analytics page without copying report-specific PDF, cover, or market rejoin content.

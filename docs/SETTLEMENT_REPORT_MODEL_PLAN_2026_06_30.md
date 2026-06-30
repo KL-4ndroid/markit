@@ -171,3 +171,13 @@ Still not approved:
 - manager access;
 - cloud-first report queries;
 - background generation jobs.
+
+## 9. Deferred Follow-Up: Analytics Shared Insight Core
+
+After the settlement report preview/spec original task is completed, remind the user to implement:
+
+- `docs/ANALYTICS_SHARED_INSIGHT_CORE_PLAN_2026_06_30.md`
+
+The follow-up goal is to extract reusable insight-quality, confidence, and limitation logic from `lib/reporting/settlement-report.ts` into a shared analytics core before upgrading the analytics page.
+
+This follow-up is intentionally deferred until the report preview/spec work is complete, and it does not approve analytics page edits yet.
