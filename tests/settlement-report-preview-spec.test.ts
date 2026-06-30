@@ -30,7 +30,7 @@ console.log('\n=== Settlement report preview spec ===');
 
 runTest('spec exists and stays non-runtime', () => {
   assert.match(previewSpecSource, /# Settlement Report Preview Spec/);
-  assert.match(previewSpecSource, /Status: approved for specification and guardrail tests only/);
+  assert.match(previewSpecSource, /Status: Slice B pure preview view model completed; preview UI and PDF generation remain deferred/);
   assert.match(previewSpecSource, /This document does not approve preview UI implementation/);
   assert.match(previewSpecSource, /This document does not approve[\s\S]*PDF generation/);
   assert.match(previewSpecSource, /This document does not approve[\s\S]*Supabase reads/);
@@ -92,7 +92,8 @@ runTest('spec maps every current limitation code to visible behavior', () => {
 runTest('spec keeps PDF and UI as later decisions', () => {
   assert.match(previewSpecSource, /Future PDF Relationship/);
   assert.match(previewSpecSource, /this spec does not choose:[\s\S]*PDF library/);
-  assert.match(previewSpecSource, /Slice B: Pure Preview View Model/);
+  assert.match(previewSpecSource, /Slice B: Pure Preview View Model[\s\S]*Status: completed/);
+  assert.match(previewSpecSource, /lib\/reporting\/settlement-report-preview\.ts/);
   assert.match(previewSpecSource, /Slice C: Owner-Only Preview UI Shell/);
   assert.match(previewSpecSource, /Slice D: PDF Technical Plan/);
   assert.match(previewSpecSource, /Stop for approval before:[\s\S]*adding report preview UI/);

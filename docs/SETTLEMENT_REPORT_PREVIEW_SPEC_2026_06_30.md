@@ -2,9 +2,9 @@
 
 Date: 2026-06-30
 
-Status: approved for specification and guardrail tests only.
+Status: Slice B pure preview view model completed; preview UI and PDF generation remain deferred.
 
-Scope: define the future owner-only settlement report preview experience that will display the output of `buildSettlementReportModel()` before any PDF generation is implemented.
+Scope: define the future owner-only settlement report preview experience and the pure preview view model that displays the output of `buildSettlementReportModel()` before any UI or PDF generation is implemented.
 
 This document does not approve preview UI implementation, PDF generation, Excel generation, browser download, Supabase reads, IndexedDB reads, manager access, analytics page changes, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
@@ -287,7 +287,12 @@ No runtime code.
 
 ### Slice B: Pure Preview View Model
 
-Future, after approval.
+Status: completed.
+
+Result record:
+
+- `lib/reporting/settlement-report-preview.ts`
+- `tests/settlement-report-preview-model.test.ts`
 
 Create a pure helper that maps `SettlementReportModel` to a preview-specific view model.
 
@@ -298,6 +303,13 @@ Allowed:
 - visible copy keys;
 - no React;
 - no browser APIs.
+
+Safety result:
+
+- The helper consumes an already-built `SettlementReportModel`;
+- the helper keeps an owner-only capability guard;
+- the helper exposes readiness, reliability, section status, top warnings, and next actions;
+- the helper does not render UI, read IndexedDB, query Supabase, generate files, or trigger downloads.
 
 Not allowed:
 
