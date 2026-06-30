@@ -23,23 +23,21 @@ export async function detectAnonymousData(currentUserId: string): Promise<{
 }> {
   try {
     // 檢查本地市集
-    const markets = await db.markets.toArray();
+    const marketCount = await db.markets
+      .filter(m => !m.owner_id || m.owner_id === 'local' || m.owner_id !== currentUserId)
+      .count();
 
     // 找出匿名資料（owner_id 為 'local' 或不屬於當前用戶）
-    const anonymousMarkets = markets.filter(
-      m => !m.owner_id || m.owner_id === 'local' || m.owner_id !== currentUserId
-    );
 
     // 檢查本地事件
-    const events = await db.events.toArray();
-    const anonymousEvents = events.filter(
-      e => !e.actor_id || e.actor_id === 'local' || e.actor_id !== currentUserId
-    );
+    const eventCount = await db.events
+      .filter(e => !e.actor_id || e.actor_id === 'local' || e.actor_id !== currentUserId)
+      .count();
 
     return {
-      hasAnonymousData: anonymousMarkets.length > 0 || anonymousEvents.length > 0,
-      marketCount: anonymousMarkets.length,
-      eventCount: anonymousEvents.length,
+      hasAnonymousData: marketCount > 0 || eventCount > 0,
+      marketCount,
+      eventCount,
     };
   } catch (error) {
     console.error('檢測匿名資料失敗:', error);

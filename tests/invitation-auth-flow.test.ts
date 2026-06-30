@@ -64,12 +64,12 @@ runTest('accepted invitation signup skips anonymous-data scan and redirects home
   const acceptedIndex = authManagerSource.indexOf('if (meta?.invitationAccepted)');
   const replaceIndex = authManagerSource.indexOf("router.replace('/')", acceptedIndex);
   const returnIndex = authManagerSource.indexOf('return;', replaceIndex);
-  const detectIndex = authManagerSource.indexOf('detectAnonymousData(userId)');
+  const scheduleIndex = authManagerSource.indexOf('scheduleAnonymousDataDetection(userId, email)');
 
   assert.ok(acceptedIndex > 0, 'AuthManager must branch on invitation success metadata');
   assert.ok(replaceIndex > acceptedIndex, 'accepted invitation must redirect home');
   assert.ok(returnIndex > replaceIndex, 'accepted invitation must stop before migration detection');
-  assert.ok(detectIndex > returnIndex, 'anonymous-data detection must remain outside invitation fast path');
+  assert.ok(scheduleIndex > returnIndex, 'anonymous-data detection must remain outside invitation fast path');
 });
 
 function main(): void {

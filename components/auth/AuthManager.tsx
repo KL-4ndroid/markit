@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { detectAnonymousData } from '@/lib/supabase/migration';
 import { LoginModal } from './LoginModal';
@@ -13,6 +13,9 @@ type LoginSuccessMeta = {
 
 export function AuthManager() {
   const router = useRouter();
+  const migrationDetectionRequestRef = useRef(0);
+  const migrationDetectionTimeoutRef = useRef<number | null>(null);
+  const migrationDetectionIdleRef = useRef<number | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>('login');
   const [showMigrationModal, setShowMigrationModal] = useState(false);
@@ -46,26 +49,58 @@ export function AuthManager() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (migrationDetectionTimeoutRef.current != null) {
+        window.clearTimeout(migrationDetectionTimeoutRef.current);
+      }
+      if (migrationDetectionIdleRef.current != null && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(migrationDetectionIdleRef.current);
+      }
+    };
+  }, []);
+
+  const scheduleAnonymousDataDetection = (userId: string, email: string) => {
+    const requestId = ++migrationDetectionRequestRef.current;
+
+    const runDetection = async () => {
+      const { hasAnonymousData, marketCount, eventCount } = await detectAnonymousData(userId);
+      if (requestId !== migrationDetectionRequestRef.current) return;
+
+      if (hasAnonymousData) {
+        setMigrationData({
+          userId,
+          userEmail: email,
+          marketCount,
+          eventCount,
+        });
+        setShowMigrationModal(true);
+      }
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      migrationDetectionIdleRef.current = window.requestIdleCallback(() => {
+        void runDetection();
+      }, { timeout: 2000 });
+      return;
+    }
+
+    migrationDetectionTimeoutRef.current = window.setTimeout(() => {
+      void runDetection();
+    }, 250);
+  };
+
   const handleLoginSuccess = async (userId: string, email: string, meta?: LoginSuccessMeta) => {
     setShowLoginModal(false);
     window.dispatchEvent(new CustomEvent('auth:login-success'));
 
     if (meta?.invitationAccepted) {
+      migrationDetectionRequestRef.current += 1;
       router.replace('/');
       return;
     }
 
-    const { hasAnonymousData, marketCount, eventCount } = await detectAnonymousData(userId);
-
-    if (hasAnonymousData) {
-      setMigrationData({
-        userId,
-        userEmail: email,
-        marketCount,
-        eventCount,
-      });
-      setShowMigrationModal(true);
-    }
+    scheduleAnonymousDataDetection(userId, email);
   };
 
   const handleMigrationComplete = () => {
