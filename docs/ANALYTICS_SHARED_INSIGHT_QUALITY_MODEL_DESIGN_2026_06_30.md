@@ -2,7 +2,7 @@
 
 Date: 2026-06-30
 
-Status: design and pure model tests completed.
+Status: design, pure model tests, and settlement-report equivalence preparation completed.
 
 Scope: define and test the first shared insight-quality model for BoothBook analytics/reporting reliability signals.
 
@@ -99,11 +99,23 @@ Not completed in this slice:
 
 ## 8. Next Safe Slice
 
-The next safe slice is settlement-report equivalence preparation:
+Completed safe slice: settlement-report equivalence preparation.
 
-- add tests that compare current settlement report `dataQuality` output to what the shared model would produce;
-- do not change `buildSettlementReportModel()` yet;
-- only after equivalence is proven should settlement report consume `buildInsightQualityModel()`.
+Result record:
+
+- `tests/settlement-report-insight-quality-equivalence.test.ts`
+
+Safety result:
+
+- Tests compare current settlement report `dataQuality` output to what the shared model would produce.
+- Tests verify confidence, limitation list, warning/info counts, next actions, and representative section availability.
+- `buildSettlementReportModel()` is not changed in this slice.
+- `settlement-report.ts` still does not import `buildInsightQualityModel()`.
+
+Next safe slice:
+
+- wire settlement report to consume `buildInsightQualityModel()` only if equivalence remains green;
+- keep settlement report totals, scoring, recommendations, and public output unchanged.
 
 ## 9. Stop Conditions
 

@@ -46,12 +46,12 @@ console.log('\n=== Analytics shared insight core plan ===');
 
 runTest('plan records Slice D design and model tests without adoption', () => {
   assert.match(planSource, /# Analytics Shared Insight Core Plan/);
-  assert.match(planSource, /Status: Slice D design\/model tests completed; adoption remains deferred/);
+  assert.match(planSource, /Status: Slice D equivalence preparation completed; adoption remains deferred/);
   assert.match(planSource, /Trigger: remind the user to implement this after the current settlement report original task is completed/);
   assert.match(planSource, /settlement report preview\/spec work/);
   assert.match(planSource, /Slice B: Pure Type Extraction[\s\S]*Status: completed as pure type extraction/);
   assert.match(planSource, /Slice C: Pure Helper Extraction[\s\S]*Status: completed as pure helper extraction/);
-  assert.match(planSource, /Slice D: Shared Insight Quality Model[\s\S]*Status: design and pure model tests completed; settlement report adoption remains deferred/);
+  assert.match(planSource, /Slice D: Shared Insight Quality Model[\s\S]*Status: design, pure model tests, and settlement-report equivalence preparation completed; settlement report adoption remains deferred/);
   assert.match(planSource, /lib\/analytics\/insight-quality\.ts/);
   assert.match(planSource, /tests\/analytics-insight-quality\.test\.ts/);
   assert.match(planSource, /lib\/analytics\/insight-quality-model\.ts/);
@@ -118,9 +118,10 @@ runTest('settlement report aliases shared types without renaming public report t
 runTest('shared insight quality model is documented but not adopted by runtime yet', () => {
   assert.match(insightQualityModelSource, /export function buildInsightQualityModel/);
   assert.match(insightQualityModelSource, /InsightQualityModel/);
-  assert.match(insightQualityModelDesignSource, /Status: design and pure model tests completed/);
+  assert.match(insightQualityModelDesignSource, /Status: design, pure model tests, and settlement-report equivalence preparation completed/);
   assert.match(insightQualityModelDesignSource, /does not approve settlement report adoption/);
-  assert.match(insightQualityModelDesignSource, /The next safe slice is settlement-report equivalence preparation/);
+  assert.match(insightQualityModelDesignSource, /Completed safe slice: settlement-report equivalence preparation/);
+  assert.match(insightQualityModelDesignSource, /Next safe slice:[\s\S]*wire settlement report to consume `buildInsightQualityModel\(\)` only if equivalence remains green/);
   assert.doesNotMatch(settlementReportSource, /buildInsightQualityModel|insight-quality-model/);
   assert.doesNotMatch(insightQualityModelSource, /from ['"]react|use[A-Z]|@\/lib\/db|Dexie|db\.|supabase|window\.|document\.|pdf|xlsx|csv|recovery|sync/i);
 });

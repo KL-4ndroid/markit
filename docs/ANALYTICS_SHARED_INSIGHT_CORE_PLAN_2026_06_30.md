@@ -2,7 +2,7 @@
 
 Date: 2026-06-30
 
-Status: Slice D design/model tests completed; adoption remains deferred.
+Status: Slice D equivalence preparation completed; adoption remains deferred.
 
 Trigger: remind the user to implement this after the current settlement report original task is completed. The current original task means finishing the settlement report preview/spec work that depends on the report model and distortion-risk model.
 
@@ -173,13 +173,14 @@ Stop condition for further work: helper extraction starts changing model output.
 
 ### Slice D: Shared Insight Quality Model
 
-Status: design and pure model tests completed; settlement report adoption remains deferred.
+Status: design, pure model tests, and settlement-report equivalence preparation completed; settlement report adoption remains deferred.
 
 Result record:
 
 - `docs/ANALYTICS_SHARED_INSIGHT_QUALITY_MODEL_DESIGN_2026_06_30.md`
 - `lib/analytics/insight-quality-model.ts`
 - `tests/analytics-insight-quality-model.test.ts`
+- `tests/settlement-report-insight-quality-equivalence.test.ts`
 
 Create a shared input/output model that can return:
 
@@ -198,7 +199,8 @@ Safety result:
 - The model returns confidence, confidence score, confidence components, limitations, section availability, warning/info counts, next actions, and final-readiness.
 - The model does not read markets, daily stats, products, events, Supabase, IndexedDB, or browser state.
 - The model is not consumed by settlement report, report preview, or analytics page runtime yet.
-- The next safe slice is settlement-report equivalence preparation before any adoption.
+- Settlement-report equivalence preparation verifies the shared model can match current `dataQuality` confidence, limitations, next actions, counts, and representative section availability.
+- The next safe slice is settlement-report adoption behind equivalence tests.
 
 Stop condition: analytics page runtime or settlement report runtime starts depending on it before settlement report output equivalence tests pass.
 
