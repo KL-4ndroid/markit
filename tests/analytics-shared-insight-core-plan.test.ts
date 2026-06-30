@@ -69,7 +69,8 @@ runTest('plan requires equivalence and blocks runtime expansion', () => {
 runTest('settlement report plans remain the current original task before shared analytics extraction', () => {
   assert.match(settlementPlanSource, /Settlement reports are the primary reporting experience/);
   assert.match(settlementPlanSource, /This plan does not approve PDF generation/);
-  assert.match(distortionPlanSource, /The future Report Preview Spec must include visible UI states/);
+  assert.match(distortionPlanSource, /Completed follow-up:[\s\S]*SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30/);
+  assert.match(distortionPlanSource, /The Report Preview Spec includes visible UI states/);
   assert.match(distortionPlanSource, /Stop for approval before:[\s\S]*adding report preview UI/);
 });
 

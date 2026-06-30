@@ -172,6 +172,34 @@ Still not approved:
 - cloud-first report queries;
 - background generation jobs.
 
+## 8. Report Preview Spec
+
+Status: completed as specification and guardrail tests only.
+
+Result record:
+
+- `docs/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30.md`
+- `tests/settlement-report-preview-spec.test.ts`
+
+The preview spec defines:
+
+- owner-only preview access;
+- preview section order;
+- summary, data-quality, score, market, product, cost, and next-action sections;
+- visible behavior for every current limitation code;
+- future implementation slices for pure preview view model, owner-only UI shell, and PDF technical planning.
+
+Still not approved:
+
+- preview UI implementation;
+- route/page implementation;
+- PDF generation;
+- PDF/download buttons;
+- Excel generation;
+- Supabase or IndexedDB reads;
+- manager access;
+- analytics page runtime changes.
+
 ## 9. Deferred Follow-Up: Analytics Shared Insight Core
 
 After the settlement report preview/spec original task is completed, remind the user to implement:

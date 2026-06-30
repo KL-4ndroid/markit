@@ -66,7 +66,12 @@ The first implementation should follow these rules:
 
 ## 5. Preview Spec Dependency
 
-The future Report Preview Spec must include visible UI states for these risk levels:
+Completed follow-up:
+
+- `docs/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30.md`
+- `tests/settlement-report-preview-spec.test.ts`
+
+The Report Preview Spec includes visible UI states for these risk levels:
 
 - `available`: section can show normal conclusion.
 - `limited`: section can show a softened conclusion with a visible reason.
@@ -79,7 +84,7 @@ The preview must also show:
 - owner-facing explanation;
 - next data action.
 
-The preview spec should not start from visual layout first. It must first map each distortion risk to the exact visible section behavior.
+The preview spec does not start from visual layout first. It maps each distortion risk to the exact visible section behavior.
 
 ## 6. Stop Conditions
 
