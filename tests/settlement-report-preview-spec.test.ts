@@ -30,18 +30,17 @@ console.log('\n=== Settlement report preview spec ===');
 
 runTest('spec exists and stays non-runtime', () => {
   assert.match(previewSpecSource, /# Settlement Report Preview Spec/);
-  assert.match(previewSpecSource, /Status: Slice B pure preview view model completed; preview UI and PDF generation remain deferred/);
-  assert.match(previewSpecSource, /This document does not approve preview UI implementation/);
-  assert.match(previewSpecSource, /This document does not approve[\s\S]*PDF generation/);
-  assert.match(previewSpecSource, /This document does not approve[\s\S]*Supabase reads/);
-  assert.match(previewSpecSource, /This document does not approve[\s\S]*IndexedDB reads/);
+  assert.match(previewSpecSource, /Status: Slice C owner-only preview UI shell completed; PDF generation remains deferred/);
+  assert.match(previewSpecSource, /approves only the owner-only preview UI shell with local read-only IndexedDB access/);
+  assert.match(previewSpecSource, /It does not approve[\s\S]*PDF generation/);
+  assert.match(previewSpecSource, /It does not approve[\s\S]*Supabase reads/);
 });
 
 runTest('spec defines owner-only preview and data-source boundary', () => {
   assert.match(previewSpecSource, /Initial preview access is owner-only/);
   assert.match(previewSpecSource, /Manager, operator, viewer, and fail-closed roles:[\s\S]*no preview access/);
-  assert.match(previewSpecSource, /consume an already-built `SettlementReportModel`/);
-  assert.match(previewSpecSource, /must not:[\s\S]*read IndexedDB directly/);
+  assert.match(previewSpecSource, /preview UI shell may read local IndexedDB through the approved owner-only route/);
+  assert.match(previewSpecSource, /pure preview view model must consume an already-built `SettlementReportModel`/);
   assert.match(previewSpecSource, /must not:[\s\S]*query Supabase directly/);
   assert.match(previewSpecSource, /must not:[\s\S]*generate PDF, Excel, CSV, or downloads/);
 });
@@ -94,7 +93,8 @@ runTest('spec keeps PDF and UI as later decisions', () => {
   assert.match(previewSpecSource, /this spec does not choose:[\s\S]*PDF library/);
   assert.match(previewSpecSource, /Slice B: Pure Preview View Model[\s\S]*Status: completed/);
   assert.match(previewSpecSource, /lib\/reporting\/settlement-report-preview\.ts/);
-  assert.match(previewSpecSource, /Slice C: Owner-Only Preview UI Shell/);
+  assert.match(previewSpecSource, /Slice C: Owner-Only Preview UI Shell[\s\S]*Status: completed/);
+  assert.match(previewSpecSource, /app\/reports\/settlement\/page\.tsx/);
   assert.match(previewSpecSource, /Slice D: PDF Technical Plan/);
   assert.match(previewSpecSource, /Stop for approval before:[\s\S]*adding report preview UI/);
   assert.match(previewSpecSource, /Stop for approval before:[\s\S]*adding PDF generation/);

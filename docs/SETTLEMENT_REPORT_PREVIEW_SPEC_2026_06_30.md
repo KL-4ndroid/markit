@@ -2,11 +2,11 @@
 
 Date: 2026-06-30
 
-Status: Slice B pure preview view model completed; preview UI and PDF generation remain deferred.
+Status: Slice C owner-only preview UI shell completed; PDF generation remains deferred.
 
 Scope: define the future owner-only settlement report preview experience and the pure preview view model that displays the output of `buildSettlementReportModel()` before any UI or PDF generation is implemented.
 
-This document does not approve preview UI implementation, PDF generation, Excel generation, browser download, Supabase reads, IndexedDB reads, manager access, analytics page changes, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+This document approves only the owner-only preview UI shell with local read-only IndexedDB access. It does not approve PDF generation, Excel generation, browser download, Supabase reads, manager access, analytics page logic replacement, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
 ## 1. Product Goal
 
@@ -35,11 +35,12 @@ Manager, operator, viewer, and fail-closed roles:
 
 - no preview access in the initial implementation.
 
-The preview must consume an already-built `SettlementReportModel` or a caller-provided authorized view model.
+The preview UI shell may read local IndexedDB through the approved owner-only route, then build `SettlementReportModel` and `SettlementReportPreviewModel` locally.
+
+The pure preview view model must consume an already-built `SettlementReportModel` or a caller-provided authorized view model.
 
 It must not:
 
-- read IndexedDB directly;
 - query Supabase directly;
 - call sync services;
 - run data repair;
@@ -320,7 +321,12 @@ Not allowed:
 
 ### Slice C: Owner-Only Preview UI Shell
 
-Future, after approval.
+Status: completed.
+
+Result record:
+
+- `app/reports/settlement/page.tsx`
+- `tests/settlement-report-preview-ui.test.ts`
 
 Add the page/shell only after Slice B is stable.
 
@@ -329,7 +335,9 @@ Required:
 - owner-only gate;
 - no download action;
 - no PDF generation;
-- no direct data source reads unless separately approved.
+- local IndexedDB read-only access only;
+- no Supabase reads;
+- no write, sync, repair, or projection rebuild action.
 
 ### Slice D: PDF Technical Plan
 

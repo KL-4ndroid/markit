@@ -2,7 +2,7 @@
 
 import { useState, useMemo, Fragment, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, TrendingUp, XCircle, AlertTriangle, CheckCircle, Lightbulb, BarChart3, DollarSign, Timer, Calculator, type LucideIcon } from 'lucide-react';
+import { X, TrendingUp, XCircle, AlertTriangle, CheckCircle, Lightbulb, BarChart3, DollarSign, Timer, Calculator, FileText, type LucideIcon } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { toast } from 'sonner';
@@ -501,6 +501,17 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-medium text-white opacity-90">數據分析</h1>
             <div className="flex items-center gap-2">
+              {!isStaff && !isRoleLoading && !roleError && (
+                <button
+                  onClick={() => router.push('/reports/settlement')}
+                  className="bg-white/20 backdrop-blur-sm hover:bg-white/30 px-3 py-1.5 rounded-full transition-all flex items-center gap-2"
+                  aria-label="結算報告"
+                >
+                  <FileText className="h-4 w-4 text-white" strokeWidth={1.75} />
+                  <span className="hidden text-sm font-medium text-white sm:inline">報告</span>
+                </button>
+              )}
+
               {/* 重新計算按鈕 */}
               <button
                 onClick={handleRecalculate}
