@@ -176,9 +176,9 @@ runTest('blocks manager and fail-closed capabilities from preview model', () => 
   );
 });
 
-runTest('preview model remains pure and does not approve UI or file generation', () => {
+runTest('preview model remains pure while formal UI and PDF boundaries stay explicit', () => {
   assert.match(previewSpecSource, /Slice B: Pure Preview View Model[\s\S]*Status: completed/);
-  assert.match(previewSpecSource, /Slice C: Owner-Only Preview UI Shell[\s\S]*Status: completed/);
+  assert.match(previewSpecSource, /Slice C: Formal Owner-Only Preview UI[\s\S]*Status: completed/);
   assert.match(previewSpecSource, /does not approve[\s\S]*PDF generation/);
   assert.doesNotMatch(
     previewModelImports,

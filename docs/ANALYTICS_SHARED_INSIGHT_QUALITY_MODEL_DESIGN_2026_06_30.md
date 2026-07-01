@@ -6,7 +6,7 @@ Status: design, pure model tests, settlement-report equivalence preparation, and
 
 Scope: define and test the first shared insight-quality model for BoothBook analytics/reporting reliability signals.
 
-This document approves only settlement report data-quality adoption of the shared insight-quality model. It does not approve settlement report output changes, analytics page adoption, report preview UI, PDF generation, Excel generation, Supabase reads, IndexedDB reads, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+This document approves only settlement report data-quality adoption of the shared insight-quality model. Report preview UI approval and completion are tracked in `docs/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30.md`. This document does not approve analytics page adoption, PDF generation, Excel generation, Supabase reads, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
 ## 1. Goal
 
@@ -98,7 +98,6 @@ Completed in the follow-up adoption slice:
 
 Not completed in this slice:
 
-- wiring report preview to consume this model;
 - wiring analytics page to consume this model.
 
 ## 8. Next Safe Slice
@@ -117,10 +116,10 @@ Safety result:
 - `buildSettlementReportModel()` now consumes `buildInsightQualityModel()` only for report-level data-quality confidence.
 - Settlement report totals, scoring, recommendations, limitations, notes, content, and owner-only guard remain covered by existing tests.
 
-Next safe slice:
+Completed follow-up slice:
 
-- define the owner-only report preview data contract and UI shell;
-- keep PDF generation, Excel generation, analytics page adoption, Supabase reads, and IndexedDB reads deferred.
+- owner-only report preview data contract and formal preview UI are tracked in `docs/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30.md`;
+- PDF generation, Excel generation, analytics page adoption, and Supabase report reads remain deferred.
 
 ## 9. Stop Conditions
 
@@ -129,7 +128,7 @@ Stop for approval before:
 - changing settlement report `dataQuality` output;
 - changing settlement report score or recommendation;
 - editing analytics page runtime;
-- editing report preview UI;
-- adding Supabase or IndexedDB reads;
+- adding PDF/download behavior to report preview UI;
+- adding Supabase report reads;
 - adding PDF or Excel generation;
 - adding repair or projection rebuild behavior.

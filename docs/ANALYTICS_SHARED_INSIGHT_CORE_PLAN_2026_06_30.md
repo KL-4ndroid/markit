@@ -8,7 +8,7 @@ Trigger: remind the user to implement this after the current settlement report o
 
 Scope: define which logic should be extracted from `lib/reporting/settlement-report.ts` into a shared analytics insight core, so the existing analytics page can reuse the same data-quality, confidence, and limitation rules without copying report-specific PDF or settlement language.
 
-This document does not approve runtime analytics page changes, report preview UI, PDF generation, Excel generation, Supabase reads, IndexedDB reads, data repair, projection rebuilds, duplicate cleanup, or broad analytics UI rewrite.
+This document does not approve runtime analytics page changes, PDF generation, Excel generation, Supabase reads, data repair, projection rebuilds, duplicate cleanup, or broad analytics UI rewrite. Report preview UI approval and completion are tracked separately in `docs/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30.md`.
 
 ## 1. Why This Exists
 
@@ -203,9 +203,9 @@ Safety result:
 - The model is not consumed by report preview or analytics page runtime yet.
 - Settlement-report equivalence preparation verifies the shared model can match current `dataQuality` confidence, limitations, next actions, counts, and representative section availability.
 - Settlement report model tests still cover totals, scoring, recommendations, limitations, notes, content, and owner-only guard.
-- The next safe slice is report preview data contract and owner-only UI shell planning.
+- The report preview data contract and owner-only UI are tracked in the settlement report preview spec; the next shared-core slice remains analytics extraction planning only.
 
-Stop condition: analytics page runtime, report preview UI, PDF generation, Excel generation, Supabase reads, IndexedDB reads, or broader settlement report output changes start depending on it without a new approved slice.
+Stop condition: analytics page runtime, PDF generation, Excel generation, Supabase reads, or broader settlement report output changes start depending on it without a new approved slice.
 
 ### Slice E: Analytics Page Adoption
 
@@ -247,8 +247,7 @@ Stop for approval before:
 - replacing analytics calculations;
 - changing settlement report scores;
 - changing role permissions;
-- adding report preview UI;
 - adding PDF generation;
 - adding Excel generation;
-- adding Supabase or IndexedDB reads;
+- adding Supabase report reads;
 - repairing data or rebuilding projections.

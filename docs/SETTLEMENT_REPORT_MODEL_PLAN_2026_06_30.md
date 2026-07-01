@@ -123,7 +123,7 @@ Additional required limitation codes:
 - product profit based on current product cost rather than sale-time cost;
 - partial period overlap for multi-day markets.
 
-These risks must be presented as confidence and section-availability limitations. They do not approve data repair, projection rebuilds, duplicate cleanup, or report preview UI.
+These risks must be presented as confidence and section-availability limitations. They do not approve data repair, projection rebuilds, duplicate cleanup, or PDF generation. Report preview UI approval and completion are tracked in `docs/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30.md`.
 
 ## 6. Data Source Policy
 
@@ -160,7 +160,7 @@ The first implementation must also include:
 - tests for simple revenue entry without cost;
 - tests for item-level sales without product cost;
 - tests proving product analysis is disabled when product detail is missing.
-- tests proving distortion risks are surfaced before report preview UI is designed.
+- tests proving distortion risks are surfaced before report preview UI consumes them.
 
 Still not approved:
 
@@ -174,7 +174,7 @@ Still not approved:
 
 ## 8. Report Preview Spec
 
-Status: completed as specification and guardrail tests only.
+Status: completed as specification, pure preview model, and formal owner-only preview UI.
 
 Result record:
 
@@ -187,16 +187,14 @@ The preview spec defines:
 - preview section order;
 - summary, data-quality, score, market, product, cost, and next-action sections;
 - visible behavior for every current limitation code;
-- future implementation slices for pure preview view model, owner-only UI shell, and PDF technical planning.
+- completed implementation slices for pure preview view model and owner-only preview UI, plus future PDF technical planning.
 
 Still not approved:
 
-- preview UI implementation;
-- route/page implementation;
 - PDF generation;
 - PDF/download buttons;
 - Excel generation;
-- Supabase or IndexedDB reads;
+- Supabase report reads;
 - manager access;
 - analytics page runtime changes.
 

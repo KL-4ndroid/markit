@@ -2,11 +2,11 @@
 
 Date: 2026-06-30
 
-Status: approved for model-layer risk classification only.
+Status: completed for model-layer risk classification; follow-up preview UI slices are tracked in the preview spec.
 
-Scope: define which data conditions can make a weekly/monthly settlement report misleading, and how the report model should downgrade, hide, or explain affected conclusions before any report preview UI or PDF generation is designed.
+Scope: define which data conditions can make a weekly/monthly settlement report misleading, and how the report model should downgrade, hide, or explain affected conclusions before report preview UI or PDF generation is designed.
 
-This document does not approve report preview UI, PDF generation, Excel generation, Supabase reads, IndexedDB reads, data repair, projection rebuilds, duplicate cleanup, or any destructive recovery behavior.
+This document did not by itself approve report preview UI. Preview UI approval and completion are tracked in `docs/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30.md`. This document still does not approve PDF generation, Excel generation, Supabase reads, data repair, projection rebuilds, duplicate cleanup, or any destructive recovery behavior.
 
 ## 1. Product Rule
 
@@ -90,7 +90,6 @@ The preview spec does not start from visual layout first. It maps each distortio
 
 Stop for approval before:
 
-- adding report preview UI;
 - adding PDF generation;
 - adding Excel generation;
 - querying Supabase for reports;

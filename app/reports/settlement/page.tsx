@@ -3,7 +3,18 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, AlertTriangle, BarChart3, CheckCircle2, FileText, ShieldAlert } from 'lucide-react';
+import {
+  ArrowLeft,
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  FileText,
+  LineChart,
+  Package,
+  Receipt,
+  ShieldAlert,
+  TrendingUp,
+} from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { db } from '@/lib/db';
@@ -11,8 +22,20 @@ import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-ca
 import {
   buildSettlementReportModel,
   type SettlementReportKind,
+  type SettlementReportModel,
+  type SettlementReportRecommendation,
+  type SettlementReportSignalStatus,
 } from '@/lib/reporting/settlement-report';
-import { buildSettlementReportPreviewModel } from '@/lib/reporting/settlement-report-preview';
+import {
+  buildSettlementReportPreviewModel,
+  type SettlementReportPreviewModel,
+  type SettlementReportPreviewReadiness,
+} from '@/lib/reporting/settlement-report-preview';
+
+type BuiltPreview = {
+  report: SettlementReportModel;
+  preview: SettlementReportPreviewModel;
+};
 
 function toDateInputValue(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -36,10 +59,21 @@ function formatMoney(value: number): string {
   }).format(value);
 }
 
-function readinessLabel(readiness: 'ready' | 'limited' | 'not_ready'): string {
-  if (readiness === 'ready') return '可用';
-  if (readiness === 'limited') return '有限';
-  return '需補資料';
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat('zh-TW', {
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) return '0%';
+  return `${Math.round(value * 100)}%`;
+}
+
+function readinessLabel(readiness: SettlementReportPreviewReadiness): string {
+  if (readiness === 'ready') return '可作為決策參考';
+  if (readiness === 'limited') return '可參考但需保留判斷';
+  return '需先補齊或確認資料';
 }
 
 function confidenceLabel(confidence: 'high' | 'medium' | 'low'): string {
@@ -48,10 +82,42 @@ function confidenceLabel(confidence: 'high' | 'medium' | 'low'): string {
   return '低';
 }
 
-function statusClasses(status: 'available' | 'limited' | 'unavailable'): string {
+function recommendationLabel(recommendation: SettlementReportRecommendation): string {
+  switch (recommendation) {
+    case 'strong_rejoin':
+      return '強烈建議再參加';
+    case 'rejoin':
+      return '建議再參加';
+    case 'observe':
+      return '可觀察';
+    case 'caution':
+      return '需謹慎';
+    case 'avoid':
+      return '不建議優先參加';
+  }
+}
+
+function signalLabel(status: SettlementReportSignalStatus): string {
+  if (status === 'available') return '完整';
+  if (status === 'limited') return '有限';
+  return '不足';
+}
+
+function statusClasses(status: SettlementReportSignalStatus): string {
   if (status === 'available') return 'border-[#B8D8C3] bg-[#F1F8F3] text-[#2F6B46]';
   if (status === 'limited') return 'border-[#E7D6A0] bg-[#FFF8E6] text-[#7A5A12]';
   return 'border-[#E6B9B0] bg-[#FFF1EE] text-[#9B3A2A]';
+}
+
+function readinessClasses(readiness: SettlementReportPreviewReadiness): string {
+  if (readiness === 'ready') return statusClasses('available');
+  if (readiness === 'limited') return statusClasses('limited');
+  return statusClasses('unavailable');
+}
+
+function getScoreBarWidth(score: number | null): string {
+  if (score === null || !Number.isFinite(score)) return '0%';
+  return `${Math.max(0, Math.min(100, Math.round(score)))}%`;
 }
 
 export default function SettlementReportPreviewPage() {
@@ -91,7 +157,7 @@ export default function SettlementReportPreviewPage() {
       .toArray();
   }, [canPreview, startDate, endDate]) ?? [];
 
-  const preview = useMemo(() => {
+  const built = useMemo<BuiltPreview | null>(() => {
     if (!canPreview) return null;
 
     const report = buildSettlementReportModel({
@@ -107,16 +173,19 @@ export default function SettlementReportPreviewPage() {
       products,
     });
 
-    return buildSettlementReportPreviewModel({
-      capabilities,
+    return {
       report,
-    });
+      preview: buildSettlementReportPreviewModel({
+        capabilities,
+        report,
+      }),
+    };
   }, [canPreview, capabilities, kind, startDate, endDate, markets, dailyStats, products]);
 
   if (isRoleLoading) {
     return (
       <div className="min-h-screen bg-background px-4 py-6">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
           <div className="border border-[#E8E3D8] bg-white px-4 py-5 text-sm text-muted-foreground shadow-sm">
             正在確認權限...
           </div>
@@ -128,7 +197,7 @@ export default function SettlementReportPreviewPage() {
   if (!canPreview) {
     return (
       <div className="min-h-screen bg-background px-4 py-6">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
           <Link href="/analytics" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <ArrowLeft size={16} />
             返回分析
@@ -145,21 +214,24 @@ export default function SettlementReportPreviewPage() {
     );
   }
 
+  const report = built?.report ?? null;
+  const preview = built?.preview ?? null;
+
   return (
-    <div className="min-h-screen bg-background px-4 py-6">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
-        <header className="flex flex-col gap-4 border-b border-[#E8E3D8] pb-5 md:flex-row md:items-end md:justify-between">
+    <div className="min-h-screen bg-[#F7F5EF] px-4 pb-12 pt-5">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+        <header className="flex flex-col gap-4 border-b border-[#D8D0C3] pb-5 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
             <Link href="/analytics" className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <ArrowLeft size={16} />
               返回分析
             </Link>
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#F1F8F3] text-[#2F6B46]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#E7EFE4] text-[#315F43]">
                 <FileText size={22} />
               </div>
               <div className="min-w-0">
-                <h1 className="text-2xl font-semibold text-foreground">結算報告預覽</h1>
+                <h1 className="text-2xl font-semibold text-foreground">品牌經營結算報告</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {preview ? `${preview.header.periodLabel} · 信心度 ${confidenceLabel(preview.header.confidence)}` : '正在整理本機資料'}
                 </p>
@@ -171,7 +243,8 @@ export default function SettlementReportPreviewPage() {
             <select
               value={kind}
               onChange={(event) => setKind(event.target.value as SettlementReportKind)}
-              className="border border-[#D8D0C3] bg-white px-3 py-2 text-sm text-foreground"
+              className="h-10 border border-[#CFC7BA] bg-white px-3 text-sm text-foreground"
+              aria-label="報告類型"
             >
               <option value="weekly">週報</option>
               <option value="monthly">月報</option>
@@ -180,61 +253,89 @@ export default function SettlementReportPreviewPage() {
               type="date"
               value={startDate}
               onChange={(event) => setStartDate(event.target.value)}
-              className="border border-[#D8D0C3] bg-white px-3 py-2 text-sm text-foreground"
+              className="h-10 border border-[#CFC7BA] bg-white px-3 text-sm text-foreground"
+              aria-label="開始日期"
             />
             <input
               type="date"
               value={endDate}
               onChange={(event) => setEndDate(event.target.value)}
-              className="border border-[#D8D0C3] bg-white px-3 py-2 text-sm text-foreground"
+              className="h-10 border border-[#CFC7BA] bg-white px-3 text-sm text-foreground"
+              aria-label="結束日期"
             />
           </div>
         </header>
 
-        {preview && (
+        {preview && report && (
           <>
-            <section className="grid gap-3 md:grid-cols-4">
-              <div className="border border-[#E8E3D8] bg-white p-4 shadow-sm">
-                <p className="text-xs text-muted-foreground">總營收</p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">{formatMoney(preview.executiveSummary.totalRevenue)}</p>
-              </div>
-              <div className="border border-[#E8E3D8] bg-white p-4 shadow-sm">
-                <p className="text-xs text-muted-foreground">淨利</p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">{formatMoney(preview.executiveSummary.netProfit)}</p>
-              </div>
-              <div className="border border-[#E8E3D8] bg-white p-4 shadow-sm">
-                <p className="text-xs text-muted-foreground">成交數</p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">{Math.round(preview.executiveSummary.totalDeals)}</p>
-              </div>
-              <div className={`border p-4 shadow-sm ${statusClasses(preview.header.readiness === 'not_ready' ? 'unavailable' : preview.header.readiness === 'limited' ? 'limited' : 'available')}`}>
-                <p className="text-xs">報告狀態</p>
-                <p className="mt-2 text-2xl font-semibold">{readinessLabel(preview.header.readiness)}</p>
-              </div>
-            </section>
-
-            <section className="border border-[#E8E3D8] bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-start justify-between gap-4">
+            <section className="grid overflow-hidden border border-[#D8D0C3] bg-white shadow-sm lg:grid-cols-[1.25fr_0.75fr]">
+              <div className="flex min-h-[320px] flex-col justify-between bg-[#26392F] p-6 text-white md:p-8">
                 <div>
-                  <h2 className="text-lg font-semibold text-foreground">摘要結論</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{preview.header.readinessReason}</p>
+                  <div className="mb-5 inline-flex items-center gap-2 border border-white/20 px-3 py-1 text-xs text-white/80">
+                    <CalendarDays size={14} />
+                    {kind === 'monthly' ? '月結報告' : '週結報告'}
+                  </div>
+                  <h2 className="max-w-2xl text-3xl font-semibold leading-tight md:text-4xl">
+                    {recommendationLabel(preview.executiveSummary.recommendation)}
+                  </h2>
+                  <p className="mt-4 max-w-2xl text-sm leading-6 text-white/75">
+                    {preview.executiveSummary.summary}
+                  </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2 text-sm font-medium text-[#2F6B46]">
-                  <BarChart3 size={18} />
-                  {preview.executiveSummary.grade} · {Math.round(preview.executiveSummary.overallScore)}
+
+                <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                  <div className="border border-white/15 bg-white/5 p-4">
+                    <p className="text-xs text-white/60">總營收</p>
+                    <p className="mt-2 text-2xl font-semibold">{formatMoney(preview.executiveSummary.totalRevenue)}</p>
+                  </div>
+                  <div className="border border-white/15 bg-white/5 p-4">
+                    <p className="text-xs text-white/60">淨利</p>
+                    <p className="mt-2 text-2xl font-semibold">{formatMoney(preview.executiveSummary.netProfit)}</p>
+                  </div>
+                  <div className="border border-white/15 bg-white/5 p-4">
+                    <p className="text-xs text-white/60">成交數</p>
+                    <p className="mt-2 text-2xl font-semibold">{formatNumber(preview.executiveSummary.totalDeals)}</p>
+                  </div>
                 </div>
               </div>
-              <p className="text-sm leading-6 text-foreground">{preview.executiveSummary.summary}</p>
+
+              <aside className="flex flex-col justify-between gap-5 bg-[#EFE9DD] p-6 md:p-8">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">本期總評分</p>
+                  <div className="mt-4 flex items-end gap-3">
+                    <span className="text-6xl font-semibold text-[#26392F]">{Math.round(preview.executiveSummary.overallScore)}</span>
+                    <span className="pb-2 text-2xl font-semibold text-[#6E5A3E]">{preview.executiveSummary.grade}</span>
+                  </div>
+                  <div className={`mt-5 inline-flex border px-3 py-1 text-sm font-medium ${readinessClasses(preview.header.readiness)}`}>
+                    {readinessLabel(preview.header.readiness)}
+                  </div>
+                  <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                    {preview.header.readinessReason}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white p-4">
+                    <p className="text-xs text-muted-foreground">平均客單價</p>
+                    <p className="mt-2 text-xl font-semibold text-foreground">{formatMoney(preview.executiveSummary.averageOrderValue)}</p>
+                  </div>
+                  <div className="bg-white p-4">
+                    <p className="text-xs text-muted-foreground">信心等級</p>
+                    <p className="mt-2 text-xl font-semibold text-foreground">{confidenceLabel(preview.reliability.confidence)}</p>
+                  </div>
+                </div>
+              </aside>
             </section>
 
             {preview.topWarnings.length > 0 && (
-              <section className="border border-[#E6B9B0] bg-[#FFF1EE] p-5 shadow-sm">
+              <section className="border border-[#E3A79C] bg-[#FFF2EE] p-5 shadow-sm">
                 <div className="mb-3 flex items-center gap-2 text-[#9B3A2A]">
                   <AlertTriangle size={18} />
-                  <h2 className="text-base font-semibold">需要優先確認</h2>
+                  <h2 className="text-base font-semibold">優先確認事項</h2>
                 </div>
-                <div className="space-y-3">
+                <div className="grid gap-3 md:grid-cols-2">
                   {preview.topWarnings.map((warning) => (
-                    <div key={`${warning.code}-${warning.message}`} className="border-t border-[#E6B9B0] pt-3">
+                    <div key={`${warning.code}-${warning.message}`} className="border-t border-[#E3A79C] pt-3">
                       <p className="text-sm font-medium text-foreground">{warning.message}</p>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">{warning.recommendation}</p>
                     </div>
@@ -243,26 +344,153 @@ export default function SettlementReportPreviewPage() {
               </section>
             )}
 
-            <section className="grid gap-3 md:grid-cols-2">
-              {preview.sections.map((section) => (
-                <div key={section.key} className={`border p-4 shadow-sm ${statusClasses(section.status)}`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-semibold">{section.title}</h3>
-                    <span className="text-xs font-medium">{section.status}</span>
-                  </div>
-                  <p className="mt-2 text-xs leading-5">{section.reason}</p>
+            <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="border border-[#D8D0C3] bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center gap-2 text-foreground">
+                  <CheckCircle2 size={18} className="text-[#315F43]" />
+                  <h2 className="text-base font-semibold">資料可靠度</h2>
                 </div>
-              ))}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-[#F7F5EF] p-3">
+                    <p className="text-xs text-muted-foreground">警示</p>
+                    <p className="mt-1 text-xl font-semibold text-foreground">{preview.reliability.warningCount}</p>
+                  </div>
+                  <div className="bg-[#F7F5EF] p-3">
+                    <p className="text-xs text-muted-foreground">提示</p>
+                    <p className="mt-1 text-xl font-semibold text-foreground">{preview.reliability.infoCount}</p>
+                  </div>
+                  <div className="bg-[#F7F5EF] p-3">
+                    <p className="text-xs text-muted-foreground">信心</p>
+                    <p className="mt-1 text-xl font-semibold text-foreground">{confidenceLabel(preview.reliability.confidence)}</p>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {preview.reliability.limitations.slice(0, 4).map((limitation) => (
+                    <div key={`${limitation.code}-${limitation.message}`} className={`border px-3 py-2 ${limitation.severity === 'warning' ? statusClasses('unavailable') : statusClasses('limited')}`}>
+                      <p className="text-sm font-medium">{limitation.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border border-[#D8D0C3] bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center gap-2 text-foreground">
+                  <LineChart size={18} className="text-[#315F43]" />
+                  <h2 className="text-base font-semibold">評分拆解</h2>
+                </div>
+                <div className="space-y-4">
+                  {report.decision.scoreComponents.map((component) => (
+                    <div key={component.key}>
+                      <div className="mb-1 flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium text-foreground">{component.label}</span>
+                        <span className={`border px-2 py-0.5 text-xs ${statusClasses(component.status)}`}>
+                          {component.score === null ? signalLabel(component.status) : Math.round(component.score)}
+                        </span>
+                      </div>
+                      <div className="h-2 bg-[#ECE6DA]">
+                        <div className="h-2 bg-[#315F43]" style={{ width: getScoreBarWidth(component.score) }} />
+                      </div>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{component.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </section>
 
-            <section className="border border-[#E8E3D8] bg-white p-5 shadow-sm">
-              <div className="mb-3 flex items-center gap-2 text-foreground">
-                <CheckCircle2 size={18} className="text-[#2F6B46]" />
+            <section className="border border-[#D8D0C3] bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2 text-foreground">
+                <TrendingUp size={18} className="text-[#315F43]" />
+                <h2 className="text-base font-semibold">市集表現</h2>
+              </div>
+              <div className="grid gap-3">
+                {report.marketDecisions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">此期間沒有可納入結算的已完成市集。</p>
+                ) : report.marketDecisions.slice(0, 6).map((decision) => {
+                  const row = report.marketRows.find(marketRow => marketRow.marketId === decision.marketId);
+                  return (
+                    <div key={decision.marketId} className="grid gap-3 border-t border-[#E8E3D8] pt-3 md:grid-cols-[1fr_120px_120px_120px] md:items-center">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{decision.marketName}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{recommendationLabel(decision.recommendation)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">營收</p>
+                        <p className="text-sm font-medium text-foreground">{formatMoney(row?.revenue ?? 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">淨利</p>
+                        <p className="text-sm font-medium text-foreground">{formatMoney(row?.netProfit ?? 0)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">評分</p>
+                        <p className="text-sm font-medium text-foreground">{Math.round(decision.rejoinScore)} · {decision.grade}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="grid gap-5 lg:grid-cols-2">
+              <div className="border border-[#D8D0C3] bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center gap-2 text-foreground">
+                  <Package size={18} className="text-[#315F43]" />
+                  <h2 className="text-base font-semibold">商品表現</h2>
+                </div>
+                <div className="space-y-3">
+                  {report.productRows.length === 0 ? (
+                    <p className="text-sm leading-6 text-muted-foreground">此期間沒有可用的商品明細，商品排行與商品建議會被標示為不足或有限。</p>
+                  ) : report.productRows.slice(0, 5).map((product) => (
+                    <div key={product.productId} className="grid grid-cols-[1fr_auto] gap-3 border-t border-[#E8E3D8] pt-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{product.productName}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">售出 {formatNumber(product.quantity)} 件</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-foreground">{formatMoney(product.revenue)}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {product.estimatedGrossProfit === null ? '毛利不足' : `毛利 ${formatMoney(product.estimatedGrossProfit)}`}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border border-[#D8D0C3] bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center gap-2 text-foreground">
+                  <Receipt size={18} className="text-[#315F43]" />
+                  <h2 className="text-base font-semibold">成本與利潤</h2>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-[#F7F5EF] p-4">
+                    <p className="text-xs text-muted-foreground">商品成本</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">{formatMoney(report.money.productCost)}</p>
+                  </div>
+                  <div className="bg-[#F7F5EF] p-4">
+                    <p className="text-xs text-muted-foreground">固定市集成本</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">{formatMoney(report.money.fixedMarketCost)}</p>
+                  </div>
+                  <div className="bg-[#F7F5EF] p-4">
+                    <p className="text-xs text-muted-foreground">抽成費</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">{formatMoney(report.money.commissionFee)}</p>
+                  </div>
+                  <div className="bg-[#F7F5EF] p-4">
+                    <p className="text-xs text-muted-foreground">成本覆蓋率</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground">{formatPercent(report.dataQuality.costCoverageRatio)}</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="border border-[#D8D0C3] bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-2 text-foreground">
+                <CheckCircle2 size={18} className="text-[#315F43]" />
                 <h2 className="text-base font-semibold">下一步行動</h2>
               </div>
-              <div className="space-y-2">
+              <div className="grid gap-3 md:grid-cols-2">
                 {preview.nextActions.map((action) => (
-                  <p key={action} className="border-t border-[#E8E3D8] pt-2 text-sm leading-6 text-foreground">
+                  <p key={action} className="border-t border-[#E8E3D8] pt-3 text-sm leading-6 text-foreground">
                     {action}
                   </p>
                 ))}

@@ -444,7 +444,7 @@ runTest('plan records settlement reports as owner-only PDF-first future directio
   assert.match(distortionRiskPlanSource, /numbers may exist but the conclusion can still be wrong/);
   assert.match(distortionRiskPlanSource, /Simple revenue entry is valid/);
   assert.match(distortionRiskPlanSource, /The Report Preview Spec includes visible UI states/);
-  assert.match(distortionRiskPlanSource, /This document does not approve report preview UI/);
+  assert.match(distortionRiskPlanSource, /Preview UI approval and completion are tracked in `docs\/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30\.md`/);
   assert.match(distortionRiskPlanSource, /Do not automatically repair duplicate projections/);
   assert.match(cloudPlanSource, /Step 7: Owner Settlement Report Model/);
   assert.match(cloudPlanSource, /distortion-risk model/);

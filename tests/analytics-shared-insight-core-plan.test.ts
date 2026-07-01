@@ -85,7 +85,7 @@ runTest('plan requires equivalence and blocks runtime expansion', () => {
   assert.match(planSource, /no PDF, Excel, CSV, UI, Supabase, IndexedDB, recovery, or sync import is introduced/);
   assert.match(planSource, /Stop for approval before:[\s\S]*editing `app\/analytics\/page\.tsx`/);
   assert.match(planSource, /Stop for approval before:[\s\S]*replacing analytics calculations/);
-  assert.match(planSource, /Stop for approval before:[\s\S]*adding Supabase or IndexedDB reads/);
+  assert.match(planSource, /Stop for approval before:[\s\S]*adding Supabase report reads/);
 });
 
 runTest('shared insight quality module contains pure exported types and helpers', () => {
@@ -121,7 +121,7 @@ runTest('shared insight quality model is documented and adopted only by settleme
   assert.match(insightQualityModelDesignSource, /Status: design, pure model tests, settlement-report equivalence preparation, and settlement-report data-quality adoption completed/);
   assert.match(insightQualityModelDesignSource, /approves only settlement report data-quality adoption/);
   assert.match(insightQualityModelDesignSource, /Completed safe slices: settlement-report equivalence preparation and settlement-report data-quality adoption/);
-  assert.match(insightQualityModelDesignSource, /Next safe slice:[\s\S]*owner-only report preview data contract and UI shell/);
+  assert.match(insightQualityModelDesignSource, /Completed follow-up slice:[\s\S]*owner-only report preview data contract and formal preview UI/);
   assert.match(settlementReportSource, /buildInsightQualityModel/);
   assert.match(settlementReportSource, /confidence: reportInsightQuality\.confidence/);
   assert.doesNotMatch(insightQualityModelSource, /from ['"]react|use[A-Z]|@\/lib\/db|Dexie|db\.|supabase|window\.|document\.|pdf|xlsx|csv|recovery|sync/i);
@@ -132,7 +132,8 @@ runTest('settlement report plans remain the current original task before shared 
   assert.match(settlementPlanSource, /This plan does not approve PDF generation/);
   assert.match(distortionPlanSource, /Completed follow-up:[\s\S]*SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30/);
   assert.match(distortionPlanSource, /The Report Preview Spec includes visible UI states/);
-  assert.match(distortionPlanSource, /Stop for approval before:[\s\S]*adding report preview UI/);
+  assert.match(distortionPlanSource, /Preview UI approval and completion are tracked in `docs\/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30\.md`/);
+  assert.match(distortionPlanSource, /Stop for approval before:[\s\S]*adding PDF generation/);
 });
 
 runTest('full test suite includes analytics shared insight core plan guardrail', () => {

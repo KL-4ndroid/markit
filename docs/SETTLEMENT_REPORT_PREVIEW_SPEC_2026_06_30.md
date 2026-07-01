@@ -2,11 +2,11 @@
 
 Date: 2026-06-30
 
-Status: Slice C owner-only preview UI shell completed; PDF generation remains deferred.
+Status: Slice C formal owner-only preview UI completed; PDF generation remains deferred.
 
-Scope: define the future owner-only settlement report preview experience and the pure preview view model that displays the output of `buildSettlementReportModel()` before any UI or PDF generation is implemented.
+Scope: define the owner-only settlement report preview experience and the pure preview view model that displays the output of `buildSettlementReportModel()` before any PDF generation is implemented.
 
-This document approves only the owner-only preview UI shell with local read-only IndexedDB access. It does not approve PDF generation, Excel generation, browser download, Supabase reads, manager access, analytics page logic replacement, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+This document approves the owner-only preview UI with local read-only IndexedDB access. It does not approve PDF generation, Excel generation, browser download, Supabase reads, manager access, analytics page logic replacement, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
 ## 1. Product Goal
 
@@ -35,7 +35,7 @@ Manager, operator, viewer, and fail-closed roles:
 
 - no preview access in the initial implementation.
 
-The preview UI shell may read local IndexedDB through the approved owner-only route, then build `SettlementReportModel` and `SettlementReportPreviewModel` locally.
+The preview UI may read local IndexedDB through the approved owner-only route, then build `SettlementReportModel` and `SettlementReportPreviewModel` locally.
 
 The pure preview view model must consume an already-built `SettlementReportModel` or a caller-provided authorized view model.
 
@@ -319,7 +319,7 @@ Not allowed:
 - data reads;
 - repair actions.
 
-### Slice C: Owner-Only Preview UI Shell
+### Slice C: Formal Owner-Only Preview UI
 
 Status: completed.
 
@@ -328,11 +328,17 @@ Result record:
 - `app/reports/settlement/page.tsx`
 - `tests/settlement-report-preview-ui.test.ts`
 
-Add the page/shell only after Slice B is stable.
+Add the page only after Slice B is stable.
 
 Required:
 
 - owner-only gate;
+- report-like cover summary;
+- visible readiness and confidence state;
+- KPI summary;
+- data-reliability panel;
+- explainable score breakdown;
+- market, product, cost/profit, and next-action sections;
 - no download action;
 - no PDF generation;
 - local IndexedDB read-only access only;
@@ -349,13 +355,10 @@ Decide PDF generation strategy separately.
 
 Stop for approval before:
 
-- adding report preview UI;
-- adding a route or page;
 - adding PDF generation;
 - adding PDF/download buttons;
 - adding Excel generation;
 - adding Supabase reads;
-- adding IndexedDB reads;
 - changing settlement scoring;
 - changing role permissions;
 - adding manager report access;
