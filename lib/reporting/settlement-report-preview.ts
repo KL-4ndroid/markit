@@ -34,6 +34,7 @@ export type SettlementReportPreviewSection = {
 
 export type SettlementReportPreviewModel = {
   header: {
+    brandName: string;
     kind: 'weekly' | 'monthly';
     periodLabel: string;
     confidence: SettlementReportConfidence;
@@ -147,6 +148,7 @@ export function buildSettlementReportPreviewModel({
 
   return {
     header: {
+      brandName: report.brandName,
       kind: report.period.kind,
       periodLabel: report.period.label,
       confidence: report.dataQuality.confidence,

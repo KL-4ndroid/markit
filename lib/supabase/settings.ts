@@ -10,6 +10,7 @@ import type { InteractionButton } from '@/lib/interaction-buttons-store';
 
 export interface UserSettings {
   user_id: string;
+  brand_name?: string | null;
   quick_action_buttons?: QuickActionButton[];
   interaction_buttons?: InteractionButton[];
   theme?: 'light' | 'dark' | 'auto';

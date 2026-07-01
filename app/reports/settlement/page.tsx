@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   ArrowLeft,
@@ -31,6 +31,12 @@ import {
   type SettlementReportPreviewModel,
   type SettlementReportPreviewReadiness,
 } from '@/lib/reporting/settlement-report-preview';
+import {
+  OWNER_BRAND_NAME_FALLBACK,
+  OWNER_BRAND_NAME_UPDATED_EVENT,
+  loadOwnerBrandName,
+  readCachedOwnerBrandName,
+} from '@/lib/owner-brand';
 
 type BuiltPreview = {
   report: SettlementReportModel;
@@ -127,6 +133,7 @@ export default function SettlementReportPreviewPage() {
   const defaultRange = useMemo(() => getDefaultMonthRange(), []);
   const [startDate, setStartDate] = useState(defaultRange.startDate);
   const [endDate, setEndDate] = useState(defaultRange.endDate);
+  const [brandName, setBrandName] = useState(OWNER_BRAND_NAME_FALLBACK);
 
   const capabilities = useMemo(() => deriveRoleCapabilities({
     isOwner,
@@ -136,6 +143,36 @@ export default function SettlementReportPreviewPage() {
     !isRoleLoading &&
     hasCapability(capabilities, 'canImportExport') &&
     hasCapability(capabilities, 'canViewOwnerFinance');
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id || !canPreview) return;
+
+    const cached = readCachedOwnerBrandName(user.id);
+    if (cached) setBrandName(cached);
+
+    loadOwnerBrandName(user.id)
+      .then((loadedBrandName) => {
+        if (!cancelled) setBrandName(loadedBrandName);
+      })
+      .catch((error) => {
+        console.error('載入報告品牌名稱失敗:', error);
+      });
+
+    const handleBrandNameUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ ownerId?: string; brandName?: string }>).detail;
+      if (detail?.ownerId === user.id && detail.brandName) {
+        setBrandName(detail.brandName);
+      }
+    };
+
+    window.addEventListener(OWNER_BRAND_NAME_UPDATED_EVENT, handleBrandNameUpdated);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener(OWNER_BRAND_NAME_UPDATED_EVENT, handleBrandNameUpdated);
+    };
+  }, [user?.id, canPreview]);
 
   const markets = useLiveQuery(async () => {
     if (!user?.id || !canPreview) return [];
@@ -168,6 +205,7 @@ export default function SettlementReportPreviewPage() {
         endDate,
         label: `${startDate} - ${endDate}`,
       },
+      brandName,
       markets,
       dailyStats,
       products,
@@ -180,7 +218,7 @@ export default function SettlementReportPreviewPage() {
         report,
       }),
     };
-  }, [canPreview, capabilities, kind, startDate, endDate, markets, dailyStats, products]);
+  }, [canPreview, capabilities, kind, startDate, endDate, brandName, markets, dailyStats, products]);
 
   if (isRoleLoading) {
     return (
@@ -233,7 +271,7 @@ export default function SettlementReportPreviewPage() {
               <div className="min-w-0">
                 <h1 className="text-2xl font-semibold text-foreground">品牌經營結算報告</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {preview ? `${preview.header.periodLabel} · 信心度 ${confidenceLabel(preview.header.confidence)}` : '正在整理本機資料'}
+                  {preview ? `${preview.header.brandName} · ${preview.header.periodLabel} · 信心度 ${confidenceLabel(preview.header.confidence)}` : '正在整理本機資料'}
                 </p>
               </div>
             </div>
@@ -275,6 +313,7 @@ export default function SettlementReportPreviewPage() {
                     <CalendarDays size={14} />
                     {kind === 'monthly' ? '月結報告' : '週結報告'}
                   </div>
+                  <p className="mb-3 text-sm font-medium text-white/70">{preview.header.brandName}</p>
                   <h2 className="max-w-2xl text-3xl font-semibold leading-tight md:text-4xl">
                     {recommendationLabel(preview.executiveSummary.recommendation)}
                   </h2>

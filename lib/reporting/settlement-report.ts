@@ -156,6 +156,7 @@ export type SettlementReportDecision = {
 
 export type SettlementReportContent = {
   cover: {
+    brandName: string;
     title: string;
     primaryConclusion: string;
     supportingSummary: string;
@@ -167,6 +168,7 @@ export type SettlementReportContent = {
 };
 
 export type SettlementReportModel = {
+  brandName: string;
   period: SettlementReportPeriod;
   money: SettlementReportMoneySummary;
   activity: SettlementReportActivitySummary;
@@ -181,6 +183,7 @@ export type SettlementReportModel = {
 export type BuildSettlementReportModelInput = {
   capabilities: RoleCapabilities;
   period: SettlementReportPeriod;
+  brandName?: string;
   markets: Market[];
   dailyStats: DailyStats[];
   products?: Product[];
@@ -197,6 +200,11 @@ function isMarketOverlappingPeriod(market: Market, period: SettlementReportPerio
 
 function getMarketId(market: Market): string {
   return market.id ?? '';
+}
+
+function getReportBrandName(brandName: string | undefined): string {
+  const normalized = typeof brandName === 'string' ? brandName.trim().slice(0, 40) : '';
+  return normalized.length > 0 ? normalized : '我的品牌';
 }
 
 function getFixedMarketCost(market: Market): number {
@@ -833,6 +841,7 @@ function buildMarketDecisions(
 }
 
 function buildReportContent(input: {
+  brandName: string;
   period: SettlementReportPeriod;
   money: SettlementReportMoneySummary;
   activity: SettlementReportActivitySummary;
@@ -871,7 +880,8 @@ function buildReportContent(input: {
 
   return {
     cover: {
-      title: `${input.period.label} Settlement Report`,
+      brandName: input.brandName,
+      title: `${input.brandName} ${input.period.label} Settlement Report`,
       primaryConclusion: input.decision.summary,
       supportingSummary: `Overall grade ${input.decision.grade}, score ${input.decision.overallScore}, confidence ${input.decision.confidence}.`,
     },
@@ -888,9 +898,11 @@ export function buildSettlementReportModel({
   markets,
   dailyStats,
   products = [],
+  brandName: inputBrandName,
   generatedAtDate,
 }: BuildSettlementReportModelInput): SettlementReportModel {
   assertOwnerSettlementReportAllowed(capabilities);
+  const brandName = getReportBrandName(inputBrandName);
 
   const overlappingMarkets = markets.filter(isMarket => isMarketOverlappingPeriod(isMarket, period));
   const excludedMarketIds = overlappingMarkets
@@ -1114,6 +1126,7 @@ export function buildSettlementReportModel({
     notes: buildDataQualityNotes(baseDataQuality),
   };
   const content = buildReportContent({
+    brandName,
     period,
     money,
     activity,
@@ -1125,6 +1138,7 @@ export function buildSettlementReportModel({
   });
 
   return {
+    brandName,
     period,
     money,
     activity,

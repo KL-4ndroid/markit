@@ -25,6 +25,11 @@ import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { SensitiveDataMask } from '@/components/staff/SensitiveDataMask';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
+import {
+  OWNER_BRAND_NAME_UPDATED_EVENT,
+  loadOwnerBrandName,
+  readCachedOwnerBrandName,
+} from '@/lib/owner-brand';
 // Overview skeleton — mirrors the 3-column grid layout
 function OverviewSkeleton() {
   return (
@@ -108,6 +113,7 @@ export default function HomePage() {
   
   const [showSyncTooltip, setShowSyncTooltip] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [ownerBrandName, setOwnerBrandName] = useState('出攤本 - BoothBook');
 
   // ✅ 角色守衛（RoleGuard）已由 layout 級別統一處理（C2.28B）
   //   - 這裡不需要再寫 if (isRoleLoading || roleError) return <RoleLoadingFallback />
@@ -116,6 +122,39 @@ export default function HomePage() {
 
   // TODO: 從實際訂閱狀態獲取
   const currentPlan: 'free' | 'pro' | 'enterprise' = 'free';
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id || isStaff) {
+      setOwnerBrandName('出攤本 - BoothBook');
+      return;
+    }
+
+    const cached = readCachedOwnerBrandName(user.id);
+    if (cached) setOwnerBrandName(cached);
+
+    loadOwnerBrandName(user.id)
+      .then((brandName) => {
+        if (!cancelled) setOwnerBrandName(brandName);
+      })
+      .catch((error) => {
+        console.error('載入首頁品牌名稱失敗:', error);
+      });
+
+    const handleBrandNameUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ ownerId?: string; brandName?: string }>).detail;
+      if (detail?.ownerId === user.id && detail.brandName) {
+        setOwnerBrandName(detail.brandName);
+      }
+    };
+
+    window.addEventListener(OWNER_BRAND_NAME_UPDATED_EVENT, handleBrandNameUpdated);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener(OWNER_BRAND_NAME_UPDATED_EVENT, handleBrandNameUpdated);
+    };
+  }, [user?.id, isStaff]);
 
   // Per-section loading states — each section resolves independently
   const marketsLoading = allMarkets === undefined;
@@ -309,7 +348,7 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <div>
                 <h1 className="text-xl font-medium text-white">
-                  出攤本 - BoothBook
+                  {ownerBrandName}
                 </h1>
               </div>
             </div>

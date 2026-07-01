@@ -155,7 +155,9 @@ runTest('builds owner weekly settlement report totals, rankings, and data qualit
   assert.equal(report.decision.analysisAvailability.productAnalysis, 'limited');
   assert.equal(report.decision.analysisAvailability.conversionAnalysis, 'limited');
   assert.equal(report.marketDecisions[0].marketId, 'market-1');
-  assert.equal(report.content.cover.title, '2026-W23 Settlement Report');
+  assert.equal(report.brandName, '我的品牌');
+  assert.equal(report.content.cover.brandName, '我的品牌');
+  assert.equal(report.content.cover.title, '我的品牌 2026-W23 Settlement Report');
   assert.equal(report.content.marketActions.length > 0, true);
   assert.equal(
     report.dataQuality.limitations.some(limitation => limitation.code === 'missing_product_detail'),

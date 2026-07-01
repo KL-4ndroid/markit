@@ -16,6 +16,7 @@ import { StaffPermissionCard } from '@/components/staff/StaffPermissionCard';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { DataCanonicalizationPanel } from '@/components/settings/DataCanonicalizationPanel';
+import { OwnerBrandSettingsCard } from '@/components/settings/OwnerBrandSettingsCard';
 
 async function clearLocalAppData(): Promise<void> {
   const { clearAllData, db } = await import('@/lib/db');
@@ -247,6 +248,8 @@ export default function SettingsPage() {
 
         {/* PWA 安裝按鈕 */}
         <PWAInstallButton />
+
+        {!isStaff && <OwnerBrandSettingsCard />}
 
         {/* 員工管理 / 離開團隊 */}
         {isStaff ? (
