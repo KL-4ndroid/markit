@@ -147,17 +147,17 @@ runTest('PDF view model references the approved local font asset without renderi
   assert.equal(viewModel.font.renderSmokeTestRequired, true);
 });
 
-runTest('plans record font asset staging without approving PDF package or preview UI', () => {
+runTest('plans record font asset staging and later PDF runtime boundary', () => {
   assert.match(technicalPlanSource, /Slice I: Font Asset Staging[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /NotoSansTC-VariableFont_wght\.ttf/);
   assert.match(technicalPlanSource, /render smoke test must verify variable-font compatibility/);
   assert.match(presentationPlanSource, /Slice I: Font Asset Staging[\s\S]*Status: completed/);
   assert.match(presentationPlanSource, /No PDF package, PDF template, browser preview UI, download behavior/);
+  assert.match(presentationPlanSource, /Slice J: PDF Runtime Install and Font Smoke[\s\S]*Status: completed/);
 });
 
-runTest('font asset slice does not install PDF runtime dependencies', () => {
-  assert.equal(packageJson.dependencies?.['@react-pdf/renderer'], undefined);
-  assert.equal(packageJson.devDependencies?.['@react-pdf/renderer'], undefined);
+runTest('font asset remains separate from browser PDF preview dependencies', () => {
+  assert.match(packageJson.dependencies?.['@react-pdf/renderer'] ?? '', /^\^4\./);
   assert.equal(packageJson.dependencies?.puppeteer, undefined);
   assert.equal(packageJson.devDependencies?.puppeteer, undefined);
   assert.equal(packageJson.dependencies?.playwright, undefined);

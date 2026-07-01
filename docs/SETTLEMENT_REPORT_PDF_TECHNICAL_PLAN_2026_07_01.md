@@ -2,11 +2,11 @@
 
 Date: 2026-07-01
 
-Status: technical decision completed; PDF implementation remains deferred.
+Status: PDF runtime installed; formal PDF template and browser preview remain deferred.
 
 Scope: decide the recommended technical approach for the future owner-only settlement report PDF generation feature.
 
-This document does not approve installing a PDF library, generating PDFs, adding browser PDF preview UI, adding download buttons, adding browser file APIs, adding Supabase reads, changing report permissions, changing settlement scoring, changing analytics page behavior, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+This document records the approved `@react-pdf/renderer` installation and minimal font smoke test. It does not approve formal report PDF generation, browser PDF preview UI, download buttons, browser file APIs, Supabase reads, changing report permissions, changing settlement scoring, changing analytics page behavior, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
 ## 1. Recommended Approach
 
@@ -20,7 +20,7 @@ Reason:
 - fixed A4 page templates match the report's page-based design better than trying to screenshot the current preview page;
 - the app can keep PDF export owner-only and local-first.
 
-This is a recommendation for the next implementation path, not an approval to install or implement it in this slice.
+This recommendation has now been implemented only up to dependency installation and minimal font smoke testing. Formal PDF template work and browser-facing UI remain separate slices.
 
 ## 2. Alternatives Considered
 
@@ -251,7 +251,7 @@ Required before implementation:
 
 - plan test proving recommended approach and blocked behaviors;
 - package test inclusion;
-- no PDF dependency installed.
+- PDF dependency allowed only after explicit approval and smoke guardrails.
 
 ### Phase 2: Pure View Model Tests
 
@@ -323,25 +323,46 @@ Remaining decision before rendering:
 
 ### Slice J: Install PDF Library
 
-Medium risk.
+Status: completed.
 
-Requires approval before:
+Result:
 
-- adding `@react-pdf/renderer`;
-- changing package lock;
-- adding PDF rendering component.
+- installed `@react-pdf/renderer`;
+- updated `package.json` and `package-lock.json`;
+- no production component or browser preview UI was added.
 
-### Slice K: PDF Template Prototype
+### Slice K: Minimal Font Smoke Test
 
-Medium risk.
+Status: completed.
 
-Allowed after Slice J:
+Result:
 
-- fixture-only PDF document;
+- renders a minimal A4 PDF buffer in Node using `renderToBuffer`;
+- registers `public/fonts/report/NotoSansTC-VariableFont_wght.ttf`;
+- verifies the generated PDF starts with `%PDF-`;
+- verifies embedded Traditional Chinese font signals: `ToUnicode`, `CIDFontType2`, `Identity-H`, and `NotoSansTC`;
+- does not write a PDF file to disk;
 - no download UI;
 - no production user action.
 
-### Slice L: Owner-Only Browser PDF Preview UI
+Finding:
+
+- Variable font glyph rendering passed.
+- The embedded font face currently appears as a Noto Sans TC variable-font face with thin-weight naming in the generated PDF.
+- This means glyph availability is proven, but weight quality is not accepted for final report output yet.
+- Before formal report template work, run a visual PDF review or replace the variable font with static regular/medium/bold files if the typography is too light.
+
+### Slice L: PDF Template Prototype
+
+Medium risk.
+
+Allowed after Slice K:
+
+- fixture-only PDF document that uses the settlement report PDF view model;
+- no download UI;
+- no production user action.
+
+### Slice M: Owner-Only Browser PDF Preview UI
 
 Higher risk.
 
@@ -355,7 +376,6 @@ Requires approval before:
 
 Stop for decision before:
 
-- installing any PDF package;
 - adding or replacing font files beyond the staged `NotoSansTC-VariableFont_wght.ttf` asset;
 - adding browser PDF preview behavior;
 - adding browser download behavior;
@@ -375,13 +395,13 @@ Completed:
 - Noto Sans TC font-family decision;
 - pure PDF view model.
 - local Noto Sans TC variable font asset staging.
+- PDF runtime installation.
+- minimal Traditional Chinese font smoke test.
 
 Recommended next path:
 
-1. Request approval before installing `@react-pdf/renderer`.
-2. After package installation, build a fixture-only font registration and Traditional Chinese glyph smoke test.
-3. If the variable font passes the smoke test, keep it; if not, request approval to replace it with static regular/medium/bold files.
-4. After font smoke testing, build a fixture-only PDF template prototype.
-5. Defer browser PDF preview UI until fixture PDF template and font smoke tests pass.
+1. Decide whether the thin-weight variable-font output is visually acceptable enough to proceed with a fixture-only PDF template, or replace it with static regular/medium/bold files first.
+2. If keeping the variable font temporarily, build a fixture-only PDF template prototype from the PDF view model.
+3. Defer browser PDF preview UI until fixture PDF template and visual smoke tests pass.
 
-The next step now crosses into package installation and PDF rendering behavior. Treat it as a decision boundary before mutating dependencies or introducing browser-facing preview behavior.
+The next step now crosses into visual quality and report-template behavior. Treat browser-facing preview behavior as a separate decision boundary.

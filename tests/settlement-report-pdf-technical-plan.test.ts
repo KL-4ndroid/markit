@@ -29,11 +29,11 @@ console.log('\n=== Settlement report PDF technical plan ===');
 
 runTest('technical plan exists and remains non-runtime', () => {
   assert.match(technicalPlanSource, /# Settlement Report PDF Technical Plan/);
-  assert.match(technicalPlanSource, /Status: technical decision completed; PDF implementation remains deferred/);
-  assert.match(technicalPlanSource, /This document does not approve installing a PDF library/);
-  assert.match(technicalPlanSource, /does not approve[\s\S]*generating PDFs/);
-  assert.match(technicalPlanSource, /does not approve[\s\S]*adding browser PDF preview UI/);
-  assert.match(technicalPlanSource, /does not approve[\s\S]*adding download buttons/);
+  assert.match(technicalPlanSource, /Status: PDF runtime installed; formal PDF template and browser preview remain deferred/);
+  assert.match(technicalPlanSource, /records the approved `@react-pdf\/renderer` installation/);
+  assert.match(technicalPlanSource, /does not approve formal report PDF generation/);
+  assert.match(technicalPlanSource, /does not approve[\s\S]*browser PDF preview UI/);
+  assert.match(technicalPlanSource, /does not approve[\s\S]*download buttons/);
   assert.match(technicalPlanSource, /does not approve[\s\S]*Supabase reads/);
 });
 
@@ -71,12 +71,13 @@ runTest('technical plan defines owner-only preview guardrails and staged impleme
   assert.match(technicalPlanSource, /Slice H: PDF View Model[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /lib\/reporting\/settlement-report-pdf-view-model\.ts/);
   assert.match(technicalPlanSource, /Slice I: Font Asset Staging[\s\S]*Status: completed/);
-  assert.match(technicalPlanSource, /Slice J: Install PDF Library[\s\S]*Requires approval/);
-  assert.match(technicalPlanSource, /Slice L: Owner-Only Browser PDF Preview UI[\s\S]*Higher risk/);
+  assert.match(technicalPlanSource, /Slice J: Install PDF Library[\s\S]*Status: completed/);
+  assert.match(technicalPlanSource, /Slice K: Minimal Font Smoke Test[\s\S]*Status: completed/);
+  assert.match(technicalPlanSource, /Slice M: Owner-Only Browser PDF Preview UI[\s\S]*Higher risk/);
 });
 
-runTest('technical plan does not install PDF dependencies yet', () => {
-  assert.equal(packageJson.dependencies?.['@react-pdf/renderer'], undefined);
+runTest('technical plan allows the approved PDF dependency but no browser renderer alternatives', () => {
+  assert.match(packageJson.dependencies?.['@react-pdf/renderer'] ?? '', /^\^4\./);
   assert.equal(packageJson.devDependencies?.['@react-pdf/renderer'], undefined);
   assert.equal(packageJson.dependencies?.puppeteer, undefined);
   assert.equal(packageJson.devDependencies?.puppeteer, undefined);

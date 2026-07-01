@@ -224,3 +224,29 @@ Result:
 - keeps variable-font renderer compatibility behind a future smoke test.
 
 No PDF package, PDF template, browser preview UI, download behavior, Supabase access, sync, recovery, or data writes were added.
+
+### Slice J: PDF Runtime Install and Font Smoke
+
+Status: completed as dependency installation plus fixture-only smoke test.
+
+Result record:
+
+- `@react-pdf/renderer`
+- `tests/settlement-report-pdf-font-smoke.test.ts`
+- `package.json`
+- `package-lock.json`
+
+Result:
+
+- installs the approved PDF renderer;
+- renders a minimal A4 PDF buffer with Noto Sans TC;
+- verifies PDF generation, CJK font embedding, ToUnicode mapping, and Identity-H encoding;
+- confirms no file output, preview UI, download UI, Supabase access, sync, recovery, or data writes were added.
+
+Finding:
+
+- variable-font glyph rendering passed;
+- final report typography quality is still not accepted because the generated PDF embeds a thin-weight Noto Sans TC face;
+- the next template slice must either visually review this output or switch to static regular/medium/bold font files before production UI.
+
+No formal PDF template, browser preview UI, download behavior, Supabase access, sync, recovery, or data writes were added.
