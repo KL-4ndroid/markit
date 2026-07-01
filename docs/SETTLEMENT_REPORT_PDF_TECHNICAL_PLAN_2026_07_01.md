@@ -2,11 +2,11 @@
 
 Date: 2026-07-01
 
-Status: PDF runtime installed; formal PDF template and browser preview remain deferred.
+Status: browser-only owner PDF preview shell and fixture visual validation are implemented.
 
 Scope: decide the recommended technical approach for the future owner-only settlement report PDF generation feature.
 
-This document records the approved `@react-pdf/renderer` installation and minimal font smoke test. It does not approve formal report PDF generation, browser PDF preview UI, download buttons, browser file APIs, Supabase reads, changing report permissions, changing settlement scoring, changing analytics page behavior, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+This document records the approved `@react-pdf/renderer` installation, font smoke test, PDF template, owner-only browser preview shell, and fixture visual validation. It does not approve custom download buttons, browser file APIs beyond opening a generated blob URL, Supabase reads, changing report permissions, changing settlement scoring, changing analytics page behavior, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
 ## 1. Recommended Approach
 
@@ -20,7 +20,7 @@ Reason:
 - fixed A4 page templates match the report's page-based design better than trying to screenshot the current preview page;
 - the app can keep PDF export owner-only and local-first.
 
-This recommendation has now been implemented only up to dependency installation and minimal font smoke testing. Formal PDF template work and browser-facing UI remain separate slices.
+This recommendation has now been implemented through the owner-only browser preview shell. Custom download UI, server-side generation, generated-PDF storage, permission expansion, and production data mutation remain separate decision boundaries.
 
 ## 2. Alternatives Considered
 
@@ -380,6 +380,35 @@ Result:
 - does not send report data to Supabase or a server route;
 - does not expose manager, operator, or viewer export.
 
+### Slice N: Browser Visual Validation And Template Polish
+
+Status: completed as fixture artifact generation, browser-attempt documentation, and PDF template polish.
+
+Result:
+
+- adds `tests/settlement-report-pdf-browser-visual.test.ts`;
+- renders a readable owner-only fixture PDF in memory by default;
+- can write `.codex-artifacts/settlement-report-visual-validation.pdf` only when `WRITE_SETTLEMENT_PDF_ARTIFACT=1`;
+- improves the PDF template with a stronger cover hero, warm-neutral metric cards, table framing, warning limits, action limits, page badges, and refined footer;
+- registers the staged Noto Sans TC variable font for regular, medium, and bold weights through the same local asset;
+- keeps the PDF document free of IndexedDB, Supabase, sync, recovery, browser download, and data-source imports.
+
+Validation note:
+
+- Direct `file://` PDF viewing is blocked by the in-app browser security policy.
+- Direct in-app navigation to the localhost PDF viewer can be blocked because the browser PDF viewer internally redirects through a `data:` error page when unavailable.
+- The accepted automated guardrail is therefore: render PDF buffer, verify five pages, verify font embedding through existing smoke/template tests, and optionally emit the fixture PDF artifact for manual browser inspection.
+
+Still blocked:
+
+- custom in-app download UI;
+- server-side PDF generation;
+- generated-PDF storage;
+- manager/staff export;
+- Supabase reads or writes;
+- scoring/model changes;
+- sync/recovery changes.
+
 ## 11. Stop Conditions
 
 Stop for decision before:
@@ -406,11 +435,13 @@ Completed:
 - minimal Traditional Chinese font smoke test.
 - fixture-only five-page PDF template prototype.
 - owner-only browser PDF preview shell.
+- fixture visual validation and PDF template polish.
 
 Recommended next path:
 
-1. Review whether the variable-font thin-weight output is visually acceptable, or replace it with static regular/medium/bold files before production UI.
-2. Run browser smoke testing on the owner report page with real local data and inspect PDF visual quality.
-3. Keep custom download UI, server-side generation, Supabase reads, manager/staff export, and generated-PDF storage blocked until separate approval.
+1. Run owner-page manual smoke with real local owner data when the user is available to log in.
+2. If typography still appears too light in the actual browser viewer, replace the variable font with static Noto Sans TC regular/medium/bold files as a separate low-risk asset slice.
+3. Add overflow-focused fixtures if real reports show long warnings, long product names, or many action items.
+4. Keep custom download UI, server-side generation, Supabase reads, manager/staff export, and generated-PDF storage blocked until separate approval.
 
-The next step is visual/browser validation. Treat any custom download UI, role expansion, server route, or generated-PDF storage as a separate decision boundary.
+The next step is owner-page manual smoke with authenticated local data. Treat any custom download UI, role expansion, server route, or generated-PDF storage as a separate decision boundary.

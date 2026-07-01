@@ -29,12 +29,11 @@ console.log('\n=== Settlement report PDF technical plan ===');
 
 runTest('technical plan exists and remains non-runtime', () => {
   assert.match(technicalPlanSource, /# Settlement Report PDF Technical Plan/);
-  assert.match(technicalPlanSource, /Status: PDF runtime installed; formal PDF template and browser preview remain deferred/);
-  assert.match(technicalPlanSource, /records the approved `@react-pdf\/renderer` installation/);
-  assert.match(technicalPlanSource, /does not approve formal report PDF generation/);
-  assert.match(technicalPlanSource, /does not approve[\s\S]*browser PDF preview UI/);
-  assert.match(technicalPlanSource, /does not approve[\s\S]*download buttons/);
+  assert.match(technicalPlanSource, /Status: browser-only owner PDF preview shell and fixture visual validation are implemented/);
+  assert.match(technicalPlanSource, /approved `@react-pdf\/renderer` installation, font smoke test, PDF template, owner-only browser preview shell, and fixture visual validation/);
+  assert.match(technicalPlanSource, /does not approve custom download buttons/);
   assert.match(technicalPlanSource, /does not approve[\s\S]*Supabase reads/);
+  assert.match(technicalPlanSource, /does not approve[\s\S]*sync\/recovery behavior/);
 });
 
 runTest('technical plan recommends client-side react-pdf first', () => {
@@ -74,6 +73,7 @@ runTest('technical plan defines owner-only preview guardrails and staged impleme
   assert.match(technicalPlanSource, /Slice J: Install PDF Library[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /Slice K: Minimal Font Smoke Test[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /Slice M: Owner-Only Browser PDF Preview UI[\s\S]*Status: completed/);
+  assert.match(technicalPlanSource, /Slice N: Browser Visual Validation And Template Polish[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /does not add a custom download button/);
 });
 
@@ -92,7 +92,8 @@ runTest('presentation plan records technical plan completion', () => {
   assert.match(presentationPlanSource, /tests\/settlement-report-pdf-technical-plan\.test\.ts/);
   assert.match(presentationPlanSource, /Slice H: PDF View Model[\s\S]*Status: completed/);
   assert.match(presentationPlanSource, /Slice I: Font Asset Staging[\s\S]*Status: completed/);
-  assert.match(presentationPlanSource, /No PDF package, PDF template, browser preview UI, download behavior/);
+  assert.match(presentationPlanSource, /Slice M: Browser Visual Validation And Template Polish[\s\S]*Status: completed/);
+  assert.match(presentationPlanSource, /custom download UI, server-side PDF generation, generated-PDF storage/);
 });
 
 runTest('full test suite includes PDF technical plan guardrail', () => {

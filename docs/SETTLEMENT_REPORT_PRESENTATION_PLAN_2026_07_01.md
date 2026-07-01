@@ -2,11 +2,11 @@
 
 Date: 2026-07-01
 
-Status: preview repositioning approved; PDF generation still deferred.
+Status: preview repositioning, owner-only browser PDF preview, and fixture visual validation are completed.
 
 Scope: define the product relationship between the settlement report preview page and the future designed PDF output.
 
-This document does not approve PDF generation, download buttons, Excel generation, CSV export, Supabase reads, manager access, report permission changes, scoring changes, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+This document does not approve custom download buttons, Excel generation, CSV export, Supabase reads, manager access, report permission changes, scoring changes, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
 ## 1. Product Direction
 
@@ -290,3 +290,21 @@ Result:
 - keeps the existing owner finance/import-export capability guard.
 
 No Supabase access, sync, recovery, server PDF generation, generated-PDF storage, or manager/staff export was added.
+
+### Slice M: Browser Visual Validation And Template Polish
+
+Status: completed as fixture artifact generation, browser-attempt documentation, and PDF template polish.
+
+Result record:
+
+- `components/reports/settlement/SettlementReportPdfDocument.tsx`
+- `tests/settlement-report-pdf-browser-visual.test.ts`
+- `docs/SETTLEMENT_REPORT_PDF_TECHNICAL_PLAN_2026_07_01.md`
+
+Result:
+
+- keeps the first PDF report owner-only and browser-only;
+- improves the formal PDF template toward a branded monthly/weekly report style;
+- adds a readable fixture PDF validation path that does not depend on production data;
+- records that in-app browser direct PDF viewing is not a reliable automation surface because file URLs are blocked and browser PDF viewer error pages can use blocked `data:` URLs;
+- keeps custom download UI, server-side PDF generation, generated-PDF storage, manager/staff export, Supabase access, sync, recovery, and data writes out of scope.

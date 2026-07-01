@@ -30,9 +30,10 @@ console.log('\n=== Settlement report preview spec ===');
 
 runTest('spec exists and stays non-runtime', () => {
   assert.match(previewSpecSource, /# Settlement Report Preview Spec/);
-  assert.match(previewSpecSource, /Status: Slice C owner-only preview UI completed; 2026-07-01 update repositions preview as an in-app report check workspace\. PDF generation remains deferred/);
+  assert.match(previewSpecSource, /Status: Slice C formal owner-only preview UI completed; 2026-07-01 update repositions preview as an in-app report check workspace/);
+  assert.match(previewSpecSource, /Owner-only browser PDF preview is tracked in the separate PDF technical plan/);
   assert.match(previewSpecSource, /approves the owner-only preview UI with local read-only IndexedDB access/);
-  assert.match(previewSpecSource, /It does not approve[\s\S]*PDF generation/);
+  assert.match(previewSpecSource, /It does not approve[\s\S]*custom download UI/);
   assert.match(previewSpecSource, /It does not approve[\s\S]*Supabase reads/);
 });
 
@@ -88,12 +89,12 @@ runTest('spec maps every current limitation code to visible behavior', () => {
   assert.match(previewSpecSource, /Limitation To Visible Behavior Mapping/);
 });
 
-runTest('spec records completed preview UI while keeping PDF as a later decision', () => {
+runTest('spec records completed preview UI while keeping PDF decisions separate', () => {
   assert.match(previewSpecSource, /Future PDF Relationship/);
   assert.match(previewSpecSource, /this spec does not choose:[\s\S]*PDF library/);
   assert.match(previewSpecSource, /Slice B: Pure Preview View Model[\s\S]*Status: completed/);
   assert.match(previewSpecSource, /lib\/reporting\/settlement-report-preview\.ts/);
-  assert.match(previewSpecSource, /Slice C: Owner-Only Preview UI[\s\S]*Status: completed/);
+  assert.match(previewSpecSource, /Slice C: Formal Owner-Only Preview UI[\s\S]*Status: completed/);
   assert.match(previewSpecSource, /app\/reports\/settlement\/page\.tsx/);
   assert.match(previewSpecSource, /Slice E: Preview Repositioning[\s\S]*Status: approved/);
   assert.match(previewSpecSource, /Slice D: PDF Technical Plan/);

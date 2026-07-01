@@ -71,12 +71,14 @@ runTest('settlement report model and preview carry owner brand name', () => {
   assert.match(reportPageSource, /preview\.header\.brandName/);
 });
 
-runTest('brand name wiring stays out of sync recovery and report file generation', () => {
+runTest('brand name wiring stays out of sync recovery and custom export side effects', () => {
   for (const source of [brandCardSource, reportPageSource]) {
     assert.doesNotMatch(source, /@\/lib\/sync|@\/lib\/db\/recovery|@\/lib\/db\/events/);
-    assert.doesNotMatch(source, /PDF|Excel|CSV|download|下載|匯出/);
+    assert.doesNotMatch(source, /Excel|CSV|download|下載|匯出/);
     assert.doesNotMatch(source, /db\.(events|markets|products|dailyStats)\.(add|put|update|delete|clear|bulkAdd|bulkPut|bulkDelete)/);
   }
+  assert.match(reportPageSource, /buildSettlementReportPdfViewModel/);
+  assert.match(reportPageSource, /SettlementReportPdfPreviewButton/);
   assert.doesNotMatch(homePageSource, /@\/lib\/db\/recovery|@\/lib\/db\/events/);
 });
 

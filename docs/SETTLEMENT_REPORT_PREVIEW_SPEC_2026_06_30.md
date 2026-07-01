@@ -2,11 +2,11 @@
 
 Date: 2026-06-30
 
-Status: Slice C owner-only preview UI completed; 2026-07-01 update repositions preview as an in-app report check workspace. PDF generation remains deferred.
+Status: Slice C formal owner-only preview UI completed; 2026-07-01 update repositions preview as an in-app report check workspace. Owner-only browser PDF preview is tracked in the separate PDF technical plan.
 
 Scope: define the owner-only settlement report preview/check experience and the pure preview view model that displays the output of `buildSettlementReportModel()` before any PDF generation is implemented.
 
-This document approves the owner-only preview UI with local read-only IndexedDB access. It does not approve PDF generation, Excel generation, browser download, Supabase reads, manager access, analytics page logic replacement, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+This document approves the owner-only preview UI with local read-only IndexedDB access. It does not approve custom download UI, Excel generation, browser file APIs, Supabase reads, manager access, analytics page logic replacement, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
 ## 1. Product Goal
 
@@ -322,7 +322,7 @@ Not allowed:
 - data reads;
 - repair actions.
 
-### Slice C: Owner-Only Preview UI
+### Slice C: Formal Owner-Only Preview UI
 
 Status: completed.
 

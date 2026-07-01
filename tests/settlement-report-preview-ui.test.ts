@@ -22,7 +22,7 @@ function runTest(name: string, fn: TestFn): void {
 console.log('\n=== Settlement report preview UI ===');
 
 runTest('owner-only preview route exists and uses approved model boundaries', () => {
-  assert.match(previewSpecSource, /Slice C: Owner-Only Preview UI[\s\S]*Status: completed/);
+  assert.match(previewSpecSource, /Slice C: Formal Owner-Only Preview UI[\s\S]*Status: completed/);
   assert.match(pageSource, /buildSettlementReportModel/);
   assert.match(pageSource, /buildSettlementReportPreviewModel/);
   assert.match(pageSource, /deriveRoleCapabilities/);
