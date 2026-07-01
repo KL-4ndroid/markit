@@ -6,7 +6,7 @@ Status: technical decision completed; PDF implementation remains deferred.
 
 Scope: decide the recommended technical approach for the future owner-only settlement report PDF generation feature.
 
-This document does not approve installing a PDF library, generating PDFs, adding download buttons, adding browser file APIs, adding Supabase reads, changing report permissions, changing settlement scoring, changing analytics page behavior, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+This document does not approve installing a PDF library, generating PDFs, adding browser PDF preview UI, adding download buttons, adding browser file APIs, adding Supabase reads, changing report permissions, changing settlement scoring, changing analytics page behavior, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
 ## 1. Recommended Approach
 
@@ -113,7 +113,8 @@ Allowed future boundary:
 - page builds `SettlementReportModel`;
 - page builds a PDF-specific view model;
 - PDF renderer receives only the authorized owner report model/view model;
-- generated file stays in browser memory until the owner downloads it.
+- generated PDF is opened in the browser PDF viewer;
+- if the owner wants a local file, the owner uses the browser viewer's built-in download control.
 
 Blocked:
 
@@ -147,17 +148,23 @@ Recommended future module split:
   - PDF-only document component;
   - imports the PDF view model type;
   - no IndexedDB/Supabase/sync imports.
-- `components/reports/settlement/SettlementReportPdfDownloadButton.tsx`
+- `components/reports/settlement/SettlementReportPdfPreviewButton.tsx`
   - owner-only UI shell;
-  - disabled until the template and font smoke tests pass.
+  - opens the generated PDF in the browser PDF viewer after template and font smoke tests pass;
+  - does not provide a custom in-app download button in the first version.
 
 ## 5. Font Strategy
 
 Traditional Chinese must be handled with bundled local font files.
 
-Recommended:
+Decision:
 
-- use a Noto Sans TC static font family or another legally redistributable Traditional Chinese font;
+- use Noto Sans TC as the first PDF font family;
+- license basis: SIL Open Font License via the official Noto/Google Fonts distribution;
+- use this font because it is designed for Traditional Chinese usage in Taiwan/Macau, is legible for tables, and fits BoothBook's quiet operational brand tone.
+
+Recommended future asset path:
+
 - store font files under a dedicated local asset path such as `public/fonts/report/`;
 - use static TTF or WOFF files, not variable fonts, for first implementation;
 - register separate weights for regular, medium, and bold;
@@ -215,9 +222,9 @@ Reason:
 
 ## 8. Export Permission Guardrails
 
-PDF export remains owner-only.
+PDF preview/export remains owner-only.
 
-Required checks before showing or enabling a future download button:
+Required checks before showing or enabling a future browser PDF preview action:
 
 - `hasCapability(capabilities, 'canImportExport')`;
 - `hasCapability(capabilities, 'canViewOwnerFinance')`;
@@ -265,10 +272,11 @@ After installing chosen library:
 
 ### Phase 4: Browser UI Smoke
 
-Before enabling download:
+Before enabling browser PDF preview:
 
-- owner-only route shows button only for owner;
-- generated PDF can be downloaded from local fixture data;
+- owner-only route shows preview action only for owner;
+- generated PDF opens in the browser PDF viewer from local fixture data;
+- browser viewer download remains available through the viewer, not through a custom app download button;
 - button remains absent for staff roles;
 - no Supabase write/read is triggered by export.
 
@@ -276,7 +284,12 @@ Before enabling download:
 
 ### Slice H: PDF View Model
 
-Low risk.
+Status: completed as pure TypeScript view model and fixture tests.
+
+Result record:
+
+- `lib/reporting/settlement-report-pdf-view-model.ts`
+- `tests/settlement-report-pdf-view-model.test.ts`
 
 Allowed:
 
@@ -286,14 +299,21 @@ Allowed:
 - no PDF dependency;
 - no browser APIs.
 
-### Slice I: Font Asset Decision
+### Slice I: Font Family Decision
 
-Medium risk because it adds binary assets.
+Status: completed as plan-only decision.
 
-Requires decision:
+Decision:
 
-- exact font family;
-- license review;
+- first font family: Noto Sans TC;
+- license basis: SIL Open Font License;
+- style fit: clean Traditional Chinese sans-serif for operational reports;
+- no font files are added in this slice.
+
+Remaining decision before adding assets:
+
+- exact file source;
+- exact static TTF/WOFF files;
 - file size budget;
 - weights to include.
 
@@ -317,13 +337,13 @@ Allowed after Slice J:
 - no download UI;
 - no production user action.
 
-### Slice L: Owner-Only Download UI
+### Slice L: Owner-Only Browser PDF Preview UI
 
 Higher risk.
 
 Requires approval before:
 
-- adding a visible download button;
+- adding a visible PDF preview action;
 - invoking browser file/download APIs;
 - exposing the feature to production users.
 
@@ -333,6 +353,7 @@ Stop for decision before:
 
 - installing any PDF package;
 - adding font files;
+- adding browser PDF preview behavior;
 - adding browser download behavior;
 - adding server route PDF generation;
 - sending report data to Supabase or a server;
@@ -344,12 +365,18 @@ Stop for decision before:
 
 ## 12. Current Decision
 
-Recommended first path:
+Completed:
 
-1. Keep this slice documentation-only.
-2. Next low-risk implementation: `Slice H: PDF View Model`.
-3. Defer font asset addition until a specific font family and file size are approved.
-4. Defer package installation until the view model and font decision are complete.
-5. Defer download UI until a fixture PDF template passes smoke tests.
+- technical plan;
+- Noto Sans TC font-family decision;
+- pure PDF view model.
 
-The immediate next safe task after this plan is `Slice H: PDF View Model`.
+Recommended next path:
+
+1. Decide exact Noto Sans TC static font files and size budget before adding assets.
+2. After font asset approval, add only the selected local font files.
+3. After font assets are present, request approval before installing `@react-pdf/renderer`.
+4. After package installation, build a fixture-only PDF template prototype.
+5. Defer browser PDF preview UI until fixture PDF template and font smoke tests pass.
+
+The next step now crosses into font asset/package decisions and should be treated as a decision boundary before mutating dependencies or adding binary font files.

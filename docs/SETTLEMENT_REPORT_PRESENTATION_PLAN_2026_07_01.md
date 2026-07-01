@@ -179,7 +179,27 @@ Decision:
 
 - recommend client-side `@react-pdf/renderer` for the first implementation path;
 - keep first implementation browser-only to avoid sending owner financial report data to a server route;
-- require bundled local Traditional Chinese static font files;
-- keep package installation, font assets, PDF template implementation, and download UI behind later approvals.
+- use browser PDF viewer preview as the first user-facing export surface, so owners can use the browser viewer's built-in download control when needed;
+- select Noto Sans TC as the first font-family decision because it is OFL-licensed, Traditional-Chinese-oriented, and visually suitable for a quiet operational brand report;
+- require bundled local Traditional Chinese static font files before implementation;
+- keep package installation, font asset files, PDF template implementation, and browser PDF preview UI behind later approvals.
 
 No implementation is approved by this plan.
+
+### Slice H: PDF View Model
+
+Status: completed as pure TypeScript view model and static guardrail work.
+
+Result record:
+
+- `lib/reporting/settlement-report-pdf-view-model.ts`
+- `tests/settlement-report-pdf-view-model.test.ts`
+
+Result:
+
+- maps `SettlementReportModel` into five fixed A4 PDF page data structures;
+- carries Noto Sans TC font-plan metadata without adding font files;
+- applies deterministic market/product row caps;
+- keeps limitations, warnings, score rows, cost/profit metrics, and next actions ready for PDF template rendering.
+
+No PDF package, font asset, browser preview UI, download behavior, Supabase access, sync, recovery, or data writes were added.
