@@ -103,7 +103,8 @@ runTest('visual spec makes data limitations visible in the PDF', () => {
 runTest('presentation and preview plans point to PDF visual spec before technical work', () => {
   assert.match(presentationPlanSource, /Slice F: PDF Visual Specification[\s\S]*Status: completed/);
   assert.match(presentationPlanSource, /docs\/SETTLEMENT_REPORT_PDF_VISUAL_SPEC_2026_07_01\.md/);
-  assert.match(presentationPlanSource, /Slice G: PDF Technical Plan[\s\S]*No implementation until separately approved/);
+  assert.match(presentationPlanSource, /Slice G: PDF Technical Plan[\s\S]*Status: completed/);
+  assert.match(presentationPlanSource, /No implementation is approved by this plan/);
   assert.match(previewSpecSource, /Future PDF Relationship/);
   assert.match(previewSpecSource, /Those decisions require a later PDF technical plan/);
 });

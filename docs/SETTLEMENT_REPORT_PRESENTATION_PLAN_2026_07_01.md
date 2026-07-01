@@ -159,7 +159,12 @@ No runtime code.
 
 ### Slice G: PDF Technical Plan
 
-Future decision slice.
+Status: completed as technical decision and static guardrail work.
+
+Result record:
+
+- `docs/SETTLEMENT_REPORT_PDF_TECHNICAL_PLAN_2026_07_01.md`
+- `tests/settlement-report-pdf-technical-plan.test.ts`
 
 Decide:
 
@@ -170,4 +175,11 @@ Decide:
 - testing strategy;
 - export permission guardrails.
 
-No implementation until separately approved.
+Decision:
+
+- recommend client-side `@react-pdf/renderer` for the first implementation path;
+- keep first implementation browser-only to avoid sending owner financial report data to a server route;
+- require bundled local Traditional Chinese static font files;
+- keep package installation, font assets, PDF template implementation, and download UI behind later approvals.
+
+No implementation is approved by this plan.
