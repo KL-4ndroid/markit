@@ -138,7 +138,12 @@ Blocked:
 
 ### Slice F: PDF Visual Specification
 
-Future documentation slice.
+Status: completed as documentation and static guardrail work.
+
+Result record:
+
+- `docs/SETTLEMENT_REPORT_PDF_VISUAL_SPEC_2026_07_01.md`
+- `tests/settlement-report-pdf-visual-spec.test.ts`
 
 Define:
 
