@@ -269,7 +269,7 @@ export default function SettlementReportPreviewPage() {
   const preview = built?.preview ?? null;
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] px-4 pb-12 pt-5">
+    <div className="min-h-screen bg-background px-4 pb-12 pt-5">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="flex flex-col gap-4 border-b border-[#D8D0C3] pb-5 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
@@ -282,7 +282,7 @@ export default function SettlementReportPreviewPage() {
                 <FileText size={22} />
               </div>
               <div className="min-w-0">
-                <h1 className="text-2xl font-semibold text-foreground">品牌經營結算報告</h1>
+                <h1 className="text-2xl font-semibold text-foreground">結算報告檢查</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {preview ? `${preview.header.brandName} · ${preview.header.periodLabel} · 信心度 ${confidenceLabel(preview.header.confidence)}` : '正在整理本機資料'}
                 </p>
@@ -319,44 +319,44 @@ export default function SettlementReportPreviewPage() {
 
         {preview && report && (
           <>
-            <section className="grid overflow-hidden border border-[#D8D0C3] bg-white shadow-sm lg:grid-cols-[1.25fr_0.75fr]">
-              <div className="flex min-h-[380px] flex-col justify-between bg-[#26392F] p-6 text-white md:p-8">
+            <section className="grid gap-5 border border-[#D8D0C3] bg-white p-5 shadow-sm lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="flex flex-col justify-between">
                 <div>
-                  <div className="mb-8 flex flex-wrap items-center gap-3">
-                    <div className="inline-flex items-center gap-2 border border-white/20 px-3 py-1 text-xs text-white/80">
+                  <div className="mb-5 flex flex-wrap items-center gap-3">
+                    <div className="inline-flex items-center gap-2 border border-[#D8D0C3] bg-[#F7F5EF] px-3 py-1 text-xs text-muted-foreground">
                       <CalendarDays size={14} />
                       {kind === 'monthly' ? '月結報告' : '週結報告'}
                     </div>
-                    <div className="border border-white/15 px-3 py-1 text-xs text-white/65">
+                    <div className="border border-[#D8D0C3] px-3 py-1 text-xs text-muted-foreground">
                       {preview.header.periodLabel}
                     </div>
                   </div>
-                  <p className="mb-3 text-sm font-medium text-white/70">{preview.header.brandName}</p>
-                  <h2 className="max-w-2xl text-4xl font-semibold leading-tight md:text-5xl">
+                  <p className="mb-2 text-sm font-medium text-muted-foreground">{preview.header.brandName}</p>
+                  <h2 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">
                     {recommendationLabel(preview.executiveSummary.recommendation)}
                   </h2>
-                  <p className="mt-4 max-w-2xl text-sm leading-6 text-white/75">
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                     {preview.executiveSummary.summary}
                   </p>
                 </div>
 
-                <div className="mt-10 grid gap-3 sm:grid-cols-3">
-                  <div className="border border-white/15 bg-white/5 p-4">
-                    <p className="text-xs text-white/60">總營收</p>
-                    <p className="mt-2 text-2xl font-semibold tabular-nums">{formatMoney(preview.executiveSummary.totalRevenue)}</p>
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <div className="bg-[#F7F5EF] p-4">
+                    <p className="text-xs text-muted-foreground">總營收</p>
+                    <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">{formatMoney(preview.executiveSummary.totalRevenue)}</p>
                   </div>
-                  <div className="border border-white/15 bg-white/5 p-4">
-                    <p className="text-xs text-white/60">淨利</p>
-                    <p className="mt-2 text-2xl font-semibold tabular-nums">{formatMoney(preview.executiveSummary.netProfit)}</p>
+                  <div className="bg-[#F7F5EF] p-4">
+                    <p className="text-xs text-muted-foreground">淨利</p>
+                    <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">{formatMoney(preview.executiveSummary.netProfit)}</p>
                   </div>
-                  <div className="border border-white/15 bg-white/5 p-4">
-                    <p className="text-xs text-white/60">成交數</p>
-                    <p className="mt-2 text-2xl font-semibold tabular-nums">{formatNumber(preview.executiveSummary.totalDeals)}</p>
+                  <div className="bg-[#F7F5EF] p-4">
+                    <p className="text-xs text-muted-foreground">成交數</p>
+                    <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">{formatNumber(preview.executiveSummary.totalDeals)}</p>
                   </div>
                 </div>
               </div>
 
-              <aside className="flex flex-col justify-between gap-5 bg-[#EFE9DD] p-6 md:p-8">
+              <aside className="flex flex-col justify-between gap-5 border border-[#E8E3D8] bg-[#F7F5EF] p-5">
                 <div>
                   <div className="flex items-center justify-between gap-4">
                     <p className="text-xs font-medium text-muted-foreground">本期總評分</p>
@@ -365,7 +365,7 @@ export default function SettlementReportPreviewPage() {
                     </span>
                   </div>
                   <div className="mt-4 flex items-end gap-3 border-b border-[#D8D0C3] pb-5">
-                    <span className="text-7xl font-semibold leading-none text-[#26392F]">{Math.round(preview.executiveSummary.overallScore)}</span>
+                    <span className="text-6xl font-semibold leading-none text-[#26392F]">{Math.round(preview.executiveSummary.overallScore)}</span>
                     <span className="pb-2 text-sm font-medium text-muted-foreground">/ 100</span>
                   </div>
                   <div className={`mt-5 inline-flex border px-3 py-1 text-sm font-medium ${readinessClasses(preview.header.readiness)}`}>

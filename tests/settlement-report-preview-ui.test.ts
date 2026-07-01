@@ -9,6 +9,7 @@ const projectRoot = join(__dirname, '..');
 const pageSource = readFileSync(join(projectRoot, 'app/reports/settlement/page.tsx'), 'utf8');
 const analyticsPageSource = readFileSync(join(projectRoot, 'app/analytics/page.tsx'), 'utf8');
 const previewSpecSource = readFileSync(join(projectRoot, 'docs/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30.md'), 'utf8');
+const presentationPlanSource = readFileSync(join(projectRoot, 'docs/SETTLEMENT_REPORT_PRESENTATION_PLAN_2026_07_01.md'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
@@ -21,7 +22,7 @@ function runTest(name: string, fn: TestFn): void {
 console.log('\n=== Settlement report preview UI ===');
 
 runTest('owner-only preview route exists and uses approved model boundaries', () => {
-  assert.match(previewSpecSource, /Slice C: Formal Owner-Only Preview UI[\s\S]*Status: completed/);
+  assert.match(previewSpecSource, /Slice C: Owner-Only Preview UI[\s\S]*Status: completed/);
   assert.match(pageSource, /buildSettlementReportModel/);
   assert.match(pageSource, /buildSettlementReportPreviewModel/);
   assert.match(pageSource, /deriveRoleCapabilities/);
@@ -32,7 +33,7 @@ runTest('owner-only preview route exists and uses approved model boundaries', ()
 
 runTest('formal preview UI exposes report-quality sections for owner decision making', () => {
   for (const label of [
-    '品牌經營結算報告',
+    '結算報告檢查',
     '月結報告',
     '週結報告',
     '本期總評分',
@@ -54,6 +55,17 @@ runTest('formal preview UI exposes report-quality sections for owner decision ma
   assert.match(pageSource, /report\.marketDecisions/);
   assert.match(pageSource, /report\.productRows/);
   assert.match(pageSource, /preview\.nextActions/);
+});
+
+runTest('preview UI is positioned as an in-app report check workspace', () => {
+  assert.match(previewSpecSource, /in-app report check workspace/);
+  assert.match(previewSpecSource, /not the final report design/);
+  assert.match(previewSpecSource, /Slice E: Preview Repositioning/);
+  assert.match(presentationPlanSource, /Preview\/check workspace in the app/);
+  assert.match(presentationPlanSource, /The current preview page should not be treated as the final report design/);
+  assert.match(pageSource, /結算報告檢查/);
+  assert.doesNotMatch(pageSource, /品牌經營結算報告/);
+  assert.doesNotMatch(pageSource, /min-h-\[380px\].*bg-\[#26392F\]/s);
 });
 
 runTest('preview UI reads only local IndexedDB data and does not write or sync', () => {

@@ -1,0 +1,168 @@
+# Settlement Report Presentation Plan
+
+Date: 2026-07-01
+
+Status: preview repositioning approved; PDF generation still deferred.
+
+Scope: define the product relationship between the settlement report preview page and the future designed PDF output.
+
+This document does not approve PDF generation, download buttons, Excel generation, CSV export, Supabase reads, manager access, report permission changes, scoring changes, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+
+## 1. Product Direction
+
+The settlement report feature should have two separate surfaces:
+
+1. Preview/check workspace in the app.
+2. Designed PDF as the final report artifact.
+
+The current preview page should not be treated as the final report design. It should remain an owner-only workspace for checking the selected period, data readiness, warnings, key conclusions, and next actions before a final report is generated.
+
+The designed PDF should become the polished output for sharing, archiving, and reviewing the brand's weekly or monthly performance.
+
+## 2. Preview Page Role
+
+The preview page is an in-app checkpoint.
+
+It should help the owner answer:
+
+- Is the selected period correct?
+- Is the report data complete enough?
+- Are there warnings that make conclusions unreliable?
+- Are revenue, profit, score, and recommendation reasonable?
+- What data should be fixed or recorded before producing the final report?
+
+The preview page should feel consistent with the BoothBook app:
+
+- compact;
+- practical;
+- clear;
+- operational;
+- readable on mobile and desktop;
+- similar in density to app settings or analytics tools.
+
+It should not try to become a full PDF mockup or a decorative report cover.
+
+## 3. PDF Role
+
+The PDF is the final report artifact.
+
+It should be designed as a polished brand-management report:
+
+- cover summary;
+- large key numbers;
+- score and recommendation;
+- data-confidence notes;
+- market ranking;
+- product performance;
+- cost and profit section;
+- next-action page;
+- clear warnings when data is incomplete.
+
+The PDF can use more whitespace, stronger typography, page-based hierarchy, and a more refined visual tone than the in-app preview.
+
+## 4. Shared Truth
+
+Preview and PDF must use the same source model:
+
+- `buildSettlementReportModel()`;
+- `buildSettlementReportPreviewModel()` or a later PDF-specific view model derived from the same report model.
+
+The two surfaces must share:
+
+- numbers;
+- conclusions;
+- score;
+- grade;
+- recommendation;
+- limitation messages;
+- data-confidence logic;
+- next actions.
+
+They do not need to share identical layout.
+
+## 5. Visual System Direction
+
+Recommended PDF direction:
+
+- page size: portrait A4 as the default;
+- layout: cover page plus content pages;
+- visual tone: refined brand operations report, not raw accounting export;
+- palette: reuse BoothBook's quiet green and warm neutral system, with restrained accent colors;
+- typography: clear hierarchy, tabular numbers, short paragraphs;
+- charts: only if they improve decision making;
+- warnings: visible, direct, and not hidden behind icons only.
+
+Recommended preview direction:
+
+- title it as a report check or preparation workspace;
+- place period controls near the top;
+- keep warnings and data readiness near the top;
+- use smaller, app-like panels instead of a full report cover;
+- keep PDF/download actions absent until a separate approved PDF slice exists.
+
+## 6. Non-Goals
+
+This plan does not implement:
+
+- PDF generation;
+- browser download;
+- PDF library selection;
+- PDF template rendering;
+- Excel export;
+- manager access;
+- analytics page replacement;
+- Supabase report reads;
+- data mutation;
+- sync/recovery behavior.
+
+## 7. Next Safe Slices
+
+### Slice E: Reposition Preview UI
+
+Status: approved for low-risk implementation.
+
+Allowed:
+
+- rename the page heading to a check/workspace concept;
+- remove overly report-cover-like presentation;
+- make controls, readiness, and warnings feel like an in-app workflow;
+- keep all data reads local and read-only;
+- keep owner-only gate.
+
+Blocked:
+
+- adding PDF generation;
+- adding download buttons;
+- changing report scoring;
+- changing permissions.
+
+### Slice F: PDF Visual Specification
+
+Future documentation slice.
+
+Define:
+
+- page sequence;
+- typography scale;
+- PDF section layout;
+- warning styles;
+- score card;
+- table treatment;
+- content-to-page mapping.
+
+No runtime code.
+
+### Slice G: PDF Technical Plan
+
+Future decision slice.
+
+Decide:
+
+- PDF library;
+- rendering strategy;
+- font handling;
+- image/logo handling;
+- testing strategy;
+- export permission guardrails.
+
+No implementation until separately approved.

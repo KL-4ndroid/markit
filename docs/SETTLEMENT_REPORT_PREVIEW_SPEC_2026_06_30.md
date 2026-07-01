@@ -2,9 +2,9 @@
 
 Date: 2026-06-30
 
-Status: Slice C formal owner-only preview UI completed; PDF generation remains deferred.
+Status: Slice C owner-only preview UI completed; 2026-07-01 update repositions preview as an in-app report check workspace. PDF generation remains deferred.
 
-Scope: define the owner-only settlement report preview experience and the pure preview view model that displays the output of `buildSettlementReportModel()` before any PDF generation is implemented.
+Scope: define the owner-only settlement report preview/check experience and the pure preview view model that displays the output of `buildSettlementReportModel()` before any PDF generation is implemented.
 
 This document approves the owner-only preview UI with local read-only IndexedDB access. It does not approve PDF generation, Excel generation, browser download, Supabase reads, manager access, analytics page logic replacement, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
@@ -17,7 +17,7 @@ The preview should help the owner answer:
 - Which conclusions are limited or unavailable because data is missing or distorted?
 - What should be fixed or recorded next time to make future reports more accurate?
 
-The preview is not an analytics dashboard. It is a document-preview surface for a future designed PDF.
+The preview is not an analytics dashboard and is not the final report design. It is an in-app check workspace for reviewing readiness, warnings, conclusions, and source data before a future designed PDF is generated.
 
 The analytics page remains interactive and exploratory. The settlement report preview is fixed-period, owner-only, and designed for closing a week or month.
 
@@ -237,18 +237,18 @@ Behavior:
 
 ## 5. Visual Direction
 
-The future UI should feel like a polished report preview, not a generic chart dashboard.
+The in-app UI should feel like a practical BoothBook workflow, not a full PDF mockup and not a generic chart dashboard.
 
 Recommended visual principles:
 
-- quiet layout;
+- compact operational layout;
 - clear hierarchy;
-- large key numbers;
-- restrained accent color;
+- visible period controls;
+- restrained accent color aligned with the app;
 - data-quality badges;
 - concise tables;
 - readable warnings;
-- print/PDF-friendly spacing.
+- mobile and desktop readability.
 
 Avoid:
 
@@ -256,11 +256,14 @@ Avoid:
 - black-box AI labels;
 - hiding warnings behind small icons only;
 - dashboard-like overload;
+- full report-cover styling inside the app;
 - showing disabled PDF/download buttons as if they are already approved.
 
 ## 6. Future PDF Relationship
 
-The preview should be the source of truth for what the designed PDF will contain.
+The preview and the designed PDF should share the same report model, numbers, conclusions, warnings, and next actions.
+
+The preview does not need to share the same layout as the PDF. The preview is for checking; the PDF is the polished final artifact.
 
 However, this spec does not choose:
 
@@ -319,7 +322,7 @@ Not allowed:
 - data reads;
 - repair actions.
 
-### Slice C: Formal Owner-Only Preview UI
+### Slice C: Owner-Only Preview UI
 
 Status: completed.
 
@@ -333,7 +336,7 @@ Add the page only after Slice B is stable.
 Required:
 
 - owner-only gate;
-- report-like cover summary;
+- app-like report check summary;
 - visible readiness and confidence state;
 - KPI summary;
 - data-reliability panel;
@@ -344,6 +347,32 @@ Required:
 - local IndexedDB read-only access only;
 - no Supabase reads;
 - no write, sync, repair, or projection rebuild action.
+
+### Slice E: Preview Repositioning
+
+Status: approved and tracked in `docs/SETTLEMENT_REPORT_PRESENTATION_PLAN_2026_07_01.md`.
+
+Goal:
+
+- keep the preview page as the owner-only in-app checkpoint;
+- stop treating it as the final PDF visual design;
+- align page layout with BoothBook's practical app workflow.
+
+Allowed:
+
+- heading and copy changes;
+- layout simplification;
+- clearer readiness and warning hierarchy;
+- updated guardrail tests.
+
+Not allowed:
+
+- PDF generation;
+- download buttons;
+- PDF library selection;
+- permission changes;
+- scoring changes;
+- data writes or sync behavior.
 
 ### Slice D: PDF Technical Plan
 
