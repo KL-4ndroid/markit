@@ -166,7 +166,9 @@ Decision:
 Recommended future asset path:
 
 - store font files under a dedicated local asset path such as `public/fonts/report/`;
-- use static TTF or WOFF files, not variable fonts, for first implementation;
+- first staged asset: `public/fonts/report/NotoSansTC-VariableFont_wght.ttf`;
+- keep the variable font only if the PDF renderer smoke test proves weight selection and Traditional Chinese glyph output are stable;
+- fall back to static regular/medium/bold TTF or WOFF files if the renderer cannot handle the variable font reliably;
 - register separate weights for regular, medium, and bold;
 - avoid remote Google Fonts at generation time;
 - include a glyph smoke test with Traditional Chinese, numbers, currency, and punctuation.
@@ -299,23 +301,25 @@ Allowed:
 - no PDF dependency;
 - no browser APIs.
 
-### Slice I: Font Family Decision
+### Slice I: Font Asset Staging
 
-Status: completed as plan-only decision.
+Status: completed as local asset and guardrail work.
 
 Decision:
 
 - first font family: Noto Sans TC;
 - license basis: SIL Open Font License;
 - style fit: clean Traditional Chinese sans-serif for operational reports;
-- no font files are added in this slice.
+- staged asset: `public/fonts/report/NotoSansTC-VariableFont_wght.ttf`;
+- license notice: `public/fonts/report/LICENSE-NotoSansTC.txt`;
+- asset size: must stay within the first-slice 15 MB budget;
+- render smoke test must verify variable-font compatibility before PDF template work is treated as usable.
 
-Remaining decision before adding assets:
+Remaining decision before rendering:
 
-- exact file source;
-- exact static TTF/WOFF files;
-- file size budget;
-- weights to include.
+- whether `@react-pdf/renderer` can register and render the variable font correctly;
+- whether to keep the variable font or replace it with static regular/medium/bold files;
+- exact font registration code.
 
 ### Slice J: Install PDF Library
 
@@ -352,7 +356,7 @@ Requires approval before:
 Stop for decision before:
 
 - installing any PDF package;
-- adding font files;
+- adding or replacing font files beyond the staged `NotoSansTC-VariableFont_wght.ttf` asset;
 - adding browser PDF preview behavior;
 - adding browser download behavior;
 - adding server route PDF generation;
@@ -370,13 +374,14 @@ Completed:
 - technical plan;
 - Noto Sans TC font-family decision;
 - pure PDF view model.
+- local Noto Sans TC variable font asset staging.
 
 Recommended next path:
 
-1. Decide exact Noto Sans TC static font files and size budget before adding assets.
-2. After font asset approval, add only the selected local font files.
-3. After font assets are present, request approval before installing `@react-pdf/renderer`.
-4. After package installation, build a fixture-only PDF template prototype.
+1. Request approval before installing `@react-pdf/renderer`.
+2. After package installation, build a fixture-only font registration and Traditional Chinese glyph smoke test.
+3. If the variable font passes the smoke test, keep it; if not, request approval to replace it with static regular/medium/bold files.
+4. After font smoke testing, build a fixture-only PDF template prototype.
 5. Defer browser PDF preview UI until fixture PDF template and font smoke tests pass.
 
-The next step now crosses into font asset/package decisions and should be treated as a decision boundary before mutating dependencies or adding binary font files.
+The next step now crosses into package installation and PDF rendering behavior. Treat it as a decision boundary before mutating dependencies or introducing browser-facing preview behavior.

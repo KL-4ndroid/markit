@@ -142,15 +142,20 @@ runTest('builds five fixed A4 PDF pages from settlement report model', () => {
   assert.deepEqual(viewModel.pages.map(page => page.pageNumber), [1, 2, 3, 4, 5]);
 });
 
-runTest('uses Noto Sans TC font plan without adding font assets yet', () => {
+runTest('uses Noto Sans TC local font asset plan', () => {
   const viewModel = buildSettlementReportPdfViewModel({ report: buildFixtureReport() });
 
   assert.equal(viewModel.font.family, 'Noto Sans TC');
   assert.equal(viewModel.font.license, 'SIL Open Font License 1.1');
   assert.equal(viewModel.font.assetBasePath, '/fonts/report/');
+  assert.equal(viewModel.font.assetFileName, 'NotoSansTC-VariableFont_wght.ttf');
+  assert.equal(viewModel.font.assetPath, '/fonts/report/NotoSansTC-VariableFont_wght.ttf');
+  assert.equal(viewModel.font.format, 'ttf');
+  assert.equal(viewModel.font.distribution, 'variable');
   assert.deepEqual(viewModel.font.weights, ['regular', 'medium', 'bold']);
+  assert.equal(viewModel.font.renderSmokeTestRequired, true);
   assert.match(technicalPlanSource, /first font family: Noto Sans TC/);
-  assert.match(technicalPlanSource, /no font files are added in this slice/);
+  assert.match(technicalPlanSource, /NotoSansTC-VariableFont_wght\.ttf/);
 });
 
 runTest('cover page carries the same core report conclusion and metrics', () => {

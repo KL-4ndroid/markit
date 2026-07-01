@@ -19,8 +19,13 @@ export type SettlementReportPdfFontPlan = {
   family: 'Noto Sans TC';
   license: 'SIL Open Font License 1.1';
   assetBasePath: '/fonts/report/';
+  assetFileName: 'NotoSansTC-VariableFont_wght.ttf';
+  assetPath: '/fonts/report/NotoSansTC-VariableFont_wght.ttf';
+  format: 'ttf';
+  distribution: 'variable';
   weights: Array<'regular' | 'medium' | 'bold'>;
   source: 'Official Noto / Google Fonts distribution';
+  renderSmokeTestRequired: true;
 };
 
 export type SettlementReportPdfMetric = {
@@ -409,8 +414,13 @@ export function buildSettlementReportPdfViewModel({
       family: 'Noto Sans TC',
       license: 'SIL Open Font License 1.1',
       assetBasePath: '/fonts/report/',
+      assetFileName: 'NotoSansTC-VariableFont_wght.ttf',
+      assetPath: '/fonts/report/NotoSansTC-VariableFont_wght.ttf',
+      format: 'ttf',
+      distribution: 'variable',
       weights: ['regular', 'medium', 'bold'],
       source: 'Official Noto / Google Fonts distribution',
+      renderSmokeTestRequired: true,
     },
     meta: {
       brandName: report.brandName,

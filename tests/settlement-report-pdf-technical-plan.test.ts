@@ -57,8 +57,8 @@ runTest('technical plan defines Traditional Chinese font and pagination strategy
   assert.match(technicalPlanSource, /Traditional Chinese must be handled with bundled local font files/);
   assert.match(technicalPlanSource, /use Noto Sans TC as the first PDF font family/);
   assert.match(technicalPlanSource, /license basis: SIL Open Font License/);
-  assert.match(technicalPlanSource, /no font files are added in this slice/);
-  assert.match(technicalPlanSource, /static TTF or WOFF files, not variable fonts/);
+  assert.match(technicalPlanSource, /NotoSansTC-VariableFont_wght\.ttf/);
+  assert.match(technicalPlanSource, /fall back to static regular\/medium\/bold/);
   assert.match(technicalPlanSource, /avoid remote Google Fonts/);
   assert.match(technicalPlanSource, /Use fixed A4 pages for version one/);
   assert.match(technicalPlanSource, /no text should overlap or be clipped/);
@@ -70,7 +70,7 @@ runTest('technical plan defines owner-only preview guardrails and staged impleme
   assert.match(technicalPlanSource, /hasCapability\(capabilities, 'canViewOwnerFinance'\)/);
   assert.match(technicalPlanSource, /Slice H: PDF View Model[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /lib\/reporting\/settlement-report-pdf-view-model\.ts/);
-  assert.match(technicalPlanSource, /Slice I: Font Family Decision[\s\S]*Status: completed/);
+  assert.match(technicalPlanSource, /Slice I: Font Asset Staging[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /Slice J: Install PDF Library[\s\S]*Requires approval/);
   assert.match(technicalPlanSource, /Slice L: Owner-Only Browser PDF Preview UI[\s\S]*Higher risk/);
 });
@@ -89,7 +89,8 @@ runTest('presentation plan records technical plan completion', () => {
   assert.match(presentationPlanSource, /docs\/SETTLEMENT_REPORT_PDF_TECHNICAL_PLAN_2026_07_01\.md/);
   assert.match(presentationPlanSource, /tests\/settlement-report-pdf-technical-plan\.test\.ts/);
   assert.match(presentationPlanSource, /Slice H: PDF View Model[\s\S]*Status: completed/);
-  assert.match(presentationPlanSource, /No PDF package, font asset, browser preview UI, download behavior/);
+  assert.match(presentationPlanSource, /Slice I: Font Asset Staging[\s\S]*Status: completed/);
+  assert.match(presentationPlanSource, /No PDF package, PDF template, browser preview UI, download behavior/);
 });
 
 runTest('full test suite includes PDF technical plan guardrail', () => {

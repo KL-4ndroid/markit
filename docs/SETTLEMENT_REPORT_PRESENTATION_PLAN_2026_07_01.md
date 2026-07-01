@@ -181,8 +181,9 @@ Decision:
 - keep first implementation browser-only to avoid sending owner financial report data to a server route;
 - use browser PDF viewer preview as the first user-facing export surface, so owners can use the browser viewer's built-in download control when needed;
 - select Noto Sans TC as the first font-family decision because it is OFL-licensed, Traditional-Chinese-oriented, and visually suitable for a quiet operational brand report;
-- require bundled local Traditional Chinese static font files before implementation;
-- keep package installation, font asset files, PDF template implementation, and browser PDF preview UI behind later approvals.
+- stage the local `NotoSansTC-VariableFont_wght.ttf` asset first because its size is acceptable for a first slice;
+- require a renderer smoke test before trusting the variable font for generated PDFs;
+- keep package installation, PDF template implementation, and browser PDF preview UI behind later approvals.
 
 No implementation is approved by this plan.
 
@@ -202,4 +203,24 @@ Result:
 - applies deterministic market/product row caps;
 - keeps limitations, warnings, score rows, cost/profit metrics, and next actions ready for PDF template rendering.
 
-No PDF package, font asset, browser preview UI, download behavior, Supabase access, sync, recovery, or data writes were added.
+No PDF package, browser preview UI, download behavior, Supabase access, sync, recovery, or data writes were added.
+
+### Slice I: Font Asset Staging
+
+Status: completed as local asset, license notice, and static guardrail work.
+
+Result record:
+
+- `public/fonts/report/NotoSansTC-VariableFont_wght.ttf`
+- `public/fonts/report/LICENSE-NotoSansTC.txt`
+- `tests/settlement-report-pdf-font-assets.test.ts`
+
+Result:
+
+- stages Noto Sans TC as the local Traditional Chinese report font asset;
+- records the official Noto / Google Fonts source and SIL Open Font License basis;
+- keeps the first staged font asset under the 15 MB guardrail;
+- updates the PDF view model to point at the local font asset;
+- keeps variable-font renderer compatibility behind a future smoke test.
+
+No PDF package, PDF template, browser preview UI, download behavior, Supabase access, sync, recovery, or data writes were added.
