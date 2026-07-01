@@ -354,11 +354,14 @@ Finding:
 
 ### Slice L: PDF Template Prototype
 
-Medium risk.
+Status: completed.
 
-Allowed after Slice K:
+Result:
 
 - fixture-only PDF document that uses the settlement report PDF view model;
+- renders all five fixed A4 pages from `SettlementReportPdfViewModel`;
+- renders in Node test through `renderToBuffer`;
+- verifies five PDF page objects and Noto Sans TC embedding;
 - no download UI;
 - no production user action.
 
@@ -397,11 +400,12 @@ Completed:
 - local Noto Sans TC variable font asset staging.
 - PDF runtime installation.
 - minimal Traditional Chinese font smoke test.
+- fixture-only five-page PDF template prototype.
 
 Recommended next path:
 
-1. Decide whether the thin-weight variable-font output is visually acceptable enough to proceed with a fixture-only PDF template, or replace it with static regular/medium/bold files first.
-2. If keeping the variable font temporarily, build a fixture-only PDF template prototype from the PDF view model.
-3. Defer browser PDF preview UI until fixture PDF template and visual smoke tests pass.
+1. Review whether the variable-font thin-weight output is visually acceptable, or replace it with static regular/medium/bold files before production UI.
+2. If keeping the variable font temporarily, build a browser-only owner preview shell that opens the generated PDF in the browser PDF viewer.
+3. Keep custom download UI, server-side generation, Supabase reads, manager/staff export, and generated-PDF storage blocked until separate approval.
 
-The next step now crosses into visual quality and report-template behavior. Treat browser-facing preview behavior as a separate decision boundary.
+The next step now crosses into browser-facing preview behavior. Treat it as a separate decision boundary.

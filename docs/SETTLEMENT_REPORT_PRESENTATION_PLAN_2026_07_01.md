@@ -250,3 +250,22 @@ Finding:
 - the next template slice must either visually review this output or switch to static regular/medium/bold font files before production UI.
 
 No formal PDF template, browser preview UI, download behavior, Supabase access, sync, recovery, or data writes were added.
+
+### Slice K: Fixture-Only PDF Template Prototype
+
+Status: completed as non-UI PDF template and guardrail work.
+
+Result record:
+
+- `components/reports/settlement/SettlementReportPdfDocument.tsx`
+- `tests/settlement-report-pdf-template.test.ts`
+
+Result:
+
+- renders the existing settlement report PDF view model into five fixed A4 PDF pages;
+- keeps PDF rendering fixture-only through `renderToBuffer`;
+- verifies five PDF page objects and Noto Sans TC embedding;
+- covers cover summary, data confidence, market performance, product performance, and cost/profit/actions pages;
+- keeps the component free of IndexedDB, Supabase, sync, recovery, browser preview, and download behavior.
+
+No browser preview UI, download behavior, Supabase access, sync, recovery, or data writes were added.
