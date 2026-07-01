@@ -17,11 +17,27 @@ import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { DataCanonicalizationPanel } from '@/components/settings/DataCanonicalizationPanel';
 import { OwnerBrandSettingsCard } from '@/components/settings/OwnerBrandSettingsCard';
+import { getLocalPendingWriteReport } from '@/lib/sync/local-pending-write-report';
 
-async function clearLocalAppData(): Promise<void> {
+async function clearLocalAppData(userId?: string, forceDiscardLocalChanges = false): Promise<boolean> {
   const { clearAllData, db } = await import('@/lib/db');
   const { resetInitialSyncFlag } = await import('@/hooks/useSync');
   const { clearRoleCache } = await import('@/hooks/useUserRole');
+
+  const report = await getLocalPendingWriteReport(userId);
+  if (!report.isClean && !forceDiscardLocalChanges) {
+    const confirmed = window.confirm(
+      [
+        `There are ${report.pendingEventCount} unsynced local event(s) and ${report.unfinishedSyncQueueCount} unfinished sync queue item(s).`,
+        'Clearing local app data now will discard local changes that have not reached Cloud.',
+        'Press OK only if you want to discard these local changes.',
+      ].join('\n')
+    );
+
+    if (!confirmed) {
+      return false;
+    }
+  }
 
   try {
     await clearAllData();
@@ -69,6 +85,8 @@ async function clearLocalAppData(): Promise<void> {
   } catch (error) {
     console.error('重置同步或角色快取失敗:', error);
   }
+
+  return true;
 }
 
 export default function SettingsPage() {
@@ -119,7 +137,8 @@ export default function SettingsPage() {
 
     try {
       // 刪除 IndexedDB
-      await indexedDB.deleteDatabase('MarketPulseDB');
+      const cleared = await clearLocalAppData(user?.id);
+      if (!cleared) return;
       
       toast.success('✅ 本地資料庫已清除');
       toast.info('🔄 頁面將在 2 秒後重新載入...');
@@ -172,7 +191,11 @@ export default function SettingsPage() {
       console.log('✅ 雲端資料已透過 RPC 清除:', data);
 
       toast.loading('雲端資料已清除，正在清除本地快取...', { id: toastId });
-      await clearLocalAppData();
+      const cleared = await clearLocalAppData(user?.id);
+      if (!cleared) {
+        toast.dismiss(toastId);
+        return;
+      }
 
       toast.success('✅ 所有資料已清除，即將重新載入...', { id: toastId });
       
@@ -213,7 +236,11 @@ export default function SettingsPage() {
       console.log('✅ 已透過 RPC 離開團隊:', data);
 
       toast.loading('團隊關係已解除，正在清除本地快取...', { id: 'leave-team' });
-      await clearLocalAppData();
+      const cleared = await clearLocalAppData(user.id);
+      if (!cleared) {
+        toast.dismiss('leave-team');
+        return;
+      }
 
       toast.success('✅ 已離開團隊，即將重新載入...', { id: 'leave-team' });
 

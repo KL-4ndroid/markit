@@ -12,15 +12,33 @@ import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './client';
 import { initializeUserSettings } from './settings';
-import { resetAuthenticatedCache } from '@/lib/db/clear-user-data';
 import { pullQuickActionButtonsFromCloud } from '@/lib/quick-actions-store';
+import {
+  guardedAuthenticatedCacheReset,
+  type GuardedAuthenticatedCacheResetResult,
+} from '@/lib/sync/authenticated-cache-reset-guard';
+import { dispatchAuthCacheBlockedEvent } from '@/lib/auth/auth-cache-blocked-events';
+
+export interface AuthSignOutOptions {
+  forceDiscardLocalChanges?: boolean;
+}
+
+export class AuthenticatedCacheResetBlockedError extends Error {
+  result: GuardedAuthenticatedCacheResetResult;
+
+  constructor(result: GuardedAuthenticatedCacheResetResult) {
+    super('Local changes are not synced yet.');
+    this.name = 'AuthenticatedCacheResetBlockedError';
+    this.result = result;
+  }
+}
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   isConfigured: boolean;
-  signOut: () => Promise<void>;
+  signOut: (options?: AuthSignOutOptions) => Promise<void>;
 }
 
 // ✅ 跨分頁通訊頻道
@@ -63,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ✅ 追蹤是否為主動登出
   const isManualSignOutRef = useRef(false);
   const userRef = useRef<User | null>(null);
+  const blockedLocalChangesUserIdRef = useRef<string | null>(null);
   const syncUserSettingsRef = useRef<(userId: string) => Promise<void>>(async () => {});
   const clearUserDataRef = useRef<(reason: string) => Promise<void>>(async () => {});
 
@@ -173,7 +192,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         // ✅ 被動登出時也清除數據
-        resetAuthenticatedCache('full').catch(error => {
+        guardedAuthenticatedCacheReset({
+          scope: 'full',
+          reason: 'passive_signout',
+          userId: userRef.current?.id,
+          allowSyncAttempt: false,
+        }).then(result => {
+          if (result.decision === 'blocked') {
+            blockedLocalChangesUserIdRef.current = userRef.current?.id ?? null;
+            console.warn('[auth] sign-out cache reset blocked by local pending writes', result.blockingReasonCodes);
+            dispatchAuthCacheBlockedEvent(
+              'passive_signout',
+              result,
+              'The session ended, but local changes have not reached Cloud yet. Local data was kept on this device.'
+            );
+          } else {
+            blockedLocalChangesUserIdRef.current = null;
+          }
+        }).catch(error => {
           console.error('被動登出清除數據失敗:', error);
         });
         
@@ -209,6 +245,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (event === 'SIGNED_IN') {
         const newUserId = session?.user?.id;
         const previousUserId = userRef.current?.id;
+        const blockedLocalChangesUserId = blockedLocalChangesUserIdRef.current;
+
+        if (blockedLocalChangesUserId && newUserId && blockedLocalChangesUserId !== newUserId) {
+          console.warn('[auth] blocking sign-in because another user has unsynced local writes', {
+            blockedUserId: blockedLocalChangesUserId.substring(0, 8),
+            newUserId: newUserId.substring(0, 8),
+          });
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        if (blockedLocalChangesUserId && newUserId === blockedLocalChangesUserId) {
+          blockedLocalChangesUserIdRef.current = null;
+        }
         
         // ✅ 檢測用戶切換（不同用戶登入）
         if (previousUserId && newUserId && previousUserId !== newUserId) {
@@ -219,7 +272,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // ✅ 清除前一個用戶的數據（全量 authenticated cache reset）
           try {
-            await resetAuthenticatedCache('role_switch', newUserId);
+            const resetResult = await guardedAuthenticatedCacheReset({
+              scope: 'role_switch',
+              reason: 'identity_switch',
+              userId: previousUserId,
+              allowSyncAttempt: false,
+            });
+
+            if (resetResult.decision === 'blocked') {
+              blockedLocalChangesUserIdRef.current = previousUserId;
+              console.warn('[auth] identity switch blocked by local pending writes', resetResult.blockingReasonCodes);
+              dispatchAuthCacheBlockedEvent(
+                'identity_switch',
+                resetResult,
+                'Account switching was paused because the previous account still has local changes that have not reached Cloud.'
+              );
+              await supabase.auth.signOut();
+              setSession(null);
+              setUser(null);
+              setLoading(false);
+              return;
+            }
+
+            blockedLocalChangesUserIdRef.current = null;
             console.log('✅ 已清除前一個用戶的數據（role_switch scope）');
           } catch (error) {
             console.error('❌ 清除前一個用戶數據失敗:', error);
@@ -290,13 +365,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const clearUserData = async (reason: string) => {
     console.log(`🔒 清除用戶數據 (原因: ${reason})`);
-    await resetAuthenticatedCache('full');
+    const resetResult = await guardedAuthenticatedCacheReset({
+      scope: 'full',
+      reason: 'passive_signout',
+      userId: userRef.current?.id,
+      allowSyncAttempt: false,
+    });
+
+    if (resetResult.decision === 'blocked') {
+      blockedLocalChangesUserIdRef.current = userRef.current?.id ?? null;
+      throw new AuthenticatedCacheResetBlockedError(resetResult);
+    }
   };
 
   syncUserSettingsRef.current = syncUserSettings;
   clearUserDataRef.current = clearUserData;
 
-  const handleSignOut = async () => {
+  const handleSignOut = async (options: AuthSignOutOptions = {}) => {
     // ✅ 設置主動登出標記
     isManualSignOutRef.current = true;
     
@@ -308,7 +393,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     
     // ✅ 清除用戶數據
-    await clearUserData('manual_signout');
+    const resetResult = await guardedAuthenticatedCacheReset({
+      scope: 'full',
+      reason: options.forceDiscardLocalChanges ? 'force_discard' : 'manual_signout',
+      userId: user?.id,
+      allowSyncAttempt: !options.forceDiscardLocalChanges,
+      forceDiscardLocalChanges: options.forceDiscardLocalChanges === true,
+    });
+
+    if (resetResult.decision === 'blocked') {
+      isManualSignOutRef.current = false;
+      throw new AuthenticatedCacheResetBlockedError(resetResult);
+    }
     
     // ✅ 先清除本地狀態（立即反應）
     setUser(null);

@@ -50,6 +50,14 @@ Before a clear-local-and-resync action can even be previewed, a read-only prefli
 
 Any unknown state must fail closed.
 
+The local unsynced data report and local-only writes report are provided by the shared authenticated cache destruction guard line:
+
+- `docs/AUTHENTICATED_CACHE_DESTRUCTION_GUARD_PLAN_2026_07_01.md`
+- `lib/sync/local-pending-write-report.ts`
+- `tests/auth-cache-destruction-guard.test.ts`
+
+Recovery clear-local-and-resync must reuse this report instead of creating a separate pending/local-only detector.
+
 ## 4. Blocking Conditions
 
 The preflight must block preview or execute when any of these are found:

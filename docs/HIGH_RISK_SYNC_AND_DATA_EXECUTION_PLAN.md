@@ -525,6 +525,7 @@ Safety result:
 - Owner pre-clear must include both owner-created and staff-created rows in owned markets.
 - Manager remains preview-only and cannot approve clearing unrelated owner cache.
 - A clean report only permits moving to cloud rebuild preview; it does not approve deletion or replace-cache execute.
+- Local pending/local-only IndexedDB writes are checked by the shared authenticated cache destruction guard report in `lib/sync/local-pending-write-report.ts`; future recovery work must reuse it instead of adding another detector.
 
 Still not approved:
 

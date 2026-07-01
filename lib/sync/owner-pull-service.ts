@@ -56,12 +56,17 @@ export async function pullOwnerEvents(
   }
 
   const total = newEvents.length;
+  const hydrationMarketIds = new Set<string>(marketIds);
   const touchedMarketIds = new Set<string>();
   for (const event of newEvents) {
+    const eventMarketId = event.market_id ?? event.payload?.market_id ?? event.payload?.marketId;
+    if (typeof eventMarketId === 'string' && eventMarketId.trim().length > 0) {
+      hydrationMarketIds.add(eventMarketId);
+    }
     collectProjectionMarketId(touchedMarketIds, event);
   }
 
-  const { hydrated: hydratedMarketIds, missing: missingMarketIds } = await batchHydrateMarkets(touchedMarketIds, infoLevel);
+  const { hydrated: hydratedMarketIds, missing: missingMarketIds } = await batchHydrateMarkets(hydrationMarketIds, infoLevel);
   void hydratedMarketIds;
 
   const existingIds = new Set<string>();

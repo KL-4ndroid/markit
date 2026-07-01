@@ -7,6 +7,7 @@ import { useMarkets, useMonthlyStats } from '@/lib/db/hooks';
 import { formatCurrency } from '@/lib/utils';
 import { MarketCard } from '@/components/markets/MarketCard';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { confirmDiscardLocalChangesForSignOut } from '@/lib/auth/signout-confirmation';
 import { SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
 import { useSyncContext } from '@/lib/sync-context';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -329,6 +330,13 @@ export default function HomePage() {
       toast.success('已登出');
       setShowUserMenu(false);
     } catch (error: any) {
+      if (confirmDiscardLocalChangesForSignOut(error)) {
+        await signOut({ forceDiscardLocalChanges: true });
+        toast.success('已登出');
+        setShowUserMenu(false);
+        return;
+      }
+
       toast.error('登出失敗：' + error.message);
     }
   };

@@ -50,7 +50,9 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole, invalidateRoleCache } from '@/hooks/useUserRole';
-import { clearStaffLocalProjections, resetAuthenticatedCache } from '@/lib/db/clear-user-data';
+import { clearStaffLocalProjections } from '@/lib/db/clear-user-data';
+import { guardedAuthenticatedCacheReset } from '@/lib/sync/authenticated-cache-reset-guard';
+import { dispatchAuthCacheBlockedEvent } from '@/lib/auth/auth-cache-blocked-events';
 import { resetInitialSyncFlag } from '@/hooks/useSync';
 import { dispatchRoleStatusEvent } from '@/lib/permissions/role-status-events';
 import type { StaffRole } from '@/types/staff';
@@ -384,7 +386,27 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
         invalidateRoleCache();
 
         // 步驟 2：清空所有 authenticated tables + sync cursors + role cache
-        await resetAuthenticatedCache('full');
+        const resetResult = await guardedAuthenticatedCacheReset({
+          scope: 'full',
+          reason: 'staff_status_reset',
+          userId: user.id,
+          allowSyncAttempt: false,
+        });
+
+        if (resetResult.decision === 'blocked') {
+          console.warn('[StaffStatusMonitor] revoked cleanup blocked by local pending writes', resetResult.blockingReasonCodes);
+          dispatchAuthCacheBlockedEvent(
+            'staff_status_reset',
+            resetResult,
+            'Staff access changed, but local changes have not reached Cloud yet. The app kept local data and paused cleanup.'
+          );
+          dispatchRoleStatusEvent({
+            kind: 'projection-cleanup-failed',
+            message: 'Local pending writes must be resolved before clearing staff cache.',
+          });
+          cleanupInFlightRef.current = false;
+          return;
+        }
 
         // 步驟 3：刪除整個 IndexedDB 確保完全乾淨（跟 settings page 的 clearLocalAppData 一致）
         if (typeof window !== 'undefined') {

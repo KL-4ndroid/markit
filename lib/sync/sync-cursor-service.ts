@@ -13,6 +13,22 @@ export async function getLastSyncTimestamp(): Promise<number | null> {
 }
 
 /**
+ * Clear the local cloud event cursor while preserving user preferences.
+ */
+export async function clearLastSyncTimestamp(): Promise<void> {
+  try {
+    const settings = await db.settings.toArray();
+    if (settings[0]) {
+      await db.settings.update(settings[0].id!, {
+        lastSyncAt: undefined,
+      });
+    }
+  } catch (error) {
+    console.error('[useSync] clearLastSyncTimestamp: failed to clear settings cursor', error);
+  }
+}
+
+/**
  * Update the local sync cursor with the max processed cloud events.created_at timestamp.
  */
 export async function updateLastSyncTimestamp(lastSyncedCreatedAt: number): Promise<void> {

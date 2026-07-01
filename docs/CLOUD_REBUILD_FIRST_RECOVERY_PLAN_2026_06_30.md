@@ -94,6 +94,14 @@ The report must block local clear if any of these exist:
 - unsynced local events;
 - pending operations in `queued`, `processing`, or retryable failure states;
 - local-only checklist, field note, deal, or interaction writes;
+
+The unsynced local event and local-only write checks are now consolidated under:
+
+- `docs/AUTHENTICATED_CACHE_DESTRUCTION_GUARD_PLAN_2026_07_01.md`
+- `lib/sync/local-pending-write-report.ts`
+- `tests/auth-cache-destruction-guard.test.ts`
+
+Future cloud rebuild preview or execute work must reuse that report and must not introduce a second local pending-write detector.
 - unknown operation types.
 
 Not approved:

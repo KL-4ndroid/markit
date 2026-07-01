@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertCircle, CheckCircle, Loader2, Users, WifiOff } from 'lucide-react';
 import { GlobalLoadingSkeleton } from '@/components/auth/GlobalLoadingSkeleton';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { confirmDiscardLocalChangesForSignOut } from '@/lib/auth/signout-confirmation';
 import {
   verifyInvitationToken,
   type InvitationVerification,
@@ -124,6 +125,11 @@ function JoinPageContent() {
     try {
       await signOut();
       router.push('/');
+    } catch (error) {
+      if (confirmDiscardLocalChangesForSignOut(error)) {
+        await signOut({ forceDiscardLocalChanges: true });
+        router.push('/');
+      }
     } finally {
       setIsSigningOut(false);
     }

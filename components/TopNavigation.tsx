@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { useUserRole } from '@/hooks/useUserRole';
 import { getTheme } from '@/lib/theme-config';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
+import { confirmDiscardLocalChangesForSignOut } from '@/lib/auth/signout-confirmation';
 import { LogIn, LogOut, User, Shield, Eye, Edit3, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -34,6 +35,13 @@ export function TopNavigation() {
       toast.success('已登出');
       setShowUserMenu(false);
     } catch (error: any) {
+      if (confirmDiscardLocalChangesForSignOut(error)) {
+        await signOut({ forceDiscardLocalChanges: true });
+        toast.success('已登出');
+        setShowUserMenu(false);
+        return;
+      }
+
       toast.error('登出失敗：' + error.message);
     }
   };

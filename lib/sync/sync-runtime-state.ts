@@ -87,6 +87,10 @@ export function releaseSyncLock(): void {
   isSyncLocked = false;
 }
 
+export function isSyncLockActive(): boolean {
+  return isSyncLocked;
+}
+
 export function hasSetupSyncIntervals(): boolean {
   return hasSetupIntervals;
 }

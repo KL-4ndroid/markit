@@ -6,6 +6,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { AuthManager } from '@/components/auth/AuthManager';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { SessionExpiredHandler } from '@/components/auth/SessionExpiredHandler';
+import { AuthCacheBlockedDialog } from '@/components/auth/AuthCacheBlockedDialog';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { PWASplashScreen } from '@/components/PWASplashScreen';
@@ -56,6 +57,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
         <AppToaster />
         <AuthManager />
         <SessionExpiredHandler />
+        <AuthCacheBlockedDialog />
       </>
     );
   }
@@ -82,6 +84,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       </AuthGuard>
       <AuthManager />
       <SessionExpiredHandler />
+      <AuthCacheBlockedDialog />
     </>
   );
 }

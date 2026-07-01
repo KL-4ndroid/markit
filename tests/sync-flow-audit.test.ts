@@ -218,6 +218,9 @@ runTest('owner pull uses created_at cursor and owner projection reconciliation',
   assert.match(body, /const lastSyncAt\s*=\s*await getLastSyncTimestamp\(\)/);
   assert.match(body, /\.gt\(['"]created_at['"],\s*new Date\(lastSyncAt\)\.toISOString\(\)\)/);
   assert.match(body, /\.map\(e\s*=>\s*new Date\(e\.created_at\)\.getTime\(\)\)/);
+  assert.match(body, /const hydrationMarketIds\s*=\s*new Set<string>\(marketIds\)/);
+  assert.match(body, /hydrationMarketIds\.add\(eventMarketId\)/);
+  assert.match(body, /await batchHydrateMarkets\(hydrationMarketIds,\s*infoLevel\)/);
   assert.match(body, /await updateLastSyncTimestamp\(Math\.max\(\.\.\.validCreatedAt\)\)/);
   assert.match(body, /await reconcileSyncedProjectionMarkets\(touchedMarketIds,\s*['"]owner-full['"]\)/);
 });

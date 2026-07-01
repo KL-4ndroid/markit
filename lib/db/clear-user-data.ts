@@ -6,6 +6,7 @@
  */
 
 import { db } from './index';
+import { clearLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
 import type { Event, Market, Product } from '@/types/db';
 
 export interface ClearStaffLocalProjectionsOptions {
@@ -287,7 +288,9 @@ export async function resetAuthenticatedCache(
     await db.dailyStats.clear();
   });
 
-  // Clear sync-related in-memory state
+  // Clear sync-related state
+  await clearLastSyncTimestamp();
+
   if (typeof window !== 'undefined') {
     // Sync cursors
     localStorage.removeItem('lastSyncAt');
