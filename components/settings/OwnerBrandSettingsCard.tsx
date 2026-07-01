@@ -82,7 +82,7 @@ export function OwnerBrandSettingsCard() {
         <div className="min-w-0">
           <h2 className="text-lg font-medium text-foreground">品牌名稱</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            這個名稱會顯示在首頁與 owner 結算報告中。
+            這個名稱會顯示在首頁與老闆結算報告中。
           </p>
         </div>
       </div>

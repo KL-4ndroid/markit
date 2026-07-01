@@ -98,20 +98,20 @@ function getReadiness(report: SettlementReportModel): {
   if (hasCriticalWarning(report.dataQuality.limitations) || report.dataQuality.confidence === 'low') {
     return {
       readiness: 'not_ready',
-      reason: 'Critical data-quality warnings or low confidence make this preview unsuitable for final sharing.',
+      reason: '資料品質有重要警示，或信心度偏低，因此目前不適合作為正式分享版本。',
     };
   }
 
   if (warningCount > 0 || infoCount > 0 || report.dataQuality.confidence === 'medium') {
     return {
       readiness: 'limited',
-      reason: 'The preview is useful, but some conclusions should be treated as directional.',
+      reason: '這份預覽可以參考，但部分結論應視為方向性判斷。',
     };
   }
 
   return {
     readiness: 'ready',
-    reason: 'The preview has no recorded limitations and enough confidence for final review.',
+    reason: '目前未記錄明顯限制，資料信心度足以進行最終檢視。',
   };
 }
 
@@ -174,45 +174,45 @@ export function buildSettlementReportPreviewModel({
     sections: [
       {
         key: 'executive_summary',
-        title: 'Executive Summary',
+        title: '重點摘要',
         status: report.activity.includedMarketCount > 0 ? 'available' : 'unavailable',
-        reason: 'Uses the settlement report decision and headline totals.',
+        reason: '使用結算報告的整體判斷與主要數字。',
       },
       {
         key: 'data_quality',
-        title: 'Data Quality And Reliability',
+        title: '資料品質與可靠度',
         status: getDataQualityStatus(report),
-        reason: 'Shows confidence, warnings, and next data actions before conclusions are trusted.',
+        reason: '在採信結論前，先顯示信心度、警示與資料補強建議。',
       },
       {
         key: 'score_explanation',
-        title: 'Score Explanation',
+        title: '評分說明',
         status: 'available',
-        reason: 'Uses the existing settlement report score components.',
+        reason: '使用既有結算報告評分項目。',
       },
       {
         key: 'market_performance',
-        title: 'Market Performance',
+        title: '市集表現',
         status: report.marketRows.length > 0 ? 'available' : 'unavailable',
-        reason: 'Uses included market rows and market-level recommendations.',
+        reason: '使用已納入的市集資料與市集層級建議。',
       },
       {
         key: 'product_performance',
-        title: 'Product Performance',
+        title: '商品表現',
         status: report.decision.analysisAvailability.productAnalysis,
-        reason: 'Uses product rows only when item-level sales support product conclusions.',
+        reason: '只有在商品明細足以支撐結論時，才使用商品表現分析。',
       },
       {
         key: 'cost_and_profit',
-        title: 'Cost And Profit',
+        title: '成本與利潤',
         status: report.decision.analysisAvailability.profitAnalysis,
-        reason: 'Uses cost coverage to decide whether profit conclusions are reliable.',
+        reason: '使用成本覆蓋程度判斷利潤結論是否可靠。',
       },
       {
         key: 'next_actions',
-        title: 'Next Actions',
+        title: '下一步行動',
         status: 'available',
-        reason: 'Uses model-generated market, product, and data-quality actions.',
+        reason: '使用模型整理出的市集、商品與資料補強行動。',
       },
     ],
     topWarnings: limitations.filter(limitation => limitation.placement === 'top'),

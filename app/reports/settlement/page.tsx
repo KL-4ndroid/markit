@@ -256,7 +256,7 @@ export default function SettlementReportPreviewPage() {
           <section className="border border-[#E8E3D8] bg-white px-4 py-5 text-sm text-muted-foreground shadow-sm">
             <div className="mb-3 flex items-center gap-3 text-foreground">
               <ShieldAlert className="h-5 w-5 text-danger" />
-              <h1 className="text-lg font-semibold">結算報告預覽僅限 owner 使用</h1>
+              <h1 className="text-lg font-semibold">結算報告預覽僅限老闆使用</h1>
             </div>
             <p>目前角色無法查看包含成本、淨利與攤位費的結算報告內容。</p>
           </section>
@@ -361,7 +361,7 @@ export default function SettlementReportPreviewPage() {
                   <div className="flex items-center justify-between gap-4">
                     <p className="text-xs font-medium text-muted-foreground">本期總評分</p>
                     <span className={`border px-2 py-1 text-xs font-semibold ${gradeClasses(preview.executiveSummary.grade)}`}>
-                      Grade {preview.executiveSummary.grade}
+                      等級 {preview.executiveSummary.grade}
                     </span>
                   </div>
                   <div className="mt-4 flex items-end gap-3 border-b border-[#D8D0C3] pb-5">

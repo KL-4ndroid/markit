@@ -27,7 +27,7 @@ runTest('owner-only preview route exists and uses approved model boundaries', ()
   assert.match(pageSource, /deriveRoleCapabilities/);
   assert.match(pageSource, /hasCapability\(capabilities, 'canImportExport'\)/);
   assert.match(pageSource, /hasCapability\(capabilities, 'canViewOwnerFinance'\)/);
-  assert.match(pageSource, /Settlement report preview is owner-only|結算報告預覽僅限 owner 使用/);
+  assert.match(pageSource, /結算報告預覽僅限老闆使用/);
 });
 
 runTest('formal preview UI exposes report-quality sections for owner decision making', () => {
@@ -71,6 +71,13 @@ runTest('preview UI reads only local IndexedDB data and does not write or sync',
 runTest('preview UI does not expose PDF Excel CSV or download actions', () => {
   assert.doesNotMatch(pageSource, /PDF|Excel|CSV|download|下載|匯出/);
   assert.doesNotMatch(pageSource, /<a\s+[^>]*download|download=/i);
+});
+
+runTest('preview UI user-facing labels are Traditional Chinese', () => {
+  assert.doesNotMatch(pageSource, />\s*Grade\s*\{/);
+  assert.doesNotMatch(pageSource, /owner 使用/);
+  assert.match(pageSource, /等級 \{preview\.executiveSummary\.grade\}/);
+  assert.match(pageSource, /結算報告預覽僅限老闆使用/);
 });
 
 runTest('analytics page exposes owner-only entry without changing bottom navigation', () => {

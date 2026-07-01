@@ -157,7 +157,7 @@ runTest('builds owner weekly settlement report totals, rankings, and data qualit
   assert.equal(report.marketDecisions[0].marketId, 'market-1');
   assert.equal(report.brandName, '我的品牌');
   assert.equal(report.content.cover.brandName, '我的品牌');
-  assert.equal(report.content.cover.title, '我的品牌 2026-W23 Settlement Report');
+  assert.equal(report.content.cover.title, '我的品牌 2026-W23 結算報告');
   assert.equal(report.content.marketActions.length > 0, true);
   assert.equal(
     report.dataQuality.limitations.some(limitation => limitation.code === 'missing_product_detail'),
@@ -251,9 +251,9 @@ runTest('simple revenue without cost still produces useful revenue analysis with
     true
   );
   assert.deepEqual(report.content.productActions, [
-    'Product ranking is unavailable because item-level sales were not recorded.',
+    '因未記錄商品層級銷售，商品排行目前不可用。',
   ]);
-  assert.equal(report.content.dataActions.some(action => action.includes('Revenue, deal count, and average order value remain useful')), true);
+  assert.equal(report.content.dataActions.some(action => action.includes('營收、成交數與平均客單價仍有參考價值')), true);
 });
 
 runTest('item-level sales without product cost keeps product ranking but marks profit estimate limited', () => {
@@ -396,7 +396,7 @@ runTest('surfaces distortion risks before preview or PDF work', () => {
   assert.equal(codes.includes('zero_or_missing_market_cost'), true);
   assert.equal(codes.includes('cost_basis_estimated'), true);
   assert.equal(codes.includes('partial_period_overlap'), true);
-  assert.equal(report.content.dataActions.some(action => action.includes('read-only projection audit')), true);
+  assert.equal(report.content.dataActions.some(action => action.includes('唯讀投影檢查')), true);
 });
 
 runTest('blocks manager operator viewer and fail-closed roles', () => {

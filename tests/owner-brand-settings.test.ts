@@ -48,7 +48,7 @@ runTest('owner settings page exposes owner-only brand name editor', () => {
   assert.match(brandCardSource, /saveOwnerBrandName/);
   assert.match(brandCardSource, /loadOwnerBrandName/);
   assert.match(brandCardSource, /品牌名稱/);
-  assert.match(brandCardSource, /這個名稱會顯示在首頁與 owner 結算報告中/);
+  assert.match(brandCardSource, /這個名稱會顯示在首頁與老闆結算報告中/);
 });
 
 runTest('home page uses owner brand name without changing staff branch semantics', () => {
@@ -64,7 +64,7 @@ runTest('settlement report model and preview carry owner brand name', () => {
   assert.match(reportModelSource, /brandName\?: string/);
   assert.match(reportModelSource, /brandName: string/);
   assert.match(reportModelSource, /cover:[\s\S]*brandName: string/);
-  assert.match(reportModelSource, /title: `\$\{input\.brandName} \$\{input\.period\.label} Settlement Report`/);
+  assert.match(reportModelSource, /title: `\$\{input\.brandName} \$\{input\.period\.label} 結算報告`/);
   assert.match(previewModelSource, /header:[\s\S]*brandName: string/);
   assert.match(previewModelSource, /brandName: report\.brandName/);
   assert.match(reportPageSource, /brandName,\s*markets,/);

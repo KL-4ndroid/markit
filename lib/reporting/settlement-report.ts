@@ -267,6 +267,12 @@ function getConfidence(score: number): SettlementReportConfidence {
   return 'low';
 }
 
+function getConfidenceLabel(confidence: SettlementReportConfidence): string {
+  if (confidence === 'high') return '高';
+  if (confidence === 'medium') return '中';
+  return '低';
+}
+
 function getSignalStatus(coverage: number): SettlementReportSignalStatus {
   if (coverage >= 0.75) return 'available';
   if (coverage > 0) return 'limited';
@@ -292,43 +298,43 @@ function buildSettlementInsightQualityModel(input: {
     confidenceComponents: [
       {
         key: 'daily_stats_coverage',
-        label: 'Daily stats coverage',
+        label: '每日統計覆蓋率',
         weight: 30,
         score: dailyStatsCoverage,
         status: getSignalStatus(dailyStatsCoverage),
-        reason: 'Measures how many included markets have daily stats in the report period.',
+        reason: '衡量納入報告的市集中，有多少具備報告期間的每日統計資料。',
       },
       {
         key: 'cost_coverage',
-        label: 'Cost coverage',
+        label: '成本覆蓋率',
         weight: 25,
         score: input.costCoverageRatio,
         status: getSignalStatus(input.costCoverageRatio),
-        reason: 'Measures how much report revenue has cost data.',
+        reason: '衡量報告中的營收有多少具備成本資料。',
       },
       {
         key: 'product_detail_coverage',
-        label: 'Product detail coverage',
+        label: '商品明細覆蓋率',
         weight: 20,
         score: input.productDetailCoverageRatio,
         status: getSignalStatus(input.productDetailCoverageRatio),
-        reason: 'Measures how much report revenue can be linked to product detail.',
+        reason: '衡量報告中的營收有多少可連結到商品明細。',
       },
       {
         key: 'interaction_coverage',
-        label: 'Interaction coverage',
+        label: '互動資料覆蓋率',
         weight: 15,
         score: input.interactionCoverageRatio,
         status: getSignalStatus(input.interactionCoverageRatio),
-        reason: 'Measures how many included markets have interaction data.',
+        reason: '衡量納入報告的市集中，有多少具備互動資料。',
       },
       {
         key: 'sync_coverage',
-        label: 'Sync coverage',
+        label: '同步覆蓋率',
         weight: 10,
         score: input.syncCoverageRatio,
         status: getSignalStatus(input.syncCoverageRatio),
-        reason: 'Measures how many included markets are synced.',
+        reason: '衡量納入報告的市集中，有多少已完成同步。',
       },
     ],
   });
@@ -347,15 +353,15 @@ function buildDataQualityNotes(dataQuality: Omit<SettlementReportDataQuality, 'n
   const notes: string[] = [];
 
   if (dataQuality.marketsWithoutDailyStats.length > 0) {
-    notes.push('Some included markets have no daily stats in this period.');
+    notes.push('部分納入報告的市集在此期間沒有每日統計資料。');
   }
 
   if (dataQuality.missingProductNames.length > 0) {
-    notes.push('Some product rows could not be matched to product names.');
+    notes.push('部分商品紀錄無法對應到商品名稱。');
   }
 
   if (dataQuality.unsyncedMarketIds.length > 0) {
-    notes.push('Some included markets are not marked as synced.');
+    notes.push('部分納入報告的市集尚未標示為已同步。');
   }
 
   for (const limitation of dataQuality.limitations) {
@@ -389,16 +395,16 @@ function buildLimitations(input: {
       code: 'no_markets_in_period',
       severity: 'warning',
       affectedSections: ['overall_score', 'market_rejoin', 'data_quality'],
-      message: 'No eligible completed markets were found in this report period.',
-      recommendation: 'Choose a period with completed market records before using this report for rejoin decisions.',
+      message: '此報告期間沒有可納入結算的已完成市集。',
+      recommendation: '請選擇包含已完成市集紀錄的期間，再用報告判斷是否再次參加。',
     });
   } else if (input.includedMarketCount === 1) {
     limitations.push({
       code: 'low_sample_size',
       severity: 'info',
       affectedSections: ['overall_score', 'market_rejoin', 'data_quality'],
-      message: 'This report is based on one market, so ranking and trend conclusions are limited.',
-      recommendation: 'Use this as a single-market closing report; compare across more markets before making broader strategy decisions.',
+      message: '此報告只包含一場市集，因此排行與趨勢結論較有限。',
+      recommendation: '可先作為單場市集結案報告；若要做整體策略判斷，建議累積更多市集後再比較。',
     });
   }
 
@@ -407,8 +413,8 @@ function buildLimitations(input: {
       code: 'excluded_inactive_market',
       severity: 'info',
       affectedSections: ['market_rejoin', 'data_quality'],
-      message: 'Cancelled, postponed, or deleted markets were excluded from settlement totals.',
-      recommendation: 'Review excluded markets separately if cancellation fees, deposits, or sunk costs should be reported.',
+      message: '已取消、延期或刪除的市集未納入結算總額。',
+      recommendation: '若需要呈現取消費、訂金或已投入成本，請另外檢視這些未納入的市集。',
     });
   }
 
@@ -417,8 +423,8 @@ function buildLimitations(input: {
       code: 'ongoing_or_future_market',
       severity: 'warning',
       affectedSections: ['overall_score', 'market_rejoin', 'data_quality'],
-      message: 'Some included markets are ongoing or future-dated, so this is not a final closing report.',
-      recommendation: 'Generate the report after those markets are completed for final settlement decisions.',
+      message: '部分納入的市集仍在進行中或日期在未來，因此這不是最終結案報告。',
+      recommendation: '建議等市集完成後再產生報告，作為正式結算判斷。',
     });
   }
 
@@ -427,8 +433,8 @@ function buildLimitations(input: {
       code: 'missing_daily_stats',
       severity: 'warning',
       affectedSections: ['overall_score', 'market_rejoin', 'data_quality'],
-      message: 'Some markets do not have daily stats in this report period.',
-      recommendation: 'Add daily revenue/deal records for those markets before relying on market ranking.',
+      message: '部分市集在此報告期間缺少每日統計資料。',
+      recommendation: '請補齊這些市集的每日營收與成交紀錄，再依據市集排行做判斷。',
     });
   }
 
@@ -437,8 +443,8 @@ function buildLimitations(input: {
       code: 'missing_cost_data',
       severity: input.costCoverageRatio === 0 ? 'warning' : 'info',
       affectedSections: ['overall_score', 'profit', 'market_rejoin'],
-      message: 'Cost coverage is incomplete, so net profit and profit-margin analysis are estimates.',
-      recommendation: 'Revenue, deal count, and average order value remain useful; add product or manual cost when profit decisions matter.',
+      message: '成本資料覆蓋不完整，因此淨利與利潤率分析屬於估算。',
+      recommendation: '營收、成交數與平均客單價仍有參考價值；若要做利潤決策，請補上商品成本或手動成本。',
     });
   }
 
@@ -447,8 +453,8 @@ function buildLimitations(input: {
       code: 'zero_or_missing_market_cost',
       severity: 'info',
       affectedSections: ['profit', 'market_rejoin', 'data_quality'],
-      message: 'Some markets with revenue have no recorded booth, registration, rental, or commission cost.',
-      recommendation: 'If those markets were not actually free, add market costs before relying on net profit and cost-pressure conclusions.',
+      message: '部分有營收的市集沒有攤位費、報名費、租借費或抽成成本紀錄。',
+      recommendation: '若這些市集並非免費參加，請先補上市集成本，再參考淨利與成本壓力結論。',
     });
   }
 
@@ -457,8 +463,8 @@ function buildLimitations(input: {
       code: 'missing_product_detail',
       severity: input.productDetailCoverageRatio === 0 ? 'warning' : 'info',
       affectedSections: ['product_ranking', 'product_actions'],
-      message: 'Product detail coverage is incomplete, so product ranking and restock advice are limited.',
-      recommendation: 'Market-level sales analysis remains useful; record item-level sales when product decisions matter.',
+      message: '商品明細覆蓋不完整，因此商品排行與補貨建議較有限。',
+      recommendation: '市集層級的銷售分析仍可參考；若要做商品決策，建議記錄商品層級銷售。',
     });
   }
 
@@ -467,8 +473,8 @@ function buildLimitations(input: {
       code: 'manual_entry_dominant',
       severity: 'info',
       affectedSections: ['product_ranking', 'product_actions', 'data_quality'],
-      message: 'Simple revenue entry appears to dominate part of this report.',
-      recommendation: 'Revenue, deals, and average order value remain useful; product ranking should be hidden or marked unavailable for those markets.',
+      message: '此報告中有部分資料主要來自簡易收入登載。',
+      recommendation: '營收、成交數與平均客單價仍可參考；但這些市集的商品排行應隱藏或標示為不可用。',
     });
   }
 
@@ -477,8 +483,8 @@ function buildLimitations(input: {
       code: 'cost_basis_estimated',
       severity: 'info',
       affectedSections: ['profit', 'product_actions', 'data_quality'],
-      message: 'Some product profit estimates use the current product cost, not a recorded cost at time of sale.',
-      recommendation: 'Use product profit as directional unless sale-time cost is captured for those products.',
+      message: '部分商品利潤估算使用目前商品成本，而非成交當下的成本紀錄。',
+      recommendation: '若未記錄成交當下成本，商品利潤請視為方向性參考。',
     });
   }
 
@@ -487,8 +493,8 @@ function buildLimitations(input: {
       code: 'missing_interaction_data',
       severity: input.interactionCoverageRatio === 0 ? 'warning' : 'info',
       affectedSections: ['conversion'],
-      message: 'Interaction data is incomplete, so conversion analysis is limited.',
-      recommendation: 'Use revenue, deal count, and average order value first; add interaction tracking to judge booth attraction.',
+      message: '互動資料不完整，因此轉換率分析較有限。',
+      recommendation: '請優先參考營收、成交數與平均客單價；若要判斷攤位吸引力，建議補充互動紀錄。',
     });
   }
 
@@ -497,8 +503,8 @@ function buildLimitations(input: {
       code: 'unsynced_data',
       severity: 'warning',
       affectedSections: ['overall_score', 'data_quality'],
-      message: 'Some markets are not marked as synced, so cloud-confirmed reporting may differ.',
-      recommendation: 'Sync before using this report as a final shared file.',
+      message: '部分市集尚未標示為已同步，因此雲端確認後的報告可能不同。',
+      recommendation: '若要作為正式分享檔案，請先完成同步。',
     });
   }
 
@@ -507,8 +513,8 @@ function buildLimitations(input: {
       code: 'projection_mismatch',
       severity: 'warning',
       affectedSections: ['overall_score', 'market_rejoin', 'data_quality'],
-      message: 'Some market projection totals differ from the period daily stats used by this report.',
-      recommendation: 'Run a read-only projection audit before using this report as a final financial record.',
+      message: '部分市集彙總數字與此報告使用的期間每日統計不同。',
+      recommendation: '若要作為正式財務紀錄，請先執行唯讀投影檢查。',
     });
   }
 
@@ -517,8 +523,8 @@ function buildLimitations(input: {
       code: 'possible_duplicate_daily_stats',
       severity: 'warning',
       affectedSections: ['overall_score', 'market_rejoin', 'product_ranking', 'data_quality'],
-      message: 'Possible duplicate daily stat rows were detected for the same market and date.',
-      recommendation: 'Verify the source records before trusting totals, rankings, or product advice.',
+      message: '偵測到同一市集、同一日期可能有重複的每日統計資料。',
+      recommendation: '請先確認來源紀錄，再採信總額、排行或商品建議。',
     });
   }
 
@@ -527,8 +533,8 @@ function buildLimitations(input: {
       code: 'outlier_values',
       severity: 'warning',
       affectedSections: ['overall_score', 'profit', 'market_rejoin', 'conversion', 'data_quality'],
-      message: 'Unusual negative, extremely large, or internally inconsistent values were detected.',
-      recommendation: 'Review those source records before treating the score as final.',
+      message: '偵測到異常負數、過大數值或內部不一致的資料。',
+      recommendation: '請先檢查這些來源紀錄，再將評分視為最終結果。',
     });
   }
 
@@ -537,8 +543,8 @@ function buildLimitations(input: {
       code: 'partial_period_overlap',
       severity: 'info',
       affectedSections: ['profit', 'market_rejoin', 'data_quality'],
-      message: 'Some multi-day markets only partially overlap this report period.',
-      recommendation: 'Fixed market costs are counted once in this model; use a full market period when exact profit allocation matters.',
+      message: '部分多日市集只和此報告期間部分重疊。',
+      recommendation: '此模型會將固定市集成本計入一次；若需要精準分攤利潤，請使用完整市集期間。',
     });
   }
 
@@ -646,63 +652,63 @@ function buildScoreComponents(input: {
   return [
     {
       key: 'profit',
-      label: 'Profit performance',
+      label: '利潤表現',
       weight: 35,
       score: profitStatus === 'unavailable'
         ? null
         : scoreProfit(input.money.netProfit, input.money.totalRevenue),
       status: profitStatus,
       reason: profitStatus === 'unavailable'
-        ? 'Cost data is missing, so profit score is not used.'
-        : 'Uses net profit after product cost, fixed market cost, and commission.',
+        ? '缺少成本資料，因此不採用利潤評分。'
+        : '使用扣除商品成本、固定市集成本與抽成後的淨利。',
     },
     {
       key: 'revenue_deals',
-      label: 'Revenue and deal volume',
+      label: '營收與成交量',
       weight: 20,
       score: scoreRevenueAndDeals(input.money.totalRevenue, input.activity.totalDeals),
       status: input.money.totalRevenue > 0 || input.activity.totalDeals > 0 ? 'available' : 'unavailable',
-      reason: 'Uses total revenue and deal count for the report period.',
+      reason: '使用報告期間的總營收與成交數。',
     },
     {
       key: 'cost_pressure',
-      label: 'Market cost pressure',
+      label: '市集成本壓力',
       weight: 15,
       score: scoreCostPressure(input.money.fixedMarketCost, input.money.commissionFee, input.money.totalRevenue),
       status: input.money.totalRevenue > 0 ? 'available' : 'unavailable',
-      reason: 'Uses fixed market costs and commission as a share of revenue.',
+      reason: '使用固定市集成本與抽成佔營收的比例。',
     },
     {
       key: 'average_order_value',
-      label: 'Average order value',
+      label: '平均客單價',
       weight: 10,
       score: scoreAverageOrderValue(input.activity.averageOrderValue),
       status: input.activity.totalDeals > 0 ? 'available' : 'unavailable',
-      reason: 'Uses revenue divided by deal count.',
+      reason: '使用營收除以成交數。',
     },
     {
       key: 'conversion',
-      label: 'Interaction conversion',
+      label: '互動轉換',
       weight: 10,
       score: conversionStatus === 'unavailable'
         ? null
         : scoreConversion(input.activity.totalDeals, input.activity.totalInteractions),
       status: conversionStatus,
       reason: conversionStatus === 'unavailable'
-        ? 'Interaction data is missing, so conversion score is not used.'
-        : 'Uses deals divided by recorded interactions.',
+        ? '缺少互動資料，因此不採用轉換評分。'
+        : '使用成交數除以已記錄互動數。',
     },
     {
       key: 'product_fit',
-      label: 'Product fit',
+      label: '商品適配度',
       weight: 10,
       score: productStatus === 'unavailable'
         ? null
         : scoreProductFit(input.productRows, input.money.totalRevenue),
       status: productStatus,
       reason: productStatus === 'unavailable'
-        ? 'Product detail is missing, so product fit score is not used.'
-        : 'Uses product sales coverage and concentration.',
+        ? '缺少商品明細，因此不採用商品適配度評分。'
+        : '使用商品銷售覆蓋度與銷售集中度。',
     },
   ];
 }
@@ -710,15 +716,15 @@ function buildScoreComponents(input: {
 function recommendationSummary(recommendation: SettlementReportRecommendation): string {
   switch (recommendation) {
     case 'strong_rejoin':
-      return 'Strong performance. Prioritize similar markets next time.';
+      return '表現強。下次可優先考慮相似市集。';
     case 'rejoin':
-      return 'Good performance. Rejoin is recommended if schedule and booth cost are acceptable.';
+      return '表現良好。若時間與攤位成本可接受，建議再次參加。';
     case 'observe':
-      return 'Mixed performance. Keep observing before making this a priority.';
+      return '表現有好有壞。建議持續觀察，不急著列為優先。';
     case 'caution':
-      return 'Weak or uncertain performance. Rejoin only with a clear adjustment plan.';
+      return '表現偏弱或不確定。只有在有明確調整計畫時才建議再參加。';
     case 'avoid':
-      return 'Poor performance. Do not prioritize similar markets unless conditions change.';
+      return '表現不佳。除非條件改變，否則不建議優先參加相似市集。';
   }
 }
 
@@ -762,43 +768,43 @@ function buildMarketDecisions(
     const components: SettlementReportScoreComponent[] = [
       {
         key: 'profit',
-        label: 'Profit performance',
+        label: '利潤表現',
         weight: 35,
         score: profit,
         status: profit === null ? 'unavailable' : getSignalStatus(dataQuality.costCoverageRatio),
-        reason: profit === null ? 'Cost data is missing.' : 'Uses market net profit.',
+        reason: profit === null ? '缺少成本資料。' : '使用市集淨利。',
       },
       {
         key: 'revenue_deals',
-        label: 'Revenue and deal volume',
+        label: '營收與成交量',
         weight: 25,
         score: revenueDeals,
         status: row.revenue > 0 || row.dealCount > 0 ? 'available' : 'unavailable',
-        reason: 'Uses market revenue and deal count.',
+        reason: '使用市集營收與成交數。',
       },
       {
         key: 'cost_pressure',
-        label: 'Market cost pressure',
+        label: '市集成本壓力',
         weight: 20,
         score: costPressure,
         status: row.revenue > 0 ? 'available' : 'unavailable',
-        reason: 'Uses market fixed cost and commission pressure.',
+        reason: '使用市集固定成本與抽成壓力。',
       },
       {
         key: 'average_order_value',
-        label: 'Average order value',
+        label: '平均客單價',
         weight: 10,
         score: averageOrderValue,
         status: row.dealCount > 0 ? 'available' : 'unavailable',
-        reason: 'Uses market average order value.',
+        reason: '使用市集平均客單價。',
       },
       {
         key: 'conversion',
-        label: 'Interaction conversion',
+        label: '互動轉換',
         weight: 10,
         score: conversion,
         status: conversion === null ? 'unavailable' : getSignalStatus(dataQuality.interactionCoverageRatio),
-        reason: conversion === null ? 'Interaction data is missing.' : 'Uses market interaction conversion.',
+        reason: conversion === null ? '缺少互動資料。' : '使用市集互動轉換率。',
       },
     ];
 
@@ -810,16 +816,16 @@ function buildMarketDecisions(
     if (row.syncStatus !== null && row.syncStatus !== 'synced') limitations.push('unsynced_data');
 
     const reasons = [
-      `Revenue ${Math.round(row.revenue)} with ${Math.round(row.dealCount)} deals.`,
-      `Average order value ${Math.round(row.averageOrderValue)}.`,
+      `營收 ${Math.round(row.revenue)}，成交 ${Math.round(row.dealCount)} 筆。`,
+      `平均客單價 ${Math.round(row.averageOrderValue)}。`,
     ];
 
     if (profit !== null) {
-      reasons.push(`Net profit estimate ${Math.round(row.netProfit)}.`);
+      reasons.push(`淨利估算 ${Math.round(row.netProfit)}。`);
     }
 
     if (conversion !== null) {
-      reasons.push(`Interaction conversion uses ${Math.round(row.interactionCount)} recorded interactions.`);
+      reasons.push(`互動轉換使用 ${Math.round(row.interactionCount)} 筆已記錄互動。`);
     }
 
     return {
@@ -854,16 +860,16 @@ function buildReportContent(input: {
   const bestMarket = input.marketDecisions[0];
   const topProduct = input.productRows[0];
   const highlights = [
-    `Total revenue ${Math.round(input.money.totalRevenue)} across ${input.activity.totalDeals} deals.`,
-    `Average order value ${Math.round(input.activity.averageOrderValue)}.`,
+    `總營收 ${Math.round(input.money.totalRevenue)}，共 ${input.activity.totalDeals} 筆成交。`,
+    `平均客單價 ${Math.round(input.activity.averageOrderValue)}。`,
   ];
 
   if (bestMarket) {
-    highlights.push(`Best market candidate: ${bestMarket.marketName} (${bestMarket.grade}).`);
+    highlights.push(`最佳市集候選：${bestMarket.marketName}（${bestMarket.grade}）。`);
   }
 
   if (topProduct) {
-    highlights.push(`Top product by recorded revenue: ${topProduct.productName}.`);
+    highlights.push(`已記錄營收最高商品：${topProduct.productName}。`);
   }
 
   const marketActions = input.marketDecisions.slice(0, 3).map(decision =>
@@ -871,9 +877,9 @@ function buildReportContent(input: {
   );
 
   const productActions = input.productRows.length === 0
-    ? ['Product ranking is unavailable because item-level sales were not recorded.']
+    ? ['因未記錄商品層級銷售，商品排行目前不可用。']
     : input.productRows.slice(0, 3).map(product =>
-      `${product.productName}: recorded revenue ${Math.round(product.revenue)} from ${Math.round(product.quantity)} units.`
+      `${product.productName}：已記錄營收 ${Math.round(product.revenue)}，售出 ${Math.round(product.quantity)} 件。`
     );
 
   const dataActions = input.dataQuality.limitations.map(limitation => limitation.recommendation);
@@ -881,9 +887,9 @@ function buildReportContent(input: {
   return {
     cover: {
       brandName: input.brandName,
-      title: `${input.brandName} ${input.period.label} Settlement Report`,
+      title: `${input.brandName} ${input.period.label} 結算報告`,
       primaryConclusion: input.decision.summary,
-      supportingSummary: `Overall grade ${input.decision.grade}, score ${input.decision.overallScore}, confidence ${input.decision.confidence}.`,
+      supportingSummary: `整體等級 ${input.decision.grade}，評分 ${input.decision.overallScore}，信心度 ${getConfidenceLabel(input.decision.confidence)}。`,
     },
     highlights,
     marketActions,
