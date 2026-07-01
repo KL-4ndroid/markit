@@ -178,7 +178,8 @@ runTest('template covers all five report page keys', () => {
 runTest('plans record fixture-only PDF template without approving browser UI', () => {
   assert.match(technicalPlanSource, /Slice L: PDF Template Prototype[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /fixture-only PDF document that uses the settlement report PDF view model/);
-  assert.match(technicalPlanSource, /browser-facing preview behavior/);
+  assert.match(technicalPlanSource, /Slice M: Owner-Only Browser PDF Preview UI[\s\S]*Status: completed/);
+  assert.match(technicalPlanSource, /does not add a custom download button/);
   assert.match(presentationPlanSource, /Slice K: Fixture-Only PDF Template Prototype[\s\S]*Status: completed/);
   assert.match(presentationPlanSource, /No browser preview UI, download behavior, Supabase access, sync, recovery, or data writes/);
 });

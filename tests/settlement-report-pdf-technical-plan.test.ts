@@ -73,7 +73,8 @@ runTest('technical plan defines owner-only preview guardrails and staged impleme
   assert.match(technicalPlanSource, /Slice I: Font Asset Staging[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /Slice J: Install PDF Library[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /Slice K: Minimal Font Smoke Test[\s\S]*Status: completed/);
-  assert.match(technicalPlanSource, /Slice M: Owner-Only Browser PDF Preview UI[\s\S]*Higher risk/);
+  assert.match(technicalPlanSource, /Slice M: Owner-Only Browser PDF Preview UI[\s\S]*Status: completed/);
+  assert.match(technicalPlanSource, /does not add a custom download button/);
 });
 
 runTest('technical plan allows the approved PDF dependency but no browser renderer alternatives', () => {

@@ -367,20 +367,24 @@ Result:
 
 ### Slice M: Owner-Only Browser PDF Preview UI
 
-Higher risk.
+Status: completed.
 
-Requires approval before:
+Result:
 
-- adding a visible PDF preview action;
-- invoking browser file/download APIs;
-- exposing the feature to production users.
+- adds an owner-only browser preview shell on `/reports/settlement`;
+- builds the PDF from the existing local report model and PDF view model;
+- opens a generated blob URL in the browser PDF viewer;
+- uses the browser viewer for any user-initiated local save action;
+- does not add a custom download button;
+- does not store generated PDFs;
+- does not send report data to Supabase or a server route;
+- does not expose manager, operator, or viewer export.
 
 ## 11. Stop Conditions
 
 Stop for decision before:
 
 - adding or replacing font files beyond the staged `NotoSansTC-VariableFont_wght.ttf` asset;
-- adding browser PDF preview behavior;
 - adding browser download behavior;
 - adding server route PDF generation;
 - sending report data to Supabase or a server;
@@ -401,11 +405,12 @@ Completed:
 - PDF runtime installation.
 - minimal Traditional Chinese font smoke test.
 - fixture-only five-page PDF template prototype.
+- owner-only browser PDF preview shell.
 
 Recommended next path:
 
 1. Review whether the variable-font thin-weight output is visually acceptable, or replace it with static regular/medium/bold files before production UI.
-2. If keeping the variable font temporarily, build a browser-only owner preview shell that opens the generated PDF in the browser PDF viewer.
+2. Run browser smoke testing on the owner report page with real local data and inspect PDF visual quality.
 3. Keep custom download UI, server-side generation, Supabase reads, manager/staff export, and generated-PDF storage blocked until separate approval.
 
-The next step now crosses into browser-facing preview behavior. Treat it as a separate decision boundary.
+The next step is visual/browser validation. Treat any custom download UI, role expansion, server route, or generated-PDF storage as a separate decision boundary.

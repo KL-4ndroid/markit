@@ -269,3 +269,24 @@ Result:
 - keeps the component free of IndexedDB, Supabase, sync, recovery, browser preview, and download behavior.
 
 No browser preview UI, download behavior, Supabase access, sync, recovery, or data writes were added.
+
+### Slice L: Owner-Only Browser PDF Preview Shell
+
+Status: completed as browser-only owner preview shell.
+
+Result record:
+
+- `components/reports/settlement/SettlementReportPdfPreviewButton.tsx`
+- `app/reports/settlement/page.tsx`
+- `tests/settlement-report-pdf-preview-button.test.ts`
+
+Result:
+
+- shows a PDF preview action only inside the existing owner-only settlement report page;
+- generates the PDF from the already-built local report model and PDF view model;
+- opens the generated blob URL in the browser PDF viewer;
+- does not add a custom download button;
+- keeps the browser viewer's built-in local save behavior as the only save path;
+- keeps the existing owner finance/import-export capability guard.
+
+No Supabase access, sync, recovery, server PDF generation, generated-PDF storage, or manager/staff export was added.

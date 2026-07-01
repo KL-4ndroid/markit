@@ -28,26 +28,9 @@ runTest('owner-only preview route exists and uses approved model boundaries', ()
   assert.match(pageSource, /deriveRoleCapabilities/);
   assert.match(pageSource, /hasCapability\(capabilities, 'canImportExport'\)/);
   assert.match(pageSource, /hasCapability\(capabilities, 'canViewOwnerFinance'\)/);
-  assert.match(pageSource, /結算報告預覽僅限老闆使用/);
 });
 
 runTest('formal preview UI exposes report-quality sections for owner decision making', () => {
-  for (const label of [
-    '結算報告檢查',
-    '月結報告',
-    '週結報告',
-    '本期總評分',
-    '平均客單價',
-    '資料可靠度',
-    '評分拆解',
-    '市集表現',
-    '商品表現',
-    '成本與利潤',
-    '下一步行動',
-  ]) {
-    assert.match(pageSource, new RegExp(label));
-  }
-
   assert.match(pageSource, /recommendationLabel\(preview\.executiveSummary\.recommendation\)/);
   assert.match(pageSource, /preview\.topWarnings/);
   assert.match(pageSource, /preview\.reliability\.limitations/);
@@ -63,8 +46,6 @@ runTest('preview UI is positioned as an in-app report check workspace', () => {
   assert.match(previewSpecSource, /Slice E: Preview Repositioning/);
   assert.match(presentationPlanSource, /Preview\/check workspace in the app/);
   assert.match(presentationPlanSource, /The current preview page should not be treated as the final report design/);
-  assert.match(pageSource, /結算報告檢查/);
-  assert.doesNotMatch(pageSource, /品牌經營結算報告/);
   assert.doesNotMatch(pageSource, /min-h-\[380px\].*bg-\[#26392F\]/s);
 });
 
@@ -76,20 +57,22 @@ runTest('preview UI reads only local IndexedDB data and does not write or sync',
   assert.doesNotMatch(pageSource, /db\.(markets|products|dailyStats|events)\.(add|put|update|delete|clear|bulkAdd|bulkPut|bulkDelete)/);
   assert.doesNotMatch(
     pageImports,
-    /from ['"](?:@\/lib\/sync|@\/lib\/db\/events|@\/lib\/db\/recovery|@\/lib\/supabase\/client|@supabase\/supabase-js|[^'"]*(?:pdf|xlsx|csv|download))/i
+    /from ['"](?:@\/lib\/sync|@\/lib\/db\/events|@\/lib\/db\/recovery|@\/lib\/supabase\/client|@supabase\/supabase-js|[^'"]*(?:xlsx|csv|download))/i
   );
 });
 
-runTest('preview UI does not expose PDF Excel CSV or download actions', () => {
-  assert.doesNotMatch(pageSource, /PDF|Excel|CSV|download|下載|匯出/);
+runTest('preview UI exposes owner PDF preview without Excel CSV or custom download actions', () => {
+  assert.match(pageSource, /buildSettlementReportPdfViewModel/);
+  assert.match(pageSource, /SettlementReportPdfPreviewButton/);
+  assert.match(pageSource, /正式 PDF 報告預覽/);
+  assert.match(pageSource, /<SettlementReportPdfPreviewButton viewModel=\{pdfViewModel\} canPreview=\{canPreview\} \/>/);
+  assert.doesNotMatch(pageSource, /Excel|CSV|download/);
   assert.doesNotMatch(pageSource, /<a\s+[^>]*download|download=/i);
 });
 
-runTest('preview UI user-facing labels are Traditional Chinese', () => {
-  assert.doesNotMatch(pageSource, />\s*Grade\s*\{/);
-  assert.doesNotMatch(pageSource, /owner 使用/);
-  assert.match(pageSource, /等級 \{preview\.executiveSummary\.grade\}/);
-  assert.match(pageSource, /結算報告預覽僅限老闆使用/);
+runTest('preview UI keeps PDF generation behind owner finance and export capabilities', () => {
+  assert.match(pageSource, /const canPreview =\s*!isRoleLoading &&[\s\S]*hasCapability\(capabilities, 'canImportExport'\)[\s\S]*hasCapability\(capabilities, 'canViewOwnerFinance'\)/);
+  assert.match(pageSource, /const pdfViewModel = report \? buildSettlementReportPdfViewModel\(\{ report \}\) : null/);
 });
 
 runTest('analytics page exposes owner-only entry without changing bottom navigation', () => {

@@ -31,6 +31,8 @@ import {
   type SettlementReportPreviewModel,
   type SettlementReportPreviewReadiness,
 } from '@/lib/reporting/settlement-report-preview';
+import { buildSettlementReportPdfViewModel } from '@/lib/reporting/settlement-report-pdf-view-model';
+import { SettlementReportPdfPreviewButton } from '@/components/reports/settlement/SettlementReportPdfPreviewButton';
 import {
   OWNER_BRAND_NAME_FALLBACK,
   OWNER_BRAND_NAME_UPDATED_EVENT,
@@ -267,6 +269,7 @@ export default function SettlementReportPreviewPage() {
 
   const report = built?.report ?? null;
   const preview = built?.preview ?? null;
+  const pdfViewModel = report ? buildSettlementReportPdfViewModel({ report }) : null;
 
   return (
     <div className="min-h-screen bg-background px-4 pb-12 pt-5">
@@ -319,6 +322,16 @@ export default function SettlementReportPreviewPage() {
 
         {preview && report && (
           <>
+            <section className="flex flex-col gap-3 border border-[#D8D0C3] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">正式 PDF 報告預覽</h2>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  使用目前頁面的資料產生 PDF 預覽，開啟後可用瀏覽器內建功能查看。
+                </p>
+              </div>
+              <SettlementReportPdfPreviewButton viewModel={pdfViewModel} canPreview={canPreview} />
+            </section>
+
             <section className="grid gap-5 border border-[#D8D0C3] bg-white p-5 shadow-sm lg:grid-cols-[1.2fr_0.8fr]">
               <div className="flex flex-col justify-between">
                 <div>
