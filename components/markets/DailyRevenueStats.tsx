@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Calendar, DollarSign, TrendingUp, Plus } from 'lucide-react';
 import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -31,6 +31,8 @@ interface DailyRevenueStatsProps {
  */
 export function DailyRevenueStats({ market, onAddRevenue, onDateClick, canAddRevenue = true, hideProfit = false }: DailyRevenueStatsProps) {
   const stats = useDateRangeStats(market.startDate, market.endDate);
+  const dailyListRef = useRef<HTMLDivElement | null>(null);
+  const focusedDayRef = useRef<HTMLDivElement | null>(null);
 
   // 互動按鈕配置（從 store 讀取，computed per render）
   const interactionButtons = useMemo(() => getInteractionButtons(), []);
@@ -117,6 +119,33 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, canAddRev
 
   // 判斷是否為單日市集
   const isSingleDay = market.startDate === market.endDate;
+  const today = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }, []);
+  const focusedWindowStartDate = useMemo(() => {
+    if (dailyData.length <= 3) return dailyData[0]?.date;
+
+    const todayIndex = dailyData.findIndex((day) => day.date === today);
+    if (todayIndex >= 0) {
+      return dailyData[Math.max(0, todayIndex - 1)]?.date;
+    }
+
+    const nextIndex = dailyData.findIndex((day) => day.date > today);
+    if (nextIndex >= 0) {
+      return dailyData[Math.max(0, nextIndex - 1)]?.date;
+    }
+
+    return dailyData[Math.max(0, dailyData.length - 3)]?.date;
+  }, [dailyData, today]);
+
+  useEffect(() => {
+    const list = dailyListRef.current;
+    const focusedDay = focusedDayRef.current;
+    if (!list || !focusedDay) return;
+
+    list.scrollTop = Math.max(0, focusedDay.offsetTop - list.offsetTop);
+  }, [focusedWindowStartDate]);
   
   return (
     <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
@@ -132,11 +161,12 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, canAddRev
         )}
       </div>
       
-      <div className="space-y-3">
+      <div
+        ref={dailyListRef}
+        className={`space-y-3 pr-1 ${dailyData.length > 3 ? 'max-h-[28rem] overflow-y-auto overscroll-contain' : ''}`}
+      >
         {dailyData.map((day) => {
           // ✅ 使用本地日期，避免時區問題
-          const now = new Date();
-          const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
           const isPast = day.date < today;
           const isToday = day.date === today;
           const isFuture = day.date > today;
@@ -144,6 +174,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, canAddRev
           return (
             <div
               key={day.date}
+              ref={day.date === focusedWindowStartDate ? focusedDayRef : null}
               onClick={() => !isFuture && onDateClick(day.date)}  // ✅ 新增：點擊日期查看成交記錄
               className={`rounded-xl border-2 p-4 transition-all ${
                 isFuture 
