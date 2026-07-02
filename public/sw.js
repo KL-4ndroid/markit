@@ -1,10 +1,10 @@
 // Service Worker for Féria PWA
-// Version: 2.0.0
+// Version: 2.0.1
 // 功能：僅提供 PWA 基礎功能（安裝到主畫面、推送通知）
 // 已移除：離線快取功能
-// 更新日期：2026-02-15
+// 更新日期：2026-07-03
 
-const SW_VERSION = '2.0.0';
+const SW_VERSION = '2.0.1';
 
 console.log(`[SW] Service Worker ${SW_VERSION} loaded`);
 

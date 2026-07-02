@@ -17,8 +17,13 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
 
       <div className="relative max-w-md w-full">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full border-2 border-[#6F8B74] text-[#6F8B74] text-3xl font-serif mb-6">
-            市
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-[1.75rem] border border-[#DED6CA] bg-[#FFFDF7] shadow-[0_18px_45px_rgba(63,58,55,0.10)] mb-6 p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon is already generated at fixed sizes */}
+            <img
+              src="/icons/icon-192x192.png"
+              alt="Féria - 出攤筆記"
+              className="h-full w-full object-contain"
+            />
           </div>
 
           <h1 className="text-4xl font-serif text-[#3F3A37] tracking-[0.15em] mb-3">
@@ -26,7 +31,7 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
           </h1>
 
           <p className="text-xs text-[#8A867D] tracking-[0.4em]">
-            MARKET NOTEBOOK
+            出攤筆記
           </p>
         </div>
 

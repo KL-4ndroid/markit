@@ -42,8 +42,13 @@ export function GlobalLoadingState() {
       <div className="text-center px-6">
         {/* Logo */}
         <div className="mb-8">
-          <div className="w-20 h-20 mx-auto bg-gradient-to-br from-primary to-secondary rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30">
-            <span className="text-4xl">🎪</span>
+          <div className="w-20 h-20 mx-auto bg-white rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/20 p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon is already generated at fixed sizes */}
+            <img
+              src="/icons/icon-192x192.png"
+              alt="Féria - 出攤筆記"
+              className="h-full w-full object-contain"
+            />
           </div>
         </div>
 
