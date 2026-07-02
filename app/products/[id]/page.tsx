@@ -20,6 +20,7 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { EditProductForm } from '@/components/products/EditProductForm';
+import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
 import { normalizeRouteId } from '@/lib/markets/detail-loading';
 import { getProductDetail } from '@/lib/products/detail-service';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -202,14 +203,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // 載入中（初始化中）
   if (isRoleLoading || dbStatus === null || !localProductLookupComplete) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">載入中...</p>
-        </div>
-      </div>
-    );
+    return <DetailPageSkeleton stats={2} sections={2} />;
   }
 
   // DB 不健康

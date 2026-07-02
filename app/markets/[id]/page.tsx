@@ -61,6 +61,7 @@ import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { useUserRole } from '@/hooks/useUserRole';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
+import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
 import { normalizeMarketRouteId, shouldShowMarketDetailLoading } from '@/lib/markets/detail-loading';
 import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
@@ -945,14 +946,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     hasTriedSupabaseFallback,
     isLoadingSupabase,
   })) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">載入中...</p>
-        </div>
-      </div>
-    );
+    return <DetailPageSkeleton />;
   }
 
   // DB 不健康
