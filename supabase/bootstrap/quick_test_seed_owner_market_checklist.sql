@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test seed
+-- Féria quick test seed
 -- Run this only AFTER:
 --   1. quick_test_database_schema_001_052_recommended.sql has completed.
 --   2. You created one test owner in Supabase Dashboard > Authentication > Users.

@@ -14,7 +14,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">服務說明</h2>
             <p className="text-muted-foreground leading-relaxed">
-              出攤本是一款專為市集攤販設計的數位管理系統，提供銷售記錄、統計分析、
+              Féria - 出攤筆記是一款專為市集攤販設計的數位管理系統，提供銷售記錄、統計分析、
               團隊協作等功能。使用本服務即表示您同意遵守本服務條款。
             </p>
           </section>

@@ -4,9 +4,9 @@
 
 :root {
   /* ============================================================
-   * 出攤本 BoothBook 視覺識別（VI）設計 token
+   * Féria - 出攤筆記 視覺識別（VI）設計 token
    * 文件：docs/brand/VI_DESIGN_SYSTEM.md
-   * 變更：2026-06-17（從「BoothBook」霧藍暖木 → 「出攤本」霧松綠暖杏橘）
+   * 變更：2026-06-17（舊品牌霧藍暖木 → Féria 霧松綠暖杏橘）
    *
    * ⚠️ 重要：以下所有 rgb 數值都跟 tailwind.config.ts 的
    *   rgb(var(--xxx) / <alpha-value>) 配對使用。

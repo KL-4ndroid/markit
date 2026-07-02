@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test database compatibility patch
+-- Féria quick test database compatibility patch
 -- Clean bootstrap version of migration 043_staff_role_foundation.
 
 alter table public.staff_relationships

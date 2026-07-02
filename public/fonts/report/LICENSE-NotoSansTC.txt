@@ -15,5 +15,5 @@ SIL Open Font License 1.1
 https://openfontlicense.org/
 
 Project usage note:
-This font is bundled only for BoothBook settlement report PDF rendering.
+This font is bundled only for Féria settlement report PDF rendering.
 Do not sell the font file by itself.

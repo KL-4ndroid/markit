@@ -6,7 +6,7 @@ import { SyncProvider } from "@/lib/sync-context";
 import { NavigationProvider } from "@/lib/navigation-context";
 
 export const metadata: Metadata = {
-  title: "Féria｜出攤筆記",
+  title: "Féria - 出攤筆記",
   description: "獨立品牌的市集經營筆記 - 記錄市集、商品、成本與成果",
   manifest: "/manifest.json",
   appleWebApp: {

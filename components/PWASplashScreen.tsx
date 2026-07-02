@@ -75,18 +75,18 @@ export function PWASplashScreen() {
           {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon 已是預優化小圖，不需要 next/image 額外處理 */}
           <img
             src="/icons/icon-192x192.png"
-            alt="出攤本"
+            alt="Féria - 出攤筆記"
             className="w-full h-full object-contain"
           />
         </div>
 
         {/* 標題 */}
         <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">
-          出攤本
+          Féria
         </h1>
         
         <p className="text-xl text-white/90 font-light mb-8">
-          BoothBook
+          出攤筆記
         </p>
 
         {/* 載入動畫 */}

@@ -1,4 +1,4 @@
-# BoothBook Sync Gate D Owner Diagnostics Design
+# Féria Sync Gate D Owner Diagnostics Design
 
 Created: 2026-06-22
 Status: D3c-2n-3 local/staging manual retry/drain verification passed; no production synthetic data, batch mutation action, RLS, worker, cleanup, automatic runtime repair caller, or staff-row drain is approved by this document

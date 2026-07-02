@@ -1,4 +1,4 @@
-# BoothBook Sync Phase 3/4 Risk Reduction Plan
+# Féria Sync Phase 3/4 Risk Reduction Plan
 
 Created: 2026-06-20
 Status: execution guardrail plan

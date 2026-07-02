@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test database phase 3 v6: staff hardening 037-046 with clean 043/046 compatibility bodies
+-- Féria quick test database phase 3 v6: staff hardening 037-046 with clean 043/046 compatibility bodies
 -- Intended only for a new/empty or disposable Supabase staging/local test project.
 -- Do NOT run on production or on a database that contains real user data.
 -- Sanitized for quick bootstrap: removed COMMENT ON statements and replaced RAISE NOTICE with NULL;
@@ -209,7 +209,7 @@ WHERE mm.user_id = auth.uid()
 -- BEGIN SOURCE: quick_test_database_compat_drop_staff_accessible_views.sql
 -- ============================================================
 
--- BoothBook / Markit quick test database compatibility patch
+-- Féria quick test database compatibility patch
 --
 -- PostgreSQL cannot CREATE OR REPLACE VIEW when the replacement changes
 -- existing column names or order. Historical staff hardening migrations reshape
@@ -2091,7 +2091,7 @@ ROLLBACK;
 -- BEGIN SOURCE: quick_test_database_compat_staff_role_043_clean.sql
 -- ============================================================
 
--- BoothBook / Markit quick test database compatibility patch
+-- Féria quick test database compatibility patch
 -- Clean bootstrap version of migration 043_staff_role_foundation.
 
 alter table public.staff_relationships
@@ -2415,7 +2415,7 @@ ORDER BY proname;
 -- BEGIN SOURCE: quick_test_database_compat_staff_permissions_046_clean.sql
 -- ============================================================
 
--- BoothBook / Markit quick test database compatibility patch
+-- Féria quick test database compatibility patch
 -- Clean bootstrap version of migration 046_align_staff_permissions_with_role.
 --
 -- This preserves the intended 046 effects:

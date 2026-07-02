@@ -73,7 +73,7 @@ export function ImportSafetyStatusPanel() {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    downloadJson(`market-pulse-emergency-backup-${timestamp}.json`, content);
+    downloadJson(`feria-emergency-backup-${timestamp}.json`, content);
     toast.success('Emergency backup downloaded.');
   };
 

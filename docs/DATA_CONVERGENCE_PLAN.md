@@ -1,4 +1,4 @@
-﻿# Markit 資料存取收斂計畫
+# Féria 資料存取收斂計畫
 
 更新日期：2026-06-14
 狀態：C2.14～C2.30B 已完成；C2.13A Bug Fixes 已完成（commit 86569d8）；C3.1A～C3.5B 已完成；**C2.30C PermissionGate 整合已完成（commit 4ab4b1a）**；**C2.30D Cloud→local 補回脫敏已完成（commit 342bed3 + 280c2fa）**；**C2.31 衝突解決脫敏已完成（commit 799b8ab + 2fd23c8）**；C3.6 Pending Local Operations 待評估

@@ -32,7 +32,7 @@ Implementation notes:
 - Repair tools remain owner-only; staff users must not load `/recovery` repair panels.
 - New market and new product creation remain owner-only for now.
 
-本文件是 BoothBook 員工角色權限分布的主要查閱文件。
+本文件是 Féria 員工角色權限分布的主要查閱文件。
 
 未來任何與 staff role、資料可見度、操作權限、PermissionGate、useUserRole、sync / Dexie 權限行為有關的修改，都需要同步更新本文件。
 
@@ -60,7 +60,7 @@ Implementation notes:
 
 ## 1. Role Design Principle
 
-BoothBook 的員工權限分成四個層級：
+Féria 的員工權限分成四個層級：
 
 ```text
 viewer   = 只看，不寫

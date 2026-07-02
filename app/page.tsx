@@ -114,7 +114,7 @@ export default function HomePage() {
   
   const [showSyncTooltip, setShowSyncTooltip] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [ownerBrandName, setOwnerBrandName] = useState('出攤本 - BoothBook');
+  const [ownerBrandName, setOwnerBrandName] = useState('Féria - 出攤筆記');
 
   // ✅ 角色守衛（RoleGuard）已由 layout 級別統一處理（C2.28B）
   //   - 這裡不需要再寫 if (isRoleLoading || roleError) return <RoleLoadingFallback />
@@ -127,7 +127,7 @@ export default function HomePage() {
   useEffect(() => {
     let cancelled = false;
     if (!user?.id || isStaff) {
-      setOwnerBrandName('出攤本 - BoothBook');
+      setOwnerBrandName('Féria - 出攤筆記');
       return;
     }
 

@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test database phase 3: staff hardening 037-046
+-- Féria quick test database phase 3: staff hardening 037-046
 -- Intended only for a new/empty or disposable Supabase staging/local test project.
 -- Do NOT run on production or on a database that contains real user data.
 -- Sanitized for quick bootstrap: removed COMMENT ON statements and replaced RAISE NOTICE with NULL;

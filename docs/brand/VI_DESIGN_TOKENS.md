@@ -1,15 +1,15 @@
-# 出攤本 BoothBook — 視覺識別（VI）設計 token 對照
+# Féria - 出攤筆記 — 視覺識別（VI）設計 token 對照
 
 > 文件版本：2026-06-17
 > 對應設計框架：`docs/brand/VI_DESIGN_SYSTEM.md`（2026-06-16）
-> 變更內容：把 BoothBook 內部色票（霧藍 / 暖木 / 米白）對齊到「出攤本 BoothBook」對外品牌色（霧松綠 / 暖杏橘 / 奶油米白）
+> 變更內容：把 Féria 內部色票（霧藍 / 暖木 / 米白）對齊到「Féria - 出攤筆記」對外品牌色（霧松綠 / 暖杏橘 / 奶油米白）
 
 ---
 
 ## 為什麼要對齊
 
-原本 `.cursorrules` 與 `tailwind.config.ts` 用的是 BoothBook 內部色票（`#7B9FA6` 霧藍 / `#D4A574` 暖木 / `#FAFAF8` 米白）。
-2026-06-16 建立對外品牌「出攤本 BoothBook」VI 框架（`docs/brand/VI_DESIGN_SYSTEM.md`），定義對外品牌色為霧松綠 `#6F8F86` / 暖杏橘 `#D9A66A` / 奶油米白 `#F7F3EA`。
+原本 `.cursorrules` 與 `tailwind.config.ts` 用的是 Féria 內部色票（`#7B9FA6` 霧藍 / `#D4A574` 暖木 / `#FAFAF8` 米白）。
+2026-06-16 建立對外品牌「Féria - 出攤筆記」VI 框架（`docs/brand/VI_DESIGN_SYSTEM.md`），定義對外品牌色為霧松綠 `#6F8F86` / 暖杏橘 `#D9A66A` / 奶油米白 `#F7F3EA`。
 兩套色票並行會導致：
 - Logo、App Icon、IG 模板用 VI 色票，但 App 內 UI 用舊色票
 - 視覺斷裂，使用者從行銷素材進入 App 會感到「換了一個產品」

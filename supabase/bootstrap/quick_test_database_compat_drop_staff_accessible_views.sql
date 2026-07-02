@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test database compatibility patch
+-- Féria quick test database compatibility patch
 --
 -- PostgreSQL cannot CREATE OR REPLACE VIEW when the replacement changes
 -- existing column names or order. Historical staff hardening migrations reshape

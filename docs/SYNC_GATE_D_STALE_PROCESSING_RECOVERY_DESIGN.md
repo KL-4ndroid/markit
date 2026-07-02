@@ -1,11 +1,11 @@
-# BoothBook Sync Gate D Stale Processing Recovery Design
+# Féria Sync Gate D Stale Processing Recovery Design
 
 Created: 2026-06-22
 Status: D3c-2n retry/drain action design added; no retry/drain runtime code, production synthetic data, worker, cleanup, batch recovery, RLS change, or feature-flag change is approved by this document
 
 ## 0. Purpose
 
-This document defines how BoothBook should reason about `pending_operations` rows that remain in `processing` too long.
+This document defines how Féria should reason about `pending_operations` rows that remain in `processing` too long.
 
 The goal is to avoid silent data loss or duplicate final events before any recovery action exists.
 

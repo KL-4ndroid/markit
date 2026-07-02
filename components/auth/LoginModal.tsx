@@ -196,7 +196,7 @@ export function LoginModal({
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <DialogTitle className="text-2xl font-medium text-foreground mb-2">
-                {isSignup ? '建立 Markit 帳號' : '登入 Markit'}
+                {isSignup ? '建立 Féria 帳號' : '登入 Féria'}
               </DialogTitle>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {isSignup

@@ -94,7 +94,7 @@ function product(overrides: Partial<Product> = {}): Product {
 function buildFixtureReport() {
   return buildSettlementReportModel({
     capabilities: ownerCapabilities(),
-    brandName: 'BoothBook',
+    brandName: 'Féria',
     period: {
       kind: 'monthly',
       startDate: '2026-06-01',

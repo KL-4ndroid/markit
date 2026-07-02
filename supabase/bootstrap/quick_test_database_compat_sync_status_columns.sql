@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test database compatibility patch
+-- Féria quick test database compatibility patch
 --
 -- Why this exists:
 -- Historical migrations and runtime code reference sync_status on read models,

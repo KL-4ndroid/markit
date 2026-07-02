@@ -1,4 +1,4 @@
-# BoothBook Sync Gate D Pending Operation Drain Design
+# Féria Sync Gate D Pending Operation Drain Design
 
 Created: 2026-06-21
 Status: D3c-2 design complete through D3c-2n-3 local/staging manual retry/drain verification; no batch worker or production default enablement approved

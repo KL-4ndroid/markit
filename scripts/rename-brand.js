@@ -1,10 +1,10 @@
 /**
- * 批次品牌名稱重命名：市集誌 → 出攤本，Market Pulse → BoothBook
+ * 批次品牌名稱重命名：市集誌 → 出攤筆記，Féria → Féria
  *
  * 排除：
- * - node_modules / .next / .git / docs/CONVERGENCE_ARCHIVE.md（內部 Markit 代號文件）
+ * - node_modules / .next / .git
  * - 檔名/路徑（lib/db/hooks.ts 等開發者註解會處理，但 supabase/migrations 不會）
- * - 第三方 auth 品牌「Markit 帳號」（LoginModal 內）
+ * - 第三方 auth 品牌「Féria 帳號」（LoginModal 內）
  */
 
 const fs = require('fs');
@@ -22,27 +22,25 @@ const SKIP_DIRS = new Set([
 ]);
 
 const SKIP_FILES = new Set([
-  // 內部代號文件，保留 Markit
+  // 歷史收斂總檔，避免批次工具重寫長篇封存內容
   'docs/CONVERGENCE_ARCHIVE.md',
   'docs/DATA_CONVERGENCE_PLAN.md',
   'docs/CURSOR_DATA_CONVERGENCE_HANDOFF.md',
   'docs/CURSOR_HANDOFF_PLAN.md',
-  // 第三方 auth 品牌，登入按鈕用「Markit 帳號」
+  // 第三方 auth 品牌，登入按鈕用「Féria 帳號」
   'components/auth/LoginModal.tsx',
 ]);
 
 // 對照表：(regex, replacement, note)
 const REPLACEMENTS = [
   // 中文品牌名
-  { from: /市集誌/g, to: '出攤本', note: '中文品牌名' },
+  { from: /市集誌/g, to: '出攤筆記', note: '中文品牌名' },
 
   // 英文品牌名（在開發者註解、UI title、HTML title、PWA manifest）
-  { from: /Market Pulse/g, to: 'BoothBook', note: '英文品牌名' },
+  { from: /Féria/g, to: 'Féria', note: '英文品牌名' },
 
-  // 特殊：app/page.tsx 內的「市集誌 - Markit」已是「出攤本 - Markit」，
-  // 但用戶指明整體改為「出攤本」，而 Markit 是內部代號。
-  // 此處只把「- Markit」改為「- BoothBook」以保持 title 一致性。
-  { from: /出攤本 - Markit/g, to: '出攤本 - BoothBook', note: 'page.tsx title' },
+  // 特殊：app/page.tsx 內曾有舊品牌組合，統一改為 Féria。
+  { from: /出攤筆記 - Féria/g, to: 'Féria - 出攤筆記', note: 'page.tsx title' },
 ];
 
 function shouldProcess(filePath) {

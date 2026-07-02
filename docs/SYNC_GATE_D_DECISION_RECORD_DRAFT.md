@@ -1,4 +1,4 @@
-# BoothBook Sync Gate D Decision Record Draft
+# Féria Sync Gate D Decision Record Draft
 
 Created: 2026-06-21
 Status: historical D2a decision draft; superseded for current execution by `SYNC_GATE_D_WRITE_ROUTING_DECISION_RECORD.md`

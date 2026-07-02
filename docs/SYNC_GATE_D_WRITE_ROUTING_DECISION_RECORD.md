@@ -1,11 +1,11 @@
-# BoothBook Sync Gate D Write Routing Decision Record
+# Féria Sync Gate D Write Routing Decision Record
 
 Created: 2026-06-21
 Status: active Gate D decision record after D3c-2n-3 local/staging manual retry/drain verification
 
 ## 0. Purpose
 
-This document defines the decisions required before BoothBook routes any production write through `pending_operations`.
+This document defines the decisions required before Féria routes any production write through `pending_operations`.
 
 Current approvals:
 - D3b approved a disabled runtime adapter shell.

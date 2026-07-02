@@ -1,7 +1,7 @@
 # Féria Demo Mode 實作文件
 
-> 專案：`KL-4ndroid/markit`  
-> 分支：`main`  
+> 專案：`KL-4ndroid/markit`
+> 分支：`main`
 > 目標：建立一個安全隔離、可互動、可對外展示的 Féria Demo Mode。
 
 ---
@@ -21,7 +21,7 @@ Demo Mode 應可用於：
 
 核心定位：
 
-> **Féria｜出攤筆記**  
+> **Féria｜出攤筆記**
 > **獨立品牌的市集經營筆記**
 
 Demo Mode 應讓使用者在 1–2 分鐘內理解 Féria 的價值：
@@ -113,9 +113,9 @@ components/demo/FeriaDemoProductRanking.tsx
 components/demo/FeriaDemoMarketSummary.tsx
 components/demo/FeriaDemoActionPanel.tsx
 components/demo/FeriaDemoProductDrawer.tsx
-lib/demo/feria-demo-data.ts
-lib/demo/feria-demo-calculations.ts
-lib/demo/feria-demo-types.ts
+lib/demo/Féria-demo-data.ts
+lib/demo/Féria-demo-calculations.ts
+lib/demo/Féria-demo-types.ts
 ```
 
 若希望第一版更精簡，也可以先只新增：
@@ -123,8 +123,8 @@ lib/demo/feria-demo-types.ts
 ```txt
 app/demo/page.tsx
 components/demo/FeriaDemoApp.tsx
-lib/demo/feria-demo-data.ts
-lib/demo/feria-demo-calculations.ts
+lib/demo/Féria-demo-data.ts
+lib/demo/Féria-demo-calculations.ts
 ```
 
 等第一版穩定後再拆小元件。
@@ -169,7 +169,7 @@ export default function DemoPage() {
 建立：
 
 ```txt
-lib/demo/feria-demo-types.ts
+lib/demo/Féria-demo-types.ts
 ```
 
 建議型別：
@@ -220,7 +220,7 @@ export type DemoExpense = {
 建立：
 
 ```txt
-lib/demo/feria-demo-data.ts
+lib/demo/Féria-demo-data.ts
 ```
 
 建議資料語境要符合「獨立品牌」，不要只限手作。
@@ -332,13 +332,13 @@ export const demoProducts = [
 建立：
 
 ```txt
-lib/demo/feria-demo-calculations.ts
+lib/demo/Féria-demo-calculations.ts
 ```
 
 建議函式：
 
 ```ts
-import type { DemoExpense, DemoMarket, DemoProduct, DemoSale } from './feria-demo-types';
+import type { DemoExpense, DemoMarket, DemoProduct, DemoSale } from './Féria-demo-types';
 
 export function getSaleRevenue(sale: DemoSale, products: DemoProduct[]) {
   const product = products.find((item) => item.id === sale.productId);
@@ -683,7 +683,7 @@ Demo Mode 不需要 API route。
 
 ## 12. 與 Landing Page 串接建議
 
-若 landing page 是獨立 repo `boothbook-landing`，可以在 CTA 中加入：
+若 landing page 是獨立 repo `Féria-landing`，可以在 CTA 中加入：
 
 ```txt
 體驗 Demo
@@ -764,13 +764,13 @@ npm run lint
 ## 14. 建議 commit message
 
 ```txt
-feat: add interactive Feria demo mode
+feat: add interactive Féria demo mode
 ```
 
 若只先加入文件：
 
 ```txt
-docs: add Feria demo mode implementation plan
+docs: add Féria demo mode implementation plan
 ```
 
 ---
@@ -806,7 +806,7 @@ docs: add Feria demo mode implementation plan
 
 Demo Mode 的價值不在於功能多，而在於讓使用者快速感受到：
 
-> 原來 Féria 不是叫我多記一份資料，  
+> 原來 Féria 不是叫我多記一份資料，
 > 而是幫我把出攤後最混亂的收入、商品、成本與成果整理成能判斷方向的筆記。
 
 請優先讓 Demo 具備：

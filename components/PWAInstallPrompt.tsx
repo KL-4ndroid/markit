@@ -96,7 +96,7 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
       <div className="fixed inset-0 bg-black/50 z-[100] flex items-end sm:items-center sm:justify-center p-4 animate-fade-in">
         <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full max-w-md p-6 animate-slide-up">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-foreground">安裝出攤本到主畫面</h3>
+            <h3 className="text-lg font-medium text-foreground">安裝 Féria 到主畫面</h3>
             <button
               onClick={handleDismiss}
               className="p-2 rounded-full hover:bg-soft-pink transition-colors"
@@ -106,7 +106,7 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
           </div>
 
           <p className="text-sm text-muted-foreground mb-6">
-            將出攤本加入主畫面，享受更快速的啟動和更好的使用體驗！
+            將 Féria 加入主畫面，享受更快速的啟動和更好的使用體驗！
           </p>
 
           <div className="space-y-4 mb-6">
@@ -146,7 +146,7 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
 
           <div className="bg-[#E8F0F8] rounded-xl p-4">
             <p className="text-xs text-muted-foreground">
-              💡 安裝後，您可以像使用一般 App 一樣從主畫面啟動出攤本，享受更流暢的體驗！
+              💡 安裝後，您可以像使用一般 App 一樣從主畫面啟動 Féria，享受更流暢的體驗！
             </p>
           </div>
 
@@ -173,7 +173,7 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
 
             <div className="flex-1">
               <h3 className="text-base font-medium text-foreground mb-1">
-                安裝出攤本
+                安裝 Féria
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 安裝到您的裝置，享受更快速的啟動和離線使用！

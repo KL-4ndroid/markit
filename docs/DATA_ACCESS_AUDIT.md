@@ -1,4 +1,4 @@
-# BoothBook - Data Access Audit
+# Féria - Data Access Audit
 
 > **⚠️ ARCHIVED 2026-06-14 (部分取代)**
 > 本文件為 C2.14A 資料讀取路徑盤點，**結構仍有效**但多項結論已被取代：
@@ -10,15 +10,15 @@
 > 完整取代說明見 [`docs/CONVERGENCE_ARCHIVE.md`](./CONVERGENCE_ARCHIVE.md) §6。
 > 禁止直接編輯本檔（僅可修 ARCHIVED 標記）。
 
-> **Audit Date**: 2026-06-13  
-> **Project**: BoothBook (Local-First Event Sourcing Architecture)  
+> **Audit Date**: 2026-06-13
+> **Project**: Féria (Local-First Event Sourcing Architecture)
 > **Purpose**: Comprehensive audit of all data READ paths, identifying service candidates for extraction
 
 ---
 
 ## 1. Executive Summary
 
-This audit documents all data read paths in the BoothBook application, categorizing them by data source, read mechanism, and tombstone handling. The codebase follows a **Local-First architecture** with Dexie.js (IndexedDB) as the primary data source and Supabase as a backup/sync layer.
+This audit documents all data read paths in the Féria application, categorizing them by data source, read mechanism, and tombstone handling. The codebase follows a **Local-First architecture** with Dexie.js (IndexedDB) as the primary data source and Supabase as a backup/sync layer.
 
 ### Key Findings
 
@@ -155,7 +155,7 @@ Based on the audit, the following service extractions are recommended:
 // lib/services/market-events-read-model.ts
 export class MarketEventsReadModel {
   constructor(private db: Dexie) {}
-  
+
   async getMarketDeals(marketId: string): Promise<DealEvent[]> { ... }
   async getMarketInteractions(marketId: string): Promise<InteractionEvent[]> { ... }
   async getDealsByDate(marketId: string, date: string): Promise<DealEvent[]> { ... }
@@ -177,10 +177,10 @@ export class MarketEventsReadModel {
 // lib/services/market-projection-cache.ts
 export class MarketProjectionCache {
   constructor(private db: Dexie) {}
-  
+
   async getDateRangeStats(startDate: string, endDate: string): Promise<DailyStat[]> { ... }
   async getDailyStats(date: string, marketId: string): Promise<DailyStat \| undefined> { ... }
-  
+
   // Projection validation
   async validateProjectionIntegrity(marketId: string): Promise<ProjectionGap[]> { ... }
   async repairProjection(marketId: string): Promise<void> { ... }

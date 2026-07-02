@@ -54,7 +54,7 @@ The first version should prioritize stable pagination and readable tables over h
 
 ## 4. Visual Language
 
-Use a restrained BoothBook-aligned visual system:
+Use a restrained Féria-aligned visual system:
 
 - background: warm off-white;
 - primary accent: quiet green;

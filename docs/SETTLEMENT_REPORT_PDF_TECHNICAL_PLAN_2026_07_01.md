@@ -161,7 +161,7 @@ Decision:
 
 - use Noto Sans TC as the first PDF font family;
 - license basis: SIL Open Font License via the official Noto/Google Fonts distribution;
-- use this font because it is designed for Traditional Chinese usage in Taiwan/Macau, is legible for tables, and fits BoothBook's quiet operational brand tone.
+- use this font because it is designed for Traditional Chinese usage in Taiwan/Macau, is legible for tables, and fits Féria's quiet operational brand tone.
 
 Recommended future asset path:
 

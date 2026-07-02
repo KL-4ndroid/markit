@@ -4,7 +4,7 @@ Date: 2026-06-30
 
 Status: planning and guardrail phase.
 
-Scope: reframe BoothBook recovery around cloud-trusted rebuild of local cache, while keeping previous import/backup safety work as secondary infrastructure.
+Scope: reframe Féria recovery around cloud-trusted rebuild of local cache, while keeping previous import/backup safety work as secondary infrastructure.
 
 This document does not approve deleting local data, replacing local cache, running replace-cache execute, adding automatic cloud rebuild, changing sync routing, exposing production import UI, or broadening data export permissions.
 

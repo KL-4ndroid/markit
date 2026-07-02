@@ -65,11 +65,11 @@ export function TopNavigation() {
             {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon 已是預優化小圖，不需要 next/image 額外處理 */}
             <img
               src="/icons/icon-192x192.png"
-              alt="出攤本"
+              alt="Féria - 出攤筆記"
               className="w-full h-full object-contain"
             />
           </div>
-          <span className="text-sm font-medium text-foreground">出攤本</span>
+          <span className="text-sm font-medium text-foreground">Féria</span>
         </div>
 
         {/* Right Side */}

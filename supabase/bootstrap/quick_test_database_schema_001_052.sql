@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test database schema bootstrap (full traceable, corrected v3)
+-- Féria quick test database schema bootstrap (full traceable, corrected v3)
 -- Generated at: 2026-06-23 02:01:36 +08:00
 
 set check_function_bodies = off;
@@ -3742,7 +3742,7 @@ COMMENT ON FUNCTION update_market_read_model() IS 'CQRS: 當事件插入時自�
 -- BEGIN SOURCE: quick_test_database_compat_sync_status_columns.sql
 -- ============================================================
 
--- BoothBook / Markit quick test database compatibility patch
+-- Féria quick test database compatibility patch
 --
 -- Why this exists:
 -- Historical migrations and runtime code reference sync_status on read models,

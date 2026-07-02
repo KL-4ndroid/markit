@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// 出攤本 BoothBook — 視覺識別（VI）設計 token
+// Féria - 出攤筆記 — 視覺識別（VI）設計 token
 // 文件：docs/brand/VI_DESIGN_SYSTEM.md
 //
 // 色票對應（依 VI 文件 4.1–4.6）：

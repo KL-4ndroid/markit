@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test database preflight
+-- Féria quick test database preflight
 -- Run this before choosing a bootstrap/recovery file.
 --
 -- Decision guide:

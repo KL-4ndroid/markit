@@ -1,4 +1,4 @@
-# BoothBook P5 Low-Risk Execution Queue
+# Féria P5 Low-Risk Execution Queue
 
 Created: 2026-06-20
 Status: active low-risk queue

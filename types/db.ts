@@ -1,5 +1,5 @@
 /**
- * BoothBook - 資料庫類型定義
+ * Féria - 資料庫類型定義
  * 
  * 本檔案定義所有資料庫相關的 TypeScript 介面
  * 遵循事件溯源 (Event Sourcing) 架構

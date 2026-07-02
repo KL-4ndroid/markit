@@ -1,4 +1,4 @@
-# BoothBook Sync Gate D3c-2l Stale Processing Recovery Smoke Test
+# Féria Sync Gate D3c-2l Stale Processing Recovery Smoke Test
 
 Created: 2026-06-22
 Status: manual verification plan and guarded script only; no automatic execution

@@ -9,19 +9,19 @@ export default function AboutPage() {
             {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon 已是預優化小圖，不需要 next/image 額外處理 */}
             <img
               src="/icons/icon-192x192.png"
-              alt="出攤本"
+              alt="Féria - 出攤筆記"
               className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">出攤本</h1>
-          <p className="text-lg text-muted-foreground">BoothBook</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Féria</h1>
+          <p className="text-lg text-muted-foreground">Féria - 出攤筆記</p>
         </div>
         
         <div className="bg-white rounded-2xl shadow-sm p-8 space-y-6">
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">關於我們</h2>
             <p className="text-muted-foreground leading-relaxed">
-              出攤本是專為市集攤販打造的數位管理系統，我們深知市集經營的辛苦與挑戰，
+              Féria - 出攤筆記是專為市集攤販打造的數位管理系統，我們深知市集經營的辛苦與挑戰，
               因此致力於提供簡單、直覺、實用的工具，幫助攤販朋友們更輕鬆地管理生意。
             </p>
           </section>

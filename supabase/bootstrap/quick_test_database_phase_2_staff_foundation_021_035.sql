@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test database phase 2: staff foundation and policies 021-035
+-- Féria quick test database phase 2: staff foundation and policies 021-035
 -- Intended only for a new/empty or disposable Supabase staging/local test project.
 -- Do NOT run on production or on a database that contains real user data.
 -- Sanitized for quick bootstrap: removed COMMENT ON statements and replaced RAISE NOTICE with NULL;

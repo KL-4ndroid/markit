@@ -1,5 +1,5 @@
 /**
- * Toast 通知主題配置 — 出攤本 BoothBook VI 對齊版（2026-06-17）
+ * Toast 通知主題配置 — Féria VI 對齊版（2026-06-17）
  *
  * Sonner toast 的 style 是 inline CSS 物件，無法直接套用 Tailwind token，
  * 因此這裡直接用 CSS 變數（rgb var(--brand-xxx)）取代舊 hex。

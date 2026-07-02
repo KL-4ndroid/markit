@@ -1,4 +1,4 @@
-# BoothBook Sync Gate D Preflight Decision Plan
+# Féria Sync Gate D Preflight Decision Plan
 
 Created: 2026-06-20
 Status: historical pre-implementation decision plan; superseded for current execution by later Gate D decision records
@@ -30,7 +30,7 @@ Still not implemented:
 ### Decision A: Cloud Pending Operation Storage
 
 Question:
-- Should BoothBook add a cloud `pending_operations` table?
+- Should Féria add a cloud `pending_operations` table?
 
 Recommended default:
 - D2a was the first approval. Later narrow checklist-toggle Gate D slices were approved separately. Keep using event writes as the normal production source of truth until low-risk domains prove the model and a new explicit approval changes that boundary.

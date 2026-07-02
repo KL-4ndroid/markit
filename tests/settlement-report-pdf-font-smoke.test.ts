@@ -45,7 +45,7 @@ function runTest(name: string, fn: TestFn): void {
 
 function buildSmokeDocument(): React.ReactElement {
   Font.register({
-    family: 'BoothBook Noto Sans TC Smoke',
+    family: 'Féria Noto Sans TC Smoke',
     src: fontPath,
     fontWeight: 400,
   });
@@ -53,7 +53,7 @@ function buildSmokeDocument(): React.ReactElement {
   const styles = StyleSheet.create({
     page: {
       padding: 32,
-      fontFamily: 'BoothBook Noto Sans TC Smoke',
+      fontFamily: 'Féria Noto Sans TC Smoke',
       color: '#1f2933',
       backgroundColor: '#ffffff',
     },
@@ -70,8 +70,8 @@ function buildSmokeDocument(): React.ReactElement {
   return React.createElement(
     Document,
     {
-      title: 'BoothBook 繁體中文 PDF 字型測試',
-      author: 'BoothBook',
+      title: 'Féria 繁體中文 PDF 字型測試',
+      author: 'Féria',
       language: 'zh-TW',
     },
     React.createElement(
@@ -80,7 +80,7 @@ function buildSmokeDocument(): React.ReactElement {
       React.createElement(
         View,
         null,
-        React.createElement(Text, { style: styles.title }, '出攤本 繁體中文報告測試'),
+        React.createElement(Text, { style: styles.title }, 'Féria 繁體中文報告測試'),
         React.createElement(
           Text,
           { style: styles.body },

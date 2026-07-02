@@ -1,4 +1,4 @@
-# BoothBook Sync Gate D Safety And Slice Plan
+# Féria Sync Gate D Safety And Slice Plan
 
 Created: 2026-06-21
 Status: active decision plan after D3c-2n-3 local/staging manual retry/drain verification

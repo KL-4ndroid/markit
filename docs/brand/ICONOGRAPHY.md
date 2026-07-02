@@ -1,4 +1,4 @@
-# 出攤本 BoothBook — 圖示系統（Iconography）
+# Féria - 出攤筆記 — 圖示系統（Iconography）
 
 > 文件版本：2026-06-17
 > 對應設計框架：`docs/brand/VI_DESIGN_SYSTEM.md`（2026-06-16）

@@ -31,7 +31,7 @@ It should help the owner answer:
 - Are revenue, profit, score, and recommendation reasonable?
 - What data should be fixed or recorded before producing the final report?
 
-The preview page should feel consistent with the BoothBook app:
+The preview page should feel consistent with the Féria app:
 
 - compact;
 - practical;
@@ -87,7 +87,7 @@ Recommended PDF direction:
 - page size: portrait A4 as the default;
 - layout: cover page plus content pages;
 - visual tone: refined brand operations report, not raw accounting export;
-- palette: reuse BoothBook's quiet green and warm neutral system, with restrained accent colors;
+- palette: reuse Féria's quiet green and warm neutral system, with restrained accent colors;
 - typography: clear hierarchy, tabular numbers, short paragraphs;
 - charts: only if they improve decision making;
 - warnings: visible, direct, and not hidden behind icons only.

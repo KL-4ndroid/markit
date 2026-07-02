@@ -108,7 +108,7 @@ export async function createRecoveryBackup(): Promise<RecoveryBackup> {
   const timestamp = new Date(createdAt).toISOString().replace(/[:.]/g, '-');
 
   return {
-    filename: `market-pulse-recovery-${suffix}-${timestamp}.json`,
+    filename: `feria-recovery-${suffix}-${timestamp}.json`,
     mimeType: 'application/json',
     content,
     createdAt,

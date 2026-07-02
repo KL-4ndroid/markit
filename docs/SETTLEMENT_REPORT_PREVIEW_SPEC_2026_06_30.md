@@ -237,7 +237,7 @@ Behavior:
 
 ## 5. Visual Direction
 
-The in-app UI should feel like a practical BoothBook workflow, not a full PDF mockup and not a generic chart dashboard.
+The in-app UI should feel like a practical Féria workflow, not a full PDF mockup and not a generic chart dashboard.
 
 Recommended visual principles:
 
@@ -356,7 +356,7 @@ Goal:
 
 - keep the preview page as the owner-only in-app checkpoint;
 - stop treating it as the final PDF visual design;
-- align page layout with BoothBook's practical app workflow.
+- align page layout with Féria's practical app workflow.
 
 Allowed:
 

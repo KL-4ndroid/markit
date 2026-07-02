@@ -57,7 +57,7 @@ runTest('home page uses owner brand name without changing staff branch semantics
   assert.match(homePageSource, /loadOwnerBrandName\(user\.id\)/);
   assert.match(homePageSource, /OWNER_BRAND_NAME_UPDATED_EVENT/);
   assert.match(homePageSource, /\{ownerBrandName}/);
-  assert.doesNotMatch(homePageSource, /<h1[^>]*>\s*出攤本 - BoothBook\s*<\/h1>/);
+  assert.doesNotMatch(homePageSource, /<h1[^>]*>\s*出攤筆記 - Féria\s*<\/h1>/);
 });
 
 runTest('settlement report model and preview carry owner brand name', () => {

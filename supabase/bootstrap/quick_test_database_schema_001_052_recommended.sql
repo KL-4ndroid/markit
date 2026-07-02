@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test database schema bootstrap (recommended, corrected v3)
+-- Féria quick test database schema bootstrap (recommended, corrected v3)
 -- Intended only for a new/empty or disposable Supabase staging/local test project.
 -- Do NOT run on production or on a database that contains real user data.
 -- Sanitized for quick bootstrap: removed COMMENT ON statements and replaced RAISE NOTICE with NULL;
@@ -3687,7 +3687,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- BEGIN SOURCE: quick_test_database_compat_sync_status_columns.sql
 -- ============================================================
 
--- BoothBook / Markit quick test database compatibility patch
+-- Féria quick test database compatibility patch
 --
 -- Why this exists:
 -- Historical migrations and runtime code reference sync_status on read models,

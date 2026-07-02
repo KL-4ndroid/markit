@@ -1,4 +1,4 @@
-# BoothBook Sync Gate D3c-2m Synthetic Stale Processing Recovery Test Plan
+# Féria Sync Gate D3c-2m Synthetic Stale Processing Recovery Test Plan
 
 Created: 2026-06-22
 Status: staging/local test plan only; no production execution, runtime code, migration, RLS, worker, retry, drain, or cleanup action is approved

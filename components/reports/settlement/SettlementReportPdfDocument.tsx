@@ -26,7 +26,7 @@ export type SettlementReportPdfDocumentProps = {
   fontSource?: string;
 };
 
-const PDF_FONT_FAMILY = 'BoothBook Noto Sans TC';
+const PDF_FONT_FAMILY = 'Féria Noto Sans TC';
 const registeredFontSources = new Set<string>();
 const WARNING_DISPLAY_LIMIT = 5;
 
@@ -563,7 +563,7 @@ export function SettlementReportPdfDocument({
   return (
     <Document
       title={viewModel.meta.fileNameBase}
-      author="BoothBook"
+      author="Féria"
       language="zh-TW"
     >
       {viewModel.pages.map(page => (
@@ -589,7 +589,7 @@ export function SettlementReportPdfDocument({
           {renderPageBody(page)}
           <View style={styles.footer} fixed>
             <Text style={styles.footerText}>{viewModel.meta.brandName}</Text>
-            <Text style={styles.footerText}>BoothBook 結算報告</Text>
+            <Text style={styles.footerText}>Féria 結算報告</Text>
           </View>
         </Page>
       ))}

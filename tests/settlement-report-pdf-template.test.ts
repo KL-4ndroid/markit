@@ -100,7 +100,7 @@ function product(overrides: Partial<Product> = {}): Product {
 function buildFixtureViewModel() {
   const report = buildSettlementReportModel({
     capabilities: ownerCapabilities(),
-    brandName: 'BoothBook 測試品牌',
+    brandName: 'Féria 測試品牌',
     period: {
       kind: 'weekly',
       startDate: '2026-06-01',

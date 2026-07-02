@@ -1,4 +1,4 @@
-# BoothBook Sync Gate D D3c-2e Manual Smoke Test
+# Féria Sync Gate D D3c-2e Manual Smoke Test
 
 Created: 2026-06-21
 Status: manual cloud smoke test completed once against disposable production checklist data; guarded script remains manual-only

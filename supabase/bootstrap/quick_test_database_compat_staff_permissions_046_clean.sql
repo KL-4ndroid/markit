@@ -1,4 +1,4 @@
--- BoothBook / Markit quick test database compatibility patch
+-- Féria quick test database compatibility patch
 -- Clean bootstrap version of migration 046_align_staff_permissions_with_role.
 --
 -- This preserves the intended 046 effects:

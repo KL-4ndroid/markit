@@ -4,7 +4,7 @@ Date: 2026-06-30
 
 Status: design, pure model tests, settlement-report equivalence preparation, and settlement-report data-quality adoption completed.
 
-Scope: define and test the first shared insight-quality model for BoothBook analytics/reporting reliability signals.
+Scope: define and test the first shared insight-quality model for Féria analytics/reporting reliability signals.
 
 This document approves only settlement report data-quality adoption of the shared insight-quality model. Report preview UI approval and completion are tracked in `docs/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30.md`. This document does not approve analytics page adoption, PDF generation, Excel generation, Supabase reads, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 

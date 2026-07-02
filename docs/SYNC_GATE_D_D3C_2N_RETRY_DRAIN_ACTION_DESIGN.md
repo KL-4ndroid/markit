@@ -1,4 +1,4 @@
-# BoothBook Sync Gate D3c-2n Retry/Drain Action Design
+# Féria Sync Gate D3c-2n Retry/Drain Action Design
 
 Created: 2026-06-22
 Status: D3c-2n-3 local/staging manual verification passed; no migration, RLS, worker, production execution, feature-flag change, batch action, automatic retry, or staff-row drain is approved.

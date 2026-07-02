@@ -71,7 +71,7 @@ runTest('visual spec defines first-version PDF pages and content', () => {
   }
 });
 
-runTest('visual spec defines BoothBook-aligned visual and readability rules', () => {
+runTest('visual spec defines Féria-aligned visual and readability rules', () => {
   assert.match(pdfVisualSpecSource, /A4 portrait/);
   assert.match(pdfVisualSpecSource, /warm off-white/);
   assert.match(pdfVisualSpecSource, /quiet green/);

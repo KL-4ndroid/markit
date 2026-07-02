@@ -1,5 +1,5 @@
 /**
- * BoothBook - Dexie 資料庫定義
+ * Féria - Dexie 資料庫定義
  * 
  * 本檔案定義 IndexedDB 資料庫結構
  * 使用 Dexie.js 作為 IndexedDB 的封裝層
@@ -419,7 +419,7 @@ function triggerEmergencyBackupDownload(backupJson: string): void {
   const link = document.createElement('a');
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   link.href = url;
-  link.download = `market-pulse-emergency-backup-${timestamp}.json`;
+  link.download = `feria-emergency-backup-${timestamp}.json`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
