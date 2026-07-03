@@ -32,7 +32,6 @@ export function saveFormData(formId: string, data: Record<string, any>, pathname
     const key = `${FORM_AUTOSAVE_PREFIX}${formId}`;
     sessionStorage.setItem(key, JSON.stringify(saveData));
     
-    console.log(`💾 表單已暫存: ${formId}`, data);
   } catch (error) {
     console.error('保存表單資料失敗:', error);
   }
@@ -55,12 +54,10 @@ export function loadFormData(formId: string): FormAutoSaveData | null {
     // 檢查是否過期
     const now = Date.now();
     if (now - data.timestamp > AUTOSAVE_EXPIRY) {
-      console.log(`⏰ 表單暫存已過期: ${formId}`);
       clearFormData(formId);
       return null;
     }
     
-    console.log(`📂 載入暫存表單: ${formId}`, data);
     return data;
   } catch (error) {
     console.error('讀取表單資料失敗:', error);
@@ -77,7 +74,6 @@ export function clearFormData(formId: string): void {
   try {
     const key = `${FORM_AUTOSAVE_PREFIX}${formId}`;
     sessionStorage.removeItem(key);
-    console.log(`🗑️ 清除表單暫存: ${formId}`);
   } catch (error) {
     console.error('清除表單資料失敗:', error);
   }
@@ -96,7 +92,6 @@ export function clearAllFormData(): void {
         sessionStorage.removeItem(key);
       }
     });
-    console.log('🗑️ 清除所有表單暫存');
   } catch (error) {
     console.error('清除所有表單資料失敗:', error);
   }

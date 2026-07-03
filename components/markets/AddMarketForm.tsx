@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X, Calendar, MapPin, DollarSign, Clock, Package, FileText, DoorOpen, ClipboardCheck, Store, Moon } from 'lucide-react';
 import { createMarket } from '@/lib/db/hooks';
+import { useAuth } from '@/lib/supabase/auth-context';
+import { clearFormData, loadFormData, saveFormData } from '@/lib/form-autosave';
 import { DateMultiPicker } from '@/components/ui/DateMultiPicker'; // ✅ 改用多選日期選擇器
 import { TimePicker } from '@/components/ui/TimePicker';
 import type { MarketCreatedPayload } from '@/types/db';
@@ -13,19 +15,103 @@ interface AddMarketFormProps {
   onSuccess?: () => void;
 }
 
+const DEFAULT_NO_EARLY_ENTRY = true;
+const DEFAULT_TABLE_FREE = false;
+const DEFAULT_CHAIR_FREE = false;
+const DEFAULT_UMBRELLA_FREE = false;
+
+function createDefaultMarketFormData(): MarketCreatedPayload {
+  return {
+    name: '',
+    location: '',
+    dates: [],
+    startDate: '',
+    endDate: '',
+    earlyEntryEnabled: false,
+    earlyEntryTime: '11:00',
+    checkInTime: '12:00',
+    operatingStartTime: '13:00',
+    operatingEndTime: '19:00',
+    registrationFee: 0,
+    boothCost: 0,
+    deposit: 0,
+    tableRental: 0,
+    chairRental: 0,
+    umbrellaRental: 0,
+    commissionRate: 0,
+    tableFree: false,
+    chairFree: false,
+    umbrellaFree: false,
+    notes: '',
+  };
+}
+
+interface AddMarketDraft {
+  formData: MarketCreatedPayload;
+  noEarlyEntry: boolean;
+  tableFree: boolean;
+  chairFree: boolean;
+  umbrellaFree: boolean;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isAddMarketDraft(value: unknown): value is AddMarketDraft {
+  if (!isRecord(value) || !isRecord(value.formData)) return false;
+
+  return (
+    typeof value.noEarlyEntry === 'boolean' &&
+    typeof value.tableFree === 'boolean' &&
+    typeof value.chairFree === 'boolean' &&
+    typeof value.umbrellaFree === 'boolean'
+  );
+}
+
+function hasMeaningfulMarketDraft(draft: AddMarketDraft): boolean {
+  const defaults = createDefaultMarketFormData();
+  const data = draft.formData;
+
+  const hasText = [data.name, data.location, data.notes].some(value => String(value || '').trim() !== '');
+  const hasDates = Array.isArray(data.dates) && data.dates.length > 0;
+  const hasCosts = [
+    data.registrationFee,
+    data.boothCost,
+    data.deposit,
+    data.tableRental,
+    data.chairRental,
+    data.umbrellaRental,
+    data.commissionRate,
+  ].some(value => Number(value || 0) > 0);
+  const hasTimeChanges =
+    data.earlyEntryTime !== defaults.earlyEntryTime ||
+    data.checkInTime !== defaults.checkInTime ||
+    data.operatingStartTime !== defaults.operatingStartTime ||
+    data.operatingEndTime !== defaults.operatingEndTime;
+  const hasBooleanChanges =
+    draft.noEarlyEntry !== DEFAULT_NO_EARLY_ENTRY ||
+    draft.tableFree !== DEFAULT_TABLE_FREE ||
+    draft.chairFree !== DEFAULT_CHAIR_FREE ||
+    draft.umbrellaFree !== DEFAULT_UMBRELLA_FREE;
+
+  return hasText || hasDates || hasCosts || hasTimeChanges || hasBooleanChanges;
+}
+
 /**
  * 新增市集表單組件
  * 
  * 參考 sa.html 的設計，包含完整的時間軸管理功能
  */
 export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps) {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [noEarlyEntry, setNoEarlyEntry] = useState(true); // 預設勾選「不提前進場」
+  const [noEarlyEntry, setNoEarlyEntry] = useState(DEFAULT_NO_EARLY_ENTRY); // 預設勾選「不提前進場」
   
   // 免費提供狀態
-  const [tableFree, setTableFree] = useState(false);
-  const [chairFree, setChairFree] = useState(false);
-  const [umbrellaFree, setUmbrellaFree] = useState(false);
+  const [tableFree, setTableFree] = useState(DEFAULT_TABLE_FREE);
+  const [chairFree, setChairFree] = useState(DEFAULT_CHAIR_FREE);
+  const [umbrellaFree, setUmbrellaFree] = useState(DEFAULT_UMBRELLA_FREE);
   
   const [formData, setFormData] = useState<MarketCreatedPayload>({
     name: '',
@@ -59,6 +145,95 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
   });
 
   // 處理表單欄位變更
+  const [draftReady, setDraftReady] = useState(false);
+  const [showDraftCloseConfirm, setShowDraftCloseConfirm] = useState(false);
+  const draftId = useMemo(() => (user?.id ? `add-market:${user.id}` : null), [user?.id]);
+  const currentDraft = useMemo<AddMarketDraft>(() => ({
+    formData,
+    noEarlyEntry,
+    tableFree,
+    chairFree,
+    umbrellaFree,
+  }), [chairFree, formData, noEarlyEntry, tableFree, umbrellaFree]);
+  const hasDirtyDraft = draftReady && hasMeaningfulMarketDraft(currentDraft);
+
+  useEffect(() => {
+    if (!isOpen || !draftId) {
+      setDraftReady(false);
+      return;
+    }
+
+    setDraftReady(false);
+    const savedDraft = loadFormData(draftId);
+
+    if (isAddMarketDraft(savedDraft?.data)) {
+      setFormData({ ...createDefaultMarketFormData(), ...savedDraft.data.formData });
+      setNoEarlyEntry(savedDraft.data.noEarlyEntry);
+      setTableFree(savedDraft.data.tableFree);
+      setChairFree(savedDraft.data.chairFree);
+      setUmbrellaFree(savedDraft.data.umbrellaFree);
+    }
+
+    setDraftReady(true);
+  }, [draftId, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !draftId || !draftReady) return;
+
+    if (!hasMeaningfulMarketDraft(currentDraft)) return;
+
+    const timeout = window.setTimeout(() => {
+      saveFormData(draftId, currentDraft);
+    }, 750);
+
+    return () => window.clearTimeout(timeout);
+  }, [currentDraft, draftId, draftReady, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !hasDirtyDraft) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasDirtyDraft, isOpen]);
+
+  const resetFormState = () => {
+    setFormData(createDefaultMarketFormData());
+    setNoEarlyEntry(DEFAULT_NO_EARLY_ENTRY);
+    setTableFree(DEFAULT_TABLE_FREE);
+    setChairFree(DEFAULT_CHAIR_FREE);
+    setUmbrellaFree(DEFAULT_UMBRELLA_FREE);
+  };
+
+  const handleRequestClose = () => {
+    if (isSubmitting) return;
+
+    if (hasDirtyDraft) {
+      setShowDraftCloseConfirm(true);
+      return;
+    }
+
+    onClose();
+  };
+
+  const handleKeepDraftAndClose = () => {
+    setShowDraftCloseConfirm(false);
+    onClose();
+  };
+
+  const handleDiscardDraftAndClose = () => {
+    if (draftId) {
+      clearFormData(draftId);
+    }
+    resetFormState();
+    setShowDraftCloseConfirm(false);
+    onClose();
+  };
+
   const handleChange = (field: keyof MarketCreatedPayload, value: string | number | boolean | string[]) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
@@ -149,6 +324,9 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
       
       // 調用 createMarket 觸發事件溯源
       await createMarket(payload);
+      if (draftId) {
+        clearFormData(draftId);
+      }
       
       // 重置表單
       setFormData({
@@ -200,7 +378,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
       {/* 背景遮罩 */}
       <div
         className="fixed inset-0 bg-black/50 z-40 transition-opacity"
-        onClick={onClose}
+        onClick={handleRequestClose}
       />
 
       {/* Drawer 內容 */}
@@ -210,7 +388,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
           <div className="bg-gradient-to-br from-primary to-secondary px-6 py-6 flex items-center justify-between flex-shrink-0">
             <h2 className="text-xl font-medium text-white">新增市集</h2>
             <button
-              onClick={onClose}
+              onClick={handleRequestClose}
               className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
             >
               <X className="w-5 h-5 text-white" />
@@ -598,7 +776,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleRequestClose}
                 className="flex-1 px-6 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium"
               >
                 取消
@@ -615,6 +793,39 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
           </div>
         </div>
       </div>
+      {showDraftCloseConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-foreground">保留尚未完成的市集草稿？</h3>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              你已經填寫了一些內容。可以先保留草稿，之後再回來繼續編輯；也可以捨棄草稿並關閉表單。
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleKeepDraftAndClose}
+                className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white hover:bg-primary/85 transition-colors"
+              >
+                保留草稿並關閉
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardDraftAndClose}
+                className="w-full rounded-2xl bg-soft-pink px-4 py-3 text-sm font-medium text-foreground hover:bg-soft-pink/80 transition-colors"
+              >
+                捨棄草稿
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDraftCloseConfirm(false)}
+                className="w-full rounded-2xl px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-background transition-colors"
+              >
+                繼續編輯
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
