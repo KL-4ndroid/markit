@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider without replacing existing RoleGuard or SyncProvider consumers. Runtime role refresh replacement remains high-sensitivity follow-up work.
+Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. SyncProvider and page-level consumers remain on their existing `useUserRole()` calls until later slices.
 
 ## Problem
 
@@ -250,11 +250,39 @@ Implemented files:
 
 ### Slice R2: RoleGuard Consumer Replacement
 
-Status: next high-sensitivity runtime slice. Not implemented.
+Status: implemented.
 
 Goal: let `RoleGuard` read the shared RoleProvider snapshot and use `deriveRoleRefreshState(...)` so background refresh can keep protected children mounted while privileged behavior remains fail-closed.
 
-Stop before implementation unless this slice is explicitly approved after R1 verification.
+Scope:
+
+- `RoleProvider` tracks whether the same authenticated user has previously completed a successful role resolution.
+- Account/user changes synchronously reset that previous-role marker.
+- `RoleGuard` reads `roleRefreshState.shouldShowBlockingFallback` from `useRoleContext()`.
+- `RoleGuard` no longer owns a separate `useUserRole()` instance.
+- `SyncProvider` and page-level consumers remain unchanged.
+
+Acceptance:
+
+- First unresolved role load still blocks protected children.
+- Background refresh after a successful same-user role resolution can keep protected children mounted.
+- Background refresh state remains fail-closed through `deriveRoleRefreshState(...)`.
+- SyncProvider remains on its existing fail-closed `useUserRole()` path until Slice R3.
+
+Implemented files:
+
+- `lib/role-context.tsx`
+- `components/auth/RoleGuard.tsx`
+- `tests/role-provider-r1.test.ts`
+- `tests/c2-28b-render-guard-static-audit.test.ts`
+
+### Slice R3: SyncProvider Consumer Replacement
+
+Status: not implemented.
+
+Goal: let `SyncProvider` consume shared role refresh state without allowing sync to run with stale owner permissions during background refresh.
+
+Stop before implementation unless this slice is explicitly approved after R2 verification.
 
 ### Slice 5: Role Refresh Implementation
 

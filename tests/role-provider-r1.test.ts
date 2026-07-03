@@ -21,14 +21,19 @@ const layoutSource = readProjectFile('app/layout.tsx');
 const roleGuardSource = readProjectFile('components/auth/RoleGuard.tsx');
 const syncContextSource = readProjectFile('lib/sync-context.tsx');
 
-console.log('\n=== RoleProvider R1 guardrails ===');
+console.log('\n=== RoleProvider R1/R2 guardrails ===');
 
-runTest('RoleProvider is a thin wrapper around existing useUserRole', () => {
+runTest('RoleProvider owns the shared role refresh state without direct data access', () => {
   assert.match(roleContextSource, /'use client'/);
   assert.match(roleContextSource, /import \{ useUserRole, type UserRole \}/);
+  assert.match(roleContextSource, /import \{ useAuth \}/);
+  assert.match(roleContextSource, /deriveRoleRefreshState/);
   assert.match(roleContextSource, /const roleState = useUserRole\(\)/);
-  assert.match(roleContextSource, /<RoleContext\.Provider value=\{roleState\}>/);
-  assert.doesNotMatch(roleContextSource, /supabase|staff_relationships|localStorage|sessionStorage|indexedDB|Dexie|db\./i);
+  assert.match(roleContextSource, /hasUsablePreviousRoleRef/);
+  assert.match(roleContextSource, /trackedUserIdRef\.current !== userId/);
+  assert.match(roleContextSource, /userRole: userId \? roleState\.userRole : null/);
+  assert.match(roleContextSource, /<RoleContext\.Provider value=\{contextValue\}>/);
+  assert.doesNotMatch(roleContextSource, /\.from\(|staff_relationships|localStorage|sessionStorage|indexedDB|Dexie|db\./i);
 });
 
 runTest('layout places RoleProvider between AuthProvider and SyncProvider', () => {
@@ -43,9 +48,10 @@ runTest('layout places RoleProvider between AuthProvider and SyncProvider', () =
   assert.ok(appChromeIndex > syncIndex, 'AppChrome must remain under SyncProvider');
 });
 
-runTest('R1 does not replace RoleGuard or SyncProvider consumers yet', () => {
-  assert.match(roleGuardSource, /useUserRole\(\)/);
-  assert.doesNotMatch(roleGuardSource, /useRoleContext\(\)/);
+runTest('R2 replaces RoleGuard only and keeps SyncProvider on existing hook', () => {
+  assert.match(roleGuardSource, /useRoleContext\(\)/);
+  assert.match(roleGuardSource, /roleRefreshState\.shouldShowBlockingFallback/);
+  assert.doesNotMatch(roleGuardSource, /useUserRole\(\)/);
   assert.match(syncContextSource, /useUserRole\(\)/);
   assert.doesNotMatch(syncContextSource, /useRoleContext\(\)/);
 });
@@ -65,7 +71,7 @@ function main(): void {
   }
 
   if (failed > 0) {
-    throw new Error(`${failed} RoleProvider R1 tests failed`);
+    throw new Error(`${failed} RoleProvider R1/R2 tests failed`);
   }
 }
 

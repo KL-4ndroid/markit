@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { RoleLoadingFallback } from './RoleLoadingFallback';
 
 interface RoleGuardProps {
@@ -11,9 +11,9 @@ interface RoleGuardProps {
 const PUBLIC_ROUTES = ['/privacy', '/terms', '/about', '/demo', '/join'];
 
 function ProtectedRoleGuard({ children }: RoleGuardProps) {
-  const { isLoading: isRoleLoading, roleError } = useUserRole();
+  const { roleRefreshState } = useRoleContext();
 
-  if (isRoleLoading || roleError) {
+  if (roleRefreshState.shouldShowBlockingFallback) {
     return <RoleLoadingFallback />;
   }
 

@@ -57,10 +57,11 @@ runTest('useUserRole exposes derived permissions and does not commit stale async
   assert.match(useUserRoleSource, /canViewSensitiveData:\s*permissions\.canViewSensitiveData/);
 });
 
-runTest('RoleGuard blocks protected routes while role is loading or errored', () => {
+runTest('RoleGuard blocks protected routes through shared role refresh state', () => {
   assert.match(roleGuardSource, /const PUBLIC_ROUTES = \[[^\]]*['"]\/demo['"]/);
-  assert.match(roleGuardSource, /const \{ isLoading: isRoleLoading, roleError \} = useUserRole\(\)/);
-  assert.match(roleGuardSource, /if \(isRoleLoading \|\| roleError\)[\s\S]*return <RoleLoadingFallback \/>/);
+  assert.match(roleGuardSource, /const \{ roleRefreshState \} = useRoleContext\(\)/);
+  assert.match(roleGuardSource, /if \(roleRefreshState\.shouldShowBlockingFallback\)[\s\S]*return <RoleLoadingFallback \/>/);
+  assert.doesNotMatch(roleGuardSource, /useUserRole\(\)/);
   assert.match(roleGuardSource, /return <ProtectedRoleGuard>\{children\}<\/ProtectedRoleGuard>/);
 });
 
