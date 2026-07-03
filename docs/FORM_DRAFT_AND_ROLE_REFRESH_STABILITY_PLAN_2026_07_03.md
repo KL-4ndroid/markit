@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. Slice R3 migrates SyncProvider to the shared role refresh state while keeping sync paused until the role snapshot is ready. Slice R4a migrates display/navigation role consumers. Slice R4b aligns initial-sync role readiness and removes an unused account-switcher role read. Page-level data-loading consumers, staff status monitor, and repair panels remain on their existing `useUserRole()` calls until later slices.
+Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. Slice R3 migrates SyncProvider to the shared role refresh state while keeping sync paused until the role snapshot is ready. Slice R4a migrates display/navigation role consumers. Slice R4b aligns initial-sync role readiness and removes an unused account-switcher role read. Slice R4c-1 migrates only the owner-only settlement report page. Core data-loading pages, staff status monitor, and repair panels remain on their existing `useUserRole()` calls until later slices.
 
 ## Problem
 
@@ -306,7 +306,7 @@ Implemented files:
 
 ### Slice R4: Page and Local Consumer Consolidation
 
-Status: active sliced execution. R4a and R4b are implemented; broader page, staff-status-monitor, and repair-tool consumers are not implemented.
+Status: active sliced execution. R4a, R4b, and R4c-1 are implemented; broader core data-loading pages, staff-status-monitor, and repair-tool consumers are not implemented.
 
 Goal: gradually replace page-level and local component `useUserRole()` calls with shared role context where it reduces duplicate role reads without weakening local fail-closed gates.
 
@@ -376,11 +376,88 @@ Remaining R4b boundary:
 
 ### Slice R4c: Page Data-Loading Consumers
 
-Status: not implemented.
+Status: active sliced execution. R4c-1 is implemented for the owner-only settlement report page only.
 
 Goal: evaluate page-level consumers that use role state to choose `owner_full` vs `staff_scoped` database initialization and cloud fallback behavior.
 
 Stop before implementation. These consumers are high-sensitivity because incorrect role state can load the wrong local projection or expose owner/staff data incorrectly.
+
+### Slice R4c-0: Page Consumer Inventory and Guardrails
+
+Status: implemented through static guardrails.
+
+Goal: prevent page-level role consumer migration from expanding into high-sensitivity data-loading pages without explicit review.
+
+Classification:
+
+- Lower-risk page consumer:
+  - `app/reports/settlement/page.tsx`: owner-only report preview gate, no DB profile switching, no staff scoped fallback.
+- High-sensitivity page consumers:
+  - `app/page.tsx`: ownerId filters dashboard market and stats queries.
+  - `app/markets/page.tsx`: chooses `owner_full` vs `staff_scoped` database profile and filters by ownerId.
+  - `app/products/page.tsx`: chooses database profile, filters by ownerId, gates product edit capability.
+  - `app/analytics/page.tsx`: filters multiple analytics query inputs by ownerId and controls report access.
+  - `app/settings/page.tsx`: staff leave-team RPC and destructive local/cloud data controls.
+  - `app/recovery/page.tsx`: owner-only repair tools.
+
+### Slice R4c-1: Settlement Report Page Consumer Replacement
+
+Status: implemented.
+
+Goal: reduce one page-level duplicate role read without touching database profile selection, staff scoped local projection, or repair tools.
+
+Scope:
+
+- `app/reports/settlement/page.tsx` reads `userRole` and `roleRefreshState` from `useRoleContext()`.
+- Report preview requires `roleRefreshState.stage === 'ready'`.
+- Owner capability derivation uses `roleRefreshState.permissions.isOwner` only when the role state is ready.
+- Existing `canImportExport` and `canViewOwnerFinance` capability checks remain unchanged.
+- Local report data reads remain blocked when `canPreview` is false.
+
+Acceptance:
+
+- Background role refresh cannot generate owner finance report data with stale owner permissions.
+- Staff and unresolved roles remain blocked from report preview.
+- High-sensitivity core pages remain on local `useUserRole()` until their own review.
+
+Implemented files:
+
+- `app/reports/settlement/page.tsx`
+- `tests/role-provider-r1.test.ts`
+- `docs/FORM_DRAFT_AND_ROLE_REFRESH_STABILITY_PLAN_2026_07_03.md`
+
+### Slice R4c-2: Core List Page Consumer Replacement
+
+Status: not implemented.
+
+Candidate scope:
+
+- `app/markets/page.tsx`
+- `app/products/page.tsx`
+
+Stop before implementation. This slice must first define exact semantics for `roleRefreshState.stage !== 'ready'`, because these pages choose `owner_full` vs `staff_scoped` database initialization.
+
+### Slice R4c-3: Dashboard and Analytics Consumer Replacement
+
+Status: not implemented.
+
+Candidate scope:
+
+- `app/page.tsx`
+- `app/analytics/page.tsx`
+
+Stop before implementation. These pages derive ownerId and aggregate financial/analytics data, so they need separate data-scope tests before migration.
+
+### Slice R4c-4: Settings and Recovery Page Consumer Replacement
+
+Status: not implemented.
+
+Candidate scope:
+
+- `app/settings/page.tsx`
+- `app/recovery/page.tsx`
+
+Stop before implementation. These pages include destructive local/cloud data controls, staff leave-team RPC, and owner-only repair tools.
 
 ### Slice R4d: Repair and Diagnostics Consumers
 

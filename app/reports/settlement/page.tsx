@@ -16,7 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { db } from '@/lib/db';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 import {
@@ -143,19 +143,20 @@ function gradeClasses(grade: string): string {
 
 export default function SettlementReportPreviewPage() {
   const { user } = useAuth();
-  const { userRole, isOwner, isLoading: isRoleLoading } = useUserRole();
+  const { userRole, roleRefreshState } = useRoleContext();
   const [kind, setKind] = useState<SettlementReportKind>('monthly');
   const defaultRange = useMemo(() => getDefaultMonthRange(), []);
   const [startDate, setStartDate] = useState(defaultRange.startDate);
   const [endDate, setEndDate] = useState(defaultRange.endDate);
   const [brandName, setBrandName] = useState(OWNER_BRAND_NAME_FALLBACK);
+  const isRoleReady = roleRefreshState.stage === 'ready';
 
   const capabilities = useMemo(() => deriveRoleCapabilities({
-    isOwner,
+    isOwner: isRoleReady && roleRefreshState.permissions.isOwner,
     staffRole: userRole.staffRole,
-  }), [isOwner, userRole.staffRole]);
+  }), [isRoleReady, roleRefreshState.permissions.isOwner, userRole.staffRole]);
   const canPreview =
-    !isRoleLoading &&
+    isRoleReady &&
     hasCapability(capabilities, 'canImportExport') &&
     hasCapability(capabilities, 'canViewOwnerFinance');
 
@@ -235,7 +236,7 @@ export default function SettlementReportPreviewPage() {
     };
   }, [canPreview, capabilities, kind, startDate, endDate, brandName, markets, dailyStats, products]);
 
-  if (isRoleLoading) {
+  if (!isRoleReady) {
     return (
       <div className="min-h-screen bg-background px-4 py-6">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">

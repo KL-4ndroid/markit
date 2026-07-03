@@ -28,6 +28,13 @@ const initialSyncDialogSource = readProjectFile('components/sync/InitialSyncDial
 const accountSwitcherSource = readProjectFile('components/account/AccountSwitcher.tsx');
 const databaseRecoveryPanelSource = readProjectFile('components/common/DatabaseRecoveryPanel.tsx');
 const staffStatusMonitorSource = readProjectFile('hooks/useStaffStatusMonitor.ts');
+const settlementReportPageSource = readProjectFile('app/reports/settlement/page.tsx');
+const homePageSource = readProjectFile('app/page.tsx');
+const marketsPageSource = readProjectFile('app/markets/page.tsx');
+const productsPageSource = readProjectFile('app/products/page.tsx');
+const analyticsPageSource = readProjectFile('app/analytics/page.tsx');
+const settingsPageSource = readProjectFile('app/settings/page.tsx');
+const recoveryPageSource = readProjectFile('app/recovery/page.tsx');
 
 console.log('\n=== RoleProvider R1/R2/R3/R4 guardrails ===');
 
@@ -92,6 +99,28 @@ runTest('R4b aligns initial sync with shared role readiness and keeps sensitive 
   assert.doesNotMatch(accountSwitcherSource, /getCurrentDatabaseInfo/);
   assert.match(staffStatusMonitorSource, /useUserRole\(\)/);
   assert.match(databaseRecoveryPanelSource, /useUserRole\(\)/);
+});
+
+runTest('R4c migrates settlement report only and leaves data-loading pages local', () => {
+  assert.match(settlementReportPageSource, /useRoleContext\(\)/);
+  assert.match(settlementReportPageSource, /const isRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
+  assert.match(settlementReportPageSource, /isOwner:\s*isRoleReady && roleRefreshState\.permissions\.isOwner/);
+  assert.match(settlementReportPageSource, /const canPreview =\s*isRoleReady &&/);
+  assert.match(settlementReportPageSource, /if \(!isRoleReady\)/);
+  assert.doesNotMatch(settlementReportPageSource, /useUserRole\(\)/);
+
+  for (const source of [
+    homePageSource,
+    marketsPageSource,
+    productsPageSource,
+    analyticsPageSource,
+    settingsPageSource,
+    recoveryPageSource,
+  ]) {
+    assert.match(source, /useUserRole\(\)/);
+  }
+  assert.match(marketsPageSource, /initializeDatabaseSafely\(\{\s*profile:\s*isStaff \? ['"]staff_scoped['"] : ['"]owner_full['"]/);
+  assert.match(productsPageSource, /initializeDatabaseSafely\(\{\s*profile:\s*isStaff \? ['"]staff_scoped['"] : ['"]owner_full['"]/);
 });
 
 function main(): void {

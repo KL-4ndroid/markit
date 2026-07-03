@@ -71,7 +71,10 @@ runTest('preview UI exposes owner PDF preview without Excel CSV or custom downlo
 });
 
 runTest('preview UI keeps PDF generation behind owner finance and export capabilities', () => {
-  assert.match(pageSource, /const canPreview =\s*!isRoleLoading &&[\s\S]*hasCapability\(capabilities, 'canImportExport'\)[\s\S]*hasCapability\(capabilities, 'canViewOwnerFinance'\)/);
+  assert.match(pageSource, /useRoleContext\(\)/);
+  assert.match(pageSource, /const isRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
+  assert.match(pageSource, /isOwner:\s*isRoleReady && roleRefreshState\.permissions\.isOwner/);
+  assert.match(pageSource, /const canPreview =\s*isRoleReady &&[\s\S]*hasCapability\(capabilities, 'canImportExport'\)[\s\S]*hasCapability\(capabilities, 'canViewOwnerFinance'\)/);
   assert.match(pageSource, /const pdfViewModel = report \? buildSettlementReportPdfViewModel\(\{ report \}\) : null/);
 });
 
