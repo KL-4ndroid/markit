@@ -24,14 +24,12 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { useUserRole } from '@/hooks/useUserRole';
 import {
   getAvailableAccounts,
   switchToOwnerMode,
   switchToStaffMode,
   deleteDatabase,
   parseDatabaseName,
-  getCurrentDatabaseInfo,
 } from '@/lib/db/multi-account';
 import { toast } from 'sonner';
 
@@ -51,7 +49,6 @@ interface AccountSwitcherProps {
 
 export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
   const { user } = useAuth();
-  const { userRole } = useUserRole();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

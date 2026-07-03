@@ -13,7 +13,7 @@ import { Cloud, Loader2, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { SyncStatus } from '@/hooks/useSync';
 import { useSyncContext } from '@/lib/sync-context';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { resolveRoleMode } from '@/lib/auth/role-mode';
 
 // 使用 sessionStorage 記錄是否已完成初始同步（會話級別，關閉瀏覽器後重置）
@@ -31,9 +31,10 @@ function setHasCompletedInitialSync(key: string, value: boolean): void {
 
 export function InitialSyncDialog() {
   const { user, isConfigured } = useAuth();
-  const { userRole, isLoading: isRoleLoading } = useUserRole();
+  const { userRole, roleRefreshState } = useRoleContext();
   const syncContext = useSyncContext(); // ✅ 使用全局同步狀態
   const { status, downloadProgress } = syncContext;
+  const isRoleReady = roleRefreshState.stage === 'ready';
   const roleMode = resolveRoleMode(userRole);
   const initialSyncKey = user ? `${INITIAL_SYNC_KEY}:${user.id}:${roleMode}` : INITIAL_SYNC_KEY;
 
@@ -43,7 +44,7 @@ export function InitialSyncDialog() {
 
   // 監聽用戶登入
   useEffect(() => {
-    if (!user || !isConfigured || isRoleLoading) {
+    if (!user || !isConfigured || !isRoleReady) {
       setIsOpen(false);
       setHasCompletedInitialSyncState(false);
       hasSeenSuccessRef.current = false;
@@ -58,7 +59,7 @@ export function InitialSyncDialog() {
       // 用戶剛登入且未完成初始同步，顯示對話框
       setIsOpen(true);
     }
-  }, [user, isConfigured, isRoleLoading, initialSyncKey]);
+  }, [user, isConfigured, isRoleReady, initialSyncKey]);
 
   // 監聽同步狀態
   useEffect(() => {

@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. Slice R3 migrates SyncProvider to the shared role refresh state while keeping sync paused until the role snapshot is ready. Slice R4a migrates display/navigation role consumers. Page-level data-loading consumers and repair panels remain on their existing `useUserRole()` calls until later slices.
+Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. Slice R3 migrates SyncProvider to the shared role refresh state while keeping sync paused until the role snapshot is ready. Slice R4a migrates display/navigation role consumers. Slice R4b aligns initial-sync role readiness and removes an unused account-switcher role read. Page-level data-loading consumers, staff status monitor, and repair panels remain on their existing `useUserRole()` calls until later slices.
 
 ## Problem
 
@@ -306,7 +306,7 @@ Implemented files:
 
 ### Slice R4: Page and Local Consumer Consolidation
 
-Status: active sliced execution. R4a is implemented; broader page and repair-tool consumers are not implemented.
+Status: active sliced execution. R4a and R4b are implemented; broader page, staff-status-monitor, and repair-tool consumers are not implemented.
 
 Goal: gradually replace page-level and local component `useUserRole()` calls with shared role context where it reduces duplicate role reads without weakening local fail-closed gates.
 
@@ -343,11 +343,36 @@ Implemented files:
 
 ### Slice R4b: Initial Sync and Account Mode Consumers
 
-Status: not implemented.
+Status: implemented for the low-risk portion only.
 
 Goal: evaluate whether `InitialSyncDialog`, account-switching surfaces, and role-mode helpers can safely consume shared role state without changing session keys, initial-sync completion behavior, or account-switch recovery behavior.
 
-Stop before implementation. This slice needs a separate risk review because it touches first-login sync UX and local account mode selection.
+Scope:
+
+- `InitialSyncDialog` reads `userRole` and `roleRefreshState` from `useRoleContext()`.
+- `InitialSyncDialog` only evaluates the initial-sync session key after `roleRefreshState.stage === 'ready'`.
+- `InitialSyncDialog` keeps the existing `resolveRoleMode(userRole)` session-key shape.
+- `AccountSwitcher` removes an unused `useUserRole()` read and an unused `getCurrentDatabaseInfo` import.
+- Account switching, local database switching/deletion, `sessionStorage` key shape, and `SyncStatus` completion behavior are unchanged.
+- `useStaffStatusMonitor` remains unchanged because it owns downgrade/revoke cleanup and IndexedDB/cache reset behavior.
+
+Acceptance:
+
+- Initial sync dialog readiness matches the shared role state used by `SyncProvider`.
+- Initial sync session key remains `hasCompletedInitialSync:${user.id}:${roleMode}`.
+- AccountSwitcher no longer creates a redundant role read.
+- Staff status monitor and repair panels remain on local `useUserRole()` guards.
+
+Implemented files:
+
+- `components/sync/InitialSyncDialog.tsx`
+- `components/account/AccountSwitcher.tsx`
+- `tests/role-provider-r1.test.ts`
+- `docs/FORM_DRAFT_AND_ROLE_REFRESH_STABILITY_PLAN_2026_07_03.md`
+
+Remaining R4b boundary:
+
+- Do not migrate `useStaffStatusMonitor` without a separate high-risk downgrade/revoke safety review.
 
 ### Slice R4c: Page Data-Loading Consumers
 

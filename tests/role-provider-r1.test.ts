@@ -25,9 +25,11 @@ const bottomNavigationSource = readProjectFile('components/BottomNavigation.tsx'
 const staffModeNoticeSource = readProjectFile('components/staff/StaffModeNotice.tsx');
 const roleStatusBannerSource = readProjectFile('components/auth/RoleStatusBanner.tsx');
 const initialSyncDialogSource = readProjectFile('components/sync/InitialSyncDialog.tsx');
+const accountSwitcherSource = readProjectFile('components/account/AccountSwitcher.tsx');
 const databaseRecoveryPanelSource = readProjectFile('components/common/DatabaseRecoveryPanel.tsx');
+const staffStatusMonitorSource = readProjectFile('hooks/useStaffStatusMonitor.ts');
 
-console.log('\n=== RoleProvider R1/R2/R3/R4a guardrails ===');
+console.log('\n=== RoleProvider R1/R2/R3/R4 guardrails ===');
 
 runTest('RoleProvider owns the shared role refresh state without direct data access', () => {
   assert.match(roleContextSource, /'use client'/);
@@ -76,7 +78,19 @@ runTest('R4a replaces display and navigation consumers only', () => {
   }
 
   assert.match(bottomNavigationSource, /roleRefreshState\.stage !== ['"]ready['"]/);
-  assert.match(initialSyncDialogSource, /useUserRole\(\)/);
+  assert.match(databaseRecoveryPanelSource, /useUserRole\(\)/);
+});
+
+runTest('R4b aligns initial sync with shared role readiness and keeps sensitive monitors local', () => {
+  assert.match(initialSyncDialogSource, /useRoleContext\(\)/);
+  assert.match(initialSyncDialogSource, /const isRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
+  assert.match(initialSyncDialogSource, /resolveRoleMode\(userRole\)/);
+  assert.match(initialSyncDialogSource, /if \(!user \|\| !isConfigured \|\| !isRoleReady\)/);
+  assert.doesNotMatch(initialSyncDialogSource, /useUserRole\(\)/);
+
+  assert.doesNotMatch(accountSwitcherSource, /useUserRole\(\)/);
+  assert.doesNotMatch(accountSwitcherSource, /getCurrentDatabaseInfo/);
+  assert.match(staffStatusMonitorSource, /useUserRole\(\)/);
   assert.match(databaseRecoveryPanelSource, /useUserRole\(\)/);
 });
 
@@ -95,7 +109,7 @@ function main(): void {
   }
 
   if (failed > 0) {
-    throw new Error(`${failed} RoleProvider R1/R2/R3/R4a tests failed`);
+    throw new Error(`${failed} RoleProvider R1/R2/R3/R4 tests failed`);
   }
 }
 
