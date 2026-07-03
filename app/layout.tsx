@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppChrome } from "@/components/AppChrome";
 import { AuthProvider } from "@/lib/supabase/auth-context";
+import { RoleProvider } from "@/lib/role-context";
 import { SyncProvider } from "@/lib/sync-context";
 import { NavigationProvider } from "@/lib/navigation-context";
 
@@ -53,11 +54,13 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
-          <SyncProvider>
-            <NavigationProvider>
-              <AppChrome>{children}</AppChrome>
-            </NavigationProvider>
-          </SyncProvider>
+          <RoleProvider>
+            <SyncProvider>
+              <NavigationProvider>
+                <AppChrome>{children}</AppChrome>
+              </NavigationProvider>
+            </SyncProvider>
+          </RoleProvider>
         </AuthProvider>
       </body>
     </html>

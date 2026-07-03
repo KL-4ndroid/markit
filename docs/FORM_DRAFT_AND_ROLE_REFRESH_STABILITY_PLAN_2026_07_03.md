@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. RoleProvider and runtime role refresh replacement remain high-sensitivity follow-up work.
+Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider without replacing existing RoleGuard or SyncProvider consumers. Runtime role refresh replacement remains high-sensitivity follow-up work.
 
 ## Problem
 
@@ -214,6 +214,47 @@ Implemented files:
 
 - `lib/permissions/role-refresh-state.ts`
 - `tests/role-refresh-state.test.ts`
+
+### Slice R1: RoleProvider Shell
+
+Status: implemented.
+
+Goal: establish a shared role context boundary without changing existing runtime consumers.
+
+Scope:
+
+- Add `RoleProvider` and `useRoleContext()` as a thin wrapper around existing `useUserRole()`.
+- Mount `RoleProvider` under `AuthProvider` and above `SyncProvider`.
+- Keep `RoleGuard`, `SyncProvider`, pages, navigation, and repair panels on their existing `useUserRole()` calls.
+- Add static tests proving this is only a provider shell and not a consumer replacement.
+
+Acceptance:
+
+- `RoleProvider` does not query Supabase directly.
+- `RoleProvider` does not read or write storage directly.
+- `RoleProvider` does not import sync, Dexie, Gate D, recovery, or pending operation code.
+- Layout order is `AuthProvider -> RoleProvider -> SyncProvider -> NavigationProvider -> AppChrome`.
+- `RoleGuard` and `SyncProvider` still use the existing hook until their own dedicated slices.
+
+Risk: low to medium.
+
+Reason:
+
+- The shell itself is low risk, but it introduces one additional provider-level call to the existing role hook until consumers are migrated. This is acceptable only as a short-lived transition slice.
+
+Implemented files:
+
+- `lib/role-context.tsx`
+- `tests/role-provider-r1.test.ts`
+- `app/layout.tsx`
+
+### Slice R2: RoleGuard Consumer Replacement
+
+Status: next high-sensitivity runtime slice. Not implemented.
+
+Goal: let `RoleGuard` read the shared RoleProvider snapshot and use `deriveRoleRefreshState(...)` so background refresh can keep protected children mounted while privileged behavior remains fail-closed.
+
+Stop before implementation unless this slice is explicitly approved after R1 verification.
 
 ### Slice 5: Role Refresh Implementation
 
