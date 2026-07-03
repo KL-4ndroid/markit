@@ -72,15 +72,16 @@ runTest('BottomNavigation treats unresolved role as staff-like for analytics acc
   assert.match(bottomNavigationSource, /const isDisabled = \(isStaff \|\| isRoleUnresolved\) && item\.id === ['"]analytics['"]/);
 });
 
-runTest('SyncProvider derives sync info level through fail-closed role snapshot', () => {
-  assert.match(syncContextSource, /import \{ deriveSafeInfoLevel \}/);
-  assert.match(
-    syncContextSource,
-    /const safeInfoLevel = deriveSafeInfoLevel\(\{\s*userRole,\s*isLoading:\s*isRoleLoading,\s*roleError,\s*\}\)/
-  );
-  assert.match(syncContextSource, /enabled:\s*!!user && isConfigured && !isRoleLoading/);
+runTest('SyncProvider uses shared role refresh state and pauses sync until ready', () => {
+  assert.match(syncContextSource, /import \{ useRoleContext \}/);
+  assert.match(syncContextSource, /const \{ roleRefreshState \} = useRoleContext\(\)/);
+  assert.match(syncContextSource, /const safeInfoLevel = roleRefreshState\.syncInfoLevel/);
+  assert.match(syncContextSource, /const isSyncRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
+  assert.match(syncContextSource, /enabled:\s*!!user && isConfigured && isSyncRoleReady/);
   assert.match(syncContextSource, /roleInfoLevel:\s*safeInfoLevel/);
   assert.match(syncContextSource, /const isDataSanitized = safeInfoLevel < 3/);
+  assert.doesNotMatch(syncContextSource, /useUserRole\(\)/);
+  assert.doesNotMatch(syncContextSource, /deriveSafeInfoLevel\(\{/);
 });
 
 runTest('market detail Supabase fallback is blocked for staff and unresolved staff status', () => {

@@ -10,8 +10,7 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useSync, SyncStatus } from '@/hooks/useSync';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { useUserRole } from '@/hooks/useUserRole';
-import { deriveSafeInfoLevel } from '@/lib/permissions/role-fail-closed';
+import { useRoleContext } from '@/lib/role-context';
 
 interface SyncContextType {
   status: SyncStatus;
@@ -30,7 +29,7 @@ const SyncContext = createContext<SyncContextType | null>(null);
 
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { user, isConfigured } = useAuth();
-  const { userRole, isLoading: isRoleLoading, roleError } = useUserRole();
+  const { roleRefreshState } = useRoleContext();
 
   // ✅ C2.28：fail-closed infoLevel
   // - 角色載入中 → 0（最嚴格，不可寫入敏感欄位）
@@ -38,18 +37,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   // - 角色未確認 → 0
   // - 已確認 owner → 3
   // - 已確認 staff → permissions.infoLevel ?? 2
-  const safeInfoLevel = deriveSafeInfoLevel({
-    userRole,
-    isLoading: isRoleLoading,
-    roleError,
-  });
+  const safeInfoLevel = roleRefreshState.syncInfoLevel;
+  const isSyncRoleReady = roleRefreshState.stage === 'ready';
   // 保留舊變數以維持向後相容
   const infoLevel = safeInfoLevel;
 
   // ✅ 只創建一個 useSync 實例，傳入 infoLevel
   // isRoleLoading 期間 useSync 仍 disabled（由 enabled 控制）
   const syncState = useSync({
-    enabled: !!user && isConfigured && !isRoleLoading,
+    enabled: !!user && isConfigured && isSyncRoleReady,
     roleInfoLevel: safeInfoLevel,
   });
 

@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. SyncProvider and page-level consumers remain on their existing `useUserRole()` calls until later slices.
+Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. Slice R3 migrates SyncProvider to the shared role refresh state while keeping sync paused until the role snapshot is ready. Page-level consumers remain on their existing `useUserRole()` calls until later slices.
 
 ## Problem
 
@@ -278,11 +278,39 @@ Implemented files:
 
 ### Slice R3: SyncProvider Consumer Replacement
 
-Status: not implemented.
+Status: implemented.
 
 Goal: let `SyncProvider` consume shared role refresh state without allowing sync to run with stale owner permissions during background refresh.
 
-Stop before implementation unless this slice is explicitly approved after R2 verification.
+Scope:
+
+- `SyncProvider` reads `roleRefreshState` from `useRoleContext()`.
+- `SyncProvider` no longer owns a separate `useUserRole()` instance.
+- Sync `roleInfoLevel` uses `roleRefreshState.syncInfoLevel`.
+- Sync runs only when `roleRefreshState.stage === 'ready'`.
+- Initial loading, background refresh, and blocked role states all keep sync at info level `0`.
+- `useSync()` internals, event upload/download logic, cloud routing, and pending operation behavior are unchanged.
+
+Acceptance:
+
+- Background role refresh does not run sync with stale owner permissions.
+- Initial role loading and role errors keep sync disabled.
+- Owner/staff info levels still come from the shared fail-closed role refresh model.
+- RoleGuard remains on the same shared role refresh state from Slice R2.
+
+Implemented files:
+
+- `lib/sync-context.tsx`
+- `tests/role-provider-r1.test.ts`
+- `tests/c2-28b-render-guard-static-audit.test.ts`
+
+### Slice R4: Page and Local Consumer Consolidation
+
+Status: not implemented.
+
+Goal: gradually replace page-level and local component `useUserRole()` calls with shared role context where it reduces duplicate role reads without weakening local fail-closed gates.
+
+Stop before implementation unless this slice is explicitly approved after R3 verification.
 
 ### Slice 5: Role Refresh Implementation
 

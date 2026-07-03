@@ -21,7 +21,7 @@ const layoutSource = readProjectFile('app/layout.tsx');
 const roleGuardSource = readProjectFile('components/auth/RoleGuard.tsx');
 const syncContextSource = readProjectFile('lib/sync-context.tsx');
 
-console.log('\n=== RoleProvider R1/R2 guardrails ===');
+console.log('\n=== RoleProvider R1/R2/R3 guardrails ===');
 
 runTest('RoleProvider owns the shared role refresh state without direct data access', () => {
   assert.match(roleContextSource, /'use client'/);
@@ -48,12 +48,14 @@ runTest('layout places RoleProvider between AuthProvider and SyncProvider', () =
   assert.ok(appChromeIndex > syncIndex, 'AppChrome must remain under SyncProvider');
 });
 
-runTest('R2 replaces RoleGuard only and keeps SyncProvider on existing hook', () => {
+runTest('R2 and R3 replace RoleGuard and SyncProvider consumers', () => {
   assert.match(roleGuardSource, /useRoleContext\(\)/);
   assert.match(roleGuardSource, /roleRefreshState\.shouldShowBlockingFallback/);
   assert.doesNotMatch(roleGuardSource, /useUserRole\(\)/);
-  assert.match(syncContextSource, /useUserRole\(\)/);
-  assert.doesNotMatch(syncContextSource, /useRoleContext\(\)/);
+  assert.match(syncContextSource, /useRoleContext\(\)/);
+  assert.match(syncContextSource, /roleRefreshState\.syncInfoLevel/);
+  assert.match(syncContextSource, /roleRefreshState\.stage === ['"]ready['"]/);
+  assert.doesNotMatch(syncContextSource, /useUserRole\(\)/);
 });
 
 function main(): void {
@@ -71,7 +73,7 @@ function main(): void {
   }
 
   if (failed > 0) {
-    throw new Error(`${failed} RoleProvider R1/R2 tests failed`);
+    throw new Error(`${failed} RoleProvider R1/R2/R3 tests failed`);
   }
 }
 
