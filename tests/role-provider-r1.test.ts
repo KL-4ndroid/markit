@@ -20,8 +20,14 @@ const roleContextSource = readProjectFile('lib/role-context.tsx');
 const layoutSource = readProjectFile('app/layout.tsx');
 const roleGuardSource = readProjectFile('components/auth/RoleGuard.tsx');
 const syncContextSource = readProjectFile('lib/sync-context.tsx');
+const topNavigationSource = readProjectFile('components/TopNavigation.tsx');
+const bottomNavigationSource = readProjectFile('components/BottomNavigation.tsx');
+const staffModeNoticeSource = readProjectFile('components/staff/StaffModeNotice.tsx');
+const roleStatusBannerSource = readProjectFile('components/auth/RoleStatusBanner.tsx');
+const initialSyncDialogSource = readProjectFile('components/sync/InitialSyncDialog.tsx');
+const databaseRecoveryPanelSource = readProjectFile('components/common/DatabaseRecoveryPanel.tsx');
 
-console.log('\n=== RoleProvider R1/R2/R3 guardrails ===');
+console.log('\n=== RoleProvider R1/R2/R3/R4a guardrails ===');
 
 runTest('RoleProvider owns the shared role refresh state without direct data access', () => {
   assert.match(roleContextSource, /'use client'/);
@@ -58,6 +64,22 @@ runTest('R2 and R3 replace RoleGuard and SyncProvider consumers', () => {
   assert.doesNotMatch(syncContextSource, /useUserRole\(\)/);
 });
 
+runTest('R4a replaces display and navigation consumers only', () => {
+  for (const source of [
+    topNavigationSource,
+    bottomNavigationSource,
+    staffModeNoticeSource,
+    roleStatusBannerSource,
+  ]) {
+    assert.match(source, /useRoleContext\(\)/);
+    assert.doesNotMatch(source, /useUserRole\(\)/);
+  }
+
+  assert.match(bottomNavigationSource, /roleRefreshState\.stage !== ['"]ready['"]/);
+  assert.match(initialSyncDialogSource, /useUserRole\(\)/);
+  assert.match(databaseRecoveryPanelSource, /useUserRole\(\)/);
+});
+
 function main(): void {
   let failed = 0;
 
@@ -73,7 +95,7 @@ function main(): void {
   }
 
   if (failed > 0) {
-    throw new Error(`${failed} RoleProvider R1/R2/R3 tests failed`);
+    throw new Error(`${failed} RoleProvider R1/R2/R3/R4a tests failed`);
   }
 }
 

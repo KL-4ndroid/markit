@@ -1,7 +1,7 @@
 'use client';
 
 import { Shield } from 'lucide-react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 
 interface StaffModeNoticeProps {
   className?: string;
@@ -9,7 +9,7 @@ interface StaffModeNoticeProps {
 }
 
 export function StaffModeNotice({ className = '', compact = false }: StaffModeNoticeProps) {
-  const { userRole, isStaff } = useUserRole();
+  const { userRole, isStaff } = useRoleContext();
 
   if (!isStaff) return null;
 

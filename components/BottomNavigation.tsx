@@ -5,7 +5,7 @@ import { BarChart3, Calendar, Home, Package, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { useNavigation } from '@/lib/navigation-context';
 import { navigationStore } from '@/lib/navigation-store';
 
@@ -26,9 +26,9 @@ function ProtectedBottomNavigation() {
   const router = useRouter();
   const [isNavVisible, setIsNavVisible] = useState(true);
   const { setNavigation } = useNavigation();
-  const { isStaff, isLoading: isRoleLoading, roleError } = useUserRole();
+  const { isStaff, roleRefreshState } = useRoleContext();
 
-  const isRoleUnresolved = isRoleLoading || roleError != null;
+  const isRoleUnresolved = roleRefreshState.stage !== 'ready';
 
 	useEffect(() => {
 	  const unsubscribe = navigationStore.subscribe((visible) => {

@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { getTheme } from '@/lib/theme-config';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { confirmDiscardLocalChangesForSignOut } from '@/lib/auth/signout-confirmation';
@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation';
 
 export function TopNavigation() {
   const { user, signOut, isConfigured } = useAuth();
-  const { userRole } = useUserRole();
+  const { userRole } = useRoleContext();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const router = useRouter();
 

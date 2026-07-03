@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. Slice R3 migrates SyncProvider to the shared role refresh state while keeping sync paused until the role snapshot is ready. Page-level consumers remain on their existing `useUserRole()` calls until later slices.
+Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. Slice R3 migrates SyncProvider to the shared role refresh state while keeping sync paused until the role snapshot is ready. Slice R4a migrates display/navigation role consumers. Page-level data-loading consumers and repair panels remain on their existing `useUserRole()` calls until later slices.
 
 ## Problem
 
@@ -306,11 +306,64 @@ Implemented files:
 
 ### Slice R4: Page and Local Consumer Consolidation
 
-Status: not implemented.
+Status: active sliced execution. R4a is implemented; broader page and repair-tool consumers are not implemented.
 
 Goal: gradually replace page-level and local component `useUserRole()` calls with shared role context where it reduces duplicate role reads without weakening local fail-closed gates.
 
 Stop before implementation unless this slice is explicitly approved after R3 verification.
+
+### Slice R4a: Display and Navigation Consumer Replacement
+
+Status: implemented.
+
+Goal: reduce duplicate role reads in display-only and navigation-only components without changing page data loading, sync, repair tools, or cloud write behavior.
+
+Scope:
+
+- `TopNavigation` reads `userRole` from `useRoleContext()`.
+- `StaffModeNotice` reads staff display state from `useRoleContext()`.
+- `RoleStatusBanner` reads staff/loading display state from `useRoleContext()`.
+- `BottomNavigation` reads shared role state and treats any non-ready role stage as unresolved for analytics access.
+- Page components, `InitialSyncDialog`, market/product cards, recovery panels, diagnostics panels, and repair panels remain unchanged.
+
+Acceptance:
+
+- Display/navigation components no longer create independent `useUserRole()` reads.
+- Analytics navigation remains disabled for staff and unresolved/background-refresh role states.
+- High-sensitivity data-loading and repair components are not migrated in this slice.
+
+Implemented files:
+
+- `components/TopNavigation.tsx`
+- `components/BottomNavigation.tsx`
+- `components/staff/StaffModeNotice.tsx`
+- `components/auth/RoleStatusBanner.tsx`
+- `tests/role-provider-r1.test.ts`
+- `tests/c2-28b-render-guard-static-audit.test.ts`
+
+### Slice R4b: Initial Sync and Account Mode Consumers
+
+Status: not implemented.
+
+Goal: evaluate whether `InitialSyncDialog`, account-switching surfaces, and role-mode helpers can safely consume shared role state without changing session keys, initial-sync completion behavior, or account-switch recovery behavior.
+
+Stop before implementation. This slice needs a separate risk review because it touches first-login sync UX and local account mode selection.
+
+### Slice R4c: Page Data-Loading Consumers
+
+Status: not implemented.
+
+Goal: evaluate page-level consumers that use role state to choose `owner_full` vs `staff_scoped` database initialization and cloud fallback behavior.
+
+Stop before implementation. These consumers are high-sensitivity because incorrect role state can load the wrong local projection or expose owner/staff data incorrectly.
+
+### Slice R4d: Repair and Diagnostics Consumers
+
+Status: not implemented.
+
+Goal: evaluate recovery, diagnostics, and repair panels only after page-level role consolidation is stable.
+
+Stop before implementation. These remain owner-only or local-repair sensitive and should keep redundant local guards until explicitly reviewed.
 
 ### Slice 5: Role Refresh Implementation
 

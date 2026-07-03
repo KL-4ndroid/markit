@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import {
   ROLE_STATUS_EVENT,
   type RoleStatusEventDetail,
@@ -15,7 +15,7 @@ function getIcon(kind: RoleStatusEventDetail['kind']) {
 }
 
 export function RoleStatusBanner() {
-  const { isStaff, isLoading } = useUserRole();
+  const { isStaff, isLoading } = useRoleContext();
   const [detail, setDetail] = useState<RoleStatusEventDetail | null>(null);
 
   useEffect(() => {

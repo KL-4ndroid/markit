@@ -66,10 +66,11 @@ runTest('RoleGuard blocks protected routes through shared role refresh state', (
 });
 
 runTest('BottomNavigation treats unresolved role as staff-like for analytics access', () => {
-  assert.match(bottomNavigationSource, /const \{ isStaff, isLoading: isRoleLoading, roleError \} = useUserRole\(\)/);
-  assert.match(bottomNavigationSource, /const isRoleUnresolved = isRoleLoading \|\| roleError != null/);
+  assert.match(bottomNavigationSource, /const \{ isStaff, roleRefreshState \} = useRoleContext\(\)/);
+  assert.match(bottomNavigationSource, /const isRoleUnresolved = roleRefreshState\.stage !== ['"]ready['"]/);
   assert.match(bottomNavigationSource, /if \(\(isStaff \|\| isRoleUnresolved\) && item\.id === ['"]analytics['"]\)/);
   assert.match(bottomNavigationSource, /const isDisabled = \(isStaff \|\| isRoleUnresolved\) && item\.id === ['"]analytics['"]/);
+  assert.doesNotMatch(bottomNavigationSource, /useUserRole\(\)/);
 });
 
 runTest('SyncProvider uses shared role refresh state and pauses sync until ready', () => {
