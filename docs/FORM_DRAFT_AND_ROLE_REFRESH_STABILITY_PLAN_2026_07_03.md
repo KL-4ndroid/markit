@@ -2,7 +2,7 @@
 
 Date: 2026-07-03
 
-Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. Slice R3 migrates SyncProvider to the shared role refresh state while keeping sync paused until the role snapshot is ready. Slice R4a migrates display/navigation role consumers. Slice R4b aligns initial-sync role readiness and removes an unused account-switcher role read. Slice R4c-1 migrates only the owner-only settlement report page. Core data-loading pages, staff status monitor, and repair panels remain on their existing `useUserRole()` calls until later slices.
+Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. Slice R3 migrates SyncProvider to the shared role refresh state while keeping sync paused until the role snapshot is ready. Slice R4a migrates display/navigation role consumers. Slice R4b aligns initial-sync role readiness and removes an unused account-switcher role read. Slice R4c-1 migrates only the owner-only settlement report page. Slice R4c-2 migrates the core markets/products list pages with fail-closed role readiness and owner-scope guards. Dashboard/analytics/settings/recovery pages, staff status monitor, and repair panels remain on their existing `useUserRole()` calls until later slices.
 
 ## Problem
 
@@ -306,7 +306,7 @@ Implemented files:
 
 ### Slice R4: Page and Local Consumer Consolidation
 
-Status: active sliced execution. R4a, R4b, and R4c-1 are implemented; broader core data-loading pages, staff-status-monitor, and repair-tool consumers are not implemented.
+Status: active sliced execution. R4a, R4b, R4c-1, and R4c-2 are implemented; dashboard/analytics, settings/recovery, staff-status-monitor, and repair-tool consumers are not implemented.
 
 Goal: gradually replace page-level and local component `useUserRole()` calls with shared role context where it reduces duplicate role reads without weakening local fail-closed gates.
 
@@ -376,7 +376,7 @@ Remaining R4b boundary:
 
 ### Slice R4c: Page Data-Loading Consumers
 
-Status: active sliced execution. R4c-1 is implemented for the owner-only settlement report page only.
+Status: active sliced execution. R4c-1 is implemented for the owner-only settlement report page. R4c-2 is implemented for the core markets/products list pages.
 
 Goal: evaluate page-level consumers that use role state to choose `owner_full` vs `staff_scoped` database initialization and cloud fallback behavior.
 
@@ -428,14 +428,28 @@ Implemented files:
 
 ### Slice R4c-2: Core List Page Consumer Replacement
 
-Status: not implemented.
+Status: implemented.
 
-Candidate scope:
+Scope:
 
 - `app/markets/page.tsx`
 - `app/products/page.tsx`
 
-Stop before implementation. This slice must first define exact semantics for `roleRefreshState.stage !== 'ready'`, because these pages choose `owner_full` vs `staff_scoped` database initialization.
+Implemented semantics:
+
+- During `roleRefreshState.stage !== 'ready'`, both pages show the existing blocking loading state instead of preserving the previous list view.
+- During non-ready role state, both pages pass a sentinel owner id to `useMarkets(...)` / `useProducts(...)` so an unresolved owner id cannot fall through into an unscoped local-data read.
+- `initializeDatabaseSafely({ profile: ... })` runs only after the role is ready and the effective owner id is known.
+- Staff mode uses `staff_scoped`; owner mode uses `owner_full`, but only after the ready-state guard has passed.
+- Product edit capability remains fail-closed and requires `roleRefreshState.permissions.isOwner` or the relevant staff capability while the role is ready.
+- Add/edit handlers return early while scoped data is not loadable.
+
+Implemented files:
+
+- `app/markets/page.tsx`
+- `app/products/page.tsx`
+- `tests/role-provider-r1.test.ts`
+- `docs/FORM_DRAFT_AND_ROLE_REFRESH_STABILITY_PLAN_2026_07_03.md`
 
 ### Slice R4c-3: Dashboard and Analytics Consumer Replacement
 

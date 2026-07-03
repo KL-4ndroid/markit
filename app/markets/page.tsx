@@ -9,7 +9,7 @@ import { MarketCard } from '@/components/markets/MarketCard';
 import { AddMarketForm } from '@/components/markets/AddMarketForm';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { getGradientClass, getShadowClass, getPrimaryBgClass } from '@/lib/theme-config';
@@ -19,6 +19,7 @@ import MarketsLoading from './loading';
 type TabType = 'all' | 'pending' | 'completed' | 'cancelled';
 
 const SORT_ASCENDING_TABS: TabType[] = ['all', 'pending'];
+const ROLE_NOT_READY_OWNER_ID = '__role_not_ready__';
 
 function getTodayString() {
   const now = new Date();
@@ -67,15 +68,23 @@ export default function MarketsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
-  const { userRole, isStaff, isLoading: isRoleLoading, roleError } = useUserRole(); // ✅ 員工權限檢查
+  const { userRole, roleRefreshState } = useRoleContext(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 獲取當前用戶
+  const isRoleReady = roleRefreshState.stage === 'ready';
+  const isStaffMode = isRoleReady ? userRole.isStaff : true;
+  const currentOwnerId = isRoleReady ? (isStaffMode ? userRole.ownerId : user?.id) : undefined;
+  const scopedOwnerId = currentOwnerId ?? ROLE_NOT_READY_OWNER_ID;
+  const canLoadScopedData = isRoleReady && Boolean(currentOwnerId);
 
   // 初始化資料庫（使用安全初始化）
   useEffect(() => {
-    if (isRoleLoading) return;
+    if (!isRoleReady || !currentOwnerId) {
+      setDbStatus(null);
+      return;
+    }
 
     setDbStatus(null);
-    initializeDatabaseSafely({ profile: isStaff ? 'staff_scoped' : 'owner_full' })
+    initializeDatabaseSafely({ profile: isStaffMode ? 'staff_scoped' : 'owner_full' })
       .then((result) => setDbStatus(result))
       .catch((error) => {
         console.error('資料庫初始化失敗：', error);
@@ -85,15 +94,13 @@ export default function MarketsPage() {
           recoverable: true,
         });
       });
-  }, [isRoleLoading, isStaff]);
+  }, [currentOwnerId, isRoleReady, isStaffMode]);
 
   // ✅ 根據用戶身份過濾市集（權限控制）
-  const currentOwnerId = isStaff ? userRole.ownerId : user?.id;
-  
   const allMarkets = useMarkets({ 
     orderBy: 'startDate', 
     order: 'desc',
-    ownerId: currentOwnerId,  // ✅ 根據擁有者 ID 過濾
+    ownerId: scopedOwnerId,  // ✅ 根據擁有者 ID 過濾；role 未 ready 時 fail-closed
   });
 
   // 根據 Tab 篩選市集
@@ -130,9 +137,9 @@ export default function MarketsPage() {
   const batchStats = useMarketStatsBatch(allMarkets);
 
   // ✅ 角色守衛（RoleGuard）已由 layout 級別統一處理（C2.28B）
-  //   - 這裡不需要再寫 if (isRoleLoading || roleError) return <RoleLoadingFallback />
+  //   - 這裡不需要再寫 if (role is not ready) return <RoleLoadingFallback />
   //   - 到這層時角色必定已載入
-  //   - fail-closed 仍由 useUserRole 的 deriveRolePermissions 提供雙層保護
+  //   - fail-closed remains covered by shared role context permissions
 
   // 處理新增成功
   const handleAddSuccess = () => {
@@ -144,6 +151,7 @@ export default function MarketsPage() {
 
   // 處理打開表單
   const handleOpenForm = () => {
+    if (!canLoadScopedData) return;
     if (dbStatus?.ok === false) return;
     setIsFormOpen(true);
     hideNavigation(); // 隱藏導航列
@@ -174,7 +182,7 @@ export default function MarketsPage() {
   ];
 
   // 初始化中，顯示骨架屏
-  if (dbStatus === null) {
+  if (!canLoadScopedData || dbStatus === null) {
     return <MarketsLoading />;
   }
 
@@ -228,15 +236,15 @@ export default function MarketsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header - ✅ 員工模式使用紫色漸變 */}
-      <div className={`${getGradientClass(isStaff)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
+      <div className={`${getGradientClass(isStaffMode)} pt-12 pb-8 px-6 rounded-b-[2rem]`}>
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-medium text-white opacity-90 flex items-center gap-2">
               <Store className="w-6 h-6" />
-              {isStaff ? '市集列表' : '我的市集'}
+              {isStaffMode ? '市集列表' : '我的市集'}
             </h1>
             {/* 新增按鈕 - ✅ 員工模式下隱藏 */}
-            {!isStaff && (
+            {!isStaffMode && (
               <button
                 onClick={handleOpenForm}
                 className="p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm"
@@ -247,7 +255,7 @@ export default function MarketsPage() {
             )}
           </div>
           <p className="text-white/80 text-sm">
-            {isStaff ? '' : '管理您的市集場次'}
+            {isStaffMode ? '' : '管理您的市集場次'}
           </p>
         </div>
       </div>
@@ -257,7 +265,7 @@ export default function MarketsPage() {
         <StaffModeNotice className="mb-4" compact />
 
         {/* Tabs - ✅ 員工模式使用紫色主題 */}
-        <div className={`bg-white rounded-[1.5rem] p-2 shadow-lg ${getShadowClass(isStaff)} mb-6`}>
+        <div className={`bg-white rounded-[1.5rem] p-2 shadow-lg ${getShadowClass(isStaffMode)} mb-6`}>
           <div className="grid grid-cols-4 gap-1">
             {tabs.map((tab) => (
               <button
@@ -265,7 +273,7 @@ export default function MarketsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-2 py-2 rounded-xl text-xs font-medium transition-all ${
                   activeTab === tab.id
-                    ? `${getPrimaryBgClass(isStaff)} text-white shadow-md`
+                    ? `${getPrimaryBgClass(isStaffMode)} text-white shadow-md`
                     : 'text-muted-foreground hover:bg-soft-pink'
                 }`}
               >
@@ -289,20 +297,20 @@ export default function MarketsPage() {
           </div>
         ) : (
           /* 空狀態 - ✅ 員工模式使用紫色主題 */
-          <div className={`bg-white rounded-[1.5rem] p-12 shadow-lg ${getShadowClass(isStaff)} text-center`}>
-            <Calendar className={`w-16 h-16 mx-auto mb-4 opacity-50 ${isStaff ? 'text-primary' : 'text-primary'}`} />
+          <div className={`bg-white rounded-[1.5rem] p-12 shadow-lg ${getShadowClass(isStaffMode)} text-center`}>
+            <Calendar className={`w-16 h-16 mx-auto mb-4 opacity-50 ${isStaffMode ? 'text-primary' : 'text-primary'}`} />
             <h2 className="text-lg font-medium text-foreground mb-2">
-              {activeTab === 'all' ? (isStaff ? '目前沒有市集' : '尚未新增任何市集') : `沒有${tabs.find(t => t.id === activeTab)?.label}的市集`}
+              {activeTab === 'all' ? (isStaffMode ? '目前沒有市集' : '尚未新增任何市集') : `沒有${tabs.find(t => t.id === activeTab)?.label}的市集`}
             </h2>
             <p className="text-muted-foreground text-sm mb-6">
               {activeTab === 'all' 
-                ? (isStaff ? '老闆尚未新增任何市集' : '點擊右上角的 + 按鈕開始新增您的第一個市集 ✨')
+                ? (isStaffMode ? '老闆尚未新增任何市集' : '點擊右上角的 + 按鈕開始新增您的第一個市集 ✨')
                 : '切換到其他分類查看更多市集'}
             </p>
-            {activeTab === 'all' && !isStaff && (
+            {activeTab === 'all' && !isStaffMode && (
               <button
                 onClick={handleOpenForm}
-                className={`${getPrimaryBgClass(isStaff)} text-white px-6 py-3 rounded-2xl hover:opacity-90 transition-opacity inline-flex items-center gap-2`}
+                className={`${getPrimaryBgClass(isStaffMode)} text-white px-6 py-3 rounded-2xl hover:opacity-90 transition-opacity inline-flex items-center gap-2`}
               >
                 <Plus className="w-5 h-5" />
                 新增市集

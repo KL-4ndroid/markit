@@ -101,7 +101,7 @@ runTest('R4b aligns initial sync with shared role readiness and keeps sensitive 
   assert.match(databaseRecoveryPanelSource, /useUserRole\(\)/);
 });
 
-runTest('R4c migrates settlement report only and leaves data-loading pages local', () => {
+runTest('R4c migrates settlement report and list pages with fail-closed data scope', () => {
   assert.match(settlementReportPageSource, /useRoleContext\(\)/);
   assert.match(settlementReportPageSource, /const isRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
   assert.match(settlementReportPageSource, /isOwner:\s*isRoleReady && roleRefreshState\.permissions\.isOwner/);
@@ -109,18 +109,32 @@ runTest('R4c migrates settlement report only and leaves data-loading pages local
   assert.match(settlementReportPageSource, /if \(!isRoleReady\)/);
   assert.doesNotMatch(settlementReportPageSource, /useUserRole\(\)/);
 
+  for (const source of [marketsPageSource, productsPageSource]) {
+    assert.match(source, /useRoleContext\(\)/);
+    assert.match(source, /const isRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
+    assert.match(source, /const ROLE_NOT_READY_OWNER_ID = ['"]__role_not_ready__['"]/);
+    assert.match(source, /ownerId:\s*scopedOwnerId/);
+    assert.match(source, /if \(!canLoadScopedData \|\| dbStatus === null\)/);
+    assert.doesNotMatch(source, /useUserRole\(\)/);
+  }
+
+  assert.match(marketsPageSource, /const currentOwnerId = isRoleReady \? \(isStaffMode \? userRole\.ownerId : user\?\.id\) : undefined/);
+  assert.match(marketsPageSource, /if \(!isRoleReady \|\| !currentOwnerId\)/);
+  assert.match(marketsPageSource, /initializeDatabaseSafely\(\{\s*profile:\s*isStaffMode \? ['"]staff_scoped['"] : ['"]owner_full['"]/);
+
+  assert.match(productsPageSource, /const effectiveOwnerId = isRoleReady \? \(isStaffMode \? userRole\.ownerId : user\?\.id\) : undefined/);
+  assert.match(productsPageSource, /if \(!isRoleReady \|\| !effectiveOwnerId\)/);
+  assert.match(productsPageSource, /isOwner:\s*isRoleReady && roleRefreshState\.permissions\.isOwner/);
+  assert.match(productsPageSource, /initializeDatabaseSafely\(\{\s*profile:\s*isStaffMode \? ['"]staff_scoped['"] : ['"]owner_full['"]/);
+
   for (const source of [
     homePageSource,
-    marketsPageSource,
-    productsPageSource,
     analyticsPageSource,
     settingsPageSource,
     recoveryPageSource,
   ]) {
     assert.match(source, /useUserRole\(\)/);
   }
-  assert.match(marketsPageSource, /initializeDatabaseSafely\(\{\s*profile:\s*isStaff \? ['"]staff_scoped['"] : ['"]owner_full['"]/);
-  assert.match(productsPageSource, /initializeDatabaseSafely\(\{\s*profile:\s*isStaff \? ['"]staff_scoped['"] : ['"]owner_full['"]/);
 });
 
 function main(): void {
