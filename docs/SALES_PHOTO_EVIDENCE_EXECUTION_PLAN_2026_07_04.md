@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 5B boundary implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, and post-sale orchestration boundary are implemented. Runtime Supabase evidence row creation, photo capture, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 5C-1 deferred creation planner implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, and deferred post-sync creation planner are implemented. Runtime Supabase evidence row creation, photo capture, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -722,11 +722,21 @@ Slice 5B Status:
 - Guarded by `tests/sales-photo-evidence-post-sale.test.ts`.
 - This slice is not wired into existing sale UI entry points and does not import Supabase, R2, camera capture, or signed URL behavior.
 
-Next Slice 5C Boundary:
+Slice 5C-1 Status:
+
+- Added `lib/sales/photo-evidence-deferred.ts` deferred creation planner.
+- The planner only returns `ready_to_create` when the source event is a `deal_closed` event and `sync_status === 'synced'`.
+- `local_only`, `pending`, `error`, `conflict`, and unknown sync states return `wait_for_event_sync`.
+- Missing event ids, non-sale events, and invalid UUID/date inputs block fail-closed instead of creating evidence.
+- Guarded by `tests/sales-photo-evidence-deferred.test.ts`.
+- This slice does not insert into Supabase, does not drain a queue, does not run in a sync worker, does not show capture UI, does not start camera capture, and does not upload to R2.
+
+Next Slice 5C-2 Boundary:
 
 - Decide when runtime may safely insert `sale_photo_evidence`.
 - Direct immediate Supabase insert after local `recordDeal()` is risky because the cloud `events` row may not exist yet while `sale_photo_evidence.sale_id` references `public.events(id)`.
 - Recommended next decision: defer cloud evidence row creation until after the corresponding `deal_closed` event is confirmed synced, or introduce a local pending evidence queue that drains after event sync.
+- Recommended next low-risk slice: design the local pending evidence queue and post-sync drain model first, then add model tests before connecting runtime.
 - Sale persistence must remain the first committed operation; evidence creation failure must not roll back or block the sale.
 
 ### Slice 6: Client Capture and Compression
