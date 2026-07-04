@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import {
   buildSalesPhotoEvidenceObjectKey,
   canTransitionSalesPhotoEvidenceStatus,
+  createSalesPhotoEvidenceRequirementDecision,
+  findActiveSalesPhotoEvidenceForSale,
   getAllowedSalesPhotoEvidenceTransitions,
   getSalesPhotoEvidenceExpiresAt,
   isSalesPhotoEvidenceStatus,
@@ -22,6 +24,10 @@ function runTest(name: string, fn: TestFn): void {
 
 const projectRoot = join(__dirname, '..');
 const modelSource = readFileSync(join(projectRoot, 'lib/sales/photo-evidence-model.ts'), 'utf8');
+const OWNER_ID = '11111111-1111-4111-8111-111111111111';
+const MARKET_ID = '22222222-2222-4222-8222-222222222222';
+const SALE_EVENT_ID = '33333333-3333-4333-8333-333333333333';
+const STAFF_ID = '44444444-4444-4444-8444-444444444444';
 
 console.log('\n=== Sales photo evidence model ===');
 
@@ -152,6 +158,136 @@ runTest('compression policy targets clear evidence under one megabyte', () => {
   assert.equal(SALES_PHOTO_EVIDENCE_COMPRESSION_POLICY.preferredMimeType, 'image/webp');
   assert.equal(SALES_PHOTO_EVIDENCE_COMPRESSION_POLICY.fallbackMimeType, 'image/jpeg');
   assert.equal(SALES_PHOTO_EVIDENCE_COMPRESSION_POLICY.stripExif, true);
+});
+
+runTest('post-sale requirement decision does nothing when market does not require evidence', () => {
+  assert.deepEqual(
+    createSalesPhotoEvidenceRequirementDecision({
+      ownerId: OWNER_ID,
+      marketId: MARKET_ID,
+      saleEventId: SALE_EVENT_ID,
+      saleCompletedAt: '2026-07-04T10:00:00.000Z',
+      marketRequiresEvidence: false,
+      capturedByStaffId: STAFF_ID,
+      now: '2026-07-04T10:00:01.000Z',
+    }),
+    {
+      action: 'not_required',
+      reason: 'market_not_required',
+    }
+  );
+});
+
+runTest('post-sale requirement decision creates a pending metadata draft only', () => {
+  assert.deepEqual(
+    createSalesPhotoEvidenceRequirementDecision({
+      ownerId: OWNER_ID,
+      marketId: MARKET_ID,
+      saleEventId: SALE_EVENT_ID,
+      saleCompletedAt: '2026-07-04T10:00:00.000Z',
+      marketRequiresEvidence: true,
+      capturedByStaffId: STAFF_ID,
+      now: '2026-07-04T10:00:01.000Z',
+    }),
+    {
+      action: 'create_pending',
+      reason: 'market_requires_evidence',
+      draft: {
+        owner_id: OWNER_ID,
+        market_id: MARKET_ID,
+        sale_id: SALE_EVENT_ID,
+        captured_by_staff_id: STAFF_ID,
+        status: 'pending_capture',
+        sale_completed_at: '2026-07-04T10:00:00.000Z',
+        created_at: '2026-07-04T10:00:01.000Z',
+        updated_at: '2026-07-04T10:00:01.000Z',
+        deleted_at: null,
+      },
+    }
+  );
+});
+
+runTest('post-sale requirement decision skips active existing evidence for idempotency', () => {
+  const existingEvidence = {
+    id: '55555555-5555-4555-8555-555555555555',
+    sale_id: SALE_EVENT_ID,
+    status: 'pending_capture' as const,
+    deleted_at: null,
+  };
+
+  assert.equal(findActiveSalesPhotoEvidenceForSale([existingEvidence], SALE_EVENT_ID), existingEvidence);
+  assert.deepEqual(
+    createSalesPhotoEvidenceRequirementDecision({
+      ownerId: OWNER_ID,
+      marketId: MARKET_ID,
+      saleEventId: SALE_EVENT_ID,
+      saleCompletedAt: '2026-07-04T10:00:00.000Z',
+      marketRequiresEvidence: true,
+      now: '2026-07-04T10:00:01.000Z',
+      existingEvidence: [existingEvidence],
+    }),
+    {
+      action: 'skip_existing',
+      reason: 'active_evidence_exists',
+      existingEvidence,
+    }
+  );
+});
+
+runTest('post-sale requirement decision ignores soft-deleted evidence rows', () => {
+  const decision = createSalesPhotoEvidenceRequirementDecision({
+    ownerId: OWNER_ID,
+    marketId: MARKET_ID,
+    saleEventId: SALE_EVENT_ID,
+    saleCompletedAt: 1783159200000,
+    marketRequiresEvidence: true,
+    now: new Date('2026-07-04T10:00:01.000Z'),
+    existingEvidence: [
+      {
+        sale_id: SALE_EVENT_ID,
+        status: 'waived_by_owner',
+        deleted_at: '2026-07-04T10:01:00.000Z',
+      },
+    ],
+  });
+
+  assert.equal(decision.action, 'create_pending');
+});
+
+runTest('post-sale requirement decision requires committed UUID identifiers before creating a draft', () => {
+  assert.throws(
+    () =>
+      createSalesPhotoEvidenceRequirementDecision({
+        ownerId: OWNER_ID,
+        marketId: MARKET_ID,
+        saleEventId: '',
+        saleCompletedAt: '2026-07-04T10:00:00.000Z',
+        marketRequiresEvidence: true,
+      }),
+    /saleEventId is required/
+  );
+  assert.throws(
+    () =>
+      createSalesPhotoEvidenceRequirementDecision({
+        ownerId: OWNER_ID,
+        marketId: MARKET_ID,
+        saleEventId: 'local-temp-id',
+        saleCompletedAt: '2026-07-04T10:00:00.000Z',
+        marketRequiresEvidence: true,
+      }),
+    /saleEventId must be a UUID/
+  );
+  assert.throws(
+    () =>
+      createSalesPhotoEvidenceRequirementDecision({
+        ownerId: OWNER_ID,
+        marketId: MARKET_ID,
+        saleEventId: SALE_EVENT_ID,
+        saleCompletedAt: 'invalid-date',
+        marketRequiresEvidence: true,
+      }),
+    /saleCompletedAt must be a valid date/
+  );
 });
 
 runTest('model remains pure and side-effect free for Slice 1', () => {

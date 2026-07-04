@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 4 implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, and operating-screen owner/staff UI are implemented. Photo capture, evidence row creation, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 5A implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, and post-sale pending evidence draft decision model are implemented. Runtime evidence row creation, photo capture, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -699,6 +699,23 @@ Acceptance:
 - sale persists even if prompt is closed;
 - skipped rows appear as pending;
 - no duplicate evidence row is created for the same sale.
+
+Slice 5A Status:
+
+- Implemented pure post-sale requirement decision model in `lib/sales/photo-evidence-model.ts`.
+- The model returns `not_required`, `skip_existing`, or `create_pending`.
+- `create_pending` produces a metadata-only draft for `sale_photo_evidence` with `status = 'pending_capture'`.
+- The model requires committed UUID identifiers before creating a draft, especially `saleEventId`.
+- Active existing evidence for the same sale causes `skip_existing` for idempotency.
+- Soft-deleted evidence rows do not block a new pending draft.
+- Guarded by `tests/sales-photo-evidence-model.test.ts`.
+- This slice does not insert into Supabase, does not call `recordDeal()`, does not alter sale persistence, does not show the post-sale prompt, does not start camera capture, and does not upload to R2.
+
+Next Slice 5B Boundary:
+
+- Decide how runtime should obtain the committed `deal_closed` event id after sale persistence.
+- Only after that should the app insert a `sale_photo_evidence` row.
+- Sale persistence must remain the first committed operation; evidence creation failure must not roll back or block the sale.
 
 ### Slice 6: Client Capture and Compression
 

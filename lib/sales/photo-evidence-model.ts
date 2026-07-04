@@ -23,6 +23,54 @@ export const SALES_PHOTO_EVIDENCE_MIN_QUALITY = 0.65;
 
 export type SalesPhotoEvidenceObjectKind = 'image' | 'thumbnail';
 
+export type SalesPhotoEvidenceRequirementInput = {
+  ownerId: string;
+  marketId: string;
+  saleEventId: string;
+  saleCompletedAt: string | number | Date;
+  marketRequiresEvidence: boolean;
+  capturedByStaffId?: string | null;
+  now?: string | number | Date;
+  existingEvidence?: readonly SalesPhotoEvidenceExistingRow[];
+};
+
+export type SalesPhotoEvidenceExistingRow = {
+  id?: string;
+  sale_id?: string;
+  saleId?: string;
+  deleted_at?: string | null;
+  deletedAt?: string | null;
+  status?: SalesPhotoEvidenceStatus;
+};
+
+export type SalesPhotoEvidencePendingDraft = {
+  owner_id: string;
+  market_id: string;
+  sale_id: string;
+  captured_by_staff_id: string | null;
+  status: 'pending_capture';
+  sale_completed_at: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: null;
+};
+
+export type SalesPhotoEvidenceRequirementDecision =
+  | {
+      action: 'not_required';
+      reason: 'market_not_required';
+    }
+  | {
+      action: 'skip_existing';
+      reason: 'active_evidence_exists';
+      existingEvidence: SalesPhotoEvidenceExistingRow;
+    }
+  | {
+      action: 'create_pending';
+      reason: 'market_requires_evidence';
+      draft: SalesPhotoEvidencePendingDraft;
+    };
+
 export type SalesPhotoEvidenceObjectKeyInput = {
   ownerId: string;
   marketId: string;
@@ -70,6 +118,7 @@ const SALES_PHOTO_EVIDENCE_TRANSITIONS: Readonly<Record<SalesPhotoEvidenceStatus
 
 const OBJECT_KEY_SEGMENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 const OBJECT_KEY_EXTENSIONS = new Set(['webp', 'jpg', 'jpeg']);
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function requireObjectKeySegment(value: string, fieldName: string): string {
   if (typeof value !== 'string' || value.length === 0) {
@@ -81,6 +130,37 @@ function requireObjectKeySegment(value: string, fieldName: string): string {
   }
 
   return value;
+}
+
+function requireUuid(value: string, fieldName: string): string {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`${fieldName} is required`);
+  }
+
+  if (!UUID_PATTERN.test(value)) {
+    throw new Error(`${fieldName} must be a UUID`);
+  }
+
+  return value;
+}
+
+function normalizeEvidenceDate(value: string | number | Date, fieldName: string): string {
+  const date = value instanceof Date ? value : new Date(value);
+  const time = date.getTime();
+
+  if (!Number.isFinite(time)) {
+    throw new Error(`${fieldName} must be a valid date`);
+  }
+
+  return date.toISOString();
+}
+
+function getEvidenceSaleId(row: SalesPhotoEvidenceExistingRow): string | undefined {
+  return row.sale_id ?? row.saleId;
+}
+
+function isEvidenceRowActive(row: SalesPhotoEvidenceExistingRow): boolean {
+  return (row.deleted_at ?? row.deletedAt ?? null) === null;
 }
 
 export function isSalesPhotoEvidenceStatus(value: string): value is SalesPhotoEvidenceStatus {
@@ -98,6 +178,59 @@ export function canTransitionSalesPhotoEvidenceStatus(
   to: SalesPhotoEvidenceStatus
 ): boolean {
   return SALES_PHOTO_EVIDENCE_TRANSITIONS[from].includes(to);
+}
+
+export function findActiveSalesPhotoEvidenceForSale(
+  existingEvidence: readonly SalesPhotoEvidenceExistingRow[] | undefined,
+  saleEventId: string
+): SalesPhotoEvidenceExistingRow | null {
+  if (!existingEvidence || existingEvidence.length === 0) return null;
+
+  return existingEvidence.find(row => getEvidenceSaleId(row) === saleEventId && isEvidenceRowActive(row)) ?? null;
+}
+
+export function createSalesPhotoEvidenceRequirementDecision(
+  input: SalesPhotoEvidenceRequirementInput
+): SalesPhotoEvidenceRequirementDecision {
+  if (!input.marketRequiresEvidence) {
+    return {
+      action: 'not_required',
+      reason: 'market_not_required',
+    };
+  }
+
+  const ownerId = requireUuid(input.ownerId, 'ownerId');
+  const marketId = requireUuid(input.marketId, 'marketId');
+  const saleEventId = requireUuid(input.saleEventId, 'saleEventId');
+  const capturedByStaffId =
+    input.capturedByStaffId == null ? null : requireUuid(input.capturedByStaffId, 'capturedByStaffId');
+  const saleCompletedAt = normalizeEvidenceDate(input.saleCompletedAt, 'saleCompletedAt');
+  const now = normalizeEvidenceDate(input.now ?? new Date(), 'now');
+
+  const existingEvidence = findActiveSalesPhotoEvidenceForSale(input.existingEvidence, saleEventId);
+  if (existingEvidence) {
+    return {
+      action: 'skip_existing',
+      reason: 'active_evidence_exists',
+      existingEvidence,
+    };
+  }
+
+  return {
+    action: 'create_pending',
+    reason: 'market_requires_evidence',
+    draft: {
+      owner_id: ownerId,
+      market_id: marketId,
+      sale_id: saleEventId,
+      captured_by_staff_id: capturedByStaffId,
+      status: 'pending_capture',
+      sale_completed_at: saleCompletedAt,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    },
+  };
 }
 
 export function buildSalesPhotoEvidenceObjectKey(input: SalesPhotoEvidenceObjectKeyInput): string {
