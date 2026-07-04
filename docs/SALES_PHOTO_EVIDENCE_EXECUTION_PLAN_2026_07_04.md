@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 5A implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, and post-sale pending evidence draft decision model are implemented. Runtime evidence row creation, photo capture, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 5B boundary implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, and post-sale orchestration boundary are implemented. Runtime Supabase evidence row creation, photo capture, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -711,10 +711,22 @@ Slice 5A Status:
 - Guarded by `tests/sales-photo-evidence-model.test.ts`.
 - This slice does not insert into Supabase, does not call `recordDeal()`, does not alter sale persistence, does not show the post-sale prompt, does not start camera capture, and does not upload to R2.
 
-Next Slice 5B Boundary:
+Slice 5B Status:
 
-- Decide how runtime should obtain the committed `deal_closed` event id after sale persistence.
-- Only after that should the app insert a `sale_photo_evidence` row.
+- `recordDeal()` now returns the committed local `deal_closed` event id.
+- Added `lib/sales/photo-evidence-post-sale.ts` orchestration boundary.
+- The wrapper always records the sale first, then evaluates photo evidence.
+- If no evidence persister is provided, the wrapper returns a `draft_ready` result only.
+- If an explicit persister is provided and evidence creation fails, the wrapper returns `failed` evidence status while preserving the recorded sale event id.
+- If the sale itself fails, the wrapper still throws and never attempts evidence creation.
+- Guarded by `tests/sales-photo-evidence-post-sale.test.ts`.
+- This slice is not wired into existing sale UI entry points and does not import Supabase, R2, camera capture, or signed URL behavior.
+
+Next Slice 5C Boundary:
+
+- Decide when runtime may safely insert `sale_photo_evidence`.
+- Direct immediate Supabase insert after local `recordDeal()` is risky because the cloud `events` row may not exist yet while `sale_photo_evidence.sale_id` references `public.events(id)`.
+- Recommended next decision: defer cloud evidence row creation until after the corresponding `deal_closed` event is confirmed synced, or introduce a local pending evidence queue that drains after event sync.
 - Sale persistence must remain the first committed operation; evidence creation failure must not roll back or block the sale.
 
 ### Slice 6: Client Capture and Compression

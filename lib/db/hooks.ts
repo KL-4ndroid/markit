@@ -360,7 +360,7 @@ export async function recordInteraction(
 export async function recordDeal(
   data: DealClosedPayload | { marketId: string } & Omit<DealClosedPayload, 'market_id'>,
   dealDate?: string
-): Promise<void> {
+): Promise<string> {
   const { isBackfill, isManualEntry } = resolveDealModeFlags(data, dealDate);
   const marketId = 'marketId' in data ? data.marketId : data.market_id;
   
@@ -419,7 +419,7 @@ export async function recordDeal(
   };
   
   // 庫存檢查通過，記錄成交事件
-  await recordEvent('deal_closed', payload);
+  return await recordEvent('deal_closed', payload);
 }
 
 // ==================== 統計相關 Hooks ====================
