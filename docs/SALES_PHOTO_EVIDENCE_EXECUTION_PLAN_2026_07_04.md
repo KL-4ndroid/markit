@@ -662,7 +662,9 @@ Status:
 - `types/db.ts`, `lib/db/events.ts`, and `lib/data-mappers.ts` preserve `salesPhotoEvidenceRequired` locally and across event/cloud mapping.
 - Guarded by `tests/sales-photo-evidence-slice3.test.ts`.
 - This slice does not create `sale_photo_evidence` rows, start camera capture, upload to R2, request signed URLs, or change the post-sale workflow.
-- Supabase market read-model trigger/view mapping for this new flag is intentionally not changed in this slice; review separately before relying on direct cloud `markets.sales_photo_evidence_required` reads.
+- Supabase market read-model trigger/view mapping for this new flag is drafted in `supabase/migrations/056_wire_sales_photo_evidence_market_projection.sql`.
+- 056 is drafted but not manually executed. It must be manually reviewed before applying to any Supabase environment.
+- 056 is guarded by `tests/supabase-sales-photo-evidence-projection-migration.test.ts`.
 
 ### Slice 4: Active Operating Toggle and Indicator
 
