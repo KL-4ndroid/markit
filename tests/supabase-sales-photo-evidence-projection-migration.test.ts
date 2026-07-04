@@ -73,10 +73,10 @@ runTest('056 remains schema projection only and does not widen policies', () => 
   assert.match(migrationSource, /Existing markets are not backfilled/);
 });
 
-runTest('plan records 056 as drafted and not manually executed', () => {
+runTest('plan records 056 as manually executed', () => {
   assert.match(planSource, /056_wire_sales_photo_evidence_market_projection\.sql/);
-  assert.match(planSource, /056 is drafted but not manually executed/);
-  assert.match(planSource, /must be manually reviewed before applying/);
+  assert.match(planSource, /056 has been manually executed/);
+  assert.match(planSource, /reported as complete by the project owner/);
   assert.match(packageJson.scripts.test, /tsx tests\/supabase-sales-photo-evidence-projection-migration\.test\.ts/);
 });
 

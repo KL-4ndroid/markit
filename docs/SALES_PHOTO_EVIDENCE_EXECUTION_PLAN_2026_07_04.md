@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 3 implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. Owner default setting, new-market inheritance, and owner market-level toggle are implemented. Photo capture, evidence row creation, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 4 implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, and operating-screen owner/staff UI are implemented. Photo capture, evidence row creation, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -662,8 +662,8 @@ Status:
 - `types/db.ts`, `lib/db/events.ts`, and `lib/data-mappers.ts` preserve `salesPhotoEvidenceRequired` locally and across event/cloud mapping.
 - Guarded by `tests/sales-photo-evidence-slice3.test.ts`.
 - This slice does not create `sale_photo_evidence` rows, start camera capture, upload to R2, request signed URLs, or change the post-sale workflow.
-- Supabase market read-model trigger/view mapping for this new flag is drafted in `supabase/migrations/056_wire_sales_photo_evidence_market_projection.sql`.
-- 056 is drafted but not manually executed. It must be manually reviewed before applying to any Supabase environment.
+- Supabase market read-model trigger/view mapping for this new flag is implemented in `supabase/migrations/056_wire_sales_photo_evidence_market_projection.sql`.
+- 056 has been manually executed and reported as complete by the project owner.
 - 056 is guarded by `tests/supabase-sales-photo-evidence-projection-migration.test.ts`.
 
 ### Slice 4: Active Operating Toggle and Indicator
@@ -677,6 +677,16 @@ Acceptance:
 - owner can toggle during active market;
 - staff sees state but cannot change it;
 - disabling affects future sales only.
+
+Status:
+
+- Implemented through the shared `components/markets/SalesPhotoEvidenceOperatingCard.tsx`.
+- `app/markets/[id]/page.tsx` shows the owner operating-screen toggle only while the market is operating.
+- The original owner market-level setting remains available outside the operating screen.
+- `components/markets/StaffMarketDetailView.tsx` shows a read-only indicator for staff and does not pass a toggle handler.
+- Pending evidence count entry point is UI-only with `pendingCount={0}` until evidence row creation is implemented.
+- Guarded by `tests/sales-photo-evidence-slice4-operating-ui.test.ts`.
+- This slice does not create `sale_photo_evidence` rows, start camera capture, upload to R2, request signed URLs, or change sale persistence.
 
 ### Slice 5: Post-Sale Evidence Requirement Creation
 

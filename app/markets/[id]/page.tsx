@@ -57,6 +57,7 @@ import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { InteractionDetailModal } from '@/components/markets/InteractionDetailModal';
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
+import { SalesPhotoEvidenceOperatingCard } from '@/components/markets/SalesPhotoEvidenceOperatingCard';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -1193,6 +1194,14 @@ export default function MarketDetailPage({ params }: PageProps) {
               )}
             </div>
             
+            <SalesPhotoEvidenceOperatingCard
+              mode="owner"
+              required={salesPhotoEvidenceRequired}
+              isUpdating={isUpdatingSalesPhotoEvidence}
+              onToggle={handleToggleSalesPhotoEvidence}
+              pendingCount={0}
+            />
+
             {/* 3. 快速交易（完整版：選擇商品） */}
             <QuickTransactionGrid 
               marketId={marketId}
@@ -1522,6 +1531,7 @@ export default function MarketDetailPage({ params }: PageProps) {
         )}
 
         {/* 7. 每日收入統計（多天市集才顯示） */}
+        {!isOperating && (
         <section className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
           <div className="mb-4 flex items-start gap-3">
             <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -1563,6 +1573,7 @@ export default function MarketDetailPage({ params }: PageProps) {
             </span>
           </button>
         </section>
+        )}
 
         <DailyRevenueStats
           market={market}

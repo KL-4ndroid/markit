@@ -135,6 +135,7 @@ export interface Market {
   chairFree?: boolean;         // 椅子免費提供
   umbrellaFree?: boolean;      // 傘免費提供
   tableclothFree?: boolean;    // 桌巾免費提供
+  salesPhotoEvidenceRequired?: boolean; // 是否要求成交照片證明
   
   // 統計資訊（從事件計算得出）
   totalRevenue?: number;       // 總收入

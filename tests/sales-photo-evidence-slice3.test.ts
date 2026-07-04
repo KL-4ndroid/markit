@@ -18,6 +18,16 @@ function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
 }
 
+function section(source: string, start: string, end?: string): string {
+  const startIndex = source.indexOf(start);
+  assert.notEqual(startIndex, -1, `Missing section start: ${start}`);
+
+  if (!end) return source.slice(startIndex);
+  const endIndex = source.indexOf(end, startIndex + start.length);
+  assert.notEqual(endIndex, -1, `Missing section end: ${end}`);
+  return source.slice(startIndex, endIndex);
+}
+
 const settingsServiceSource = readProjectFile('lib/supabase/settings.ts');
 const settingsHelperSource = readProjectFile('lib/sales/photo-evidence-settings.ts');
 const settingsPageSource = readProjectFile('app/settings/page.tsx');
@@ -98,9 +108,10 @@ runTest('Slice 3 does not start capture, R2, or evidence row creation', () => {
 });
 
 runTest('plan records 055 execution and Slice 3 runtime boundary', () => {
+  const slice3Block = section(planSource, '### Slice 3: Owner Settings and Market Detail Toggle', '### Slice 4: Active Operating Toggle and Indicator');
   assert.match(planSource, /055 has been manually executed/);
-  assert.match(planSource, /Slice 3 implemented/);
-  assert.match(planSource, /does not create `sale_photo_evidence` rows/);
+  assert.match(slice3Block, /Status:/);
+  assert.match(slice3Block, /does not create `sale_photo_evidence` rows/);
   assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-slice3\.test\.ts/);
 });
 

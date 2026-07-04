@@ -65,6 +65,7 @@ import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
+import { SalesPhotoEvidenceOperatingCard } from '@/components/markets/SalesPhotoEvidenceOperatingCard';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -188,6 +189,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
 
   const operatingStatus = getOperatingStatus();
   const isOperating = operatingStatus.status === 'operating';
+  const salesPhotoEvidenceRequired = Boolean(market.salesPhotoEvidenceRequired);
 
   // ✅ 員工核心工作功能：補登收入 / 每日成交記錄彈窗
   const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
@@ -363,6 +365,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
               </div>
             )}
             
+            <SalesPhotoEvidenceOperatingCard
+              mode="staff"
+              required={salesPhotoEvidenceRequired}
+              pendingCount={0}
+            />
+
             {/* 3. 快速交易（完整版：選擇商品） */}
             {canRecordDeal && (
               <QuickTransactionGrid
