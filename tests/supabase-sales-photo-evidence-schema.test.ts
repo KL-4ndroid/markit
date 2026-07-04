@@ -134,10 +134,10 @@ runTest('migration does not alter events or connect runtime behavior', () => {
   assert.match(migrationSource, /Existing sales are not backfilled/);
 });
 
-runTest('plan records Slice 2 as schema-only and not executed', () => {
+runTest('plan records Slice 2 as schema-only and manually executed', () => {
   assert.match(planSource, /### Slice 2: Database and Metadata Schema/);
   assert.match(planSource, /Status:\s*\n\n- Drafted in `supabase\/migrations\/055_add_sales_photo_evidence_schema\.sql`/);
-  assert.match(planSource, /not yet executed/);
+  assert.match(planSource, /055 has been manually executed/);
   assert.match(planSource, /does not alter `public\.events`/);
 });
 

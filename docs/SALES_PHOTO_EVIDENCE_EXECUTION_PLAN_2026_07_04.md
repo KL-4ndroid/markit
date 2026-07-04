@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 2 drafted. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema is drafted and guarded by static tests, but the migration has not been manually executed. Runtime, R2, and UI behavior are not yet implemented.
+Status: Slice 3 implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. Owner default setting, new-market inheritance, and owner market-level toggle are implemented. Photo capture, evidence row creation, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -636,7 +636,7 @@ Status:
 - RLS allows owner review of owned market evidence and staff scoped capture/update rows.
 - Staff waiver and hard delete are blocked by RLS/grants.
 - The migration intentionally does not alter `public.events`, event type constraints, sync, sales runtime, R2 runtime, or UI.
-- This migration is not yet executed. It must be manually reviewed before applying to any Supabase environment.
+- 055 has been manually executed and reported as complete by the project owner.
 
 ### Slice 3: Owner Settings and Market Detail Toggle
 
@@ -651,6 +651,18 @@ Acceptance:
 - new markets inherit the default;
 - owner can override per market;
 - staff cannot see editable controls.
+
+Status:
+
+- Implemented in `lib/sales/photo-evidence-settings.ts`.
+- Owner settings UI added through `components/settings/SalesPhotoEvidenceSettingsCard.tsx`.
+- `app/settings/page.tsx` renders the setting owner-only.
+- `components/markets/AddMarketForm.tsx` applies the owner default to future `market_created` payloads.
+- `app/markets/[id]/page.tsx` exposes an owner-only market-level toggle through existing `updateMarket()` / `market_updated`.
+- `types/db.ts`, `lib/db/events.ts`, and `lib/data-mappers.ts` preserve `salesPhotoEvidenceRequired` locally and across event/cloud mapping.
+- Guarded by `tests/sales-photo-evidence-slice3.test.ts`.
+- This slice does not create `sale_photo_evidence` rows, start camera capture, upload to R2, request signed URLs, or change the post-sale workflow.
+- Supabase market read-model trigger/view mapping for this new flag is intentionally not changed in this slice; review separately before relying on direct cloud `markets.sales_photo_evidence_required` reads.
 
 ### Slice 4: Active Operating Toggle and Indicator
 

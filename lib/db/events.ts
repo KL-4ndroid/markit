@@ -500,7 +500,7 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
   const endDate = dates[dates.length - 1];
   
   // 建立市集快照
-  const market: Market = {
+  const market: Market & { salesPhotoEvidenceRequired?: boolean } = {
     id: market_id,
     name: payload.name,
     location: payload.location,
@@ -538,6 +538,7 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
     chairFree: payload.chairFree,
     umbrellaFree: payload.umbrellaFree,
     tableclothFree: payload.tableclothFree,
+    salesPhotoEvidenceRequired: payload.salesPhotoEvidenceRequired ?? false,
     
     notes: payload.notes,
     

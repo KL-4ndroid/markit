@@ -5,6 +5,7 @@ import { X, Calendar, MapPin, DollarSign, Clock, Package, FileText, DoorOpen, Cl
 import { createMarket } from '@/lib/db/hooks';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { clearFormData, loadFormData, saveFormData } from '@/lib/form-autosave';
+import { loadDefaultSalesPhotoEvidenceRequired } from '@/lib/sales/photo-evidence-settings';
 import { DateMultiPicker } from '@/components/ui/DateMultiPicker'; // ✅ 改用多選日期選擇器
 import { TimePicker } from '@/components/ui/TimePicker';
 import type { MarketCreatedPayload } from '@/types/db';
@@ -42,6 +43,7 @@ function createDefaultMarketFormData(): MarketCreatedPayload {
     tableFree: false,
     chairFree: false,
     umbrellaFree: false,
+    salesPhotoEvidenceRequired: false,
     notes: '',
   };
 }
@@ -176,6 +178,30 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
 
     setDraftReady(true);
   }, [draftId, isOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isOpen || !user?.id || !draftReady || hasMeaningfulMarketDraft(currentDraft)) return;
+
+    loadDefaultSalesPhotoEvidenceRequired(user.id)
+      .then((required) => {
+        if (cancelled) return;
+        setFormData(prev => {
+          if (prev.salesPhotoEvidenceRequired === required) return prev;
+          return {
+            ...prev,
+            salesPhotoEvidenceRequired: required,
+          };
+        });
+      })
+      .catch((error) => {
+        console.error('load default sales photo evidence setting failed:', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentDraft, draftReady, isOpen, user?.id]);
 
   useEffect(() => {
     if (!isOpen || !draftId || !draftReady) return;
@@ -350,6 +376,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
         tableFree: false,
         chairFree: false,
         umbrellaFree: false,
+        salesPhotoEvidenceRequired: false,
         notes: '',
       });
       setNoEarlyEntry(true);

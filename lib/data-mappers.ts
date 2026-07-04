@@ -31,6 +31,7 @@ const MARKET_CAMEL_TO_SNAKE: Record<string, string> = {
   chairFree: 'chair_free',
   umbrellaFree: 'umbrella_free',
   tableclothFree: 'tablecloth_free',
+  salesPhotoEvidenceRequired: 'sales_photo_evidence_required',
   totalRevenue: 'total_revenue',
   totalProfit: 'total_profit',
   totalInteractions: 'total_interactions',
@@ -177,6 +178,7 @@ export function marketCreatedPayloadToCloud(
     chair_free: payload.chairFree ?? payload.chair_free,
     umbrella_free: payload.umbrellaFree ?? payload.umbrella_free,
     tablecloth_free: payload.tableclothFree ?? payload.tablecloth_free,
+    sales_photo_evidence_required: payload.salesPhotoEvidenceRequired ?? payload.sales_photo_evidence_required,
   });
 }
 
@@ -217,6 +219,7 @@ export function marketRowToLocal(row: AnyRecord): Market {
     chairFree: row.chairFree ?? row.chair_free,
     umbrellaFree: row.umbrellaFree ?? row.umbrella_free,
     tableclothFree: row.tableclothFree ?? row.tablecloth_free,
+    salesPhotoEvidenceRequired: row.salesPhotoEvidenceRequired ?? row.sales_photo_evidence_required ?? false,
     totalRevenue: toNumber(row.totalRevenue ?? row.total_revenue) ?? 0,
     totalProfit: toNumber(row.totalProfit ?? row.total_profit) ?? 0,
     totalInteractions: toNumber(row.totalInteractions ?? row.total_interactions) ?? 0,

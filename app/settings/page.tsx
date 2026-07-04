@@ -17,6 +17,7 @@ import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { DataCanonicalizationPanel } from '@/components/settings/DataCanonicalizationPanel';
 import { OwnerBrandSettingsCard } from '@/components/settings/OwnerBrandSettingsCard';
+import { SalesPhotoEvidenceSettingsCard } from '@/components/settings/SalesPhotoEvidenceSettingsCard';
 import { getLocalPendingWriteReport } from '@/lib/sync/local-pending-write-report';
 
 async function clearLocalAppData(userId?: string, forceDiscardLocalChanges = false): Promise<boolean> {
@@ -277,6 +278,7 @@ export default function SettingsPage() {
         <PWAInstallButton />
 
         {!isStaff && <OwnerBrandSettingsCard />}
+        {!isStaff && <SalesPhotoEvidenceSettingsCard />}
 
         {/* 員工管理 / 離開團隊 */}
         {isStaff ? (

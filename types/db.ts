@@ -186,6 +186,7 @@ export interface MarketCreatedPayload {
   tableclothFree?: boolean;
   
   notes?: string;
+  salesPhotoEvidenceRequired?: boolean;
 }
 
 /**

@@ -11,6 +11,7 @@ import type { InteractionButton } from '@/lib/interaction-buttons-store';
 export interface UserSettings {
   user_id: string;
   brand_name?: string | null;
+  default_sales_photo_evidence_required?: boolean | null;
   quick_action_buttons?: QuickActionButton[];
   interaction_buttons?: InteractionButton[];
   theme?: 'light' | 'dark' | 'auto';
@@ -160,6 +161,7 @@ export async function initializeUserSettings(userId: string): Promise<void> {
         ] as any,  // 複用 quick_action_buttons 欄位
         theme: 'auto',
         language: 'zh-TW',
+        default_sales_photo_evidence_required: false,
       });
       
       console.log('✅ 用戶設定已初始化');

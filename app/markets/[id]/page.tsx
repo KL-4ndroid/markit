@@ -20,6 +20,7 @@ import {
   Check,
   DoorOpen,
   ClipboardCheck,
+  Camera,
   Store,
   Moon,
   BarChart3,
@@ -29,7 +30,7 @@ import {
   Circle,
   Package
 } from 'lucide-react';
-import { useMarket, updateMarketStatus, startMarket, endMarket, useMarketStatsFromProjection } from '@/lib/db/hooks';
+import { useMarket, updateMarket, updateMarketStatus, startMarket, endMarket, useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import {
@@ -74,6 +75,10 @@ interface PageProps {
     id?: string | string[];
   };
 }
+
+type SalesPhotoEvidenceMarket = Market & {
+  salesPhotoEvidenceRequired?: boolean;
+};
 
 export default function MarketDetailPage({ params }: PageProps) {
   const router = useRouter();
@@ -204,6 +209,9 @@ export default function MarketDetailPage({ params }: PageProps) {
   // ✅ 根據模式選擇數據源（優先順序：員工 Supabase > 本地 > 降級 Supabase）
   const effectiveLocalMarket = localMarket ?? directLocalMarket;
   const market = selectMarketDetailRecord(supabaseMarket, effectiveLocalMarket);
+  const salesPhotoEvidenceRequired = Boolean(
+    (market as SalesPhotoEvidenceMarket | undefined)?.salesPhotoEvidenceRequired
+  );
   // ✅ 從 dailyStats projection 讀取市場統計（C2.19B）
   // Staff 模式下 projection 可能為空，保持 undefined 不影響顯示
   const stats = useMarketStatsFromProjection(effectiveLocalMarket ?? undefined);
@@ -213,6 +221,7 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [isUpdatingSalesPhotoEvidence, setIsUpdatingSalesPhotoEvidence] = useState(false);
   const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedDeal, setSelectedDeal] = useState<Event<DealClosedPayload> | null>(null);
@@ -847,6 +856,26 @@ export default function MarketDetailPage({ params }: PageProps) {
   };
 
   // 處理打開補登收入對話框
+  const handleToggleSalesPhotoEvidence = async () => {
+    if (!market?.id || isStaff || isRoleLoading || dbStatus?.ok === false) return;
+
+    const nextRequired = !salesPhotoEvidenceRequired;
+
+    try {
+      setIsUpdatingSalesPhotoEvidence(true);
+      await updateMarket(marketId, {
+        salesPhotoEvidenceRequired: nextRequired,
+      } as Partial<SalesPhotoEvidenceMarket>);
+
+      toast.success(nextRequired ? '此市集已啟用銷售照片證明' : '此市集已關閉銷售照片證明');
+    } catch (error: any) {
+      console.error('toggle sales photo evidence failed:', error);
+      toast.error(error?.message || '更新銷售照片證明設定失敗');
+    } finally {
+      setIsUpdatingSalesPhotoEvidence(false);
+    }
+  };
+
   const handleOpenAddRevenue = (date: string) => {
     if (dbStatus?.ok === false) return;
     setSelectedDate(date);
@@ -1493,6 +1522,48 @@ export default function MarketDetailPage({ params }: PageProps) {
         )}
 
         {/* 7. 每日收入統計（多天市集才顯示） */}
+        <section className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Camera className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-medium text-foreground">銷售照片證明</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                開啟後，之後新增的成交會要求補上照片證明。既有待補項目不會因為關閉而自動刪除。
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleToggleSalesPhotoEvidence}
+            disabled={isUpdatingSalesPhotoEvidence}
+            className="flex w-full items-center justify-between gap-4 rounded-2xl border border-primary/15 bg-background px-4 py-4 text-left transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span>
+              <span className="block text-sm font-medium text-foreground">
+                此市集要求成交照片證明
+              </span>
+              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                {salesPhotoEvidenceRequired ? '目前已啟用' : '目前未啟用'}
+              </span>
+            </span>
+            <span
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                salesPhotoEvidenceRequired ? 'bg-primary' : 'bg-gray-300'
+              }`}
+              aria-hidden="true"
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  salesPhotoEvidenceRequired ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </span>
+          </button>
+        </section>
+
         <DailyRevenueStats
           market={market}
           onAddRevenue={handleOpenAddRevenue}
