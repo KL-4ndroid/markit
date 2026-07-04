@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 1 verified. Pure status/type/key/retention guardrails are implemented and tested; runtime, schema, R2, and UI behavior are not yet implemented.
+Status: Slice 2 drafted. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema is drafted and guarded by static tests, but the migration has not been manually executed. Runtime, R2, and UI behavior are not yet implemented.
 
 ## Goal
 
@@ -624,6 +624,19 @@ Acceptance:
 - staff can create/update their scoped evidence rows;
 - staff cannot change market setting or waive evidence;
 - no binary image data enters Postgres.
+
+Status:
+
+- Drafted in `supabase/migrations/055_add_sales_photo_evidence_schema.sql`.
+- Guarded by `tests/supabase-sales-photo-evidence-schema.test.ts`.
+- Added owner default field: `user_settings.default_sales_photo_evidence_required`.
+- Added market setting field: `markets.sales_photo_evidence_required`.
+- Added metadata-only table: `sale_photo_evidence`.
+- The schema stores private R2 object keys only; no binary image data or public URL storage.
+- RLS allows owner review of owned market evidence and staff scoped capture/update rows.
+- Staff waiver and hard delete are blocked by RLS/grants.
+- The migration intentionally does not alter `public.events`, event type constraints, sync, sales runtime, R2 runtime, or UI.
+- This migration is not yet executed. It must be manually reviewed before applying to any Supabase environment.
 
 ### Slice 3: Owner Settings and Market Detail Toggle
 
