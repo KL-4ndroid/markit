@@ -516,7 +516,7 @@ Stop before implementation. These pages derive ownerId and aggregate financial/a
 
 ### Slice R4c-3A: Dashboard Inventory and Static Guardrails
 
-Status: recommended next low-risk slice.
+Status: implemented through documentation and static guardrails. No runtime behavior changes.
 
 Scope:
 
@@ -533,6 +533,42 @@ Acceptance:
 - No runtime behavior changes.
 - Dashboard risk map exists in this plan.
 - Tests fail if dashboard is migrated without ready-state and owner-scope guards.
+
+Dashboard data dependency map:
+
+- Role source:
+  - `app/page.tsx` currently reads `userRole`, `isStaff`, `isLoading`, and `roleError` from `useUserRole()`.
+  - This remains unchanged in R4c-3A.
+- Owner scope:
+  - `currentOwnerId = isStaff ? userRole.ownerId : user?.id`.
+  - This value is the root scope for dashboard market and monthly summary reads.
+- Market list reads:
+  - `useMarkets({ orderBy: 'startDate', order: 'asc', ownerId: currentOwnerId })`.
+  - Risk: `useMarkets(...)` only filters when `ownerId` is truthy, so unresolved owner id can become a broad local read.
+  - Future migration requirement: do not pass `undefined` owner id after switching to shared role context; use a sentinel owner id or explicit no-read branch.
+- Monthly summary reads:
+  - `useMonthlyStats(currentOwnerId)`.
+  - Risk: `useMonthlyStats(...)` only filters when `ownerId` is truthy, so unresolved owner id can aggregate all active local markets.
+  - Future migration requirement: monthly stats must be blocked, scoped to a sentinel/no-result owner id, or otherwise prevented from aggregating all records while role is not ready.
+- Derived dashboard sections:
+  - `todayMarkets` derives from `allMarkets`.
+  - `todayMarketIds` derives from `todayMarkets`.
+  - `upcomingMarkets` derives from `allMarkets` and excludes `todayMarketIds`.
+  - Risk: these are safe only if `allMarkets` is already owner-scoped.
+- Owner brand name:
+  - `loadOwnerBrandName(user.id)` runs only when `user?.id` exists and `isStaff` is false.
+  - Risk: display-only and owner-local, lower sensitivity than market/stats reads.
+- Sync display:
+  - `useSyncContext()` is used for status display and manual sync-related UI state.
+  - R4c-3A does not change sync behavior. Future dashboard migration must not add sync writes, cache resets, or local data clearing.
+- Destructive/account behavior:
+  - `handleSignOut()` uses `signOut()` and `confirmDiscardLocalChangesForSignOut(error)`.
+  - This is not part of dashboard role consumer replacement and must not be changed by R4c-3B.
+
+Implemented guardrail:
+
+- `tests/role-provider-r1.test.ts` now records the dashboard inventory and keeps `app/page.tsx` on `useUserRole()` until R4c-3B.
+- If `app/page.tsx` is later migrated to `useRoleContext()`, the test requires explicit ready-state, fail-closed owner scope, and scoped dashboard reads.
 
 ### Slice R4c-3B: Dashboard Consumer Replacement
 

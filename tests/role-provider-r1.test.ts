@@ -35,6 +35,7 @@ const productsPageSource = readProjectFile('app/products/page.tsx');
 const analyticsPageSource = readProjectFile('app/analytics/page.tsx');
 const settingsPageSource = readProjectFile('app/settings/page.tsx');
 const recoveryPageSource = readProjectFile('app/recovery/page.tsx');
+const roleRefreshPlanSource = readProjectFile('docs/FORM_DRAFT_AND_ROLE_REFRESH_STABILITY_PLAN_2026_07_03.md');
 
 console.log('\n=== RoleProvider R1/R2/R3/R4 guardrails ===');
 
@@ -135,6 +136,43 @@ runTest('R4c migrates settlement report and list pages with fail-closed data sco
   ]) {
     assert.match(source, /useUserRole\(\)/);
   }
+});
+
+runTest('R4c-3A records dashboard scope risks before any dashboard migration', () => {
+  assert.match(roleRefreshPlanSource, /### Slice R4c-3A: Dashboard Inventory and Static Guardrails/);
+  assert.match(roleRefreshPlanSource, /Status: implemented through documentation and static guardrails/);
+  assert.match(roleRefreshPlanSource, /Dashboard data dependency map:/);
+  assert.match(roleRefreshPlanSource, /useMarkets\(\{ orderBy: 'startDate', order: 'asc', ownerId: currentOwnerId \}\)/);
+  assert.match(roleRefreshPlanSource, /useMonthlyStats\(currentOwnerId\)/);
+  assert.match(roleRefreshPlanSource, /unresolved owner id can become a broad local read/);
+  assert.match(roleRefreshPlanSource, /unresolved owner id can aggregate all active local markets/);
+  assert.match(roleRefreshPlanSource, /handleSignOut\(\)/);
+  assert.match(roleRefreshPlanSource, /signOut\(\)/);
+  assert.match(roleRefreshPlanSource, /confirmDiscardLocalChangesForSignOut\(error\)/);
+
+  assert.match(homePageSource, /useUserRole\(\)/);
+  assert.match(homePageSource, /const currentOwnerId = isStaff \? userRole\.ownerId : user\?\.id/);
+  assert.match(homePageSource, /useMarkets\(\{\s*orderBy:\s*['"]startDate['"],\s*order:\s*['"]asc['"],\s*ownerId:\s*currentOwnerId/s);
+  assert.match(homePageSource, /useMonthlyStats\(currentOwnerId\)/);
+  assert.match(homePageSource, /useSyncContext\(\)/);
+  assert.match(homePageSource, /confirmDiscardLocalChangesForSignOut\(error\)/);
+  assert.doesNotMatch(homePageSource, /useRoleContext\(\)/);
+});
+
+runTest('R4c-3A blocks unsafe future dashboard shared-context migration', () => {
+  const dashboardUsesSharedContext = /useRoleContext\(\)/.test(homePageSource);
+
+  if (!dashboardUsesSharedContext) {
+    assert.match(homePageSource, /useUserRole\(\)/);
+    return;
+  }
+
+  assert.match(homePageSource, /const isRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
+  assert.match(homePageSource, /const .*OwnerId = isRoleReady \?/);
+  assert.match(homePageSource, /ROLE_NOT_READY_OWNER_ID|DASHBOARD_ROLE_NOT_READY_OWNER_ID|canLoadScopedData/);
+  assert.match(homePageSource, /ownerId:\s*scopedOwnerId|ownerId:\s*dashboardOwnerId/);
+  assert.doesNotMatch(homePageSource, /ownerId:\s*currentOwnerId/);
+  assert.doesNotMatch(homePageSource, /useMonthlyStats\(currentOwnerId\)/);
 });
 
 function main(): void {
