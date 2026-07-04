@@ -308,9 +308,61 @@ Implemented files:
 
 Status: active sliced execution. R4a, R4b, R4c-1, and R4c-2 are implemented; dashboard/analytics, settings/recovery, staff-status-monitor, and repair-tool consumers are not implemented.
 
-Goal: gradually replace page-level and local component `useUserRole()` calls with shared role context where it reduces duplicate role reads without weakening local fail-closed gates.
+Goal: gradually replace page-level and local component `useUserRole()` calls with shared role context where it reduces duplicate role reads without weakening local fail-closed gates. The goal is not to remove every `useUserRole()` call.
 
 Stop before implementation unless this slice is explicitly approved after R3 verification.
+
+### R4 Role Consumer Replacement Policy
+
+Decision: do not blindly replace every `useUserRole()` call. Use the shared `RoleProvider` for ordinary UI and page-level role snapshots, and keep local `useUserRole()` or purpose-built safety hooks for high-risk monitoring, recovery, destructive controls, or role-change cleanup.
+
+Replace with `useRoleContext()` when all of these are true:
+
+- The consumer only needs the current role snapshot, permissions, or display mode.
+- The consumer can safely show a blocking/loading state while `roleRefreshState.stage !== 'ready'`.
+- The consumer does not directly execute destructive local data actions, cloud writes, repair actions, or staff revoke/downgrade cleanup.
+- Any owner/staff data scope has a fail-closed unresolved-role behavior, such as a sentinel owner id or explicit no-read branch.
+- A static guardrail or model test can lock the expected ready/non-ready semantics.
+
+Keep `useUserRole()` or a dedicated safety hook when any of these are true:
+
+- The consumer monitors staff relationship changes and performs downgrade/revoke cleanup.
+- The consumer owns account switching, sign-out, local database clearing, recovery, repair, or diagnostics execution.
+- The consumer executes Supabase RPCs, cloud writes, pending-operation drain/retry, or local IndexedDB mutation beyond normal page reads.
+- The consumer needs an independent, latest role check immediately before a destructive or privileged action.
+- Reusing a shared snapshot could accidentally keep stale owner capability active during background refresh.
+
+Current classification:
+
+- Shared-context consumers already implemented:
+  - `RoleGuard`
+  - `SyncProvider`
+  - `TopNavigation`
+  - `BottomNavigation`
+  - `StaffModeNotice`
+  - `RoleStatusBanner`
+  - `InitialSyncDialog`
+  - `app/reports/settlement/page.tsx`
+  - `app/markets/page.tsx`
+  - `app/products/page.tsx`
+- Candidate consumers, not yet implemented:
+  - `app/page.tsx`
+  - `app/analytics/page.tsx`
+  - selected non-destructive subparts of `app/settings/page.tsx`
+  - selected read-only subparts of `app/recovery/page.tsx`
+- Keep local or special guard until separate high-risk review:
+  - `useStaffStatusMonitor`
+  - owner repair panels
+  - diagnostics/drain/retry actions
+  - destructive account/cache/local-data controls
+  - any final preflight check before privileged mutation
+
+Global acceptance for any future replacement:
+
+- Non-ready role state must never run a privileged write or destructive action.
+- Non-ready role state must never use `undefined` owner id as a broad local read.
+- Background refresh may keep the UI mounted only if permissions and sync/data actions remain fail-closed.
+- Tests must prove both the migration target and the consumers intentionally left local.
 
 ### Slice R4a: Display and Navigation Consumer Replacement
 
@@ -453,7 +505,7 @@ Implemented files:
 
 ### Slice R4c-3: Dashboard and Analytics Consumer Replacement
 
-Status: not implemented.
+Status: not implemented. Split into smaller slices; do not migrate dashboard and analytics together.
 
 Candidate scope:
 
@@ -461,6 +513,77 @@ Candidate scope:
 - `app/analytics/page.tsx`
 
 Stop before implementation. These pages derive ownerId and aggregate financial/analytics data, so they need separate data-scope tests before migration.
+
+### Slice R4c-3A: Dashboard Inventory and Static Guardrails
+
+Status: recommended next low-risk slice.
+
+Scope:
+
+- Inspect `app/page.tsx` role reads, ownerId filters, dashboard summary hooks, market stats hooks, and any cloud/local fallback.
+- Document every data-read path that depends on owner/staff identity.
+- Add or update static guardrails proving dashboard migration cannot proceed without:
+  - explicit `roleRefreshState.stage === 'ready'` check,
+  - fail-closed ownerId handling,
+  - no broad local read on unresolved owner id,
+  - no sync/write/cache mutation.
+
+Acceptance:
+
+- No runtime behavior changes.
+- Dashboard risk map exists in this plan.
+- Tests fail if dashboard is migrated without ready-state and owner-scope guards.
+
+### Slice R4c-3B: Dashboard Consumer Replacement
+
+Status: not implemented; only after R4c-3A passes.
+
+Scope:
+
+- Replace dashboard page role read with `useRoleContext()`.
+- Use blocking loading while role is not ready.
+- Resolve owner id only when role is ready.
+- Pass a sentinel owner id or no-read path to dashboard local hooks while unresolved.
+- Keep dashboard UI behavior unchanged after ready state.
+
+Acceptance:
+
+- Owner dashboard sees only owner-scoped data.
+- Staff dashboard sees only staff-scoped owner data allowed by existing hooks.
+- Background refresh cannot display or compute dashboard data with unresolved owner id.
+- No sync, repair, settings, or analytics migration in this slice.
+
+### Slice R4c-3C: Analytics Inventory and Static Guardrails
+
+Status: not implemented; separate from dashboard because analytics includes financial aggregates and report access.
+
+Scope:
+
+- Inspect `app/analytics/page.tsx` ownerId filters, financial calculations, role gates, and report/export entry points.
+- Define which analytics reads are owner-only, staff-visible, or blocked.
+- Add tests that require fail-closed role readiness before analytics data derivation.
+
+Acceptance:
+
+- No runtime behavior changes.
+- Analytics data-scope map exists before code migration.
+- Report/export access remains owner-only unless separately approved.
+
+### Slice R4c-3D: Analytics Consumer Replacement
+
+Status: not implemented; only after R4c-3C passes and receives explicit approval.
+
+Scope:
+
+- Replace analytics page role read with `useRoleContext()` only for safe page-level snapshot usage.
+- Keep owner-only report/export gates strict.
+- Use ready-state and owner-scope guards before financial aggregate reads.
+
+Acceptance:
+
+- Staff/unresolved roles cannot access owner-only analytics or report/export paths.
+- No destructive local data, recovery, or settings behavior changes.
+- Tests cover unresolved role, owner, and staff cases.
 
 ### Slice R4c-4: Settings and Recovery Page Consumer Replacement
 
@@ -473,6 +596,15 @@ Candidate scope:
 
 Stop before implementation. These pages include destructive local/cloud data controls, staff leave-team RPC, and owner-only repair tools.
 
+Recommended split:
+
+- R4c-4A settings inventory only: classify display-only role reads versus destructive account/cache/local-data actions.
+- R4c-4B settings display-only replacement: only if actions remain behind local or dedicated final preflight guards.
+- R4c-4C recovery inventory only: classify read-only owner status display versus repair/diagnostics execution.
+- R4c-4D recovery read-only replacement: only for non-mutating display surfaces.
+
+Do not migrate destructive settings controls, repair execution, diagnostics execution, pending-operation drain/retry, or local-data reset buttons to shared context without a separate high-risk review and final-action revalidation design.
+
 ### Slice R4d: Repair and Diagnostics Consumers
 
 Status: not implemented.
@@ -480,6 +612,15 @@ Status: not implemented.
 Goal: evaluate recovery, diagnostics, and repair panels only after page-level role consolidation is stable.
 
 Stop before implementation. These remain owner-only or local-repair sensitive and should keep redundant local guards until explicitly reviewed.
+
+Default decision: keep repair and diagnostics execution on local `useUserRole()` or a dedicated owner-only preflight hook. Shared context may be used only for read-only labels or non-actionable status display after a separate review.
+
+Any future repair/diagnostics migration must prove:
+
+- The action re-checks owner permission immediately before execution.
+- Background refresh cannot keep a stale owner repair button enabled.
+- Unresolved role state disables execution, not just hides UI text.
+- Tests cover owner, staff, unresolved, and role-error states.
 
 ### Slice 5: Role Refresh Implementation
 
@@ -556,7 +697,8 @@ This should be treated as an auth/role architecture change, not a UI-only change
 Implementation direction:
 
 - Introduce a shared role state layer, preferably a `RoleProvider`, under `AuthProvider`.
-- Make `RoleGuard`, `SyncProvider`, `BottomNavigation`, and pages consume the same role snapshot instead of each creating independent `useUserRole()` state.
+- Make `RoleGuard`, `SyncProvider`, `BottomNavigation`, and approved page-level consumers use the shared role snapshot instead of creating unnecessary independent `useUserRole()` state.
+- Preserve local `useUserRole()` or dedicated final preflight hooks for staff revoke/downgrade monitors, destructive controls, recovery/repair execution, and any privileged mutation path that needs an immediate permission re-check.
 - Split role load state into at least:
   - `isInitialLoading`: no usable current role snapshot exists yet.
   - `isRefreshing`: a previous role snapshot exists, and the app is validating freshness in the background.
