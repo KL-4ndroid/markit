@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 5C-3B-0 Dexie queue table and storage adapter implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, and disabled storage adapter are implemented. Runtime Supabase evidence row creation, post-sale enqueue wiring, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 5C-3B-2 runtime enqueue risk boundary recorded. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, and runtime enqueue boundary guardrails are implemented. Runtime Supabase evidence row creation, post-sale enqueue wiring, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -771,13 +771,24 @@ Slice 5C-3B-1 Status:
 - Guarded by `tests/auth-cache-destruction-guard.test.ts`.
 - This slice does not connect `recordDeal()`, does not write Supabase, does not mount a sync worker, does not connect UI capture, does not capture photos, and does not upload to R2.
 
-Next Slice 5C-3B-2 Boundary:
+Slice 5C-3B-2 Status:
 
-- Decide when runtime may safely insert `sale_photo_evidence`.
-- Direct immediate Supabase insert after local `recordDeal()` is risky because the cloud `events` row may not exist yet while `sale_photo_evidence.sale_id` references `public.events(id)`.
-- Recommended next decision: whether to connect a disabled-by-default runtime enqueue path after `recordDeal()` has safely committed.
-- Runtime enqueue and drain remain blocked until the enqueue call site, feature flag, and rollback behavior are separately reviewed.
-- Sale persistence must remain the first committed operation; evidence creation failure must not roll back or block the sale.
+- Runtime enqueue remains blocked; this slice only records the high-risk boundary and guardrails before implementation.
+- Direct immediate Supabase insert after local `recordDeal()` is not approved because the cloud `events` row may not exist yet while `sale_photo_evidence.sale_id` references `public.events(id)`.
+- The recommended future runtime path is to call `recordDealWithPhotoEvidenceRequirement()` after the sale has committed, injecting `createDexieSalesPhotoEvidencePendingCreationStorage()` as the local queue writer only when an explicit internal feature flag is enabled.
+- The feature flag must default off, must not read public env, localStorage, sessionStorage, or remote config, and must be enabled only by a reviewed code change or narrowly scoped test harness.
+- Sale persistence remains the first committed operation. Evidence enqueue failure must not throw to the caller, must not roll back `deal_closed`, and must be logged or surfaced separately.
+- `queueId` remains the sale event id so duplicate enqueue attempts are idempotent.
+- The normal event push may run independently. The evidence drain must wait for the source `deal_closed` event to become synced before creating cloud evidence metadata.
+- No drain worker, Supabase evidence insert, camera capture, upload, signed URL, or UI capture prompt is approved by this slice.
+- Guarded by `tests/sales-photo-evidence-runtime-enqueue-plan.test.ts`.
+
+Next Slice 5C-3B-3 Boundary:
+
+- Decide the first production sale entry point for disabled-by-default enqueue wiring.
+- Recommended first target: a single explicit market-detail revenue dialog path, not all sale entry points at once.
+- Before implementation, confirm owner/staff identity source, market owner id source, requirement flag source, and whether the disabled feature flag should be committed as code-only off or exposed only to tests.
+- Runtime enqueue remains blocked until this decision is confirmed.
 
 ### Slice 6: Client Capture and Compression
 
