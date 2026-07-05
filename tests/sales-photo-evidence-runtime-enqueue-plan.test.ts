@@ -69,7 +69,7 @@ runTest('only AddRevenueDialog is approved for the disabled runtime wrapper pilo
   const addRevenueDialogSource = readFileSync(join(projectRoot, 'components/markets/AddRevenueDialog.tsx'), 'utf8');
 
   assert.match(addRevenueDialogSource, /recordDealWithOptionalSalesPhotoEvidence/);
-  assert.doesNotMatch(addRevenueDialogSource, /evidenceContext:/);
+  assert.match(addRevenueDialogSource, /evidenceContext:\s*createSalesPhotoEvidenceRuntimeContext\(\)/);
 });
 
 runTest('full test suite includes runtime enqueue boundary guardrails', () => {

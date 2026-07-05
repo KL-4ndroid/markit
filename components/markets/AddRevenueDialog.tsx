@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, AlertCircle } from 'lucide-react';
 import { useProducts } from '@/lib/db/hooks';
-import { recordDealWithOptionalSalesPhotoEvidence } from '@/lib/sales/photo-evidence-runtime-enqueue';
+import {
+  recordDealWithOptionalSalesPhotoEvidence,
+  type SalesPhotoEvidenceRuntimeContext,
+} from '@/lib/sales/photo-evidence-runtime-enqueue';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
@@ -15,6 +18,10 @@ interface AddRevenueDialogProps {
   onClose: () => void;
   marketId: string;
   selectedDate: string;
+  salesPhotoEvidenceContext?: Pick<
+    SalesPhotoEvidenceRuntimeContext,
+    'ownerId' | 'marketRequiresEvidence' | 'capturedByStaffId'
+  >;
 }
 
 interface CartItem {
@@ -32,7 +39,13 @@ type InputMode = 'simple' | 'full';
  * 1. 簡化輸入：直接輸入收入、成本、成交次數
  * 2. 完整輸入：選擇商品、數量、價格
  */
-export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: AddRevenueDialogProps) {
+export function AddRevenueDialog({
+  isOpen,
+  onClose,
+  marketId,
+  selectedDate,
+  salesPhotoEvidenceContext,
+}: AddRevenueDialogProps) {
   const products = useProducts({ isActive: true });
   const [mode, setMode] = useState<InputMode>('simple');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,6 +84,18 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
 
   // 計算利潤（簡化模式）
   const calculatedProfit = (parseFloat(revenue) || 0) - (parseFloat(cost) || 0);
+
+  const createSalesPhotoEvidenceRuntimeContext = (): SalesPhotoEvidenceRuntimeContext | undefined => {
+    if (!salesPhotoEvidenceContext) return undefined;
+
+    const submittedAt = new Date().toISOString();
+    return {
+      ...salesPhotoEvidenceContext,
+      marketId,
+      saleCompletedAt: submittedAt,
+      now: submittedAt,
+    };
+  };
   
   // 提交簡化模式
   const handleSimpleSubmit = async () => {
@@ -102,7 +127,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
         totalAmount: revenueNum,
         paymentMethod: 'cash', // 簡化模式預設現金
         notes: simpleNotes || `補登收入 - ${formatDate(selectedDate)}`,
-      }, selectedDate);
+      }, selectedDate, { evidenceContext: createSalesPhotoEvidenceRuntimeContext() });
       
       toast.success('✅ 收入補登成功', {
         description: `已記錄到 ${formatDate(selectedDate)}`,
@@ -182,7 +207,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
         totalAmount,
         paymentMethod,
         notes: fullNotes || `補登收入 - ${formatDate(selectedDate)}`,
-      }, selectedDate);
+      }, selectedDate, { evidenceContext: createSalesPhotoEvidenceRuntimeContext() });
 
       toast.success('✅ 收入補登成功', {
         description: `已記錄到 ${formatDate(selectedDate)}`,

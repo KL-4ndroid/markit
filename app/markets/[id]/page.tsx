@@ -213,6 +213,11 @@ export default function MarketDetailPage({ params }: PageProps) {
   const salesPhotoEvidenceRequired = Boolean(
     (market as SalesPhotoEvidenceMarket | undefined)?.salesPhotoEvidenceRequired
   );
+  const addRevenueSalesPhotoEvidenceContext = {
+    ownerId: (market as Market | undefined)?.owner_id ?? user?.id ?? null,
+    marketRequiresEvidence: salesPhotoEvidenceRequired,
+    capturedByStaffId: null,
+  };
   // ✅ 從 dailyStats projection 讀取市場統計（C2.19B）
   // Staff 模式下 projection 可能為空，保持 undefined 不影響顯示
   const stats = useMarketStatsFromProjection(effectiveLocalMarket ?? undefined);
@@ -2237,6 +2242,7 @@ export default function MarketDetailPage({ params }: PageProps) {
         onClose={handleCloseAddRevenue}
         marketId={marketId}
         selectedDate={selectedDate}
+        salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
       />
 
       {/* 日期成交記錄彈窗 */}

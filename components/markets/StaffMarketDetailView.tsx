@@ -190,6 +190,11 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   const operatingStatus = getOperatingStatus();
   const isOperating = operatingStatus.status === 'operating';
   const salesPhotoEvidenceRequired = Boolean(market.salesPhotoEvidenceRequired);
+  const addRevenueSalesPhotoEvidenceContext = {
+    ownerId: market.relationship_owner_id ?? market.owner_id ?? userRole.ownerId ?? null,
+    marketRequiresEvidence: salesPhotoEvidenceRequired,
+    capturedByStaffId: isOwner ? null : user?.id ?? null,
+  };
 
   // ✅ 員工核心工作功能：補登收入 / 每日成交記錄彈窗
   const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
@@ -597,6 +602,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         onClose={handleCloseAddRevenue}
         marketId={marketId}
         selectedDate={selectedDate}
+        salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
       />
 
       {/* 每日成交記錄彈窗（透過 DailyRevenueStats 觸發） */}

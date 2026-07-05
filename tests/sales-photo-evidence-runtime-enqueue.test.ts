@@ -14,6 +14,8 @@ const projectRoot = join(__dirname, '..');
 const flagSource = readFileSync(join(projectRoot, 'lib/sales/photo-evidence-runtime-flags.ts'), 'utf8');
 const wrapperSource = readFileSync(join(projectRoot, 'lib/sales/photo-evidence-runtime-enqueue.ts'), 'utf8');
 const addRevenueDialogSource = readFileSync(join(projectRoot, 'components/markets/AddRevenueDialog.tsx'), 'utf8');
+const ownerMarketDetailSource = readFileSync(join(projectRoot, 'app/markets/[id]/page.tsx'), 'utf8');
+const staffMarketDetailSource = readFileSync(join(projectRoot, 'components/markets/StaffMarketDetailView.tsx'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
@@ -132,10 +134,28 @@ runTest('enabled runtime path keeps sale success when evidence enqueue fails', a
   assert.deepEqual(order, ['recordDeal', 'createPendingEvidence']);
 });
 
-runTest('AddRevenueDialog uses the disabled wrapper without passing evidence context yet', () => {
+runTest('AddRevenueDialog passes submit-time evidence context into the disabled wrapper', () => {
   assert.match(addRevenueDialogSource, /recordDealWithOptionalSalesPhotoEvidence/);
   assert.doesNotMatch(addRevenueDialogSource, /import \{ useProducts,\s*recordDeal \}/);
-  assert.doesNotMatch(addRevenueDialogSource, /evidenceContext:/);
+  assert.match(addRevenueDialogSource, /salesPhotoEvidenceContext\?: Pick/);
+  assert.match(addRevenueDialogSource, /const submittedAt = new Date\(\)\.toISOString\(\)/);
+  assert.match(addRevenueDialogSource, /saleCompletedAt: submittedAt/);
+  assert.match(addRevenueDialogSource, /now: submittedAt/);
+  assert.match(addRevenueDialogSource, /evidenceContext:\s*createSalesPhotoEvidenceRuntimeContext\(\)/);
+});
+
+runTest('owner and staff market detail provide only local context while flag remains disabled', () => {
+  assert.match(ownerMarketDetailSource, /addRevenueSalesPhotoEvidenceContext/);
+  assert.match(ownerMarketDetailSource, /ownerId:[\s\S]*owner_id[\s\S]*user\?\.id[\s\S]*null/);
+  assert.match(ownerMarketDetailSource, /marketRequiresEvidence: salesPhotoEvidenceRequired/);
+  assert.match(ownerMarketDetailSource, /capturedByStaffId: null/);
+  assert.match(ownerMarketDetailSource, /salesPhotoEvidenceContext=\{addRevenueSalesPhotoEvidenceContext\}/);
+
+  assert.match(staffMarketDetailSource, /addRevenueSalesPhotoEvidenceContext/);
+  assert.match(staffMarketDetailSource, /ownerId:[\s\S]*relationship_owner_id[\s\S]*owner_id[\s\S]*userRole\.ownerId[\s\S]*null/);
+  assert.match(staffMarketDetailSource, /marketRequiresEvidence: salesPhotoEvidenceRequired/);
+  assert.match(staffMarketDetailSource, /capturedByStaffId: isOwner \? null : user\?\.id \?\? null/);
+  assert.match(staffMarketDetailSource, /salesPhotoEvidenceContext=\{addRevenueSalesPhotoEvidenceContext\}/);
 });
 
 runTest('runtime wrapper does not write cloud evidence or start capture upload behavior', () => {
