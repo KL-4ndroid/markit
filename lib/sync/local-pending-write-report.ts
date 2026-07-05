@@ -5,6 +5,7 @@ import type { Event } from '@/types/db';
 export type LocalPendingWriteBlockingReason =
   | 'local_pending_events'
   | 'local_sync_queue_unfinished'
+  | 'local_pending_sales_photo_evidence'
   | 'actor_mismatch'
   | 'offline'
   | 'sync_locked'
@@ -21,12 +22,22 @@ export interface LocalPendingWriteReport {
   pendingEventCountByActorId: Record<string, number>;
   actorMismatchEventIds: string[];
   unfinishedSyncQueueCount: number;
+  pendingSalesPhotoEvidenceCreationCount: number;
+  pendingSalesPhotoEvidenceCreationIds: string[];
+  pendingSalesPhotoEvidenceCreationCountByStatus: Record<string, number>;
   blockingReasonCodes: LocalPendingWriteBlockingReason[];
   isClean: boolean;
 }
 
 const PENDING_EVENT_STATUSES = ['pending', 'local_only'] as const;
 const UNFINISHED_SYNC_QUEUE_STATUSES = ['pending', 'syncing', 'failed'] as const;
+const UNFINISHED_SALES_PHOTO_EVIDENCE_CREATION_STATUSES = [
+  'waiting_for_event_sync',
+  'creating',
+  'failed_retryable',
+  'failed_permanent',
+  'blocked_invalid_source',
+] as const;
 
 function increment(map: Record<string, number>, key: string | undefined): void {
   const normalized = key && key.trim().length > 0 ? key : 'unknown';
@@ -50,6 +61,7 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
   const blockingReasonCodes = new Set<LocalPendingWriteBlockingReason>();
   const pendingEventCountByType: Record<string, number> = {};
   const pendingEventCountByActorId: Record<string, number> = {};
+  const pendingSalesPhotoEvidenceCreationCountByStatus: Record<string, number> = {};
 
   if (!isOnline) blockingReasonCodes.add('offline');
   if (syncLocked) blockingReasonCodes.add('sync_locked');
@@ -65,8 +77,14 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       .anyOf([...UNFINISHED_SYNC_QUEUE_STATUSES])
       .count();
 
+    const pendingSalesPhotoEvidenceCreations = await db.salesPhotoEvidencePendingCreations
+      .where('status')
+      .anyOf([...UNFINISHED_SALES_PHOTO_EVIDENCE_CREATION_STATUSES])
+      .toArray();
+
     const pendingEventIds: string[] = [];
     const actorMismatchEventIds: string[] = [];
+    const pendingSalesPhotoEvidenceCreationIds: string[] = [];
 
     for (const event of pendingEvents) {
       if (event.id) pendingEventIds.push(event.id);
@@ -78,8 +96,16 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       }
     }
 
+    for (const item of pendingSalesPhotoEvidenceCreations) {
+      if (item.queueId) pendingSalesPhotoEvidenceCreationIds.push(item.queueId);
+      increment(pendingSalesPhotoEvidenceCreationCountByStatus, item.status);
+    }
+
     if (pendingEvents.length > 0) blockingReasonCodes.add('local_pending_events');
     if (unfinishedSyncQueueCount > 0) blockingReasonCodes.add('local_sync_queue_unfinished');
+    if (pendingSalesPhotoEvidenceCreations.length > 0) {
+      blockingReasonCodes.add('local_pending_sales_photo_evidence');
+    }
     if (actorMismatchEventIds.length > 0) blockingReasonCodes.add('actor_mismatch');
 
     const codes = Array.from(blockingReasonCodes);
@@ -95,6 +121,9 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       pendingEventCountByActorId,
       actorMismatchEventIds,
       unfinishedSyncQueueCount,
+      pendingSalesPhotoEvidenceCreationCount: pendingSalesPhotoEvidenceCreations.length,
+      pendingSalesPhotoEvidenceCreationIds,
+      pendingSalesPhotoEvidenceCreationCountByStatus,
       blockingReasonCodes: codes,
       isClean: codes.length === 0,
     };
@@ -113,6 +142,9 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       pendingEventCountByActorId,
       actorMismatchEventIds: [],
       unfinishedSyncQueueCount: 0,
+      pendingSalesPhotoEvidenceCreationCount: 0,
+      pendingSalesPhotoEvidenceCreationIds: [],
+      pendingSalesPhotoEvidenceCreationCountByStatus,
       blockingReasonCodes: codes,
       isClean: false,
     };

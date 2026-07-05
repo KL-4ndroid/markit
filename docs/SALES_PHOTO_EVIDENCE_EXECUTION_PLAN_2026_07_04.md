@@ -761,12 +761,22 @@ Slice 5C-3B-0 Status:
 - This slice does not connect `recordDeal()`, does not write Supabase, does not mount a sync worker, does not connect UI, does not capture photos, and does not upload to R2.
 - Before any production enqueue path is connected, pending-write/auth-cache-reset guards must include this table so local pending evidence work is not silently lost on sign-out, role switch, or clear-local-and-resync flows.
 
-Next Slice 5C-3B-1 Boundary:
+Slice 5C-3B-1 Status:
+
+- Extended `lib/sync/local-pending-write-report.ts` to count unfinished `salesPhotoEvidencePendingCreations`.
+- Unfinished evidence creation statuses are all local queue states except `created`: `waiting_for_event_sync`, `creating`, `failed_retryable`, `failed_permanent`, and `blocked_invalid_source`.
+- Added blocking reason `local_pending_sales_photo_evidence`.
+- Auth-cache blocked event payloads, the blocked-state dialog, and force sign-out confirmation now surface the pending evidence count.
+- Because there is no production evidence drain path yet, pending evidence rows are treated as a hard block and are not routed through the normal event push path.
+- Guarded by `tests/auth-cache-destruction-guard.test.ts`.
+- This slice does not connect `recordDeal()`, does not write Supabase, does not mount a sync worker, does not connect UI capture, does not capture photos, and does not upload to R2.
+
+Next Slice 5C-3B-2 Boundary:
 
 - Decide when runtime may safely insert `sale_photo_evidence`.
 - Direct immediate Supabase insert after local `recordDeal()` is risky because the cloud `events` row may not exist yet while `sale_photo_evidence.sale_id` references `public.events(id)`.
-- Recommended next decision: whether to extend `local-pending-write-report` and auth/cache reset guardrails to count `salesPhotoEvidencePendingCreations` before any runtime enqueue path is connected.
-- Runtime enqueue and drain remain blocked until the pending-write report can detect and block unfinished evidence creation rows.
+- Recommended next decision: whether to connect a disabled-by-default runtime enqueue path after `recordDeal()` has safely committed.
+- Runtime enqueue and drain remain blocked until the enqueue call site, feature flag, and rollback behavior are separately reviewed.
 - Sale persistence must remain the first committed operation; evidence creation failure must not roll back or block the sale.
 
 ### Slice 6: Client Capture and Compression

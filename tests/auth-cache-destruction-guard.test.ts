@@ -80,6 +80,9 @@ function report(overrides: Partial<LocalPendingWriteReport>): LocalPendingWriteR
     pendingEventCountByActorId: {},
     actorMismatchEventIds: [],
     unfinishedSyncQueueCount: 0,
+    pendingSalesPhotoEvidenceCreationCount: 0,
+    pendingSalesPhotoEvidenceCreationIds: [],
+    pendingSalesPhotoEvidenceCreationCountByStatus: {},
     blockingReasonCodes,
     isClean: blockingReasonCodes.length === 0,
     ...overrides,
@@ -105,6 +108,9 @@ runTest('plan consolidates cache reset recovery and pending pre-clear guardrails
 runTest('local pending write report is read-only and classifies blocking reasons', async () => {
   const originalEventsWhere = db.events.where.bind(db.events);
   const originalSyncQueueWhere = db.syncQueue.where.bind(db.syncQueue);
+  const originalSalesPhotoEvidencePendingCreationsWhere = db.salesPhotoEvidencePendingCreations.where.bind(
+    db.salesPhotoEvidencePendingCreations
+  );
   const restoreNavigator = mockNavigatorOnline(false);
 
   try {
@@ -134,6 +140,12 @@ runTest('local pending write report is read-only and classifies blocking reasons
       { id: 'queue-2', status: 'success' },
     ]).where;
 
+    (db.salesPhotoEvidencePendingCreations as any).where = createTableMock([
+      { queueId: 'photo-evidence-1', status: 'waiting_for_event_sync' },
+      { queueId: 'photo-evidence-2', status: 'created' },
+      { queueId: 'photo-evidence-3', status: 'failed_retryable' },
+    ]).where;
+
     const report = await getLocalPendingWriteReport('user-1');
 
     assert.equal(report.isClean, false);
@@ -145,13 +157,19 @@ runTest('local pending write report is read-only and classifies blocking reasons
     assert.equal(report.pendingEventCountByActorId['other-user'], 1);
     assert.deepEqual(report.actorMismatchEventIds, ['event-2']);
     assert.equal(report.unfinishedSyncQueueCount, 1);
+    assert.equal(report.pendingSalesPhotoEvidenceCreationCount, 2);
+    assert.deepEqual(report.pendingSalesPhotoEvidenceCreationIds, ['photo-evidence-1', 'photo-evidence-3']);
+    assert.equal(report.pendingSalesPhotoEvidenceCreationCountByStatus.waiting_for_event_sync, 1);
+    assert.equal(report.pendingSalesPhotoEvidenceCreationCountByStatus.failed_retryable, 1);
     assert.ok(report.blockingReasonCodes.includes('local_pending_events'));
     assert.ok(report.blockingReasonCodes.includes('local_sync_queue_unfinished'));
+    assert.ok(report.blockingReasonCodes.includes('local_pending_sales_photo_evidence'));
     assert.ok(report.blockingReasonCodes.includes('actor_mismatch'));
     assert.ok(report.blockingReasonCodes.includes('offline'));
   } finally {
     (db.events as any).where = originalEventsWhere;
     (db.syncQueue as any).where = originalSyncQueueWhere;
+    (db.salesPhotoEvidencePendingCreations as any).where = originalSalesPhotoEvidencePendingCreationsWhere;
     restoreNavigator();
   }
 });
@@ -159,11 +177,15 @@ runTest('local pending write report is read-only and classifies blocking reasons
 runTest('local pending write report observes active sync lock', async () => {
   const originalEventsWhere = db.events.where.bind(db.events);
   const originalSyncQueueWhere = db.syncQueue.where.bind(db.syncQueue);
+  const originalSalesPhotoEvidencePendingCreationsWhere = db.salesPhotoEvidencePendingCreations.where.bind(
+    db.salesPhotoEvidencePendingCreations
+  );
   const restoreNavigator = mockNavigatorOnline(true);
 
   try {
     (db.events as any).where = createTableMock([]).where;
     (db.syncQueue as any).where = createTableMock([]).where;
+    (db.salesPhotoEvidencePendingCreations as any).where = createTableMock([]).where;
 
     assert.equal(acquireSyncLock(), true);
     const report = await getLocalPendingWriteReport('user-1');
@@ -175,6 +197,7 @@ runTest('local pending write report observes active sync lock', async () => {
     releaseSyncLock();
     (db.events as any).where = originalEventsWhere;
     (db.syncQueue as any).where = originalSyncQueueWhere;
+    (db.salesPhotoEvidencePendingCreations as any).where = originalSalesPhotoEvidencePendingCreationsWhere;
     restoreNavigator();
   }
 });
@@ -258,6 +281,36 @@ runTest('guard blocks offline pending writes without clearing cache', async () =
   assert.deepEqual(calls, []);
 });
 
+runTest('guard blocks pending sales photo evidence without using the event push path', async () => {
+  const calls: string[] = [];
+
+  const result = await guardedAuthenticatedCacheReset(
+    { scope: 'full', reason: 'manual_signout', userId: 'user-1', allowSyncAttempt: true },
+    {
+      getReport: async () => report({
+        pendingSalesPhotoEvidenceCreationCount: 1,
+        pendingSalesPhotoEvidenceCreationIds: ['photo-evidence-1'],
+        pendingSalesPhotoEvidenceCreationCountByStatus: {
+          waiting_for_event_sync: 1,
+        },
+        blockingReasonCodes: ['local_pending_sales_photo_evidence'],
+        isClean: false,
+      }),
+      push: async () => {
+        calls.push('push');
+        return 0;
+      },
+      reset: async () => {
+        calls.push('reset');
+      },
+    }
+  );
+
+  assert.equal(result.decision, 'blocked');
+  assert.deepEqual(result.blockingReasonCodes, ['local_pending_sales_photo_evidence']);
+  assert.deepEqual(calls, []);
+});
+
 runTest('guard requires explicit force flag before discarding local changes', async () => {
   const calls: string[] = [];
 
@@ -320,6 +373,7 @@ runTest('blocked state UX is mounted and listens for auth cache blocked events',
   assert.match(authCacheBlockedDialogSource, /AUTH_CACHE_BLOCKED_EVENT/);
   assert.match(authCacheBlockedDialogSource, /Sign in to sync/);
   assert.match(authCacheBlockedDialogSource, /Discard local changes/);
+  assert.match(authCacheBlockedDialogSource, /pending sales photo evidence item/);
   assert.match(authCacheBlockedDialogSource, /forceDiscardLocalChanges:\s*true/);
   assert.match(appChromeSource, /import \{ AuthCacheBlockedDialog \}/);
   assert.match(appChromeSource, /<AuthCacheBlockedDialog \/>/);

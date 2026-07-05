@@ -69,6 +69,7 @@ export function AuthCacheBlockedDialog() {
             <div className="rounded-xl bg-background p-3 text-foreground">
               <p>{detail?.pendingEventCount ?? 0} unsynced local event(s)</p>
               <p>{detail?.unfinishedSyncQueueCount ?? 0} unfinished sync queue item(s)</p>
+              <p>{detail?.pendingSalesPhotoEvidenceCreationCount ?? 0} pending sales photo evidence item(s)</p>
             </div>
             <p>
               Sign in with the original account to let the app sync these changes, or discard them only if you are sure they should not be kept.
