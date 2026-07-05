@@ -18,7 +18,6 @@ const productionSaleEntryFiles = [
   'components/sales/QuickInteractionButtons.tsx',
   'components/sales/QuickDealModal.tsx',
   'components/sales/CartDrawer.tsx',
-  'components/markets/AddRevenueDialog.tsx',
 ];
 
 function runTest(name: string, fn: TestFn): void {
@@ -53,7 +52,7 @@ runTest('post-sale wrapper remains dependency-injected and cloud-free', () => {
   assert.doesNotMatch(postSaleSource, /getUserMedia|uploadEvidence|signedUrl|signed_url|R2/i);
 });
 
-runTest('Dexie queue storage remains available but not a production sale entry dependency', () => {
+runTest('Dexie queue storage remains available while broad production sale entries stay unwired', () => {
   assert.match(storageSource, /createDexieSalesPhotoEvidencePendingCreationStorage/);
   assert.doesNotMatch(storageSource, /@\/lib\/supabase|supabase|from\(/);
   assert.doesNotMatch(storageSource, /getUserMedia|uploadEvidence|signedUrl|signed_url|R2/i);
@@ -64,6 +63,13 @@ runTest('Dexie queue storage remains available but not a production sale entry d
   });
 
   assert.deepEqual(wiredFiles, []);
+});
+
+runTest('only AddRevenueDialog is approved for the disabled runtime wrapper pilot', () => {
+  const addRevenueDialogSource = readFileSync(join(projectRoot, 'components/markets/AddRevenueDialog.tsx'), 'utf8');
+
+  assert.match(addRevenueDialogSource, /recordDealWithOptionalSalesPhotoEvidence/);
+  assert.doesNotMatch(addRevenueDialogSource, /evidenceContext:/);
 });
 
 runTest('full test suite includes runtime enqueue boundary guardrails', () => {

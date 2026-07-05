@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Calendar, AlertCircle } from 'lucide-react';
-import { useProducts, recordDeal } from '@/lib/db/hooks';
+import { useProducts } from '@/lib/db/hooks';
+import { recordDealWithOptionalSalesPhotoEvidence } from '@/lib/sales/photo-evidence-runtime-enqueue';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
@@ -90,7 +91,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
     setIsSubmitting(true);
     
     try {
-      await recordDeal({
+      await recordDealWithOptionalSalesPhotoEvidence({
         marketId,
         isBackfill: true,
         isManualEntry: true,
@@ -169,7 +170,7 @@ export function AddRevenueDialog({ isOpen, onClose, marketId, selectedDate }: Ad
     setIsSubmitting(true);
 
     try {
-      await recordDeal({
+      await recordDealWithOptionalSalesPhotoEvidence({
         marketId,
         isBackfill: true,
         isManualEntry: false,

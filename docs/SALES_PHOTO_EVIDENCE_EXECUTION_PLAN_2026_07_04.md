@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 5C-3B-2 runtime enqueue risk boundary recorded. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, and runtime enqueue boundary guardrails are implemented. Runtime Supabase evidence row creation, post-sale enqueue wiring, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 5C-3B-3 disabled single-entry runtime wrapper pilot implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, and `AddRevenueDialog` wrapper pilot are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -783,12 +783,25 @@ Slice 5C-3B-2 Status:
 - No drain worker, Supabase evidence insert, camera capture, upload, signed URL, or UI capture prompt is approved by this slice.
 - Guarded by `tests/sales-photo-evidence-runtime-enqueue-plan.test.ts`.
 
-Next Slice 5C-3B-3 Boundary:
+Slice 5C-3B-3 Status:
 
-- Decide the first production sale entry point for disabled-by-default enqueue wiring.
-- Recommended first target: a single explicit market-detail revenue dialog path, not all sale entry points at once.
-- Before implementation, confirm owner/staff identity source, market owner id source, requirement flag source, and whether the disabled feature flag should be committed as code-only off or exposed only to tests.
-- Runtime enqueue remains blocked until this decision is confirmed.
+- Added `lib/sales/photo-evidence-runtime-flags.ts` with a code-only `salesPhotoEvidenceRuntimeEnqueue` flag that defaults off.
+- The flag does not read public env, localStorage, sessionStorage, remote config, or Supabase.
+- Added `lib/sales/photo-evidence-runtime-enqueue.ts`, a dependency-injected wrapper around sale recording and optional evidence enqueue.
+- When the flag is off, the wrapper records the sale through the existing `recordDeal()` path and returns `runtime_disabled`.
+- When the flag is on but required context is missing, the wrapper still records the sale and returns `context_missing`; it does not enqueue evidence with incomplete data.
+- When the flag is on and full context is provided, the wrapper calls the existing post-sale evidence planner and writes only to the local Dexie pending creation queue.
+- `AddRevenueDialog` is the only production sale entry wired to the disabled wrapper pilot. It does not pass `evidenceContext` yet, so no evidence enqueue can occur in production.
+- Other sale entry points remain on their existing direct `recordDeal()` calls.
+- Guarded by `tests/sales-photo-evidence-runtime-enqueue-plan.test.ts` and `tests/sales-photo-evidence-runtime-enqueue.test.ts`.
+- This slice does not write Supabase evidence rows, does not mount a drain worker, does not capture photos, does not upload to R2, does not create signed URLs, and does not show a capture prompt.
+
+Next Slice 5C-3B-4 Boundary:
+
+- Decide whether to supply full `evidenceContext` to the `AddRevenueDialog` wrapper while keeping the flag off.
+- Required context decisions: owner id source, staff id source, market requirement source, sale completion timestamp source, and behavior when role or market ownership is unresolved.
+- Recommended next target: pass context only where already available locally, fail closed to `context_missing` when unresolved, and keep the flag default off.
+- Enabling the flag for production remains blocked until context wiring and local queue verification pass.
 
 ### Slice 6: Client Capture and Compression
 
