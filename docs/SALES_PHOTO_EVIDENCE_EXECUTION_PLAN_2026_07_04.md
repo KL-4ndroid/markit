@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 5C-2 pending creation queue model implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, and local pending creation queue model are implemented. Runtime Supabase evidence row creation, photo capture, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 5C-3A disabled pending creation drain boundary implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, and disabled drain service interface are implemented. Runtime Supabase evidence row creation, Dexie queue table, photo capture, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -741,12 +741,21 @@ Slice 5C-2 Status:
 - Guarded by `tests/sales-photo-evidence-pending-creation.test.ts`.
 - This slice does not create a Dexie table, does not write to Supabase, does not mount a sync worker, does not connect UI, does not capture photos, and does not upload to R2.
 
-Next Slice 5C-3 Boundary:
+Slice 5C-3A Status:
+
+- Added `lib/sales/photo-evidence-pending-creation-drain.ts` disabled drain service boundary.
+- The boundary defines the storage adapter contract needed by a future local queue table, but does not implement the Dexie adapter yet.
+- The drain is disabled unless explicitly called with `enabled: true`; no production path imports or calls it.
+- When enabled in tests with fake dependencies, it waits for unsynced source events, creates only after synced `deal_closed`, treats existing active evidence as fulfilled, blocks invalid source rows, and classifies writer failures as retryable.
+- Guarded by `tests/sales-photo-evidence-pending-creation-drain.test.ts`.
+- This slice does not add a Dexie version, does not create a local queue table, does not write to Supabase, does not mount a sync worker, does not connect UI, does not capture photos, and does not upload to R2.
+
+Next Slice 5C-3B Boundary:
 
 - Decide when runtime may safely insert `sale_photo_evidence`.
 - Direct immediate Supabase insert after local `recordDeal()` is risky because the cloud `events` row may not exist yet while `sale_photo_evidence.sale_id` references `public.events(id)`.
-- Recommended next decision: whether to introduce a real local queue table and post-sync drain service for evidence metadata creation.
-- Recommended next low-risk slice before runtime: draft the Dexie table/storage contract and drain service interface with tests, but keep execution disabled.
+- Recommended next decision: whether to introduce a real Dexie queue table and storage adapter.
+- Real Dexie schema changes affect every local browser database on app startup, so this should be treated as a higher-sensitivity runtime/storage slice.
 - Sale persistence must remain the first committed operation; evidence creation failure must not roll back or block the sale.
 
 ### Slice 6: Client Capture and Compression
