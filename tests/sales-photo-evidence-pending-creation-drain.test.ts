@@ -18,7 +18,6 @@ type TestFn = () => void | Promise<void>;
 const tests: Array<{ name: string; fn: TestFn }> = [];
 const projectRoot = join(__dirname, '..');
 const drainSource = readFileSync(join(projectRoot, 'lib/sales/photo-evidence-pending-creation-drain.ts'), 'utf8');
-const dbSource = readFileSync(join(projectRoot, 'lib/db/index.ts'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
@@ -270,11 +269,10 @@ runTest('enabled drain marks exhausted retryable rows as permanent failure', asy
   ]);
 });
 
-runTest('drain boundary is not wired to Dexie schema sync UI or Supabase yet', () => {
+runTest('drain boundary is not wired to Dexie adapter sync UI or Supabase yet', () => {
   assert.doesNotMatch(drainSource, /@\/lib\/supabase|supabase|from\(/);
   assert.doesNotMatch(drainSource, /@\/lib\/db|recordEvent|recordDeal|getUserMedia|uploadEvidence|signedUrl|signed_url|R2/i);
   assert.doesNotMatch(drainSource, /fetch\(|window\.|document\./);
-  assert.doesNotMatch(dbSource, /pendingSalesPhotoEvidenceCreations|photoEvidencePendingCreations/);
 
   const productionFiles = [
     'hooks/useSync.ts',

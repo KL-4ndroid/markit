@@ -14,6 +14,7 @@ import type {
   DailyStats,
   Settings,
 } from '@/types/db';
+import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import {
   checkAppIntegrity,
   checkBackupIntegrity,
@@ -58,6 +59,7 @@ export class MarketPulseDB extends Dexie {
   dailyStats!: Table<DailyStats, number>;  // ✅ 使用 number 作為主鍵類型（++id 自動遞增）
   settings!: Table<Settings, number>;
   syncQueue!: Table<SyncQueueItem, string>;
+  salesPhotoEvidencePendingCreations!: Table<LocalPendingSalesPhotoEvidenceCreation, string>;
 
   constructor() {
     super('MarketPulseDB');
@@ -227,6 +229,16 @@ export class MarketPulseDB extends Dexie {
       }
       
       console.log(`✅ dailyStats 索引修復完成：${oldStats.length} 筆`);
+    });
+
+    this.version(5).stores({
+      events: 'id, type, timestamp, actor_id, market_id, sync_status',
+      markets: 'id, status, name, startDate, endDate, owner_id, is_collaborative, sync_status, isDeleted',
+      products: 'id, category, name, isActive, market_id, owner_id',
+      dailyStats: '++id, [date+marketId], date, marketId',
+      settings: '++id',
+      syncQueue: 'id, status, created_at',
+      salesPhotoEvidencePendingCreations: 'queueId, saleEventId, ownerId, marketId, status, updatedAt, createdAt',
     });
   }
 }
