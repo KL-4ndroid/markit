@@ -17,6 +17,8 @@ interface SalesPhotoEvidencePendingListDialogProps {
   isOpen: boolean;
   items: SalesPhotoEvidencePendingCreationListItem[];
   isLoading?: boolean;
+  loadError?: string | null;
+  lastLoadedAt?: number | null;
   onRefresh?: () => void;
   onClose: () => void;
 }
@@ -60,14 +62,40 @@ function getStatusIcon(status: SalesPhotoEvidencePendingCreationListItem['status
   return <Clock className="h-4 w-4" />;
 }
 
+function countByStatus(items: SalesPhotoEvidencePendingCreationListItem[]) {
+  return items.reduce<Record<SalesPhotoEvidencePendingCreationListItem['status'], number>>(
+    (counts, item) => {
+      counts[item.status] += 1;
+      return counts;
+    },
+    {
+      waiting_for_event_sync: 0,
+      creating: 0,
+      created: 0,
+      failed_retryable: 0,
+      failed_permanent: 0,
+      blocked_invalid_source: 0,
+    }
+  );
+}
+
 export function SalesPhotoEvidencePendingListDialog({
   isOpen,
   items,
   isLoading = false,
+  loadError = null,
+  lastLoadedAt = null,
   onRefresh,
   onClose,
 }: SalesPhotoEvidencePendingListDialogProps) {
   if (!isOpen) return null;
+
+  const statusCounts = countByStatus(items);
+  const needsAttentionCount =
+    statusCounts.failed_retryable +
+    statusCounts.failed_permanent +
+    statusCounts.blocked_invalid_source;
+  const lastLoadedLabel = lastLoadedAt ? formatDateTime(new Date(lastLoadedAt).toISOString()) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 px-4 py-6 sm:items-center">
@@ -78,6 +106,22 @@ export function SalesPhotoEvidencePendingListDialog({
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
               這裡只顯示本機尚未處理完成的照片補件狀態。
             </p>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-background px-3 py-1 text-muted-foreground">
+                全部 {items.length}
+              </span>
+              <span className="rounded-full bg-soft-yellow px-3 py-1 text-secondary">
+                等待同步 {statusCounts.waiting_for_event_sync}
+              </span>
+              <span className="rounded-full bg-orange-50 px-3 py-1 text-orange-700">
+                需確認 {needsAttentionCount}
+              </span>
+            </div>
+            {lastLoadedLabel && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                最後更新 {lastLoadedLabel}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -90,7 +134,11 @@ export function SalesPhotoEvidencePendingListDialog({
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto px-5 py-4">
-          {isLoading ? (
+          {loadError ? (
+            <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {loadError}
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               載入中

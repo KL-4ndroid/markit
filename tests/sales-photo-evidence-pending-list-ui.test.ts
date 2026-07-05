@@ -133,6 +133,10 @@ runTest('pending list read model stays local-only and read-only', () => {
 runTest('pending list dialog is display-only', () => {
   assert.match(dialogSource, /export function SalesPhotoEvidencePendingListDialog/);
   assert.match(dialogSource, /items: SalesPhotoEvidencePendingCreationListItem\[\]/);
+  assert.match(dialogSource, /loadError\?: string \| null/);
+  assert.match(dialogSource, /lastLoadedAt\?: number \| null/);
+  assert.match(dialogSource, /const statusCounts = countByStatus\(items\)/);
+  assert.match(dialogSource, /const needsAttentionCount/);
   assert.match(dialogSource, /待補照片/);
   assert.match(dialogSource, /重新整理/);
   assert.doesNotMatch(dialogSource, /db\.|supabase|recordEvent|enqueue|drain|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i);
@@ -145,6 +149,8 @@ runTest('owner and staff market detail wire pending count and dialog without ena
     assert.match(source, /listLocalSalesPhotoEvidencePendingCreationsForMarket/);
     assert.match(source, /pendingCount=\{pendingSalesPhotoEvidenceItems\.length\}/);
     assert.match(source, /onOpenPendingEvidence=\{handleOpenPendingSalesPhotoEvidence\}/);
+    assert.match(source, /loadError=\{pendingSalesPhotoEvidenceLoadError\}/);
+    assert.match(source, /lastLoadedAt=\{pendingSalesPhotoEvidenceLoadedAt\}/);
     assert.match(source, /onRefresh=\{loadPendingSalesPhotoEvidenceItems\}/);
     assert.doesNotMatch(
       source,
@@ -153,10 +159,12 @@ runTest('owner and staff market detail wire pending count and dialog without ena
   }
 });
 
-runTest('plan and npm test include Slice 5C-3C pending list guardrails', () => {
+runTest('plan and npm test include Slice 5C-3C and 5C-3D pending list guardrails', () => {
   assert.match(planSource, /Slice 5C-3C Status/);
-  assert.match(planSource, /pending evidence list UI shell/);
+  assert.match(planSource, /pending evidence list UI shell/i);
   assert.match(planSource, /local-only read model/);
+  assert.match(planSource, /Slice 5C-3D Status/);
+  assert.match(planSource, /read-only pending list UX polish/);
   assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-pending-list-ui\.test\.ts/);
 });
 

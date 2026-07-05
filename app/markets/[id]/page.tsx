@@ -235,6 +235,8 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [isUpdatingSalesPhotoEvidence, setIsUpdatingSalesPhotoEvidence] = useState(false);
   const [showPendingSalesPhotoEvidence, setShowPendingSalesPhotoEvidence] = useState(false);
   const [isLoadingPendingSalesPhotoEvidence, setIsLoadingPendingSalesPhotoEvidence] = useState(false);
+  const [pendingSalesPhotoEvidenceLoadError, setPendingSalesPhotoEvidenceLoadError] = useState<string | null>(null);
+  const [pendingSalesPhotoEvidenceLoadedAt, setPendingSalesPhotoEvidenceLoadedAt] = useState<number | null>(null);
   const [pendingSalesPhotoEvidenceItems, setPendingSalesPhotoEvidenceItems] = useState<
     SalesPhotoEvidencePendingCreationListItem[]
   >([]);
@@ -895,15 +897,20 @@ export default function MarketDetailPage({ params }: PageProps) {
   const loadPendingSalesPhotoEvidenceItems = useCallback(async () => {
     if (!marketId) {
       setPendingSalesPhotoEvidenceItems([]);
+      setPendingSalesPhotoEvidenceLoadError(null);
+      setPendingSalesPhotoEvidenceLoadedAt(null);
       return;
     }
 
     setIsLoadingPendingSalesPhotoEvidence(true);
+    setPendingSalesPhotoEvidenceLoadError(null);
     try {
       const items = await listLocalSalesPhotoEvidencePendingCreationsForMarket(marketId);
       setPendingSalesPhotoEvidenceItems(items);
+      setPendingSalesPhotoEvidenceLoadedAt(Date.now());
     } catch (error) {
       console.error('load pending sales photo evidence failed:', error);
+      setPendingSalesPhotoEvidenceLoadError('待補照片狀態讀取失敗，請稍後再試或重新整理。');
     } finally {
       setIsLoadingPendingSalesPhotoEvidence(false);
     }
@@ -2286,6 +2293,8 @@ export default function MarketDetailPage({ params }: PageProps) {
         isOpen={showPendingSalesPhotoEvidence}
         items={pendingSalesPhotoEvidenceItems}
         isLoading={isLoadingPendingSalesPhotoEvidence}
+        loadError={pendingSalesPhotoEvidenceLoadError}
+        lastLoadedAt={pendingSalesPhotoEvidenceLoadedAt}
         onRefresh={loadPendingSalesPhotoEvidenceItems}
         onClose={() => setShowPendingSalesPhotoEvidence(false)}
       />
