@@ -58,6 +58,7 @@ import { InteractionDetailModal } from '@/components/markets/InteractionDetailMo
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { SalesPhotoEvidenceOperatingCard } from '@/components/markets/SalesPhotoEvidenceOperatingCard';
+import { SalesPhotoEvidencePendingListDialog } from '@/components/markets/SalesPhotoEvidencePendingListDialog';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -69,6 +70,10 @@ import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
 import { getDealEventDate, getDealEventRevenue, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
+import {
+  listLocalSalesPhotoEvidencePendingCreationsForMarket,
+  type SalesPhotoEvidencePendingCreationListItem,
+} from '@/lib/sales/photo-evidence-pending-creation-read-model';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
@@ -228,6 +233,11 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [isUpdatingSalesPhotoEvidence, setIsUpdatingSalesPhotoEvidence] = useState(false);
+  const [showPendingSalesPhotoEvidence, setShowPendingSalesPhotoEvidence] = useState(false);
+  const [isLoadingPendingSalesPhotoEvidence, setIsLoadingPendingSalesPhotoEvidence] = useState(false);
+  const [pendingSalesPhotoEvidenceItems, setPendingSalesPhotoEvidenceItems] = useState<
+    SalesPhotoEvidencePendingCreationListItem[]
+  >([]);
   const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedDeal, setSelectedDeal] = useState<Event<DealClosedPayload> | null>(null);
@@ -882,6 +892,32 @@ export default function MarketDetailPage({ params }: PageProps) {
     }
   };
 
+  const loadPendingSalesPhotoEvidenceItems = useCallback(async () => {
+    if (!marketId) {
+      setPendingSalesPhotoEvidenceItems([]);
+      return;
+    }
+
+    setIsLoadingPendingSalesPhotoEvidence(true);
+    try {
+      const items = await listLocalSalesPhotoEvidencePendingCreationsForMarket(marketId);
+      setPendingSalesPhotoEvidenceItems(items);
+    } catch (error) {
+      console.error('load pending sales photo evidence failed:', error);
+    } finally {
+      setIsLoadingPendingSalesPhotoEvidence(false);
+    }
+  }, [marketId]);
+
+  useEffect(() => {
+    void loadPendingSalesPhotoEvidenceItems();
+  }, [loadPendingSalesPhotoEvidenceItems]);
+
+  const handleOpenPendingSalesPhotoEvidence = () => {
+    setShowPendingSalesPhotoEvidence(true);
+    void loadPendingSalesPhotoEvidenceItems();
+  };
+
   const handleOpenAddRevenue = (date: string) => {
     if (dbStatus?.ok === false) return;
     setSelectedDate(date);
@@ -1204,7 +1240,8 @@ export default function MarketDetailPage({ params }: PageProps) {
               required={salesPhotoEvidenceRequired}
               isUpdating={isUpdatingSalesPhotoEvidence}
               onToggle={handleToggleSalesPhotoEvidence}
-              pendingCount={0}
+              pendingCount={pendingSalesPhotoEvidenceItems.length}
+              onOpenPendingEvidence={handleOpenPendingSalesPhotoEvidence}
             />
 
             {/* 3. 快速交易（完整版：選擇商品） */}
@@ -2243,6 +2280,14 @@ export default function MarketDetailPage({ params }: PageProps) {
         marketId={marketId}
         selectedDate={selectedDate}
         salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+      />
+
+      <SalesPhotoEvidencePendingListDialog
+        isOpen={showPendingSalesPhotoEvidence}
+        items={pendingSalesPhotoEvidenceItems}
+        isLoading={isLoadingPendingSalesPhotoEvidence}
+        onRefresh={loadPendingSalesPhotoEvidenceItems}
+        onClose={() => setShowPendingSalesPhotoEvidence(false)}
       />
 
       {/* 日期成交記錄彈窗 */}

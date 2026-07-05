@@ -50,7 +50,8 @@ runTest('owner operating screen can toggle the requirement without creating evid
   assert.match(operatingBlock, /<SalesPhotoEvidenceOperatingCard[\s\S]*mode="owner"/);
   assert.match(operatingBlock, /required=\{salesPhotoEvidenceRequired\}/);
   assert.match(operatingBlock, /onToggle=\{handleToggleSalesPhotoEvidence\}/);
-  assert.match(operatingBlock, /pendingCount=\{0\}/);
+  assert.match(operatingBlock, /pendingCount=\{pendingSalesPhotoEvidenceItems\.length\}/);
+  assert.match(operatingBlock, /onOpenPendingEvidence=\{handleOpenPendingSalesPhotoEvidence\}/);
   assert.doesNotMatch(operatingBlock, /sale_photo_evidence|uploadEvidence|getUserMedia|signedUrl|signed_url/i);
 
   const settingsBlock = section(ownerPageSource, '/* 7. 每日收入統計', '<DailyRevenueStats');
@@ -63,7 +64,8 @@ runTest('staff operating screen shows read-only indicator and never receives a t
   const operatingBlock = section(staffViewSource, '{isOperating && (', '<MarketFieldOpsSection');
   assert.match(operatingBlock, /<SalesPhotoEvidenceOperatingCard[\s\S]*mode="staff"/);
   assert.match(operatingBlock, /required=\{salesPhotoEvidenceRequired\}/);
-  assert.match(operatingBlock, /pendingCount=\{0\}/);
+  assert.match(operatingBlock, /pendingCount=\{pendingSalesPhotoEvidenceItems\.length\}/);
+  assert.match(operatingBlock, /onOpenPendingEvidence=\{handleOpenPendingSalesPhotoEvidence\}/);
   assert.doesNotMatch(operatingBlock, /onToggle=\{handleToggleSalesPhotoEvidence\}|updateMarket\(|recordEvent\(/);
 });
 

@@ -66,6 +66,7 @@ import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { SalesPhotoEvidenceOperatingCard } from '@/components/markets/SalesPhotoEvidenceOperatingCard';
+import { SalesPhotoEvidencePendingListDialog } from '@/components/markets/SalesPhotoEvidencePendingListDialog';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -73,6 +74,10 @@ import { useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { getActiveDealEventsForMarket } from '@/lib/events/active-event-service';
 import { getDealEventDate } from '@/lib/markets/event-view-utils';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
+import {
+  listLocalSalesPhotoEvidencePendingCreationsForMarket,
+  type SalesPhotoEvidencePendingCreationListItem,
+} from '@/lib/sales/photo-evidence-pending-creation-read-model';
 import type { Market, Event, DealClosedPayload } from '@/types/db';
 
 interface StaffMarketDetailViewProps {
@@ -199,8 +204,39 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   // ✅ 員工核心工作功能：補登收入 / 每日成交記錄彈窗
   const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
   const [showDailyDealsModal, setShowDailyDealsModal] = useState(false);
+  const [showPendingSalesPhotoEvidence, setShowPendingSalesPhotoEvidence] = useState(false);
+  const [isLoadingPendingSalesPhotoEvidence, setIsLoadingPendingSalesPhotoEvidence] = useState(false);
+  const [pendingSalesPhotoEvidenceItems, setPendingSalesPhotoEvidenceItems] = useState<
+    SalesPhotoEvidencePendingCreationListItem[]
+  >([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
+
+  const loadPendingSalesPhotoEvidenceItems = useCallback(async () => {
+    if (!marketId) {
+      setPendingSalesPhotoEvidenceItems([]);
+      return;
+    }
+
+    setIsLoadingPendingSalesPhotoEvidence(true);
+    try {
+      const items = await listLocalSalesPhotoEvidencePendingCreationsForMarket(marketId);
+      setPendingSalesPhotoEvidenceItems(items);
+    } catch (error) {
+      console.error('load pending sales photo evidence failed:', error);
+    } finally {
+      setIsLoadingPendingSalesPhotoEvidence(false);
+    }
+  }, [marketId]);
+
+  useEffect(() => {
+    void loadPendingSalesPhotoEvidenceItems();
+  }, [loadPendingSalesPhotoEvidenceItems]);
+
+  const handleOpenPendingSalesPhotoEvidence = () => {
+    setShowPendingSalesPhotoEvidence(true);
+    void loadPendingSalesPhotoEvidenceItems();
+  };
 
   // ✅ 載入成交事件（從 db.events 讀取，員工呼叫 OK）
   useEffect(() => {
@@ -373,7 +409,8 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
             <SalesPhotoEvidenceOperatingCard
               mode="staff"
               required={salesPhotoEvidenceRequired}
-              pendingCount={0}
+              pendingCount={pendingSalesPhotoEvidenceItems.length}
+              onOpenPendingEvidence={handleOpenPendingSalesPhotoEvidence}
             />
 
             {/* 3. 快速交易（完整版：選擇商品） */}
@@ -603,6 +640,14 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         marketId={marketId}
         selectedDate={selectedDate}
         salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+      />
+
+      <SalesPhotoEvidencePendingListDialog
+        isOpen={showPendingSalesPhotoEvidence}
+        items={pendingSalesPhotoEvidenceItems}
+        isLoading={isLoadingPendingSalesPhotoEvidence}
+        onRefresh={loadPendingSalesPhotoEvidenceItems}
+        onClose={() => setShowPendingSalesPhotoEvidence(false)}
       />
 
       {/* 每日成交記錄彈窗（透過 DailyRevenueStats 觸發） */}
