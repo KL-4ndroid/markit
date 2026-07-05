@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 5C-3B-4 AddRevenueDialog evidence context plumbing implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, and disabled evidence context plumbing are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 5C-3B-5 runtime enablement decision recorded. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, and runtime enablement guardrails are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -806,11 +806,21 @@ Slice 5C-3B-4 Status:
 - The runtime flag remains code-only and default off, so this slice still does not create local pending evidence rows in production.
 - Guarded by `tests/sales-photo-evidence-runtime-enqueue.test.ts` and `tests/sales-photo-evidence-runtime-enqueue-plan.test.ts`.
 
-Next Slice 5C-3B-5 Boundary:
+Slice 5C-3B-5 Status:
 
-- Decide whether to add a test-only controlled enablement path for `salesPhotoEvidenceRuntimeEnqueue`.
-- Production enablement remains blocked until the local queue insert can be verified with disposable data and a visible pending-evidence UX exists.
-- Recommended next target: add model/static tests for controlled enablement only, or pause runtime work and move to pending evidence list UI shell.
+- No global test-only flag setter is added.
+- Existing dependency injection remains the only approved controlled enablement path for runtime enqueue tests.
+- Production flag remains code-only and default off.
+- The flag module remains immutable and must not read public env, localStorage, sessionStorage, remote config, Supabase, or any external control plane.
+- This avoids creating a second mutable runtime control path just for tests.
+- Guarded by `tests/sales-photo-evidence-runtime-enablement-decision.test.ts`.
+
+Next Slice 5C-3C Boundary:
+
+- Move away from runtime enablement and build a pending evidence list UI shell.
+- Recommended scope: owner/staff local-only read model for `salesPhotoEvidencePendingCreations`, pending count wiring, and a read-only pending list modal or panel.
+- Do not capture photos, upload files, sign URLs, drain the queue, create Supabase evidence rows, or enable runtime enqueue.
+- Production enqueue remains blocked until pending rows are visible and recoverable to users.
 
 ### Slice 6: Client Capture and Compression
 
