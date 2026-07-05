@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 5C-3D read-only pending list UX polish implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, and read-only pending list UX polish are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 5C-3E runtime enqueue verification plan recorded. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, and runtime enqueue verification plan guardrails are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -833,11 +833,21 @@ Slice 5C-3D Status:
 - No capture, upload, signed URL, drain, Supabase evidence row creation, queue mutation, or runtime enqueue enablement is added.
 - Guarded by `tests/sales-photo-evidence-pending-list-ui.test.ts`.
 
-Next Slice 5C-3E Boundary:
+Slice 5C-3E Status:
 
-- This is now the boundary before runtime enqueue verification or any queue recovery/cleanup action.
-- Recommended next discussion: whether to create a disposable local-only fixture path for runtime enqueue verification, or postpone runtime enqueue and move to photo capture design.
-- Do not enable production enqueue until local pending rows have an approved recovery/cleanup path and manual verification scope is agreed.
+- Runtime enqueue verification plan only is recorded.
+- No runtime flag change is made.
+- No local fixture, hidden UI, production enqueue, queue cleanup, or retry action is implemented.
+- Recommended future verification path: a local-only disposable fixture that calls `recordDealWithOptionalSalesPhotoEvidence()` with injected dependencies after explicit approval.
+- The fixture, if later approved, must write only to local IndexedDB test/disposable data and must not call Supabase, R2, signed URL, upload, drain, or queue cleanup.
+- Production runtime enqueue remains blocked until pending rows have an approved recovery/cleanup path and manual verification scope is agreed.
+- Guarded by `tests/sales-photo-evidence-runtime-verification-plan.test.ts`.
+
+Next Slice 5C-3F Boundary:
+
+- This is the boundary before any implementation that intentionally creates local pending evidence rows outside unit tests.
+- Recommended next decision: approve or reject a local-only disposable verification fixture.
+- If rejected, postpone runtime enqueue and move to Slice 6 photo capture design without connecting it to sales runtime.
 
 ### Slice 6: Client Capture and Compression
 
