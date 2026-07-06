@@ -130,7 +130,7 @@ runTest('pending list read model stays local-only and read-only', () => {
   assert.doesNotMatch(readModelSource, /supabase|sale_photo_evidence|drain|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i);
 });
 
-runTest('pending list dialog is display-only', () => {
+runTest('pending list dialog stays adapter-free and delegates local capture by prop', () => {
   assert.match(dialogSource, /export function SalesPhotoEvidencePendingListDialog/);
   assert.match(dialogSource, /items: SalesPhotoEvidencePendingCreationListItem\[\]/);
   assert.match(dialogSource, /buildPendingSalesPhotoEvidenceCreationDiagnosticSummary\(items\)/);
@@ -143,11 +143,13 @@ runTest('pending list dialog is display-only', () => {
   assert.match(dialogSource, /不會自動清除、恢復或上傳任何資料/);
   assert.match(dialogSource, /RECOMMENDATION_LABELS/);
   assert.match(dialogSource, /重新讀取/);
+  assert.match(dialogSource, /captureEnabled = false/);
+  assert.match(dialogSource, /onCaptureLocal\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<void>/);
   assert.doesNotMatch(dialogSource, /db\.|supabase|recordEvent|enqueue|drain|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i);
   assert.doesNotMatch(dialogSource, /add\(|put\(|update\(|delete\(|clear\(|bulkAdd\(/);
 });
 
-runTest('owner and staff market detail wire pending count and dialog without enabling runtime writes', () => {
+runTest('owner and staff market detail wire pending count and dialog without cloud writes', () => {
   for (const source of [ownerPageSource, staffViewSource]) {
     assert.match(source, /SalesPhotoEvidencePendingListDialog/);
     assert.match(source, /listLocalSalesPhotoEvidencePendingCreationsForMarket/);
@@ -161,6 +163,11 @@ runTest('owner and staff market detail wire pending count and dialog without ena
       /enqueuePendingSalesPhotoEvidenceCreation|createDexieSalesPhotoEvidencePendingCreationStorage|drainSalesPhotoEvidencePendingCreations|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i
     );
   }
+
+  assert.match(staffViewSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
+  assert.match(staffViewSource, /captureEnabled=\{true\}/);
+  assert.match(staffViewSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
+  assert.doesNotMatch(ownerPageSource, /captureAndStoreSalesPhotoEvidenceWithFileInput|captureEnabled=\{true\}|onCaptureLocal=\{/);
 });
 
 runTest('plan and npm test include Slice 5C-3C and 5C-3D pending list guardrails', () => {

@@ -241,7 +241,7 @@ runTest('adapter falls back from primary webp image render to jpeg when primary 
   ]);
 });
 
-runTest('runtime adapter source remains disconnected from cloud upload sync and production UI wiring', () => {
+runTest('runtime adapter source remains disconnected from cloud upload sync and only staff pending UI may import it', () => {
   assert.match(adapterSource, /type="file"|input\.type = 'file'/);
   assert.match(adapterSource, /accept = 'image\/\*'/);
   assert.match(adapterSource, /capture', 'environment'/);
@@ -250,19 +250,23 @@ runTest('runtime adapter source remains disconnected from cloud upload sync and 
   assert.doesNotMatch(adapterSource, /fetch\(|XMLHttpRequest|uploadEvidence|signedUrl|signed_url|S3Client|PutObjectCommand|GetObjectCommand|\bR2\b/i);
   assert.doesNotMatch(adapterSource, /localStorage|sessionStorage|recordEvent|recordDeal|enqueuePendingSalesPhotoEvidenceCreation/);
 
-  const productionFiles = [
+  const blockedProductionFiles = [
     'components/markets/AddRevenueDialog.tsx',
     'components/markets/SalesPhotoEvidenceOperatingCard.tsx',
-    'components/markets/StaffMarketDetailView.tsx',
     'app/markets/[id]/page.tsx',
   ];
 
-  const matches = productionFiles.filter(file => {
+  const matches = blockedProductionFiles.filter(file => {
     const source = readProjectFile(file);
     return /captureAndStoreSalesPhotoEvidenceWithFileInput|photo-evidence-browser-adapter/.test(source);
   });
 
   assert.deepEqual(matches, []);
+
+  const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
+  assert.match(staffViewSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
+  assert.match(staffViewSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
+  assert.doesNotMatch(staffViewSource, /upload|getUserMedia|signedUrl|signed_url|\bR2\b|drainSalesPhotoEvidencePendingCreations/i);
 });
 
 runTest('execution plan and package test include the runtime adapter slice', () => {

@@ -36,6 +36,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Calendar,
@@ -78,10 +79,28 @@ import {
   listLocalSalesPhotoEvidencePendingCreationsForMarket,
   type SalesPhotoEvidencePendingCreationListItem,
 } from '@/lib/sales/photo-evidence-pending-creation-read-model';
+import { captureAndStoreSalesPhotoEvidenceWithFileInput } from '@/lib/sales/photo-evidence-browser-adapter';
 import type { Market, Event, DealClosedPayload } from '@/types/db';
 
 interface StaffMarketDetailViewProps {
   market: Market;
+}
+
+function getSalesPhotoEvidenceCaptureFailureMessage(reason: string): string {
+  switch (reason) {
+    case 'capture_cancelled':
+      return '已取消選擇照片，待補照片仍保留。';
+    case 'adapter_unavailable':
+      return '目前瀏覽器不支援拍照或圖片處理，請改用支援的瀏覽器再試。';
+    case 'source_decode_failed':
+      return '照片讀取失敗，請重新拍照或選擇其他圖片。';
+    case 'compression_failed':
+      return '照片壓縮失敗，請重新拍照或選擇較清楚的圖片。';
+    case 'output_policy_rejected':
+      return '照片格式或大小不符合限制，請重新拍照或選擇其他圖片。';
+    default:
+      return '照片暫存失敗，請稍後再試。';
+  }
 }
 
 export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
@@ -211,6 +230,10 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   const [pendingSalesPhotoEvidenceItems, setPendingSalesPhotoEvidenceItems] = useState<
     SalesPhotoEvidencePendingCreationListItem[]
   >([]);
+  const [capturingSalesPhotoEvidenceQueueId, setCapturingSalesPhotoEvidenceQueueId] = useState<string | null>(null);
+  const [salesPhotoEvidenceCaptureErrorByQueueId, setSalesPhotoEvidenceCaptureErrorByQueueId] = useState<
+    Record<string, string | null>
+  >({});
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
 
@@ -244,6 +267,73 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
     setShowPendingSalesPhotoEvidence(true);
     void loadPendingSalesPhotoEvidenceItems();
   };
+
+  const isLocalSalesPhotoEvidenceCaptureAllowed = useCallback(
+    (item: SalesPhotoEvidencePendingCreationListItem) => {
+      return !item.capturedByStaffId || item.capturedByStaffId === user?.id;
+    },
+    [user?.id]
+  );
+
+  const handleCaptureLocalSalesPhotoEvidence = useCallback(
+    async (item: SalesPhotoEvidencePendingCreationListItem) => {
+      if (!user?.id) {
+        const message = '請先登入後再補拍照片。';
+        setSalesPhotoEvidenceCaptureErrorByQueueId(previous => ({
+          ...previous,
+          [item.queueId]: message,
+        }));
+        toast.error(message);
+        return;
+      }
+
+      if (!isLocalSalesPhotoEvidenceCaptureAllowed(item)) {
+        const message = '這筆待補照片屬於其他員工，不能在此裝置補拍。';
+        setSalesPhotoEvidenceCaptureErrorByQueueId(previous => ({
+          ...previous,
+          [item.queueId]: message,
+        }));
+        toast.error(message);
+        return;
+      }
+
+      setCapturingSalesPhotoEvidenceQueueId(item.queueId);
+      setSalesPhotoEvidenceCaptureErrorByQueueId(previous => ({
+        ...previous,
+        [item.queueId]: null,
+      }));
+
+      try {
+        const result = await captureAndStoreSalesPhotoEvidenceWithFileInput({ queueItem: item });
+
+        if (result.action === 'capture_stored_locally') {
+          toast.success('照片已暫存在本機，尚未上傳雲端。');
+          await loadPendingSalesPhotoEvidenceItems();
+          return;
+        }
+
+        const message = getSalesPhotoEvidenceCaptureFailureMessage(result.failure.reason);
+        setSalesPhotoEvidenceCaptureErrorByQueueId(previous => ({
+          ...previous,
+          [item.queueId]: message,
+        }));
+        if (result.failure.reason !== 'capture_cancelled') {
+          toast.error(message);
+        }
+      } catch (error) {
+        console.error('capture local sales photo evidence failed:', error);
+        const message = '照片暫存失敗，請稍後再試。';
+        setSalesPhotoEvidenceCaptureErrorByQueueId(previous => ({
+          ...previous,
+          [item.queueId]: message,
+        }));
+        toast.error(message);
+      } finally {
+        setCapturingSalesPhotoEvidenceQueueId(null);
+      }
+    },
+    [isLocalSalesPhotoEvidenceCaptureAllowed, loadPendingSalesPhotoEvidenceItems, user?.id]
+  );
 
   // ✅ 載入成交事件（從 db.events 讀取，員工呼叫 OK）
   useEffect(() => {
@@ -655,6 +745,11 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         isLoading={isLoadingPendingSalesPhotoEvidence}
         loadError={pendingSalesPhotoEvidenceLoadError}
         lastLoadedAt={pendingSalesPhotoEvidenceLoadedAt}
+        captureEnabled={true}
+        capturingQueueId={capturingSalesPhotoEvidenceQueueId}
+        captureErrorByQueueId={salesPhotoEvidenceCaptureErrorByQueueId}
+        isLocalCaptureAllowed={isLocalSalesPhotoEvidenceCaptureAllowed}
+        onCaptureLocal={handleCaptureLocalSalesPhotoEvidence}
         onRefresh={loadPendingSalesPhotoEvidenceItems}
         onClose={() => setShowPendingSalesPhotoEvidence(false)}
       />

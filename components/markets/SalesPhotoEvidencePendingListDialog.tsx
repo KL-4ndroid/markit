@@ -25,6 +25,11 @@ interface SalesPhotoEvidencePendingListDialogProps {
   isLoading?: boolean;
   loadError?: string | null;
   lastLoadedAt?: number | null;
+  captureEnabled?: boolean;
+  capturingQueueId?: string | null;
+  captureErrorByQueueId?: Record<string, string | null>;
+  isLocalCaptureAllowed?: (item: SalesPhotoEvidencePendingCreationListItem) => boolean;
+  onCaptureLocal?: (item: SalesPhotoEvidencePendingCreationListItem) => void | Promise<void>;
   onRefresh?: () => void;
   onClose: () => void;
 }
@@ -124,6 +129,11 @@ export function SalesPhotoEvidencePendingListDialog({
   isLoading = false,
   loadError = null,
   lastLoadedAt = null,
+  captureEnabled = false,
+  capturingQueueId = null,
+  captureErrorByQueueId = {},
+  isLocalCaptureAllowed,
+  onCaptureLocal,
   onRefresh,
   onClose,
 }: SalesPhotoEvidencePendingListDialogProps) {
@@ -231,8 +241,16 @@ export function SalesPhotoEvidencePendingListDialog({
 
                     <SalesPhotoEvidenceLocalCaptureAction
                       status={item.status}
-                      captureEnabled={false}
+                      captureEnabled={captureEnabled && (isLocalCaptureAllowed?.(item) ?? true)}
+                      isCapturing={capturingQueueId === item.queueId}
+                      onCapture={onCaptureLocal ? () => void onCaptureLocal(item) : undefined}
                     />
+
+                    {captureErrorByQueueId[item.queueId] && (
+                      <div className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        {captureErrorByQueueId[item.queueId]}
+                      </div>
+                    )}
 
                     {(item.retryCount > 0 || item.lastErrorMessage) && (
                       <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs text-muted-foreground">

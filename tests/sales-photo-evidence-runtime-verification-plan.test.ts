@@ -56,7 +56,7 @@ runTest('runtime wrapper remains injectable but production callers do not force 
   for (const source of [addRevenueDialogSource, ownerPageSource, staffViewSource]) {
     assert.doesNotMatch(source, /isRuntimeEnqueueEnabled:\s*\(\)\s*=>\s*true/);
     assert.doesNotMatch(source, /createPendingEvidence:\s*async|enqueuePendingSalesPhotoEvidenceCreation/);
-    assert.doesNotMatch(source, /setSalesPhotoEvidence|enableSalesPhotoEvidence|controlledTest|testHarness/i);
+    assert.doesNotMatch(source, /enableSalesPhotoEvidence|disableSalesPhotoEvidence|controlledTest|testHarness/i);
   }
 });
 
