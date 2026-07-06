@@ -1044,10 +1044,20 @@ Slice 9A Status:
 - This slice does not request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, or enable runtime enqueue.
 - Guarded by `tests/sales-photo-evidence-owner-album.test.ts`.
 
-Next Phase Boundary After Slice 6B/7A/9A:
+Slice 9B Status:
+
+- Route integration is intentionally limited to a design and guardrail test before touching the market detail runtime route.
+- The future owner album entry point should live in the owner market detail experience, near the existing sales photo evidence controls, and not in `StaffMarketDetailView`.
+- The first runtime route component must be owner-only and must fail closed when role, owner id, or market id is not ready.
+- The first runtime route component must pass rows through `buildSalesPhotoEvidenceOwnerAlbumViewModel()` before rendering `SalesPhotoEvidenceOwnerAlbumShell`.
+- The first runtime route component may render a loading or empty state, but must not fetch signed read URLs, render private images, call R2, upload, write Supabase, mutate expiration, enable runtime enqueue, or execute cleanup.
+- Data fetching remains a separate approval boundary. The allowed next implementation slice is a prop-driven owner-only route section with injected rows, not a cloud-backed fetcher.
+- Guarded by `tests/sales-photo-evidence-owner-album-route-integration-plan.test.ts`.
+
+Next Phase Boundary After Slice 6B/7A/9A/9B:
 
 - Production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, browser camera/canvas adapter, Supabase evidence-row writer, R2 upload, and signed read URLs remain explicit approval boundaries.
-- Recommended next low-risk step: route integration design for the read-only owner album shell, without data fetching changes or signed read URL usage.
+- Recommended next low-risk step: prop-driven owner-only route section for the read-only owner album shell, without data fetching changes or signed read URL usage.
 - Alternative low-risk step: Phase A browser adapter implementation design document only, before any real camera/canvas code.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.
 
