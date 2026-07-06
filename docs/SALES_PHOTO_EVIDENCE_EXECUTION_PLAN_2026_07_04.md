@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 5C-3G pending evidence recovery/cleanup semantics implemented as a pure model. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, and pending creation recovery/cleanup classification are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 5C-3H-0 owner-visible pending evidence diagnostics model implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, and owner-readable pending diagnostics view model are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -866,10 +866,23 @@ Slice 5C-3G Status:
 - The model is not wired to Dexie mutation, Supabase, R2, upload, signed URL, drain, UI, timer, or browser storage execution paths.
 - Guarded by `tests/sales-photo-evidence-pending-creation-recovery.test.ts`.
 
-Next Slice 5C-3H Boundary:
+Slice 5C-3H-0 Status:
+
+- Owner-visible pending evidence diagnostics are implemented as a pure view model in `lib/sales/photo-evidence-pending-creation-diagnostics.ts`.
+- The diagnostics model converts local queue rows into severity and owner recommendation categories.
+- `waiting_for_event_sync` is informational and recommends waiting for sale sync.
+- stale `creating` is warning-level and recommends stale-creating recovery.
+- `failed_retryable` is warning-level and remains normal retry work.
+- old `created` rows are informational and recommend retiring only the local queue row.
+- `blocked_invalid_source` and `failed_permanent` are critical and require manual review.
+- The diagnostics summary sorts critical rows first, then warning, info, and none.
+- The diagnostics model is not wired into UI, Dexie mutation, Supabase, R2, upload, signed URL, cleanup executor, or production runtime enqueue paths.
+- Guarded by `tests/sales-photo-evidence-pending-creation-diagnostics.test.ts`.
+
+Next Slice 5C-3H-1 Boundary:
 
 - This is the boundary before any production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, photo capture implementation, or Supabase evidence-row writer.
-- Recommended next step if continuing runtime safety: design an owner-visible local diagnostics/action surface for pending evidence rows, still without automatic cleanup.
+- Recommended next step if continuing runtime safety: connect the diagnostics model into the existing read-only pending list UI so owner/staff can see severity and recommendations without any mutation action.
 - Recommended next step if shifting toward product flow: begin Slice 6 photo capture/compression design only, without connecting capture to sales runtime.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.
 

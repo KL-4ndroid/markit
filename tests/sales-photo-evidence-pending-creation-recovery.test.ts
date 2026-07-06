@@ -190,7 +190,7 @@ runTest('recovery model stays pure and is not wired to runtime cleanup execution
   });
 
   assert.deepEqual(wiredFiles, []);
-  assert.match(planSource, /5C-3G pending evidence recovery\/cleanup semantics/);
+  assert.match(planSource, /Slice 5C-3G Status/);
   assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-pending-creation-recovery\.test\.ts/);
 });
 
