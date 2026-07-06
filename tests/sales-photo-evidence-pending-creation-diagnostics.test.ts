@@ -200,7 +200,7 @@ runTest('diagnostics model remains pure and disconnected from UI and mutation ex
 
   assert.deepEqual(wiredFiles, ['components/markets/SalesPhotoEvidencePendingListDialog.tsx']);
   assert.match(planSource, /Slice 5C-3H-0 Status/);
-  assert.match(planSource, /5C-3H-1 read-only pending evidence diagnostics display/);
+  assert.match(planSource, /Slice 5C-3H-1 Status/);
   assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-pending-creation-diagnostics\.test\.ts/);
 });
 
