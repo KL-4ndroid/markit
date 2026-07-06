@@ -59,6 +59,7 @@ import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { SalesPhotoEvidenceOperatingCard } from '@/components/markets/SalesPhotoEvidenceOperatingCard';
 import { SalesPhotoEvidencePendingListDialog } from '@/components/markets/SalesPhotoEvidencePendingListDialog';
+import { SalesPhotoEvidenceOwnerAlbumRouteSection } from '@/components/markets/SalesPhotoEvidenceOwnerAlbumRouteSection';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -74,6 +75,10 @@ import {
   listLocalSalesPhotoEvidencePendingCreationsForMarket,
   type SalesPhotoEvidencePendingCreationListItem,
 } from '@/lib/sales/photo-evidence-pending-creation-read-model';
+import {
+  listOwnerSalesPhotoEvidenceAlbumMetadataRows,
+} from '@/lib/supabase/sales-photo-evidence';
+import type { SalesPhotoEvidenceAlbumSourceRow } from '@/lib/sales/photo-evidence-owner-album-read-model';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
@@ -240,6 +245,9 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [pendingSalesPhotoEvidenceItems, setPendingSalesPhotoEvidenceItems] = useState<
     SalesPhotoEvidencePendingCreationListItem[]
   >([]);
+  const [ownerSalesPhotoEvidenceRows, setOwnerSalesPhotoEvidenceRows] = useState<SalesPhotoEvidenceAlbumSourceRow[]>([]);
+  const [isLoadingOwnerSalesPhotoEvidenceAlbum, setIsLoadingOwnerSalesPhotoEvidenceAlbum] = useState(false);
+  const [ownerSalesPhotoEvidenceAlbumLoadError, setOwnerSalesPhotoEvidenceAlbumLoadError] = useState<string | null>(null);
   const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedDeal, setSelectedDeal] = useState<Event<DealClosedPayload> | null>(null);
@@ -919,6 +927,45 @@ export default function MarketDetailPage({ params }: PageProps) {
   useEffect(() => {
     void loadPendingSalesPhotoEvidenceItems();
   }, [loadPendingSalesPhotoEvidenceItems]);
+
+  const ownerSalesPhotoEvidenceAlbumOwnerId = user?.id ?? (market as Market | undefined)?.owner_id ?? null;
+
+  const loadOwnerSalesPhotoEvidenceAlbumRows = useCallback(async () => {
+    if (isStaff || isRoleLoading || !marketId || !ownerSalesPhotoEvidenceAlbumOwnerId) {
+      setOwnerSalesPhotoEvidenceRows([]);
+      setOwnerSalesPhotoEvidenceAlbumLoadError(null);
+      return;
+    }
+
+    setIsLoadingOwnerSalesPhotoEvidenceAlbum(true);
+    setOwnerSalesPhotoEvidenceAlbumLoadError(null);
+
+    try {
+      const result = await listOwnerSalesPhotoEvidenceAlbumMetadataRows({
+        actorRole: 'owner',
+        ownerId: ownerSalesPhotoEvidenceAlbumOwnerId,
+        marketId,
+      });
+
+      if (result.action === 'rows_loaded') {
+        setOwnerSalesPhotoEvidenceRows(result.rows);
+        return;
+      }
+
+      setOwnerSalesPhotoEvidenceRows([]);
+      setOwnerSalesPhotoEvidenceAlbumLoadError(result.message);
+    } catch (error: any) {
+      console.error('load owner sales photo evidence album failed:', error);
+      setOwnerSalesPhotoEvidenceRows([]);
+      setOwnerSalesPhotoEvidenceAlbumLoadError(error?.message || '銷售照片紀錄讀取失敗，請稍後再試或重新整理。');
+    } finally {
+      setIsLoadingOwnerSalesPhotoEvidenceAlbum(false);
+    }
+  }, [isStaff, isRoleLoading, marketId, ownerSalesPhotoEvidenceAlbumOwnerId]);
+
+  useEffect(() => {
+    void loadOwnerSalesPhotoEvidenceAlbumRows();
+  }, [loadOwnerSalesPhotoEvidenceAlbumRows]);
 
   const handleOpenPendingSalesPhotoEvidence = () => {
     setShowPendingSalesPhotoEvidence(true);
@@ -1623,6 +1670,18 @@ export default function MarketDetailPage({ params }: PageProps) {
           </button>
         </section>
         )}
+
+        <SalesPhotoEvidenceOwnerAlbumRouteSection
+          actorRole={isStaff ? 'staff' : 'owner'}
+          ownerId={ownerSalesPhotoEvidenceAlbumOwnerId}
+          marketId={marketId}
+          rows={ownerSalesPhotoEvidenceRows}
+          isRoleReady={!isRoleLoading}
+          isLoading={isLoadingOwnerSalesPhotoEvidenceAlbum}
+          loadError={ownerSalesPhotoEvidenceAlbumLoadError}
+          onRefresh={loadOwnerSalesPhotoEvidenceAlbumRows}
+          className="mb-6"
+        />
 
         <DailyRevenueStats
           market={market}

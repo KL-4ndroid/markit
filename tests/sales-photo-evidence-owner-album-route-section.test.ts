@@ -52,15 +52,32 @@ runTest('route section stays free of data fetching mutation and cloud image acce
   );
 });
 
-runTest('route section is not mounted into owner or staff market detail yet', () => {
-  assert.doesNotMatch(marketDetailSource, /SalesPhotoEvidenceOwnerAlbumRouteSection/);
+runTest('route section is mounted in owner market detail but not staff market detail', () => {
+  assert.match(marketDetailSource, /import \{ SalesPhotoEvidenceOwnerAlbumRouteSection \}/);
+  assert.match(marketDetailSource, /<SalesPhotoEvidenceOwnerAlbumRouteSection/);
   assert.doesNotMatch(staffMarketDetailSource, /SalesPhotoEvidenceOwnerAlbumRouteSection/);
+
+  const staffReturnIndex = marketDetailSource.indexOf('return <StaffMarketDetailView market={market} />');
+  const albumSectionIndex = marketDetailSource.indexOf('<SalesPhotoEvidenceOwnerAlbumRouteSection');
+
+  assert.ok(staffReturnIndex > 0, 'staff return must exist');
+  assert.ok(albumSectionIndex > staffReturnIndex, 'owner album section must be after staff route return');
 });
 
-runTest('plan records Slice 9C as unmounted prop-driven route section only', () => {
+runTest('owner market detail passes only scoped props into the route section', () => {
+  assert.match(
+    marketDetailSource,
+    /<SalesPhotoEvidenceOwnerAlbumRouteSection[\s\S]*actorRole=\{isStaff \? 'staff' : 'owner'\}[\s\S]*ownerId=\{ownerSalesPhotoEvidenceAlbumOwnerId\}[\s\S]*marketId=\{marketId\}[\s\S]*rows=\{ownerSalesPhotoEvidenceRows\}/
+  );
+  assert.match(marketDetailSource, /isRoleReady=\{!isRoleLoading\}/);
+  assert.match(marketDetailSource, /onRefresh=\{loadOwnerSalesPhotoEvidenceAlbumRows\}/);
+});
+
+runTest('plan records Slice 9C and Slice 9F route mounting boundaries', () => {
   assert.match(planSource, /Slice 9C Status/);
   assert.match(planSource, /prop-driven owner-only route section/);
-  assert.match(planSource, /not mounted into `app\/markets\/\[id\]\/page\.tsx`/);
+  assert.match(planSource, /Slice 9F Status/);
+  assert.match(planSource, /mounted in `app\/markets\/\[id\]\/page\.tsx`/);
   assert.match(planSource, /does not fetch rows, request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue/);
   assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-owner-album-route-section\.test\.ts/);
 });

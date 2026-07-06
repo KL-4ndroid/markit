@@ -49,7 +49,8 @@ runTest('route integration keeps sensitive runtime work behind approval boundari
   assert.match(planSource, /Data fetching remains a separate approval boundary/);
 });
 
-runTest('current runtime route remains untouched by the design-only slice', () => {
+runTest('current runtime route uses the route section boundary instead of direct shell or read-model wiring', () => {
+  assert.match(marketDetailSource, /SalesPhotoEvidenceOwnerAlbumRouteSection/);
   assert.doesNotMatch(marketDetailSource, /SalesPhotoEvidenceOwnerAlbumShell/);
   assert.doesNotMatch(marketDetailSource, /buildSalesPhotoEvidenceOwnerAlbumViewModel/);
   assert.doesNotMatch(staffMarketDetailSource, /SalesPhotoEvidenceOwnerAlbumShell/);

@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 9E read-only owner album metadata reader implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, browser adapter contract/spec model, upload/signed-read contract model, read-only owner album shell, owner album route-section boundary, owner album read-source contract, and read-only Supabase metadata reader are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, browser camera capture, canvas/image processing adapter implementation, real R2 upload, real signed URL issuance, private image rendering, expiration mutation, and mounted album route integration are not yet implemented.
+Status: Slice 9F owner market-detail read-only album mounting implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, browser adapter contract/spec model, upload/signed-read contract model, read-only owner album shell, owner album route-section boundary, owner album read-source contract, read-only Supabase metadata reader, and owner market-detail read-only album mounting are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, browser camera capture, canvas/image processing adapter implementation, real R2 upload, real signed URL issuance, private image rendering, expiration mutation, and evidence row creation from production sales are not yet implemented.
 
 ## Goal
 
@@ -1059,7 +1059,7 @@ Slice 9C Status:
 - A prop-driven owner-only route section is implemented in `components/markets/SalesPhotoEvidenceOwnerAlbumRouteSection.tsx`.
 - The route section accepts injected rows and delegates all filtering/summarizing to `buildSalesPhotoEvidenceOwnerAlbumViewModel()`.
 - The route section fails closed by rendering nothing unless role is ready, actor role is owner, owner id exists, and market id exists.
-- The route section is not mounted into `app/markets/[id]/page.tsx` or `StaffMarketDetailView`.
+- The route section was first implemented unmounted, then mounted in owner market detail in Slice 9F.
 - This slice does not fetch rows, request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
 - Guarded by `tests/sales-photo-evidence-owner-album-route-section.test.ts`.
 
@@ -1083,10 +1083,20 @@ Slice 9E Status:
 - This slice does not mount UI, request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
 - Guarded by `tests/supabase-sales-photo-evidence-owner-album-reader.test.ts`.
 
-Next Phase Boundary After Slice 6B/7A/9A/9B/9C/9D/9E:
+Slice 9F Status:
+
+- The read-only owner album route section is mounted in `app/markets/[id]/page.tsx`.
+- The owner market-detail route owns only load state, rows, load error, and refresh callback.
+- The route calls `listOwnerSalesPhotoEvidenceAlbumMetadataRows()` only for owner scope after role readiness.
+- The route passes rows into `SalesPhotoEvidenceOwnerAlbumRouteSection`; it does not call the shell or read model directly.
+- `StaffMarketDetailView` does not mount the owner album route section.
+- This slice does not request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
+- Guarded by `tests/sales-photo-evidence-owner-album-route-section.test.ts` and `tests/sales-photo-evidence-owner-album-route-integration-plan.test.ts`.
+
+Next Phase Boundary After Slice 6B/7A/9A/9B/9C/9D/9E/9F:
 
 - Production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, browser camera/canvas adapter, Supabase evidence-row writer, R2 upload, and signed read URLs remain explicit approval boundaries.
-- Recommended next step requiring product confirmation: decide whether to mount the owner album section in market detail using the read-only metadata reader.
+- Recommended next step requiring product confirmation: decide whether to design signed-read image preview or keep the album metadata-only until photo upload exists.
 - Alternative low-risk step: Phase A browser adapter implementation design document only, before any real camera/canvas code.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.
 
