@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 9F owner market-detail read-only album mounting implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, browser adapter contract/spec model, browser adapter implementation design, local binary pending storage design, local binary pending payload storage implementation, upload/signed-read contract model, read-only owner album shell, owner album route-section boundary, owner album read-source contract, read-only Supabase metadata reader, and owner market-detail read-only album mounting are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, browser camera capture, canvas/image processing adapter implementation, real R2 upload, real signed URL issuance, private image rendering, expiration mutation, and evidence row creation from production sales are not yet implemented.
+Status: Slice 9F owner market-detail read-only album mounting implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, browser adapter contract/spec model, browser adapter implementation design, local binary pending storage design, local binary pending payload storage implementation, file-input browser capture adapter service, upload/signed-read contract model, read-only owner album shell, owner album route-section boundary, owner album read-source contract, read-only Supabase metadata reader, and owner market-detail read-only album mounting are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, mounted production capture UI, real R2 upload, real signed URL issuance, private image rendering, expiration mutation, and evidence row creation from production sales are not yet implemented.
 
 ## Goal
 
@@ -1053,6 +1053,17 @@ Slice 6E Status:
 - This slice does not implement browser capture runtime, upload, signed read, R2, Supabase writes, queue drain, runtime enqueue, automatic retry, or cleanup execution.
 - Guarded by `tests/sales-photo-evidence-pending-payload-storage.test.ts`, `tests/auth-cache-destruction-guard.test.ts`, and `tests/sales-photo-evidence-runtime-readiness-checklist.test.ts`.
 
+Slice 6F Status:
+
+- A file-input browser capture adapter service is implemented in `lib/sales/photo-evidence-browser-adapter.ts`.
+- The service uses the recommended file input path with `accept="image/*"` and `capture="environment"` instead of a custom live `getUserMedia()` stream.
+- The adapter checks secure context, file input availability, and image processing availability before selecting a file.
+- The default implementation decodes the selected image, renders compressed image and thumbnail variants with canvas, hashes blobs with Web Crypto, validates output policy, and writes the result through `putPendingSalesPhotoEvidencePayload()`.
+- The service is dependency-injected for tests and future UI wiring, so the runtime path can be verified without mounting the adapter in production UI.
+- Capture cancellation, capability failures, unsupported sources, decode failures, and compression failures all return `capture_failed` and keep evidence pending.
+- This slice does not mount UI, upload, request signed reads, call R2, write Supabase, drain queues, or enable runtime enqueue.
+- Guarded by `tests/sales-photo-evidence-browser-adapter-runtime.test.ts`.
+
 Slice 7A Status:
 
 - Phase B starts with a contract-only upload and signed-read model in `lib/sales/photo-evidence-upload-contract.ts`.
@@ -1126,11 +1137,11 @@ Slice 9F Status:
 - This slice does not request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
 - Guarded by `tests/sales-photo-evidence-owner-album-route-section.test.ts` and `tests/sales-photo-evidence-owner-album-route-integration-plan.test.ts`.
 
-Next Phase Boundary After Slice 6B/6C/6D/6E/7A/9A/9B/9C/9D/9E/9F:
+Next Phase Boundary After Slice 6B/6C/6D/6E/6F/7A/9A/9B/9C/9D/9E/9F:
 
 - Production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, browser camera/canvas adapter, Supabase evidence-row writer, R2 upload, and signed read URLs remain explicit approval boundaries.
-- Recommended next step requiring product confirmation: decide whether to implement the file-input browser capture adapter that stores into local pending payloads, or keep capture blocked until upload is designed end-to-end.
-- Alternative low-risk step: create disabled UI integration tests for the future capture button without enabling camera/canvas runtime.
+- Recommended next step requiring product confirmation: decide whether to mount a disabled/local-only capture button behind existing pending evidence UI, or keep capture service unmounted until upload is designed end-to-end.
+- Alternative low-risk step: create UI integration guardrail tests for the future capture button without enabling production capture.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.
 
 ### Slice 6: Client Capture and Compression
