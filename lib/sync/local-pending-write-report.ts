@@ -25,6 +25,8 @@ export interface LocalPendingWriteReport {
   pendingSalesPhotoEvidenceCreationCount: number;
   pendingSalesPhotoEvidenceCreationIds: string[];
   pendingSalesPhotoEvidenceCreationCountByStatus: Record<string, number>;
+  pendingSalesPhotoEvidencePayloadCount: number;
+  pendingSalesPhotoEvidencePayloadIds: string[];
   blockingReasonCodes: LocalPendingWriteBlockingReason[];
   isClean: boolean;
 }
@@ -82,9 +84,12 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       .anyOf([...UNFINISHED_SALES_PHOTO_EVIDENCE_CREATION_STATUSES])
       .toArray();
 
+    const pendingSalesPhotoEvidencePayloads = await db.salesPhotoEvidencePendingPayloads.toArray();
+
     const pendingEventIds: string[] = [];
     const actorMismatchEventIds: string[] = [];
     const pendingSalesPhotoEvidenceCreationIds: string[] = [];
+    const pendingSalesPhotoEvidencePayloadIds: string[] = [];
 
     for (const event of pendingEvents) {
       if (event.id) pendingEventIds.push(event.id);
@@ -101,9 +106,16 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       increment(pendingSalesPhotoEvidenceCreationCountByStatus, item.status);
     }
 
+    for (const item of pendingSalesPhotoEvidencePayloads) {
+      if (item.queueId) pendingSalesPhotoEvidencePayloadIds.push(item.queueId);
+    }
+
     if (pendingEvents.length > 0) blockingReasonCodes.add('local_pending_events');
     if (unfinishedSyncQueueCount > 0) blockingReasonCodes.add('local_sync_queue_unfinished');
     if (pendingSalesPhotoEvidenceCreations.length > 0) {
+      blockingReasonCodes.add('local_pending_sales_photo_evidence');
+    }
+    if (pendingSalesPhotoEvidencePayloads.length > 0) {
       blockingReasonCodes.add('local_pending_sales_photo_evidence');
     }
     if (actorMismatchEventIds.length > 0) blockingReasonCodes.add('actor_mismatch');
@@ -124,6 +136,8 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       pendingSalesPhotoEvidenceCreationCount: pendingSalesPhotoEvidenceCreations.length,
       pendingSalesPhotoEvidenceCreationIds,
       pendingSalesPhotoEvidenceCreationCountByStatus,
+      pendingSalesPhotoEvidencePayloadCount: pendingSalesPhotoEvidencePayloads.length,
+      pendingSalesPhotoEvidencePayloadIds,
       blockingReasonCodes: codes,
       isClean: codes.length === 0,
     };
@@ -145,6 +159,8 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       pendingSalesPhotoEvidenceCreationCount: 0,
       pendingSalesPhotoEvidenceCreationIds: [],
       pendingSalesPhotoEvidenceCreationCountByStatus,
+      pendingSalesPhotoEvidencePayloadCount: 0,
+      pendingSalesPhotoEvidencePayloadIds: [],
       blockingReasonCodes: codes,
       isClean: false,
     };

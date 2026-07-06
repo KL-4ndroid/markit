@@ -15,6 +15,7 @@ import type {
   Settings,
 } from '@/types/db';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
+import type { LocalPendingSalesPhotoEvidencePayload } from '@/lib/sales/photo-evidence-pending-payload-storage';
 import {
   checkAppIntegrity,
   checkBackupIntegrity,
@@ -60,6 +61,7 @@ export class MarketPulseDB extends Dexie {
   settings!: Table<Settings, number>;
   syncQueue!: Table<SyncQueueItem, string>;
   salesPhotoEvidencePendingCreations!: Table<LocalPendingSalesPhotoEvidenceCreation, string>;
+  salesPhotoEvidencePendingPayloads!: Table<LocalPendingSalesPhotoEvidencePayload, string>;
 
   constructor() {
     super('MarketPulseDB');
@@ -239,6 +241,17 @@ export class MarketPulseDB extends Dexie {
       settings: '++id',
       syncQueue: 'id, status, created_at',
       salesPhotoEvidencePendingCreations: 'queueId, saleEventId, ownerId, marketId, status, updatedAt, createdAt',
+    });
+
+    this.version(6).stores({
+      events: 'id, type, timestamp, actor_id, market_id, sync_status',
+      markets: 'id, status, name, startDate, endDate, owner_id, is_collaborative, sync_status, isDeleted',
+      products: 'id, category, name, isActive, market_id, owner_id',
+      dailyStats: '++id, [date+marketId], date, marketId',
+      settings: '++id',
+      syncQueue: 'id, status, created_at',
+      salesPhotoEvidencePendingCreations: 'queueId, saleEventId, ownerId, marketId, status, updatedAt, createdAt',
+      salesPhotoEvidencePendingPayloads: 'queueId, ownerId, marketId, updatedAt, createdAt',
     });
   }
 }

@@ -39,8 +39,8 @@ runTest('readiness checklist keeps production enablement blocked', () => {
   assert.match(planSource, /Do not enable the runtime flag/);
   assert.match(planSource, /Do not add a queue recovery\/cleanup executor/);
   assert.match(planSource, /Do not create Supabase evidence rows from production runtime/);
-  assert.match(planSource, /Next Phase Boundary After Slice 6B\/6C\/6D\/7A\/9A\/9B\/9C\/9D\/9E\/9F/);
-  assert.match(planSource, /Recommended next step requiring product confirmation: decide whether to implement local binary pending storage/);
+  assert.match(planSource, /Next Phase Boundary After Slice 6B\/6C\/6D\/6E\/7A\/9A\/9B\/9C\/9D\/9E\/9F/);
+  assert.match(planSource, /Recommended next step requiring product confirmation: decide whether to implement the file-input browser capture adapter/);
   assert.match(planSource, /browser camera\/canvas adapter/);
 });
 
@@ -59,6 +59,8 @@ runTest('pending-write guard still blocks unfinished local evidence work', () =>
   assert.match(pendingWriteReportSource, /local_pending_sales_photo_evidence/);
   assert.match(pendingWriteReportSource, /pendingSalesPhotoEvidenceCreationCount/);
   assert.match(pendingWriteReportSource, /salesPhotoEvidencePendingCreations/);
+  assert.match(pendingWriteReportSource, /pendingSalesPhotoEvidencePayloadCount/);
+  assert.match(pendingWriteReportSource, /salesPhotoEvidencePendingPayloads/);
 });
 
 runTest('readiness checklist is test-covered without adding runtime mutation wiring', () => {

@@ -13,6 +13,7 @@ export interface AuthCacheBlockedEventDetail {
   pendingEventCount: number;
   unfinishedSyncQueueCount: number;
   pendingSalesPhotoEvidenceCreationCount: number;
+  pendingSalesPhotoEvidencePayloadCount: number;
   blockingReasonCodes: string[];
 }
 
@@ -31,6 +32,7 @@ export function dispatchAuthCacheBlockedEvent(
       pendingEventCount: report.pendingEventCount,
       unfinishedSyncQueueCount: report.unfinishedSyncQueueCount,
       pendingSalesPhotoEvidenceCreationCount: report.pendingSalesPhotoEvidenceCreationCount,
+      pendingSalesPhotoEvidencePayloadCount: report.pendingSalesPhotoEvidencePayloadCount,
       blockingReasonCodes: result.blockingReasonCodes,
     },
   }));
