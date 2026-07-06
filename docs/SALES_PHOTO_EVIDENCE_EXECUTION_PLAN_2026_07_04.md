@@ -1054,10 +1054,19 @@ Slice 9B Status:
 - Data fetching remains a separate approval boundary. The allowed next implementation slice is a prop-driven owner-only route section with injected rows, not a cloud-backed fetcher.
 - Guarded by `tests/sales-photo-evidence-owner-album-route-integration-plan.test.ts`.
 
-Next Phase Boundary After Slice 6B/7A/9A/9B:
+Slice 9C Status:
+
+- A prop-driven owner-only route section is implemented in `components/markets/SalesPhotoEvidenceOwnerAlbumRouteSection.tsx`.
+- The route section accepts injected rows and delegates all filtering/summarizing to `buildSalesPhotoEvidenceOwnerAlbumViewModel()`.
+- The route section fails closed by rendering nothing unless role is ready, actor role is owner, owner id exists, and market id exists.
+- The route section is not mounted into `app/markets/[id]/page.tsx` or `StaffMarketDetailView`.
+- This slice does not fetch rows, request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
+- Guarded by `tests/sales-photo-evidence-owner-album-route-section.test.ts`.
+
+Next Phase Boundary After Slice 6B/7A/9A/9B/9C:
 
 - Production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, browser camera/canvas adapter, Supabase evidence-row writer, R2 upload, and signed read URLs remain explicit approval boundaries.
-- Recommended next low-risk step: prop-driven owner-only route section for the read-only owner album shell, without data fetching changes or signed read URL usage.
+- Recommended next step requiring product confirmation: decide whether to mount the empty/read-only owner album section in market detail before real row fetching exists.
 - Alternative low-risk step: Phase A browser adapter implementation design document only, before any real camera/canvas code.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.
 

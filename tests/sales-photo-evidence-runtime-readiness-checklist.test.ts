@@ -39,8 +39,8 @@ runTest('readiness checklist keeps production enablement blocked', () => {
   assert.match(planSource, /Do not enable the runtime flag/);
   assert.match(planSource, /Do not add a queue recovery\/cleanup executor/);
   assert.match(planSource, /Do not create Supabase evidence rows from production runtime/);
-  assert.match(planSource, /Next Phase Boundary After Slice 6B\/7A\/9A\/9B/);
-  assert.match(planSource, /Recommended next low-risk step: prop-driven owner-only route section for the read-only owner album shell/);
+  assert.match(planSource, /Next Phase Boundary After Slice 6B\/7A\/9A\/9B\/9C/);
+  assert.match(planSource, /Recommended next step requiring product confirmation: decide whether to mount the empty\/read-only owner album section/);
   assert.match(planSource, /browser camera\/canvas adapter/);
 });
 
