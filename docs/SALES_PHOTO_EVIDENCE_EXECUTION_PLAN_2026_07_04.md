@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 6A capture/compression pure model implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, and capture/compression decision model are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, browser camera capture, canvas/image processing adapter, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 7A upload/signed-read contract-only model implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, and upload/signed-read contract model are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, browser camera capture, canvas/image processing adapter, real R2 upload, real signed URL issuance, and album review are not yet implemented.
 
 ## Goal
 
@@ -1010,11 +1010,24 @@ Slice 6A Status:
 - This slice does not call camera APIs, canvas, Supabase, R2, upload, signed URLs, or production runtime enqueue.
 - Guarded by `tests/sales-photo-evidence-capture-compression.test.ts`.
 
-Next Phase Boundary After Slice 6A:
+Slice 7A Status:
+
+- Phase B starts with a contract-only upload and signed-read model in `lib/sales/photo-evidence-upload-contract.ts`.
+- Upload preparation is allowed only for `captured_local` evidence rows.
+- Upload preparation requires one `image` variant and one `thumbnail` variant.
+- Upload preparation accepts only WebP/JPEG variants that are within the shared compression file-size limit and have valid dimensions.
+- Owner actors must match `ownerId`; staff actors must match `capturedByStaffId`. Real route implementation must still perform live server-side permission checks before storage access.
+- Object keys are generated with the existing retention-scoped private object-key policy.
+- Signed read preparation is allowed only for `uploaded` evidence rows with a private object key.
+- Signed read TTL is capped at `300` seconds.
+- This slice does not create routes, R2 clients, signed URLs, Supabase writes, upload execution, or runtime enqueue.
+- Guarded by `tests/sales-photo-evidence-upload-contract.test.ts`.
+
+Next Phase Boundary After Slice 7A:
 
 - Production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, browser camera/canvas adapter, Supabase evidence-row writer, R2 upload, and signed read URLs remain explicit approval boundaries.
-- Recommended next low-risk step: Phase B upload contract and signed access design with docs, pure types, and static tests only.
-- Alternative low-risk step: Phase A browser adapter design/spec only, without calling camera APIs or canvas and without connecting capture to sales runtime.
+- Recommended next low-risk step: Phase A browser adapter design/spec only, without calling camera APIs or canvas and without connecting capture to sales runtime.
+- Alternative low-risk step: Phase D read-only owner album model and UI shell without signed read URL usage.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.
 
 ### Slice 6: Client Capture and Compression
