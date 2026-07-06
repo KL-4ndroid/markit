@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 5C-3I production enqueue readiness checklist implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, and production enqueue readiness checklist are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 6A capture/compression pure model implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, and capture/compression decision model are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, browser camera capture, canvas/image processing adapter, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -902,11 +902,119 @@ Slice 5C-3I Status:
 - Do not create Supabase evidence rows from production runtime.
 - Do not connect photo capture, R2 upload, signed URLs, or album review through this readiness checklist.
 
-Next Slice 5C-3J Boundary:
+## Risk-Reduced Merged Execution Plan
 
-- This is the high-risk decision boundary before production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, photo capture implementation, or Supabase evidence-row writer.
-- Recommended next step if continuing runtime safety: discuss whether to approve a narrowly scoped local-only production enqueue pilot, including manual verification data, rollback plan, and owner/staff visible failure handling.
-- Recommended next step if avoiding runtime enablement: begin Slice 6 photo capture/compression design only, without connecting capture to sales runtime.
+The original `5C-3J` through `Slice 10` plan is merged into four larger phases to reduce repeated planning/test overhead while keeping high-risk behavior locked behind explicit boundaries.
+
+### Phase A: Capture + Compression Local Capability
+
+Scope:
+
+- capture/compression policy model;
+- supported source image type checks;
+- source image safety limits;
+- primary image, fallback image, and thumbnail variant plans;
+- compressed output validation;
+- failure classification before browser processing.
+
+Allowed implementation:
+
+- pure TypeScript model and tests;
+- no browser APIs;
+- no UI;
+- no IndexedDB writes;
+- no Supabase;
+- no R2;
+- no upload;
+- no production runtime enqueue.
+
+Risk:
+
+- Low while kept as a pure model.
+- Medium only when a browser adapter starts using camera/canvas APIs.
+
+### Phase B: Upload Contract + Signed Access Design
+
+Scope:
+
+- trusted route contract for signed upload and signed read;
+- object key policy reuse;
+- permission boundary for owner/staff access;
+- upload failure classification;
+- metadata write contract.
+
+Allowed implementation first:
+
+- contract docs;
+- pure request/response types;
+- static tests.
+
+Blocked until explicit approval:
+
+- real server route;
+- R2 credential usage;
+- Supabase metadata write;
+- signed URL issuance.
+
+### Phase C: Pending Evidence Active Flow
+
+Scope:
+
+- production enqueue decision;
+- post-sale pending evidence creation;
+- capture later;
+- retry upload;
+- minimum recovery/cleanup executor.
+
+Risk:
+
+- High.
+- This is where real users can create pending evidence rows from normal sales.
+
+Blocked until explicit approval:
+
+- enabling the runtime flag;
+- queue recovery/cleanup mutation;
+- automatic retry;
+- production browser/profile verification.
+
+### Phase D: Owner Review + Expiration
+
+Scope:
+
+- owner album;
+- evidence thumbnail grid;
+- signed read display;
+- uploaded/pending/failed/expired filters;
+- expiration reconciliation.
+
+Allowed implementation first:
+
+- read-only album model and UI shell;
+- no signed read URL until Phase B is approved.
+
+Blocked until explicit approval:
+
+- real signed image access;
+- expiration metadata mutation;
+- cleanup job.
+
+Slice 6A Status:
+
+- Capture/compression local capability is implemented as a pure decision model in `lib/sales/photo-evidence-capture-compression.ts`.
+- The model accepts `image/jpeg`, `image/png`, and `image/webp` as source capture types.
+- Source images above `25_000_000` bytes are rejected before browser processing.
+- Invalid file size or dimensions fail closed.
+- The model outputs primary WebP, fallback JPEG, and thumbnail variant plans using the shared compression policy.
+- Compressed output validation accepts only WebP/JPEG under the configured file-size limit with valid dimensions.
+- This slice does not call camera APIs, canvas, Supabase, R2, upload, signed URLs, or production runtime enqueue.
+- Guarded by `tests/sales-photo-evidence-capture-compression.test.ts`.
+
+Next Phase Boundary After Slice 6A:
+
+- Production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, browser camera/canvas adapter, Supabase evidence-row writer, R2 upload, and signed read URLs remain explicit approval boundaries.
+- Recommended next low-risk step: Phase B upload contract and signed access design with docs, pure types, and static tests only.
+- Alternative low-risk step: Phase A browser adapter design/spec only, without calling camera APIs or canvas and without connecting capture to sales runtime.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.
 
 ### Slice 6: Client Capture and Compression

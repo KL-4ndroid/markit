@@ -39,7 +39,9 @@ runTest('readiness checklist keeps production enablement blocked', () => {
   assert.match(planSource, /Do not enable the runtime flag/);
   assert.match(planSource, /Do not add a queue recovery\/cleanup executor/);
   assert.match(planSource, /Do not create Supabase evidence rows from production runtime/);
-  assert.match(planSource, /Next Slice 5C-3J Boundary/);
+  assert.match(planSource, /Next Phase Boundary After Slice 6A/);
+  assert.match(planSource, /Recommended next low-risk step: Phase B upload contract and signed access design/);
+  assert.match(planSource, /browser camera\/canvas adapter/);
 });
 
 runTest('runtime flag still defaults off and has no external control plane', () => {
