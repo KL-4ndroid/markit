@@ -1020,6 +1020,16 @@ Slice 6B Status:
 - This slice does not call browser media APIs, canvas APIs, IndexedDB, Supabase, R2, upload, signed URLs, or production runtime enqueue.
 - Guarded by `tests/sales-photo-evidence-browser-adapter-contract.test.ts`.
 
+Slice 6C Status:
+
+- Phase A browser adapter implementation design document is implemented in `docs/SALES_PHOTO_EVIDENCE_BROWSER_ADAPTER_IMPLEMENTATION_DESIGN.md`.
+- The recommended first implementation is file-input capture with `accept="image/*"` and `capture="environment"`.
+- A custom `navigator.mediaDevices.getUserMedia()` live camera stream is deferred.
+- The design keeps the browser adapter as a UI/local-processing boundary that returns in-memory compressed outputs.
+- Local binary pending storage remains a separate approval boundary before any real capture UI runtime.
+- This slice does not implement browser camera, canvas, local binary storage, upload, signed read, R2, Supabase writes, or runtime enqueue.
+- Guarded by `tests/sales-photo-evidence-browser-adapter-implementation-design.test.ts`.
+
 Slice 7A Status:
 
 - Phase B starts with a contract-only upload and signed-read model in `lib/sales/photo-evidence-upload-contract.ts`.
