@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 5C-3F local-only disposable runtime verification fixture implemented. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, and isolated fake-indexeddb runtime fixture are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
+Status: Slice 5C-3G pending evidence recovery/cleanup semantics implemented as a pure model. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, and pending creation recovery/cleanup classification are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, photo capture, R2 upload, signed access, and album review are not yet implemented.
 
 ## Goal
 
@@ -854,11 +854,24 @@ Slice 5C-3F Status:
 - The fixture must not call Supabase, R2, signed URL, upload, drain, or queue cleanup paths.
 - Guarded by `tests/sales-photo-evidence-runtime-local-fixture.test.ts`.
 
-Next Slice 5C-3G Boundary:
+Slice 5C-3G Status:
 
-- This is the boundary before production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup actions, or photo capture implementation.
-- Recommended next step: design pending evidence recovery/cleanup semantics before enabling production enqueue.
-- Alternative low-risk step: begin Slice 6 photo capture/compression design only, without connecting capture to sales runtime.
+- Pending evidence recovery/cleanup semantics are implemented as a pure classifier in `lib/sales/photo-evidence-pending-creation-recovery.ts`.
+- Stale `creating` rows are classified as recoverable retryable work after an explicit grace window.
+- Fresh `creating` rows are retained because another drain attempt may still be active.
+- Old `created` rows are eligible only for local queue-row retirement; sale records and `sale_photo_evidence` metadata must not be deleted by this cleanup.
+- Fresh `created` rows are retained for diagnostics until the cleanup grace window passes.
+- `waiting_for_event_sync` and `failed_retryable` rows are not cleanup candidates because normal drain/retry may still resolve them.
+- `failed_permanent` and `blocked_invalid_source` rows require manual review before any removal.
+- The model is not wired to Dexie mutation, Supabase, R2, upload, signed URL, drain, UI, timer, or browser storage execution paths.
+- Guarded by `tests/sales-photo-evidence-pending-creation-recovery.test.ts`.
+
+Next Slice 5C-3H Boundary:
+
+- This is the boundary before any production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, photo capture implementation, or Supabase evidence-row writer.
+- Recommended next step if continuing runtime safety: design an owner-visible local diagnostics/action surface for pending evidence rows, still without automatic cleanup.
+- Recommended next step if shifting toward product flow: begin Slice 6 photo capture/compression design only, without connecting capture to sales runtime.
+- Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.
 
 ### Slice 6: Client Capture and Compression
 
