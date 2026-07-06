@@ -1063,10 +1063,20 @@ Slice 9C Status:
 - This slice does not fetch rows, request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
 - Guarded by `tests/sales-photo-evidence-owner-album-route-section.test.ts`.
 
-Next Phase Boundary After Slice 6B/7A/9A/9B/9C:
+Slice 9D Status:
+
+- A read-source contract is implemented in `lib/sales/photo-evidence-owner-album-read-source.ts`.
+- The contract allows only owner-scoped reads from `sale_photo_evidence`.
+- The contract selects only album metadata columns needed by `buildSalesPhotoEvidenceOwnerAlbumViewModel()`.
+- The contract requires `owner_id = ownerId`, `market_id = marketId`, and `deleted_at IS NULL`.
+- The contract sorts by `sale_completed_at DESC` and caps the read limit at `250`.
+- This slice does not execute Supabase queries, read IndexedDB, request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
+- Guarded by `tests/sales-photo-evidence-owner-album-read-source.test.ts`.
+
+Next Phase Boundary After Slice 6B/7A/9A/9B/9C/9D:
 
 - Production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, browser camera/canvas adapter, Supabase evidence-row writer, R2 upload, and signed read URLs remain explicit approval boundaries.
-- Recommended next step requiring product confirmation: decide whether to mount the empty/read-only owner album section in market detail before real row fetching exists.
+- Recommended next step requiring product confirmation: decide whether to implement a read-only Supabase metadata reader before mounting the owner album section.
 - Alternative low-risk step: Phase A browser adapter implementation design document only, before any real camera/canvas code.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.
 
