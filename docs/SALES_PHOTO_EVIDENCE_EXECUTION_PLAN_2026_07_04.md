@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 9A read-only owner album model and UI shell implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, browser adapter contract/spec model, upload/signed-read contract model, and read-only owner album shell are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, browser camera capture, canvas/image processing adapter implementation, real R2 upload, real signed URL issuance, private image rendering, expiration mutation, and album route integration are not yet implemented.
+Status: Slice 9E read-only owner album metadata reader implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, browser adapter contract/spec model, upload/signed-read contract model, read-only owner album shell, owner album route-section boundary, owner album read-source contract, and read-only Supabase metadata reader are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, browser camera capture, canvas/image processing adapter implementation, real R2 upload, real signed URL issuance, private image rendering, expiration mutation, and mounted album route integration are not yet implemented.
 
 ## Goal
 
@@ -1073,10 +1073,20 @@ Slice 9D Status:
 - This slice does not execute Supabase queries, read IndexedDB, request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
 - Guarded by `tests/sales-photo-evidence-owner-album-read-source.test.ts`.
 
-Next Phase Boundary After Slice 6B/7A/9A/9B/9C/9D:
+Slice 9E Status:
+
+- A read-only Supabase metadata reader is implemented in `lib/supabase/sales-photo-evidence.ts`.
+- The reader uses `buildSalesPhotoEvidenceOwnerAlbumReadSourcePlan()` before touching Supabase.
+- The reader rejects non-owner or invalid scope before creating a Supabase query.
+- The reader reads only metadata rows from `sale_photo_evidence` using the approved owner/market/deleted filters, order, and limit.
+- The reader returns `read_failed` instead of throwing on Supabase read errors so future UI can render an explicit error state.
+- This slice does not mount UI, request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
+- Guarded by `tests/supabase-sales-photo-evidence-owner-album-reader.test.ts`.
+
+Next Phase Boundary After Slice 6B/7A/9A/9B/9C/9D/9E:
 
 - Production runtime enqueue enablement, browser-profile verification, queue recovery/cleanup executor, browser camera/canvas adapter, Supabase evidence-row writer, R2 upload, and signed read URLs remain explicit approval boundaries.
-- Recommended next step requiring product confirmation: decide whether to implement a read-only Supabase metadata reader before mounting the owner album section.
+- Recommended next step requiring product confirmation: decide whether to mount the owner album section in market detail using the read-only metadata reader.
 - Alternative low-risk step: Phase A browser adapter implementation design document only, before any real camera/canvas code.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.
 
