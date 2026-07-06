@@ -133,12 +133,16 @@ runTest('pending list read model stays local-only and read-only', () => {
 runTest('pending list dialog is display-only', () => {
   assert.match(dialogSource, /export function SalesPhotoEvidencePendingListDialog/);
   assert.match(dialogSource, /items: SalesPhotoEvidencePendingCreationListItem\[\]/);
+  assert.match(dialogSource, /buildPendingSalesPhotoEvidenceCreationDiagnosticSummary\(items\)/);
+  assert.match(dialogSource, /diagnostics\.severityCounts\.warning \+ diagnostics\.severityCounts\.critical/);
   assert.match(dialogSource, /loadError\?: string \| null/);
   assert.match(dialogSource, /lastLoadedAt\?: number \| null/);
   assert.match(dialogSource, /const statusCounts = countByStatus\(items\)/);
   assert.match(dialogSource, /const needsAttentionCount/);
   assert.match(dialogSource, /待補照片/);
-  assert.match(dialogSource, /重新整理/);
+  assert.match(dialogSource, /不會自動清除、恢復或上傳任何資料/);
+  assert.match(dialogSource, /RECOMMENDATION_LABELS/);
+  assert.match(dialogSource, /重新讀取/);
   assert.doesNotMatch(dialogSource, /db\.|supabase|recordEvent|enqueue|drain|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i);
   assert.doesNotMatch(dialogSource, /add\(|put\(|update\(|delete\(|clear\(|bulkAdd\(/);
 });
@@ -165,6 +169,8 @@ runTest('plan and npm test include Slice 5C-3C and 5C-3D pending list guardrails
   assert.match(planSource, /local-only read model/);
   assert.match(planSource, /Slice 5C-3D Status/);
   assert.match(planSource, /read-only pending list UX polish/);
+  assert.match(planSource, /Slice 5C-3H-1 Status/);
+  assert.match(planSource, /read-only diagnostics display/);
   assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-pending-list-ui\.test\.ts/);
 });
 
