@@ -17,6 +17,7 @@ import {
 import type {
   SalesPhotoEvidencePendingCreationListItem,
 } from '@/lib/sales/photo-evidence-pending-creation-read-model';
+import { SalesPhotoEvidenceLocalCaptureAction } from './SalesPhotoEvidenceLocalCaptureAction';
 
 interface SalesPhotoEvidencePendingListDialogProps {
   isOpen: boolean;
@@ -227,6 +228,11 @@ export function SalesPhotoEvidencePendingListDialog({
                         </div>
                       </div>
                     )}
+
+                    <SalesPhotoEvidenceLocalCaptureAction
+                      status={item.status}
+                      captureEnabled={false}
+                    />
 
                     {(item.retryCount > 0 || item.lastErrorMessage) && (
                       <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs text-muted-foreground">
