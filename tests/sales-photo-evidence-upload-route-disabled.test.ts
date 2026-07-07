@@ -9,7 +9,7 @@ import {
   POST,
   PUT,
   createSalesPhotoEvidenceUploadRouteHandlers,
-  type SalesPhotoEvidenceUploadRouteDeps,
+  isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv,
 } from '../app/api/sales-photo-evidence/upload/route';
 import type { SalesPhotoEvidenceMetadataClaimSupabaseClient } from '../lib/supabase/sales-photo-evidence-metadata-claim-repository';
 
@@ -187,6 +187,31 @@ runTest('disabled POST does not parse request body or create repository', async 
   assert.equal(repositoryCalled, false);
 });
 
+runTest('metadata claim route enablement allows local and staging but blocks production by default', () => {
+  assert.equal(isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv({}), false);
+  assert.equal(isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv({
+    SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED: '1',
+    NODE_ENV: 'development',
+  }), true);
+  assert.equal(isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv({
+    SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED: '1',
+    VERCEL_ENV: 'preview',
+  }), true);
+  assert.equal(isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv({
+    SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED: '1',
+    APP_ENV: 'staging',
+  }), true);
+  assert.equal(isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv({
+    SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED: '1',
+    VERCEL_ENV: 'production',
+  }), false);
+  assert.equal(isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv({
+    SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED: '1',
+    VERCEL_ENV: 'production',
+    SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ALLOW_PRODUCTION: '1',
+  }), true);
+});
+
 runTest('enabled POST requires authenticated actor before parsing metadata claim body', async () => {
   const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
     isMetadataClaimEnabled: () => true,
@@ -281,6 +306,7 @@ runTest('route source wires metadata claim but still avoids R2 signed reads and 
   assert.match(routeSource, /executeSalesPhotoEvidenceMetadataClaimAdapter/);
   assert.match(routeSource, /createSalesPhotoEvidenceMetadataClaimSupabaseRepository/);
   assert.match(routeSource, /SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED/);
+  assert.match(routeSource, /SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ALLOW_PRODUCTION/);
   assert.match(routeSource, /global:\s*{\s*headers:\s*{\s*Authorization:\s*`Bearer \$\{token\}`/);
   assert.doesNotMatch(routeSource, /@aws-sdk|S3Client|PutObjectCommand|GetObjectCommand|getSignedUrl|createPresignedPost/);
   assert.doesNotMatch(routeSource, /deletePendingSalesPhotoEvidencePayload|indexedDB|Dexie|salesPhotoEvidencePendingPayloads/i);

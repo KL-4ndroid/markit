@@ -104,6 +104,9 @@ tsx tests/sales-photo-evidence-local-capture-action-ui.test.ts
 tsx tests/sales-photo-evidence-local-capture-browser-smoke-plan.test.ts
 tsx tests/sales-photo-evidence-upload-contract.test.ts
 tsx tests/sales-photo-evidence-writer-upload-design.test.ts
+tsx tests/sales-photo-evidence-r2-upload-transport-design.test.ts
+tsx tests/sales-photo-evidence-r2-upload-adapter.test.ts
+tsx tests/sales-photo-evidence-upload-form-data.test.ts
 tsx tests/sales-photo-evidence-writer-upload-types.test.ts
 tsx tests/sales-photo-evidence-upload-route-disabled.test.ts
 tsx tests/sales-photo-evidence-metadata-claim.test.ts

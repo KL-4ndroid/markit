@@ -1,7 +1,7 @@
 # Sales Photo Evidence Writer and R2 Upload Design
 
 Date: 2026-07-07
-Status: design-only. This document defines the recommended Supabase evidence-row writer and R2 upload architecture. It does not implement routes, R2 clients, Supabase mutations, signed URLs, queue drain wiring, runtime enqueue enablement, cleanup execution, or production recovery behavior.
+Status: architecture record. This document defines the recommended Supabase evidence-row writer and R2 upload architecture. Metadata-claim route wiring now exists behind local/staging-safe feature gates. This document still does not implement R2 clients, signed URLs, queue drain wiring, runtime enqueue enablement, cleanup execution, or production recovery behavior.
 
 ## Scope
 
@@ -66,7 +66,9 @@ Input:
 - `thumbnail` payload metadata and binary
 - `capturedAt`
 
-The first implementation may use `FormData`, because the browser already holds local `Blob` values. A later optimization can switch to pre-signed upload URLs, but that should be a separate decision.
+The first implementation should use `FormData`, because the browser already holds local `Blob` values and the server route can keep permission recheck, metadata claim, object upload, and metadata finalize in one boundary. A later optimization can switch to pre-signed upload URLs, but that should be a separate decision.
+
+The detailed transport decision is recorded in `docs/SALES_PHOTO_EVIDENCE_R2_UPLOAD_TRANSPORT_DESIGN.md`.
 
 ## Server-Side Steps
 
@@ -238,6 +240,15 @@ Add server-only R2 adapter interface and validation:
 - no public env;
 - no upload execution outside injected tests.
 
+### Slice 7B-4A: R2 Upload Transport Design Guardrail
+
+Completed transport design:
+
+- choose `multipart/form-data` server route first;
+- defer pre-signed upload URLs;
+- keep R2 upload execution under a separate future gate;
+- do not install an SDK or parse `FormData` in the route yet.
+
 ### Slice 7B-5: Disabled End-to-End Route Test
 
 Test the full path through injected fake Supabase and fake R2.
@@ -274,6 +285,6 @@ Requires separate approval after local/staging evidence.
 
 ## Current Recommendation
 
-Proceed next with `Slice 7B-1: Pure Service Types`.
+Proceed next with `Slice 7B-4D: Fake Adapter Route Test`.
 
-Do not implement the route or R2 client yet. The route and R2 client introduce real cloud write risk and should be sliced behind explicit tests and a disabled default.
+Do not install an SDK or call real R2 until fake-adapter route ordering tests are stable.

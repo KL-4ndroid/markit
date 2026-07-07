@@ -26,9 +26,10 @@ function runTest(name: string, fn: TestFn): void {
 
 console.log('\n=== Sales photo evidence writer and upload design ===');
 
-runTest('writer upload design is design-only and keeps runtime cloud writes blocked', () => {
-  assert.match(designSource, /Status: design-only/);
-  assert.match(designSource, /does not implement routes, R2 clients, Supabase mutations, signed URLs, queue drain wiring, runtime enqueue enablement, cleanup execution, or production recovery behavior/);
+runTest('writer upload design records current route wiring while keeping R2 runtime blocked', () => {
+  assert.match(designSource, /Status: architecture record/);
+  assert.match(designSource, /Metadata-claim route wiring now exists behind local\/staging-safe feature gates/);
+  assert.match(designSource, /does not implement R2 clients, signed URLs, queue drain wiring, runtime enqueue enablement, cleanup execution, or production recovery behavior/);
   assert.match(designSource, /This design does not cover:[\s\S]*post-sale runtime enqueue enablement[\s\S]*automatic background worker[\s\S]*broad queue drain[\s\S]*signed read URL implementation/);
 });
 
@@ -80,20 +81,27 @@ runTest('implementation slices defer route R2 client and production enablement',
   assert.match(designSource, /Slice 7B-2: Server Route Skeleton Disabled/);
   assert.match(designSource, /rejects all requests with `501` or feature-disabled response/);
   assert.match(designSource, /Slice 7B-4: R2 Adapter Contract/);
+  assert.match(designSource, /Slice 7B-4A: R2 Upload Transport Design Guardrail/);
   assert.match(designSource, /Slice 7B-6: Manual Local\/Staging Enablement/);
   assert.match(designSource, /Slice 7B-7: Production Enablement/);
   assert.match(designSource, /Requires separate approval after local\/staging evidence/);
 });
 
-runTest('execution plan records 7B-0 and keeps next step pure service types', () => {
+runTest('execution plan records current R2 transport boundary and keeps next step fake route test only', () => {
   assert.match(executionPlanSource, /Slice 7B-0 Status/);
   assert.match(executionPlanSource, /writer\/upload design/);
-  assert.match(executionPlanSource, /recommended next implementation slice is `Slice 7B-1: Pure Service Types`/);
-  assert.match(executionPlanSource, /does not implement runtime routes, R2 clients, Supabase mutations, signed URLs, queue drain wiring, runtime enqueue enablement, cleanup execution, or production recovery behavior/);
+  assert.match(executionPlanSource, /Slice 7B-4A Status/);
+  assert.match(executionPlanSource, /R2 upload transport design/);
+  assert.match(executionPlanSource, /Slice 7B-4B Status/);
+  assert.match(executionPlanSource, /Slice 7B-4C Status/);
+  assert.match(executionPlanSource, /recommended next implementation slice is `Slice 7B-4D: Fake Adapter Route Test`/);
+  assert.match(executionPlanSource, /does not install an R2 SDK, parse `FormData`, call R2, issue signed URLs, delete local payloads, or enable production upload/);
 });
 
 runTest('package test includes design guardrail without adding R2 SDK dependency', () => {
   assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-writer-upload-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-r2-upload-transport-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-r2-upload-adapter\.test\.ts/);
 
   const dependencyNames = [
     ...Object.keys(packageJson.dependencies ?? {}),

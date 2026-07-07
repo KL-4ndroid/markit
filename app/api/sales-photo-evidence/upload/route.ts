@@ -31,6 +31,8 @@ export type SalesPhotoEvidenceUploadRouteDeps = {
   createRepository(request: Request): SalesPhotoEvidenceMetadataClaimSupabaseClient;
 };
 
+export type SalesPhotoEvidenceMetadataClaimRouteEnv = Record<string, string | undefined>;
+
 const DISABLED_RESPONSE_BODY = Object.freeze({
   ok: false,
   code: 'sales_photo_evidence_upload_disabled',
@@ -169,8 +171,24 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
   };
 }
 
+export function isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv(
+  env: SalesPhotoEvidenceMetadataClaimRouteEnv
+): boolean {
+  if (env.SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED !== '1') return false;
+
+  const deploymentEnv = env.VERCEL_ENV ?? env.APP_ENV ?? env.NODE_ENV;
+  if (
+    deploymentEnv === 'production' &&
+    env.SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ALLOW_PRODUCTION !== '1'
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 function isMetadataClaimRouteEnabled(): boolean {
-  return process.env.SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED === '1';
+  return isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv(process.env);
 }
 
 function getSupabaseRouteConfig(): { url: string; anonKey: string } | null {
