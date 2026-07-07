@@ -17,6 +17,7 @@ const highRiskPlanSource = readFileSync(join(projectRoot, 'docs/HIGH_RISK_SYNC_A
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const timestamp = new Date('2026-06-30T10:00:00+08:00').getTime();
 
 function runTest(name: string, fn: TestFn): void {
@@ -457,7 +458,7 @@ runTest('plan records settlement reports as owner-only PDF-first future directio
 });
 
 runTest('full test suite includes settlement report model guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-model\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-model\.test\.ts/);
 });
 
 function main(): void {

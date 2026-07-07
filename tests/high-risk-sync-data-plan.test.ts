@@ -11,6 +11,7 @@ const planSource = readFileSync(planPath, 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -207,23 +208,23 @@ runTest('plan records owner settlement report model without approving PDF Excel 
 });
 
 runTest('full test suite includes high-risk plan and importData boundary guardrails', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/import-data-indexeddb-rollback\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-classifier\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/import-runner\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/import-safety-status-ui\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/import-ui-classifier-integration-plan\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-first-recovery-plan\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-model\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/high-risk-sync-data-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-data-rollback-boundary\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-data-indexeddb-rollback\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-recovery-classifier\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-runner\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-safety-status-ui\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-ui-classifier-integration-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/cloud-rebuild-first-recovery-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/csv-reporting-export\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-model\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });
 
 function main(): void {

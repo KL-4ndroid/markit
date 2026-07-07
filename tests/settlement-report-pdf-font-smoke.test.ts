@@ -38,6 +38,7 @@ const packageJson = JSON.parse(packageJsonSource) as {
   devDependencies?: Record<string, string>;
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -127,7 +128,7 @@ runTest('plans record package installation and font smoke result without approvi
 });
 
 runTest('full test suite includes PDF font smoke guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-pdf-font-smoke\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-pdf-font-smoke\.test\.ts/);
 });
 
 async function main(): Promise<void> {

@@ -37,6 +37,7 @@ const insightQualityModelDesignSource = readFileSync(
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -137,9 +138,9 @@ runTest('settlement report plans remain the current original task before shared 
 });
 
 runTest('full test suite includes analytics shared insight core plan guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/analytics-shared-insight-core-plan\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/analytics-insight-quality\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/analytics-insight-quality-model\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/analytics-shared-insight-core-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/analytics-insight-quality\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/analytics-insight-quality-model\.test\.ts/);
 });
 
 function main(): void {

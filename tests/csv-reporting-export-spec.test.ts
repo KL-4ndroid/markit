@@ -13,6 +13,7 @@ const roleCapabilitiesSource = readFileSync(join(projectRoot, 'lib/permissions/r
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const specSource = existsSync(specPath) ? readFileSync(specPath, 'utf8') : '';
 const cloudPlanSource = readFileSync(cloudPlanPath, 'utf8');
 const highRiskPlanSource = readFileSync(highRiskPlanPath, 'utf8');
@@ -175,8 +176,8 @@ runTest('cloud rebuild and high-risk plans record step 5 completion and stop lin
 });
 
 runTest('full test suite includes CSV reporting export spec guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/csv-reporting-export\.test\.ts/);
 });
 
 function main(): void {

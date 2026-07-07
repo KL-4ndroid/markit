@@ -19,6 +19,7 @@ function readProjectFile(path: string): string {
 const readerSource = readProjectFile('lib/supabase/sales-photo-evidence.ts');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const MARKET_ID = '22222222-2222-4222-8222-222222222222';
@@ -187,7 +188,7 @@ runTest('plan records Slice 9E as read-only metadata reader only', () => {
   assert.match(planSource, /read-only Supabase metadata reader/);
   assert.match(planSource, /does not mount UI/);
   assert.match(planSource, /does not request signed read URLs/);
-  assert.match(packageJson.scripts.test, /tsx tests\/supabase-sales-photo-evidence-owner-album-reader\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/supabase-sales-photo-evidence-owner-album-reader\.test\.ts/);
 });
 
 async function main(): Promise<void> {

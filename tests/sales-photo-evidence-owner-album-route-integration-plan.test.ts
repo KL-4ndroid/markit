@@ -15,6 +15,7 @@ const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_202
 const marketDetailSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffMarketDetailSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -59,7 +60,7 @@ runTest('current runtime route uses the route section boundary instead of direct
 
 runTest('route integration plan is included in the main test command', () => {
   assert.match(
-    packageJson.scripts.test,
+    testManifestSource,
     /tsx tests\/sales-photo-evidence-owner-album-route-integration-plan\.test\.ts/
   );
 });

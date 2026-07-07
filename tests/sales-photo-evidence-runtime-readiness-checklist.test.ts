@@ -17,6 +17,7 @@ const runtimeSource = readProjectFile('lib/sales/photo-evidence-runtime-enqueue.
 const addRevenueDialogSource = readProjectFile('components/markets/AddRevenueDialog.tsx');
 const pendingWriteReportSource = readProjectFile('lib/sync/local-pending-write-report.ts');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -39,8 +40,8 @@ runTest('readiness checklist keeps production enablement blocked', () => {
   assert.match(planSource, /Do not enable the runtime flag/);
   assert.match(planSource, /Do not add a queue recovery\/cleanup executor/);
   assert.match(planSource, /Do not create Supabase evidence rows from production runtime/);
-  assert.match(planSource, /Next Phase Boundary After Slice 6B\/6C\/6D\/6E\/6F\/6G\/6H\/6I\/7A\/7B-0\/7B-1\/7B-2\/7B-3A\/7B-3B\/9A\/9B\/9C\/9D\/9E\/9F/);
-  assert.match(planSource, /Recommended next step: stop for approval before implementing any actual Supabase metadata write adapter/);
+  assert.match(planSource, /Next Phase Boundary After Slice 6B\/6C\/6D\/6E\/6F\/6G\/6H\/6I\/7A\/7B-0\/7B-1\/7B-2\/7B-3A\/7B-3B\/7B-3C\/7B-3D\/9A\/9B\/9C\/9D\/9E\/9F/);
+  assert.match(planSource, /Recommended next step: stop before wiring the disabled upload route to the metadata claim adapter\/repository/);
   assert.match(planSource, /Recommended next decision step: before any runtime route, confirm upload transport/);
   assert.match(planSource, /custom live camera stream/);
 });
@@ -65,7 +66,7 @@ runTest('pending-write guard still blocks unfinished local evidence work', () =>
 });
 
 runTest('readiness checklist is test-covered without adding runtime mutation wiring', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-runtime-readiness-checklist\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-runtime-readiness-checklist\.test\.ts/);
   assert.doesNotMatch(planSource, /runtime enqueue enabled in production/i);
 });
 

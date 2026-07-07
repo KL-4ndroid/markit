@@ -11,6 +11,7 @@ const deferredSource = readFileSync(join(projectRoot, 'lib/sales/photo-evidence-
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const MARKET_ID = '22222222-2222-4222-8222-222222222222';
@@ -130,7 +131,7 @@ runTest('deferred planner stays pure and is covered by the package test script',
   assert.doesNotMatch(deferredSource, /@\/lib\/supabase|supabase|from\(/);
   assert.doesNotMatch(deferredSource, /@\/lib\/db|recordEvent|recordDeal|getUserMedia|uploadEvidence|signedUrl|signed_url|R2/i);
   assert.doesNotMatch(deferredSource, /fetch\(|window\.|document\./);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-deferred\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-deferred\.test\.ts/);
 });
 
 async function main(): Promise<void> {

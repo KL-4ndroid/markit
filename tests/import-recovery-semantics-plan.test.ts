@@ -15,6 +15,7 @@ const recoveryPanelSource = readFileSync(join(projectRoot, 'components/common/Da
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const planSource = existsSync(planPath) ? readFileSync(planPath, 'utf8') : '';
 const highRiskPlanSource = readFileSync(highRiskPlanPath, 'utf8');
 
@@ -144,9 +145,9 @@ runTest('high-risk plan records semantics slice without approving runtime behavi
 });
 
 runTest('full test suite includes import recovery semantics guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/import-runner\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/import-safety-status-ui\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-recovery-semantics-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-runner\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-safety-status-ui\.test\.ts/);
 });
 
 function main(): void {

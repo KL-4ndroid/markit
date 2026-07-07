@@ -24,6 +24,7 @@ const highRiskPlanSource = readFileSync(join(projectRoot, 'docs/HIGH_RISK_SYNC_A
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -149,7 +150,7 @@ runTest('plans record the import safety status UI shell as completed without app
 });
 
 runTest('full test suite includes import safety status UI guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/import-safety-status-ui\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-safety-status-ui\.test\.ts/);
 });
 
 function main(): void {

@@ -13,6 +13,7 @@ const presentationPlanSource = readFileSync(join(projectRoot, 'docs/SETTLEMENT_R
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const pageImports = pageSource.match(/^import[\s\S]*?;$/gm)?.join('\n') ?? '';
 
 function runTest(name: string, fn: TestFn): void {
@@ -84,7 +85,7 @@ runTest('analytics page exposes owner-only entry without changing bottom navigat
 });
 
 runTest('full test suite includes settlement report preview UI guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-preview-ui\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-preview-ui\.test\.ts/);
 });
 
 function main(): void {

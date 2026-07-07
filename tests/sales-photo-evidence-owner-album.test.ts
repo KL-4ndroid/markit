@@ -19,6 +19,7 @@ const readModelSource = readProjectFile('lib/sales/photo-evidence-owner-album-re
 const shellSource = readProjectFile('components/markets/SalesPhotoEvidenceOwnerAlbumShell.tsx');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const MARKET_ID = '22222222-2222-4222-8222-222222222222';
@@ -207,7 +208,7 @@ runTest('execution plan records Slice 9A as read-only owner album shell', () => 
   assert.match(planSource, /Slice 9A Status/);
   assert.match(planSource, /read-only owner album model and UI shell/);
   assert.match(planSource, /does not request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, or enable runtime enqueue/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-owner-album\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-owner-album\.test\.ts/);
 });
 
 function main(): void {

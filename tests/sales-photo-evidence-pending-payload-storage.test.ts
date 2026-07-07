@@ -24,6 +24,7 @@ const localPendingWriteReportSource = readFileSync(join(projectRoot, 'lib/sync/l
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const MARKET_ID = '22222222-2222-4222-8222-222222222222';
@@ -231,7 +232,7 @@ runTest('payload storage stays local-only and disconnected from upload or sync p
   assert.doesNotMatch(storageSource, /fetch\(|window\.|document\.|localStorage|sessionStorage/);
   assert.match(localPendingWriteReportSource, /pendingSalesPhotoEvidencePayloadCount/);
   assert.match(localPendingWriteReportSource, /salesPhotoEvidencePendingPayloads\.toArray\(\)/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-pending-payload-storage\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-pending-payload-storage\.test\.ts/);
 });
 
 async function main(): Promise<void> {

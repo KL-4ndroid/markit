@@ -39,6 +39,7 @@ const eventsSource = readProjectFile('lib/db/events.ts');
 const typesSource = readProjectFile('types/db.ts');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 console.log('\n=== Sales photo evidence Slice 3 ===');
 
@@ -112,7 +113,7 @@ runTest('plan records 055 execution and Slice 3 runtime boundary', () => {
   assert.match(planSource, /055 has been manually executed/);
   assert.match(slice3Block, /Status:/);
   assert.match(slice3Block, /does not create `sale_photo_evidence` rows/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-slice3\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-slice3\.test\.ts/);
 });
 
 function main(): void {

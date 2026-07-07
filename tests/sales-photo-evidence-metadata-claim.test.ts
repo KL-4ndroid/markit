@@ -30,6 +30,7 @@ const executionPlanSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION
 const packageJson = JSON.parse(readProjectFile('package.json')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function baseInput(overrides: Partial<SalesPhotoEvidenceMetadataClaimInput> = {}): SalesPhotoEvidenceMetadataClaimInput {
   return {
@@ -204,7 +205,7 @@ runTest('execution plan and package test script record 7B-3A boundary', () => {
   assert.match(executionPlanSource, /Slice 7B-3A Status/);
   assert.match(executionPlanSource, /photo-evidence-metadata-claim\.ts/);
   assert.match(executionPlanSource, /pure metadata claim plan model/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-metadata-claim\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-metadata-claim\.test\.ts/);
 });
 
 function main(): void {

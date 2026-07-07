@@ -14,6 +14,7 @@ function readProjectFile(path: string): string {
 const designSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_LOCAL_BINARY_PENDING_STORAGE_DESIGN.md');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -62,7 +63,7 @@ runTest('execution plan records Slice 6D as design-only', () => {
   assert.match(planSource, /Slice 6D Status/);
   assert.match(planSource, /local binary pending storage design document/);
   assert.match(planSource, /does not implement Dexie schema migration, IndexedDB blob writes, browser capture runtime, upload, signed read, R2, Supabase writes, queue drain, or runtime enqueue/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-local-binary-pending-storage-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-local-binary-pending-storage-design\.test\.ts/);
 });
 
 function main(): void {

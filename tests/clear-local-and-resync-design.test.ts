@@ -14,6 +14,7 @@ const migrationSource = readFileSync(join(projectRoot, 'lib/supabase/migration.t
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const designSource = existsSync(designPath) ? readFileSync(designPath, 'utf8') : '';
 const cloudPlanSource = readFileSync(cloudPlanPath, 'utf8');
 const highRiskPlanSource = readFileSync(highRiskPlanPath, 'utf8');
@@ -131,8 +132,8 @@ runTest('clear local design records pending operations pre-clear dependency', ()
 });
 
 runTest('full test suite includes clear local and resync design guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
 });
 
 function main(): void {

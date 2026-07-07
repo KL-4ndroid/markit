@@ -24,6 +24,7 @@ const diagnosticsDesignSource = readFileSync(
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 const runtimeFiles = [
   'hooks/useSync.ts',
@@ -167,7 +168,7 @@ runTest('decision records mention D3c-2n-3 as staging verification only', () => 
 
 runTest('full test suite includes the D3c-2n guardrail', () => {
   assert.match(
-    packageJson.scripts.test,
+    testManifestSource,
     /tsx tests\/sync-gate-d-retry-drain-action-design\.test\.ts/
   );
 });

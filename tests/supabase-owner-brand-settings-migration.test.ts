@@ -13,6 +13,7 @@ const migrationSource = readFileSync(
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -34,7 +35,7 @@ runTest('054 migration does not change policies data or existing sync tables', (
 });
 
 runTest('full test suite includes owner brand migration guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/supabase-owner-brand-settings-migration\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/supabase-owner-brand-settings-migration\.test\.ts/);
 });
 
 function main(): void {

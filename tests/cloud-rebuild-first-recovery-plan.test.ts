@@ -15,6 +15,7 @@ const importPlanSource = readFileSync(importPlanPath, 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -141,13 +142,13 @@ runTest('import recovery plan is demoted to secondary emergency infrastructure',
 });
 
 runTest('full test suite includes cloud rebuild first plan guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-first-recovery-plan\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export\.test\.ts/);
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-model\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/cloud-rebuild-first-recovery-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/clear-local-and-resync-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/cloud-rebuild-preview\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/csv-reporting-export-spec\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/csv-reporting-export\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-model\.test\.ts/);
 });
 
 function main(): void {

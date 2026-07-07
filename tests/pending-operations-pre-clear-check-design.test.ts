@@ -14,6 +14,7 @@ const diagnosticsServiceSource = readFileSync(join(projectRoot, 'lib/sync/owner-
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const designSource = existsSync(designPath) ? readFileSync(designPath, 'utf8') : '';
 const cloudPlanSource = readFileSync(cloudPlanPath, 'utf8');
 const clearPlanSource = readFileSync(clearPlanPath, 'utf8');
@@ -148,7 +149,7 @@ runTest('cloud clear and high-risk plans record step 3 completion and boundaries
 });
 
 runTest('full test suite includes pending operations pre-clear design guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/pending-operations-pre-clear-check-design\.test\.ts/);
 });
 
 function main(): void {

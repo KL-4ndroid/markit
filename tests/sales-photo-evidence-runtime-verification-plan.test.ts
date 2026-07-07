@@ -22,6 +22,7 @@ const addRevenueDialogSource = readProjectFile('components/markets/AddRevenueDia
 const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 console.log('\n=== Sales photo evidence runtime verification plan ===');
 
@@ -61,7 +62,7 @@ runTest('runtime wrapper remains injectable but production callers do not force 
 });
 
 runTest('full test suite includes runtime verification plan guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-runtime-verification-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-runtime-verification-plan\.test\.ts/);
 });
 
 async function main(): Promise<void> {

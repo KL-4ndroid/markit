@@ -28,6 +28,7 @@ function section(source: string, start: string, end?: string): string {
 const migrationSource = readProjectFile('supabase/migrations/056_wire_sales_photo_evidence_market_projection.sql');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 console.log('\n=== Supabase sales photo evidence projection migration ===');
 
@@ -77,7 +78,7 @@ runTest('plan records 056 as manually executed', () => {
   assert.match(planSource, /056_wire_sales_photo_evidence_market_projection\.sql/);
   assert.match(planSource, /056 has been manually executed/);
   assert.match(planSource, /reported as complete by the project owner/);
-  assert.match(packageJson.scripts.test, /tsx tests\/supabase-sales-photo-evidence-projection-migration\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/supabase-sales-photo-evidence-projection-migration\.test\.ts/);
 });
 
 function main(): void {

@@ -21,6 +21,7 @@ const drainDesignSource = readFileSync(drainDesignPath, 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 const productionFiles = [
   'hooks/useSync.ts',
@@ -161,11 +162,11 @@ runTest('design recommends recovery placement with only the approved diagnostics
 
 runTest('full test suite includes the owner diagnostics guardrail', () => {
   assert.match(
-    packageJson.scripts.test,
+    testManifestSource,
     /tsx tests\/sync-gate-d-owner-diagnostics-design\.test\.ts/
   );
   assert.match(
-    packageJson.scripts.test,
+    testManifestSource,
     /tsx tests\/supabase-pending-operations-diagnostics-rpc\.test\.ts/
   );
 });

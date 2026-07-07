@@ -17,6 +17,7 @@ const runnerSource = readFileSync(join(projectRoot, 'lib/db/import-runner.ts'), 
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 const okIntegrity: IntegrityResult = { ok: true, errors: [], warnings: [] };
 const backup: BackupData = {
@@ -155,7 +156,7 @@ runTest('runner remains DB-layer only and does not mount UI or write cloud data'
 });
 
 runTest('full test suite includes phase-aware import runner guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/import-runner\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-runner\.test\.ts/);
 });
 
 async function main(): Promise<void> {

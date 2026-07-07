@@ -15,6 +15,7 @@ const technicalPlanSource = readFileSync(join(projectRoot, 'docs/SETTLEMENT_REPO
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const timestamp = new Date('2026-06-30T10:00:00+08:00').getTime();
 
 function runTest(name: string, fn: TestFn): void {
@@ -246,7 +247,7 @@ runTest('PDF view model remains pure and does not import runtime PDF or data API
 });
 
 runTest('full test suite includes PDF view model guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-pdf-view-model\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-pdf-view-model\.test\.ts/);
 });
 
 function main(): void {

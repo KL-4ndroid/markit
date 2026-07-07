@@ -24,6 +24,7 @@ const executionPlanSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION
 const packageJson = JSON.parse(readProjectFile('package.json')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -95,7 +96,7 @@ runTest('execution plan and package test script record 7B-2 disabled route scope
   assert.match(executionPlanSource, /app\/api\/sales-photo-evidence\/upload\/route\.ts/);
   assert.match(executionPlanSource, /rejects every request with a 501 disabled response/);
   assert.match(executionPlanSource, /does not parse requests, read files, call Supabase, call R2, write metadata, delete local payloads, drain queues, issue signed URLs, or enable runtime upload/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-upload-route-disabled\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-upload-route-disabled\.test\.ts/);
 });
 
 async function main(): Promise<void> {

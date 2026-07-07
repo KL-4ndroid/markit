@@ -16,6 +16,7 @@ const marketDetailSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffMarketDetailSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -79,7 +80,7 @@ runTest('plan records Slice 9C and Slice 9F route mounting boundaries', () => {
   assert.match(planSource, /Slice 9F Status/);
   assert.match(planSource, /mounted in `app\/markets\/\[id\]\/page\.tsx`/);
   assert.match(planSource, /does not fetch rows, request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-owner-album-route-section\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-owner-album-route-section\.test\.ts/);
 });
 
 function main(): void {

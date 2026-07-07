@@ -16,6 +16,7 @@ const csvExportSource = readFileSync(join(projectRoot, 'lib/reporting/csv-export
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -125,7 +126,7 @@ runTest('production UI and sync paths do not import CSV reporting export helper'
 });
 
 runTest('full test suite includes CSV reporting export helper guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/csv-reporting-export\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/csv-reporting-export\.test\.ts/);
 });
 
 function main(): void {

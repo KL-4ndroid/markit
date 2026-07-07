@@ -27,6 +27,7 @@ const highRiskPlanSource = readFileSync(join(projectRoot, 'docs/HIGH_RISK_SYNC_A
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -435,7 +436,7 @@ runTest('recovery planning reuses the shared local pending write report', () => 
 });
 
 runTest('full test suite includes auth cache destruction guard tests', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/auth-cache-destruction-guard\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/auth-cache-destruction-guard\.test\.ts/);
 });
 
 async function main(): Promise<void> {

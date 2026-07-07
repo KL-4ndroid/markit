@@ -22,6 +22,7 @@ function readProjectFile(path: string): string {
 const adapterContractSource = readProjectFile('lib/sales/photo-evidence-browser-adapter-contract.ts');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -149,7 +150,7 @@ runTest('execution plan records Slice 6B as browser adapter spec only', () => {
   assert.match(planSource, /Slice 6B Status/);
   assert.match(planSource, /browser adapter contract\/spec only/);
   assert.match(planSource, /does not call browser media APIs, canvas APIs, IndexedDB, Supabase, R2, upload, signed URLs, or production runtime enqueue/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-browser-adapter-contract\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-browser-adapter-contract\.test\.ts/);
 });
 
 function main(): void {

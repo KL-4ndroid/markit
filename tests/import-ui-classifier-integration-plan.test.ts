@@ -15,6 +15,7 @@ const importSafetyPanelSource = readFileSync(join(projectRoot, 'components/commo
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const planSource = existsSync(planPath) ? readFileSync(planPath, 'utf8') : '';
 const highRiskPlanSource = readFileSync(highRiskPlanPath, 'utf8');
 const importPlanSource = readFileSync(importPlanPath, 'utf8');
@@ -83,7 +84,7 @@ runTest('high-risk and import recovery plans record this design slice as complet
 });
 
 runTest('full test suite includes import UI classifier integration plan guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/import-ui-classifier-integration-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-ui-classifier-integration-plan\.test\.ts/);
 });
 
 function main(): void {

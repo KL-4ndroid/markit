@@ -23,6 +23,7 @@ const settingsServiceSource = readFileSync(join(projectRoot, 'lib/supabase/setti
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -83,7 +84,7 @@ runTest('brand name wiring stays out of sync recovery and custom export side eff
 });
 
 runTest('full test suite includes owner brand settings guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/owner-brand-settings\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/owner-brand-settings\.test\.ts/);
 });
 
 function main(): void {

@@ -30,6 +30,7 @@ const presentationPlanSource = readFileSync(
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const timestamp = new Date('2026-06-30T10:00:00+08:00').getTime();
 
 function runTest(name: string, fn: TestFn): void {
@@ -185,7 +186,7 @@ runTest('plans record fixture-only PDF template without approving browser UI', (
 });
 
 runTest('full test suite includes PDF template guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-pdf-template\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-pdf-template\.test\.ts/);
 });
 
 async function main(): Promise<void> {

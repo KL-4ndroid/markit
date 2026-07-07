@@ -13,6 +13,7 @@ const runtimeTestSource = readFileSync(join(projectRoot, 'tests/sales-photo-evid
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -47,7 +48,7 @@ runTest('runtime tests exercise enabled behavior through injected dependencies o
 });
 
 runTest('full test suite includes runtime enablement decision guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-runtime-enablement-decision\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-runtime-enablement-decision\.test\.ts/);
 });
 
 async function main(): Promise<void> {

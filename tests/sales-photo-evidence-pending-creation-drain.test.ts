@@ -21,6 +21,7 @@ const drainSource = readFileSync(join(projectRoot, 'lib/sales/photo-evidence-pen
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const MARKET_ID = '22222222-2222-4222-8222-222222222222';
@@ -290,7 +291,7 @@ runTest('drain boundary is not wired to Dexie adapter sync UI or Supabase yet', 
   });
 
   assert.deepEqual(matches, []);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-pending-creation-drain\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-pending-creation-drain\.test\.ts/);
 });
 
 async function main(): Promise<void> {

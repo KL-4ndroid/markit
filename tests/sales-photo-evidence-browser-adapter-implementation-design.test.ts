@@ -14,6 +14,7 @@ function readProjectFile(path: string): string {
 const designSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_BROWSER_ADAPTER_IMPLEMENTATION_DESIGN.md');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -59,7 +60,7 @@ runTest('execution plan records Slice 6C as design-only', () => {
   assert.match(planSource, /Slice 6C Status/);
   assert.match(planSource, /browser adapter implementation design document/);
   assert.match(planSource, /does not implement browser camera, canvas, local binary storage, upload, signed read, R2, Supabase writes, or runtime enqueue/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-browser-adapter-implementation-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-browser-adapter-implementation-design\.test\.ts/);
 });
 
 function main(): void {

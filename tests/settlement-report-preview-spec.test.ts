@@ -21,6 +21,7 @@ const settlementPlanSource = readFileSync(
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -111,7 +112,7 @@ runTest('upstream plans still identify preview as dependent on model and distort
 });
 
 runTest('full test suite includes settlement report preview spec guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-preview-spec\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-preview-spec\.test\.ts/);
 });
 
 function main(): void {

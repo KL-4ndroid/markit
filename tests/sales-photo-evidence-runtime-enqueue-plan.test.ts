@@ -12,6 +12,7 @@ const storageSource = readFileSync(join(projectRoot, 'lib/sales/photo-evidence-p
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 const productionSaleEntryFiles = [
   'components/sales/QuickTransactionGrid.tsx',
@@ -73,7 +74,7 @@ runTest('only AddRevenueDialog is approved for the disabled runtime wrapper pilo
 });
 
 runTest('full test suite includes runtime enqueue boundary guardrails', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-runtime-enqueue-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-runtime-enqueue-plan\.test\.ts/);
 });
 
 async function main(): Promise<void> {

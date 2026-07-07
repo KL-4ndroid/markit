@@ -20,6 +20,7 @@ const packageJson = JSON.parse(packageJsonSource) as {
   devDependencies?: Record<string, string>;
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -97,7 +98,7 @@ runTest('presentation plan records technical plan completion', () => {
 });
 
 runTest('full test suite includes PDF technical plan guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-pdf-technical-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-pdf-technical-plan\.test\.ts/);
 });
 
 function main(): void {

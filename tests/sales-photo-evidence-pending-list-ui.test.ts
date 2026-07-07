@@ -81,6 +81,7 @@ const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 console.log('\n=== Sales photo evidence pending list UI ===');
 
@@ -178,7 +179,7 @@ runTest('plan and npm test include Slice 5C-3C and 5C-3D pending list guardrails
   assert.match(planSource, /read-only pending list UX polish/);
   assert.match(planSource, /Slice 5C-3H-1 Status/);
   assert.match(planSource, /read-only diagnostics display/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-pending-list-ui\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-pending-list-ui\.test\.ts/);
 });
 
 async function main(): Promise<void> {

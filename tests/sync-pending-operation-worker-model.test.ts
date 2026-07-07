@@ -17,6 +17,7 @@ const projectRoot = join(__dirname, '..');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 const baseInput = {
   operationId: 'c466de02-d79a-4ae8-adc0-44b3fa0efd06',
@@ -154,7 +155,7 @@ runTest('production files do not mount a pending operation worker', () => {
 });
 
 runTest('full test suite includes pending operation worker model guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sync-pending-operation-worker-model\.test\.ts/);
 });
 
 function main(): void {

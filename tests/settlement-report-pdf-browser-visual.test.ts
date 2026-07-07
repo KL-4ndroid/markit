@@ -27,6 +27,7 @@ const presentationPlanSource = readFileSync(
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const timestamp = new Date('2026-06-30T10:00:00+08:00').getTime();
 
 function runTest(name: string, fn: TestFn): void {
@@ -207,7 +208,7 @@ runTest('plans record browser visual validation boundaries and template polish',
   assert.match(technicalPlanSource, /custom in-app download UI/);
   assert.match(presentationPlanSource, /Slice M: Browser Visual Validation And Template Polish[\s\S]*Status: completed/);
   assert.match(presentationPlanSource, /does not depend on production data/);
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-pdf-browser-visual\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-pdf-browser-visual\.test\.ts/);
 });
 
 async function main(): Promise<void> {

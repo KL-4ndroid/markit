@@ -16,6 +16,7 @@ const executionPlanSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION
 const packageJson = JSON.parse(readProjectFile('package.json')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -79,7 +80,7 @@ runTest('execution plan and package script include 7B-3B design guardrail', () =
   assert.match(executionPlanSource, /Slice 7B-3B Status/);
   assert.match(executionPlanSource, /SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ADAPTER_DESIGN\.md/);
   assert.match(executionPlanSource, /Actual Supabase metadata writes remain blocked/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-metadata-claim-adapter-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-metadata-claim-adapter-design\.test\.ts/);
 });
 
 function main(): void {

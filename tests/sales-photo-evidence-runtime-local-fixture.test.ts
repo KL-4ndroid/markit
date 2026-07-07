@@ -78,6 +78,7 @@ async function runEnabledFixture(
 
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 const fixtureSource = readFileSync(__filename, 'utf8');
 
 console.log('\n=== Sales photo evidence runtime local fixture ===');
@@ -173,7 +174,7 @@ runTest('plan and npm test record 5C-3F local fixture completion', () => {
   assert.match(planSource, /local-only disposable runtime verification fixture/i);
   assert.match(planSource, /fake-indexeddb/i);
   assert.match(planSource, /does not change the production runtime flag/i);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-runtime-local-fixture\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-runtime-local-fixture\.test\.ts/);
 });
 
 async function main(): Promise<void> {

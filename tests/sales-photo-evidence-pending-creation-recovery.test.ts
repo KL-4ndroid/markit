@@ -29,6 +29,7 @@ const planSource = readFileSync(
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const MARKET_ID = '22222222-2222-4222-8222-222222222222';
@@ -191,7 +192,7 @@ runTest('recovery model stays pure and is not wired to runtime cleanup execution
 
   assert.deepEqual(wiredFiles, []);
   assert.match(planSource, /Slice 5C-3G Status/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-pending-creation-recovery\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-pending-creation-recovery\.test\.ts/);
 });
 
 function main(): void {

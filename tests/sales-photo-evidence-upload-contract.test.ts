@@ -20,6 +20,7 @@ function readProjectFile(path: string): string {
 const contractSource = readProjectFile('lib/sales/photo-evidence-upload-contract.ts');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const MARKET_ID = '22222222-2222-4222-8222-222222222222';
@@ -222,7 +223,7 @@ runTest('Phase B plan records contract-only boundary and keeps runtime blocked',
   assert.match(planSource, /Slice 7A Status/);
   assert.match(planSource, /contract-only upload and signed-read model/);
   assert.match(planSource, /does not create routes, R2 clients, signed URLs, Supabase writes, upload execution, or runtime enqueue/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-upload-contract\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-upload-contract\.test\.ts/);
 });
 
 function main(): void {

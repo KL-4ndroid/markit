@@ -18,6 +18,7 @@ const packageJson = JSON.parse(readProjectFile('package.json')) as {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
 };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -60,7 +61,7 @@ runTest('execution plan records Slice 6I as low-risk plan-only smoke scope', () 
 });
 
 runTest('package test includes guardrail but package dependencies do not add browser automation', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-local-capture-browser-smoke-plan\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-local-capture-browser-smoke-plan\.test\.ts/);
 
   const dependencyNames = [
     ...Object.keys(packageJson.dependencies ?? {}),

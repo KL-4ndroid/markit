@@ -22,6 +22,7 @@ const recoverySource = readProjectFile('app/recovery/page.tsx');
 const panelSource = readProjectFile('components/common/OwnerPendingOperationDiagnosticsPanel.tsx');
 const serviceSource = readProjectFile('lib/sync/owner-pending-operation-diagnostics.ts');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 console.log('\n=== Sync Gate D owner diagnostics UI ===');
 
@@ -123,7 +124,7 @@ runTest('diagnostics UI omits sensitive payload and role snapshot fields', () =>
 
 runTest('full test suite includes the owner diagnostics UI guardrail', () => {
   assert.match(
-    packageJson.scripts.test,
+    testManifestSource,
     /tsx tests\/sync-gate-d-owner-diagnostics-ui\.test\.ts/
   );
 });

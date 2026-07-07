@@ -30,6 +30,7 @@ const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 console.log('\n=== Sales photo evidence Slice 4 operating UI ===');
 
@@ -73,7 +74,7 @@ runTest('plan and npm test include Slice 4 operating UI guardrails', () => {
   assert.match(planSource, /Slice 4: Active Operating Toggle and Indicator[\s\S]*Status:[\s\S]*implemented/);
   assert.match(planSource, /owner operating-screen toggle/);
   assert.match(planSource, /read-only indicator for staff/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-slice4-operating-ui\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-slice4-operating-ui\.test\.ts/);
 });
 
 function main(): void {

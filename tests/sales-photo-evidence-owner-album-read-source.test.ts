@@ -20,6 +20,7 @@ const readModelSource = readProjectFile('lib/sales/photo-evidence-owner-album-re
 const migrationSource = readProjectFile('supabase/migrations/055_add_sales_photo_evidence_schema.sql');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const MARKET_ID = '22222222-2222-4222-8222-222222222222';
@@ -148,7 +149,7 @@ runTest('plan records Slice 9D as read-source contract only', () => {
   assert.match(planSource, /read-source contract/);
   assert.match(planSource, /does not execute Supabase queries/);
   assert.match(planSource, /does not request signed read URLs/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-owner-album-read-source\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-owner-album-read-source\.test\.ts/);
 });
 
 function main(): void {

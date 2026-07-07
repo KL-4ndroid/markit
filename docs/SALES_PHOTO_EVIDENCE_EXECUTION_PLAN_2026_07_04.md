@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 9F owner market-detail read-only album mounting implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, browser adapter contract/spec model, browser adapter implementation design, local binary pending storage design, local binary pending payload storage implementation, file-input browser capture adapter service, disabled/local-only capture button UI shell, staff pending-dialog local-only capture, browser temporary-profile smoke plan, upload/signed-read contract model, writer/upload design, writer/upload pure service types, disabled upload route shell, metadata claim plan model, metadata claim adapter design, read-only owner album shell, owner album route-section boundary, owner album read-source contract, read-only Supabase metadata reader, and owner market-detail read-only album mounting are implemented. Runtime Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, automated browser smoke execution, cloud-backed production capture/upload UI, real R2 upload, real signed URL issuance, private image rendering, expiration mutation, and evidence row creation from production sales are not yet implemented.
+Status: Slice 9F owner market-detail read-only album mounting implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, browser adapter contract/spec model, browser adapter implementation design, local binary pending storage design, local binary pending payload storage implementation, file-input browser capture adapter service, disabled/local-only capture button UI shell, staff pending-dialog local-only capture, browser temporary-profile smoke plan, upload/signed-read contract model, writer/upload design, writer/upload pure service types, disabled upload route shell, metadata claim plan model, metadata claim adapter design, dependency-injected metadata claim adapter, concrete Supabase metadata claim repository, read-only owner album shell, owner album route-section boundary, owner album read-source contract, read-only Supabase metadata reader, and owner market-detail read-only album mounting are implemented. Runtime route wiring for Supabase evidence row creation, enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, automated browser smoke execution, cloud-backed production capture/upload UI, real R2 upload, real signed URL issuance, private image rendering, expiration mutation, and evidence row creation from production sales are not yet implemented.
 
 ## Goal
 
@@ -1153,6 +1153,25 @@ Slice 7B-3B Status:
 - Actual Supabase metadata writes remain blocked and require approval before implementation.
 - Guarded by `tests/sales-photo-evidence-metadata-claim-adapter-design.test.ts`.
 
+Slice 7B-3C Status:
+
+- A dependency-injected metadata claim adapter is implemented in `lib/sales/photo-evidence-metadata-claim-adapter.ts`.
+- The adapter reads sale event, active evidence row, and active staff relationship through an injected repository, then delegates authorization and status decisions to `createSalesPhotoEvidenceMetadataClaimPlan()`.
+- The adapter defaults to disabled; disabled mode builds the plan but calls no create/update repository methods.
+- When explicitly enabled by a caller, it can call only `createEvidenceUploadingClaim()` or `markEvidenceUploading()` on the injected repository, and only writes the `uploading` claim state.
+- It never marks `uploaded`, never deletes local payloads, never calls R2, never parses upload requests, never imports route code, and never creates a Supabase client.
+- This still does not wire the adapter into the disabled upload route and does not provide a concrete Supabase repository implementation.
+- Guarded by `tests/sales-photo-evidence-metadata-claim-adapter.test.ts`.
+
+Slice 7B-3D Status:
+
+- A concrete Supabase metadata claim repository is implemented in `lib/supabase/sales-photo-evidence-metadata-claim-repository.ts`.
+- The repository can read the scoped deal event, read the active evidence row, check an active staff relationship, insert a new `uploading` metadata claim, or update an existing scoped active row to `uploading`.
+- It uses an injected Supabase-like client and does not import the global Supabase client.
+- It never writes `uploaded`, R2 object keys, signed URLs, local payload deletion, route wiring, queue drain behavior, or runtime enqueue behavior.
+- The disabled upload route still does not call this repository; production route wiring remains blocked.
+- Guarded by `tests/supabase-sales-photo-evidence-metadata-claim-repository.test.ts`.
+
 Slice 9A Status:
 
 - Phase D starts with a read-only owner album model and UI shell.
@@ -1213,10 +1232,10 @@ Slice 9F Status:
 - This slice does not request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
 - Guarded by `tests/sales-photo-evidence-owner-album-route-section.test.ts` and `tests/sales-photo-evidence-owner-album-route-integration-plan.test.ts`.
 
-Next Phase Boundary After Slice 6B/6C/6D/6E/6F/6G/6H/6I/7A/7B-0/7B-1/7B-2/7B-3A/7B-3B/9A/9B/9C/9D/9E/9F:
+Next Phase Boundary After Slice 6B/6C/6D/6E/6F/6G/6H/6I/7A/7B-0/7B-1/7B-2/7B-3A/7B-3B/7B-3C/7B-3D/9A/9B/9C/9D/9E/9F:
 
 - Production runtime enqueue enablement, actual browser-profile smoke execution, queue recovery/cleanup executor, custom live camera stream, Supabase evidence-row writer implementation, R2 upload implementation, and signed read URLs remain explicit approval boundaries.
-- Recommended next step: stop for approval before implementing any actual Supabase metadata write adapter.
+- Recommended next step: stop before wiring the disabled upload route to the metadata claim adapter/repository, because route wiring would make the write path reachable.
 - Recommended next decision step: before any runtime route, confirm upload transport (`FormData` server route vs pre-signed upload URL flow).
 - Alternative low-risk step: add more static/read-model guardrails around pending payload visibility without enabling upload.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.

@@ -23,6 +23,7 @@ function readProjectFile(path: string): string {
 const captureCompressionSource = readProjectFile('lib/sales/photo-evidence-capture-compression.ts');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -160,7 +161,7 @@ runTest('risk-reduced merged plan records Phase A and keeps runtime boundaries c
   assert.match(planSource, /Phase D: Owner Review \+ Expiration/);
   assert.match(planSource, /Slice 6A Status/);
   assert.match(planSource, /does not call camera APIs, canvas, Supabase, R2, upload, signed URLs, or production runtime enqueue/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-capture-compression\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-capture-compression\.test\.ts/);
 });
 
 function main(): void {

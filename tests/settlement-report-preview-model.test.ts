@@ -16,6 +16,7 @@ const previewSpecSource = readFileSync(join(projectRoot, 'docs/SETTLEMENT_REPORT
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const timestamp = new Date('2026-06-30T10:00:00+08:00').getTime();
 
 function runTest(name: string, fn: TestFn): void {
@@ -187,7 +188,7 @@ runTest('preview model remains pure while formal UI and PDF boundaries stay expl
 });
 
 runTest('full test suite includes settlement report preview model guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-preview-model\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-preview-model\.test\.ts/);
 });
 
 function main(): void {

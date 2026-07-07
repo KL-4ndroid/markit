@@ -15,6 +15,7 @@ const highRiskPlanSource = readFileSync(join(projectRoot, 'docs/HIGH_RISK_SYNC_A
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -114,7 +115,7 @@ runTest('high-risk plan records classifier as the only approved continuation sli
 });
 
 runTest('full test suite includes import recovery classifier guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/import-recovery-classifier\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/import-recovery-classifier\.test\.ts/);
 });
 
 function main(): void {

@@ -11,6 +11,7 @@ const projectRoot = join(__dirname, '..');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -222,7 +223,7 @@ runTest('production sync paths do not import cache replacement apply simulator',
 });
 
 runTest('full test suite includes cache replacement apply simulator guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sync-cache-replacement-apply-simulator\.test\.ts/);
 });
 
 function main(): void {

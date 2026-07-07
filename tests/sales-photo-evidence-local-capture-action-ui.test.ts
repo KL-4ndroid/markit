@@ -17,6 +17,7 @@ const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -75,7 +76,7 @@ runTest('execution plan and npm test include the local capture action guardrails
   assert.match(planSource, /Owner market detail remains disabled/);
   assert.match(planSource, /does not call the browser adapter, write local payloads, upload, request signed reads, call R2, write Supabase, drain queues, or enable runtime enqueue/);
   assert.match(planSource, /does not upload, request signed reads, call R2, write Supabase, drain queues, enable runtime enqueue/);
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-local-capture-action-ui\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-local-capture-action-ui\.test\.ts/);
 });
 
 function main(): void {

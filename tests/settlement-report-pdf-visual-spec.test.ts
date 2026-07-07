@@ -21,6 +21,7 @@ const previewSpecSource = readFileSync(
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -110,7 +111,7 @@ runTest('presentation and preview plans point to PDF visual spec before technica
 });
 
 runTest('full test suite includes PDF visual spec guardrail', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/settlement-report-pdf-visual-spec\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/settlement-report-pdf-visual-spec\.test\.ts/);
 });
 
 function main(): void {

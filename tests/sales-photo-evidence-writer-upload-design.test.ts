@@ -18,6 +18,7 @@ const packageJson = JSON.parse(readProjectFile('package.json')) as {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
 };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
@@ -92,7 +93,7 @@ runTest('execution plan records 7B-0 and keeps next step pure service types', ()
 });
 
 runTest('package test includes design guardrail without adding R2 SDK dependency', () => {
-  assert.match(packageJson.scripts.test, /tsx tests\/sales-photo-evidence-writer-upload-design\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-writer-upload-design\.test\.ts/);
 
   const dependencyNames = [
     ...Object.keys(packageJson.dependencies ?? {}),

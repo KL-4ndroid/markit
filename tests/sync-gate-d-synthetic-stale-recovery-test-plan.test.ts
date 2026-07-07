@@ -27,6 +27,7 @@ const drainDesignSource = readFileSync(
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 
 console.log('\n=== Sync Gate D synthetic stale recovery test plan ===');
 
@@ -106,7 +107,7 @@ runTest('decision and drain design records mention D3c-2m as passed staging veri
 
 runTest('full test suite includes the D3c-2m guardrail', () => {
   assert.match(
-    packageJson.scripts.test,
+    testManifestSource,
     /tsx tests\/sync-gate-d-synthetic-stale-recovery-test-plan\.test\.ts/
   );
 });

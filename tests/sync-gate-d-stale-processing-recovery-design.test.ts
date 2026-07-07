@@ -24,6 +24,7 @@ const decisionSource = readFileSync(decisionPath, 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
+const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 const disallowedRuntimeFiles = [
   'lib/markets/field-ops-write-router.ts',
@@ -114,11 +115,11 @@ runTest('stale processing recovery is not wired into broad runtime paths', () =>
 
 runTest('full test suite includes stale processing recovery guardrails', () => {
   assert.match(
-    packageJson.scripts.test,
+    testManifestSource,
     /tsx tests\/sync-gate-d-stale-processing-recovery-design\.test\.ts/
   );
   assert.match(
-    packageJson.scripts.test,
+    testManifestSource,
     /tsx tests\/supabase-pending-operations-stale-recovery-rpc\.test\.ts/
   );
 });
