@@ -39,8 +39,9 @@ runTest('readiness checklist keeps production enablement blocked', () => {
   assert.match(planSource, /Do not enable the runtime flag/);
   assert.match(planSource, /Do not add a queue recovery\/cleanup executor/);
   assert.match(planSource, /Do not create Supabase evidence rows from production runtime/);
-  assert.match(planSource, /Next Phase Boundary After Slice 6B\/6C\/6D\/6E\/6F\/6G\/6H\/6I\/7A\/9A\/9B\/9C\/9D\/9E\/9F/);
-  assert.match(planSource, /Recommended next step requiring product confirmation: decide whether to manually execute the temporary-profile staff local capture smoke test/);
+  assert.match(planSource, /Next Phase Boundary After Slice 6B\/6C\/6D\/6E\/6F\/6G\/6H\/6I\/7A\/7B-0\/9A\/9B\/9C\/9D\/9E\/9F/);
+  assert.match(planSource, /Recommended next low-risk step: proceed with `Slice 7B-1: Pure Service Types`/);
+  assert.match(planSource, /Recommended next decision step: before any runtime route, confirm upload transport/);
   assert.match(planSource, /custom live camera stream/);
 });
 
