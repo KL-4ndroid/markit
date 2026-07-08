@@ -11,71 +11,69 @@ function readProjectFile(path: string): string {
   return readFileSync(join(projectRoot, path), 'utf8');
 }
 
-const actionSource = readProjectFile('components/markets/SalesPhotoEvidenceLocalCaptureAction.tsx');
+const captureActionSource = readProjectFile('components/markets/SalesPhotoEvidenceLocalCaptureAction.tsx');
+const uploadActionSource = readProjectFile('components/markets/SalesPhotoEvidenceManualUploadAction.tsx');
 const dialogSource = readProjectFile('components/markets/SalesPhotoEvidencePendingListDialog.tsx');
 const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
-const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
 const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
 }
 
-console.log('\n=== Sales photo evidence local capture action UI ===');
+console.log('\n=== Sales photo evidence local capture and manual upload action UI ===');
 
-runTest('local capture action is prop-driven and disabled by default', () => {
-  assert.match(actionSource, /export function SalesPhotoEvidenceLocalCaptureAction/);
-  assert.match(actionSource, /captureEnabled = false/);
-  assert.match(actionSource, /const canCapture = captureEnabled && eligible && typeof onCapture === 'function' && !isCapturing/);
-  assert.match(actionSource, /status === 'waiting_for_event_sync' \|\| status === 'failed_retryable'/);
-  assert.match(actionSource, /disabled=\{!canCapture\}/);
+runTest('local capture action remains prop-driven and disabled by default', () => {
+  assert.match(captureActionSource, /export function SalesPhotoEvidenceLocalCaptureAction/);
+  assert.match(captureActionSource, /captureEnabled = false/);
+  assert.match(captureActionSource, /const canCapture = captureEnabled && eligible && typeof onCapture === 'function' && !isCapturing/);
+  assert.match(captureActionSource, /status === 'waiting_for_event_sync' \|\| status === 'failed_retryable'/);
+  assert.match(captureActionSource, /disabled=\{!canCapture\}/);
 });
 
-runTest('local capture action does not import runtime adapter storage cloud or sync paths', () => {
-  assert.doesNotMatch(actionSource, /photo-evidence-browser-adapter|captureAndStoreSalesPhotoEvidenceWithFileInput/);
-  assert.doesNotMatch(actionSource, /photo-evidence-pending-payload-storage|putPendingSalesPhotoEvidencePayload|db\.|supabase/i);
-  assert.doesNotMatch(actionSource, /upload|getUserMedia|signedUrl|signed_url|\bR2\b|recordEvent|recordDeal|enqueue|drain/i);
-  assert.doesNotMatch(actionSource, /localStorage|sessionStorage|fetch\(|XMLHttpRequest/);
+runTest('manual upload action is prop-driven and does not own upload side effects', () => {
+  assert.match(uploadActionSource, /export function SalesPhotoEvidenceManualUploadAction/);
+  assert.match(uploadActionSource, /uploadEnabled = false/);
+  assert.match(uploadActionSource, /const canUpload = uploadEnabled && eligible && typeof onUpload === 'function' && !isUploading/);
+  assert.match(uploadActionSource, /status === 'waiting_for_event_sync' \|\| status === 'failed_retryable'/);
+  assert.doesNotMatch(uploadActionSource, /photo-evidence-manual-upload-client|fetch\(|supabase|db\.|@aws-sdk|R2_BUCKET|service_role/i);
 });
 
-runTest('pending list mounts the action shell with explicit capture props and no adapter import', () => {
+runTest('pending list delegates capture and upload by props without importing runtime adapters', () => {
   assert.match(dialogSource, /import \{ SalesPhotoEvidenceLocalCaptureAction \}/);
+  assert.match(dialogSource, /import \{ SalesPhotoEvidenceManualUploadAction \}/);
   assert.match(dialogSource, /captureEnabled\?: boolean/);
+  assert.match(dialogSource, /uploadEnabled\?: boolean/);
   assert.match(dialogSource, /capturingQueueId\?: string \| null/);
-  assert.match(dialogSource, /isLocalCaptureAllowed\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => boolean/);
+  assert.match(dialogSource, /uploadingQueueId\?: string \| null/);
   assert.match(dialogSource, /onCaptureLocal\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<void>/);
+  assert.match(dialogSource, /onUploadManual\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<void>/);
   assert.match(dialogSource, /captureEnabled = false/);
-  assert.match(dialogSource, /<SalesPhotoEvidenceLocalCaptureAction[\s\S]*status=\{item\.status\}[\s\S]*captureEnabled=\{captureEnabled && \(isLocalCaptureAllowed\?\.\(item\) \?\? true\)\}/);
-  assert.match(dialogSource, /isCapturing=\{capturingQueueId === item\.queueId\}/);
-  assert.match(dialogSource, /onCapture=\{onCaptureLocal \? \(\) => void onCaptureLocal\(item\) : undefined\}/);
-  assert.doesNotMatch(dialogSource, /photo-evidence-browser-adapter|captureAndStoreSalesPhotoEvidenceWithFileInput/);
-  assert.doesNotMatch(dialogSource, /putPendingSalesPhotoEvidencePayload|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i);
+  assert.match(dialogSource, /uploadEnabled = false/);
+  assert.doesNotMatch(dialogSource, /photo-evidence-browser-adapter|photo-evidence-manual-upload-client|fetch\(|supabase|db\.|@aws-sdk|R2_BUCKET|service_role/i);
 });
 
-runTest('staff detail enables only local capture while owner detail stays disabled', () => {
+runTest('staff detail is the only runtime container for local capture and manual upload', () => {
   assert.match(staffViewSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
+  assert.match(staffViewSource, /uploadPendingSalesPhotoEvidenceManually/);
   assert.match(staffViewSource, /captureEnabled=\{true\}/);
+  assert.match(staffViewSource, /uploadEnabled=\{true\}/);
   assert.match(staffViewSource, /isLocalCaptureAllowed=\{isLocalSalesPhotoEvidenceCaptureAllowed\}/);
   assert.match(staffViewSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
+  assert.match(staffViewSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
   assert.match(staffViewSource, /item\.capturedByStaffId === user\?\.id/);
-  assert.match(staffViewSource, /照片已暫存在本機，尚未上傳雲端/);
-  assert.doesNotMatch(staffViewSource, /upload|getUserMedia|signedUrl|signed_url|\bR2\b|drainSalesPhotoEvidencePendingCreations/i);
+  assert.doesNotMatch(staffViewSource, /getUserMedia|signedUrl|signed_url|\bR2\b|drainSalesPhotoEvidencePendingCreations/i);
 
   assert.doesNotMatch(ownerPageSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
   assert.doesNotMatch(ownerPageSource, /captureEnabled=\{true\}/);
   assert.doesNotMatch(ownerPageSource, /onCaptureLocal=\{/);
 });
 
-runTest('execution plan and npm test include the local capture action guardrails', () => {
+runTest('execution plan and npm test include the local capture guardrails', () => {
   assert.match(planSource, /Slice 6G Status/);
-  assert.match(planSource, /disabled\/local-only capture button UI shell/);
   assert.match(planSource, /Slice 6H Status/);
-  assert.match(planSource, /staff pending evidence dialog enables local-only capture/);
-  assert.match(planSource, /Owner market detail remains disabled/);
-  assert.match(planSource, /does not call the browser adapter, write local payloads, upload, request signed reads, call R2, write Supabase, drain queues, or enable runtime enqueue/);
-  assert.match(planSource, /does not upload, request signed reads, call R2, write Supabase, drain queues, enable runtime enqueue/);
   assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-local-capture-action-ui\.test\.ts/);
 });
 

@@ -18,6 +18,7 @@ import type {
   SalesPhotoEvidencePendingCreationListItem,
 } from '@/lib/sales/photo-evidence-pending-creation-read-model';
 import { SalesPhotoEvidenceLocalCaptureAction } from './SalesPhotoEvidenceLocalCaptureAction';
+import { SalesPhotoEvidenceManualUploadAction } from './SalesPhotoEvidenceManualUploadAction';
 
 interface SalesPhotoEvidencePendingListDialogProps {
   isOpen: boolean;
@@ -28,8 +29,12 @@ interface SalesPhotoEvidencePendingListDialogProps {
   captureEnabled?: boolean;
   capturingQueueId?: string | null;
   captureErrorByQueueId?: Record<string, string | null>;
+  uploadEnabled?: boolean;
+  uploadingQueueId?: string | null;
+  uploadErrorByQueueId?: Record<string, string | null>;
   isLocalCaptureAllowed?: (item: SalesPhotoEvidencePendingCreationListItem) => boolean;
   onCaptureLocal?: (item: SalesPhotoEvidencePendingCreationListItem) => void | Promise<void>;
+  onUploadManual?: (item: SalesPhotoEvidencePendingCreationListItem) => void | Promise<void>;
   onRefresh?: () => void;
   onClose: () => void;
 }
@@ -132,8 +137,12 @@ export function SalesPhotoEvidencePendingListDialog({
   captureEnabled = false,
   capturingQueueId = null,
   captureErrorByQueueId = {},
+  uploadEnabled = false,
+  uploadingQueueId = null,
+  uploadErrorByQueueId = {},
   isLocalCaptureAllowed,
   onCaptureLocal,
+  onUploadManual,
   onRefresh,
   onClose,
 }: SalesPhotoEvidencePendingListDialogProps) {
@@ -246,9 +255,22 @@ export function SalesPhotoEvidencePendingListDialog({
                       onCapture={onCaptureLocal ? () => void onCaptureLocal(item) : undefined}
                     />
 
+                    <SalesPhotoEvidenceManualUploadAction
+                      status={item.status}
+                      uploadEnabled={uploadEnabled && (isLocalCaptureAllowed?.(item) ?? true)}
+                      isUploading={uploadingQueueId === item.queueId}
+                      onUpload={onUploadManual ? () => void onUploadManual(item) : undefined}
+                    />
+
                     {captureErrorByQueueId[item.queueId] && (
                       <div className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
                         {captureErrorByQueueId[item.queueId]}
+                      </div>
+                    )}
+
+                    {uploadErrorByQueueId[item.queueId] && (
+                      <div className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
+                        {uploadErrorByQueueId[item.queueId]}
                       </div>
                     )}
 

@@ -266,8 +266,10 @@ runTest('runtime adapter source remains disconnected from cloud upload sync and 
 
   const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
   assert.match(staffViewSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
+  assert.match(staffViewSource, /uploadPendingSalesPhotoEvidenceManually/);
   assert.match(staffViewSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
-  assert.doesNotMatch(staffViewSource, /upload|getUserMedia|signedUrl|signed_url|\bR2\b|drainSalesPhotoEvidencePendingCreations/i);
+  assert.match(staffViewSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
+  assert.doesNotMatch(staffViewSource, /getUserMedia|signedUrl|signed_url|\bR2\b|drainSalesPhotoEvidencePendingCreations/i);
 });
 
 runTest('execution plan and package test include the runtime adapter slice', () => {

@@ -13,6 +13,7 @@ import type {
   SalesPhotoEvidenceAlbumItemDisplayStatus,
   SalesPhotoEvidenceOwnerAlbumViewModel,
 } from '@/lib/sales/photo-evidence-owner-album-read-model';
+import { SalesPhotoEvidenceOwnerAlbumImage } from './SalesPhotoEvidenceOwnerAlbumImage';
 
 interface SalesPhotoEvidenceOwnerAlbumShellProps {
   viewModel: SalesPhotoEvidenceOwnerAlbumViewModel;
@@ -171,14 +172,17 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
                 </span>
               </div>
 
-              <div className="flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-border bg-white text-center">
-                <div className="px-4">
-                  <ImageOff className="mx-auto h-7 w-7 text-muted-foreground" />
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                    {getItemCaption(item)}
-                  </p>
-                </div>
+              <div className="aspect-[4/3] overflow-hidden rounded-xl bg-white">
+                <SalesPhotoEvidenceOwnerAlbumImage
+                  evidenceId={item.id}
+                  canLoad={item.displayStatus === 'uploaded_private' && item.hasPrivateThumbnailObject}
+                  alt={`銷售照片 ${item.saleId ?? item.id}`}
+                />
               </div>
+
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                {getItemCaption(item)}
+              </p>
 
               <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                 <div>

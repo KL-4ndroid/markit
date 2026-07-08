@@ -4,11 +4,20 @@ import { NextResponse } from 'next/server';
 import {
   executeSalesPhotoEvidenceMetadataClaimAdapter,
   type SalesPhotoEvidenceMetadataClaimAdapterResult,
+  type SalesPhotoEvidenceMetadataClaimedRow,
 } from '@/lib/sales/photo-evidence-metadata-claim-adapter';
+import {
+  buildSalesPhotoEvidenceObjectKey,
+  getSalesPhotoEvidenceExpiresAt,
+} from '@/lib/sales/photo-evidence-model';
+import type { SalesPhotoEvidenceR2UploadAdapter } from '@/lib/sales/photo-evidence-r2-upload-adapter';
+import type { SalesPhotoEvidenceUploadMimeType } from '@/lib/sales/photo-evidence-upload-contract';
+import { parseSalesPhotoEvidenceUploadFormData } from '@/lib/sales/photo-evidence-upload-form-data';
 import {
   createSalesPhotoEvidenceMetadataClaimSupabaseRepository,
   type SalesPhotoEvidenceMetadataClaimSupabaseClient,
 } from '@/lib/supabase/sales-photo-evidence-metadata-claim-repository';
+import type { SalesPhotoEvidenceUploadMetadataRepository } from '@/lib/supabase/sales-photo-evidence-metadata-claim-repository';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,11 +36,41 @@ type SalesPhotoEvidenceUploadRouteBody = {
 
 export type SalesPhotoEvidenceUploadRouteDeps = {
   isMetadataClaimEnabled(): boolean;
+  isR2UploadEnabled?(): boolean;
   resolveActor(request: Request): Promise<SalesPhotoEvidenceUploadRouteActor | null>;
   createRepository(request: Request): SalesPhotoEvidenceMetadataClaimSupabaseClient;
+  r2UploadAdapter?: SalesPhotoEvidenceR2UploadAdapter;
+  createR2UploadAdapter?(): Promise<SalesPhotoEvidenceR2UploadAdapter | null>;
+  finalizeUploadedEvidence?(input: SalesPhotoEvidenceFinalizeUploadedInput): Promise<void>;
+  markEvidenceUploadFailed?(input: SalesPhotoEvidenceMarkUploadFailedInput): Promise<void>;
+  now?(): Date;
 };
 
 export type SalesPhotoEvidenceMetadataClaimRouteEnv = Record<string, string | undefined>;
+
+export type SalesPhotoEvidenceFinalizeUploadedInput = {
+  evidenceId: string;
+  ownerId: string;
+  marketId: string;
+  saleId: string;
+  imageObjectKey: string;
+  thumbnailObjectKey: string;
+  mimeType: string;
+  width: number;
+  height: number;
+  fileSizeBytes: number;
+  capturedAt: string;
+  uploadedAt: string;
+  expiresAt: string;
+};
+
+export type SalesPhotoEvidenceMarkUploadFailedInput = {
+  evidenceId: string;
+  ownerId: string;
+  marketId: string;
+  saleId: string;
+  reason: 'r2_image_upload_failed' | 'r2_thumbnail_upload_failed' | 'metadata_finalize_failed';
+};
 
 const DISABLED_RESPONSE_BODY = Object.freeze({
   ok: false,
@@ -50,6 +89,15 @@ function jsonResponse(body: unknown, status: number): NextResponse {
 
 function disabledUploadResponse(): NextResponse {
   return jsonResponse(DISABLED_RESPONSE_BODY, 501);
+}
+
+function disabledR2UploadResponse(): NextResponse {
+  return jsonResponse({
+    ok: false,
+    code: 'sales_photo_evidence_r2_upload_disabled',
+    message: 'Sales photo evidence R2 upload is not enabled yet.',
+    shouldKeepLocalPayload: true,
+  }, 501);
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -81,6 +129,10 @@ function parseUploadRouteBody(value: unknown): SalesPhotoEvidenceUploadRouteBody
     capturedAt: record.capturedAt,
     hasLocalPayload: record.hasLocalPayload,
   };
+}
+
+function isMultipartFormDataRequest(request: Request): boolean {
+  return request.headers.get('content-type')?.toLowerCase().includes('multipart/form-data') ?? false;
 }
 
 function mapClaimResultToResponse(result: SalesPhotoEvidenceMetadataClaimAdapterResult): NextResponse {
@@ -123,9 +175,16 @@ function mapClaimResultToResponse(result: SalesPhotoEvidenceMetadataClaimAdapter
 }
 
 export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvidenceUploadRouteDeps) {
+  const isR2UploadEnabled = deps.isR2UploadEnabled ?? (() => false);
+
   async function post(request: Request): Promise<NextResponse> {
     if (!deps.isMetadataClaimEnabled()) {
       return disabledUploadResponse();
+    }
+
+    const wantsR2Upload = isMultipartFormDataRequest(request);
+    if (wantsR2Upload && !isR2UploadEnabled()) {
+      return disabledR2UploadResponse();
     }
 
     const actor = await deps.resolveActor(request);
@@ -135,6 +194,10 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
         code: 'authentication_required',
         message: 'Sales photo evidence upload requires an authenticated user.',
       }, 401);
+    }
+
+    if (wantsR2Upload) {
+      return handleFormDataUpload(request, actor);
     }
 
     const body = parseUploadRouteBody(await request.json());
@@ -162,6 +225,162 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     return mapClaimResultToResponse(result);
   }
 
+  async function markUploadFailedIfPossible(
+    row: SalesPhotoEvidenceMetadataClaimedRow,
+    reason: SalesPhotoEvidenceMarkUploadFailedInput['reason'],
+    repository: SalesPhotoEvidenceUploadMetadataRepository
+  ): Promise<void> {
+    const input = {
+      evidenceId: row.id,
+      ownerId: row.ownerId,
+      marketId: row.marketId,
+      saleId: row.saleId,
+      reason,
+    };
+
+    if (deps.markEvidenceUploadFailed) {
+      await deps.markEvidenceUploadFailed(input);
+      return;
+    }
+
+    await repository.markEvidenceUploadFailed(input);
+  }
+
+  async function handleFormDataUpload(
+    request: Request,
+    actor: SalesPhotoEvidenceUploadRouteActor
+  ): Promise<NextResponse> {
+    const r2UploadAdapter = deps.r2UploadAdapter ?? await deps.createR2UploadAdapter?.();
+    if (!r2UploadAdapter) {
+      return disabledR2UploadResponse();
+    }
+
+    const parsed = parseSalesPhotoEvidenceUploadFormData(await request.formData());
+    if (!parsed.ok) {
+      return jsonResponse({
+        ok: false,
+        code: parsed.code,
+        message: parsed.message,
+        shouldKeepLocalPayload: true,
+      }, 400);
+    }
+
+    const body = parsed.request;
+    const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(deps.createRepository(request));
+    const result = await executeSalesPhotoEvidenceMetadataClaimAdapter({
+      actorId: actor.actorId,
+      actorRole: actor.actorId === body.ownerId ? 'owner' : 'staff',
+      ownerId: body.ownerId,
+      marketId: body.marketId,
+      saleEventId: body.saleEventId,
+      capturedByStaffId: body.capturedByStaffId,
+      capturedAt: body.capturedAt,
+      hasLocalPayload: true,
+      writeEnabled: true,
+    }, repository);
+
+    if (result.action === 'metadata_claim_skipped_uploaded') {
+      return mapClaimResultToResponse(result);
+    }
+    if (result.action !== 'metadata_claim_created' && result.action !== 'metadata_claim_reused') {
+      return mapClaimResultToResponse(result);
+    }
+
+    const row = result.row;
+    const imageContentType = body.imageMetadata.mimeType as SalesPhotoEvidenceUploadMimeType;
+    const thumbnailContentType = body.thumbnailMetadata.mimeType as SalesPhotoEvidenceUploadMimeType;
+    const imageObjectKey = buildSalesPhotoEvidenceObjectKey({
+      ownerId: body.ownerId,
+      marketId: body.marketId,
+      saleId: body.saleEventId,
+      evidenceId: row.id,
+      kind: 'image',
+      extension: imageContentType === 'image/jpeg' ? 'jpg' : 'webp',
+    });
+    const thumbnailObjectKey = buildSalesPhotoEvidenceObjectKey({
+      ownerId: body.ownerId,
+      marketId: body.marketId,
+      saleId: body.saleEventId,
+      evidenceId: row.id,
+      kind: 'thumbnail',
+      extension: thumbnailContentType === 'image/jpeg' ? 'jpg' : 'webp',
+    });
+
+    const imageUpload = await r2UploadAdapter.uploadObject({
+      key: imageObjectKey,
+      body: body.image,
+      contentType: imageContentType,
+      contentLength: body.imageMetadata.fileSizeBytes,
+    });
+    if (!imageUpload.ok) {
+      await markUploadFailedIfPossible(row, 'r2_image_upload_failed', repository);
+      return jsonResponse({
+        ok: false,
+        code: 'r2_image_upload_failed',
+        message: imageUpload.message,
+        shouldKeepLocalPayload: true,
+      }, 500);
+    }
+
+    const thumbnailUpload = await r2UploadAdapter.uploadObject({
+      key: thumbnailObjectKey,
+      body: body.thumbnail,
+      contentType: thumbnailContentType,
+      contentLength: body.thumbnailMetadata.fileSizeBytes,
+    });
+    if (!thumbnailUpload.ok) {
+      await markUploadFailedIfPossible(row, 'r2_thumbnail_upload_failed', repository);
+      return jsonResponse({
+        ok: false,
+        code: 'r2_thumbnail_upload_failed',
+        message: thumbnailUpload.message,
+        shouldKeepLocalPayload: true,
+      }, 500);
+    }
+
+    const uploadedAt = (deps.now?.() ?? new Date()).toISOString();
+    const finalizeInput = {
+      evidenceId: row.id,
+      ownerId: row.ownerId,
+      marketId: row.marketId,
+      saleId: row.saleId,
+      imageObjectKey,
+      thumbnailObjectKey,
+      mimeType: imageContentType,
+      width: body.imageMetadata.width,
+      height: body.imageMetadata.height,
+      fileSizeBytes: body.imageMetadata.fileSizeBytes,
+      capturedAt: body.capturedAt,
+      uploadedAt,
+      expiresAt: getSalesPhotoEvidenceExpiresAt(uploadedAt),
+    };
+
+    try {
+      if (deps.finalizeUploadedEvidence) {
+        await deps.finalizeUploadedEvidence(finalizeInput);
+      } else {
+        await repository.finalizeEvidenceUploaded(finalizeInput);
+      }
+    } catch (error) {
+      await markUploadFailedIfPossible(row, 'metadata_finalize_failed', repository);
+      return jsonResponse({
+        ok: false,
+        code: 'metadata_finalize_failed',
+        message: 'Sales photo evidence metadata finalize failed.',
+        shouldKeepLocalPayload: true,
+      }, 500);
+    }
+
+    return jsonResponse({
+      ok: true,
+      action: 'upload_completed',
+      evidenceId: row.id,
+      status: 'uploaded',
+      shouldDeleteLocalPayloadAfterSuccess: true,
+      shouldRetryWithLocalPayload: false,
+    }, 200);
+  }
+
   return {
     GET: async () => disabledUploadResponse(),
     POST: post,
@@ -187,8 +406,28 @@ export function isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv(
   return true;
 }
 
+export function isSalesPhotoEvidenceR2UploadRouteEnabledForEnv(
+  env: SalesPhotoEvidenceMetadataClaimRouteEnv
+): boolean {
+  if (env.SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED !== '1') return false;
+
+  const deploymentEnv = env.VERCEL_ENV ?? env.APP_ENV ?? env.NODE_ENV;
+  if (
+    deploymentEnv === 'production' &&
+    env.SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ALLOW_PRODUCTION !== '1'
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 function isMetadataClaimRouteEnabled(): boolean {
   return isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv(process.env);
+}
+
+function isR2UploadRouteEnabled(): boolean {
+  return isSalesPhotoEvidenceR2UploadRouteEnabledForEnv(process.env);
 }
 
 function getSupabaseRouteConfig(): { url: string; anonKey: string } | null {
@@ -248,10 +487,23 @@ function createRouteSupabaseClient(request: Request): SalesPhotoEvidenceMetadata
   }) as unknown as SalesPhotoEvidenceMetadataClaimSupabaseClient;
 }
 
+async function createDefaultR2UploadAdapter(): Promise<SalesPhotoEvidenceR2UploadAdapter | null> {
+  const {
+    createCloudflareR2SalesPhotoEvidenceUploadAdapter,
+    createSalesPhotoEvidenceR2ServerConfigFromEnv,
+  } = await import('@/lib/sales/photo-evidence-r2-upload-adapter.server');
+  const configResult = createSalesPhotoEvidenceR2ServerConfigFromEnv(process.env);
+
+  if (!configResult.ok) return null;
+  return createCloudflareR2SalesPhotoEvidenceUploadAdapter({ config: configResult.config });
+}
+
 const routeHandlers = createSalesPhotoEvidenceUploadRouteHandlers({
   isMetadataClaimEnabled: isMetadataClaimRouteEnabled,
+  isR2UploadEnabled: isR2UploadRouteEnabled,
   resolveActor: resolveActorFromBearerToken,
   createRepository: createRouteSupabaseClient,
+  createR2UploadAdapter: createDefaultR2UploadAdapter,
 });
 
 export const GET = routeHandlers.GET;

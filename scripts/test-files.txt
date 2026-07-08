@@ -106,7 +106,9 @@ tsx tests/sales-photo-evidence-upload-contract.test.ts
 tsx tests/sales-photo-evidence-writer-upload-design.test.ts
 tsx tests/sales-photo-evidence-r2-upload-transport-design.test.ts
 tsx tests/sales-photo-evidence-r2-upload-adapter.test.ts
+tsx tests/sales-photo-evidence-r2-upload-adapter-server.test.ts
 tsx tests/sales-photo-evidence-upload-form-data.test.ts
+tsx tests/sales-photo-evidence-manual-upload-client.test.ts
 tsx tests/sales-photo-evidence-writer-upload-types.test.ts
 tsx tests/sales-photo-evidence-upload-route-disabled.test.ts
 tsx tests/sales-photo-evidence-metadata-claim.test.ts
@@ -118,6 +120,7 @@ tsx tests/sales-photo-evidence-owner-album-route-section.test.ts
 tsx tests/sales-photo-evidence-owner-album-read-source.test.ts
 tsx tests/supabase-sales-photo-evidence-owner-album-reader.test.ts
 tsx tests/sales-photo-evidence-owner-album.test.ts
+tsx tests/sales-photo-evidence-owner-image-read.test.ts
 tsx tests/sales-photo-evidence-post-sale.test.ts
 tsx tests/sales-photo-evidence-deferred.test.ts
 tsx tests/sales-photo-evidence-pending-creation.test.ts

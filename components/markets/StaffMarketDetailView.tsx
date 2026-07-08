@@ -80,6 +80,7 @@ import {
   type SalesPhotoEvidencePendingCreationListItem,
 } from '@/lib/sales/photo-evidence-pending-creation-read-model';
 import { captureAndStoreSalesPhotoEvidenceWithFileInput } from '@/lib/sales/photo-evidence-browser-adapter';
+import { uploadPendingSalesPhotoEvidenceManually } from '@/lib/sales/photo-evidence-manual-upload-client';
 import type { Market, Event, DealClosedPayload } from '@/types/db';
 
 interface StaffMarketDetailViewProps {
@@ -234,6 +235,10 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   const [salesPhotoEvidenceCaptureErrorByQueueId, setSalesPhotoEvidenceCaptureErrorByQueueId] = useState<
     Record<string, string | null>
   >({});
+  const [uploadingSalesPhotoEvidenceQueueId, setUploadingSalesPhotoEvidenceQueueId] = useState<string | null>(null);
+  const [salesPhotoEvidenceUploadErrorByQueueId, setSalesPhotoEvidenceUploadErrorByQueueId] = useState<
+    Record<string, string | null>
+  >({});
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
 
@@ -330,6 +335,64 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         toast.error(message);
       } finally {
         setCapturingSalesPhotoEvidenceQueueId(null);
+      }
+    },
+    [isLocalSalesPhotoEvidenceCaptureAllowed, loadPendingSalesPhotoEvidenceItems, user?.id]
+  );
+
+  const handleUploadManualSalesPhotoEvidence = useCallback(
+    async (item: SalesPhotoEvidencePendingCreationListItem) => {
+      if (!user?.id) {
+        const message = '請先登入後再上傳照片。';
+        setSalesPhotoEvidenceUploadErrorByQueueId(previous => ({
+          ...previous,
+          [item.queueId]: message,
+        }));
+        toast.error(message);
+        return;
+      }
+
+      if (!isLocalSalesPhotoEvidenceCaptureAllowed(item)) {
+        const message = '這筆照片不是由目前登入的員工建立，不能上傳。';
+        setSalesPhotoEvidenceUploadErrorByQueueId(previous => ({
+          ...previous,
+          [item.queueId]: message,
+        }));
+        toast.error(message);
+        return;
+      }
+
+      setUploadingSalesPhotoEvidenceQueueId(item.queueId);
+      setSalesPhotoEvidenceUploadErrorByQueueId(previous => ({
+        ...previous,
+        [item.queueId]: null,
+      }));
+
+      try {
+        const result = await uploadPendingSalesPhotoEvidenceManually(item);
+        if (result.ok) {
+          toast.success('照片已上傳，老闆可在市集詳情查看。');
+          await loadPendingSalesPhotoEvidenceItems();
+          return;
+        }
+
+        setSalesPhotoEvidenceUploadErrorByQueueId(previous => ({
+          ...previous,
+          [item.queueId]: result.message,
+        }));
+        toast.error(result.message);
+        await loadPendingSalesPhotoEvidenceItems();
+      } catch (error) {
+        console.error('manual upload sales photo evidence failed:', error);
+        const message = '照片上傳失敗，請稍後再試。';
+        setSalesPhotoEvidenceUploadErrorByQueueId(previous => ({
+          ...previous,
+          [item.queueId]: message,
+        }));
+        toast.error(message);
+        await loadPendingSalesPhotoEvidenceItems();
+      } finally {
+        setUploadingSalesPhotoEvidenceQueueId(null);
       }
     },
     [isLocalSalesPhotoEvidenceCaptureAllowed, loadPendingSalesPhotoEvidenceItems, user?.id]
@@ -748,8 +811,12 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         captureEnabled={true}
         capturingQueueId={capturingSalesPhotoEvidenceQueueId}
         captureErrorByQueueId={salesPhotoEvidenceCaptureErrorByQueueId}
+        uploadEnabled={true}
+        uploadingQueueId={uploadingSalesPhotoEvidenceQueueId}
+        uploadErrorByQueueId={salesPhotoEvidenceUploadErrorByQueueId}
         isLocalCaptureAllowed={isLocalSalesPhotoEvidenceCaptureAllowed}
         onCaptureLocal={handleCaptureLocalSalesPhotoEvidence}
+        onUploadManual={handleUploadManualSalesPhotoEvidence}
         onRefresh={loadPendingSalesPhotoEvidenceItems}
         onClose={() => setShowPendingSalesPhotoEvidence(false)}
       />

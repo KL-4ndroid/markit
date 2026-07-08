@@ -285,6 +285,6 @@ Requires separate approval after local/staging evidence.
 
 ## Current Recommendation
 
-Proceed next with `Slice 7B-4D: Fake Adapter Route Test`.
+Proceed next with `Slice 7B-4F: Local/Staging Smoke Wiring`.
 
-Do not install an SDK or call real R2 until fake-adapter route ordering tests are stable.
+Do not enable production upload or connect user-facing upload buttons until local/staging smoke evidence exists.

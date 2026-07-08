@@ -40,8 +40,8 @@ runTest('readiness checklist keeps production enablement blocked', () => {
   assert.match(planSource, /Do not enable the runtime flag/);
   assert.match(planSource, /Do not add a queue recovery\/cleanup executor/);
   assert.match(planSource, /Do not create Supabase evidence rows from production runtime/);
-  assert.match(planSource, /Next Phase Boundary After Slice 6B\/6C\/6D\/6E\/6F\/6G\/6H\/6I\/7A\/7B-0\/7B-1\/7B-2\/7B-3A\/7B-3B\/7B-3C\/7B-3D\/7B-3E\/7B-4A\/7B-4B\/7B-4C\/9A\/9B\/9C\/9D\/9E\/9F/);
-  assert.match(planSource, /Recommended next step: implement `Slice 7B-4D: Fake Adapter Route Test` without SDK installation or real R2 upload execution/);
+  assert.match(planSource, /Next Phase Boundary After Slice 6B\/6C\/6D\/6E\/6F\/6G\/6H\/6I\/7A\/7B-0\/7B-1\/7B-2\/7B-3A\/7B-3B\/7B-3C\/7B-3D\/7B-3E\/7B-4A\/7B-4B\/7B-4C\/7B-4D\/7B-4E\/9A\/9B\/9C\/9D\/9E\/9F/);
+  assert.match(planSource, /Recommended next step: implement `Slice 7B-4F: Local\/Staging Smoke Wiring` with explicit server env, disposable data, and no production enablement/);
   assert.match(planSource, /Recommended next decision step: before any real R2 upload path, confirm local\/staging credentials and disposable smoke-test data/);
   assert.match(planSource, /custom live camera stream/);
 });

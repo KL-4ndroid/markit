@@ -10,6 +10,7 @@ import {
   PUT,
   createSalesPhotoEvidenceUploadRouteHandlers,
   isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv,
+  isSalesPhotoEvidenceR2UploadRouteEnabledForEnv,
 } from '../app/api/sales-photo-evidence/upload/route';
 import type { SalesPhotoEvidenceMetadataClaimSupabaseClient } from '../lib/supabase/sales-photo-evidence-metadata-claim-repository';
 
@@ -149,6 +150,44 @@ function createJsonRequest(body: unknown): Request {
   });
 }
 
+function createBlob(size: number, type: 'image/webp' | 'image/jpeg'): Blob {
+  return new Blob([new Uint8Array(size)], { type });
+}
+
+function createUploadFormDataRequest(): Request {
+  const image = createBlob(4, 'image/webp');
+  const thumbnail = createBlob(2, 'image/webp');
+  const formData = new FormData();
+
+  formData.set('ownerId', IDS.ownerId);
+  formData.set('marketId', IDS.marketId);
+  formData.set('saleEventId', IDS.saleId);
+  formData.set('capturedByStaffId', IDS.staffId);
+  formData.set('capturedAt', '2026-07-07T01:05:00.000Z');
+  formData.set('queueId', 'queue-1');
+  formData.set('image', image);
+  formData.set('thumbnail', thumbnail);
+  formData.set('imageMetadata', JSON.stringify({
+    kind: 'image',
+    mimeType: image.type,
+    fileSizeBytes: image.size,
+    width: 1200,
+    height: 900,
+  }));
+  formData.set('thumbnailMetadata', JSON.stringify({
+    kind: 'thumbnail',
+    mimeType: thumbnail.type,
+    fileSizeBytes: thumbnail.size,
+    width: 320,
+    height: 240,
+  }));
+
+  return new Request('https://example.test/api/sales-photo-evidence/upload', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
 console.log('\n=== Sales photo evidence upload route metadata claim wiring ===');
 
 runTest('default route methods remain disabled by default', async () => {
@@ -209,6 +248,27 @@ runTest('metadata claim route enablement allows local and staging but blocks pro
     SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED: '1',
     VERCEL_ENV: 'production',
     SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ALLOW_PRODUCTION: '1',
+  }), true);
+});
+
+runTest('R2 upload route enablement uses a separate local staging and production guard', () => {
+  assert.equal(isSalesPhotoEvidenceR2UploadRouteEnabledForEnv({}), false);
+  assert.equal(isSalesPhotoEvidenceR2UploadRouteEnabledForEnv({
+    SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED: '1',
+    NODE_ENV: 'development',
+  }), true);
+  assert.equal(isSalesPhotoEvidenceR2UploadRouteEnabledForEnv({
+    SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED: '1',
+    APP_ENV: 'staging',
+  }), true);
+  assert.equal(isSalesPhotoEvidenceR2UploadRouteEnabledForEnv({
+    SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED: '1',
+    VERCEL_ENV: 'production',
+  }), false);
+  assert.equal(isSalesPhotoEvidenceR2UploadRouteEnabledForEnv({
+    SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED: '1',
+    VERCEL_ENV: 'production',
+    SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ALLOW_PRODUCTION: '1',
   }), true);
 });
 
@@ -302,17 +362,108 @@ runTest('enabled POST rejects invalid request before repository creation', async
   assert.equal(repositoryCalled, false);
 });
 
+runTest('enabled FormData POST stays disabled behind the R2 upload gate before parsing body', async () => {
+  let repositoryCalled = false;
+  const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+    isMetadataClaimEnabled: () => true,
+    isR2UploadEnabled: () => false,
+    async resolveActor() {
+      throw new Error('auth should not be resolved while R2 upload is disabled');
+    },
+    createRepository() {
+      repositoryCalled = true;
+      return createFakeClient({});
+    },
+  });
+
+  const response = await handlers.POST(createUploadFormDataRequest());
+  const body = await response.json() as { code: string; shouldKeepLocalPayload: boolean };
+
+  assert.equal(response.status, 501);
+  assert.equal(body.code, 'sales_photo_evidence_r2_upload_disabled');
+  assert.equal(body.shouldKeepLocalPayload, true);
+  assert.equal(repositoryCalled, false);
+});
+
+runTest('enabled FormData POST runs claim image upload thumbnail upload and finalize through injected fakes only', async () => {
+  const calls: string[] = [];
+  const fakeClient = createFakeClient({
+    events: {
+      data: {
+        id: IDS.saleId,
+        type: 'deal_closed',
+        market_id: IDS.marketId,
+        timestamp: '2026-07-07T01:02:03.000Z',
+        markets: { owner_id: IDS.ownerId },
+      },
+      error: null,
+    },
+    sale_photo_evidence: { data: null, error: null },
+    'sale_photo_evidence:insert': { data: evidenceRow(), error: null },
+  });
+  const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+    isMetadataClaimEnabled: () => true,
+    isR2UploadEnabled: () => true,
+    async resolveActor() {
+      calls.push('auth');
+      return { actorId: IDS.ownerId };
+    },
+    createRepository() {
+      calls.push('repository');
+      return fakeClient;
+    },
+    r2UploadAdapter: {
+      async uploadObject(input) {
+        calls.push(input.key.includes('sales-evidence-thumbs/') ? 'upload_thumbnail' : 'upload_image');
+        return { ok: true, key: input.key };
+      },
+    },
+    async finalizeUploadedEvidence(input) {
+      calls.push('finalize');
+      assert.equal(input.evidenceId, IDS.evidenceId);
+      assert.equal(input.ownerId, IDS.ownerId);
+      assert.equal(input.marketId, IDS.marketId);
+      assert.equal(input.saleId, IDS.saleId);
+      assert.match(input.imageObjectKey, /^sales-evidence\/7d\//);
+      assert.match(input.thumbnailObjectKey, /^sales-evidence-thumbs\/7d\//);
+      assert.equal(input.mimeType, 'image/webp');
+      assert.equal(input.width, 1200);
+      assert.equal(input.height, 900);
+      assert.equal(input.fileSizeBytes, 4);
+    },
+    now: () => new Date('2026-07-07T02:00:00.000Z'),
+  });
+
+  const response = await handlers.POST(createUploadFormDataRequest());
+  const body = await response.json() as {
+    ok: boolean;
+    action: string;
+    evidenceId: string;
+    shouldDeleteLocalPayloadAfterSuccess: boolean;
+  };
+
+  assert.equal(response.status, 200);
+  assert.equal(body.ok, true);
+  assert.equal(body.action, 'upload_completed');
+  assert.equal(body.evidenceId, IDS.evidenceId);
+  assert.equal(body.shouldDeleteLocalPayloadAfterSuccess, true);
+  assert.deepEqual(calls, ['auth', 'repository', 'upload_image', 'upload_thumbnail', 'finalize']);
+});
+
 runTest('route source wires metadata claim but still avoids R2 signed reads and local payload deletion', () => {
   assert.match(routeSource, /executeSalesPhotoEvidenceMetadataClaimAdapter/);
   assert.match(routeSource, /createSalesPhotoEvidenceMetadataClaimSupabaseRepository/);
   assert.match(routeSource, /SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED/);
   assert.match(routeSource, /SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ALLOW_PRODUCTION/);
+  assert.match(routeSource, /SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED/);
+  assert.match(routeSource, /SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ALLOW_PRODUCTION/);
+  assert.match(routeSource, /isR2UploadEnabled/);
+  assert.match(routeSource, /createDefaultR2UploadAdapter/);
+  assert.match(routeSource, /parseSalesPhotoEvidenceUploadFormData\(await request\.formData\(\)\)/);
   assert.match(routeSource, /global:\s*{\s*headers:\s*{\s*Authorization:\s*`Bearer \$\{token\}`/);
   assert.doesNotMatch(routeSource, /@aws-sdk|S3Client|PutObjectCommand|GetObjectCommand|getSignedUrl|createPresignedPost/);
   assert.doesNotMatch(routeSource, /deletePendingSalesPhotoEvidencePayload|indexedDB|Dexie|salesPhotoEvidencePendingPayloads/i);
-  assert.doesNotMatch(routeSource, /r2_object_key|r2_thumbnail_key|uploaded_at|expires_at/);
   assert.doesNotMatch(routeSource, /NEXT_PUBLIC_R2|SERVICE_ROLE|service_role/i);
-  assert.doesNotMatch(routeSource, /formData\s*\(/);
 });
 
 runTest('execution plan and test manifest record metadata claim route wiring', () => {

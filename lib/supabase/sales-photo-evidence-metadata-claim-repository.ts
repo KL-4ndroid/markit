@@ -57,6 +57,35 @@ type SupabaseEvidenceRow = {
   deleted_at: string | null;
 };
 
+export type SalesPhotoEvidenceFinalizeUploadedMetadataInput = {
+  evidenceId: string;
+  ownerId: string;
+  marketId: string;
+  saleId: string;
+  imageObjectKey: string;
+  thumbnailObjectKey: string;
+  mimeType: string;
+  width: number;
+  height: number;
+  fileSizeBytes: number;
+  capturedAt: string;
+  uploadedAt: string;
+  expiresAt: string;
+};
+
+export type SalesPhotoEvidenceMarkUploadFailedMetadataInput = {
+  evidenceId: string;
+  ownerId: string;
+  marketId: string;
+  saleId: string;
+  reason: string;
+};
+
+export type SalesPhotoEvidenceUploadMetadataRepository = SalesPhotoEvidenceMetadataClaimRepository & {
+  finalizeEvidenceUploaded(input: SalesPhotoEvidenceFinalizeUploadedMetadataInput): Promise<SalesPhotoEvidenceMetadataClaimedRow>;
+  markEvidenceUploadFailed(input: SalesPhotoEvidenceMarkUploadFailedMetadataInput): Promise<SalesPhotoEvidenceMetadataClaimedRow>;
+};
+
 type SupabaseStaffRelationshipRow = {
   owner_id: string;
 };
@@ -127,7 +156,7 @@ function requireRow<T>(row: T | null, message: string): T {
 
 export function createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
   client: SalesPhotoEvidenceMetadataClaimSupabaseClient
-): SalesPhotoEvidenceMetadataClaimRepository {
+): SalesPhotoEvidenceUploadMetadataRepository {
   return {
     async getSaleEventForEvidenceClaim(input) {
       const { data, error } = await client
@@ -210,6 +239,53 @@ export function createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
 
       throwIfSupabaseError(error, 'Sales photo evidence metadata claim update failed.');
       return mapClaimedRow(requireRow(data as SupabaseEvidenceRow | null, 'Sales photo evidence metadata claim update returned no row.'));
+    },
+
+    async finalizeEvidenceUploaded(input: SalesPhotoEvidenceFinalizeUploadedMetadataInput) {
+      const { data, error } = await client
+        .from('sale_photo_evidence')
+        .update({
+          status: 'uploaded',
+          r2_object_key: input.imageObjectKey,
+          r2_thumbnail_key: input.thumbnailObjectKey,
+          mime_type: input.mimeType,
+          width: input.width,
+          height: input.height,
+          file_size_bytes: input.fileSizeBytes,
+          captured_at: input.capturedAt,
+          uploaded_at: input.uploadedAt,
+          expires_at: input.expiresAt,
+          failure_reason: null,
+        })
+        .eq('id', input.evidenceId)
+        .eq('owner_id', input.ownerId)
+        .eq('market_id', input.marketId)
+        .eq('sale_id', input.saleId)
+        .is('deleted_at', null)
+        .select(EVIDENCE_SELECT_COLUMNS)
+        .single();
+
+      throwIfSupabaseError(error, 'Sales photo evidence metadata finalize failed.');
+      return mapClaimedRow(requireRow(data as SupabaseEvidenceRow | null, 'Sales photo evidence metadata finalize returned no row.'));
+    },
+
+    async markEvidenceUploadFailed(input: SalesPhotoEvidenceMarkUploadFailedMetadataInput) {
+      const { data, error } = await client
+        .from('sale_photo_evidence')
+        .update({
+          status: 'upload_failed',
+          failure_reason: input.reason,
+        })
+        .eq('id', input.evidenceId)
+        .eq('owner_id', input.ownerId)
+        .eq('market_id', input.marketId)
+        .eq('sale_id', input.saleId)
+        .is('deleted_at', null)
+        .select(EVIDENCE_SELECT_COLUMNS)
+        .single();
+
+      throwIfSupabaseError(error, 'Sales photo evidence metadata failure update failed.');
+      return mapClaimedRow(requireRow(data as SupabaseEvidenceRow | null, 'Sales photo evidence metadata failure update returned no row.'));
     },
   };
 }

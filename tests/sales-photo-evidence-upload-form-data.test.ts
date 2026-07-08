@@ -139,11 +139,13 @@ runTest('rejects invalid metadata and file metadata mismatch', () => {
   assert.equal(parseSalesPhotoEvidenceUploadFormData(wrongSize).ok, false);
 });
 
-runTest('parser source stays model-only and route still does not parse FormData', () => {
+runTest('parser source stays model-only and route parses FormData only behind the gated upload branch', () => {
   assert.doesNotMatch(parserSource, /@aws-sdk|aws-sdk|S3Client|PutObjectCommand|createPresignedPost|getSignedUrl/);
   assert.doesNotMatch(parserSource, /process\.env|NEXT_PUBLIC_R2|SERVICE_ROLE|service_role/);
   assert.doesNotMatch(parserSource, /NextResponse|createClient|supabase|fetch\s*\(/i);
-  assert.doesNotMatch(routeSource, /formData\s*\(/);
+  assert.match(routeSource, /isMultipartFormDataRequest\(request\)/);
+  assert.match(routeSource, /wantsR2Upload && !isR2UploadEnabled\(\)/);
+  assert.match(routeSource, /parseSalesPhotoEvidenceUploadFormData\(await request\.formData\(\)\)/);
 });
 
 runTest('execution plan and manifest record Slice 7B-4C', () => {

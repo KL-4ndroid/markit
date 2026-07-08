@@ -146,12 +146,26 @@ runTest('pending list dialog stays adapter-free and delegates local capture by p
   assert.match(dialogSource, /重新讀取/);
   assert.match(dialogSource, /captureEnabled = false/);
   assert.match(dialogSource, /onCaptureLocal\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<void>/);
-  assert.doesNotMatch(dialogSource, /db\.|supabase|recordEvent|enqueue|drain|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i);
+  assert.match(dialogSource, /uploadEnabled = false/);
+  assert.match(dialogSource, /onUploadManual\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<void>/);
+  assert.doesNotMatch(dialogSource, /db\.|supabase|recordEvent|enqueue|drain|getUserMedia|signedUrl|signed_url|\bR2\b|fetch\(/i);
   assert.doesNotMatch(dialogSource, /add\(|put\(|update\(|delete\(|clear\(|bulkAdd\(/);
 });
 
 runTest('owner and staff market detail wire pending count and dialog without cloud writes', () => {
-  for (const source of [ownerPageSource, staffViewSource]) {
+  assert.match(ownerPageSource, /SalesPhotoEvidencePendingListDialog/);
+  assert.match(ownerPageSource, /listLocalSalesPhotoEvidencePendingCreationsForMarket/);
+  assert.match(ownerPageSource, /pendingCount=\{pendingSalesPhotoEvidenceItems\.length\}/);
+  assert.match(ownerPageSource, /onOpenPendingEvidence=\{handleOpenPendingSalesPhotoEvidence\}/);
+  assert.match(ownerPageSource, /loadError=\{pendingSalesPhotoEvidenceLoadError\}/);
+  assert.match(ownerPageSource, /lastLoadedAt=\{pendingSalesPhotoEvidenceLoadedAt\}/);
+  assert.match(ownerPageSource, /onRefresh=\{loadPendingSalesPhotoEvidenceItems\}/);
+  assert.doesNotMatch(
+    ownerPageSource,
+    /enqueuePendingSalesPhotoEvidenceCreation|createDexieSalesPhotoEvidencePendingCreationStorage|drainSalesPhotoEvidencePendingCreations|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i
+  );
+
+  for (const source of [staffViewSource]) {
     assert.match(source, /SalesPhotoEvidencePendingListDialog/);
     assert.match(source, /listLocalSalesPhotoEvidencePendingCreationsForMarket/);
     assert.match(source, /pendingCount=\{pendingSalesPhotoEvidenceItems\.length\}/);
@@ -161,13 +175,16 @@ runTest('owner and staff market detail wire pending count and dialog without clo
     assert.match(source, /onRefresh=\{loadPendingSalesPhotoEvidenceItems\}/);
     assert.doesNotMatch(
       source,
-      /enqueuePendingSalesPhotoEvidenceCreation|createDexieSalesPhotoEvidencePendingCreationStorage|drainSalesPhotoEvidencePendingCreations|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i
+      /enqueuePendingSalesPhotoEvidenceCreation|createDexieSalesPhotoEvidencePendingCreationStorage|drainSalesPhotoEvidencePendingCreations|getUserMedia|signedUrl|signed_url|\bR2\b/i
     );
   }
 
   assert.match(staffViewSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
+  assert.match(staffViewSource, /uploadPendingSalesPhotoEvidenceManually/);
   assert.match(staffViewSource, /captureEnabled=\{true\}/);
+  assert.match(staffViewSource, /uploadEnabled=\{true\}/);
   assert.match(staffViewSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
+  assert.match(staffViewSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
   assert.doesNotMatch(ownerPageSource, /captureAndStoreSalesPhotoEvidenceWithFileInput|captureEnabled=\{true\}|onCaptureLocal=\{/);
 });
 

@@ -32,6 +32,13 @@ export type DexieSalesPhotoEvidencePendingCreationStorageOptions = {
   ) => Promise<readonly SalesPhotoEvidenceExistingRow[]>;
 };
 
+export type MarkLocalPendingSalesPhotoEvidenceCreationFailureInput = {
+  queueId: string;
+  code: string;
+  message: string;
+  now?: string | number | Date;
+};
+
 function normalizeLimit(limit: number): number {
   if (!Number.isFinite(limit)) return 0;
   return Math.max(0, Math.floor(limit));
@@ -66,6 +73,33 @@ export async function enqueuePendingSalesPhotoEvidenceCreation(
     item,
     created: true,
   };
+}
+
+export async function markLocalPendingSalesPhotoEvidenceCreationCreated(
+  queueId: string,
+  now?: string | number | Date
+): Promise<LocalPendingSalesPhotoEvidenceCreation | null> {
+  const existing = await db.salesPhotoEvidencePendingCreations.get(queueId);
+  if (!existing) return null;
+
+  const next = markPendingSalesPhotoEvidenceCreationCreated(existing, now);
+  await db.salesPhotoEvidencePendingCreations.put(next);
+  return next;
+}
+
+export async function markLocalPendingSalesPhotoEvidenceCreationRetryableFailure(
+  input: MarkLocalPendingSalesPhotoEvidenceCreationFailureInput
+): Promise<LocalPendingSalesPhotoEvidenceCreation | null> {
+  const existing = await db.salesPhotoEvidencePendingCreations.get(input.queueId);
+  if (!existing) return null;
+
+  const next = markPendingSalesPhotoEvidenceCreationRetryableFailure(existing, {
+    code: input.code,
+    message: input.message,
+    now: input.now,
+  });
+  await db.salesPhotoEvidencePendingCreations.put(next);
+  return next;
 }
 
 export function createDexieSalesPhotoEvidencePendingCreationStorage(

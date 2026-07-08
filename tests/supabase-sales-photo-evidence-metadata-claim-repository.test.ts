@@ -247,6 +247,71 @@ runTest('mark uploading claim updates only matching scoped active row', async ()
   ]);
 });
 
+runTest('finalize uploaded updates only matching scoped metadata after R2 success', async () => {
+  const client = createFakeClient({
+    'sale_photo_evidence:update': {
+      data: evidenceRow({ status: 'uploaded' }),
+      error: null,
+    },
+  });
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
+
+  const row = await repository.finalizeEvidenceUploaded({
+    evidenceId: IDS.evidenceId,
+    ownerId: IDS.ownerId,
+    marketId: IDS.marketId,
+    saleId: IDS.saleId,
+    imageObjectKey: 'sales-evidence/7d/a/b/c/d.webp',
+    thumbnailObjectKey: 'sales-evidence-thumbs/7d/a/b/c/d.webp',
+    mimeType: 'image/webp',
+    width: 1200,
+    height: 900,
+    fileSizeBytes: 4,
+    capturedAt: '2026-07-07T01:05:00.000Z',
+    uploadedAt: '2026-07-07T02:00:00.000Z',
+    expiresAt: '2026-07-14T02:00:00.000Z',
+  });
+
+  assert.equal(row.status, 'uploaded');
+  assert.deepEqual(client.calls[0].values, {
+    status: 'uploaded',
+    r2_object_key: 'sales-evidence/7d/a/b/c/d.webp',
+    r2_thumbnail_key: 'sales-evidence-thumbs/7d/a/b/c/d.webp',
+    mime_type: 'image/webp',
+    width: 1200,
+    height: 900,
+    file_size_bytes: 4,
+    captured_at: '2026-07-07T01:05:00.000Z',
+    uploaded_at: '2026-07-07T02:00:00.000Z',
+    expires_at: '2026-07-14T02:00:00.000Z',
+    failure_reason: null,
+  });
+});
+
+runTest('mark upload failed updates only matching scoped retry metadata', async () => {
+  const client = createFakeClient({
+    'sale_photo_evidence:update': {
+      data: evidenceRow({ status: 'upload_failed' }),
+      error: null,
+    },
+  });
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
+
+  const row = await repository.markEvidenceUploadFailed({
+    evidenceId: IDS.evidenceId,
+    ownerId: IDS.ownerId,
+    marketId: IDS.marketId,
+    saleId: IDS.saleId,
+    reason: 'r2_image_upload_failed',
+  });
+
+  assert.equal(row.status, 'upload_failed');
+  assert.deepEqual(client.calls[0].values, {
+    status: 'upload_failed',
+    failure_reason: 'r2_image_upload_failed',
+  });
+});
+
 runTest('repository throws on Supabase write errors without deleting local payloads', async () => {
   const client = createFakeClient({
     'sale_photo_evidence:insert': { data: null, error: { message: 'blocked' } },
@@ -280,9 +345,6 @@ runTest('repository source avoids route R2 signed URL and global client wiring',
     /NEXT_PUBLIC/,
     /formData\s*\(/,
     /deletePendingSalesPhotoEvidencePayload/,
-    /uploaded_at/,
-    /r2_object_key/,
-    /r2_thumbnail_key/,
   ];
 
   for (const pattern of forbiddenPatterns) {

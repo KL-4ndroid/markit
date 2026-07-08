@@ -62,19 +62,17 @@ runTest('feature gates separate metadata claim enablement from future R2 upload 
   assert.match(routeSource, /SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ALLOW_PRODUCTION/);
 });
 
-runTest('transport design remains design-only with no R2 SDK or route FormData parsing', () => {
+runTest('transport design records server-only R2 SDK boundary without route default wiring', () => {
   assert.match(designSource, /Status: design-only/);
-  assert.match(designSource, /Do not install an SDK or call real R2 until fake-adapter route ordering tests are stable/);
-  assert.doesNotMatch(routeSource, /formData\s*\(/);
+  assert.match(designSource, /Do not enable production upload or connect user-facing upload buttons until local\/staging smoke evidence exists/);
+  assert.match(routeSource, /isR2UploadEnabled/);
 
   const dependencyNames = [
     ...Object.keys(packageJson.dependencies ?? {}),
     ...Object.keys(packageJson.devDependencies ?? {}),
   ];
-  assert.deepEqual(
-    dependencyNames.filter(name => /@aws-sdk|aws-sdk|cloudflare|r2/i.test(name)),
-    []
-  );
+  assert.deepEqual(dependencyNames.filter(name => name === '@aws-sdk/client-s3'), ['@aws-sdk/client-s3']);
+  assert.deepEqual(dependencyNames.filter(name => /(^aws-sdk$|cloudflare|r2)/i.test(name)), []);
 });
 
 runTest('transport guardrail is included in the full test manifest', () => {

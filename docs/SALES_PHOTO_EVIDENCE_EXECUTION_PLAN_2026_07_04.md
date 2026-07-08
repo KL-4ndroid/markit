@@ -1,7 +1,7 @@
 # Féria Sales Photo Evidence Execution Plan
 
 Date: 2026-07-04
-Status: Slice 9F owner market-detail read-only album mounting implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, browser adapter contract/spec model, browser adapter implementation design, local binary pending storage design, local binary pending payload storage implementation, file-input browser capture adapter service, disabled/local-only capture button UI shell, staff pending-dialog local-only capture, browser temporary-profile smoke plan, upload/signed-read contract model, writer/upload design, writer/upload pure service types, disabled upload route shell, metadata claim plan model, metadata claim adapter design, dependency-injected metadata claim adapter, concrete Supabase metadata claim repository, gated upload-route metadata claim wiring, local/staging metadata-claim route enablement guard, R2 upload transport design, R2 adapter interface, pure FormData parser model, read-only owner album shell, owner album route-section boundary, owner album read-source contract, read-only Supabase metadata reader, and owner market-detail read-only album mounting are implemented. Enabled post-sale enqueue, recovery/cleanup execution, sync drain wiring, automated browser smoke execution, cloud-backed production capture/upload UI, real R2 upload, real signed URL issuance, private image rendering, expiration mutation, and evidence row creation from production sales are not yet implemented.
+Status: Slice 9F owner market-detail read-only album mounting and V1 manual upload/display path are implemented under the risk-reduced merged execution plan. Pure status/type/key/retention guardrails are implemented and tested. Database metadata schema was drafted, guarded by static tests, and 055 has been manually executed. 056 has been manually executed. Owner default setting, new-market inheritance, owner market-level toggle, operating-screen owner/staff UI, post-sale pending evidence draft decision model, post-sale orchestration boundary, deferred post-sync creation planner, local pending creation queue model, disabled drain service interface, Dexie queue table, disabled storage adapter, pending-write/auth-cache guard integration, runtime enqueue boundary guardrails, code-only disabled runtime flag, dependency-injected runtime wrapper, `AddRevenueDialog` wrapper pilot, disabled evidence context plumbing, runtime enablement guardrails, owner/staff local pending evidence list shell, read-only pending list UX polish, runtime enqueue verification plan guardrails, isolated fake-indexeddb runtime fixture, pending creation recovery/cleanup classification, owner-readable pending diagnostics view model, read-only diagnostics display, production enqueue readiness checklist, capture/compression decision model, browser adapter contract/spec model, browser adapter implementation design, local binary pending storage design, local binary pending payload storage implementation, file-input browser capture adapter service, disabled/local-only capture button UI shell, staff pending-dialog local-only capture, browser temporary-profile smoke plan, upload/signed-read contract model, writer/upload design, writer/upload pure service types, disabled upload route shell, metadata claim plan model, metadata claim adapter design, dependency-injected metadata claim adapter, concrete Supabase metadata claim repository, gated upload-route metadata claim wiring, local/staging metadata-claim route enablement guard, R2 upload transport design, R2 adapter interface, server-only real R2 adapter, gated real R2 route wiring, pure FormData parser model, fake-adapter route upload ordering, staff manual upload client/UI retry path, owner-only private image read route, owner album thumbnail rendering, read-only owner album shell, owner album route-section boundary, owner album read-source contract, read-only Supabase metadata reader, and owner market-detail read-only album mounting are implemented. Background auto-upload, live camera stream, batch R2 orphan cleanup, automated browser smoke execution, production R2 upload/read enablement, expiration mutation, and broad recovery/cleanup execution are not yet implemented.
 
 ## Goal
 
@@ -1212,6 +1212,58 @@ Slice 7B-4C Status:
 - The recommended next implementation slice is `Slice 7B-4D: Fake Adapter Route Test`.
 - Guarded by `tests/sales-photo-evidence-upload-form-data.test.ts`.
 
+Slice 7B-4D Status:
+
+- The upload route now has a gated FormData branch for fake-adapter ordering tests.
+- FormData upload remains blocked unless both metadata claim and the separate R2 upload gate are enabled.
+- When R2 upload is not enabled, the route returns a 501 R2-disabled response before auth, repository creation, or body parsing.
+- When explicitly enabled through dependency injection in tests, the route runs the order: auth, metadata claim, image upload, thumbnail upload, metadata finalize.
+- Successful fake upload returns `shouldDeleteLocalPayloadAfterSuccess: true`; all failure paths keep the local payload.
+- This slice uses injected fake R2 and fake finalizer behavior only. It does not install an SDK, call real R2, issue signed URLs, delete local payloads, enable production upload, or connect UI upload buttons.
+- The recommended next implementation slice is `Slice 7B-4E: Real R2 Adapter`.
+- Guarded by `tests/sales-photo-evidence-upload-route-disabled.test.ts`.
+
+Slice 7B-4E Status:
+
+- The server-only real R2 adapter is implemented in `lib/sales/photo-evidence-r2-upload-adapter.server.ts`.
+- The adapter uses the approved S3-compatible `@aws-sdk/client-s3` dependency and `PutObjectCommand`.
+- The adapter accepts explicit server config input or explicit server env mapping through `createSalesPhotoEvidenceR2ServerConfigFromEnv()`.
+- The adapter validates object key, content type, content length, and body before sending to R2.
+- R2 upload errors are mapped to `r2_upload_failed` results instead of throwing through route code.
+- The upload route lazy-loads this adapter only when `SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED=1` and valid server-only R2 config exist.
+- Production still requires `SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ALLOW_PRODUCTION=1`, so accidental production upload fails closed.
+- This slice does not enable production upload, connect UI upload buttons, issue signed URLs, or delete local payloads.
+- The recommended next implementation slice is `Slice 7B-4F: Local/Staging Smoke Wiring`.
+- Guarded by `tests/sales-photo-evidence-r2-upload-adapter-server.test.ts`.
+
+Slice 7B-4F Status:
+
+- Staff manual upload is implemented through `lib/sales/photo-evidence-manual-upload-client.ts`.
+- The client reuses the existing compressed local pending payload and posts `FormData` to `/api/sales-photo-evidence/upload`.
+- On route success, local payload deletion happens only when the server explicitly returns `shouldDeleteLocalPayloadAfterSuccess: true`.
+- On route failure, the local payload is kept and the pending queue row is marked retryable for manual retry.
+- `SalesPhotoEvidencePendingListDialog` remains prop-driven; `StaffMarketDetailView` is the only runtime container that imports the upload client.
+- This slice does not add background upload, automatic retry, live camera stream, R2 orphan cleanup, owner upload controls, or direct R2 access from browser UI.
+- Guarded by `tests/sales-photo-evidence-manual-upload-client.test.ts`, `tests/sales-photo-evidence-local-capture-action-ui.test.ts`, and `tests/sales-photo-evidence-pending-list-ui.test.ts`.
+
+Slice 7B-4G Status:
+
+- Owner-only private image read is implemented through `/api/sales-photo-evidence/image`.
+- The route is separately gated by `SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ENABLED=1`; production additionally requires `SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ALLOW_PRODUCTION=1`.
+- The route verifies auth, reads the Supabase metadata row, applies the existing signed-read contract, and only then reads from R2.
+- The implementation proxies private bytes through the authenticated app route instead of exposing public bucket URLs.
+- This slice does not issue public URLs, enable production reads by default, add cleanup, mutate expiration, or broaden staff/manager read UI.
+- Guarded by `tests/sales-photo-evidence-owner-image-read.test.ts`.
+
+Slice 9G Status:
+
+- Owner album thumbnail rendering is implemented through `components/markets/SalesPhotoEvidenceOwnerAlbumImage.tsx`.
+- The album shell loads thumbnails only for uploaded rows with private thumbnail objects.
+- The image client fetches the owner-only image route with a Supabase bearer token and converts the response into a browser object URL.
+- Object URLs are revoked on unmount to avoid leaking browser memory.
+- This slice does not fetch R2 directly from the browser, expose object keys to an `<img>` URL, add detail-view original image modal, or add batch download.
+- Guarded by `tests/sales-photo-evidence-owner-image-read.test.ts`.
+
 Slice 9A Status:
 
 - Phase D starts with a read-only owner album model and UI shell.
@@ -1272,10 +1324,10 @@ Slice 9F Status:
 - This slice does not request signed read URLs, render private images, call R2, write Supabase, mutate expiration, upload, execute cleanup, or enable runtime enqueue.
 - Guarded by `tests/sales-photo-evidence-owner-album-route-section.test.ts` and `tests/sales-photo-evidence-owner-album-route-integration-plan.test.ts`.
 
-Next Phase Boundary After Slice 6B/6C/6D/6E/6F/6G/6H/6I/7A/7B-0/7B-1/7B-2/7B-3A/7B-3B/7B-3C/7B-3D/7B-3E/7B-4A/7B-4B/7B-4C/9A/9B/9C/9D/9E/9F:
+Next Phase Boundary After Slice 6B/6C/6D/6E/6F/6G/6H/6I/7A/7B-0/7B-1/7B-2/7B-3A/7B-3B/7B-3C/7B-3D/7B-3E/7B-4A/7B-4B/7B-4C/7B-4D/7B-4E/9A/9B/9C/9D/9E/9F:
 
 - Production runtime enqueue enablement, actual browser-profile smoke execution, queue recovery/cleanup executor, custom live camera stream, R2 SDK wiring, R2 upload implementation, route `FormData` parsing, production metadata-claim enablement, and signed read URLs remain explicit approval boundaries.
-- Recommended next step: implement `Slice 7B-4D: Fake Adapter Route Test` without SDK installation or real R2 upload execution.
+- Recommended next step: implement `Slice 7B-4F: Local/Staging Smoke Wiring` with explicit server env, disposable data, and no production enablement.
 - Recommended next decision step: before any real R2 upload path, confirm local/staging credentials and disposable smoke-test data.
 - Alternative low-risk step: add more static/read-model guardrails around pending payload visibility without enabling upload.
 - Any actual recovery/cleanup execution must be separately approved and must preview target rows before mutation.

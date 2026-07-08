@@ -87,31 +87,32 @@ runTest('implementation slices defer route R2 client and production enablement',
   assert.match(designSource, /Requires separate approval after local\/staging evidence/);
 });
 
-runTest('execution plan records current R2 transport boundary and keeps next step fake route test only', () => {
+runTest('execution plan records current R2 transport boundary and keeps next step real adapter only', () => {
   assert.match(executionPlanSource, /Slice 7B-0 Status/);
   assert.match(executionPlanSource, /writer\/upload design/);
   assert.match(executionPlanSource, /Slice 7B-4A Status/);
   assert.match(executionPlanSource, /R2 upload transport design/);
   assert.match(executionPlanSource, /Slice 7B-4B Status/);
   assert.match(executionPlanSource, /Slice 7B-4C Status/);
-  assert.match(executionPlanSource, /recommended next implementation slice is `Slice 7B-4D: Fake Adapter Route Test`/);
+  assert.match(executionPlanSource, /Slice 7B-4D Status/);
+  assert.match(executionPlanSource, /Slice 7B-4E Status/);
+  assert.match(executionPlanSource, /recommended next implementation slice is `Slice 7B-4F: Local\/Staging Smoke Wiring`/);
   assert.match(executionPlanSource, /does not install an R2 SDK, parse `FormData`, call R2, issue signed URLs, delete local payloads, or enable production upload/);
 });
 
-runTest('package test includes design guardrail without adding R2 SDK dependency', () => {
+runTest('package test includes design guardrails and only the approved R2 SDK dependency', () => {
   assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-writer-upload-design\.test\.ts/);
   assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-r2-upload-transport-design\.test\.ts/);
   assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-r2-upload-adapter\.test\.ts/);
+  assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-r2-upload-adapter-server\.test\.ts/);
 
   const dependencyNames = [
     ...Object.keys(packageJson.dependencies ?? {}),
     ...Object.keys(packageJson.devDependencies ?? {}),
   ];
 
-  assert.deepEqual(
-    dependencyNames.filter(name => /@aws-sdk|aws-sdk|cloudflare|r2/i.test(name)),
-    []
-  );
+  assert.deepEqual(dependencyNames.filter(name => name === '@aws-sdk/client-s3'), ['@aws-sdk/client-s3']);
+  assert.deepEqual(dependencyNames.filter(name => /(^aws-sdk$|cloudflare|r2)/i.test(name)), []);
 });
 
 function main(): void {
