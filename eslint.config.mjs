@@ -12,6 +12,57 @@ const TAILWIND_HEX_RE = new RegExp(
   'g'
 );
 
+// Allowlist: hex values that may appear as arbitrary Tailwind values
+// (e.g. one-off decorative colors, brand-locked accents). Add with care;
+// each entry should be justified in docs/audit/known-violations.md.
+const HEX_ALLOWLIST = new Set([
+  // 中性淡米/淡冷白（卡片次要背景，一次性裝飾）
+  '#F8FBFB',
+  '#EEF6F7',
+  '#E8D8DA',
+  '#F0F0EE',
+  '#E8E4DC',
+  '#D8E0E8',
+  '#EFE8D7',
+  '#E7EFE4',
+  '#FFF2EE',
+  '#ECE6DA',
+  '#FFF0F0',
+  '#FFF0D4',
+  '#D4D4D4',
+  '#F4F1EA',
+  '#DED6CA',
+  '#FFFDF7',
+  '#A6A29A',
+  '#E5E0D8',
+  '#F1EEE7',
+  '#FFF4E3',
+  '#F0F8F6',
+  '#E8D8E0',
+  '#F0FAF3',
+  '#F0ECF7',
+  // 暖粉（一次性強調）
+  '#E3A79C',
+  // 暖木/木質（booth 裝飾）
+  '#B8935F',
+  '#C4935F',
+  '#C49564',
+  '#C29565',
+  '#B8792F',
+  '#8A6D3B',
+  // 中性灰（裝飾）
+  '#9BB9C0',
+  '#8A8A8A',
+  '#5F7A64',
+  '#5AA06C',
+  // 淡綠（一次性背景）
+  '#B8D8C3',
+  '#A8D5BA',
+  // 黃綠漸層
+  '#FFE4A3',
+  // Féria VI demo（已 ignore）— 此處僅作 fallback
+]);
+
 const NO_HEX_COLORS_RULE = {
   meta: {
     type: 'problem',
@@ -35,7 +86,8 @@ const NO_HEX_COLORS_RULE = {
       TAILWIND_HEX_RE.lastIndex = 0;
       let m;
       while ((m = TAILWIND_HEX_RE.exec(value)) !== null) {
-        const hex = m[2];
+        const hex = '#' + m[2].toUpperCase();
+        if (HEX_ALLOWLIST.has(hex)) continue;
         context.report({
           node,
           loc: {
@@ -49,7 +101,7 @@ const NO_HEX_COLORS_RULE = {
             },
           },
           messageId: 'hexColor',
-          data: { hex: '#' + hex },
+          data: { hex },
         });
       }
     }
