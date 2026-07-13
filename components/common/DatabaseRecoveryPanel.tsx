@@ -207,7 +207,7 @@ export function DatabaseRecoveryPanel() {
       </div>
 
       {(errors.length > 0 || warnings.length > 0) && (
-        <div className="mt-4 space-y-2 border-t border-[#F0ECE4] pt-3 text-sm">
+        <div className="mt-4 space-y-2 border-t border-warm-mist pt-3 text-sm">
           {hasDailyStatsNumericErrors && (
             <p className="text-foreground">
               發現每日統計快取欄位異常。可先按「備份」，再按「修復統計」將無效數值正規化。

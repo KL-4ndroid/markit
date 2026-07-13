@@ -59,6 +59,13 @@ const config: Config = {
         'neutral-alt': "rgb(var(--brand-neutral-alt) / <alpha-value>)",
         'neutral-alt-warm': "rgb(var(--brand-neutral-alt-warm) / <alpha-value>)",
         'accent-green': "rgb(var(--brand-accent-green) / <alpha-value>)",
+        // 段階三新增：細粒度灰階與強調色（2026-07-13）
+        'border-hairline': "rgb(var(--brand-border-hairline) / <alpha-value>)",
+        'cream-soft': "rgb(var(--brand-cream-soft) / <alpha-value>)",
+        'cream-lighter': "rgb(var(--brand-cream-lighter) / <alpha-value>)",
+        'warm-mist': "rgb(var(--brand-warm-mist) / <alpha-value>)",
+        'accent-green-deep': "rgb(var(--brand-accent-green-deep) / <alpha-value>)",
+        'mist-light': "rgb(var(--brand-mist-light) / <alpha-value>)",
       },
       borderRadius: {
         'xl': '1rem',

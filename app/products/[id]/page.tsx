@@ -331,7 +331,7 @@ export default function ProductDetailPage({ params }: PageProps) {
       <div className="max-w-lg mx-auto px-6 -mt-4 pb-6 space-y-4">
         {/* 商品圖示 */}
         <div className={`${categoryStyle.bg} rounded-[1.5rem] p-12 flex items-center justify-center shadow-lg shadow-primary/10`}>
-          <div className="text-8xl">{categoryStyle.emoji}</div>
+          <div className="text-secondary/20xl">{categoryStyle.emoji}</div>
         </div>
 
         {/* 價格資訊 */}

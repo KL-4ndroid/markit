@@ -1596,7 +1596,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                   market.status === 'postponed'
                     ? 'bg-soft-pink text-foreground ring-2 ring-secondary'
-                    : 'bg-neutral-alt text-muted-foreground hover:bg-[#ECECEC] cursor-pointer'
+                    : 'bg-neutral-alt text-muted-foreground hover:bg-border-hairline cursor-pointer'
                 }`}
               >
                 已延期
@@ -1608,7 +1608,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                   market.status === 'cancelled'
                     ? 'bg-soft-pink text-danger ring-2 ring-danger'
-                    : 'bg-neutral-alt text-muted-foreground hover:bg-[#ECECEC] cursor-pointer'
+                    : 'bg-neutral-alt text-muted-foreground hover:bg-border-hairline cursor-pointer'
                 }`}
               >
                 已取消

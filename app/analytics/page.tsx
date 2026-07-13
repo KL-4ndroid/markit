@@ -626,7 +626,7 @@ export default function AnalyticsPage() {
           <>
             {/* ✅ 市集總覽卡片（暫時註解） */}
             {/* {topMarketOverview && (
-              <div className="bg-gradient-to-br from-white to-[#F5F5F3] rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6 border-2 border-primary/20">
+              <div className="bg-gradient-to-br from-white to-cream-lighter rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6 border-2 border-primary/20">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-2xl">🟢</span>
                   <h2 className="text-xl font-medium text-foreground">
@@ -694,7 +694,7 @@ export default function AnalyticsPage() {
                   {/* 說明燈泡按鈕 */}
                   <button
                     onClick={() => setShowInfoTooltip(!showInfoTooltip)}
-                    className="relative bg-soft-yellow hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                    className="relative bg-soft-yellow hover:bg-secondary/20 p-1.5 rounded-full transition-colors"
                     aria-label="查看說明"
                   >
                     <svg 
@@ -871,7 +871,7 @@ export default function AnalyticsPage() {
                     {/* 說明燈泡按鈕 */}
                     <button
                       onClick={() => setShowAOVInfoTooltip(!showAOVInfoTooltip)}
-                      className="relative bg-soft-yellow hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                      className="relative bg-soft-yellow hover:bg-secondary/20 p-1.5 rounded-full transition-colors"
                       aria-label="查看說明"
                     >
                       <svg 
@@ -1068,7 +1068,7 @@ export default function AnalyticsPage() {
                                 duration: 6000,
                               });
                             }}
-                            className="relative bg-soft-yellow hover:bg-[#FFE8C7] p-1.5 rounded-full transition-colors"
+                            className="relative bg-soft-yellow hover:bg-secondary/20 p-1.5 rounded-full transition-colors"
                             aria-label="查看說明"
                           >
                             <svg 

@@ -28,7 +28,7 @@ const STATE_STYLES: Record<PendingOperationDiagnosticsStateGroup, string> = {
   healthy: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   needs_attention: 'border-amber-200 bg-amber-50 text-amber-700',
   in_progress: 'border-sky-200 bg-sky-50 text-sky-700',
-  unknown: 'border-neutral-stripe bg-[#F5F3EE] text-muted-foreground',
+  unknown: 'border-neutral-stripe bg-cream-soft text-muted-foreground',
 };
 
 export function OwnerPendingOperationDiagnosticsPanel() {
@@ -197,7 +197,7 @@ export function OwnerPendingOperationDiagnosticsPanel() {
             type="button"
             onClick={handleLoad}
             disabled={isBlocked || isLoading}
-            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE] disabled:opacity-50"
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-cream-soft disabled:opacity-50"
           >
             {isLoading ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />}
             {isLoading ? '讀取中...' : '讀取 diagnostics'}
@@ -213,11 +213,11 @@ export function OwnerPendingOperationDiagnosticsPanel() {
             </div>
 
             {rows.length === 0 ? (
-              <div className="border border-[#F0ECE4] bg-background px-3 py-3 text-sm text-muted-foreground">
+              <div className="border border-warm-mist bg-background px-3 py-3 text-sm text-muted-foreground">
                 目前沒有可顯示的 pending operation diagnostics。
               </div>
             ) : (
-              <div className="overflow-x-auto border border-[#F0ECE4]">
+              <div className="overflow-x-auto border border-warm-mist">
                 <table className="min-w-full border-collapse text-left text-sm">
                   <thead className="bg-background text-xs uppercase text-muted-foreground">
                     <tr>
@@ -229,7 +229,7 @@ export function OwnerPendingOperationDiagnosticsPanel() {
                       <th className="px-3 py-2 font-medium">錯誤</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#F0ECE4]">
+                  <tbody className="divide-y divide-warm-mist">
                     {rows.map(row => (
                       <DiagnosticsRow
                         key={row.operationId}
@@ -367,7 +367,7 @@ function BlockedPanel({
       <div className="flex items-start gap-3">
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-            danger ? 'bg-feria-dangerSoft text-[#B85C5C]' : 'bg-[#F0ECE4] text-muted-foreground'
+            danger ? 'bg-feria-dangerSoft text-[#B85C5C]' : 'bg-warm-mist text-muted-foreground'
           }`}
         >
           {icon}

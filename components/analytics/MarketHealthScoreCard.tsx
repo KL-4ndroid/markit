@@ -22,7 +22,7 @@ export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScore
     'S': 'bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-white',
     'A': 'bg-gradient-to-r from-primary to-[#5A8A91] text-white',
     'B': 'bg-gradient-to-r from-secondary to-[#C89563] text-white',
-    'C': 'bg-gradient-to-r from-[#E8E8E8] to-[#D0D0D0] text-foreground',
+    'C': 'bg-gradient-to-r from-mist-light to-[#D0D0D0] text-foreground',
     'D': 'bg-gradient-to-r from-soft-pink to-soft-pink/80 text-muted-foreground',
   };
 

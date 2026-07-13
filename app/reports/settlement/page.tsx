@@ -298,7 +298,7 @@ export default function SettlementReportPreviewPage() {
             <select
               value={kind}
               onChange={(event) => setKind(event.target.value as SettlementReportKind)}
-              className="h-10 border border-[#CFC7BA] bg-white px-3 text-sm text-foreground"
+              className="h-10 border border-neutral-stripe-dark bg-white px-3 text-sm text-foreground"
               aria-label="報告類型"
             >
               <option value="weekly">週報</option>
@@ -308,14 +308,14 @@ export default function SettlementReportPreviewPage() {
               type="date"
               value={startDate}
               onChange={(event) => setStartDate(event.target.value)}
-              className="h-10 border border-[#CFC7BA] bg-white px-3 text-sm text-foreground"
+              className="h-10 border border-neutral-stripe-dark bg-white px-3 text-sm text-foreground"
               aria-label="開始日期"
             />
             <input
               type="date"
               value={endDate}
               onChange={(event) => setEndDate(event.target.value)}
-              className="h-10 border border-[#CFC7BA] bg-white px-3 text-sm text-foreground"
+              className="h-10 border border-neutral-stripe-dark bg-white px-3 text-sm text-foreground"
               aria-label="結束日期"
             />
           </div>
@@ -379,7 +379,7 @@ export default function SettlementReportPreviewPage() {
                     </span>
                   </div>
                   <div className="mt-4 flex items-end gap-3 border-b border-neutral-stripe-dark pb-5">
-                    <span className="text-6xl font-semibold leading-none text-[#26392F]">{Math.round(preview.executiveSummary.overallScore)}</span>
+                    <span className="text-6xl font-semibold leading-none text-accent-green-deep">{Math.round(preview.executiveSummary.overallScore)}</span>
                     <span className="pb-2 text-sm font-medium text-muted-foreground">/ 100</span>
                   </div>
                   <div className={`mt-5 inline-flex border px-3 py-1 text-sm font-medium ${readinessClasses(preview.header.readiness)}`}>
@@ -603,7 +603,7 @@ export default function SettlementReportPreviewPage() {
               <div className="grid gap-3 md:grid-cols-2">
                 {preview.nextActions.map((action, index) => (
                   <div key={action} className="grid grid-cols-[28px_1fr] gap-3 border-t border-neutral-stripe pt-3">
-                    <span className="flex h-7 w-7 items-center justify-center bg-[#26392F] text-xs font-semibold text-white">
+                    <span className="flex h-7 w-7 items-center justify-center bg-accent-green-deep text-xs font-semibold text-white">
                       {index + 1}
                     </span>
                     <p className="text-sm leading-6 text-foreground">{action}</p>

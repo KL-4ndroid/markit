@@ -136,9 +136,9 @@ export default function FeatureUnlockGuard({
               </span>
             </div>
             
-            <div className="relative w-full bg-[#E8E8E8] h-3 rounded-full overflow-hidden">
+            <div className="relative w-full bg-mist-light h-3 rounded-full overflow-hidden">
               {/* 進度條背景漸層 */}
-              <div className="absolute inset-0 bg-gradient-to-r from-[#E8E8E8] to-[#D4D4D4]" />
+              <div className="absolute inset-0 bg-gradient-to-r from-mist-light to-[#D4D4D4]" />
               
               {/* 進度條填充 */}
               <div 
@@ -159,7 +159,7 @@ export default function FeatureUnlockGuard({
           </div>
           
           {/* 底部提示 */}
-          <div className="mt-4 pt-4 border-t border-[#E8E8E8]">
+          <div className="mt-4 pt-4 border-t border-mist-light">
             <p className="text-[10px] text-muted-foreground text-center leading-relaxed inline-flex items-center gap-1.5 justify-center w-full">
               <Lightbulb className="w-3 h-3 shrink-0" strokeWidth={1.75} />
               <span>繼續記錄市集數據，解鎖更多深度分析功能</span>

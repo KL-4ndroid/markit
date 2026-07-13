@@ -157,7 +157,7 @@ export function OwnerRevenueGapRepairPanel() {
         <div className="flex items-start gap-3">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-              hasRepairs ? 'bg-soft-green text-[#4D7F87]' : 'bg-[#F0ECE4] text-muted-foreground'
+              hasRepairs ? 'bg-soft-green text-info' : 'bg-warm-mist text-muted-foreground'
             }`}
           >
             {hasRepairs ? <Zap size={20} /> : <RefreshCw size={20} />}
@@ -174,7 +174,7 @@ export function OwnerRevenueGapRepairPanel() {
           <div className="space-y-2 rounded-md border border-neutral-stripe bg-background p-3 text-sm">
             {previewResult.repaired.length > 0 && (
               <div>
-                <p className="mb-1 font-medium text-[#4D7F87]">可修復 ({previewResult.repaired.length})</p>
+                <p className="mb-1 font-medium text-info">可修復 ({previewResult.repaired.length})</p>
                 {previewResult.repaired.map(r => (
                   <div key={r.marketId} className="pl-2 text-muted-foreground">
                     {r.marketId.slice(0, 8)}... 收入 {formatMoney(r.localRevenueBefore)} → {formatMoney(r.localRevenueAfter)}，
@@ -214,7 +214,7 @@ export function OwnerRevenueGapRepairPanel() {
               type="button"
               onClick={handleDryRun}
               disabled={isBlocked}
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE] disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-cream-soft disabled:opacity-50"
             >
               <Eye size={16} />
               預覽修復範圍
@@ -240,7 +240,7 @@ export function OwnerRevenueGapRepairPanel() {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-cream-soft"
               >
                 取消
               </button>
@@ -271,7 +271,7 @@ function BlockedPanel({
     <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm opacity-70">
       <div className="flex items-start gap-3">
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-          danger ? 'bg-soft-pink text-[#B85C5C]' : 'bg-[#F0ECE4] text-muted-foreground'
+          danger ? 'bg-soft-pink text-[#B85C5C]' : 'bg-warm-mist text-muted-foreground'
         }`}>
           {icon}
         </div>

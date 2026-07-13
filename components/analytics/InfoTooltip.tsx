@@ -37,7 +37,7 @@ export default function InfoTooltip({
           inline-flex items-center justify-center
           w-5 h-5 rounded-full
           transition-all duration-200
-          bg-[#F5F5F3] text-muted-foreground hover:bg-primary hover:text-white
+          bg-cream-lighter text-muted-foreground hover:bg-primary hover:text-white
           focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
         `}
         aria-label={`查看 ${title} 說明`}
@@ -113,7 +113,7 @@ export default function InfoTooltip({
 
                     {/* 計算公式 */}
                     {formula && (
-                      <div className="mb-4 p-3 bg-[#F5F5F3] rounded-lg border border-muted">
+                      <div className="mb-4 p-3 bg-cream-lighter rounded-lg border border-muted">
                         <p className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
                           <Ruler className="w-3.5 h-3.5" strokeWidth={1.75} />
                           計算公式

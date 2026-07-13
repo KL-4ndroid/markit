@@ -123,7 +123,7 @@ export function PWAUpdatePrompt() {
             <button
               onClick={handleDismiss}
               disabled={isUpdating}
-              className="w-full bg-neutral-alt text-muted-foreground px-6 py-4 rounded-2xl font-medium hover:bg-[#ECECEC] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-neutral-alt text-muted-foreground px-6 py-4 rounded-2xl font-medium hover:bg-border-hairline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               稍後提醒
             </button>

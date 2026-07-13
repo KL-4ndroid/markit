@@ -20,6 +20,13 @@ const BASE_REPLACEMENTS = [
   ['#F5F5F0', 'neutral-alt'],
   ['#F7F5EF', 'neutral-alt-warm'],
   ['#315F43', 'accent-green'],
+  // Phase 3: fine-grained greys + deep accent (2026-07-13, second pass)
+  ['#ECECEC', 'border-hairline'],
+  ['#F5F3EE', 'cream-soft'],
+  ['#F5F5F3', 'cream-lighter'],
+  ['#F0ECE4', 'warm-mist'],
+  ['#26392F', 'accent-green-deep'],
+  ['#E8E8E8', 'mist-light'],
 ];
 
 const PREFIXES = ['bg', 'from', 'to', 'text', 'ring', 'via', 'border', 'shadow', 'fill', 'stroke', 'decoration', 'divide'];

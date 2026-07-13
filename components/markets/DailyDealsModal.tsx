@@ -60,7 +60,7 @@ export function DailyDealsModal({
             </div>
             <button
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-neutral-alt hover:bg-[#ECECEC] transition-colors flex items-center justify-center"
+              className="w-10 h-10 rounded-full bg-neutral-alt hover:bg-border-hairline transition-colors flex items-center justify-center"
             >
               <X className="w-5 h-5 text-muted-foreground" />
             </button>

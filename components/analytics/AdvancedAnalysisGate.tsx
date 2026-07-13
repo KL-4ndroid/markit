@@ -14,7 +14,7 @@ export function AdvancedAnalysisGate({
   return (
     <div className="bg-white rounded-[1.5rem] p-5 shadow-lg shadow-primary/10 mb-6 border border-primary/10">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-[#F5F5F3] flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-full bg-cream-lighter flex items-center justify-center flex-shrink-0">
           <Lock className="w-5 h-5 text-primary" />
         </div>
         <div className="min-w-0 flex-1">

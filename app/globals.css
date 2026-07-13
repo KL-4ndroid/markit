@@ -55,6 +55,15 @@
   --brand-neutral-alt-warm: 247 245 239;      /* #F7F5EF 暖米（替換背景） */
   --brand-accent-green: 49 95 67;             /* #315F43 深綠強調 */
 
+  /* === 段階三新增：細粒度灰階與強調色（2026-07-13） === */
+  /* 對應 known-violations.md A 級色票（頻率 ≥ 4） */
+  --brand-border-hairline: 236 236 236;       /* #ECECEC 細髮絲邊 */
+  --brand-cream-soft: 245 243 238;            /* #F5F3EE 柔米白 */
+  --brand-cream-lighter: 245 245 243;         /* #F5F5F3 極淺米白 */
+  --brand-warm-mist: 240 236 228;             /* #F0ECE4 暖霧 */
+  --brand-accent-green-deep: 38 57 47;        /* #26392F 深綠強調 */
+  --brand-mist-light: 232 232 232;            /* #E8E8E8 中性霧 */
+
   /* 圓角系統 */
   --radius: 1.25rem;
   --radius-sm: 0.75rem;

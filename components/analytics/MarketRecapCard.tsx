@@ -16,7 +16,7 @@ const resultStyles = {
   strong: 'bg-soft-green text-foreground',
   watch: 'bg-soft-yellow text-foreground',
   needs_adjustment: 'bg-[#FFF4E5] text-foreground',
-  not_enough_data: 'bg-[#F5F5F3] text-muted-foreground',
+  not_enough_data: 'bg-cream-lighter text-muted-foreground',
 } as const;
 
 function TextList({ title, items }: { title: string; items: string[] }) {
@@ -54,7 +54,7 @@ export function MarketRecapCard({ report }: MarketRecapCardProps) {
         <span className={`text-xs px-3 py-1 rounded-full ${resultStyles[report.resultLabel]}`}>
           {resultLabels[report.resultLabel]}
         </span>
-        <span className="text-xs px-3 py-1 rounded-full bg-[#F5F5F3] text-foreground">
+        <span className="text-xs px-3 py-1 rounded-full bg-cream-lighter text-foreground">
           {report.confidence === 'high' ? '信心較高' : report.confidence === 'medium' ? '信心中等' : '信心較低'}
         </span>
       </div>

@@ -185,7 +185,7 @@ export function LocalProjectionRepairPanel() {
             <button
               type="button"
               onClick={handleDryRun}
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-cream-soft"
             >
               <Eye size={16} />
               預覽本機修復
@@ -218,7 +218,7 @@ export function LocalProjectionRepairPanel() {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-cream-soft"
               >
                 取消
               </button>
@@ -245,7 +245,7 @@ function BlockedPanel({
     <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm opacity-70">
       <div className="flex items-start gap-3">
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-          danger ? 'bg-soft-pink text-[#B85C5C]' : 'bg-[#F0ECE4] text-muted-foreground'
+          danger ? 'bg-soft-pink text-[#B85C5C]' : 'bg-warm-mist text-muted-foreground'
         }`}>
           {icon}
         </div>

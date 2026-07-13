@@ -103,7 +103,7 @@ export function ImportSafetyStatusPanel() {
           <button
             type="button"
             onClick={refresh}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-cream-soft"
           >
             <RefreshCw size={16} />
             Refresh
@@ -120,7 +120,7 @@ export function ImportSafetyStatusPanel() {
         </div>
       </div>
 
-      <div className="mt-4 space-y-2 border-t border-[#F0ECE4] pt-3 text-sm">
+      <div className="mt-4 space-y-2 border-t border-warm-mist pt-3 text-sm">
         <p className="text-foreground">
           Status: <span className="font-medium">{status ? storageModeLabel(status) : 'Loading'}</span>
         </p>

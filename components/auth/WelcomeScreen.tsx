@@ -26,11 +26,11 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
             />
           </div>
 
-          <h1 className="text-4xl font-serif text-[#3F3A37] tracking-[0.15em] mb-3">
+          <h1 className="text-4xl font-serif text-foreground/70 tracking-[0.15em] mb-3">
             Féria
           </h1>
 
-          <p className="text-xs text-[#8A867D] tracking-[0.4em]">
+          <p className="text-xs text-muted-foreground tracking-[0.4em]">
             出攤筆記
           </p>
         </div>
@@ -55,26 +55,26 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
 
         <button
           onClick={onGetStarted}
-          className="w-full bg-[#6F8B74] text-white py-4 rounded-full tracking-widest text-lg transition-colors hover:bg-[#5F7A64] active:scale-[0.98]"
+          className="w-full bg-primary/90 text-white py-4 rounded-full tracking-widest text-lg transition-colors hover:bg-[#5F7A64] active:scale-[0.98]"
         >
           開始使用
         </button>
 
-        <p className="mt-4 text-center text-sm text-[#8A867D]">
+        <p className="mt-4 text-center text-sm text-muted-foreground">
           登入或註冊後，可在不同裝置同步資料。
         </p>
 
         <div className="mt-8 text-center space-y-4">
           <div className="flex justify-center gap-4 text-xs text-[#A6A29A]">
-            <Link href="/about" className="hover:text-[#6F8B74] transition-colors">
+            <Link href="/about" className="hover:text-primary/90 transition-colors">
               關於
             </Link>
             <span>/</span>
-            <Link href="/privacy" className="hover:text-[#6F8B74] transition-colors">
+            <Link href="/privacy" className="hover:text-primary/90 transition-colors">
               隱私
             </Link>
             <span>/</span>
-            <Link href="/terms" className="hover:text-[#6F8B74] transition-colors">
+            <Link href="/terms" className="hover:text-primary/90 transition-colors">
               條款
             </Link>
           </div>
@@ -96,16 +96,16 @@ function FeatureItem({
   return (
     <div className="bg-white rounded-xl p-5 border border-[#E5E0D8] shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
       <div className="flex items-start gap-4">
-        <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#F1EEE7] text-[#6F8B74] shrink-0">
+        <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#F1EEE7] text-primary/90 shrink-0">
           {icon}
         </div>
 
         <div>
-          <h3 className="text-[#3F3A37] font-serif text-lg mb-1">
+          <h3 className="text-foreground/70 font-serif text-lg mb-1">
             {title}
           </h3>
 
-          <p className="text-[#8A867D] text-sm leading-relaxed">
+          <p className="text-muted-foreground text-sm leading-relaxed">
             {description}
           </p>
         </div>

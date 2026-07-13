@@ -129,7 +129,7 @@ export function PWAInstallButton() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-foreground">
-                    點擊底部的 <Share className="w-4 h-4 inline text-[#007AFF]" /> <strong>分享</strong> 按鈕
+                    點擊底部的 <Share className="w-4 h-4 inline text-info" /> <strong>分享</strong> 按鈕
                   </p>
                 </div>
               </div>

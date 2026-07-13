@@ -190,7 +190,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideP
           <button
             key={num}
             onClick={() => handleNumberClick(num)}
-            className="bg-neutral-alt hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+            className="bg-neutral-alt hover:bg-border-hairline active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
           >
             {num}
           </button>
@@ -201,7 +201,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideP
           <button
             key={num}
             onClick={() => handleNumberClick(num)}
-            className="bg-neutral-alt hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+            className="bg-neutral-alt hover:bg-border-hairline active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
           >
             {num}
           </button>
@@ -212,7 +212,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideP
           <button
             key={num}
             onClick={() => handleNumberClick(num)}
-            className="bg-neutral-alt hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+            className="bg-neutral-alt hover:bg-border-hairline active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
           >
             {num}
           </button>
@@ -232,7 +232,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideP
         </button>
         <button
           onClick={() => handleNumberClick(0)}
-          className="bg-neutral-alt hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+          className="bg-neutral-alt hover:bg-border-hairline active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
         >
           0
         </button>

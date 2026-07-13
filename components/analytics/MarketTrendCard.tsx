@@ -15,8 +15,8 @@ const directionLabels: Record<MarketTrendDirection, string> = {
 const directionStyles: Record<MarketTrendDirection, string> = {
   improving: 'bg-soft-green text-foreground',
   declining: 'bg-[#FFF4E5] text-foreground',
-  flat: 'bg-[#F5F5F3] text-foreground',
-  not_enough_data: 'bg-[#F5F5F3] text-muted-foreground',
+  flat: 'bg-cream-lighter text-foreground',
+  not_enough_data: 'bg-cream-lighter text-muted-foreground',
 };
 
 function getDirectionIcon(direction: MarketTrendDirection) {
@@ -50,7 +50,7 @@ export function MarketTrendCard({ trend }: MarketTrendCardProps) {
           <DirectionIcon className="w-3.5 h-3.5" />
           {directionLabels[trend.direction]}
         </span>
-        <span className="text-xs px-3 py-1 rounded-full bg-[#F5F5F3] text-foreground">
+        <span className="text-xs px-3 py-1 rounded-full bg-cream-lighter text-foreground">
           {trend.points.length} 場有收入紀錄
         </span>
       </div>

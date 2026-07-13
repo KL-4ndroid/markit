@@ -36,7 +36,7 @@ function getToneStyle(tone: AnalyticsActionCard['tone']) {
       };
     default:
       return {
-        bg: 'bg-[#F5F5F3]',
+        bg: 'bg-cream-lighter',
         border: 'border-primary/20',
         iconBg: 'bg-primary',
         icon: Info,
@@ -89,7 +89,7 @@ export function ActionableInsightsCard({ result }: ActionableInsightsCardProps) 
         <span className="text-xs px-3 py-1 rounded-full bg-soft-green text-foreground">
           資料：{levelLabels[result.dataCompleteness.level]}
         </span>
-        <span className="text-xs px-3 py-1 rounded-full bg-[#F5F5F3] text-foreground">
+        <span className="text-xs px-3 py-1 rounded-full bg-cream-lighter text-foreground">
           信心：{confidenceLabels[result.confidence]}
         </span>
       </div>
