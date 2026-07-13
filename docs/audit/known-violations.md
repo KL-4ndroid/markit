@@ -10,13 +10,19 @@
 
 | 項目 | 值 |
 |---|---|
-| 總違規數 | **58**（hex）+ **0**（其他規則） |
-| 唯一未登錄色票 | **45** |
-| 最後更新 | 2026-07-13（階段二 commit 之後） |
-| 趨勢 | 396 → 185 → 108 → 78 → **58**（持續下降） |
+| 總違規數 | **0**（hex）+ **0**（其他規則） |
+| 唯一未登錄色票 | **0** |
+| 最後更新 | 2026-07-14（P0-P3 全部完成） |
+| 趨勢 | 396 → 185 → 108 → 78 → 58 → 44 → **0** |
 | 負責人 | Cursor Agent + 人類 owner（KL） |
 
-> **2026-07-13 階段二更新**：執行了階段三（6 個 token 新增）+ 階段四（`#FFE8C7` / `#CFC7BA` B 級替換）+ 階段五（17 個 B 級精準替換）= 額外清除 50 個 errors（108 → 58）。剩餘 58 個為 C/D 級，需以 `eslint-disable` 或個別決策處理。
+> **2026-07-14 階段三更新**：執行了 P0-P3 全部計畫：
+> - **P0**：新增 9 個 status tokens（good/warn/danger × border/bg/text）
+> - **P1**：新增 2 個 warning tokens + 1 個 text-warm-deep
+> - **P2**：新增 2 個 gold tokens（金幣/獎盃）
+> - **P3**：ESLint `HEX_ALLOWLIST` 收容 41 個一次性裝飾色票
+>
+> 結果：44 → 0 errors。最後 2 個（`#BDB5AA` disabled 狀態）改用 `muted` token 解決。CI budget 由 58 降至 0。
 
 ---
 
@@ -26,11 +32,11 @@
 
 | 指標 | 數值 |
 |---|---|
-| 總 ESLint errors | **58** |
-| 唯一色票 | **45** |
-| 受影響檔案 | ~30 |
+| 總 ESLint errors | **0** |
+| 唯一色票 | **0** |
+| 受影響檔案 | 0 |
 
-> 階段二（2026-07-13）處理了 50 個 errors（108 → 58）。剩下 58 為**幾乎全 1-2 次的零散色票**，個別值不值得新增為 token；建議以 C/D 級方式處理（見 1.3）。
+> **2026-07-14 完成**：透過 P0（9 status tokens）+ P1（3 tokens）+ P2（2 gold tokens）+ P3（41 個 allowList）+ 1 個改用既有 token (`muted`)，hex violations 全部清除。
 
 ### 1.2 違規清單（依頻率排序）
 
@@ -72,13 +78,28 @@
 | **C. 例外列表** | 寫入 ESLint rule 的 `allowList` 或元件內 `eslint-disable` | 保留設計彈性 |
 | **D. 移除/重構** | 例如 iOS 藍 `#007AFF` 應移除或改用 `info` | 涵蓋少數 errors |
 
-### 1.4 下一輪預計行動（C/D 級處理）
+### 1.4 P0-P3 處理結果
 
-**剩餘 45 個色票策略**：
-- **C 級（例外列表）**：在 `eslint.config.mjs` 的 `no-hex-colors` rule 加入 `allowList`，保留設計彈性（金幣 `#FFD700`、個別一次性色票）
-- **D 級（重構）**：個別元件需要審查（暖粉 `#E3A79C`、暖木 `#B8935F` 等可能需要正規化為 token）
+| 優先級 | 動作 | 結果 |
+|---|---|---|
+| **P0** ✅ | 新增 status token（good/warn/danger × border/bg/text） | 58 → 53 |
+| **P1** ✅ | warning tokens + text-warm-deep | 53 → 49 |
+| **P2** ✅ | gold/gold-warm tokens | 49 → 44 |
+| **P3** ✅ | ESLint `HEX_ALLOWLIST`（41 個一次性裝飾） | 44 → 2 |
+| 收尾 ✅ | `#BDB5AA` disabled → `muted` | 2 → **0** |
 
-**預期成果**：58 → ~30 errors。
+**最終成果：58 → 0 errors。CI budget 由 58 降至 0。**
+
+### 1.5 新增 token 清單
+
+| Token | 值 | 用途 |
+|---|---|---|
+| `status-good-border/bg/text` | `#B8D8C3` `#F1F8F3` `#2F6B46` | 庫存充足 / 評分 A / 通過 |
+| `status-warn-border/bg/text` | `#E7D6A0` `#FFF8E6` `#7A5A12` | 庫存緊張 / 評分 C / 提醒 |
+| `status-danger-border/bg/text` | `#E6B9B0` `#FFF1EE` `#9B3A2A` | 缺貨 / 評分 F / 失敗 |
+| `warning-border/bg` | `#E3A79C` `#FFF2EE` | 結算頁警告面板 |
+| `text-warm-deep` | `#6E5A3E` | 暖深棕文字（評分 B） |
+| `gold` / `gold-warm` | `#FFD700` / `#FFA500` | 金幣/獎盃/高分 |
 
 ---
 
@@ -148,8 +169,10 @@ ignores: [
 | 2026-07-12 | 首次稽核（`2026-07-12-rules-audit.md`） | 396 | 78 |
 | 2026-07-13 | 稽核 commit `8639e60` 修正 | 108 | 57 |
 | 2026-07-13 | 本文件建立 | 108 | 57 |
-| 2026-07-13 | **階段二修正**（6 token 新增 + 17 個 B 級替換 + 階段四 `#FFE8C7`） | **58** | **45** |
-| _下次更新_ | _剩餘 45 個零散色票採 C/D 級處理_ | _~30_ | _~20_ |
+| 2026-07-13 | **階段二修正**（6 token 新增 + 17 個 B 級替換 + 階段四 `#FFE8C7`） | 58 | 45 |
+| 2026-07-14 | **階段三修正**（P0-P3：14 新增 token + 41 個 ESLint allowList + 收尾） | **0** | **0** |
+
+> **階段三成果**：58 → 0 errors（CI budget 由 58 降至 0）。
 
 ---
 
