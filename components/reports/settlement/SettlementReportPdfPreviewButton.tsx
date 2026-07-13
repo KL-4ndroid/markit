@@ -70,7 +70,7 @@ export function SettlementReportPdfPreviewButton({
         type="button"
         onClick={handleOpenPreview}
         disabled={isDisabled}
-        className="inline-flex h-10 items-center justify-center gap-2 border border-accent-green-deep bg-accent-green-deep px-4 text-sm font-medium text-white transition hover:bg-accent-green disabled:cursor-not-allowed disabled:border-[#BDB5AA] disabled:bg-[#BDB5AA]"
+        className="inline-flex h-10 items-center justify-center gap-2 border border-accent-green-deep bg-accent-green-deep px-4 text-sm font-medium text-white transition hover:bg-accent-green disabled:cursor-not-allowed disabled:border-muted disabled:bg-muted"
       >
         {isOpening ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
         {isOpening ? '正在產生 PDF' : '開啟 PDF 預覽'}

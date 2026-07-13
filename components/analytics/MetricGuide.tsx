@@ -25,7 +25,7 @@ export function MetricGuide({ title, content, value, icon }: MetricGuideProps) {
       {/* 智慧燈泡按鈕 */}
       <button
         onClick={() => setIsOpen(true)}
-        className="relative bg-soft-yellow hover:bg-[#FFE8C7] p-1.5 rounded-full transition-all hover:scale-110 group"
+        className="relative bg-soft-yellow hover:bg-secondary/20 p-1.5 rounded-full transition-all hover:scale-110 group"
         aria-label="查看指標說明"
       >
         <Lightbulb className="w-4 h-4 text-secondary animate-pulse group-hover:animate-none" />

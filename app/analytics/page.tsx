@@ -1092,7 +1092,7 @@ export default function AnalyticsPage() {
                         </div>
                         <div className="bg-soft-yellow rounded-xl p-3 text-center">
                           <p className="text-xs text-muted-foreground mb-1">最高分</p>
-                          <p className="text-xl font-bold text-[#FFD700]">
+                          <p className="text-xl font-bold text-gold">
                             {Math.max(...marketHealthScores.map(s => s.healthScore)).toFixed(1)}
                           </p>
                         </div>

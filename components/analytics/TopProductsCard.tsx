@@ -79,9 +79,9 @@ export function TopProductsCard({
         </div>
 
         {/* 利潤第一 */}
-        <div className="bg-background rounded-lg p-3 border border-[#FFD700]/20">
+        <div className="bg-background rounded-lg p-3 border border-gold/20">
           <div className="flex flex-col items-center text-center mb-2">
-            <div className="bg-gradient-to-br from-[#FFD700] to-[#FFA500] p-2 rounded-lg mb-2">
+            <div className="bg-gradient-to-br from-gold to-gold-warm p-2 rounded-lg mb-2">
               <DollarSign className="w-3 h-3 text-white" />
             </div>
             <h3 className="font-medium text-foreground text-[10px] leading-tight">

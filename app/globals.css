@@ -64,6 +64,29 @@
   --brand-accent-green-deep: 38 57 47;        /* #26392F 深綠強調 */
   --brand-mist-light: 232 232 232;            /* #E8E8E8 中性霧 */
 
+  /* === 段階四新增：狀態語義色票（2026-07-14） === */
+  /* 對應 known-violations.md P0：補齊設計系統缺少的狀態語義色票 */
+  /* good = 庫存充足 / 正常 / 通過 */
+  --brand-status-good-border: 184 216 195;     /* #B8D8C3 狀態良好邊框 */
+  --brand-status-good-bg: 241 248 243;         /* #F1F8F3 狀態良好背景 */
+  --brand-status-good-text: 47 107 70;         /* #2F6B46 狀態良好文字 */
+  /* warn = 庫存緊張 / 中等 / 提醒 */
+  --brand-status-warn-border: 231 214 160;     /* #E7D6A0 狀態警告邊框 */
+  --brand-status-warn-bg: 255 248 230;         /* #FFF8E6 狀態警告背景 */
+  --brand-status-warn-text: 122 90 18;         /* #7A5A12 狀態警告文字 */
+  /* danger = 缺貨 / 危險 / 失敗 */
+  --brand-status-danger-border: 230 185 176;   /* #E6B9B0 狀態危險邊框 */
+  --brand-status-danger-bg: 255 241 238;       /* #FFF1EE 狀態危險背景 */
+  --brand-status-danger-text: 155 58 42;       /* #9B3A2A 狀態危險文字 */
+  /* warning = 結算頁 / 損壞資料警告（與 status-warn 區分：偏紅而非偏黃） */
+  --brand-warning-border: 227 167 156;         /* #E3A79C 警告邊框 */
+  --brand-warning-bg: 255 242 238;             /* #FFF2EE 警告背景 */
+  /* 段階四延伸：B 級暖深文字（settlement grade B 用） */
+  --brand-text-warm-deep: 110 90 62;           /* #6E5A3E 暖深棕（B 級暖色文字） */
+  /* 金幣/獎盃裝飾色（2026-07-14 — 設計意圖明確，保留為 token） */
+  --brand-gold: 255 215 0;                     /* #FFD700 金幣金 */
+  --brand-gold-warm: 255 165 0;                /* #FFA500 暖橙（gradient 終點） */
+
   /* 圓角系統 */
   --radius: 1.25rem;
   --radius-sm: 0.75rem;

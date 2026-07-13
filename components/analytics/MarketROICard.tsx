@@ -40,7 +40,7 @@ export function MarketROICard({
   const getRankColor = (rank: number) => {
     switch (rank) {
       case 1:
-        return 'bg-gradient-to-br from-[#FFD700] to-[#FFA500] text-white';
+        return 'bg-gradient-to-br from-gold to-gold-warm text-white';
       case 2:
         return 'bg-gradient-to-br from-[#C0C0C0] to-[#A8A8A8] text-white';
       case 3:

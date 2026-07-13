@@ -19,7 +19,7 @@ export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScore
   
   // 評級顏色
   const gradeColors = {
-    'S': 'bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-white',
+    'S': 'bg-gradient-to-r from-gold to-gold-warm text-white',
     'A': 'bg-gradient-to-r from-primary to-[#5A8A91] text-white',
     'B': 'bg-gradient-to-r from-secondary to-[#C89563] text-white',
     'C': 'bg-gradient-to-r from-mist-light to-[#D0D0D0] text-foreground',
@@ -37,7 +37,7 @@ export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScore
 
   // 分數顏色（根據分數範圍）
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-[#FFD700]';
+    if (score >= 80) return 'text-gold';
     if (score >= 70) return 'text-primary';
     if (score >= 50) return 'text-secondary';
     if (score >= 30) return 'text-muted-foreground';

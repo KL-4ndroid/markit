@@ -112,9 +112,9 @@ function signalLabel(status: SettlementReportSignalStatus): string {
 }
 
 function statusClasses(status: SettlementReportSignalStatus): string {
-  if (status === 'available') return 'border-[#B8D8C3] bg-[#F1F8F3] text-[#2F6B46]';
-  if (status === 'limited') return 'border-[#E7D6A0] bg-[#FFF8E6] text-[#7A5A12]';
-  return 'border-[#E6B9B0] bg-[#FFF1EE] text-[#9B3A2A]';
+  if (status === 'available') return 'border-status-good-border bg-status-good-bg text-status-good-text';
+  if (status === 'limited') return 'border-status-warn-border bg-status-warn-bg text-status-warn-text';
+  return 'border-status-danger-border bg-status-danger-bg text-status-danger-text';
 }
 
 function readinessClasses(readiness: SettlementReportPreviewReadiness): string {
@@ -135,10 +135,10 @@ function getSectionStatusLabel(status: SettlementReportSignalStatus): string {
 }
 
 function gradeClasses(grade: string): string {
-  if (grade === 'A') return 'border-[#B8D8C3] bg-[#F1F8F3] text-[#2F6B46]';
-  if (grade === 'B') return 'border-neutral-stripe-dark bg-neutral-alt-warm text-[#6E5A3E]';
-  if (grade === 'C') return 'border-[#E7D6A0] bg-[#FFF8E6] text-[#7A5A12]';
-  return 'border-[#E6B9B0] bg-[#FFF1EE] text-[#9B3A2A]';
+  if (grade === 'A') return 'border-status-good-border bg-status-good-bg text-status-good-text';
+  if (grade === 'B') return 'border-neutral-stripe-dark bg-neutral-alt-warm text-text-warm-deep';
+  if (grade === 'C') return 'border-status-warn-border bg-status-warn-bg text-status-warn-text';
+  return 'border-status-danger-border bg-status-danger-bg text-status-danger-text';
 }
 
 export default function SettlementReportPreviewPage() {
@@ -282,7 +282,7 @@ export default function SettlementReportPreviewPage() {
               返回分析
             </Link>
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#E7EFE4] text-accent-green">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-status-good-bg text-accent-green">
                 <FileText size={22} />
               </div>
               <div className="min-w-0">
@@ -415,14 +415,14 @@ export default function SettlementReportPreviewPage() {
             </section>
 
             {preview.topWarnings.length > 0 && (
-              <section className="border border-[#E3A79C] bg-[#FFF2EE] p-5 shadow-sm">
-                <div className="mb-3 flex items-center gap-2 text-[#9B3A2A]">
+              <section className="border border-warning-border bg-warning-bg p-5 shadow-sm">
+                <div className="mb-3 flex items-center gap-2 text-status-danger-text">
                   <AlertTriangle size={18} />
                   <h2 className="text-base font-semibold">優先確認事項</h2>
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   {preview.topWarnings.map((warning) => (
-                    <div key={`${warning.code}-${warning.message}`} className="border-t border-[#E3A79C] pt-3">
+                    <div key={`${warning.code}-${warning.message}`} className="border-t border-warning-border pt-3">
                       <p className="text-sm font-medium text-foreground">{warning.message}</p>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">{warning.recommendation}</p>
                     </div>
@@ -453,7 +453,7 @@ export default function SettlementReportPreviewPage() {
                 </div>
                 <div className="mt-4 space-y-3">
                   {preview.reliability.limitations.length === 0 ? (
-                    <div className="border border-[#B8D8C3] bg-[#F1F8F3] px-3 py-2 text-sm font-medium text-[#2F6B46]">
+                    <div className="border border-status-good-border bg-status-good-bg px-3 py-2 text-sm font-medium text-status-good-text">
                       本期未偵測到重大資料限制。
                     </div>
                   ) : (
@@ -480,7 +480,7 @@ export default function SettlementReportPreviewPage() {
                           {component.score === null ? signalLabel(component.status) : Math.round(component.score)}
                         </span>
                       </div>
-                      <div className="h-2 bg-[#ECE6DA]">
+                      <div className="h-2 bg-neutral-stripe">
                         <div className="h-2 bg-accent-green" style={{ width: getScoreBarWidth(component.score) }} />
                       </div>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">{component.reason}</p>
