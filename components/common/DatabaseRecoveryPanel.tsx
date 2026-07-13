@@ -137,7 +137,7 @@ export function DatabaseRecoveryPanel() {
   );
 
   return (
-    <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm">
+    <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
@@ -162,7 +162,7 @@ export function DatabaseRecoveryPanel() {
             type="button"
             onClick={handleCheck}
             disabled={isChecking}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground disabled:opacity-50"
           >
             <ShieldCheck size={16} />
             檢查
@@ -171,7 +171,7 @@ export function DatabaseRecoveryPanel() {
             type="button"
             onClick={handleRetry}
             disabled={isChecking}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground disabled:opacity-50"
           >
             <RefreshCw size={16} />
             重試

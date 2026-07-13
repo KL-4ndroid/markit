@@ -1404,7 +1404,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                   
                   if (!isStatusReady) {
                     return (
-                      <div className="bg-soft-yellow border border-[#FFF8E7] rounded-xl p-3 mt-3">
+                      <div className="bg-soft-yellow border border-soft-yellow rounded-xl p-3 mt-3">
                         <p className="text-sm text-foreground whitespace-pre-line flex items-center gap-2">
                           <AlertCircle className="w-4 h-4 text-secondary flex-shrink-0" />
                           <span>需將狀態更新為「已繳費」或「如期舉行」才能自動營業</span>
@@ -1415,7 +1415,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                   
                   if (!isWithinMarketPeriod) {
                     return (
-                      <div className="bg-soft-yellow border border-[#FFF8E7] rounded-xl p-3 mt-3">
+                      <div className="bg-soft-yellow border border-soft-yellow rounded-xl p-3 mt-3">
                         <p className="text-sm text-foreground whitespace-pre-line flex items-center gap-2">
                           <AlertCircle className="w-4 h-4 text-secondary flex-shrink-0" />
                           <span>僅限市集日期自動營業（{dateRangeText}）</span>
@@ -1596,7 +1596,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                   market.status === 'postponed'
                     ? 'bg-soft-pink text-foreground ring-2 ring-secondary'
-                    : 'bg-[#F5F5F0] text-muted-foreground hover:bg-[#ECECEC] cursor-pointer'
+                    : 'bg-neutral-alt text-muted-foreground hover:bg-[#ECECEC] cursor-pointer'
                 }`}
               >
                 已延期
@@ -1608,7 +1608,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                   market.status === 'cancelled'
                     ? 'bg-soft-pink text-danger ring-2 ring-danger'
-                    : 'bg-[#F5F5F0] text-muted-foreground hover:bg-[#ECECEC] cursor-pointer'
+                    : 'bg-neutral-alt text-muted-foreground hover:bg-[#ECECEC] cursor-pointer'
                 }`}
               >
                 已取消
@@ -1792,7 +1792,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                       <button
                         key={button.id}
                         onClick={() => handleInteractionClick(button.id, button.label, button.emoji)}
-                        className="bg-background rounded-xl p-3 text-center hover:bg-[#F5F5F0] hover:scale-105 transition-all cursor-pointer active:scale-95"
+                        className="bg-background rounded-xl p-3 text-center hover:bg-neutral-alt hover:scale-105 transition-all cursor-pointer active:scale-95"
                       >
                         <div className="text-xl mb-1">{button.emoji}</div>
                         <div className="text-lg font-medium text-foreground">{count}</div>
@@ -1971,7 +1971,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                       <div className="flex-shrink-0">
                         <Circle className="w-6 h-6 text-gray-300" />
                       </div>
-                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-pink/30 text-muted-foreground border-[#F5E6E8]">
+                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-pink/30 text-muted-foreground border-soft-pink">
                         <div className="flex items-center gap-3">
                           <DoorOpen className="w-5 h-5" />
                           <div>
@@ -2000,7 +2000,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                       <div className="flex-shrink-0">
                         <Circle className="w-6 h-6 text-gray-300" />
                       </div>
-                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-green/30 text-muted-foreground border-[#E8F3E8]">
+                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-green/30 text-muted-foreground border-soft-green">
                         <div className="flex items-center gap-3">
                           <ClipboardCheck className="w-5 h-5" />
                           <div>
@@ -2029,7 +2029,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                       <div className="flex-shrink-0">
                         <Circle className="w-6 h-6 text-gray-300" />
                       </div>
-                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-green/30 text-muted-foreground border-[#E8F3E8]">
+                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-green/30 text-muted-foreground border-soft-green">
                         <div className="flex items-center gap-3">
                           <Store className="w-5 h-5" />
                           <div>
@@ -2064,7 +2064,7 @@ export default function MarketDetailPage({ params }: PageProps) {
                     <div className="flex-shrink-0">
                       <Circle className="w-6 h-6 text-gray-300" />
                     </div>
-                    <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-yellow/30 text-muted-foreground border-[#FFF8E7]">
+                    <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-yellow/30 text-muted-foreground border-soft-yellow">
                       <div className="flex items-center gap-3">
                         <Moon className="w-5 h-5" />
                         <div>

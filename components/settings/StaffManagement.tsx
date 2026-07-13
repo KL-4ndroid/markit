@@ -301,7 +301,7 @@ export function StaffManagement() {
       <div className="p-6">
 
         {/* 說明區塊 */}
-        <div className="bg-gradient-to-br from-[#E8F0F8] to-[#E8F3E8] rounded-xl p-4 mb-4">
+        <div className="bg-gradient-to-br from-cat-clothing to-soft-green rounded-xl p-4 mb-4">
           <div className="flex items-start gap-2">
             <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
@@ -605,7 +605,7 @@ export function StaffManagement() {
                       <label className="block text-sm font-medium text-foreground mb-2">
                         員工權限
                       </label>
-                      <div className="p-4 rounded-xl border border-primary/20 bg-[#E8F0F8]">
+                      <div className="p-4 rounded-xl border border-primary/20 bg-cat-clothing">
                         <div className="flex items-center gap-2 mb-2">
                           <Eye className="w-5 h-5 text-primary" />
                           <span className="text-sm font-medium text-foreground">固定權限</span>
@@ -695,7 +695,7 @@ export function StaffManagement() {
 
                   <div className="space-y-4">
                     {/* 影響說明 */}
-                    <div className="bg-[#E8F0F8] rounded-xl p-3">
+                    <div className="bg-cat-clothing rounded-xl p-3">
                       <div className="flex items-start gap-2">
                         <AlertCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                         <p className="text-xs text-muted-foreground">

@@ -132,10 +132,10 @@ export default function ProductDetailPage({ params }: PageProps) {
       handmade: { bg: 'bg-soft-pink', emoji: '🖐️', text: '手作' },
       food: { bg: 'bg-soft-yellow', emoji: '🍰', text: '食品' },
       accessory: { bg: 'bg-soft-green', emoji: '💎', text: '飾品' },
-      clothing: { bg: 'bg-[#E8F0F8]', emoji: '👕', text: '服飾' },
-      art: { bg: 'bg-[#F8E8F0]', emoji: '🎨', text: '藝術品' },
+      clothing: { bg: 'bg-cat-clothing', emoji: '👕', text: '服飾' },
+      art: { bg: 'bg-cat-art', emoji: '🎨', text: '藝術品' },
       stationery: { bg: 'bg-[#FFF0E8]', emoji: '📚', text: '文具' },
-      other: { bg: 'bg-[#F0F0F0]', emoji: '📦', text: '其他' },
+      other: { bg: 'bg-cat-other', emoji: '📦', text: '其他' },
     };
     return styles[category] || styles.other;
   };

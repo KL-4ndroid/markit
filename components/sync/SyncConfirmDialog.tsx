@@ -181,7 +181,7 @@ export function SyncConfirmDialog({
                 <button
                   onClick={onClose}
                   disabled={isProcessing}
-                  className="w-full py-3 rounded-xl bg-[#F5F5F0] text-muted-foreground hover:bg-[#ECECEC] transition-colors disabled:opacity-50"
+                  className="w-full py-3 rounded-xl bg-neutral-alt text-muted-foreground hover:bg-[#ECECEC] transition-colors disabled:opacity-50"
                 >
                   稍後決定
                 </button>

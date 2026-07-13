@@ -293,7 +293,7 @@ export function StaffInvitationDialog() {
                 </div>
 
                 {/* 建議 */}
-                <div className="bg-[#E8F0F8] rounded-2xl p-4 mb-6">
+                <div className="bg-cat-clothing rounded-2xl p-4 mb-6">
                   <p className="text-sm font-medium text-foreground mb-2">
                     💡 建議
                   </p>

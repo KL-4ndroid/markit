@@ -455,7 +455,7 @@ export default function SettingsPage() {
               </>
             )}
 
-            <div className="mt-4 bg-gradient-to-br from-[#E8F0F8] to-[#FFF8E7] rounded-xl p-4">
+            <div className="mt-4 bg-gradient-to-br from-cat-clothing to-soft-yellow rounded-xl p-4">
               <h3 className="text-sm font-medium text-foreground mb-2">
                 💡 使用說明
               </h3>
@@ -547,7 +547,7 @@ export default function SettingsPage() {
                   </h3>
                 </div>
                 
-                <div className="bg-[#E8F0F8] rounded-xl p-4 mb-3">
+                <div className="bg-cat-clothing rounded-xl p-4 mb-3">
                   <p className="text-sm text-foreground mb-2 font-medium">
                     📱 本地資料（IndexedDB）
                   </p>
@@ -626,7 +626,7 @@ export default function SettingsPage() {
               </div>
 
               {/* 差異對比表 */}
-              <div className="mt-6 bg-gradient-to-br from-[#E8F0F8] to-[#FFF8E7] rounded-xl p-4">
+              <div className="mt-6 bg-gradient-to-br from-cat-clothing to-soft-yellow rounded-xl p-4">
                 <p className="text-sm font-medium text-foreground mb-3">
                   📊 功能對比
                 </p>

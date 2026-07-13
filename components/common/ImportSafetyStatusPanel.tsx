@@ -81,7 +81,7 @@ export function ImportSafetyStatusPanel() {
   const canDownload = !!status?.hasLocalBackupContent;
 
   return (
-    <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm">
+    <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <div
@@ -103,7 +103,7 @@ export function ImportSafetyStatusPanel() {
           <button
             type="button"
             onClick={refresh}
-            className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
           >
             <RefreshCw size={16} />
             Refresh

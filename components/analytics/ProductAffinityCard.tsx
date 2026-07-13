@@ -97,7 +97,7 @@ export function ProductAffinityCard({ pairs, isLoading }: ProductAffinityCardPro
         {topPairs.map((pair, index) => (
           <div
             key={`${pair.productA}-${pair.productB}`}
-            className="bg-gradient-to-r from-[#E8F3E8] to-[#FFF8E7] rounded-xl p-4"
+            className="bg-gradient-to-r from-soft-green to-soft-yellow rounded-xl p-4"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">

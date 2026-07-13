@@ -144,7 +144,7 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
   // 支付方式選項
   const paymentMethods: { value: PaymentMethod; label: string; icon: any; color: string }[] = [
     { value: 'cash', label: '現金', icon: Banknote, color: 'bg-soft-green' },
-    { value: 'mobile', label: '行動支付', icon: Smartphone, color: 'bg-[#E8F0F8]' },
+    { value: 'mobile', label: '行動支付', icon: Smartphone, color: 'bg-cat-clothing' },
     { value: 'card', label: '信用卡', icon: CreditCard, color: 'bg-soft-pink' },
   ];
 
@@ -154,10 +154,10 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
       handmade: { bg: 'bg-soft-pink', emoji: '🧵' },
       food: { bg: 'bg-soft-yellow', emoji: '🍰' },
       accessory: { bg: 'bg-soft-green', emoji: '💎' },
-      clothing: { bg: 'bg-[#E8F0F8]', emoji: '👕' },
-      art: { bg: 'bg-[#F8E8F0]', emoji: '🎨' },
+      clothing: { bg: 'bg-cat-clothing', emoji: '👕' },
+      art: { bg: 'bg-cat-art', emoji: '🎨' },
       stationery: { bg: 'bg-[#FFF0E8]', emoji: '📚' },
-      other: { bg: 'bg-[#F0F0F0]', emoji: '📦' },
+      other: { bg: 'bg-cat-other', emoji: '📦' },
     };
     return styles[category] || styles.other;
   };
@@ -173,7 +173,7 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
       <div className="fixed inset-0 z-[1000] flex items-end sm:items-center sm:justify-center pointer-events-none">
         <div className="bg-background w-full h-[90vh] sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up pointer-events-auto">
           {/* Header */}
-          <div className="bg-gradient-to-br from-[#E8F3E8] to-primary px-6 py-6 flex items-center justify-between">
+          <div className="bg-gradient-to-br from-soft-green to-primary px-6 py-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <ShoppingCart className="w-6 h-6 text-white" />
               <h2 className="text-xl font-medium text-white">購物車</h2>
@@ -321,7 +321,7 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
             <button
               onClick={handleCheckout}
               disabled={cart.size === 0 || isProcessing}
-              className="w-full bg-gradient-to-r from-[#E8F3E8] to-primary text-white px-6 py-4 rounded-2xl hover:shadow-lg transition-all font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-soft-green to-primary text-white px-6 py-4 rounded-2xl hover:shadow-lg transition-all font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isProcessing ? '處理中...' : `完成結帳 ${totalItems > 0 ? `(${totalItems} 件)` : ''}`}
             </button>

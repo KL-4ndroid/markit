@@ -157,7 +157,7 @@ export function PWAInstallButton() {
               </div>
             </div>
 
-            <div className="bg-[#E8F0F8] rounded-xl p-4 mb-4">
+            <div className="bg-cat-clothing rounded-xl p-4 mb-4">
               <p className="text-xs text-muted-foreground">
                 💡 安裝後，您可以像使用一般 App 一樣從主畫面啟動 Féria，享受更流暢的體驗！
               </p>

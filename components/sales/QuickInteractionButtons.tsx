@@ -190,7 +190,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideP
           <button
             key={num}
             onClick={() => handleNumberClick(num)}
-            className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+            className="bg-neutral-alt hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
           >
             {num}
           </button>
@@ -201,7 +201,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideP
           <button
             key={num}
             onClick={() => handleNumberClick(num)}
-            className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+            className="bg-neutral-alt hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
           >
             {num}
           </button>
@@ -212,7 +212,7 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideP
           <button
             key={num}
             onClick={() => handleNumberClick(num)}
-            className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+            className="bg-neutral-alt hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
           >
             {num}
           </button>
@@ -226,13 +226,13 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideP
               return prev + '00';
             });
           }}
-          className="bg-[#E8F0F8] hover:bg-[#D8E0E8] active:scale-95 text-primary text-lg font-bold py-4 rounded-xl transition-all shadow-sm"
+          className="bg-cat-clothing hover:bg-[#D8E0E8] active:scale-95 text-primary text-lg font-bold py-4 rounded-xl transition-all shadow-sm"
         >
           00
         </button>
         <button
           onClick={() => handleNumberClick(0)}
-          className="bg-[#F5F5F0] hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
+          className="bg-neutral-alt hover:bg-[#ECECEC] active:scale-95 text-foreground text-xl font-medium py-4 rounded-xl transition-all shadow-sm"
         >
           0
         </button>

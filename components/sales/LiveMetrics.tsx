@@ -30,7 +30,7 @@ export function LiveMetrics({ marketId }: LiveMetricsProps) {
 
       <div className="grid grid-cols-2 gap-3">
         {/* 成交金額 */}
-        <div className="bg-gradient-to-br from-[#E8F3E8] to-primary/10 rounded-2xl p-4">
+        <div className="bg-gradient-to-br from-soft-green to-primary/10 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="w-4 h-4 text-primary" />
             <span className="text-xs text-muted-foreground">成交金額</span>
@@ -44,7 +44,7 @@ export function LiveMetrics({ marketId }: LiveMetricsProps) {
         </div>
 
         {/* 客單價 */}
-        <div className="bg-gradient-to-br from-[#FFF8E7] to-secondary/10 rounded-2xl p-4">
+        <div className="bg-gradient-to-br from-soft-yellow to-secondary/10 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-4 h-4 text-secondary" />
             <span className="text-xs text-muted-foreground">客單價</span>
@@ -58,7 +58,7 @@ export function LiveMetrics({ marketId }: LiveMetricsProps) {
         </div>
 
         {/* 互動次數 */}
-        <div className="bg-gradient-to-br from-[#F8E8F0] to-[#F8E8F0]/50 rounded-2xl p-4">
+        <div className="bg-gradient-to-br from-cat-art to-cat-art/50 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Users className="w-4 h-4 text-foreground" />
             <span className="text-xs text-muted-foreground">互動次數</span>
@@ -72,7 +72,7 @@ export function LiveMetrics({ marketId }: LiveMetricsProps) {
         </div>
 
         {/* 轉換率 */}
-        <div className="bg-gradient-to-br from-[#E8F0F8] to-[#E8F0F8]/50 rounded-2xl p-4">
+        <div className="bg-gradient-to-br from-cat-clothing to-cat-clothing/50 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Target className="w-4 h-4 text-foreground" />
             <span className="text-xs text-muted-foreground">轉換率</span>

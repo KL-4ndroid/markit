@@ -233,7 +233,7 @@ export function InitialSyncDialog() {
 
                   {/* 提示文字 */}
                   {status === SyncStatus.SYNCING && (
-                    <div className="bg-[#E8F0F8] rounded-xl p-4 w-full">
+                    <div className="bg-cat-clothing rounded-xl p-4 w-full">
                       <p className="text-xs text-muted-foreground text-center">
                         {downloadProgress?.phase === 'snapshot' 
                           ? '正在快速載入數據快照...' 

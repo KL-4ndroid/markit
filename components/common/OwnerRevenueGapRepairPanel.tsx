@@ -152,7 +152,7 @@ export function OwnerRevenueGapRepairPanel() {
   const hasRepairs = previewResult && previewResult.repaired.length > 0;
 
   return (
-    <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm">
+    <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm">
       <div className="flex flex-col gap-3">
         <div className="flex items-start gap-3">
           <div
@@ -171,7 +171,7 @@ export function OwnerRevenueGapRepairPanel() {
         </div>
 
         {hasPreview && previewResult && (
-          <div className="space-y-2 rounded-md border border-[#E8E3D8] bg-background p-3 text-sm">
+          <div className="space-y-2 rounded-md border border-neutral-stripe bg-background p-3 text-sm">
             {previewResult.repaired.length > 0 && (
               <div>
                 <p className="mb-1 font-medium text-[#4D7F87]">可修復 ({previewResult.repaired.length})</p>
@@ -214,7 +214,7 @@ export function OwnerRevenueGapRepairPanel() {
               type="button"
               onClick={handleDryRun}
               disabled={isBlocked}
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE] disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE] disabled:opacity-50"
             >
               <Eye size={16} />
               預覽修復範圍
@@ -240,7 +240,7 @@ export function OwnerRevenueGapRepairPanel() {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
               >
                 取消
               </button>
@@ -268,7 +268,7 @@ function BlockedPanel({
   danger?: boolean;
 }) {
   return (
-    <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm opacity-70">
+    <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm opacity-70">
       <div className="flex items-start gap-3">
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
           danger ? 'bg-soft-pink text-[#B85C5C]' : 'bg-[#F0ECE4] text-muted-foreground'
@@ -292,7 +292,7 @@ function BusyButton({ label, filled = false }: { label: string; filled?: boolean
       className={`inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-medium opacity-50 ${
         filled
           ? 'bg-secondary text-white'
-          : 'border border-[#D8D0C3] text-muted-foreground'
+          : 'border border-neutral-stripe-dark text-muted-foreground'
       }`}
     >
       <RefreshCw size={16} className="animate-spin" />

@@ -329,7 +329,7 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
                 <button
                   onClick={() => handlePayment('mobile')}
                   disabled={isProcessing}
-                  className="bg-[#E8F0F8] hover:bg-[#D8E0E8] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-cat-clothing hover:bg-[#D8E0E8] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   📱 電子支付
                 </button>
@@ -343,7 +343,7 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
                 <button
                   onClick={() => handlePayment('other')}
                   disabled={isProcessing}
-                  className="bg-[#F8E8F0] hover:bg-[#E8D8E0] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-cat-art hover:bg-[#E8D8E0] active:scale-95 text-foreground py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   💳 其他
                 </button>

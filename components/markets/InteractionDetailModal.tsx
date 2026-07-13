@@ -134,7 +134,7 @@ export function InteractionDetailModal({
                       {events.map((event, index) => (
                         <div
                           key={event.id || index}
-                          className="flex items-center gap-3 bg-background rounded-lg p-3 hover:bg-[#F5F5F0] transition-colors"
+                          className="flex items-center gap-3 bg-background rounded-lg p-3 hover:bg-neutral-alt transition-colors"
                         >
                           <Clock className="w-4 h-4 text-primary flex-shrink-0" />
                           <div className="flex-1">

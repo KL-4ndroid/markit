@@ -47,6 +47,14 @@
   --brand-cat-stationery: 255 240 232;   /* #FFF0E8 柔橘（文具） */
   --brand-cat-other: 240 240 240;        /* #F0F0F0 淺灰（其他） */
 
+  /* === 段階二新增：灰階替換色（從既有 hex 提煉，2026-07-13） === */
+  /* 高頻使用但未列入 VI 色票的替換方案 */
+  --brand-neutral-stripe: 232 227 216;      /* #E8E3D8 暖灰（表格交替列） */
+  --brand-neutral-stripe-dark: 216 208 195;   /* #D8D0C3 交替列深色 */
+  --brand-neutral-alt: 245 245 240;           /* #F5F5F0 近白灰（卡片替換背景） */
+  --brand-neutral-alt-warm: 247 245 239;      /* #F7F5EF 暖米（替換背景） */
+  --brand-accent-green: 49 95 67;             /* #315F43 深綠強調 */
+
   /* 圓角系統 */
   --radius: 1.25rem;
   --radius-sm: 0.75rem;

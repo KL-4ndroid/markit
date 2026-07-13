@@ -23,7 +23,7 @@ export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScore
     'A': 'bg-gradient-to-r from-primary to-[#5A8A91] text-white',
     'B': 'bg-gradient-to-r from-secondary to-[#C89563] text-white',
     'C': 'bg-gradient-to-r from-[#E8E8E8] to-[#D0D0D0] text-foreground',
-    'D': 'bg-gradient-to-r from-[#F5E6E8] to-soft-pink/80 text-muted-foreground',
+    'D': 'bg-gradient-to-r from-soft-pink to-soft-pink/80 text-muted-foreground',
   };
 
   // 評級文字
@@ -144,7 +144,7 @@ export function MarketHealthScoreCard({ market, score, rank }: MarketHealthScore
         </div>
 
         {/* 客單價 */}
-        <div className="bg-[#E8F0F8] rounded-xl p-3">
+        <div className="bg-cat-clothing rounded-xl p-3">
           <p className="text-xs text-muted-foreground mb-1 inline-flex items-center gap-1">
             <CreditCard className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
             客單價

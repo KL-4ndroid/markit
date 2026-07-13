@@ -301,7 +301,7 @@ export function AddRevenueDialog({
                       value={revenue}
                       onChange={(e) => setRevenue(e.target.value)}
                       placeholder="請輸入收入金額"
-                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 pr-12 text-lg focus:border-primary focus:outline-none"
+                      className="w-full border-2 border-soft-green rounded-xl px-4 py-3 pr-12 text-lg focus:border-primary focus:outline-none"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                       元
@@ -320,7 +320,7 @@ export function AddRevenueDialog({
                       value={cost}
                       onChange={(e) => setCost(e.target.value)}
                       placeholder="請輸入成本金額"
-                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 pr-12 text-lg focus:border-primary focus:outline-none"
+                      className="w-full border-2 border-soft-green rounded-xl px-4 py-3 pr-12 text-lg focus:border-primary focus:outline-none"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                       元
@@ -349,7 +349,7 @@ export function AddRevenueDialog({
                       value={dealCount}
                       onChange={(e) => setDealCount(e.target.value)}
                       min="1"
-                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 pr-12 text-lg focus:border-primary focus:outline-none"
+                      className="w-full border-2 border-soft-green rounded-xl px-4 py-3 pr-12 text-lg focus:border-primary focus:outline-none"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                       筆
@@ -366,7 +366,7 @@ export function AddRevenueDialog({
                     value={simpleNotes}
                     onChange={(e) => setSimpleNotes(e.target.value)}
                     placeholder="輸入備註..."
-                    className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 resize-none focus:border-primary focus:outline-none"
+                    className="w-full border-2 border-soft-green rounded-xl px-4 py-3 resize-none focus:border-primary focus:outline-none"
                     rows={3}
                   />
                 </div>
@@ -392,7 +392,7 @@ export function AddRevenueDialog({
                       <button
                         key={product.id}
                         onClick={() => addToCart(product)}
-                        className="bg-[#F5F5F0] hover:bg-soft-green rounded-xl p-3 text-left transition-colors"
+                        className="bg-neutral-alt hover:bg-soft-green rounded-xl p-3 text-left transition-colors"
                       >
                         <div className="text-sm font-medium text-foreground mb-1">
                           {product.name}
@@ -413,7 +413,7 @@ export function AddRevenueDialog({
                       {cart.map((item) => (
                         <div
                           key={item.product.id}
-                          className="bg-white border-2 border-[#E8F3E8] rounded-xl p-4"
+                          className="bg-white border-2 border-soft-green rounded-xl p-4"
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="font-medium text-foreground">
@@ -434,7 +434,7 @@ export function AddRevenueDialog({
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => updateQuantity(item.product.id!, item.quantity - 1)}
-                                  className="w-8 h-8 rounded-lg bg-[#F5F5F0] hover:bg-soft-green flex items-center justify-center"
+                                  className="w-8 h-8 rounded-lg bg-neutral-alt hover:bg-soft-green flex items-center justify-center"
                                 >
                                   -
                                 </button>
@@ -442,11 +442,11 @@ export function AddRevenueDialog({
                                   type="number"
                                   value={item.quantity}
                                   onChange={(e) => updateQuantity(item.product.id!, parseInt(e.target.value) || 0)}
-                                  className="w-16 text-center border-2 border-[#E8F3E8] rounded-lg px-2 py-1"
+                                  className="w-16 text-center border-2 border-soft-green rounded-lg px-2 py-1"
                                 />
                                 <button
                                   onClick={() => updateQuantity(item.product.id!, item.quantity + 1)}
-                                  className="w-8 h-8 rounded-lg bg-[#F5F5F0] hover:bg-soft-green flex items-center justify-center"
+                                  className="w-8 h-8 rounded-lg bg-neutral-alt hover:bg-soft-green flex items-center justify-center"
                                 >
                                   +
                                 </button>
@@ -460,12 +460,12 @@ export function AddRevenueDialog({
                                 type="number"
                                 value={item.price}
                                 onChange={(e) => updatePrice(item.product.id!, parseFloat(e.target.value) || 0)}
-                                className="w-full border-2 border-[#E8F3E8] rounded-lg px-3 py-1"
+                                className="w-full border-2 border-soft-green rounded-lg px-3 py-1"
                               />
                             </div>
                           </div>
                           
-                          <div className="mt-3 pt-3 border-t border-[#E8F3E8] text-right">
+                          <div className="mt-3 pt-3 border-t border-soft-green text-right">
                             <span className="text-sm text-muted-foreground">小計：</span>
                             <span className="text-lg font-medium text-primary ml-2">
                               {formatCurrency(item.price * item.quantity)}
@@ -494,7 +494,7 @@ export function AddRevenueDialog({
                           className={`py-2 rounded-xl text-sm font-medium transition-colors ${
                             paymentMethod === method.value
                               ? 'bg-primary text-white'
-                              : 'bg-[#F5F5F0] text-muted-foreground hover:bg-soft-green'
+                              : 'bg-neutral-alt text-muted-foreground hover:bg-soft-green'
                           }`}
                         >
                           {method.label}
@@ -512,7 +512,7 @@ export function AddRevenueDialog({
                       value={fullNotes}
                       onChange={(e) => setFullNotes(e.target.value)}
                       placeholder="輸入備註..."
-                      className="w-full border-2 border-[#E8F3E8] rounded-xl px-4 py-3 resize-none focus:border-primary focus:outline-none"
+                      className="w-full border-2 border-soft-green rounded-xl px-4 py-3 resize-none focus:border-primary focus:outline-none"
                       rows={3}
                     />
                   </div>
@@ -532,7 +532,7 @@ export function AddRevenueDialog({
 
           {/* Footer */}
           {((mode === 'simple' && revenue) || (mode === 'full' && cart.length > 0)) && (
-            <div className="border-t border-[#E8F3E8] p-6">
+            <div className="border-t border-soft-green p-6">
               {mode === 'simple' ? (
                 <>
                   <div className="flex items-center justify-between mb-4">

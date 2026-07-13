@@ -53,6 +53,12 @@ const config: Config = {
         'cat-art': "rgb(var(--brand-cat-art) / <alpha-value>)",
         'cat-stationery': "rgb(var(--brand-cat-stationery) / <alpha-value>)",
         'cat-other': "rgb(var(--brand-cat-other) / <alpha-value>)",
+        // 段階二新增：灰階替換 + 深綠強調（2026-07-13）
+        'neutral-stripe': "rgb(var(--brand-neutral-stripe) / <alpha-value>)",
+        'neutral-stripe-dark': "rgb(var(--brand-neutral-stripe-dark) / <alpha-value>)",
+        'neutral-alt': "rgb(var(--brand-neutral-alt) / <alpha-value>)",
+        'neutral-alt-warm': "rgb(var(--brand-neutral-alt-warm) / <alpha-value>)",
+        'accent-green': "rgb(var(--brand-accent-green) / <alpha-value>)",
       },
       borderRadius: {
         'xl': '1rem',

@@ -103,7 +103,7 @@ export function SyncStatusIndicator() {
       console.log('[SyncStatusIndicator] 同步中:', { pendingCount, status });
       return {
         bg: 'bg-soft-green',
-        ring: 'ring-[#E8F3E8]',
+        ring: 'ring-soft-green',
         animate: 'animate-pulse',
       };
     }
@@ -123,7 +123,7 @@ export function SyncStatusIndicator() {
       console.log('[SyncStatusIndicator] 錯誤模式:', { error });
       return {
         bg: 'bg-soft-pink',
-        ring: 'ring-[#F5E6E8]',
+        ring: 'ring-soft-pink',
         animate: '',
       };
     }
@@ -131,7 +131,7 @@ export function SyncStatusIndicator() {
     // 成功或閒置：柔綠色靜態
     return {
       bg: 'bg-soft-green',
-      ring: 'ring-[#E8F3E8]',
+      ring: 'ring-soft-green',
       animate: '',
     };
   };
@@ -229,7 +229,7 @@ export function SyncStatusIndicator() {
                       {uploadProgress.current} / {uploadProgress.total}
                     </span>
                   </div>
-                  <div className="h-2 bg-[#F0F0F0] rounded-full overflow-hidden">
+                  <div className="h-2 bg-cat-other rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300"
                       style={{
@@ -256,7 +256,7 @@ export function SyncStatusIndicator() {
                       {downloadProgress.current} / {downloadProgress.total}
                     </span>
                   </div>
-                  <div className="h-2 bg-[#F0F0F0] rounded-full overflow-hidden">
+                  <div className="h-2 bg-cat-other rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-secondary to-primary transition-all duration-300"
                       style={{

@@ -22,7 +22,7 @@ function ProgressBar({ progress }: { progress: CanonicalizationProgress | null }
         <span>{progress.message}</span>
         <span>{percentage}%</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[#E8F0F8]">
+      <div className="h-2 overflow-hidden rounded-full bg-cat-clothing">
         <div
           className="h-full rounded-full bg-primary transition-all"
           style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}

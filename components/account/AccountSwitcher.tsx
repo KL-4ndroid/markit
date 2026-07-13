@@ -198,7 +198,7 @@ export function AccountSwitcher({ isOpen, onClose }: AccountSwitcherProps) {
                   </div>
 
                   {/* 說明 */}
-                  <div className="bg-[#E8F0F8] rounded-xl p-3 mb-4">
+                  <div className="bg-cat-clothing rounded-xl p-3 mb-4">
                     <div className="flex items-start gap-2">
                       <AlertCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                       <div className="text-xs text-muted-foreground">

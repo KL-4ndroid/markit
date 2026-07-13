@@ -268,7 +268,7 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess, mode = 'o
                 )}
                 
                 {formData.unlimitedStock && (
-                  <div className="px-4 py-3 rounded-2xl border border-primary/20 bg-[#F0F0F0] text-muted-foreground text-center">
+                  <div className="px-4 py-3 rounded-2xl border border-primary/20 bg-cat-other text-muted-foreground text-center">
                     ∞ 不限庫存
                   </div>
                 )}

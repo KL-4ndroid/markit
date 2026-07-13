@@ -185,7 +185,7 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, canAddRev
                   ? 'border-primary bg-primary/5'
                   : isFuture
                   ? ''
-                  : 'border-[#E8F3E8] bg-white'
+                  : 'border-soft-green bg-white'
               }`}
             >
               <div className="flex items-center justify-between mb-3">

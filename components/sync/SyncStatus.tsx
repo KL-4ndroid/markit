@@ -85,9 +85,9 @@ export function SyncStatus() {
       case SyncStatusEnum.ERROR:
         return 'bg-soft-pink';
       case SyncStatusEnum.OFFLINE:
-        return 'bg-[#F0F0F0]';
+        return 'bg-cat-other';
       default:
-        return 'bg-[#F0F0F0]';
+        return 'bg-cat-other';
     }
   };
 

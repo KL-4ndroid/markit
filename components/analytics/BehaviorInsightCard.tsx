@@ -15,7 +15,7 @@ export function BehaviorInsightCard({ insights }: BehaviorInsightCardProps) {
   }
 
   return (
-    <div className="bg-gradient-to-br from-[#FFF8E7] to-[#FFF0D4] rounded-[1.5rem] p-6 shadow-lg shadow-secondary/10">
+    <div className="bg-gradient-to-br from-soft-yellow to-[#FFF0D4] rounded-[1.5rem] p-6 shadow-lg shadow-secondary/10">
       <div className="flex items-start gap-3">
         <div className="p-2 bg-white/60 rounded-xl">
           <Lightbulb className="w-5 h-5 text-secondary" />

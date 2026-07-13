@@ -132,7 +132,7 @@ export function LocalProjectionRepairPanel() {
   const hasRepairs = !!previewResult && previewResult.repaired.length > 0;
 
   return (
-    <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm">
+    <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm">
       <div className="flex flex-col gap-3">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFF4E3] text-[#B8792F]">
@@ -147,7 +147,7 @@ export function LocalProjectionRepairPanel() {
         </div>
 
         {hasPreview && previewResult && (
-          <div className="space-y-3 rounded-md border border-[#E8E3D8] bg-background p-3 text-sm">
+          <div className="space-y-3 rounded-md border border-neutral-stripe bg-background p-3 text-sm">
             {previewResult.repaired.map(item => (
               <div key={item.marketId} className="space-y-1">
                 <p className="font-medium text-foreground">{item.marketId}</p>
@@ -185,7 +185,7 @@ export function LocalProjectionRepairPanel() {
             <button
               type="button"
               onClick={handleDryRun}
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
             >
               <Eye size={16} />
               預覽本機修復
@@ -196,7 +196,7 @@ export function LocalProjectionRepairPanel() {
             <button
               type="button"
               disabled
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-muted-foreground opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-muted-foreground opacity-50"
             >
               <RefreshCw size={16} className="animate-spin" />
               {state === 'checking' ? '掃描中...' : '修復中...'}
@@ -218,7 +218,7 @@ export function LocalProjectionRepairPanel() {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE]"
               >
                 取消
               </button>
@@ -242,7 +242,7 @@ function BlockedPanel({
   danger?: boolean;
 }) {
   return (
-    <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm opacity-70">
+    <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm opacity-70">
       <div className="flex items-start gap-3">
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
           danger ? 'bg-soft-pink text-[#B85C5C]' : 'bg-[#F0ECE4] text-muted-foreground'

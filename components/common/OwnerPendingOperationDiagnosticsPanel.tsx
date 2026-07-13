@@ -28,7 +28,7 @@ const STATE_STYLES: Record<PendingOperationDiagnosticsStateGroup, string> = {
   healthy: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   needs_attention: 'border-amber-200 bg-amber-50 text-amber-700',
   in_progress: 'border-sky-200 bg-sky-50 text-sky-700',
-  unknown: 'border-[#E8E3D8] bg-[#F5F3EE] text-muted-foreground',
+  unknown: 'border-neutral-stripe bg-[#F5F3EE] text-muted-foreground',
 };
 
 export function OwnerPendingOperationDiagnosticsPanel() {
@@ -176,7 +176,7 @@ export function OwnerPendingOperationDiagnosticsPanel() {
   const summary = summarizeRows(rows);
 
   return (
-    <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm">
+    <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
@@ -197,7 +197,7 @@ export function OwnerPendingOperationDiagnosticsPanel() {
             type="button"
             onClick={handleLoad}
             disabled={isBlocked || isLoading}
-            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-[#D8D0C3] px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE] disabled:opacity-50"
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-[#F5F3EE] disabled:opacity-50"
           >
             {isLoading ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />}
             {isLoading ? '讀取中...' : '讀取 diagnostics'}
@@ -363,7 +363,7 @@ function BlockedPanel({
   danger?: boolean;
 }) {
   return (
-    <section className="w-full border border-[#E8E3D8] bg-white px-4 py-4 shadow-sm opacity-70">
+    <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm opacity-70">
       <div className="flex items-start gap-3">
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
