@@ -8,6 +8,7 @@ tsx tests/detail-service.test.ts
 tsx tests/detail-fallback.test.ts
 tsx tests/event-sync-service.test.ts
 tsx tests/staff-event-preflight.test.ts
+tsx tests/staff-relationship-id-fallback.test.ts
 tsx tests/sync-cursor-service.test.ts
 tsx tests/synced-event-factory.test.ts
 tsx tests/sync-permission-pause-service.test.ts

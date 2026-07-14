@@ -32,6 +32,27 @@ type StaffRelationshipWithRelationshipId = StaffRelationship & {
   relationship_id?: string;
 };
 
+export type StaffRelationshipIdentityRow = Pick<
+  StaffRelationship,
+  'id' | 'staff_id' | 'status'
+>;
+
+export function hydrateMissingStaffRelationshipIds(
+  staffList: StaffRelationshipWithRelationshipId[],
+  identityRows: readonly StaffRelationshipIdentityRow[]
+): StaffRelationshipWithRelationshipId[] {
+  const identityByStaffAndStatus = new Map(
+    identityRows.map(row => [`${row.staff_id}:${row.status}`, row.id])
+  );
+
+  return staffList.map(staff => ({
+    ...staff,
+    relationship_id:
+      staff.relationship_id ??
+      identityByStaffAndStatus.get(`${staff.staff_id}:${staff.status}`),
+  }));
+}
+
 /**
  * 獲取我的員工列表（作為老闆）
  *
@@ -63,7 +84,35 @@ export async function getMyStaff(): Promise<StaffRelationshipWithRelationshipId[
  * @returns 員工列表（UI 顯示格式）
  */
 export async function getMyStaffMembers(): Promise<StaffMember[]> {
-  const staffList = await getMyStaff();
+  let staffList = await getMyStaff();
+
+  const missingRelationshipStaffIds = Array.from(new Set(
+    staffList
+      .filter(staff => !staff.relationship_id)
+      .map(staff => staff.staff_id)
+      .filter(Boolean)
+  ));
+
+  if (missingRelationshipStaffIds.length > 0) {
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+
+    if (!authError && authData.user) {
+      const { data: identityRows, error: identityError } = await supabase
+        .from('staff_relationships')
+        .select('id, staff_id, status')
+        .eq('owner_id', authData.user.id)
+        .in('staff_id', missingRelationshipStaffIds);
+
+      if (identityError) {
+        console.warn('補查員工關係識別碼失敗:', identityError);
+      } else {
+        staffList = hydrateMissingStaffRelationshipIds(
+          staffList,
+          (identityRows || []) as StaffRelationshipIdentityRow[]
+        );
+      }
+    }
+  }
 
   return staffList
     .filter(s => s.status !== 'revoked')
@@ -74,7 +123,7 @@ export async function getMyStaffMembers(): Promise<StaffMember[]> {
     permissions: s.permissions || { can_view: true, can_edit: false },
     role: s.role,
     relationship_id: s.relationship_id,
-    joined_at: s.created_at || new Date().toISOString(),
+    joined_at: s.accepted_at || s.invited_at || s.created_at || new Date().toISOString(),
   }));
 }
 
