@@ -296,6 +296,8 @@ Primary files:
 
 Goal: Prove staff local capture works in a real browser without cloud writes.
 
+Execution status: **Blocked pending manual browser execution (2026-07-14).** See `docs/SALES_PHOTO_EVIDENCE_SMOKE_RESULT_LOCAL_2026_07_14.md`.
+
 Tasks:
 
 - Start local dev server with disposable data.
