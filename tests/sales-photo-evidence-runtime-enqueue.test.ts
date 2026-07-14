@@ -68,7 +68,7 @@ function makeDeps(options: {
 
 console.log('\n=== Sales photo evidence runtime enqueue ===');
 
-runTest('runtime gate enables local, requires explicit staging opt-in, and locks production', () => {
+runTest('runtime gate enables local and requires explicit staging or production opt-in', () => {
   assert.match(flagSource, /salesPhotoEvidenceRuntimeEnqueue/);
   assert.deepEqual(resolveSalesPhotoEvidenceRuntimeGateStatus({ nodeEnv: 'development' }), {
     enabled: true,
@@ -93,6 +93,21 @@ runTest('runtime gate enables local, requires explicit staging opt-in, and locks
     environment: 'production',
     reason: 'production_locked',
   });
+  assert.deepEqual(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'production',
+    explicitSetting: '1',
+    allowProductionSetting: '1',
+  }), {
+    enabled: true,
+    environment: 'production',
+    reason: 'production_enabled',
+  });
+  assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'production',
+    allowProductionSetting: '1',
+  }).enabled, false);
   assert.doesNotMatch(flagSource, /localStorage|sessionStorage|remoteConfig|fetch\(/);
 });
 

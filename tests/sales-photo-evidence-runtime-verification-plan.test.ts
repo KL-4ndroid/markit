@@ -43,7 +43,7 @@ runTest('recommended future verification remains local-only and explicitly appro
   assert.match(planSource, /must not call Supabase, R2, signed URL, upload, drain, or queue cleanup/i);
 });
 
-runTest('runtime gate keeps production disabled with no mutable control plane', () => {
+runTest('runtime gate requires dual production opt-in with no mutable control plane', () => {
   assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({ nodeEnv: 'development' }).enabled, true);
   assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
     nodeEnv: 'production',
@@ -55,6 +55,12 @@ runTest('runtime gate keeps production disabled with no mutable control plane', 
     publicAppEnv: 'production',
     explicitSetting: '1',
   }).enabled, false);
+  assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'production',
+    explicitSetting: '1',
+    allowProductionSetting: '1',
+  }).enabled, true);
   assert.doesNotMatch(flagSource, /setSalesPhotoEvidence|enableSalesPhotoEvidence|disableSalesPhotoEvidence|controlled|fixture/i);
   assert.doesNotMatch(flagSource, /localStorage|sessionStorage|remoteConfig|fetch\(/);
 });

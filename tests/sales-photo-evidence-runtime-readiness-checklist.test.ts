@@ -12,7 +12,7 @@ function readProjectFile(path: string): string {
   return readFileSync(join(projectRoot, path), 'utf8');
 }
 
-const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
+const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_REVISED_EXECUTION_PLAN_2026_07_14.md');
 const flagSource = readProjectFile('lib/sales/photo-evidence-runtime-flags.ts');
 const runtimeSource = readProjectFile('lib/sales/photo-evidence-runtime-enqueue.ts');
 const addRevenueDialogSource = readProjectFile('components/markets/AddRevenueDialog.tsx');
@@ -27,33 +27,34 @@ function runTest(name: string, fn: TestFn): void {
 console.log('\n=== Sales photo evidence runtime readiness checklist ===');
 
 runTest('readiness checklist records all prerequisites before production enqueue', () => {
-  assert.match(planSource, /Slice 5C-3I Status/);
-  assert.match(planSource, /production enqueue readiness checklist/i);
-  assert.match(planSource, /runtime flag remains code-only and default off/i);
-  assert.match(planSource, /pending-write guards include local pending sales photo evidence/i);
-  assert.match(planSource, /local-only fake-indexeddb runtime fixture has passed/i);
-  assert.match(planSource, /recovery\/cleanup semantics and diagnostics display are available/i);
-  assert.match(planSource, /manual verification scope must be explicitly approved/i);
+  assert.match(planSource, /Production runtime enqueue requires all three public production values/);
+  assert.match(planSource, /SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ALLOW_PRODUCTION=1/);
+  assert.match(planSource, /SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ALLOW_PRODUCTION=1/);
+  assert.match(planSource, /SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ALLOW_PRODUCTION=1/);
+  assert.match(planSource, /Rollback Plan/);
 });
 
-runTest('readiness checklist keeps production enablement blocked', () => {
-  assert.match(planSource, /Production runtime enqueue remains blocked/);
-  assert.match(planSource, /Do not enable the runtime flag/);
-  assert.match(planSource, /Do not add a queue recovery\/cleanup executor/);
-  assert.match(planSource, /Do not create Supabase evidence rows from production runtime/);
-  assert.match(planSource, /Next Phase Boundary After Slice 6B\/6C\/6D\/6E\/6F\/6G\/6H\/6I\/7A\/7B-0\/7B-1\/7B-2\/7B-3A\/7B-3B\/7B-3C\/7B-3D\/7B-3E\/7B-4A\/7B-4B\/7B-4C\/7B-4D\/7B-4E\/9A\/9B\/9C\/9D\/9E\/9F/);
-  assert.match(planSource, /Recommended next step: implement `Slice 7B-4F: Local\/Staging Smoke Wiring` with explicit server env, disposable data, and no production enablement/);
-  assert.match(planSource, /Recommended next decision step: before any real R2 upload path, confirm local\/staging credentials and disposable smoke-test data/);
-  assert.match(planSource, /custom live camera stream/);
+runTest('readiness checklist keeps production behind independent client and server gates', () => {
+  assert.match(planSource, /NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ALLOW_PRODUCTION=1/);
+  assert.match(planSource, /Production test page remains unavailable/);
+  assert.match(planSource, /Turn off runtime enqueue/);
+  assert.match(planSource, /Keep existing local pending rows and binary payloads intact/);
 });
 
-runTest('runtime gate keeps production off and avoids mutable external control planes', () => {
+runTest('runtime gate defaults production off and requires explicit dual opt-in', () => {
   assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
     nodeEnv: 'production',
     publicAppEnv: 'production',
     explicitSetting: '1',
   }).enabled, false);
+  assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'production',
+    explicitSetting: '1',
+    allowProductionSetting: '1',
+  }).enabled, true);
   assert.match(flagSource, /production_locked/);
+  assert.match(flagSource, /production_enabled/);
   assert.doesNotMatch(flagSource, /localStorage|sessionStorage|remoteConfig|fetch\(|supabase/i);
 });
 
@@ -73,7 +74,7 @@ runTest('pending-write guard still blocks unfinished local evidence work', () =>
 
 runTest('readiness checklist is test-covered without adding runtime mutation wiring', () => {
   assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-runtime-readiness-checklist\.test\.ts/);
-  assert.doesNotMatch(planSource, /runtime enqueue enabled in production/i);
+  assert.doesNotMatch(runtimeSource, /isRuntimeEnqueueEnabled:\s*\(\)\s*=>\s*true/);
 });
 
 function main(): void {

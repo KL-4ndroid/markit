@@ -24,8 +24,9 @@ console.log('\n=== Sales photo evidence runtime enablement decision ===');
 
 runTest('revised plan records local staging and production runtime boundaries', () => {
   assert.match(planSource, /NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ENABLED=1/);
+  assert.match(planSource, /NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ALLOW_PRODUCTION=1/);
   assert.match(planSource, /NEXT_PUBLIC_APP_ENV=staging/);
-  assert.match(planSource, /Production remains locked off/);
+  assert.match(planSource, /Production runtime enqueue requires all three public production values/);
   assert.match(planSource, /debug\/sales-photo-evidence/);
 });
 
@@ -41,6 +42,12 @@ runTest('runtime gate is deterministic and free of mutable control planes', () =
     publicAppEnv: 'production',
     explicitSetting: '1',
   }).enabled, false);
+  assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'production',
+    explicitSetting: '1',
+    allowProductionSetting: '1',
+  }).enabled, true);
   assert.doesNotMatch(flagSource, /setSalesPhotoEvidence|enableSalesPhotoEvidence|disableSalesPhotoEvidence|controlled/i);
   assert.doesNotMatch(flagSource, /localStorage|sessionStorage|remoteConfig|fetch\(/);
 });
@@ -55,6 +62,7 @@ runTest('runtime tests cover injected behavior and environment policy', () => {
   assert.match(runtimeTestSource, /makeDeps\(\{ enabled: true/);
   assert.match(runtimeTestSource, /makeDeps\(\{ enabled: false/);
   assert.match(runtimeTestSource, /production_locked/);
+  assert.match(runtimeTestSource, /production_enabled/);
   assert.match(runtimeTestSource, /publicAppEnv: 'staging'/);
   assert.doesNotMatch(runtimeTestSource, /setSalesPhotoEvidence|controlledTest|testHarness/);
 });

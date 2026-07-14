@@ -3,13 +3,20 @@ export const SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_FLAG = 'salesPhotoEvidenceRunt
 export type SalesPhotoEvidenceRuntimeGateStatus = {
   enabled: boolean;
   environment: 'local' | 'staging' | 'production';
-  reason: 'local_default' | 'local_disabled' | 'staging_enabled' | 'staging_disabled' | 'production_locked';
+  reason:
+    | 'local_default'
+    | 'local_disabled'
+    | 'staging_enabled'
+    | 'staging_disabled'
+    | 'production_enabled'
+    | 'production_locked';
 };
 
 export type SalesPhotoEvidenceRuntimeGateInput = {
   nodeEnv?: string;
   publicAppEnv?: string;
   explicitSetting?: string;
+  allowProductionSetting?: string;
 };
 
 export function resolveSalesPhotoEvidenceRuntimeGateStatus(
@@ -34,10 +41,13 @@ export function resolveSalesPhotoEvidenceRuntimeGateStatus(
     };
   }
 
+  const productionEnabled =
+    explicitSetting === '1' && input.allowProductionSetting === '1';
+
   return {
-    enabled: false,
+    enabled: productionEnabled,
     environment: 'production',
-    reason: 'production_locked',
+    reason: productionEnabled ? 'production_enabled' : 'production_locked',
   };
 }
 
@@ -46,6 +56,8 @@ export function getSalesPhotoEvidenceRuntimeGateStatus(): SalesPhotoEvidenceRunt
     nodeEnv: process.env.NODE_ENV,
     publicAppEnv: process.env.NEXT_PUBLIC_APP_ENV,
     explicitSetting: process.env.NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ENABLED,
+    allowProductionSetting:
+      process.env.NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ALLOW_PRODUCTION,
   });
 }
 

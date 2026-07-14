@@ -1,7 +1,7 @@
 # Sales Photo Evidence Revised Execution Plan
 
 Date: 2026-07-14
-Status: Active implementation plan. Local/staging runtime wiring and test workbench were completed on 2026-07-14; manual browser and staging smoke remain required before production.
+Status: Active implementation plan. Local runtime verification was accepted on 2026-07-14, and production runtime enablement was explicitly approved with independent client and server environment gates. Production smoke and monitoring remain required after deployment.
 
 ## Executive Summary
 
@@ -15,7 +15,7 @@ The current plan is strong in engineering caution, but weak in operational clari
 4. The compressed local payload is stored safely.
 5. Staff can manually upload in local/staging first.
 6. Owner can review uploaded thumbnails and status from market detail.
-7. Production enablement happens only after staging smoke tests and explicit environment gates.
+7. Production enablement requires an explicit client double opt-in, independent server route allow flags, and a reversible deployment.
 
 ## Current State
 
@@ -44,10 +44,10 @@ Implemented or substantially implemented:
 
 Not yet complete for a production V1:
 
-- Production runtime enqueue is still intentionally off.
-- Real production R2 upload/read enablement is not approved.
-- Local browser smoke must be rerun because the earlier user-reported pass was invalidated by the later observation that no pending row was created.
-- Staging upload/read smoke has not yet recorded a final pass/fail result.
+- Production runtime enqueue is available only through the explicit double opt-in described in the rollout matrix.
+- Real production R2 upload/read remains independently controlled by route enable and production allow flags.
+- Local browser capture/upload verification was accepted by the owner on 2026-07-14.
+- The owner explicitly chose direct Production enablement instead of a Vercel Preview release; Production smoke must therefore use a tightly scoped real transaction and immediate rollback thresholds.
 - Owner/staff post-sale UX is implemented but still needs manual mobile visual verification.
 - Background upload and automatic retry are not implemented.
 - Queue recovery/cleanup executor is not implemented.
@@ -103,13 +103,13 @@ The following changes require a new reviewed decision record before implementati
 
 ### Good Stability Choices
 
-- Runtime enqueue defaults off.
+- Runtime enqueue defaults off in Production unless both the ordinary enqueue flag and the Production allow flag are explicitly enabled.
 - Production route enablement requires separate explicit environment gates.
 - Upload route keeps local payloads unless the server explicitly confirms safe deletion.
 - R2 adapter is server-only and lazy-loaded.
 - Metadata claim and upload finalization are separated by clear route ordering.
 - Signed/private image read does not expose public bucket URLs.
-- Tests enforce that production callers do not silently force the runtime on.
+- Tests enforce that production callers do not silently force the runtime on and that one Production flag alone is insufficient.
 
 ### Main Stability Risks
 
@@ -505,8 +505,8 @@ Blocking rule: any data loss, duplicate pending task, unauthorized image read, c
 | Default local | On unless explicitly set to `0` | Off | Off | Off | Off | Required sales create local tasks; no cloud mutation |
 | Local capture smoke | On | Off | Off | Off | Off | Staff can create and capture a local pending payload |
 | Staging upload smoke | Explicitly on | On | On | On | Off | Disposable staging enqueue/upload/read works |
-| Production pilot | Locked off | On | On | On | Explicitly on | Runtime enqueue requires a separate reviewed production design |
-| Production full V1 | Locked off | On | On | On | Explicitly on | Not available until the runtime production gate is redesigned and approved |
+| Production pilot | Explicit double opt-in | On | On | On | Explicitly on | Required sales create local tasks; manual capture/upload/read are available |
+| Production full V1 | Explicit double opt-in | On | On | On | Explicitly on | Same manual V1 path with rollback and monitoring retained |
 
 ### Exact Server Route Flags
 
@@ -518,8 +518,10 @@ Blocking rule: any data loss, duplicate pending task, unauthorized image read, c
 - Private image read production gate: `SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ALLOW_PRODUCTION=1`
 - Local runtime enqueue is on by default and can be disabled with `NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ENABLED=0`.
 - Staging runtime enqueue requires both `NEXT_PUBLIC_APP_ENV=staging` and `NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ENABLED=1`.
-- Production remains locked off even if the public enqueue variable is set.
+- Production runtime enqueue requires all three public production values: `NEXT_PUBLIC_APP_ENV=production`, `NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ENABLED=1`, and `NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ALLOW_PRODUCTION=1`.
+- Omitting either Production runtime value leaves enqueue locked off. Both values are public feature controls and must not contain credentials.
 - The Staging test page additionally requires `SALES_PHOTO_EVIDENCE_TEST_PAGE_ENABLED=1`; local development exposes `/debug/sales-photo-evidence` automatically.
+- Production test page remains unavailable; Production verification uses the normal owner/staff sales workflow.
 
 R2 credentials (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, and optional `R2_ENDPOINT`) are server-only and must never be placed in client-exposed environment variables, screenshots, or smoke result documents.
 
