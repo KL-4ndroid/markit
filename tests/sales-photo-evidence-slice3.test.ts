@@ -62,7 +62,7 @@ runTest('settings page exposes owner-only sales photo evidence default card', ()
   assert.match(settingsPageSource, /\{!isStaff && <SalesPhotoEvidenceSettingsCard \/>}/);
   assert.match(settingsCardSource, /loadDefaultSalesPhotoEvidenceRequired/);
   assert.match(settingsCardSource, /saveDefaultSalesPhotoEvidenceRequired/);
-  assert.match(settingsCardSource, /新市集預設要求照片證明/);
+  assert.match(settingsCardSource, /新市集預設需要成交照片/);
   assert.match(settingsCardSource, /只影響之後新增的市集，不會修改既有市集/);
 });
 
@@ -77,15 +77,15 @@ runTest('new markets inherit owner default through market_created payload', () =
 runTest('market detail exposes owner-only market-level toggle through market_updated', () => {
   const staffReturnIndex = marketDetailSource.indexOf('return <StaffMarketDetailView market={market} />');
   const toggleIndex = marketDetailSource.indexOf('handleToggleSalesPhotoEvidence');
-  const cardIndex = marketDetailSource.indexOf('銷售照片證明', staffReturnIndex);
+  const cardIndex = marketDetailSource.indexOf('成交照片紀錄', staffReturnIndex);
 
   assert.ok(staffReturnIndex > 0, 'staff route must return before owner UI');
   assert.ok(toggleIndex > 0, 'toggle handler must exist');
   assert.ok(cardIndex > staffReturnIndex, 'owner toggle card must render after staff return');
   assert.match(marketDetailSource, /import \{ useMarket, updateMarket,/);
   assert.match(marketDetailSource, /await updateMarket\(marketId,[\s\S]*salesPhotoEvidenceRequired: nextRequired/);
-  assert.match(marketDetailSource, /此市集要求成交照片證明/);
-  assert.match(marketDetailSource, /既有待補項目不會因為關閉而自動刪除/);
+  assert.match(marketDetailSource, /此市集需要成交照片/);
+  assert.match(marketDetailSource, /關閉後，既有待補照片仍會保留/);
 });
 
 runTest('cloud/local mappers preserve the new market flag without changing sync flow', () => {

@@ -7,8 +7,8 @@ Status: plan-only guardrail for the staff local capture browser smoke test. No b
 
 Verify that the approved staff-only local capture flow works in a real browser context:
 
-1. Staff opens a market pending evidence list.
-2. Staff clicks the local capture action for an eligible pending row.
+1. Staff opens a market `待補照片` list.
+2. Staff clicks `拍攝/選擇照片` for an eligible pending row.
 3. Browser file-input capture/selection opens.
 4. The selected image is decoded, compressed, thumbnailed, hashed, and stored as a local pending payload.
 5. The sale and pending evidence row remain valid if capture is cancelled or fails.
@@ -46,8 +46,8 @@ Blocked:
 2. Sign in as a staff account that can access one test market.
 3. Ensure the market has at least one local pending sales photo evidence row with status `waiting_for_event_sync` or `failed_retryable`.
 4. Open the staff market detail page.
-5. Open the pending evidence dialog from the sales photo evidence operating card.
-6. Click `拍照存本機` on the eligible row.
+5. Open `待補照片` from the `成交照片` operating card.
+6. Click `拍攝/選擇照片` on the eligible row.
 7. Select a small test image.
 8. Confirm the UI shows success or no blocking error.
 9. Inspect IndexedDB in the temporary browser profile:

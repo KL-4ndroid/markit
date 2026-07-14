@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 let passed = 0;
 let failed = 0;
@@ -19,31 +20,31 @@ function runTest(name: string, fn: () => void): void {
 }
 
 const cardSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/staff/StaffPermissionCard.tsx',
+  join(__dirname, '..', 'components/staff/StaffPermissionCard.tsx'),
   'utf-8'
 );
 const bannerSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/auth/RoleStatusBanner.tsx',
+  join(__dirname, '..', 'components/auth/RoleStatusBanner.tsx'),
   'utf-8'
 );
 const authGuardSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/auth/AuthGuard.tsx',
+  join(__dirname, '..', 'components/auth/AuthGuard.tsx'),
   'utf-8'
 );
 const monitorSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/hooks/useStaffStatusMonitor.ts',
+  join(__dirname, '..', 'hooks/useStaffStatusMonitor.ts'),
   'utf-8'
 );
 const debugPageSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/app/debug/staff-role-test/page.tsx',
+  join(__dirname, '..', 'app/debug/staff-role-test/page.tsx'),
   'utf-8'
 );
 const settingsSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/app/settings/page.tsx',
+  join(__dirname, '..', 'app/settings/page.tsx'),
   'utf-8'
 );
 const recoverySource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/app/recovery/page.tsx',
+  join(__dirname, '..', 'app/recovery/page.tsx'),
   'utf-8'
 );
 

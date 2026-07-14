@@ -51,6 +51,7 @@ runTest('browser smoke plan verifies staff local capture behavior without instal
   assert.match(smokePlanSource, /Non-owned staff row stays disabled/);
   assert.match(smokePlanSource, /Cancelled selection keeps the row pending/);
   assert.match(smokePlanSource, /Successful selection creates exactly one local pending payload/);
+  assert.match(smokePlanSource, /拍攝\/選擇照片/);
   assert.match(smokePlanSource, /Automated browser smoke testing can be added later only after a separate decision/);
 });
 

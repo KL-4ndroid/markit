@@ -79,7 +79,7 @@ const RECOMMENDATION_LABELS: Record<
   wait_for_sale_sync: '等待這筆銷售同步完成後，系統才能建立照片需求。',
   retry_can_continue: '這筆資料仍可重試，請先保留本機資料。',
   recover_stale_creating: '建立中狀態已逾時，之後需要經確認再恢復為可重試。',
-  retire_created_queue_row: '照片需求已建立，之後可只清理本機佇列紀錄。',
+  retire_created_queue_row: '照片需求已建立，本機紀錄會在確認完成後清理。',
   manual_review_required: '來源資料異常或已達永久失敗，需人工檢查後再處理。',
 };
 
@@ -159,9 +159,9 @@ export function SalesPhotoEvidencePendingListDialog({
       <section className="w-full max-w-lg rounded-[1.5rem] bg-white shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
           <div>
-            <h2 className="text-lg font-medium text-foreground">待補照片紀錄</h2>
+            <h2 className="text-lg font-medium text-foreground">待補照片</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              這裡只顯示本機尚未完成的照片證明佇列，不會自動清除、恢復或上傳任何資料。
+              成交紀錄已保留。你可以拍攝或選擇照片，完成後再上傳。
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               <span className="rounded-full bg-background px-3 py-1 text-muted-foreground">
@@ -184,7 +184,7 @@ export function SalesPhotoEvidencePendingListDialog({
             type="button"
             onClick={onClose}
             className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
-            aria-label="關閉待補照片紀錄"
+            aria-label="關閉待補照片"
           >
             <X className="h-5 w-5" />
           </button>
@@ -202,9 +202,9 @@ export function SalesPhotoEvidencePendingListDialog({
             </div>
           ) : items.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-8 text-center">
-              <p className="text-sm font-medium text-foreground">目前沒有待補照片紀錄</p>
+              <p className="text-sm font-medium text-foreground">目前沒有待補照片</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                若市集要求照片證明，成交後產生的待補項目會顯示在這裡。
+                需要照片的成交會在完成後顯示在這裡。
               </p>
             </div>
           ) : (
@@ -220,7 +220,7 @@ export function SalesPhotoEvidencePendingListDialog({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-foreground">
-                          銷售事件：{item.saleEventId}
+                          成交照片
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           成交時間 {formatDateTime(item.saleCompletedAt)}
@@ -277,7 +277,7 @@ export function SalesPhotoEvidencePendingListDialog({
                     {(item.retryCount > 0 || item.lastErrorMessage) && (
                       <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs text-muted-foreground">
                         {item.retryCount > 0 && <p>重試次數：{item.retryCount}</p>}
-                        {item.lastErrorMessage && <p className="mt-1">錯誤：{item.lastErrorMessage}</p>}
+                        {item.lastErrorMessage && <p className="mt-1">上次處理未完成，請依提示重試。</p>}
                       </div>
                     )}
                   </article>

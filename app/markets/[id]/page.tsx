@@ -893,10 +893,10 @@ export default function MarketDetailPage({ params }: PageProps) {
         salesPhotoEvidenceRequired: nextRequired,
       } as Partial<SalesPhotoEvidenceMarket>);
 
-      toast.success(nextRequired ? '此市集已啟用銷售照片證明' : '此市集已關閉銷售照片證明');
+      toast.success(nextRequired ? '此市集已啟用成交照片紀錄' : '此市集已關閉成交照片紀錄');
     } catch (error: any) {
       console.error('toggle sales photo evidence failed:', error);
-      toast.error(error?.message || '更新銷售照片證明設定失敗');
+      toast.error(error?.message || '更新成交照片紀錄設定失敗');
     } finally {
       setIsUpdatingSalesPhotoEvidence(false);
     }
@@ -957,7 +957,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     } catch (error: any) {
       console.error('load owner sales photo evidence album failed:', error);
       setOwnerSalesPhotoEvidenceRows([]);
-      setOwnerSalesPhotoEvidenceAlbumLoadError(error?.message || '銷售照片紀錄讀取失敗，請稍後再試或重新整理。');
+      setOwnerSalesPhotoEvidenceAlbumLoadError(error?.message || '成交照片讀取失敗，請稍後再試或重新整理。');
     } finally {
       setIsLoadingOwnerSalesPhotoEvidenceAlbum(false);
     }
@@ -1634,9 +1634,9 @@ export default function MarketDetailPage({ params }: PageProps) {
               <Camera className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-lg font-medium text-foreground">銷售照片證明</h2>
+              <h2 className="text-lg font-medium text-foreground">成交照片紀錄</h2>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                開啟後，之後新增的成交會要求補上照片證明。既有待補項目不會因為關閉而自動刪除。
+                開啟後，之後新增的成交需要補上照片。關閉後，既有待補照片仍會保留。
               </p>
             </div>
           </div>
@@ -1649,7 +1649,7 @@ export default function MarketDetailPage({ params }: PageProps) {
           >
             <span>
               <span className="block text-sm font-medium text-foreground">
-                此市集要求成交照片證明
+                此市集需要成交照片
               </span>
               <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                 {salesPhotoEvidenceRequired ? '目前已啟用' : '目前未啟用'}

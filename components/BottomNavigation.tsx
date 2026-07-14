@@ -42,7 +42,6 @@ function ProtectedBottomNavigation() {
 
   useEffect(() => {
     const routesToPrefetch = ['/markets', '/products', '/analytics', '/settings'];
-    let timeoutId: ReturnType<typeof setTimeout>;
 
     const doPrefetch = () => {
       routesToPrefetch.forEach(route => router.prefetch(route));
@@ -53,7 +52,7 @@ function ProtectedBottomNavigation() {
       return () => cancelIdleCallback(idleId);
     }
 
-    timeoutId = setTimeout(doPrefetch, 1500);
+    const timeoutId = setTimeout(doPrefetch, 1500);
     return () => clearTimeout(timeoutId);
   }, [router]);
 

@@ -21,6 +21,7 @@
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   ROLE_CACHE_INVALIDATED_EVENT,
   clearRoleCache,
@@ -371,7 +372,7 @@ runTest('localStorage cleared even if dispatch throws', () => {
 console.log('\n=== 8. static checks on useUserRole.ts ===');
 
 const useUserRoleSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/hooks/useUserRole.ts',
+  join(__dirname, '..', 'hooks/useUserRole.ts'),
   'utf-8'
 );
 

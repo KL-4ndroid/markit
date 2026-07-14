@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const doc = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/docs/p5-4-downgrade-safety-test-plan.md',
+  join(__dirname, '..', 'docs/p5-4-downgrade-safety-test-plan.md'),
   'utf-8'
 );
 

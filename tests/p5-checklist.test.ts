@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 let passed = 0;
 let failed = 0;
@@ -19,27 +20,27 @@ function runTest(name: string, fn: () => void): void {
 }
 
 const checklistSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/lib/markets/checklist.ts',
+  join(__dirname, '..', 'lib/markets/checklist.ts'),
   'utf-8'
 );
 const checklistPanelSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/markets/ChecklistPanel.tsx',
+  join(__dirname, '..', 'components/markets/ChecklistPanel.tsx'),
   'utf-8'
 );
 const marketFieldOpsSectionSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/markets/MarketFieldOpsSection.tsx',
+  join(__dirname, '..', 'components/markets/MarketFieldOpsSection.tsx'),
   'utf-8'
 );
 const staffMarketDetailSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/components/markets/StaffMarketDetailView.tsx',
+  join(__dirname, '..', 'components/markets/StaffMarketDetailView.tsx'),
   'utf-8'
 );
 const roleFreshnessSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/lib/permissions/role-freshness.ts',
+  join(__dirname, '..', 'lib/permissions/role-freshness.ts'),
   'utf-8'
 );
 const staffPreflightSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/lib/sync/staff-event-preflight.ts',
+  join(__dirname, '..', 'lib/sync/staff-event-preflight.ts'),
   'utf-8'
 );
 

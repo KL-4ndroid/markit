@@ -26,12 +26,12 @@ export function SalesPhotoEvidenceLocalCaptureAction({
 }: SalesPhotoEvidenceLocalCaptureActionProps) {
   const eligible = isCaptureEligibleStatus(status);
   const canCapture = captureEnabled && eligible && typeof onCapture === 'function' && !isCapturing;
-  const label = isCapturing ? '照片處理中' : '拍照存本機';
+  const label = isCapturing ? '照片處理中' : '拍攝/選擇照片';
   const helper = captureEnabled
     ? eligible
       ? '照片會先暫存在本機，尚未上傳雲端。'
       : '此筆狀態目前不能重新拍照。'
-    : '拍照入口尚未正式啟用。';
+    : '目前無法拍攝或選擇照片。';
 
   return (
     <div className="mt-3 rounded-xl border border-dashed border-primary/15 bg-white px-3 py-2">

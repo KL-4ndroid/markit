@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { isStaffLocalProjectionRecord } from '../lib/db/clear-user-data';
 
 let passed = 0;
@@ -20,14 +21,22 @@ function runTest(name: string, fn: () => void): void {
 }
 
 const clearUserDataSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/lib/db/clear-user-data.ts',
+  join(__dirname, '..', 'lib/db/clear-user-data.ts'),
   'utf-8'
 );
 
 const staffStatusMonitorSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/hooks/useStaffStatusMonitor.ts',
+  join(__dirname, '..', 'hooks/useStaffStatusMonitor.ts'),
   'utf-8'
 );
+
+function getClearStaffLocalProjectionsSource(): string {
+  const start = clearUserDataSource.indexOf('export async function clearStaffLocalProjections');
+  const end = clearUserDataSource.indexOf('export async function clearUserData', start);
+  assert.notEqual(start, -1, 'helper source start found');
+  assert.notEqual(end, -1, 'helper source end found');
+  return clearUserDataSource.slice(start, end);
+}
 
 console.log('\n=== P5-4c staff projection predicate ===');
 
@@ -82,21 +91,13 @@ runTest('clearStaffLocalProjections targets projection tables only', () => {
 });
 
 runTest('clearStaffLocalProjections preserves settings and syncQueue', () => {
-  const helperMatch = clearUserDataSource.match(
-    /export async function clearStaffLocalProjections[\s\S]*?\n}\n/
-  );
-  assert.ok(helperMatch, 'helper source found');
-  const helperSource = helperMatch![0];
+  const helperSource = getClearStaffLocalProjectionsSource();
   assert.doesNotMatch(helperSource, /db\.settings\.(clear|delete|bulkDelete)/);
   assert.doesNotMatch(helperSource, /db\.syncQueue\.(clear|delete|bulkDelete)/);
 });
 
 runTest('clearStaffLocalProjections does not delete database or reload', () => {
-  const helperMatch = clearUserDataSource.match(
-    /export async function clearStaffLocalProjections[\s\S]*?\n}\n/
-  );
-  assert.ok(helperMatch, 'helper source found');
-  const helperSource = helperMatch![0];
+  const helperSource = getClearStaffLocalProjectionsSource();
   assert.doesNotMatch(helperSource, /deleteDatabase/);
   assert.doesNotMatch(helperSource, /location\.href|location\.reload|window\.location/);
 });

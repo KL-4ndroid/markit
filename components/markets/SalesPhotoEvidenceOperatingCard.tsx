@@ -32,11 +32,11 @@ export function SalesPhotoEvidenceOperatingCard({
           <Camera className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <h2 className="text-lg font-medium text-foreground">成交照片證明</h2>
+          <h2 className="text-lg font-medium text-foreground">成交照片</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             {isOwner
-              ? '營業中可快速調整本場是否要求成交照片證明。變更只影響之後的成交。'
-              : '本場是否需要成交照片證明由老闆設定，員工只能查看狀態。'}
+              ? '營業中可調整本場是否需要成交照片紀錄，變更只影響之後的成交。'
+              : '是否需要成交照片由老闆設定，員工可在成交後拍攝或稍後補上。'}
           </p>
         </div>
       </div>
@@ -51,7 +51,7 @@ export function SalesPhotoEvidenceOperatingCard({
           >
             <span>
               <span className="block text-sm font-medium text-foreground">
-                此市集要求成交照片證明
+                此市集需要成交照片
               </span>
               <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                 {required ? '目前已啟用' : '目前未啟用'}
@@ -74,10 +74,10 @@ export function SalesPhotoEvidenceOperatingCard({
           <div className="flex w-full items-center justify-between gap-4 rounded-2xl border border-primary/15 bg-background px-4 py-4">
             <span>
               <span className="block text-sm font-medium text-foreground">
-                此市集要求成交照片證明
+                此市集需要成交照片
               </span>
               <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                {required ? '成交後需要補上照片證明' : '目前沒有要求照片證明'}
+                {required ? '成交後請拍攝或選擇照片' : '目前不需要成交照片'}
               </span>
             </span>
             <span
@@ -103,7 +103,7 @@ export function SalesPhotoEvidenceOperatingCard({
                 待補照片 {pendingCount}
               </span>
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                待處理列表會在成交照片流程啟用後開放
+                {pendingCount > 0 ? '查看並完成尚未上傳的照片' : '目前沒有待補照片'}
               </span>
             </span>
           </span>

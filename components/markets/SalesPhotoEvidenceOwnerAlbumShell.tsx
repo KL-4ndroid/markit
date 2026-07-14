@@ -112,7 +112,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
             <Camera className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-lg font-medium text-foreground">銷售照片紀錄</h2>
+            <h2 className="text-lg font-medium text-foreground">成交照片</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
               這裡只顯示照片紀錄狀態。正式圖片預覽會等 signed read 流程核准後再開放。
             </p>
@@ -176,7 +176,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
                 <SalesPhotoEvidenceOwnerAlbumImage
                   evidenceId={item.id}
                   canLoad={item.displayStatus === 'uploaded_private' && item.hasPrivateThumbnailObject}
-                  alt={`銷售照片 ${item.saleId ?? item.id}`}
+                  alt="成交照片"
                 />
               </div>
 

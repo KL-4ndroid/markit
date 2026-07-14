@@ -31,6 +31,7 @@ runTest('local capture action remains prop-driven and disabled by default', () =
   assert.match(captureActionSource, /const canCapture = captureEnabled && eligible && typeof onCapture === 'function' && !isCapturing/);
   assert.match(captureActionSource, /status === 'waiting_for_event_sync' \|\| status === 'failed_retryable'/);
   assert.match(captureActionSource, /disabled=\{!canCapture\}/);
+  assert.match(captureActionSource, /拍攝\/選擇照片/);
 });
 
 runTest('manual upload action is prop-driven and does not own upload side effects', () => {
@@ -53,6 +54,8 @@ runTest('pending list delegates capture and upload by props without importing ru
   assert.match(dialogSource, /captureEnabled = false/);
   assert.match(dialogSource, /uploadEnabled = false/);
   assert.doesNotMatch(dialogSource, /photo-evidence-browser-adapter|photo-evidence-manual-upload-client|fetch\(|supabase|db\.|@aws-sdk|R2_BUCKET|service_role/i);
+  assert.match(dialogSource, /成交紀錄已保留/);
+  assert.doesNotMatch(dialogSource, /銷售事件：\{item\.saleEventId\}|錯誤：\{item\.lastErrorMessage\}/);
 });
 
 runTest('staff detail is the only runtime container for local capture and manual upload', () => {

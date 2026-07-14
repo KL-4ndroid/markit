@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   ROLE_FRESHNESS_MAX_AGE_MS,
   RoleFreshnessError,
@@ -262,10 +263,7 @@ runTest('manager can manage field notes and checklist items', () => {
 
 console.log('\n=== P5-4d recordEvent static wiring ===');
 
-const eventsSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/lib/db/events.ts',
-  'utf-8'
-);
+const eventsSource = readFileSync(join(__dirname, '..', 'lib/db/events.ts'), 'utf-8');
 
 runTest('recordEvent imports role freshness helper', () => {
   assert.match(eventsSource, /assertFreshStaffCapability/);

@@ -7,6 +7,7 @@
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 let passed = 0;
 let failed = 0;
@@ -26,12 +27,12 @@ function runTest(name: string, fn: () => void): void {
 }
 
 const useUserRoleSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/hooks/useUserRole.ts',
+  join(__dirname, '..', 'hooks/useUserRole.ts'),
   'utf-8'
 );
 
 const useStaffStatusMonitorSource = readFileSync(
-  'C:/Users/chean/Documents/Codex/2026-05-24/github-plugin-github-openai-curated/markit-master/hooks/useStaffStatusMonitor.ts',
+  join(__dirname, '..', 'hooks/useStaffStatusMonitor.ts'),
   'utf-8'
 );
 

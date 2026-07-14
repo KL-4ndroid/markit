@@ -141,7 +141,7 @@ runTest('pending list dialog stays adapter-free and delegates local capture by p
   assert.match(dialogSource, /const statusCounts = countByStatus\(items\)/);
   assert.match(dialogSource, /const needsAttentionCount/);
   assert.match(dialogSource, /待補照片/);
-  assert.match(dialogSource, /不會自動清除、恢復或上傳任何資料/);
+  assert.match(dialogSource, /成交紀錄已保留/);
   assert.match(dialogSource, /RECOMMENDATION_LABELS/);
   assert.match(dialogSource, /重新讀取/);
   assert.match(dialogSource, /captureEnabled = false/);
