@@ -332,6 +332,8 @@ Deliverable:
 
 Goal: Prove the manual upload path with real staging R2 and staging Supabase.
 
+Execution status: **Blocked pending external Staging resources (2026-07-14).** Code-only preflight passed. See `docs/SALES_PHOTO_EVIDENCE_SMOKE_RESULT_STAGING_2026_07_14.md`.
+
 Tasks:
 
 - Configure staging-only route gates.
