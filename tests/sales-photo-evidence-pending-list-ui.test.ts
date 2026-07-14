@@ -162,7 +162,7 @@ runTest('owner and staff market detail wire pending count and dialog without clo
   assert.match(ownerPageSource, /onRefresh=\{loadPendingSalesPhotoEvidenceItems\}/);
   assert.doesNotMatch(
     ownerPageSource,
-    /enqueuePendingSalesPhotoEvidenceCreation|createDexieSalesPhotoEvidencePendingCreationStorage|drainSalesPhotoEvidencePendingCreations|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i
+    /enqueuePendingSalesPhotoEvidenceCreation|createDexieSalesPhotoEvidencePendingCreationStorage|drainSalesPhotoEvidencePendingCreations|getUserMedia|signedUrl|signed_url|@aws-sdk|R2_BUCKET/i
   );
 
   for (const source of [staffViewSource]) {
@@ -185,7 +185,12 @@ runTest('owner and staff market detail wire pending count and dialog without clo
   assert.match(staffViewSource, /uploadEnabled=\{true\}/);
   assert.match(staffViewSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
   assert.match(staffViewSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
-  assert.doesNotMatch(ownerPageSource, /captureAndStoreSalesPhotoEvidenceWithFileInput|captureEnabled=\{true\}|onCaptureLocal=\{/);
+  assert.match(ownerPageSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
+  assert.match(ownerPageSource, /uploadPendingSalesPhotoEvidenceManually/);
+  assert.match(ownerPageSource, /captureEnabled=\{true\}/);
+  assert.match(ownerPageSource, /uploadEnabled=\{true\}/);
+  assert.match(ownerPageSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
+  assert.match(ownerPageSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
 });
 
 runTest('plan and npm test include Slice 5C-3C and 5C-3D pending list guardrails', () => {

@@ -163,7 +163,7 @@ runTest('enabled runtime path keeps sale success when evidence enqueue fails', a
   assert.deepEqual(order, ['recordDeal', 'createPendingEvidence']);
 });
 
-runTest('AddRevenueDialog passes submit-time evidence context into the disabled wrapper', () => {
+runTest('AddRevenueDialog passes submit-time evidence context into the runtime wrapper', () => {
   assert.match(addRevenueDialogSource, /recordDealWithOptionalSalesPhotoEvidence/);
   assert.doesNotMatch(addRevenueDialogSource, /import \{ useProducts,\s*recordDeal \}/);
   assert.match(addRevenueDialogSource, /salesPhotoEvidenceContext\?: Pick/);
@@ -173,7 +173,7 @@ runTest('AddRevenueDialog passes submit-time evidence context into the disabled 
   assert.match(addRevenueDialogSource, /evidenceContext:\s*createSalesPhotoEvidenceRuntimeContext\(\)/);
 });
 
-runTest('owner and staff market detail provide only local context while flag remains disabled', () => {
+runTest('owner and staff market detail provide scoped local runtime context', () => {
   assert.match(ownerMarketDetailSource, /addRevenueSalesPhotoEvidenceContext/);
   assert.match(ownerMarketDetailSource, /ownerId:[\s\S]*owner_id[\s\S]*user\?\.id[\s\S]*null/);
   assert.match(ownerMarketDetailSource, /marketRequiresEvidence: salesPhotoEvidenceRequired/);
@@ -194,6 +194,7 @@ runTest('all visible transaction entries use the optional evidence wrapper and r
   }
 
   assert.match(staffMarketDetailSource, /SalesPhotoEvidencePostSalePrompt/);
+  assert.match(ownerMarketDetailSource, /SalesPhotoEvidencePostSalePrompt/);
   assert.match(staffMarketDetailSource, /handleSalesPhotoEvidenceResult/);
   assert.match(staffMarketDetailSource, /handleCaptureLocalSalesPhotoEvidence\(postSaleSalesPhotoEvidenceItem\)/);
 });

@@ -58,20 +58,22 @@ runTest('pending list delegates capture and upload by props without importing ru
   assert.doesNotMatch(dialogSource, /銷售事件：\{item\.saleEventId\}|錯誤：\{item\.lastErrorMessage\}/);
 });
 
-runTest('staff detail is the only runtime container for local capture and manual upload', () => {
-  assert.match(staffViewSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
-  assert.match(staffViewSource, /uploadPendingSalesPhotoEvidenceManually/);
-  assert.match(staffViewSource, /captureEnabled=\{true\}/);
-  assert.match(staffViewSource, /uploadEnabled=\{true\}/);
-  assert.match(staffViewSource, /isLocalCaptureAllowed=\{isLocalSalesPhotoEvidenceCaptureAllowed\}/);
-  assert.match(staffViewSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
-  assert.match(staffViewSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
-  assert.match(staffViewSource, /item\.capturedByStaffId === user\?\.id/);
-  assert.doesNotMatch(staffViewSource, /getUserMedia|signedUrl|signed_url|\bR2\b|drainSalesPhotoEvidencePendingCreations/i);
+runTest('owner and staff details both contain scoped local capture and manual upload', () => {
+  for (const source of [ownerPageSource, staffViewSource]) {
+    assert.match(source, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
+    assert.match(source, /uploadPendingSalesPhotoEvidenceManually/);
+    assert.match(source, /captureEnabled=\{true\}/);
+    assert.match(source, /uploadEnabled=\{true\}/);
+    assert.match(source, /isLocalCaptureAllowed=\{isLocalSalesPhotoEvidenceCaptureAllowed\}/);
+    assert.match(source, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
+    assert.match(source, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
+    assert.doesNotMatch(source, /getUserMedia|signedUrl|signed_url|\bR2\b|drainSalesPhotoEvidencePendingCreations/i);
+  }
 
-  assert.doesNotMatch(ownerPageSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
-  assert.doesNotMatch(ownerPageSource, /captureEnabled=\{true\}/);
-  assert.doesNotMatch(ownerPageSource, /onCaptureLocal=\{/);
+  assert.match(staffViewSource, /item\.capturedByStaffId === user\?\.id/);
+  assert.match(ownerPageSource, /item\.ownerId === ownerSalesPhotoEvidenceActorId/);
+  assert.match(ownerPageSource, /item\.marketId === marketId/);
+  assert.match(ownerPageSource, /SalesPhotoEvidencePostSalePrompt/);
 });
 
 runTest('execution plan and npm test include the local capture guardrails', () => {

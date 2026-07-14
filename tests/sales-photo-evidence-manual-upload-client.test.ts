@@ -25,6 +25,7 @@ function runTest(name: string, fn: TestFn): void {
 const clientSource = readProjectFile('lib/sales/photo-evidence-manual-upload-client.ts');
 const dialogSource = readProjectFile('components/markets/SalesPhotoEvidencePendingListDialog.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
+const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const actionSource = readProjectFile('components/markets/SalesPhotoEvidenceManualUploadAction.tsx');
 const testManifestSource = readProjectFile('scripts/test-files.txt');
 
@@ -181,6 +182,9 @@ runTest('client and UI reuse existing route and stay out of R2 SDK storage inter
   assert.match(staffViewSource, /uploadPendingSalesPhotoEvidenceManually/);
   assert.match(staffViewSource, /uploadEnabled=\{true\}/);
   assert.match(staffViewSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
+  assert.match(ownerPageSource, /uploadPendingSalesPhotoEvidenceManually/);
+  assert.match(ownerPageSource, /uploadEnabled=\{true\}/);
+  assert.match(ownerPageSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
 });
 
 runTest('test manifest includes the manual upload client guardrail', () => {

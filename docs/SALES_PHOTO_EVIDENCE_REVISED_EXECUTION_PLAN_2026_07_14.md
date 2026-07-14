@@ -5,13 +5,13 @@ Status: Active implementation plan. Local/staging runtime wiring and test workbe
 
 ## Executive Summary
 
-The sales photo evidence feature is directionally sound and already has many important safety boundaries implemented: metadata-only database design, R2 object storage, owner-controlled requirement settings, local pending payload storage, gated upload/read routes, staff-side local capture, manual upload, and owner read-only album mounting.
+The sales photo evidence feature is directionally sound and already has many important safety boundaries implemented: metadata-only database design, R2 object storage, owner-controlled requirement settings, local pending payload storage, gated upload/read routes, owner/staff local capture, manual upload, and owner read-only album mounting.
 
 The current plan is strong in engineering caution, but weak in operational clarity. It has grown into a long historical ledger where completed, partially completed, blocked, and future work are difficult to distinguish. The next plan should stop expanding horizontally and instead finish a narrow V1 workflow:
 
 1. A sale is recorded first.
 2. If the market requires evidence, a pending evidence task is created.
-3. Staff can capture or choose an image without blocking sales.
+3. The owner or staff member who performs the sale can capture or choose an image without blocking sales.
 4. The compressed local payload is stored safely.
 5. Staff can manually upload in local/staging first.
 6. Owner can review uploaded thumbnails and status from market detail.
@@ -39,7 +39,7 @@ Implemented or substantially implemented:
 - Local runtime enqueue is enabled by default in development and can be explicitly disabled.
 - Staging runtime enqueue requires an explicit public staging classification and enqueue opt-in.
 - Quick revenue, product sale, cart checkout, and backfill revenue entries use the same optional photo-evidence wrapper.
-- Staff receives a post-sale `拍攝商品` / `稍後補拍` prompt after a required evidence task is created.
+- Owner and staff receive a post-sale `拍攝商品` / `稍後補拍` prompt after a required evidence task is created.
 - `/debug/sales-photo-evidence` provides a production-locked Local/Staging end-to-end test workbench.
 
 Not yet complete for a production V1:
@@ -48,7 +48,7 @@ Not yet complete for a production V1:
 - Real production R2 upload/read enablement is not approved.
 - Local browser smoke must be rerun because the earlier user-reported pass was invalidated by the later observation that no pending row was created.
 - Staging upload/read smoke has not yet recorded a final pass/fail result.
-- Staff post-sale UX is implemented but still needs manual mobile visual verification.
+- Owner/staff post-sale UX is implemented but still needs manual mobile visual verification.
 - Background upload and automatic retry are not implemented.
 - Queue recovery/cleanup executor is not implemented.
 - Expiration reconciliation is not implemented.
@@ -59,7 +59,7 @@ Not yet complete for a production V1:
 ### Strengths
 
 - The existing plan correctly protects the core sales transaction. Photo capture and upload are follow-up work, not part of the sale transaction.
-- Role boundaries are clear: owner controls settings and waiver; staff captures, skips, and retries.
+- Role boundaries are clear: owner controls settings and waiver; both owner and staff may capture and upload sales they are authorized to record.
 - Storage boundaries are correct: image binaries are not stored in Postgres.
 - R2 object access is appropriately private and routed through trusted server code.
 - Local pending work is treated as valuable data and included in destructive-cache guards.
@@ -300,7 +300,7 @@ Primary files:
 
 ### Phase 1: Local Browser Smoke
 
-Goal: Prove staff local capture works in a real browser without cloud writes.
+Goal: Prove owner and staff local capture works in a real browser without cloud writes.
 
 Execution status: **Rerun required (2026-07-14).** The earlier user-reported pass was invalidated after the user confirmed that no pending photo row or upload action appeared. The missing runtime wiring has now been implemented; rerun through `/debug/sales-photo-evidence` and record the actual queue, capture, and IndexedDB observations.
 
@@ -318,7 +318,7 @@ Tasks:
 
 Acceptance:
 
-- Eligible staff-owned row enables capture.
+- Eligible owner-owned and staff-owned rows enable capture for the authorized actor.
 - Non-owned row disables capture.
 - Cancel leaves the row pending.
 - Successful capture creates or replaces exactly one local payload by queue id.
@@ -344,7 +344,7 @@ Tasks:
 
 - Configure staging-only route gates.
 - Use disposable owner/staff accounts.
-- Upload one local pending payload through the staff manual upload action.
+- Upload one local pending payload through the owner or staff manual upload action.
 - Confirm upload route ordering:
   1. Authenticate.
   2. Claim or reuse metadata.
@@ -377,9 +377,9 @@ Deliverable:
 
 ### Phase 3: Staff Post-Sale UX Completion
 
-Goal: Complete the actual staff workflow after a sale.
+Goal: Complete the actual owner/staff workflow after a sale.
 
-Execution status: **Implementation complete; manual UX verification pending (2026-07-14).** Required sales enqueue one idempotent local task, update pending state, and show `拍攝商品` / `稍後補拍`. Quick revenue, product sale, cart checkout, and backfill revenue share the wrapper.
+Execution status: **Implementation complete; manual UX verification pending (2026-07-14).** Required sales enqueue one idempotent local task, update pending state, and show `拍攝商品` / `稍後補拍` to both owner and staff. Quick revenue, product sale, cart checkout, and backfill revenue share the wrapper.
 
 Tasks:
 
@@ -393,7 +393,7 @@ Tasks:
 Acceptance:
 
 - Recording a sale never waits for camera, compression, upload, or R2.
-- Staff can close the post-sale prompt and continue selling.
+- Owner and staff can close the post-sale prompt and continue selling.
 - The pending evidence list reflects the new sale.
 - Capture and upload actions are available only in the correct state.
 - Toasts and error messages are short and readable.

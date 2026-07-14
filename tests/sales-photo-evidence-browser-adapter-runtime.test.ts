@@ -242,7 +242,7 @@ runTest('adapter falls back from primary webp image render to jpeg when primary 
   ]);
 });
 
-runTest('runtime adapter source remains disconnected from cloud upload sync and only staff pending UI may import it', () => {
+runTest('runtime adapter stays cloud-free while owner and staff pending UIs may import it', () => {
   assert.match(adapterSource, /type="file"|input\.type = 'file'/);
   assert.match(adapterSource, /accept = 'image\/\*'/);
   assert.match(adapterSource, /capture', 'environment'/);
@@ -254,7 +254,6 @@ runTest('runtime adapter source remains disconnected from cloud upload sync and 
   const blockedProductionFiles = [
     'components/markets/AddRevenueDialog.tsx',
     'components/markets/SalesPhotoEvidenceOperatingCard.tsx',
-    'app/markets/[id]/page.tsx',
   ];
 
   const matches = blockedProductionFiles.filter(file => {
@@ -265,11 +264,18 @@ runTest('runtime adapter source remains disconnected from cloud upload sync and 
   assert.deepEqual(matches, []);
 
   const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
+  const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
   assert.match(staffViewSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
   assert.match(staffViewSource, /uploadPendingSalesPhotoEvidenceManually/);
   assert.match(staffViewSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
   assert.match(staffViewSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
   assert.doesNotMatch(staffViewSource, /getUserMedia|signedUrl|signed_url|\bR2\b|drainSalesPhotoEvidencePendingCreations/i);
+
+  assert.match(ownerPageSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
+  assert.match(ownerPageSource, /uploadPendingSalesPhotoEvidenceManually/);
+  assert.match(ownerPageSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
+  assert.match(ownerPageSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
+  assert.doesNotMatch(ownerPageSource, /getUserMedia|signedUrl|signed_url|\bR2\b|drainSalesPhotoEvidencePendingCreations/i);
 });
 
 runTest('execution plan and package test include the runtime adapter slice', () => {
