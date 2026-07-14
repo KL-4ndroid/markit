@@ -1,7 +1,7 @@
 # Sales Photo Evidence Local Smoke Result
 
 Date: 2026-07-14
-Status: **PASS - user-reported manual execution**
+Status: **INVALIDATED - rerun required after runtime wiring fix**
 Plan phase: Phase 1, Local Browser Smoke
 Application commit under test: `37e50d4`
 Environment class: Local development server; environment classification not independently verified by Codex
@@ -26,13 +26,15 @@ URL: `http://127.0.0.1:3000`
 
 ## Manual Execution Result
 
-The repository user reported that the manual test was completed and requested progression to the next phase. No failure was reported. This is accepted as a Phase 1 pass for planning progression.
+The repository user initially reported that the manual test was complete. A later direct observation showed that ordinary staff sales did not create pending photo rows and no upload action was available. The earlier pass is therefore invalid and must not be used as release evidence.
+
+The missing runtime path has since been implemented for quick revenue, product sale, cart checkout, and backfill revenue. A production-locked test page is available at `/debug/sales-photo-evidence` for the rerun.
 
 Codex could not independently observe the browser session because the in-app browser control runtime failed to initialize. Browser version, viewport, queue id, IndexedDB counts, replacement behavior, and network observations were not supplied. These remain residual verification gaps and must not be represented as independently verified evidence.
 
 ## Safety Follow-Up
 
-- Runtime enqueue was restored to `false` after the test.
+- Runtime enqueue now follows the reviewed Local/Staging/Production environment gate instead of a temporary source edit.
 - Phase 2 still requires explicit staging classification and disposable owner/staff accounts.
 - No production allow flag may be enabled based only on this user-reported result.
 
@@ -40,9 +42,9 @@ Codex could not independently observe the browser session because the in-app bro
 
 Use a temporary/guest browser profile and a non-sensitive test image.
 
-- [x] Manual test reported complete by the repository user.
-- [x] No functional failure reported.
-- [x] Runtime enqueue restored to `false` after inspection.
+- [ ] Create an NT$1 `[TEST]` sale from `/debug/sales-photo-evidence`.
+- [ ] Confirm exactly one matching pending row appears.
+- [ ] Capture/select a photo and confirm the local payload exists.
 - [ ] Browser name/version and viewport supplied.
 - [ ] Disposable environment classification independently recorded.
 - [ ] Owned/non-owned row observations supplied.
@@ -63,9 +65,9 @@ Use a temporary/guest browser profile and a non-sensitive test image.
 - Duplicate/replace behavior:
 - Unexpected network requests:
 - Mobile UX result:
-- Final result: `PASS` (user reported; not independently observed by Codex)
-- Notes: Detailed evidence fields were not supplied. Retain this limitation in release readiness review.
+- Final result: `PENDING RERUN`
+- Notes: The original pass was invalidated by the missing runtime integration.
 
 ## Exit Decision
 
-Phase 2 planning and staging preflight may start. Production rollout remains blocked until staging evidence is complete; the missing Phase 1 detail must remain visible in the production readiness review.
+Production rollout remains blocked. Phase 1 must be rerun through the new test page and Phase 2 must record a real Staging upload/read pass.

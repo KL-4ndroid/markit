@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { DollarSign, Delete, Banknote, Smartphone, Landmark, CreditCard, CheckCircle2 } from 'lucide-react';
-import { recordInteraction, recordDeal } from '@/lib/db/hooks';
+import { recordInteraction } from '@/lib/db/hooks';
+import {
+  recordDealWithOptionalSalesPhotoEvidence,
+  type SalesPhotoEvidenceRuntimeResultHandler,
+  type SalesPhotoEvidenceTransactionContext,
+} from '@/lib/sales/photo-evidence-runtime-enqueue';
 import { toast } from 'sonner';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import { db } from '@/lib/db';
@@ -12,6 +17,8 @@ interface QuickInteractionButtonsProps {
   marketId: string;
   onInteractionRecorded?: () => void;
   hideProfit?: boolean;
+  salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
+  onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
 }
 
 type PaymentMethod = 'cash' | 'mobile' | 'card' | 'other';
@@ -25,7 +32,13 @@ type PaymentMethod = 'cash' | 'mobile' | 'card' | 'other';
  * - 基於本地 Dexie 的 useLiveQuery，不等待 API 回傳
  * - 體感延遲趨近於 0
  */
-export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideProfit = false }: QuickInteractionButtonsProps) {
+export function QuickInteractionButtons({
+  marketId,
+  onInteractionRecorded,
+  hideProfit = false,
+  salesPhotoEvidenceContext,
+  onSalesPhotoEvidenceResult,
+}: QuickInteractionButtonsProps) {
   const [displayAmount, setDisplayAmount] = useState<string>('0');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
@@ -97,7 +110,8 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideP
     try {
       // ✅ 背景執行：記錄成交（寫入本地 Dexie）
       // recordDeal 會立即更新本地數據，useLiveQuery 會自動響應
-      await recordDeal({
+      const submittedAt = new Date().toISOString();
+      const result = await recordDealWithOptionalSalesPhotoEvidence({
         marketId,
         items: [],
         totalAmount: amount,
@@ -105,7 +119,17 @@ export function QuickInteractionButtons({ marketId, onInteractionRecorded, hideP
         isManualEntry: true,
         manualRevenue: amount,
         manualDealCount: 1,
+      }, undefined, {
+        evidenceContext: salesPhotoEvidenceContext
+          ? {
+              ...salesPhotoEvidenceContext,
+              marketId,
+              saleCompletedAt: submittedAt,
+              now: submittedAt,
+            }
+          : undefined,
       });
+      await onSalesPhotoEvidenceResult?.(result);
 
       // ✅ 觸發 deal-closed 事件，通知其他組件更新
       window.dispatchEvent(new CustomEvent('deal-closed', {

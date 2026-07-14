@@ -7,6 +7,7 @@ import { useProducts } from '@/lib/db/hooks';
 import {
   recordDealWithOptionalSalesPhotoEvidence,
   type SalesPhotoEvidenceRuntimeContext,
+  type SalesPhotoEvidenceRuntimeResultHandler,
 } from '@/lib/sales/photo-evidence-runtime-enqueue';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ interface AddRevenueDialogProps {
     SalesPhotoEvidenceRuntimeContext,
     'ownerId' | 'marketRequiresEvidence' | 'capturedByStaffId'
   >;
+  onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
 }
 
 interface CartItem {
@@ -45,6 +47,7 @@ export function AddRevenueDialog({
   marketId,
   selectedDate,
   salesPhotoEvidenceContext,
+  onSalesPhotoEvidenceResult,
 }: AddRevenueDialogProps) {
   const products = useProducts({ isActive: true });
   const [mode, setMode] = useState<InputMode>('simple');
@@ -116,7 +119,7 @@ export function AddRevenueDialog({
     setIsSubmitting(true);
     
     try {
-      await recordDealWithOptionalSalesPhotoEvidence({
+      const result = await recordDealWithOptionalSalesPhotoEvidence({
         marketId,
         isBackfill: true,
         isManualEntry: true,
@@ -128,6 +131,7 @@ export function AddRevenueDialog({
         paymentMethod: 'cash', // 簡化模式預設現金
         notes: simpleNotes || `補登收入 - ${formatDate(selectedDate)}`,
       }, selectedDate, { evidenceContext: createSalesPhotoEvidenceRuntimeContext() });
+      await onSalesPhotoEvidenceResult?.(result);
       
       toast.success('✅ 收入補登成功', {
         description: `已記錄到 ${formatDate(selectedDate)}`,
@@ -195,7 +199,7 @@ export function AddRevenueDialog({
     setIsSubmitting(true);
 
     try {
-      await recordDealWithOptionalSalesPhotoEvidence({
+      const result = await recordDealWithOptionalSalesPhotoEvidence({
         marketId,
         isBackfill: true,
         isManualEntry: false,
@@ -208,6 +212,7 @@ export function AddRevenueDialog({
         paymentMethod,
         notes: fullNotes || `補登收入 - ${formatDate(selectedDate)}`,
       }, selectedDate, { evidenceContext: createSalesPhotoEvidenceRuntimeContext() });
+      await onSalesPhotoEvidenceResult?.(result);
 
       toast.success('✅ 收入補登成功', {
         description: `已記錄到 ${formatDate(selectedDate)}`,

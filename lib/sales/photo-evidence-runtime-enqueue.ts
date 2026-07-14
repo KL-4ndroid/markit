@@ -23,6 +23,11 @@ export type SalesPhotoEvidenceRuntimeContext = {
   now?: string | number | Date;
 };
 
+export type SalesPhotoEvidenceTransactionContext = Pick<
+  SalesPhotoEvidenceRuntimeContext,
+  'ownerId' | 'marketRequiresEvidence' | 'capturedByStaffId'
+>;
+
 export type SalesPhotoEvidenceRuntimeEnqueueOptions = {
   evidenceContext?: SalesPhotoEvidenceRuntimeContext;
   deps?: Partial<SalesPhotoEvidenceRuntimeDeps>;
@@ -35,6 +40,10 @@ export type SalesPhotoEvidenceRuntimeResult = {
     | { status: 'context_missing'; missingFields: string[] }
     | RecordDealWithPhotoEvidenceResult['evidence'];
 };
+
+export type SalesPhotoEvidenceRuntimeResultHandler = (
+  result: SalesPhotoEvidenceRuntimeResult
+) => void | Promise<void>;
 
 export type SalesPhotoEvidenceRuntimeDeps = {
   recordDeal: RecordDealForPhotoEvidence;

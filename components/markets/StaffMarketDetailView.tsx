@@ -68,6 +68,7 @@ import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { SalesPhotoEvidenceOperatingCard } from '@/components/markets/SalesPhotoEvidenceOperatingCard';
 import { SalesPhotoEvidencePendingListDialog } from '@/components/markets/SalesPhotoEvidencePendingListDialog';
+import { SalesPhotoEvidencePostSalePrompt } from '@/components/markets/SalesPhotoEvidencePostSalePrompt';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -81,6 +82,9 @@ import {
 } from '@/lib/sales/photo-evidence-pending-creation-read-model';
 import { captureAndStoreSalesPhotoEvidenceWithFileInput } from '@/lib/sales/photo-evidence-browser-adapter';
 import { uploadPendingSalesPhotoEvidenceManually } from '@/lib/sales/photo-evidence-manual-upload-client';
+import type {
+  SalesPhotoEvidenceRuntimeResult,
+} from '@/lib/sales/photo-evidence-runtime-enqueue';
 import type { Market, Event, DealClosedPayload } from '@/types/db';
 
 interface StaffMarketDetailViewProps {
@@ -223,6 +227,10 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
 
   // ✅ 員工核心工作功能：補登收入 / 每日成交記錄彈窗
   const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
+  const [showSalesPhotoEvidencePostSalePrompt, setShowSalesPhotoEvidencePostSalePrompt] = useState(false);
+  const [postSaleSalesPhotoEvidenceItem, setPostSaleSalesPhotoEvidenceItem] = useState<
+    SalesPhotoEvidencePendingCreationListItem | null
+  >(null);
   const [showDailyDealsModal, setShowDailyDealsModal] = useState(false);
   const [showPendingSalesPhotoEvidence, setShowPendingSalesPhotoEvidence] = useState(false);
   const [isLoadingPendingSalesPhotoEvidence, setIsLoadingPendingSalesPhotoEvidence] = useState(false);
@@ -247,7 +255,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
       setPendingSalesPhotoEvidenceItems([]);
       setPendingSalesPhotoEvidenceLoadError(null);
       setPendingSalesPhotoEvidenceLoadedAt(null);
-      return;
+      return [] as SalesPhotoEvidencePendingCreationListItem[];
     }
 
     setIsLoadingPendingSalesPhotoEvidence(true);
@@ -256,13 +264,35 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
       const items = await listLocalSalesPhotoEvidencePendingCreationsForMarket(marketId);
       setPendingSalesPhotoEvidenceItems(items);
       setPendingSalesPhotoEvidenceLoadedAt(Date.now());
+      return items;
     } catch (error) {
       console.error('load pending sales photo evidence failed:', error);
       setPendingSalesPhotoEvidenceLoadError('待補照片狀態讀取失敗，請稍後再試或重新整理。');
+      return [] as SalesPhotoEvidencePendingCreationListItem[];
     } finally {
       setIsLoadingPendingSalesPhotoEvidence(false);
     }
   }, [marketId]);
+
+  const handleSalesPhotoEvidenceResult = useCallback(
+    async (result: SalesPhotoEvidenceRuntimeResult) => {
+      if (result.evidence.status === 'created') {
+        const items = await loadPendingSalesPhotoEvidenceItems();
+        setPostSaleSalesPhotoEvidenceItem(
+          items.find(item => item.queueId === result.dealEventId) ?? null
+        );
+        setShowSalesPhotoEvidencePostSalePrompt(true);
+        return;
+      }
+
+      if (result.evidence.status === 'failed') {
+        toast.warning('成交已儲存，但待補照片建立失敗。請稍後再試。');
+      } else if (result.evidence.status === 'context_missing') {
+        toast.warning('成交已儲存，但缺少建立待補照片所需的市集資料。');
+      }
+    },
+    [loadPendingSalesPhotoEvidenceItems]
+  );
 
   useEffect(() => {
     void loadPendingSalesPhotoEvidenceItems();
@@ -561,6 +591,8 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
                   <QuickInteractionButtons 
                     marketId={marketId}
                     hideProfit={true}
+                    salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+                    onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
                   />
                 )}
               </div>
@@ -579,6 +611,8 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
                 marketId={marketId}
                 isExpanded={isQuickTransactionExpanded}
                 onToggle={handleToggleQuickTransaction}
+                salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+                onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
               />
             )}
           </>
@@ -800,6 +834,21 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         marketId={marketId}
         selectedDate={selectedDate}
         salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+        onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+      />
+
+      <SalesPhotoEvidencePostSalePrompt
+        isOpen={showSalesPhotoEvidencePostSalePrompt}
+        isCaptureReady={Boolean(postSaleSalesPhotoEvidenceItem)}
+        onCaptureNow={() => {
+          setShowSalesPhotoEvidencePostSalePrompt(false);
+          if (postSaleSalesPhotoEvidenceItem) {
+            void handleCaptureLocalSalesPhotoEvidence(postSaleSalesPhotoEvidenceItem);
+          } else {
+            handleOpenPendingSalesPhotoEvidence();
+          }
+        }}
+        onLater={() => setShowSalesPhotoEvidencePostSalePrompt(false)}
       />
 
       <SalesPhotoEvidencePendingListDialog

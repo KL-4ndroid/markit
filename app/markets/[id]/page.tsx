@@ -79,6 +79,7 @@ import {
   listOwnerSalesPhotoEvidenceAlbumMetadataRows,
 } from '@/lib/supabase/sales-photo-evidence';
 import type { SalesPhotoEvidenceAlbumSourceRow } from '@/lib/sales/photo-evidence-owner-album-read-model';
+import type { SalesPhotoEvidenceRuntimeResult } from '@/lib/sales/photo-evidence-runtime-enqueue';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
@@ -924,6 +925,19 @@ export default function MarketDetailPage({ params }: PageProps) {
     }
   }, [marketId]);
 
+  const handleSalesPhotoEvidenceResult = useCallback(
+    async (result: SalesPhotoEvidenceRuntimeResult) => {
+      if (result.evidence.status === 'created') {
+        await loadPendingSalesPhotoEvidenceItems();
+      } else if (result.evidence.status === 'failed') {
+        toast.warning('成交已儲存，但待補照片建立失敗。請稍後再試。');
+      } else if (result.evidence.status === 'context_missing') {
+        toast.warning('成交已儲存，但缺少建立待補照片所需的市集資料。');
+      }
+    },
+    [loadPendingSalesPhotoEvidenceItems]
+  );
+
   useEffect(() => {
     void loadPendingSalesPhotoEvidenceItems();
   }, [loadPendingSalesPhotoEvidenceItems]);
@@ -1285,6 +1299,8 @@ export default function MarketDetailPage({ params }: PageProps) {
               {isQuickRevenueExpanded && (
                 <QuickInteractionButtons 
                   marketId={marketId}
+                  salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+                  onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
                 />
               )}
             </div>
@@ -1303,6 +1319,8 @@ export default function MarketDetailPage({ params }: PageProps) {
               marketId={marketId}
               isExpanded={isQuickTransactionExpanded}
               onToggle={handleToggleQuickTransaction}
+              salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+              onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
             />
           </>
         )}
@@ -2315,6 +2333,8 @@ export default function MarketDetailPage({ params }: PageProps) {
         isOpen={showCartDrawer}
         onClose={() => setShowCartDrawer(false)}
         marketId={marketId}
+        salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+        onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
       />
 
       {/* 編輯市集表單 */}
@@ -2346,6 +2366,7 @@ export default function MarketDetailPage({ params }: PageProps) {
         marketId={marketId}
         selectedDate={selectedDate}
         salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+        onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
       />
 
       <SalesPhotoEvidencePendingListDialog

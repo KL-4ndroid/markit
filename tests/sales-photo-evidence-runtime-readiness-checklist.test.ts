@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { resolveSalesPhotoEvidenceRuntimeGateStatus } from '../lib/sales/photo-evidence-runtime-flags';
 
 type TestFn = () => void;
 
@@ -46,9 +47,14 @@ runTest('readiness checklist keeps production enablement blocked', () => {
   assert.match(planSource, /custom live camera stream/);
 });
 
-runTest('runtime flag still defaults off and has no external control plane', () => {
-  assert.match(flagSource, /\[SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_FLAG\]:\s*false/);
-  assert.doesNotMatch(flagSource, /process\.env|NEXT_PUBLIC|localStorage|sessionStorage|remote|supabase/i);
+runTest('runtime gate keeps production off and avoids mutable external control planes', () => {
+  assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'production',
+    explicitSetting: '1',
+  }).enabled, false);
+  assert.match(flagSource, /production_locked/);
+  assert.doesNotMatch(flagSource, /localStorage|sessionStorage|remoteConfig|fetch\(|supabase/i);
 });
 
 runTest('production sale UI still does not force runtime enqueue enablement', () => {

@@ -5,6 +5,7 @@ import {
   recordDealWithOptionalSalesPhotoEvidence,
   type SalesPhotoEvidenceRuntimeDeps,
 } from '../lib/sales/photo-evidence-runtime-enqueue';
+import { resolveSalesPhotoEvidenceRuntimeGateStatus } from '../lib/sales/photo-evidence-runtime-flags';
 import type { DealClosedPayload } from '../types/db';
 
 type TestFn = () => void | Promise<void>;
@@ -14,6 +15,11 @@ const projectRoot = join(__dirname, '..');
 const flagSource = readFileSync(join(projectRoot, 'lib/sales/photo-evidence-runtime-flags.ts'), 'utf8');
 const wrapperSource = readFileSync(join(projectRoot, 'lib/sales/photo-evidence-runtime-enqueue.ts'), 'utf8');
 const addRevenueDialogSource = readFileSync(join(projectRoot, 'components/markets/AddRevenueDialog.tsx'), 'utf8');
+const quickRevenueSource = readFileSync(join(projectRoot, 'components/sales/QuickInteractionButtons.tsx'), 'utf8');
+const quickTransactionSource = readFileSync(join(projectRoot, 'components/sales/QuickTransactionGrid.tsx'), 'utf8');
+const cartDrawerSource = readFileSync(join(projectRoot, 'components/sales/CartDrawer.tsx'), 'utf8');
+const testPageSource = readFileSync(join(projectRoot, 'app/debug/sales-photo-evidence/page.tsx'), 'utf8');
+const testWorkbenchSource = readFileSync(join(projectRoot, 'components/markets/SalesPhotoEvidenceTestWorkbench.tsx'), 'utf8');
 const ownerMarketDetailSource = readFileSync(join(projectRoot, 'app/markets/[id]/page.tsx'), 'utf8');
 const staffMarketDetailSource = readFileSync(join(projectRoot, 'components/markets/StaffMarketDetailView.tsx'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
@@ -62,10 +68,32 @@ function makeDeps(options: {
 
 console.log('\n=== Sales photo evidence runtime enqueue ===');
 
-runTest('runtime flag defaults off and avoids external control planes', () => {
+runTest('runtime gate enables local, requires explicit staging opt-in, and locks production', () => {
   assert.match(flagSource, /salesPhotoEvidenceRuntimeEnqueue/);
-  assert.match(flagSource, /false/);
-  assert.doesNotMatch(flagSource, /NEXT_PUBLIC|process\.env|localStorage|sessionStorage|remoteConfig|fetch\(/);
+  assert.deepEqual(resolveSalesPhotoEvidenceRuntimeGateStatus({ nodeEnv: 'development' }), {
+    enabled: true,
+    environment: 'local',
+    reason: 'local_default',
+  });
+  assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'staging',
+    explicitSetting: '1',
+  }).enabled, true);
+  assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'staging',
+  }).enabled, false);
+  assert.deepEqual(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'production',
+    explicitSetting: '1',
+  }), {
+    enabled: false,
+    environment: 'production',
+    reason: 'production_locked',
+  });
+  assert.doesNotMatch(flagSource, /localStorage|sessionStorage|remoteConfig|fetch\(/);
 });
 
 runTest('disabled runtime path records the sale only and does not enqueue evidence', async () => {
@@ -157,6 +185,26 @@ runTest('owner and staff market detail provide only local context while flag rem
   assert.match(staffMarketDetailSource, /marketRequiresEvidence: salesPhotoEvidenceRequired/);
   assert.match(staffMarketDetailSource, /capturedByStaffId: isOwner \? null : user\?\.id \?\? null/);
   assert.match(staffMarketDetailSource, /salesPhotoEvidenceContext=\{addRevenueSalesPhotoEvidenceContext\}/);
+});
+
+runTest('all visible transaction entries use the optional evidence wrapper and result callback', () => {
+  for (const source of [addRevenueDialogSource, quickRevenueSource, quickTransactionSource, cartDrawerSource]) {
+    assert.match(source, /recordDealWithOptionalSalesPhotoEvidence/);
+    assert.match(source, /onSalesPhotoEvidenceResult/);
+  }
+
+  assert.match(staffMarketDetailSource, /SalesPhotoEvidencePostSalePrompt/);
+  assert.match(staffMarketDetailSource, /handleSalesPhotoEvidenceResult/);
+  assert.match(staffMarketDetailSource, /handleCaptureLocalSalesPhotoEvidence\(postSaleSalesPhotoEvidenceItem\)/);
+});
+
+runTest('local and staging test page is production locked and provides real capture/upload controls', () => {
+  assert.match(testPageSource, /deploymentEnv === 'production'/);
+  assert.match(testPageSource, /SALES_PHOTO_EVIDENCE_TEST_PAGE_ENABLED/);
+  assert.match(testWorkbenchSource, /\[TEST\] 成交照片測試頁建立/);
+  assert.match(testWorkbenchSource, /recordDealWithOptionalSalesPhotoEvidence/);
+  assert.match(testWorkbenchSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
+  assert.match(testWorkbenchSource, /uploadPendingSalesPhotoEvidenceManually/);
 });
 
 runTest('runtime wrapper does not write cloud evidence or start capture upload behavior', () => {

@@ -1,7 +1,7 @@
 # Sales Photo Evidence Revised Execution Plan
 
 Date: 2026-07-14
-Status: Execution-hardened plan. Product decisions, phase gates, verification commands, rollback, privacy, and retention rules are defined for implementation.
+Status: Active implementation plan. Local/staging runtime wiring and test workbench were completed on 2026-07-14; manual browser and staging smoke remain required before production.
 
 ## Executive Summary
 
@@ -36,13 +36,19 @@ Implemented or substantially implemented:
 - Owner album metadata reader and market-detail read-only album section.
 - Extensive static and unit guardrail tests around disabled production behavior.
 - Phase 0 copy normalization, smoke-plan text repair, and portable test-file path cleanup completed on 2026-07-14.
+- Local runtime enqueue is enabled by default in development and can be explicitly disabled.
+- Staging runtime enqueue requires an explicit public staging classification and enqueue opt-in.
+- Quick revenue, product sale, cart checkout, and backfill revenue entries use the same optional photo-evidence wrapper.
+- Staff receives a post-sale `拍攝商品` / `稍後補拍` prompt after a required evidence task is created.
+- `/debug/sales-photo-evidence` provides a production-locked Local/Staging end-to-end test workbench.
 
 Not yet complete for a production V1:
 
 - Production runtime enqueue is still intentionally off.
 - Real production R2 upload/read enablement is not approved.
-- Local/staging smoke execution is not completed as a documented pass/fail artifact.
-- Staff post-sale capture prompt is not yet a polished end-to-end UX.
+- Local browser smoke must be rerun because the earlier user-reported pass was invalidated by the later observation that no pending row was created.
+- Staging upload/read smoke has not yet recorded a final pass/fail result.
+- Staff post-sale UX is implemented but still needs manual mobile visual verification.
 - Background upload and automatic retry are not implemented.
 - Queue recovery/cleanup executor is not implemented.
 - Expiration reconciliation is not implemented.
@@ -296,7 +302,7 @@ Primary files:
 
 Goal: Prove staff local capture works in a real browser without cloud writes.
 
-Execution status: **Complete by user-reported manual pass (2026-07-14).** See `docs/SALES_PHOTO_EVIDENCE_SMOKE_RESULT_LOCAL_2026_07_14.md`. Detailed browser/network evidence was not supplied and remains a documented residual verification gap.
+Execution status: **Rerun required (2026-07-14).** The earlier user-reported pass was invalidated after the user confirmed that no pending photo row or upload action appeared. The missing runtime wiring has now been implemented; rerun through `/debug/sales-photo-evidence` and record the actual queue, capture, and IndexedDB observations.
 
 Tasks:
 
@@ -332,7 +338,7 @@ Deliverable:
 
 Goal: Prove the manual upload path with real staging R2 and staging Supabase.
 
-Execution status: **Blocked pending external Staging resources (2026-07-14).** Code-only preflight passed. See `docs/SALES_PHOTO_EVIDENCE_SMOKE_RESULT_STAGING_2026_07_14.md`.
+Execution status: **Ready for manual Staging smoke (2026-07-14).** The user reported that private R2 credentials and all three non-production route gates are configured. Runtime wiring and a production-locked test workbench now exist; a real upload/read pass is still required. See `docs/SALES_PHOTO_EVIDENCE_SMOKE_RESULT_STAGING_2026_07_14.md`.
 
 Tasks:
 
@@ -372,6 +378,8 @@ Deliverable:
 ### Phase 3: Staff Post-Sale UX Completion
 
 Goal: Complete the actual staff workflow after a sale.
+
+Execution status: **Implementation complete; manual UX verification pending (2026-07-14).** Required sales enqueue one idempotent local task, update pending state, and show `拍攝商品` / `稍後補拍`. Quick revenue, product sale, cart checkout, and backfill revenue share the wrapper.
 
 Tasks:
 
@@ -494,11 +502,11 @@ Blocking rule: any data loss, duplicate pending task, unauthorized image read, c
 
 | Environment | Runtime Enqueue | Metadata Claim Route | R2 Upload Route | Image Read Route | Production Allow Flags | Expected Behavior |
 | --- | --- | --- | --- | --- | --- | --- |
-| Default local | Off | Off | Off | Off | Off | No cloud mutation; guardrail tests pass |
-| Local capture smoke | Off | Off | Off | Off | Off | Staff can create local pending payload only |
-| Staging upload smoke | Off or scoped | On | On | On | Off | Disposable staging upload/read works |
-| Production pilot | Scoped/on by decision | On | On | On | Explicitly on | One controlled production cohort |
-| Production full V1 | On | On | On | On | Explicitly on | Manual upload and owner review available |
+| Default local | On unless explicitly set to `0` | Off | Off | Off | Off | Required sales create local tasks; no cloud mutation |
+| Local capture smoke | On | Off | Off | Off | Off | Staff can create and capture a local pending payload |
+| Staging upload smoke | Explicitly on | On | On | On | Off | Disposable staging enqueue/upload/read works |
+| Production pilot | Locked off | On | On | On | Explicitly on | Runtime enqueue requires a separate reviewed production design |
+| Production full V1 | Locked off | On | On | On | Explicitly on | Not available until the runtime production gate is redesigned and approved |
 
 ### Exact Server Route Flags
 
@@ -508,7 +516,10 @@ Blocking rule: any data loss, duplicate pending task, unauthorized image read, c
 - R2 upload production gate: `SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ALLOW_PRODUCTION=1`
 - Private image read local/staging gate: `SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ENABLED=1`
 - Private image read production gate: `SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ALLOW_PRODUCTION=1`
-- Runtime enqueue is currently a code-only flag: `salesPhotoEvidenceRuntimeEnqueue`; it remains off until the relevant phase explicitly changes and tests it.
+- Local runtime enqueue is on by default and can be disabled with `NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ENABLED=0`.
+- Staging runtime enqueue requires both `NEXT_PUBLIC_APP_ENV=staging` and `NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ENABLED=1`.
+- Production remains locked off even if the public enqueue variable is set.
+- The Staging test page additionally requires `SALES_PHOTO_EVIDENCE_TEST_PAGE_ENABLED=1`; local development exposes `/debug/sales-photo-evidence` automatically.
 
 R2 credentials (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, and optional `R2_ENDPOINT`) are server-only and must never be placed in client-exposed environment variables, screenshots, or smoke result documents.
 

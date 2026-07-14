@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { resolveSalesPhotoEvidenceRuntimeGateStatus } from '../lib/sales/photo-evidence-runtime-flags';
 
 type TestFn = () => void | Promise<void>;
 
@@ -42,11 +43,20 @@ runTest('recommended future verification remains local-only and explicitly appro
   assert.match(planSource, /must not call Supabase, R2, signed URL, upload, drain, or queue cleanup/i);
 });
 
-runTest('runtime flag stays code-only disabled with no external control plane', () => {
-  assert.match(flagSource, /Object\.freeze/);
-  assert.match(flagSource, /false/);
+runTest('runtime gate keeps production disabled with no mutable control plane', () => {
+  assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({ nodeEnv: 'development' }).enabled, true);
+  assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'staging',
+    explicitSetting: '1',
+  }).enabled, true);
+  assert.equal(resolveSalesPhotoEvidenceRuntimeGateStatus({
+    nodeEnv: 'production',
+    publicAppEnv: 'production',
+    explicitSetting: '1',
+  }).enabled, false);
   assert.doesNotMatch(flagSource, /setSalesPhotoEvidence|enableSalesPhotoEvidence|disableSalesPhotoEvidence|controlled|fixture/i);
-  assert.doesNotMatch(flagSource, /NEXT_PUBLIC|process\.env|localStorage|sessionStorage|remoteConfig|fetch\(/);
+  assert.doesNotMatch(flagSource, /localStorage|sessionStorage|remoteConfig|fetch\(/);
 });
 
 runTest('runtime wrapper remains injectable but production callers do not force enablement', () => {

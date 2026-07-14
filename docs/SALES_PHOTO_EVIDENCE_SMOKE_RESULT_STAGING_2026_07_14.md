@@ -1,7 +1,7 @@
 # Sales Photo Evidence Staging Smoke Result
 
 Date: 2026-07-14
-Status: **Blocked - external Staging resources required**
+Status: **Ready for manual execution - final result pending**
 Plan phase: Phase 2, Staging Manual Upload
 Application baseline: `dd4783f`
 
@@ -25,7 +25,7 @@ Present in `.env.local`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - Supabase public/anonymous client keys
 
-Missing or not configured for this phase:
+The repository user reported these values are now configured in the Git-ignored local environment file:
 
 - `R2_ACCOUNT_ID`
 - `R2_ACCESS_KEY_ID`
@@ -44,12 +44,12 @@ Production allow flags must remain absent/off during Staging smoke:
 
 ## Required Human Setup
 
-Before rerunning Phase 2:
+Before recording the final Phase 2 result:
 
 1. Confirm the configured Supabase project is an isolated Staging project and migrations `055` and `056` are applied.
 2. Provide disposable Staging owner and staff accounts with one disposable market and sale.
 3. Configure a private Staging R2 bucket with the expected seven-day lifecycle prefix policy.
-4. Add the server-only R2 values and the three non-production route enable flags to a Git-ignored local environment file.
+4. Open `/debug/sales-photo-evidence`, confirm all four environment checks show `就緒`, and use the disposable staff account.
 5. Do not paste credentials into this document, screenshots, logs, commits, or the Codex conversation.
 6. Restart the local dev server after environment changes.
 

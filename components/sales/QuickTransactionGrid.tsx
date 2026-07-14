@@ -3,7 +3,11 @@
 import { useState, useMemo } from 'react';
 import { ShoppingCart, Plus, Minus } from 'lucide-react';
 import { useProducts } from '@/lib/db/hooks';
-import { recordDeal } from '@/lib/db/hooks';
+import {
+  recordDealWithOptionalSalesPhotoEvidence,
+  type SalesPhotoEvidenceRuntimeResultHandler,
+  type SalesPhotoEvidenceTransactionContext,
+} from '@/lib/sales/photo-evidence-runtime-enqueue';
 import { toast } from 'sonner';
 import type { Product } from '@/types/db';
 import Link from 'next/link';
@@ -12,6 +16,8 @@ interface QuickTransactionGridProps {
   marketId: string;
   isExpanded?: boolean;  // ✅ 新增：是否展開
   onToggle?: () => void;  // ✅ 新增：切換展開/折疊的回調
+  salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
+  onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
 }
 
 interface CartItem {
@@ -25,7 +31,13 @@ type PaymentMethod = 'cash' | 'card' | 'mobile' | 'other';
  * 快速交易網格組件
  * 一頁式購物車操作，點擊支付方式即可快速完成交易
  */
-export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: QuickTransactionGridProps) {
+export function QuickTransactionGrid({
+  marketId,
+  isExpanded = true,
+  onToggle,
+  salesPhotoEvidenceContext,
+  onSalesPhotoEvidenceResult,
+}: QuickTransactionGridProps) {
   const products = useProducts({ isActive: true });
   const [showProducts, setShowProducts] = useState(true);  // ✅ 預設關閉顯示商品
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
@@ -139,12 +151,23 @@ export function QuickTransactionGrid({ marketId, isExpanded = true, onToggle }: 
       }));
 
       // 記錄成交
-      await recordDeal({
+      const submittedAt = new Date().toISOString();
+      const result = await recordDealWithOptionalSalesPhotoEvidence({
         marketId,
         items,
         totalAmount,
         paymentMethod,
+      }, undefined, {
+        evidenceContext: salesPhotoEvidenceContext
+          ? {
+              ...salesPhotoEvidenceContext,
+              marketId,
+              saleCompletedAt: submittedAt,
+              now: submittedAt,
+            }
+          : undefined,
       });
+      await onSalesPhotoEvidenceResult?.(result);
 
       // 支付方式文字
       const paymentText = {

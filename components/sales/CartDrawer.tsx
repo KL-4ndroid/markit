@@ -4,7 +4,11 @@ import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, Minus, ShoppingCart, CreditCard, Smartphone, Banknote } from 'lucide-react';
 import { useProducts } from '@/lib/db/hooks';
-import { recordDeal } from '@/lib/db/hooks';
+import {
+  recordDealWithOptionalSalesPhotoEvidence,
+  type SalesPhotoEvidenceRuntimeResultHandler,
+  type SalesPhotoEvidenceTransactionContext,
+} from '@/lib/sales/photo-evidence-runtime-enqueue';
 import { toast } from 'sonner';
 import type { Product } from '@/types/db';
 
@@ -13,6 +17,8 @@ interface CartDrawerProps {
   onClose: () => void;
   marketId: string;
   onSuccess?: () => void;
+  salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
+  onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
 }
 
 interface CartItem {
@@ -26,7 +32,14 @@ type PaymentMethod = 'cash' | 'card' | 'mobile' | 'other';
  * 購物車抽屜組件
  * 用於快速結帳
  */
-export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerProps) {
+export function CartDrawer({
+  isOpen,
+  onClose,
+  marketId,
+  onSuccess,
+  salesPhotoEvidenceContext,
+  onSalesPhotoEvidenceResult,
+}: CartDrawerProps) {
   const products = useProducts({ isActive: true });
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
@@ -116,12 +129,23 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
       }));
 
       // 記錄成交
-      await recordDeal({
+      const submittedAt = new Date().toISOString();
+      const result = await recordDealWithOptionalSalesPhotoEvidence({
         marketId,
         items,
         totalAmount,
         paymentMethod,
+      }, undefined, {
+        evidenceContext: salesPhotoEvidenceContext
+          ? {
+              ...salesPhotoEvidenceContext,
+              marketId,
+              saleCompletedAt: submittedAt,
+              now: submittedAt,
+            }
+          : undefined,
       });
+      await onSalesPhotoEvidenceResult?.(result);
 
       // 成功提示
       toast.success(`🎉 辛苦了！成交一筆 NT$${totalAmount.toLocaleString()}`, {
