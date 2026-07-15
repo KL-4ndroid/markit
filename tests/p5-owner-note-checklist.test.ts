@@ -37,7 +37,7 @@ runTest('owner market detail imports shared note and checklist panels', () => {
 });
 
 runTest('owner panels render only after staff route returns', () => {
-  const staffReturnIndex = ownerMarketDetailSource.indexOf('return <StaffMarketDetailView market={market} />');
+  const staffReturnIndex = ownerMarketDetailSource.indexOf('if (isStaff) {');
   const fieldOpsIndex = ownerMarketDetailSource.indexOf('<MarketFieldOpsSection', staffReturnIndex);
 
   assert.ok(staffReturnIndex > 0, 'staff return must exist');

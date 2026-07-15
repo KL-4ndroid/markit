@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useMemo, useCallback, useTransition, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Calendar,
@@ -42,7 +43,6 @@ import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { InteractionButtons } from '@/components/sales/InteractionButtons';
 import { TransactionWorkspace } from '@/components/sales/TransactionWorkspace';
-import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { InteractionPreferenceChart } from '@/components/analytics/InteractionPreferenceChart';
 import { InteractionTimeHeatmap } from '@/components/analytics/InteractionTimeHeatmap';
 import { BehaviorInsightCard } from '@/components/analytics/BehaviorInsightCard';
@@ -85,6 +85,10 @@ import type { SalesPhotoEvidenceAlbumSourceRow } from '@/lib/sales/photo-evidenc
 import { findSalesPhotoEvidenceOwnerImageForSale } from '@/lib/sales/photo-evidence-owner-view';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
+const EditMarketForm = dynamic(() =>
+  import('@/components/markets/EditMarketForm').then(module => module.EditMarketForm)
+);
+
 interface PageProps {
   params?: {
     id?: string | string[];
@@ -99,6 +103,7 @@ type SalesPhotoEvidenceMarket = Market & {
 
 export default function MarketDetailPage({ params }: PageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const routeParams = useParams<{ id?: string | string[] }>();
   const marketId = normalizeMarketRouteId(routeParams?.id ?? params?.id) ?? ''; // UUID 字符串，不需要 parseInt
   const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
@@ -950,6 +955,7 @@ export default function MarketDetailPage({ params }: PageProps) {
     marketId,
     canHandleItem: isLocalSalesPhotoEvidenceCaptureAllowed,
     onUploadCompleted: loadOwnerSalesPhotoEvidenceAlbumRows,
+    initialView: searchParams.get('task') === 'pending-photos' ? 'pending_list' : undefined,
   });
   const handleSalesPhotoEvidenceResult = salesPhotoEvidenceFlow.handleSalesPhotoEvidenceResult;
   const handleOpenPendingSalesPhotoEvidence = salesPhotoEvidenceFlow.openPendingList;
@@ -1157,7 +1163,12 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // ✅ 員工模式：使用簡化的專屬視圖
   if (isStaff) {
-    return <StaffMarketDetailView market={market} />;
+    return (
+      <StaffMarketDetailView
+        market={market}
+        initialPhotoEvidenceView={searchParams.get('task') === 'pending-photos' ? 'pending_list' : undefined}
+      />
+    );
   }
 
   // ✅ 老闆模式：使用完整功能視圖
@@ -2297,13 +2308,12 @@ export default function MarketDetailPage({ params }: PageProps) {
       )}
 
       {/* 編輯市集表單 */}
-      {market && (
+      {market && showEditForm && (
         <EditMarketForm
           isOpen={showEditForm}
           onClose={handleCloseEditForm}
           market={market}
           onSuccess={() => {
-            toast.success('市集資訊已更新');
             showNavigation(); // 顯示導航列
           }}
         />

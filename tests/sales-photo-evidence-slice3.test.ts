@@ -75,7 +75,7 @@ runTest('new markets inherit owner default through market_created payload', () =
 });
 
 runTest('market detail exposes owner-only market-level toggle through market_updated', () => {
-  const staffReturnIndex = marketDetailSource.indexOf('return <StaffMarketDetailView market={market} />');
+  const staffReturnIndex = marketDetailSource.indexOf('if (isStaff) {');
   const toggleIndex = marketDetailSource.indexOf('handleToggleSalesPhotoEvidence');
   const cardIndex = marketDetailSource.indexOf('成交照片紀錄', staffReturnIndex);
 

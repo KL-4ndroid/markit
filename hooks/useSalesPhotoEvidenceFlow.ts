@@ -27,6 +27,7 @@ interface UseSalesPhotoEvidenceFlowOptions {
   marketId: string;
   canHandleItem: (item: LocalPendingSalesPhotoEvidenceCreation) => boolean;
   onUploadCompleted?: () => void | Promise<void>;
+  initialView?: 'pending_list';
 }
 
 function captureFailureMessage(reason: string): string {
@@ -65,6 +66,7 @@ export function useSalesPhotoEvidenceFlow({
   marketId,
   canHandleItem,
   onUploadCompleted,
+  initialView,
 }: UseSalesPhotoEvidenceFlowOptions) {
   const [state, dispatch] = useReducer(
     reduceSaleCompletionFlow,
@@ -99,6 +101,12 @@ export function useSalesPhotoEvidenceFlow({
   useEffect(() => {
     void loadPendingItems();
   }, [loadPendingItems]);
+
+  useEffect(() => {
+    if (initialView !== 'pending_list') return;
+    dispatch({ type: 'OPEN_PENDING_LIST' });
+    void loadPendingItems();
+  }, [initialView, loadPendingItems]);
 
   useEffect(() => {
     if (state.view !== 'completed') return;

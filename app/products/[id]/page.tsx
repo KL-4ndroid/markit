@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
@@ -19,13 +20,16 @@ import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
-import { EditProductForm } from '@/components/products/EditProductForm';
 import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
 import { normalizeRouteId } from '@/lib/markets/detail-loading';
 import { getProductDetail } from '@/lib/products/detail-service';
 import { useUserRole } from '@/hooks/useUserRole';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 import type { Product, ProductCategory } from '@/types/db';
+
+const EditProductForm = dynamic(() =>
+  import('@/components/products/EditProductForm').then(module => module.EditProductForm)
+);
 
 interface PageProps {
   params?: {
@@ -451,7 +455,7 @@ export default function ProductDetailPage({ params }: PageProps) {
       </div>
 
       {/* 編輯商品表單 */}
-      {product && (
+      {product && showEditForm && (
         <EditProductForm
           product={product}
           isOpen={showEditForm}

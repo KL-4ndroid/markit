@@ -397,10 +397,12 @@ runTest('auth context routes cache clears through the guard instead of direct re
 });
 
 runTest('manual sign-out entry points use shared discard confirmation helper', () => {
-  for (const source of [topNavigationSource, homePageSource, joinPageSource]) {
+  for (const source of [topNavigationSource, joinPageSource]) {
     assert.match(source, /confirmDiscardLocalChangesForSignOut/);
     assert.match(source, /forceDiscardLocalChanges:\s*true/);
   }
+
+  assert.doesNotMatch(homePageSource, /\bsignOut\s*\(/);
 });
 
 runTest('settings and staff destructive clear paths use pending-write guards', () => {

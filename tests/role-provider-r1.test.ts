@@ -138,7 +138,7 @@ runTest('R4c migrates settlement report and list pages with fail-closed data sco
   }
 });
 
-runTest('R4c-3A records dashboard scope risks before any dashboard migration', () => {
+runTest('R4c-3A dashboard migration keeps role scope fail-closed', () => {
   assert.match(roleRefreshPlanSource, /### Slice R4c-3A: Dashboard Inventory and Static Guardrails/);
   assert.match(roleRefreshPlanSource, /Status: implemented through documentation and static guardrails/);
   assert.match(roleRefreshPlanSource, /Dashboard data dependency map:/);
@@ -152,10 +152,12 @@ runTest('R4c-3A records dashboard scope risks before any dashboard migration', (
 
   assert.match(homePageSource, /useUserRole\(\)/);
   assert.match(homePageSource, /const currentOwnerId = isStaff \? userRole\.ownerId : user\?\.id/);
-  assert.match(homePageSource, /useMarkets\(\{\s*orderBy:\s*['"]startDate['"],\s*order:\s*['"]asc['"],\s*ownerId:\s*currentOwnerId/s);
-  assert.match(homePageSource, /useMonthlyStats\(currentOwnerId\)/);
+  assert.match(homePageSource, /DASHBOARD_ROLE_NOT_READY_OWNER_ID/);
+  assert.match(homePageSource, /ownerId:\s*scopedOwnerId/);
+  assert.match(homePageSource, /buildTodayViewModel\(allMarkets, now\)/);
+  assert.doesNotMatch(homePageSource, /useMonthlyStats\(/);
   assert.match(homePageSource, /useSyncContext\(\)/);
-  assert.match(homePageSource, /confirmDiscardLocalChangesForSignOut\(error\)/);
+  assert.doesNotMatch(homePageSource, /\bsignOut\s*\(/);
   assert.doesNotMatch(homePageSource, /useRoleContext\(\)/);
 });
 

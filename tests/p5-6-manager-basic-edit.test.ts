@@ -43,6 +43,10 @@ const editProductFormSource = readFileSync(
   join(projectRoot, 'components/products/EditProductForm.tsx'),
   'utf-8'
 );
+const productFormFieldsSource = readFileSync(
+  join(projectRoot, 'components/products/ProductFormFields.tsx'),
+  'utf-8'
+);
 const productCardSource = readFileSync(
   join(projectRoot, 'components/products/ProductCard.tsx'),
   'utf-8'
@@ -222,25 +226,21 @@ runTest('EditMarketForm manager mode strips owner-only market fields from submit
   assert.doesNotMatch(managerUpdatesBlock, /boothCost:/);
 });
 
-runTest('ProductsPage exposes manager product edit without opening add product', () => {
+runTest('ProductsPage routes manager edits through detail while keeping add owner-only', () => {
   assert.match(productsPageSource, /hasCapability\(roleCapabilities,\s*['"]canEditProductBasic['"]\)/);
   assert.match(productsPageSource, /canEdit=\{canEditProductBasic\}/);
-  assert.match(productsPageSource, /mode=\{isStaff\s*\?\s*['"]manager['"]\s*:\s*['"]owner['"]\}/);
-  assert.match(productsPageSource, /!\s*isStaff\s*&&\s*\(/, 'AddProductForm trigger remains owner-only');
+  assert.match(productsPageSource, /router\.push\(`\/products\/\$\{product\.id\}`\)/);
+  assert.match(productsPageSource, /!\s*isStaffMode\s*&&\s*\(/, 'AddProductForm trigger remains owner-only');
 });
 
-runTest('ProductCard can allow manager edit while defaulting staff to read-only', () => {
+runTest('ProductCard labels edit intent only when its capability prop is enabled', () => {
   assert.match(productCardSource, /canEdit\?:\s*boolean/);
   assert.match(productCardSource, /canEdit\s*=\s*false/);
-  assert.match(productCardSource, /isStaff\(productAccessItem\)\s*&&\s*!\s*canEdit/);
+  assert.match(productCardSource, /canEdit\s*\?\s*['"]查看與編輯['"]\s*:\s*['"]查看商品['"]/);
 });
 
 runTest('EditProductForm manager mode strips product name/category/cost/delete', () => {
   const managerUpdatesBlock = extractConstObject(editProductFormSource, 'managerUpdates');
-  const priceCostSection = editProductFormSource.slice(
-    editProductFormSource.indexOf('{/* 價格與成本 */}'),
-    editProductFormSource.indexOf('{/* 庫存 */}')
-  );
   assert.match(editProductFormSource, /mode\?:\s*['"]owner['"]\s*\|\s*['"]manager['"]/);
   assert.match(editProductFormSource, /const\s+isManagerMode\s*=\s*mode\s*===\s*['"]manager['"]/);
   assert.match(managerUpdatesBlock, /price:/);
@@ -248,14 +248,9 @@ runTest('EditProductForm manager mode strips product name/category/cost/delete',
   assert.doesNotMatch(managerUpdatesBlock, /name:/);
   assert.doesNotMatch(managerUpdatesBlock, /category:/);
   assert.doesNotMatch(managerUpdatesBlock, /cost:/);
-  assert.ok(
-    priceCostSection.indexOf('value={formData.price}') < priceCostSection.indexOf('{!isManagerMode &&'),
-    'price input must remain visible in manager mode'
-  );
-  assert.ok(
-    priceCostSection.indexOf('{!isManagerMode &&') < priceCostSection.indexOf('value={formData.cost}'),
-    'cost input must be owner-only'
-  );
+  assert.match(productFormFieldsSource, /label="售價"/);
+  assert.match(productFormFieldsSource, /!isManagerMode\s*&&\s*\([\s\S]*?label="商品名稱"/);
+  assert.match(productFormFieldsSource, /!isManagerMode\s*&&\s*\([\s\S]*?label="成本"/);
   assert.match(editProductFormSource, /\{!isManagerMode\s*&&\s*\([\s\S]*?setShowDeleteConfirm/);
 });
 

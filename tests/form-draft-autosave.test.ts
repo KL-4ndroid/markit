@@ -65,9 +65,12 @@ runTest('AddMarketForm routes close actions through dirty guard instead of direc
   assert.match(addMarketFormSource, /const handleRequestClose = \(\) =>/);
   assert.match(addMarketFormSource, /setShowDraftCloseConfirm\(true\)/);
   assert.doesNotMatch(addMarketFormSource, /onClick=\{onClose\}/);
-
-  const closeActionMatches = addMarketFormSource.match(/onClick=\{handleRequestClose\}/g) || [];
-  assert.ok(closeActionMatches.length >= 3, 'backdrop, header close, and footer cancel should use the dirty guard');
+  assert.match(
+    addMarketFormSource,
+    /<FullScreenForm[\s\S]*?onClose=\{handleRequestClose\}/,
+    'FullScreenForm must route backdrop, escape, and header close through the dirty guard'
+  );
+  assert.match(addMarketFormSource, /onClick=\{handleRequestClose\}/, 'footer cancel must use the dirty guard');
 });
 
 runTest('AddMarketForm keep/discard choices preserve or clear drafts explicitly', () => {

@@ -154,6 +154,16 @@ tsx tests/ui-primitives.test.ts
 tsx tests/sync-ui-consolidation.test.ts
 tsx tests/app-shell-accessibility-performance.test.ts
 tsx tests/global-overlay-host.test.ts
+tsx tests/today-view-model.test.ts
+tsx tests/today-home-ui.test.ts
+tsx tests/market-list-view-model.test.ts
+tsx tests/market-list-ui.test.ts
+tsx tests/market-form.test.ts
+tsx tests/market-form-ui.test.ts
+tsx tests/product-list-view-model.test.ts
+tsx tests/product-list-ui.test.ts
+tsx tests/product-form.test.ts
+tsx tests/product-form-ui.test.ts
 tsx tests/role-capabilities.test.ts
 tsx tests/p5-4d-role-freshness-gate.test.ts
 tsx tests/p5-field-notes.test.ts

@@ -61,7 +61,7 @@ runTest('route section is mounted in owner market detail but not staff market de
   assert.match(marketDetailSource, /<SalesPhotoEvidenceOwnerAlbumRouteSection/);
   assert.doesNotMatch(staffMarketDetailSource, /SalesPhotoEvidenceOwnerAlbumRouteSection/);
 
-  const staffReturnIndex = marketDetailSource.indexOf('return <StaffMarketDetailView market={market} />');
+  const staffReturnIndex = marketDetailSource.indexOf('if (isStaff) {');
   const albumSectionIndex = marketDetailSource.indexOf('<SalesPhotoEvidenceOwnerAlbumRouteSection');
 
   assert.ok(staffReturnIndex > 0, 'staff return must exist');

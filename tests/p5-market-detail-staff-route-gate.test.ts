@@ -36,7 +36,7 @@ runTest('MarketDetailPage initializes Dexie with staff scoped profile', () => {
 });
 
 runTest('MarketDetailPage routes staff to StaffMarketDetailView before owner UI', () => {
-  const staffReturnIndex = marketDetailSource.indexOf('return <StaffMarketDetailView market={market} />');
+  const staffReturnIndex = marketDetailSource.indexOf('if (isStaff) {');
   const ownerEditFormIndex = marketDetailSource.indexOf('<EditMarketForm', staffReturnIndex);
   const ownerDeleteModalIndex = marketDetailSource.indexOf('{showDeleteConfirm && isMounted && createPortal', staffReturnIndex);
   const ownerFieldOpsIndex = marketDetailSource.indexOf('<MarketFieldOpsSection', staffReturnIndex);

@@ -1,10 +1,21 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
-import { X, Package, DollarSign, Tag, FileText, Ban, Trash2, Hand, Cookie, Gem, Shirt, Palette, BookOpen, MoreHorizontal } from 'lucide-react';
-import { Dialog, Transition } from '@headlessui/react';
-import { updateProduct, deleteProduct } from '@/lib/db/hooks';
-import type { Product, ProductCategory, ProductUpdatedPayload } from '@/types/db';
+import { Ban, CheckCircle2, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import { ProductFormFields } from '@/components/products/ProductFormFields';
+import { AppDialog } from '@/components/ui/AppDialog';
+import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { deleteProduct, updateProduct } from '@/lib/db/hooks';
+import {
+  createProductFormValues,
+  getFirstProductFormError,
+  validateProductForm,
+  type ProductFormErrors,
+  type ProductFormValues,
+} from '@/lib/products/product-form';
+import type { Product } from '@/types/db';
 
 interface EditProductFormProps {
   product: Product;
@@ -14,102 +25,122 @@ interface EditProductFormProps {
   mode?: 'owner' | 'manager';
 }
 
-/**
- * 編輯商品表單組件
- */
-export function EditProductForm({ product, isOpen, onClose, onSuccess, mode = 'owner' }: EditProductFormProps) {
+const FORM_ID = 'edit-product-form';
+const FIELD_PREFIX = 'edit-product';
+
+export function EditProductForm({
+  product,
+  isOpen,
+  onClose,
+  onSuccess,
+  mode = 'owner',
+}: EditProductFormProps) {
   const isManagerMode = mode === 'manager';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [formData, setFormData] = useState<Partial<Product>>({
-    name: product.name,
-    category: product.category,
-    price: product.price,
-    cost: product.cost,
-    stock: product.stock,
-    unlimitedStock: product.unlimitedStock || false,
-    description: product.description,
-    isActive: product.isActive,
-  });
+  const [showZeroStockConfirm, setShowZeroStockConfirm] = useState(false);
+  const [formData, setFormData] = useState<ProductFormValues>(() => createProductFormValues(product));
+  const [errors, setErrors] = useState<ProductFormErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // 當 product 變更時更新表單
   useEffect(() => {
-    setFormData({
-      name: product.name,
-      category: product.category,
-      price: product.price,
-      cost: product.cost,
-      stock: product.stock,
-      unlimitedStock: product.unlimitedStock || false,
-      description: product.description,
-      isActive: product.isActive,
+    setFormData(createProductFormValues(product));
+    setErrors({});
+    setSubmitError(null);
+  }, [product, isOpen]);
+
+  const handleChange = <Field extends keyof ProductFormValues>(
+    field: Field,
+    value: ProductFormValues[Field],
+  ) => {
+    setFormData(previous => ({ ...previous, [field]: value }));
+    setErrors(previous => {
+      if (!(field in previous)) return previous;
+      const next = { ...previous };
+      delete next[field as keyof ProductFormErrors];
+      return next;
     });
-  }, [product]);
-
-  // 分類選項
-  const categories: { value: ProductCategory; label: string; icon: typeof Package; color: string }[] = [
-    { value: 'handmade', label: '手作', icon: Hand, color: 'bg-soft-pink' },
-    { value: 'food', label: '食品', icon: Cookie, color: 'bg-soft-yellow' },
-    { value: 'accessory', label: '飾品', icon: Gem, color: 'bg-soft-green' },
-    { value: 'clothing', label: '服飾', icon: Shirt, color: 'bg-cat-clothing' },
-    { value: 'art', label: '藝術品', icon: Palette, color: 'bg-cat-art' },
-    { value: 'stationery', label: '文具', icon: BookOpen, color: 'bg-cat-stationery' },
-    { value: 'other', label: '其他', icon: MoreHorizontal, color: 'bg-cat-other' },
-  ];
-
-  const handleChange = (field: keyof Product, value: string | number | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setSubmitError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if ((!isManagerMode && !formData.name) || formData.price! <= 0) {
-      alert('請填寫商品名稱和價格');
-      return;
-    }
+  const focusFirstError = (nextErrors: ProductFormErrors) => {
+    const firstError = getFirstProductFormError(nextErrors);
+    if (!firstError) return;
+    window.requestAnimationFrame(() => {
+      document.getElementById(`${FIELD_PREFIX}-${firstError}`)?.focus();
+    });
+  };
 
+  const updateValidatedProduct = async () => {
     setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       const managerUpdates: Partial<Product> = {
         price: formData.price,
         stock: formData.unlimitedStock ? 0 : formData.stock,
         unlimitedStock: formData.unlimitedStock,
-        description: formData.description,
+        description: formData.description.trim(),
+        isActive: formData.isActive,
+      };
+      const ownerUpdates: Partial<Product> = {
+        name: formData.name.trim(),
+        category: formData.category,
+        price: formData.price,
+        cost: formData.cost,
+        stock: formData.unlimitedStock ? 0 : formData.stock,
+        unlimitedStock: formData.unlimitedStock,
+        description: formData.description.trim(),
         isActive: formData.isActive,
       };
 
-      await updateProduct(product.id!, isManagerMode ? managerUpdates : formData);
-      
+      await updateProduct(product.id!, isManagerMode ? managerUpdates : ownerUpdates);
+      setShowZeroStockConfirm(false);
       onClose();
       onSuccess?.();
     } catch (error) {
       console.error('更新商品失敗：', error);
-      alert('更新商品失敗，請稍後再試');
+      setSubmitError('變更尚未儲存，請確認連線後再試一次。');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 處理停用/啟用商品
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextErrors = validateProductForm(formData, { requireIdentity: !isManagerMode });
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      focusFirstError(nextErrors);
+      return;
+    }
+
+    if (!formData.unlimitedStock && formData.stock === 0) {
+      setShowZeroStockConfirm(true);
+      return;
+    }
+
+    void updateValidatedProduct();
+  };
+
   const handleToggleActive = async () => {
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
-      await updateProduct(product.id!, { isActive: !formData.isActive });
-      setFormData(prev => ({ ...prev, isActive: !prev.isActive }));
+      const nextActive = !formData.isActive;
+      await updateProduct(product.id!, { isActive: nextActive });
+      setFormData(previous => ({ ...previous, isActive: nextActive }));
       onSuccess?.();
     } catch (error) {
       console.error('更新商品狀態失敗：', error);
-      alert('更新商品狀態失敗，請稍後再試');
+      setSubmitError('商品狀態尚未更新，請稍後再試。');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 處理刪除商品
   const handleDelete = async () => {
-    setIsSubmitting(true);
     try {
       await deleteProduct(product.id!);
       setShowDeleteConfirm(false);
@@ -117,293 +148,102 @@ export function EditProductForm({ product, isOpen, onClose, onSuccess, mode = 'o
       onSuccess?.();
     } catch (error) {
       console.error('刪除商品失敗：', error);
-      alert('刪除商品失敗，請稍後再試');
-    } finally {
-      setIsSubmitting(false);
+      setSubmitError('商品尚未刪除，請稍後再試。');
+      throw error;
     }
   };
 
-  if (!isOpen) return null;
+  const handleClose = () => {
+    if (isSubmitting) return;
+    setSubmitError(null);
+    onClose();
+  };
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
+      <AppDialog
+        open={isOpen}
+        onClose={handleClose}
+        title="編輯商品"
+        description={isManagerMode ? '可調整銷售、庫存與現場需要的資訊。' : '更新商品資料與販售狀態。'}
+        size="md"
+        dismissible={!isSubmitting}
+        footer={(
+          <>
+            <Button variant="secondary" onClick={handleClose} disabled={isSubmitting}>
+              取消
+            </Button>
+            <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
+              儲存變更
+            </Button>
+          </>
+        )}
+      >
+        <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
+          <ProductFormFields
+            idPrefix={FIELD_PREFIX}
+            values={formData}
+            errors={errors}
+            mode={mode}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
 
-      <div className="fixed inset-0 z-50 flex justify-center p-4">
-        <div className="bg-background w-full h-[90vh] sm:h-auto rounded-[2rem] sm:max-h-[90vh] sm:max-w-lg sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
-          {/* Header */}
-          <div className="bg-gradient-to-br from-primary to-secondary px-6 py-6 flex items-center justify-between">
-            <h2 className="text-xl font-medium text-white">編輯商品</h2>
-            <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
-              <X className="w-5 h-5 text-white" />
-            </button>
-          </div>
+          <section className="mt-6 space-y-3 border-t border-primary/10 pt-5" aria-labelledby="product-management-heading">
+            <h3 id="product-management-heading" className="text-sm font-medium text-foreground">
+              商品狀態
+            </h3>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={handleToggleActive}
+              disabled={isSubmitting}
+              leadingIcon={formData.isActive
+                ? <Ban className="h-4 w-4" aria-hidden="true" />
+                : <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
+            >
+              {formData.isActive ? '停用商品' : '啟用商品'}
+            </Button>
 
-          {/* 表單內容 */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 pb-24">
-            <div className="space-y-5">
-              {/* 商品名稱 */}
-              {!isManagerMode && (
-                <>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  商品名稱 <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  placeholder="例如：手工陶杯"
-                  className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
-                  required
-                />
-              </div>
-
-              {/* 分類選擇 */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  <Tag className="w-4 h-4 inline mr-1 text-primary" />
-                  分類 <span className="text-danger">*</span>
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {categories.map((cat) => {
-                    const Icon = cat.icon;
-                    return (
-                    <button
-                      key={cat.value}
-                      type="button"
-                      onClick={() => handleChange('category', cat.value)}
-                      className={`p-3 rounded-2xl border-2 transition-all ${
-                        formData.category === cat.value
-                          ? 'border-primary shadow-md'
-                          : 'border-transparent'
-                      } ${cat.color}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-5 h-5 text-foreground/70" strokeWidth={1.75} />
-                        <span className="text-sm font-medium text-foreground">{cat.label}</span>
-                      </div>
-                    </button>
-                    );
-                  })}
-                </div>
-              </div>
-                </>
-              )}
-
-              {/* 價格與成本 */}
-              <div className={`grid ${isManagerMode ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    <DollarSign className="w-4 h-4 inline mr-1 text-primary" />
-                    售價 <span className="text-danger">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => handleChange('price', Number(e.target.value))}
-                    placeholder="0"
-                    min="0"
-                    className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
-                    required
-                  />
-                </div>
-                {!isManagerMode && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    <DollarSign className="w-4 h-4 inline mr-1 text-secondary" />
-                    成本
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.cost}
-                    onChange={(e) => handleChange('cost', Number(e.target.value))}
-                    placeholder="0"
-                    min="0"
-                    className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
-                  />
-                </div>
-                )}
-              </div>
-
-              {/* 庫存 */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  <Package className="w-4 h-4 inline mr-1 text-primary" />
-                  庫存數量
-                </label>
-                
-                {/* 不限庫存 Checkbox */}
-                <div className="mb-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.unlimitedStock}
-                      onChange={(e) => {
-                        const unlimited = e.target.checked;
-                        setFormData(prev => ({
-                          ...prev,
-                          unlimitedStock: unlimited,
-                          stock: unlimited ? 0 : prev.stock,
-                        }));
-                      }}
-                      className="w-4 h-4 rounded border-primary/30 text-primary focus:ring-primary/50"
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      不限庫存（販售服務或接單訂製）
-                    </span>
-                  </label>
-                </div>
-                
-                {/* 庫存輸入框 */}
-                {!formData.unlimitedStock && (
-                  <input
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => handleChange('stock', Number(e.target.value))}
-                    placeholder="0"
-                    min="0"
-                    className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground"
-                  />
-                )}
-                
-                {formData.unlimitedStock && (
-                  <div className="px-4 py-3 rounded-2xl border border-primary/20 bg-cat-other text-muted-foreground text-center">
-                    ∞ 不限庫存
-                  </div>
-                )}
-              </div>
-
-              {/* 描述 */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  <FileText className="w-4 h-4 inline mr-1 text-primary" />
-                  商品描述
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => handleChange('description', e.target.value)}
-                  placeholder="商品的詳細說明..."
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-2xl border border-primary/20 bg-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground resize-none"
-                />
-              </div>
-
-              {/* 停用/刪除區域 */}
-              <div className="pt-4 border-t border-primary/10 space-y-3">
-                <p className="text-sm font-medium text-muted-foreground">商品管理</p>
-                
-                {/* 停用/啟用按鈕 */}
-                <button
-                  type="button"
-                  onClick={handleToggleActive}
-                  disabled={isSubmitting}
-                  className={`w-full px-4 py-3 rounded-2xl transition-colors font-medium flex items-center justify-center gap-2 ${
-                    formData.isActive
-                      ? 'bg-soft-yellow text-secondary hover:bg-[#FFF0D4]'
-                      : 'bg-soft-green text-primary hover:bg-soft-green/80'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  <Ban className="w-5 h-5" />
-                  {formData.isActive ? '停用商品' : '啟用商品'}
-                </button>
-
-                {!isManagerMode && (
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    disabled={isSubmitting}
-                    className="w-full px-4 py-3 rounded-2xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                    刪除商品
-                  </button>
-                )}
-              </div>
-            </div>
-          </form>
-
-          {/* 底部按鈕 - 固定在彈窗底部 */}
-          <div className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t border-primary/10 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-6 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium"
-              >
-                取消
-              </button>
-              <button
-                type="submit"
-                onClick={handleSubmit}
+            {!isManagerMode && (
+              <Button
+                variant="ghost"
+                className="w-full text-danger hover:bg-status-danger-bg"
+                onClick={() => setShowDeleteConfirm(true)}
                 disabled={isSubmitting}
-                className="flex-1 px-6 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                leadingIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
               >
-                {isSubmitting ? '更新中...' : '儲存變更'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+                刪除商品
+              </Button>
+            )}
+          </section>
 
-      {/* 刪除確認對話框 - 使用 Headless UI */}
-      <Transition appear show={showDeleteConfirm} as={Fragment}>
-        <Dialog as="div" className="relative z-[60]" onClose={() => setShowDeleteConfirm(false)}>
-          {/* 背景遮罩 */}
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/50" />
-          </Transition.Child>
+          {submitError && (
+            <p className="mt-5 rounded-control border border-status-danger-border bg-status-danger-bg p-3 text-sm text-status-danger-text" role="alert">
+              {submitError}
+            </p>
+          )}
+        </form>
+      </AppDialog>
 
-          {/* 對話框容器 */}
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-6">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-sm transform overflow-hidden rounded-[1.5rem] bg-white p-6 shadow-xl transition-all">
-                  <Dialog.Title className="text-lg font-medium text-foreground mb-2">
-                    確認刪除商品？
-                  </Dialog.Title>
-                  
-                  <Dialog.Description className="text-sm text-muted-foreground mb-6">
-                    刪除後，此商品將被永久移除，此操作無法復原。
-                  </Dialog.Description>
-                  
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowDeleteConfirm(false)}
-                      className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors"
-                    >
-                      取消
-                    </button>
-                    <button
-                      onClick={handleDelete}
-                      disabled={isSubmitting}
-                      className="flex-1 px-4 py-3 rounded-2xl bg-danger text-white hover:bg-danger/85 transition-colors disabled:opacity-50"
-                    >
-                      {isSubmitting ? '刪除中...' : '確認刪除'}
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+      <ConfirmDialog
+        open={showZeroStockConfirm}
+        onClose={() => setShowZeroStockConfirm(false)}
+        onConfirm={updateValidatedProduct}
+        title="儲存為零庫存？"
+        description="儲存後商品會顯示為已售完，仍可稍後補上庫存。"
+        confirmLabel="仍要儲存"
+      />
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="確認刪除商品？"
+        description="刪除後商品將無法繼續販售，此操作無法復原。"
+        confirmLabel="刪除商品"
+        tone="danger"
+      />
     </>
   );
 }

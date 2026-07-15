@@ -10,6 +10,10 @@ interface DateMultiPickerProps {
   className?: string;
   placeholder?: string;
   required?: boolean;
+  id?: string;
+  disabled?: boolean;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean | 'true' | 'false';
 }
 
 /**
@@ -26,6 +30,10 @@ export function DateMultiPicker({
   className = '',
   placeholder = '選擇日期',
   required = false,
+  id,
+  disabled = false,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
 }: DateMultiPickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const pickerRef = useRef<any>(null);
@@ -127,10 +135,14 @@ export function DateMultiPicker({
   return (
     <input
       ref={inputRef}
+      id={id}
       type="text"
       readOnly
       placeholder={placeholder}
       required={required}
+      disabled={disabled}
+      aria-describedby={ariaDescribedBy}
+      aria-invalid={ariaInvalid}
       className={className}
     />
   );

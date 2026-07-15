@@ -8,6 +8,9 @@ interface TimePickerProps {
   className?: string;
   placeholder?: string;
   required?: boolean;
+  id?: string;
+  disabled?: boolean;
+  'aria-describedby'?: string;
 }
 
 /**
@@ -21,9 +24,17 @@ export function TimePicker({
   className = '',
   placeholder = '選擇時間',
   required = false,
+  id,
+  disabled = false,
+  'aria-describedby': ariaDescribedBy,
 }: TimePickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const pickerRef = useRef<any>(null);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     if (!inputRef.current) return;
@@ -45,7 +56,7 @@ export function TimePicker({
         type: 'time',
         input: inputRef.current,
         onChange: (newValue: string) => {
-          onChange(newValue);
+          onChangeRef.current(newValue);
         },
       });
     };
@@ -57,7 +68,7 @@ export function TimePicker({
         pickerRef.current.destroy();
       }
     };
-  }, [onChange]);
+  }, []);
 
   // 當 value 從外部改變時，更新 input
   useEffect(() => {
@@ -69,11 +80,14 @@ export function TimePicker({
   return (
     <input
       ref={inputRef}
+      id={id}
       type="text"
       readOnly
       value={value}
       placeholder={placeholder}
       required={required}
+      disabled={disabled}
+      aria-describedby={ariaDescribedBy}
       className={className}
     />
   );

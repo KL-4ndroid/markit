@@ -35,6 +35,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -63,7 +64,6 @@ import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
 import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
-import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
@@ -85,11 +85,16 @@ import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-ca
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import type { Market, Event, DealClosedPayload } from '@/types/db';
 
+const EditMarketForm = dynamic(() =>
+  import('@/components/markets/EditMarketForm').then(module => module.EditMarketForm)
+);
+
 interface StaffMarketDetailViewProps {
   market: Market;
+  initialPhotoEvidenceView?: 'pending_list';
 }
 
-export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
+export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: StaffMarketDetailViewProps) {
   const router = useRouter();
   const marketId = market.id!;
   const { user } = useAuth();
@@ -214,6 +219,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   const salesPhotoEvidenceFlow = useSalesPhotoEvidenceFlow({
     marketId,
     canHandleItem: isLocalSalesPhotoEvidenceCaptureAllowed,
+    initialView: initialPhotoEvidenceView,
   });
   const handleSalesPhotoEvidenceResult = salesPhotoEvidenceFlow.handleSalesPhotoEvidenceResult;
   const handleOpenPendingSalesPhotoEvidence = salesPhotoEvidenceFlow.openPendingList;
@@ -667,13 +673,15 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         }}
       />
 
-      <EditMarketForm
-        isOpen={showEditMarketForm}
-        onClose={() => setShowEditMarketForm(false)}
-        market={market}
-        mode="manager"
-        onSuccess={() => setShowEditMarketForm(false)}
-      />
+      {showEditMarketForm && (
+        <EditMarketForm
+          isOpen
+          onClose={() => setShowEditMarketForm(false)}
+          market={market}
+          mode="manager"
+          onSuccess={() => setShowEditMarketForm(false)}
+        />
+      )}
     </div>
   );
 }
