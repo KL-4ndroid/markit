@@ -1,11 +1,15 @@
 'use client';
 
 import {
+  Banknote,
   Camera,
   Clock,
+  CreditCard,
   ImageOff,
+  MoreHorizontal,
   RefreshCw,
   ShieldCheck,
+  Smartphone,
   XCircle,
 } from 'lucide-react';
 import type {
@@ -13,6 +17,11 @@ import type {
   SalesPhotoEvidenceAlbumItemDisplayStatus,
   SalesPhotoEvidenceOwnerAlbumViewModel,
 } from '@/lib/sales/photo-evidence-owner-album-read-model';
+import type { SalesPhotoEvidenceTransactionSummary } from '@/lib/sales/photo-evidence-owner-view';
+import {
+  SALES_PAYMENT_METHOD_LABELS,
+  type SalesPaymentMethod,
+} from '@/lib/sales/payment-methods';
 import { SalesPhotoEvidenceOwnerAlbumImage } from './SalesPhotoEvidenceOwnerAlbumImage';
 
 interface SalesPhotoEvidenceOwnerAlbumShellProps {
@@ -20,6 +29,7 @@ interface SalesPhotoEvidenceOwnerAlbumShellProps {
   isLoading?: boolean;
   loadError?: string | null;
   onRefresh?: () => void;
+  transactionBySaleId?: ReadonlyMap<string, SalesPhotoEvidenceTransactionSummary>;
   className?: string;
 }
 
@@ -64,11 +74,16 @@ function getStatusIcon(status: SalesPhotoEvidenceAlbumItemDisplayStatus) {
   return <ImageOff className="h-4 w-4" />;
 }
 
-function getItemCaption(item: SalesPhotoEvidenceAlbumItem): string {
+const PAYMENT_METHOD_ICONS = {
+  cash: Banknote,
+  card: CreditCard,
+  mobile: Smartphone,
+  other: MoreHorizontal,
+} satisfies Record<SalesPaymentMethod, typeof Banknote>;
+
+function getItemCaption(item: SalesPhotoEvidenceAlbumItem): string | null {
   if (item.displayStatus === 'uploaded_private') {
-    return item.hasPrivateThumbnailObject
-      ? '已有私有縮圖物件，需等 signed read 才能顯示圖片。'
-      : '已有私有圖片物件，尚無可顯示縮圖。';
+    return null;
   }
 
   if (item.displayStatus === 'captured_local') {
@@ -100,6 +115,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
   isLoading = false,
   loadError = null,
   onRefresh,
+  transactionBySaleId = new Map(),
   className = '',
 }: SalesPhotoEvidenceOwnerAlbumShellProps) {
   const { summary } = viewModel;
@@ -114,7 +130,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
           <div className="min-w-0">
             <h2 className="text-lg font-medium text-foreground">成交照片</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              這裡只顯示照片紀錄狀態。正式圖片預覽會等 signed read 流程核准後再開放。
+              依成交時間整理照片、金額與支付方式。
             </p>
           </div>
         </div>
@@ -153,49 +169,73 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {viewModel.items.map(item => (
-            <article key={item.id} className="rounded-2xl border border-border bg-background p-4">
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    成交 {item.saleId ?? item.id}
+          {viewModel.items.map(item => {
+            const transaction = item.saleId ? transactionBySaleId.get(item.saleId) : undefined;
+            const PaymentMethodIcon = transaction
+              ? PAYMENT_METHOD_ICONS[transaction.paymentMethod]
+              : null;
+            const caption = getItemCaption(item);
+
+            return (
+              <article key={item.id} className="rounded-2xl border border-border bg-background p-4">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      成交 {item.saleId ?? item.id}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatDateTime(item.saleCompletedAt)}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${DISPLAY_STATUS_STYLES[item.displayStatus]}`}
+                  >
+                    {getStatusIcon(item.displayStatus)}
+                    {DISPLAY_STATUS_LABELS[item.displayStatus]}
+                  </span>
+                </div>
+
+                <div className="aspect-[4/3] overflow-hidden rounded-xl bg-white">
+                  <SalesPhotoEvidenceOwnerAlbumImage
+                    evidenceId={item.id}
+                    canLoad={item.displayStatus === 'uploaded_private' && (item.hasPrivateThumbnailObject || item.hasPrivateImageObject)}
+                    alt="成交照片"
+                    previewVariant={item.hasPrivateThumbnailObject ? 'thumbnail' : 'image'}
+                    fullVariant={item.hasPrivateImageObject ? 'image' : 'thumbnail'}
+                  />
+                </div>
+
+                {transaction && PaymentMethodIcon && (
+                  <div className="mt-3 flex items-center justify-between gap-3 border-b border-border pb-3">
+                    <strong className="text-lg font-semibold tabular-nums text-foreground">
+                      NT$ {transaction.amount.toLocaleString()}
+                    </strong>
+                    <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <PaymentMethodIcon className="h-4 w-4" aria-hidden="true" />
+                      {SALES_PAYMENT_METHOD_LABELS[transaction.paymentMethod]}
+                    </span>
+                  </div>
+                )}
+
+                {caption && (
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    {caption}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {formatDateTime(item.saleCompletedAt)}
-                  </p>
-                </div>
-                <span
-                  className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${DISPLAY_STATUS_STYLES[item.displayStatus]}`}
-                >
-                  {getStatusIcon(item.displayStatus)}
-                  {DISPLAY_STATUS_LABELS[item.displayStatus]}
-                </span>
-              </div>
+                )}
 
-              <div className="aspect-[4/3] overflow-hidden rounded-xl bg-white">
-                <SalesPhotoEvidenceOwnerAlbumImage
-                  evidenceId={item.id}
-                  canLoad={item.displayStatus === 'uploaded_private' && item.hasPrivateThumbnailObject}
-                  alt="成交照片"
-                />
-              </div>
-
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                {getItemCaption(item)}
-              </p>
-
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                <div>
-                  <dt>上傳時間</dt>
-                  <dd className="mt-0.5 font-medium text-foreground">{formatDateTime(item.uploadedAt)}</dd>
-                </div>
-                <div>
-                  <dt>到期時間</dt>
-                  <dd className="mt-0.5 font-medium text-foreground">{formatDateTime(item.expiresAt)}</dd>
-                </div>
-              </dl>
-            </article>
-          ))}
+                <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>
+                    <dt>上傳時間</dt>
+                    <dd className="mt-0.5 font-medium text-foreground">{formatDateTime(item.uploadedAt)}</dd>
+                  </div>
+                  <div>
+                    <dt>到期時間</dt>
+                    <dd className="mt-0.5 font-medium text-foreground">{formatDateTime(item.expiresAt)}</dd>
+                  </div>
+                </dl>
+              </article>
+            );
+          })}
         </div>
       )}
     </section>

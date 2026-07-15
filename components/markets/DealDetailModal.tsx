@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
-import { X, Edit, Trash2, Clock, CreditCard } from 'lucide-react';
+import { X, Edit, Trash2, Clock, CreditCard, Camera } from 'lucide-react';
 import {
   getDealEventRevenue,
   getDealNotes,
@@ -13,7 +13,9 @@ import {
   getDealPaymentMethod,
   isBackfillDealEvent,
 } from '@/lib/markets/event-view-utils';
+import type { SalesPhotoEvidenceOwnerImageDescriptor } from '@/lib/sales/photo-evidence-owner-view';
 import type { Event, DealClosedPayload } from '@/types/db';
+import { SalesPhotoEvidenceOwnerAlbumImage } from './SalesPhotoEvidenceOwnerAlbumImage';
 
 interface DealDetailModalProps {
   isOpen: boolean;
@@ -21,13 +23,21 @@ interface DealDetailModalProps {
   onClose: () => void;
   onEdit?: (deal: Event<DealClosedPayload>) => void;
   onDelete?: (deal: Event<DealClosedPayload>) => void;
+  photoEvidence?: SalesPhotoEvidenceOwnerImageDescriptor | null;
 }
 
 /**
  * 成交詳細內容彈窗
  * 顯示成交詳情、商品明細，並提供編輯和刪除功能
  */
-export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: DealDetailModalProps) {
+export function DealDetailModal({
+  isOpen,
+  deal,
+  onClose,
+  onEdit,
+  onDelete,
+  photoEvidence = null,
+}: DealDetailModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   if (!deal) return null;
@@ -120,6 +130,27 @@ export function DealDetailModal({ isOpen, deal, onClose, onEdit, onDelete }: Dea
                 </div>
               </div>
             </div>
+
+            {photoEvidence && (
+              <section aria-labelledby="deal-photo-evidence-title">
+                <h3
+                  id="deal-photo-evidence-title"
+                  className="mb-3 flex items-center gap-2 text-sm font-medium text-foreground"
+                >
+                  <Camera className="h-4 w-4 text-primary" />
+                  成交照片
+                </h3>
+                <div className="aspect-[4/3] overflow-hidden rounded-xl bg-background">
+                  <SalesPhotoEvidenceOwnerAlbumImage
+                    evidenceId={photoEvidence.evidenceId}
+                    canLoad={true}
+                    alt="此筆成交的成交照片"
+                    previewVariant={photoEvidence.previewVariant}
+                    fullVariant={photoEvidence.fullVariant}
+                  />
+                </div>
+              </section>
+            )}
 
             {/* 商品明細 */}
             <div>

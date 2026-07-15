@@ -27,9 +27,12 @@ console.log('\n=== Sales photo evidence owner album route section ===');
 runTest('route section is prop-driven and uses the approved read model plus shell', () => {
   assert.match(routeSectionSource, /interface SalesPhotoEvidenceOwnerAlbumRouteSectionProps/);
   assert.match(routeSectionSource, /rows\?: readonly SalesPhotoEvidenceAlbumSourceRow\[\]/);
+  assert.match(routeSectionSource, /dealEvents\?: readonly Event<DealClosedPayload>\[\]/);
   assert.match(routeSectionSource, /buildSalesPhotoEvidenceOwnerAlbumViewModel/);
+  assert.match(routeSectionSource, /buildSalesPhotoEvidenceTransactionIndex/);
   assert.match(routeSectionSource, /SalesPhotoEvidenceOwnerAlbumShell/);
   assert.match(routeSectionSource, /viewModel=\{decision\.viewModel\}/);
+  assert.match(routeSectionSource, /transactionBySaleId=\{transactionBySaleId\}/);
 });
 
 runTest('route section fails closed until owner role and scope are ready', () => {
@@ -71,6 +74,7 @@ runTest('owner market detail passes only scoped props into the route section', (
     /<SalesPhotoEvidenceOwnerAlbumRouteSection[\s\S]*actorRole=\{isStaff \? 'staff' : 'owner'\}[\s\S]*ownerId=\{ownerSalesPhotoEvidenceAlbumOwnerId\}[\s\S]*marketId=\{marketId\}[\s\S]*rows=\{ownerSalesPhotoEvidenceRows\}/
   );
   assert.match(marketDetailSource, /isRoleReady=\{!isRoleLoading\}/);
+  assert.match(marketDetailSource, /dealEvents=\{dealEvents\}/);
   assert.match(marketDetailSource, /onRefresh=\{loadOwnerSalesPhotoEvidenceAlbumRows\}/);
 });
 

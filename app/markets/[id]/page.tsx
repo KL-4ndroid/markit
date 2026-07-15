@@ -82,6 +82,7 @@ import {
   listOwnerSalesPhotoEvidenceAlbumMetadataRows,
 } from '@/lib/supabase/sales-photo-evidence';
 import type { SalesPhotoEvidenceAlbumSourceRow } from '@/lib/sales/photo-evidence-owner-album-read-model';
+import { findSalesPhotoEvidenceOwnerImageForSale } from '@/lib/sales/photo-evidence-owner-view';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
@@ -266,6 +267,10 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [interactionEvents, setInteractionEvents] = useState<Event<InteractionRecordedPayload>[]>([]);
   const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
   const [buttonLabels, setButtonLabels] = useState<Record<string, { label: string; emoji: string }>>({});
+  const selectedDealPhotoEvidence = useMemo(
+    () => findSalesPhotoEvidenceOwnerImageForSale(ownerSalesPhotoEvidenceRows, selectedDeal?.id),
+    [ownerSalesPhotoEvidenceRows, selectedDeal?.id]
+  );
 
   // 初始化資料庫（使用安全初始化）
   useEffect(() => {
@@ -1695,6 +1700,7 @@ export default function MarketDetailPage({ params }: PageProps) {
           ownerId={ownerSalesPhotoEvidenceAlbumOwnerId}
           marketId={marketId}
           rows={ownerSalesPhotoEvidenceRows}
+          dealEvents={dealEvents}
           isRoleReady={!isRoleLoading}
           isLoading={isLoadingOwnerSalesPhotoEvidenceAlbum}
           loadError={ownerSalesPhotoEvidenceAlbumLoadError}
@@ -2310,6 +2316,7 @@ export default function MarketDetailPage({ params }: PageProps) {
         onClose={handleCloseDealDetail}
         onEdit={handleEditDeal}
         onDelete={handleDeleteDeal}
+        photoEvidence={selectedDealPhotoEvidence}
       />
 
       {/* 補登收入對話框 */}

@@ -150,9 +150,11 @@ runTest('owner image client uses bearer fetch and object URL without exposing R2
 
 runTest('owner album shell renders the image component but does not fetch directly', () => {
   assert.match(shellSource, /SalesPhotoEvidenceOwnerAlbumImage/);
-  assert.match(shellSource, /canLoad=\{item\.displayStatus === 'uploaded_private' && item\.hasPrivateThumbnailObject\}/);
+  assert.match(shellSource, /canLoad=\{item\.displayStatus === 'uploaded_private' && \(item\.hasPrivateThumbnailObject \|\| item\.hasPrivateImageObject\)\}/);
   assert.match(imageComponentSource, /fetchSalesPhotoEvidenceOwnerImageObjectUrl/);
   assert.match(imageComponentSource, /URL\.revokeObjectURL/);
+  assert.match(imageComponentSource, /variant: SalesPhotoEvidenceOwnerImageVariant/);
+  assert.match(imageComponentSource, /aria-label="放大查看成交照片"/);
   assert.doesNotMatch(shellSource, /fetchSalesPhotoEvidenceOwnerImageObjectUrl|fetch\(|supabase|@aws-sdk|R2_BUCKET|service_role/i);
 });
 
