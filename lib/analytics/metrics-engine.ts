@@ -25,15 +25,13 @@ import { getDealEventCount } from '@/lib/events/event-read-model';
  * Metrics 快取
  * 使用 WeakMap 避免記憶體洩漏（當 market 被 GC 時，cache 也會被清除）
  */
-const metricsCache = new WeakMap<Market, MarketMetrics>();
+let metricsCache = new WeakMap<Market, MarketMetrics>();
 
 /**
  * 清除快取（用於測試或強制重新計算）
  */
 export function clearMetricsCache(): void {
-  // WeakMap 無法直接清除，但可以重新創建
-  // 實務上不需要清除，因為 WeakMap 會自動 GC
-  console.log('📝 Metrics cache cleared (WeakMap will be garbage collected)');
+  metricsCache = new WeakMap<Market, MarketMetrics>();
 }
 
 // ==================== Confidence Score ====================
@@ -123,6 +121,7 @@ export async function calculateMarketMetrics(
     allMarkets?: Market[];
     db?: MarketPulseDB;
     enableBatchEntryCorrection?: boolean;
+    preloadedDealEvents?: Event<DealClosedPayload>[];
   } = {}
 ): Promise<MarketMetrics> {
   const { 
@@ -130,7 +129,8 @@ export async function calculateMarketMetrics(
     verbose = false,
     allMarkets,
     db,
-    enableBatchEntryCorrection = true
+    enableBatchEntryCorrection = true,
+    preloadedDealEvents,
   } = options;
   
   // 🔥 檢查快取
@@ -154,23 +154,26 @@ export async function calculateMarketMetrics(
   // 🔥 v3.4: 批次補登偵測（僅當啟用且有必要數據時）
   if (enableBatchEntryCorrection && allMarkets && db && market.id) {
     try {
-      // 獲取歷史成交事件（排除當前市集）
       const historicalMarkets = allMarkets.filter(m => m.id !== market.id);
       const historicalMarketIds = historicalMarkets.map(m => m.id!).filter(Boolean);
       
       if (historicalMarketIds.length > 0) {
-        const historicalDeals = await db.events
-          .where('market_id')
-          .anyOf(historicalMarketIds)
-          .and(e => e.type === 'deal_closed')
-          .toArray() as Event<DealClosedPayload>[];
-        
-        // 獲取當前市集的成交事件
-        const currentDeals = await db.events
-          .where('market_id')
-          .equals(market.id)
-          .and(e => e.type === 'deal_closed')
-          .toArray() as Event<DealClosedPayload>[];
+        const historicalMarketIdSet = new Set(historicalMarketIds);
+        const historicalDeals = preloadedDealEvents
+          ? preloadedDealEvents.filter(event => event.market_id && historicalMarketIdSet.has(event.market_id))
+          : await db.events
+              .where('market_id')
+              .anyOf(historicalMarketIds)
+              .and(e => e.type === 'deal_closed')
+              .toArray() as Event<DealClosedPayload>[];
+
+        const currentDeals = preloadedDealEvents
+          ? preloadedDealEvents.filter(event => event.market_id === market.id)
+          : await db.events
+              .where('market_id')
+              .equals(market.id)
+              .and(e => e.type === 'deal_closed')
+              .toArray() as Event<DealClosedPayload>[];
         
         // 偵測每筆補登
         for (const dealEvent of currentDeals) {
@@ -419,11 +422,20 @@ export async function calculateBatchMetrics(
   } = {}
 ): Promise<Array<{ market: Market; marketId: string; metrics: MarketMetrics }>> {
   const results = [];
+  const marketIds = markets.map(market => market.id).filter((id): id is string => Boolean(id));
+  const preloadedDealEvents = options.db && options.enableBatchEntryCorrection !== false && marketIds.length > 0
+    ? await options.db.events
+        .where('market_id')
+        .anyOf(marketIds)
+        .and(event => event.type === 'deal_closed')
+        .toArray() as Event<DealClosedPayload>[]
+    : undefined;
   
   for (const market of markets) {
     const metrics = await calculateMarketMetrics(market, {
       ...options,
       allMarkets: markets, // 傳入所有市集用於計算歷史數據
+      preloadedDealEvents,
     });
     
     results.push({

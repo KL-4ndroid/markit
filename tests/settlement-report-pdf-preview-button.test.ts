@@ -36,7 +36,10 @@ console.log('\n=== Settlement report PDF preview button ===');
 
 runTest('browser preview shell is client-only and uses react-pdf blob generation', () => {
   assert.match(buttonSource, /^'use client';/);
-  assert.match(buttonSource, /import \{ pdf \} from '@react-pdf\/renderer'/);
+  assert.match(buttonSource, /import\('@react-pdf\/renderer'\)/);
+  assert.match(buttonSource, /import\('\.\/SettlementReportPdfDocument'\)/);
+  assert.doesNotMatch(buttonSource, /^import \{ pdf \} from '@react-pdf\/renderer'/m);
+  assert.doesNotMatch(buttonSource, /^import \{ SettlementReportPdfDocument \}/m);
   assert.match(buttonSource, /\.toBlob\(\)/);
   assert.match(buttonSource, /URL\.createObjectURL\(blob\)/);
   assert.match(buttonSource, /window\.open\(url, '_blank'\)/);

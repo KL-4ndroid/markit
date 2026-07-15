@@ -81,6 +81,8 @@ tsx tests/analytics-data-completeness.test.ts
 tsx tests/actionable-analytics.test.ts
 tsx tests/market-recap.test.ts
 tsx tests/market-trend.test.ts
+tsx tests/market-metrics-view-model.test.ts
+tsx tests/analytics-information-architecture.test.ts
 tsx tests/product-recommendations.test.ts
 tsx tests/owner-revenue-gap-repair.test.ts
 tsx tests/local-projection-repair.test.ts

@@ -52,14 +52,28 @@ runTest('preview UI is positioned as an in-app report check workspace', () => {
 
 runTest('preview UI reads only local IndexedDB data and does not write or sync', () => {
   assert.match(pageSource, /useLiveQuery/);
-  assert.match(pageSource, /db\.markets\.toArray/);
-  assert.match(pageSource, /db\.products\.toArray/);
+  assert.match(pageSource, /db\.markets\s*\.where\('owner_id'\)\s*\.equals\(user\.id\)/);
+  assert.match(pageSource, /db\.products\.where\('owner_id'\)\.equals\(user\.id\)/);
   assert.match(pageSource, /db\.dailyStats/);
+  assert.match(pageSource, /\.where\('marketId'\)\s*\.anyOf\(marketIds\)/);
   assert.doesNotMatch(pageSource, /db\.(markets|products|dailyStats|events)\.(add|put|update|delete|clear|bulkAdd|bulkPut|bulkDelete)/);
   assert.doesNotMatch(
     pageImports,
     /from ['"](?:@\/lib\/sync|@\/lib\/db\/events|@\/lib\/db\/recovery|@\/lib\/supabase\/client|@supabase\/supabase-js|[^'"]*(?:xlsx|csv|download))/i
   );
+});
+
+runTest('preview UI separates decision tasks without changing report formulas', () => {
+  assert.match(pageSource, /type ReportTab = 'summary' \| 'markets' \| 'products' \| 'quality'/);
+  assert.match(pageSource, /label: '摘要'/);
+  assert.match(pageSource, /label: '市集'/);
+  assert.match(pageSource, /label: '商品與成本'/);
+  assert.match(pageSource, /label: '資料品質'/);
+  assert.match(pageSource, /activeTab === 'summary'/);
+  assert.match(pageSource, /activeTab === 'markets'/);
+  assert.match(pageSource, /activeTab === 'products'/);
+  assert.match(pageSource, /activeTab === 'quality'/);
+  assert.match(pageSource, /isReportDataLoading/);
 });
 
 runTest('preview UI exposes owner PDF preview without Excel CSV or custom download actions', () => {

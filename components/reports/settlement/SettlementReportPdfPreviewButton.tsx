@@ -2,10 +2,8 @@
 
 import React, { useState } from 'react';
 import { ExternalLink, Loader2 } from 'lucide-react';
-import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 
-import { SettlementReportPdfDocument } from './SettlementReportPdfDocument';
 import type { SettlementReportPdfViewModel } from '@/lib/reporting/settlement-report-pdf-view-model';
 
 export type SettlementReportPdfPreviewButtonProps = {
@@ -33,6 +31,10 @@ export function SettlementReportPdfPreviewButton({
     setErrorMessage(null);
 
     try {
+      const [{ pdf }, { SettlementReportPdfDocument }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('./SettlementReportPdfDocument'),
+      ]);
       const documentElement = React.createElement(SettlementReportPdfDocument, {
         viewModel,
         fontSource: viewModel.font.assetPath,

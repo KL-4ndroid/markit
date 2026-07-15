@@ -33,6 +33,8 @@ import {
 } from '@/lib/reporting/settlement-report-preview';
 import { buildSettlementReportPdfViewModel } from '@/lib/reporting/settlement-report-pdf-view-model';
 import { SettlementReportPdfPreviewButton } from '@/components/reports/settlement/SettlementReportPdfPreviewButton';
+import { StateView } from '@/components/ui/StateView';
+import { Tabs, type TabItem } from '@/components/ui/Tabs';
 import {
   OWNER_BRAND_NAME_FALLBACK,
   OWNER_BRAND_NAME_UPDATED_EVENT,
@@ -44,6 +46,15 @@ type BuiltPreview = {
   report: SettlementReportModel;
   preview: SettlementReportPreviewModel;
 };
+
+type ReportTab = 'summary' | 'markets' | 'products' | 'quality';
+
+const REPORT_TABS: readonly TabItem<ReportTab>[] = [
+  { id: 'summary', label: '摘要' },
+  { id: 'markets', label: '市集' },
+  { id: 'products', label: '商品與成本' },
+  { id: 'quality', label: '資料品質' },
+];
 
 function toDateInputValue(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -128,12 +139,6 @@ function getScoreBarWidth(score: number | null): string {
   return `${Math.max(0, Math.min(100, Math.round(score)))}%`;
 }
 
-function getSectionStatusLabel(status: SettlementReportSignalStatus): string {
-  if (status === 'available') return '可用';
-  if (status === 'limited') return '有限';
-  return '不足';
-}
-
 function gradeClasses(grade: string): string {
   if (grade === 'A') return 'border-status-good-border bg-status-good-bg text-status-good-text';
   if (grade === 'B') return 'border-neutral-stripe-dark bg-neutral-alt-warm text-text-warm-deep';
@@ -149,6 +154,7 @@ export default function SettlementReportPreviewPage() {
   const [startDate, setStartDate] = useState(defaultRange.startDate);
   const [endDate, setEndDate] = useState(defaultRange.endDate);
   const [brandName, setBrandName] = useState(OWNER_BRAND_NAME_FALLBACK);
+  const [activeTab, setActiveTab] = useState<ReportTab>('summary');
   const isRoleReady = roleRefreshState.stage === 'ready';
 
   const capabilities = useMemo(() => deriveRoleCapabilities({
@@ -190,28 +196,43 @@ export default function SettlementReportPreviewPage() {
     };
   }, [user?.id, canPreview]);
 
-  const markets = useLiveQuery(async () => {
+  const marketsQuery = useLiveQuery(async () => {
     if (!user?.id || !canPreview) return [];
-    const rows = await db.markets.toArray();
-    return rows.filter(market => market.owner_id === user.id && !market.isDeleted);
-  }, [user?.id, canPreview]) ?? [];
-
-  const products = useLiveQuery(async () => {
-    if (!user?.id || !canPreview) return [];
-    const rows = await db.products.toArray();
-    return rows.filter(product => product.owner_id === user.id || product.owner_id === undefined);
-  }, [user?.id, canPreview]) ?? [];
-
-  const dailyStats = useLiveQuery(async () => {
-    if (!canPreview) return [];
-    return await db.dailyStats
-      .where('date')
-      .between(startDate, endDate, true, true)
+    return db.markets
+      .where('owner_id')
+      .equals(user.id)
+      .and(market => !market.isDeleted)
       .toArray();
-  }, [canPreview, startDate, endDate]) ?? [];
+  }, [user?.id, canPreview]);
+
+  const productsQuery = useLiveQuery(async () => {
+    if (!user?.id || !canPreview) return [];
+    return db.products.where('owner_id').equals(user.id).toArray();
+  }, [user?.id, canPreview]);
+
+  const markets = useMemo(() => marketsQuery ?? [], [marketsQuery]);
+  const products = useMemo(() => productsQuery ?? [], [productsQuery]);
+  const marketIds = useMemo(
+    () => markets.flatMap(market => market.id ? [market.id] : []),
+    [markets],
+  );
+  const marketIdsKey = marketIds.join('|');
+
+  const dailyStatsQuery = useLiveQuery(async () => {
+    if (!canPreview || marketIds.length === 0) return [];
+    return db.dailyStats
+      .where('marketId')
+      .anyOf(marketIds)
+      .and(stat => stat.date >= startDate && stat.date <= endDate)
+      .toArray();
+  }, [canPreview, marketIdsKey, startDate, endDate]);
+  const dailyStats = useMemo(() => dailyStatsQuery ?? [], [dailyStatsQuery]);
+  const isReportDataLoading = marketsQuery === undefined
+    || productsQuery === undefined
+    || dailyStatsQuery === undefined;
 
   const built = useMemo<BuiltPreview | null>(() => {
-    if (!canPreview) return null;
+    if (!canPreview || isReportDataLoading) return null;
 
     const report = buildSettlementReportModel({
       capabilities,
@@ -234,7 +255,7 @@ export default function SettlementReportPreviewPage() {
         report,
       }),
     };
-  }, [canPreview, capabilities, kind, startDate, endDate, brandName, markets, dailyStats, products]);
+  }, [canPreview, isReportDataLoading, capabilities, kind, startDate, endDate, brandName, markets, dailyStats, products]);
 
   if (!isRoleReady) {
     return (
@@ -321,6 +342,13 @@ export default function SettlementReportPreviewPage() {
           </div>
         </header>
 
+        {isReportDataLoading && (
+          <StateView
+            title="正在整理結算資料"
+            description="只讀取目前帳號與日期範圍內的市集、商品和統計。"
+          />
+        )}
+
         {preview && report && (
           <>
             <section className="flex flex-col gap-3 border border-neutral-stripe-dark bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
@@ -333,6 +361,14 @@ export default function SettlementReportPreviewPage() {
               <SettlementReportPdfPreviewButton viewModel={pdfViewModel} canPreview={canPreview} />
             </section>
 
+            <Tabs
+              items={REPORT_TABS}
+              value={activeTab}
+              onChange={setActiveTab}
+              ariaLabel="結算報告內容"
+            />
+
+            {activeTab === 'summary' && (
             <section className="grid gap-5 border border-neutral-stripe-dark bg-white p-5 shadow-sm lg:grid-cols-[1.2fr_0.8fr]">
               <div className="flex flex-col justify-between">
                 <div>
@@ -402,19 +438,9 @@ export default function SettlementReportPreviewPage() {
                 </div>
               </aside>
             </section>
+            )}
 
-            <section className="grid gap-3 md:grid-cols-4">
-              {preview.sections.slice(0, 4).map((section) => (
-                <div key={section.key} className={`border px-4 py-3 shadow-sm ${statusClasses(section.status)}`}>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold">{section.title}</p>
-                    <span className="text-xs font-medium">{getSectionStatusLabel(section.status)}</span>
-                  </div>
-                </div>
-              ))}
-            </section>
-
-            {preview.topWarnings.length > 0 && (
+            {activeTab === 'quality' && preview.topWarnings.length > 0 && (
               <section className="border border-warning-border bg-warning-bg p-5 shadow-sm">
                 <div className="mb-3 flex items-center gap-2 text-status-danger-text">
                   <AlertTriangle size={18} />
@@ -431,6 +457,7 @@ export default function SettlementReportPreviewPage() {
               </section>
             )}
 
+            {activeTab === 'quality' && (
             <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="border border-neutral-stripe-dark bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2 text-foreground">
@@ -489,7 +516,9 @@ export default function SettlementReportPreviewPage() {
                 </div>
               </div>
             </section>
+            )}
 
+            {activeTab === 'markets' && (
             <section className="border border-neutral-stripe-dark bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center gap-2 text-foreground">
                 <TrendingUp size={18} className="text-accent-green" />
@@ -532,7 +561,9 @@ export default function SettlementReportPreviewPage() {
                 })}
               </div>
             </section>
+            )}
 
+            {activeTab === 'products' && (
             <section className="grid gap-5 lg:grid-cols-2">
               <div className="border border-neutral-stripe-dark bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center gap-2 text-foreground">
@@ -594,7 +625,9 @@ export default function SettlementReportPreviewPage() {
                 </div>
               </div>
             </section>
+            )}
 
+            {activeTab === 'summary' && (
             <section className="border border-neutral-stripe-dark bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center gap-2 text-foreground">
                 <CheckCircle2 size={18} className="text-accent-green" />
@@ -611,6 +644,7 @@ export default function SettlementReportPreviewPage() {
                 ))}
               </div>
             </section>
+            )}
           </>
         )}
       </div>
