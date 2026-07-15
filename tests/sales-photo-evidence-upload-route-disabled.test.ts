@@ -138,6 +138,7 @@ function validRequestBody() {
     saleEventId: IDS.saleId,
     capturedByStaffId: IDS.staffId,
     capturedAt: '2026-07-07T01:05:00.000Z',
+    saleCompletedAt: '2026-07-07T01:02:03.000Z',
     hasLocalPayload: true,
   };
 }
@@ -164,6 +165,7 @@ function createUploadFormDataRequest(): Request {
   formData.set('saleEventId', IDS.saleId);
   formData.set('capturedByStaffId', IDS.staffId);
   formData.set('capturedAt', '2026-07-07T01:05:00.000Z');
+  formData.set('saleCompletedAt', '2026-07-07T01:02:03.000Z');
   formData.set('queueId', 'queue-1');
   formData.set('image', image);
   formData.set('thumbnail', thumbnail);
@@ -288,6 +290,31 @@ runTest('enabled POST requires authenticated actor before parsing metadata claim
 
   assert.equal(response.status, 401);
   assert.equal(body.code, 'authentication_required');
+});
+
+runTest('unexpected route failures return structured JSON and retain the local payload', async () => {
+  const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+    isMetadataClaimEnabled: () => true,
+    async resolveActor() {
+      throw new Error('temporary auth dependency failure');
+    },
+    createRepository() {
+      return createFakeClient({});
+    },
+  });
+
+  const originalConsoleError = console.error;
+  console.error = () => undefined;
+  try {
+    const response = await handlers.POST(createJsonRequest(validRequestBody()));
+    const body = await response.json() as { code: string; shouldKeepLocalPayload: boolean };
+
+    assert.equal(response.status, 500);
+    assert.equal(body.code, 'upload_route_unexpected_error');
+    assert.equal(body.shouldKeepLocalPayload, true);
+  } finally {
+    console.error = originalConsoleError;
+  }
 });
 
 runTest('enabled POST creates an uploading metadata claim through injected repository only', async () => {
@@ -448,6 +475,54 @@ runTest('enabled FormData POST runs claim image upload thumbnail upload and fina
   assert.equal(body.evidenceId, IDS.evidenceId);
   assert.equal(body.shouldDeleteLocalPayloadAfterSuccess, true);
   assert.deepEqual(calls, ['auth', 'repository', 'upload_image', 'upload_thumbnail', 'finalize']);
+});
+
+runTest('R2 failure remains identifiable even when failure-status metadata cannot be updated', async () => {
+  const fakeClient = createFakeClient({
+    events: {
+      data: {
+        id: IDS.saleId,
+        type: 'deal_closed',
+        market_id: IDS.marketId,
+        timestamp: '2026-07-07T01:02:03.000Z',
+        markets: { owner_id: IDS.ownerId },
+      },
+      error: null,
+    },
+    sale_photo_evidence: { data: null, error: null },
+    'sale_photo_evidence:insert': { data: evidenceRow(), error: null },
+  });
+  const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+    isMetadataClaimEnabled: () => true,
+    isR2UploadEnabled: () => true,
+    async resolveActor() {
+      return { actorId: IDS.ownerId };
+    },
+    createRepository() {
+      return fakeClient;
+    },
+    r2UploadAdapter: {
+      async uploadObject(input) {
+        return { ok: false, key: input.key, code: 'r2_upload_failed', message: 'R2 unavailable' };
+      },
+    },
+    async markEvidenceUploadFailed() {
+      throw new Error('metadata update unavailable');
+    },
+  });
+
+  const originalConsoleError = console.error;
+  console.error = () => undefined;
+  try {
+    const response = await handlers.POST(createUploadFormDataRequest());
+    const body = await response.json() as { code: string; shouldKeepLocalPayload: boolean };
+
+    assert.equal(response.status, 500);
+    assert.equal(body.code, 'r2_image_upload_failed');
+    assert.equal(body.shouldKeepLocalPayload, true);
+  } finally {
+    console.error = originalConsoleError;
+  }
 });
 
 runTest('route source wires metadata claim but still avoids R2 signed reads and local payload deletion', () => {

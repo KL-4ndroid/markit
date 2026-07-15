@@ -7,6 +7,7 @@ import {
 } from '../lib/sales/photo-evidence-pending-creation-read-model';
 import {
   createLocalPendingSalesPhotoEvidenceCreation,
+  markPendingSalesPhotoEvidenceCreationCreated,
   markPendingSalesPhotoEvidenceCreationRetryableFailure,
   type LocalPendingSalesPhotoEvidenceCreation,
 } from '../lib/sales/photo-evidence-pending-creation';
@@ -124,6 +125,19 @@ runTest('read model respects limit and returns empty for blank market id', async
   });
 });
 
+runTest('completed uploads no longer remain in the pending count', async () => {
+  const pending = makeItem('33333333-3333-4333-8333-333333333333');
+  const uploaded = markPendingSalesPhotoEvidenceCreationCreated(
+    makeItem('55555555-5555-4555-8555-555555555555'),
+    '2026-07-05T10:05:00.000Z'
+  );
+
+  await withMockedQueue([pending, uploaded], async () => {
+    const rows = await listLocalSalesPhotoEvidencePendingCreationsForMarket(MARKET_ID);
+    assert.deepEqual(rows.map(row => row.saleEventId), [pending.saleEventId]);
+  });
+});
+
 runTest('pending list read model stays local-only and read-only', () => {
   assert.match(readModelSource, /db\.salesPhotoEvidencePendingCreations/);
   assert.match(readModelSource, /\.where\('marketId'\)[\s\S]*\.equals\(marketId\)[\s\S]*\.toArray\(\)/);
@@ -145,9 +159,9 @@ runTest('pending list dialog stays adapter-free and delegates local capture by p
   assert.match(dialogSource, /RECOMMENDATION_LABELS/);
   assert.match(dialogSource, /重新讀取/);
   assert.match(dialogSource, /captureEnabled = false/);
-  assert.match(dialogSource, /onCaptureLocal\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<void>/);
+  assert.match(dialogSource, /onCaptureLocal\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<unknown>/);
   assert.match(dialogSource, /uploadEnabled = false/);
-  assert.match(dialogSource, /onUploadManual\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<void>/);
+  assert.match(dialogSource, /onUploadManual\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<unknown>/);
   assert.doesNotMatch(dialogSource, /db\.|supabase|recordEvent|enqueue|drain|getUserMedia|signedUrl|signed_url|\bR2\b|fetch\(/i);
   assert.doesNotMatch(dialogSource, /add\(|put\(|update\(|delete\(|clear\(|bulkAdd\(/);
 });

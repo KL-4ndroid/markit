@@ -31,6 +31,7 @@ type SalesPhotoEvidenceUploadRouteBody = {
   saleEventId: string;
   capturedByStaffId: string | null;
   capturedAt: string;
+  saleCompletedAt: string;
   hasLocalPayload: boolean;
 };
 
@@ -127,6 +128,9 @@ function parseUploadRouteBody(value: unknown): SalesPhotoEvidenceUploadRouteBody
     saleEventId: record.saleEventId,
     capturedByStaffId,
     capturedAt: record.capturedAt,
+    saleCompletedAt: isNonEmptyString(record.saleCompletedAt)
+      ? record.saleCompletedAt
+      : record.capturedAt,
     hasLocalPayload: record.hasLocalPayload,
   };
 }
@@ -177,7 +181,7 @@ function mapClaimResultToResponse(result: SalesPhotoEvidenceMetadataClaimAdapter
 export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvidenceUploadRouteDeps) {
   const isR2UploadEnabled = deps.isR2UploadEnabled ?? (() => false);
 
-  async function post(request: Request): Promise<NextResponse> {
+  async function postInternal(request: Request): Promise<NextResponse> {
     if (!deps.isMetadataClaimEnabled()) {
       return disabledUploadResponse();
     }
@@ -218,11 +222,29 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       saleEventId: body.saleEventId,
       capturedByStaffId: body.capturedByStaffId,
       capturedAt: body.capturedAt,
+      saleCompletedAt: body.saleCompletedAt,
       hasLocalPayload: body.hasLocalPayload,
       writeEnabled: true,
     }, repository);
 
     return mapClaimResultToResponse(result);
+  }
+
+  async function post(request: Request): Promise<NextResponse> {
+    try {
+      return await postInternal(request);
+    } catch (error) {
+      console.error('sales photo evidence upload route failed', {
+        name: error instanceof Error ? error.name : 'UnknownError',
+        message: error instanceof Error ? error.message : 'Unknown upload route failure',
+      });
+      return jsonResponse({
+        ok: false,
+        code: 'upload_route_unexpected_error',
+        message: 'Sales photo evidence upload route failed unexpectedly.',
+        shouldKeepLocalPayload: true,
+      }, 500);
+    }
   }
 
   async function markUploadFailedIfPossible(
@@ -238,12 +260,20 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       reason,
     };
 
-    if (deps.markEvidenceUploadFailed) {
-      await deps.markEvidenceUploadFailed(input);
-      return;
-    }
+    try {
+      if (deps.markEvidenceUploadFailed) {
+        await deps.markEvidenceUploadFailed(input);
+        return;
+      }
 
-    await repository.markEvidenceUploadFailed(input);
+      await repository.markEvidenceUploadFailed(input);
+    } catch (error) {
+      console.error('sales photo evidence failure status update failed', {
+        reason,
+        name: error instanceof Error ? error.name : 'UnknownError',
+        message: error instanceof Error ? error.message : 'Unknown metadata failure update error',
+      });
+    }
   }
 
   async function handleFormDataUpload(
@@ -275,6 +305,7 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       saleEventId: body.saleEventId,
       capturedByStaffId: body.capturedByStaffId,
       capturedAt: body.capturedAt,
+      saleCompletedAt: body.saleCompletedAt,
       hasLocalPayload: true,
       writeEnabled: true,
     }, repository);
@@ -432,7 +463,8 @@ function isR2UploadRouteEnabled(): boolean {
 
 function getSupabaseRouteConfig(): { url: string; anonKey: string } | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !anonKey) return null;
   return { url, anonKey };

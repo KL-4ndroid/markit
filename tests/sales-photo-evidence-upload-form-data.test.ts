@@ -43,6 +43,7 @@ function validFormData(): FormData {
   formData.set('saleEventId', IDS.saleId);
   formData.set('capturedByStaffId', IDS.staffId);
   formData.set('capturedAt', '2026-07-08T01:02:03.000Z');
+  formData.set('saleCompletedAt', '2026-07-08T01:00:00.000Z');
   formData.set('queueId', 'queue-1');
   formData.set('image', image);
   formData.set('thumbnail', thumbnail);
@@ -76,8 +77,20 @@ runTest('parses a valid upload FormData fixture without touching route runtime',
   assert.equal(result.request.saleEventId, IDS.saleId);
   assert.equal(result.request.capturedByStaffId, IDS.staffId);
   assert.equal(result.request.queueId, 'queue-1');
+  assert.equal(result.request.saleCompletedAt, '2026-07-08T01:00:00.000Z');
   assert.equal(result.request.imageMetadata.kind, 'image');
   assert.equal(result.request.thumbnailMetadata.kind, 'thumbnail');
+});
+
+runTest('uses captured time as a backward-compatible sale time fallback', () => {
+  const formData = validFormData();
+  formData.delete('saleCompletedAt');
+
+  const result = parseSalesPhotoEvidenceUploadFormData(formData);
+
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.request.saleCompletedAt, '2026-07-08T01:02:03.000Z');
 });
 
 runTest('normalizes absent optional staff and queue fields to null', () => {

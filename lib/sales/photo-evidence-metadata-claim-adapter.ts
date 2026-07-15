@@ -15,6 +15,7 @@ export type SalesPhotoEvidenceMetadataClaimAdapterInput = {
   saleEventId: string;
   capturedByStaffId: string | null;
   capturedAt: string;
+  saleCompletedAt?: string;
   hasLocalPayload: boolean;
   writeEnabled?: boolean;
 };
@@ -24,6 +25,7 @@ export type SalesPhotoEvidenceMetadataClaimRepository = {
     ownerId: string;
     marketId: string;
     saleEventId: string;
+    saleCompletedAt?: string;
   }): Promise<SalesPhotoEvidenceClaimSaleEvent | null>;
   getActiveEvidenceForSale(input: {
     ownerId: string;
@@ -106,24 +108,40 @@ export async function executeSalesPhotoEvidenceMetadataClaimAdapter(
   input: SalesPhotoEvidenceMetadataClaimAdapterInput,
   repository: SalesPhotoEvidenceMetadataClaimRepository
 ): Promise<SalesPhotoEvidenceMetadataClaimAdapterResult> {
-  const [saleEvent, existingEvidence, staffRelationshipActive] = await Promise.all([
-    repository.getSaleEventForEvidenceClaim({
-      ownerId: input.ownerId,
-      marketId: input.marketId,
-      saleEventId: input.saleEventId,
-    }),
-    repository.getActiveEvidenceForSale({
-      ownerId: input.ownerId,
-      marketId: input.marketId,
-      saleEventId: input.saleEventId,
-    }),
-    input.actorRole === 'staff'
-      ? repository.isStaffRelationshipActive({
-          ownerId: input.ownerId,
-          staffId: input.actorId,
-        })
-      : Promise.resolve(false),
-  ]);
+  let saleEvent: SalesPhotoEvidenceClaimSaleEvent | null;
+  let existingEvidence: SalesPhotoEvidenceClaimExistingRow | null;
+  let staffRelationshipActive: boolean;
+
+  try {
+    [saleEvent, existingEvidence, staffRelationshipActive] = await Promise.all([
+      repository.getSaleEventForEvidenceClaim({
+        ownerId: input.ownerId,
+        marketId: input.marketId,
+        saleEventId: input.saleEventId,
+        saleCompletedAt: input.saleCompletedAt,
+      }),
+      repository.getActiveEvidenceForSale({
+        ownerId: input.ownerId,
+        marketId: input.marketId,
+        saleEventId: input.saleEventId,
+      }),
+      input.actorRole === 'staff'
+        ? repository.isStaffRelationshipActive({
+            ownerId: input.ownerId,
+            staffId: input.actorId,
+          })
+        : Promise.resolve(false),
+    ]);
+  } catch (error) {
+    return {
+      action: 'metadata_claim_failed',
+      reason: 'metadata_claim_failed',
+      message: 'Sales photo evidence metadata lookup failed.',
+      error,
+      shouldKeepLocalPayload: true,
+      shouldUploadAfterMetadataClaim: false,
+    };
+  }
 
   const plan = createSalesPhotoEvidenceMetadataClaimPlan({
     actorId: input.actorId,

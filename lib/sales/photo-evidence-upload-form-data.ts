@@ -11,6 +11,7 @@ export type SalesPhotoEvidenceUploadFormDataRequest = {
   saleEventId: string;
   capturedByStaffId: string | null;
   capturedAt: string;
+  saleCompletedAt: string;
   queueId: string | null;
   image: Blob;
   thumbnail: Blob;
@@ -110,6 +111,7 @@ export function parseSalesPhotoEvidenceUploadFormData(
   const marketId = getSingleStringField(formData, 'marketId');
   const saleEventId = getSingleStringField(formData, 'saleEventId');
   const capturedAt = getSingleStringField(formData, 'capturedAt');
+  const saleCompletedAt = getOptionalStringField(formData, 'saleCompletedAt');
   const capturedByStaffId = getOptionalStringField(formData, 'capturedByStaffId');
   const queueId = getOptionalStringField(formData, 'queueId');
 
@@ -143,6 +145,7 @@ export function parseSalesPhotoEvidenceUploadFormData(
       saleEventId,
       capturedByStaffId,
       capturedAt,
+      saleCompletedAt: saleCompletedAt ?? capturedAt,
       queueId,
       image,
       thumbnail,

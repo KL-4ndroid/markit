@@ -17,7 +17,9 @@ import {
 import type {
   SalesPhotoEvidencePendingCreationListItem,
 } from '@/lib/sales/photo-evidence-pending-creation-read-model';
+import type { LocalPendingSalesPhotoEvidencePayload } from '@/lib/sales/photo-evidence-pending-payload-storage';
 import { SalesPhotoEvidenceLocalCaptureAction } from './SalesPhotoEvidenceLocalCaptureAction';
+import { SalesPhotoEvidenceLocalThumbnail } from './SalesPhotoEvidenceLocalThumbnail';
 import { SalesPhotoEvidenceManualUploadAction } from './SalesPhotoEvidenceManualUploadAction';
 
 interface SalesPhotoEvidencePendingListDialogProps {
@@ -32,9 +34,14 @@ interface SalesPhotoEvidencePendingListDialogProps {
   uploadEnabled?: boolean;
   uploadingQueueId?: string | null;
   uploadErrorByQueueId?: Record<string, string | null>;
+  payloadRefreshByQueueId?: Record<string, string | null>;
   isLocalCaptureAllowed?: (item: SalesPhotoEvidencePendingCreationListItem) => boolean;
-  onCaptureLocal?: (item: SalesPhotoEvidencePendingCreationListItem) => void | Promise<void>;
-  onUploadManual?: (item: SalesPhotoEvidencePendingCreationListItem) => void | Promise<void>;
+  onPreviewLocal?: (
+    item: SalesPhotoEvidencePendingCreationListItem,
+    payload: LocalPendingSalesPhotoEvidencePayload
+  ) => void;
+  onCaptureLocal?: (item: SalesPhotoEvidencePendingCreationListItem) => void | Promise<unknown>;
+  onUploadManual?: (item: SalesPhotoEvidencePendingCreationListItem) => void | Promise<unknown>;
   onRefresh?: () => void;
   onClose: () => void;
 }
@@ -140,7 +147,9 @@ export function SalesPhotoEvidencePendingListDialog({
   uploadEnabled = false,
   uploadingQueueId = null,
   uploadErrorByQueueId = {},
+  payloadRefreshByQueueId = {},
   isLocalCaptureAllowed,
+  onPreviewLocal,
   onCaptureLocal,
   onUploadManual,
   onRefresh,
@@ -155,11 +164,16 @@ export function SalesPhotoEvidencePendingListDialog({
   const lastLoadedLabel = lastLoadedAt ? formatDateTime(new Date(lastLoadedAt).toISOString()) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 px-4 py-6 sm:items-center">
-      <section className="w-full max-w-lg rounded-[1.5rem] bg-white shadow-2xl">
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/35 p-4">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sales-photo-evidence-pending-title"
+        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
+      >
         <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
           <div>
-            <h2 className="text-lg font-medium text-foreground">待補照片</h2>
+            <h2 id="sales-photo-evidence-pending-title" className="text-lg font-medium text-foreground">待補照片</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
               成交紀錄已保留。你可以拍攝或選擇照片，完成後再上傳。
             </p>
@@ -190,7 +204,7 @@ export function SalesPhotoEvidencePendingListDialog({
           </button>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto px-5 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {loadError ? (
             <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
               {loadError}
@@ -247,6 +261,12 @@ export function SalesPhotoEvidencePendingListDialog({
                         </div>
                       </div>
                     )}
+
+                    <SalesPhotoEvidenceLocalThumbnail
+                      queueId={item.queueId}
+                      refreshKey={payloadRefreshByQueueId[item.queueId]}
+                      onPreview={payload => onPreviewLocal?.(item, payload)}
+                    />
 
                     <SalesPhotoEvidenceLocalCaptureAction
                       status={item.status}

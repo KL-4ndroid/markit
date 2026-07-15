@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
+import { db } from '@/lib/db';
 import {
   deletePendingSalesPhotoEvidencePayload,
   getPendingSalesPhotoEvidencePayload,
@@ -37,6 +38,7 @@ export type SalesPhotoEvidenceManualUploadDeps = {
   deletePayload?: typeof deletePendingSalesPhotoEvidencePayload;
   markCreated?: typeof markLocalPendingSalesPhotoEvidenceCreationCreated;
   markRetryableFailure?: typeof markLocalPendingSalesPhotoEvidenceCreationRetryableFailure;
+  waitForSaleEventSync?: (saleEventId: string) => Promise<boolean>;
   now?: () => Date;
 };
 
@@ -70,6 +72,7 @@ export function buildSalesPhotoEvidenceManualUploadFormData(
   formData.set('ownerId', item.ownerId);
   formData.set('marketId', item.marketId);
   formData.set('saleEventId', item.saleEventId);
+  formData.set('saleCompletedAt', item.saleCompletedAt);
   formData.set('capturedAt', payload.updatedAt);
   formData.set('queueId', item.queueId);
   if (item.capturedByStaffId) {
@@ -97,6 +100,46 @@ function failure(code: string, message: string): SalesPhotoEvidenceManualUploadF
   };
 }
 
+function getUserFacingUploadFailureMessage(code: string, fallback?: string): string {
+  switch (code) {
+    case 'sale_event_sync_pending':
+      return '成交資料仍在同步，照片已保留在此裝置。請確認網路後稍候再試。';
+    case 'metadata_claim_failed':
+      return '成交資料驗證失敗，照片仍保留在此裝置。請稍候再試；若持續發生，請聯絡管理者檢查雲端資料設定。';
+    case 'r2_image_upload_failed':
+    case 'r2_thumbnail_upload_failed':
+      return '照片儲存服務上傳失敗，照片仍保留在此裝置，請稍後再試。';
+    case 'metadata_finalize_failed':
+      return '照片已傳送但成交紀錄更新失敗，本機照片已保留，請稍後再試。';
+    case 'sales_photo_evidence_upload_disabled':
+    case 'sales_photo_evidence_r2_upload_disabled':
+      return '正式環境的照片上傳功能尚未完整啟用，請檢查 Vercel 的照片上傳環境變數。';
+    case 'authentication_required':
+      return '登入狀態已失效，請重新登入後再上傳照片。';
+    case 'upload_route_unexpected_error':
+      return '照片上傳服務暫時發生錯誤，照片已保留在此裝置，請稍後再試。';
+    default:
+      return fallback || '照片上傳失敗，照片仍保留在此裝置，請稍後再試。';
+  }
+}
+
+async function waitForDefaultSaleEventSync(saleEventId: string): Promise<boolean> {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('trigger-sync', {
+      detail: { eventType: 'deal_closed', eventId: saleEventId },
+    }));
+  }
+
+  const deadline = Date.now() + 12_000;
+  do {
+    const event = await db.events.get(saleEventId);
+    if (event?.sync_status === 'synced') return true;
+    await new Promise(resolve => setTimeout(resolve, 400));
+  } while (Date.now() < deadline);
+
+  return false;
+}
+
 async function parseUploadResponse(response: Response): Promise<UploadRouteResponse> {
   try {
     return await response.json() as UploadRouteResponse;
@@ -122,25 +165,55 @@ export async function uploadPendingSalesPhotoEvidenceManually(
     return failure('local_payload_missing', '請先選擇照片，或重新選擇照片後再上傳。');
   }
 
+  const saleEventSynced = await (deps.waitForSaleEventSync ?? waitForDefaultSaleEventSync)(item.saleEventId);
+  if (!saleEventSynced) {
+    return failure(
+      'sale_event_sync_pending',
+      getUserFacingUploadFailureMessage('sale_event_sync_pending')
+    );
+  }
+
   const token = await (deps.getAccessToken ?? getDefaultAccessToken)();
   if (!token) {
     return failure('authentication_required', '登入狀態已失效，請重新登入後再上傳照片。');
   }
 
-  const response = await fetchImpl('/api/sales-photo-evidence/upload', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: buildSalesPhotoEvidenceManualUploadFormData(item, payload),
-  });
+  let response: Response;
+  try {
+    response = await fetchImpl('/api/sales-photo-evidence/upload', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: buildSalesPhotoEvidenceManualUploadFormData(item, payload),
+    });
+  } catch (error) {
+    const result = failure(
+      'network_error',
+      '網路連線失敗，照片已保留在此裝置。請確認網路後再試。'
+    );
+    await markRetryableFailure({
+      queueId: item.queueId,
+      code: result.code,
+      message: result.message,
+      now: now(),
+    });
+    console.error('sales photo evidence upload network error', error);
+    return result;
+  }
   const body = await parseUploadResponse(response);
 
   if (!response.ok || body.ok !== true) {
+    const code = body.code ?? `http_${response.status}`;
     const result = failure(
-      body.code ?? `http_${response.status}`,
-      body.message ?? '照片上傳失敗，請稍後再試。'
+      code,
+      getUserFacingUploadFailureMessage(code, body.message)
     );
+    console.error('sales photo evidence upload rejected', {
+      status: response.status,
+      code,
+      serverMessage: body.message ?? null,
+    });
     await markRetryableFailure({
       queueId: item.queueId,
       code: result.code,

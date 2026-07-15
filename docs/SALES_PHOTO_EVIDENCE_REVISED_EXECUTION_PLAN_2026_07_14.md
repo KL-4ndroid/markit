@@ -3,6 +3,20 @@
 Date: 2026-07-14
 Status: Active implementation plan. Local runtime verification was accepted on 2026-07-14, and production runtime enablement was explicitly approved with independent client and server environment gates. Production smoke and monitoring remain required after deployment.
 
+## Production Follow-up 2026-07-15
+
+The first Production workflow exposed two usability gaps and one upload stability gap. The approved correction is now:
+
+1. Capture or album selection stores the compressed payload locally and immediately opens a centered preview dialog.
+2. The preview dialog provides the two primary actions: upload the selected photo or capture/select a replacement.
+3. Pending rows show the current local thumbnail, and successfully uploaded rows leave the pending count.
+4. Post-sale, pending-list, and preview dialogs remain vertically centered on mobile and desktop.
+5. Manual upload waits briefly for the local `deal_closed` event to finish cloud sync before claiming metadata.
+6. Staff-scoped sale validation may fall back to the existing `is_sale_photo_evidence_sale_event` security-definer RPC when direct event reads are hidden by RLS.
+7. Upload route failures return structured stage codes and always preserve the local payload unless finalization explicitly succeeds.
+
+Production verification must cover owner and staff capture, replacement, successful upload, retry after network/R2 failure, pending-count removal, and owner album refresh.
+
 ## Executive Summary
 
 The sales photo evidence feature is directionally sound and already has many important safety boundaries implemented: metadata-only database design, R2 object storage, owner-controlled requirement settings, local pending payload storage, gated upload/read routes, owner/staff local capture, manual upload, and owner read-only album mounting.

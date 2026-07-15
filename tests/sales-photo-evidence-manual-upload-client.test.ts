@@ -85,6 +85,7 @@ runTest('builds the approved multipart form data from existing compressed local 
   assert.equal(formData.get('ownerId'), item.ownerId);
   assert.equal(formData.get('marketId'), item.marketId);
   assert.equal(formData.get('saleEventId'), item.saleEventId);
+  assert.equal(formData.get('saleCompletedAt'), item.saleCompletedAt);
   assert.equal(formData.get('capturedByStaffId'), item.capturedByStaffId);
   assert.equal(formData.get('capturedAt'), '2026-07-01T00:01:00.000Z');
   assert.ok(formData.get('image') instanceof Blob);
@@ -108,6 +109,10 @@ runTest('successful manual upload deletes local payload only after server succes
     getAccessToken: async () => {
       calls.push('get_token');
       return 'token';
+    },
+    waitForSaleEventSync: async () => {
+      calls.push('wait_for_sale_sync');
+      return true;
     },
     fetchImpl: async (_url, init) => {
       calls.push(`fetch:${init?.method}:${(init?.headers as Record<string, string>).Authorization}`);
@@ -134,6 +139,7 @@ runTest('successful manual upload deletes local payload only after server succes
   });
   assert.deepEqual(calls, [
     'get_payload',
+    'wait_for_sale_sync',
     'get_token',
     'fetch:POST:Bearer token',
     `delete_payload:${item.queueId}`,
@@ -143,27 +149,55 @@ runTest('successful manual upload deletes local payload only after server succes
 
 runTest('failed manual upload keeps local payload and marks retryable failure', async () => {
   const calls: string[] = [];
-  const result = await uploadPendingSalesPhotoEvidenceManually(item, {
-    getPayload: async () => payload(),
-    getAccessToken: async () => 'token',
-    fetchImpl: async () => new Response(JSON.stringify({
-      ok: false,
-      code: 'r2_image_upload_failed',
-      message: 'R2 failed',
-    }), { status: 500 }),
-    deletePayload: async () => {
-      calls.push('delete_payload');
-    },
-    markRetryableFailure: async input => {
-      calls.push(`${input.queueId}:${input.code}:${input.message}`);
-      return item;
-    },
-  });
+  const originalConsoleError = console.error;
+  console.error = () => undefined;
+  let result: Awaited<ReturnType<typeof uploadPendingSalesPhotoEvidenceManually>>;
+  try {
+    result = await uploadPendingSalesPhotoEvidenceManually(item, {
+      getPayload: async () => payload(),
+      waitForSaleEventSync: async () => true,
+      getAccessToken: async () => 'token',
+      fetchImpl: async () => new Response(JSON.stringify({
+        ok: false,
+        code: 'r2_image_upload_failed',
+        message: 'R2 failed',
+      }), { status: 500 }),
+      deletePayload: async () => {
+        calls.push('delete_payload');
+      },
+      markRetryableFailure: async input => {
+        calls.push(`${input.queueId}:${input.code}:${input.message}`);
+        return item;
+      },
+    });
+  } finally {
+    console.error = originalConsoleError;
+  }
 
   assert.equal(result.ok, false);
   assert.equal(result.code, 'r2_image_upload_failed');
   assert.equal(result.shouldKeepLocalPayload, true);
-  assert.deepEqual(calls, [`${item.queueId}:r2_image_upload_failed:R2 failed`]);
+  assert.deepEqual(calls, [
+    `${item.queueId}:r2_image_upload_failed:照片儲存服務上傳失敗，照片仍保留在此裝置，請稍後再試。`,
+  ]);
+});
+
+runTest('manual upload waits for the sale event and keeps the photo local while sync is pending', async () => {
+  let fetchCalled = false;
+  const result = await uploadPendingSalesPhotoEvidenceManually(item, {
+    getPayload: async () => payload(),
+    waitForSaleEventSync: async () => false,
+    getAccessToken: async () => 'token',
+    fetchImpl: async () => {
+      fetchCalled = true;
+      return new Response(null, { status: 500 });
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'sale_event_sync_pending');
+  assert.equal(result.shouldKeepLocalPayload, true);
+  assert.equal(fetchCalled, false);
 });
 
 runTest('client and UI reuse existing route and stay out of R2 SDK storage internals', () => {
@@ -171,12 +205,14 @@ runTest('client and UI reuse existing route and stay out of R2 SDK storage inter
   assert.match(clientSource, /deletePendingSalesPhotoEvidencePayload/);
   assert.match(clientSource, /markLocalPendingSalesPhotoEvidenceCreationCreated/);
   assert.match(clientSource, /markLocalPendingSalesPhotoEvidenceCreationRetryableFailure/);
+  assert.match(clientSource, /trigger-sync/);
+  assert.match(clientSource, /sale_event_sync_pending/);
   assert.doesNotMatch(clientSource, /@aws-sdk|S3Client|PutObjectCommand|R2_BUCKET|service_role/i);
 
   assert.match(actionSource, /export function SalesPhotoEvidenceManualUploadAction/);
   assert.match(dialogSource, /import \{ SalesPhotoEvidenceManualUploadAction \}/);
   assert.match(dialogSource, /uploadEnabled\?: boolean/);
-  assert.match(dialogSource, /onUploadManual\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<void>/);
+  assert.match(dialogSource, /onUploadManual\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<unknown>/);
   assert.doesNotMatch(dialogSource, /photo-evidence-manual-upload-client|fetch\(|supabase|@aws-sdk|R2_BUCKET|service_role/i);
 
   assert.match(staffViewSource, /uploadPendingSalesPhotoEvidenceManually/);

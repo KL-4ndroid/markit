@@ -69,6 +69,7 @@ import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSectio
 import { SalesPhotoEvidenceOperatingCard } from '@/components/markets/SalesPhotoEvidenceOperatingCard';
 import { SalesPhotoEvidencePendingListDialog } from '@/components/markets/SalesPhotoEvidencePendingListDialog';
 import { SalesPhotoEvidencePostSalePrompt } from '@/components/markets/SalesPhotoEvidencePostSalePrompt';
+import { SalesPhotoEvidenceCapturePreviewDialog } from '@/components/markets/SalesPhotoEvidenceCapturePreviewDialog';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -82,6 +83,7 @@ import {
 } from '@/lib/sales/photo-evidence-pending-creation-read-model';
 import { captureAndStoreSalesPhotoEvidenceWithFileInput } from '@/lib/sales/photo-evidence-browser-adapter';
 import { uploadPendingSalesPhotoEvidenceManually } from '@/lib/sales/photo-evidence-manual-upload-client';
+import type { LocalPendingSalesPhotoEvidencePayload } from '@/lib/sales/photo-evidence-pending-payload-storage';
 import type {
   SalesPhotoEvidenceRuntimeResult,
 } from '@/lib/sales/photo-evidence-runtime-enqueue';
@@ -247,6 +249,13 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
   const [salesPhotoEvidenceUploadErrorByQueueId, setSalesPhotoEvidenceUploadErrorByQueueId] = useState<
     Record<string, string | null>
   >({});
+  const [salesPhotoEvidencePayloadRefreshByQueueId, setSalesPhotoEvidencePayloadRefreshByQueueId] = useState<
+    Record<string, string | null>
+  >({});
+  const [salesPhotoEvidencePreview, setSalesPhotoEvidencePreview] = useState<{
+    item: SalesPhotoEvidencePendingCreationListItem;
+    payload: LocalPendingSalesPhotoEvidencePayload;
+  } | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
 
@@ -319,7 +328,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           [item.queueId]: message,
         }));
         toast.error(message);
-        return;
+        return null;
       }
 
       if (!isLocalSalesPhotoEvidenceCaptureAllowed(item)) {
@@ -329,7 +338,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           [item.queueId]: message,
         }));
         toast.error(message);
-        return;
+        return null;
       }
 
       setCapturingSalesPhotoEvidenceQueueId(item.queueId);
@@ -342,9 +351,13 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         const result = await captureAndStoreSalesPhotoEvidenceWithFileInput({ queueItem: item });
 
         if (result.action === 'capture_stored_locally') {
-          toast.success('照片已暫存在本機，尚未上傳雲端。');
+          setSalesPhotoEvidencePreview({ item, payload: result.payload });
+          setSalesPhotoEvidencePayloadRefreshByQueueId(previous => ({
+            ...previous,
+            [item.queueId]: result.payload.updatedAt,
+          }));
           await loadPendingSalesPhotoEvidenceItems();
-          return;
+          return result.payload;
         }
 
         const message = getSalesPhotoEvidenceCaptureFailureMessage(result.failure.reason);
@@ -355,6 +368,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         if (result.failure.reason !== 'capture_cancelled') {
           toast.error(message);
         }
+        return null;
       } catch (error) {
         console.error('capture local sales photo evidence failed:', error);
         const message = '照片暫存失敗，請稍後再試。';
@@ -363,6 +377,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           [item.queueId]: message,
         }));
         toast.error(message);
+        return null;
       } finally {
         setCapturingSalesPhotoEvidenceQueueId(null);
       }
@@ -379,7 +394,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           [item.queueId]: message,
         }));
         toast.error(message);
-        return;
+        return false;
       }
 
       if (!isLocalSalesPhotoEvidenceCaptureAllowed(item)) {
@@ -389,7 +404,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
           [item.queueId]: message,
         }));
         toast.error(message);
-        return;
+        return false;
       }
 
       setUploadingSalesPhotoEvidenceQueueId(item.queueId);
@@ -402,8 +417,15 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         const result = await uploadPendingSalesPhotoEvidenceManually(item);
         if (result.ok) {
           toast.success('照片已上傳，老闆可在市集詳情查看。');
+          setSalesPhotoEvidencePreview(previous => (
+            previous?.item.queueId === item.queueId ? null : previous
+          ));
+          setSalesPhotoEvidencePayloadRefreshByQueueId(previous => ({
+            ...previous,
+            [item.queueId]: new Date().toISOString(),
+          }));
           await loadPendingSalesPhotoEvidenceItems();
-          return;
+          return true;
         }
 
         setSalesPhotoEvidenceUploadErrorByQueueId(previous => ({
@@ -412,6 +434,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         }));
         toast.error(result.message);
         await loadPendingSalesPhotoEvidenceItems();
+        return false;
       } catch (error) {
         console.error('manual upload sales photo evidence failed:', error);
         const message = '照片上傳失敗，請稍後再試。';
@@ -421,6 +444,7 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         }));
         toast.error(message);
         await loadPendingSalesPhotoEvidenceItems();
+        return false;
       } finally {
         setUploadingSalesPhotoEvidenceQueueId(null);
       }
@@ -863,11 +887,36 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
         uploadEnabled={true}
         uploadingQueueId={uploadingSalesPhotoEvidenceQueueId}
         uploadErrorByQueueId={salesPhotoEvidenceUploadErrorByQueueId}
+        payloadRefreshByQueueId={salesPhotoEvidencePayloadRefreshByQueueId}
         isLocalCaptureAllowed={isLocalSalesPhotoEvidenceCaptureAllowed}
+        onPreviewLocal={(item, payload) => setSalesPhotoEvidencePreview({ item, payload })}
         onCaptureLocal={handleCaptureLocalSalesPhotoEvidence}
         onUploadManual={handleUploadManualSalesPhotoEvidence}
         onRefresh={loadPendingSalesPhotoEvidenceItems}
         onClose={() => setShowPendingSalesPhotoEvidence(false)}
+      />
+
+      <SalesPhotoEvidenceCapturePreviewDialog
+        isOpen={Boolean(salesPhotoEvidencePreview)}
+        payload={salesPhotoEvidencePreview?.payload ?? null}
+        isUploading={Boolean(
+          salesPhotoEvidencePreview &&
+          uploadingSalesPhotoEvidenceQueueId === salesPhotoEvidencePreview.item.queueId
+        )}
+        uploadError={salesPhotoEvidencePreview
+          ? salesPhotoEvidenceUploadErrorByQueueId[salesPhotoEvidencePreview.item.queueId]
+          : null}
+        onRetake={() => {
+          if (salesPhotoEvidencePreview) {
+            void handleCaptureLocalSalesPhotoEvidence(salesPhotoEvidencePreview.item);
+          }
+        }}
+        onUpload={() => {
+          if (salesPhotoEvidencePreview) {
+            void handleUploadManualSalesPhotoEvidence(salesPhotoEvidencePreview.item);
+          }
+        }}
+        onClose={() => setSalesPhotoEvidencePreview(null)}
       />
 
       {/* 每日成交記錄彈窗（透過 DailyRevenueStats 觸發） */}

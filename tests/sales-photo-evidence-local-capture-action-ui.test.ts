@@ -14,6 +14,9 @@ function readProjectFile(path: string): string {
 const captureActionSource = readProjectFile('components/markets/SalesPhotoEvidenceLocalCaptureAction.tsx');
 const uploadActionSource = readProjectFile('components/markets/SalesPhotoEvidenceManualUploadAction.tsx');
 const dialogSource = readProjectFile('components/markets/SalesPhotoEvidencePendingListDialog.tsx');
+const previewDialogSource = readProjectFile('components/markets/SalesPhotoEvidenceCapturePreviewDialog.tsx');
+const thumbnailSource = readProjectFile('components/markets/SalesPhotoEvidenceLocalThumbnail.tsx');
+const postSalePromptSource = readProjectFile('components/markets/SalesPhotoEvidencePostSalePrompt.tsx');
 const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
@@ -49,13 +52,28 @@ runTest('pending list delegates capture and upload by props without importing ru
   assert.match(dialogSource, /uploadEnabled\?: boolean/);
   assert.match(dialogSource, /capturingQueueId\?: string \| null/);
   assert.match(dialogSource, /uploadingQueueId\?: string \| null/);
-  assert.match(dialogSource, /onCaptureLocal\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<void>/);
-  assert.match(dialogSource, /onUploadManual\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<void>/);
+  assert.match(dialogSource, /onCaptureLocal\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<unknown>/);
+  assert.match(dialogSource, /onUploadManual\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<unknown>/);
   assert.match(dialogSource, /captureEnabled = false/);
   assert.match(dialogSource, /uploadEnabled = false/);
   assert.doesNotMatch(dialogSource, /photo-evidence-browser-adapter|photo-evidence-manual-upload-client|fetch\(|supabase|db\.|@aws-sdk|R2_BUCKET|service_role/i);
   assert.match(dialogSource, /成交紀錄已保留/);
   assert.doesNotMatch(dialogSource, /銷售事件：\{item\.saleEventId\}|錯誤：\{item\.lastErrorMessage\}/);
+});
+
+runTest('capture flow shows a centered preview with upload and retake actions', () => {
+  assert.match(previewDialogSource, /items-center justify-center/);
+  assert.match(previewDialogSource, /確認成交照片/);
+  assert.match(previewDialogSource, /重新拍攝或選擇/);
+  assert.match(previewDialogSource, /確認並上傳照片/);
+  assert.match(previewDialogSource, /URL\.createObjectURL\(payload\.image\.blob\)/);
+  assert.match(thumbnailSource, /getPendingSalesPhotoEvidencePayload\(queueId\)/);
+  assert.match(thumbnailSource, /已選擇照片，點擊查看/);
+  assert.match(dialogSource, /SalesPhotoEvidenceLocalThumbnail/);
+  assert.match(dialogSource, /items-center justify-center/);
+  assert.match(postSalePromptSource, /items-center justify-center/);
+  assert.doesNotMatch(dialogSource, /items-end/);
+  assert.doesNotMatch(postSalePromptSource, /items-end/);
 });
 
 runTest('owner and staff details both contain scoped local capture and manual upload', () => {
@@ -67,6 +85,8 @@ runTest('owner and staff details both contain scoped local capture and manual up
     assert.match(source, /isLocalCaptureAllowed=\{isLocalSalesPhotoEvidenceCaptureAllowed\}/);
     assert.match(source, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
     assert.match(source, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
+    assert.match(source, /SalesPhotoEvidenceCapturePreviewDialog/);
+    assert.match(source, /setSalesPhotoEvidencePreview/);
     assert.doesNotMatch(source, /getUserMedia|signedUrl|signed_url|\bR2\b|drainSalesPhotoEvidencePendingCreations/i);
   }
 

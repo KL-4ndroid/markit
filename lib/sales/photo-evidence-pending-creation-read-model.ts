@@ -47,7 +47,7 @@ export async function listLocalSalesPhotoEvidencePendingCreationsForMarket(
     .equals(marketId)
     .toArray();
 
-  return sortNewestFirst(rows).slice(0, limit);
+  return sortNewestFirst(rows.filter(row => row.status !== 'created')).slice(0, limit);
 }
 
 export async function getLocalSalesPhotoEvidencePendingCreationSummaryForMarket(

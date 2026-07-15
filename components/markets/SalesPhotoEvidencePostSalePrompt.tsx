@@ -18,12 +18,12 @@ export function SalesPhotoEvidencePostSalePrompt({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1100] flex items-end justify-center bg-black/35 px-4 py-6 sm:items-center">
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/35 p-4">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="sales-photo-evidence-post-sale-title"
-        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-lg bg-white p-5 shadow-2xl"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 gap-3">
