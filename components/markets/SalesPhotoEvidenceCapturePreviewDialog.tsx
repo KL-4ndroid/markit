@@ -47,19 +47,24 @@ export function SalesPhotoEvidenceCapturePreviewDialog({
   if (!isOpen || !payload) return null;
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 p-4">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sales-photo-evidence-preview-title"
-        className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
-      >
-        <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+    <>
+      <div
+        className="fixed inset-0 z-[1199] bg-black/50 transition-opacity"
+        onClick={isUploading ? undefined : onClose}
+      />
+      <div className="pointer-events-none fixed inset-0 z-[1200] flex justify-center p-4">
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sales-photo-evidence-preview-title"
+          className="pointer-events-auto relative flex max-h-[90dvh] w-full max-w-lg self-center flex-col overflow-hidden rounded-[2rem] bg-background shadow-2xl animate-slide-up"
+        >
+        <header className="flex items-start justify-between gap-4 bg-gradient-to-br from-primary to-secondary px-6 py-6">
           <div className="min-w-0">
-            <h2 id="sales-photo-evidence-preview-title" className="text-lg font-medium text-foreground">
+            <h2 id="sales-photo-evidence-preview-title" className="text-xl font-medium text-white">
               確認成交照片
             </h2>
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-sm leading-relaxed text-white/80">
               成交已完成。確認照片清楚後上傳，或重新拍攝與選擇照片。
             </p>
           </div>
@@ -67,14 +72,14 @@ export function SalesPhotoEvidenceCapturePreviewDialog({
             type="button"
             onClick={onClose}
             disabled={isUploading}
-            className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:opacity-50"
+            className="shrink-0 rounded-full bg-white/20 p-2 text-white transition-colors hover:bg-white/30 disabled:opacity-50"
             aria-label="關閉照片預覽"
           >
             <X className="h-5 w-5" />
           </button>
         </header>
 
-        <div className="overflow-y-auto p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-neutral-950">
             {previewUrl && (
               <Image
@@ -101,7 +106,7 @@ export function SalesPhotoEvidenceCapturePreviewDialog({
           )}
         </div>
 
-        <footer className="grid gap-2 border-t border-border px-5 py-4 sm:grid-cols-2">
+        <footer className="grid gap-2 border-t border-border bg-background px-6 py-4 sm:grid-cols-2">
           <button
             type="button"
             onClick={onRetake}
@@ -121,7 +126,8 @@ export function SalesPhotoEvidenceCapturePreviewDialog({
             {isUploading ? '同步並上傳中' : '確認並上傳照片'}
           </button>
         </footer>
-      </section>
-    </div>
+        </section>
+      </div>
+    </>
   );
 }

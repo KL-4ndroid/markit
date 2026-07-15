@@ -10,7 +10,7 @@ The first Production workflow exposed two usability gaps and one upload stabilit
 1. Capture or album selection stores the compressed payload locally and immediately opens a centered preview dialog.
 2. The preview dialog provides the two primary actions: upload the selected photo or capture/select a replacement.
 3. Pending rows show the current local thumbnail, and successfully uploaded rows leave the pending count.
-4. Post-sale, pending-list, and preview dialogs remain vertically centered on mobile and desktop.
+4. Post-sale, pending-list, and preview dialogs reuse the Add Product/Add Market modal shell: separate overlay, symmetric viewport padding, centered fixed layer, rounded container, gradient header, and independently scrolling content.
 5. Manual upload waits briefly for the local `deal_closed` event to finish cloud sync before claiming metadata.
 6. Staff-scoped sale validation may fall back to the existing `is_sale_photo_evidence_sale_event` security-definer RPC when direct event reads are hidden by RLS.
 7. Upload route failures return structured stage codes and always preserve the local payload unless finalization explicitly succeeds.

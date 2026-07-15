@@ -17,6 +17,8 @@ const dialogSource = readProjectFile('components/markets/SalesPhotoEvidencePendi
 const previewDialogSource = readProjectFile('components/markets/SalesPhotoEvidenceCapturePreviewDialog.tsx');
 const thumbnailSource = readProjectFile('components/markets/SalesPhotoEvidenceLocalThumbnail.tsx');
 const postSalePromptSource = readProjectFile('components/markets/SalesPhotoEvidencePostSalePrompt.tsx');
+const addProductFormSource = readProjectFile('components/products/AddProductForm.tsx');
+const addMarketFormSource = readProjectFile('components/markets/AddMarketForm.tsx');
 const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
@@ -62,7 +64,14 @@ runTest('pending list delegates capture and upload by props without importing ru
 });
 
 runTest('capture flow shows a centered preview with upload and retake actions', () => {
-  assert.match(previewDialogSource, /items-center justify-center/);
+  assert.match(addProductFormSource, /fixed inset-0 z-50 flex justify-center p-4/);
+  assert.match(addMarketFormSource, /fixed inset-0 z-50 flex justify-center p-4/);
+  for (const source of [previewDialogSource, dialogSource, postSalePromptSource]) {
+    assert.match(source, /fixed inset-0 z-\[\d+\] flex justify-center p-4/);
+    assert.match(source, /bg-gradient-to-br from-primary to-secondary/);
+    assert.match(source, /rounded-\[2rem\]/);
+    assert.match(source, /animate-slide-up/);
+  }
   assert.match(previewDialogSource, /確認成交照片/);
   assert.match(previewDialogSource, /重新拍攝或選擇/);
   assert.match(previewDialogSource, /確認並上傳照片/);
@@ -70,8 +79,6 @@ runTest('capture flow shows a centered preview with upload and retake actions', 
   assert.match(thumbnailSource, /getPendingSalesPhotoEvidencePayload\(queueId\)/);
   assert.match(thumbnailSource, /已選擇照片，點擊查看/);
   assert.match(dialogSource, /SalesPhotoEvidenceLocalThumbnail/);
-  assert.match(dialogSource, /items-center justify-center/);
-  assert.match(postSalePromptSource, /items-center justify-center/);
   assert.doesNotMatch(dialogSource, /items-end/);
   assert.doesNotMatch(postSalePromptSource, /items-end/);
 });
