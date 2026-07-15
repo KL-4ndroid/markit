@@ -172,13 +172,10 @@ export default function AnalyticsPage() {
         id: 'recalculate',
       });
       
-      // 3. 等待一小段時間讓 UI 更新
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // 4. 強制重新計算（透過重新渲染觸發）
+      // 3. 強制重新計算（透過重新渲染觸發）
       // React 會自動重新執行所有 useMemo 和 useLiveQuery
       
-      // 5. 顯示成功提示
+      // 4. 顯示成功提示
       toast.success('快取已清除，數據已重新計算', {
         id: 'recalculate',
         duration: 3000,

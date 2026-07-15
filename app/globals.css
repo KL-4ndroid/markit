@@ -146,45 +146,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   position: relative;
-  
-  /* 僅在移動設備上防止下拉回彈 */
-  @media (pointer: coarse) {
-    overscroll-behavior-y: none;
-  }
 }
 
-/* 頁面切換過渡效果 - 2026-06-17 復原
-   設計意圖：
-   - 200ms 短動畫：符合 3 秒操作原則，不延遲用戶操作
-   - 0.98 → 1 透明度微動：避免「黑屏再淡入」造成的閃爍感
-   - translateX(8px) 微滑：比全寬滑入更不容易察覺
-   - transform 動畫：硬體加速，不影響版面
-   - 配 reduced-motion：尊重無障礙設定
-*/
 .page-transition {
-  /* 強制硬體加速 */
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  /* 確保有背景色，防止白屏 */
   background-color: rgb(var(--brand-background));
   min-height: 100vh;
-  /* 防止內容跳動 */
-  contain: layout style paint;
 }
 
-/* 淺入：預設 / 非導航列切換 */
-.fade-in {
-  animation: page-fade-in 200ms ease-out;
-}
-
-/* 從右滑入：使用者往「右」導航（例如 首頁→設定，索引增加）*/
-.slide-from-right {
-  animation: page-slide-from-right 200ms ease-out;
-}
-
-/* 從左滑入：使用者往「左」導航（例如 設定→首頁，索引減少）*/
-.slide-from-left {
-  animation: page-slide-from-left 200ms ease-out;
+.route-fade-in {
+  animation: page-fade-in 120ms ease-out;
 }
 
 @keyframes page-fade-in {
@@ -192,35 +162,25 @@ body {
   to   { opacity: 1; }
 }
 
-@keyframes page-slide-from-right {
-  from { transform: translateX(8px); opacity: 0.98; }
-  to   { transform: translateX(0);    opacity: 1; }
-}
-
-@keyframes page-slide-from-left {
-  from { transform: translateX(-8px); opacity: 0.98; }
-  to   { transform: translateX(0);    opacity: 1; }
-}
-
 /* 尊重用戶的動畫偏好設定 */
 @media (prefers-reduced-motion: reduce) {
-  .page-transition,
-  .slide-from-right,
-  .slide-from-left,
-  .fade-in {
-    animation: none !important;
-    transition: none !important;
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
 /* 數字對齊 */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
-}
-
-/* 平滑滾動 */
-html {
-  scroll-behavior: smooth;
 }
 
 /* 自定義滾動條 */
@@ -262,33 +222,14 @@ html {
   background: var(--background);
 }
 
-/* 優化觸摸反饋 */
-* {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  
-  /* 僅在觸摸設備上啟用觸摸滾動優化 */
-  @media (pointer: coarse) {
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
 /* 移除點擊延遲 */
 a, button {
   touch-action: manipulation;
 }
 
-/* 防止頁面切換閃爍 - 保持背景色 */
-#__next,
-[data-nextjs-scroll-focus-boundary] {
-  background: var(--background);
-}
-
-/* 硬體加速 */
-.hardware-accelerated {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000px;
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid rgb(var(--brand-primary));
+  outline-offset: 2px;
 }
 
 /* 骨架屏動畫 - 移除透明度變化 */

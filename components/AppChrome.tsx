@@ -8,12 +8,8 @@ import { RoleGuard } from '@/components/auth/RoleGuard';
 import { SessionExpiredHandler } from '@/components/auth/SessionExpiredHandler';
 import { AuthCacheBlockedDialog } from '@/components/auth/AuthCacheBlockedDialog';
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { GlobalOverlayHost } from '@/components/global-overlays/GlobalOverlayHost';
 import { PWASplashScreen } from '@/components/PWASplashScreen';
-import { PWAUpdatePrompt } from '@/components/PWAUpdatePrompt';
-import { InitialSyncDialog } from '@/components/sync/InitialSyncDialog';
-import { SyncProgressManager } from '@/components/sync/SyncProgressManager';
-import { StaffInvitationDialog } from '@/components/staff/StaffInvitationDialog';
 import { RegisterServiceWorker } from '@/app/register-sw';
 
 const STANDALONE_PUBLIC_ROUTES = ['/demo'];
@@ -72,11 +68,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
               {children}
             </main>
             <BottomNavigation />
-            <PWAInstallPrompt />
-            <PWAUpdatePrompt />
-            <StaffInvitationDialog />
-            <InitialSyncDialog />
-            <SyncProgressManager />
+            <GlobalOverlayHost />
             <RegisterServiceWorker />
             <AppToaster />
           </div>

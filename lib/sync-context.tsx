@@ -7,7 +7,7 @@
 
 'use client';
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, useMemo, ReactNode } from 'react';
 import { useSync, SyncStatus } from '@/hooks/useSync';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useRoleContext } from '@/lib/role-context';
@@ -55,11 +55,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const isDataSanitized = safeInfoLevel < 3;
 
   // ✅ 在 Context 中提供脫敏狀態
-  const contextValue = {
+  const contextValue = useMemo<SyncContextType>(() => ({
     ...syncState,
     isDataSanitized,
     infoLevel,
-  };
+  }), [infoLevel, isDataSanitized, syncState]);
 
   return (
     <SyncContext.Provider value={contextValue}>

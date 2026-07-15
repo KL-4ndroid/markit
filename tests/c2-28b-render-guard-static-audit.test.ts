@@ -20,6 +20,7 @@ const roleFailClosedSource = readProjectFile('lib/permissions/role-fail-closed.t
 const useUserRoleSource = readProjectFile('hooks/useUserRole.ts');
 const roleGuardSource = readProjectFile('components/auth/RoleGuard.tsx');
 const bottomNavigationSource = readProjectFile('components/BottomNavigation.tsx');
+const appNavigationSource = readProjectFile('lib/navigation/app-navigation.ts');
 const syncContextSource = readProjectFile('lib/sync-context.tsx');
 const marketFallbackSource = readProjectFile('lib/markets/detail-fallback.ts');
 const recoveryPageSource = readProjectFile('app/recovery/page.tsx');
@@ -65,11 +66,13 @@ runTest('RoleGuard blocks protected routes through shared role refresh state', (
   assert.match(roleGuardSource, /return <ProtectedRoleGuard>\{children\}<\/ProtectedRoleGuard>/);
 });
 
-runTest('BottomNavigation treats unresolved role as staff-like for analytics access', () => {
+runTest('BottomNavigation uses fail-closed role-aware navigation without disabled owner entries', () => {
   assert.match(bottomNavigationSource, /const \{ isStaff, roleRefreshState \} = useRoleContext\(\)/);
   assert.match(bottomNavigationSource, /const isRoleUnresolved = roleRefreshState\.stage !== ['"]ready['"]/);
-  assert.match(bottomNavigationSource, /if \(\(isStaff \|\| isRoleUnresolved\) && item\.id === ['"]analytics['"]\)/);
-  assert.match(bottomNavigationSource, /const isDisabled = \(isStaff \|\| isRoleUnresolved\) && item\.id === ['"]analytics['"]/);
+  assert.match(bottomNavigationSource, /getAppNavigationItems\(\{[\s\S]*isStaff,[\s\S]*roleReady:\s*!isRoleUnresolved/);
+  assert.match(appNavigationSource, /const STAFF_NAVIGATION_IDS[\s\S]*'today'[\s\S]*'markets'[\s\S]*'products'[\s\S]*'more'/);
+  assert.doesNotMatch(appNavigationSource.match(/const STAFF_NAVIGATION_IDS[\s\S]*?\];/)?.[0] ?? '', /'analytics'/);
+  assert.doesNotMatch(bottomNavigationSource, /isDisabled|僅供老闆/);
   assert.doesNotMatch(bottomNavigationSource, /useUserRole\(\)/);
 });
 
@@ -81,6 +84,7 @@ runTest('SyncProvider uses shared role refresh state and pauses sync until ready
   assert.match(syncContextSource, /enabled:\s*!!user && isConfigured && isSyncRoleReady/);
   assert.match(syncContextSource, /roleInfoLevel:\s*safeInfoLevel/);
   assert.match(syncContextSource, /const isDataSanitized = safeInfoLevel < 3/);
+  assert.match(syncContextSource, /const contextValue = useMemo<SyncContextType>/);
   assert.doesNotMatch(syncContextSource, /useUserRole\(\)/);
   assert.doesNotMatch(syncContextSource, /deriveSafeInfoLevel\(\{/);
 });

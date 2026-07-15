@@ -405,7 +405,10 @@ runTest('manual sign-out entry points use shared discard confirmation helper', (
 
 runTest('settings and staff destructive clear paths use pending-write guards', () => {
   assert.match(settingsPageSource, /getLocalPendingWriteReport/);
-  assert.match(settingsPageSource, /Clearing local app data now will discard local changes/);
+  assert.match(settingsPageSource, /if \(!report\.isClean && !forceDiscardLocalChanges\)[\s\S]*return false/);
+  assert.match(settingsPageSource, /pendingSalesPhotoEvidenceCreationCount/);
+  assert.match(settingsPageSource, /confirmationText="DELETE"/);
+  assert.doesNotMatch(settingsPageSource, /window\.confirm\(|\bprompt\(/);
   assert.match(staffStatusMonitorSource, /guardedAuthenticatedCacheReset\(/);
   assert.match(staffStatusMonitorSource, /reason:\s*['"]staff_status_reset['"]/);
   assert.match(staffStatusMonitorSource, /dispatchAuthCacheBlockedEvent\(/);

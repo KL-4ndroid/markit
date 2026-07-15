@@ -6,12 +6,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { RefreshCw, X } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import { type CoordinatedOverlayProps } from '@/components/global-overlays/overlay-types';
 
-export function PWAUpdatePrompt() {
+export function PWAUpdatePrompt({
+  isSuppressed = false,
+  onVisibilityChange,
+}: CoordinatedOverlayProps) {
   const [showPrompt, setShowPrompt] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    onVisibilityChange?.(showPrompt);
+  }, [onVisibilityChange, showPrompt]);
+
+  useEffect(() => () => onVisibilityChange?.(false), [onVisibilityChange]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -27,7 +37,6 @@ export function PWAUpdatePrompt() {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 // 有新版本可用
-                console.log('[PWA] 發現新版本');
                 setShowPrompt(true);
               }
             });
@@ -36,7 +45,6 @@ export function PWAUpdatePrompt() {
 
         // 定期檢查更新（每 30 分鐘）
         const checkInterval = setInterval(() => {
-          console.log('[PWA] 檢查更新...');
           reg.update();
         }, 30 * 60 * 1000);
 
@@ -69,17 +77,17 @@ export function PWAUpdatePrompt() {
     setShowPrompt(false);
   };
 
-  if (!showPrompt) {
+  if (!showPrompt || isSuppressed) {
     return null;
   }
 
   return (
     <>
       {/* 背景遮罩 */}
-      <div className="fixed inset-0 bg-black/50 z-[9998] backdrop-blur-sm" />
+      <div className="fixed inset-0 z-overlay bg-black/50" />
 
       {/* 更新提示卡片 */}
-      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[9999] max-w-sm mx-auto">
+      <div className="fixed inset-x-4 top-1/2 z-dialog mx-auto max-w-sm -translate-y-1/2">
         <div className="bg-white rounded-[2rem] p-6 shadow-2xl shadow-primary/30 animate-in fade-in zoom-in duration-300">
           {/* 圖標 */}
           <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center">

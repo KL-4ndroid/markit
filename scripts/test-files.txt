@@ -149,6 +149,11 @@ tsx tests/conflict-sanitization.test.ts
 tsx tests/role-fail-closed.test.ts
 tsx tests/role-refresh-state.test.ts
 tsx tests/role-provider-r1.test.ts
+tsx tests/app-navigation.test.ts
+tsx tests/ui-primitives.test.ts
+tsx tests/sync-ui-consolidation.test.ts
+tsx tests/app-shell-accessibility-performance.test.ts
+tsx tests/global-overlay-host.test.ts
 tsx tests/role-capabilities.test.ts
 tsx tests/p5-4d-role-freshness-gate.test.ts
 tsx tests/p5-field-notes.test.ts

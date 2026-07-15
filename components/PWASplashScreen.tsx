@@ -57,7 +57,7 @@ export function PWASplashScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-gradient-to-br from-primary via-primary/85 to-secondary flex items-center justify-center transition-opacity duration-300 ${
+      className={`fixed inset-0 z-critical bg-gradient-to-br from-primary via-primary/85 to-secondary flex items-center justify-center transition-opacity duration-300 ${
         isAnimatingOut ? 'opacity-0' : 'opacity-100'
       }`}
     >

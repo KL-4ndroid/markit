@@ -4,7 +4,6 @@ import { AppChrome } from "@/components/AppChrome";
 import { AuthProvider } from "@/lib/supabase/auth-context";
 import { RoleProvider } from "@/lib/role-context";
 import { SyncProvider } from "@/lib/sync-context";
-import { NavigationProvider } from "@/lib/navigation-context";
 
 export const metadata: Metadata = {
   title: "Féria - 出攤筆記",
@@ -29,8 +28,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: "#24381F",
 };
 
@@ -56,9 +53,7 @@ export default function RootLayout({
         <AuthProvider>
           <RoleProvider>
             <SyncProvider>
-              <NavigationProvider>
-                <AppChrome>{children}</AppChrome>
-              </NavigationProvider>
+              <AppChrome>{children}</AppChrome>
             </SyncProvider>
           </RoleProvider>
         </AuthProvider>

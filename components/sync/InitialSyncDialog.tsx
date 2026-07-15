@@ -15,6 +15,7 @@ import { SyncStatus } from '@/hooks/useSync';
 import { useSyncContext } from '@/lib/sync-context';
 import { useRoleContext } from '@/lib/role-context';
 import { resolveRoleMode } from '@/lib/auth/role-mode';
+import { type CoordinatedOverlayProps } from '@/components/global-overlays/overlay-types';
 
 // 使用 sessionStorage 記錄是否已完成初始同步（會話級別，關閉瀏覽器後重置）
 const INITIAL_SYNC_KEY = 'hasCompletedInitialSync';
@@ -29,7 +30,10 @@ function setHasCompletedInitialSync(key: string, value: boolean): void {
   sessionStorage.setItem(key, value.toString());
 }
 
-export function InitialSyncDialog() {
+export function InitialSyncDialog({
+  isSuppressed = false,
+  onVisibilityChange,
+}: CoordinatedOverlayProps) {
   const { user, isConfigured } = useAuth();
   const { userRole, roleRefreshState } = useRoleContext();
   const syncContext = useSyncContext(); // ✅ 使用全局同步狀態
@@ -41,6 +45,12 @@ export function InitialSyncDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [, setHasCompletedInitialSyncState] = useState(false);
   const hasSeenSuccessRef = useRef(false); // ✅ 使用 ref 避免觸發重新渲染
+
+  useEffect(() => {
+    onVisibilityChange?.(isOpen);
+  }, [isOpen, onVisibilityChange]);
+
+  useEffect(() => () => onVisibilityChange?.(false), [onVisibilityChange]);
 
   // 監聽用戶登入
   useEffect(() => {
@@ -136,8 +146,8 @@ export function InitialSyncDialog() {
   const progressInfo = getProgressInfo();
 
   return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-[10000]" onClose={() => {}}>
+    <Transition appear show={isOpen && !isSuppressed} as={Fragment}>
+      <Dialog as="div" className="relative z-dialog" onClose={() => {}}>
         {/* 背景遮罩 */}
         <Transition.Child
           as={Fragment}

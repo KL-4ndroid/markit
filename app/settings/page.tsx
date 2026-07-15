@@ -18,7 +18,11 @@ import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { DataCanonicalizationPanel } from '@/components/settings/DataCanonicalizationPanel';
 import { OwnerBrandSettingsCard } from '@/components/settings/OwnerBrandSettingsCard';
 import { SalesPhotoEvidenceSettingsCard } from '@/components/settings/SalesPhotoEvidenceSettingsCard';
-import { getLocalPendingWriteReport } from '@/lib/sync/local-pending-write-report';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import {
+  getLocalPendingWriteReport,
+  type LocalPendingWriteReport,
+} from '@/lib/sync/local-pending-write-report';
 
 async function clearLocalAppData(userId?: string, forceDiscardLocalChanges = false): Promise<boolean> {
   const { clearAllData, db } = await import('@/lib/db');
@@ -27,17 +31,7 @@ async function clearLocalAppData(userId?: string, forceDiscardLocalChanges = fal
 
   const report = await getLocalPendingWriteReport(userId);
   if (!report.isClean && !forceDiscardLocalChanges) {
-    const confirmed = window.confirm(
-      [
-        `There are ${report.pendingEventCount} unsynced local event(s) and ${report.unfinishedSyncQueueCount} unfinished sync queue item(s).`,
-        'Clearing local app data now will discard local changes that have not reached Cloud.',
-        'Press OK only if you want to discard these local changes.',
-      ].join('\n')
-    );
-
-    if (!confirmed) {
-      return false;
-    }
+    return false;
   }
 
   try {
@@ -98,6 +92,10 @@ export default function SettingsPage() {
   const [isStaffManagementExpanded, setIsStaffManagementExpanded] = useState(false);
   const [isInteractionExpanded, setIsInteractionExpanded] = useState(false);
   const [isDatabaseExpanded, setIsDatabaseExpanded] = useState(false);
+  const [confirmation, setConfirmation] = useState<
+    'reset-interaction' | 'clear-local' | 'clear-online' | 'leave-team' | null
+  >(null);
+  const [localPendingReport, setLocalPendingReport] = useState<LocalPendingWriteReport | null>(null);
   const { user, signOut } = useAuth();
   const { userRole, isStaff, isLoading: isRoleLoading, roleError } = useUserRole();
 
@@ -112,15 +110,17 @@ export default function SettingsPage() {
   //   - fail-closed 仍由 useUserRole 的 deriveRolePermissions 提供雙層保護
 
   const handleResetInteraction = () => {
-    if (confirm('確定要重置互動設定嗎？重置後需要重新設定。')) {
-      resetInteractionButtons();
-      setButtons(getInteractionButtons());
-      setIsSetupComplete(false);
-      toast.success('🔄 已重置互動設定');
-      
-      // 觸發 storage 事件
-      window.dispatchEvent(new Event('storage'));
-    }
+    setConfirmation('reset-interaction');
+  };
+
+  const confirmResetInteraction = () => {
+    resetInteractionButtons();
+    setButtons(getInteractionButtons());
+    setIsSetupComplete(false);
+    setConfirmation(null);
+    toast.success('已重置互動設定');
+
+    window.dispatchEvent(new Event('storage'));
   };
 
   const handleWizardComplete = () => {
@@ -132,22 +132,28 @@ export default function SettingsPage() {
   };
 
   const handleClearLocalDatabase = async () => {
-    if (!confirm('⚠️ 警告：這將清除所有本地資料（市集、商品、統計等），此操作無法復原！\n\n確定要繼續嗎？')) {
-      return;
-    }
+    const report = await getLocalPendingWriteReport(user?.id);
+    setLocalPendingReport(report);
+    setConfirmation('clear-local');
+  };
 
+  const confirmClearLocalDatabase = async () => {
     try {
-      // 刪除 IndexedDB
-      const cleared = await clearLocalAppData(user?.id);
-      if (!cleared) return;
-      
-      toast.success('✅ 本地資料庫已清除');
-      toast.info('🔄 頁面將在 2 秒後重新載入...');
-      
-      // 延遲刷新頁面
+      const approvedDiscard = localPendingReport?.isClean === false;
+      const cleared = await clearLocalAppData(user?.id, approvedDiscard);
+      if (!cleared) {
+        setConfirmation(null);
+        toast.warning('偵測到新的未同步資料，已停止清除。請重新確認目前狀態。');
+        return;
+      }
+
+      setConfirmation(null);
+      toast.success('本地資料庫已清除');
+      toast.info('頁面即將重新載入');
+
       setTimeout(() => {
         window.location.reload();
-      }, 2000);
+      }, 800);
     } catch (error) {
       console.error('清除本地資料庫失敗:', error);
       toast.error('清除失敗，請稍後再試');
@@ -159,28 +165,12 @@ export default function SettingsPage() {
       toast.error('請先登入 Supabase 帳號');
       return;
     }
+    setConfirmation('clear-online');
+  };
 
-    const confirmText = prompt(
-      '⚠️⚠️⚠️ DANGER: PERMANENT DATA DELETION ⚠️⚠️⚠️\n\n' +
-      '這將永久刪除您在 Supabase 雲端的所有資料：\n' +
-      'This will permanently delete all your data from Supabase cloud:\n\n' +
-      '• 所有市集記錄 (All market records)\n' +
-      '• 所有商品資料 (All product data)\n' +
-      '• 所有事件歷史 (All event history)\n' +
-      '• 所有統計資料 (All statistics)\n' +
-      '• 本地資料庫 (Local database)\n\n' +
-      '⚠️ 此操作無法復原！(This action CANNOT be undone!)\n' +
-      '⚠️ 所有設備的資料都會被清除！(All devices will be affected!)\n' +
-      '⚠️ 雲端刪除成功後才會清除本地資料！(Local data is cleared only after cloud deletion succeeds!)\n\n' +
-      '如果您確定要繼續，請輸入 DELETE：\n' +
-      'If you are sure, type DELETE:'
-    );
-
-    if (confirmText !== 'DELETE') {
-      toast.info('已取消操作 (Operation cancelled)');
-      return;
-    }
-
+  const confirmClearOnlineDatabase = async () => {
+    if (!user) return;
+    setConfirmation(null);
     const toastId = toast.loading('正在清除所有資料...');
 
     try {
@@ -189,16 +179,14 @@ export default function SettingsPage() {
       const { data, error } = await supabase.rpc('delete_current_user_app_data');
       if (error) throw error;
 
-      console.log('✅ 雲端資料已透過 RPC 清除:', data);
-
       toast.loading('雲端資料已清除，正在清除本地快取...', { id: toastId });
-      const cleared = await clearLocalAppData(user?.id);
+      const cleared = await clearLocalAppData(user.id, true);
       if (!cleared) {
         toast.dismiss(toastId);
         return;
       }
 
-      toast.success('✅ 所有資料已清除，即將重新載入...', { id: toastId });
+      toast.success('所有資料已清除，即將重新載入', { id: toastId });
       
       setTimeout(() => {
         window.location.href = '/';
@@ -213,18 +201,12 @@ export default function SettingsPage() {
   // ✅ 員工離開團隊：先解除雲端關係，成功後才清除本地快取
   const handleLeaveTeam = async () => {
     if (!user || !userRole.ownerId) return;
+    setConfirmation('leave-team');
+  };
 
-    const confirmed = confirm(
-      '⚠️ 確定要離開團隊嗎？\n\n' +
-      '離開後：\n' +
-      '• 您將無法再訪問老闆的市集\n' +
-      '• 您的本地數據將被清除\n' +
-      '• 您將恢復為一般用戶身分\n\n' +
-      '此操作無法復原！'
-    );
-
-    if (!confirmed) return;
-
+  const confirmLeaveTeam = async () => {
+    if (!user || !userRole.ownerId) return;
+    setConfirmation(null);
     try {
       toast.loading('正在離開團隊...', { id: 'leave-team' });
 
@@ -234,16 +216,14 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      console.log('✅ 已透過 RPC 離開團隊:', data);
-
       toast.loading('團隊關係已解除，正在清除本地快取...', { id: 'leave-team' });
-      const cleared = await clearLocalAppData(user.id);
+      const cleared = await clearLocalAppData(user.id, true);
       if (!cleared) {
         toast.dismiss('leave-team');
         return;
       }
 
-      toast.success('✅ 已離開團隊，即將重新載入...', { id: 'leave-team' });
+      toast.success('已離開團隊，即將重新載入', { id: 'leave-team' });
 
       setTimeout(() => {
         window.location.href = '/';
@@ -675,6 +655,49 @@ export default function SettingsPage() {
         isOpen={showWizard}
         onClose={() => setShowWizard(false)}
         onComplete={handleWizardComplete}
+      />
+
+      <ConfirmDialog
+        open={confirmation === 'reset-interaction'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={confirmResetInteraction}
+        title="重置互動記錄設定？"
+        description="目前的三個互動按鈕會恢復為未設定狀態，之後可以重新建立。"
+        confirmLabel="重置設定"
+      />
+
+      <ConfirmDialog
+        open={confirmation === 'clear-local'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={confirmClearLocalDatabase}
+        title="清除這台裝置的資料？"
+        description={localPendingReport?.isClean === false
+          ? `偵測到 ${localPendingReport.pendingEventCount} 筆未同步事件、${localPendingReport.unfinishedSyncQueueCount} 筆同步佇列工作，以及 ${localPendingReport.pendingSalesPhotoEvidenceCreationCount + localPendingReport.pendingSalesPhotoEvidencePayloadCount} 筆待處理照片。清除後，尚未送達雲端的內容將無法復原。`
+          : '這會清除這台裝置上的市集、商品、統計與快取。已同步的資料可在重新登入後從雲端取回。'}
+        confirmLabel="清除本機資料"
+        tone="danger"
+        confirmationText={localPendingReport?.isClean === false ? '清除本機' : undefined}
+      />
+
+      <ConfirmDialog
+        open={confirmation === 'clear-online'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={confirmClearOnlineDatabase}
+        title="永久刪除所有線上資料？"
+        description="所有市集、商品、事件、統計與各裝置的本機資料都會被清除，而且無法復原。"
+        confirmLabel="永久刪除"
+        tone="danger"
+        confirmationText="DELETE"
+      />
+
+      <ConfirmDialog
+        open={confirmation === 'leave-team'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={confirmLeaveTeam}
+        title="離開目前團隊？"
+        description="離開後將無法再存取老闆的市集，這台裝置上的團隊資料也會清除，帳號會恢復為一般使用者。"
+        confirmLabel="離開團隊"
+        tone="danger"
       />
     </div>
   );

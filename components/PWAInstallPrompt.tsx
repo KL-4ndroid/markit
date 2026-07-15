@@ -2,16 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { X, Download, Share } from 'lucide-react';
+import { type CoordinatedOverlayProps } from '@/components/global-overlays/overlay-types';
 
 /**
  * PWA 安裝提示組件
  * 支援 iOS 和 Android 的安裝引導
  * 只在第一次訪問時自動顯示，之後需要從設置頁面手動觸發
  */
-export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: boolean }) {
+interface PWAInstallPromptProps extends CoordinatedOverlayProps {
+  manualTrigger?: boolean;
+}
+
+export function PWAInstallPrompt({
+  manualTrigger = false,
+  isSuppressed = false,
+  onVisibilityChange,
+}: PWAInstallPromptProps) {
   const [showPrompt, setShowPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop' | null>(null);
+
+  useEffect(() => {
+    onVisibilityChange?.(showPrompt && platform !== null);
+  }, [onVisibilityChange, platform, showPrompt]);
+
+  useEffect(() => () => onVisibilityChange?.(false), [onVisibilityChange]);
 
   useEffect(() => {
     // 檢查是否已安裝
@@ -74,11 +89,7 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
     deferredPrompt.prompt();
 
     // 等待用戶選擇
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    }
+    await deferredPrompt.userChoice;
 
     setDeferredPrompt(null);
     setShowPrompt(false);
@@ -88,12 +99,12 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
     setShowPrompt(false);
   };
 
-  if (!showPrompt) return null;
+  if (!showPrompt || isSuppressed) return null;
 
   // iOS 安裝引導
   if (platform === 'ios') {
     return (
-      <div className="fixed inset-0 bg-black/50 z-[100] flex items-end sm:items-center sm:justify-center p-4 animate-fade-in">
+      <div className="fixed inset-0 z-dialog flex items-end bg-black/50 p-4 sm:items-center sm:justify-center">
         <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full max-w-md p-6 animate-slide-up">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-foreground">安裝 Féria 到主畫面</h3>
@@ -164,7 +175,7 @@ export function PWAInstallPrompt({ manualTrigger = false }: { manualTrigger?: bo
   // Android/Desktop 安裝提示
   if (platform === 'android' || platform === 'desktop') {
     return (
-      <div className="fixed bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-[100] animate-slide-up">
+      <div className="fixed bottom-20 left-4 right-4 z-dialog sm:left-auto sm:right-4 sm:max-w-md">
         <div className="bg-white rounded-[1.5rem] p-6 shadow-xl">
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">

@@ -23,6 +23,8 @@ import { AlertTriangle, Users, Shield, Trash2, CheckCircle, X } from 'lucide-rea
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { type CoordinatedOverlayProps } from '@/components/global-overlays/overlay-types';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface PendingInvitation {
   id: string;
@@ -35,11 +37,21 @@ interface PendingInvitation {
   invited_at: string;
 }
 
-export function StaffInvitationDialog() {
+export function StaffInvitationDialog({
+  isSuppressed = false,
+  onVisibilityChange,
+}: CoordinatedOverlayProps) {
   const { user } = useAuth();
   const [invitation, setInvitation] = useState<PendingInvitation | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pendingDecision, setPendingDecision] = useState<'accept' | 'reject' | null>(null);
+
+  useEffect(() => {
+    onVisibilityChange?.(Boolean(invitation && isOpen));
+  }, [invitation, isOpen, onVisibilityChange]);
+
+  useEffect(() => () => onVisibilityChange?.(false), [onVisibilityChange]);
 
   // 檢查是否有待處理的邀請
   const checkPendingInvitation = useCallback(async () => {
@@ -87,14 +99,6 @@ export function StaffInvitationDialog() {
   // 接受邀請
   const handleAccept = async () => {
     if (!user || !invitation) return;
-
-    const confirmed = confirm(
-      '接受員工邀請後，系統會切換到員工模式並清除本機快取資料。\n\n' +
-      '雲端個人資料不會在這個流程中刪除；如需刪除個人資料，請到設定頁另外操作。\n\n' +
-      '是否繼續？'
-    );
-
-    if (!confirmed) return;
 
     setIsProcessing(true);
 
@@ -170,15 +174,8 @@ export function StaffInvitationDialog() {
   };
 
   // 拒絕邀請
-  const handleReject = async () => {
-    if (!user || !invitation) return;
-
-    const confirmed = confirm(
-      '確定要拒絕邀請嗎？\n\n' +
-      '拒絕後，您將繼續使用原有身份。'
-    );
-
-    if (!confirmed) return;
+  const handleReject = async (): Promise<boolean> => {
+    if (!user || !invitation) return false;
 
     setIsProcessing(true);
 
@@ -199,10 +196,12 @@ export function StaffInvitationDialog() {
       // 關閉對話框
       setIsOpen(false);
       setInvitation(null);
+      return true;
 
     } catch (error: any) {
       console.error('拒絕邀請失敗:', error);
       toast.error('拒絕邀請失敗：' + error.message, { id: 'reject-invitation' });
+      return false;
     } finally {
       setIsProcessing(false);
     }
@@ -211,8 +210,9 @@ export function StaffInvitationDialog() {
   if (!invitation) return null;
 
   return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-[10001]" onClose={() => {}}>
+    <>
+      <Transition appear show={isOpen && !isSuppressed && pendingDecision === null} as={Fragment}>
+        <Dialog as="div" className="relative z-dialog" onClose={() => {}}>
         {/* 背景遮罩 */}
         <Transition.Child
           as={Fragment}
@@ -307,7 +307,7 @@ export function StaffInvitationDialog() {
                 {/* 按鈕 */}
                 <div className="flex gap-3">
                   <button
-                    onClick={handleReject}
+                    onClick={() => setPendingDecision('reject')}
                     disabled={isProcessing}
                     className="flex-1 px-6 py-4 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
@@ -315,7 +315,7 @@ export function StaffInvitationDialog() {
                     拒絕邀請
                   </button>
                   <button
-                    onClick={handleAccept}
+                    onClick={() => setPendingDecision('accept')}
                     disabled={isProcessing}
                     className="flex-1 px-6 py-4 rounded-2xl bg-gradient-to-br from-primary to-primary/85 text-white hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
@@ -332,7 +332,28 @@ export function StaffInvitationDialog() {
             </Transition.Child>
           </div>
         </div>
-      </Dialog>
-    </Transition>
+        </Dialog>
+      </Transition>
+
+      <ConfirmDialog
+        open={pendingDecision === 'accept' && !isSuppressed}
+        onClose={() => setPendingDecision(null)}
+        onConfirm={handleAccept}
+        title="接受員工邀請"
+        description="接受後會切換為員工模式並清除這台裝置上的本機快取；雲端個人資料不會在此流程中刪除。"
+        confirmLabel="接受並切換"
+      />
+      <ConfirmDialog
+        open={pendingDecision === 'reject' && !isSuppressed}
+        onClose={() => setPendingDecision(null)}
+        onConfirm={async () => {
+          if (await handleReject()) setPendingDecision(null);
+        }}
+        title="拒絕員工邀請"
+        description="拒絕後會刪除此邀請紀錄，您會繼續使用目前身分，老闆之後仍可再次邀請。"
+        confirmLabel="拒絕邀請"
+        tone="danger"
+      />
+    </>
   );
 }
