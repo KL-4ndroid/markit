@@ -163,8 +163,8 @@ runTest('保留營業狀態卡片', () => {
 
 runTest('保留員工核心工作功能（互動 / 交易 / 流水帳）', () => {
   assert.match(source, /InteractionButtons/, '應保留 InteractionButtons');
-  assert.match(source, /QuickInteractionButtons/, '應保留 QuickInteractionButtons');
-  assert.match(source, /QuickTransactionGrid/, '應保留 QuickTransactionGrid');
+  assert.match(source, /TransactionWorkspace/, '應保留統一交易工作區');
+  assert.match(source, /salesPhotoEvidenceRequired=\{salesPhotoEvidenceRequired\}/, '交易工作區應顯示本場照片規則');
   assert.match(source, /DailyTransactionLog/, '應保留 DailyTransactionLog');
 });
 

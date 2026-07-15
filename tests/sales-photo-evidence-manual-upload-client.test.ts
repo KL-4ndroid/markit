@@ -23,7 +23,8 @@ function runTest(name: string, fn: TestFn): void {
 }
 
 const clientSource = readProjectFile('lib/sales/photo-evidence-manual-upload-client.ts');
-const dialogSource = readProjectFile('components/markets/SalesPhotoEvidencePendingListDialog.tsx');
+const dialogSource = readProjectFile('components/markets/SalesPhotoEvidenceFlowDialog.tsx');
+const flowHookSource = readProjectFile('hooks/useSalesPhotoEvidenceFlow.ts');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const actionSource = readProjectFile('components/markets/SalesPhotoEvidenceManualUploadAction.tsx');
@@ -210,17 +211,16 @@ runTest('client and UI reuse existing route and stay out of R2 SDK storage inter
   assert.doesNotMatch(clientSource, /@aws-sdk|S3Client|PutObjectCommand|R2_BUCKET|service_role/i);
 
   assert.match(actionSource, /export function SalesPhotoEvidenceManualUploadAction/);
-  assert.match(dialogSource, /import \{ SalesPhotoEvidenceManualUploadAction \}/);
-  assert.match(dialogSource, /uploadEnabled\?: boolean/);
-  assert.match(dialogSource, /onUploadManual\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<unknown>/);
+  assert.match(dialogSource, /onUpload: \(/);
+  assert.match(dialogSource, /onUpload\(state\.item, payload\)/);
   assert.doesNotMatch(dialogSource, /photo-evidence-manual-upload-client|fetch\(|supabase|@aws-sdk|R2_BUCKET|service_role/i);
 
-  assert.match(staffViewSource, /uploadPendingSalesPhotoEvidenceManually/);
-  assert.match(staffViewSource, /uploadEnabled=\{true\}/);
-  assert.match(staffViewSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
-  assert.match(ownerPageSource, /uploadPendingSalesPhotoEvidenceManually/);
-  assert.match(ownerPageSource, /uploadEnabled=\{true\}/);
-  assert.match(ownerPageSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
+  assert.match(flowHookSource, /uploadPendingSalesPhotoEvidenceManually\(item\)/);
+  for (const source of [staffViewSource, ownerPageSource]) {
+    assert.match(source, /useSalesPhotoEvidenceFlow/);
+    assert.match(source, /onUpload=\{\(item, payload\) => void salesPhotoEvidenceFlow\.upload\(item, payload\)\}/);
+    assert.doesNotMatch(source, /uploadPendingSalesPhotoEvidenceManually/);
+  }
 });
 
 runTest('test manifest includes the manual upload client guardrail', () => {

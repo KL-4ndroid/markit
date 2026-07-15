@@ -10,6 +10,10 @@ import {
   type RecordDealWithPhotoEvidenceResult,
 } from '@/lib/sales/photo-evidence-post-sale';
 import type { DealClosedPayload } from '@/types/db';
+import {
+  buildSalesTransactionSummary,
+  type SalesTransactionSummary,
+} from '@/lib/sales/sale-summary';
 
 export type SalesPhotoEvidenceRuntimeDealInput =
   DealClosedPayload | ({ marketId: string } & Omit<DealClosedPayload, 'market_id'>);
@@ -35,6 +39,7 @@ export type SalesPhotoEvidenceRuntimeEnqueueOptions = {
 
 export type SalesPhotoEvidenceRuntimeResult = {
   dealEventId: string;
+  transaction: SalesTransactionSummary;
   evidence:
     | { status: 'runtime_disabled' }
     | { status: 'context_missing'; missingFields: string[] }
@@ -93,8 +98,10 @@ export async function recordDealWithOptionalSalesPhotoEvidence(
   const deps = resolveDeps(options.deps);
 
   if (!deps.isRuntimeEnqueueEnabled()) {
+    const dealEventId = await deps.recordDeal(deal, dealDate);
     return {
-      dealEventId: await deps.recordDeal(deal, dealDate),
+      dealEventId,
+      transaction: buildSalesTransactionSummary(deal, dealEventId, options.evidenceContext?.saleCompletedAt),
       evidence: { status: 'runtime_disabled' },
     };
   }
@@ -103,8 +110,10 @@ export async function recordDealWithOptionalSalesPhotoEvidence(
   const missingFields = getMissingContextFields(context);
 
   if (missingFields.length > 0) {
+    const dealEventId = await deps.recordDeal(deal, dealDate);
     return {
-      dealEventId: await deps.recordDeal(deal, dealDate),
+      dealEventId,
+      transaction: buildSalesTransactionSummary(deal, dealEventId, context?.saleCompletedAt),
       evidence: {
         status: 'context_missing',
         missingFields,
@@ -126,5 +135,8 @@ export async function recordDealWithOptionalSalesPhotoEvidence(
     onEvidenceError: deps.onEvidenceError,
   });
 
-  return result;
+  return {
+    ...result,
+    transaction: buildSalesTransactionSummary(deal, result.dealEventId, context!.saleCompletedAt),
+  };
 }

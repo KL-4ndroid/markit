@@ -27,12 +27,15 @@ export type SalesPhotoEvidenceDecodedImage = {
 
 export type CaptureAndStoreSalesPhotoEvidenceInput = {
   queueItem: LocalPendingSalesPhotoEvidenceCreation;
+  source?: SalesPhotoEvidenceCaptureSource;
   now?: string | number | Date;
 };
 
+export type SalesPhotoEvidenceCaptureSource = 'camera' | 'library';
+
 export type CaptureAndStoreSalesPhotoEvidenceDependencies = {
   getCapabilitySnapshot?: () => SalesPhotoEvidenceBrowserCapabilitySnapshot;
-  selectFile?: () => Promise<File | null>;
+  selectFile?: (source: SalesPhotoEvidenceCaptureSource) => Promise<File | null>;
   decodeImage?: (file: File) => Promise<SalesPhotoEvidenceDecodedImage>;
   renderVariant?: (
     decoded: SalesPhotoEvidenceDecodedImage,
@@ -76,7 +79,7 @@ function defaultCapabilitySnapshot(): SalesPhotoEvidenceBrowserCapabilitySnapsho
   };
 }
 
-function selectFileWithInput(): Promise<File | null> {
+function selectFileWithInput(source: SalesPhotoEvidenceCaptureSource): Promise<File | null> {
   if (typeof document === 'undefined') {
     return Promise.resolve(null);
   }
@@ -85,7 +88,7 @@ function selectFileWithInput(): Promise<File | null> {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.setAttribute('capture', 'environment');
+    if (source === 'camera') input.setAttribute('capture', 'environment');
     input.style.position = 'fixed';
     input.style.left = '-9999px';
     input.style.opacity = '0';
@@ -246,7 +249,7 @@ export async function captureAndStoreSalesPhotoEvidenceWithFileInput(
   let decoded: SalesPhotoEvidenceDecodedImage | null = null;
 
   try {
-    const file = await selectFile();
+    const file = await selectFile(input.source ?? 'camera');
     if (!file) return fail('capture_cancelled', readiness);
 
     decoded = await decodeImage(file);

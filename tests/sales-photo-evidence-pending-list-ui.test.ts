@@ -77,11 +77,13 @@ async function withMockedQueue<T>(
 }
 
 const readModelSource = readProjectFile('lib/sales/photo-evidence-pending-creation-read-model.ts');
-const dialogSource = readProjectFile('components/markets/SalesPhotoEvidencePendingListDialog.tsx');
+const dialogSource = readProjectFile('components/markets/SalesPhotoEvidenceFlowDialog.tsx');
+const taskCardSource = readProjectFile('components/markets/SalesPhotoEvidencePendingTaskCard.tsx');
+const flowHookSource = readProjectFile('hooks/useSalesPhotoEvidenceFlow.ts');
+const workspaceSource = readProjectFile('components/sales/TransactionWorkspace.tsx');
 const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
-const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
-const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const planSource = readProjectFile('docs/SALES_CHECKOUT_PHOTO_EVIDENCE_UIUX_OPTIMIZATION_PLAN_2026_07_15.md');
 const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 console.log('\n=== Sales photo evidence pending list UI ===');
@@ -145,76 +147,48 @@ runTest('pending list read model stays local-only and read-only', () => {
   assert.doesNotMatch(readModelSource, /supabase|sale_photo_evidence|drain|upload|getUserMedia|signedUrl|signed_url|\bR2\b/i);
 });
 
-runTest('pending list dialog stays adapter-free and delegates local capture by prop', () => {
-  assert.match(dialogSource, /export function SalesPhotoEvidencePendingListDialog/);
-  assert.match(dialogSource, /items: SalesPhotoEvidencePendingCreationListItem\[\]/);
-  assert.match(dialogSource, /buildPendingSalesPhotoEvidenceCreationDiagnosticSummary\(items\)/);
-  assert.match(dialogSource, /diagnostics\.severityCounts\.warning \+ diagnostics\.severityCounts\.critical/);
-  assert.match(dialogSource, /loadError\?: string \| null/);
-  assert.match(dialogSource, /lastLoadedAt\?: number \| null/);
-  assert.match(dialogSource, /const statusCounts = countByStatus\(items\)/);
-  assert.match(dialogSource, /const needsAttentionCount/);
+runTest('pending list is a task view with one primary action and no operator diagnostics', () => {
+  assert.match(dialogSource, /export function SalesPhotoEvidenceFlowDialog/);
+  assert.match(dialogSource, /pendingItems: SalesPhotoEvidencePendingTaskItem\[\]/);
+  assert.match(dialogSource, /SalesPhotoEvidencePendingTaskCard/);
+  assert.match(dialogSource, /pendingItemsError\?: string \| null/);
+  assert.match(dialogSource, /isLoadingPendingItems\?: boolean/);
   assert.match(dialogSource, /待補照片/);
-  assert.match(dialogSource, /成交紀錄已保留/);
-  assert.match(dialogSource, /RECOMMENDATION_LABELS/);
-  assert.match(dialogSource, /重新讀取/);
-  assert.match(dialogSource, /captureEnabled = false/);
-  assert.match(dialogSource, /onCaptureLocal\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<unknown>/);
-  assert.match(dialogSource, /uploadEnabled = false/);
-  assert.match(dialogSource, /onUploadManual\?: \(item: SalesPhotoEvidencePendingCreationListItem\) => void \| Promise<unknown>/);
+  assert.match(taskCardSource, /transaction\.totalAmount/);
+  assert.match(taskCardSource, /formatSalesPaymentMethod\(transaction\.paymentMethod\)/);
+  assert.match(taskCardSource, /尚未拍照/);
+  assert.match(taskCardSource, /照片尚未上傳/);
+  assert.match(taskCardSource, /照片已保留，可重新上傳/);
+  assert.match(taskCardSource, /payload \?/);
+  assert.doesNotMatch(taskCardSource, /lastErrorMessage|retryCount|RECOMMENDATION_LABELS|severityCounts|錯誤碼/);
   assert.doesNotMatch(dialogSource, /db\.|supabase|recordEvent|enqueue|drain|getUserMedia|signedUrl|signed_url|\bR2\b|fetch\(/i);
   assert.doesNotMatch(dialogSource, /add\(|put\(|update\(|delete\(|clear\(|bulkAdd\(/);
 });
 
-runTest('owner and staff market detail wire pending count and dialog without cloud writes', () => {
-  assert.match(ownerPageSource, /SalesPhotoEvidencePendingListDialog/);
-  assert.match(ownerPageSource, /listLocalSalesPhotoEvidencePendingCreationsForMarket/);
-  assert.match(ownerPageSource, /pendingCount=\{pendingSalesPhotoEvidenceItems\.length\}/);
-  assert.match(ownerPageSource, /onOpenPendingEvidence=\{handleOpenPendingSalesPhotoEvidence\}/);
-  assert.match(ownerPageSource, /loadError=\{pendingSalesPhotoEvidenceLoadError\}/);
-  assert.match(ownerPageSource, /lastLoadedAt=\{pendingSalesPhotoEvidenceLoadedAt\}/);
-  assert.match(ownerPageSource, /onRefresh=\{loadPendingSalesPhotoEvidenceItems\}/);
-  assert.doesNotMatch(
-    ownerPageSource,
-    /enqueuePendingSalesPhotoEvidenceCreation|createDexieSalesPhotoEvidencePendingCreationStorage|drainSalesPhotoEvidencePendingCreations|getUserMedia|signedUrl|signed_url|@aws-sdk|R2_BUCKET/i
-  );
-
-  for (const source of [staffViewSource]) {
-    assert.match(source, /SalesPhotoEvidencePendingListDialog/);
-    assert.match(source, /listLocalSalesPhotoEvidencePendingCreationsForMarket/);
-    assert.match(source, /pendingCount=\{pendingSalesPhotoEvidenceItems\.length\}/);
-    assert.match(source, /onOpenPendingEvidence=\{handleOpenPendingSalesPhotoEvidence\}/);
-    assert.match(source, /loadError=\{pendingSalesPhotoEvidenceLoadError\}/);
-    assert.match(source, /lastLoadedAt=\{pendingSalesPhotoEvidenceLoadedAt\}/);
-    assert.match(source, /onRefresh=\{loadPendingSalesPhotoEvidenceItems\}/);
+runTest('owner and staff wire the shared pending task controller without cloud writes', () => {
+  for (const source of [ownerPageSource, staffViewSource]) {
+    assert.match(source, /useSalesPhotoEvidenceFlow/);
+    assert.match(source, /SalesPhotoEvidenceFlowDialog/);
+    assert.match(source, /pendingItems=\{salesPhotoEvidenceFlow\.pendingItems\}/);
+    assert.match(source, /pendingPhotoCount=\{salesPhotoEvidenceFlow\.pendingCount\}/);
+    assert.match(source, /onOpenPendingPhotos=\{handleOpenPendingSalesPhotoEvidence\}/);
+    assert.match(source, /onRefresh=\{\(\) => void salesPhotoEvidenceFlow\.loadPendingItems\(\)\}/);
     assert.doesNotMatch(
       source,
-      /enqueuePendingSalesPhotoEvidenceCreation|createDexieSalesPhotoEvidencePendingCreationStorage|drainSalesPhotoEvidencePendingCreations|getUserMedia|signedUrl|signed_url|\bR2\b/i
+      /captureAndStoreSalesPhotoEvidenceWithFileInput|uploadPendingSalesPhotoEvidenceManually|createDexieSalesPhotoEvidencePendingCreationStorage|drainSalesPhotoEvidencePendingCreations|getUserMedia|signedUrl|signed_url|\bR2\b/i
     );
   }
 
-  assert.match(staffViewSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
-  assert.match(staffViewSource, /uploadPendingSalesPhotoEvidenceManually/);
-  assert.match(staffViewSource, /captureEnabled=\{true\}/);
-  assert.match(staffViewSource, /uploadEnabled=\{true\}/);
-  assert.match(staffViewSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
-  assert.match(staffViewSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
-  assert.match(ownerPageSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
-  assert.match(ownerPageSource, /uploadPendingSalesPhotoEvidenceManually/);
-  assert.match(ownerPageSource, /captureEnabled=\{true\}/);
-  assert.match(ownerPageSource, /uploadEnabled=\{true\}/);
-  assert.match(ownerPageSource, /onCaptureLocal=\{handleCaptureLocalSalesPhotoEvidence\}/);
-  assert.match(ownerPageSource, /onUploadManual=\{handleUploadManualSalesPhotoEvidence\}/);
+  assert.match(flowHookSource, /listLocalSalesPhotoEvidencePendingTasksForMarket/);
+  assert.match(flowHookSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
+  assert.match(flowHookSource, /uploadPendingSalesPhotoEvidenceManually/);
+  assert.match(workspaceSource, /onOpenPendingPhotos/);
 });
 
 runTest('plan and npm test include Slice 5C-3C and 5C-3D pending list guardrails', () => {
-  assert.match(planSource, /Slice 5C-3C Status/);
-  assert.match(planSource, /pending evidence list UI shell/i);
-  assert.match(planSource, /local-only read model/);
-  assert.match(planSource, /Slice 5C-3D Status/);
-  assert.match(planSource, /read-only pending list UX polish/);
-  assert.match(planSource, /Slice 5C-3H-1 Status/);
-  assert.match(planSource, /read-only diagnostics display/);
+  assert.match(planSource, /將待補清單改為任務清單/);
+  assert.match(planSource, /金額、支付方式及商品摘要/);
+  assert.match(planSource, /隱藏一般操作者不需要的診斷資訊/);
   assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-pending-list-ui\.test\.ts/);
 });
 

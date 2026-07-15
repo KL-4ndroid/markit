@@ -71,12 +71,9 @@ runTest('P5-5 opens staff deal/revenue/transaction writes through canRecordDeal'
   );
   assert.match(
     staffViewSource,
-    /\{canRecordDeal\s*&&\s*\([\s\S]*?\{isQuickRevenueExpanded\s*&&\s*\([\s\S]*?<QuickInteractionButtons/
+    /\{canRecordDeal\s*&&\s*\([\s\S]*?<TransactionWorkspace/
   );
-  assert.match(
-    staffViewSource,
-    /\{canRecordDeal\s*&&\s*\(\s*<QuickTransactionGrid/
-  );
+  assert.match(staffViewSource, /<TransactionWorkspace[\s\S]*hideProfit/);
   assert.match(staffViewSource, /if\s*\(\s*!canRecordDeal\s*\)\s*return\s*;/);
   assert.match(staffViewSource, /canAddRevenue=\{canRecordDeal\}/);
   assert.match(staffViewSource, /hideProfit=\{true\}/);

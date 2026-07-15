@@ -26,10 +26,10 @@ function section(source: string, start: string, end?: string): string {
 }
 
 const cardSource = readProjectFile('components/markets/SalesPhotoEvidenceOperatingCard.tsx');
+const workspaceSource = readProjectFile('components/sales/TransactionWorkspace.tsx');
 const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
-const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
-const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };
+const planSource = readProjectFile('docs/SALES_CHECKOUT_PHOTO_EVIDENCE_UIUX_OPTIMIZATION_PLAN_2026_07_15.md');
 const testManifestSource = readProjectFile('scripts/test-files.txt');
 
 console.log('\n=== Sales photo evidence Slice 4 operating UI ===');
@@ -45,35 +45,38 @@ runTest('operating card is UI-only and has owner/staff modes', () => {
   assert.doesNotMatch(cardSource, /recordEvent|updateMarket|supabase|db\./);
 });
 
-runTest('owner operating screen can toggle the requirement without creating evidence rows', () => {
-  assert.match(ownerPageSource, /import \{ SalesPhotoEvidenceOperatingCard \}/);
+runTest('owner operating screen shows compact photo status and keeps setting outside checkout', () => {
+  assert.match(ownerPageSource, /import \{ TransactionWorkspace \}/);
   const operatingBlock = section(ownerPageSource, '{isOperating && (', '/* 3. 營業狀態卡片');
-  assert.match(operatingBlock, /<SalesPhotoEvidenceOperatingCard[\s\S]*mode="owner"/);
-  assert.match(operatingBlock, /required=\{salesPhotoEvidenceRequired\}/);
-  assert.match(operatingBlock, /onToggle=\{handleToggleSalesPhotoEvidence\}/);
-  assert.match(operatingBlock, /pendingCount=\{pendingSalesPhotoEvidenceItems\.length\}/);
-  assert.match(operatingBlock, /onOpenPendingEvidence=\{handleOpenPendingSalesPhotoEvidence\}/);
+  assert.match(operatingBlock, /<TransactionWorkspace/);
+  assert.match(operatingBlock, /salesPhotoEvidenceRequired=\{salesPhotoEvidenceRequired\}/);
+  assert.match(operatingBlock, /pendingPhotoCount=\{salesPhotoEvidenceFlow\.pendingCount\}/);
+  assert.match(operatingBlock, /onOpenPendingPhotos=\{handleOpenPendingSalesPhotoEvidence\}/);
+  assert.doesNotMatch(operatingBlock, /onTogglePhotoRequirement|handleToggleSalesPhotoEvidence/);
   assert.doesNotMatch(operatingBlock, /sale_photo_evidence|uploadEvidence|getUserMedia|signedUrl|signed_url/i);
 
   const settingsBlock = section(ownerPageSource, '/* 7. 每日收入統計', '<DailyRevenueStats');
   assert.match(settingsBlock, /\{!isOperating && \(/);
+  assert.match(settingsBlock, /onClick=\{handleToggleSalesPhotoEvidence\}/);
+  assert.match(workspaceSource, /本場需拍照/);
+  assert.doesNotMatch(workspaceSource, /role="switch"|onTogglePhotoRequirement/);
 });
 
 runTest('staff operating screen shows read-only indicator and never receives a toggle handler', () => {
-  assert.match(staffViewSource, /import \{ SalesPhotoEvidenceOperatingCard \}/);
+  assert.match(staffViewSource, /import \{ TransactionWorkspace \}/);
   assert.match(staffViewSource, /const salesPhotoEvidenceRequired = Boolean\(market\.salesPhotoEvidenceRequired\)/);
   const operatingBlock = section(staffViewSource, '{isOperating && (', '<MarketFieldOpsSection');
-  assert.match(operatingBlock, /<SalesPhotoEvidenceOperatingCard[\s\S]*mode="staff"/);
-  assert.match(operatingBlock, /required=\{salesPhotoEvidenceRequired\}/);
-  assert.match(operatingBlock, /pendingCount=\{pendingSalesPhotoEvidenceItems\.length\}/);
-  assert.match(operatingBlock, /onOpenPendingEvidence=\{handleOpenPendingSalesPhotoEvidence\}/);
+  assert.match(operatingBlock, /<TransactionWorkspace/);
+  assert.match(operatingBlock, /salesPhotoEvidenceRequired=\{salesPhotoEvidenceRequired\}/);
+  assert.match(operatingBlock, /pendingPhotoCount=\{salesPhotoEvidenceFlow\.pendingCount\}/);
+  assert.match(operatingBlock, /onOpenPendingPhotos=\{handleOpenPendingSalesPhotoEvidence\}/);
   assert.doesNotMatch(operatingBlock, /onToggle=\{handleToggleSalesPhotoEvidence\}|updateMarket\(|recordEvent\(/);
 });
 
 runTest('plan and npm test include Slice 4 operating UI guardrails', () => {
-  assert.match(planSource, /Slice 4: Active Operating Toggle and Indicator[\s\S]*Status:[\s\S]*implemented/);
-  assert.match(planSource, /owner operating-screen toggle/);
-  assert.match(planSource, /read-only indicator for staff/);
+  assert.match(planSource, /重新安排成交照片設定/);
+  assert.match(planSource, /營業畫面只保留緊湊狀態/);
+  assert.match(planSource, /員工不需要看到不能操作的設定卡/);
   assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-slice4-operating-ui\.test\.ts/);
 });
 

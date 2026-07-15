@@ -155,7 +155,7 @@ runTest('allows retryable rows below retry limit and blocks rows at retry limit'
   assert.equal(exhausted.reason, 'max_retry_exceeded');
 });
 
-runTest('pending creation model stays pure and write/drain paths are not mounted in production yet', () => {
+runTest('pending creation model stays pure and page surfaces do not own queue write or drain logic', () => {
   assert.doesNotMatch(pendingCreationSource, /@\/lib\/supabase|supabase|from\(/);
   assert.doesNotMatch(pendingCreationSource, /@\/lib\/db|recordEvent|recordDeal|getUserMedia|uploadEvidence|signedUrl|signed_url|R2/i);
   assert.doesNotMatch(pendingCreationSource, /fetch\(|window\.|document\./);
@@ -168,11 +168,12 @@ runTest('pending creation model stays pure and write/drain paths are not mounted
     'components/markets/SalesPhotoEvidenceOperatingCard.tsx',
     'components/markets/StaffMarketDetailView.tsx',
     'app/markets/[id]/page.tsx',
+    'hooks/useSalesPhotoEvidenceFlow.ts',
   ];
 
   const matches = productionFiles.filter(file => {
     const source = readFileSync(join(projectRoot, file), 'utf8');
-    return /photo-evidence-pending-creation(?!-read-model)|classifyPendingSalesPhotoEvidenceCreationCandidate/.test(source);
+    return /classifyPendingSalesPhotoEvidenceCreationCandidate|createDexieSalesPhotoEvidencePendingCreationStorage|enqueuePendingSalesPhotoEvidenceCreation|drainSalesPhotoEvidencePendingCreations|markPendingSalesPhotoEvidenceCreation/.test(source);
   });
 
   assert.deepEqual(matches, []);

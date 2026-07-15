@@ -40,10 +40,8 @@ import {
 import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
-import { CartDrawer } from '@/components/sales/CartDrawer';
-import { QuickInteractionButtons } from '@/components/sales/QuickInteractionButtons';
 import { InteractionButtons } from '@/components/sales/InteractionButtons';
-import { QuickTransactionGrid } from '@/components/sales/QuickTransactionGrid';
+import { TransactionWorkspace } from '@/components/sales/TransactionWorkspace';
 import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { InteractionPreferenceChart } from '@/components/analytics/InteractionPreferenceChart';
 import { InteractionTimeHeatmap } from '@/components/analytics/InteractionTimeHeatmap';
@@ -57,14 +55,12 @@ import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { InteractionDetailModal } from '@/components/markets/InteractionDetailModal';
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
-import { SalesPhotoEvidenceOperatingCard } from '@/components/markets/SalesPhotoEvidenceOperatingCard';
-import { SalesPhotoEvidencePendingListDialog } from '@/components/markets/SalesPhotoEvidencePendingListDialog';
-import { SalesPhotoEvidencePostSalePrompt } from '@/components/markets/SalesPhotoEvidencePostSalePrompt';
-import { SalesPhotoEvidenceCapturePreviewDialog } from '@/components/markets/SalesPhotoEvidenceCapturePreviewDialog';
+import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
 import { SalesPhotoEvidenceOwnerAlbumRouteSection } from '@/components/markets/SalesPhotoEvidenceOwnerAlbumRouteSection';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useSalesPhotoEvidenceFlow } from '@/hooks/useSalesPhotoEvidenceFlow';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
@@ -73,41 +69,17 @@ import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
 import { getDealEventDate, getDealEventRevenue, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
-import {
-  listLocalSalesPhotoEvidencePendingCreationsForMarket,
-  type SalesPhotoEvidencePendingCreationListItem,
-} from '@/lib/sales/photo-evidence-pending-creation-read-model';
+import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import {
   listOwnerSalesPhotoEvidenceAlbumMetadataRows,
 } from '@/lib/supabase/sales-photo-evidence';
 import type { SalesPhotoEvidenceAlbumSourceRow } from '@/lib/sales/photo-evidence-owner-album-read-model';
-import type { SalesPhotoEvidenceRuntimeResult } from '@/lib/sales/photo-evidence-runtime-enqueue';
-import { captureAndStoreSalesPhotoEvidenceWithFileInput } from '@/lib/sales/photo-evidence-browser-adapter';
-import { uploadPendingSalesPhotoEvidenceManually } from '@/lib/sales/photo-evidence-manual-upload-client';
-import type { LocalPendingSalesPhotoEvidencePayload } from '@/lib/sales/photo-evidence-pending-payload-storage';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 interface PageProps {
   params?: {
     id?: string | string[];
   };
-}
-
-function getSalesPhotoEvidenceCaptureFailureMessage(reason: string): string {
-  switch (reason) {
-    case 'capture_cancelled':
-      return '已取消選擇照片，待補照片仍保留。';
-    case 'adapter_unavailable':
-      return '目前瀏覽器不支援拍照或圖片處理，請改用支援的瀏覽器再試。';
-    case 'source_decode_failed':
-      return '照片讀取失敗，請重新拍照或選擇其他圖片。';
-    case 'compression_failed':
-      return '照片壓縮失敗，請重新拍照或選擇較清楚的圖片。';
-    case 'output_policy_rejected':
-      return '照片格式或大小不符合限制，請重新拍照或選擇其他圖片。';
-    default:
-      return '照片暫存失敗，請稍後再試。';
-  }
 }
 
 type SalesPhotoEvidenceMarket = Market & {
@@ -258,35 +230,8 @@ export default function MarketDetailPage({ params }: PageProps) {
   const [isPending, startTransition] = useTransition(); // 用於非阻塞更新
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [isUpdatingSalesPhotoEvidence, setIsUpdatingSalesPhotoEvidence] = useState(false);
-  const [showPendingSalesPhotoEvidence, setShowPendingSalesPhotoEvidence] = useState(false);
-  const [isLoadingPendingSalesPhotoEvidence, setIsLoadingPendingSalesPhotoEvidence] = useState(false);
-  const [pendingSalesPhotoEvidenceLoadError, setPendingSalesPhotoEvidenceLoadError] = useState<string | null>(null);
-  const [pendingSalesPhotoEvidenceLoadedAt, setPendingSalesPhotoEvidenceLoadedAt] = useState<number | null>(null);
-  const [pendingSalesPhotoEvidenceItems, setPendingSalesPhotoEvidenceItems] = useState<
-    SalesPhotoEvidencePendingCreationListItem[]
-  >([]);
-  const [showSalesPhotoEvidencePostSalePrompt, setShowSalesPhotoEvidencePostSalePrompt] = useState(false);
-  const [postSaleSalesPhotoEvidenceItem, setPostSaleSalesPhotoEvidenceItem] = useState<
-    SalesPhotoEvidencePendingCreationListItem | null
-  >(null);
-  const [capturingSalesPhotoEvidenceQueueId, setCapturingSalesPhotoEvidenceQueueId] = useState<string | null>(null);
-  const [salesPhotoEvidenceCaptureErrorByQueueId, setSalesPhotoEvidenceCaptureErrorByQueueId] = useState<
-    Record<string, string | null>
-  >({});
-  const [uploadingSalesPhotoEvidenceQueueId, setUploadingSalesPhotoEvidenceQueueId] = useState<string | null>(null);
-  const [salesPhotoEvidenceUploadErrorByQueueId, setSalesPhotoEvidenceUploadErrorByQueueId] = useState<
-    Record<string, string | null>
-  >({});
-  const [salesPhotoEvidencePayloadRefreshByQueueId, setSalesPhotoEvidencePayloadRefreshByQueueId] = useState<
-    Record<string, string | null>
-  >({});
-  const [salesPhotoEvidencePreview, setSalesPhotoEvidencePreview] = useState<{
-    item: SalesPhotoEvidencePendingCreationListItem;
-    payload: LocalPendingSalesPhotoEvidencePayload;
-  } | null>(null);
   const [ownerSalesPhotoEvidenceRows, setOwnerSalesPhotoEvidenceRows] = useState<SalesPhotoEvidenceAlbumSourceRow[]>([]);
   const [isLoadingOwnerSalesPhotoEvidenceAlbum, setIsLoadingOwnerSalesPhotoEvidenceAlbum] = useState(false);
   const [ownerSalesPhotoEvidenceAlbumLoadError, setOwnerSalesPhotoEvidenceAlbumLoadError] = useState<string | null>(null);
@@ -306,36 +251,6 @@ export default function MarketDetailPage({ params }: PageProps) {
   // ✅ 防抖狀態 - 防止重複點擊
   const [lastClickTime, setLastClickTime] = useState<number>(0);
   const DEBOUNCE_DELAY = 300; // 300ms 防抖
-  
-  // ✅ 新增：交易功能區塊的展開/折疊狀態（互斥）
-  const [isQuickRevenueExpanded, setIsQuickRevenueExpanded] = useState(true);  // 快速新增收入（預設展開）
-  const [isQuickTransactionExpanded, setIsQuickTransactionExpanded] = useState(false);  // 快速交易（預設折疊）
-  
-  // ✅ 處理快速新增收入的展開/折疊切換
-  const handleToggleQuickRevenue = () => {
-    if (isQuickRevenueExpanded) {
-      // 如果當前是展開的，折疊它並展開快速交易
-      setIsQuickRevenueExpanded(false);
-      setIsQuickTransactionExpanded(true);
-    } else {
-      // 如果當前是折疊的，展開它並折疊快速交易
-      setIsQuickRevenueExpanded(true);
-      setIsQuickTransactionExpanded(false);
-    }
-  };
-  
-  // ✅ 處理快速交易的展開/折疊切換
-  const handleToggleQuickTransaction = () => {
-    if (isQuickTransactionExpanded) {
-      // 如果當前是展開的，折疊它並展開快速新增收入
-      setIsQuickTransactionExpanded(false);
-      setIsQuickRevenueExpanded(true);
-    } else {
-      // 如果當前是折疊的，展開它並折疊快速新增收入
-      setIsQuickTransactionExpanded(true);
-      setIsQuickRevenueExpanded(false);
-    }
-  };
   
   // 互動行為數據狀態
   const [interactionEvents, setInteractionEvents] = useState<Event<InteractionRecordedPayload>[]>([]);
@@ -944,51 +859,6 @@ export default function MarketDetailPage({ params }: PageProps) {
     }
   };
 
-  const loadPendingSalesPhotoEvidenceItems = useCallback(async () => {
-    if (!marketId) {
-      setPendingSalesPhotoEvidenceItems([]);
-      setPendingSalesPhotoEvidenceLoadError(null);
-      setPendingSalesPhotoEvidenceLoadedAt(null);
-      return [] as SalesPhotoEvidencePendingCreationListItem[];
-    }
-
-    setIsLoadingPendingSalesPhotoEvidence(true);
-    setPendingSalesPhotoEvidenceLoadError(null);
-    try {
-      const items = await listLocalSalesPhotoEvidencePendingCreationsForMarket(marketId);
-      setPendingSalesPhotoEvidenceItems(items);
-      setPendingSalesPhotoEvidenceLoadedAt(Date.now());
-      return items;
-    } catch (error) {
-      console.error('load pending sales photo evidence failed:', error);
-      setPendingSalesPhotoEvidenceLoadError('待補照片狀態讀取失敗，請稍後再試或重新整理。');
-      return [] as SalesPhotoEvidencePendingCreationListItem[];
-    } finally {
-      setIsLoadingPendingSalesPhotoEvidence(false);
-    }
-  }, [marketId]);
-
-  const handleSalesPhotoEvidenceResult = useCallback(
-    async (result: SalesPhotoEvidenceRuntimeResult) => {
-      if (result.evidence.status === 'created') {
-        const items = await loadPendingSalesPhotoEvidenceItems();
-        setPostSaleSalesPhotoEvidenceItem(
-          items.find(item => item.queueId === result.dealEventId) ?? null
-        );
-        setShowSalesPhotoEvidencePostSalePrompt(true);
-      } else if (result.evidence.status === 'failed') {
-        toast.warning('成交已儲存，但待補照片建立失敗。請稍後再試。');
-      } else if (result.evidence.status === 'context_missing') {
-        toast.warning('成交已儲存，但缺少建立待補照片所需的市集資料。');
-      }
-    },
-    [loadPendingSalesPhotoEvidenceItems]
-  );
-
-  useEffect(() => {
-    void loadPendingSalesPhotoEvidenceItems();
-  }, [loadPendingSalesPhotoEvidenceItems]);
-
   const ownerSalesPhotoEvidenceAlbumOwnerId = user?.id ?? (market as Market | undefined)?.owner_id ?? null;
 
   const loadOwnerSalesPhotoEvidenceAlbumRows = useCallback(async () => {
@@ -1030,7 +900,7 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   const ownerSalesPhotoEvidenceActorId = user?.id ?? null;
   const isLocalSalesPhotoEvidenceCaptureAllowed = useCallback(
-    (item: SalesPhotoEvidencePendingCreationListItem) => {
+    (item: LocalPendingSalesPhotoEvidenceCreation) => {
       return Boolean(
         ownerSalesPhotoEvidenceActorId &&
         item.ownerId === ownerSalesPhotoEvidenceActorId &&
@@ -1040,127 +910,13 @@ export default function MarketDetailPage({ params }: PageProps) {
     [marketId, ownerSalesPhotoEvidenceActorId]
   );
 
-  const handleCaptureLocalSalesPhotoEvidence = useCallback(
-    async (item: SalesPhotoEvidencePendingCreationListItem) => {
-      if (!isLocalSalesPhotoEvidenceCaptureAllowed(item)) {
-        const message = '這筆待補照片不屬於目前登入老闆的市集。';
-        setSalesPhotoEvidenceCaptureErrorByQueueId(previous => ({
-          ...previous,
-          [item.queueId]: message,
-        }));
-        toast.error(message);
-        return null;
-      }
-
-      setCapturingSalesPhotoEvidenceQueueId(item.queueId);
-      setSalesPhotoEvidenceCaptureErrorByQueueId(previous => ({
-        ...previous,
-        [item.queueId]: null,
-      }));
-
-      try {
-        const result = await captureAndStoreSalesPhotoEvidenceWithFileInput({ queueItem: item });
-        if (result.action === 'capture_stored_locally') {
-          setSalesPhotoEvidencePreview({ item, payload: result.payload });
-          setSalesPhotoEvidencePayloadRefreshByQueueId(previous => ({
-            ...previous,
-            [item.queueId]: result.payload.updatedAt,
-          }));
-          await loadPendingSalesPhotoEvidenceItems();
-          return result.payload;
-        }
-
-        const message = getSalesPhotoEvidenceCaptureFailureMessage(result.failure.reason);
-        setSalesPhotoEvidenceCaptureErrorByQueueId(previous => ({
-          ...previous,
-          [item.queueId]: message,
-        }));
-        if (result.failure.reason !== 'capture_cancelled') toast.error(message);
-        return null;
-      } catch (error) {
-        console.error('owner capture local sales photo evidence failed:', error);
-        const message = '照片暫存失敗，請稍後再試。';
-        setSalesPhotoEvidenceCaptureErrorByQueueId(previous => ({
-          ...previous,
-          [item.queueId]: message,
-        }));
-        toast.error(message);
-        return null;
-      } finally {
-        setCapturingSalesPhotoEvidenceQueueId(null);
-      }
-    },
-    [isLocalSalesPhotoEvidenceCaptureAllowed, loadPendingSalesPhotoEvidenceItems]
-  );
-
-  const handleUploadManualSalesPhotoEvidence = useCallback(
-    async (item: SalesPhotoEvidencePendingCreationListItem) => {
-      if (!isLocalSalesPhotoEvidenceCaptureAllowed(item)) {
-        const message = '這筆照片不屬於目前登入老闆的市集。';
-        setSalesPhotoEvidenceUploadErrorByQueueId(previous => ({
-          ...previous,
-          [item.queueId]: message,
-        }));
-        toast.error(message);
-        return false;
-      }
-
-      setUploadingSalesPhotoEvidenceQueueId(item.queueId);
-      setSalesPhotoEvidenceUploadErrorByQueueId(previous => ({
-        ...previous,
-        [item.queueId]: null,
-      }));
-
-      try {
-        const result = await uploadPendingSalesPhotoEvidenceManually(item);
-        if (result.ok) {
-          toast.success('照片已上傳，可在成交照片紀錄查看。');
-          setSalesPhotoEvidencePreview(previous => (
-            previous?.item.queueId === item.queueId ? null : previous
-          ));
-          setSalesPhotoEvidencePayloadRefreshByQueueId(previous => ({
-            ...previous,
-            [item.queueId]: new Date().toISOString(),
-          }));
-          await Promise.all([
-            loadPendingSalesPhotoEvidenceItems(),
-            loadOwnerSalesPhotoEvidenceAlbumRows(),
-          ]);
-          return true;
-        }
-
-        setSalesPhotoEvidenceUploadErrorByQueueId(previous => ({
-          ...previous,
-          [item.queueId]: result.message,
-        }));
-        toast.error(result.message);
-        await loadPendingSalesPhotoEvidenceItems();
-        return false;
-      } catch (error) {
-        console.error('owner manual upload sales photo evidence failed:', error);
-        const message = '照片上傳失敗，請稍後再試。';
-        setSalesPhotoEvidenceUploadErrorByQueueId(previous => ({
-          ...previous,
-          [item.queueId]: message,
-        }));
-        toast.error(message);
-        await loadPendingSalesPhotoEvidenceItems();
-        return false;
-      } finally {
-        setUploadingSalesPhotoEvidenceQueueId(null);
-      }
-    },
-    [
-      isLocalSalesPhotoEvidenceCaptureAllowed,
-      loadOwnerSalesPhotoEvidenceAlbumRows,
-      loadPendingSalesPhotoEvidenceItems,
-    ]
-  );
-
-  const handleOpenPendingSalesPhotoEvidence = () => {
-    setShowPendingSalesPhotoEvidence(true);
-    void loadPendingSalesPhotoEvidenceItems();
-  };
+  const salesPhotoEvidenceFlow = useSalesPhotoEvidenceFlow({
+    marketId,
+    canHandleItem: isLocalSalesPhotoEvidenceCaptureAllowed,
+    onUploadCompleted: loadOwnerSalesPhotoEvidenceAlbumRows,
+  });
+  const handleSalesPhotoEvidenceResult = salesPhotoEvidenceFlow.handleSalesPhotoEvidenceResult;
+  const handleOpenPendingSalesPhotoEvidence = salesPhotoEvidenceFlow.openPendingList;
 
   const handleOpenAddRevenue = (date: string) => {
     if (dbStatus?.ok === false) return;
@@ -1449,52 +1205,11 @@ export default function MarketDetailPage({ params }: PageProps) {
               />
             </div>
 
-            {/* 2. 新增收入（簡化版：直接輸入金額） */}
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
-              {/* Header with toggle */}
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
-                  <DollarSign className="w-5 h-5 text-primary" />
-                  快速新增收入
-                </h2>
-                <button
-                  onClick={handleToggleQuickRevenue}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    isQuickRevenueExpanded ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      isQuickRevenueExpanded ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  ></span>
-                </button>
-              </div>
-              
-              {/* Content */}
-              {isQuickRevenueExpanded && (
-                <QuickInteractionButtons 
-                  marketId={marketId}
-                  salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
-                  onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
-                />
-              )}
-            </div>
-            
-            <SalesPhotoEvidenceOperatingCard
-              mode="owner"
-              required={salesPhotoEvidenceRequired}
-              isUpdating={isUpdatingSalesPhotoEvidence}
-              onToggle={handleToggleSalesPhotoEvidence}
-              pendingCount={pendingSalesPhotoEvidenceItems.length}
-              onOpenPendingEvidence={handleOpenPendingSalesPhotoEvidence}
-            />
-
-            {/* 3. 快速交易（完整版：選擇商品） */}
-            <QuickTransactionGrid 
+            <TransactionWorkspace
               marketId={marketId}
-              isExpanded={isQuickTransactionExpanded}
-              onToggle={handleToggleQuickTransaction}
+              salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
+              pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
+              onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
               salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
               onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
             />
@@ -2504,15 +2219,6 @@ export default function MarketDetailPage({ params }: PageProps) {
         document.body
       )}
 
-      {/* 購物車抽屜 */}
-      <CartDrawer
-        isOpen={showCartDrawer}
-        onClose={() => setShowCartDrawer(false)}
-        marketId={marketId}
-        salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
-        onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
-      />
-
       {/* 編輯市集表單 */}
       {market && (
         <EditMarketForm
@@ -2545,62 +2251,19 @@ export default function MarketDetailPage({ params }: PageProps) {
         onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
       />
 
-      <SalesPhotoEvidencePostSalePrompt
-        isOpen={showSalesPhotoEvidencePostSalePrompt}
-        isCaptureReady={Boolean(postSaleSalesPhotoEvidenceItem)}
-        onCaptureNow={() => {
-          setShowSalesPhotoEvidencePostSalePrompt(false);
-          if (postSaleSalesPhotoEvidenceItem) {
-            void handleCaptureLocalSalesPhotoEvidence(postSaleSalesPhotoEvidenceItem);
-          } else {
-            handleOpenPendingSalesPhotoEvidence();
-          }
-        }}
-        onLater={() => setShowSalesPhotoEvidencePostSalePrompt(false)}
-      />
-
-      <SalesPhotoEvidencePendingListDialog
-        isOpen={showPendingSalesPhotoEvidence}
-        items={pendingSalesPhotoEvidenceItems}
-        isLoading={isLoadingPendingSalesPhotoEvidence}
-        loadError={pendingSalesPhotoEvidenceLoadError}
-        lastLoadedAt={pendingSalesPhotoEvidenceLoadedAt}
-        captureEnabled={true}
-        capturingQueueId={capturingSalesPhotoEvidenceQueueId}
-        captureErrorByQueueId={salesPhotoEvidenceCaptureErrorByQueueId}
-        uploadEnabled={true}
-        uploadingQueueId={uploadingSalesPhotoEvidenceQueueId}
-        uploadErrorByQueueId={salesPhotoEvidenceUploadErrorByQueueId}
-        payloadRefreshByQueueId={salesPhotoEvidencePayloadRefreshByQueueId}
-        isLocalCaptureAllowed={isLocalSalesPhotoEvidenceCaptureAllowed}
-        onPreviewLocal={(item, payload) => setSalesPhotoEvidencePreview({ item, payload })}
-        onCaptureLocal={handleCaptureLocalSalesPhotoEvidence}
-        onUploadManual={handleUploadManualSalesPhotoEvidence}
-        onRefresh={loadPendingSalesPhotoEvidenceItems}
-        onClose={() => setShowPendingSalesPhotoEvidence(false)}
-      />
-
-      <SalesPhotoEvidenceCapturePreviewDialog
-        isOpen={Boolean(salesPhotoEvidencePreview)}
-        payload={salesPhotoEvidencePreview?.payload ?? null}
-        isUploading={Boolean(
-          salesPhotoEvidencePreview &&
-          uploadingSalesPhotoEvidenceQueueId === salesPhotoEvidencePreview.item.queueId
-        )}
-        uploadError={salesPhotoEvidencePreview
-          ? salesPhotoEvidenceUploadErrorByQueueId[salesPhotoEvidencePreview.item.queueId]
-          : null}
-        onRetake={() => {
-          if (salesPhotoEvidencePreview) {
-            void handleCaptureLocalSalesPhotoEvidence(salesPhotoEvidencePreview.item);
-          }
-        }}
-        onUpload={() => {
-          if (salesPhotoEvidencePreview) {
-            void handleUploadManualSalesPhotoEvidence(salesPhotoEvidencePreview.item);
-          }
-        }}
-        onClose={() => setSalesPhotoEvidencePreview(null)}
+      <SalesPhotoEvidenceFlowDialog
+        state={salesPhotoEvidenceFlow.state}
+        pendingItems={salesPhotoEvidenceFlow.pendingItems}
+        isLoadingPendingItems={salesPhotoEvidenceFlow.isLoadingPendingItems}
+        pendingItemsError={salesPhotoEvidenceFlow.pendingItemsError}
+        payloadRefreshByQueueId={salesPhotoEvidenceFlow.payloadRefreshByQueueId}
+        canHandleItem={isLocalSalesPhotoEvidenceCaptureAllowed}
+        onCapture={(item, source) => void salesPhotoEvidenceFlow.capture(item, source)}
+        onPreview={salesPhotoEvidenceFlow.openPreview}
+        onUpload={(item, payload) => void salesPhotoEvidenceFlow.upload(item, payload)}
+        onRefresh={() => void salesPhotoEvidenceFlow.loadPendingItems()}
+        onBack={salesPhotoEvidenceFlow.back}
+        onClose={salesPhotoEvidenceFlow.close}
       />
 
       {/* 日期成交記錄彈窗 */}

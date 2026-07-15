@@ -22,6 +22,8 @@ const testPageSource = readFileSync(join(projectRoot, 'app/debug/sales-photo-evi
 const testWorkbenchSource = readFileSync(join(projectRoot, 'components/markets/SalesPhotoEvidenceTestWorkbench.tsx'), 'utf8');
 const ownerMarketDetailSource = readFileSync(join(projectRoot, 'app/markets/[id]/page.tsx'), 'utf8');
 const staffMarketDetailSource = readFileSync(join(projectRoot, 'components/markets/StaffMarketDetailView.tsx'), 'utf8');
+const flowHookSource = readFileSync(join(projectRoot, 'hooks/useSalesPhotoEvidenceFlow.ts'), 'utf8');
+const flowDialogSource = readFileSync(join(projectRoot, 'components/markets/SalesPhotoEvidenceFlowDialog.tsx'), 'utf8');
 const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
   scripts: Record<string, string>;
 };
@@ -202,16 +204,22 @@ runTest('owner and staff market detail provide scoped local runtime context', ()
   assert.match(staffMarketDetailSource, /salesPhotoEvidenceContext=\{addRevenueSalesPhotoEvidenceContext\}/);
 });
 
-runTest('all visible transaction entries use the optional evidence wrapper and result callback', () => {
+runTest('all transaction entries use the wrapper and share one result controller', () => {
   for (const source of [addRevenueDialogSource, quickRevenueSource, quickTransactionSource, cartDrawerSource]) {
     assert.match(source, /recordDealWithOptionalSalesPhotoEvidence/);
     assert.match(source, /onSalesPhotoEvidenceResult/);
   }
 
-  assert.match(staffMarketDetailSource, /SalesPhotoEvidencePostSalePrompt/);
-  assert.match(ownerMarketDetailSource, /SalesPhotoEvidencePostSalePrompt/);
-  assert.match(staffMarketDetailSource, /handleSalesPhotoEvidenceResult/);
-  assert.match(staffMarketDetailSource, /handleCaptureLocalSalesPhotoEvidence\(postSaleSalesPhotoEvidenceItem\)/);
+  for (const source of [staffMarketDetailSource, ownerMarketDetailSource]) {
+    assert.match(source, /TransactionWorkspace/);
+    assert.match(source, /SalesPhotoEvidenceFlowDialog/);
+    assert.match(source, /handleSalesPhotoEvidenceResult/);
+    assert.doesNotMatch(source, /SalesPhotoEvidencePostSalePrompt|SalesPhotoEvidenceCapturePreviewDialog/);
+  }
+  assert.match(flowHookSource, /handleSalesPhotoEvidenceResult/);
+  assert.match(flowHookSource, /pendingCreationFromSalesPhotoEvidenceResult/);
+  assert.match(flowDialogSource, /state: SaleCompletionFlowState/);
+  assert.doesNotMatch(ownerMarketDetailSource, /<CartDrawer/);
 });
 
 runTest('local and staging test page is production locked and provides real capture/upload controls', () => {

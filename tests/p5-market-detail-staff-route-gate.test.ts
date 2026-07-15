@@ -56,8 +56,9 @@ runTest('StaffMarketDetailView keeps manager edits scoped to manager mode', () =
 runTest('StaffMarketDetailView opens deal writes through capability and keeps profit hidden', () => {
   assert.match(staffMarketViewSource, /hasCapability\(roleCapabilities,\s*['"]canRecordDeal['"]\)/);
   assert.match(staffMarketViewSource, /<DailyRevenueStats[\s\S]*hideProfit=\{true\}[\s\S]*canAddRevenue=\{canRecordDeal\}/);
-  assert.match(staffMarketViewSource, /\{canRecordDeal\s*&&\s*\([\s\S]*?<QuickTransactionGrid/);
-  assert.match(staffMarketViewSource, /<QuickInteractionButtons[\s\S]*hideProfit=\{true\}/);
+  assert.match(staffMarketViewSource, /\{canRecordDeal\s*&&\s*\([\s\S]*?<TransactionWorkspace/);
+  assert.match(staffMarketViewSource, /<TransactionWorkspace[\s\S]*hideProfit/);
+  assert.match(staffMarketViewSource, /salesPhotoEvidenceContext=\{addRevenueSalesPhotoEvidenceContext\}/);
 });
 
 runTest('StaffMarketDetailView passes Field Ops permissions from capabilities only', () => {

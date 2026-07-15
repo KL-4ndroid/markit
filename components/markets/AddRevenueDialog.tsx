@@ -12,7 +12,9 @@ import {
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
+import type { SalesPaymentMethod } from '@/lib/sales/payment-methods';
 import type { Product } from '@/types/db';
+import { PaymentMethodSelector } from '@/components/sales/PaymentMethodSelector';
 
 interface AddRevenueDialogProps {
   isOpen: boolean;
@@ -61,7 +63,7 @@ export function AddRevenueDialog({
   
   // 完整模式狀態
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'mobile' | 'other'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<SalesPaymentMethod>('cash');
   const [fullNotes, setFullNotes] = useState('');
 
   // 處理對話框開啟/關閉
@@ -118,8 +120,9 @@ export function AddRevenueDialog({
     
     setIsSubmitting(true);
     
+    let result;
     try {
-      const result = await recordDealWithOptionalSalesPhotoEvidence({
+      result = await recordDealWithOptionalSalesPhotoEvidence({
         marketId,
         isBackfill: true,
         isManualEntry: true,
@@ -131,19 +134,24 @@ export function AddRevenueDialog({
         paymentMethod: 'cash', // 簡化模式預設現金
         notes: simpleNotes || `補登收入 - ${formatDate(selectedDate)}`,
       }, selectedDate, { evidenceContext: createSalesPhotoEvidenceRuntimeContext() });
-      await onSalesPhotoEvidenceResult?.(result);
-      
-      toast.success('✅ 收入補登成功', {
-        description: `已記錄到 ${formatDate(selectedDate)}`,
-      });
-      
-      window.dispatchEvent(new CustomEvent('deal-closed', {
-        detail: { marketId, date: selectedDate, amount: revenueNum },
-      }));
-      onClose();
     } catch (error) {
       console.error('補登收入失敗：', error);
       toast.error('補登失敗，請稍後再試');
+      setIsSubmitting(false);
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent('deal-closed', {
+      detail: { marketId, date: selectedDate, amount: revenueNum },
+    }));
+    onClose();
+
+    try {
+      if (onSalesPhotoEvidenceResult) await onSalesPhotoEvidenceResult(result);
+      else toast.success('收入補登成功', { description: `已記錄到 ${formatDate(selectedDate)}` });
+    } catch (error) {
+      console.error('開啟補登照片流程失敗：', error);
+      toast.warning('補登已完成，照片可從待補照片處理');
     } finally {
       setIsSubmitting(false);
     }
@@ -198,8 +206,9 @@ export function AddRevenueDialog({
 
     setIsSubmitting(true);
 
+    let result;
     try {
-      const result = await recordDealWithOptionalSalesPhotoEvidence({
+      result = await recordDealWithOptionalSalesPhotoEvidence({
         marketId,
         isBackfill: true,
         isManualEntry: false,
@@ -212,19 +221,24 @@ export function AddRevenueDialog({
         paymentMethod,
         notes: fullNotes || `補登收入 - ${formatDate(selectedDate)}`,
       }, selectedDate, { evidenceContext: createSalesPhotoEvidenceRuntimeContext() });
-      await onSalesPhotoEvidenceResult?.(result);
-
-      toast.success('✅ 收入補登成功', {
-        description: `已記錄到 ${formatDate(selectedDate)}`,
-      });
-
-      window.dispatchEvent(new CustomEvent('deal-closed', {
-        detail: { marketId, date: selectedDate, amount: totalAmount },
-      }));
-      onClose();
     } catch (error) {
       console.error('補登收入失敗：', error);
       toast.error('補登失敗，請稍後再試');
+      setIsSubmitting(false);
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent('deal-closed', {
+      detail: { marketId, date: selectedDate, amount: totalAmount },
+    }));
+    onClose();
+
+    try {
+      if (onSalesPhotoEvidenceResult) await onSalesPhotoEvidenceResult(result);
+      else toast.success('收入補登成功', { description: `已記錄到 ${formatDate(selectedDate)}` });
+    } catch (error) {
+      console.error('開啟補登照片流程失敗：', error);
+      toast.warning('補登已完成，照片可從待補照片處理');
     } finally {
       setIsSubmitting(false);
     }
@@ -238,7 +252,7 @@ export function AddRevenueDialog({
       {/* 背景遮罩 - 確保覆蓋全螢幕 */}
       <div 
         className="fixed inset-0 bg-black/50 z-[999] transition-opacity"
-        onClick={onClose}
+        onClick={isSubmitting ? undefined : onClose}
       />
       
       {/* 對話框容器 - 強制鎖定螢幕正中央 */}
@@ -259,7 +273,9 @@ export function AddRevenueDialog({
               </div>
               <button
                 onClick={onClose}
+                disabled={isSubmitting}
                 className="text-white/80 hover:text-white transition-colors"
+                aria-label="關閉補登收入視窗"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -486,26 +502,11 @@ export function AddRevenueDialog({
                 {cart.length > 0 && (
                   <div>
                     <h3 className="text-sm font-medium text-foreground mb-3">支付方式</h3>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[
-                        { value: 'cash', label: '現金' },
-                        { value: 'card', label: '刷卡' },
-                        { value: 'mobile', label: '行動支付' },
-                        { value: 'other', label: '其他' },
-                      ].map((method) => (
-                        <button
-                          key={method.value}
-                          onClick={() => setPaymentMethod(method.value as any)}
-                          className={`py-2 rounded-xl text-sm font-medium transition-colors ${
-                            paymentMethod === method.value
-                              ? 'bg-primary text-white'
-                              : 'bg-neutral-alt text-muted-foreground hover:bg-soft-green'
-                          }`}
-                        >
-                          {method.label}
-                        </button>
-                      ))}
-                    </div>
+                    <PaymentMethodSelector
+                      value={paymentMethod}
+                      onChange={setPaymentMethod}
+                      disabled={isSubmitting}
+                    />
                   </div>
                 )}
 
