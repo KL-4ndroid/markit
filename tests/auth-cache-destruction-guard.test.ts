@@ -19,7 +19,8 @@ const authCacheBlockedEventsSource = readFileSync(join(projectRoot, 'lib/auth/au
 const topNavigationSource = readFileSync(join(projectRoot, 'components/TopNavigation.tsx'), 'utf8');
 const homePageSource = readFileSync(join(projectRoot, 'app/page.tsx'), 'utf8');
 const joinPageSource = readFileSync(join(projectRoot, 'app/join/page.tsx'), 'utf8');
-const settingsPageSource = readFileSync(join(projectRoot, 'app/settings/page.tsx'), 'utf8');
+const settingsDataPageSource = readFileSync(join(projectRoot, 'app/settings/data/page.tsx'), 'utf8');
+const clearLocalAppDataSource = readFileSync(join(projectRoot, 'lib/settings/clear-local-app-data.ts'), 'utf8');
 const staffStatusMonitorSource = readFileSync(join(projectRoot, 'hooks/useStaffStatusMonitor.ts'), 'utf8');
 const clearLocalDesignSource = readFileSync(join(projectRoot, 'docs/CLEAR_LOCAL_AND_RESYNC_DESIGN_2026_06_30.md'), 'utf8');
 const cloudRebuildPlanSource = readFileSync(join(projectRoot, 'docs/CLOUD_REBUILD_FIRST_RECOVERY_PLAN_2026_06_30.md'), 'utf8');
@@ -406,11 +407,11 @@ runTest('manual sign-out entry points use shared discard confirmation helper', (
 });
 
 runTest('settings and staff destructive clear paths use pending-write guards', () => {
-  assert.match(settingsPageSource, /getLocalPendingWriteReport/);
-  assert.match(settingsPageSource, /if \(!report\.isClean && !forceDiscardLocalChanges\)[\s\S]*return false/);
-  assert.match(settingsPageSource, /pendingSalesPhotoEvidenceCreationCount/);
-  assert.match(settingsPageSource, /confirmationText="DELETE"/);
-  assert.doesNotMatch(settingsPageSource, /window\.confirm\(|\bprompt\(/);
+  assert.match(settingsDataPageSource, /getLocalPendingWriteReport/);
+  assert.match(clearLocalAppDataSource, /if \(!report\.isClean && !forceDiscardLocalChanges\) return false/);
+  assert.match(settingsDataPageSource, /pendingSalesPhotoEvidenceCreationCount/);
+  assert.match(settingsDataPageSource, /confirmationText="DELETE"/);
+  assert.doesNotMatch(`${settingsDataPageSource}\n${clearLocalAppDataSource}`, /window\.confirm\(|\bprompt\(/);
   assert.match(staffStatusMonitorSource, /guardedAuthenticatedCacheReset\(/);
   assert.match(staffStatusMonitorSource, /reason:\s*['"]staff_status_reset['"]/);
   assert.match(staffStatusMonitorSource, /dispatchAuthCacheBlockedEvent\(/);

@@ -164,6 +164,8 @@ tsx tests/product-list-view-model.test.ts
 tsx tests/product-list-ui.test.ts
 tsx tests/product-form.test.ts
 tsx tests/product-form-ui.test.ts
+tsx tests/settings-navigation.test.ts
+tsx tests/settings-information-architecture.test.ts
 tsx tests/role-capabilities.test.ts
 tsx tests/p5-4d-role-freshness-gate.test.ts
 tsx tests/p5-field-notes.test.ts

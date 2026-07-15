@@ -1,177 +1,130 @@
 'use client';
 
+import { CheckCircle2, Download, Share, Smartphone } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Download, Share, Smartphone } from 'lucide-react';
 
-/**
- * PWA 安裝按鈕組件（用於設置頁面）
- * 檢測是否已安裝，已安裝則不顯示
- */
+import { AppDialog } from '@/components/ui/AppDialog';
+import { Button } from '@/components/ui/Button';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+type InstallPlatform = 'ios' | 'browser';
+
 export function PWAInstallButton() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [canInstall, setCanInstall] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [platform, setPlatform] = useState<InstallPlatform>('browser');
 
   useEffect(() => {
-    // 檢查是否已安裝
-    const checkInstalled = () => {
-      const installed = window.matchMedia('(display-mode: standalone)').matches ||
-                       (window.navigator as any).standalone ||
-                       document.referrer.includes('android-app://');
-      setIsInstalled(installed);
-    };
+    const installed = window.matchMedia('(display-mode: standalone)').matches
+      || Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone)
+      || document.referrer.includes('android-app://');
+    setIsInstalled(installed);
 
-    checkInstalled();
-
-    // 檢測平台
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIOS = /iphone|ipad|ipod/.test(userAgent);
-    const isAndroid = /android/.test(userAgent);
-    const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
-
-    if (isIOS && !isInStandaloneMode) {
+    if (isIOS && !installed) {
       setPlatform('ios');
       setCanInstall(true);
-    } else if (isAndroid) {
-      setPlatform('android');
-    } else {
-      setPlatform('desktop');
     }
 
-    // Android/Desktop: 監聽安裝提示事件
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferredPrompt(event as BeforeInstallPromptEvent);
       setCanInstall(true);
-      setPlatform('android');
+      setPlatform('browser');
+    };
+
+    const handleInstalled = () => {
+      setIsInstalled(true);
+      setCanInstall(false);
+      setDeferredPrompt(null);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
+    window.addEventListener('appinstalled', handleInstalled);
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleInstalled);
     };
   }, []);
 
   const handleInstall = async () => {
     if (platform === 'ios') {
-      // iOS 顯示引導
-      setShowModal(true);
-    } else if (deferredPrompt) {
-      // Android/Desktop 直接安裝
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        setIsInstalled(true);
-      }
-      
-      setDeferredPrompt(null);
+      setShowInstructions(true);
+      return;
     }
+
+    if (!deferredPrompt) return;
+    await deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    if (choice.outcome === 'accepted') setIsInstalled(true);
+    setDeferredPrompt(null);
+    setCanInstall(false);
   };
-
-  // 已安裝則不顯示按鈕
-  if (isInstalled) {
-    return null;
-  }
-
-  // 無法安裝則不顯示按鈕
-  if (!canInstall) {
-    return null;
-  }
 
   return (
     <>
-      <button
-        onClick={handleInstall}
-        className="w-full p-6 bg-gradient-to-br from-primary to-primary/85 rounded-[1.5rem] shadow-lg hover:shadow-xl transition-all"
+      <section className="rounded-card border border-primary/10 bg-white p-5" aria-labelledby="install-app-title">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            {isInstalled
+              ? <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+              : <Smartphone className="h-5 w-5" aria-hidden="true" />}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 id="install-app-title" className="text-base font-semibold text-foreground">
+              {isInstalled ? '已安裝到這台裝置' : '安裝 Féria 到主畫面'}
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              {isInstalled
+                ? '可以直接從主畫面開啟，並繼續使用離線保存功能。'
+                : canInstall
+                  ? '安裝後可更快開啟，畫面也會更接近一般 App。'
+                  : '若瀏覽器支援安裝，可從瀏覽器選單選擇「安裝應用程式」。'}
+            </p>
+          </div>
+        </div>
+
+        {!isInstalled && canInstall && (
+          <Button
+            className="mt-4 w-full sm:w-auto"
+            leadingIcon={<Download className="h-4 w-4" aria-hidden="true" />}
+            onClick={() => void handleInstall()}
+          >
+            安裝到主畫面
+          </Button>
+        )}
+      </section>
+
+      <AppDialog
+        open={showInstructions}
+        onClose={() => setShowInstructions(false)}
+        title="在 iPhone 或 iPad 安裝 Féria"
+        description="Safari 會透過分享選單把網頁加入主畫面。"
+        size="sm"
+        footer={<Button onClick={() => setShowInstructions(false)}>完成</Button>}
       >
-        <div className="flex items-center gap-4">
-          <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
-            <Smartphone className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1 text-left">
-            <h3 className="text-base font-medium text-white mb-1">
-              安裝 Féria 到主畫面
-            </h3>
-            <p className="text-sm text-white/80">
-              享受更快速的啟動和離線使用
-            </p>
-          </div>
-          <Download className="w-5 h-5 text-white" />
-        </div>
-      </button>
-
-      {/* iOS 安裝引導 Modal */}
-      {showModal && platform === 'ios' && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-end sm:items-center sm:justify-center p-4">
-          <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-foreground">安裝 Féria 到主畫面</h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-2 rounded-full hover:bg-soft-pink transition-colors"
-              >
-                <span className="text-xl">×</span>
-              </button>
-            </div>
-
-            <p className="text-sm text-muted-foreground mb-6">
-              將 Féria 加入主畫面，享受更快速的啟動和更好的使用體驗！
-            </p>
-
-            <div className="space-y-4 mb-6">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">
-                  1
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-foreground">
-                    點擊底部的 <Share className="w-4 h-4 inline text-info" /> <strong>分享</strong> 按鈕
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">
-                  2
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-foreground">
-                    向下滾動並選擇 <strong>「加入主畫面」</strong>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium">
-                  3
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-foreground">
-                    點擊右上角的 <strong>「加入」</strong> 完成安裝
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-cat-clothing rounded-xl p-4 mb-4">
-              <p className="text-xs text-muted-foreground">
-                💡 安裝後，您可以像使用一般 App 一樣從主畫面啟動 Féria，享受更流暢的體驗！
-              </p>
-            </div>
-
-            <button
-              onClick={() => setShowModal(false)}
-              className="w-full px-6 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium"
-            >
-              我知道了
-            </button>
-          </div>
-        </div>
-      )}
+        <ol className="space-y-4 text-sm text-foreground">
+          <li className="flex items-start gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">1</span>
+            <span className="pt-1">在 Safari 工具列點選 <Share className="inline h-4 w-4 text-primary" aria-label="分享" />。</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">2</span>
+            <span className="pt-1">在選單中選擇「加入主畫面」。</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">3</span>
+            <span className="pt-1">確認名稱後點選「加入」。</span>
+          </li>
+        </ol>
+      </AppDialog>
     </>
   );
 }

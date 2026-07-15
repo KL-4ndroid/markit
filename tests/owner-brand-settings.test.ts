@@ -14,7 +14,7 @@ type TestFn = () => void;
 const tests: Array<{ name: string; fn: TestFn }> = [];
 const projectRoot = join(__dirname, '..');
 const homePageSource = readFileSync(join(projectRoot, 'app/page.tsx'), 'utf8');
-const settingsPageSource = readFileSync(join(projectRoot, 'app/settings/page.tsx'), 'utf8');
+const settingsPageSource = readFileSync(join(projectRoot, 'app/settings/sales/page.tsx'), 'utf8');
 const brandCardSource = readFileSync(join(projectRoot, 'components/settings/OwnerBrandSettingsCard.tsx'), 'utf8');
 const reportPageSource = readFileSync(join(projectRoot, 'app/reports/settlement/page.tsx'), 'utf8');
 const reportModelSource = readFileSync(join(projectRoot, 'lib/reporting/settlement-report.ts'), 'utf8');
@@ -44,8 +44,9 @@ runTest('brand name normalization is conservative and has a safe fallback', () =
 
 runTest('owner settings page exposes owner-only brand name editor', () => {
   assert.match(settingsServiceSource, /brand_name\?: string \| null/);
-  assert.match(settingsPageSource, /import \{ OwnerBrandSettingsCard \}/);
-  assert.match(settingsPageSource, /\{!isStaff && <OwnerBrandSettingsCard \/>}/);
+  assert.match(settingsPageSource, /OwnerBrandSettingsCard = dynamic/);
+  assert.match(settingsPageSource, /!isOwner/);
+  assert.match(settingsPageSource, /<OwnerBrandSettingsCard \/>/);
   assert.match(brandCardSource, /saveOwnerBrandName/);
   assert.match(brandCardSource, /loadOwnerBrandName/);
   assert.match(brandCardSource, /品牌名稱/);

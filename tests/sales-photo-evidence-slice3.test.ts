@@ -30,7 +30,7 @@ function section(source: string, start: string, end?: string): string {
 
 const settingsServiceSource = readProjectFile('lib/supabase/settings.ts');
 const settingsHelperSource = readProjectFile('lib/sales/photo-evidence-settings.ts');
-const settingsPageSource = readProjectFile('app/settings/page.tsx');
+const settingsPageSource = readProjectFile('app/settings/sales/page.tsx');
 const settingsCardSource = readProjectFile('components/settings/SalesPhotoEvidenceSettingsCard.tsx');
 const addMarketFormSource = readProjectFile('components/markets/AddMarketForm.tsx');
 const marketDetailSource = readProjectFile('app/markets/[id]/page.tsx');
@@ -58,8 +58,9 @@ runTest('default setting helper stays owner settings only and normalizes fail-cl
 });
 
 runTest('settings page exposes owner-only sales photo evidence default card', () => {
-  assert.match(settingsPageSource, /import \{ SalesPhotoEvidenceSettingsCard \}/);
-  assert.match(settingsPageSource, /\{!isStaff && <SalesPhotoEvidenceSettingsCard \/>}/);
+  assert.match(settingsPageSource, /SalesPhotoEvidenceSettingsCard = dynamic/);
+  assert.match(settingsPageSource, /!isOwner/);
+  assert.match(settingsPageSource, /<SalesPhotoEvidenceSettingsCard \/>/);
   assert.match(settingsCardSource, /loadDefaultSalesPhotoEvidenceRequired/);
   assert.match(settingsCardSource, /saveDefaultSalesPhotoEvidenceRequired/);
   assert.match(settingsCardSource, /新市集預設需要成交照片/);

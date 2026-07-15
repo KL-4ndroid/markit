@@ -8,6 +8,7 @@ import type {
   CanonicalizationProgress,
   CanonicalizationResult,
 } from '@/lib/db/data-canonicalization';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 function ProgressBar({ progress }: { progress: CanonicalizationProgress | null }) {
   if (!progress) return null;
@@ -61,6 +62,7 @@ export function DataCanonicalizationPanel() {
   const [progress, setProgress] = useState<CanonicalizationProgress | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [showRunConfirmation, setShowRunConfirmation] = useState(false);
 
   const hasChanges = !!plan && (plan.changes.events > 0 || plan.changes.dailyStats > 0);
 
@@ -90,12 +92,14 @@ export function DataCanonicalizationPanel() {
       return;
     }
 
-    const confirmed = window.confirm(
-      '即將整理本機資料格式。\n\n此工具會先建立本機備份，只整理 IndexedDB 內的事件與統計欄位，不會修改雲端資料，也不會刪除 events。\n\n是否繼續？'
-    );
-    if (!confirmed) return;
+    setShowRunConfirmation(true);
+  };
+
+  const confirmRun = async () => {
+    if (!plan || !hasChanges) return;
 
     setIsRunning(true);
+    setShowRunConfirmation(false);
     setResult(null);
 
     try {
@@ -201,6 +205,15 @@ export function DataCanonicalizationPanel() {
           執行格式整理
         </button>
       </div>
+
+      <ConfirmDialog
+        open={showRunConfirmation}
+        onClose={() => setShowRunConfirmation(false)}
+        onConfirm={confirmRun}
+        title="整理這台裝置的資料格式？"
+        description="系統會先建立本機備份，再整理 IndexedDB 內的事件與統計欄位；不會修改雲端資料，也不會刪除 events。"
+        confirmLabel="開始整理"
+      />
     </div>
   );
 }

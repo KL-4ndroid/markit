@@ -79,10 +79,10 @@ export default function AboutPage() {
 
         <div className="mt-8 text-center">
           <a
-            href="/"
+            href="/settings/app"
             className="text-primary hover:text-primary/85 transition-colors"
           >
-            ← 返回首頁
+            ← 返回 App 與版本
           </a>
         </div>
       </div>

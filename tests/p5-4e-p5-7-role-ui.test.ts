@@ -40,7 +40,7 @@ const debugPageSource = readFileSync(
   'utf-8'
 );
 const settingsSource = readFileSync(
-  join(__dirname, '..', 'app/settings/page.tsx'),
+  join(__dirname, '..', 'app/settings/team/page.tsx'),
   'utf-8'
 );
 const recoverySource = readFileSync(

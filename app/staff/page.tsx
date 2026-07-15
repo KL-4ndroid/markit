@@ -12,7 +12,7 @@ export default function StaffPage() {
   // 自動導向到設定頁面
   useEffect(() => {
     if (user) {
-      router.push('/settings');
+      router.replace('/settings/team');
     }
   }, [user, router]);
 
@@ -23,7 +23,7 @@ export default function StaffPage() {
       <div className="max-w-md w-full bg-white rounded-[2rem] p-8 shadow-xl text-center">
         <AlertCircle className="w-16 h-16 text-primary mx-auto mb-4 opacity-50" />
         <h2 className="text-xl font-medium text-foreground mb-2">
-          員工管理已移至設定頁面
+          員工管理已移至團隊與權限
         </h2>
         <p className="text-muted-foreground text-sm mb-6">
           正在為您導向...

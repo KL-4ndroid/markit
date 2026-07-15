@@ -29,6 +29,7 @@ import {
 import { getMyStaffMembers, type StaffMember, inviteStaff, removeStaff, updateStaffRole } from '@/lib/supabase/staff';
 import type { StaffRole } from '@/types/staff';
 import { RoleBadge } from '@/components/staff/RoleBadge';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 // P3b-alt：員工角色輔助文案
 // 對應 staff_relationships.role 欄位
@@ -75,6 +76,11 @@ export function StaffManagement() {
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [selectedRole, setSelectedRole] = useState<StaffRole>('viewer');
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [confirmation, setConfirmation] = useState<
+    | { type: 'delete-invitation'; invitationId: string }
+    | { type: 'remove-staff'; staffId: string; email: string }
+    | null
+  >(null);
 
   // 載入員工列表和邀請連結
   const loadStaffList = useCallback(async () => {
@@ -171,15 +177,13 @@ export function StaffManagement() {
   };
 
   // 刪除邀請連結
-  const handleDeleteInvitation = async (invitationId: string) => {
-    if (!confirm('確定要刪除此邀請連結嗎？')) {
-      return;
-    }
-
+  const confirmDeleteInvitation = async () => {
+    if (confirmation?.type !== 'delete-invitation') return;
     try {
-      await deleteInvitation(invitationId);
+      await deleteInvitation(confirmation.invitationId);
+      setConfirmation(null);
       toast.success('已刪除邀請連結');
-      loadInvitations();
+      await loadInvitations();
     } catch (error: any) {
       console.error('刪除邀請失敗:', error);
       toast.error('刪除失敗', {
@@ -203,14 +207,12 @@ export function StaffManagement() {
   };
 
   // 移除員工
-  const handleRemove = async (staffId: string, email: string) => {
-    if (!confirm(`確定要移除員工「${email}」嗎？\n\n移除後，該員工將無法訪問您的任何市集。`)) {
-      return;
-    }
-
+  const confirmRemoveStaff = async () => {
+    if (confirmation?.type !== 'remove-staff') return;
     try {
-      await removeStaff(staffId);
-      toast.success(`✅ 已移除員工 ${email}`);
+      await removeStaff(confirmation.staffId);
+      setConfirmation(null);
+      toast.success(`已移除員工 ${confirmation.email}`);
 
       // 重新載入列表
       await loadStaffList();
@@ -386,7 +388,11 @@ export function StaffManagement() {
                     <Edit3 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleRemove(staff.id, staff.email)}
+                    onClick={() => setConfirmation({
+                      type: 'remove-staff',
+                      staffId: staff.id,
+                      email: staff.email,
+                    })}
                     className="p-2 rounded-xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors"
                     title={staff.status === 'pending' ? '取消邀請' : '移除員工'}
                   >
@@ -506,7 +512,10 @@ export function StaffManagement() {
                           QR
                         </button>
                         <button
-                          onClick={() => handleDeleteInvitation(invitation.id)}
+                          onClick={() => setConfirmation({
+                            type: 'delete-invitation',
+                            invitationId: invitation.id,
+                          })}
                           className="flex items-center justify-center px-3 py-1.5 bg-soft-pink text-danger rounded-lg hover:bg-soft-pink/80 transition-colors text-xs font-medium"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -768,6 +777,28 @@ export function StaffManagement() {
           </div>
         </Dialog>
       </Transition>
+
+      <ConfirmDialog
+        open={confirmation?.type === 'delete-invitation'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={confirmDeleteInvitation}
+        title="刪除這組邀請連結？"
+        description="刪除後，尚未使用這組連結的人將無法再加入團隊；已加入的員工不受影響。"
+        confirmLabel="刪除連結"
+        tone="danger"
+      />
+
+      <ConfirmDialog
+        open={confirmation?.type === 'remove-staff'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={confirmRemoveStaff}
+        title="移除這位員工？"
+        description={confirmation?.type === 'remove-staff'
+          ? `移除「${confirmation.email}」後，對方將無法再存取你的市集。`
+          : ''}
+        confirmLabel="移除員工"
+        tone="danger"
+      />
     </div>
   );
 }

@@ -24,11 +24,11 @@ export default function RecoveryPage() {
       <div className="min-h-screen bg-background px-4 py-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
           <Link
-            href="/settings"
+            href="/settings/data"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground"
           >
             <ArrowLeft size={16} />
-            返回設定
+            返回資料與救援
           </Link>
           <section className="border border-neutral-stripe bg-white px-4 py-5 text-sm text-muted-foreground shadow-sm">
             正在確認修復工具權限...
@@ -43,11 +43,11 @@ export default function RecoveryPage() {
       <div className="min-h-screen bg-background px-4 py-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
           <Link
-            href="/settings"
+            href="/settings/data"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground"
           >
             <ArrowLeft size={16} />
-            返回設定
+            返回資料與救援
           </Link>
           <section className="border border-neutral-stripe bg-white px-4 py-5 text-sm text-muted-foreground shadow-sm">
             <div className="mb-3 flex items-center gap-3 text-foreground">
@@ -70,11 +70,11 @@ export default function RecoveryPage() {
         <header className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <Link
-              href="/settings"
+              href="/settings/data"
               className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground"
             >
               <ArrowLeft size={16} />
-              返回設定
+              返回資料與救援
             </Link>
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-soft-green text-info">
