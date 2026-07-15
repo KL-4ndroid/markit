@@ -1,13 +1,14 @@
 'use client';
 
-import { Camera, DollarSign, ImagePlus, ShoppingBag } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Camera, CheckCircle2, DollarSign, ImagePlus, ShoppingBag } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 import type {
   SalesPhotoEvidenceRuntimeResultHandler,
   SalesPhotoEvidenceTransactionContext,
 } from '@/lib/sales/photo-evidence-runtime-enqueue';
 import {
+  formatSalesPaymentMethod,
   isSalesPaymentMethod,
   type SalesPaymentMethod,
 } from '@/lib/sales/payment-methods';
@@ -39,6 +40,8 @@ export function TransactionWorkspace({
 }: TransactionWorkspaceProps) {
   const [mode, setMode] = useState<TransactionMode>('quick');
   const [paymentMethod, setPaymentMethod] = useState<SalesPaymentMethod>('cash');
+  const [recentSale, setRecentSale] = useState<{ amount: number; paymentMethod: SalesPaymentMethod } | null>(null);
+  const noticeTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -48,6 +51,36 @@ export function TransactionWorkspace({
       // Storage availability should never block checkout.
     }
   }, []);
+
+  useEffect(() => {
+    const handleDealClosed = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        marketId?: string;
+        amount?: number;
+        paymentMethod?: unknown;
+      }>).detail;
+      if (
+        detail?.marketId !== marketId ||
+        typeof detail.amount !== 'number' ||
+        !Number.isFinite(detail.amount)
+      ) {
+        return;
+      }
+
+      setRecentSale({
+        amount: detail.amount,
+        paymentMethod: isSalesPaymentMethod(detail.paymentMethod) ? detail.paymentMethod : 'other',
+      });
+      if (noticeTimeoutRef.current) window.clearTimeout(noticeTimeoutRef.current);
+      noticeTimeoutRef.current = window.setTimeout(() => setRecentSale(null), 4000);
+    };
+
+    window.addEventListener('deal-closed', handleDealClosed);
+    return () => {
+      window.removeEventListener('deal-closed', handleDealClosed);
+      if (noticeTimeoutRef.current) window.clearTimeout(noticeTimeoutRef.current);
+    };
+  }, [marketId]);
 
   const changePaymentMethod = (next: SalesPaymentMethod) => {
     setPaymentMethod(next);
@@ -71,42 +104,43 @@ export function TransactionWorkspace({
   };
 
   return (
-    <section className="mb-6 overflow-hidden rounded-lg border border-border bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
-        <div>
-          <h2 className="text-base font-medium text-foreground">交易</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">{salesPhotoEvidenceRequired ? '本場成交需拍照' : '本場成交不需拍照'}</p>
+    <section className="mb-6 overflow-hidden rounded-card border border-atelier-line bg-atelier-paper">
+      <div className="flex items-start justify-between gap-3 border-b border-atelier-line px-4 py-4 sm:px-5">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-atelier-clay">現場收款</p>
+          <h2 className="mt-1 text-lg font-semibold text-atelier-ink">交易</h2>
+          <p className="mt-1 text-xs text-atelier-muted">完成後會先安全保存在這台裝置</p>
         </div>
         <button
           type="button"
           onClick={onOpenPendingPhotos}
-          className={`relative flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium text-foreground transition-colors ${
+          className={`relative flex min-h-11 shrink-0 items-center gap-2 rounded-control border px-3 text-sm font-medium transition-colors ${
             pendingPhotoCount > 0
-              ? 'border-secondary/40 bg-secondary/10 hover:bg-secondary/15'
-              : 'border-border bg-white hover:bg-background'
+              ? 'border-atelier-clay/40 bg-atelier-clay/10 text-atelier-ink hover:bg-atelier-clay/15'
+              : 'border-atelier-line bg-atelier-paper text-atelier-muted hover:bg-atelier-canvas'
           }`}
           aria-label={`待補照片 ${pendingPhotoCount} 筆`}
         >
-          <ImagePlus className="h-4 w-4 text-primary" />
+          <ImagePlus className="h-4 w-4 text-primary" aria-hidden="true" />
           待補
-          <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-xs ${pendingPhotoCount > 0 ? 'bg-secondary text-white' : 'bg-background text-muted-foreground'}`}>
+          <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-xs ${pendingPhotoCount > 0 ? 'bg-atelier-clay text-white' : 'bg-atelier-canvas text-atelier-muted'}`}>
             {pendingPhotoCount}
           </span>
         </button>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3 sm:px-5">
-        <span className="flex min-w-0 items-center gap-2 text-sm text-foreground">
-          <Camera className="h-4 w-4 shrink-0 text-primary" />
-          成交照片
-        </span>
-        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${salesPhotoEvidenceRequired ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-muted-foreground'}`}>
-          {salesPhotoEvidenceRequired ? '本場需拍照' : '本場免拍照'}
-        </span>
-      </div>
-
       <div className="p-4 sm:p-5">
-        <div className="mb-5 grid grid-cols-2 rounded-lg bg-background p-1" role="tablist" aria-label="交易方式">
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-control border border-atelier-line bg-atelier-canvas px-3 py-2">
+          <span className="flex min-w-0 items-center gap-2 text-xs text-atelier-muted">
+            <Camera className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            成交照片
+          </span>
+          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${salesPhotoEvidenceRequired ? 'bg-primary/10 text-primary' : 'bg-atelier-line/70 text-atelier-muted'}`}>
+            {salesPhotoEvidenceRequired ? '本場需拍照' : '本場免拍照'}
+          </span>
+        </div>
+
+        <div className="mb-4 grid grid-cols-2 rounded-control border border-atelier-line bg-atelier-canvas p-1" role="tablist" aria-label="交易方式">
           <button
             id={`transaction-tab-quick-${marketId}`}
             type="button"
@@ -116,7 +150,7 @@ export function TransactionWorkspace({
             tabIndex={mode === 'quick' ? 0 : -1}
             onClick={() => setMode('quick')}
             onKeyDown={event => changeModeFromKeyboard(event, 'products')}
-            className={`flex min-h-10 items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors ${mode === 'quick' ? 'bg-white text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${mode === 'quick' ? 'bg-atelier-ink text-white' : 'text-atelier-muted hover:bg-atelier-paper hover:text-atelier-ink'}`}
           >
             <DollarSign className="h-4 w-4" />
             快速收款
@@ -130,11 +164,22 @@ export function TransactionWorkspace({
             tabIndex={mode === 'products' ? 0 : -1}
             onClick={() => setMode('products')}
             onKeyDown={event => changeModeFromKeyboard(event, 'quick')}
-            className={`flex min-h-10 items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors ${mode === 'products' ? 'bg-white text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${mode === 'products' ? 'bg-atelier-ink text-white' : 'text-atelier-muted hover:bg-atelier-paper hover:text-atelier-ink'}`}
           >
             <ShoppingBag className="h-4 w-4" />
             商品銷售
           </button>
+        </div>
+
+        <div className="min-h-0" aria-live="polite" aria-atomic="true">
+          {recentSale && (
+            <div className="mb-4 flex items-center gap-3 rounded-control border border-status-good-border bg-status-good-bg px-3 py-2.5 text-status-good-text" role="status">
+              <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <p className="text-sm font-medium">
+                已安全儲存 NT${recentSale.amount.toLocaleString()} · {formatSalesPaymentMethod(recentSale.paymentMethod)}
+              </p>
+            </div>
+          )}
         </div>
 
         <div

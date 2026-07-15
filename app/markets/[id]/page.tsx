@@ -58,6 +58,7 @@ import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSectio
 import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceDetailTabs';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
+import { MarketOverviewPhotoStory } from '@/components/markets/MarketOverviewPhotoStory';
 import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
 import { SalesPhotoEvidenceOwnerAlbumRouteSection } from '@/components/markets/SalesPhotoEvidenceOwnerAlbumRouteSection';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
@@ -1173,25 +1174,31 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // ✅ 老闆模式：使用完整功能視圖
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-atelier-canvas pb-20 text-atelier-ink">
       {/* Header */}
-      <header className="border-b border-primary/20 bg-primary px-4 pb-5 pt-8">
+      <div className="flex h-1.5" aria-hidden="true">
+        <span className="w-[68%] bg-primary" />
+        <span className="w-[18%] bg-atelier-clay" />
+        <span className="flex-1 bg-atelier-blue" />
+      </div>
+      <header className="border-b border-atelier-line bg-atelier-paper px-4 pb-5 pt-[calc(1rem+env(safe-area-inset-top))]">
         <div className="mx-auto max-w-5xl">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-start gap-3">
               <button
                 onClick={() => router.back()}
-                className="text-white hover:opacity-80 transition-opacity"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-atelier-line bg-atelier-paper text-atelier-muted transition-colors hover:bg-atelier-canvas hover:text-atelier-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label="返回市集列表"
               >
-                <ArrowLeft className="w-6 h-6" />
+                <ArrowLeft className="h-5 w-5" />
               </button>
-              <div className="flex-1">
-                <h1 className="text-white text-xl font-medium">{market.name}</h1>
-                <div className="text-white/80 text-xs mt-1">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-primary">市集工作台</p>
+                <h1 className="mt-1 break-words text-2xl font-semibold leading-tight text-atelier-ink">{market.name}</h1>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-atelier-muted">
                   {/* 日期 - 完整顯示，支援換行 */}
-                  <div className="flex items-start gap-1 mb-1">
-                    <Calendar className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-1.5">
+                    <Calendar className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
                     <span className="flex-1">
                       {market.dates && market.dates.length > 0 
                         ? formatDateRanges(market.dates)
@@ -1202,24 +1209,24 @@ export default function MarketDetailPage({ params }: PageProps) {
                     </span>
                   </div>
                   {/* 地點 */}
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3 flex-shrink-0" />
-                    <span>{market.location}</span>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="truncate">{market.location}</span>
                   </div>
                 </div>
               </div>
             </div>
             
             {/* 右側操作區 */}
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1">
               {/* ✅ 同步狀態指示器 */}
-              <SyncStatusIndicator />
+              <SyncStatusIndicator tone="default" />
               
               {/* ✅ 編輯按鈕：員工模式下隱藏 */}
               {!isStaff && (
                 <button
                   onClick={handleOpenEditForm}
-                  className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1 text-white backdrop-blur-sm"
+                  className="flex min-h-11 items-center gap-1.5 rounded-control border border-atelier-line bg-atelier-paper px-3 text-sm font-medium text-atelier-ink transition-colors hover:bg-atelier-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Edit className="w-4 h-4" />
                   編輯
@@ -1308,8 +1315,8 @@ export default function MarketDetailPage({ params }: PageProps) {
         {resolvedOwnerWorkspaceView === 'live' && isOperating && (
           <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
             {/* 1. 互動記錄按鈕 */}
-            <section className="rounded-lg border border-border bg-white p-4 lg:col-start-2 lg:row-start-1">
-              <h2 className="mb-3 flex items-center gap-2 text-base font-medium text-foreground">
+            <section className="rounded-card border border-atelier-line bg-atelier-paper p-4 lg:col-start-2 lg:row-start-1">
+              <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-atelier-ink">
                 <TrendingUp className="w-5 h-5 text-primary" />
                 記錄互動
               </h2>
@@ -1721,12 +1728,22 @@ export default function MarketDetailPage({ params }: PageProps) {
         )}
 
         {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'performance' && (
-        <DailyRevenueStats
-          market={market}
-          onAddRevenue={handleOpenAddRevenue}
-          onDateClick={handleDateClick}
-          showTotals={false}
-        />
+        <>
+          <MarketOverviewPhotoStory
+            actorRole={isStaff ? 'staff' : 'owner'}
+            ownerId={ownerSalesPhotoEvidenceAlbumOwnerId}
+            marketId={marketId}
+            rows={ownerSalesPhotoEvidenceRows}
+            dealEvents={dealEvents}
+            onViewAll={() => setOwnerOverviewDetail('photos')}
+          />
+          <DailyRevenueStats
+            market={market}
+            onAddRevenue={handleOpenAddRevenue}
+            onDateClick={handleDateClick}
+            showTotals={false}
+          />
+        </>
         )}
 
         {resolvedOwnerWorkspaceView === 'manage' && (

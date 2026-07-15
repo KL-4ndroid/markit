@@ -103,16 +103,20 @@ export function QuickInteractionButtons({
 
   return (
     <div>
-      <div className="relative mb-3 overflow-hidden rounded-lg bg-primary px-4 py-4">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-atelier-ink">收款金額</p>
+        <p className="text-xs text-atelier-muted">新台幣</p>
+      </div>
+      <div className="relative mb-3 overflow-hidden rounded-card bg-atelier-ink px-4 py-5">
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 text-3xl font-medium tabular-nums text-white">
+          <div className="min-w-0 text-3xl font-semibold tabular-nums text-white sm:text-4xl">
             NT$ {amount.toLocaleString()}
           </div>
           <button
             type="button"
             onClick={() => setDisplayAmount('0')}
             disabled={isProcessing}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 text-white hover:bg-white/30 disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 disabled:opacity-50"
             aria-label="清除金額"
           >
             <Delete className="h-5 w-5" />
@@ -120,14 +124,14 @@ export function QuickInteractionButtons({
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-3 gap-2">
+      <div className="mb-5 grid grid-cols-3 gap-2">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(number => (
           <button
             key={number}
             type="button"
             onClick={() => handleNumberClick(number)}
             disabled={isProcessing}
-            className="min-h-12 rounded-lg border border-border bg-white text-xl font-medium text-foreground hover:bg-background active:scale-95 disabled:opacity-50"
+            className="min-h-14 rounded-control border border-atelier-line bg-atelier-paper text-xl font-semibold text-atelier-ink transition-colors hover:bg-atelier-canvas active:bg-primary/10 disabled:opacity-50"
           >
             {number}
           </button>
@@ -136,7 +140,7 @@ export function QuickInteractionButtons({
           type="button"
           onClick={() => setDisplayAmount(previous => previous === '0' ? '0' : previous + '00')}
           disabled={isProcessing}
-          className="min-h-12 rounded-lg border border-border bg-background text-lg font-medium text-primary active:scale-95 disabled:opacity-50"
+          className="min-h-14 rounded-control border border-atelier-line bg-primary/10 text-lg font-semibold text-primary transition-colors active:bg-primary/20 disabled:opacity-50"
         >
           00
         </button>
@@ -144,7 +148,7 @@ export function QuickInteractionButtons({
           type="button"
           onClick={() => handleNumberClick(0)}
           disabled={isProcessing}
-          className="min-h-12 rounded-lg border border-border bg-white text-xl font-medium text-foreground hover:bg-background active:scale-95 disabled:opacity-50"
+          className="min-h-14 rounded-control border border-atelier-line bg-atelier-paper text-xl font-semibold text-atelier-ink transition-colors hover:bg-atelier-canvas active:bg-primary/10 disabled:opacity-50"
         >
           0
         </button>
@@ -152,10 +156,10 @@ export function QuickInteractionButtons({
           type="button"
           onClick={() => setDisplayAmount(previous => previous.length <= 1 ? '0' : previous.slice(0, -1))}
           disabled={isProcessing}
-          className="min-h-12 rounded-lg border border-border bg-background text-xl font-medium text-secondary active:scale-95 disabled:opacity-50"
+          className="flex min-h-14 items-center justify-center rounded-control border border-atelier-line bg-atelier-clay/10 text-atelier-clay transition-colors active:bg-atelier-clay/20 disabled:opacity-50"
           aria-label="刪除最後一位數字"
         >
-          ⌫
+          <Delete className="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
 
@@ -169,7 +173,7 @@ export function QuickInteractionButtons({
         type="button"
         onClick={() => void handleQuickDeal()}
         disabled={isProcessing || amount <= 0}
-        className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-base font-medium text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100"
       >
         {isProcessing && <Loader2 className="h-5 w-5 animate-spin" />}
         {isProcessing ? '正在記錄交易' : `完成收款 NT$${amount.toLocaleString()}`}

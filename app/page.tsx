@@ -38,7 +38,6 @@ import {
 } from '@/lib/owner-brand';
 import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { getGradientClass } from '@/lib/theme-config';
 import type { Market } from '@/types/db';
 
 const DASHBOARD_ROLE_NOT_READY_OWNER_ID = '__role_not_ready__';
@@ -68,9 +67,9 @@ function marketTimeLabel(market: Market): string | null {
 }
 
 function phaseClasses(phase: TodayMarketPhase): string {
-  if (phase === 'operating') return 'bg-status-good-bg text-status-good-text';
-  if (phase === 'ended') return 'bg-muted text-muted-foreground';
-  return 'bg-status-warn-bg text-status-warn-text';
+  if (phase === 'operating') return 'border-status-good-border bg-status-good-bg text-status-good-text';
+  if (phase === 'ended') return 'border-atelier-line bg-atelier-canvas text-atelier-muted';
+  return 'border-status-warn-border bg-status-warn-bg text-status-warn-text';
 }
 
 interface TaskRowProps {
@@ -84,14 +83,14 @@ interface TaskRowProps {
 function TaskRow({ icon, title, description, actionLabel, onClick }: TaskRowProps) {
   const content = (
     <>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary/10 text-primary">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-atelier-line bg-atelier-paper text-primary">
         {icon}
       </span>
       <span className="min-w-0 flex-1 text-left">
         <span className="block text-sm font-medium text-foreground">{title}</span>
         <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{description}</span>
       </span>
-      {actionLabel && <span className="text-xs font-medium text-primary">{actionLabel}</span>}
+      {actionLabel && <span className="text-xs font-semibold text-atelier-clay">{actionLabel}</span>}
       {onClick && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
     </>
   );
@@ -104,7 +103,7 @@ function TaskRow({ icon, title, description, actionLabel, onClick }: TaskRowProp
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-16 w-full items-center gap-3 py-3 outline-none transition-colors hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-primary"
+      className="flex min-h-16 w-full items-center gap-3 rounded-control px-2 py-3 outline-none transition-colors hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
     >
       {content}
     </button>
@@ -121,18 +120,22 @@ function TodayMarketCard({ item, isStaff, onOpen }: TodayMarketCardProps) {
   const timeLabel = marketTimeLabel(item.market);
 
   return (
-    <article className="rounded-card border border-primary/15 bg-white p-5 shadow-sm shadow-primary/5">
+    <article className="overflow-hidden rounded-card border border-atelier-line bg-atelier-paper shadow-atelier">
+      <div className={`h-1.5 ${item.phase === 'operating' ? 'bg-primary' : item.phase === 'ended' ? 'bg-atelier-blue' : 'bg-atelier-clay'}`} aria-hidden="true" />
+      <div className="p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${phaseClasses(item.phase)}`}>
+          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${phaseClasses(item.phase)}`}>
             {item.phaseLabel}
           </span>
-          <h2 className="mt-3 break-words text-xl font-semibold text-foreground">{item.market.name}</h2>
+          <h2 className="mt-3 break-words text-[1.4rem] font-semibold leading-tight text-atelier-ink">{item.market.name}</h2>
         </div>
-        <Store className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-primary/10 text-primary">
+          <Store className="h-5 w-5" aria-hidden="true" />
+        </span>
       </div>
 
-      <div className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+      <div className="mt-5 grid gap-2.5 border-t border-atelier-line pt-4 text-sm text-atelier-muted sm:grid-cols-2">
         <p className="flex min-w-0 items-center gap-2">
           <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="truncate">{item.market.location || '尚未設定地點'}</span>
@@ -147,11 +150,12 @@ function TodayMarketCard({ item, isStaff, onOpen }: TodayMarketCardProps) {
 
       <Button
         onClick={onOpen}
-        className="mt-5 w-full sm:w-auto"
+        className="mt-5 min-h-12 w-full bg-atelier-ink hover:bg-atelier-ink/90 sm:w-auto"
         leadingIcon={<ArrowRight className="h-4 w-4" aria-hidden="true" />}
       >
         {getTodayMarketActionLabel(item.phase, isStaff)}
       </Button>
+      </div>
     </article>
   );
 }
@@ -238,26 +242,31 @@ export default function HomePage() {
     : '團隊工作區';
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className={`${getGradientClass(isStaff)} border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white`}>
+    <div className="min-h-screen bg-atelier-canvas text-atelier-ink">
+      <div className="flex h-1.5" aria-hidden="true">
+        <span className="w-[68%] bg-primary" />
+        <span className="w-[18%] bg-atelier-clay" />
+        <span className="flex-1 bg-atelier-blue" />
+      </div>
+      <header className="border-b border-atelier-line bg-atelier-paper px-5 pb-6 pt-[calc(1.25rem+env(safe-area-inset-top))]">
         <div className="mx-auto flex max-w-3xl items-start justify-between gap-4">
           <div className="min-w-0">
             {isStaff ? (
-              <p className="truncate text-sm text-white/80">{staffWorkspaceName}</p>
+              <p className="truncate text-xs font-semibold text-primary">{staffWorkspaceName}</p>
             ) : (
-              <p className="truncate text-sm text-white/80">{ownerBrandName}</p>
+              <p className="truncate text-xs font-semibold text-primary">{ownerBrandName}</p>
             )}
-            <h1 className="mt-1 text-2xl font-semibold">今日</h1>
-            <p className="mt-1 text-sm text-white/80">{formatDateLabel(now)}</p>
-            {isStaff && <div className="mt-3"><StaffBadge /></div>}
+            <h1 className="mt-2 text-[1.75rem] font-semibold leading-none text-atelier-ink">今日</h1>
+            <p className="mt-2 text-sm text-atelier-muted">{formatDateLabel(now)}</p>
+            {isStaff && <div className="mt-3"><StaffBadge tone="default" /></div>}
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
-            <SyncStatusIndicator />
+            <SyncStatusIndicator tone="default" />
             <IconButton
               label="開啟更多設定"
               tooltip="更多"
-              tone="inverse"
+              className="border border-atelier-line bg-atelier-paper text-atelier-muted hover:bg-atelier-canvas hover:text-atelier-ink"
               icon={<Settings className="h-5 w-5" aria-hidden="true" />}
               onClick={() => router.push('/settings')}
             />
@@ -265,13 +274,16 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6">
+      <main className="mx-auto max-w-3xl px-4 pb-8 pt-7 sm:px-6">
         <section aria-labelledby="today-focus-title">
-          <div className="mb-3">
-            <p className="text-xs font-medium text-primary">現在</p>
-            <h2 id="today-focus-title" className="mt-1 text-lg font-semibold text-foreground">
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+            <p className="text-xs font-semibold text-atelier-clay">現在</p>
+            <h2 id="today-focus-title" className="mt-1 text-lg font-semibold text-atelier-ink">
               {isStaff ? '你的今日工作' : '今天的營運重點'}
             </h2>
+            </div>
+            <span className="h-px flex-1 bg-atelier-line" aria-hidden="true" />
           </div>
 
           {todayView.primaryMarket ? (
@@ -300,8 +312,11 @@ export default function HomePage() {
 
         {(pendingPhotoItems.length > 0 || showSyncTask) && (
           <section className="mt-8" aria-labelledby="today-tasks-title">
-            <h2 id="today-tasks-title" className="text-base font-semibold text-foreground">待處理</h2>
-            <div className="mt-2 divide-y divide-primary/10 border-y border-primary/10">
+            <div className="flex items-center gap-3">
+              <h2 id="today-tasks-title" className="text-base font-semibold text-atelier-ink">待處理</h2>
+              <span className="h-px flex-1 bg-atelier-line" aria-hidden="true" />
+            </div>
+            <div className="mt-2 divide-y divide-atelier-line border-y border-atelier-line">
               {pendingPhotoItems.length > 0 && (
                 <TaskRow
                   icon={<Camera className="h-5 w-5" aria-hidden="true" />}
@@ -328,16 +343,16 @@ export default function HomePage() {
 
         {todayView.todayMarkets.length > 1 && (
           <section className="mt-8" aria-labelledby="other-today-title">
-            <h2 id="other-today-title" className="text-base font-semibold text-foreground">今日其他場次</h2>
-            <div className="mt-2 divide-y divide-primary/10 border-y border-primary/10">
+            <h2 id="other-today-title" className="text-base font-semibold text-atelier-ink">今日其他場次</h2>
+            <div className="mt-2 divide-y divide-atelier-line border-y border-atelier-line">
               {todayView.todayMarkets.slice(1).map(item => (
                 <button
                   key={item.market.id ?? item.market.name}
                   type="button"
                   onClick={() => openMarket(item.market.id)}
-                  className="flex min-h-16 w-full items-center gap-3 py-3 text-left hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-primary"
+                  className="flex min-h-16 w-full items-center gap-3 rounded-control px-2 py-3 text-left hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${phaseClasses(item.phase)}`}>
+                  <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${phaseClasses(item.phase)}`}>
                     {item.phaseLabel}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{item.market.name}</span>
@@ -348,16 +363,16 @@ export default function HomePage() {
           </section>
         )}
 
-        <section className="mt-8 border-t border-primary/10 pt-6" aria-labelledby="upcoming-title">
+        <section className="mt-8 border-t border-atelier-line pt-6" aria-labelledby="upcoming-title">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-medium text-secondary">接下來</p>
-              <h2 id="upcoming-title" className="mt-1 text-lg font-semibold text-foreground">近期市集</h2>
+              <p className="text-xs font-semibold text-atelier-blue">接下來</p>
+              <h2 id="upcoming-title" className="mt-1 text-lg font-semibold text-atelier-ink">近期市集</h2>
             </div>
             <button
               type="button"
               onClick={() => router.push('/markets')}
-              className="flex min-h-11 items-center gap-1 rounded-control px-2 text-sm font-medium text-primary hover:bg-white focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex min-h-11 items-center gap-1 rounded-control px-2 text-sm font-medium text-primary hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
             >
               查看全部
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -365,15 +380,15 @@ export default function HomePage() {
           </div>
 
           {todayView.upcomingMarkets.length > 0 ? (
-            <div className="mt-3 divide-y divide-primary/10 border-y border-primary/10">
+            <div className="mt-3 divide-y divide-atelier-line border-y border-atelier-line">
               {todayView.upcomingMarkets.slice(0, 3).map(item => (
                 <button
                   key={item.market.id ?? `${item.market.name}-${item.nextDate}`}
                   type="button"
                   onClick={() => openMarket(item.market.id)}
-                  className="flex min-h-16 w-full items-center gap-3 py-3 text-left hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-primary"
+                  className="flex min-h-16 w-full items-center gap-3 rounded-control px-2 py-3 text-left hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <span className="flex h-10 min-w-14 shrink-0 items-center justify-center rounded-control bg-white px-2 text-xs font-medium text-primary">
+                  <span className="flex h-10 min-w-14 shrink-0 items-center justify-center rounded-control border border-atelier-line bg-atelier-paper px-2 text-xs font-semibold text-primary">
                     {formatDateKey(item.nextDate)}
                   </span>
                   <span className="min-w-0 flex-1">

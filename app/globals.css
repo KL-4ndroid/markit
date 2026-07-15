@@ -87,12 +87,24 @@
   --brand-gold: 255 215 0;                     /* #FFD700 金幣金 */
   --brand-gold-warm: 255 165 0;                /* #FFA500 暖橙（gradient 終點） */
 
+  /* === Atelier visual pilot：文創工作台樣板（2026-07-15） === */
+  /* 不取代既有品牌語意色；先供今日、市集總覽與現場交易樣板使用。 */
+  --atelier-canvas: 246 247 243;                /* 紙白畫布，降低全頁米黃色比例 */
+  --atelier-paper: 255 254 252;                 /* 暖白內容表面 */
+  --atelier-ink: 36 48 43;                      /* 墨色結構與高對比操作 */
+  --atelier-muted: 101 108 103;                 /* 次要資訊 */
+  --atelier-line: 218 221 214;                  /* 細緻分隔線 */
+  --atelier-clay: 194 122 78;                   /* 暖杏陶土強調 */
+  --atelier-blue: 105 134 146;                  /* 霧藍內容分類 */
+  --atelier-rose: 177 108 105;                  /* 乾燥玫瑰內容分類 */
+  --atelier-shadow: 0 10px 28px rgb(36 48 43 / 0.07);
+
   /* 圓角系統 */
-  --radius: 1.25rem;
-  --radius-sm: 0.75rem;
-  --radius-md: 1.125rem;
-  --radius-lg: 1.25rem;
-  --radius-xl: 1.5rem;
+  --radius: 0.5rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 0.75rem;
 }
 
 /* ✅ 自訂動畫 */
@@ -139,9 +151,8 @@ body {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei',
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
@@ -200,6 +211,14 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--brand-primary) / 0.85);
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }
 
 /* 動畫 - 移除所有動畫效果 */

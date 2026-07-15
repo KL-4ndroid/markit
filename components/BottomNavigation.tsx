@@ -51,7 +51,7 @@ function ProtectedBottomNavigation() {
   return (
     <nav
       aria-label="主要導覽"
-      className={`fixed left-0 right-0 z-50 border-t border-primary/20 bg-white px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] ease-in-out ${
+      className={`fixed left-0 right-0 z-50 border-t border-atelier-line bg-atelier-paper/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] ease-in-out ${
         isNavVisible ? 'bottom-0 translate-y-0' : '-bottom-24 translate-y-24'
       }`}
     >
@@ -65,20 +65,21 @@ function ProtectedBottomNavigation() {
               key={item.id}
               href={item.path}
               aria-current={isActive ? 'page' : undefined}
-              className="flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg transition-colors"
+              className="group relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-control transition-colors"
             >
               <span
-                className={`flex h-8 min-w-10 items-center justify-center rounded-lg px-2 transition-colors ${
+                className={`flex h-8 min-w-10 items-center justify-center rounded-control px-2 transition-colors ${
                   isActive
-                    ? 'bg-primary text-white'
-                    : 'bg-transparent text-muted-foreground hover:bg-soft-pink'
+                    ? 'bg-primary/10 text-primary'
+                    : 'bg-transparent text-atelier-muted group-hover:bg-atelier-canvas group-hover:text-atelier-ink'
                 }`}
               >
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </span>
-              <span className={`text-xs ${isActive ? 'font-medium text-primary' : 'text-muted-foreground'}`}>
+              <span className={`text-xs ${isActive ? 'font-semibold text-primary' : 'text-atelier-muted'}`}>
                 {item.label}
               </span>
+              {isActive && <span className="absolute bottom-0 h-0.5 w-5 rounded-full bg-atelier-clay" aria-hidden="true" />}
             </Link>
           );
         })}

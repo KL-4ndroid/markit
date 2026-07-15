@@ -81,6 +81,15 @@ const config: Config = {
         'text-warm-deep': "rgb(var(--brand-text-warm-deep) / <alpha-value>)",
         gold: "rgb(var(--brand-gold) / <alpha-value>)",
         'gold-warm': "rgb(var(--brand-gold-warm) / <alpha-value>)",
+        // Atelier visual pilot：今日／市集總覽／現場交易
+        'atelier-canvas': "rgb(var(--atelier-canvas) / <alpha-value>)",
+        'atelier-paper': "rgb(var(--atelier-paper) / <alpha-value>)",
+        'atelier-ink': "rgb(var(--atelier-ink) / <alpha-value>)",
+        'atelier-muted': "rgb(var(--atelier-muted) / <alpha-value>)",
+        'atelier-line': "rgb(var(--atelier-line) / <alpha-value>)",
+        'atelier-clay': "rgb(var(--atelier-clay) / <alpha-value>)",
+        'atelier-blue': "rgb(var(--atelier-blue) / <alpha-value>)",
+        'atelier-rose': "rgb(var(--atelier-rose) / <alpha-value>)",
       },
       borderRadius: {
         'xl': '1rem',
@@ -95,6 +104,9 @@ const config: Config = {
         overlay: '60',
         dialog: '70',
         critical: '80',
+      },
+      boxShadow: {
+        atelier: 'var(--atelier-shadow)',
       },
     },
   },

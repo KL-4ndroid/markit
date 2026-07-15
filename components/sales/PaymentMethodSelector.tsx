@@ -27,7 +27,9 @@ export function PaymentMethodSelector({
   disabled = false,
 }: PaymentMethodSelectorProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label="支付方式">
+    <fieldset>
+      <legend className="mb-2 text-sm font-medium text-atelier-ink">支付方式</legend>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label="支付方式">
       {SALES_PAYMENT_METHODS.map(method => {
         const Icon = ICONS[method];
         const selected = value === method;
@@ -39,10 +41,10 @@ export function PaymentMethodSelector({
             aria-checked={selected}
             onClick={() => onChange(method)}
             disabled={disabled}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-lg border px-2 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-control border px-2 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
               selected
                 ? 'border-primary bg-primary/10 text-primary'
-                : 'border-border bg-white text-muted-foreground hover:bg-background hover:text-foreground'
+                : 'border-atelier-line bg-atelier-paper text-atelier-muted hover:bg-atelier-canvas hover:text-atelier-ink'
             }`}
           >
             <Icon className="h-4 w-4 shrink-0" />
@@ -50,6 +52,7 @@ export function PaymentMethodSelector({
           </button>
         );
       })}
-    </div>
+      </div>
+    </fieldset>
   );
 }

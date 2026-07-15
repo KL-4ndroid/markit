@@ -194,3 +194,4 @@ tsx tests/sale-completion-flow.test.ts
 tsx tests/sales-checkout-photo-evidence-uiux.test.ts
 tsx tests/market-workspace.test.ts
 tsx tests/sales-photo-evidence-owner-view.test.ts
+tsx tests/atelier-visual-pilot.test.ts

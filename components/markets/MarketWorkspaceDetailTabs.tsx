@@ -22,8 +22,8 @@ export function MarketWorkspaceDetailTabs<T extends string>({
   ariaLabel,
 }: MarketWorkspaceDetailTabsProps<T>) {
   return (
-    <div className="mb-4" role="tablist" aria-label={ariaLabel}>
-      <div className="grid grid-cols-2 gap-2 sm:flex">
+    <div className="mb-5 border-b border-atelier-line" role="tablist" aria-label={ariaLabel}>
+      <div className="scrollbar-none flex snap-x snap-proximity gap-1 overflow-x-auto">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = item.id === value;
@@ -35,14 +35,15 @@ export function MarketWorkspaceDetailTabs<T extends string>({
               role="tab"
               aria-selected={isActive}
               onClick={() => onChange(item.id)}
-              className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto ${
+              className={`relative flex min-h-11 min-w-max snap-start items-center justify-center gap-1.5 px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                 isActive
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-white text-muted-foreground hover:bg-background hover:text-foreground'
+                  ? 'text-atelier-ink'
+                  : 'text-atelier-muted hover:bg-atelier-paper hover:text-atelier-ink'
               }`}
             >
               <Icon className="h-4 w-4" aria-hidden="true" />
               {item.label}
+              {isActive && <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-atelier-clay" aria-hidden="true" />}
             </button>
           );
         })}

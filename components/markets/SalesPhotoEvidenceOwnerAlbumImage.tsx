@@ -105,7 +105,7 @@ export function SalesPhotoEvidenceOwnerAlbumImage({
       <img
         src={preview.objectUrl}
         alt={alt}
-        className="h-full w-full rounded-xl object-cover"
+        className="h-full w-full rounded-card object-cover"
       />
     );
 
@@ -116,7 +116,7 @@ export function SalesPhotoEvidenceOwnerAlbumImage({
         <button
           type="button"
           onClick={() => setIsViewerOpen(true)}
-          className="group relative h-full w-full cursor-zoom-in overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="group relative h-full w-full cursor-zoom-in overflow-hidden rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           aria-label="放大查看成交照片"
           aria-haspopup="dialog"
           title="放大查看"
@@ -171,7 +171,7 @@ export function SalesPhotoEvidenceOwnerAlbumImage({
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-center rounded-xl border border-dashed border-border bg-white text-center">
+    <div className="flex h-full w-full items-center justify-center rounded-card border border-dashed border-atelier-line bg-atelier-paper text-center">
       <div className="px-4">
         {preview.isLoading ? (
           <Loader2 className="mx-auto h-7 w-7 animate-spin text-primary" />

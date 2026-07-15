@@ -145,8 +145,11 @@ export function QuickTransactionGrid({
   const content = (
     <div>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">點選商品加入本次交易</p>
-        <Link href="/products" className="text-sm font-medium text-primary hover:underline">
+        <div>
+          <p className="text-sm font-medium text-atelier-ink">選擇商品</p>
+          <p className="mt-0.5 text-xs text-atelier-muted">再次點選可增加數量</p>
+        </div>
+        <Link href="/products" className="inline-flex min-h-11 items-center rounded-control px-2 text-sm font-medium text-primary hover:bg-atelier-canvas">
           管理商品
         </Link>
       </div>
@@ -161,10 +164,10 @@ export function QuickTransactionGrid({
                 type="button"
                 onClick={() => addToCart(product)}
                 disabled={isProcessing}
-                className={`relative min-h-24 rounded-lg border p-3 text-left transition-colors active:scale-[0.98] disabled:opacity-50 ${
+                className={`relative min-h-28 rounded-control border p-3 text-left transition-colors active:bg-primary/10 disabled:opacity-50 ${
                   quantity > 0
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border bg-white hover:bg-background'
+                    ? 'border-primary bg-primary/10'
+                    : 'border-atelier-line bg-atelier-paper hover:bg-atelier-canvas'
                 }`}
               >
                 {quantity > 0 && (
@@ -172,9 +175,9 @@ export function QuickTransactionGrid({
                     {quantity}
                   </span>
                 )}
-                <Package className="mb-2 h-5 w-5 text-primary" />
-                <span className="block truncate text-sm font-medium text-foreground">{product.name}</span>
-                <span className="mt-1 block text-sm tabular-nums text-muted-foreground">
+                <Package className="mb-3 h-5 w-5 text-primary" aria-hidden="true" />
+                <span className="block truncate text-sm font-semibold text-atelier-ink">{product.name}</span>
+                <span className="mt-1 block text-sm tabular-nums text-atelier-muted">
                   NT${product.price.toLocaleString()}
                 </span>
               </button>
@@ -182,7 +185,7 @@ export function QuickTransactionGrid({
           })}
         </div>
       ) : (
-        <div className="mb-5 rounded-lg border border-dashed border-border px-4 py-8 text-center">
+        <div className="mb-5 rounded-card border border-dashed border-atelier-line px-4 py-8 text-center">
           <Package className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">尚未建立可銷售商品</p>
           <Link href="/products" className="mt-2 inline-block text-sm font-medium text-primary hover:underline">
@@ -192,23 +195,23 @@ export function QuickTransactionGrid({
       )}
 
       {cart.size > 0 && (
-        <div className="mb-5 border-t border-border pt-4">
+        <div className="mb-5 border-t border-atelier-line pt-4">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-medium text-foreground">本次商品</h3>
             <button
               type="button"
               onClick={() => setCart(new Map())}
               disabled={isProcessing}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-secondary hover:bg-secondary/10 disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-sm text-atelier-clay hover:bg-atelier-clay/10 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
               清空
             </button>
           </div>
 
-          <div className="space-y-2">
+          <div className="divide-y divide-atelier-line border-y border-atelier-line">
             {Array.from(cart.values()).map(item => (
-              <div key={item.product.id} className="flex items-center justify-between gap-3 rounded-lg bg-background p-3">
+              <div key={item.product.id} className="flex min-h-16 items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">{item.product.name}</p>
                   <p className="text-xs tabular-nums text-muted-foreground">
@@ -220,7 +223,7 @@ export function QuickTransactionGrid({
                     type="button"
                     onClick={() => changeQuantity(item.product.id!, -1)}
                     disabled={isProcessing}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-white text-foreground hover:bg-gray-50 disabled:opacity-50"
+                    className="flex h-11 w-11 items-center justify-center rounded-control border border-atelier-line bg-atelier-paper text-atelier-ink hover:bg-atelier-canvas disabled:opacity-50"
                     aria-label={`減少 ${item.product.name} 數量`}
                   >
                     <Minus className="h-4 w-4" />
@@ -232,7 +235,7 @@ export function QuickTransactionGrid({
                     type="button"
                     onClick={() => changeQuantity(item.product.id!, 1)}
                     disabled={isProcessing}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
+                    className="flex h-11 w-11 items-center justify-center rounded-control bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
                     aria-label={`增加 ${item.product.name} 數量`}
                   >
                     <Plus className="h-4 w-4" />
@@ -244,9 +247,9 @@ export function QuickTransactionGrid({
         </div>
       )}
 
-      <div className="mb-4 flex items-center justify-between rounded-lg bg-background px-4 py-3">
-        <span className="text-sm font-medium text-foreground">交易總額</span>
-        <span className="text-xl font-medium tabular-nums text-primary">NT${totalAmount.toLocaleString()}</span>
+      <div className="mb-5 flex items-center justify-between rounded-card bg-atelier-ink px-4 py-4 text-white">
+        <span className="text-sm font-medium text-white/75">交易總額</span>
+        <span className="text-2xl font-semibold tabular-nums">NT${totalAmount.toLocaleString()}</span>
       </div>
 
       <PaymentMethodSelector
@@ -259,7 +262,7 @@ export function QuickTransactionGrid({
         type="button"
         onClick={() => void handleCheckout()}
         disabled={isProcessing || cart.size === 0}
-        className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-base font-medium text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100"
       >
         {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
         {isProcessing ? '正在記錄交易' : `完成交易 NT$${totalAmount.toLocaleString()}`}
@@ -270,8 +273,8 @@ export function QuickTransactionGrid({
   if (embedded) return content;
 
   return (
-    <section className="mb-6 overflow-hidden rounded-lg border border-border bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+    <section className="mb-6 overflow-hidden rounded-card border border-atelier-line bg-atelier-paper">
+      <div className="flex items-center justify-between gap-3 border-b border-atelier-line px-5 py-4">
         <h2 className="flex items-center gap-2 text-base font-medium text-foreground">
           <ShoppingCart className="h-5 w-5 text-primary" />
           商品銷售

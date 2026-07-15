@@ -197,7 +197,7 @@ runTest('owner album read model and shell stay read-only and avoid cloud image a
   ] as const) {
     assert.doesNotMatch(source, /@\/lib\/db|db\.|Dexie|indexedDB/i, label);
     assert.doesNotMatch(source, /@\/lib\/supabase|supabase|from\(/i, label);
-    assert.doesNotMatch(source, /fetch\(|XMLHttpRequest|navigator\.|window\.|document\.|canvas|getUserMedia/i, label);
+    assert.doesNotMatch(source, /fetch\(|XMLHttpRequest|navigator\.|window\.|document\.|getContext\(|HTMLCanvasElement|getUserMedia/i, label);
     assert.doesNotMatch(source, /localStorage|sessionStorage|process\.env|NEXT_PUBLIC/i, label);
     assert.doesNotMatch(source, /\.(insert|update|delete|put|bulkPut|clear)\s*\(/, label);
     assert.doesNotMatch(source, /getSignedUrl|signedUrl\s*\(|signed_url\s*\(|createPresignedPost|S3Client|PutObjectCommand|GetObjectCommand/i, label);

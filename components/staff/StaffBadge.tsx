@@ -8,11 +8,19 @@
 
 import { UserCircle } from 'lucide-react';
 
-export function StaffBadge() {
+interface StaffBadgeProps {
+  tone?: 'inverse' | 'default';
+}
+
+export function StaffBadge({ tone = 'inverse' }: StaffBadgeProps) {
+  const classes = tone === 'inverse'
+    ? 'bg-white/20 text-white'
+    : 'border border-primary/15 bg-primary/10 text-primary';
+
   return (
-    <div className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full flex items-center gap-1.5">
-      <UserCircle className="w-3.5 h-3.5 text-white" />
-      <span className="text-xs text-white font-medium">員工模式</span>
+    <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 ${classes}`}>
+      <UserCircle className="h-3.5 w-3.5" aria-hidden="true" />
+      <span className="text-xs font-medium">員工模式</span>
     </div>
   );
 }

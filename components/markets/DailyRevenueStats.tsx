@@ -158,18 +158,23 @@ export function DailyRevenueStats({
   }, [focusedWindowStartDate]);
   
   return (
-    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-white">
-      <div className="flex min-h-14 items-center justify-between border-b border-border px-4 py-3">
-        <h2 className="flex items-center gap-2 text-base font-medium text-foreground">
-          <Calendar className="h-4 w-4 text-primary" />
-          {isSingleDay ? '收入明細' : '每日表現'}
-        </h2>
-        {!isSingleDay && <div className="text-xs text-muted-foreground">共 {dateRange.length} 天</div>}
+    <section className="mb-4 overflow-hidden rounded-card border border-atelier-line bg-atelier-paper">
+      <div className="flex min-h-14 items-center justify-between border-b border-atelier-line px-4 py-3 sm:px-5">
+        <div>
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-atelier-blue">
+            <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+            營運節奏
+          </p>
+          <h2 className="mt-1 text-base font-semibold text-atelier-ink">
+            {isSingleDay ? '收入明細' : '每日表現'}
+          </h2>
+        </div>
+        {!isSingleDay && <div className="text-xs text-atelier-muted">共 {dateRange.length} 天</div>}
       </div>
 
       <div
         ref={dailyListRef}
-        className={`divide-y divide-border ${dailyData.length > 5 ? 'max-h-[28rem] overflow-y-auto overscroll-contain' : ''}`}
+        className={`divide-y divide-atelier-line ${dailyData.length > 5 ? 'max-h-[28rem] overflow-y-auto overscroll-contain' : ''}`}
       >
         {dailyData.map((day) => {
           const isToday = day.date === today;
@@ -180,15 +185,15 @@ export function DailyRevenueStats({
               key={day.date}
               ref={day.date === focusedWindowStartDate ? focusedDayRef : null}
               onClick={() => !isFuture && onDateClick(day.date)}
-              className={`px-4 py-3 transition-colors ${
-                isFuture ? 'cursor-not-allowed bg-background opacity-60' : 'cursor-pointer hover:bg-background'
-              } ${isToday ? 'bg-primary/5' : 'bg-white'}`}
+              className={`px-4 py-4 transition-colors sm:px-5 ${
+                isFuture ? 'cursor-not-allowed bg-atelier-canvas opacity-60' : 'cursor-pointer hover:bg-atelier-canvas'
+              } ${isToday ? 'bg-status-good-bg' : 'bg-atelier-paper'}`}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">{formatDate(day.date)}</span>
                   {isToday && <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-white">今天</span>}
-                  {isFuture && <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-muted-foreground">尚未開始</span>}
+                  {isFuture && <span className="rounded-full bg-atelier-line px-2 py-0.5 text-xs text-atelier-muted">尚未開始</span>}
                 </div>
 
                 <div className="flex items-center justify-between gap-2 sm:justify-end">
@@ -218,7 +223,7 @@ export function DailyRevenueStats({
                         event.stopPropagation();
                         onAddRevenue(day.date);
                       }}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-primary transition-colors hover:bg-primary/10"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-atelier-line text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       title="補登收入"
                       aria-label={`${formatDate(day.date)}補登收入`}
                     >
@@ -229,7 +234,7 @@ export function DailyRevenueStats({
               </div>
 
               {showInteractions && interactionButtons.length > 0 && !isFuture && (
-                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-atelier-line pt-3 text-xs text-atelier-muted">
                   <TrendingUp className="h-3.5 w-3.5" />
                   <span>互動</span>
                   {Object.values(day.interactions).some((count) => count > 0) ? (
@@ -251,7 +256,7 @@ export function DailyRevenueStats({
       </div>
 
       {showTotals && !isSingleDay && (
-        <div className="border-t border-border px-4 py-3">
+        <div className="border-t border-atelier-line bg-atelier-canvas px-4 py-4">
           <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
             <div className="text-center">
               <div className="text-xs text-muted-foreground">總收入</div>

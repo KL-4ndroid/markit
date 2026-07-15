@@ -29,27 +29,27 @@ export function MarketWorkspaceSummary({
   items,
 }: MarketWorkspaceSummaryProps) {
   return (
-    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-white" aria-label="市集摘要">
-      <div className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-4 py-2.5">
-        <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+    <section className="mb-4 overflow-hidden rounded-card border border-atelier-line bg-atelier-paper" aria-label="市集摘要">
+      <div className="flex min-h-11 items-center justify-between gap-3 border-b border-atelier-line px-4 py-2.5">
+        <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-atelier-ink">
           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${PHASE_STYLES[phase]}`} aria-hidden="true" />
           <span>{getMarketWorkspacePhaseLabel(phase)}</span>
         </div>
         {operatingTime && (
-          <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex min-w-0 items-center gap-1.5 text-xs text-atelier-muted">
             <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate">{operatingTime}</span>
           </div>
         )}
       </div>
 
-      <dl className={`grid divide-x divide-border ${items.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+      <dl className={`grid divide-x divide-atelier-line ${items.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
         {items.map((item) => (
-          <div key={item.label} className="min-w-0 px-3 py-3 text-center">
-            <dt className="truncate text-xs text-muted-foreground">{item.label}</dt>
+          <div key={item.label} className="min-w-0 px-3 py-4 text-center">
+            <dt className="truncate text-[11px] font-medium text-atelier-muted">{item.label}</dt>
             <dd
-              className={`mt-1 truncate text-sm font-semibold sm:text-base ${
-                item.emphasis ? 'text-primary' : 'text-foreground'
+              className={`mt-1.5 truncate text-base font-semibold tabular-nums sm:text-lg ${
+                item.emphasis ? 'text-primary' : 'text-atelier-ink'
               }`}
               title={typeof item.value === 'string' || typeof item.value === 'number' ? String(item.value) : undefined}
             >

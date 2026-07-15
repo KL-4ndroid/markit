@@ -8,7 +8,11 @@ import { SyncStatus } from '@/hooks/useSync';
 import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 
-export function SyncStatusIndicator() {
+interface SyncStatusIndicatorProps {
+  tone?: 'inverse' | 'default';
+}
+
+export function SyncStatusIndicator({ tone = 'inverse' }: SyncStatusIndicatorProps) {
   const { user, isConfigured } = useAuth();
   const { status, pendingCount, error, sync, isOnline } = useSyncContext();
   const [isClickLocked, setIsClickLocked] = useState(false);
@@ -60,6 +64,10 @@ export function SyncStatusIndicator() {
     : hasError
       ? 'bg-danger'
       : 'bg-status-good-text';
+  const buttonClasses = tone === 'inverse'
+    ? 'hover:bg-white/15 focus-visible:ring-white/60'
+    : 'border border-atelier-line bg-atelier-paper hover:bg-atelier-canvas focus-visible:ring-primary/30';
+  const spinnerClasses = tone === 'inverse' ? 'text-white' : 'text-primary';
 
   const handleSync = () => {
     if (isSyncing || isClickLocked) return;
@@ -79,10 +87,10 @@ export function SyncStatusIndicator() {
       disabled={isSyncing || isClickLocked}
       aria-label={statusLabel}
       title={statusLabel}
-      className="relative inline-flex h-11 w-11 items-center justify-center rounded-control transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-wait disabled:opacity-75"
+      className={`relative inline-flex h-11 w-11 items-center justify-center rounded-control transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-wait disabled:opacity-75 ${buttonClasses}`}
     >
       {isSyncing ? (
-        <RefreshCw className="h-4 w-4 animate-spin text-white" aria-hidden="true" />
+        <RefreshCw className={`h-4 w-4 animate-spin ${spinnerClasses}`} aria-hidden="true" />
       ) : (
         <span className={`h-3 w-3 rounded-full ${indicatorClass}`} aria-hidden="true" />
       )}

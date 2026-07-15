@@ -103,9 +103,9 @@ function getItemCaption(item: SalesPhotoEvidenceAlbumItem): string | null {
 
 function SummaryPill({ label, value }: { label: string; value: number }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-background px-3 py-1 text-xs text-muted-foreground">
+    <span className="inline-flex items-center gap-2 rounded-full border border-atelier-line bg-atelier-canvas px-3 py-1 text-xs text-atelier-muted">
       <span>{label}</span>
-      <strong className="font-medium text-foreground">{value}</strong>
+      <strong className="font-semibold tabular-nums text-atelier-ink">{value}</strong>
     </span>
   );
 }
@@ -121,14 +121,15 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
   const { summary } = viewModel;
 
   return (
-    <section className={`bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 ${className}`}>
+    <section className={`rounded-card border border-atelier-line bg-atelier-paper p-4 sm:p-5 ${className}`}>
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary/10 text-primary">
             <Camera className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-lg font-medium text-foreground">成交照片</h2>
+            <p className="text-xs font-semibold text-atelier-clay">市集影像紀錄</p>
+            <h2 className="mt-1 text-lg font-semibold text-atelier-ink">成交照片</h2>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
               依成交時間整理照片、金額與支付方式。
             </p>
@@ -139,7 +140,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
             type="button"
             onClick={onRefresh}
             disabled={isLoading}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-control border border-atelier-line px-3 text-sm font-medium text-atelier-ink transition-colors hover:bg-atelier-canvas disabled:cursor-not-allowed disabled:opacity-60"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             重新整理
@@ -156,11 +157,11 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
       </div>
 
       {loadError ? (
-        <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-card border border-status-danger-border bg-status-danger-bg px-4 py-3 text-sm text-status-danger-text">
           {loadError}
         </div>
       ) : viewModel.items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-8 text-center">
+        <div className="rounded-card border border-dashed border-atelier-line bg-atelier-canvas px-4 py-8 text-center">
           <ImageOff className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-3 text-sm font-medium text-foreground">目前沒有照片紀錄</p>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -177,7 +178,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
             const caption = getItemCaption(item);
 
             return (
-              <article key={item.id} className="rounded-2xl border border-border bg-background p-4">
+              <article key={item.id} className="overflow-hidden rounded-card border border-atelier-line bg-atelier-canvas p-3">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">
@@ -195,7 +196,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
                   </span>
                 </div>
 
-                <div className="aspect-[4/3] overflow-hidden rounded-xl bg-white">
+                <div className="aspect-[4/3] overflow-hidden rounded-card bg-atelier-paper">
                   <SalesPhotoEvidenceOwnerAlbumImage
                     evidenceId={item.id}
                     canLoad={item.displayStatus === 'uploaded_private' && (item.hasPrivateThumbnailObject || item.hasPrivateImageObject)}
@@ -206,7 +207,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
                 </div>
 
                 {transaction && PaymentMethodIcon && (
-                  <div className="mt-3 flex items-center justify-between gap-3 border-b border-border pb-3">
+                  <div className="mt-3 flex items-center justify-between gap-3 border-b border-atelier-line pb-3">
                     <strong className="text-lg font-semibold tabular-nums text-foreground">
                       NT$ {transaction.amount.toLocaleString()}
                     </strong>
