@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { Calendar, DollarSign, TrendingUp, Plus } from 'lucide-react';
+import { Calendar, TrendingUp, Plus } from 'lucide-react';
 import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
@@ -21,6 +21,8 @@ interface DailyRevenueStatsProps {
    * 資料層脫敏由 C2.30C PermissionGate 統一處理。
    */
   hideProfit?: boolean;
+  showTotals?: boolean;
+  showInteractions?: boolean;
 }
 
 /**
@@ -29,7 +31,15 @@ interface DailyRevenueStatsProps {
  * 顯示多天市集的每日收入明細
  * 支持補登收入功能
  */
-export function DailyRevenueStats({ market, onAddRevenue, onDateClick, canAddRevenue = true, hideProfit = false }: DailyRevenueStatsProps) {
+export function DailyRevenueStats({
+  market,
+  onAddRevenue,
+  onDateClick,
+  canAddRevenue = true,
+  hideProfit = false,
+  showTotals = true,
+  showInteractions = false,
+}: DailyRevenueStatsProps) {
   const stats = useDateRangeStats(market.startDate, market.endDate);
   const dailyListRef = useRef<HTMLDivElement | null>(null);
   const focusedDayRef = useRef<HTMLDivElement | null>(null);
@@ -148,174 +158,120 @@ export function DailyRevenueStats({ market, onAddRevenue, onDateClick, canAddRev
   }, [focusedWindowStartDate]);
   
   return (
-    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
-          <Calendar className="w-5 h-5 text-primary" />
-          {isSingleDay ? '收入明細' : '每日收入明細'}
+    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-white">
+      <div className="flex min-h-14 items-center justify-between border-b border-border px-4 py-3">
+        <h2 className="flex items-center gap-2 text-base font-medium text-foreground">
+          <Calendar className="h-4 w-4 text-primary" />
+          {isSingleDay ? '收入明細' : '每日表現'}
         </h2>
-        {!isSingleDay && (
-          <div className="text-xs text-muted-foreground">
-            共 {dateRange.length} 天
-          </div>
-        )}
+        {!isSingleDay && <div className="text-xs text-muted-foreground">共 {dateRange.length} 天</div>}
       </div>
-      
+
       <div
         ref={dailyListRef}
-        className={`space-y-3 pr-1 ${dailyData.length > 3 ? 'max-h-[28rem] overflow-y-auto overscroll-contain' : ''}`}
+        className={`divide-y divide-border ${dailyData.length > 5 ? 'max-h-[28rem] overflow-y-auto overscroll-contain' : ''}`}
       >
         {dailyData.map((day) => {
-          // ✅ 使用本地日期，避免時區問題
-          const isPast = day.date < today;
           const isToday = day.date === today;
           const isFuture = day.date > today;
-          
+
           return (
             <div
               key={day.date}
               ref={day.date === focusedWindowStartDate ? focusedDayRef : null}
-              onClick={() => !isFuture && onDateClick(day.date)}  // ✅ 新增：點擊日期查看成交記錄
-              className={`rounded-xl border-2 p-4 transition-all ${
-                isFuture 
-                  ? 'border-gray-200 bg-gray-50 opacity-60'
-                  : 'cursor-pointer hover:shadow-md hover:scale-[1.02]'
-              } ${
-                isToday
-                  ? 'border-primary bg-primary/5'
-                  : isFuture
-                  ? ''
-                  : 'border-soft-green bg-white'
-              }`}
+              onClick={() => !isFuture && onDateClick(day.date)}
+              className={`px-4 py-3 transition-colors ${
+                isFuture ? 'cursor-not-allowed bg-background opacity-60' : 'cursor-pointer hover:bg-background'
+              } ${isToday ? 'bg-primary/5' : 'bg-white'}`}
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="text-sm font-medium text-foreground">
-                    {formatDate(day.date)}
-                  </div>
-                  {isToday && (
-                    <span className="text-xs bg-primary text-white px-2 py-0.5 rounded-full">
-                      今天
-                    </span>
-                  )}
-                  {isFuture && (
-                    <span className="text-xs bg-gray-300 text-gray-600 px-2 py-0.5 rounded-full">
-                      未來
-                    </span>
-                  )}
+                  <span className="text-sm font-medium text-foreground">{formatDate(day.date)}</span>
+                  {isToday && <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-white">今天</span>}
+                  {isFuture && <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-muted-foreground">尚未開始</span>}
                 </div>
-                
-                {/* 補登按鈕 - 只在過去或今天顯示 */}
-                {!isFuture && canAddRevenue && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();  // ✅ 阻止冒泡，避免觸發日期點擊
-                      onAddRevenue(day.date);
-                    }}
-                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/85 transition-colors z-10 bg-white rounded-full px-2 py-1"
-                  >
-                    <Plus className="w-4 h-4" />
-                    補登
-                  </button>
-                )}
-              </div>
-              
-              <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
-                <div className="text-center">
-                  <div className="text-xs text-muted-foreground mb-1">收入</div>
-                  <div className="text-lg font-medium text-primary">
-                    {formatCurrency(day.revenue)}
-                  </div>
-                </div>
-                {hideProfit ? null : (
-                  <div className="text-center">
-                    <div className="text-xs text-muted-foreground mb-1">利潤</div>
-                    <div className={`text-lg font-medium ${
-                      day.profit >= 0 ? 'text-foreground' : 'text-danger'
-                    }`}>
-                      {formatCurrency(day.profit)}
+
+                <div className="flex items-center justify-between gap-2 sm:justify-end">
+                  <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} flex-1 gap-4 sm:flex-none`}>
+                    <div className="text-center">
+                      <div className="text-[11px] text-muted-foreground">收入</div>
+                      <div className="text-sm font-semibold text-primary">{formatCurrency(day.revenue)}</div>
+                    </div>
+                    {hideProfit ? null : (
+                      <div className="text-center">
+                        <div className="text-[11px] text-muted-foreground">利潤</div>
+                        <div className={`text-sm font-semibold ${day.profit >= 0 ? 'text-foreground' : 'text-danger'}`}>
+                          {formatCurrency(day.profit)}
+                        </div>
+                      </div>
+                    )}
+                    <div className="text-center">
+                      <div className="text-[11px] text-muted-foreground">成交</div>
+                      <div className="text-sm font-semibold text-foreground">{day.deals}</div>
                     </div>
                   </div>
-                )}
-                <div className="text-center">
-                  <div className="text-xs text-muted-foreground mb-1">成交</div>
-                  <div className="text-lg font-medium text-secondary">
-                    {day.deals}
-                  </div>
+
+                  {!isFuture && canAddRevenue && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onAddRevenue(day.date);
+                      }}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-primary transition-colors hover:bg-primary/10"
+                      title="補登收入"
+                      aria-label={`${formatDate(day.date)}補登收入`}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* 互動次數統計 */}
-              {interactionButtons.length > 0 && !isFuture && (
-                <div className="mt-3 pt-3 border-t border-primary/10">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <span>互動：</span>
-                    {Object.values(day.interactions).some(count => count > 0) ? (
-                      // 有互動記錄：顯示各類互動次數
-                      interactionButtons
-                        .filter(button => (day.interactions[button.id] || 0) > 0)
-                        .map((button, index, filteredArray) => {
-                          const count = day.interactions[button.id] || 0;
-                          return (
-                            <span key={button.id} className="text-foreground">
-                              {button.label} <span className="font-medium">{count}</span>
-                              {index < filteredArray.length - 1 && <span className="mx-1">•</span>}
-                            </span>
-                          );
-                        })
-                    ) : (
-                      // 無互動記錄：顯示提示
-                      <span className="text-muted-foreground italic">當日無任何互動記錄</span>
-                    )}
-                  </div>
+              {showInteractions && interactionButtons.length > 0 && !isFuture && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  <span>互動</span>
+                  {Object.values(day.interactions).some((count) => count > 0) ? (
+                    interactionButtons
+                      .filter((button) => (day.interactions[button.id] || 0) > 0)
+                      .map((button) => (
+                        <span key={button.id} className="text-foreground">
+                          {button.label} {day.interactions[button.id] || 0}
+                        </span>
+                      ))
+                  ) : (
+                    <span>無紀錄</span>
+                  )}
                 </div>
               )}
             </div>
           );
         })}
       </div>
-      
-      {/* 總計 */}
-      {!isSingleDay && (
-        <div className="mt-4 pt-4 border-t border-primary/10">
+
+      {showTotals && !isSingleDay && (
+        <div className="border-t border-border px-4 py-3">
           <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
             <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">總收入</div>
-              <div className="text-xl font-bold text-primary">
-                {formatCurrency(dailyTotals.totalRevenue)}
-              </div>
+              <div className="text-xs text-muted-foreground">總收入</div>
+              <div className="mt-1 text-base font-semibold text-primary">{formatCurrency(dailyTotals.totalRevenue)}</div>
             </div>
             {hideProfit ? null : (
               <div className="text-center">
-                <div className="text-xs text-muted-foreground mb-1">總利潤</div>
-                <div className={`text-xl font-bold ${
-                  dailyTotals.totalProfit >= 0 ? 'text-foreground' : 'text-danger'
-                }`}>
+                <div className="text-xs text-muted-foreground">總利潤</div>
+                <div className={`mt-1 text-base font-semibold ${dailyTotals.totalProfit >= 0 ? 'text-foreground' : 'text-danger'}`}>
                   {formatCurrency(dailyTotals.totalProfit)}
                 </div>
               </div>
             )}
             <div className="text-center">
-              <div className="text-xs text-muted-foreground mb-1">總成交</div>
-              <div className="text-xl font-bold text-secondary">
-                {dailyTotals.totalDeals}
-              </div>
+              <div className="text-xs text-muted-foreground">總成交</div>
+              <div className="mt-1 text-base font-semibold text-foreground">{dailyTotals.totalDeals}</div>
             </div>
           </div>
         </div>
       )}
-      
-      {/* 提示 */}
-      <div className="mt-4 bg-soft-yellow border border-secondary/20 rounded-xl p-3 text-xs text-foreground">
-        <p className="font-semibold mb-1">💡 提示：</p>
-        <p>
-          {isSingleDay 
-            ? '點擊卡片可查看成交記錄明細。點擊「補登」可以補登收入記錄。'
-            : '點擊日期卡片可查看該日的成交記錄明細。點擊「補登」可以為指定日期補登收入記錄。'
-          }
-        </p>
-      </div>
-    </div>
+    </section>
   );
 }

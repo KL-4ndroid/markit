@@ -55,6 +55,9 @@ import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { InteractionDetailModal } from '@/components/markets/InteractionDetailModal';
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
+import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceDetailTabs';
+import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
+import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
 import { SalesPhotoEvidenceOwnerAlbumRouteSection } from '@/components/markets/SalesPhotoEvidenceOwnerAlbumRouteSection';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
@@ -69,6 +72,11 @@ import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
 import { getDealEventDate, getDealEventRevenue, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
+import {
+  getDefaultOwnerMarketWorkspaceView,
+  resolveMarketWorkspacePhase,
+  type OwnerMarketWorkspaceView,
+} from '@/lib/markets/market-workspace';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import {
   listOwnerSalesPhotoEvidenceAlbumMetadataRows,
@@ -81,6 +89,8 @@ interface PageProps {
     id?: string | string[];
   };
 }
+
+type OwnerOverviewDetail = 'performance' | 'interactions' | 'photos' | 'costs';
 
 type SalesPhotoEvidenceMarket = Market & {
   salesPhotoEvidenceRequired?: boolean;
@@ -601,13 +611,19 @@ export default function MarketDetailPage({ params }: PageProps) {
 
   // ✅ 自動營業狀態（響應式）- 三種狀態：'not-started' | 'operating' | 'ended'
   const [operatingPhase, setOperatingPhase] = useState<'not-started' | 'operating' | 'ended'>('not-started');
+  const [isOperatingPhaseReady, setIsOperatingPhaseReady] = useState(false);
+  const [ownerWorkspaceView, setOwnerWorkspaceView] = useState<OwnerMarketWorkspaceView | null>(null);
+  const [ownerOverviewDetail, setOwnerOverviewDetail] = useState<OwnerOverviewDetail>('performance');
 
   // ✅ 自動判斷營業階段
   const checkOperatingStatus = useCallback(() => {
     if (!market) {
       setOperatingPhase('not-started');
+      setIsOperatingPhaseReady(false);
       return;
     }
+
+    setIsOperatingPhaseReady(true);
     
     // ✅ 使用本地日期，避免時區問題
     const now = new Date();
@@ -686,11 +702,26 @@ export default function MarketDetailPage({ params }: PageProps) {
   
   // ✅ 向後兼容：保留 isOperating 變數
   const isOperating = operatingPhase === 'operating';
+  const marketWorkspacePhase = resolveMarketWorkspacePhase({
+    operatingPhase,
+    dates: market?.dates,
+    startDate: market?.startDate,
+    endDate: market?.endDate,
+    marketStatus: market?.status,
+  });
 
   // ✅ 當 market 數據變化時，立即重新判斷營業狀態
   useEffect(() => {
     checkOperatingStatus();
   }, [market, checkOperatingStatus]);
+
+  useEffect(() => {
+    if (!isOperatingPhaseReady || ownerWorkspaceView !== null) return;
+    setOwnerWorkspaceView(getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase));
+  }, [isOperatingPhaseReady, marketWorkspacePhase, ownerWorkspaceView]);
+
+  const resolvedOwnerWorkspaceView = ownerWorkspaceView
+    ?? getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase);
 
   // ✅ 每分鐘自動更新一次營業狀態
   useEffect(() => {
@@ -1128,13 +1159,14 @@ export default function MarketDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="gradient-header pt-12 pb-8 px-6 rounded-b-[2rem]">
-        <div className="max-w-lg mx-auto">
+      <header className="border-b border-primary/20 bg-primary px-4 pb-5 pt-8">
+        <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3 flex-1">
               <button
                 onClick={() => router.back()}
                 className="text-white hover:opacity-80 transition-opacity"
+                aria-label="返回市集列表"
               >
                 <ArrowLeft className="w-6 h-6" />
               </button>
@@ -1180,22 +1212,91 @@ export default function MarketDetailPage({ params }: PageProps) {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-6 -mt-4">
+      <main className="mx-auto max-w-5xl px-4 pb-6">
+        <MarketWorkspaceNavigation
+          value={resolvedOwnerWorkspaceView}
+          onChange={setOwnerWorkspaceView}
+          ariaLabel="老闆市集工作台"
+          items={[
+            { id: 'live', label: '現場', icon: Store, badge: salesPhotoEvidenceFlow.pendingCount },
+            { id: 'overview', label: '總覽', icon: BarChart3 },
+            { id: 'manage', label: '管理', icon: ClipboardCheck },
+          ]}
+        />
+
+        <MarketWorkspaceSummary
+          phase={marketWorkspacePhase}
+          operatingTime={market.operatingStartTime && market.operatingEndTime
+            ? `${market.operatingStartTime}–${market.operatingEndTime}`
+            : null}
+          items={resolvedOwnerWorkspaceView === 'manage'
+            ? [
+                { label: '市集狀態', value: getStatusText(market.status) },
+                {
+                  label: '固定成本',
+                  value: formatCurrency(
+                    (market.boothCost || 0) +
+                    (market.tableFree ? 0 : (market.tableRental || 0)) +
+                    (market.chairFree ? 0 : (market.chairRental || 0)) +
+                    (market.umbrellaFree ? 0 : (market.umbrellaRental || 0))
+                  ),
+                },
+                { label: '成交照片', value: salesPhotoEvidenceRequired ? '需要' : '不需要' },
+              ]
+            : resolvedOwnerWorkspaceView === 'overview'
+              ? [
+                  { label: '總收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
+                  {
+                    label: '淨利潤',
+                    value: formatCurrency(
+                      (market.totalProfit || 0) -
+                      (market.boothCost || 0) -
+                      (market.tableFree ? 0 : (market.tableRental || 0)) -
+                      (market.chairFree ? 0 : (market.chairRental || 0)) -
+                      (market.umbrellaFree ? 0 : (market.umbrellaRental || 0))
+                    ),
+                  },
+                  { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
+                ]
+              : [
+                  { label: '收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
+                  { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
+                  { label: '待補照片', value: salesPhotoEvidenceFlow.pendingCount },
+                ]}
+        />
+
+        {resolvedOwnerWorkspaceView === 'overview' && (
+          <MarketWorkspaceDetailTabs
+            value={ownerOverviewDetail}
+            onChange={setOwnerOverviewDetail}
+            ariaLabel="總覽詳細資料"
+            items={[
+              { id: 'performance', label: '每日表現', icon: Calendar },
+              { id: 'interactions', label: '顧客互動', icon: TrendingUp },
+              { id: 'photos', label: '成交照片', icon: Camera },
+              { id: 'costs', label: '成本設備', icon: DollarSign },
+            ]}
+          />
+        )}
+
+        {resolvedOwnerWorkspaceView === 'live' && !isOperating && (
+          <div className="mb-4 flex items-start gap-3 rounded-lg border border-border bg-white px-4 py-3 text-sm text-muted-foreground">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+            <span>目前不在營業時段，交易功能會在營業期間顯示。</span>
+          </div>
+        )}
         {/* 營業中時的操作區 - 根據自動判斷顯示 */}
-        {isOperating && (
-          <>
+        {resolvedOwnerWorkspaceView === 'live' && isOperating && (
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
             {/* 1. 互動記錄按鈕 */}
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
-              <h2 className="text-lg font-medium flex items-center gap-2 text-foreground mb-4">
+            <section className="rounded-lg border border-border bg-white p-4 lg:col-start-2 lg:row-start-1">
+              <h2 className="mb-3 flex items-center gap-2 text-base font-medium text-foreground">
                 <TrendingUp className="w-5 h-5 text-primary" />
                 記錄互動
               </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                記錄顧客互動行為，幫助分析顧客偏好
-              </p>
               <InteractionButtons 
                 marketId={marketId}
                 onInteractionRecorded={() => {
@@ -1203,25 +1304,40 @@ export default function MarketDetailPage({ params }: PageProps) {
                   window.dispatchEvent(new Event('interaction-recorded'));
                 }}
               />
+            </section>
+
+            <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
+              <TransactionWorkspace
+                marketId={marketId}
+                salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
+                pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
+                onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
+                salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+                onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+              />
             </div>
 
-            <TransactionWorkspace
-              marketId={marketId}
-              salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
-              pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
-              onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
-              salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
-              onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
-            />
-          </>
+            <div className="lg:col-start-2 lg:row-start-2">
+              <DailyTransactionLog
+                marketId={marketId}
+                limit={5}
+                showSummary={false}
+                title="最近紀錄"
+                onViewAll={() => {
+                  setOwnerOverviewDetail('performance');
+                  setOwnerWorkspaceView('overview');
+                }}
+              />
+            </div>
+          </div>
         )}
 
         {/* ✅ 當日流水帳 - 營業中或已結束時顯示（僅員工模式） */}
         {/* 老闆模式不顯示流水帳 */}
 
         {/* 3. 營業狀態卡片 - 自動判斷（折疊）- 營業中時隱藏 */}
-        {operatingPhase !== 'operating' && (
-          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+        {resolvedOwnerWorkspaceView === 'manage' && operatingPhase !== 'operating' && (
+          <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
             <button
               onClick={() => setIsOperatingStatusCollapsed(!isOperatingStatusCollapsed)}
               className="w-full flex items-center justify-between mb-4"
@@ -1358,12 +1474,12 @@ export default function MarketDetailPage({ params }: PageProps) {
                 })()}
               </>
             )}
-          </div>
+          </section>
         )}
 
         {/* 4. 報名狀態 Stepper - 營業中時完全隱藏 */}
-        {!isOperating && (
-          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+        {resolvedOwnerWorkspaceView === 'manage' && !isOperating && (
+          <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-foreground">報名狀態</h2>
           </div>
@@ -1524,20 +1640,13 @@ export default function MarketDetailPage({ params }: PageProps) {
               </button>
             </div>
 
-            {/* 提示 */}
-            <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 text-xs text-foreground">
-              <p className="font-semibold mb-1">💡 提示：</p>
-              <p>
-                點擊任意狀態可快速切換。需設定為「已繳費」或「如期舉行」才能自動營業。
-              </p>
-            </div>
           </div>
-          </div>
+          </section>
         )}
 
         {/* 7. 每日收入統計（多天市集才顯示） */}
-        {!isOperating && (
-        <section className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+        {resolvedOwnerWorkspaceView === 'manage' && !isOperating && (
+        <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
           <div className="mb-4 flex items-start gap-3">
             <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Camera className="h-5 w-5" />
@@ -1580,6 +1689,7 @@ export default function MarketDetailPage({ params }: PageProps) {
         </section>
         )}
 
+        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'photos' && (
         <SalesPhotoEvidenceOwnerAlbumRouteSection
           actorRole={isStaff ? 'staff' : 'owner'}
           ownerId={ownerSalesPhotoEvidenceAlbumOwnerId}
@@ -1591,90 +1701,40 @@ export default function MarketDetailPage({ params }: PageProps) {
           onRefresh={loadOwnerSalesPhotoEvidenceAlbumRows}
           className="mb-6"
         />
+        )}
 
+        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'performance' && (
         <DailyRevenueStats
           market={market}
           onAddRevenue={handleOpenAddRevenue}
           onDateClick={handleDateClick}
+          showTotals={false}
         />
+        )}
 
+        {resolvedOwnerWorkspaceView === 'manage' && (
+        <div className="mx-auto max-w-3xl">
         <MarketFieldOpsSection
           marketId={marketId}
           canManageFieldNotes={true}
           canManageChecklist={true}
           canToggleChecklistItem={true}
         />
+        </div>
+        )}
 
         {/* 6. 即時統計 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'interactions' && (
+        <section className="mb-4 rounded-lg border border-border bg-white p-4">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
+            <h2 className="flex items-center gap-2 text-base font-medium text-foreground">
               <BarChart3 className="w-5 h-5 text-primary" />
-              {market.startDate === market.endDate ? '即時統計' : '總計統計'}
+              互動摘要
             </h2>
-            {market.startDate !== market.endDate && (
-              <div className="text-xs text-muted-foreground">
-                {(() => {
-                  // ✅ 修復：使用 dates 陣列的實際天數，而非計算 startDate 到 endDate 的天數
-                  const actualDays = market.dates && market.dates.length > 0 
-                    ? market.dates.length 
-                    : (() => {
-                        // 降級：如果沒有 dates 陣列，使用舊邏輯（連續日期）
-                        const start = new Date(market.startDate);
-                        const end = new Date(market.endDate);
-                        return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-                      })();
-                  return `共 ${actualDays} 天`;
-                })()}
-              </div>
-            )}
+            <span className="text-sm font-semibold text-foreground">
+              {stats?.totalInteractions ?? interactionEvents.length} 次
+            </span>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-primary/10 rounded-xl p-4">
-              <div className="text-2xl font-medium text-primary">
-                {formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0)}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">總收入</div>
-            </div>
-            <div className="bg-soft-green rounded-xl p-4">
-              <div className="text-2xl font-medium text-foreground">
-                {formatCurrency((() => {
-                  // ✅ 計算淨利潤：總利潤 - 攤位費 - 設備租賃費用
-                  const totalProfit = market.totalProfit || 0;
-                  const boothCost = market.boothCost || 0;
-                  const tableRental = market.tableFree ? 0 : (market.tableRental || 0);
-                  const chairRental = market.chairFree ? 0 : (market.chairRental || 0);
-                  const umbrellaRental = market.umbrellaFree ? 0 : (market.umbrellaRental || 0);
-                  const equipmentCost = tableRental + chairRental + umbrellaRental;
-                  
-                  return totalProfit - boothCost - equipmentCost;
-                })())}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">淨利潤</div>
-            </div>
-            <div className="bg-secondary/10 rounded-xl p-4">
-              <div className="text-2xl font-medium text-secondary">
-                {stats?.totalDeals ?? market.totalDeals ?? 0}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">成交數</div>
-            </div>
-            <div className="bg-soft-pink rounded-xl p-4">
-              <div className="text-2xl font-medium text-foreground">
-                {formatCurrency((() => {
-                  // ✅ 總支出：攤位費 + 設備租賃費用
-                  const boothCost = market.boothCost || 0;
-                  const tableRental = market.tableFree ? 0 : (market.tableRental || 0);
-                  const chairRental = market.chairFree ? 0 : (market.chairRental || 0);
-                  const umbrellaRental = market.umbrellaFree ? 0 : (market.umbrellaRental || 0);
-                  const equipmentCost = tableRental + chairRental + umbrellaRental;
-                  
-                  return boothCost + equipmentCost;
-                })())}
-              </div>
-              <div className="text-sm text-muted-foreground mt-1">總支出</div>
-            </div>
-          </div>
-
           {/* 互動次數統計（C2.19B：從 dailyStats projection 讀取） */}
           {(stats?.totalInteractions ?? interactionEvents.length) > 0 && (
             <div className="mt-4 pt-4 border-t border-primary/10">
@@ -1713,13 +1773,22 @@ export default function MarketDetailPage({ params }: PageProps) {
               </div>
             </div>
           )}
-        </div>
+          {(stats?.totalInteractions ?? interactionEvents.length) === 0 && (
+            <div className="rounded-lg bg-background px-4 py-8 text-center text-sm text-muted-foreground">
+              目前沒有顧客互動紀錄
+            </div>
+          )}
+        </section>
+        )}
 
 
 
         {/* 8. 成本明細 - ✅ 員工模式下隱藏 */}
-        {!isStaff && (
-          <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+        {(
+          resolvedOwnerWorkspaceView === 'manage' ||
+          (resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'costs')
+        ) && (
+          <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
             <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-foreground">
               <DollarSign className="w-5 h-5 text-primary" />
               成本明細
@@ -1826,11 +1895,12 @@ export default function MarketDetailPage({ params }: PageProps) {
               </span>
             </div>
           </div>
-        </div>
+        </section>
         )}
 
         {/* 5. 今日時間軸（折疊） */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+        {resolvedOwnerWorkspaceView === 'manage' && (
+        <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
           <button
             onClick={() => setIsTimelineCollapsed(!isTimelineCollapsed)}
             className="w-full flex items-center justify-between"
@@ -2024,10 +2094,11 @@ export default function MarketDetailPage({ params }: PageProps) {
             )}
           </div>
           )}
-        </div>
+        </section>
+        )}
         
         {/* 顧客行為分析區塊 */}
-        {interactionEvents.length > 0 && (
+        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'interactions' && interactionEvents.length > 0 && (
           <>
             <div className="mb-4">
               <h2 className="text-xl font-medium text-foreground flex items-center gap-2">
@@ -2062,18 +2133,18 @@ export default function MarketDetailPage({ params }: PageProps) {
 
 
         {/* 次要操作 */}
-        {market.status !== 'cancelled' && market.status !== 'completed' && (
-          <div className="space-y-2">
+        {resolvedOwnerWorkspaceView === 'manage' && market.status !== 'cancelled' && market.status !== 'completed' && (
+          <div className="mx-auto max-w-3xl space-y-2">
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-full bg-soft-pink text-danger px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors flex items-center justify-center gap-2"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-danger/20 bg-soft-pink px-6 py-3 text-danger transition-colors hover:bg-soft-pink/80"
             >
               <Trash2 className="w-5 h-5" />
               刪除記錄
             </button>
           </div>
         )}
-      </div>
+      </main>
 
       {/* 狀態變更確認對話框 */}
       {showStatusChangeConfirm && isMounted && pendingStatus && createPortal(

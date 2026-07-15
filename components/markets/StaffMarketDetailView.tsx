@@ -5,12 +5,12 @@
  * - 市集基本資訊（名稱、日期、地點）
  * - 營業狀態和時間軸
  * - 每日收入明細（物理隱藏利潤，與老闆的 DailyRevenueStats 結構一致）
- * - 租賃設備資訊（攤位費、設備、保證金）
+ * - 租賃設備資訊（設備提供狀態、保證金）
  * - 員工核心工作功能（互動記錄、快速新增收入、快速交易、流水帳）
  *
  * 隱藏的功能（與老闆差異）：
  * - 編輯按鈕
- * - 成本明細（攤位費仍可見於「費用資訊」）
+ * - 承租設備狀態（保留既有員工資料脫敏）
  * - 報名狀態管理
  * - 刪除/取消功能
  * - 顧客行為分析（互動偏好圖表）
@@ -65,6 +65,8 @@ import { AddRevenueDialog } from '@/components/markets/AddRevenueDialog';
 import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { EditMarketForm } from '@/components/markets/EditMarketForm';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
+import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
+import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -73,6 +75,12 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { getActiveDealEventsForMarket } from '@/lib/events/active-event-service';
 import { getDealEventDate } from '@/lib/markets/event-view-utils';
+import {
+  getDefaultStaffMarketWorkspaceView,
+  resolveMarketWorkspacePhase,
+  type MarketWorkspacePhase,
+  type StaffMarketWorkspaceView,
+} from '@/lib/markets/market-workspace';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import type { Market, Event, DealClosedPayload } from '@/types/db';
@@ -165,6 +173,20 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
 
   const operatingStatus = getOperatingStatus();
   const isOperating = operatingStatus.status === 'operating';
+  const workspacePhase: MarketWorkspacePhase = resolveMarketWorkspacePhase({
+    operatingPhase: isOperating
+      ? 'operating'
+      : operatingStatus.status === 'closed'
+        ? 'ended'
+        : 'not-started',
+    dates: market.dates,
+    startDate: market.startDate,
+    endDate: market.endDate,
+    marketStatus: market.status,
+  });
+  const [workspaceView, setWorkspaceView] = useState<StaffMarketWorkspaceView>(() =>
+    getDefaultStaffMarketWorkspaceView(workspacePhase)
+  );
   const salesPhotoEvidenceRequired = Boolean(market.salesPhotoEvidenceRequired);
   const addRevenueSalesPhotoEvidenceContext = {
     ownerId: market.relationship_owner_id ?? market.owner_id ?? userRole.ownerId ?? null,
@@ -250,13 +272,13 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
 
   // ✅ 員工端總計改用 dailyStats 算出（C3.4 reset 過的 market.total* 為 0）
   // useMarketStatsFromProjection 從 db.dailyStats 加總，與老闆頁同來源
-  useMarketStatsFromProjection(market);
+  const stats = useMarketStatsFromProjection(market);
 
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header - 員工模式紫色漸變 */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 pt-12 pb-8 px-6 rounded-b-[2rem]">
-        <div className="max-w-lg mx-auto">
+      <header className="border-b border-primary/20 bg-primary px-4 pb-5 pt-8">
+        <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3 flex-1">
               <button
@@ -304,23 +326,56 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-6 -mt-4">
+      <main className="mx-auto max-w-5xl px-4 pb-6">
+        <MarketWorkspaceNavigation
+          value={workspaceView}
+          onChange={setWorkspaceView}
+          ariaLabel="員工市集工作台"
+          items={[
+            { id: 'live', label: '現場', icon: Store, badge: salesPhotoEvidenceFlow.pendingCount },
+            { id: 'records', label: '紀錄', icon: Clock },
+            { id: 'tasks', label: '任務', icon: ClipboardCheck },
+          ]}
+        />
+
+        <MarketWorkspaceSummary
+          phase={workspacePhase}
+          operatingTime={market.operatingStartTime && market.operatingEndTime
+            ? `${market.operatingStartTime}–${market.operatingEndTime}`
+            : null}
+          items={workspaceView === 'tasks'
+            ? [
+                { label: '開始', value: market.operatingStartTime || '--' },
+                { label: '結束', value: market.operatingEndTime || '--' },
+                { label: '待補照片', value: salesPhotoEvidenceFlow.pendingCount },
+              ]
+            : [
+                { label: '收入', value: formatCurrency(stats?.totalRevenue ?? 0), emphasis: true },
+                { label: '成交', value: stats?.totalDeals ?? 0 },
+                { label: '待補照片', value: salesPhotoEvidenceFlow.pendingCount },
+              ]}
+        />
+
+        {workspaceView === 'live' && !isOperating && (
+          <div className="mb-4 flex items-start gap-3 rounded-lg border border-border bg-white px-4 py-3 text-sm text-muted-foreground">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+            <span>目前不在營業時段，交易功能會在營業期間顯示。</span>
+          </div>
+        )}
+
         {/* ✅ 營業中時的操作區 - 員工核心工作功能 */}
-        {isOperating && (
-          <>
+        {workspaceView === 'live' && isOperating && (
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
             {/* 1. 互動記錄按鈕 */}
             {canRecordInteraction && (
-              <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
-                <h2 className="text-lg font-medium flex items-center gap-2 text-foreground mb-4">
+              <section className="rounded-lg border border-border bg-white p-4 lg:col-start-2 lg:row-start-1">
+                <h2 className="mb-3 flex items-center gap-2 text-base font-medium text-foreground">
                   <TrendingUp className="w-5 h-5 text-primary" />
                   記錄互動
                 </h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  記錄顧客互動行為，幫助分析顧客偏好
-                </p>
                 <InteractionButtons
                   marketId={marketId}
                   onInteractionRecorded={() => {
@@ -328,10 +383,11 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
                     window.dispatchEvent(new Event('interaction-recorded'));
                   }}
                 />
-              </div>
+              </section>
             )}
 
             {canRecordDeal && (
+              <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
               <TransactionWorkspace
                 marketId={marketId}
                 salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
@@ -341,29 +397,52 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
                 onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
                 hideProfit
               />
+              </div>
             )}
-          </>
+
+            <div className="lg:col-start-2 lg:row-start-2">
+              <DailyTransactionLog
+                marketId={marketId}
+                allowDelete={canDeleteOwnRecord}
+                deleteActorId={deleteActorId}
+                deleteSameDayOnly={canDeleteOwnRecord}
+                limit={5}
+                showSummary={false}
+                title="最近紀錄"
+                onViewAll={() => setWorkspaceView('records')}
+              />
+            </div>
+          </div>
         )}
         
         {/* ✅ 當日流水帳 - 營業中或已結束時顯示 */}
-        {(operatingStatus.status === 'operating' || operatingStatus.status === 'closed') && (
+        {workspaceView === 'records' && (
+          <div className="mx-auto max-w-3xl">
           <DailyTransactionLog
             marketId={marketId}
             allowDelete={canDeleteOwnRecord}
             deleteActorId={deleteActorId}
             deleteSameDayOnly={canDeleteOwnRecord}
+            showSummary
+            title="交易紀錄"
           />
+          </div>
         )}
 
-        <MarketFieldOpsSection
-          marketId={marketId}
-          canManageFieldNotes={canManageFieldNotes}
-          canManageChecklist={canManageChecklist}
-          canToggleChecklistItem={canToggleChecklistItem}
-        />
+        {(workspaceView === 'records' || workspaceView === 'tasks') && (
+          <div className="mx-auto max-w-3xl">
+          <MarketFieldOpsSection
+            marketId={marketId}
+            canManageFieldNotes={canManageFieldNotes}
+            canManageChecklist={canManageChecklist}
+            canToggleChecklistItem={canToggleChecklistItem}
+          />
+          </div>
+        )}
         
         {/* 營業狀態卡片 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+        {workspaceView === 'tasks' && (
+        <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-foreground">營業狀態</h2>
             <div className={`px-4 py-2 rounded-full flex items-center gap-2 font-medium text-sm ${operatingStatus.color}`}>
@@ -458,20 +537,27 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
               </p>
             </div>
           )}
-        </div>
+        </section>
+        )}
 
         {/* 每日收入明細 - 與老闆頁 DailyRevenueStats 同結構，物理隱藏利潤 */}
+        {workspaceView === 'records' && (
+        <div className="mx-auto max-w-3xl">
         <DailyRevenueStats
           market={market}
           hideProfit={true}
           onAddRevenue={handleOpenAddRevenue}
           onDateClick={handleDateClick}
           canAddRevenue={canRecordDeal}
+          showTotals={false}
         />
+        </div>
+        )}
 
         {/* 承租設備 */}
-        <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
-          <h2 className="text-lg font-medium text-foreground mb-4">承租設備</h2>
+        {workspaceView === 'tasks' && (
+        <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
+          <h2 className="mb-4 text-base font-medium text-foreground">承租設備</h2>
           <div className="space-y-3">
             {/* 保證金 */}
             {market.deposit && market.deposit > 0 && (
@@ -540,19 +626,9 @@ export function StaffMarketDetailView({ market }: StaffMarketDetailViewProps) {
               </span>
             </div>
           </div>
-        </div>
-
-        {/* 提示卡片 */}
-        <div className="bg-primary/10 border border-primary/20 rounded-[1.5rem] p-6 text-center">
-          <AlertCircle className="w-12 h-12 text-primary mx-auto mb-3 opacity-50" />
-          <p className="text-sm text-foreground font-medium mb-1">
-            員工模式
-          </p>
-          <p className="text-xs text-muted-foreground">
-            您正在以員工身份查看此市集，部分功能和數據已隱藏
-          </p>
-        </div>
-      </div>
+        </section>
+        )}
+      </main>
 
       {/* 補登收入對話框（透過 DailyRevenueStats 觸發） */}
       <AddRevenueDialog

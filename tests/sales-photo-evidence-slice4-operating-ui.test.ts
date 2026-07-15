@@ -47,7 +47,11 @@ runTest('operating card is UI-only and has owner/staff modes', () => {
 
 runTest('owner operating screen shows compact photo status and keeps setting outside checkout', () => {
   assert.match(ownerPageSource, /import \{ TransactionWorkspace \}/);
-  const operatingBlock = section(ownerPageSource, '{isOperating && (', '/* 3. 營業狀態卡片');
+  const operatingBlock = section(
+    ownerPageSource,
+    "{resolvedOwnerWorkspaceView === 'live' && isOperating && (",
+    '/* 3. 營業狀態卡片'
+  );
   assert.match(operatingBlock, /<TransactionWorkspace/);
   assert.match(operatingBlock, /salesPhotoEvidenceRequired=\{salesPhotoEvidenceRequired\}/);
   assert.match(operatingBlock, /pendingPhotoCount=\{salesPhotoEvidenceFlow\.pendingCount\}/);
@@ -56,7 +60,7 @@ runTest('owner operating screen shows compact photo status and keeps setting out
   assert.doesNotMatch(operatingBlock, /sale_photo_evidence|uploadEvidence|getUserMedia|signedUrl|signed_url/i);
 
   const settingsBlock = section(ownerPageSource, '/* 7. 每日收入統計', '<DailyRevenueStats');
-  assert.match(settingsBlock, /\{!isOperating && \(/);
+  assert.match(settingsBlock, /resolvedOwnerWorkspaceView === 'manage' && !isOperating/);
   assert.match(settingsBlock, /onClick=\{handleToggleSalesPhotoEvidence\}/);
   assert.match(workspaceSource, /本場需拍照/);
   assert.doesNotMatch(workspaceSource, /role="switch"|onTogglePhotoRequirement/);
@@ -65,7 +69,11 @@ runTest('owner operating screen shows compact photo status and keeps setting out
 runTest('staff operating screen shows read-only indicator and never receives a toggle handler', () => {
   assert.match(staffViewSource, /import \{ TransactionWorkspace \}/);
   assert.match(staffViewSource, /const salesPhotoEvidenceRequired = Boolean\(market\.salesPhotoEvidenceRequired\)/);
-  const operatingBlock = section(staffViewSource, '{isOperating && (', '<MarketFieldOpsSection');
+  const operatingBlock = section(
+    staffViewSource,
+    "{workspaceView === 'live' && isOperating && (",
+    '當日流水帳 - 營業中或已結束時顯示'
+  );
   assert.match(operatingBlock, /<TransactionWorkspace/);
   assert.match(operatingBlock, /salesPhotoEvidenceRequired=\{salesPhotoEvidenceRequired\}/);
   assert.match(operatingBlock, /pendingPhotoCount=\{salesPhotoEvidenceFlow\.pendingCount\}/);

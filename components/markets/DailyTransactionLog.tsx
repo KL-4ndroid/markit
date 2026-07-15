@@ -37,6 +37,10 @@ interface DailyTransactionLogProps {
   deleteActorId?: string;
   deleteSameDayOnly?: boolean;
   date?: string; // 可選：指定日期，預設為今天
+  limit?: number;
+  showSummary?: boolean;
+  title?: string;
+  onViewAll?: () => void;
 }
 
 interface LogEntry {
@@ -56,6 +60,10 @@ export function DailyTransactionLog({
   allowDelete,
   deleteActorId,
   deleteSameDayOnly,
+  limit,
+  showSummary = true,
+  title = '當日流水帳',
+  onViewAll,
 }: DailyTransactionLogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -216,12 +224,14 @@ export function DailyTransactionLog({
     setShowDeleteConfirm(true);
   };
 
+  const visibleLogs = typeof limit === 'number' ? logs.slice(0, limit) : logs;
+
   if (isLoading) {
     return (
-      <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
-        <h2 className="text-lg font-medium flex items-center gap-2 text-foreground mb-4">
+      <div className="mb-4 rounded-lg border border-border bg-white p-4">
+        <h2 className="mb-4 flex items-center gap-2 text-base font-medium text-foreground">
           <Clock className="w-5 h-5 text-primary" />
-          當日流水帳
+          {title}
         </h2>
         <div className="text-center py-8">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -232,12 +242,12 @@ export function DailyTransactionLog({
   }
 
   return (
-    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6 mb-6">
+    <section className="mb-4 rounded-lg border border-border bg-white p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
+        <h2 className="flex items-center gap-2 text-base font-medium text-foreground">
           <Clock className="w-5 h-5 text-primary" />
-          當日流水帳
+          {title}
         </h2>
         <div className="text-xs text-muted-foreground">
           {new Date(getTargetDate()).toLocaleDateString('zh-TW', { 
@@ -248,35 +258,34 @@ export function DailyTransactionLog({
       </div>
 
       {/* 統計摘要 */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-primary/10 rounded-xl p-3 text-center">
-          <div className="text-lg font-bold text-primary">{totalDeals}</div>
+      {showSummary && <div className="mb-4 grid grid-cols-3 divide-x divide-border border-y border-border">
+        <div className="p-3 text-center">
+          <div className="text-base font-semibold text-primary">{totalDeals}</div>
           <div className="text-xs text-muted-foreground mt-1">成交</div>
         </div>
-        <div className="bg-soft-green rounded-xl p-3 text-center">
-          <div className="text-lg font-bold text-foreground">{totalInteractions}</div>
+        <div className="p-3 text-center">
+          <div className="text-base font-semibold text-foreground">{totalInteractions}</div>
           <div className="text-xs text-muted-foreground mt-1">互動</div>
         </div>
-        <div className="bg-secondary/10 rounded-xl p-3 text-center">
-          <div className="text-lg font-bold text-secondary">{formatCurrency(totalRevenue)}</div>
+        <div className="p-3 text-center">
+          <div className="truncate text-base font-semibold text-foreground">{formatCurrency(totalRevenue)}</div>
           <div className="text-xs text-muted-foreground mt-1">收入</div>
         </div>
-      </div>
+      </div>}
 
       {/* 流水帳列表 */}
       {logs.length === 0 ? (
-        <div className="bg-background rounded-xl p-8 text-center">
+        <div className="rounded-lg bg-background p-8 text-center">
           <Package className="w-12 h-12 text-primary mx-auto mb-3 opacity-30" />
           <p className="text-sm text-muted-foreground">今日尚無交易記錄</p>
-          <p className="text-xs text-muted-foreground mt-1">開始記錄互動和成交吧！</p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-[400px] overflow-y-auto">
-          {logs.map((log) => (
+        <div className="max-h-[400px] divide-y divide-border overflow-y-auto">
+          {visibleLogs.map((log) => (
             <div
               key={log.id}
-              className={`group flex items-center justify-between p-3 rounded-xl transition-all hover:bg-background ${
-                log.type === 'deal' ? 'bg-primary/5' : 'bg-white border border-primary/10'
+              className={`group flex items-center justify-between p-3 transition-colors hover:bg-background ${
+                log.type === 'deal' ? 'bg-primary/5' : 'bg-white'
               }`}
             >
               <div className="flex items-center gap-3 flex-1">
@@ -302,7 +311,7 @@ export function DailyTransactionLog({
                 {canDeleteDailyLogEntry(allowDelete) && (
                   <button
                     onClick={() => openDeleteConfirm(log)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg hover:bg-red-50 text-red-500"
+                    className="rounded-lg p-2 text-red-500 opacity-100 transition-opacity hover:bg-red-50 sm:opacity-0 sm:group-hover:opacity-100"
                     title="刪除記錄"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -316,11 +325,15 @@ export function DailyTransactionLog({
 
       {/* 底部提示 */}
       {logs.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-primary/10">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>共 {logs.length} 筆記錄</span>
-            <span>實時更新</span>
-          </div>
+        <div className="mt-3 flex min-h-9 items-center justify-between gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
+          <span>{visibleLogs.length < logs.length ? `顯示最近 ${visibleLogs.length} 筆` : `共 ${logs.length} 筆記錄`}</span>
+          {visibleLogs.length < logs.length && onViewAll ? (
+            <button type="button" onClick={onViewAll} className="min-h-9 px-2 font-medium text-primary hover:text-primary/80">
+              查看全部
+            </button>
+          ) : (
+            <span>即時更新</span>
+          )}
         </div>
       )}
 
@@ -410,6 +423,6 @@ export function DailyTransactionLog({
         </>,
         document.body
       )}
-    </div>
+    </section>
   );
 }
