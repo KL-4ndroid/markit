@@ -23,9 +23,9 @@ export function MarketWorkspaceNavigation<T extends string>({
   ariaLabel,
 }: MarketWorkspaceNavigationProps<T>) {
   return (
-    <nav className="sticky top-0 z-30 -mx-1 bg-atelier-canvas/95 px-1 py-3" aria-label={ariaLabel}>
+    <nav className="sticky top-0 z-30 -mx-1 bg-atelier-canvas px-1 py-3" aria-label={ariaLabel}>
       <div
-        className="grid grid-cols-3 gap-1 rounded-card border border-atelier-line bg-atelier-paper p-1"
+        className="grid grid-cols-3 gap-1 rounded-card bg-atelier-paper p-1 shadow-atelier"
         role="tablist"
         aria-label={ariaLabel}
       >
@@ -42,8 +42,8 @@ export function MarketWorkspaceNavigation<T extends string>({
               onClick={() => onChange(item.id)}
               className={`relative flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-control px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                 isActive
-                  ? 'bg-atelier-ink text-white'
-                  : 'text-atelier-muted hover:bg-atelier-canvas hover:text-atelier-ink'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-atelier-muted hover:bg-atelier-sage-soft hover:text-atelier-ink'
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -51,7 +51,7 @@ export function MarketWorkspaceNavigation<T extends string>({
               {typeof item.badge === 'number' && item.badge > 0 && (
                 <span
                   className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] leading-none ${
-                    isActive ? 'bg-white text-atelier-ink' : 'bg-danger text-white'
+                    isActive ? 'bg-atelier-paper text-primary' : 'bg-atelier-rose text-white'
                   }`}
                   aria-label={`${item.badge} 項待處理`}
                 >

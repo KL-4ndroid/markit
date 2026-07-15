@@ -90,6 +90,11 @@ const config: Config = {
         'atelier-clay': "rgb(var(--atelier-clay) / <alpha-value>)",
         'atelier-blue': "rgb(var(--atelier-blue) / <alpha-value>)",
         'atelier-rose': "rgb(var(--atelier-rose) / <alpha-value>)",
+        'atelier-sage-soft': "rgb(var(--atelier-sage-soft) / <alpha-value>)",
+        'atelier-apricot-soft': "rgb(var(--atelier-apricot-soft) / <alpha-value>)",
+        'atelier-blue-soft': "rgb(var(--atelier-blue-soft) / <alpha-value>)",
+        'atelier-rose-soft': "rgb(var(--atelier-rose-soft) / <alpha-value>)",
+        'atelier-sun': "rgb(var(--atelier-sun) / <alpha-value>)",
       },
       borderRadius: {
         'xl': '1rem',
@@ -107,6 +112,8 @@ const config: Config = {
       },
       boxShadow: {
         atelier: 'var(--atelier-shadow)',
+        'atelier-key': 'var(--atelier-key-shadow)',
+        'atelier-lift': 'var(--atelier-lift-shadow)',
       },
     },
   },

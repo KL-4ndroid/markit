@@ -51,7 +51,7 @@ function ProtectedBottomNavigation() {
   return (
     <nav
       aria-label="主要導覽"
-      className={`fixed left-0 right-0 z-50 border-t border-atelier-line bg-atelier-paper/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] ease-in-out ${
+      className={`fixed left-0 right-0 z-50 bg-atelier-paper/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgb(78_68_53_/_0.08)] ease-in-out ${
         isNavVisible ? 'bottom-0 translate-y-0' : '-bottom-24 translate-y-24'
       }`}
     >
@@ -70,8 +70,8 @@ function ProtectedBottomNavigation() {
               <span
                 className={`flex h-8 min-w-10 items-center justify-center rounded-control px-2 transition-colors ${
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'bg-transparent text-atelier-muted group-hover:bg-atelier-canvas group-hover:text-atelier-ink'
+                    ? 'bg-atelier-sage-soft text-primary shadow-sm'
+                    : 'bg-transparent text-atelier-muted group-hover:bg-atelier-blue-soft group-hover:text-atelier-ink'
                 }`}
               >
                 <Icon className="h-5 w-5" aria-hidden="true" />
@@ -79,7 +79,7 @@ function ProtectedBottomNavigation() {
               <span className={`text-xs ${isActive ? 'font-semibold text-primary' : 'text-atelier-muted'}`}>
                 {item.label}
               </span>
-              {isActive && <span className="absolute bottom-0 h-0.5 w-5 rounded-full bg-atelier-clay" aria-hidden="true" />}
+              {isActive && <span className="absolute bottom-0 h-1 w-1 rounded-full bg-atelier-clay" aria-hidden="true" />}
             </Link>
           );
         })}

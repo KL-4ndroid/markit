@@ -38,6 +38,13 @@ interface CartItem {
   quantity: number;
 }
 
+const PRODUCT_SURFACES = [
+  'bg-atelier-sage-soft',
+  'bg-atelier-apricot-soft',
+  'bg-atelier-blue-soft',
+  'bg-atelier-rose-soft',
+] as const;
+
 export function QuickTransactionGrid({
   marketId,
   isExpanded = true,
@@ -156,7 +163,7 @@ export function QuickTransactionGrid({
 
       {products && products.length > 0 ? (
         <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {products.map(product => {
+          {products.map((product, productIndex) => {
             const quantity = product.id ? cart.get(product.id)?.quantity ?? 0 : 0;
             return (
               <button
@@ -164,10 +171,10 @@ export function QuickTransactionGrid({
                 type="button"
                 onClick={() => addToCart(product)}
                 disabled={isProcessing}
-                className={`relative min-h-28 rounded-control border p-3 text-left transition-colors active:bg-primary/10 disabled:opacity-50 ${
+                className={`relative min-h-28 rounded-control p-3 text-left shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm disabled:opacity-50 ${
                   quantity > 0
-                    ? 'border-primary bg-primary/10'
-                    : 'border-atelier-line bg-atelier-paper hover:bg-atelier-canvas'
+                    ? 'bg-atelier-sage-soft ring-2 ring-primary'
+                    : `${PRODUCT_SURFACES[productIndex % PRODUCT_SURFACES.length]} hover:brightness-[0.98]`
                 }`}
               >
                 {quantity > 0 && (
@@ -195,7 +202,7 @@ export function QuickTransactionGrid({
       )}
 
       {cart.size > 0 && (
-        <div className="mb-5 border-t border-atelier-line pt-4">
+        <div className="-mx-4 mb-5 bg-atelier-blue-soft/45 px-4 py-4 sm:-mx-5 sm:px-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-medium text-foreground">本次商品</h3>
             <button
@@ -209,9 +216,9 @@ export function QuickTransactionGrid({
             </button>
           </div>
 
-          <div className="divide-y divide-atelier-line border-y border-atelier-line">
+          <div className="space-y-2">
             {Array.from(cart.values()).map(item => (
-              <div key={item.product.id} className="flex min-h-16 items-center justify-between gap-3 py-3">
+              <div key={item.product.id} className="flex min-h-16 items-center justify-between gap-3 rounded-control bg-atelier-paper px-3 py-2 shadow-sm">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">{item.product.name}</p>
                   <p className="text-xs tabular-nums text-muted-foreground">
@@ -223,7 +230,7 @@ export function QuickTransactionGrid({
                     type="button"
                     onClick={() => changeQuantity(item.product.id!, -1)}
                     disabled={isProcessing}
-                    className="flex h-11 w-11 items-center justify-center rounded-control border border-atelier-line bg-atelier-paper text-atelier-ink hover:bg-atelier-canvas disabled:opacity-50"
+                    className="flex h-11 w-11 items-center justify-center rounded-control bg-atelier-canvas text-atelier-ink transition-colors hover:bg-atelier-rose-soft disabled:opacity-50"
                     aria-label={`減少 ${item.product.name} 數量`}
                   >
                     <Minus className="h-4 w-4" />
@@ -247,7 +254,8 @@ export function QuickTransactionGrid({
         </div>
       )}
 
-      <div className="mb-5 flex items-center justify-between rounded-card bg-atelier-ink px-4 py-4 text-white">
+      <div className="relative mb-5 flex items-center justify-between overflow-hidden rounded-card bg-deep px-4 py-4 text-white shadow-atelier">
+        <span className="absolute inset-y-0 left-0 w-1.5 bg-atelier-clay" aria-hidden="true" />
         <span className="text-sm font-medium text-white/75">交易總額</span>
         <span className="text-2xl font-semibold tabular-nums">NT${totalAmount.toLocaleString()}</span>
       </div>
@@ -273,8 +281,8 @@ export function QuickTransactionGrid({
   if (embedded) return content;
 
   return (
-    <section className="mb-6 overflow-hidden rounded-card border border-atelier-line bg-atelier-paper">
-      <div className="flex items-center justify-between gap-3 border-b border-atelier-line px-5 py-4">
+    <section className="mb-6 overflow-hidden rounded-card bg-atelier-paper shadow-atelier">
+      <div className="flex items-center justify-between gap-3 bg-atelier-apricot-soft/65 px-5 py-4">
         <h2 className="flex items-center gap-2 text-base font-medium text-foreground">
           <ShoppingCart className="h-5 w-5 text-primary" />
           商品銷售

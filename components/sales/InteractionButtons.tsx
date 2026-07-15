@@ -12,6 +12,13 @@ interface InteractionButtonsProps {
   onInteractionRecorded?: () => void;
 }
 
+const INTERACTION_SURFACES = [
+  'bg-atelier-sage-soft hover:bg-atelier-sage-soft/75',
+  'bg-atelier-apricot-soft hover:bg-atelier-apricot-soft/75',
+  'bg-atelier-blue-soft hover:bg-atelier-blue-soft/75',
+  'bg-atelier-rose-soft hover:bg-atelier-rose-soft/75',
+] as const;
+
 export function InteractionButtons({ marketId, onInteractionRecorded }: InteractionButtonsProps) {
   const [buttons, setButtons] = useState<InteractionButton[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -71,16 +78,16 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
   return (
     <div>
       <div className="relative grid grid-cols-3 gap-2">
-        {buttons.map(button => (
+        {buttons.map((button, buttonIndex) => (
           <button
             key={button.id}
             type="button"
             onClick={() => void handleInteraction(button.id, button.label)}
             disabled={isProcessing}
-            className={`relative min-h-24 overflow-hidden rounded-control border p-3 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+            className={`relative min-h-24 overflow-hidden rounded-control p-3 shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${
               clickingButton === button.id
-                ? 'border-status-good-border bg-status-good-bg'
-                : 'border-atelier-line bg-atelier-paper hover:bg-atelier-canvas active:bg-primary/10'
+                ? 'bg-status-good-bg ring-2 ring-status-good-border'
+                : INTERACTION_SURFACES[buttonIndex % INTERACTION_SURFACES.length]
             }`}
           >
             {clickingButton === button.id && (

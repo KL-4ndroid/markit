@@ -158,8 +158,8 @@ export function DailyRevenueStats({
   }, [focusedWindowStartDate]);
   
   return (
-    <section className="mb-4 overflow-hidden rounded-card border border-atelier-line bg-atelier-paper">
-      <div className="flex min-h-14 items-center justify-between border-b border-atelier-line px-4 py-3 sm:px-5">
+    <section className="mb-5 overflow-hidden rounded-card bg-atelier-paper shadow-atelier">
+      <div className="flex min-h-16 items-center justify-between bg-atelier-blue-soft/75 px-4 py-4 sm:px-5">
         <div>
           <p className="flex items-center gap-1.5 text-xs font-semibold text-atelier-blue">
             <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
@@ -169,14 +169,18 @@ export function DailyRevenueStats({
             {isSingleDay ? '收入明細' : '每日表現'}
           </h2>
         </div>
-        {!isSingleDay && <div className="text-xs text-atelier-muted">共 {dateRange.length} 天</div>}
+        {!isSingleDay && (
+          <div className="rounded-full bg-atelier-paper/80 px-3 py-1 text-xs font-medium text-atelier-blue">
+            共 {dateRange.length} 天
+          </div>
+        )}
       </div>
 
       <div
         ref={dailyListRef}
-        className={`divide-y divide-atelier-line ${dailyData.length > 5 ? 'max-h-[28rem] overflow-y-auto overscroll-contain' : ''}`}
+        className={`relative py-1 ${dailyData.length > 5 ? 'max-h-[28rem] overflow-y-auto overscroll-contain' : ''}`}
       >
-        {dailyData.map((day) => {
+        {dailyData.map((day, dayIndex) => {
           const isToday = day.date === today;
           const isFuture = day.date > today;
 
@@ -185,95 +189,106 @@ export function DailyRevenueStats({
               key={day.date}
               ref={day.date === focusedWindowStartDate ? focusedDayRef : null}
               onClick={() => !isFuture && onDateClick(day.date)}
-              className={`px-4 py-4 transition-colors sm:px-5 ${
-                isFuture ? 'cursor-not-allowed bg-atelier-canvas opacity-60' : 'cursor-pointer hover:bg-atelier-canvas'
-              } ${isToday ? 'bg-status-good-bg' : 'bg-atelier-paper'}`}
+              className={`relative px-4 py-4 transition-colors sm:px-5 ${
+                isFuture ? 'cursor-not-allowed opacity-55' : 'cursor-pointer hover:bg-atelier-canvas/70'
+              } ${isToday ? 'bg-atelier-sage-soft/65' : 'bg-atelier-paper'}`}
             >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2">
+              {dayIndex < dailyData.length - 1 && (
+                <span className="absolute bottom-0 left-[1.22rem] top-8 w-px bg-atelier-line sm:left-[1.47rem]" aria-hidden="true" />
+              )}
+              <span
+                className={`absolute left-4 top-[1.35rem] h-3 w-3 rounded-full ring-4 ring-atelier-paper sm:left-5 ${
+                  isToday ? 'bg-primary' : isFuture ? 'bg-atelier-line' : 'bg-atelier-sun'
+                }`}
+                aria-hidden="true"
+              />
+
+              <div className="pl-7 sm:pl-8">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium text-foreground">{formatDate(day.date)}</span>
                   {isToday && <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-white">今天</span>}
-                  {isFuture && <span className="rounded-full bg-atelier-line px-2 py-0.5 text-xs text-atelier-muted">尚未開始</span>}
+                  {isFuture && <span className="rounded-full bg-atelier-canvas px-2 py-0.5 text-xs text-atelier-muted">尚未開始</span>}
                 </div>
 
-                <div className="flex items-center justify-between gap-2 sm:justify-end">
-                  <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} flex-1 gap-4 sm:flex-none`}>
-                    <div className="text-center">
-                      <div className="text-[11px] text-muted-foreground">收入</div>
-                      <div className="text-sm font-semibold text-primary">{formatCurrency(day.revenue)}</div>
-                    </div>
-                    {hideProfit ? null : (
-                      <div className="text-center">
-                        <div className="text-[11px] text-muted-foreground">利潤</div>
-                        <div className={`text-sm font-semibold ${day.profit >= 0 ? 'text-foreground' : 'text-danger'}`}>
-                          {formatCurrency(day.profit)}
-                        </div>
-                      </div>
-                    )}
-                    <div className="text-center">
-                      <div className="text-[11px] text-muted-foreground">成交</div>
-                      <div className="text-sm font-semibold text-foreground">{day.deals}</div>
+                <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[11px] text-muted-foreground">當日收入</div>
+                    <div className="mt-0.5 break-words text-xl font-semibold leading-tight tabular-nums text-primary">
+                      {formatCurrency(day.revenue)}
                     </div>
                   </div>
 
-                  {!isFuture && canAddRevenue && (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onAddRevenue(day.date);
-                      }}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-atelier-line text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      title="補登收入"
-                      aria-label={`${formatDate(day.date)}補登收入`}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {showInteractions && interactionButtons.length > 0 && !isFuture && (
-                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-atelier-line pt-3 text-xs text-atelier-muted">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>互動</span>
-                  {Object.values(day.interactions).some((count) => count > 0) ? (
-                    interactionButtons
-                      .filter((button) => (day.interactions[button.id] || 0) > 0)
-                      .map((button) => (
-                        <span key={button.id} className="text-foreground">
-                          {button.label} {day.interactions[button.id] || 0}
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-atelier-muted">
+                      {hideProfit ? null : (
+                        <span>
+                          利潤 <strong className={`font-semibold tabular-nums ${day.profit >= 0 ? 'text-foreground' : 'text-danger'}`}>
+                            {formatCurrency(day.profit)}
+                          </strong>
                         </span>
-                      ))
-                  ) : (
-                    <span>無紀錄</span>
-                  )}
+                      )}
+                      <span>
+                        成交 <strong className="font-semibold tabular-nums text-foreground">{day.deals} 筆</strong>
+                      </span>
+                    </div>
+
+                    {!isFuture && canAddRevenue && (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onAddRevenue(day.date);
+                        }}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-atelier-apricot-soft text-atelier-clay shadow-sm transition-colors hover:bg-atelier-clay hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        title="補登收入"
+                        aria-label={`${formatDate(day.date)}補登收入`}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              )}
+
+                {showInteractions && interactionButtons.length > 0 && !isFuture && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 rounded-control bg-atelier-blue-soft/70 px-3 py-2 text-xs text-atelier-muted">
+                    <TrendingUp className="h-3.5 w-3.5 text-atelier-blue" />
+                    <span>互動</span>
+                    {Object.values(day.interactions).some((count) => count > 0) ? (
+                      interactionButtons
+                        .filter((button) => (day.interactions[button.id] || 0) > 0)
+                        .map((button) => (
+                          <span key={button.id} className="font-medium text-foreground">
+                            {button.label} {day.interactions[button.id] || 0}
+                          </span>
+                        ))
+                    ) : (
+                      <span>無紀錄</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
 
       {showTotals && !isSingleDay && (
-        <div className="border-t border-atelier-line bg-atelier-canvas px-4 py-4">
-          <div className={`grid ${hideProfit ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
-            <div className="text-center">
-              <div className="text-xs text-muted-foreground">總收入</div>
-              <div className="mt-1 text-base font-semibold text-primary">{formatCurrency(dailyTotals.totalRevenue)}</div>
-            </div>
+        <div className="flex flex-wrap items-end justify-between gap-4 bg-atelier-apricot-soft/70 px-4 py-4 sm:px-5">
+          <div>
+            <div className="text-xs text-muted-foreground">這場市集合計</div>
+            <div className="mt-1 text-xl font-semibold tabular-nums text-primary">{formatCurrency(dailyTotals.totalRevenue)}</div>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-atelier-muted">
             {hideProfit ? null : (
-              <div className="text-center">
-                <div className="text-xs text-muted-foreground">總利潤</div>
-                <div className={`mt-1 text-base font-semibold ${dailyTotals.totalProfit >= 0 ? 'text-foreground' : 'text-danger'}`}>
+              <span>
+                總利潤 <strong className={`font-semibold tabular-nums ${dailyTotals.totalProfit >= 0 ? 'text-foreground' : 'text-danger'}`}>
                   {formatCurrency(dailyTotals.totalProfit)}
-                </div>
-              </div>
+                </strong>
+              </span>
             )}
-            <div className="text-center">
-              <div className="text-xs text-muted-foreground">總成交</div>
-              <div className="mt-1 text-base font-semibold text-foreground">{dailyTotals.totalDeals}</div>
-            </div>
+            <span>
+              總成交 <strong className="font-semibold tabular-nums text-foreground">{dailyTotals.totalDeals} 筆</strong>
+            </span>
           </div>
         </div>
       )}

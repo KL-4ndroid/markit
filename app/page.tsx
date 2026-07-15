@@ -13,6 +13,7 @@ import {
   Store,
   WifiOff,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
@@ -50,6 +51,20 @@ function formatDateLabel(date: Date): string {
   }).format(date);
 }
 
+function getGreeting(date: Date): string {
+  const hour = date.getHours();
+  if (hour < 11) return '早安，慢慢準備好今天';
+  if (hour < 17) return '午安，現場辛苦了';
+  return '晚安，今天也辛苦了';
+}
+
+function getCompanionMessage(phase?: TodayMarketPhase): string {
+  if (phase === 'operating') return '我們一起把現場的每筆成交收好。';
+  if (phase === 'ended') return '今天的記錄都在這裡，放心收攤吧。';
+  if (phase === 'preparing') return '出攤前的大小事，我們一起顧好。';
+  return '沒有出攤的日子，也可以照自己的步調整理。';
+}
+
 function formatDateKey(dateKey: string): string {
   const [year, month, day] = dateKey.split('-').map(Number);
   return new Intl.DateTimeFormat('zh-TW', {
@@ -67,9 +82,9 @@ function marketTimeLabel(market: Market): string | null {
 }
 
 function phaseClasses(phase: TodayMarketPhase): string {
-  if (phase === 'operating') return 'border-status-good-border bg-status-good-bg text-status-good-text';
-  if (phase === 'ended') return 'border-atelier-line bg-atelier-canvas text-atelier-muted';
-  return 'border-status-warn-border bg-status-warn-bg text-status-warn-text';
+  if (phase === 'operating') return 'bg-primary text-white';
+  if (phase === 'ended') return 'bg-atelier-blue-soft text-atelier-blue';
+  return 'bg-atelier-apricot-soft text-atelier-clay';
 }
 
 interface TaskRowProps {
@@ -78,12 +93,20 @@ interface TaskRowProps {
   description: string;
   actionLabel?: string;
   onClick?: () => void;
+  tone?: 'sage' | 'apricot' | 'blue' | 'rose';
 }
 
-function TaskRow({ icon, title, description, actionLabel, onClick }: TaskRowProps) {
+const TASK_TONE_CLASSES = {
+  sage: 'bg-atelier-sage-soft text-primary',
+  apricot: 'bg-atelier-apricot-soft text-atelier-clay',
+  blue: 'bg-atelier-blue-soft text-atelier-blue',
+  rose: 'bg-atelier-rose-soft text-atelier-rose',
+} as const;
+
+function TaskRow({ icon, title, description, actionLabel, onClick, tone = 'sage' }: TaskRowProps) {
   const content = (
     <>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control border border-atelier-line bg-atelier-paper text-primary">
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control ${TASK_TONE_CLASSES[tone]}`}>
         {icon}
       </span>
       <span className="min-w-0 flex-1 text-left">
@@ -96,14 +119,14 @@ function TaskRow({ icon, title, description, actionLabel, onClick }: TaskRowProp
   );
 
   if (!onClick) {
-    return <div className="flex min-h-16 items-center gap-3 py-3">{content}</div>;
+    return <div className="flex min-h-16 items-center gap-3 rounded-card bg-atelier-paper px-3 py-3 shadow-atelier">{content}</div>;
   }
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-16 w-full items-center gap-3 rounded-control px-2 py-3 outline-none transition-colors hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
+      className="flex min-h-16 w-full items-center gap-3 rounded-card bg-atelier-paper px-3 py-3 shadow-atelier outline-none transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-atelier-lift focus-visible:ring-2 focus-visible:ring-primary"
     >
       {content}
     </button>
@@ -118,24 +141,34 @@ interface TodayMarketCardProps {
 
 function TodayMarketCard({ item, isStaff, onOpen }: TodayMarketCardProps) {
   const timeLabel = marketTimeLabel(item.market);
+  const surfaceClass = item.phase === 'operating'
+    ? 'bg-atelier-sage-soft'
+    : item.phase === 'ended'
+      ? 'bg-atelier-blue-soft'
+      : 'bg-atelier-apricot-soft';
+  const companionLine = item.phase === 'operating'
+    ? '現場辛苦了，今天的每筆記錄都會留在這裡。'
+    : item.phase === 'ended'
+      ? '今天辛苦了，回顧與待處理都整理好了。'
+      : '準備好了，就從這裡進入今天的市集。';
 
   return (
-    <article className="overflow-hidden rounded-card border border-atelier-line bg-atelier-paper shadow-atelier">
-      <div className={`h-1.5 ${item.phase === 'operating' ? 'bg-primary' : item.phase === 'ended' ? 'bg-atelier-blue' : 'bg-atelier-clay'}`} aria-hidden="true" />
+    <article className={`overflow-hidden rounded-card shadow-atelier-lift ${surfaceClass}`}>
       <div className="p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${phaseClasses(item.phase)}`}>
+          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${phaseClasses(item.phase)}`}>
             {item.phaseLabel}
           </span>
           <h2 className="mt-3 break-words text-[1.4rem] font-semibold leading-tight text-atelier-ink">{item.market.name}</h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-atelier-muted">{companionLine}</p>
         </div>
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-primary/10 text-primary">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control bg-atelier-paper/80 text-primary shadow-atelier">
           <Store className="h-5 w-5" aria-hidden="true" />
         </span>
       </div>
 
-      <div className="mt-5 grid gap-2.5 border-t border-atelier-line pt-4 text-sm text-atelier-muted sm:grid-cols-2">
+      <div className="mt-5 grid gap-2.5 text-sm text-atelier-muted sm:grid-cols-2">
         <p className="flex min-w-0 items-center gap-2">
           <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="truncate">{item.market.location || '尚未設定地點'}</span>
@@ -150,7 +183,7 @@ function TodayMarketCard({ item, isStaff, onOpen }: TodayMarketCardProps) {
 
       <Button
         onClick={onOpen}
-        className="mt-5 min-h-12 w-full bg-atelier-ink hover:bg-atelier-ink/90 sm:w-auto"
+        className="mt-5 min-h-12 w-full bg-primary shadow-atelier hover:bg-primary/90 sm:w-auto"
         leadingIcon={<ArrowRight className="h-4 w-4" aria-hidden="true" />}
       >
         {getTodayMarketActionLabel(item.phase, isStaff)}
@@ -240,35 +273,51 @@ export default function HomePage() {
   const staffWorkspaceName = userRole.ownerEmail
     ? `${userRole.ownerEmail.split('@')[0]} 團隊`
     : '團隊工作區';
+  const greeting = getGreeting(now);
+  const companionMessage = getCompanionMessage(todayView.primaryMarket?.phase);
 
   return (
     <div className="min-h-screen bg-atelier-canvas text-atelier-ink">
-      <div className="flex h-1.5" aria-hidden="true">
-        <span className="w-[68%] bg-primary" />
-        <span className="w-[18%] bg-atelier-clay" />
-        <span className="flex-1 bg-atelier-blue" />
-      </div>
-      <header className="border-b border-atelier-line bg-atelier-paper px-5 pb-6 pt-[calc(1.25rem+env(safe-area-inset-top))]">
-        <div className="mx-auto flex max-w-3xl items-start justify-between gap-4">
-          <div className="min-w-0">
+      <header className="overflow-hidden bg-atelier-paper px-5 pb-7 pt-[calc(1.25rem+env(safe-area-inset-top))]">
+        <div className="mx-auto max-w-3xl">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
             {isStaff ? (
               <p className="truncate text-xs font-semibold text-primary">{staffWorkspaceName}</p>
             ) : (
               <p className="truncate text-xs font-semibold text-primary">{ownerBrandName}</p>
             )}
-            <h1 className="mt-2 text-[1.75rem] font-semibold leading-none text-atelier-ink">今日</h1>
-            <p className="mt-2 text-sm text-atelier-muted">{formatDateLabel(now)}</p>
-            {isStaff && <div className="mt-3"><StaffBadge tone="default" /></div>}
+
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1">
+              <SyncStatusIndicator tone="default" />
+              <IconButton
+                label="開啟更多設定"
+                tooltip="更多"
+                className="bg-atelier-canvas text-atelier-muted shadow-sm hover:bg-atelier-sage-soft hover:text-atelier-ink"
+                icon={<Settings className="h-5 w-5" aria-hidden="true" />}
+                onClick={() => router.push('/settings')}
+              />
+            </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1">
-            <SyncStatusIndicator tone="default" />
-            <IconButton
-              label="開啟更多設定"
-              tooltip="更多"
-              className="border border-atelier-line bg-atelier-paper text-atelier-muted hover:bg-atelier-canvas hover:text-atelier-ink"
-              icon={<Settings className="h-5 w-5" aria-hidden="true" />}
-              onClick={() => router.push('/settings')}
+          <div className="mt-6 flex items-end justify-between gap-5">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-atelier-clay">{greeting}</p>
+              <h1 className="mt-1 text-[2rem] font-semibold leading-none text-atelier-ink">今日</h1>
+              <p className="mt-3 text-sm text-atelier-muted">{formatDateLabel(now)}</p>
+              <p className="mt-2 max-w-md text-sm leading-6 text-atelier-ink/75">{companionMessage}</p>
+              {isStaff && <div className="mt-3"><StaffBadge tone="default" /></div>}
+            </div>
+            <Image
+              src="/logo-alpha.png"
+              alt=""
+              width={88}
+              height={88}
+              priority
+              aria-hidden="true"
+              className="h-[4.75rem] w-[4.75rem] shrink-0 object-cover opacity-90 mix-blend-multiply sm:h-[5.5rem] sm:w-[5.5rem]"
             />
           </div>
         </div>
@@ -276,14 +325,13 @@ export default function HomePage() {
 
       <main className="mx-auto max-w-3xl px-4 pb-8 pt-7 sm:px-6">
         <section aria-labelledby="today-focus-title">
-          <div className="mb-4 flex items-end justify-between gap-4">
+          <div className="mb-4">
             <div>
             <p className="text-xs font-semibold text-atelier-clay">現在</p>
             <h2 id="today-focus-title" className="mt-1 text-lg font-semibold text-atelier-ink">
               {isStaff ? '你的今日工作' : '今天的營運重點'}
             </h2>
             </div>
-            <span className="h-px flex-1 bg-atelier-line" aria-hidden="true" />
           </div>
 
           {todayView.primaryMarket ? (
@@ -314,15 +362,15 @@ export default function HomePage() {
           <section className="mt-8" aria-labelledby="today-tasks-title">
             <div className="flex items-center gap-3">
               <h2 id="today-tasks-title" className="text-base font-semibold text-atelier-ink">待處理</h2>
-              <span className="h-px flex-1 bg-atelier-line" aria-hidden="true" />
             </div>
-            <div className="mt-2 divide-y divide-atelier-line border-y border-atelier-line">
+            <div className="mt-3 space-y-2">
               {pendingPhotoItems.length > 0 && (
                 <TaskRow
                   icon={<Camera className="h-5 w-5" aria-hidden="true" />}
                   title={`待補照片 ${pendingPhotoItems.length} 筆`}
                   description="完成今日尚未上傳的成交照片"
                   actionLabel="處理"
+                  tone="rose"
                   onClick={() => openMarket(pendingPhotoMarketId, 'pending-photos')}
                 />
               )}
@@ -334,6 +382,7 @@ export default function HomePage() {
                   title={status === SyncStatus.OFFLINE ? '目前離線' : status === SyncStatus.ERROR ? '同步需要重試' : `${pendingCount} 筆資料待同步`}
                   description={status === SyncStatus.OFFLINE ? '操作會先安全保存在這台裝置' : '本機資料仍在，可重新嘗試同步'}
                   actionLabel={status === SyncStatus.OFFLINE ? undefined : '重試'}
+                  tone="blue"
                   onClick={status === SyncStatus.OFFLINE ? undefined : () => void sync()}
                 />
               )}
@@ -344,15 +393,15 @@ export default function HomePage() {
         {todayView.todayMarkets.length > 1 && (
           <section className="mt-8" aria-labelledby="other-today-title">
             <h2 id="other-today-title" className="text-base font-semibold text-atelier-ink">今日其他場次</h2>
-            <div className="mt-2 divide-y divide-atelier-line border-y border-atelier-line">
+            <div className="mt-3 space-y-2">
               {todayView.todayMarkets.slice(1).map(item => (
                 <button
                   key={item.market.id ?? item.market.name}
                   type="button"
                   onClick={() => openMarket(item.market.id)}
-                  className="flex min-h-16 w-full items-center gap-3 rounded-control px-2 py-3 text-left hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
+                  className="flex min-h-16 w-full items-center gap-3 rounded-card bg-atelier-paper px-3 py-3 text-left shadow-atelier transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-atelier-lift focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${phaseClasses(item.phase)}`}>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${phaseClasses(item.phase)}`}>
                     {item.phaseLabel}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{item.market.name}</span>
@@ -363,7 +412,7 @@ export default function HomePage() {
           </section>
         )}
 
-        <section className="mt-8 border-t border-atelier-line pt-6" aria-labelledby="upcoming-title">
+        <section className="-mx-4 mt-9 bg-atelier-blue-soft/60 px-4 py-6 sm:-mx-6 sm:px-6" aria-labelledby="upcoming-title">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold text-atelier-blue">接下來</p>
@@ -372,7 +421,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => router.push('/markets')}
-              className="flex min-h-11 items-center gap-1 rounded-control px-2 text-sm font-medium text-primary hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex min-h-11 items-center gap-1 rounded-control px-2 text-sm font-medium text-primary hover:bg-atelier-paper/80 focus-visible:ring-2 focus-visible:ring-primary"
             >
               查看全部
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -380,15 +429,15 @@ export default function HomePage() {
           </div>
 
           {todayView.upcomingMarkets.length > 0 ? (
-            <div className="mt-3 divide-y divide-atelier-line border-y border-atelier-line">
+            <div className="mt-3 space-y-2">
               {todayView.upcomingMarkets.slice(0, 3).map(item => (
                 <button
                   key={item.market.id ?? `${item.market.name}-${item.nextDate}`}
                   type="button"
                   onClick={() => openMarket(item.market.id)}
-                  className="flex min-h-16 w-full items-center gap-3 rounded-control px-2 py-3 text-left hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
+                  className="flex min-h-16 w-full items-center gap-3 rounded-card bg-atelier-paper/90 px-3 py-3 text-left shadow-sm transition-colors hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <span className="flex h-10 min-w-14 shrink-0 items-center justify-center rounded-control border border-atelier-line bg-atelier-paper px-2 text-xs font-semibold text-primary">
+                  <span className="flex h-11 min-w-14 shrink-0 items-center justify-center rounded-control bg-atelier-blue-soft px-2 text-xs font-semibold text-atelier-blue">
                     {formatDateKey(item.nextDate)}
                   </span>
                   <span className="min-w-0 flex-1">

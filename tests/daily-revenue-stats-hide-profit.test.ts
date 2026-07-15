@@ -5,8 +5,8 @@
  * 由於本 codebase 採用純函式 + assert 模式（無 React Testing Library），
  * 本測試改用「讀檔案 + 字串匹配」方式驗證：
  * 1. prop interface 包含 hideProfit
- * 2. hideProfit=true 時 grid-cols 為 2
- * 3. hideProfit=false（預設）時 grid-cols 為 3
+ * 2. 每日資訊採主收入 + 次要指標的非表格式結構
+ * 3. 總計採主收入 + 次要指標的彈性結構
  * 4. 函式簽名接受 hideProfit 參數
  * 5. 老闆模式（不傳 hideProfit）行為不變
  *
@@ -52,14 +52,13 @@ runTest('hideProfit 預設值為 false（老闆模式行為不變）', () => {
   );
 });
 
-runTest('hideProfit=true 時 grid 為 grid-cols-2（每日卡片）', () => {
-  // 驗證每日卡片 grid 用動態 grid-cols-${hideProfit ? 2 : 3}
-  // 兩種寫法都可接受：template literal 或 className 字串拼接
-  const hasTemplateLiteral = /grid\s+\$\{hideProfit\s*\?\s*'grid-cols-2'\s*:\s*'grid-cols-3'\}/.test(source);
-  const hasConditionalClass = /\$\{hideProfit\s*\?\s*'grid-cols-2'\s*:\s*'grid-cols-3'\}/.test(source);
-  assert.ok(
-    hasTemplateLiteral || hasConditionalClass,
-    '每日卡片 grid 應根據 hideProfit 動態切換 grid-cols-2 / grid-cols-3'
+runTest('每日表現採主收入與次要指標的非表格式結構', () => {
+  assert.match(source, /當日收入/);
+  assert.match(source, /成交\s*<strong/);
+  assert.doesNotMatch(
+    source,
+    /\$\{hideProfit\s*\?\s*'grid-cols-2'\s*:\s*'grid-cols-3'\}/,
+    '每日表現不應退回等分表格式欄位'
   );
 });
 
@@ -74,14 +73,9 @@ runTest('hideProfit=true 時不渲染「利潤」文字（每日卡片）', () =
   );
 });
 
-runTest('hideProfit=true 時底部總計 grid 為 grid-cols-2（多日市集）', () => {
-  // 底部總計區塊也應該用動態 grid-cols
-  // 找第二個 grid-cols-2 / grid-cols-3 的條件渲染（在總計區塊）
-  const matches = source.match(/\$\{hideProfit\s*\?\s*'grid-cols-2'\s*:\s*'grid-cols-3'\}/g);
-  assert.ok(
-    matches && matches.length >= 2,
-    `底部總計也應有動態 grid-cols（每日卡片 + 總計 = 至少 2 處）`
-  );
+runTest('多日總計採主收入與次要指標的彈性結構', () => {
+  assert.match(source, /這場市集合計/);
+  assert.match(source, /flex flex-wrap items-end justify-between/);
 });
 
 runTest('hideProfit=true 時不渲染「總利潤」文字（底部總計）', () => {

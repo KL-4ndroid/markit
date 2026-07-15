@@ -282,24 +282,19 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
 
   return (
     <div className="min-h-screen bg-atelier-canvas pb-20 text-atelier-ink">
-      <div className="flex h-1.5" aria-hidden="true">
-        <span className="w-[68%] bg-primary" />
-        <span className="w-[18%] bg-atelier-clay" />
-        <span className="flex-1 bg-atelier-blue" />
-      </div>
-      <header className="border-b border-atelier-line bg-atelier-paper px-4 pb-5 pt-[calc(1rem+env(safe-area-inset-top))]">
+      <header className="bg-atelier-sage-soft/80 px-4 pb-6 pt-[calc(1rem+env(safe-area-inset-top))]">
         <div className="mx-auto max-w-5xl">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-start gap-3">
               <button
                 onClick={() => router.back()}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-atelier-line bg-atelier-paper text-atelier-muted transition-colors hover:bg-atelier-canvas hover:text-atelier-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-atelier-paper text-atelier-muted shadow-sm transition-colors hover:bg-atelier-blue-soft hover:text-atelier-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label="返回市集列表"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-primary">現場工作台</p>
+                <p className="text-xs font-semibold text-atelier-clay">今天一起把現場顧好</p>
                 <h1 className="mt-1 break-words text-2xl font-semibold leading-tight text-atelier-ink">{market.name}</h1>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-atelier-muted">
                   {/* 日期 */}
@@ -320,6 +315,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
                     <span className="truncate">{market.location}</span>
                   </div>
                 </div>
+                <p className="mt-2 text-xs leading-5 text-atelier-muted">交易、照片與待辦，都在熟悉的位置等你。</p>
               </div>
             </div>
             
@@ -329,7 +325,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
               {canEditMarketBasic && (
                 <button
                   onClick={() => setShowEditMarketForm(true)}
-                  className="flex min-h-11 items-center gap-1.5 rounded-control border border-atelier-line bg-atelier-paper px-3 text-sm font-medium text-atelier-ink transition-colors hover:bg-atelier-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="flex min-h-11 items-center gap-1.5 rounded-control bg-atelier-paper px-3 text-sm font-medium text-atelier-ink shadow-sm transition-colors hover:bg-atelier-blue-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Edit className="w-4 h-4" />
                   編輯
@@ -383,7 +379,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
           <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
             {/* 1. 互動記錄按鈕 */}
             {canRecordInteraction && (
-              <section className="rounded-card border border-atelier-line bg-atelier-paper p-4 lg:col-start-2 lg:row-start-1">
+              <section className="rounded-card bg-atelier-blue-soft/65 p-4 shadow-atelier lg:col-start-2 lg:row-start-1">
                 <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-atelier-ink">
                   <TrendingUp className="w-5 h-5 text-primary" />
                   記錄互動

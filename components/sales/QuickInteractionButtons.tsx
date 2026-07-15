@@ -1,6 +1,6 @@
 'use client';
 
-import { Delete, Loader2 } from 'lucide-react';
+import { Check, Delete, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -107,7 +107,8 @@ export function QuickInteractionButtons({
         <p className="text-sm font-medium text-atelier-ink">收款金額</p>
         <p className="text-xs text-atelier-muted">新台幣</p>
       </div>
-      <div className="relative mb-3 overflow-hidden rounded-card bg-atelier-ink px-4 py-5">
+      <div className="relative mb-4 overflow-hidden rounded-card bg-deep px-4 py-5 shadow-atelier">
+        <span className="absolute inset-y-0 left-0 w-1.5 bg-atelier-clay" aria-hidden="true" />
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 text-3xl font-semibold tabular-nums text-white sm:text-4xl">
             NT$ {amount.toLocaleString()}
@@ -116,7 +117,7 @@ export function QuickInteractionButtons({
             type="button"
             onClick={() => setDisplayAmount('0')}
             disabled={isProcessing}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-white/20 bg-white/10 text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-white/10 text-white transition-colors hover:bg-white/20 disabled:opacity-50"
             aria-label="清除金額"
           >
             <Delete className="h-5 w-5" />
@@ -124,14 +125,14 @@ export function QuickInteractionButtons({
         </div>
       </div>
 
-      <div className="mb-5 grid grid-cols-3 gap-2">
+      <div className="mb-5 grid grid-cols-3 gap-2.5">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(number => (
           <button
             key={number}
             type="button"
             onClick={() => handleNumberClick(number)}
             disabled={isProcessing}
-            className="min-h-14 rounded-control border border-atelier-line bg-atelier-paper text-xl font-semibold text-atelier-ink transition-colors hover:bg-atelier-canvas active:bg-primary/10 disabled:opacity-50"
+            className="min-h-14 rounded-control bg-atelier-paper text-xl font-semibold text-atelier-ink shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-atelier-sage-soft active:translate-y-0.5 active:shadow-sm disabled:opacity-50"
           >
             {number}
           </button>
@@ -140,7 +141,7 @@ export function QuickInteractionButtons({
           type="button"
           onClick={() => setDisplayAmount(previous => previous === '0' ? '0' : previous + '00')}
           disabled={isProcessing}
-          className="min-h-14 rounded-control border border-atelier-line bg-primary/10 text-lg font-semibold text-primary transition-colors active:bg-primary/20 disabled:opacity-50"
+          className="min-h-14 rounded-control bg-atelier-blue-soft text-lg font-semibold text-atelier-blue shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-atelier-blue-soft/70 active:translate-y-0.5 active:shadow-sm disabled:opacity-50"
         >
           00
         </button>
@@ -148,7 +149,7 @@ export function QuickInteractionButtons({
           type="button"
           onClick={() => handleNumberClick(0)}
           disabled={isProcessing}
-          className="min-h-14 rounded-control border border-atelier-line bg-atelier-paper text-xl font-semibold text-atelier-ink transition-colors hover:bg-atelier-canvas active:bg-primary/10 disabled:opacity-50"
+          className="min-h-14 rounded-control bg-atelier-paper text-xl font-semibold text-atelier-ink shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-atelier-sage-soft active:translate-y-0.5 active:shadow-sm disabled:opacity-50"
         >
           0
         </button>
@@ -156,7 +157,7 @@ export function QuickInteractionButtons({
           type="button"
           onClick={() => setDisplayAmount(previous => previous.length <= 1 ? '0' : previous.slice(0, -1))}
           disabled={isProcessing}
-          className="flex min-h-14 items-center justify-center rounded-control border border-atelier-line bg-atelier-clay/10 text-atelier-clay transition-colors active:bg-atelier-clay/20 disabled:opacity-50"
+          className="flex min-h-14 items-center justify-center rounded-control bg-atelier-apricot-soft text-atelier-clay shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-atelier-rose-soft active:translate-y-0.5 active:shadow-sm disabled:opacity-50"
           aria-label="刪除最後一位數字"
         >
           <Delete className="h-5 w-5" aria-hidden="true" />
@@ -175,7 +176,7 @@ export function QuickInteractionButtons({
         disabled={isProcessing || amount <= 0}
         className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100"
       >
-        {isProcessing && <Loader2 className="h-5 w-5 animate-spin" />}
+        {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" aria-hidden="true" />}
         {isProcessing ? '正在記錄交易' : `完成收款 NT$${amount.toLocaleString()}`}
       </button>
     </div>

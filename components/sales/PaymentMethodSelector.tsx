@@ -41,10 +41,10 @@ export function PaymentMethodSelector({
             aria-checked={selected}
             onClick={() => onChange(method)}
             disabled={disabled}
-            className={`flex min-h-12 items-center justify-center gap-2 rounded-control border px-2 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-control px-2 py-2 text-xs font-medium transition-[transform,box-shadow,background-color] duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${
               selected
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-atelier-line bg-atelier-paper text-atelier-muted hover:bg-atelier-canvas hover:text-atelier-ink'
+                ? 'bg-primary text-white shadow-atelier-key'
+                : 'bg-atelier-canvas text-atelier-muted shadow-sm hover:bg-atelier-sage-soft hover:text-atelier-ink active:translate-y-0.5'
             }`}
           >
             <Icon className="h-4 w-4 shrink-0" />
