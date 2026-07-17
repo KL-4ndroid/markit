@@ -144,6 +144,71 @@ export const BUILT_IN_THEME_PRESETS: readonly ThemePreset[] = [
       danger: [190, 83, 104], warn: [222, 178, 91], info: [123, 119, 164],
     }),
   },
+  {
+    id: 'honey-milk-tea',
+    name: '蜂蜜奶茶',
+    description: '焦糖棕、蜂蜜金與奶油米白，像午後咖啡店一樣溫暖。',
+    palette: paletteFromRgb({
+      primary: [132, 95, 64], secondary: [204, 146, 83], background: [250, 246, 239],
+      card: [255, 252, 247], foreground: [62, 49, 39], mutedForeground: [108, 91, 75],
+      softPink: [246, 229, 222], softGreen: [231, 238, 224], softYellow: [250, 235, 199],
+      homeEndedCard: [239, 229, 216],
+      upcomingSection: [247, 240, 229], upcomingDateBadge: [237, 224, 205],
+      danger: [174, 86, 76], warn: [196, 147, 62], info: [110, 134, 132],
+    }),
+  },
+  {
+    id: 'hydrangea-rain',
+    name: '紫陽雨日',
+    description: '雨霧紫、繡球粉與微冷白，安靜又帶一點浪漫。',
+    palette: paletteFromRgb({
+      primary: [99, 88, 150], secondary: [190, 125, 159], background: [248, 247, 252],
+      card: [255, 254, 255], foreground: [52, 48, 64], mutedForeground: [99, 92, 116],
+      softPink: [246, 228, 238], softGreen: [231, 239, 236], softYellow: [250, 243, 220],
+      homeEndedCard: [234, 231, 246],
+      upcomingSection: [243, 241, 249], upcomingDateBadge: [230, 227, 244],
+      danger: [177, 79, 103], warn: [205, 166, 78], info: [111, 124, 165],
+    }),
+  },
+  {
+    id: 'forest-market',
+    name: '森町綠意',
+    description: '森林綠、木質棕與葉影柔色，適合自然系品牌。',
+    palette: paletteFromRgb({
+      primary: [68, 105, 82], secondary: [177, 132, 81], background: [245, 248, 244],
+      card: [253, 255, 252], foreground: [43, 55, 48], mutedForeground: [86, 103, 93],
+      softPink: [243, 228, 226], softGreen: [220, 237, 224], softYellow: [248, 240, 211],
+      homeEndedCard: [222, 235, 226],
+      upcomingSection: [234, 242, 235], upcomingDateBadge: [217, 233, 222],
+      danger: [170, 83, 73], warn: [201, 164, 72], info: [91, 128, 119],
+    }),
+  },
+  {
+    id: 'sea-salt-soda',
+    name: '海鹽蘇打',
+    description: '海水藍、珊瑚杏與清透白，帶來輕盈的夏日感。',
+    palette: paletteFromRgb({
+      primary: [65, 113, 132], secondary: [218, 151, 113], background: [245, 249, 250],
+      card: [253, 255, 255], foreground: [42, 55, 60], mutedForeground: [84, 105, 112],
+      softPink: [248, 229, 231], softGreen: [226, 240, 235], softYellow: [252, 244, 218],
+      homeEndedCard: [220, 237, 241],
+      upcomingSection: [233, 244, 247], upcomingDateBadge: [215, 235, 240],
+      danger: [183, 83, 89], warn: [218, 177, 79], info: [79, 132, 151],
+    }),
+  },
+  {
+    id: 'berry-caramel',
+    name: '莓果焦糖',
+    description: '莓果紅、焦糖橙與暖粉背景，成熟而有手作質感。',
+    palette: paletteFromRgb({
+      primary: [135, 73, 82], secondary: [194, 127, 74], background: [251, 247, 245],
+      card: [255, 253, 251], foreground: [58, 44, 47], mutedForeground: [105, 86, 90],
+      softPink: [246, 223, 228], softGreen: [229, 238, 228], softYellow: [250, 237, 211],
+      homeEndedCard: [241, 226, 229],
+      upcomingSection: [248, 239, 239], upcomingDateBadge: [239, 221, 226],
+      danger: [173, 72, 82], warn: [204, 153, 65], info: [123, 123, 145],
+    }),
+  },
 ];
 
 const ALIASED_VARIABLES: Partial<Record<ThemeTokenKey, readonly string[]>> = {

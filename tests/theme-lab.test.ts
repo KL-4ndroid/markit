@@ -36,6 +36,13 @@ assert.equal(sanitizeThemePalette(legacyPalette)?.upcomingSection, '#EFF3F4');
 assert.equal(sanitizeThemePalette(legacyPalette)?.upcomingDateBadge, '#E7EFF1');
 assert.ok(getContrastRatio('#3A3A3A', '#FAFAF8') >= 4.5);
 assert.ok(BUILT_IN_THEME_PRESETS.some((preset) => preset.id === 'warm-twilight'));
+assert.equal(BUILT_IN_THEME_PRESETS.length, 9);
+for (const presetId of ['honey-milk-tea', 'hydrangea-rain', 'forest-market', 'sea-salt-soda', 'berry-caramel']) {
+  const preset = BUILT_IN_THEME_PRESETS.find((candidate) => candidate.id === presetId);
+  assert.ok(preset, `missing built-in theme preset: ${presetId}`);
+  assert.ok(getContrastRatio(preset.palette.foreground, preset.palette.background) >= 4.5);
+  assert.ok(getContrastRatio(preset.palette.mutedForeground, preset.palette.card) >= 4.5);
+}
 
 const exported = createThemeLabExport('測試色票', DEFAULT_THEME_PALETTE);
 const imported = parseThemeLabImport(JSON.stringify(exported));
