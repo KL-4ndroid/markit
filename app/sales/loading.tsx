@@ -8,7 +8,7 @@ export default function SalesLoading() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header Skeleton - 純灰階 */}
-      <div className="bg-gradient-to-br from-gray-300 to-gray-400 pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="japanese-gradient-header rounded-b-[2rem] px-6 pb-8 pt-12">
         <div className="max-w-lg mx-auto">
           <div className="h-8 w-24 bg-white/30 rounded-lg skeleton-shimmer-header mb-2"></div>
           <div className="h-4 w-40 bg-white/20 rounded skeleton-shimmer-header"></div>

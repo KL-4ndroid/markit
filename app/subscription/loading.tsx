@@ -8,7 +8,7 @@ export default function SubscriptionLoading() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header Skeleton - 純灰階 */}
-      <div className="bg-gradient-to-br from-gray-300 to-gray-400 pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="japanese-gradient-header rounded-b-[2rem] px-6 pb-8 pt-12">
         <div className="max-w-4xl mx-auto">
           <div className="w-10 h-10 bg-white/30 rounded-full mb-4 skeleton-shimmer-header" />
           <div className="w-48 h-8 bg-white/30 rounded-xl mb-2 skeleton-shimmer-header" />

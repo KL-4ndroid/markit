@@ -15,7 +15,7 @@ export function GlobalLoadingSkeleton({ message }: GlobalLoadingSkeletonProps) {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* 頂部區域骨架 */}
-      <div className="bg-gradient-to-br from-primary to-[#9BB9C0] px-6 pt-12 pb-8">
+      <div className="japanese-gradient-header px-6 pt-12 pb-8">
         {/* 標題骨架 */}
         <div className="h-8 w-32 bg-white/20 rounded-xl mb-6 animate-pulse" />
         
@@ -36,7 +36,7 @@ export function GlobalLoadingSkeleton({ message }: GlobalLoadingSkeletonProps) {
 
       {/* 快速操作按鈕骨架 */}
       <div className="px-6 -mt-6 mb-6">
-        <div className="bg-white rounded-2xl shadow-lg p-4">
+        <div className="japanese-surface-card p-4">
           <div className="grid grid-cols-4 gap-3">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="flex flex-col items-center gap-2">
@@ -81,7 +81,7 @@ function StatCardSkeleton() {
  */
 function MarketCardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
+    <div className="japanese-surface-card p-5">
       {/* 標題與日期 */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">

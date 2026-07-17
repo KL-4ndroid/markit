@@ -29,7 +29,7 @@ runTest('join route uses the lightweight auth-flow shell with AuthManager mounte
   assert.match(appChromeSource, /const isAuthFlowPublicRoute = AUTH_FLOW_PUBLIC_ROUTES\.some/);
   assert.match(
     appChromeSource,
-    /if \(isAuthFlowPublicRoute\)[\s\S]*<main>\{children\}<\/main>[\s\S]*<AppToaster \/>[\s\S]*<AuthManager \/>[\s\S]*<SessionExpiredHandler \/>/
+    /if \(isAuthFlowPublicRoute\)[\s\S]*<main(?:\s[^>]*)?>\{children\}<\/main>[\s\S]*<AppToaster \/>[\s\S]*<AuthManager \/>[\s\S]*<SessionExpiredHandler \/>/
   );
 });
 

@@ -173,7 +173,7 @@ export function SalesPhotoEvidencePendingListDialog({
           aria-labelledby="sales-photo-evidence-pending-title"
           className="pointer-events-auto relative flex h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-[2rem] bg-background shadow-2xl animate-slide-up"
         >
-        <header className="flex items-start justify-between gap-4 bg-gradient-to-br from-primary to-secondary px-6 py-6">
+        <header className="japanese-gradient-header flex items-start justify-between gap-4 px-6 py-6">
           <div>
             <h2 id="sales-photo-evidence-pending-title" className="text-xl font-medium text-white">待補照片</h2>
             <p className="mt-1 text-sm leading-relaxed text-white/80">

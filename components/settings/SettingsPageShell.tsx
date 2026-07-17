@@ -25,7 +25,7 @@ export function SettingsPageShell({
 }: SettingsPageShellProps) {
   return (
     <div className="min-h-screen bg-background">
-      <header className={`${getGradientClass(isStaff)} border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white`}>
+      <header className={`${getGradientClass(isStaff)} rounded-b-[2rem] border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier`}>
         <div className="mx-auto flex max-w-3xl items-start gap-3">
           {backHref && (
             <Link

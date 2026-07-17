@@ -87,11 +87,11 @@ export function PWAUpdatePrompt({
   return (
     <>
       {/* 背景遮罩 */}
-      <div className="fixed inset-0 z-overlay bg-black/50" />
+      <div className="fixed inset-0 z-overlay bg-deep/35 backdrop-blur-sm" />
 
       {/* 更新提示卡片 */}
       <div className="fixed inset-x-4 top-1/2 z-dialog mx-auto max-w-sm -translate-y-1/2">
-        <div className="bg-white rounded-[2rem] p-6 shadow-2xl shadow-primary/30 animate-in fade-in zoom-in duration-300">
+        <div className="japanese-surface-card rounded-[2rem] p-6 animate-in fade-in zoom-in duration-300">
           {/* 圖標 */}
           <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center">
             <RefreshCw className="w-8 h-8 text-white" />

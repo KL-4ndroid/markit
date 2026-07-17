@@ -342,6 +342,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
       <FullScreenForm
         open={isOpen}
         onClose={handleRequestClose}
+        eyebrow="市集管理"
         title="新增市集"
         description="先完成基本資料；其他設定可依主辦資訊逐項補充。"
         dismissible={!isSubmitting}
@@ -357,25 +358,33 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
         )}
       >
         <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
-          <MarketBasicFields
-            idPrefix={FIELD_PREFIX}
-            name={formData.name}
-            location={formData.location}
-            dates={formData.dates || []}
-            errors={errors}
-            disabled={isSubmitting}
-            onNameChange={value => handleChange('name', value)}
-            onLocationChange={value => handleChange('location', value)}
-            onDatesChange={value => handleChange('dates', value)}
-          />
+          <div className="japanese-surface-card p-5 sm:p-6">
+            <MarketBasicFields
+              idPrefix={FIELD_PREFIX}
+              name={formData.name}
+              location={formData.location}
+              dates={formData.dates || []}
+              errors={errors}
+              disabled={isSubmitting}
+              onNameChange={value => handleChange('name', value)}
+              onLocationChange={value => handleChange('location', value)}
+              onDatesChange={value => handleChange('dates', value)}
+            />
+          </div>
 
-          <div className="mt-7 border-t border-primary/15">
-            <p className="py-4 text-xs font-medium text-muted-foreground">可選設定</p>
+          <div className="mt-6">
+            <div className="mb-3 px-1">
+              <p className="text-sm font-semibold text-foreground">細節設定</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">需要時再展開，建立後也能回來補充。</p>
+            </div>
+
+            <div className="space-y-3">
 
             <FormSectionDisclosure
               title="成本與抽成"
               description="攤位費、保證金與營業額抽成"
               icon={DollarSign}
+              tone="yellow"
             >
               <MarketCostFields
                 idPrefix={FIELD_PREFIX}
@@ -392,6 +401,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
               title="設備"
               description="桌椅與傘具租金或免費提供狀態"
               icon={Package}
+              tone="green"
             >
               <MarketEquipmentFields
                 idPrefix={FIELD_PREFIX}
@@ -411,6 +421,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
               title="時間軸"
               description="進場、報到與營業起訖時間"
               icon={Clock}
+              tone="blue"
             >
               <MarketTimelineFields
                 idPrefix={FIELD_PREFIX}
@@ -434,6 +445,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
               title="備註"
               description="主辦規定與現場注意事項"
               icon={FileText}
+              tone="pink"
             >
               <MarketNotesField
                 idPrefix={FIELD_PREFIX}
@@ -442,6 +454,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                 onChange={value => handleChange('notes', value)}
               />
             </FormSectionDisclosure>
+            </div>
           </div>
 
           {submitError && (

@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#24381F",
+  themeColor: "#7B9FA6",
 };
 
 export default function RootLayout({
@@ -45,8 +45,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Féria 出攤筆記" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <meta name="theme-color" content="#24381F" />
-        <meta name="msapplication-TileColor" content="#24381F" />
+        <meta name="theme-color" content="#7B9FA6" />
+        <meta name="msapplication-TileColor" content="#7B9FA6" />
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body>

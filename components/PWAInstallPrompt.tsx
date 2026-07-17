@@ -104,8 +104,8 @@ export function PWAInstallPrompt({
   // iOS 安裝引導
   if (platform === 'ios') {
     return (
-      <div className="fixed inset-0 z-dialog flex items-end bg-black/50 p-4 sm:items-center sm:justify-center">
-        <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full max-w-md p-6 animate-slide-up">
+      <div className="fixed inset-0 z-dialog flex items-end bg-deep/35 p-4 backdrop-blur-sm sm:items-center sm:justify-center">
+        <div className="japanese-surface-card w-full max-w-md rounded-t-[2rem] p-6 animate-slide-up sm:rounded-[2rem]">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-foreground">安裝 Féria 到主畫面</h3>
             <button
@@ -176,7 +176,7 @@ export function PWAInstallPrompt({
   if (platform === 'android' || platform === 'desktop') {
     return (
       <div className="fixed bottom-20 left-4 right-4 z-dialog sm:left-auto sm:right-4 sm:max-w-md">
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-xl">
+        <div className="japanese-surface-card p-6">
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
               <Download className="w-6 h-6 text-white" />

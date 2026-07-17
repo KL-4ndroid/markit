@@ -9,8 +9,8 @@ export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 export type ButtonSize = 'default' | 'compact';
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-white shadow-sm shadow-primary/15 hover:bg-primary/88 hover:shadow-md focus-visible:ring-primary/35',
-  secondary: 'border border-primary/15 bg-atelier-paper text-foreground shadow-sm shadow-primary/5 hover:bg-soft-pink focus-visible:ring-primary/25',
+  primary: 'bg-primary text-white shadow-atelier-key hover:bg-primary/88 hover:shadow-atelier-lift focus-visible:ring-primary/35',
+  secondary: 'border border-primary/15 bg-atelier-paper text-foreground shadow-atelier hover:bg-soft-pink focus-visible:ring-primary/25',
   danger: 'bg-danger text-white hover:bg-danger/85 focus-visible:ring-danger/30',
   ghost: 'bg-transparent text-foreground hover:bg-muted/60 focus-visible:ring-primary/20',
 };

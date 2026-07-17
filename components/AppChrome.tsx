@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { Toaster } from 'sonner';
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -11,6 +12,13 @@ import { BottomNavigation } from '@/components/BottomNavigation';
 import { GlobalOverlayHost } from '@/components/global-overlays/GlobalOverlayHost';
 import { PWASplashScreen } from '@/components/PWASplashScreen';
 import { RegisterServiceWorker } from '@/app/register-sw';
+
+const ThemeLabGate = process.env.NODE_ENV === 'development'
+  ? dynamic(
+      () => import('@/components/dev/ThemeLabGate').then((module) => module.ThemeLabGate),
+      { ssr: false },
+    )
+  : () => null;
 
 const STANDALONE_PUBLIC_ROUTES = [
   '/demo',
@@ -43,8 +51,9 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
   if (isStandalonePublicRoute) {
     return (
       <>
-        <main>{children}</main>
+        <main className="japanese-app">{children}</main>
         <AppToaster />
+        <ThemeLabGate />
       </>
     );
   }
@@ -52,11 +61,12 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
   if (isAuthFlowPublicRoute) {
     return (
       <>
-        <main>{children}</main>
+        <main className="japanese-app">{children}</main>
         <AppToaster />
         <AuthManager />
         <SessionExpiredHandler />
         <AuthCacheBlockedDialog />
+        <ThemeLabGate />
       </>
     );
   }
@@ -66,7 +76,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <PWASplashScreen />
       <AuthGuard>
         <RoleGuard>
-          <div className="min-h-screen bg-background">
+          <div className="japanese-app min-h-screen bg-background">
             <main className="pb-24">
               {children}
             </main>
@@ -80,6 +90,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <AuthManager />
       <SessionExpiredHandler />
       <AuthCacheBlockedDialog />
+      <ThemeLabGate />
     </>
   );
 }

@@ -21,7 +21,7 @@ export function StateView({
 }: StateViewProps) {
   return (
     <div className={cn(
-      'flex flex-col items-center border border-primary/10 bg-white text-center',
+      'japanese-surface-card flex flex-col items-center text-center',
       compact ? 'gap-2 rounded-card px-4 py-5' : 'gap-3 rounded-card px-6 py-8',
       className,
     )}>

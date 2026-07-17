@@ -35,6 +35,9 @@
   --brand-soft-pink: 245 230 232;        /* #F5E6E8 */
   --brand-soft-green: 232 243 232;       /* #E8F3E8 */
   --brand-soft-yellow: 255 248 231;      /* #FFF8E7 */
+  --brand-home-ended-card: 231 239 241;  /* #E7EFF1 首頁「今日已收班」卡片 */
+  --brand-upcoming-section: 239 243 244; /* #EFF3F4 首頁「近期市集」區塊 */
+  --brand-upcoming-date-badge: 231 239 241; /* #E7EFF1 近期市集日期標籤 */
 
   /* 功能色：危險 / 提醒 / 資訊 */
   --brand-danger: 199 119 110;           /* #C7776E 乾燥玫瑰（舊 #d4183d 紅） */
@@ -102,9 +105,9 @@
   --atelier-blue-soft: 231 239 241;             /* 霧藍柔面 */
   --atelier-rose-soft: 244 229 228;             /* 玫瑰柔面 */
   --atelier-sun: 226 185 104;                   /* 日光黃點綴 */
-  --atelier-shadow: 0 10px 28px rgb(123 159 166 / 0.10);
-  --atelier-key-shadow: 0 2px 0 rgb(93 112 113 / 0.10), 0 8px 18px rgb(123 159 166 / 0.10);
-  --atelier-lift-shadow: 0 18px 42px rgb(123 159 166 / 0.15);
+  --atelier-shadow: 0 10px 28px rgb(var(--brand-primary) / 0.10);
+  --atelier-key-shadow: 0 2px 0 rgb(var(--brand-primary) / 0.10), 0 8px 18px rgb(var(--brand-primary) / 0.10);
+  --atelier-lift-shadow: 0 18px 42px rgb(var(--brand-primary) / 0.15);
 
   /* 圓角系統 */
   --radius: 1.25rem;
@@ -156,8 +159,8 @@ body {
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: rgb(var(--brand-foreground));
+  background: rgb(var(--brand-background));
   font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei',
     -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -175,6 +178,100 @@ body {
   background:
     radial-gradient(circle at 86% 12%, rgb(255 255 255 / 0.18), transparent 15rem),
     linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-primary) / 0.94) 46%, rgb(var(--brand-secondary)) 100%);
+}
+
+/* JapaneseD 全專案視覺基準。 */
+.japanese-app {
+  min-height: 100vh;
+  color: rgb(var(--brand-foreground));
+  background:
+    radial-gradient(circle at 10% 4%, rgb(var(--brand-soft-yellow) / 0.52), transparent 25rem),
+    radial-gradient(circle at 96% 20%, rgb(var(--brand-soft-green) / 0.42), transparent 30rem),
+    rgb(var(--brand-background));
+}
+
+.japanese-gradient-header {
+  background:
+    radial-gradient(circle at 86% 12%, rgb(255 255 255 / 0.18), transparent 15rem),
+    linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-primary) / 0.94) 46%, rgb(var(--brand-secondary)) 100%);
+  box-shadow: var(--atelier-lift-shadow);
+}
+
+.japanese-gradient-header-staff {
+  background:
+    radial-gradient(circle at 86% 12%, rgb(255 255 255 / 0.14), transparent 15rem),
+    linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-primary) / 0.88) 100%);
+}
+
+.japanese-surface-card {
+  border: 1px solid rgb(var(--brand-primary) / 0.12);
+  border-radius: 1.5rem;
+  background: rgb(var(--brand-card));
+  box-shadow: var(--atelier-shadow);
+}
+
+.japanese-soft-panel {
+  border: 1px solid rgb(var(--brand-primary) / 0.10);
+  border-radius: 1.25rem;
+  background: rgb(var(--brand-soft-green) / 0.58);
+}
+
+.japanese-form-scroll {
+  background:
+    radial-gradient(circle at 8% 2%, rgb(var(--brand-soft-yellow) / 0.50), transparent 20rem),
+    radial-gradient(circle at 100% 28%, rgb(var(--brand-soft-green) / 0.42), transparent 24rem),
+    rgb(var(--atelier-canvas));
+}
+
+.japanese-form-footer {
+  box-shadow: 0 -12px 30px rgb(var(--brand-primary) / 0.08);
+}
+
+.japanese-app ::selection {
+  color: rgb(var(--brand-foreground));
+  background: rgb(var(--brand-soft-pink));
+}
+
+.japanese-app :where(input, textarea, select) {
+  color: rgb(var(--brand-foreground));
+  background-color: rgb(var(--brand-card));
+}
+
+.japanese-app :where(input, textarea, select)::placeholder {
+  color: rgb(var(--brand-muted-foreground) / 0.72);
+}
+
+/* 將仍在舊頁面中的冷灰 utility 收斂到 JapaneseD 暖中性色。 */
+.japanese-app :where(.text-gray-800, .text-gray-700) {
+  color: rgb(var(--brand-foreground));
+}
+
+.japanese-app :where(.text-gray-600, .text-gray-500) {
+  color: rgb(var(--brand-muted-foreground));
+}
+
+.japanese-app .text-gray-300 {
+  color: rgb(var(--brand-neutral-stripe-dark));
+}
+
+.japanese-app .bg-gray-50 {
+  background-color: rgb(var(--brand-background));
+}
+
+.japanese-app .bg-gray-100 {
+  background-color: rgb(var(--brand-muted));
+}
+
+.japanese-app .bg-gray-200 {
+  background-color: rgb(var(--brand-neutral-stripe));
+}
+
+.japanese-app :where(.border-gray-100, .border-gray-200) {
+  border-color: rgb(var(--brand-primary) / 0.12);
+}
+
+.japanese-app [class~="bg-black/50"] {
+  background-color: rgb(var(--brand-deep) / 0.36);
 }
 
 .page-transition {

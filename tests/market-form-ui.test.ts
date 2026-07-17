@@ -30,7 +30,7 @@ assert.match(sharedFields, /label="市集日期"/);
 assert.match(sharedFields, /mode\?: 'owner' \| 'manager'/);
 
 assert.match(fullScreenForm, /h-\[100dvh\]/);
-assert.match(fullScreenForm, /sm:max-w-2xl/);
+assert.match(fullScreenForm, /sm:max-w-3xl/);
 assert.match(fullScreenForm, /env\(safe-area-inset-bottom\)/);
 
 assert.match(timePicker, /const onChangeRef = useRef\(onChange\)/);

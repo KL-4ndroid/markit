@@ -10,7 +10,7 @@ export default function TermsPage() {
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold text-foreground mb-8">服務條款</h1>
         
-        <div className="bg-white rounded-2xl shadow-sm p-8 space-y-6">
+        <div className="japanese-surface-card space-y-6 p-8">
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">服務說明</h2>
             <p className="text-muted-foreground leading-relaxed">

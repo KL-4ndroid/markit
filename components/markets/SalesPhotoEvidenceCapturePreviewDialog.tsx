@@ -59,7 +59,7 @@ export function SalesPhotoEvidenceCapturePreviewDialog({
           aria-labelledby="sales-photo-evidence-preview-title"
           className="pointer-events-auto relative flex max-h-[90dvh] w-full max-w-lg self-center flex-col overflow-hidden rounded-[2rem] bg-background shadow-2xl animate-slide-up"
         >
-        <header className="flex items-start justify-between gap-4 bg-gradient-to-br from-primary to-secondary px-6 py-6">
+        <header className="japanese-gradient-header flex items-start justify-between gap-4 px-6 py-6">
           <div className="min-w-0">
             <h2 id="sales-photo-evidence-preview-title" className="text-xl font-medium text-white">
               確認成交照片

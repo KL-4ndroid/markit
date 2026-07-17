@@ -69,7 +69,7 @@ export default function MarketOverviewCard({
   };
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 shadow-lg">
+    <div className="rounded-card border border-primary/10 bg-atelier-blue-soft/70 p-6 shadow-atelier">
       {/* 標題 */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2">

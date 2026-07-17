@@ -4,8 +4,8 @@
   "description": "手作品牌的市集經營筆記 - 輕鬆管理銷售、統計數據、追蹤成本",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F7F3EA",
-  "theme_color": "#6F8F86",
+  "background_color": "#FAFAF8",
+  "theme_color": "#7B9FA6",
   "orientation": "portrait",
   "scope": "/",
   "icons": [

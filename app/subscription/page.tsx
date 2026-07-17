@@ -35,7 +35,7 @@ export default function SubscriptionPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="japanese-gradient-header rounded-b-[2rem] px-6 pb-8 pt-12">
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => router.back()}
@@ -58,7 +58,7 @@ export default function SubscriptionPage() {
       <div className="max-w-4xl mx-auto px-6 -mt-4 pb-12">
         {/* 當前訂閱狀態卡片 */}
         {currentPlan !== 'free' && (
-          <div className="bg-white rounded-[1.5rem] p-6 shadow-lg mb-8">
+          <div className="japanese-surface-card mb-8 p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h2 className="text-lg font-bold text-foreground mb-1">
@@ -126,7 +126,7 @@ export default function SubscriptionPage() {
         </div>
 
         {/* 常見問題 */}
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg">
+        <div className="japanese-surface-card p-6">
           <h2 className="text-lg font-bold text-foreground mb-4">
             常見問題
           </h2>
@@ -175,13 +175,13 @@ export default function SubscriptionPage() {
       {showCancelDialog && (
         <>
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 z-50 bg-deep/35 backdrop-blur-sm"
             onClick={() => setShowCancelDialog(false)}
           />
           
           <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
             <div 
-              className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-8 pointer-events-auto"
+              className="japanese-surface-card w-full max-w-md p-8 pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="w-16 h-16 rounded-2xl bg-soft-pink flex items-center justify-center mb-6 mx-auto">

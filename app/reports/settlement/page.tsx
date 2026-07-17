@@ -261,7 +261,7 @@ export default function SettlementReportPreviewPage() {
     return (
       <div className="min-h-screen bg-background px-4 py-6">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-          <div className="border border-neutral-stripe bg-white px-4 py-5 text-sm text-muted-foreground shadow-sm">
+          <div className="japanese-surface-card px-4 py-5 text-sm text-muted-foreground">
             正在確認權限...
           </div>
         </div>
@@ -277,7 +277,7 @@ export default function SettlementReportPreviewPage() {
             <ArrowLeft size={16} />
             返回分析
           </Link>
-          <section className="border border-neutral-stripe bg-white px-4 py-5 text-sm text-muted-foreground shadow-sm">
+          <section className="japanese-surface-card px-4 py-5 text-sm text-muted-foreground">
             <div className="mb-3 flex items-center gap-3 text-foreground">
               <ShieldAlert className="h-5 w-5 text-danger" />
               <h1 className="text-lg font-semibold">結算報告預覽僅限老闆使用</h1>
@@ -296,7 +296,7 @@ export default function SettlementReportPreviewPage() {
   return (
     <div className="min-h-screen bg-background px-4 pb-12 pt-5">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="flex flex-col gap-4 border-b border-neutral-stripe-dark pb-5 md:flex-row md:items-end md:justify-between">
+        <header className="japanese-surface-card flex flex-col gap-4 p-5 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
             <Link href="/analytics" className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <ArrowLeft size={16} />
@@ -319,7 +319,7 @@ export default function SettlementReportPreviewPage() {
             <select
               value={kind}
               onChange={(event) => setKind(event.target.value as SettlementReportKind)}
-              className="h-10 border border-neutral-stripe-dark bg-white px-3 text-sm text-foreground"
+              className="h-10 rounded-xl border border-primary/20 bg-white px-3 text-sm text-foreground"
               aria-label="報告類型"
             >
               <option value="weekly">週報</option>
@@ -329,14 +329,14 @@ export default function SettlementReportPreviewPage() {
               type="date"
               value={startDate}
               onChange={(event) => setStartDate(event.target.value)}
-              className="h-10 border border-neutral-stripe-dark bg-white px-3 text-sm text-foreground"
+              className="h-10 rounded-xl border border-primary/20 bg-white px-3 text-sm text-foreground"
               aria-label="開始日期"
             />
             <input
               type="date"
               value={endDate}
               onChange={(event) => setEndDate(event.target.value)}
-              className="h-10 border border-neutral-stripe-dark bg-white px-3 text-sm text-foreground"
+              className="h-10 rounded-xl border border-primary/20 bg-white px-3 text-sm text-foreground"
               aria-label="結束日期"
             />
           </div>
@@ -351,7 +351,7 @@ export default function SettlementReportPreviewPage() {
 
         {preview && report && (
           <>
-            <section className="flex flex-col gap-3 border border-neutral-stripe-dark bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <section className="japanese-surface-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-base font-semibold text-foreground">正式 PDF 報告預覽</h2>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
@@ -369,7 +369,7 @@ export default function SettlementReportPreviewPage() {
             />
 
             {activeTab === 'summary' && (
-            <section className="grid gap-5 border border-neutral-stripe-dark bg-white p-5 shadow-sm lg:grid-cols-[1.2fr_0.8fr]">
+            <section className="japanese-surface-card grid gap-5 p-5 lg:grid-cols-[1.2fr_0.8fr]">
               <div className="flex flex-col justify-between">
                 <div>
                   <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -391,22 +391,22 @@ export default function SettlementReportPreviewPage() {
                 </div>
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  <div className="bg-neutral-alt-warm p-4">
+                  <div className="rounded-xl bg-neutral-alt-warm p-4">
                     <p className="text-xs text-muted-foreground">總營收</p>
                     <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">{formatMoney(preview.executiveSummary.totalRevenue)}</p>
                   </div>
-                  <div className="bg-neutral-alt-warm p-4">
+                  <div className="rounded-xl bg-neutral-alt-warm p-4">
                     <p className="text-xs text-muted-foreground">淨利</p>
                     <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">{formatMoney(preview.executiveSummary.netProfit)}</p>
                   </div>
-                  <div className="bg-neutral-alt-warm p-4">
+                  <div className="rounded-xl bg-neutral-alt-warm p-4">
                     <p className="text-xs text-muted-foreground">成交數</p>
                     <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">{formatNumber(preview.executiveSummary.totalDeals)}</p>
                   </div>
                 </div>
               </div>
 
-              <aside className="flex flex-col justify-between gap-5 border border-neutral-stripe bg-neutral-alt-warm p-5">
+              <aside className="flex flex-col justify-between gap-5 rounded-2xl border border-neutral-stripe bg-neutral-alt-warm p-5">
                 <div>
                   <div className="flex items-center justify-between gap-4">
                     <p className="text-xs font-medium text-muted-foreground">本期總評分</p>

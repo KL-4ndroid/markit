@@ -17,7 +17,7 @@ import { TimePicker } from '@/components/ui/TimePicker';
 import type { MarketCoreFormErrors } from '@/lib/markets/market-form';
 
 const inputClassName =
-  'min-h-11 w-full rounded-control border border-primary/20 bg-white px-3 text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-muted/40 disabled:text-muted-foreground';
+  'min-h-12 w-full rounded-2xl border border-primary/15 bg-atelier-paper px-4 text-foreground shadow-sm outline-none transition-all placeholder:text-muted-foreground/65 hover:border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-muted/40 disabled:text-muted-foreground';
 
 interface MarketBasicFieldsProps {
   idPrefix: string;
@@ -47,14 +47,22 @@ export function MarketBasicFields({
   const isManagerMode = mode === 'manager';
 
   return (
-    <section className="space-y-4" aria-labelledby={`${idPrefix}-basic-heading`}>
-      <div>
-        <h3 id={`${idPrefix}-basic-heading`} className="text-base font-medium text-foreground">
-          基本資料
-        </h3>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-          {isManagerMode ? '確認這次市集的營業日期。' : '完成這三項即可建立市集。'}
-        </p>
+    <section className="space-y-5" aria-labelledby={`${idPrefix}-basic-heading`}>
+      <div className="flex items-start gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-soft-pink text-primary">
+          <Store className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <h3 id={`${idPrefix}-basic-heading`} className="text-base font-semibold text-foreground">
+              基本資料
+            </h3>
+            <span className="rounded-full bg-soft-yellow px-2.5 py-1 text-[11px] font-medium text-secondary">優先填寫</span>
+          </div>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            {isManagerMode ? '確認這次市集的營業日期。' : '名稱、地點與日期是市集的核心資料。'}
+          </p>
+        </div>
       </div>
 
       {!isManagerMode && (
@@ -190,7 +198,7 @@ export function MarketTimelineFields({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-control border border-primary/15 px-3">
+        <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border border-primary/10 bg-soft-green/45 px-4 transition-colors hover:border-primary/25">
           <input
             type="checkbox"
             checked={noEarlyEntry}
@@ -244,12 +252,12 @@ export function MarketTimelineFields({
         />
       </div>
 
-      <dl className="grid grid-cols-2 gap-3 border-t border-primary/10 pt-4 text-sm">
-        <div>
+      <dl className="grid grid-cols-2 gap-3 text-sm">
+        <div className="rounded-2xl border border-primary/10 bg-soft-yellow/45 p-3">
           <dt className="text-xs text-muted-foreground">營業時長</dt>
           <dd className="mt-1 font-medium tabular-nums text-foreground">{operatingDuration}</dd>
         </div>
-        <div>
+        <div className="rounded-2xl border border-primary/10 bg-soft-green/50 p-3">
           <dt className="text-xs text-muted-foreground">含進場總時長</dt>
           <dd className="mt-1 font-medium tabular-nums text-foreground">{totalDuration}</dd>
         </div>
@@ -327,7 +335,7 @@ export function MarketCostFields({
           />
         )}
       </FormField>
-      <p className="border-t border-primary/10 pt-3 text-sm text-muted-foreground">
+      <p className="rounded-2xl border border-secondary/15 bg-soft-yellow/45 p-3 text-sm text-muted-foreground">
         攤位與設備固定成本合計
         <strong className="ml-2 font-medium tabular-nums text-foreground">
           NT$ {fixedCostTotal.toLocaleString()}
@@ -375,7 +383,7 @@ export function MarketEquipmentFields({
         const isFree = free[option.freeField];
         const inputId = `${idPrefix}-${option.rentalField}`;
         return (
-          <div key={option.rentalField} className="grid gap-3 border-b border-primary/10 pb-4 last:border-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <div key={option.rentalField} className="grid gap-3 rounded-2xl border border-primary/10 bg-soft-green/25 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <FormField id={inputId} label={`${option.label}租金`}>
               {(fieldProps) => (
                 <div className="relative">
@@ -394,7 +402,7 @@ export function MarketEquipmentFields({
                 </div>
               )}
             </FormField>
-            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-control border border-primary/15 px-3 text-sm text-foreground">
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-primary/10 bg-atelier-paper px-3 text-sm text-foreground transition-colors hover:border-primary/25">
               <input
                 type="checkbox"
                 checked={isFree}

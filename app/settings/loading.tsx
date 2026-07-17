@@ -1,7 +1,7 @@
 export default function SettingsLoading() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-white/15 bg-gray-400 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))]">
+      <div className="japanese-gradient-header border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <div className="mx-auto max-w-3xl">
           <div className="h-7 w-24 rounded bg-white/30 skeleton-shimmer-header" />
           <div className="mt-2 h-4 w-72 max-w-full rounded bg-white/20 skeleton-shimmer-header" />

@@ -30,7 +30,7 @@ export default function RecoveryPage() {
             <ArrowLeft size={16} />
             返回資料與救援
           </Link>
-          <section className="border border-neutral-stripe bg-white px-4 py-5 text-sm text-muted-foreground shadow-sm">
+          <section className="japanese-surface-card px-4 py-5 text-sm text-muted-foreground">
             正在確認修復工具權限...
           </section>
         </div>
@@ -49,7 +49,7 @@ export default function RecoveryPage() {
             <ArrowLeft size={16} />
             返回資料與救援
           </Link>
-          <section className="border border-neutral-stripe bg-white px-4 py-5 text-sm text-muted-foreground shadow-sm">
+          <section className="japanese-surface-card px-4 py-5 text-sm text-muted-foreground">
             <div className="mb-3 flex items-center gap-3 text-foreground">
               <ShieldAlert className="h-5 w-5 text-danger" />
               <h1 className="text-lg font-semibold">修復工具僅限 owner 使用</h1>
@@ -67,7 +67,7 @@ export default function RecoveryPage() {
   return (
     <div className="min-h-screen bg-background px-4 py-6">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
-        <header className="flex items-start justify-between gap-4">
+        <header className="japanese-surface-card flex items-start justify-between gap-4 p-5">
           <div className="min-w-0">
             <Link
               href="/settings/data"
@@ -100,7 +100,7 @@ export default function RecoveryPage() {
 
         <LocalProjectionRepairPanel />
 
-        <section className="border border-neutral-stripe bg-white px-4 py-4 text-sm text-muted-foreground shadow-sm">
+        <section className="japanese-surface-card px-4 py-4 text-sm text-muted-foreground">
           <h2 className="mb-2 text-base font-semibold text-foreground">使用建議</h2>
           <ol className="list-decimal space-y-2 pl-5">
             <li>先按「檢查」確認本機資料庫狀態，若有 numeric cache 錯誤，再使用資料庫修復。</li>

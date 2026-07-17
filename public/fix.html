@@ -13,7 +13,9 @@
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #C7776E 0%, #6F8F86 100%);
+      background:
+        radial-gradient(circle at 18% 18%, rgba(255, 244, 199, 0.38), transparent 34%),
+        linear-gradient(135deg, #C7776E 0%, #7B9FA6 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -27,7 +29,8 @@
       padding: 50px;
       max-width: 500px;
       width: 100%;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(123, 159, 166, 0.12);
+      box-shadow: 0 20px 54px rgba(92, 116, 121, 0.22);
       text-align: center;
     }
     
@@ -46,7 +49,7 @@
     
     .warning {
       background: #FFF8E7;
-      border-left: 4px solid #D9A66A;
+      border-left: 4px solid #D4A574;
       padding: 15px;
       margin-bottom: 30px;
       text-align: left;
@@ -54,7 +57,7 @@
     }
     
     .warning-title {
-      color: #D9A66A;
+      color: #D4A574;
       font-weight: 600;
       margin-bottom: 5px;
     }
@@ -92,7 +95,7 @@
     }
     
     .btn-secondary {
-      background: #F7F3EA;
+      background: #FAFAF8;
       color: #2F3432;
     }
     
@@ -103,7 +106,7 @@
     .status {
       margin-top: 30px;
       padding: 20px;
-      background: #F7F3EA;
+      background: #FAFAF8;
       border-radius: 16px;
       display: none;
     }
@@ -119,7 +122,7 @@
     }
     
     .status-success {
-      color: #6F8F86;
+      color: #7B9FA6;
     }
     
     .status-error {
@@ -129,7 +132,7 @@
     .countdown {
       font-size: 48px;
       font-weight: 700;
-      color: #6F8F86;
+      color: #7B9FA6;
       margin: 20px 0;
     }
   </style>

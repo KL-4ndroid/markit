@@ -189,10 +189,10 @@ export function LoginModal({
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+      <div className="fixed inset-0 bg-deep/35 backdrop-blur-sm" aria-hidden="true" />
 
       <div className="fixed inset-0 flex items-center justify-center p-6">
-        <DialogPanel className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl">
+        <DialogPanel className="japanese-surface-card w-full max-w-md p-8">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <DialogTitle className="text-2xl font-medium text-foreground mb-2">

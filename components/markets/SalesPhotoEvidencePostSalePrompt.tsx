@@ -27,7 +27,7 @@ export function SalesPhotoEvidencePostSalePrompt({
           aria-labelledby="sales-photo-evidence-post-sale-title"
           className="pointer-events-auto relative flex max-h-[90dvh] w-full max-w-md self-center flex-col overflow-hidden rounded-[2rem] bg-background shadow-2xl animate-slide-up"
         >
-          <header className="flex items-center justify-between gap-4 bg-gradient-to-br from-primary to-secondary px-6 py-6">
+          <header className="japanese-gradient-header flex items-center justify-between gap-4 px-6 py-6">
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
                 <CheckCircle2 className="h-5 w-5" />

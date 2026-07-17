@@ -209,7 +209,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   if (dbStatus.ok === false) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="bg-gradient-to-br from-secondary to-secondary/85 pt-12 pb-8 px-6 rounded-b-[2rem]">
+        <div className="japanese-gradient-header rounded-b-[2rem] px-6 pb-8 pt-12">
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push('/products')}
@@ -262,7 +262,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   if (!product) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
+        <div className="japanese-gradient-header rounded-b-[2rem] px-6 pb-8 pt-12">
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push('/products')}
@@ -306,7 +306,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="japanese-gradient-header rounded-b-[2rem] px-6 pb-8 pt-12">
         <div className="max-w-lg mx-auto">
           <button
             onClick={() => router.push('/products')}

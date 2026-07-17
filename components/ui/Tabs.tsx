@@ -41,7 +41,7 @@ export function Tabs<T extends string>({
       <TabList
         aria-label={ariaLabel}
         className={cn(
-          'flex min-h-11 gap-1 overflow-x-auto rounded-control bg-muted/70 p-1',
+          'flex min-h-11 gap-1 overflow-x-auto rounded-control border border-primary/10 bg-soft-green/65 p-1',
           className,
         )}
       >
@@ -49,7 +49,7 @@ export function Tabs<T extends string>({
           <Tab
             key={item.id}
             disabled={item.disabled}
-            className="flex min-h-11 min-w-max flex-1 items-center justify-center gap-2 rounded-control px-3 text-sm font-medium text-muted-foreground outline-none transition-colors data-[selected]:bg-white data-[selected]:text-foreground data-[selected]:shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-11 min-w-max flex-1 items-center justify-center gap-2 rounded-control px-3 text-sm font-medium text-muted-foreground outline-none transition-colors data-[selected]:bg-atelier-paper data-[selected]:text-primary data-[selected]:shadow-atelier focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {item.icon}
             <span>{item.label}</span>

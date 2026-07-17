@@ -39,6 +39,9 @@ const config: Config = {
         'soft-pink': "rgb(var(--brand-soft-pink) / <alpha-value>)",
         'soft-green': "rgb(var(--brand-soft-green) / <alpha-value>)",
         'soft-yellow': "rgb(var(--brand-soft-yellow) / <alpha-value>)",
+        'home-ended-card': "rgb(var(--brand-home-ended-card) / <alpha-value>)",
+        'upcoming-section': "rgb(var(--brand-upcoming-section) / <alpha-value>)",
+        'upcoming-date-badge': "rgb(var(--brand-upcoming-date-badge) / <alpha-value>)",
         // 功能色
         danger: "rgb(var(--brand-danger) / <alpha-value>)",
         warn: "rgb(var(--brand-warn) / <alpha-value>)",

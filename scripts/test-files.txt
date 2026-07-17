@@ -201,6 +201,7 @@ tsx tests/sales-checkout-photo-evidence-uiux.test.ts
 tsx tests/market-workspace.test.ts
 tsx tests/sales-photo-evidence-owner-view.test.ts
 tsx tests/atelier-visual-pilot.test.ts
+tsx tests/theme-lab.test.ts
 tsx tests/platform-camera-boundary.test.ts
 tsx tests/platform-file-boundary.test.ts
 tsx tests/platform-network-boundary.test.ts

@@ -307,7 +307,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className={`${getGradientClass(false)} border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white`}>
+      <header className={`${getGradientClass(false)} rounded-b-[2rem] border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier`}>
         <div className="mx-auto flex max-w-3xl items-start justify-between gap-4">
           <div>
             <p className="text-sm text-white/80">營運決策</p>

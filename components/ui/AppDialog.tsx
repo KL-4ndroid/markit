@@ -46,18 +46,18 @@ export function AppDialog({
       onClose={dismissible ? onClose : () => {}}
       className={layer === 'critical' ? 'relative z-critical' : 'relative z-dialog'}
     >
-      <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
+      <div className="fixed inset-0 bg-deep/35 backdrop-blur-sm" aria-hidden="true" />
       <div className="fixed inset-0 overflow-y-auto p-4">
         <div className="flex min-h-full items-center justify-center">
           <DialogPanel
             aria-describedby={description ? descriptionId : undefined}
             className={cn(
-              'flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-dialog bg-white shadow-2xl',
+              'japanese-surface-card flex max-h-[90dvh] w-full flex-col overflow-hidden',
               SIZE_CLASSES[size],
               className,
             )}
           >
-            <header className="flex items-start justify-between gap-4 border-b border-primary/10 px-5 py-4">
+            <header className="flex items-start justify-between gap-4 border-b border-primary/10 bg-soft-yellow/45 px-5 py-4">
               <div className="min-w-0">
                 <DialogTitle className="text-lg font-medium text-foreground">
                   {title}

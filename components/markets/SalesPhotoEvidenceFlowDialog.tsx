@@ -103,7 +103,7 @@ export function SalesPhotoEvidenceFlowDialog({
       <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
       <div className="fixed inset-0 flex justify-center p-4">
         <DialogPanel className="relative flex max-h-[90dvh] w-full max-w-lg self-center flex-col overflow-hidden rounded-[2rem] bg-background shadow-2xl animate-slide-up">
-          <header className="flex shrink-0 items-center justify-between gap-3 bg-gradient-to-br from-primary to-secondary px-5 py-5">
+          <header className="japanese-gradient-header flex shrink-0 items-center justify-between gap-3 px-5 py-5">
             <div className="flex min-w-0 items-center gap-2">
               {canGoBack && (
                 <button

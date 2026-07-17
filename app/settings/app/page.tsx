@@ -3,10 +3,12 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ChevronRight, Info, Smartphone } from 'lucide-react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { useUserRole } from '@/hooks/useUserRole';
 import { APP_METADATA } from '@/lib/app-metadata';
+import { THEME_LAB_OPEN_EVENT } from '@/lib/theme-lab';
 
 const PWAInstallButton = dynamic(
   () => import('@/components/PWAInstallButton').then((module) => module.PWAInstallButton),
@@ -15,6 +17,38 @@ const PWAInstallButton = dynamic(
 
 export default function AppSettingsPage() {
   const { isStaff } = useUserRole();
+  const themeLabTapCount = useRef(0);
+  const themeLabResetTimer = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (themeLabResetTimer.current) window.clearTimeout(themeLabResetTimer.current);
+  }, []);
+
+  const handleVersionTap = useCallback(() => {
+    if (process.env.NODE_ENV !== 'development') return;
+    themeLabTapCount.current += 1;
+    if (themeLabResetTimer.current) window.clearTimeout(themeLabResetTimer.current);
+    themeLabResetTimer.current = window.setTimeout(() => {
+      themeLabTapCount.current = 0;
+    }, 3000);
+
+    if (themeLabTapCount.current < 7) return;
+    themeLabTapCount.current = 0;
+    window.dispatchEvent(new Event(THEME_LAB_OPEN_EVENT));
+  }, []);
+
+  const versionContent = (
+    <>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon is a local optimized app asset. */}
+        <img src="/icons/icon-192x192.png" alt="" className="h-full w-full object-contain" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span id="version-title" className="block text-sm font-semibold text-foreground">{APP_METADATA.displayName}</span>
+        <span className="mt-1 block text-xs text-muted-foreground">版本 {APP_METADATA.versionLabel}</span>
+      </span>
+    </>
+  );
 
   return (
     <SettingsPageShell
@@ -28,16 +62,18 @@ export default function AppSettingsPage() {
         <PWAInstallButton />
 
         <section className="rounded-card border border-primary/10 bg-white" aria-labelledby="version-title">
-          <div className="flex items-center gap-3 px-4 py-4">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg">
-              {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon is a local optimized app asset. */}
-              <img src="/icons/icon-192x192.png" alt="" className="h-full w-full object-contain" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 id="version-title" className="text-sm font-semibold text-foreground">{APP_METADATA.displayName}</h2>
-              <p className="mt-1 text-xs text-muted-foreground">版本 {APP_METADATA.versionLabel}</p>
-            </div>
-          </div>
+          {process.env.NODE_ENV === 'development' ? (
+            <button
+              type="button"
+              onClick={handleVersionTap}
+              aria-label="App 版本資訊"
+              className="flex w-full items-center gap-3 px-4 py-4 text-left"
+            >
+              {versionContent}
+            </button>
+          ) : (
+            <div className="flex items-center gap-3 px-4 py-4">{versionContent}</div>
+          )}
 
           <Link
             href="/about"

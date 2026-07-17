@@ -282,7 +282,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
 
   return (
     <div className="min-h-screen bg-atelier-canvas pb-20 text-atelier-ink">
-      <header className="bg-atelier-sage-soft/80 px-4 pb-6 pt-[calc(1rem+env(safe-area-inset-top))]">
+      <header className="japanese-gradient-header japanese-gradient-header-staff rounded-b-[2rem] px-4 pb-6 pt-[calc(1rem+env(safe-area-inset-top))] text-white">
         <div className="mx-auto max-w-5xl">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -294,9 +294,9 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-atelier-clay">今天一起把現場顧好</p>
-                <h1 className="mt-1 break-words text-2xl font-semibold leading-tight text-atelier-ink">{market.name}</h1>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-atelier-muted">
+                <p className="text-xs font-semibold text-white/85">今天一起把現場顧好</p>
+                <h1 className="mt-1 break-words text-2xl font-semibold leading-tight text-white">{market.name}</h1>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/80">
                   {/* 日期 */}
                   <div className="flex items-start gap-1.5">
                     <Calendar className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
@@ -315,7 +315,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
                     <span className="truncate">{market.location}</span>
                   </div>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-atelier-muted">交易、照片與待辦，都在熟悉的位置等你。</p>
+                <p className="mt-2 text-xs leading-5 text-white/80">交易、照片與待辦，都在熟悉的位置等你。</p>
               </div>
             </div>
             

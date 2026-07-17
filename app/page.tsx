@@ -145,7 +145,7 @@ function TodayMarketCard({ item, isStaff, onOpen }: TodayMarketCardProps) {
   const surfaceClass = item.phase === 'operating'
     ? 'bg-atelier-sage-soft'
     : item.phase === 'ended'
-      ? 'bg-atelier-blue-soft'
+      ? 'bg-home-ended-card'
       : 'bg-atelier-apricot-soft';
   const companionLine = item.phase === 'operating'
     ? '現場辛苦了，今天的每筆記錄都會留在這裡。'
@@ -413,7 +413,7 @@ export default function HomePage() {
           </section>
         )}
 
-        <section className="-mx-4 mt-9 bg-atelier-blue-soft/60 px-4 py-6 sm:-mx-6 sm:px-6" aria-labelledby="upcoming-title">
+        <section className="-mx-4 mt-9 bg-upcoming-section px-4 py-6 sm:-mx-6 sm:px-6" aria-labelledby="upcoming-title">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold text-atelier-blue">接下來</p>
@@ -438,7 +438,7 @@ export default function HomePage() {
                   onClick={() => openMarket(item.market.id)}
                   className="flex min-h-16 w-full items-center gap-3 rounded-card bg-atelier-paper/90 px-3 py-3 text-left shadow-sm transition-colors hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <span className="flex h-11 min-w-14 shrink-0 items-center justify-center rounded-control bg-atelier-blue-soft px-2 text-xs font-semibold text-atelier-blue">
+                  <span className="flex h-11 min-w-14 shrink-0 items-center justify-center rounded-control bg-upcoming-date-badge px-2 text-xs font-semibold text-atelier-blue">
                     {formatDateKey(item.nextDate)}
                   </span>
                   <span className="min-w-0 flex-1">
