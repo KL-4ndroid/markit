@@ -27,10 +27,6 @@ type SupabaseTableClient = {
 
 export type SalesPhotoEvidenceMetadataClaimSupabaseClient = {
   from(table: 'events' | 'markets' | 'sale_photo_evidence' | 'staff_relationships'): SupabaseTableClient;
-  rpc?(
-    fn: 'is_sale_photo_evidence_sale_event',
-    args: { p_sale_id: string; p_market_id: string; p_owner_id: string }
-  ): Promise<SupabaseResult<boolean>>;
 };
 
 type SupabaseSaleEventRow = {
@@ -159,26 +155,22 @@ export function createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
         return saleEvent;
       }
 
-      if (!client.rpc) {
-        throwIfSupabaseError(error, 'Sales photo evidence sale event lookup failed.');
-        return null;
+      // Migration 059 intentionally revokes the legacy authenticated helper.
+      // Staff-scoped RLS may hide the event from this preliminary user-client
+      // read, so defer the authoritative sale/owner/actor validation to the
+      // server-only claim RPC instead of calling the revoked helper here.
+      if (input.saleCompletedAt) {
+        return {
+          id: input.saleEventId,
+          type: 'deal_closed',
+          ownerId: input.ownerId,
+          marketId: input.marketId,
+          completedAt: input.saleCompletedAt,
+        };
       }
 
-      const validation = await client.rpc('is_sale_photo_evidence_sale_event', {
-        p_sale_id: input.saleEventId,
-        p_market_id: input.marketId,
-        p_owner_id: input.ownerId,
-      });
-      throwIfSupabaseError(validation.error, 'Sales photo evidence sale event validation failed.');
-      if (validation.data !== true) return null;
-
-      return {
-        id: input.saleEventId,
-        type: 'deal_closed',
-        ownerId: input.ownerId,
-        marketId: input.marketId,
-        completedAt: input.saleCompletedAt ?? new Date(0).toISOString(),
-      };
+      throwIfSupabaseError(error, 'Sales photo evidence sale event lookup failed.');
+      return null;
     },
 
     async getActiveEvidenceForSale(input) {

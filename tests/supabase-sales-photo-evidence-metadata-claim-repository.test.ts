@@ -225,18 +225,10 @@ runTest('sale event lookup uses deal owner market filters and maps joined owner'
   ]);
 });
 
-runTest('sale event lookup falls back to the security definer validator for staff-scoped reads', async () => {
-  const baseClient = createFakeClient({
+runTest('sale event lookup defers staff-scoped validation to the server mutation RPC', async () => {
+  const client = createFakeClient({
     events: { data: null, error: null },
   });
-  let rpcArgs: Record<string, string> | null = null;
-  const client: SalesPhotoEvidenceMetadataClaimSupabaseClient = {
-    ...baseClient,
-    async rpc(_fn, args) {
-      rpcArgs = args;
-      return { data: true, error: null };
-    },
-  };
   const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
     client,
     createFakeMutationRepository()
@@ -255,11 +247,8 @@ runTest('sale event lookup falls back to the security definer validator for staf
     marketId: IDS.marketId,
     completedAt: '2026-07-07T01:02:03.000Z',
   });
-  assert.deepEqual(rpcArgs, {
-    p_sale_id: IDS.saleId,
-    p_market_id: IDS.marketId,
-    p_owner_id: IDS.ownerId,
-  });
+  assert.equal(client.calls.length, 1);
+  assert.doesNotMatch(repositorySource, /client\.rpc\('is_sale_photo_evidence_sale_event'/);
 });
 
 runTest('active evidence lookup filters owner market sale and not-deleted row', async () => {
