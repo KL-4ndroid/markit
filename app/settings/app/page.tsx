@@ -25,7 +25,6 @@ export default function AppSettingsPage() {
   }, []);
 
   const handleVersionTap = useCallback(() => {
-    if (process.env.NODE_ENV !== 'development') return;
     themeLabTapCount.current += 1;
     if (themeLabResetTimer.current) window.clearTimeout(themeLabResetTimer.current);
     themeLabResetTimer.current = window.setTimeout(() => {
@@ -62,18 +61,14 @@ export default function AppSettingsPage() {
         <PWAInstallButton />
 
         <section className="rounded-card border border-primary/10 bg-white" aria-labelledby="version-title">
-          {process.env.NODE_ENV === 'development' ? (
-            <button
-              type="button"
-              onClick={handleVersionTap}
-              aria-label="App 版本資訊"
-              className="flex w-full items-center gap-3 px-4 py-4 text-left"
-            >
-              {versionContent}
-            </button>
-          ) : (
-            <div className="flex items-center gap-3 px-4 py-4">{versionContent}</div>
-          )}
+          <button
+            type="button"
+            onClick={handleVersionTap}
+            aria-label="App 版本資訊"
+            className="flex w-full items-center gap-3 px-4 py-4 text-left"
+          >
+            {versionContent}
+          </button>
 
           <Link
             href="/about"

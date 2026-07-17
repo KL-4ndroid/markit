@@ -13,12 +13,10 @@ import { GlobalOverlayHost } from '@/components/global-overlays/GlobalOverlayHos
 import { PWASplashScreen } from '@/components/PWASplashScreen';
 import { RegisterServiceWorker } from '@/app/register-sw';
 
-const ThemeLabGate = process.env.NODE_ENV === 'development'
-  ? dynamic(
-      () => import('@/components/dev/ThemeLabGate').then((module) => module.ThemeLabGate),
-      { ssr: false },
-    )
-  : () => null;
+const ThemeLabGate = dynamic(
+  () => import('@/components/dev/ThemeLabGate').then((module) => module.ThemeLabGate),
+  { ssr: false },
+);
 
 const STANDALONE_PUBLIC_ROUTES = [
   '/demo',

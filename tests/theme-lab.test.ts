@@ -50,11 +50,12 @@ const themeModel = read('lib/theme-lab.ts');
 const home = read('app/page.tsx');
 const tailwind = read('tailwind.config.ts');
 
-assert.match(appChrome, /process\.env\.NODE_ENV === 'development'/);
 assert.match(appChrome, /dynamic\(/);
 assert.match(appChrome, /ThemeLabGate/);
+assert.doesNotMatch(appChrome, /process\.env\.NODE_ENV/);
 assert.match(settingsPage, /themeLabTapCount\.current < 7/);
 assert.match(settingsPage, /THEME_LAB_OPEN_EVENT/);
+assert.doesNotMatch(settingsPage, /process\.env\.NODE_ENV/);
 assert.match(gate, /Ctrl|ctrlKey/);
 assert.match(gate, /localStorage|loadThemeLabState/);
 assert.match(lab, /type="color"/);
@@ -72,4 +73,4 @@ assert.doesNotMatch(gate, /fetch\(|supabase/i);
 assert.doesNotMatch(lab, /fetch\(|supabase/i);
 assert.equal(existsSync(join(root, 'app', 'theme-lab', 'page.tsx')), false);
 
-console.log('PASS development-only theme lab');
+console.log('PASS theme lab available in all builds');
