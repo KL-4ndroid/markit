@@ -264,7 +264,7 @@ runTest('runtime adapter stays cloud-free and is owned only by the shared flow h
   assert.deepEqual(matches, []);
 
   const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
-  const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
+  const ownerPageSource = readProjectFile('components/markets/MarketDetailScreen.tsx');
   const flowHookSource = readProjectFile('hooks/useSalesPhotoEvidenceFlow.ts');
 
   for (const source of [staffViewSource, ownerPageSource]) {

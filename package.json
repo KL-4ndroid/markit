@@ -5,6 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:mobile": "node scripts/build-mobile.mjs",
+    "build:mobile:api": "node scripts/build-mobile.mjs --require-api-base",
+    "build:mobile:runtime-smoke": "node scripts/build-mobile.mjs --runtime-smoke",
+    "verify:mobile": "node scripts/verify-mobile-static-output.mjs",
+    "smoke:mobile": "node scripts/smoke-mobile-static-output.mjs",
+    "smoke:api:staging": "node scripts/smoke-vercel-api.mjs",
     "start": "next start",
     "lint": "eslint .",
     "lint:hex": "node scripts/lint-hex.js",
@@ -30,6 +36,7 @@
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^3.7.0",
+    "server-only": "^0.0.1",
     "sonner": "^1.2.0",
     "tailwind-merge": "^3.4.0",
     "uuid": "^13.0.0"

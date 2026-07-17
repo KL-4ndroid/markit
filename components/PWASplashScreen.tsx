@@ -10,14 +10,18 @@
 import { useEffect, useState } from 'react';
 import { APP_METADATA } from '@/lib/app-metadata';
 
+const MIN_DISPLAY_TIME_MS = 800;
+const EXIT_ANIMATION_TIME_MS = 300;
+
 export function PWASplashScreen() {
   const [isVisible, setIsVisible] = useState(true);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
 
   useEffect(() => {
     // 檢查是否為 PWA 模式
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                  (window.navigator as any).standalone === true;
+    const isPWA = (typeof window.matchMedia === 'function'
+      && window.matchMedia('(display-mode: standalone)').matches)
+      || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
     if (!isPWA) {
       // 非 PWA 模式，立即隱藏
@@ -25,42 +29,47 @@ export function PWASplashScreen() {
       return;
     }
 
-    // PWA 模式：顯示啟動畫面至少 800ms
-    const minDisplayTime = 800;
-    const startTime = Date.now();
+    // 元件完成 hydration 後即開始計時，不依賴可能已經錯過的 window.load 事件。
+    const exitTimer = window.setTimeout(() => {
+      setIsAnimatingOut(true);
+    }, MIN_DISPLAY_TIME_MS);
 
-    // 等待 DOM 完全載入
-    const handleLoad = () => {
-      const elapsed = Date.now() - startTime;
-      const remainingTime = Math.max(0, minDisplayTime - elapsed);
+    // 獨立的最終隱藏計時器可避免淡出狀態更新或動畫事件異常時永久遮住應用。
+    const hideTimer = window.setTimeout(() => {
+      setIsVisible(false);
+    }, MIN_DISPLAY_TIME_MS + EXIT_ANIMATION_TIME_MS);
 
-      setTimeout(() => {
-        // 開始淡出動畫
-        setIsAnimatingOut(true);
-        
-        // 動畫完成後隱藏
-        setTimeout(() => {
-          setIsVisible(false);
-        }, 300);
-      }, remainingTime);
+    return () => {
+      window.clearTimeout(exitTimer);
+      window.clearTimeout(hideTimer);
     };
-
-    if (document.readyState === 'complete') {
-      handleLoad();
-    } else {
-      window.addEventListener('load', handleLoad);
-      return () => window.removeEventListener('load', handleLoad);
-    }
   }, []);
 
   if (!isVisible) return null;
 
   return (
-    <div
-      className={`fixed inset-0 z-critical bg-gradient-to-br from-primary via-primary/85 to-secondary flex items-center justify-center transition-opacity duration-300 ${
-        isAnimatingOut ? 'opacity-0' : 'opacity-100'
-      }`}
-    >
+    <>
+      <style data-app-splash-failsafe>{`
+        @keyframes feria-splash-failsafe-hide {
+          0%, 68.75% {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+          }
+          87.5%, 100% {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+          }
+        }
+      `}</style>
+      <div
+        data-app-splash
+        className={`fixed inset-0 z-critical bg-gradient-to-br from-primary via-primary/85 to-secondary flex items-center justify-center transition-opacity duration-300 ${
+          isAnimatingOut ? 'opacity-0' : 'opacity-100'
+        }`}
+        style={{ animation: 'feria-splash-failsafe-hide 1600ms ease-out forwards' }}
+      >
       {/* 背景裝飾 */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 left-10 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse" />
@@ -101,6 +110,7 @@ export function PWASplashScreen() {
       <div className="absolute bottom-8 text-white/60 text-sm">
         v{APP_METADATA.versionLabel}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

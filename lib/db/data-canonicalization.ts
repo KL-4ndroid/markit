@@ -2,6 +2,7 @@ import { normalizeEventPayloadForLocal } from '@/lib/data-mappers';
 import type { DailyStats, Event } from '@/types/db';
 import { db, exportData } from './index';
 import { normalizeProductsSold, toNonNegativeNumber, toNumber } from './recovery';
+import { getFilePort } from '@/lib/platform/file-capability';
 
 type AnyRecord = Record<string, unknown>;
 
@@ -237,15 +238,10 @@ async function createLocalCanonicalizationBackup(): Promise<void> {
     // Fall through to download.
   }
 
-  const blob = new Blob([backup], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `markit-canonicalization-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  await getFilePort().saveFile({
+    filename: `markit-canonicalization-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`,
+    data: new Blob([backup], { type: 'application/json' }),
+  });
 }
 
 export async function runLocalDataCanonicalization(

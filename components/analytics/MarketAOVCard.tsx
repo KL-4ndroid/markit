@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Trophy, DollarSign, ShoppingCart, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { Market } from '@/types/db';
+import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 
 interface MarketAOVCardProps {
   market: Market;
@@ -28,7 +29,8 @@ export function MarketAOVCard({
 
   // 點擊卡片跳轉到市集詳情
   const handleClick = () => {
-    router.push(`/markets/${market.id}`);
+    if (!market.id) return;
+    router.push(buildMarketDetailHref(market.id));
   };
 
   // 排名顏色

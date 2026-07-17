@@ -111,7 +111,7 @@ runTest('production UI and sync paths do not import CSV reporting export helper'
   const productionFiles = [
     'app/settings/page.tsx',
     'app/recovery/page.tsx',
-    'app/markets/[id]/page.tsx',
+    'components/markets/MarketDetailScreen.tsx',
     'hooks/useSync.ts',
     'lib/sync/owner-pull-service.ts',
     'lib/sync/staff-pull-service.ts',

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Download, RefreshCw, ShieldCheck, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
+import { getAppPlatform } from '@/lib/platform';
 import {
   createRecoveryBackup,
   getDatabaseRecoveryStatus,
@@ -14,17 +15,11 @@ import {
 import { useUserRole } from '@/hooks/useUserRole';
 import { resolveInfoLevel } from '@/lib/permissions/PermissionGate';
 
-function downloadJson(filename: string, content: string): void {
-  const blob = new Blob([content], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+async function saveJson(filename: string, content: string): Promise<void> {
+  await getAppPlatform().files.saveFile({
+    filename,
+    data: new Blob([content], { type: 'application/json' }),
+  });
 }
 
 export function DatabaseRecoveryPanel() {
@@ -70,7 +65,7 @@ export function DatabaseRecoveryPanel() {
     setIsExporting(true);
     try {
       const backup = await createRecoveryBackup();
-      downloadJson(backup.filename, backup.content);
+      await saveJson(backup.filename, backup.content);
       toast.success('已建立並下載本機備份');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '建立備份失敗');
@@ -83,7 +78,7 @@ export function DatabaseRecoveryPanel() {
     setIsRepairing(true);
     try {
       const result = await repairInvalidDailyStats();
-      downloadJson(result.backup.filename, result.backup.content);
+      await saveJson(result.backup.filename, result.backup.content);
       const nextStatus = await getDatabaseRecoveryStatus();
       setStatus(nextStatus);
 
@@ -104,7 +99,7 @@ export function DatabaseRecoveryPanel() {
     try {
       // 傳入 infoLevel 讓從雲端補回的商品依權限脫敏
       const result = await repairProductReferenceErrors(infoLevel);
-      downloadJson(result.backup.filename, result.backup.content);
+      await saveJson(result.backup.filename, result.backup.content);
       const nextStatus = await getDatabaseRecoveryStatus();
       setStatus(nextStatus);
 

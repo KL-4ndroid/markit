@@ -29,6 +29,7 @@ import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { useProducts } from '@/lib/db/hooks';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
+import { buildProductDetailHref } from '@/lib/navigation/product-detail-route';
 import {
   filterProductList,
   type ProductListCategory,
@@ -210,7 +211,7 @@ export default function ProductsPage() {
   const openProduct = (product: Product) => {
     if (!product.id) return;
     writeReturnState({ ...returnStateRef.current, scrollY: window.scrollY });
-    router.push(`/products/${product.id}`);
+    router.push(buildProductDetailHref(product.id));
   };
 
   const handleOpenForm = () => {
@@ -254,7 +255,7 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className={`${getGradientClass(isStaffMode)} border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white`}>
+      <header className={`${getGradientClass(isStaffMode)} rounded-b-[2rem] border-b border-white/15 px-5 pb-8 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier`}>
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
           <div>
             <p className="text-sm text-white/80">{isStaffMode ? '銷售商品' : '商品管理'}</p>
@@ -285,7 +286,7 @@ export default function ProductsPage() {
               value={searchQuery}
               onChange={event => setSearchQuery(event.target.value)}
               placeholder="搜尋商品名稱或描述"
-              className="min-h-11 w-full rounded-control border border-primary/15 bg-white pl-10 pr-12 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="min-h-11 w-full rounded-control border border-primary/15 bg-atelier-paper pl-10 pr-12 text-sm text-foreground shadow-sm shadow-primary/5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
             {searchQuery && (
               <button

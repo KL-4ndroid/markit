@@ -6,30 +6,30 @@
   /* ============================================================
    * Féria - 出攤筆記 視覺識別（VI）設計 token
    * 文件：docs/brand/VI_DESIGN_SYSTEM.md
-   * 變更：2026-06-17（舊品牌霧藍暖木 → Féria 霧松綠暖杏橘）
+   * 變更：2026-07-17（參考 JapaneseD，恢復霧藍、暖木與米白的日系溫度）
    *
    * ⚠️ 重要：以下所有 rgb 數值都跟 tailwind.config.ts 的
    *   rgb(var(--xxx) / <alpha-value>) 配對使用。
    *   不要把這裡改成 hex，否則 /10 / /20 透明度會失效。
    * ============================================================ */
 
-  /* 主色：霧松綠（舊 #7B9FA6 霧藍） */
-  --brand-primary: 111 143 134;          /* #6F8F86 */
+  /* 主色：霧藍 */
+  --brand-primary: 123 159 166;          /* #7B9FA6 — 舊版霧藍，安靜且帶手作感 */
 
-  /* 次色：暖杏橘（舊 #D4A574 暖木） */
-  --brand-secondary: 217 166 106;        /* #D9A66A */
+  /* 次色：暖木 */
+  --brand-secondary: 212 165 116;        /* #D4A574 — 舊版暖木色 */
 
-  /* 文字主色：墨灰黑（舊 #3A3A3A 中性灰） */
-  --brand-foreground: 47 52 50;          /* #2F3432 */
+  /* 文字主色：柔黑 */
+  --brand-foreground: 58 58 58;          /* #3A3A3A */
   --brand-muted-foreground: 107 107 107; /* #6B6B6B 保留 */
 
-  /* 背景 / 卡片：奶油米白（舊 #FAFAF8） */
-  --brand-background: 247 243 234;       /* #F7F3EA */
+  /* 背景 / 卡片：米白與暖白 */
+  --brand-background: 250 250 248;       /* #FAFAF8 */
   --brand-card: 255 255 255;             /* #ffffff 保留 */
 
   /* 中性：淺霧灰 / 深灰綠（新增） */
-  --brand-muted: 232 226 216;            /* #E8E2D8 */
-  --brand-deep: 64 80 75;                /* #40504B */
+  --brand-muted: 239 238 233;            /* 柔和紙張灰 */
+  --brand-deep: 67 78 76;                /* 霧藍系深色 */
 
   /* 柔色（保留原有日式柔色系） */
   --brand-soft-pink: 245 230 232;        /* #F5E6E8 */
@@ -89,29 +89,29 @@
 
   /* === Atelier companion：溫暖的市集工作夥伴（2026-07-16） === */
   /* 中性底維持工作效率，柔色表面與暖陰影負責陪伴感與內容節奏。 */
-  --atelier-canvas: 248 247 243;                /* 帶紙張溫度的淺灰白 */
-  --atelier-paper: 255 253 249;                 /* 暖白內容表面 */
-  --atelier-ink: 49 56 52;                      /* 柔和深墨綠 */
-  --atelier-muted: 111 106 98;                  /* 暖灰次要資訊 */
-  --atelier-line: 226 220 210;                  /* 低存在感暖灰線 */
-  --atelier-clay: 195 126 82;                   /* 暖杏陶土強調 */
-  --atelier-blue: 112 143 149;                  /* 霧藍內容分類 */
+  --atelier-canvas: 250 250 248;                /* 舊版米白底，像自然紙張 */
+  --atelier-paper: 255 255 253;                 /* 不刺眼的暖白內容表面 */
+  --atelier-ink: 58 58 58;                      /* 舊版柔黑主文字 */
+  --atelier-muted: 107 107 107;                 /* 中性暖灰次要資訊 */
+  --atelier-line: 229 228 220;                  /* 低存在感米灰線 */
+  --atelier-clay: 212 165 116;                  /* 舊版暖木色 */
+  --atelier-blue: 123 159 166;                  /* 舊版霧藍 */
   --atelier-rose: 184 119 116;                  /* 乾燥玫瑰內容分類 */
   --atelier-sage-soft: 230 239 233;             /* 鼠尾草柔面 */
   --atelier-apricot-soft: 247 232 216;          /* 杏色柔面 */
   --atelier-blue-soft: 231 239 241;             /* 霧藍柔面 */
   --atelier-rose-soft: 244 229 228;             /* 玫瑰柔面 */
   --atelier-sun: 226 185 104;                   /* 日光黃點綴 */
-  --atelier-shadow: 0 12px 32px rgb(78 68 53 / 0.10);
-  --atelier-key-shadow: 0 2px 0 rgb(88 76 58 / 0.14), 0 7px 16px rgb(88 76 58 / 0.08);
-  --atelier-lift-shadow: 0 16px 40px rgb(78 68 53 / 0.14);
+  --atelier-shadow: 0 10px 28px rgb(123 159 166 / 0.10);
+  --atelier-key-shadow: 0 2px 0 rgb(93 112 113 / 0.10), 0 8px 18px rgb(123 159 166 / 0.10);
+  --atelier-lift-shadow: 0 18px 42px rgb(123 159 166 / 0.15);
 
   /* 圓角系統 */
-  --radius: 0.5rem;
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 0.75rem;
+  --radius: 1.25rem;
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
 }
 
 /* ✅ 自訂動畫 */
@@ -164,6 +164,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   position: relative;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgb(var(--brand-soft-yellow) / 0.62), transparent 28rem),
+    radial-gradient(circle at 92% 24%, rgb(var(--brand-soft-green) / 0.46), transparent 32rem);
+  background-attachment: fixed;
+}
+
+/* JapaneseD 的招牌霧藍 × 暖木漸層，降低飽和度以維持新版可讀性。 */
+.japanese-warm-header {
+  background:
+    radial-gradient(circle at 86% 12%, rgb(255 255 255 / 0.18), transparent 15rem),
+    linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-primary) / 0.94) 46%, rgb(var(--brand-secondary)) 100%);
 }
 
 .page-transition {

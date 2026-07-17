@@ -81,7 +81,7 @@ export function createCloudflareR2SalesPhotoEvidenceUploadAdapter(
           ok: false,
           key: uploadInput.key,
           code: 'r2_upload_failed',
-          message: error instanceof Error ? error.message : 'Sales photo evidence R2 upload failed.',
+          message: 'Sales photo evidence R2 upload failed.',
         };
       }
     },

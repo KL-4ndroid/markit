@@ -21,17 +21,8 @@ type SupabaseReadQuery<T> = {
   maybeSingle(): Promise<SupabaseResult<T>>;
 };
 
-type SupabaseWriteQuery<T> = {
-  eq(column: string, value: string): SupabaseWriteQuery<T>;
-  is(column: string, value: null): SupabaseWriteQuery<T>;
-  select(columns: string): SupabaseWriteQuery<T>;
-  single(): Promise<SupabaseResult<T>>;
-};
-
 type SupabaseTableClient = {
   select(columns: string): SupabaseReadQuery<unknown>;
-  insert(values: Record<string, unknown>): SupabaseWriteQuery<unknown>;
-  update(values: Record<string, unknown>): SupabaseWriteQuery<unknown>;
 };
 
 export type SalesPhotoEvidenceMetadataClaimSupabaseClient = {
@@ -90,6 +81,14 @@ export type SalesPhotoEvidenceUploadMetadataRepository = SalesPhotoEvidenceMetad
   markEvidenceUploadFailed(input: SalesPhotoEvidenceMarkUploadFailedMetadataInput): Promise<SalesPhotoEvidenceMetadataClaimedRow>;
 };
 
+export type SalesPhotoEvidenceServerMutationRepository = Pick<
+  SalesPhotoEvidenceUploadMetadataRepository,
+  | 'createEvidenceUploadingClaim'
+  | 'markEvidenceUploading'
+  | 'finalizeEvidenceUploaded'
+  | 'markEvidenceUploadFailed'
+>;
+
 type SupabaseStaffRelationshipRow = {
   owner_id: string;
 };
@@ -140,26 +139,9 @@ function mapEvidenceRow(row: SupabaseEvidenceRow): SalesPhotoEvidenceClaimExisti
   };
 }
 
-function mapClaimedRow(row: SupabaseEvidenceRow): SalesPhotoEvidenceMetadataClaimedRow {
-  return {
-    id: row.id,
-    ownerId: row.owner_id,
-    marketId: row.market_id,
-    saleId: row.sale_id,
-    capturedByStaffId: row.captured_by_staff_id,
-    status: row.status,
-  };
-}
-
-function requireRow<T>(row: T | null, message: string): T {
-  if (!row) {
-    throw new Error(message);
-  }
-  return row;
-}
-
 export function createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
-  client: SalesPhotoEvidenceMetadataClaimSupabaseClient
+  client: SalesPhotoEvidenceMetadataClaimSupabaseClient,
+  mutations: SalesPhotoEvidenceServerMutationRepository
 ): SalesPhotoEvidenceUploadMetadataRepository {
   return {
     async getSaleEventForEvidenceClaim(input) {
@@ -227,88 +209,19 @@ export function createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
     },
 
     async createEvidenceUploadingClaim(input: SalesPhotoEvidenceCreateUploadingClaimInput) {
-      const { data, error } = await client
-        .from('sale_photo_evidence')
-        .insert({
-          owner_id: input.ownerId,
-          market_id: input.marketId,
-          sale_id: input.saleId,
-          captured_by_staff_id: input.capturedByStaffId,
-          status: 'uploading',
-          sale_completed_at: input.saleCompletedAt,
-          captured_at: input.capturedAt,
-        })
-        .select(EVIDENCE_SELECT_COLUMNS)
-        .single();
-
-      throwIfSupabaseError(error, 'Sales photo evidence metadata claim insert failed.');
-      return mapClaimedRow(requireRow(data as SupabaseEvidenceRow | null, 'Sales photo evidence metadata claim insert returned no row.'));
+      return mutations.createEvidenceUploadingClaim(input);
     },
 
     async markEvidenceUploading(input: SalesPhotoEvidenceMarkUploadingClaimInput) {
-      const { data, error } = await client
-        .from('sale_photo_evidence')
-        .update({
-          status: 'uploading',
-          captured_at: input.capturedAt,
-        })
-        .eq('id', input.evidenceId)
-        .eq('owner_id', input.ownerId)
-        .eq('market_id', input.marketId)
-        .eq('sale_id', input.saleId)
-        .is('deleted_at', null)
-        .select(EVIDENCE_SELECT_COLUMNS)
-        .single();
-
-      throwIfSupabaseError(error, 'Sales photo evidence metadata claim update failed.');
-      return mapClaimedRow(requireRow(data as SupabaseEvidenceRow | null, 'Sales photo evidence metadata claim update returned no row.'));
+      return mutations.markEvidenceUploading(input);
     },
 
     async finalizeEvidenceUploaded(input: SalesPhotoEvidenceFinalizeUploadedMetadataInput) {
-      const { data, error } = await client
-        .from('sale_photo_evidence')
-        .update({
-          status: 'uploaded',
-          r2_object_key: input.imageObjectKey,
-          r2_thumbnail_key: input.thumbnailObjectKey,
-          mime_type: input.mimeType,
-          width: input.width,
-          height: input.height,
-          file_size_bytes: input.fileSizeBytes,
-          captured_at: input.capturedAt,
-          uploaded_at: input.uploadedAt,
-          expires_at: input.expiresAt,
-          failure_reason: null,
-        })
-        .eq('id', input.evidenceId)
-        .eq('owner_id', input.ownerId)
-        .eq('market_id', input.marketId)
-        .eq('sale_id', input.saleId)
-        .is('deleted_at', null)
-        .select(EVIDENCE_SELECT_COLUMNS)
-        .single();
-
-      throwIfSupabaseError(error, 'Sales photo evidence metadata finalize failed.');
-      return mapClaimedRow(requireRow(data as SupabaseEvidenceRow | null, 'Sales photo evidence metadata finalize returned no row.'));
+      return mutations.finalizeEvidenceUploaded(input);
     },
 
     async markEvidenceUploadFailed(input: SalesPhotoEvidenceMarkUploadFailedMetadataInput) {
-      const { data, error } = await client
-        .from('sale_photo_evidence')
-        .update({
-          status: 'upload_failed',
-          failure_reason: input.reason,
-        })
-        .eq('id', input.evidenceId)
-        .eq('owner_id', input.ownerId)
-        .eq('market_id', input.marketId)
-        .eq('sale_id', input.saleId)
-        .is('deleted_at', null)
-        .select(EVIDENCE_SELECT_COLUMNS)
-        .single();
-
-      throwIfSupabaseError(error, 'Sales photo evidence metadata failure update failed.');
-      return mapClaimedRow(requireRow(data as SupabaseEvidenceRow | null, 'Sales photo evidence metadata failure update returned no row.'));
+      return mutations.markEvidenceUploadFailed(input);
     },
   };
 }

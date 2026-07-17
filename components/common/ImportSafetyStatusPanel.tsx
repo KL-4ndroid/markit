@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Download, FileWarning, RefreshCw, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { getAppPlatform } from '@/lib/platform';
 import {
   getImportSafetyStatus,
   readLocalImportEmergencyBackup,
@@ -40,19 +41,6 @@ function storageModeLabel(status: ImportSafetyStatus): string {
   }
 }
 
-function downloadJson(filename: string, content: string): void {
-  const blob = new Blob([content], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
 export function ImportSafetyStatusPanel() {
   const [status, setStatus] = useState<ImportSafetyStatus | null>(null);
 
@@ -64,7 +52,7 @@ export function ImportSafetyStatusPanel() {
     refresh();
   }, []);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const content = readLocalImportEmergencyBackup();
     if (!content) {
       toast.error('No local emergency backup content is available to download.');
@@ -73,7 +61,10 @@ export function ImportSafetyStatusPanel() {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    downloadJson(`feria-emergency-backup-${timestamp}.json`, content);
+    await getAppPlatform().files.saveFile({
+      filename: `feria-emergency-backup-${timestamp}.json`,
+      data: new Blob([content], { type: 'application/json' }),
+    });
     toast.success('Emergency backup downloaded.');
   };
 

@@ -8,8 +8,10 @@ import {
   findActiveSalesPhotoEvidenceForSale,
   getAllowedSalesPhotoEvidenceTransitions,
   getSalesPhotoEvidenceExpiresAt,
+  isSalesPhotoEvidenceObjectKeyBoundToIdentity,
   isSalesPhotoEvidenceStatus,
   SALES_PHOTO_EVIDENCE_COMPRESSION_POLICY,
+  SALES_PHOTO_EVIDENCE_MAX_TOTAL_PAYLOAD_BYTES,
   SALES_PHOTO_EVIDENCE_RETENTION_DAYS,
   SALES_PHOTO_EVIDENCE_STATUSES,
 } from '../lib/sales/photo-evidence-model';
@@ -139,6 +141,59 @@ runTest('R2 object key builder rejects path injection characters', () => {
   );
 });
 
+runTest('R2 object key binding requires the exact evidence identity kind and extension', () => {
+  const identity = {
+    ownerId: 'owner_1',
+    marketId: 'market_2',
+    saleId: 'sale_3',
+    evidenceId: 'evidence_4',
+    kind: 'image' as const,
+  };
+
+  assert.equal(isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+    ...identity,
+    key: 'sales-evidence/7d/owner_1/market_2/sale_3/evidence_4.webp',
+  }), true);
+  assert.equal(isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+    ...identity,
+    key: 'sales-evidence/7d/owner_1/market_2/sale_3/evidence_4.jpg',
+  }), true);
+  assert.equal(isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+    ...identity,
+    kind: 'thumbnail',
+    key: 'sales-evidence-thumbs/7d/owner_1/market_2/sale_3/evidence_4.jpeg',
+  }), true);
+  assert.equal(isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+    ...identity,
+    key: 'sales-evidence/7d/another_owner/market_2/sale_3/evidence_4.webp',
+  }), false);
+  assert.equal(isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+    ...identity,
+    key: 'sales-evidence/7d/owner_1/another_market/sale_3/evidence_4.webp',
+  }), false);
+  assert.equal(isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+    ...identity,
+    key: 'sales-evidence/7d/owner_1/market_2/another_sale/evidence_4.webp',
+  }), false);
+  assert.equal(isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+    ...identity,
+    key: 'sales-evidence/7d/owner_1/market_2/sale_3/another_evidence.webp',
+  }), false);
+  assert.equal(isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+    ...identity,
+    kind: 'thumbnail',
+    key: 'sales-evidence/7d/owner_1/market_2/sale_3/evidence_4.webp',
+  }), false);
+  assert.equal(isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+    ...identity,
+    key: 'sales-evidence/7d/owner_1/market_2/sale_3/evidence_4.png',
+  }), false);
+  assert.equal(isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+    ...identity,
+    key: 'sales-evidence/7d/owner_1/market_2/sale_3/evidence_4.webp/extra',
+  }), false);
+});
+
 runTest('expiration uses uploaded_at plus seven days', () => {
   assert.equal(SALES_PHOTO_EVIDENCE_RETENTION_DAYS, 7);
   assert.equal(
@@ -150,6 +205,7 @@ runTest('expiration uses uploaded_at plus seven days', () => {
 
 runTest('compression policy targets clear evidence under one megabyte', () => {
   assert.equal(SALES_PHOTO_EVIDENCE_COMPRESSION_POLICY.maxFileSizeBytes, 1_000_000);
+  assert.equal(SALES_PHOTO_EVIDENCE_MAX_TOTAL_PAYLOAD_BYTES, 1_500_000);
   assert.equal(SALES_PHOTO_EVIDENCE_COMPRESSION_POLICY.targetMaxEdgePx, 2048);
   assert.equal(SALES_PHOTO_EVIDENCE_COMPRESSION_POLICY.fallbackMaxEdgePx, 1800);
   assert.equal(SALES_PHOTO_EVIDENCE_COMPRESSION_POLICY.thumbnailMaxEdgePx, 320);

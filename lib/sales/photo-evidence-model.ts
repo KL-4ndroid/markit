@@ -15,6 +15,7 @@ export type SalesPhotoEvidenceStatus = (typeof SALES_PHOTO_EVIDENCE_STATUSES)[nu
 export const SALES_PHOTO_EVIDENCE_RETENTION_DAYS = 7;
 export const SALES_PHOTO_EVIDENCE_RETENTION_PREFIX = `${SALES_PHOTO_EVIDENCE_RETENTION_DAYS}d` as const;
 export const SALES_PHOTO_EVIDENCE_MAX_FILE_SIZE_BYTES = 1_000_000;
+export const SALES_PHOTO_EVIDENCE_MAX_TOTAL_PAYLOAD_BYTES = 1_500_000;
 export const SALES_PHOTO_EVIDENCE_TARGET_MAX_EDGE_PX = 2048;
 export const SALES_PHOTO_EVIDENCE_FALLBACK_MAX_EDGE_PX = 1800;
 export const SALES_PHOTO_EVIDENCE_THUMBNAIL_MAX_EDGE_PX = 320;
@@ -78,6 +79,15 @@ export type SalesPhotoEvidenceObjectKeyInput = {
   evidenceId: string;
   kind?: SalesPhotoEvidenceObjectKind;
   extension?: 'webp' | 'jpg' | 'jpeg';
+};
+
+export type SalesPhotoEvidenceObjectKeyBindingInput = {
+  key: string | null;
+  ownerId: string;
+  marketId: string;
+  saleId: string;
+  evidenceId: string;
+  kind: SalesPhotoEvidenceObjectKind;
 };
 
 export type SalesPhotoEvidenceCompressionPolicy = {
@@ -250,6 +260,36 @@ export function buildSalesPhotoEvidenceObjectKey(input: SalesPhotoEvidenceObject
     requireObjectKeySegment(input.saleId, 'saleId'),
     `${requireObjectKeySegment(input.evidenceId, 'evidenceId')}.${extension}`,
   ].join('/');
+}
+
+/**
+ * Verifies that an R2 key is the exact canonical key for one evidence variant.
+ * Prefix-only checks are insufficient because they can allow a row to point at
+ * another owner's or sale's object inside the same private bucket.
+ */
+export function isSalesPhotoEvidenceObjectKeyBoundToIdentity(
+  input: SalesPhotoEvidenceObjectKeyBindingInput
+): boolean {
+  if (typeof input.key !== 'string') return false;
+
+  const extensionSeparator = input.key.lastIndexOf('.');
+  if (extensionSeparator <= 0 || extensionSeparator === input.key.length - 1) return false;
+
+  const extension = input.key.slice(extensionSeparator + 1);
+  if (!OBJECT_KEY_EXTENSIONS.has(extension)) return false;
+
+  try {
+    return input.key === buildSalesPhotoEvidenceObjectKey({
+      ownerId: input.ownerId,
+      marketId: input.marketId,
+      saleId: input.saleId,
+      evidenceId: input.evidenceId,
+      kind: input.kind,
+      extension: extension as 'webp' | 'jpg' | 'jpeg',
+    });
+  } catch {
+    return false;
+  }
 }
 
 export function getSalesPhotoEvidenceExpiresAt(uploadedAt: string | Date): string {

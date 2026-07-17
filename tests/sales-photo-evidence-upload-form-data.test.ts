@@ -158,7 +158,7 @@ runTest('parser source stays model-only and route parses FormData only behind th
   assert.doesNotMatch(parserSource, /NextResponse|createClient|supabase|fetch\s*\(/i);
   assert.match(routeSource, /isMultipartFormDataRequest\(request\)/);
   assert.match(routeSource, /wantsR2Upload && !isR2UploadEnabled\(\)/);
-  assert.match(routeSource, /parseSalesPhotoEvidenceUploadFormData\(await request\.formData\(\)\)/);
+  assert.match(routeSource, /parseAndValidateSalesPhotoEvidenceUploadFormData\(await request\.formData\(\)\)/);
 });
 
 runTest('execution plan and manifest record Slice 7B-4C', () => {

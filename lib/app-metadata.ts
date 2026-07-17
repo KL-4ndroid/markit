@@ -1,6 +1,7 @@
-import packageJson from '@/package.json';
-
-const appVersion = process.env.NEXT_PUBLIC_APP_VERSION || packageJson.version;
+// next.config.mjs injects the package version for both Web and mobile builds.
+// Keep package.json out of client bundles: importing it here exposes the full
+// dependency manifest to every client that renders application metadata.
+const appVersion = process.env.NEXT_PUBLIC_APP_VERSION?.trim() || 'development';
 const appBuildTime = process.env.NEXT_PUBLIC_APP_BUILD_TIME || '';
 const appCommitSha = process.env.NEXT_PUBLIC_APP_COMMIT_SHA || '';
 const appVersionLabel = appCommitSha ? `${appVersion} (${appCommitSha})` : appVersion;

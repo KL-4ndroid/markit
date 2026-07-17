@@ -51,7 +51,7 @@ function ProtectedBottomNavigation() {
   return (
     <nav
       aria-label="主要導覽"
-      className={`fixed left-0 right-0 z-50 bg-atelier-paper/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgb(78_68_53_/_0.08)] ease-in-out ${
+      className={`fixed bottom-0 left-0 right-0 z-50 border-t border-primary/10 bg-atelier-paper/95 px-2 pt-2.5 pb-[calc(0.6rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgb(123_159_166_/_0.10)] backdrop-blur-md ease-in-out ${
         isNavVisible ? 'bottom-0 translate-y-0' : '-bottom-24 translate-y-24'
       }`}
     >
@@ -70,8 +70,8 @@ function ProtectedBottomNavigation() {
               <span
                 className={`flex h-8 min-w-10 items-center justify-center rounded-control px-2 transition-colors ${
                   isActive
-                    ? 'bg-atelier-sage-soft text-primary shadow-sm'
-                    : 'bg-transparent text-atelier-muted group-hover:bg-atelier-blue-soft group-hover:text-atelier-ink'
+                    ? 'scale-105 bg-primary text-white shadow-atelier-key'
+                    : 'bg-transparent text-atelier-muted group-hover:bg-soft-pink group-hover:text-atelier-ink'
                 }`}
               >
                 <Icon className="h-5 w-5" aria-hidden="true" />

@@ -52,8 +52,10 @@ npm audit --omit=dev
 
 1. 進入 [Supabase Dashboard](https://app.supabase.com)
 2. 選擇專案 > SQL Editor
-3. 依序執行 `supabase/migrations/` 下的 SQL 檔案
-4. 確認無錯誤
+3. 先檢查遠端 migration history 與實際 schema
+4. 對既有環境只執行已審核且尚未套用的 migration，並確認無錯誤
+
+> 此 repository 的歷史 migration 含重複版本前綴。不得對既有 staging／production 直接執行完整 migration chain 或盲目執行 `supabase db push`。Phase 2 照片邊界必須使用經審核的 `057 -> 058 -> staging smoke -> 059 -> post-cutover smoke` 順序。
 
 ### Migration 順序
 
@@ -100,7 +102,50 @@ SELECT id, email FROM auth.users LIMIT 5;
 |------|-------|--------------|
 | NEXT_PUBLIC_SUPABASE_URL | https://xxx.supabase.co | Production, Preview, Development |
 | NEXT_PUBLIC_SUPABASE_ANON_KEY | eyJxxx... | Production, Preview, Development |
+| SUPABASE_SECRET_KEY | Dedicated named `sb_secret_...`; server-only | Branch-specific Preview / Production；每個環境使用不同 key |
 | NEXT_PUBLIC_DEBUG_MODE | false | Production |
+| APP_API_CORS_ALLOWED_ORIGINS | Production: `https://markit-app-mocha.vercel.app,capacitor://localhost`; Preview: `<stable-staging-origin>,capacitor://localhost` | Production；Preview 的精確 origin 待首次 persistent branch deployment 後填入 |
+| SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED | `1` only while enabled | Preview first, then Production |
+| SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ALLOW_PRODUCTION | `0` → `1` after smoke | Production only |
+| SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED | `1` only while enabled | Preview first, then Production |
+| SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ALLOW_PRODUCTION | `0` → `1` after smoke | Production only |
+| SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ENABLED | `1` only while enabled | Preview first, then Production |
+| SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ALLOW_PRODUCTION | `0` → `1` after smoke | Production only |
+| R2_ACCOUNT_ID | Vercel secret | Preview/Production, preferably separate |
+| R2_ACCESS_KEY_ID | Vercel secret | Preview/Production, preferably separate |
+| R2_SECRET_ACCESS_KEY | Vercel secret | Preview/Production, preferably separate |
+| R2_BUCKET_NAME | Private bucket name | Preview/Production, preferably separate |
+
+Phase 2 server-only mutation cutover:
+
+- [ ] Confirm the Vercel production Git branch (`main` versus `master`) before creating staging.
+- [ ] Create a persistent `staging` branch in the same Vercel project and record its stable branch URL after the first deployment.
+- [ ] Use a separate staging Supabase project, R2 bucket/token, and named `SUPABASE_SECRET_KEY` whenever possible.
+- [ ] Inspect staging migration history, then apply `057_harden_sales_photo_evidence_api_boundary.sql` without pushing the complete historical chain.
+- [ ] Apply additive `058_add_sales_photo_evidence_server_mutation_rpcs.sql`; confirm the three RPCs exist and the legacy authenticated write path is still available for controlled comparison.
+- [ ] Deploy the server-secret RPC client with controlled route gates and run staging RPC smoke before any permission cutover.
+- [ ] Only after the RPC smoke passes, apply `059_enforce_sales_photo_evidence_server_mutation_boundary.sql`.
+- [ ] After migration 059, confirm `authenticated` retains SELECT but cannot INSERT/UPDATE/DELETE `sale_photo_evidence`.
+- [ ] After migration 059, confirm `service_role` cannot mutate the table directly and can execute only the three approved BFF mutation RPCs.
+- [ ] Keep `SUPABASE_SECRET_KEY` server-only; never expose it through `NEXT_PUBLIC_*`, logs, mobile artifacts, or support output.
+- [ ] Verify missing/invalid server secret returns retryable 503 before metadata or R2 writes.
+- [ ] Before and after migration 059, verify owner upload/read, active-staff upload, revoked-staff denial, revoke-during-upload finalize denial, and unrelated-user denial against staging.
+- [ ] Verify authenticated direct Supabase INSERT/UPDATE/DELETE is denied after migration 059 while approved BFF RPC writes still succeed.
+- [x] Production API origin confirmed: `https://markit-app-mocha.vercel.app`.
+- [ ] Stable staging origin: pending first persistent branch deployment.
+
+補充邊界：
+
+- [ ] Vercel Web 專案未設定 `APP_BUILD_TARGET` 或 `NEXT_PUBLIC_APP_BUILD_TARGET`
+- [ ] Build Command 為 `npm run build`，Output Directory 未設為 `out`
+- [ ] Web 的 `NEXT_PUBLIC_API_BASE_URL` 留空，沿用 same-origin `/api`
+- [ ] iOS staging／production build 分別注入固定 HTTPS API origin
+- [ ] 不將臨時 Preview URL 寫入正式 iOS binary
+- [ ] R2 變數都沒有 `NEXT_PUBLIC_` 前綴
+- [ ] Supabase 已套用 `057_harden_sales_photo_evidence_api_boundary.sql`
+- [ ] Supabase 已套用 additive `058_add_sales_photo_evidence_server_mutation_rpcs.sql`，且 staging RPC smoke 通過
+- [ ] Supabase 僅在 smoke 通過後套用 `059_enforce_sales_photo_evidence_server_mutation_boundary.sql`
+- [ ] 059 後的 BFF smoke 與 direct-write denial 驗證均通過
 
 ### 3. 部署
 
@@ -114,6 +159,21 @@ SELECT id, email FROM auth.users LIMIT 5;
 2. 測試首頁載入
 3. 測試離線模式（關閉網路）
 4. 測試資料創建（若已配置 Supabase）
+
+### 5. Phase 2 BFF 驗證
+
+- [ ] `GET /api/health` 回 200、`Cache-Control: no-store`
+- [ ] `capacitor://localhost` 對 upload/image 的 preflight 回 204
+- [ ] 非 allowlist origin 在 auth、Supabase、R2 前回 403
+- [ ] 缺少或無效 Bearer token 回 401，且沒有 stack／secret
+- [ ] owner 可讀取自己已上傳的 image／thumbnail
+- [ ] unrelated user 與 revoked staff fail closed
+- [ ] active staff 只能上傳自己 actor identity 對應的 payload
+- [ ] 上傳 MIME signature、單檔 1 MB、合計 1.5 MB、request 2 MB 上限生效
+- [ ] 058 後、059 前的 BFF RPC path staging smoke 通過，且 retry／lease／failure cleanup 行為正確
+- [ ] 059 後重跑相同 BFF smoke，並確認 direct authenticated 及 direct `service_role` table mutation 均被拒絕
+- [ ] Production 第一次部署保持所有 `*_ALLOW_PRODUCTION=0`
+- [ ] 回滾時先關閉 server production allow flags，再重新建置 client public flags
 
 ## 安全檢查
 
@@ -194,6 +254,12 @@ const sentryConfig = {
 3. 點擊 "Redeploy"
 
 ### 2. 資料庫回滾
+
+Phase 2 權限 cutover 不應以未審核的反向 SQL 直接恢復舊有 grants：
+
+1. 先關閉照片 route/runtime flags，停止新的 mutation。
+2. 若 059 後發生問題，使用經審核的 forward-fix migration 修正權限或 RPC；不要盲目重放舊 authenticated／service-role table grants。
+3. 檢查 R2 已寫入但資料庫 finalize 失敗的物件，依 upload lease 與 evidence ID 執行人工 reconciliation。
 
 ```sql
 -- 查看 Migration 歷史

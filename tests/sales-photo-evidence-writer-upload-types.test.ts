@@ -37,6 +37,7 @@ runTest('uploadable statuses prepare an uploading to uploaded transition when lo
     'pending_capture',
     'capture_skipped',
     'captured_local',
+    'uploading',
     'upload_failed',
   ];
 
@@ -86,10 +87,9 @@ runTest('uploaded status is idempotent and permits local payload cleanup without
   assert.equal(plan.requiresExistingEvidenceRow, true);
 });
 
-runTest('terminal and in-flight statuses reject upload without deleting local payload', () => {
+runTest('terminal statuses reject upload without deleting local payload', () => {
   const statuses: SalesPhotoEvidenceStatus[] = [
     'not_required',
-    'uploading',
     'expired',
     'waived_by_owner',
   ];

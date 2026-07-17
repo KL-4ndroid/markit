@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/Button';
+import { buildProductDetailHref } from '@/lib/navigation/product-detail-route';
 import { getProductStockState, type ProductStockTone } from '@/lib/products/product-list-view-model';
 import { formatCurrency } from '@/lib/utils';
 import type { Product, ProductCategory } from '@/types/db';
@@ -60,11 +61,11 @@ export function ProductCard({ product, onOpen, canEdit = false }: ProductCardPro
       onOpen(product);
       return;
     }
-    if (product.id) router.push(`/products/${product.id}`);
+    if (product.id) router.push(buildProductDetailHref(product.id));
   };
 
   return (
-    <article className="flex min-h-48 flex-col rounded-card border border-primary/15 bg-white p-4 shadow-sm shadow-primary/5">
+    <article className="flex min-h-48 flex-col rounded-card border border-primary/10 bg-atelier-paper p-4 shadow-atelier transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-atelier-lift">
       <div className="flex items-start justify-between gap-3">
         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control ${category.background}`}>
           <CategoryIcon className="h-5 w-5 text-foreground/75" aria-hidden="true" />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { getAppPlatform } from '@/lib/platform';
 
 /**
  * Service Worker 註冊組件
@@ -11,6 +12,8 @@ import { useEffect } from 'react';
  */
 export function RegisterServiceWorker() {
   useEffect(() => {
+    if (getAppPlatform().kind !== 'web') return;
+
     if (
       typeof window !== 'undefined' &&
       'serviceWorker' in navigator &&

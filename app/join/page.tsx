@@ -11,6 +11,7 @@ import {
   type InvitationVerification,
 } from '@/lib/supabase/staff-invitations';
 import { toast } from 'sonner';
+import { getNetworkPort } from '@/lib/platform/network-capability';
 
 function JoinPageContent() {
   const searchParams = useSearchParams();
@@ -20,23 +21,14 @@ function JoinPageContent() {
   const [verifying, setVerifying] = useState(true);
   const [verification, setVerification] = useState<InvitationVerification | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(() => getNetworkPort().getCurrentStatus().connected);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
-    setIsOnline(navigator.onLine);
-
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
+    const network = getNetworkPort();
+    setIsOnline(network.getCurrentStatus().connected);
+    return network.subscribe(status => setIsOnline(status.connected));
   }, []);
 
   useEffect(() => {

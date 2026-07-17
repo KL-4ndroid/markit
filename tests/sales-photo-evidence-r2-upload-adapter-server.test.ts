@@ -144,7 +144,7 @@ runTest('server adapter maps R2 errors to retryable upload failures', async () =
 
   assert.equal(result.ok, false);
   assert.equal(result.code, 'r2_upload_failed');
-  assert.equal(result.message, 'network failed');
+  assert.equal(result.message, 'Sales photo evidence R2 upload failed.');
 });
 
 runTest('R2 SDK is confined to server adapter and route remains dependency-injected', () => {

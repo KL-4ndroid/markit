@@ -38,6 +38,7 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { supabaseAuthStorage } from '@/lib/supabase/auth-storage-bridge';
 
 /**
  * 員工 session 禁止查詢的底表清單（C2.29B-2.2）
@@ -138,6 +139,7 @@ function getBaseSupabaseClient(): SupabaseClient {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        storage: supabaseAuthStorage,
       },
     }
   );

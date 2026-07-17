@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, 
   Package, 
@@ -21,7 +21,6 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
-import { normalizeRouteId } from '@/lib/markets/detail-loading';
 import { getProductDetail } from '@/lib/products/detail-service';
 import { useUserRole } from '@/hooks/useUserRole';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
@@ -31,16 +30,12 @@ const EditProductForm = dynamic(() =>
   import('@/components/products/EditProductForm').then(module => module.EditProductForm)
 );
 
-interface PageProps {
-  params?: {
-    id?: string | string[];
-  };
+interface ProductDetailScreenProps {
+  productId: string;
 }
 
-export default function ProductDetailPage({ params }: PageProps) {
+export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   const router = useRouter();
-  const routeParams = useParams<{ id?: string | string[] }>();
-  const productId = normalizeRouteId(routeParams?.id ?? params?.id) ?? ''; // UUID 字符串，不需要 parseInt
   const liveProduct = useProduct(productId);
   const [directLocalProduct, setDirectLocalProduct] = useState<Product | undefined>(undefined);
   const [localProductLookupComplete, setLocalProductLookupComplete] = useState(false);

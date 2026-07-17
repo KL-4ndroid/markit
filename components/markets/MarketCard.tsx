@@ -7,6 +7,7 @@ import type { MarketStatsFromProjection } from '@/lib/db/hooks';
 import { formatDate, formatCurrency, formatDateRanges, filterCurrentWeekDates } from '@/lib/utils';
 import { useUserRole } from '@/hooks/useUserRole';
 import { getShadowClass, getBorderClass } from '@/lib/theme-config';
+import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 import { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 
@@ -231,7 +232,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       return;
     }
 
-    router.push(`/markets/${market.id}`);
+    router.push(buildMarketDetailHref(market.id));
   };
 
   // 點擊備註圖示

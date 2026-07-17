@@ -1,4 +1,5 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { SALES_PHOTO_EVIDENCE_MAX_FILE_SIZE_BYTES } from '@/lib/sales/photo-evidence-model';
 import {
   createSalesPhotoEvidenceR2ServerConfigFromEnv,
   type SalesPhotoEvidenceR2ServerEnv,
@@ -21,7 +22,11 @@ export type SalesPhotoEvidenceR2ReadAdapter = {
 };
 
 export type SalesPhotoEvidenceR2GetObjectClient = {
-  send(command: GetObjectCommand): Promise<{ Body?: unknown; ContentType?: string }>;
+  send(command: GetObjectCommand): Promise<{
+    Body?: unknown;
+    ContentType?: string;
+    ContentLength?: number;
+  }>;
 };
 
 export type CreateCloudflareR2SalesPhotoEvidenceReadAdapterInput = {
@@ -29,23 +34,43 @@ export type CreateCloudflareR2SalesPhotoEvidenceReadAdapterInput = {
   client?: SalesPhotoEvidenceR2GetObjectClient;
 };
 
+function assertAllowedBodySize(size: number): void {
+  if (size <= 0 || size > SALES_PHOTO_EVIDENCE_MAX_FILE_SIZE_BYTES) {
+    throw new Error('R2 response body size is outside the evidence limit.');
+  }
+}
+
 async function bodyToUint8Array(body: unknown): Promise<Uint8Array> {
-  if (body instanceof Uint8Array) return body;
-  if (body instanceof Blob) return new Uint8Array(await body.arrayBuffer());
+  if (body instanceof Uint8Array) {
+    assertAllowedBodySize(body.byteLength);
+    return body;
+  }
+  if (body instanceof Blob) {
+    assertAllowedBodySize(body.size);
+    return new Uint8Array(await body.arrayBuffer());
+  }
   if (body && typeof body === 'object' && 'transformToByteArray' in body) {
     const transformed = await (body as { transformToByteArray(): Promise<Uint8Array> }).transformToByteArray();
+    assertAllowedBodySize(transformed.byteLength);
     return transformed;
   }
   if (body && typeof body === 'object' && Symbol.asyncIterator in body) {
     const chunks: Uint8Array[] = [];
+    let total = 0;
     for await (const chunk of body as AsyncIterable<Uint8Array | Buffer | string>) {
       if (typeof chunk === 'string') {
-        chunks.push(new TextEncoder().encode(chunk));
+        const encoded = new TextEncoder().encode(chunk);
+        total += encoded.byteLength;
+        assertAllowedBodySize(total);
+        chunks.push(encoded);
       } else {
-        chunks.push(chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk));
+        const bytes = chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk);
+        total += bytes.byteLength;
+        assertAllowedBodySize(total);
+        chunks.push(bytes);
       }
     }
-    const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+    assertAllowedBodySize(total);
     const result = new Uint8Array(total);
     let offset = 0;
     for (const chunk of chunks) {
@@ -81,16 +106,25 @@ export function createCloudflareR2SalesPhotoEvidenceReadAdapter(
           Bucket: config.bucketName,
           Key: key,
         }));
+        if (
+          response.ContentType !== 'image/webp'
+          && response.ContentType !== 'image/jpeg'
+        ) {
+          throw new Error('R2 response content type is outside the evidence contract.');
+        }
+        if (response.ContentLength !== undefined) {
+          assertAllowedBodySize(response.ContentLength);
+        }
         return {
           ok: true,
           body: await bodyToUint8Array(response.Body),
-          contentType: response.ContentType ?? 'application/octet-stream',
+          contentType: response.ContentType,
         };
       } catch (error) {
         return {
           ok: false,
           code: 'r2_read_failed',
-          message: error instanceof Error ? error.message : 'R2 read failed.',
+          message: 'Sales photo evidence R2 read failed.',
         };
       }
     },

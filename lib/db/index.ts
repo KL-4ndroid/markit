@@ -29,6 +29,7 @@ import {
   ImportOutcomeError,
   runPhaseAwareImport,
 } from './import-runner';
+import { getFilePort } from '@/lib/platform/file-capability';
 
 export type DatabaseInitResult =
   | { ok: true; integrity: IntegrityResult }
@@ -436,19 +437,12 @@ export async function initializeDatabaseSafely(
 const EMERGENCY_BACKUP_KEY = 'market_pulse_emergency_backup';
 const EMERGENCY_BACKUP_METADATA_KEY = 'market_pulse_emergency_backup_metadata';
 
-function triggerEmergencyBackupDownload(backupJson: string): void {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
-
-  const blob = new Blob([backupJson], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+async function triggerEmergencyBackupDownload(backupJson: string): Promise<void> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  link.href = url;
-  link.download = `feria-emergency-backup-${timestamp}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  await getFilePort().saveFile({
+    filename: `feria-emergency-backup-${timestamp}.json`,
+    data: new Blob([backupJson], { type: 'application/json' }),
+  });
 }
 
 async function createEmergencyBackupBeforeImport(): Promise<void> {
@@ -469,7 +463,7 @@ async function createEmergencyBackupBeforeImport(): Promise<void> {
       localStorage.setItem(EMERGENCY_BACKUP_KEY, backupJson);
       localStorage.setItem(EMERGENCY_BACKUP_METADATA_KEY, JSON.stringify(metadata));
     } else {
-      triggerEmergencyBackupDownload(backupJson);
+      await triggerEmergencyBackupDownload(backupJson);
       localStorage.setItem(EMERGENCY_BACKUP_METADATA_KEY, JSON.stringify({
         ...metadata,
         downloaded: true,

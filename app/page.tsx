@@ -39,6 +39,7 @@ import {
 } from '@/lib/owner-brand';
 import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 import type { Market } from '@/types/db';
 
 const DASHBOARD_ROLE_NOT_READY_OWNER_ID = '__role_not_ready__';
@@ -262,8 +263,7 @@ export default function HomePage() {
 
   const openMarket = (marketId?: string, task?: 'pending-photos') => {
     if (!marketId) return;
-    const taskQuery = task ? `?task=${task}` : '';
-    router.push(`/markets/${marketId}${taskQuery}`);
+    router.push(buildMarketDetailHref(marketId, { task }));
   };
 
   const pendingPhotoMarketId = pendingPhotoItems[0]?.marketId;
@@ -277,15 +277,15 @@ export default function HomePage() {
   const companionMessage = getCompanionMessage(todayView.primaryMarket?.phase);
 
   return (
-    <div className="min-h-screen bg-atelier-canvas text-atelier-ink">
-      <header className="overflow-hidden bg-atelier-paper px-5 pb-7 pt-[calc(1.25rem+env(safe-area-inset-top))]">
+    <div className="min-h-screen bg-atelier-canvas/80 text-atelier-ink">
+      <header className="japanese-warm-header overflow-hidden rounded-b-[2rem] px-5 pb-9 pt-[calc(1.25rem+env(safe-area-inset-top))] text-white shadow-atelier-lift">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
             {isStaff ? (
-              <p className="truncate text-xs font-semibold text-primary">{staffWorkspaceName}</p>
+              <p className="truncate text-xs font-semibold text-white/90">{staffWorkspaceName}</p>
             ) : (
-              <p className="truncate text-xs font-semibold text-primary">{ownerBrandName}</p>
+              <p className="truncate text-xs font-semibold text-white/90">{ownerBrandName}</p>
             )}
 
             </div>
@@ -295,7 +295,7 @@ export default function HomePage() {
               <IconButton
                 label="開啟更多設定"
                 tooltip="更多"
-                className="bg-atelier-canvas text-atelier-muted shadow-sm hover:bg-atelier-sage-soft hover:text-atelier-ink"
+                className="bg-white/20 text-white shadow-sm backdrop-blur-sm hover:bg-white/30 hover:text-white"
                 icon={<Settings className="h-5 w-5" aria-hidden="true" />}
                 onClick={() => router.push('/settings')}
               />
@@ -304,10 +304,10 @@ export default function HomePage() {
 
           <div className="mt-6 flex items-end justify-between gap-5">
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-atelier-clay">{greeting}</p>
-              <h1 className="mt-1 text-[2rem] font-semibold leading-none text-atelier-ink">今日</h1>
-              <p className="mt-3 text-sm text-atelier-muted">{formatDateLabel(now)}</p>
-              <p className="mt-2 max-w-md text-sm leading-6 text-atelier-ink/75">{companionMessage}</p>
+              <p className="text-sm font-medium text-white/85">{greeting}</p>
+              <h1 className="mt-1 text-[2rem] font-semibold leading-none text-white">今日</h1>
+              <p className="mt-3 text-sm text-white/80">{formatDateLabel(now)}</p>
+              <p className="mt-2 max-w-md text-sm leading-6 text-white/85">{companionMessage}</p>
               {isStaff && <div className="mt-3"><StaffBadge tone="default" /></div>}
             </div>
             <Image
@@ -316,8 +316,9 @@ export default function HomePage() {
               width={88}
               height={88}
               priority
+              unoptimized
               aria-hidden="true"
-              className="h-[4.75rem] w-[4.75rem] shrink-0 object-cover opacity-90 mix-blend-multiply sm:h-[5.5rem] sm:w-[5.5rem]"
+              className="h-[4.75rem] w-[4.75rem] shrink-0 rounded-full bg-white/15 object-cover opacity-95 sm:h-[5.5rem] sm:w-[5.5rem]"
             />
           </div>
         </div>

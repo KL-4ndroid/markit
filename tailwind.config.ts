@@ -3,13 +3,11 @@ import type { Config } from "tailwindcss";
 // Féria - 出攤筆記 — 視覺識別（VI）設計 token
 // 文件：docs/brand/VI_DESIGN_SYSTEM.md
 //
-// 色票對應（依 VI 文件 4.1–4.6）：
-//   霧松綠  #6F8F86  →  primary       (主色，舊 #7B9FA6 霧藍)
-//   暖杏橘  #D9A66A  →  secondary     (次色，舊 #D4A574 暖木)
-//   奶油米白 #F7F3EA →  background    (背景，舊 #FAFAF8)
-//   墨灰黑  #2F3432  →  foreground    (文字主色)
-//   淺霧灰  #E8E2D8  →  muted         (中性色，舊無)
-//   深灰綠  #40504B  →  deep          (輔助深色，舊無)
+// 色票以 JapaneseD 舊版的溫暖日系語言為基礎，保留新版語義 token：
+//   霧藍色  #7B9FA6 → primary
+//   暖木色  #D4A574 → secondary
+//   米白色  #FAFAF8 → background
+//   柔黑色  #3A3A3A → foreground
 //   乾燥玫瑰 #C7776E →  danger        (危險色，舊 #d4183d)
 //   柔霧黃  #E5C46B  →  warn          (提醒色，舊 #FFF8E7 柔黃)
 //   霧藍灰  #7E9AA0  →  info          (資訊色，舊無)
@@ -100,9 +98,9 @@ const config: Config = {
         'xl': '1rem',
         '2xl': '1.25rem',
         '3xl': '1.5rem',
-        control: '0.5rem',
-        card: '0.5rem',
-        dialog: '0.75rem',
+        control: '1rem',
+        card: '1.5rem',
+        dialog: '1.5rem',
       },
       zIndex: {
         navigation: '50',

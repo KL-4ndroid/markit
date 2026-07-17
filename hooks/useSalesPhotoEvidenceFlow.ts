@@ -4,6 +4,7 @@ import { useCallback, useEffect, useReducer, useState } from 'react';
 import { toast } from 'sonner';
 
 import { captureAndStoreSalesPhotoEvidenceWithFileInput } from '@/lib/sales/photo-evidence-browser-adapter';
+import { getAppPlatform } from '@/lib/platform';
 import { uploadPendingSalesPhotoEvidenceManually } from '@/lib/sales/photo-evidence-manual-upload-client';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import {
@@ -211,9 +212,13 @@ export function useSalesPhotoEvidenceFlow({
     dispatch({ type: 'START_CAPTURE' });
 
     try {
+      const camera = getAppPlatform().camera;
       const result = await captureAndStoreSalesPhotoEvidenceWithFileInput({
         queueItem: item,
         source,
+      }, {
+        getCapabilitySnapshot: () => camera.getCapabilitySnapshot(),
+        selectFile: captureSource => camera.selectImage(captureSource),
       });
 
       if (result.action === 'capture_stored_locally') {

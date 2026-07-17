@@ -12,7 +12,7 @@ function readProjectFile(path: string): string {
 }
 
 const routeSectionSource = readProjectFile('components/markets/SalesPhotoEvidenceOwnerAlbumRouteSection.tsx');
-const marketDetailSource = readProjectFile('app/markets/[id]/page.tsx');
+const marketDetailSource = readProjectFile('components/markets/MarketDetailScreen.tsx');
 const staffMarketDetailSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const planSource = readProjectFile('docs/SALES_PHOTO_EVIDENCE_EXECUTION_PLAN_2026_07_04.md');
 const packageJson = JSON.parse(readProjectFile('package.json')) as { scripts: Record<string, string> };

@@ -275,7 +275,7 @@ runTest('storage adapter remains disconnected from production enqueue drain and 
     'lib/sync/staff-pull-service.ts',
     'components/markets/SalesPhotoEvidenceOperatingCard.tsx',
     'components/markets/StaffMarketDetailView.tsx',
-    'app/markets/[id]/page.tsx',
+    'components/markets/MarketDetailScreen.tsx',
   ];
 
   const matches = productionFiles.filter(file => {

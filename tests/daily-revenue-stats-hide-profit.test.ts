@@ -105,9 +105,9 @@ runTest('computeDailyTotals 純函式未受 hideProfit 影響（仍算 totalProf
 });
 
 runTest('老闆模式 DailyRevenueStats 呼叫點未傳 hideProfit（行為 0 變化）', () => {
-  // 驗證 app/markets/[id]/page.tsx 內 DailyRevenueStats 呼叫沒傳 hideProfit
+  // 驗證 MarketDetailScreen 內 DailyRevenueStats 呼叫沒傳 hideProfit
   // 確保老闆模式仍是 hideProfit=false（預設值）
-  const ownerPagePath = join(projectRoot, 'app/markets/[id]/page.tsx');
+  const ownerPagePath = join(projectRoot, 'components/markets/MarketDetailScreen.tsx');
   const ownerPageSource = readFileSync(ownerPagePath, 'utf-8');
   // 找 <DailyRevenueStats ... /> 標籤（單行）並確認沒有 hideProfit
   const match = ownerPageSource.match(/<DailyRevenueStats[^>]*\/>/);

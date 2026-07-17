@@ -28,6 +28,7 @@ import {
 } from '@/lib/sales/photo-evidence-runtime-enqueue';
 import { getSalesPhotoEvidenceRuntimeGateStatus } from '@/lib/sales/photo-evidence-runtime-flags';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 
 type RouteReadiness = {
   metadataClaim: boolean;
@@ -272,7 +273,7 @@ export function SalesPhotoEvidenceTestWorkbench({
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
             <span>此操作會寫入一筆標記為 [TEST] 的真實成交。</span>
             {selectedMarket?.id && (
-              <Link href={`/markets/${selectedMarket.id}`} className="inline-flex items-center gap-1 text-primary hover:underline">
+              <Link href={buildMarketDetailHref(selectedMarket.id)} className="inline-flex items-center gap-1 text-primary hover:underline">
                 開啟市集 <ExternalLink className="h-3.5 w-3.5" />
               </Link>
             )}

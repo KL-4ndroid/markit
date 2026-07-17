@@ -12,7 +12,10 @@ import { GlobalOverlayHost } from '@/components/global-overlays/GlobalOverlayHos
 import { PWASplashScreen } from '@/components/PWASplashScreen';
 import { RegisterServiceWorker } from '@/app/register-sw';
 
-const STANDALONE_PUBLIC_ROUTES = ['/demo'];
+const STANDALONE_PUBLIC_ROUTES = [
+  '/demo',
+  ...(process.env.NEXT_PUBLIC_APP_RUNTIME_SMOKE === '1' ? ['/mobile-runtime-smoke'] : []),
+];
 const AUTH_FLOW_PUBLIC_ROUTES = ['/join'];
 
 function AppToaster() {

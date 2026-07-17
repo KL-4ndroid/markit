@@ -15,6 +15,8 @@ import { pullOwnerEvents } from '@/lib/sync/owner-pull-service';
 import { pullEventsFromViews } from '@/lib/sync/staff-pull-service';
 import { handlePermissionSyncError } from '@/lib/sync/sync-error-policy';
 import { pushEvents } from '@/lib/sync/sync-push-service';
+import { getNetworkPort } from '@/lib/platform/network-capability';
+import { getLifecyclePort } from '@/lib/platform/lifecycle-capability';
 import {
   acquireSyncLock,
   getActiveSyncIdentity,
@@ -69,6 +71,7 @@ export function useSync(options: UseSyncOptions = {}) {
   
   // ✅ 使用全局狀態，並訂閱更新
   const [state, setState] = useState<SyncState>(getGlobalSyncState());
+  const [isOnline, setIsOnline] = useState(() => getNetworkPort().getCurrentStatus().connected);
 
   const syncTimeoutRef = useRef<NodeJS.Timeout>();
   const intervalRef = useRef<NodeJS.Timeout>();
@@ -126,6 +129,8 @@ export function useSync(options: UseSyncOptions = {}) {
       return;
     }
 
+    if (getLifecyclePort().getCurrentState() !== 'active') return;
+
     const pauseUntil = getSyncPauseUntil();
     if (pauseUntil > Date.now()) {
       updateGlobalState(prev => ({
@@ -143,7 +148,7 @@ export function useSync(options: UseSyncOptions = {}) {
     }
 
     // 檢查網路狀態
-    if (!navigator.onLine) {
+    if (!getNetworkPort().getCurrentStatus().connected) {
       releaseSyncLock();
       setState(prev => ({ ...prev, status: SyncStatus.OFFLINE }));
       return;
@@ -274,29 +279,30 @@ export function useSync(options: UseSyncOptions = {}) {
 
   // 監聽網路狀態和即時同步事件
   useEffect(() => {
-    const handleOnline = () => {
-      throttledSyncFnRef.current?.();
-    };
-
-    const handleOffline = () => {
-      updateGlobalState(prev => ({ ...prev, status: SyncStatus.OFFLINE }));
-    };
+    const network = getNetworkPort();
+    setIsOnline(network.getCurrentStatus().connected);
+    const unsubscribeNetwork = network.subscribe(status => {
+      setIsOnline(status.connected);
+      if (status.connected) throttledSyncFnRef.current?.();
+      else updateGlobalState(prev => ({ ...prev, status: SyncStatus.OFFLINE }));
+    });
 
     // ✅ 監聽即時同步事件
     const handleTriggerSync = (event: any) => {
       throttledSyncFnRef.current?.();
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
     window.addEventListener('trigger-sync', handleTriggerSync as EventListener);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      unsubscribeNetwork();
       window.removeEventListener('trigger-sync', handleTriggerSync as EventListener);
     };
   }, []);
+
+  useEffect(() => getLifecyclePort().subscribe(lifecycleState => {
+    if (lifecycleState === 'active') throttledSyncFnRef.current?.();
+  }), []);
 
   // 定期同步
   useEffect(() => {
@@ -341,8 +347,8 @@ export function useSync(options: UseSyncOptions = {}) {
   return useMemo(() => ({
     ...state,
     sync: triggerSync,
-    isOnline: navigator.onLine,
-  }), [state, triggerSync]);
+    isOnline,
+  }), [isOnline, state, triggerSync]);
 }
 
 /**

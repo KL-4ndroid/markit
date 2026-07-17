@@ -27,7 +27,7 @@ function section(source: string, start: string, end?: string): string {
 
 const cardSource = readProjectFile('components/markets/SalesPhotoEvidenceOperatingCard.tsx');
 const workspaceSource = readProjectFile('components/sales/TransactionWorkspace.tsx');
-const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
+const ownerPageSource = readProjectFile('components/markets/MarketDetailScreen.tsx');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const planSource = readProjectFile('docs/SALES_CHECKOUT_PHOTO_EVIDENCE_UIUX_OPTIMIZATION_PLAN_2026_07_15.md');
 const testManifestSource = readProjectFile('scripts/test-files.txt');

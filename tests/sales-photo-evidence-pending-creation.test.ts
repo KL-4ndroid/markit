@@ -167,7 +167,7 @@ runTest('pending creation model stays pure and page surfaces do not own queue wr
     'lib/sync/staff-pull-service.ts',
     'components/markets/SalesPhotoEvidenceOperatingCard.tsx',
     'components/markets/StaffMarketDetailView.tsx',
-    'app/markets/[id]/page.tsx',
+    'components/markets/MarketDetailScreen.tsx',
     'hooks/useSalesPhotoEvidenceFlow.ts',
   ];
 

@@ -282,7 +282,7 @@ runTest('drain boundary is not wired to Dexie adapter sync UI or Supabase yet', 
     'lib/sync/staff-pull-service.ts',
     'components/markets/SalesPhotoEvidenceOperatingCard.tsx',
     'components/markets/StaffMarketDetailView.tsx',
-    'app/markets/[id]/page.tsx',
+    'components/markets/MarketDetailScreen.tsx',
   ];
 
   const matches = productionFiles.filter(file => {

@@ -26,7 +26,7 @@ const clientSource = readProjectFile('lib/sales/photo-evidence-manual-upload-cli
 const dialogSource = readProjectFile('components/markets/SalesPhotoEvidenceFlowDialog.tsx');
 const flowHookSource = readProjectFile('hooks/useSalesPhotoEvidenceFlow.ts');
 const staffViewSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
-const ownerPageSource = readProjectFile('app/markets/[id]/page.tsx');
+const ownerPageSource = readProjectFile('components/markets/MarketDetailScreen.tsx');
 const actionSource = readProjectFile('components/markets/SalesPhotoEvidenceManualUploadAction.tsx');
 const testManifestSource = readProjectFile('scripts/test-files.txt');
 
@@ -115,8 +115,8 @@ runTest('successful manual upload deletes local payload only after server succes
       calls.push('wait_for_sale_sync');
       return true;
     },
-    fetchImpl: async (_url, init) => {
-      calls.push(`fetch:${init?.method}:${(init?.headers as Record<string, string>).Authorization}`);
+    fetchImpl: async (url, init) => {
+      calls.push(`fetch:${String(url)}:${init?.method}:${(init?.headers as Record<string, string>).Authorization}`);
       assert.ok(init?.body instanceof FormData);
       return new Response(JSON.stringify({
         ok: true,
@@ -142,7 +142,7 @@ runTest('successful manual upload deletes local payload only after server succes
     'get_payload',
     'wait_for_sale_sync',
     'get_token',
-    'fetch:POST:Bearer token',
+    'fetch:/api/sales-photo-evidence/upload:POST:Bearer token',
     `delete_payload:${item.queueId}`,
     `mark_created:${item.queueId}`,
   ]);
@@ -183,6 +183,84 @@ runTest('failed manual upload keeps local payload and marks retryable failure', 
   ]);
 });
 
+runTest('manual upload never retries POST transport failures and keeps the local payload', async () => {
+  let attempts = 0;
+  let retryMarked = 0;
+  const result = await uploadPendingSalesPhotoEvidenceManually(item, {
+    getPayload: async () => payload(),
+    waitForSaleEventSync: async () => true,
+    getAccessToken: async () => 'token',
+    fetchImpl: async () => {
+      attempts += 1;
+      throw new Error('offline detail must not escape');
+    },
+    markRetryableFailure: async () => {
+      retryMarked += 1;
+      return item;
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'network_error');
+  assert.equal(result.shouldKeepLocalPayload, true);
+  assert.equal(attempts, 1);
+  assert.equal(retryMarked, 1);
+});
+
+runTest('permanent authentication rejection is not recorded as retryable', async () => {
+  let retryMarked = false;
+  const result = await uploadPendingSalesPhotoEvidenceManually(item, {
+    getPayload: async () => payload(),
+    waitForSaleEventSync: async () => true,
+    getAccessToken: async () => 'token',
+    fetchImpl: async () => new Response(JSON.stringify({
+      ok: false,
+      code: 'authentication_required',
+      message: 'internal text is ignored',
+      retryable: false,
+    }), { status: 401 }),
+    markRetryableFailure: async () => {
+      retryMarked = true;
+      return item;
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, 'authentication_required');
+  assert.equal(retryMarked, false);
+});
+
+runTest('mobile upload uses the explicit HTTPS Vercel API origin', async () => {
+  const previousBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const previousTarget = process.env.NEXT_PUBLIC_APP_BUILD_TARGET;
+  let requestedUrl = '';
+  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://app.example.test';
+  process.env.NEXT_PUBLIC_APP_BUILD_TARGET = 'mobile';
+  try {
+    const result = await uploadPendingSalesPhotoEvidenceManually(item, {
+      getPayload: async () => payload(),
+      waitForSaleEventSync: async () => true,
+      getAccessToken: async () => 'token',
+      fetchImpl: async input => {
+        requestedUrl = String(input);
+        return new Response(JSON.stringify({
+          ok: true,
+          evidenceId: 'evidence-id',
+          shouldDeleteLocalPayloadAfterSuccess: false,
+        }), { status: 200 });
+      },
+      markCreated: async () => item,
+    });
+    assert.equal(result.ok, true);
+    assert.equal(requestedUrl, 'https://app.example.test/api/sales-photo-evidence/upload');
+  } finally {
+    if (previousBase === undefined) delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    else process.env.NEXT_PUBLIC_API_BASE_URL = previousBase;
+    if (previousTarget === undefined) delete process.env.NEXT_PUBLIC_APP_BUILD_TARGET;
+    else process.env.NEXT_PUBLIC_APP_BUILD_TARGET = previousTarget;
+  }
+});
+
 runTest('manual upload waits for the sale event and keeps the photo local while sync is pending', async () => {
   let fetchCalled = false;
   const result = await uploadPendingSalesPhotoEvidenceManually(item, {
@@ -201,8 +279,46 @@ runTest('manual upload waits for the sale event and keeps the photo local while 
   assert.equal(fetchCalled, false);
 });
 
+runTest('manual upload reports invalid remote API configuration without making a request', async () => {
+  const originalApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const originalConsoleError = console.error;
+  let fetchCalled = false;
+  let retryCode: string | null = null;
+
+  process.env.NEXT_PUBLIC_API_BASE_URL = '/relative-api';
+  console.error = () => undefined;
+  try {
+    const result = await uploadPendingSalesPhotoEvidenceManually(item, {
+      getPayload: async () => payload(),
+      waitForSaleEventSync: async () => true,
+      getAccessToken: async () => 'token',
+      fetchImpl: async () => {
+        fetchCalled = true;
+        return new Response(null, { status: 500 });
+      },
+      markRetryableFailure: async input => {
+        retryCode = input.code;
+        return item;
+      },
+    });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.code, 'api_base_url_invalid');
+    assert.equal(retryCode, 'api_base_url_invalid');
+    assert.equal(fetchCalled, false);
+  } finally {
+    console.error = originalConsoleError;
+    if (originalApiBaseUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    } else {
+      process.env.NEXT_PUBLIC_API_BASE_URL = originalApiBaseUrl;
+    }
+  }
+});
+
 runTest('client and UI reuse existing route and stay out of R2 SDK storage internals', () => {
-  assert.match(clientSource, /fetchImpl\('\/api\/sales-photo-evidence\/upload'/);
+  assert.match(clientSource, /buildAppApiUrl\('\/api\/sales-photo-evidence\/upload'\)/);
+  assert.match(clientSource, /isAppApiUrlError/);
   assert.match(clientSource, /deletePendingSalesPhotoEvidencePayload/);
   assert.match(clientSource, /markLocalPendingSalesPhotoEvidenceCreationCreated/);
   assert.match(clientSource, /markLocalPendingSalesPhotoEvidenceCreationRetryableFailure/);

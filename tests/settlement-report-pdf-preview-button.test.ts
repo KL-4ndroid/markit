@@ -41,10 +41,9 @@ runTest('browser preview shell is client-only and uses react-pdf blob generation
   assert.doesNotMatch(buttonSource, /^import \{ pdf \} from '@react-pdf\/renderer'/m);
   assert.doesNotMatch(buttonSource, /^import \{ SettlementReportPdfDocument \}/m);
   assert.match(buttonSource, /\.toBlob\(\)/);
-  assert.match(buttonSource, /URL\.createObjectURL\(blob\)/);
-  assert.match(buttonSource, /window\.open\(url, '_blank'\)/);
-  assert.match(buttonSource, /openedWindow\.opener = null/);
-  assert.match(buttonSource, /URL\.revokeObjectURL\(url\)/);
+  assert.match(buttonSource, /getAppPlatform\(\)\.files\.previewFile/);
+  assert.match(buttonSource, /filename: buildPdfFileName\(viewModel\)/);
+  assert.doesNotMatch(buttonSource, /URL\.createObjectURL|window\.open/);
 });
 
 runTest('browser preview shell is guarded by owner preview permission and nullable view model', () => {

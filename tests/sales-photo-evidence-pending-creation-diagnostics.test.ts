@@ -188,7 +188,7 @@ runTest('diagnostics model remains pure and disconnected from UI and mutation ex
 
   const productionFiles = [
     'components/markets/SalesPhotoEvidencePendingListDialog.tsx',
-    'app/markets/[id]/page.tsx',
+    'components/markets/MarketDetailScreen.tsx',
     'components/markets/StaffMarketDetailView.tsx',
     'lib/sales/photo-evidence-runtime-enqueue.ts',
     'lib/sales/photo-evidence-pending-creation-storage.ts',

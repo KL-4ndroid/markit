@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { isSyncLockActive } from '@/lib/sync/sync-runtime-state';
 import type { Event } from '@/types/db';
+import { getNetworkPort } from '@/lib/platform/network-capability';
 
 export type LocalPendingWriteBlockingReason =
   | 'local_pending_events'
@@ -46,11 +47,6 @@ function increment(map: Record<string, number>, key: string | undefined): void {
   map[normalized] = (map[normalized] ?? 0) + 1;
 }
 
-function getBrowserOnlineState(): boolean {
-  if (typeof navigator === 'undefined') return true;
-  return navigator.onLine;
-}
-
 function isActorMismatch(event: Event, userId?: string): boolean {
   if (!userId) return false;
   if (!event.actor_id || event.actor_id === 'local') return false;
@@ -58,7 +54,7 @@ function isActorMismatch(event: Event, userId?: string): boolean {
 }
 
 export async function getLocalPendingWriteReport(userId?: string): Promise<LocalPendingWriteReport> {
-  const isOnline = getBrowserOnlineState();
+  const isOnline = getNetworkPort().getCurrentStatus().connected;
   const syncLocked = isSyncLockActive();
   const blockingReasonCodes = new Set<LocalPendingWriteBlockingReason>();
   const pendingEventCountByType: Record<string, number> = {};

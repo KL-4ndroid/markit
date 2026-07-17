@@ -182,7 +182,7 @@ runTest('recovery model stays pure and is not wired to runtime cleanup execution
     'lib/sales/photo-evidence-pending-creation-drain.ts',
     'components/markets/SalesPhotoEvidencePendingListDialog.tsx',
     'components/markets/AddRevenueDialog.tsx',
-    'app/markets/[id]/page.tsx',
+    'components/markets/MarketDetailScreen.tsx',
   ];
 
   const wiredFiles = productionFiles.filter(file => {

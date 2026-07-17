@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { type CoordinatedOverlayProps } from '@/components/global-overlays/overlay-types';
+import { getAppPlatform } from '@/lib/platform';
 
 export function PWAUpdatePrompt({
   isSuppressed = false,
@@ -24,6 +25,8 @@ export function PWAUpdatePrompt({
   useEffect(() => () => onVisibilityChange?.(false), [onVisibilityChange]);
 
   useEffect(() => {
+    if (getAppPlatform().kind !== 'web') return;
+
     if ('serviceWorker' in navigator) {
       // 監聽更新事件
       navigator.serviceWorker.ready.then((reg) => {

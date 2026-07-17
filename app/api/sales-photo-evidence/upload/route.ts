@@ -1,6 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
+import { normalizeAppApiErrorBody } from '@/lib/api/contract';
+import {
+  authenticateAppApiRequest,
+  createAppApiUserSupabaseClient,
+} from '@/lib/api/server/auth';
+import {
+  applyAppApiCors,
+  createAppApiCorsPreflightResponse,
+  createAppApiCorsRejectionResponse,
+} from '@/lib/api/server/cors';
 import {
   executeSalesPhotoEvidenceMetadataClaimAdapter,
   type SalesPhotoEvidenceMetadataClaimAdapterResult,
@@ -12,38 +21,34 @@ import {
 } from '@/lib/sales/photo-evidence-model';
 import type { SalesPhotoEvidenceR2UploadAdapter } from '@/lib/sales/photo-evidence-r2-upload-adapter';
 import type { SalesPhotoEvidenceUploadMimeType } from '@/lib/sales/photo-evidence-upload-contract';
-import { parseSalesPhotoEvidenceUploadFormData } from '@/lib/sales/photo-evidence-upload-form-data';
+import { parseAndValidateSalesPhotoEvidenceUploadFormData } from '@/lib/sales/photo-evidence-upload-form-data';
 import {
   createSalesPhotoEvidenceMetadataClaimSupabaseRepository,
   type SalesPhotoEvidenceMetadataClaimSupabaseClient,
+  type SalesPhotoEvidenceServerMutationRepository,
 } from '@/lib/supabase/sales-photo-evidence-metadata-claim-repository';
 import type { SalesPhotoEvidenceUploadMetadataRepository } from '@/lib/supabase/sales-photo-evidence-metadata-claim-repository';
+import { createSalesPhotoEvidenceServerMutationRepository } from '@/lib/supabase/sales-photo-evidence-server-mutation-repository.server';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 30;
 
 type SalesPhotoEvidenceUploadRouteActor = {
   actorId: string;
 };
 
-type SalesPhotoEvidenceUploadRouteBody = {
-  ownerId: string;
-  marketId: string;
-  saleEventId: string;
-  capturedByStaffId: string | null;
-  capturedAt: string;
-  saleCompletedAt: string;
-  hasLocalPayload: boolean;
-};
-
 export type SalesPhotoEvidenceUploadRouteDeps = {
   isMetadataClaimEnabled(): boolean;
   isR2UploadEnabled?(): boolean;
-  resolveActor(request: Request): Promise<SalesPhotoEvidenceUploadRouteActor | null>;
+  resolveActor(request: Request): Promise<SalesPhotoEvidenceUploadRouteActor | 'unavailable' | null>;
   createRepository(request: Request): SalesPhotoEvidenceMetadataClaimSupabaseClient;
+  createMutationRepository?(
+    actor: SalesPhotoEvidenceUploadRouteActor,
+    attemptId: string
+  ): SalesPhotoEvidenceServerMutationRepository | null;
   r2UploadAdapter?: SalesPhotoEvidenceR2UploadAdapter;
   createR2UploadAdapter?(): Promise<SalesPhotoEvidenceR2UploadAdapter | null>;
-  finalizeUploadedEvidence?(input: SalesPhotoEvidenceFinalizeUploadedInput): Promise<void>;
-  markEvidenceUploadFailed?(input: SalesPhotoEvidenceMarkUploadFailedInput): Promise<void>;
   now?(): Date;
 };
 
@@ -79,8 +84,19 @@ const DISABLED_RESPONSE_BODY = Object.freeze({
   message: 'Sales photo evidence upload is not enabled yet.',
 });
 
+// 1.5 MB validated binary payload plus a bounded amount of multipart metadata.
+const SALES_PHOTO_EVIDENCE_MAX_MULTIPART_REQUEST_BYTES = 2_000_000;
+
 function jsonResponse(body: unknown, status: number): NextResponse {
-  return NextResponse.json(body, {
+  const responseBody = (
+    body
+    && typeof body === 'object'
+    && !Array.isArray(body)
+    && (body as Record<string, unknown>).ok === false
+  )
+    ? normalizeAppApiErrorBody(body as Record<string, unknown>, status)
+    : body;
+  return NextResponse.json(responseBody, {
     status,
     headers: {
       'Cache-Control': 'no-store',
@@ -101,42 +117,33 @@ function disabledR2UploadResponse(): NextResponse {
   }, 501);
 }
 
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0;
-}
-
-function parseUploadRouteBody(value: unknown): SalesPhotoEvidenceUploadRouteBody | null {
-  if (!value || typeof value !== 'object') return null;
-
-  const record = value as Record<string, unknown>;
-  const capturedByStaffId = record.capturedByStaffId;
-
-  if (
-    !isNonEmptyString(record.ownerId) ||
-    !isNonEmptyString(record.marketId) ||
-    !isNonEmptyString(record.saleEventId) ||
-    !(capturedByStaffId === null || isNonEmptyString(capturedByStaffId)) ||
-    !isNonEmptyString(record.capturedAt) ||
-    typeof record.hasLocalPayload !== 'boolean'
-  ) {
-    return null;
-  }
-
-  return {
-    ownerId: record.ownerId,
-    marketId: record.marketId,
-    saleEventId: record.saleEventId,
-    capturedByStaffId,
-    capturedAt: record.capturedAt,
-    saleCompletedAt: isNonEmptyString(record.saleCompletedAt)
-      ? record.saleCompletedAt
-      : record.capturedAt,
-    hasLocalPayload: record.hasLocalPayload,
-  };
+function serverMutationUnavailableResponse(): NextResponse {
+  return jsonResponse({
+    ok: false,
+    code: 'sales_photo_evidence_server_mutation_unavailable',
+    message: 'Sales photo evidence server mutation is temporarily unavailable.',
+    shouldKeepLocalPayload: true,
+  }, 503);
 }
 
 function isMultipartFormDataRequest(request: Request): boolean {
   return request.headers.get('content-type')?.toLowerCase().includes('multipart/form-data') ?? false;
+}
+
+function isMultipartRequestTooLarge(request: Request): boolean {
+  const value = request.headers.get('content-length');
+  if (!value) return false;
+  const contentLength = Number(value);
+  return !Number.isSafeInteger(contentLength)
+    || contentLength < 0
+    || contentLength > SALES_PHOTO_EVIDENCE_MAX_MULTIPART_REQUEST_BYTES;
+}
+
+function getTrustedCapturedByStaffId(
+  actor: SalesPhotoEvidenceUploadRouteActor,
+  ownerId: string
+): string | null {
+  return actor.actorId === ownerId ? null : actor.actorId;
 }
 
 function mapClaimResultToResponse(result: SalesPhotoEvidenceMetadataClaimAdapterResult): NextResponse {
@@ -187,11 +194,35 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     }
 
     const wantsR2Upload = isMultipartFormDataRequest(request);
+    if (!wantsR2Upload) {
+      return jsonResponse({
+        ok: false,
+        code: 'unsupported_media_type',
+        message: 'Sales photo evidence upload requires multipart form data.',
+        shouldKeepLocalPayload: true,
+      }, 415);
+    }
     if (wantsR2Upload && !isR2UploadEnabled()) {
       return disabledR2UploadResponse();
     }
+    if (wantsR2Upload && isMultipartRequestTooLarge(request)) {
+      return jsonResponse({
+        ok: false,
+        code: 'upload_request_too_large',
+        message: 'Sales photo evidence upload request is too large.',
+        shouldKeepLocalPayload: true,
+      }, 413);
+    }
 
     const actor = await deps.resolveActor(request);
+    if (actor === 'unavailable') {
+      return jsonResponse({
+        ok: false,
+        code: 'authentication_unavailable',
+        message: 'Sales photo evidence authentication is temporarily unavailable.',
+        shouldKeepLocalPayload: true,
+      }, 503);
+    }
     if (!actor) {
       return jsonResponse({
         ok: false,
@@ -200,34 +231,7 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       }, 401);
     }
 
-    if (wantsR2Upload) {
-      return handleFormDataUpload(request, actor);
-    }
-
-    const body = parseUploadRouteBody(await request.json());
-    if (!body) {
-      return jsonResponse({
-        ok: false,
-        code: 'invalid_request',
-        message: 'Sales photo evidence upload request is invalid.',
-      }, 400);
-    }
-
-    const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(deps.createRepository(request));
-    const result = await executeSalesPhotoEvidenceMetadataClaimAdapter({
-      actorId: actor.actorId,
-      actorRole: actor.actorId === body.ownerId ? 'owner' : 'staff',
-      ownerId: body.ownerId,
-      marketId: body.marketId,
-      saleEventId: body.saleEventId,
-      capturedByStaffId: body.capturedByStaffId,
-      capturedAt: body.capturedAt,
-      saleCompletedAt: body.saleCompletedAt,
-      hasLocalPayload: body.hasLocalPayload,
-      writeEnabled: true,
-    }, repository);
-
-    return mapClaimResultToResponse(result);
+    return handleFormDataUpload(request, actor);
   }
 
   async function post(request: Request): Promise<NextResponse> {
@@ -236,7 +240,6 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     } catch (error) {
       console.error('sales photo evidence upload route failed', {
         name: error instanceof Error ? error.name : 'UnknownError',
-        message: error instanceof Error ? error.message : 'Unknown upload route failure',
       });
       return jsonResponse({
         ok: false,
@@ -261,17 +264,11 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     };
 
     try {
-      if (deps.markEvidenceUploadFailed) {
-        await deps.markEvidenceUploadFailed(input);
-        return;
-      }
-
       await repository.markEvidenceUploadFailed(input);
     } catch (error) {
       console.error('sales photo evidence failure status update failed', {
         reason,
         name: error instanceof Error ? error.name : 'UnknownError',
-        message: error instanceof Error ? error.message : 'Unknown metadata failure update error',
       });
     }
   }
@@ -285,7 +282,7 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       return disabledR2UploadResponse();
     }
 
-    const parsed = parseSalesPhotoEvidenceUploadFormData(await request.formData());
+    const parsed = await parseAndValidateSalesPhotoEvidenceUploadFormData(await request.formData());
     if (!parsed.ok) {
       return jsonResponse({
         ok: false,
@@ -296,14 +293,23 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     }
 
     const body = parsed.request;
-    const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(deps.createRepository(request));
+    const uploadAttemptId = crypto.randomUUID();
+    const mutationRepository = deps.createMutationRepository?.(actor, uploadAttemptId) ?? null;
+    if (!mutationRepository) {
+      return serverMutationUnavailableResponse();
+    }
+
+    const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
+      deps.createRepository(request),
+      mutationRepository
+    );
     const result = await executeSalesPhotoEvidenceMetadataClaimAdapter({
       actorId: actor.actorId,
       actorRole: actor.actorId === body.ownerId ? 'owner' : 'staff',
       ownerId: body.ownerId,
       marketId: body.marketId,
       saleEventId: body.saleEventId,
-      capturedByStaffId: body.capturedByStaffId,
+      capturedByStaffId: getTrustedCapturedByStaffId(actor, body.ownerId),
       capturedAt: body.capturedAt,
       saleCompletedAt: body.saleCompletedAt,
       hasLocalPayload: true,
@@ -348,7 +354,7 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       return jsonResponse({
         ok: false,
         code: 'r2_image_upload_failed',
-        message: imageUpload.message,
+        message: 'Sales photo evidence image storage failed.',
         shouldKeepLocalPayload: true,
       }, 500);
     }
@@ -364,7 +370,7 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       return jsonResponse({
         ok: false,
         code: 'r2_thumbnail_upload_failed',
-        message: thumbnailUpload.message,
+        message: 'Sales photo evidence thumbnail storage failed.',
         shouldKeepLocalPayload: true,
       }, 500);
     }
@@ -387,11 +393,7 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     };
 
     try {
-      if (deps.finalizeUploadedEvidence) {
-        await deps.finalizeUploadedEvidence(finalizeInput);
-      } else {
-        await repository.finalizeEvidenceUploaded(finalizeInput);
-      }
+      await repository.finalizeEvidenceUploaded(finalizeInput);
     } catch (error) {
       await markUploadFailedIfPossible(row, 'metadata_finalize_failed', repository);
       return jsonResponse({
@@ -461,62 +463,25 @@ function isR2UploadRouteEnabled(): boolean {
   return isSalesPhotoEvidenceR2UploadRouteEnabledForEnv(process.env);
 }
 
-function getSupabaseRouteConfig(): { url: string; anonKey: string } | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
-  if (!url || !anonKey) return null;
-  return { url, anonKey };
-}
-
-function getBearerToken(request: Request): string | null {
-  const authorization = request.headers.get('authorization');
-  if (!authorization?.startsWith('Bearer ')) return null;
-  return authorization.slice('Bearer '.length).trim() || null;
-}
-
-async function resolveActorFromBearerToken(request: Request): Promise<SalesPhotoEvidenceUploadRouteActor | null> {
-  const config = getSupabaseRouteConfig();
-  const token = getBearerToken(request);
-  if (!config || !token) return null;
-
-  const client = createClient(config.url, config.anonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  });
-
-  const { data, error } = await client.auth.getUser(token);
-  if (error || !data.user?.id) return null;
-
-  return { actorId: data.user.id };
+async function resolveActorFromBearerToken(
+  request: Request
+): Promise<SalesPhotoEvidenceUploadRouteActor | 'unavailable' | null> {
+  const result = await authenticateAppApiRequest(request);
+  if (result.ok) return result.actor;
+  return result.code === 'authentication_unavailable' ? 'unavailable' : null;
 }
 
 function createRouteSupabaseClient(request: Request): SalesPhotoEvidenceMetadataClaimSupabaseClient {
-  const config = getSupabaseRouteConfig();
-  const token = getBearerToken(request);
-  if (!config) {
-    throw new Error('Supabase route configuration is missing.');
-  }
-  if (!token) {
-    throw new Error('Supabase route authentication token is missing.');
-  }
+  const client = createAppApiUserSupabaseClient(request);
+  if (!client) throw new Error('Authenticated Supabase client is unavailable.');
+  return client as unknown as SalesPhotoEvidenceMetadataClaimSupabaseClient;
+}
 
-  return createClient(config.url, config.anonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  }) as unknown as SalesPhotoEvidenceMetadataClaimSupabaseClient;
+function createRouteServerMutationRepository(
+  actor: SalesPhotoEvidenceUploadRouteActor,
+  attemptId: string
+): SalesPhotoEvidenceServerMutationRepository | null {
+  return createSalesPhotoEvidenceServerMutationRepository(actor.actorId, attemptId);
 }
 
 async function createDefaultR2UploadAdapter(): Promise<SalesPhotoEvidenceR2UploadAdapter | null> {
@@ -535,11 +500,35 @@ const routeHandlers = createSalesPhotoEvidenceUploadRouteHandlers({
   isR2UploadEnabled: isR2UploadRouteEnabled,
   resolveActor: resolveActorFromBearerToken,
   createRepository: createRouteSupabaseClient,
+  createMutationRepository: createRouteServerMutationRepository,
   createR2UploadAdapter: createDefaultR2UploadAdapter,
 });
 
-export const GET = routeHandlers.GET;
-export const POST = routeHandlers.POST;
-export const PUT = routeHandlers.PUT;
-export const PATCH = routeHandlers.PATCH;
-export const DELETE = routeHandlers.DELETE;
+async function runUploadRouteWithCors(
+  request: Request,
+  handler: () => Promise<Response>
+): Promise<Response> {
+  const corsRejection = createAppApiCorsRejectionResponse(request);
+  if (corsRejection) return corsRejection;
+  return applyAppApiCors(request, await handler());
+}
+
+export const GET = (request?: Request) => request
+  ? runUploadRouteWithCors(request, routeHandlers.GET)
+  : routeHandlers.GET();
+export const POST = (request: Request) => runUploadRouteWithCors(
+  request,
+  () => routeHandlers.POST(request)
+);
+export const PUT = (request?: Request) => request
+  ? runUploadRouteWithCors(request, routeHandlers.PUT)
+  : routeHandlers.PUT();
+export const PATCH = (request?: Request) => request
+  ? runUploadRouteWithCors(request, routeHandlers.PATCH)
+  : routeHandlers.PATCH();
+export const DELETE = (request?: Request) => request
+  ? runUploadRouteWithCors(request, routeHandlers.DELETE)
+  : routeHandlers.DELETE();
+export const OPTIONS = (request: Request) => createAppApiCorsPreflightResponse(request, {
+  allowedMethods: ['POST', 'OPTIONS'],
+});

@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import type { Market } from '@/types/db';
 import { TrendingUp, Target, Eye, Sparkles, Calendar, Lightbulb } from 'lucide-react';
 import { MetricGuide } from './MetricGuide';
+import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 
 interface QuadrantGridProps {
   stars: Market[];
@@ -121,7 +122,9 @@ export function QuadrantGrid({
         {markets.slice(0, maxCount).map((market, index) => (
           <div
             key={market.id}
-            onClick={() => router.push(`/markets/${market.id}`)}
+            onClick={() => {
+              if (market.id) router.push(buildMarketDetailHref(market.id));
+            }}
             className="text-xs text-foreground bg-white/50 hover:bg-white rounded-lg px-2 py-1.5 cursor-pointer transition-colors"
           >
             <div className="font-medium line-clamp-1">

@@ -8,7 +8,7 @@ const editForm = readFileSync(join(root, 'components/markets/EditMarketForm.tsx'
 const sharedFields = readFileSync(join(root, 'components/markets/MarketFormFields.tsx'), 'utf8');
 const fullScreenForm = readFileSync(join(root, 'components/ui/FullScreenForm.tsx'), 'utf8');
 const timePicker = readFileSync(join(root, 'components/ui/TimePicker.tsx'), 'utf8');
-const ownerDetail = readFileSync(join(root, 'app/markets/[id]/page.tsx'), 'utf8');
+const ownerDetail = readFileSync(join(root, 'components/markets/MarketDetailScreen.tsx'), 'utf8');
 const staffDetail = readFileSync(join(root, 'components/markets/StaffMarketDetailView.tsx'), 'utf8');
 
 for (const source of [addForm, editForm]) {

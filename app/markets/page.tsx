@@ -19,6 +19,7 @@ import {
   type MarketListViewItem,
 } from '@/lib/markets/market-list-view-model';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
+import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { getGradientClass } from '@/lib/theme-config';
@@ -92,7 +93,7 @@ interface MarketListCardProps {
 
 function MarketListCard({ item, isStaff, onOpen }: MarketListCardProps) {
   return (
-    <article className="rounded-card border border-primary/15 bg-white p-4 shadow-sm shadow-primary/5 sm:p-5">
+    <article className="rounded-card border border-primary/10 bg-atelier-paper p-4 shadow-atelier transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-atelier-lift sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${stageClasses(item.stage)}`}>
@@ -210,7 +211,7 @@ export default function MarketsPage() {
   const openMarket = (marketId?: string) => {
     if (!marketId) return;
     writeReturnState({ view: activeView, scrollY: window.scrollY });
-    router.push(`/markets/${marketId}`);
+    router.push(buildMarketDetailHref(marketId));
   };
 
   const handleAddSuccess = () => {
@@ -253,7 +254,7 @@ export default function MarketsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className={`${getGradientClass(isStaffMode)} border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white`}>
+      <header className={`${getGradientClass(isStaffMode)} rounded-b-[2rem] border-b border-white/15 px-5 pb-8 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier`}>
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
           <div>
             <p className="text-sm text-white/80">{isStaffMode ? '團隊工作區' : '營運管理'}</p>

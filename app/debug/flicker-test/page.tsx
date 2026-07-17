@@ -154,7 +154,7 @@ export default function FlickerTestPage() {
 `;
 
     // 複製到剪貼簿
-    navigator.clipboard.writeText(css).then(() => {
+    import('@/lib/platform/interaction-capabilities').then(({ getClipboardPort }) => getClipboardPort().writeText(css)).then(() => {
       alert('✅ CSS 參數已複製到剪貼簿！\n\n可以直接貼到 globals.css 中使用。');
     });
   };

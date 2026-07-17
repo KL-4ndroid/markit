@@ -6,6 +6,7 @@ import type { Market } from '@/types/db';
 import { formatCurrency } from '@/lib/utils';
 import { db } from '@/lib/db';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
+import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 
 interface MarketDetailListProps {
   markets: Market[];
@@ -104,7 +105,9 @@ export function MarketDetailList({ markets }: MarketDetailListProps) {
               className="border border-primary/15 rounded-xl overflow-hidden"
             >
               <button
-                onClick={() => router.push(`/markets/${market.id}`)}
+                onClick={() => {
+                  if (market.id) router.push(buildMarketDetailHref(market.id));
+                }}
                 className="block w-full p-4 hover:bg-background transition-colors text-left"
               >
                 <div className="flex justify-between items-start mb-2">

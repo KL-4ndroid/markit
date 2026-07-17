@@ -95,7 +95,7 @@ runTest('owner UI renders transaction metadata and on-demand full image entry po
   const shellSource = readProjectFile('components/markets/SalesPhotoEvidenceOwnerAlbumShell.tsx');
   const imageSource = readProjectFile('components/markets/SalesPhotoEvidenceOwnerAlbumImage.tsx');
   const dealDetailSource = readProjectFile('components/markets/DealDetailModal.tsx');
-  const marketDetailSource = readProjectFile('app/markets/[id]/page.tsx');
+  const marketDetailSource = readProjectFile('components/markets/MarketDetailScreen.tsx');
 
   assert.match(shellSource, /transactionBySaleId\.get\(item\.saleId\)/);
   assert.match(shellSource, /NT\$ \{transaction\.amount\.toLocaleString\(\)\}/);

@@ -1,11 +1,25 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-import { isSalesPhotoEvidenceStatus } from '@/lib/sales/photo-evidence-model';
+import { normalizeAppApiErrorBody } from '@/lib/api/contract';
+import {
+  authenticateAppApiRequest,
+  createAppApiUserSupabaseClient,
+} from '@/lib/api/server/auth';
+import {
+  applyAppApiCors,
+  createAppApiCorsPreflightResponse,
+  createAppApiCorsRejectionResponse,
+} from '@/lib/api/server/cors';
+import {
+  isSalesPhotoEvidenceObjectKeyBoundToIdentity,
+  isSalesPhotoEvidenceStatus,
+} from '@/lib/sales/photo-evidence-model';
 import { createSalesPhotoEvidenceSignedReadContract } from '@/lib/sales/photo-evidence-upload-contract';
 import type { SalesPhotoEvidenceR2ReadAdapter } from '@/lib/sales/photo-evidence-r2-read-adapter.server';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 15;
 
 type SalesPhotoEvidenceImageRouteEnv = Record<string, string | undefined>;
 
@@ -27,13 +41,21 @@ type SalesPhotoEvidenceImageRouteRow = {
 
 type SalesPhotoEvidenceImageRouteDeps = {
   isEnabled(): boolean;
-  resolveActor(request: Request): Promise<SalesPhotoEvidenceImageRouteActor | null>;
+  resolveActor(request: Request): Promise<SalesPhotoEvidenceImageRouteActor | 'unavailable' | null>;
   getEvidenceRow(input: { evidenceId: string }): Promise<SalesPhotoEvidenceImageRouteRow | null>;
   createR2ReadAdapter(): Promise<SalesPhotoEvidenceR2ReadAdapter | null>;
 };
 
 function jsonResponse(body: unknown, status: number): NextResponse {
-  return NextResponse.json(body, {
+  const responseBody = (
+    body
+    && typeof body === 'object'
+    && !Array.isArray(body)
+    && (body as Record<string, unknown>).ok === false
+  )
+    ? normalizeAppApiErrorBody(body as Record<string, unknown>, status)
+    : body;
+  return NextResponse.json(responseBody, {
     status,
     headers: {
       'Cache-Control': 'no-store',
@@ -65,7 +87,7 @@ function getQuery(request: Request): { evidenceId: string; variant: 'image' | 't
 }
 
 export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvidenceImageRouteDeps) {
-  async function get(request: Request): Promise<Response> {
+  async function getInternal(request: Request): Promise<Response> {
     if (!deps.isEnabled()) return disabledResponse();
 
     const query = getQuery(request);
@@ -78,6 +100,13 @@ export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvide
     }
 
     const actor = await deps.resolveActor(request);
+    if (actor === 'unavailable') {
+      return jsonResponse({
+        ok: false,
+        code: 'authentication_unavailable',
+        message: 'Sales photo evidence authentication is temporarily unavailable.',
+      }, 503);
+    }
     if (!actor) {
       return jsonResponse({
         ok: false,
@@ -102,6 +131,20 @@ export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvide
         code: 'invalid_evidence_status',
         message: 'Sales photo evidence status is invalid.',
       }, 400);
+    }
+    if (!isSalesPhotoEvidenceObjectKeyBoundToIdentity({
+      key: objectKey,
+      ownerId: row.owner_id,
+      marketId: row.market_id,
+      saleId: row.sale_id,
+      evidenceId: row.id,
+      kind: query.variant,
+    })) {
+      return jsonResponse({
+        ok: false,
+        code: 'invalid_object_binding',
+        message: 'Sales photo evidence image object is unavailable.',
+      }, 404);
     }
 
     const contract = createSalesPhotoEvidenceSignedReadContract({
@@ -130,7 +173,19 @@ export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvide
       return jsonResponse({
         ok: false,
         code: result.code,
-        message: result.message,
+        message: 'Sales photo evidence image storage read failed.',
+      }, 502);
+    }
+
+    if (
+      (result.contentType !== 'image/webp' && result.contentType !== 'image/jpeg')
+      || result.body.byteLength <= 0
+      || result.body.byteLength > 1_000_000
+    ) {
+      return jsonResponse({
+        ok: false,
+        code: 'invalid_image_object',
+        message: 'Sales photo evidence image object is invalid.',
       }, 502);
     }
 
@@ -142,8 +197,24 @@ export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvide
       headers: {
         'Cache-Control': 'private, no-store',
         'Content-Type': result.contentType,
+        'X-Content-Type-Options': 'nosniff',
       },
     });
+  }
+
+  async function get(request: Request): Promise<Response> {
+    try {
+      return await getInternal(request);
+    } catch (error) {
+      console.error('sales photo evidence image route failed', {
+        name: error instanceof Error ? error.name : 'UnknownError',
+      });
+      return jsonResponse({
+        ok: false,
+        code: 'image_route_unavailable',
+        message: 'Sales photo evidence image route is temporarily unavailable.',
+      }, 503);
+    }
   }
 
   return {
@@ -171,57 +242,16 @@ export function isSalesPhotoEvidenceImageReadRouteEnabledForEnv(
   return true;
 }
 
-function getSupabaseRouteConfig(): { url: string; anonKey: string } | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !anonKey) return null;
-  return { url, anonKey };
-}
-
-function getBearerToken(request: Request): string | null {
-  const authorization = request.headers.get('authorization');
-  if (!authorization?.startsWith('Bearer ')) return null;
-  const token = authorization.slice('Bearer '.length).trim();
-  return token.length > 0 ? token : null;
-}
-
-async function resolveActorFromRequest(request: Request): Promise<SalesPhotoEvidenceImageRouteActor | null> {
-  const config = getSupabaseRouteConfig();
-  const token = getBearerToken(request);
-  if (!config || !token) return null;
-
-  const client = createClient(config.url, config.anonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
-  const { data, error } = await client.auth.getUser(token);
-  if (error || !data.user) return null;
-  return { actorId: data.user.id };
+async function resolveActorFromRequest(
+  request: Request
+): Promise<SalesPhotoEvidenceImageRouteActor | 'unavailable' | null> {
+  const result = await authenticateAppApiRequest(request);
+  if (result.ok) return result.actor;
+  return result.code === 'authentication_unavailable' ? 'unavailable' : null;
 }
 
 function createSupabaseClientForRequest(request: Request) {
-  const config = getSupabaseRouteConfig();
-  const token = getBearerToken(request);
-  if (!config || !token) return null;
-
-  return createClient(config.url, config.anonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
+  return createAppApiUserSupabaseClient(request);
 }
 
 async function getEvidenceRowFromSupabase(
@@ -238,7 +268,8 @@ async function getEvidenceRowFromSupabase(
     .is('deleted_at', null)
     .maybeSingle();
 
-  if (error || !data) return null;
+  if (error) throw new Error('Sales photo evidence metadata lookup failed.');
+  if (!data) return null;
   return data as SalesPhotoEvidenceImageRouteRow;
 }
 
@@ -250,13 +281,35 @@ async function createDefaultR2ReadAdapter(): Promise<SalesPhotoEvidenceR2ReadAda
   return createCloudflareR2SalesPhotoEvidenceReadAdapter({ env: process.env });
 }
 
-export const GET = async (request: Request) => createSalesPhotoEvidenceImageRouteHandlers({
-  isEnabled: () => isSalesPhotoEvidenceImageReadRouteEnabledForEnv(process.env),
-  resolveActor: resolveActorFromRequest,
-  getEvidenceRow: ({ evidenceId }) => getEvidenceRowFromSupabase(request, evidenceId),
-  createR2ReadAdapter: createDefaultR2ReadAdapter,
-}).GET(request);
-export const POST = async () => disabledResponse();
-export const PUT = async () => disabledResponse();
-export const PATCH = async () => disabledResponse();
-export const DELETE = async () => disabledResponse();
+async function runImageRouteWithCors(
+  request: Request,
+  handler: () => Promise<Response>
+): Promise<Response> {
+  const corsRejection = createAppApiCorsRejectionResponse(request);
+  if (corsRejection) return corsRejection;
+  return applyAppApiCors(request, await handler());
+}
+
+export const GET = (request: Request) => runImageRouteWithCors(request, () => (
+  createSalesPhotoEvidenceImageRouteHandlers({
+    isEnabled: () => isSalesPhotoEvidenceImageReadRouteEnabledForEnv(process.env),
+    resolveActor: resolveActorFromRequest,
+    getEvidenceRow: ({ evidenceId }) => getEvidenceRowFromSupabase(request, evidenceId),
+    createR2ReadAdapter: createDefaultR2ReadAdapter,
+  }).GET(request)
+));
+export const POST = (request?: Request) => request
+  ? runImageRouteWithCors(request, async () => disabledResponse())
+  : disabledResponse();
+export const PUT = (request?: Request) => request
+  ? runImageRouteWithCors(request, async () => disabledResponse())
+  : disabledResponse();
+export const PATCH = (request?: Request) => request
+  ? runImageRouteWithCors(request, async () => disabledResponse())
+  : disabledResponse();
+export const DELETE = (request?: Request) => request
+  ? runImageRouteWithCors(request, async () => disabledResponse())
+  : disabledResponse();
+export const OPTIONS = (request: Request) => createAppApiCorsPreflightResponse(request, {
+  allowedMethods: ['GET', 'OPTIONS'],
+});

@@ -12,7 +12,7 @@ const paymentSelectorSource = read('components/sales/PaymentMethodSelector.tsx')
 const addRevenueSource = read('components/markets/AddRevenueDialog.tsx');
 const flowDialogSource = read('components/markets/SalesPhotoEvidenceFlowDialog.tsx');
 const flowHookSource = read('hooks/useSalesPhotoEvidenceFlow.ts');
-const ownerPageSource = read('app/markets/[id]/page.tsx');
+const ownerPageSource = read('components/markets/MarketDetailScreen.tsx');
 const staffPageSource = read('components/markets/StaffMarketDetailView.tsx');
 const manifestSource = read('scripts/test-files.txt');
 

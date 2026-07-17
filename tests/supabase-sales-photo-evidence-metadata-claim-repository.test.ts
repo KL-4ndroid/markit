@@ -4,8 +4,15 @@ import { join } from 'node:path';
 
 import {
   createSalesPhotoEvidenceMetadataClaimSupabaseRepository,
+  type SalesPhotoEvidenceFinalizeUploadedMetadataInput,
+  type SalesPhotoEvidenceMarkUploadFailedMetadataInput,
   type SalesPhotoEvidenceMetadataClaimSupabaseClient,
+  type SalesPhotoEvidenceServerMutationRepository,
 } from '../lib/supabase/sales-photo-evidence-metadata-claim-repository';
+import type {
+  SalesPhotoEvidenceCreateUploadingClaimInput,
+  SalesPhotoEvidenceMarkUploadingClaimInput,
+} from '../lib/sales/photo-evidence-metadata-claim-adapter';
 
 type TestFn = () => void | Promise<void>;
 
@@ -107,6 +114,74 @@ function evidenceRow(overrides: Record<string, unknown> = {}) {
   };
 }
 
+type MutationCalls = {
+  create: SalesPhotoEvidenceCreateUploadingClaimInput[];
+  mark: SalesPhotoEvidenceMarkUploadingClaimInput[];
+  finalize: SalesPhotoEvidenceFinalizeUploadedMetadataInput[];
+  fail: SalesPhotoEvidenceMarkUploadFailedMetadataInput[];
+};
+
+function createFakeMutationRepository(options: { throwOnCreate?: boolean } = {}):
+  SalesPhotoEvidenceServerMutationRepository & { calls: MutationCalls } {
+  const calls: MutationCalls = {
+    create: [],
+    mark: [],
+    finalize: [],
+    fail: [],
+  };
+
+  return {
+    calls,
+    async createEvidenceUploadingClaim(input) {
+      calls.create.push(input);
+      if (options.throwOnCreate) {
+        throw new Error('Sales photo evidence metadata claim insert failed.');
+      }
+      return {
+        id: IDS.evidenceId,
+        ownerId: input.ownerId,
+        marketId: input.marketId,
+        saleId: input.saleId,
+        capturedByStaffId: input.capturedByStaffId,
+        status: 'uploading',
+      };
+    },
+    async markEvidenceUploading(input) {
+      calls.mark.push(input);
+      return {
+        id: input.evidenceId,
+        ownerId: input.ownerId,
+        marketId: input.marketId,
+        saleId: input.saleId,
+        capturedByStaffId: IDS.staffId,
+        status: 'uploading',
+      };
+    },
+    async finalizeEvidenceUploaded(input) {
+      calls.finalize.push(input);
+      return {
+        id: input.evidenceId,
+        ownerId: input.ownerId,
+        marketId: input.marketId,
+        saleId: input.saleId,
+        capturedByStaffId: IDS.staffId,
+        status: 'uploaded',
+      };
+    },
+    async markEvidenceUploadFailed(input) {
+      calls.fail.push(input);
+      return {
+        id: input.evidenceId,
+        ownerId: input.ownerId,
+        marketId: input.marketId,
+        saleId: input.saleId,
+        capturedByStaffId: IDS.staffId,
+        status: 'upload_failed',
+      };
+    },
+  };
+}
+
 function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
 }
@@ -126,7 +201,10 @@ runTest('sale event lookup uses deal owner market filters and maps joined owner'
       error: null,
     },
   });
-  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
+    client,
+    createFakeMutationRepository()
+  );
   const event = await repository.getSaleEventForEvidenceClaim({
     ownerId: IDS.ownerId,
     marketId: IDS.marketId,
@@ -159,7 +237,10 @@ runTest('sale event lookup falls back to the security definer validator for staf
       return { data: true, error: null };
     },
   };
-  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
+    client,
+    createFakeMutationRepository()
+  );
   const event = await repository.getSaleEventForEvidenceClaim({
     ownerId: IDS.ownerId,
     marketId: IDS.marketId,
@@ -185,7 +266,10 @@ runTest('active evidence lookup filters owner market sale and not-deleted row', 
   const client = createFakeClient({
     sale_photo_evidence: { data: evidenceRow(), error: null },
   });
-  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
+    client,
+    createFakeMutationRepository()
+  );
   const row = await repository.getActiveEvidenceForSale({
     ownerId: IDS.ownerId,
     marketId: IDS.marketId,
@@ -206,7 +290,10 @@ runTest('staff relationship lookup requires active relationship', async () => {
   const client = createFakeClient({
     staff_relationships: { data: { owner_id: IDS.ownerId }, error: null },
   });
-  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
+    client,
+    createFakeMutationRepository()
+  );
   const active = await repository.isStaffRelationshipActive({
     ownerId: IDS.ownerId,
     staffId: IDS.staffId,
@@ -220,15 +307,11 @@ runTest('staff relationship lookup requires active relationship', async () => {
   ]);
 });
 
-runTest('create uploading claim inserts only metadata status uploading', async () => {
-  const client = createFakeClient({
-    'sale_photo_evidence:insert': {
-      data: evidenceRow({ status: 'uploading' }),
-      error: null,
-    },
-  });
-  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
-  const row = await repository.createEvidenceUploadingClaim({
+runTest('create uploading claim delegates only to the server mutation repository', async () => {
+  const client = createFakeClient({});
+  const mutations = createFakeMutationRepository();
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client, mutations);
+  const input: SalesPhotoEvidenceCreateUploadingClaimInput = {
     ownerId: IDS.ownerId,
     marketId: IDS.marketId,
     saleId: IDS.saleId,
@@ -236,61 +319,38 @@ runTest('create uploading claim inserts only metadata status uploading', async (
     status: 'uploading',
     saleCompletedAt: '2026-07-07T01:02:03.000Z',
     capturedAt: '2026-07-07T01:05:00.000Z',
-  });
+  };
+  const row = await repository.createEvidenceUploadingClaim(input);
 
   assert.equal(row.status, 'uploading');
-  assert.deepEqual(client.calls[0].values, {
-    owner_id: IDS.ownerId,
-    market_id: IDS.marketId,
-    sale_id: IDS.saleId,
-    captured_by_staff_id: IDS.staffId,
-    status: 'uploading',
-    sale_completed_at: '2026-07-07T01:02:03.000Z',
-    captured_at: '2026-07-07T01:05:00.000Z',
-  });
+  assert.deepEqual(mutations.calls.create, [input]);
+  assert.equal(client.calls.length, 0);
 });
 
-runTest('mark uploading claim updates only matching scoped active row', async () => {
-  const client = createFakeClient({
-    'sale_photo_evidence:update': {
-      data: evidenceRow({ status: 'uploading' }),
-      error: null,
-    },
-  });
-  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
-  const row = await repository.markEvidenceUploading({
+runTest('mark uploading claim delegates scoped input only to the server mutation repository', async () => {
+  const client = createFakeClient({});
+  const mutations = createFakeMutationRepository();
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client, mutations);
+  const input: SalesPhotoEvidenceMarkUploadingClaimInput = {
     evidenceId: IDS.evidenceId,
     ownerId: IDS.ownerId,
     marketId: IDS.marketId,
     saleId: IDS.saleId,
     status: 'uploading',
     capturedAt: '2026-07-07T01:05:00.000Z',
-  });
+  };
+  const row = await repository.markEvidenceUploading(input);
 
   assert.equal(row.status, 'uploading');
-  assert.deepEqual(client.calls[0].values, {
-    status: 'uploading',
-    captured_at: '2026-07-07T01:05:00.000Z',
-  });
-  assert.deepEqual(client.calls[0].filters, [
-    { column: 'id', value: IDS.evidenceId, operator: 'eq' },
-    { column: 'owner_id', value: IDS.ownerId, operator: 'eq' },
-    { column: 'market_id', value: IDS.marketId, operator: 'eq' },
-    { column: 'sale_id', value: IDS.saleId, operator: 'eq' },
-    { column: 'deleted_at', value: null, operator: 'is' },
-  ]);
+  assert.deepEqual(mutations.calls.mark, [input]);
+  assert.equal(client.calls.length, 0);
 });
 
-runTest('finalize uploaded updates only matching scoped metadata after R2 success', async () => {
-  const client = createFakeClient({
-    'sale_photo_evidence:update': {
-      data: evidenceRow({ status: 'uploaded' }),
-      error: null,
-    },
-  });
-  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
-
-  const row = await repository.finalizeEvidenceUploaded({
+runTest('finalize uploaded delegates only to the server mutation repository', async () => {
+  const client = createFakeClient({});
+  const mutations = createFakeMutationRepository();
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client, mutations);
+  const input: SalesPhotoEvidenceFinalizeUploadedMetadataInput = {
     evidenceId: IDS.evidenceId,
     ownerId: IDS.ownerId,
     marketId: IDS.marketId,
@@ -304,53 +364,38 @@ runTest('finalize uploaded updates only matching scoped metadata after R2 succes
     capturedAt: '2026-07-07T01:05:00.000Z',
     uploadedAt: '2026-07-07T02:00:00.000Z',
     expiresAt: '2026-07-14T02:00:00.000Z',
-  });
+  };
+  const row = await repository.finalizeEvidenceUploaded(input);
 
   assert.equal(row.status, 'uploaded');
-  assert.deepEqual(client.calls[0].values, {
-    status: 'uploaded',
-    r2_object_key: 'sales-evidence/7d/a/b/c/d.webp',
-    r2_thumbnail_key: 'sales-evidence-thumbs/7d/a/b/c/d.webp',
-    mime_type: 'image/webp',
-    width: 1200,
-    height: 900,
-    file_size_bytes: 4,
-    captured_at: '2026-07-07T01:05:00.000Z',
-    uploaded_at: '2026-07-07T02:00:00.000Z',
-    expires_at: '2026-07-14T02:00:00.000Z',
-    failure_reason: null,
-  });
+  assert.deepEqual(mutations.calls.finalize, [input]);
+  assert.equal(client.calls.length, 0);
 });
 
-runTest('mark upload failed updates only matching scoped retry metadata', async () => {
-  const client = createFakeClient({
-    'sale_photo_evidence:update': {
-      data: evidenceRow({ status: 'upload_failed' }),
-      error: null,
-    },
-  });
-  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
-
-  const row = await repository.markEvidenceUploadFailed({
+runTest('mark upload failed delegates only to the server mutation repository', async () => {
+  const client = createFakeClient({});
+  const mutations = createFakeMutationRepository();
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client, mutations);
+  const input: SalesPhotoEvidenceMarkUploadFailedMetadataInput = {
     evidenceId: IDS.evidenceId,
     ownerId: IDS.ownerId,
     marketId: IDS.marketId,
     saleId: IDS.saleId,
     reason: 'r2_image_upload_failed',
-  });
+  };
+  const row = await repository.markEvidenceUploadFailed(input);
 
   assert.equal(row.status, 'upload_failed');
-  assert.deepEqual(client.calls[0].values, {
-    status: 'upload_failed',
-    failure_reason: 'r2_image_upload_failed',
-  });
+  assert.deepEqual(mutations.calls.fail, [input]);
+  assert.equal(client.calls.length, 0);
 });
 
-runTest('repository throws on Supabase write errors without deleting local payloads', async () => {
-  const client = createFakeClient({
-    'sale_photo_evidence:insert': { data: null, error: { message: 'blocked' } },
-  });
-  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(client);
+runTest('repository propagates sanitized server mutation failures without a user-client fallback', async () => {
+  const client = createFakeClient({});
+  const repository = createSalesPhotoEvidenceMetadataClaimSupabaseRepository(
+    client,
+    createFakeMutationRepository({ throwOnCreate: true })
+  );
 
   await assert.rejects(
     () => repository.createEvidenceUploadingClaim({
@@ -364,6 +409,7 @@ runTest('repository throws on Supabase write errors without deleting local paylo
     }),
     /metadata claim insert failed/
   );
+  assert.equal(client.calls.length, 0);
 });
 
 runTest('repository source avoids route R2 signed URL and global client wiring', () => {

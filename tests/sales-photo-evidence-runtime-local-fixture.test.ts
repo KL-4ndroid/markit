@@ -157,7 +157,7 @@ runTest('fixture stays isolated from production UI, cloud, upload, and drain pat
 
   const productionFiles = [
     'components/markets/AddRevenueDialog.tsx',
-    'app/markets/[id]/page.tsx',
+    'components/markets/MarketDetailScreen.tsx',
     'components/markets/StaffMarketDetailView.tsx',
     'lib/sales/photo-evidence-runtime-flags.ts',
   ];

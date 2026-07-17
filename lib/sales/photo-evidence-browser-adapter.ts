@@ -67,7 +67,7 @@ function fail(
   };
 }
 
-function defaultCapabilitySnapshot(): SalesPhotoEvidenceBrowserCapabilitySnapshot {
+export function getSalesPhotoEvidenceWebCapabilitySnapshot(): SalesPhotoEvidenceBrowserCapabilitySnapshot {
   const hasDocument = typeof document !== 'undefined';
   const input = hasDocument ? document.createElement('input') : null;
   const canvas = hasDocument ? document.createElement('canvas') : null;
@@ -79,7 +79,7 @@ function defaultCapabilitySnapshot(): SalesPhotoEvidenceBrowserCapabilitySnapsho
   };
 }
 
-function selectFileWithInput(source: SalesPhotoEvidenceCaptureSource): Promise<File | null> {
+export function selectSalesPhotoEvidenceFileWithInput(source: SalesPhotoEvidenceCaptureSource): Promise<File | null> {
   if (typeof document === 'undefined') {
     return Promise.resolve(null);
   }
@@ -234,14 +234,14 @@ export async function captureAndStoreSalesPhotoEvidenceWithFileInput(
   input: CaptureAndStoreSalesPhotoEvidenceInput,
   dependencies: CaptureAndStoreSalesPhotoEvidenceDependencies = {}
 ): Promise<CaptureAndStoreSalesPhotoEvidenceResult> {
-  const getCapabilitySnapshot = dependencies.getCapabilitySnapshot ?? defaultCapabilitySnapshot;
+  const getCapabilitySnapshot = dependencies.getCapabilitySnapshot ?? getSalesPhotoEvidenceWebCapabilitySnapshot;
   const readiness = classifySalesPhotoEvidenceBrowserAdapterReadiness(getCapabilitySnapshot());
 
   if (!readiness.ready) {
     return fail('adapter_unavailable', readiness);
   }
 
-  const selectFile = dependencies.selectFile ?? selectFileWithInput;
+  const selectFile = dependencies.selectFile ?? selectSalesPhotoEvidenceFileWithInput;
   const decodeImage = dependencies.decodeImage ?? decodeImageFile;
   const renderVariant = dependencies.renderVariant ?? renderCanvasVariant;
   const storePayload = dependencies.storePayload ?? putPendingSalesPhotoEvidencePayload;

@@ -1,7 +1,7 @@
 /**
  * P5 Market detail direct-route staff permission tests.
  *
- * /markets/[id] is a large owner page. Staff direct-route access must return
+ * /markets/detail?id=... renders the large owner screen. Staff direct-route access must return
  * the dedicated StaffMarketDetailView before owner-only controls are rendered.
  */
 
@@ -19,7 +19,7 @@ function runTest(name: string, fn: TestFn): void {
 
 const projectRoot = join(__dirname, '..');
 const marketDetailSource = readFileSync(
-  join(projectRoot, 'app/markets/[id]/page.tsx'),
+  join(projectRoot, 'components/markets/MarketDetailScreen.tsx'),
   'utf-8'
 );
 const staffMarketViewSource = readFileSync(

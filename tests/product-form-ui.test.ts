@@ -6,7 +6,7 @@ const root = join(__dirname, '..');
 const addForm = readFileSync(join(root, 'components/products/AddProductForm.tsx'), 'utf8');
 const editForm = readFileSync(join(root, 'components/products/EditProductForm.tsx'), 'utf8');
 const fields = readFileSync(join(root, 'components/products/ProductFormFields.tsx'), 'utf8');
-const detailPage = readFileSync(join(root, 'app/products/[id]/page.tsx'), 'utf8');
+const detailPage = readFileSync(join(root, 'components/products/ProductDetailScreen.tsx'), 'utf8');
 
 for (const source of [addForm, editForm]) {
   assert.match(source, /<ProductFormFields/);

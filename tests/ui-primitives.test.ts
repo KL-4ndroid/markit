@@ -31,7 +31,9 @@ assert.match(tabs, /TabGroup/);
 assert.match(tabs, /aria-label=\{ariaLabel\}/);
 assert.match(tabs, /min-h-11/);
 assert.match(globalStyles, /:focus-visible/);
-assert.match(tailwind, /dialog:\s*'0\.75rem'/);
+assert.match(tailwind, /control:\s*'1rem'/);
+assert.match(tailwind, /card:\s*'1\.5rem'/);
+assert.match(tailwind, /dialog:\s*'1\.5rem'/);
 assert.match(tailwind, /dialog:\s*'70'/);
 
 console.log('PASS shared UI primitive contracts');

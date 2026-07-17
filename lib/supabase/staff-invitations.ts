@@ -6,6 +6,7 @@
 
 import { supabase } from './client';
 import { nanoid } from 'nanoid';
+import { getDeepLinkPort } from '@/lib/platform/interaction-capabilities';
 
 /**
  * 邀請資訊
@@ -189,11 +190,7 @@ export async function cleanupExpiredInvitations(): Promise<number> {
  * @returns 完整的邀請網址
  */
 export function generateInvitationUrl(token: string): string {
-  const origin = typeof window !== 'undefined' 
-    ? window.location.origin 
-    : 'http://localhost:3000';
-  
-  return `${origin}/join?token=${token}`;
+  return getDeepLinkPort().createAppUrl(`/join?token=${encodeURIComponent(token)}`);
 }
 
 /**

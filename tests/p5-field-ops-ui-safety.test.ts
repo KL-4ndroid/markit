@@ -19,7 +19,7 @@ const fieldNotesPanelSource = readProjectFile('components/markets/FieldNotesPane
 const checklistPanelSource = readProjectFile('components/markets/ChecklistPanel.tsx');
 const marketFieldOpsSectionSource = readProjectFile('components/markets/MarketFieldOpsSection.tsx');
 const staffMarketDetailSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
-const ownerMarketDetailSource = readProjectFile('app/markets/[id]/page.tsx');
+const ownerMarketDetailSource = readProjectFile('components/markets/MarketDetailScreen.tsx');
 
 const forbiddenPanelPatterns = [
   /useUserRole/,

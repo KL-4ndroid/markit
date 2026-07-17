@@ -8,7 +8,7 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8');
 const globalCss = read('app/globals.css');
 const tailwind = read('tailwind.config.ts');
 const home = read('app/page.tsx');
-const ownerMarket = read('app/markets/[id]/page.tsx');
+const ownerMarket = read('components/markets/MarketDetailScreen.tsx');
 const staffMarket = read('components/markets/StaffMarketDetailView.tsx');
 const photoStory = read('components/markets/MarketOverviewPhotoStory.tsx');
 const transactionWorkspace = read('components/sales/TransactionWorkspace.tsx');
@@ -26,8 +26,9 @@ for (const token of ['atelier-canvas', 'atelier-paper', 'atelier-ink', 'atelier-
 
 assert.match(home, /bg-atelier-canvas/);
 assert.match(home, /shadow-atelier/);
-assert.doesNotMatch(home, /getGradientClass|bg-gradient/);
+assert.match(home, /japanese-warm-header/);
 assert.match(bottomNavigation, /bg-atelier-paper\/95/);
+assert.match(bottomNavigation, /bg-primary text-white/);
 assert.match(bottomNavigation, /bg-atelier-clay/);
 
 assert.match(ownerMarket, /<MarketOverviewPhotoStory/);

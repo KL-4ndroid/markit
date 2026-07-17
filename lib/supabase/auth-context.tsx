@@ -97,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // ✅ 初始化跨分頁通訊
+    let removeStorageListener: (() => void) | undefined;
     const supportsBroadcastChannel = typeof window !== 'undefined' && typeof window.BroadcastChannel !== 'undefined';
 
     if (supportsBroadcastChannel) {
@@ -136,22 +137,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       window.addEventListener('storage', handleStorageChange);
       
-      return () => {
+      removeStorageListener = () => {
         window.removeEventListener('storage', handleStorageChange);
       };
     }
 
     // 獲取初始 Session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      
-      // 如果已登入，拉取用戶設定
-      if (session?.user) {
-        syncUserSettingsRef.current(session.user.id);
-      }
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.error('取得初始 Session 失敗:', error);
+        }
+
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+
+        // 如果已登入，拉取用戶設定
+        if (session?.user) {
+          syncUserSettingsRef.current(session.user.id);
+        }
+      })
+      .catch(error => {
+        // 認證初始化失敗時採未登入狀態，避免永久停在全域載入骨架。
+        console.error('初始化 Session 失敗:', error);
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+      });
 
     // ✅ 移除定期檢查 Session 的邏輯
     // Supabase 的 autoRefreshToken 會自動處理 token 刷新
@@ -326,6 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       subscription.unsubscribe();
+      removeStorageListener?.();
       
       // 清理 BroadcastChannel
       if (broadcastChannelRef.current) {

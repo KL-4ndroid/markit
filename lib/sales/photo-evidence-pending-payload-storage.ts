@@ -1,11 +1,13 @@
 import { db } from '@/lib/db';
+import { SALES_PHOTO_EVIDENCE_MAX_TOTAL_PAYLOAD_BYTES } from '@/lib/sales/photo-evidence-model';
 import {
   classifySalesPhotoEvidenceCompressionOutput,
   type SalesPhotoEvidenceCompressionOutputInfo,
 } from '@/lib/sales/photo-evidence-capture-compression';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 
-export const SALES_PHOTO_EVIDENCE_PENDING_PAYLOAD_MAX_TOTAL_BYTES = 1_500_000;
+export const SALES_PHOTO_EVIDENCE_PENDING_PAYLOAD_MAX_TOTAL_BYTES =
+  SALES_PHOTO_EVIDENCE_MAX_TOTAL_PAYLOAD_BYTES;
 
 export type SalesPhotoEvidencePendingPayloadVariant = SalesPhotoEvidenceCompressionOutputInfo & {
   blob: Blob;

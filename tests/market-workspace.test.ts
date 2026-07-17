@@ -51,7 +51,7 @@ assert.equal(resolveMarketWorkspacePhase({
 }), 'ended');
 
 const projectRoot = join(__dirname, '..');
-const ownerPageSource = readFileSync(join(projectRoot, 'app/markets/[id]/page.tsx'), 'utf8');
+const ownerPageSource = readFileSync(join(projectRoot, 'components/markets/MarketDetailScreen.tsx'), 'utf8');
 const staffPageSource = readFileSync(join(projectRoot, 'components/markets/StaffMarketDetailView.tsx'), 'utf8');
 const revenueStatsSource = readFileSync(join(projectRoot, 'components/markets/DailyRevenueStats.tsx'), 'utf8');
 

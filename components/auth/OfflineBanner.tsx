@@ -9,25 +9,18 @@
 
 import { WifiOff, AlertCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getNetworkPort } from '@/lib/platform/network-capability';
 
 export function OfflineBanner() {
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(() => getNetworkPort().getCurrentStatus().connected);
 
   useEffect(() => {
     // 初始化狀態
-    setIsOnline(navigator.onLine);
+    const network = getNetworkPort();
+    setIsOnline(network.getCurrentStatus().connected);
 
     // 監聽網路狀態變化
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
+    return network.subscribe(status => setIsOnline(status.connected));
   }, []);
 
   // 在線時不顯示

@@ -16,7 +16,7 @@ function readProjectFile(path: string): string {
   return readFileSync(join(projectRoot, path), 'utf8');
 }
 
-const ownerMarketDetailSource = readProjectFile('app/markets/[id]/page.tsx');
+const ownerMarketDetailSource = readProjectFile('components/markets/MarketDetailScreen.tsx');
 const staffMarketDetailSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
 const marketFieldOpsSectionSource = readProjectFile('components/markets/MarketFieldOpsSection.tsx');
 

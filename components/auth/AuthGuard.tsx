@@ -18,6 +18,7 @@ import { WelcomeScreen } from './WelcomeScreen';
 import { OfflineBanner } from './OfflineBanner';
 import { StaffStatusMonitor } from './StaffStatusMonitor';
 import { RoleStatusBanner } from './RoleStatusBanner';
+import { getNetworkPort } from '@/lib/platform/network-capability';
 
 // ✅ 白名單路由：無需登入即可訪問
 // /demo 是公開展示用 Demo Mode，只使用靜態範例資料，不讀取正式資料或權限資料。
@@ -145,7 +146,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   // 4️⃣ 未登入但有離線資料：允許訪問（唯讀模式）
-  if (!navigator.onLine && hasOfflineData) {
+  if (!getNetworkPort().getCurrentStatus().connected && hasOfflineData) {
     console.log('🔒 離線模式：允許訪問本地資料（唯讀）');
     return (
       <>

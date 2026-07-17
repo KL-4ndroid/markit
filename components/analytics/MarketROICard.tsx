@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Trophy, TrendingUp, Clock, DollarSign } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { Market } from '@/types/db';
+import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 
 interface MarketROICardProps {
   market: Market;
@@ -33,7 +34,8 @@ export function MarketROICard({
 
   // 點擊卡片跳轉到市集詳情
   const handleClick = () => {
-    router.push(`/markets/${market.id}`);
+    if (!market.id) return;
+    router.push(buildMarketDetailHref(market.id));
   };
 
   // 排名顏色

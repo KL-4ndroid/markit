@@ -17,10 +17,19 @@ const testFiles = readFileSync(manifestPath, 'utf8')
   .map(line => line.replace(/^tsx\s+/, ''));
 
 for (const testFile of testFiles) {
+  const env = testFile === 'tests/app-api-server-mutation-client.test.ts'
+    ? {
+        ...process.env,
+        NODE_OPTIONS: [process.env.NODE_OPTIONS, '--conditions=react-server']
+          .filter(Boolean)
+          .join(' '),
+      }
+    : process.env;
   const result = spawnSync(tsxBin, [testFile], {
     cwd: projectRoot,
     stdio: 'inherit',
     shell: process.platform === 'win32',
+    env,
   });
 
   if (result.error) {

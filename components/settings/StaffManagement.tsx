@@ -30,6 +30,7 @@ import { getMyStaffMembers, type StaffMember, inviteStaff, removeStaff, updateSt
 import type { StaffRole } from '@/types/staff';
 import { RoleBadge } from '@/components/staff/RoleBadge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { getClipboardPort } from '@/lib/platform/interaction-capabilities';
 
 // P3b-alt：員工角色輔助文案
 // 對應 staff_relationships.role 欄位
@@ -193,9 +194,9 @@ export function StaffManagement() {
   };
 
   // 複製邀請連結
-  const handleCopyLink = (token: string) => {
+  const handleCopyLink = async (token: string) => {
     const url = generateInvitationUrl(token);
-    navigator.clipboard.writeText(url);
+    await getClipboardPort().writeText(url);
     toast.success('已複製連結！', {
       description: '可以分享給員工了',
     });

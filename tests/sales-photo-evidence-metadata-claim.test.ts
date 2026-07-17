@@ -103,6 +103,16 @@ runTest('staff can prepare a claim only for their own active relationship and ro
   assert.equal(plan.evidenceId, IDS.evidenceId);
 });
 
+runTest('an uploading row reaches the authoritative RPC so its lease can be renewed or reclaimed', () => {
+  const plan = createSalesPhotoEvidenceMetadataClaimPlan(baseInput({
+    existingEvidence: activeExistingRow('uploading'),
+  }));
+
+  assert.equal(plan.action, 'prepare_metadata_claim');
+  assert.equal(plan.mode, 'reuse_then_mark_uploading');
+  assert.equal(plan.evidenceId, IDS.evidenceId);
+});
+
 runTest('staff without active relationship is denied before metadata writes', () => {
   const plan = createSalesPhotoEvidenceMetadataClaimPlan(baseInput({
     actorId: IDS.staffId,

@@ -113,6 +113,7 @@ const UPLOADABLE_STATUSES = new Set<SalesPhotoEvidenceStatus | null>([
   'pending_capture',
   'capture_skipped',
   'captured_local',
+  'uploading',
   'upload_failed',
 ]);
 
@@ -138,8 +139,8 @@ export function createSalesPhotoEvidenceMetadataTransitionPlan(
   }
 
   if (
-    input.currentStatus === 'uploading' ||
-    (input.currentStatus !== null && TERMINAL_NON_UPLOADABLE_STATUSES.has(input.currentStatus))
+    input.currentStatus !== null
+    && TERMINAL_NON_UPLOADABLE_STATUSES.has(input.currentStatus)
   ) {
     return {
       action: 'reject_upload_transition',

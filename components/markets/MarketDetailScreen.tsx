@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback, useTransition, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Calendar,
@@ -90,23 +90,16 @@ const EditMarketForm = dynamic(() =>
   import('@/components/markets/EditMarketForm').then(module => module.EditMarketForm)
 );
 
-interface PageProps {
-  params?: {
-    id?: string | string[];
-  };
-}
-
 type OwnerOverviewDetail = 'performance' | 'interactions' | 'photos' | 'costs';
 
 type SalesPhotoEvidenceMarket = Market & {
   salesPhotoEvidenceRequired?: boolean;
 };
 
-export default function MarketDetailPage({ params }: PageProps) {
+export function MarketDetailScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const routeParams = useParams<{ id?: string | string[] }>();
-  const marketId = normalizeMarketRouteId(routeParams?.id ?? params?.id) ?? ''; // UUID 字符串，不需要 parseInt
+  const marketId = normalizeMarketRouteId(searchParams.get('id') ?? undefined) ?? ''; // UUID 字符串，不需要 parseInt
   const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
   const { isStaff, canViewSensitiveData, isLoading: isRoleLoading } = useUserRole(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 檢查是否已登入

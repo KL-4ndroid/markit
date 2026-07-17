@@ -1,7 +1,7 @@
 /**
  * P5 Product detail direct-route staff permission tests.
  *
- * The product list page already gates manager edits. This keeps /products/[id]
+ * The product list page already gates manager edits. This keeps /products/detail/?id=...
  * from becoming a direct-URL bypass for staff roles.
  */
 
@@ -19,7 +19,7 @@ function runTest(name: string, fn: TestFn): void {
 
 const projectRoot = join(__dirname, '..');
 const productDetailSource = readFileSync(
-  join(projectRoot, 'app/products/[id]/page.tsx'),
+  join(projectRoot, 'components/products/ProductDetailScreen.tsx'),
   'utf-8'
 );
 

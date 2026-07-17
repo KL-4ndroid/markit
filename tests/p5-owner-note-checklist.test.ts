@@ -20,7 +20,7 @@ function runTest(name: string, fn: () => void): void {
 }
 
 const ownerMarketDetailSource = readFileSync(
-  join(process.cwd(), 'app/markets/[id]/page.tsx'),
+  join(process.cwd(), 'components/markets/MarketDetailScreen.tsx'),
   'utf-8'
 );
 const marketFieldOpsSectionSource = readFileSync(

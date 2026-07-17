@@ -1,5 +1,12 @@
 import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
+import { buildAppApiUrl, isAppApiUrlError } from '@/lib/api/client';
+import { parseAppApiErrorResponse } from '@/lib/api/contract';
+import {
+  fetchAppApi,
+  isAppApiRequestError,
+  type AppApiSleep,
+} from '@/lib/api/transport';
 import {
   deletePendingSalesPhotoEvidencePayload,
   getPendingSalesPhotoEvidencePayload,
@@ -34,6 +41,8 @@ export type SalesPhotoEvidenceManualUploadResult =
 export type SalesPhotoEvidenceManualUploadDeps = {
   getAccessToken?: () => Promise<string | null>;
   fetchImpl?: typeof fetch;
+  sleepImpl?: AppApiSleep;
+  timeoutMs?: number;
   getPayload?: typeof getPendingSalesPhotoEvidencePayload;
   deletePayload?: typeof deletePendingSalesPhotoEvidencePayload;
   markCreated?: typeof markLocalPendingSalesPhotoEvidenceCreationCreated;
@@ -100,7 +109,7 @@ function failure(code: string, message: string): SalesPhotoEvidenceManualUploadF
   };
 }
 
-function getUserFacingUploadFailureMessage(code: string, fallback?: string): string {
+function getUserFacingUploadFailureMessage(code: string): string {
   switch (code) {
     case 'sale_event_sync_pending':
       return '成交資料仍在同步，照片已保留在此裝置。請確認網路後稍候再試。';
@@ -117,9 +126,17 @@ function getUserFacingUploadFailureMessage(code: string, fallback?: string): str
     case 'authentication_required':
       return '登入狀態已失效，請重新登入後再上傳照片。';
     case 'upload_route_unexpected_error':
+    case 'image_route_unexpected_error':
       return '照片上傳服務暫時發生錯誤，照片已保留在此裝置，請稍後再試。';
+    case 'request_timeout':
+      return '照片上傳逾時，照片已保留在此裝置。請確認網路後再試。';
+    case 'permission_denied':
+      return '目前帳號沒有上傳這筆成交照片的權限，照片仍保留在此裝置。';
+    case 'invalid_upload_form_data':
+    case 'invalid_request':
+      return '照片資料格式無法上傳，照片仍保留在此裝置，請重新選擇照片後再試。';
     default:
-      return fallback || '照片上傳失敗，照片仍保留在此裝置，請稍後再試。';
+      return '照片上傳失敗，照片仍保留在此裝置，請稍後再試。';
   }
 }
 
@@ -180,46 +197,56 @@ export async function uploadPendingSalesPhotoEvidenceManually(
 
   let response: Response;
   try {
-    response = await fetchImpl('/api/sales-photo-evidence/upload', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
+    response = await fetchAppApi(
+      buildAppApiUrl('/api/sales-photo-evidence/upload'),
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: buildSalesPhotoEvidenceManualUploadFormData(item, payload),
       },
-      body: buildSalesPhotoEvidenceManualUploadFormData(item, payload),
-    });
-  } catch (error) {
-    const result = failure(
-      'network_error',
-      '網路連線失敗，照片已保留在此裝置。請確認網路後再試。'
+      {
+        fetchImpl,
+        sleepImpl: deps.sleepImpl,
+        timeoutMs: deps.timeoutMs ?? 25_000,
+      }
     );
+  } catch (error) {
+    const result = isAppApiUrlError(error)
+      ? failure(error.code, error.message)
+      : isAppApiRequestError(error) && error.code === 'request_timeout'
+        ? failure('request_timeout', getUserFacingUploadFailureMessage('request_timeout'))
+        : failure(
+            'network_error',
+            '網路連線失敗，照片已保留在此裝置。請確認網路後再試。'
+          );
     await markRetryableFailure({
       queueId: item.queueId,
       code: result.code,
       message: result.message,
       now: now(),
     });
-    console.error('sales photo evidence upload network error', error);
     return result;
   }
+  const errorResponse = response.clone();
   const body = await parseUploadResponse(response);
 
   if (!response.ok || body.ok !== true) {
-    const code = body.code ?? `http_${response.status}`;
+    const apiError = await parseAppApiErrorResponse(errorResponse);
+    const code = apiError.code;
     const result = failure(
       code,
-      getUserFacingUploadFailureMessage(code, body.message)
+      getUserFacingUploadFailureMessage(code)
     );
-    console.error('sales photo evidence upload rejected', {
-      status: response.status,
-      code,
-      serverMessage: body.message ?? null,
-    });
-    await markRetryableFailure({
-      queueId: item.queueId,
-      code: result.code,
-      message: result.message,
-      now: now(),
-    });
+    if (apiError.retryable) {
+      await markRetryableFailure({
+        queueId: item.queueId,
+        code: result.code,
+        message: result.message,
+        now: now(),
+      });
+    }
     return result;
   }
 

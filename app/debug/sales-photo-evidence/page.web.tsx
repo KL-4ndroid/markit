@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { SalesPhotoEvidenceTestWorkbench } from '@/components/markets/SalesPhotoEvidenceTestWorkbench';
 
+// The `.web.tsx` route extension keeps this server-only diagnostic out of mobile static exports.
 export const dynamic = 'force-dynamic';
 
 function isTestPageEnabled(): boolean {
