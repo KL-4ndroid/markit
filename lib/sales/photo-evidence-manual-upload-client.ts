@@ -112,6 +112,7 @@ function failure(code: string, message: string): SalesPhotoEvidenceManualUploadF
 function getUserFacingUploadFailureMessage(code: string): string {
   switch (code) {
     case 'sale_event_sync_pending':
+    case 'source_invalid':
       return '成交資料仍在同步，照片已保留在此裝置。請確認網路後稍候再試。';
     case 'metadata_claim_failed':
       return '成交資料驗證失敗，照片仍保留在此裝置。請稍候再試；若持續發生，請聯絡管理者檢查雲端資料設定。';
@@ -182,13 +183,12 @@ export async function uploadPendingSalesPhotoEvidenceManually(
     return failure('local_payload_missing', '請先選擇照片，或重新選擇照片後再上傳。');
   }
 
-  const saleEventSynced = await (deps.waitForSaleEventSync ?? waitForDefaultSaleEventSync)(item.saleEventId);
-  if (!saleEventSynced) {
-    return failure(
-      'sale_event_sync_pending',
-      getUserFacingUploadFailureMessage('sale_event_sync_pending')
-    );
-  }
+  // The local sync marker is only an optimization. Revocation cleanup followed
+  // by re-invitation can leave IndexedDB with a stale local_only marker even
+  // after the sale event already exists in Cloud. After the bounded wait, let
+  // the authenticated BFF be the final authority; it rejects missing or
+  // mismatched sale events before claiming metadata or writing any R2 object.
+  await (deps.waitForSaleEventSync ?? waitForDefaultSaleEventSync)(item.saleEventId);
 
   const token = await (deps.getAccessToken ?? getDefaultAccessToken)();
   if (!token) {

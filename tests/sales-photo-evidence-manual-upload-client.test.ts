@@ -261,22 +261,51 @@ runTest('mobile upload uses the explicit HTTPS Vercel API origin', async () => {
   }
 });
 
-runTest('manual upload waits for the sale event and keeps the photo local while sync is pending', async () => {
-  let fetchCalled = false;
+runTest('manual upload falls through to the server authority when the local sale sync marker stays stale', async () => {
+  let fetchCalled = 0;
   const result = await uploadPendingSalesPhotoEvidenceManually(item, {
     getPayload: async () => payload(),
     waitForSaleEventSync: async () => false,
     getAccessToken: async () => 'token',
     fetchImpl: async () => {
-      fetchCalled = true;
-      return new Response(null, { status: 500 });
+      fetchCalled += 1;
+      return new Response(JSON.stringify({
+        ok: true,
+        evidenceId: '55555555-5555-4555-8555-555555555555',
+        shouldDeleteLocalPayloadAfterSuccess: true,
+      }), { status: 200 });
+    },
+    deletePayload: async () => undefined,
+    markCreated: async () => item,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(fetchCalled, 1);
+});
+
+runTest('server source rejection after a stale local marker keeps the photo and reports sync pending', async () => {
+  let payloadDeleted = false;
+  const result = await uploadPendingSalesPhotoEvidenceManually(item, {
+    getPayload: async () => payload(),
+    waitForSaleEventSync: async () => false,
+    getAccessToken: async () => 'token',
+    fetchImpl: async () => new Response(JSON.stringify({
+      ok: false,
+      code: 'source_invalid',
+      message: 'internal source detail is ignored',
+      retryable: false,
+      shouldKeepLocalPayload: true,
+    }), { status: 400 }),
+    deletePayload: async () => {
+      payloadDeleted = true;
     },
   });
 
   assert.equal(result.ok, false);
-  assert.equal(result.code, 'sale_event_sync_pending');
+  assert.equal(result.code, 'source_invalid');
+  assert.equal(result.message, '成交資料仍在同步，照片已保留在此裝置。請確認網路後稍候再試。');
   assert.equal(result.shouldKeepLocalPayload, true);
-  assert.equal(fetchCalled, false);
+  assert.equal(payloadDeleted, false);
 });
 
 runTest('manual upload reports invalid remote API configuration without making a request', async () => {
