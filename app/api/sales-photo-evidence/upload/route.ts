@@ -19,6 +19,11 @@ import {
   buildSalesPhotoEvidenceObjectKey,
   getSalesPhotoEvidenceExpiresAt,
 } from '@/lib/sales/photo-evidence-model';
+import {
+  resolveSalesPhotoEvidenceFaultInjection,
+  type ResolveSalesPhotoEvidenceFaultInjectionInput,
+  type SalesPhotoEvidenceFaultInjectionDecision,
+} from '@/lib/sales/photo-evidence-fault-injection.server';
 import type { SalesPhotoEvidenceR2UploadAdapter } from '@/lib/sales/photo-evidence-r2-upload-adapter';
 import type { SalesPhotoEvidenceUploadMimeType } from '@/lib/sales/photo-evidence-upload-contract';
 import { parseAndValidateSalesPhotoEvidenceUploadFormData } from '@/lib/sales/photo-evidence-upload-form-data';
@@ -49,6 +54,9 @@ export type SalesPhotoEvidenceUploadRouteDeps = {
   ): SalesPhotoEvidenceServerMutationRepository | null;
   r2UploadAdapter?: SalesPhotoEvidenceR2UploadAdapter;
   createR2UploadAdapter?(): Promise<SalesPhotoEvidenceR2UploadAdapter | null>;
+  resolveFaultInjection?(
+    input: Omit<ResolveSalesPhotoEvidenceFaultInjectionInput, 'env'>
+  ): SalesPhotoEvidenceFaultInjectionDecision;
   now?(): Date;
 };
 
@@ -319,6 +327,22 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     }
 
     const body = parsed.request;
+    const faultDecision = deps.resolveFaultInjection?.({
+      request,
+      actorId: actor.actorId,
+      ownerId: body.ownerId,
+      marketId: body.marketId,
+      saleEventId: body.saleEventId,
+    }) ?? { action: 'none' };
+    if (faultDecision.action === 'reject') {
+      return jsonResponse({
+        ok: false,
+        code: 'fault_injection_not_authorized',
+        message: 'Sales photo evidence test fault request is not authorized.',
+        shouldKeepLocalPayload: true,
+      }, 403);
+    }
+
     const uploadAttemptId = crypto.randomUUID();
     const mutationRepository = deps.createMutationRepository?.(actor, uploadAttemptId) ?? null;
     if (!mutationRepository) {
@@ -386,12 +410,22 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       }, 500);
     }
 
-    const thumbnailUpload = await r2UploadAdapter.uploadObject({
-      key: thumbnailObjectKey,
-      body: body.thumbnail,
-      contentType: thumbnailContentType,
-      contentLength: body.thumbnailMetadata.fileSizeBytes,
-    });
+    const thumbnailUpload = (
+      faultDecision.action === 'inject'
+      && faultDecision.mode === 'thumbnail_upload_failed'
+    )
+      ? {
+          ok: false as const,
+          key: thumbnailObjectKey,
+          code: 'r2_upload_failed' as const,
+          message: 'Controlled sales photo evidence thumbnail upload failure.',
+        }
+      : await r2UploadAdapter.uploadObject({
+          key: thumbnailObjectKey,
+          body: body.thumbnail,
+          contentType: thumbnailContentType,
+          contentLength: body.thumbnailMetadata.fileSizeBytes,
+        });
     if (!thumbnailUpload.ok) {
       const cleanup = await compensateConfirmedR2Uploads(r2UploadAdapter, [imageObjectKey]);
       await markUploadFailedIfPossible(row, 'r2_thumbnail_upload_failed', repository);
@@ -422,6 +456,12 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     };
 
     try {
+      if (
+        faultDecision.action === 'inject'
+        && faultDecision.mode === 'metadata_finalize_failed'
+      ) {
+        throw new Error('Controlled sales photo evidence metadata finalize failure.');
+      }
       await repository.finalizeEvidenceUploaded(finalizeInput);
     } catch (error) {
       const cleanup = await compensateConfirmedR2Uploads(r2UploadAdapter, [
@@ -536,6 +576,10 @@ const routeHandlers = createSalesPhotoEvidenceUploadRouteHandlers({
   createRepository: createRouteSupabaseClient,
   createMutationRepository: createRouteServerMutationRepository,
   createR2UploadAdapter: createDefaultR2UploadAdapter,
+  resolveFaultInjection: input => resolveSalesPhotoEvidenceFaultInjection({
+    ...input,
+    env: process.env,
+  }),
 });
 
 async function runUploadRouteWithCors(

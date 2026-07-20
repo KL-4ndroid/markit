@@ -110,6 +110,7 @@ tsx tests/sales-photo-evidence-writer-upload-design.test.ts
 tsx tests/sales-photo-evidence-r2-upload-transport-design.test.ts
 tsx tests/sales-photo-evidence-r2-upload-adapter.test.ts
 tsx tests/sales-photo-evidence-r2-upload-adapter-server.test.ts
+tsx tests/sales-photo-evidence-fault-injection-server.test.ts
 tsx tests/sales-photo-evidence-r2-read-adapter-server.test.ts
 tsx tests/sales-photo-evidence-upload-form-data.test.ts
 tsx tests/sales-photo-evidence-payload-validation.test.ts

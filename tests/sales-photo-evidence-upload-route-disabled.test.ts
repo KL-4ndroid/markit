@@ -747,6 +747,52 @@ runTest('multipart MIME signature mismatch fails before metadata or R2 writes', 
   assert.equal(r2Called, false);
 });
 
+runTest('unauthorized fault headers fail before claim or R2 writes', async () => {
+  let mutationCalled = false;
+  let r2Called = false;
+  const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+    isMetadataClaimEnabled: () => true,
+    isR2UploadEnabled: () => true,
+    async resolveActor() {
+      return { actorId: IDS.ownerId };
+    },
+    createRepository() {
+      return createFakeClient({});
+    },
+    createMutationRepository() {
+      mutationCalled = true;
+      return createFakeMutationRepository();
+    },
+    resolveFaultInjection() {
+      return { action: 'reject' };
+    },
+    r2UploadAdapter: {
+      async uploadObject(input) {
+        r2Called = true;
+        return { ok: true, key: input.key };
+      },
+      async deleteObject(input) {
+        r2Called = true;
+        return { ok: true, key: input.key };
+      },
+    },
+  });
+
+  const response = await handlers.POST(createUploadFormDataRequest());
+  const body = await response.json() as {
+    code: string;
+    retryable: boolean;
+    shouldKeepLocalPayload: boolean;
+  };
+
+  assert.equal(response.status, 403);
+  assert.equal(body.code, 'fault_injection_not_authorized');
+  assert.equal(body.retryable, false);
+  assert.equal(body.shouldKeepLocalPayload, true);
+  assert.equal(mutationCalled, false);
+  assert.equal(r2Called, false);
+});
+
 runTest('production handler path uses one attempt for claim R2 uploads and server finalize', async () => {
   const calls: string[] = [];
   const attemptIds: string[] = [];
@@ -974,6 +1020,58 @@ runTest('thumbnail failure deletes the image confirmed uploaded by the same atte
   }]);
 });
 
+runTest('authorized thumbnail fault skips the thumbnail PUT and uses the compensation path', async () => {
+  const calls: string[] = [];
+  const fakeClient = createFakeClient({
+    events: {
+      data: {
+        id: IDS.saleId,
+        type: 'deal_closed',
+        market_id: IDS.marketId,
+        timestamp: '2026-07-07T01:02:03.000Z',
+        markets: { owner_id: IDS.ownerId },
+      },
+      error: null,
+    },
+    sale_photo_evidence: { data: null, error: null },
+  });
+  const mutations = createFakeMutationRepository(calls);
+  const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+    isMetadataClaimEnabled: () => true,
+    isR2UploadEnabled: () => true,
+    async resolveActor() {
+      return { actorId: IDS.ownerId };
+    },
+    createRepository() {
+      return fakeClient;
+    },
+    createMutationRepository() {
+      return mutations;
+    },
+    resolveFaultInjection() {
+      return { action: 'inject', mode: 'thumbnail_upload_failed' };
+    },
+    r2UploadAdapter: {
+      async uploadObject(input) {
+        calls.push(input.key.includes('sales-evidence-thumbs/') ? 'unexpected_upload_thumbnail' : 'upload_image');
+        return { ok: true, key: input.key };
+      },
+      async deleteObject(input) {
+        calls.push(input.key.includes('sales-evidence-thumbs/') ? 'unexpected_delete_thumbnail' : 'delete_image');
+        return { ok: true, key: input.key };
+      },
+    },
+  });
+
+  const response = await handlers.POST(createUploadFormDataRequest());
+  const body = await response.json() as { code: string; cleanupIncomplete: boolean };
+
+  assert.equal(response.status, 500);
+  assert.equal(body.code, 'r2_thumbnail_upload_failed');
+  assert.equal(body.cleanupIncomplete, false);
+  assert.deepEqual(calls, ['claim', 'upload_image', 'delete_image', 'server_mark_failed']);
+});
+
 runTest('finalize rejection keeps the payload and performs same-attempt failure cleanup', async () => {
   const calls: string[] = [];
   const attemptIds: string[] = [];
@@ -1056,6 +1154,66 @@ runTest('finalize rejection keeps the payload and performs same-attempt failure 
     saleId: IDS.saleId,
     reason: 'metadata_finalize_failed',
   }]);
+});
+
+runTest('authorized finalize fault skips finalize mutation and compensates both uploads', async () => {
+  const calls: string[] = [];
+  const fakeClient = createFakeClient({
+    events: {
+      data: {
+        id: IDS.saleId,
+        type: 'deal_closed',
+        market_id: IDS.marketId,
+        timestamp: '2026-07-07T01:02:03.000Z',
+        markets: { owner_id: IDS.ownerId },
+      },
+      error: null,
+    },
+    sale_photo_evidence: { data: null, error: null },
+  });
+  const mutations = createFakeMutationRepository(calls);
+  const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+    isMetadataClaimEnabled: () => true,
+    isR2UploadEnabled: () => true,
+    async resolveActor() {
+      return { actorId: IDS.ownerId };
+    },
+    createRepository() {
+      return fakeClient;
+    },
+    createMutationRepository() {
+      return mutations;
+    },
+    resolveFaultInjection() {
+      return { action: 'inject', mode: 'metadata_finalize_failed' };
+    },
+    r2UploadAdapter: {
+      async uploadObject(input) {
+        calls.push(input.key.includes('sales-evidence-thumbs/') ? 'upload_thumbnail' : 'upload_image');
+        return { ok: true, key: input.key };
+      },
+      async deleteObject(input) {
+        calls.push(input.key.includes('sales-evidence-thumbs/') ? 'delete_thumbnail' : 'delete_image');
+        return { ok: true, key: input.key };
+      },
+    },
+  });
+
+  const response = await handlers.POST(createUploadFormDataRequest());
+  const body = await response.json() as { code: string; cleanupIncomplete: boolean };
+
+  assert.equal(response.status, 500);
+  assert.equal(body.code, 'metadata_finalize_failed');
+  assert.equal(body.cleanupIncomplete, false);
+  assert.deepEqual(calls, [
+    'claim',
+    'upload_image',
+    'upload_thumbnail',
+    'delete_thumbnail',
+    'delete_image',
+    'server_mark_failed',
+  ]);
+  assert.deepEqual(mutations.finalizedInputs, []);
 });
 
 runTest('compensation reports cleanup incomplete and still attempts every confirmed object', async () => {
