@@ -1,6 +1,7 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 import {
+  validateSalesPhotoEvidenceR2DeleteObjectInput,
   validateSalesPhotoEvidenceR2ServerConfig,
   validateSalesPhotoEvidenceR2UploadObjectInput,
   type SalesPhotoEvidenceR2ServerConfig,
@@ -10,20 +11,20 @@ import {
 
 export type SalesPhotoEvidenceR2ServerEnv = Record<string, string | undefined>;
 
-export type SalesPhotoEvidenceR2PutObjectClient = {
-  send(command: PutObjectCommand): Promise<{ ETag?: string }>;
+export type SalesPhotoEvidenceR2ObjectClient = {
+  send(command: PutObjectCommand | DeleteObjectCommand): Promise<{ ETag?: string }>;
 };
 
 export type CreateCloudflareR2SalesPhotoEvidenceUploadAdapterInput = {
   config: SalesPhotoEvidenceR2ServerConfig;
-  client?: SalesPhotoEvidenceR2PutObjectClient;
+  client?: SalesPhotoEvidenceR2ObjectClient;
 };
 
 function getR2Endpoint(config: SalesPhotoEvidenceR2ServerConfig): string {
   return config.endpoint ?? `https://${config.accountId}.r2.cloudflarestorage.com`;
 }
 
-function createDefaultR2Client(config: SalesPhotoEvidenceR2ServerConfig): SalesPhotoEvidenceR2PutObjectClient {
+function createDefaultR2Client(config: SalesPhotoEvidenceR2ServerConfig): SalesPhotoEvidenceR2ObjectClient {
   return new S3Client({
     region: 'auto',
     endpoint: getR2Endpoint(config),
@@ -82,6 +83,30 @@ export function createCloudflareR2SalesPhotoEvidenceUploadAdapter(
           key: uploadInput.key,
           code: 'r2_upload_failed',
           message: 'Sales photo evidence R2 upload failed.',
+        };
+      }
+    },
+
+    async deleteObject(deleteInput) {
+      const invalid = validateSalesPhotoEvidenceR2DeleteObjectInput(deleteInput);
+      if (invalid) return invalid;
+
+      try {
+        await client.send(new DeleteObjectCommand({
+          Bucket: input.config.bucketName,
+          Key: deleteInput.key,
+        }));
+
+        return {
+          ok: true,
+          key: deleteInput.key,
+        };
+      } catch {
+        return {
+          ok: false,
+          key: deleteInput.key,
+          code: 'r2_delete_failed',
+          message: 'Sales photo evidence R2 delete failed.',
         };
       }
     },

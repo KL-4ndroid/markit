@@ -273,6 +273,32 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     }
   }
 
+  async function compensateConfirmedR2Uploads(
+    adapter: SalesPhotoEvidenceR2UploadAdapter,
+    objectKeys: readonly string[]
+  ): Promise<{ cleanupIncomplete: boolean }> {
+    let cleanupIncomplete = false;
+
+    for (const key of objectKeys) {
+      try {
+        const result = await adapter.deleteObject({ key });
+        if (!result.ok) {
+          cleanupIncomplete = true;
+          console.error('sales photo evidence R2 compensation failed', {
+            code: result.code,
+          });
+        }
+      } catch (error) {
+        cleanupIncomplete = true;
+        console.error('sales photo evidence R2 compensation failed', {
+          name: error instanceof Error ? error.name : 'UnknownError',
+        });
+      }
+    }
+
+    return { cleanupIncomplete };
+  }
+
   async function handleFormDataUpload(
     request: Request,
     actor: SalesPhotoEvidenceUploadRouteActor
@@ -356,6 +382,7 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
         code: 'r2_image_upload_failed',
         message: 'Sales photo evidence image storage failed.',
         shouldKeepLocalPayload: true,
+        cleanupIncomplete: false,
       }, 500);
     }
 
@@ -366,12 +393,14 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       contentLength: body.thumbnailMetadata.fileSizeBytes,
     });
     if (!thumbnailUpload.ok) {
+      const cleanup = await compensateConfirmedR2Uploads(r2UploadAdapter, [imageObjectKey]);
       await markUploadFailedIfPossible(row, 'r2_thumbnail_upload_failed', repository);
       return jsonResponse({
         ok: false,
         code: 'r2_thumbnail_upload_failed',
         message: 'Sales photo evidence thumbnail storage failed.',
         shouldKeepLocalPayload: true,
+        cleanupIncomplete: cleanup.cleanupIncomplete,
       }, 500);
     }
 
@@ -395,12 +424,17 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     try {
       await repository.finalizeEvidenceUploaded(finalizeInput);
     } catch (error) {
+      const cleanup = await compensateConfirmedR2Uploads(r2UploadAdapter, [
+        thumbnailObjectKey,
+        imageObjectKey,
+      ]);
       await markUploadFailedIfPossible(row, 'metadata_finalize_failed', repository);
       return jsonResponse({
         ok: false,
         code: 'metadata_finalize_failed',
         message: 'Sales photo evidence metadata finalize failed.',
         shouldKeepLocalPayload: true,
+        cleanupIncomplete: cleanup.cleanupIncomplete,
       }, 500);
     }
 

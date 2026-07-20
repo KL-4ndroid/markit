@@ -58,6 +58,9 @@ export function normalizeAppApiErrorBody(
   if (typeof body.shouldRetryWithLocalPayload === 'boolean') {
     normalized.shouldRetryWithLocalPayload = body.shouldRetryWithLocalPayload;
   }
+  if (typeof body.cleanupIncomplete === 'boolean') {
+    normalized.cleanupIncomplete = body.cleanupIncomplete;
+  }
 
   return normalized;
 }

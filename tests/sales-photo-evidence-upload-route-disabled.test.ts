@@ -502,6 +502,9 @@ runTest('staff identity and attribution come from the verified actor rather than
       async uploadObject(input) {
         return { ok: true, key: input.key };
       },
+      async deleteObject(input) {
+        return { ok: true, key: input.key };
+      },
     },
   });
   const source = createUploadFormDataRequest();
@@ -547,6 +550,9 @@ runTest('inactive staff relationship fails closed before metadata mutation', asy
       async uploadObject(input) {
         return { ok: true, key: input.key };
       },
+      async deleteObject(input) {
+        return { ok: true, key: input.key };
+      },
     },
   });
 
@@ -577,6 +583,9 @@ runTest('enabled multipart POST rejects invalid form data before repository crea
     },
     r2UploadAdapter: {
       async uploadObject(input) {
+        return { ok: true, key: input.key };
+      },
+      async deleteObject(input) {
         return { ok: true, key: input.key };
       },
     },
@@ -613,6 +622,9 @@ runTest('missing server mutation configuration returns retryable 503 before DB o
     r2UploadAdapter: {
       async uploadObject(input) {
         r2Called = true;
+        return { ok: true, key: input.key };
+      },
+      async deleteObject(input) {
         return { ok: true, key: input.key };
       },
     },
@@ -718,6 +730,9 @@ runTest('multipart MIME signature mismatch fails before metadata or R2 writes', 
         r2Called = true;
         return { ok: true, key: input.key };
       },
+      async deleteObject(input) {
+        return { ok: true, key: input.key };
+      },
     },
   });
 
@@ -774,6 +789,9 @@ runTest('production handler path uses one attempt for claim R2 uploads and serve
     r2UploadAdapter: {
       async uploadObject(input) {
         calls.push(input.key.includes('sales-evidence-thumbs/') ? 'upload_thumbnail' : 'upload_image');
+        return { ok: true, key: input.key };
+      },
+      async deleteObject(input) {
         return { ok: true, key: input.key };
       },
     },
@@ -858,6 +876,10 @@ runTest('R2 failure is recorded through the same server mutation repository befo
         calls.push('upload_image');
         return { ok: false, key: input.key, code: 'r2_upload_failed', message: 'R2 unavailable' };
       },
+      async deleteObject(input) {
+        calls.push('unexpected_delete');
+        return { ok: true, key: input.key };
+      },
     },
   });
 
@@ -877,6 +899,79 @@ runTest('R2 failure is recorded through the same server mutation repository befo
     reason: 'r2_image_upload_failed',
   }]);
   assert.deepEqual(mutations.finalizedInputs, []);
+});
+
+runTest('thumbnail failure deletes the image confirmed uploaded by the same attempt', async () => {
+  const calls: string[] = [];
+  const fakeClient = createFakeClient({
+    events: {
+      data: {
+        id: IDS.saleId,
+        type: 'deal_closed',
+        market_id: IDS.marketId,
+        timestamp: '2026-07-07T01:02:03.000Z',
+        markets: { owner_id: IDS.ownerId },
+      },
+      error: null,
+    },
+    sale_photo_evidence: { data: null, error: null },
+  });
+  const mutations = createFakeMutationRepository(calls);
+  let uploadCount = 0;
+  const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+    isMetadataClaimEnabled: () => true,
+    isR2UploadEnabled: () => true,
+    async resolveActor() {
+      return { actorId: IDS.ownerId };
+    },
+    createRepository() {
+      return fakeClient;
+    },
+    createMutationRepository() {
+      return mutations;
+    },
+    r2UploadAdapter: {
+      async uploadObject(input) {
+        uploadCount++;
+        if (uploadCount === 1) {
+          calls.push('upload_image');
+          return { ok: true, key: input.key };
+        }
+        calls.push('upload_thumbnail');
+        return { ok: false, key: input.key, code: 'r2_upload_failed', message: 'R2 unavailable' };
+      },
+      async deleteObject(input) {
+        calls.push(input.key.includes('sales-evidence-thumbs/') ? 'unexpected_delete_thumbnail' : 'delete_image');
+        return { ok: true, key: input.key };
+      },
+    },
+  });
+
+  const response = await handlers.POST(createUploadFormDataRequest());
+  const body = await response.json() as {
+    code: string;
+    shouldKeepLocalPayload: boolean;
+    cleanupIncomplete: boolean;
+  };
+
+  assert.equal(response.status, 500);
+  assert.equal(body.code, 'r2_thumbnail_upload_failed');
+  assert.equal(body.shouldKeepLocalPayload, true);
+  assert.equal(body.cleanupIncomplete, false);
+  assert.deepEqual(calls, [
+    'claim',
+    'upload_image',
+    'upload_thumbnail',
+    'delete_image',
+    'server_mark_failed',
+  ]);
+  assert.deepEqual(mutations.failedInputs, [{
+    evidenceId: IDS.evidenceId,
+    ownerId: IDS.ownerId,
+    marketId: IDS.marketId,
+    saleId: IDS.saleId,
+    reason: 'r2_thumbnail_upload_failed',
+  }]);
 });
 
 runTest('finalize rejection keeps the payload and performs same-attempt failure cleanup', async () => {
@@ -918,6 +1013,10 @@ runTest('finalize rejection keeps the payload and performs same-attempt failure 
         calls.push(input.key.includes('sales-evidence-thumbs/') ? 'upload_thumbnail' : 'upload_image');
         return { ok: true, key: input.key };
       },
+      async deleteObject(input) {
+        calls.push(input.key.includes('sales-evidence-thumbs/') ? 'delete_thumbnail' : 'delete_image');
+        return { ok: true, key: input.key };
+      },
     },
     now: () => new Date('2026-07-07T02:00:00.000Z'),
   });
@@ -928,6 +1027,7 @@ runTest('finalize rejection keeps the payload and performs same-attempt failure 
     code: string;
     retryable: boolean;
     shouldKeepLocalPayload: boolean;
+    cleanupIncomplete: boolean;
     shouldDeleteLocalPayloadAfterSuccess?: boolean;
   };
 
@@ -936,6 +1036,7 @@ runTest('finalize rejection keeps the payload and performs same-attempt failure 
   assert.equal(body.code, 'metadata_finalize_failed');
   assert.equal(body.retryable, true);
   assert.equal(body.shouldKeepLocalPayload, true);
+  assert.equal(body.cleanupIncomplete, false);
   assert.equal(body.shouldDeleteLocalPayloadAfterSuccess, undefined);
   assert.equal(attemptIds.length, 1, 'One request must create exactly one upload-attempt lease.');
   assert.deepEqual(calls, [
@@ -943,6 +1044,8 @@ runTest('finalize rejection keeps the payload and performs same-attempt failure 
     'upload_image',
     'upload_thumbnail',
     'server_finalize',
+    'delete_thumbnail',
+    'delete_image',
     'server_mark_failed',
   ]);
   assert.equal(mutations.finalizedInputs.length, 1);
@@ -953,6 +1056,86 @@ runTest('finalize rejection keeps the payload and performs same-attempt failure 
     saleId: IDS.saleId,
     reason: 'metadata_finalize_failed',
   }]);
+});
+
+runTest('compensation reports cleanup incomplete and still attempts every confirmed object', async () => {
+  const calls: string[] = [];
+  const fakeClient = createFakeClient({
+    events: {
+      data: {
+        id: IDS.saleId,
+        type: 'deal_closed',
+        market_id: IDS.marketId,
+        timestamp: '2026-07-07T01:02:03.000Z',
+        markets: { owner_id: IDS.ownerId },
+      },
+      error: null,
+    },
+    sale_photo_evidence: { data: null, error: null },
+  });
+  const mutations = createFakeMutationRepository(calls, {
+    finalizeError: new Error('finalize failed'),
+  });
+  const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+    isMetadataClaimEnabled: () => true,
+    isR2UploadEnabled: () => true,
+    async resolveActor() {
+      return { actorId: IDS.ownerId };
+    },
+    createRepository() {
+      return fakeClient;
+    },
+    createMutationRepository() {
+      return mutations;
+    },
+    r2UploadAdapter: {
+      async uploadObject(input) {
+        calls.push(input.key.includes('sales-evidence-thumbs/') ? 'upload_thumbnail' : 'upload_image');
+        return { ok: true, key: input.key };
+      },
+      async deleteObject(input) {
+        if (input.key.includes('sales-evidence-thumbs/')) {
+          calls.push('delete_thumbnail_failed');
+          return {
+            ok: false,
+            key: input.key,
+            code: 'r2_delete_failed',
+            message: 'R2 unavailable',
+          };
+        }
+        calls.push('delete_image');
+        return { ok: true, key: input.key };
+      },
+    },
+  });
+
+  const originalConsoleError = console.error;
+  console.error = () => {};
+  try {
+    const response = await handlers.POST(createUploadFormDataRequest());
+    const body = await response.json() as {
+      code: string;
+      shouldKeepLocalPayload: boolean;
+      cleanupIncomplete: boolean;
+    };
+
+    assert.equal(response.status, 500);
+    assert.equal(body.code, 'metadata_finalize_failed');
+    assert.equal(body.shouldKeepLocalPayload, true);
+    assert.equal(body.cleanupIncomplete, true);
+  } finally {
+    console.error = originalConsoleError;
+  }
+
+  assert.deepEqual(calls, [
+    'claim',
+    'upload_image',
+    'upload_thumbnail',
+    'server_finalize',
+    'delete_thumbnail_failed',
+    'delete_image',
+    'server_mark_failed',
+  ]);
 });
 
 runTest('server mutation secrets never escape through route JSON or cleanup logs', async () => {
@@ -991,6 +1174,9 @@ runTest('server mutation secrets never escape through route JSON or cleanup logs
       async uploadObject(input) {
         return { ok: true, key: input.key };
       },
+      async deleteObject(input) {
+        return { ok: true, key: input.key };
+      },
     },
   });
 
@@ -1006,6 +1192,7 @@ runTest('server mutation secrets never escape through route JSON or cleanup logs
       message: string;
       retryable: boolean;
       shouldKeepLocalPayload: boolean;
+      cleanupIncomplete: boolean;
     };
     const observableOutput = JSON.stringify({
       body,
@@ -1020,6 +1207,7 @@ runTest('server mutation secrets never escape through route JSON or cleanup logs
       message: 'Sales photo evidence metadata finalize failed.',
       retryable: true,
       shouldKeepLocalPayload: true,
+      cleanupIncomplete: false,
     });
     assert.doesNotMatch(observableOutput, /sb_secret_ROUTE_CANARY_must_not_escape/);
     assert.equal(mutations.finalizedInputs.length, 1);

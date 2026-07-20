@@ -13,6 +13,7 @@ async function main(): Promise<void> {
     code: 'temporary_failure',
     message: 'Try again later.',
     shouldKeepLocalPayload: true,
+    cleanupIncomplete: true,
     stack: 'sensitive stack',
     cause: { secret: 'must-not-leak' },
     env: { R2_SECRET_ACCESS_KEY: 'must-not-leak' },
@@ -24,6 +25,7 @@ async function main(): Promise<void> {
     message: 'Try again later.',
     retryable: true,
     shouldKeepLocalPayload: true,
+    cleanupIncomplete: true,
   });
   assert.equal('stack' in normalized, false);
   assert.equal('cause' in normalized, false);

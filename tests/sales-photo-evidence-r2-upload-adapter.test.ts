@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
+  validateSalesPhotoEvidenceR2DeleteObjectInput,
   validateSalesPhotoEvidenceR2ServerConfig,
   validateSalesPhotoEvidenceR2UploadObjectInput,
   type SalesPhotoEvidenceR2UploadAdapter,
@@ -69,6 +70,26 @@ runTest('rejects unsafe or unrelated object keys before upload', () => {
   }
 });
 
+runTest('delete validation accepts only the bounded evidence key namespaces', () => {
+  assert.equal(validateSalesPhotoEvidenceR2DeleteObjectInput({ key: VALID_KEY }), null);
+  assert.equal(validateSalesPhotoEvidenceR2DeleteObjectInput({
+    key: VALID_KEY.replace('sales-evidence/', 'sales-evidence-thumbs/'),
+  }), null);
+
+  for (const key of [
+    '',
+    '/sales-evidence/7d/a.webp',
+    'sales-evidence/7d/../a.webp',
+    'sales-evidence/7d/a//b.webp',
+    'other-prefix/7d/a.webp',
+    'sales-evidence\\7d\\a.webp',
+  ]) {
+    const result = validateSalesPhotoEvidenceR2DeleteObjectInput({ key });
+    assert.equal(result?.ok, false, key);
+    assert.equal(result?.code, 'invalid_delete_object', key);
+  }
+});
+
 runTest('rejects unsupported content metadata before upload', () => {
   assert.equal(validateSalesPhotoEvidenceR2UploadObjectInput({
     ...validInput(),
@@ -117,12 +138,19 @@ runTest('adapter interface is dependency-injected and fakeable without SDK impor
     async uploadObject(input) {
       return { ok: true, key: input.key, etag: 'fake-etag' };
     },
+    async deleteObject(input) {
+      return { ok: true, key: input.key };
+    },
   };
 
   assert.deepEqual(await fakeAdapter.uploadObject(validInput()), {
     ok: true,
     key: VALID_KEY,
     etag: 'fake-etag',
+  });
+  assert.deepEqual(await fakeAdapter.deleteObject({ key: VALID_KEY }), {
+    ok: true,
+    key: VALID_KEY,
   });
 });
 

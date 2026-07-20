@@ -27,8 +27,29 @@ export type SalesPhotoEvidenceR2UploadObjectResult =
   | SalesPhotoEvidenceR2UploadObjectSuccess
   | SalesPhotoEvidenceR2UploadObjectFailure;
 
+export type SalesPhotoEvidenceR2DeleteObjectInput = {
+  key: string;
+};
+
+export type SalesPhotoEvidenceR2DeleteObjectSuccess = {
+  ok: true;
+  key: string;
+};
+
+export type SalesPhotoEvidenceR2DeleteObjectFailure = {
+  ok: false;
+  key: string;
+  code: 'invalid_delete_object' | 'r2_delete_failed';
+  message: string;
+};
+
+export type SalesPhotoEvidenceR2DeleteObjectResult =
+  | SalesPhotoEvidenceR2DeleteObjectSuccess
+  | SalesPhotoEvidenceR2DeleteObjectFailure;
+
 export type SalesPhotoEvidenceR2UploadAdapter = {
   uploadObject(input: SalesPhotoEvidenceR2UploadObjectInput): Promise<SalesPhotoEvidenceR2UploadObjectResult>;
+  deleteObject(input: SalesPhotoEvidenceR2DeleteObjectInput): Promise<SalesPhotoEvidenceR2DeleteObjectResult>;
 };
 
 export type SalesPhotoEvidenceR2ServerConfig = {
@@ -82,10 +103,16 @@ function isValidUploadBody(value: unknown): value is SalesPhotoEvidenceR2UploadO
   ) || value instanceof ArrayBuffer || value instanceof Uint8Array;
 }
 
+function isValidEvidenceObjectKey(key: string): boolean {
+  return isNonEmptyString(key)
+    && hasAllowedEvidenceKeyPrefix(key)
+    && !hasUnsafeObjectKeySegment(key);
+}
+
 export function validateSalesPhotoEvidenceR2UploadObjectInput(
   input: SalesPhotoEvidenceR2UploadObjectInput
 ): SalesPhotoEvidenceR2UploadObjectFailure | null {
-  if (!isNonEmptyString(input.key) || !hasAllowedEvidenceKeyPrefix(input.key) || hasUnsafeObjectKeySegment(input.key)) {
+  if (!isValidEvidenceObjectKey(input.key)) {
     return {
       ok: false,
       key: input.key,
@@ -126,6 +153,19 @@ export function validateSalesPhotoEvidenceR2UploadObjectInput(
   }
 
   return null;
+}
+
+export function validateSalesPhotoEvidenceR2DeleteObjectInput(
+  input: SalesPhotoEvidenceR2DeleteObjectInput
+): SalesPhotoEvidenceR2DeleteObjectFailure | null {
+  if (isValidEvidenceObjectKey(input.key)) return null;
+
+  return {
+    ok: false,
+    key: input.key,
+    code: 'invalid_delete_object',
+    message: 'Sales photo evidence R2 delete object key is invalid.',
+  };
 }
 
 export function validateSalesPhotoEvidenceR2ServerConfig(
