@@ -439,7 +439,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('✅ 登出成功');
     
     // ✅ 不重新載入頁面，讓 AuthGuard 自動顯示歡迎頁面
-    // window.location.href = '/';
+    // Replace the protected history entry after the guarded reset and remote
+    // sign-out both succeed. A clean home navigation also remounts the login
+    // event listener instead of leaving the welcome screen on a settings URL.
+    if (typeof window !== 'undefined') {
+      window.location.replace('/');
+    }
   };
 
   return (

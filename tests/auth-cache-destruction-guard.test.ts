@@ -438,6 +438,15 @@ runTest('auth context routes cache clears through the guard instead of direct re
   assert.match(authContextSource, /blockedLocalChangesUserIdRef\.current\s*=\s*null/);
 });
 
+runTest('successful manual sign-out replaces a protected route with the public home route', () => {
+  const signOutIndex = authContextSource.indexOf('await supabase.auth.signOut()');
+  const homeReplaceIndex = authContextSource.indexOf("window.location.replace('/')", signOutIndex);
+
+  assert.ok(signOutIndex > 0, 'manual sign-out must call Supabase');
+  assert.ok(homeReplaceIndex > signOutIndex, 'home replacement must run only after Supabase sign-out');
+  assert.doesNotMatch(authContextSource, /window\.location\.href\s*=\s*['"]\/['"]/);
+});
+
 runTest('manual sign-out entry points use shared discard confirmation helper', () => {
   for (const source of [topNavigationSource, joinPageSource]) {
     assert.match(source, /confirmDiscardLocalChangesForSignOut/);
