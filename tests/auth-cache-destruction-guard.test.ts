@@ -5,6 +5,7 @@ import { db } from '../lib/db';
 import { acquireSyncLock, releaseSyncLock } from '../lib/sync/sync-runtime-state';
 import { getLocalPendingWriteReport } from '../lib/sync/local-pending-write-report';
 import { guardedAuthenticatedCacheReset } from '../lib/sync/authenticated-cache-reset-guard';
+import { resetAuthenticatedCache } from '../lib/db/clear-user-data';
 import type { LocalPendingWriteReport } from '../lib/sync/local-pending-write-report';
 
 type TestFn = () => Promise<void> | void;
@@ -387,6 +388,45 @@ runTest('guard requires explicit force flag before discarding local changes', as
   assert.deepEqual(calls, ['reset']);
 });
 
+runTest('force discard removes every pending-write table so sign-out cannot re-block', async () => {
+  const cleared: string[] = [];
+  const originalTransaction = db.transaction.bind(db);
+  const originalSettingsToArray = db.settings.toArray.bind(db.settings);
+  const tables = [
+    ['events', db.events],
+    ['markets', db.markets],
+    ['products', db.products],
+    ['dailyStats', db.dailyStats],
+    ['syncQueue', db.syncQueue],
+    ['salesPhotoEvidencePendingCreations', db.salesPhotoEvidencePendingCreations],
+    ['salesPhotoEvidencePendingPayloads', db.salesPhotoEvidencePendingPayloads],
+  ] as const;
+  const originalClearMethods = tables.map(([, table]) => table.clear.bind(table));
+
+  try {
+    (db as any).transaction = async (...args: unknown[]) => {
+      const callback = args.at(-1) as () => Promise<void>;
+      await callback();
+    };
+    (db.settings as any).toArray = async () => [];
+    tables.forEach(([name, table]) => {
+      (table as any).clear = async () => {
+        cleared.push(name);
+      };
+    });
+
+    await resetAuthenticatedCache('full', 'owner-force-discard');
+
+    assert.deepEqual(cleared, tables.map(([name]) => name));
+  } finally {
+    (db as any).transaction = originalTransaction;
+    (db.settings as any).toArray = originalSettingsToArray;
+    tables.forEach(([, table], index) => {
+      (table as any).clear = originalClearMethods[index];
+    });
+  }
+});
+
 runTest('auth context routes cache clears through the guard instead of direct reset', () => {
   assert.doesNotMatch(authContextSource, /import \{ resetAuthenticatedCache \}/);
   assert.doesNotMatch(authContextSource, /await resetAuthenticatedCache\(/);
@@ -395,6 +435,7 @@ runTest('auth context routes cache clears through the guard instead of direct re
   assert.match(authContextSource, /reason:\s*['"]passive_signout['"]/);
   assert.match(authContextSource, /reason:\s*['"]identity_switch['"]/);
   assert.match(authContextSource, /forceDiscardLocalChanges/);
+  assert.match(authContextSource, /blockedLocalChangesUserIdRef\.current\s*=\s*null/);
 });
 
 runTest('manual sign-out entry points use shared discard confirmation helper', () => {

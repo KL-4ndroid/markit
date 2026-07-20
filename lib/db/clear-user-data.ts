@@ -280,12 +280,25 @@ export async function resetAuthenticatedCache(
 ): Promise<void> {
   console.log(`🔒 resetAuthenticatedCache(scope=${scope}, userId=${userId?.slice(0, 8) ?? 'none'})`);
 
-  // Always clear authenticated tables
-  await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats], async () => {
+  // Always clear authenticated tables, including every table counted by
+  // getLocalPendingWriteReport. Leaving one of these queues behind causes a
+  // forced sign-out to immediately reopen the blocked-cache dialog.
+  await db.transaction('rw', [
+    db.events,
+    db.markets,
+    db.products,
+    db.dailyStats,
+    db.syncQueue,
+    db.salesPhotoEvidencePendingCreations,
+    db.salesPhotoEvidencePendingPayloads,
+  ], async () => {
     await db.events.clear();
     await db.markets.clear();
     await db.products.clear();
     await db.dailyStats.clear();
+    await db.syncQueue.clear();
+    await db.salesPhotoEvidencePendingCreations.clear();
+    await db.salesPhotoEvidencePendingPayloads.clear();
   });
 
   // Clear sync-related state

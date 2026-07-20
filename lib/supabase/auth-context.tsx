@@ -419,6 +419,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isManualSignOutRef.current = false;
       throw new AuthenticatedCacheResetBlockedError(resetResult);
     }
+
+    // Force discard may run after Supabase has already emitted SIGNED_OUT.
+    // Release the remembered cache owner so a subsequent account is not
+    // rejected by a stale identity-switch guard.
+    blockedLocalChangesUserIdRef.current = null;
     
     // ✅ 先清除本地狀態（立即反應）
     setUser(null);
