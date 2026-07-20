@@ -290,6 +290,7 @@ runTest('staff cache writers sanitize data before writing to IndexedDB', () => {
   assert.match(marketsBody, /operatingEndTime:\s*mappedMarket\.operatingEndTime\s*\?\?\s*existing\?\.operatingEndTime/);
   assert.match(productsBody, /sanitizeWithLevel\(product,\s*['"]product['"],\s*infoLevel\)/);
   assert.match(productsBody, /totalSold:\s*0/);
+  assert.match(eventsBody, /existing\.sync_status\s*!==\s*['"]synced['"][\s\S]*markEventSynced\(event\.id\)/);
   assert.match(eventsBody, /sanitizeEventsWithLevel\(events,\s*infoLevel\)/);
   assert.match(eventsBody, /preflightStaffEventImport\(localEvent/);
   assert.match(eventsBody, /await sanitizeStaffProjectionsAfterReplay\(localEvent,\s*infoLevel\)/);

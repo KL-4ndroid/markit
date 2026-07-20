@@ -4,10 +4,12 @@ import { join } from 'node:path';
 
 import {
   buildSalesPhotoEvidenceManualUploadFormData,
+  selectCanonicalSalesPhotoEvidenceSaleEventId,
   uploadPendingSalesPhotoEvidenceManually,
 } from '../lib/sales/photo-evidence-manual-upload-client';
 import type { LocalPendingSalesPhotoEvidencePayload } from '../lib/sales/photo-evidence-pending-payload-storage';
 import type { SalesPhotoEvidencePendingCreationListItem } from '../lib/sales/photo-evidence-pending-creation-read-model';
+import type { Event } from '../types/db';
 
 type TestFn = () => void | Promise<void>;
 
@@ -76,6 +78,22 @@ function payload(): LocalPendingSalesPhotoEvidencePayload {
     createdAt: '2026-07-01T00:00:00.000Z',
     updatedAt: '2026-07-01T00:01:00.000Z',
   };
+}
+
+function localSaleEvent(overrides: Partial<Event> = {}): Event {
+  return {
+    id: item.saleEventId,
+    type: 'deal_closed',
+    payload: {
+      market_id: item.marketId,
+      totalAmount: 1,
+    },
+    timestamp: Date.parse(item.saleCompletedAt),
+    actor_id: item.capturedByStaffId!,
+    market_id: item.marketId,
+    sync_status: 'local_only',
+    ...overrides,
+  } as Event;
 }
 
 console.log('\n=== Sales photo evidence manual upload client ===');
@@ -266,6 +284,7 @@ runTest('manual upload falls through to the server authority when the local sale
   const result = await uploadPendingSalesPhotoEvidenceManually(item, {
     getPayload: async () => payload(),
     waitForSaleEventSync: async () => false,
+    resolveCanonicalSaleEventId: async () => null,
     getAccessToken: async () => 'token',
     fetchImpl: async () => {
       fetchCalled += 1;
@@ -288,6 +307,7 @@ runTest('server source rejection after a stale local marker keeps the photo and 
   const result = await uploadPendingSalesPhotoEvidenceManually(item, {
     getPayload: async () => payload(),
     waitForSaleEventSync: async () => false,
+    resolveCanonicalSaleEventId: async () => null,
     getAccessToken: async () => 'token',
     fetchImpl: async () => new Response(JSON.stringify({
       ok: false,
@@ -306,6 +326,60 @@ runTest('server source rejection after a stale local marker keeps the photo and 
   assert.equal(result.message, '成交資料仍在同步，照片已保留在此裝置。請確認網路後稍候再試。');
   assert.equal(result.shouldKeepLocalPayload, true);
   assert.equal(payloadDeleted, false);
+});
+
+runTest('canonical sale selection requires one exact market, type, actor, and millisecond match', () => {
+  const event = localSaleEvent();
+  const exact = {
+    id: '66666666-6666-4666-8666-666666666666',
+    type: 'deal_closed',
+    market_id: item.marketId,
+    actor_id: item.capturedByStaffId,
+    timestamp: item.saleCompletedAt,
+  };
+
+  assert.equal(selectCanonicalSalesPhotoEvidenceSaleEventId(item, event, [exact]), exact.id);
+  assert.equal(selectCanonicalSalesPhotoEvidenceSaleEventId(item, event, []), null);
+  assert.equal(selectCanonicalSalesPhotoEvidenceSaleEventId(item, event, [exact, {
+    ...exact,
+    id: '77777777-7777-4777-8777-777777777777',
+  }]), null);
+  assert.equal(selectCanonicalSalesPhotoEvidenceSaleEventId(item, event, [{
+    ...exact,
+    actor_id: '88888888-8888-4888-8888-888888888888',
+  }]), null);
+  assert.equal(selectCanonicalSalesPhotoEvidenceSaleEventId(item, event, [{
+    ...exact,
+    timestamp: '2026-07-01T00:00:00.001Z',
+  }]), null);
+});
+
+runTest('stale local sale id uploads once with the unique canonical cloud id and keeps the queue id', async () => {
+  const canonicalSaleEventId = '66666666-6666-4666-8666-666666666666';
+  let requestedSaleEventId = '';
+  let requestedQueueId = '';
+  const result = await uploadPendingSalesPhotoEvidenceManually(item, {
+    getPayload: async () => payload(),
+    waitForSaleEventSync: async () => false,
+    resolveCanonicalSaleEventId: async () => canonicalSaleEventId,
+    getAccessToken: async () => 'token',
+    fetchImpl: async (_url, init) => {
+      const body = init?.body as FormData;
+      requestedSaleEventId = String(body.get('saleEventId'));
+      requestedQueueId = String(body.get('queueId'));
+      return new Response(JSON.stringify({
+        ok: true,
+        evidenceId: '55555555-5555-4555-8555-555555555555',
+        shouldDeleteLocalPayloadAfterSuccess: true,
+      }), { status: 200 });
+    },
+    deletePayload: async () => undefined,
+    markCreated: async () => item,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(requestedSaleEventId, canonicalSaleEventId);
+  assert.equal(requestedQueueId, item.queueId);
 });
 
 runTest('manual upload reports invalid remote API configuration without making a request', async () => {

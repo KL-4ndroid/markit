@@ -5,6 +5,7 @@ import { batchHydrateMarkets } from '@/lib/sync/owner-market-hydration-service';
 import { getOwnerAccessibleMarketIds } from '@/lib/sync/owner-market-access-service';
 import { collectProjectionMarketId } from '@/lib/sync/projection-reconciliation';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
+import { markEventSynced } from '@/lib/sync/event-sync-service';
 import { getLastSyncTimestamp, updateLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
 import { reconcileSyncedProjectionMarkets } from '@/lib/sync/sync-projection-reconciliation-runner';
 import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
@@ -72,7 +73,13 @@ export async function pullOwnerEvents(
   const existingIds = new Set<string>();
   const eventIds = newEvents.map(e => e.id);
   const existingEvents = await db.events.where('id').anyOf(eventIds).toArray();
-  existingEvents.forEach(e => existingIds.add(e.id!));
+  for (const existingEvent of existingEvents) {
+    if (!existingEvent.id) continue;
+    existingIds.add(existingEvent.id);
+    if (existingEvent.sync_status !== 'synced') {
+      await markEventSynced(existingEvent.id);
+    }
+  }
 
   const eventsToProcess: any[] = [];
   let skippedByMissingMarket = 0;

@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { getEventMarketId } from '@/lib/events/event-read-model';
 import { marketAccessRowToLocal, normalizeEventPayloadForLocal, productAccessRowToLocal } from '@/lib/data-mappers';
 import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
+import { markEventSynced } from '@/lib/sync/event-sync-service';
 import { preflightStaffEventImport } from '@/lib/sync/staff-event-preflight';
 import { sanitizeStaffProjectionsAfterReplay } from '@/lib/sync/staff-projection-sanitizer';
 import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
@@ -130,6 +131,7 @@ export async function syncEventsToIndexedDB(events: any[], infoLevel: InfoLevel)
           const updated = {
             ...existing,
             payload: { ...existing.payload, eventId: event.payload.eventId },
+            sync_status: 'synced' as const,
           };
           await db.events.put(updated);
 
@@ -149,6 +151,9 @@ export async function syncEventsToIndexedDB(events: any[], infoLevel: InfoLevel)
           }
           processedCount++;
         } else {
+          if (existing.sync_status !== 'synced') {
+            await markEventSynced(event.id);
+          }
           skippedCount++;
         }
         continue;

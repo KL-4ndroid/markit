@@ -16,10 +16,12 @@ import {
   markLocalPendingSalesPhotoEvidenceCreationCreated,
   markLocalPendingSalesPhotoEvidenceCreationRetryableFailure,
 } from '@/lib/sales/photo-evidence-pending-creation-storage';
+import { getEventMarketId } from '@/lib/events/event-read-model';
 import type {
   SalesPhotoEvidencePendingCreationListItem,
 } from '@/lib/sales/photo-evidence-pending-creation-read-model';
 import type { SalesPhotoEvidenceUploadedVariantInfo } from '@/lib/sales/photo-evidence-upload-contract';
+import type { Event } from '@/types/db';
 
 export type SalesPhotoEvidenceManualUploadSuccess = {
   ok: true;
@@ -48,7 +50,18 @@ export type SalesPhotoEvidenceManualUploadDeps = {
   markCreated?: typeof markLocalPendingSalesPhotoEvidenceCreationCreated;
   markRetryableFailure?: typeof markLocalPendingSalesPhotoEvidenceCreationRetryableFailure;
   waitForSaleEventSync?: (saleEventId: string) => Promise<boolean>;
+  resolveCanonicalSaleEventId?: (
+    item: SalesPhotoEvidencePendingCreationListItem
+  ) => Promise<string | null>;
   now?: () => Date;
+};
+
+export type SalesPhotoEvidenceCanonicalSaleEventCandidate = {
+  id?: unknown;
+  type?: unknown;
+  market_id?: unknown;
+  actor_id?: unknown;
+  timestamp?: unknown;
 };
 
 type UploadRouteResponse = {
@@ -158,6 +171,69 @@ async function waitForDefaultSaleEventSync(saleEventId: string): Promise<boolean
   return false;
 }
 
+function toIsoTimestamp(value: unknown): string | null {
+  const date = typeof value === 'string' || typeof value === 'number'
+    ? new Date(value)
+    : null;
+  return date && Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
+export function selectCanonicalSalesPhotoEvidenceSaleEventId(
+  item: SalesPhotoEvidencePendingCreationListItem,
+  localEvent: Event | null | undefined,
+  candidates: readonly SalesPhotoEvidenceCanonicalSaleEventCandidate[]
+): string | null {
+  if (
+    !localEvent
+    || localEvent.id !== item.saleEventId
+    || localEvent.type !== 'deal_closed'
+    || getEventMarketId(localEvent) !== item.marketId
+  ) {
+    return null;
+  }
+
+  const timestamp = toIsoTimestamp(localEvent.timestamp);
+  const expectedActorId = item.capturedByStaffId ?? localEvent.actor_id;
+  if (!timestamp || !expectedActorId || expectedActorId === 'local') return null;
+
+  const matchingIds = candidates.flatMap(candidate => {
+    const candidateTimestamp = toIsoTimestamp(candidate.timestamp);
+    return (
+      typeof candidate.id === 'string'
+      && candidate.type === 'deal_closed'
+      && candidate.market_id === item.marketId
+      && candidate.actor_id === expectedActorId
+      && candidateTimestamp === timestamp
+    ) ? [candidate.id] : [];
+  });
+
+  return matchingIds.length === 1 ? matchingIds[0] : null;
+}
+
+async function resolveDefaultCanonicalSaleEventId(
+  item: SalesPhotoEvidencePendingCreationListItem
+): Promise<string | null> {
+  const localEvent = await db.events.get(item.saleEventId);
+  if (!localEvent) return null;
+
+  const timestamp = toIsoTimestamp(localEvent.timestamp);
+  const expectedActorId = item.capturedByStaffId ?? localEvent.actor_id;
+  if (!timestamp || !expectedActorId || expectedActorId === 'local') return null;
+
+  const table = item.capturedByStaffId ? 'staff_accessible_events' : 'events';
+  const { data, error } = await supabase
+    .from(table)
+    .select('id,type,market_id,actor_id,timestamp')
+    .eq('market_id', item.marketId)
+    .eq('type', 'deal_closed')
+    .eq('actor_id', expectedActorId)
+    .eq('timestamp', timestamp)
+    .limit(2);
+
+  if (error || !Array.isArray(data)) return null;
+  return selectCanonicalSalesPhotoEvidenceSaleEventId(item, localEvent, data);
+}
+
 async function parseUploadResponse(response: Response): Promise<UploadRouteResponse> {
   try {
     return await response.json() as UploadRouteResponse;
@@ -188,7 +264,20 @@ export async function uploadPendingSalesPhotoEvidenceManually(
   // after the sale event already exists in Cloud. After the bounded wait, let
   // the authenticated BFF be the final authority; it rejects missing or
   // mismatched sale events before claiming metadata or writing any R2 object.
-  await (deps.waitForSaleEventSync ?? waitForDefaultSaleEventSync)(item.saleEventId);
+  const saleEventSynced = await (deps.waitForSaleEventSync ?? waitForDefaultSaleEventSync)(item.saleEventId);
+  let uploadItem = item;
+  if (!saleEventSynced) {
+    try {
+      const canonicalSaleEventId = await (
+        deps.resolveCanonicalSaleEventId ?? resolveDefaultCanonicalSaleEventId
+      )(item);
+      if (canonicalSaleEventId && canonicalSaleEventId !== item.saleEventId) {
+        uploadItem = { ...item, saleEventId: canonicalSaleEventId };
+      }
+    } catch {
+      // The BFF remains authoritative and will reject the original source ID.
+    }
+  }
 
   const token = await (deps.getAccessToken ?? getDefaultAccessToken)();
   if (!token) {
@@ -204,7 +293,7 @@ export async function uploadPendingSalesPhotoEvidenceManually(
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        body: buildSalesPhotoEvidenceManualUploadFormData(item, payload),
+        body: buildSalesPhotoEvidenceManualUploadFormData(uploadItem, payload),
       },
       {
         fetchImpl,
