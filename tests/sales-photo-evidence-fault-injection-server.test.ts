@@ -69,6 +69,38 @@ for (const badRequest of [
 }
 console.log('PASS malformed partial and wrong-token fault requests fail closed');
 
+assert.deepEqual(resolve({
+  env: env({
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE: 'thumbnail_upload_failed',
+  }),
+}), { action: 'inject', mode: 'thumbnail_upload_failed' });
+assert.deepEqual(resolve({
+  env: env({
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE: 'metadata_finalize_failed',
+  }),
+}), { action: 'inject', mode: 'metadata_finalize_failed' });
+console.log('PASS the two approved automatic exact-scope modes inject without browser headers');
+
+for (const unrelatedInput of [
+  { ownerId: IDS.staffId },
+  { marketId: IDS.staffId },
+  { saleEventId: IDS.staffId },
+]) {
+  assert.deepEqual(resolve({
+    ...unrelatedInput,
+    env: env({
+      SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE: 'thumbnail_upload_failed',
+    }),
+  }), { action: 'none' });
+}
+assert.deepEqual(resolve({
+  actorId: IDS.staffId,
+  env: env({
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE: 'thumbnail_upload_failed',
+  }),
+}), { action: 'reject' });
+console.log('PASS automatic mode leaves unrelated sales untouched and rejects a non-owner actor');
+
 for (const badEnv of [
   env({ SALES_PHOTO_EVIDENCE_FAULT_INJECTION_ENABLED: '0' }),
   env({ SALES_PHOTO_EVIDENCE_FAULT_INJECTION_ALLOW_PRODUCTION: '0' }),
@@ -83,6 +115,39 @@ for (const badEnv of [
   }), { action: 'reject' });
 }
 console.log('PASS disabled incomplete and production-unapproved configurations fail closed');
+
+for (const badAutomaticEnv of [
+  env({
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE: 'unknown_mode',
+  }),
+  env({
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE: 'thumbnail_upload_failed',
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_ENABLED: '0',
+  }),
+  env({
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE: 'thumbnail_upload_failed',
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_ALLOW_PRODUCTION: '0',
+  }),
+  env({
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE: 'thumbnail_upload_failed',
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_TOKEN: '',
+  }),
+  env({
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE: 'thumbnail_upload_failed',
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_SALE_ID: 'not-a-uuid',
+  }),
+]) {
+  assert.deepEqual(resolve({ env: badAutomaticEnv }), { action: 'reject' });
+}
+console.log('PASS automatic mode also requires the complete production-approved secret scope');
+
+assert.deepEqual(resolve({
+  request: request('thumbnail_upload_failed', 'wrong_token_abcdefghijklmnopqrstuvwxyz_12'),
+  env: env({
+    SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE: 'thumbnail_upload_failed',
+  }),
+}), { action: 'reject' });
+console.log('PASS automatic configuration never weakens header-token validation');
 
 for (const scopedInput of [
   { actorId: IDS.staffId },

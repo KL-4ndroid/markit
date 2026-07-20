@@ -46,9 +46,13 @@ export function resolveSalesPhotoEvidenceFaultInjection(
 ): SalesPhotoEvidenceFaultInjectionDecision {
   const requestedMode = input.request.headers.get(SALES_PHOTO_EVIDENCE_FAULT_HEADER)?.trim() ?? '';
   const suppliedToken = input.request.headers.get(SALES_PHOTO_EVIDENCE_FAULT_TOKEN_HEADER)?.trim() ?? '';
+  const automaticMode = input.env.SALES_PHOTO_EVIDENCE_FAULT_INJECTION_AUTOMATIC_MODE?.trim() ?? '';
+  const hasHeaderRequest = Boolean(requestedMode || suppliedToken);
+  const hasAutomaticRequest = Boolean(automaticMode);
+  const selectedMode = hasHeaderRequest ? requestedMode : automaticMode;
 
-  if (!requestedMode && !suppliedToken) return { action: 'none' };
-  if (!isMode(requestedMode)) return { action: 'reject' };
+  if (!hasHeaderRequest && !hasAutomaticRequest) return { action: 'none' };
+  if (!isMode(selectedMode)) return { action: 'reject' };
 
   const deploymentEnv = input.env.VERCEL_ENV ?? input.env.APP_ENV ?? input.env.NODE_ENV;
   if (input.env.SALES_PHOTO_EVIDENCE_FAULT_INJECTION_ENABLED !== '1') return { action: 'reject' };
@@ -60,7 +64,13 @@ export function resolveSalesPhotoEvidenceFaultInjection(
   }
 
   const expectedToken = input.env.SALES_PHOTO_EVIDENCE_FAULT_INJECTION_TOKEN?.trim() ?? '';
-  if (!safeTokenEquals(suppliedToken, expectedToken)) return { action: 'reject' };
+  if (
+    hasHeaderRequest
+      ? !safeTokenEquals(suppliedToken, expectedToken)
+      : !TOKEN_PATTERN.test(expectedToken)
+  ) {
+    return { action: 'reject' };
+  }
 
   const expectedOwnerId = input.env.SALES_PHOTO_EVIDENCE_FAULT_INJECTION_OWNER_ID?.trim() ?? '';
   const expectedMarketId = input.env.SALES_PHOTO_EVIDENCE_FAULT_INJECTION_MARKET_ID?.trim() ?? '';
@@ -68,15 +78,25 @@ export function resolveSalesPhotoEvidenceFaultInjection(
   if (![expectedOwnerId, expectedMarketId, expectedSaleId].every(value => UUID_PATTERN.test(value))) {
     return { action: 'reject' };
   }
+
+  const matchesExpectedBodyScope = (
+    input.ownerId === expectedOwnerId
+    && input.marketId === expectedMarketId
+    && input.saleEventId === expectedSaleId
+  );
+  if (!hasHeaderRequest && !matchesExpectedBodyScope) {
+    return { action: 'none' };
+  }
   if (
     input.actorId !== input.ownerId
     || input.actorId !== expectedOwnerId
-    || input.ownerId !== expectedOwnerId
-    || input.marketId !== expectedMarketId
-    || input.saleEventId !== expectedSaleId
+    || !matchesExpectedBodyScope
   ) {
     return { action: 'reject' };
   }
 
-  return { action: 'inject', mode: requestedMode };
+  return {
+    action: 'inject',
+    mode: selectedMode,
+  };
 }
