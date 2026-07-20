@@ -168,6 +168,15 @@ export function useUserRole() {
     return { isStaff: false };
   });
 
+  // Bind a resolved role snapshot to the user it was loaded for. Without this
+  // identity marker, the render immediately after null -> user (or user A ->
+  // user B) can briefly treat the previous/default owner-shaped role as ready
+  // before the effect below starts the new query.
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(() => {
+    if (!user) return null;
+    return getCachedRole(user.id) ? user.id : null;
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   // ✅ C2.28：明確追蹤角色查詢錯誤，確保 fail-closed 行為
   const [roleError, setRoleError] = useState<Error | null>(null);
@@ -213,6 +222,7 @@ export function useUserRole() {
       clearRoleCache();
       if (shouldCommitRoleLoad(requestId, requestUserId)) {
         setUserRole({ isStaff: false });
+        setResolvedUserId(null);
         setRoleError(null);
         setIsLoading(false);
         revalidationInFlightRef.current = false;
@@ -260,6 +270,7 @@ export function useUserRole() {
         };
 
         setUserRole(role);
+        setResolvedUserId(requestUser.id);
         // ✅ 保存到緩存
         setCachedRole(requestUser.id, role);
       } else {
@@ -267,6 +278,7 @@ export function useUserRole() {
         const role: UserRole = { isStaff: false, staffRole: null };
 
         setUserRole(role);
+        setResolvedUserId(requestUser.id);
         // ✅ 保存到緩存
         setCachedRole(requestUser.id, role);
       }
@@ -278,6 +290,7 @@ export function useUserRole() {
       // （不再 fallback 成 owner）讓 isOwner / canEdit / canViewSensitiveData 全部回傳 false
       setRoleError(error instanceof Error ? error : new Error(String(error)));
       setUserRole({ isStaff: true, staffRole: null, permissions: { can_view: false, can_edit: false } });
+      setResolvedUserId(requestUser.id);
     } finally {
       if (shouldCommitRoleLoad(requestId, requestUserId)) {
         setIsLoading(false);
@@ -343,6 +356,7 @@ export function useUserRole() {
     userRole,
     isLoading,
     roleError, // ✅ C2.28：新增錯誤狀態出口
+    resolvedUserId,
     isStaff: userRole.isStaff, // ✅ 保留向後相容：語意維持「從 userRole 讀」
     isOwner: permissions.isOwner,
     canEdit: permissions.canEdit,

@@ -41,8 +41,17 @@ export function InitialSyncDialog({
   const isRoleReady = roleRefreshState.stage === 'ready';
   const roleMode = resolveRoleMode(userRole);
   const initialSyncKey = user ? `${INITIAL_SYNC_KEY}:${user.id}:${roleMode}` : INITIAL_SYNC_KEY;
+  const shouldOpenInitially = Boolean(
+    user
+    && isConfigured
+    && isRoleReady
+    && !getHasCompletedInitialSync(initialSyncKey)
+  );
 
-  const [isOpen, setIsOpen] = useState(false);
+  // This overlay mounts with the protected app after role resolution. Derive
+  // its first frame synchronously so the dashboard cannot paint once and then
+  // be covered by the initial-sync dialog in a later effect.
+  const [isOpen, setIsOpen] = useState(shouldOpenInitially);
   const [, setHasCompletedInitialSyncState] = useState(false);
   const hasSeenSuccessRef = useRef(false); // ✅ 使用 ref 避免觸發重新渲染
 

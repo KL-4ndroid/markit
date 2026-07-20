@@ -22,6 +22,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const roleState = useUserRole();
   const userId = user?.id ?? null;
+  const isResolvedForCurrentUser = userId !== null && roleState.resolvedUserId === userId;
   const trackedUserIdRef = useRef<string | null>(userId);
   const hasUsablePreviousRoleRef = useRef(false);
 
@@ -33,17 +34,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const roleRefreshState = useMemo(() => deriveRoleRefreshState(
     {
       userRole: userId ? roleState.userRole : null,
-      isLoading: roleState.isLoading,
+      isLoading: roleState.isLoading || (userId !== null && !isResolvedForCurrentUser),
       roleError: roleState.roleError,
     },
     { hasUsablePreviousRole: hasUsablePreviousRoleRef.current },
-  ), [roleState.isLoading, roleState.roleError, roleState.userRole, userId]);
+  ), [isResolvedForCurrentUser, roleState.isLoading, roleState.roleError, roleState.userRole, userId]);
 
   useEffect(() => {
-    if (userId && !roleState.isLoading && !roleState.roleError && roleState.userRole != null) {
+    if (isResolvedForCurrentUser && !roleState.isLoading && !roleState.roleError && roleState.userRole != null) {
       hasUsablePreviousRoleRef.current = true;
     }
-  }, [roleState.isLoading, roleState.roleError, roleState.userRole, userId]);
+  }, [isResolvedForCurrentUser, roleState.isLoading, roleState.roleError, roleState.userRole, userId]);
 
   const contextValue = useMemo<RoleContextValue>(() => ({
     ...roleState,

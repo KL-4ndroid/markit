@@ -11,7 +11,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { useAuth } from '@/lib/supabase/auth-context';
+import {
+  AUTH_MANUAL_SIGN_OUT_CANCELLED_EVENT,
+  AUTH_MANUAL_SIGN_OUT_STARTED_EVENT,
+  useAuth,
+} from '@/lib/supabase/auth-context';
 import { getAllSavedForms } from '@/lib/form-autosave';
 
 export function SessionExpiredHandler() {
@@ -22,6 +26,25 @@ export function SessionExpiredHandler() {
   // ✅ 修復：使用 useRef 而非 useState
   const previousUserRef = useRef<string | null>(null);
   const isInitialMount = useRef(true);
+  const isManualSignOutPendingRef = useRef(false);
+
+  useEffect(() => {
+    const handleManualSignOutStarted = () => {
+      isManualSignOutPendingRef.current = true;
+      setShowDialog(false);
+    };
+    const handleManualSignOutCancelled = () => {
+      isManualSignOutPendingRef.current = false;
+    };
+
+    window.addEventListener(AUTH_MANUAL_SIGN_OUT_STARTED_EVENT, handleManualSignOutStarted);
+    window.addEventListener(AUTH_MANUAL_SIGN_OUT_CANCELLED_EVENT, handleManualSignOutCancelled);
+
+    return () => {
+      window.removeEventListener(AUTH_MANUAL_SIGN_OUT_STARTED_EVENT, handleManualSignOutStarted);
+      window.removeEventListener(AUTH_MANUAL_SIGN_OUT_CANCELLED_EVENT, handleManualSignOutCancelled);
+    };
+  }, []);
 
   useEffect(() => {
     // ✅ 跳過首次掛載（避免誤判為登出）
@@ -33,6 +56,12 @@ export function SessionExpiredHandler() {
 
     // ✅ 檢測 Session 過期：之前有使用者，現在沒有
     if (previousUserRef.current && !user && !session) {
+      if (isManualSignOutPendingRef.current) {
+        isManualSignOutPendingRef.current = false;
+        previousUserRef.current = null;
+        return;
+      }
+
       console.log('🔐 偵測到 Session 過期', {
         previousUser: previousUserRef.current,
         currentUser: user,

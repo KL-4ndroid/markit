@@ -16,6 +16,7 @@ const planPath = join(projectRoot, 'docs/AUTHENTICATED_CACHE_DESTRUCTION_GUARD_P
 const authContextSource = readFileSync(join(projectRoot, 'lib/supabase/auth-context.tsx'), 'utf8');
 const appChromeSource = readFileSync(join(projectRoot, 'components/AppChrome.tsx'), 'utf8');
 const authCacheBlockedDialogSource = readFileSync(join(projectRoot, 'components/auth/AuthCacheBlockedDialog.tsx'), 'utf8');
+const sessionExpiredHandlerSource = readFileSync(join(projectRoot, 'components/auth/SessionExpiredHandler.tsx'), 'utf8');
 const authCacheBlockedEventsSource = readFileSync(join(projectRoot, 'lib/auth/auth-cache-blocked-events.ts'), 'utf8');
 const topNavigationSource = readFileSync(join(projectRoot, 'components/TopNavigation.tsx'), 'utf8');
 const homePageSource = readFileSync(join(projectRoot, 'app/page.tsx'), 'utf8');
@@ -438,13 +439,29 @@ runTest('auth context routes cache clears through the guard instead of direct re
   assert.match(authContextSource, /blockedLocalChangesUserIdRef\.current\s*=\s*null/);
 });
 
-runTest('successful manual sign-out replaces a protected route with the public home route', () => {
+runTest('successful manual sign-out uses client navigation and opens login without a document reload', () => {
   const signOutIndex = authContextSource.indexOf('await supabase.auth.signOut()');
-  const homeReplaceIndex = authContextSource.indexOf("window.location.replace('/')", signOutIndex);
+  const homeReplaceIndex = authContextSource.indexOf("router.replace('/')", signOutIndex);
+  const loginOpenIndex = authContextSource.indexOf("new CustomEvent('auth:open-login'", homeReplaceIndex);
 
   assert.ok(signOutIndex > 0, 'manual sign-out must call Supabase');
-  assert.ok(homeReplaceIndex > signOutIndex, 'home replacement must run only after Supabase sign-out');
+  assert.ok(homeReplaceIndex > signOutIndex, 'client home replacement must run only after Supabase sign-out');
+  assert.ok(loginOpenIndex > homeReplaceIndex, 'login dialog must open after client home navigation starts');
+  assert.match(authContextSource, /useRouter\(\)/);
+  assert.doesNotMatch(authContextSource, /window\.location\.replace\(['"]\/['"]\)/);
   assert.doesNotMatch(authContextSource, /window\.location\.href\s*=\s*['"]\/['"]/);
+});
+
+runTest('manual sign-out is not misclassified as an expired session', () => {
+  assert.match(authContextSource, /AUTH_MANUAL_SIGN_OUT_STARTED_EVENT/);
+  assert.match(authContextSource, /AUTH_MANUAL_SIGN_OUT_CANCELLED_EVENT/);
+  assert.match(sessionExpiredHandlerSource, /isManualSignOutPendingRef/);
+  assert.match(sessionExpiredHandlerSource, /AUTH_MANUAL_SIGN_OUT_STARTED_EVENT/);
+  assert.match(sessionExpiredHandlerSource, /AUTH_MANUAL_SIGN_OUT_CANCELLED_EVENT/);
+  assert.match(
+    sessionExpiredHandlerSource,
+    /if \(isManualSignOutPendingRef\.current\)[\s\S]*previousUserRef\.current = null;[\s\S]*return;/,
+  );
 });
 
 runTest('manual sign-out entry points use shared discard confirmation helper', () => {

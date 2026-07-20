@@ -19,6 +19,10 @@ assert.match(host, /OVERLAY_PRIORITY\.find\(id => visibility\[id\]\)/);
 assert.match(host, /activeOverlay !== null && activeOverlay !== id/);
 assert.match(host, /dynamic<CoordinatedOverlayProps>/);
 assert.match(host, /ssr: false/g);
+assert.match(host, /import \{ InitialSyncDialog \} from '@\/components\/sync\/InitialSyncDialog'/);
+assert.doesNotMatch(host, /dynamic<CoordinatedOverlayProps>\(\s*\(\) => import\('@\/components\/sync\/InitialSyncDialog'/);
+assert.match(initialSync, /const shouldOpenInitially = Boolean\(/);
+assert.match(initialSync, /useState\(shouldOpenInitially\)/);
 
 for (const source of [invitation, initialSync, pwaUpdate, pwaInstall]) {
   assert.match(source, /isSuppressed/);

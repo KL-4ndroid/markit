@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useState } from 'react';
 
+import { InitialSyncDialog } from '@/components/sync/InitialSyncDialog';
 import { type CoordinatedOverlayProps } from './overlay-types';
 
 type OverlayId = 'staffInvitation' | 'initialSync' | 'pwaUpdate' | 'pwaInstall';
@@ -23,11 +24,6 @@ const INITIAL_VISIBILITY: Record<OverlayId, boolean> = {
 
 const StaffInvitationDialog = dynamic<CoordinatedOverlayProps>(
   () => import('@/components/staff/StaffInvitationDialog').then(module => module.StaffInvitationDialog),
-  { ssr: false },
-);
-
-const InitialSyncDialog = dynamic<CoordinatedOverlayProps>(
-  () => import('@/components/sync/InitialSyncDialog').then(module => module.InitialSyncDialog),
   { ssr: false },
 );
 

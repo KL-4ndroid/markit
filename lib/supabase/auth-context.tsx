@@ -9,6 +9,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './client';
 import { initializeUserSettings } from './settings';
@@ -22,6 +23,9 @@ import { dispatchAuthCacheBlockedEvent } from '@/lib/auth/auth-cache-blocked-eve
 export interface AuthSignOutOptions {
   forceDiscardLocalChanges?: boolean;
 }
+
+export const AUTH_MANUAL_SIGN_OUT_STARTED_EVENT = 'auth:manual-sign-out-started';
+export const AUTH_MANUAL_SIGN_OUT_CANCELLED_EVENT = 'auth:manual-sign-out-cancelled';
 
 export class AuthenticatedCacheResetBlockedError extends Error {
   result: GuardedAuthenticatedCacheResetResult;
@@ -70,6 +74,7 @@ function isSessionExpired(session: Session | null): boolean {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -425,25 +430,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // rejected by a stale identity-switch guard.
     blockedLocalChangesUserIdRef.current = null;
     
-    // ✅ 先清除本地狀態（立即反應）
-    setUser(null);
-    setSession(null);
-    
+    // Let session-expiry UI distinguish an intentional sign-out before
+    // Supabase emits SIGNED_OUT and clears the React auth state.
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(AUTH_MANUAL_SIGN_OUT_STARTED_EVENT));
+    }
+
     // 執行登出
     const { error } = await supabase.auth.signOut();
     if (error) {
+      isManualSignOutRef.current = false;
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(AUTH_MANUAL_SIGN_OUT_CANCELLED_EVENT));
+      }
       console.error('❌ 登出失敗:', error);
       throw error;
     }
+
+    setUser(null);
+    setSession(null);
     
     console.log('✅ 登出成功');
     
-    // ✅ 不重新載入頁面，讓 AuthGuard 自動顯示歡迎頁面
-    // Replace the protected history entry after the guarded reset and remote
-    // sign-out both succeed. A clean home navigation also remounts the login
-    // event listener instead of leaving the welcome screen on a settings URL.
+    // Keep signed-out users out of protected settings routes without a full
+    // document reload. AuthManager remains mounted, so the login dialog can be
+    // opened deliberately instead of flashing through a loading skeleton.
     if (typeof window !== 'undefined') {
-      window.location.replace('/');
+      router.replace('/');
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('auth:open-login', { detail: { mode: 'login' } }));
+      }, 0);
     }
   };
 

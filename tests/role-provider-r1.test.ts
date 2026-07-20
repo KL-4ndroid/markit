@@ -17,6 +17,7 @@ function readProjectFile(path: string): string {
 }
 
 const roleContextSource = readProjectFile('lib/role-context.tsx');
+const userRoleHookSource = readProjectFile('hooks/useUserRole.ts');
 const layoutSource = readProjectFile('app/layout.tsx');
 const roleGuardSource = readProjectFile('components/auth/RoleGuard.tsx');
 const syncContextSource = readProjectFile('lib/sync-context.tsx');
@@ -47,6 +48,8 @@ runTest('RoleProvider owns the shared role refresh state without direct data acc
   assert.match(roleContextSource, /const roleState = useUserRole\(\)/);
   assert.match(roleContextSource, /hasUsablePreviousRoleRef/);
   assert.match(roleContextSource, /trackedUserIdRef\.current !== userId/);
+  assert.match(roleContextSource, /roleState\.resolvedUserId === userId/);
+  assert.match(roleContextSource, /!isResolvedForCurrentUser/);
   assert.match(roleContextSource, /userRole: userId \? roleState\.userRole : null/);
   assert.match(roleContextSource, /<RoleContext\.Provider value=\{contextValue\}>/);
   assert.doesNotMatch(roleContextSource, /\.from\(|staff_relationships|localStorage|sessionStorage|indexedDB|Dexie|db\./i);
@@ -159,6 +162,17 @@ runTest('R4c-3A dashboard migration keeps role scope fail-closed', () => {
   assert.match(homePageSource, /useSyncContext\(\)/);
   assert.doesNotMatch(homePageSource, /\bsignOut\s*\(/);
   assert.doesNotMatch(homePageSource, /useRoleContext\(\)/);
+});
+
+runTest('role snapshots are bound to the authenticated user before protected UI mounts', () => {
+  assert.match(userRoleHookSource, /const \[resolvedUserId, setResolvedUserId\]/);
+  assert.match(userRoleHookSource, /setResolvedUserId\(requestUser\.id\)/);
+  assert.match(userRoleHookSource, /setResolvedUserId\(null\)/);
+  assert.match(userRoleHookSource, /resolvedUserId,/);
+  assert.match(
+    roleContextSource,
+    /isLoading: roleState\.isLoading \|\| \(userId !== null && !isResolvedForCurrentUser\)/,
+  );
 });
 
 runTest('R4c-3A blocks unsafe future dashboard shared-context migration', () => {
