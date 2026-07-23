@@ -63,7 +63,7 @@ export function AppDialog({
                   {title}
                 </DialogTitle>
                 {description && (
-                  <p id={descriptionId} className="mt-1 text-sm leading-6 text-muted-foreground">
+                  <p id={descriptionId} className="mt-1 whitespace-pre-line text-sm leading-6 text-muted-foreground">
                     {description}
                   </p>
                 )}

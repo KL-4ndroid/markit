@@ -1471,3 +1471,21 @@ Do not implement:
 - batch export/download;
 - product catalog photo reuse;
 - staff-controlled requirement toggles.
+
+## Owner Delete UX Guardrail (2026-07-23)
+
+- The owner UI must query the delete-route capability before enabling a destructive control. An unavailable or malformed capability response fails closed.
+- Permanent deletion removes the private image from the album, recent-photo story, and sale detail while leaving the sale event, revenue, and analytics unchanged.
+- Markets that require evidence must explicitly state that permanent deletion does not currently create a new pending-photo task. The confirmation requires the owner to type `永久移除`.
+- Do not reuse the pending-metadata-creation queue as a replacement-photo task. Its `created` state means cloud metadata creation finished, not that the photo requirement was reopened.
+- A future replace action must upload and validate the new private image first, atomically switch the evidence metadata, and delete the old objects only after the replacement commits successfully.
+
+## Expiration Cleanup Runtime (2026-07-23)
+
+- Image reads enforce `expires_at` server-side and return `410 evidence_expired` without touching R2 after the exact retention deadline.
+- Vercel Cron calls `/api/cron/sales-photo-evidence-expiration` daily at `03:00 UTC`. The endpoint requires `CRON_SECRET` and explicit environment gates.
+- Migration `061_add_sales_photo_evidence_expiration_rpcs.sql` exposes only bounded service-role list/finalize capabilities; browser and authenticated roles receive no execute grant.
+- Cleanup validates both object keys against owner, market, sale, and evidence identity. It deletes the thumbnail and image before setting status to `expired` and clearing both keys.
+- A failed or partial R2 cleanup does not finalize metadata. The row remains eligible for a later retry, while the read API continues to block access by timestamp.
+- R2 lifecycle rules for both `sales-evidence/7d/` prefixes remain a second layer of deletion protection and must still be confirmed in each deployed bucket.
+- Sales events, revenue, payment metadata, and analytics are never deleted by expiration cleanup.

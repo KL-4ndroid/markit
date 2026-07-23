@@ -128,6 +128,7 @@ tsx tests/supabase-sales-photo-evidence-owner-album-reader.test.ts
 tsx tests/sales-photo-evidence-owner-album.test.ts
 tsx tests/sales-photo-evidence-owner-image-read.test.ts
 tsx tests/sales-photo-evidence-owner-delete.test.ts
+tsx tests/sales-photo-evidence-expiration.test.ts
 tsx tests/supabase-sales-photo-evidence-owner-delete-migration.test.ts
 tsx tests/sales-photo-evidence-api-cors-integration.test.ts
 tsx tests/sales-photo-evidence-post-sale.test.ts

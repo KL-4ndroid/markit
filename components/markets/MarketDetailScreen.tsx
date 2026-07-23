@@ -87,8 +87,15 @@ import {
   listOwnerSalesPhotoEvidenceAlbumMetadataRows,
 } from '@/lib/supabase/sales-photo-evidence';
 import type { SalesPhotoEvidenceAlbumSourceRow } from '@/lib/sales/photo-evidence-owner-album-read-model';
-import { deleteSalesPhotoEvidenceAsOwner } from '@/lib/sales/photo-evidence-owner-delete-client';
-import { findSalesPhotoEvidenceOwnerImageForSale } from '@/lib/sales/photo-evidence-owner-view';
+import {
+  deleteSalesPhotoEvidenceAsOwner,
+  getSalesPhotoEvidenceOwnerDeleteCapability,
+  type SalesPhotoEvidenceOwnerDeleteCapability,
+} from '@/lib/sales/photo-evidence-owner-delete-client';
+import {
+  findSalesPhotoEvidenceOwnerExpiredStateForSale,
+  findSalesPhotoEvidenceOwnerImageForSale,
+} from '@/lib/sales/photo-evidence-owner-view';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 const EditMarketForm = dynamic(() =>
@@ -250,6 +257,7 @@ export function MarketDetailScreen() {
   const [ownerSalesPhotoEvidenceRows, setOwnerSalesPhotoEvidenceRows] = useState<SalesPhotoEvidenceAlbumSourceRow[]>([]);
   const [isLoadingOwnerSalesPhotoEvidenceAlbum, setIsLoadingOwnerSalesPhotoEvidenceAlbum] = useState(false);
   const [ownerSalesPhotoEvidenceAlbumLoadError, setOwnerSalesPhotoEvidenceAlbumLoadError] = useState<string | null>(null);
+  const [ownerSalesPhotoEvidenceDeleteCapability, setOwnerSalesPhotoEvidenceDeleteCapability] = useState<SalesPhotoEvidenceOwnerDeleteCapability | null>(null);
   const [showAddRevenueDialog, setShowAddRevenueDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedDeal, setSelectedDeal] = useState<Event<DealClosedPayload> | null>(null);
@@ -277,6 +285,10 @@ export function MarketDetailScreen() {
   const [buttonLabels, setButtonLabels] = useState<Record<string, { label: string; role: InteractionButton['role'] }>>({});
   const selectedDealPhotoEvidence = useMemo(
     () => findSalesPhotoEvidenceOwnerImageForSale(ownerSalesPhotoEvidenceRows, selectedDeal?.id),
+    [ownerSalesPhotoEvidenceRows, selectedDeal?.id]
+  );
+  const selectedDealExpiredPhotoEvidence = useMemo(
+    () => findSalesPhotoEvidenceOwnerExpiredStateForSale(ownerSalesPhotoEvidenceRows, selectedDeal?.id),
     [ownerSalesPhotoEvidenceRows, selectedDeal?.id]
   );
 
@@ -900,6 +912,7 @@ export function MarketDetailScreen() {
   };
 
   const ownerSalesPhotoEvidenceAlbumOwnerId = user?.id ?? (market as Market | undefined)?.owner_id ?? null;
+  const ownerSalesPhotoEvidenceDeleteUserId = user?.id ?? null;
 
   const loadOwnerSalesPhotoEvidenceAlbumRows = useCallback(async () => {
     if (isStaff || isRoleLoading || !marketId || !ownerSalesPhotoEvidenceAlbumOwnerId) {
@@ -945,6 +958,26 @@ export function MarketDetailScreen() {
     toast.success('成交照片已刪除');
     return true;
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (isStaff || isRoleLoading || !ownerSalesPhotoEvidenceDeleteUserId) {
+      setOwnerSalesPhotoEvidenceDeleteCapability(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setOwnerSalesPhotoEvidenceDeleteCapability(null);
+    void getSalesPhotoEvidenceOwnerDeleteCapability().then((capability) => {
+      if (!cancelled) setOwnerSalesPhotoEvidenceDeleteCapability(capability);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isRoleLoading, isStaff, ownerSalesPhotoEvidenceDeleteUserId]);
 
   useEffect(() => {
     void loadOwnerSalesPhotoEvidenceAlbumRows();
@@ -1744,6 +1777,8 @@ export function MarketDetailScreen() {
           loadError={ownerSalesPhotoEvidenceAlbumLoadError}
           onRefresh={loadOwnerSalesPhotoEvidenceAlbumRows}
           onDelete={handleDeleteOwnerSalesPhotoEvidence}
+          deleteCapability={ownerSalesPhotoEvidenceDeleteCapability}
+          marketRequiresEvidence={salesPhotoEvidenceRequired}
           className="mb-6"
         />
         )}
@@ -2383,6 +2418,7 @@ export function MarketDetailScreen() {
         onEdit={handleEditDeal}
         onDelete={handleDeleteDeal}
         photoEvidence={selectedDealPhotoEvidence}
+        expiredPhotoEvidence={selectedDealExpiredPhotoEvidence}
       />
 
       {/* 補登收入對話框 */}

@@ -77,6 +77,7 @@ runTest('route returns private image bytes only after auth metadata and R2 adapt
         status: 'uploaded',
         r2_object_key: objectKey('image'),
         r2_thumbnail_key: objectKey('thumbnail'),
+        expires_at: '2099-07-30T00:00:00.000Z',
         deleted_at: null,
       };
     },
@@ -114,6 +115,7 @@ runTest('route rejects non-owner actors before R2 read', async () => {
       status: 'uploaded',
       r2_object_key: objectKey('image'),
       r2_thumbnail_key: objectKey('thumbnail'),
+      expires_at: '2099-07-30T00:00:00.000Z',
       deleted_at: null,
     }),
     createR2ReadAdapter: async () => ({
@@ -128,6 +130,40 @@ runTest('route rejects non-owner actors before R2 read', async () => {
 
   assert.equal(response.status, 403);
   assert.equal(r2Read, false);
+});
+
+runTest('route rejects expired evidence before creating an R2 adapter', async () => {
+  let r2AdapterCreated = false;
+  const handlers = createSalesPhotoEvidenceImageRouteHandlers({
+    isEnabled: () => true,
+    now: () => new Date('2026-07-30T00:00:00.000Z'),
+    resolveActor: async () => ({ actorId: ownerId }),
+    getEvidenceRow: async () => ({
+      id: evidenceId,
+      owner_id: ownerId,
+      market_id: marketId,
+      sale_id: saleId,
+      captured_by_staff_id: null,
+      status: 'uploaded',
+      r2_object_key: objectKey('image'),
+      r2_thumbnail_key: objectKey('thumbnail'),
+      expires_at: '2026-07-30T00:00:00.000Z',
+      deleted_at: null,
+    }),
+    createR2ReadAdapter: async () => {
+      r2AdapterCreated = true;
+      return null;
+    },
+  });
+
+  const response = await handlers.GET(new Request(
+    `http://localhost/api/sales-photo-evidence/image?evidenceId=${evidenceId}`
+  ));
+  const body = await response.json() as { code: string };
+
+  assert.equal(response.status, 410);
+  assert.equal(body.code, 'evidence_expired');
+  assert.equal(r2AdapterCreated, false);
 });
 
 runTest('image auth and metadata dependency outages return retryable server errors', async () => {
@@ -184,6 +220,7 @@ runTest('route rejects a stored object key that is not bound to the evidence row
       status: 'uploaded',
       r2_object_key: 'sales-evidence/7d/another/tenant/object.webp',
       r2_thumbnail_key: 'sales-evidence-thumbs/7d/another/tenant/object.webp',
+      expires_at: '2099-07-30T00:00:00.000Z',
       deleted_at: null,
     }),
     createR2ReadAdapter: async () => ({
@@ -213,6 +250,7 @@ runTest('route rejects invalid R2 content and never returns adapter error detail
     status: 'uploaded',
     r2_object_key: objectKey('image'),
     r2_thumbnail_key: objectKey('thumbnail'),
+    expires_at: '2099-07-30T00:00:00.000Z',
     deleted_at: null,
   };
   const request = new Request(

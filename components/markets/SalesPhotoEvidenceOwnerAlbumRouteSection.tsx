@@ -8,6 +8,7 @@ import {
 } from '@/lib/sales/photo-evidence-owner-album-read-model';
 import { buildSalesPhotoEvidenceTransactionIndex } from '@/lib/sales/photo-evidence-owner-view';
 import type { DealClosedPayload, Event } from '@/types/db';
+import type { SalesPhotoEvidenceOwnerDeleteCapability } from '@/lib/sales/photo-evidence-owner-delete-client';
 
 interface SalesPhotoEvidenceOwnerAlbumRouteSectionProps {
   actorRole: SalesPhotoEvidenceOwnerAlbumActorRole | null;
@@ -20,6 +21,8 @@ interface SalesPhotoEvidenceOwnerAlbumRouteSectionProps {
   loadError?: string | null;
   onRefresh?: () => void;
   onDelete?: (evidenceId: string) => Promise<boolean>;
+  deleteCapability?: SalesPhotoEvidenceOwnerDeleteCapability | null;
+  marketRequiresEvidence?: boolean;
   className?: string;
 }
 
@@ -34,6 +37,8 @@ export function SalesPhotoEvidenceOwnerAlbumRouteSection({
   loadError = null,
   onRefresh,
   onDelete,
+  deleteCapability,
+  marketRequiresEvidence,
   className,
 }: SalesPhotoEvidenceOwnerAlbumRouteSectionProps) {
   if (!isRoleReady || actorRole !== 'owner' || !ownerId || !marketId) {
@@ -60,6 +65,8 @@ export function SalesPhotoEvidenceOwnerAlbumRouteSection({
       loadError={loadError}
       onRefresh={onRefresh}
       onDelete={onDelete}
+      deleteCapability={deleteCapability}
+      marketRequiresEvidence={marketRequiresEvidence}
       transactionBySaleId={transactionBySaleId}
       className={className}
     />

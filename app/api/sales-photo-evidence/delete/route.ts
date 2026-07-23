@@ -49,6 +49,10 @@ function disabledResponse(): NextResponse {
   }, 501);
 }
 
+function capabilityResponse(enabled: boolean): NextResponse {
+  return jsonResponse({ ok: true, enabled }, 200);
+}
+
 function getEvidenceId(request: Request): string | null {
   const evidenceId = new URL(request.url).searchParams.get('evidenceId')?.trim() ?? '';
   return UUID_PATTERN.test(evidenceId) ? evidenceId : null;
@@ -179,7 +183,7 @@ export function createSalesPhotoEvidenceDeleteRouteHandlers(deps: SalesPhotoEvid
   }
 
   return {
-    GET: async () => disabledResponse(),
+    GET: async () => capabilityResponse(deps.isEnabled()),
     POST: async () => disabledResponse(),
     PUT: async () => disabledResponse(),
     PATCH: async () => disabledResponse(),
@@ -219,9 +223,9 @@ async function createR2DeleteAdapter(): Promise<SalesPhotoEvidenceR2UploadAdapte
 }
 
 async function runWithCors(request: Request, handler: () => Promise<Response>): Promise<Response> {
-  const rejection = createAppApiCorsRejectionResponse(request, { allowedMethods: ['DELETE', 'OPTIONS'] });
+  const rejection = createAppApiCorsRejectionResponse(request, { allowedMethods: ['GET', 'DELETE', 'OPTIONS'] });
   if (rejection) return rejection;
-  return applyAppApiCors(request, await handler(), { allowedMethods: ['DELETE', 'OPTIONS'] });
+  return applyAppApiCors(request, await handler(), { allowedMethods: ['GET', 'DELETE', 'OPTIONS'] });
 }
 
 export const DELETE = (request: Request) => runWithCors(request, () => (
@@ -232,10 +236,17 @@ export const DELETE = (request: Request) => runWithCors(request, () => (
     createR2DeleteAdapter,
   }).DELETE(request)
 ));
-export const GET = () => disabledResponse();
+export const GET = (request: Request) => runWithCors(request, () => (
+  createSalesPhotoEvidenceDeleteRouteHandlers({
+    isEnabled: () => isSalesPhotoEvidenceDeleteRouteEnabledForEnv(process.env),
+    resolveActor,
+    createDeleteRepository,
+    createR2DeleteAdapter,
+  }).GET()
+));
 export const POST = () => disabledResponse();
 export const PUT = () => disabledResponse();
 export const PATCH = () => disabledResponse();
 export const OPTIONS = (request: Request) => createAppApiCorsPreflightResponse(request, {
-  allowedMethods: ['DELETE', 'OPTIONS'],
+  allowedMethods: ['GET', 'DELETE', 'OPTIONS'],
 });

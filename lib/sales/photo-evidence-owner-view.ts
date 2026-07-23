@@ -17,6 +17,11 @@ export type SalesPhotoEvidenceOwnerImageDescriptor = {
   fullVariant: 'image' | 'thumbnail';
 };
 
+export type SalesPhotoEvidenceOwnerExpiredState = {
+  expiresAt: string | null;
+  cleanupCompleted: boolean;
+};
+
 function optionalString(value: string | null | undefined): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
@@ -67,6 +72,35 @@ export function findSalesPhotoEvidenceOwnerImageForSale(
       evidenceId: row.id,
       previewVariant: thumbnailObjectKey ? 'thumbnail' : 'image',
       fullVariant: imageObjectKey ? 'image' : 'thumbnail',
+    };
+  }
+
+  return null;
+}
+
+export function findSalesPhotoEvidenceOwnerExpiredStateForSale(
+  rows: readonly SalesPhotoEvidenceAlbumSourceRow[],
+  saleId: string | null | undefined,
+  now: string | number | Date = Date.now()
+): SalesPhotoEvidenceOwnerExpiredState | null {
+  if (!saleId) return null;
+
+  const nowDate = now instanceof Date ? now : new Date(now);
+  const nowTime = Number.isFinite(nowDate.getTime()) ? nowDate.getTime() : Date.now();
+
+  for (const row of rows) {
+    const rowSaleId = optionalString(row.sale_id ?? row.saleId);
+    const deletedAt = optionalString(row.deleted_at ?? row.deletedAt);
+    if (rowSaleId !== saleId || deletedAt) continue;
+
+    const expiresAt = optionalString(row.expires_at ?? row.expiresAt);
+    const expiresTime = expiresAt ? new Date(expiresAt).getTime() : Number.NaN;
+    const expiredByTime = Number.isFinite(expiresTime) && expiresTime <= nowTime;
+    if (row.status !== 'expired' && !expiredByTime) continue;
+
+    return {
+      expiresAt,
+      cleanupCompleted: row.status === 'expired',
     };
   }
 

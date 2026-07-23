@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
-import { X, Edit, Trash2, Clock, CreditCard, Camera } from 'lucide-react';
+import { X, Edit, Trash2, Clock, CreditCard, Camera, ImageOff } from 'lucide-react';
 import {
   getDealEventRevenue,
   getDealNotes,
@@ -13,7 +13,10 @@ import {
   getDealPaymentMethod,
   isBackfillDealEvent,
 } from '@/lib/markets/event-view-utils';
-import type { SalesPhotoEvidenceOwnerImageDescriptor } from '@/lib/sales/photo-evidence-owner-view';
+import type {
+  SalesPhotoEvidenceOwnerExpiredState,
+  SalesPhotoEvidenceOwnerImageDescriptor,
+} from '@/lib/sales/photo-evidence-owner-view';
 import type { Event, DealClosedPayload } from '@/types/db';
 import { SalesPhotoEvidenceOwnerAlbumImage } from './SalesPhotoEvidenceOwnerAlbumImage';
 
@@ -24,6 +27,7 @@ interface DealDetailModalProps {
   onEdit?: (deal: Event<DealClosedPayload>) => void;
   onDelete?: (deal: Event<DealClosedPayload>) => void;
   photoEvidence?: SalesPhotoEvidenceOwnerImageDescriptor | null;
+  expiredPhotoEvidence?: SalesPhotoEvidenceOwnerExpiredState | null;
 }
 
 /**
@@ -37,6 +41,7 @@ export function DealDetailModal({
   onEdit,
   onDelete,
   photoEvidence = null,
+  expiredPhotoEvidence = null,
 }: DealDetailModalProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -148,6 +153,25 @@ export function DealDetailModal({
                     previewVariant={photoEvidence.previewVariant}
                     fullVariant={photoEvidence.fullVariant}
                   />
+                </div>
+              </section>
+            )}
+
+            {!photoEvidence && expiredPhotoEvidence && (
+              <section
+                aria-label="成交照片已過期"
+                className="rounded-xl border border-atelier-line bg-atelier-canvas p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <ImageOff className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">成交照片已過期</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      {expiredPhotoEvidence.cleanupCompleted
+                        ? '照片已超過七天保留期限並完成雲端清理；成交紀錄與營收統計仍會保留。'
+                        : '照片已超過七天保留期限並停止查看，雲端檔案正在等待清理。'}
+                    </p>
+                  </div>
                 </div>
               </section>
             )}

@@ -13,7 +13,7 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type {
   SalesPhotoEvidenceAlbumItem,
@@ -21,6 +21,7 @@ import type {
   SalesPhotoEvidenceOwnerAlbumViewModel,
 } from '@/lib/sales/photo-evidence-owner-album-read-model';
 import type { SalesPhotoEvidenceTransactionSummary } from '@/lib/sales/photo-evidence-owner-view';
+import type { SalesPhotoEvidenceOwnerDeleteCapability } from '@/lib/sales/photo-evidence-owner-delete-client';
 import {
   SALES_PAYMENT_METHOD_LABELS,
   type SalesPaymentMethod,
@@ -33,6 +34,8 @@ interface SalesPhotoEvidenceOwnerAlbumShellProps {
   loadError?: string | null;
   onRefresh?: () => void;
   onDelete?: (evidenceId: string) => Promise<boolean>;
+  deleteCapability?: SalesPhotoEvidenceOwnerDeleteCapability | null;
+  marketRequiresEvidence?: boolean;
   transactionBySaleId?: ReadonlyMap<string, SalesPhotoEvidenceTransactionSummary>;
   className?: string;
 }
@@ -71,6 +74,20 @@ function formatDateTime(value: string | null): string {
   }).format(date);
 }
 
+function getRetentionNotice(
+  item: SalesPhotoEvidenceAlbumItem,
+  now: number | null
+): { label: string; urgent: boolean } | null {
+  if (now === null || item.displayStatus !== 'uploaded_private' || !item.expiresAt) return null;
+  const expiresTime = new Date(item.expiresAt).getTime();
+  if (!Number.isFinite(expiresTime)) return null;
+
+  const remainingHours = Math.ceil((expiresTime - now) / (60 * 60 * 1000));
+  if (remainingHours <= 0) return null;
+  if (remainingHours <= 24) return { label: '24 小時內到期', urgent: true };
+  return { label: `剩餘 ${Math.ceil(remainingHours / 24)} 天`, urgent: false };
+}
+
 function getStatusIcon(status: SalesPhotoEvidenceAlbumItemDisplayStatus) {
   if (status === 'uploaded_private') return <ShieldCheck className="h-4 w-4" />;
   if (status === 'upload_failed') return <XCircle className="h-4 w-4" />;
@@ -99,7 +116,9 @@ function getItemCaption(item: SalesPhotoEvidenceAlbumItem): string | null {
   }
 
   if (item.displayStatus === 'expired') {
-    return '照片保留期限已過或被標記過期。';
+    return item.status === 'expired'
+      ? `照片已於 ${formatDateTime(item.expiresAt)} 到期，雲端檔案已完成清理。`
+      : `照片已於 ${formatDateTime(item.expiresAt)} 到期並停止查看，雲端清理排程中。`;
   }
 
   return '目前沒有可顯示的照片物件。';
@@ -150,12 +169,23 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
   loadError = null,
   onRefresh,
   onDelete,
+  deleteCapability = null,
+  marketRequiresEvidence = false,
   transactionBySaleId = new Map(),
   className = '',
 }: SalesPhotoEvidenceOwnerAlbumShellProps) {
   const { summary } = viewModel;
   const [deleteItem, setDeleteItem] = useState<SalesPhotoEvidenceAlbumItem | null>(null);
+  const [deletingEvidenceId, setDeletingEvidenceId] = useState<string | null>(null);
   const [filter, setFilter] = useState<AlbumFilter>('current');
+  const [retentionNow, setRetentionNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    const updateNow = () => setRetentionNow(Date.now());
+    updateNow();
+    const intervalId = window.setInterval(updateNow, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
   const currentCount = useMemo(
     () => viewModel.items.filter(item => matchesAlbumFilter(item, 'current')).length,
     [viewModel.items]
@@ -179,9 +209,35 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
 
   const confirmDelete = async () => {
     if (!deleteItem || !onDelete) return;
-    const deleted = await onDelete(deleteItem.id);
-    if (deleted) setDeleteItem(null);
+    setDeletingEvidenceId(deleteItem.id);
+    try {
+      const deleted = await onDelete(deleteItem.id);
+      if (deleted) setDeleteItem(null);
+    } finally {
+      setDeletingEvidenceId(null);
+    }
   };
+
+  const deleteTransaction = deleteItem?.saleId
+    ? transactionBySaleId.get(deleteItem.saleId)
+    : undefined;
+  const deleteCapabilityMessage = deleteCapability?.status === 'disabled'
+    ? deleteCapability.message
+    : null;
+  const canDelete = deleteCapability?.status === 'enabled';
+  const deleteDescription = deleteItem
+    ? [
+        `成交時間：${formatDateTime(deleteItem.saleCompletedAt)}`,
+        deleteTransaction
+          ? `成交金額：NT$ ${deleteTransaction.amount.toLocaleString()}（${SALES_PAYMENT_METHOD_LABELS[deleteTransaction.paymentMethod]}）`
+          : null,
+        '照片會從成交照片、每日表現與成交詳情中移除；成交紀錄、營收及統計不會改變。',
+        marketRequiresEvidence
+          ? '本市集要求成交照片。永久移除後，系統目前不會自動建立待補拍任務。'
+          : null,
+        '雲端照片檔案會一併刪除，且無法復原。',
+      ].filter(Boolean).join('\n')
+    : '';
 
   return (
     <section className={`rounded-card border border-atelier-line bg-atelier-paper p-4 sm:p-5 ${className}`}>
@@ -223,6 +279,12 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
         ))}
       </div>
 
+      {onDelete && deleteCapabilityMessage && summary.countByDisplayStatus.uploaded_private > 0 && (
+        <div className="mb-4 rounded-card border border-status-warn-border bg-status-warn-bg px-4 py-3 text-sm text-status-warn-text">
+          {deleteCapabilityMessage}
+        </div>
+      )}
+
       {loadError ? (
         <div className="rounded-card border border-status-danger-border bg-status-danger-bg px-4 py-3 text-sm text-status-danger-text">
           {loadError}
@@ -247,9 +309,16 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
               ? PAYMENT_METHOD_ICONS[transaction.paymentMethod]
               : null;
             const caption = getItemCaption(item);
+            const retentionNotice = getRetentionNotice(item, retentionNow);
 
             return (
-              <article key={item.id} className="overflow-hidden rounded-card border border-atelier-line bg-atelier-canvas p-3">
+              <article
+                key={item.id}
+                aria-busy={deletingEvidenceId === item.id}
+                className={`overflow-hidden rounded-card border border-atelier-line bg-atelier-canvas p-3 transition-opacity ${
+                  deletingEvidenceId === item.id ? 'pointer-events-none opacity-60' : ''
+                }`}
+              >
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">
@@ -270,9 +339,10 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
                       <button
                         type="button"
                         onClick={() => setDeleteItem(item)}
-                        className="flex h-11 w-11 items-center justify-center rounded-control text-danger transition-colors hover:bg-status-danger-bg focus-visible:ring-2 focus-visible:ring-danger"
+                        disabled={!canDelete || deletingEvidenceId !== null}
+                        className="flex h-11 w-11 items-center justify-center rounded-control text-danger transition-colors hover:bg-status-danger-bg focus-visible:ring-2 focus-visible:ring-danger disabled:cursor-not-allowed disabled:opacity-40"
                         aria-label="刪除成交照片"
-                        title="刪除成交照片"
+                        title={canDelete ? '刪除成交照片' : (deleteCapabilityMessage ?? '正在確認刪除功能')}
                       >
                         <Trash2 className="h-4 w-4" aria-hidden="true" />
                       </button>
@@ -316,6 +386,13 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
                   <div>
                     <dt>到期時間</dt>
                     <dd className="mt-0.5 font-medium text-foreground">{formatDateTime(item.expiresAt)}</dd>
+                    {retentionNotice && (
+                      <dd className={`mt-1 font-medium ${
+                        retentionNotice.urgent ? 'text-status-warn-text' : 'text-atelier-muted'
+                      }`}>
+                        {retentionNotice.label}
+                      </dd>
+                    )}
                   </div>
                 </dl>
               </article>
@@ -328,9 +405,10 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
         onClose={() => setDeleteItem(null)}
         onConfirm={confirmDelete}
         title="刪除成交照片？"
-        description="照片會從成交照片與每日表現的最近成交照片中移除，雲端檔案也會一併刪除。此操作無法復原。"
-        confirmLabel="刪除照片"
+        description={deleteDescription}
+        confirmLabel="永久移除照片"
         tone="danger"
+        confirmationText={marketRequiresEvidence ? '永久移除' : undefined}
       />
     </section>
   );

@@ -44,6 +44,8 @@ function getOwnerImageFailureMessage(code?: string): string {
     case 'not_found':
     case 'object_key_missing':
       return '找不到這張照片，可能已過期或移除。';
+    case 'evidence_expired':
+      return '這張照片已超過七天保留期限，無法再查看。';
     case 'request_timeout':
       return '照片讀取逾時，請確認網路後再試。';
     default:

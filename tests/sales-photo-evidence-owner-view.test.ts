@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import {
   buildSalesPhotoEvidenceTransactionIndex,
+  findSalesPhotoEvidenceOwnerExpiredStateForSale,
   findSalesPhotoEvidenceOwnerImageForSale,
 } from '../lib/sales/photo-evidence-owner-view';
 import type { SalesPhotoEvidenceAlbumSourceRow } from '../lib/sales/photo-evidence-owner-album-read-model';
@@ -91,6 +92,34 @@ runTest('detail image descriptor hides missing pending deleted and expired photo
   assert.equal(findSalesPhotoEvidenceOwnerImageForSale([row({ sale_id: 'another-sale' })], saleId, now), null);
 });
 
+runTest('detail view distinguishes expired access from completed cloud cleanup', () => {
+  const saleId = '11111111-1111-4111-8111-111111111111';
+  const now = '2026-07-23T00:00:00.000Z';
+
+  assert.deepEqual(
+    findSalesPhotoEvidenceOwnerExpiredStateForSale([row()], saleId, now),
+    {
+      expiresAt: '2026-07-22T10:00:00.000Z',
+      cleanupCompleted: false,
+    }
+  );
+  assert.deepEqual(
+    findSalesPhotoEvidenceOwnerExpiredStateForSale([
+      row({ status: 'expired', r2_object_key: null, r2_thumbnail_key: null }),
+    ], saleId, now),
+    {
+      expiresAt: '2026-07-22T10:00:00.000Z',
+      cleanupCompleted: true,
+    }
+  );
+  assert.equal(
+    findSalesPhotoEvidenceOwnerExpiredStateForSale([
+      row({ deleted_at: '2026-07-22T11:00:00.000Z' }),
+    ], saleId, now),
+    null
+  );
+});
+
 runTest('owner UI renders transaction metadata and on-demand full image entry points', () => {
   const shellSource = readProjectFile('components/markets/SalesPhotoEvidenceOwnerAlbumShell.tsx');
   const imageSource = readProjectFile('components/markets/SalesPhotoEvidenceOwnerAlbumImage.tsx');
@@ -105,7 +134,9 @@ runTest('owner UI renders transaction metadata and on-demand full image entry po
   assert.match(imageSource, /fullImage\.objectUrl \?\? preview\.objectUrl/);
   assert.match(dealDetailSource, /\{photoEvidence && \(/);
   assert.match(dealDetailSource, /fullVariant=\{photoEvidence\.fullVariant\}/);
+  assert.match(dealDetailSource, /成交照片已過期/);
   assert.match(marketDetailSource, /photoEvidence=\{selectedDealPhotoEvidence\}/);
+  assert.match(marketDetailSource, /expiredPhotoEvidence=\{selectedDealExpiredPhotoEvidence\}/);
 });
 
 function main(): void {

@@ -36,6 +36,7 @@ type SalesPhotoEvidenceImageRouteRow = {
   status: string;
   r2_object_key: string | null;
   r2_thumbnail_key: string | null;
+  expires_at: string | null;
   deleted_at: string | null;
 };
 
@@ -44,6 +45,7 @@ type SalesPhotoEvidenceImageRouteDeps = {
   resolveActor(request: Request): Promise<SalesPhotoEvidenceImageRouteActor | 'unavailable' | null>;
   getEvidenceRow(input: { evidenceId: string }): Promise<SalesPhotoEvidenceImageRouteRow | null>;
   createR2ReadAdapter(): Promise<SalesPhotoEvidenceR2ReadAdapter | null>;
+  now?: () => Date;
 };
 
 function jsonResponse(body: unknown, status: number): NextResponse {
@@ -122,6 +124,22 @@ export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvide
         code: 'not_found',
         message: 'Sales photo evidence image was not found.',
       }, 404);
+    }
+
+    const expiresAt = row.expires_at ? new Date(row.expires_at).getTime() : Number.NaN;
+    if (!Number.isFinite(expiresAt)) {
+      return jsonResponse({
+        ok: false,
+        code: 'invalid_evidence_expiration',
+        message: 'Sales photo evidence expiration is invalid.',
+      }, 409);
+    }
+    if (expiresAt <= (deps.now?.() ?? new Date()).getTime()) {
+      return jsonResponse({
+        ok: false,
+        code: 'evidence_expired',
+        message: 'Sales photo evidence has expired.',
+      }, 410);
     }
 
     const objectKey = query.variant === 'thumbnail' ? row.r2_thumbnail_key : row.r2_object_key;
@@ -263,7 +281,7 @@ async function getEvidenceRowFromSupabase(
 
   const { data, error } = await client
     .from('sale_photo_evidence')
-    .select('id,owner_id,market_id,sale_id,captured_by_staff_id,status,r2_object_key,r2_thumbnail_key,deleted_at')
+    .select('id,owner_id,market_id,sale_id,captured_by_staff_id,status,r2_object_key,r2_thumbnail_key,expires_at,deleted_at')
     .eq('id', evidenceId)
     .is('deleted_at', null)
     .maybeSingle();
