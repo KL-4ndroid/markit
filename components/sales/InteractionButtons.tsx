@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { recordInteraction } from '@/lib/db/hooks';
 import { getInteractionButtons, type InteractionButton } from '@/lib/interaction-buttons-store';
+import { InteractionRoleIcon } from '@/components/interactions/InteractionRoleIcon';
 
 interface InteractionButtonsProps {
   marketId: string;
@@ -93,7 +94,7 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
             {clickingButton === button.id && (
               <CheckCircle2 className="absolute right-2 top-2 h-4 w-4 text-status-good-text" aria-hidden="true" />
             )}
-            <div className="mb-2 text-center text-2xl" aria-hidden="true">{button.emoji}</div>
+            <InteractionRoleIcon role={button.role} className="mx-auto mb-2 h-6 w-6 text-atelier-ink" />
             <div className="text-center text-sm font-semibold text-atelier-ink">{button.label}</div>
           </button>
         ))}

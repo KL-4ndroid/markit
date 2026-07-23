@@ -29,7 +29,8 @@ import {
   Armchair,
   Umbrella,
   Circle,
-  Package
+  Package,
+  ChevronDown,
 } from 'lucide-react';
 import { useMarket, updateMarket, updateMarketStatus, startMarket, endMarket, useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
@@ -45,6 +46,7 @@ import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { InteractionButtons } from '@/components/sales/InteractionButtons';
 import { TransactionWorkspace } from '@/components/sales/TransactionWorkspace';
 import { InteractionPreferenceChart } from '@/components/analytics/InteractionPreferenceChart';
+import { InteractionRoleIcon } from '@/components/interactions/InteractionRoleIcon';
 import { InteractionTimeHeatmap } from '@/components/analytics/InteractionTimeHeatmap';
 import { BehaviorInsightCard } from '@/components/analytics/BehaviorInsightCard';
 import { DailyRevenueStats } from '@/components/markets/DailyRevenueStats';
@@ -63,7 +65,7 @@ import { MarketOverviewPhotoStory } from '@/components/markets/MarketOverviewPho
 import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
 import { SalesPhotoEvidenceOwnerAlbumRouteSection } from '@/components/markets/SalesPhotoEvidenceOwnerAlbumRouteSection';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
-import { getInteractionButtons } from '@/lib/interaction-buttons-store';
+import { getInteractionButtons, type InteractionButton } from '@/lib/interaction-buttons-store';
 import { useRoleContext } from '@/lib/role-context';
 import { useSalesPhotoEvidenceFlow } from '@/hooks/useSalesPhotoEvidenceFlow';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
@@ -74,6 +76,7 @@ import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
 import { getDealEventDate, getDealEventRevenue, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
+import { buildMarketInteractionSummary } from '@/lib/markets/market-interaction-summary';
 import {
   getDefaultOwnerMarketWorkspaceView,
   resolveMarketWorkspacePhase,
@@ -253,7 +256,11 @@ export function MarketDetailScreen() {
   const [showDealDetailModal, setShowDealDetailModal] = useState(false);
   const [showDailyDealsModal, setShowDailyDealsModal] = useState(false);  // ✅ 新增：日期成交記錄彈窗
   const [showInteractionDetailModal, setShowInteractionDetailModal] = useState(false);  // ✅ 新增：互動詳情彈窗
-  const [selectedInteractionType, setSelectedInteractionType] = useState<{ type: string; label: string; emoji: string } | null>(null);
+  const [selectedInteractionType, setSelectedInteractionType] = useState<{
+    type: string;
+    label: string;
+    role: InteractionButton['role'];
+  } | null>(null);
   const [countdown, setCountdown] = useState<string>('--');
   const [isOperatingStatusCollapsed, setIsOperatingStatusCollapsed] = useState(true);  // 營業狀態折疊
   const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(false);  // 今日時間軸折疊（預設展開）
@@ -267,7 +274,7 @@ export function MarketDetailScreen() {
   // 互動行為數據狀態
   const [interactionEvents, setInteractionEvents] = useState<Event<InteractionRecordedPayload>[]>([]);
   const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
-  const [buttonLabels, setButtonLabels] = useState<Record<string, { label: string; emoji: string }>>({});
+  const [buttonLabels, setButtonLabels] = useState<Record<string, { label: string; role: InteractionButton['role'] }>>({});
   const selectedDealPhotoEvidence = useMemo(
     () => findSalesPhotoEvidenceOwnerImageForSale(ownerSalesPhotoEvidenceRows, selectedDeal?.id),
     [ownerSalesPhotoEvidenceRows, selectedDeal?.id]
@@ -369,9 +376,9 @@ export function MarketDetailScreen() {
       try {
         // 獲取按鈕配置（使用新版 interaction-buttons-store）
         const buttons = getInteractionButtons();
-        const labelMap: Record<string, { label: string; emoji: string }> = {};
+        const labelMap: Record<string, { label: string; role: InteractionButton['role'] }> = {};
         buttons.forEach(btn => {
-          labelMap[btn.id] = { label: btn.label, emoji: btn.emoji };
+          labelMap[btn.id] = { label: btn.label, role: btn.role };
         });
         setButtonLabels(labelMap);
 
@@ -430,22 +437,18 @@ export function MarketDetailScreen() {
     };
   }, [market, marketId, dbStatus]);
 
+  const interactionSummary = useMemo(
+    () => buildMarketInteractionSummary(interactionEvents.map(getInteractionType)),
+    [interactionEvents]
+  );
+
   // 計算互動偏好數據
   const interactionPreferenceData = useMemo(() => {
-    const counts: Record<string, number> = {};
-    
-    interactionEvents.forEach(event => {
-      const type = getInteractionType(event);
-      if (!type) return;
-      counts[type] = (counts[type] || 0) + 1;
-    });
-
-    return Object.entries(counts).map(([type, count]) => ({
+    return Object.entries(interactionSummary.countByType).map(([type, count]) => ({
       name: buttonLabels[type]?.label || type,
-      emoji: buttonLabels[type]?.emoji || '❓',
       value: count,
     })).sort((a, b) => b.value - a.value);
-  }, [interactionEvents, buttonLabels]);
+  }, [interactionSummary, buttonLabels]);
 
   // 計算時序熱力圖數據
   const timeHeatmapData = useMemo(() => {
@@ -487,7 +490,7 @@ export function MarketDetailScreen() {
       const totalInteractions = interactionPreferenceData.reduce((sum, item) => sum + item.value, 0);
       const percentage = ((topInteraction.value / totalInteractions) * 100).toFixed(0);
       insights.push(
-        `本場市集「${topInteraction.emoji} ${topInteraction.name}」最為頻繁，佔總互動 ${percentage}%。`
+        `本場市集「${topInteraction.name}」最為頻繁，佔總互動 ${percentage}%。`
       );
     }
 
@@ -1012,8 +1015,8 @@ export function MarketDetailScreen() {
   };
 
   // ✅ 新增：處理點擊互動次數方塊
-  const handleInteractionClick = (buttonId: string, label: string, emoji: string) => {
-    setSelectedInteractionType({ type: buttonId, label, emoji });
+  const handleInteractionClick = (buttonId: string, label: string, role: InteractionButton['role']) => {
+    setSelectedInteractionType({ type: buttonId, label, role });
     setShowInteractionDetailModal(true);
   };
 
@@ -1241,17 +1244,24 @@ export function MarketDetailScreen() {
       </header>
 
       {/* Content */}
-      <main className="mx-auto max-w-5xl px-4 pb-6">
+      <div className="mx-auto max-w-5xl px-4 pb-6">
         <MarketWorkspaceNavigation
           value={resolvedOwnerWorkspaceView}
           onChange={setOwnerWorkspaceView}
           ariaLabel="老闆市集工作台"
+          panelId="owner-market-workspace-panel"
           items={[
             { id: 'live', label: '現場', icon: Store, badge: salesPhotoEvidenceFlow.pendingCount },
             { id: 'overview', label: '總覽', icon: BarChart3 },
             { id: 'manage', label: '管理', icon: ClipboardCheck },
           ]}
         />
+
+        <div
+          id="owner-market-workspace-panel"
+          role="tabpanel"
+          aria-labelledby={`owner-market-workspace-panel-tab-${resolvedOwnerWorkspaceView}`}
+        >
 
         <MarketWorkspaceSummary
           phase={marketWorkspacePhase}
@@ -1297,6 +1307,7 @@ export function MarketDetailScreen() {
             value={ownerOverviewDetail}
             onChange={setOwnerOverviewDetail}
             ariaLabel="總覽詳細資料"
+            panelId="owner-overview-detail-panel"
             items={[
               { id: 'performance', label: '每日表現', icon: Calendar },
               { id: 'interactions', label: '顧客互動', icon: TrendingUp },
@@ -1305,6 +1316,14 @@ export function MarketDetailScreen() {
             ]}
           />
         )}
+
+        <div
+          id={resolvedOwnerWorkspaceView === 'overview' ? 'owner-overview-detail-panel' : undefined}
+          role={resolvedOwnerWorkspaceView === 'overview' ? 'tabpanel' : undefined}
+          aria-labelledby={resolvedOwnerWorkspaceView === 'overview'
+            ? `owner-overview-detail-panel-tab-${ownerOverviewDetail}`
+            : undefined}
+        >
 
         {resolvedOwnerWorkspaceView === 'live' && !isOperating && (
           <div className="mb-4 flex items-start gap-3 rounded-card bg-atelier-apricot-soft/70 px-4 py-3 text-sm text-atelier-muted shadow-sm">
@@ -1750,6 +1769,23 @@ export function MarketDetailScreen() {
 
         {resolvedOwnerWorkspaceView === 'manage' && (
         <div className="mx-auto max-w-3xl">
+        <section className="mb-4 rounded-card border border-atelier-line bg-atelier-blue-soft/55 p-4">
+          <div className="flex items-start gap-3">
+            <Clock className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <div>
+              <h2 className="text-base font-semibold text-atelier-ink">今日現場模式</h2>
+              <p className="mt-1 text-sm leading-relaxed text-foreground">
+                系統會依設定的營業時間自動開啟與收起今日現場工具
+                {market.operatingEndTime
+                  ? `，今天預計於 ${formatClockTime(market.operatingEndTime)} 收起。`
+                  : '。請在編輯市集中補上營業時間。'}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                這不會提前結束整場多日市集；整場狀態仍依市集日期與管理設定保留。
+              </p>
+            </div>
+          </div>
+        </section>
         <MarketFieldOpsSection
           marketId={marketId}
           referenceNote={market.notes}
@@ -1769,11 +1805,11 @@ export function MarketDetailScreen() {
               互動摘要
             </h2>
             <span className="text-sm font-semibold text-foreground">
-              {stats?.totalInteractions ?? interactionEvents.length} 次
+              {interactionSummary.totalCount} 次
             </span>
           </div>
           {/* 互動次數統計（C2.19B：從 dailyStats projection 讀取） */}
-          {(stats?.totalInteractions ?? interactionEvents.length) > 0 && (
+          {interactionSummary.totalCount > 0 && (
             <div className="mt-4 pt-4 border-t border-primary/10">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp className="w-4 h-4 text-primary" />
@@ -1782,25 +1818,17 @@ export function MarketDetailScreen() {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {(() => {
-                  // 統計各類型互動次數
-                  const interactionCounts: Record<string, number> = {};
-                  interactionEvents.forEach(event => {
-                    const type = getInteractionType(event);
-                    if (!type) return;
-                    interactionCounts[type] = (interactionCounts[type] || 0) + 1;
-                  });
-
-                  // 按照互動按鈕的順序顯示
                   const buttons = getInteractionButtons();
                   return buttons.map(button => {
-                    const count = interactionCounts[button.id] || 0;
+                    const count = interactionSummary.countByType[button.id] || 0;
                     return (
                       <button
                         key={button.id}
-                        onClick={() => handleInteractionClick(button.id, button.label, button.emoji)}
+                        type="button"
+                        onClick={() => handleInteractionClick(button.id, button.label, button.role)}
                         className="bg-background rounded-xl p-3 text-center hover:bg-neutral-alt hover:scale-105 transition-all cursor-pointer active:scale-95"
                       >
-                        <div className="text-xl mb-1">{button.emoji}</div>
+                        <InteractionRoleIcon role={button.role} className="mx-auto mb-1 h-5 w-5 text-primary" />
                         <div className="text-lg font-medium text-foreground">{count}</div>
                         <div className="text-xs text-muted-foreground mt-0.5">{button.label}</div>
                       </button>
@@ -1810,7 +1838,7 @@ export function MarketDetailScreen() {
               </div>
             </div>
           )}
-          {(stats?.totalInteractions ?? interactionEvents.length) === 0 && (
+          {interactionSummary.totalCount === 0 && (
             <div className="rounded-lg bg-background px-4 py-8 text-center text-sm text-muted-foreground">
               目前沒有顧客互動紀錄
             </div>
@@ -1939,18 +1967,20 @@ export function MarketDetailScreen() {
         {resolvedOwnerWorkspaceView === 'manage' && (
         <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
           <button
+            type="button"
             onClick={() => setIsTimelineCollapsed(!isTimelineCollapsed)}
             className="w-full flex items-center justify-between"
+            aria-expanded={!isTimelineCollapsed}
+            aria-controls="owner-market-timeline-panel"
           >
             <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
               <Clock className="w-5 h-5 text-primary" />
               今日時間軸
             </h2>
-            <div className={`text-muted-foreground transition-transform ${isTimelineCollapsed ? '' : 'rotate-180'}`}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+            <ChevronDown
+              className={`h-5 w-5 text-muted-foreground transition-transform ${isTimelineCollapsed ? '' : 'rotate-180'}`}
+              aria-hidden="true"
+            />
           </button>
 
           {/* 倒數提示 - 始終顯示，不受折疊影響 */}
@@ -1963,7 +1993,7 @@ export function MarketDetailScreen() {
           )}
 
           {!isTimelineCollapsed && (
-          <div className="space-y-4 mt-4">
+          <div id="owner-market-timeline-panel" className="space-y-4 mt-4">
             {/* 檢查是否有任何時間設定 */}
             {!market.checkInTime && !market.operatingStartTime && !market.operatingEndTime && !(market.earlyEntryEnabled && market.earlyEntryTime) ? (
               <div className="bg-soft-yellow border border-secondary/30 rounded-xl p-4 text-center">
@@ -2139,7 +2169,8 @@ export function MarketDetailScreen() {
           <>
             <div className="mb-4">
               <h2 className="text-xl font-medium text-foreground flex items-center gap-2">
-                📈 顧客行為分析
+                <BarChart3 className="h-5 w-5 text-primary" aria-hidden="true" />
+                顧客行為分析
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
                 本場市集的顧客互動模式與偏好
@@ -2181,7 +2212,9 @@ export function MarketDetailScreen() {
             </button>
           </div>
         )}
-      </main>
+        </div>
+        </div>
+      </div>
 
       {/* 狀態變更確認對話框 */}
       {showStatusChangeConfirm && isMounted && pendingStatus && createPortal(
@@ -2213,7 +2246,10 @@ export function MarketDetailScreen() {
               {isOperating && (
                 <div className="bg-soft-yellow border border-secondary/30 rounded-xl p-3 mb-4">
                   <p className="text-sm text-foreground font-medium mb-1">
-                    ⚠️ 重要提示
+                    <span className="inline-flex items-center gap-1.5">
+                      <AlertCircle className="h-4 w-4 text-secondary" aria-hidden="true" />
+                      重要提示
+                    </span>
                   </p>
                   <p className="text-xs text-muted-foreground">
                     此變更將會<span className="font-bold text-danger">立即結束營業狀態</span>，快速互動和快速交易功能將被隱藏。
@@ -2390,7 +2426,7 @@ export function MarketDetailScreen() {
           onClose={handleCloseInteractionDetail}
           interactionType={selectedInteractionType.type}
           label={selectedInteractionType.label}
-          emoji={selectedInteractionType.emoji}
+          role={selectedInteractionType.role}
           events={interactionEvents}
         />
       )}

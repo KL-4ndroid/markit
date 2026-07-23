@@ -48,10 +48,10 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
     try {
       await createChecklistItem(marketId, trimmedText);
       setText('');
-      toast.success('Checklist 已新增');
+      toast.success('現場待辦已新增');
     } catch (error) {
       console.error('create checklist item failed:', error);
-      toast.error('新增 checklist 失敗');
+      toast.error('新增現場待辦失敗');
     } finally {
       setIsSaving(false);
     }
@@ -65,7 +65,7 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
       await toggleChecklistItem(marketId, item.id, !item.completed);
     } catch (error) {
       console.error('toggle checklist item failed:', error);
-      toast.error('更新 checklist 失敗');
+      toast.error('更新現場待辦失敗');
     } finally {
       setIsSaving(false);
     }
@@ -85,10 +85,10 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
     try {
       await updateChecklistItem(marketId, editingItem.id, { text: trimmedText });
       resetEditing();
-      toast.success('Checklist 已更新');
+      toast.success('現場待辦已更新');
     } catch (error) {
       console.error('update checklist item failed:', error);
-      toast.error('更新 checklist 失敗');
+      toast.error('更新現場待辦失敗');
     } finally {
       setIsSaving(false);
     }
@@ -103,10 +103,10 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
       if (editingItem?.id === item.id) {
         resetEditing();
       }
-      toast.success('Checklist 已刪除');
+      toast.success('現場待辦已刪除');
     } catch (error) {
       console.error('delete checklist item failed:', error);
-      toast.error('刪除 checklist 失敗');
+      toast.error('刪除現場待辦失敗');
     } finally {
       setIsSaving(false);
     }
@@ -117,7 +117,7 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <CheckSquare className="h-5 w-5 text-primary" />
-          <h2 className="text-base font-medium text-foreground">Checklist</h2>
+          <h2 className="text-base font-medium text-foreground">現場待辦</h2>
         </div>
         <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
           {remaining} 待完成
@@ -138,7 +138,7 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
             onClick={handleCreate}
             disabled={isSaving || text.trim().length === 0}
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="新增 checklist item"
+            aria-label="新增現場待辦"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -148,11 +148,11 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
       <div className="space-y-2">
         {isLoading ? (
           <p className="rounded-lg bg-background px-3 py-4 text-center text-sm text-muted-foreground">
-            載入 checklist 中...
+            載入現場待辦中...
           </p>
         ) : visibleItems.length === 0 ? (
           <p className="rounded-lg bg-background px-3 py-4 text-center text-sm text-muted-foreground">
-            尚無 checklist
+            尚無現場待辦
           </p>
         ) : (
           visibleItems.map((item) => {
@@ -176,7 +176,7 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
                       onClick={handleUpdate}
                       disabled={isSaving || editingText.trim().length === 0}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="儲存 checklist item"
+                      aria-label="儲存現場待辦"
                     >
                       <Save className="h-4 w-4" />
                     </button>
@@ -185,7 +185,7 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
                       onClick={resetEditing}
                       disabled={isSaving}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-background text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="取消編輯 checklist item"
+                      aria-label="取消編輯現場待辦"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -201,7 +201,7 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
                           ? 'border-primary bg-primary text-white'
                           : 'border-primary/30 bg-white'
                       }`}
-                      aria-label={item.completed ? '取消完成 checklist item' : '完成 checklist item'}
+                      aria-label={item.completed ? '取消完成現場待辦' : '完成現場待辦'}
                     >
                       {item.completed && <Check className="h-3.5 w-3.5" />}
                     </button>
@@ -225,7 +225,7 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
                         onClick={() => handleDelete(item)}
                         disabled={isSaving}
                         className="rounded-md p-1.5 text-danger hover:bg-soft-pink disabled:cursor-not-allowed disabled:opacity-50"
-                        aria-label="刪除 checklist item"
+                        aria-label="刪除現場待辦"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

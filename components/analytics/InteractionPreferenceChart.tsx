@@ -7,7 +7,6 @@ interface InteractionPreferenceChartProps {
   data: {
     name: string;
     value: number;
-    emoji: string;
   }[];
 }
 
@@ -75,7 +74,7 @@ export function InteractionPreferenceChart({ data }: InteractionPreferenceChartP
                 }}
                 formatter={(value: any, name: string | number | undefined, props: any) => {
                   const percent = ((value / total) * 100).toFixed(1);
-                  return [`${value} 次 (${percent}%)`, `${props.payload.emoji} ${name || ''}`];
+                  return [`${value} 次 (${percent}%)`, `${name || ''}`];
                 }}
               />
             </PieChart>
@@ -94,7 +93,7 @@ export function InteractionPreferenceChart({ data }: InteractionPreferenceChartP
                     }}
                   />
                   <span className="text-sm text-foreground">
-                    {item.emoji} {item.name}
+                    {item.name}
                   </span>
                 </div>
                 <span className="text-sm font-medium text-muted-foreground">

@@ -13,7 +13,7 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type {
   SalesPhotoEvidenceAlbumItem,
@@ -105,12 +105,42 @@ function getItemCaption(item: SalesPhotoEvidenceAlbumItem): string | null {
   return '目前沒有可顯示的照片物件。';
 }
 
-function SummaryPill({ label, value }: { label: string; value: number }) {
+type AlbumFilter = 'current' | 'uploaded' | 'pending' | 'failed' | 'expired' | 'all';
+
+function matchesAlbumFilter(item: SalesPhotoEvidenceAlbumItem, filter: AlbumFilter): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'current') return !['expired', 'waived', 'skipped'].includes(item.displayStatus);
+  if (filter === 'uploaded') return item.displayStatus === 'uploaded_private';
+  if (filter === 'pending') return item.displayStatus === 'pending' || item.displayStatus === 'captured_local';
+  if (filter === 'failed') return item.displayStatus === 'upload_failed';
+  return item.displayStatus === 'expired';
+}
+
+function FilterButton({
+  label,
+  value,
+  isActive,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  isActive: boolean;
+  onClick: () => void;
+}) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-atelier-line bg-atelier-canvas px-3 py-1 text-xs text-atelier-muted">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={isActive}
+      className={`inline-flex min-h-11 items-center gap-2 rounded-control border px-3 text-xs transition-colors ${
+        isActive
+          ? 'border-primary bg-primary text-white'
+          : 'border-atelier-line bg-atelier-canvas text-atelier-muted hover:bg-atelier-sage-soft hover:text-atelier-ink'
+      }`}
+    >
       <span>{label}</span>
-      <strong className="font-semibold tabular-nums text-atelier-ink">{value}</strong>
-    </span>
+      <strong className={`font-semibold tabular-nums ${isActive ? 'text-white' : 'text-atelier-ink'}`}>{value}</strong>
+    </button>
   );
 }
 
@@ -125,6 +155,27 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
 }: SalesPhotoEvidenceOwnerAlbumShellProps) {
   const { summary } = viewModel;
   const [deleteItem, setDeleteItem] = useState<SalesPhotoEvidenceAlbumItem | null>(null);
+  const [filter, setFilter] = useState<AlbumFilter>('current');
+  const currentCount = useMemo(
+    () => viewModel.items.filter(item => matchesAlbumFilter(item, 'current')).length,
+    [viewModel.items]
+  );
+  const filteredItems = useMemo(
+    () => viewModel.items.filter(item => matchesAlbumFilter(item, filter)),
+    [filter, viewModel.items]
+  );
+  const filterOptions: ReadonlyArray<{ id: AlbumFilter; label: string; value: number }> = [
+    { id: 'current', label: '目前', value: currentCount },
+    { id: 'uploaded', label: '已上傳', value: summary.countByDisplayStatus.uploaded_private },
+    {
+      id: 'pending',
+      label: '待處理',
+      value: summary.countByDisplayStatus.pending + summary.countByDisplayStatus.captured_local,
+    },
+    { id: 'failed', label: '上傳異常', value: summary.countByDisplayStatus.upload_failed },
+    { id: 'expired', label: '已過期', value: summary.countByDisplayStatus.expired },
+    { id: 'all', label: '全部', value: summary.totalCount },
+  ];
 
   const confirmDelete = async () => {
     if (!deleteItem || !onDelete) return;
@@ -160,29 +211,37 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
         )}
       </div>
 
-      <div className="mb-5 flex flex-wrap gap-2">
-        <SummaryPill label="全部" value={summary.totalCount} />
-        <SummaryPill label="已上傳" value={summary.countByDisplayStatus.uploaded_private} />
-        <SummaryPill label="待補拍" value={summary.countByDisplayStatus.pending} />
-        <SummaryPill label="上傳異常" value={summary.countByDisplayStatus.upload_failed} />
-        <SummaryPill label="已過期" value={summary.countByDisplayStatus.expired} />
+      <div className="mb-5 flex flex-wrap gap-2" aria-label="照片狀態篩選">
+        {filterOptions.map(option => (
+          <FilterButton
+            key={option.id}
+            label={option.label}
+            value={option.value}
+            isActive={filter === option.id}
+            onClick={() => setFilter(option.id)}
+          />
+        ))}
       </div>
 
       {loadError ? (
         <div className="rounded-card border border-status-danger-border bg-status-danger-bg px-4 py-3 text-sm text-status-danger-text">
           {loadError}
         </div>
-      ) : viewModel.items.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="rounded-card border border-dashed border-atelier-line bg-atelier-canvas px-4 py-8 text-center">
           <ImageOff className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-3 text-sm font-medium text-foreground">目前沒有照片紀錄</p>
+          <p className="mt-3 text-sm font-medium text-foreground">
+            {viewModel.items.length === 0 ? '目前沒有照片紀錄' : '此篩選沒有照片紀錄'}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            啟用拍照流程後，這裡會顯示每筆成交對應的照片狀態。
+            {viewModel.items.length === 0
+              ? '啟用拍照流程後，這裡會顯示每筆成交對應的照片狀態。'
+              : '可切換其他狀態查看歷史照片紀錄。'}
           </p>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {viewModel.items.map(item => {
+          {filteredItems.map(item => {
             const transaction = item.saleId ? transactionBySaleId.get(item.saleId) : undefined;
             const PaymentMethodIcon = transaction
               ? PAYMENT_METHOD_ICONS[transaction.paymentMethod]
@@ -194,7 +253,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">
-                      成交 {item.saleId ?? item.id}
+                      成交紀錄
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {formatDateTime(item.saleCompletedAt)}
@@ -211,7 +270,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
                       <button
                         type="button"
                         onClick={() => setDeleteItem(item)}
-                        className="flex h-9 w-9 items-center justify-center rounded-control text-danger transition-colors hover:bg-status-danger-bg focus-visible:ring-2 focus-visible:ring-danger"
+                        className="flex h-11 w-11 items-center justify-center rounded-control text-danger transition-colors hover:bg-status-danger-bg focus-visible:ring-2 focus-visible:ring-danger"
                         aria-label="刪除成交照片"
                         title="刪除成交照片"
                       >

@@ -107,9 +107,9 @@ export function TransactionWorkspace({
     <section className="mb-6 overflow-hidden rounded-card bg-atelier-paper shadow-atelier-lift">
       <div className="flex items-start justify-between gap-3 bg-atelier-apricot-soft/65 px-4 py-4 sm:px-5">
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-atelier-clay">現場收款</p>
+          <p className="text-xs font-semibold text-atelier-ink">現場收款</p>
           <h2 className="mt-1 text-lg font-semibold text-atelier-ink">把這筆交易收好</h2>
-          <p className="mt-1 text-xs text-atelier-muted">成交後會先安全留在這台裝置</p>
+          <p className="mt-1 text-xs text-foreground">成交後會先安全留在這台裝置</p>
         </div>
         <button
           type="button"

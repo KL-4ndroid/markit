@@ -5,13 +5,15 @@ import { X, Clock } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Event, InteractionRecordedPayload } from '@/types/db';
 import { getInteractionType } from '@/lib/events/event-read-model';
+import type { InteractionButton } from '@/lib/interaction-buttons-store';
+import { InteractionRoleIcon } from '@/components/interactions/InteractionRoleIcon';
 
 interface InteractionDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   interactionType: string;
   label: string;
-  emoji: string;
+  role: InteractionButton['role'];
   events: Event<InteractionRecordedPayload>[];
 }
 
@@ -24,7 +26,7 @@ export function InteractionDetailModal({
   onClose,
   interactionType,
   label,
-  emoji,
+  role,
   events,
 }: InteractionDetailModalProps) {
   // 過濾出該類型的互動事件，並按時間排序（最新的在前）
@@ -93,15 +95,19 @@ export function InteractionDetailModal({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              <div className="text-3xl">{emoji}</div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-control bg-primary/10 text-primary">
+                <InteractionRoleIcon role={role} className="h-5 w-5" />
+              </div>
               <div>
                 <DialogTitle className="text-lg font-medium text-foreground">{label}</DialogTitle>
                 <p className="text-sm text-muted-foreground">共 {filteredEvents.length} 次互動</p>
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="flex h-11 w-11 items-center justify-center rounded-control text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+              aria-label="關閉互動詳情"
             >
               <X className="w-5 h-5" />
             </button>
@@ -111,7 +117,7 @@ export function InteractionDetailModal({
           <div className="flex-1 overflow-y-auto p-6">
             {filteredEvents.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-4xl mb-3 opacity-30">{emoji}</div>
+                <InteractionRoleIcon role={role} className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
                 <p className="text-muted-foreground">尚無互動記錄</p>
               </div>
             ) : (
@@ -159,6 +165,7 @@ export function InteractionDetailModal({
           {/* Footer */}
           <div className="p-6 border-t border-gray-100">
             <button
+              type="button"
               onClick={onClose}
               className="w-full bg-primary text-white px-4 py-3 rounded-2xl hover:bg-primary/85 transition-colors"
             >

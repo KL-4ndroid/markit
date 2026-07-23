@@ -101,8 +101,8 @@ runTest('checklist panel calls create/toggle/update/delete service functions', (
   assert.match(checklistPanelSource, /const trimmedText = text\.trim\(\)/);
   assert.match(checklistPanelSource, /const trimmedText = editingText\.trim\(\)/);
   assert.match(checklistPanelSource, /resetEditing/);
-  assert.match(checklistPanelSource, /載入 checklist 中/);
-  assert.match(checklistPanelSource, /尚無 checklist/);
+  assert.match(checklistPanelSource, /載入現場待辦中/);
+  assert.match(checklistPanelSource, /尚無現場待辦/);
   assert.match(checklistPanelSource, /<Check className="h-3\.5 w-3\.5" \/>/);
   assert.doesNotMatch(checklistPanelSource, /if \(!canManage && items\.length === 0\) return null/);
   assert.doesNotMatch(checklistPanelSource, /staffRole|isOwner|useUserRole/);
