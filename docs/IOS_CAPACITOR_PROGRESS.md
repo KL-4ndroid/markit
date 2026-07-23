@@ -2,14 +2,15 @@
 
 ## Current Phase
 
-Phase 2 / Backend API boundary
+Phase 2 / Backend API boundary (paused)
 
 ## Status
 
-IN PROGRESS - Gate 1 remains passed. The Phase 2 BFF is deployed on Vercel, the server-only environment configuration and migrations 057/058/059 are reported complete, the production health/CORS/invalid-token smoke passes, and the real post-cutover role, upload, read, retry, and concurrent lease/idempotency paths pass. Narrow same-attempt R2 failure compensation is implemented and verified locally but is not deployed or live fault-injected. Gate 2 remains not passed pending deployed storage-failure compensation and remote cleanup evidence.
+PAUSED BY PRODUCT PRIORITY - On 2026-07-22 the user paused the Capacitor workstream until the Web product workflow is complete. Gate 1 remains passed. Phase 2 keeps its verified BFF, API, CORS, role, upload, read, retry, and lease/idempotency evidence, but Gate 2 remains not passed pending deployed storage-failure compensation and remote cleanup evidence. No Capacitor packages or native projects are authorized during the pause. Web-first work must follow `docs/CROSS_PLATFORM_VIBE_CODING_GUARDRAILS.md` so future iOS and Android delivery does not require a broad rewrite.
 
 ## Decisions
 
+- On 2026-07-22 the user paused the Capacitor series of tasks to prioritize completing the Web workflow. Web will emphasize data presentation and historical review, while all new work must preserve a shared, platform-neutral core for future iOS and Android Capacitor applications.
 - The user authorized direct implementation on 2026-07-16, with work pausing only for material product decisions, external credentials, or manual actions.
 - The user confirmed on 2026-07-17 that the production Web application is deployed on Vercel and authorized reusing that Vercel deployment for the BFF/API routes.
 - The production Web/API origin is confirmed as `https://markit-app-mocha.vercel.app`.
@@ -130,4 +131,4 @@ IN PROGRESS - Gate 1 remains passed. The Phase 2 BFF is deployed on Vercel, the 
 
 ## Next Authorized Slice
 
-None — waiting for approval to either (a) switch only the file-selection/upload portion to the already authenticated Chrome session, or (b) let the user manually choose `public/logo.png` in the in-app browser after the seven exact-scope variables are re-enabled. After that decision, execute the thumbnail/finalize compensation probes, prove physical R2 deletion and metadata/local-payload behavior, remove every temporary variable, redeploy safely, and perform the normal retry. The broader batch/retention cleanup executor, multi-tab revoke cleanup, and deletion of the two disposable Auth accounts remain separate. Gate 2 stays closed and Phase 3 remains unauthorized.
+None - the Capacitor workstream is paused by product priority. When the user explicitly resumes it, continue with the previously approved Gate 2 compensation evidence: choose the authenticated Chrome or manual in-app-browser file-selection path, execute the thumbnail/finalize probes, prove physical R2 deletion and metadata/local-payload behavior, remove all temporary variables, redeploy safely, and perform the normal retry. Gate 2 stays closed and Phase 3 remains unauthorized until that evidence passes.

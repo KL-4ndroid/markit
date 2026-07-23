@@ -21,6 +21,11 @@ const {
 } = testRequire('../app/api/sales-photo-evidence/image/route') as typeof import(
   '../app/api/sales-photo-evidence/image/route'
 );
+const {
+  OPTIONS: deleteOptions,
+} = testRequire('../app/api/sales-photo-evidence/delete/route') as typeof import(
+  '../app/api/sales-photo-evidence/delete/route'
+);
 
 type TestFn = () => void | Promise<void>;
 const tests: Array<{ name: string; fn: TestFn }> = [];
@@ -55,10 +60,14 @@ async function withCorsEnv(fn: () => Promise<void>): Promise<void> {
 
 console.log('\n=== Sales photo evidence API CORS integration ===');
 
-runTest('upload and image endpoints accept exact Capacitor preflight contracts', async () => {
+runTest('upload image and delete endpoints accept exact Capacitor preflight contracts', async () => {
   await withCorsEnv(async () => {
     const upload = uploadOptions(preflight('https://api.example.test/api/sales-photo-evidence/upload', 'POST'));
     const image = imageOptions(preflight('https://api.example.test/api/sales-photo-evidence/image', 'GET'));
+    const deleteResponse = deleteOptions(preflight(
+      'https://api.example.test/api/sales-photo-evidence/delete',
+      'DELETE'
+    ));
 
     assert.equal(upload.status, 204);
     assert.equal(upload.headers.get('access-control-allow-origin'), CAPACITOR_ORIGIN);
@@ -66,6 +75,9 @@ runTest('upload and image endpoints accept exact Capacitor preflight contracts',
     assert.equal(image.status, 204);
     assert.equal(image.headers.get('access-control-allow-origin'), CAPACITOR_ORIGIN);
     assert.match(image.headers.get('access-control-allow-methods') ?? '', /GET/);
+    assert.equal(deleteResponse.status, 204);
+    assert.equal(deleteResponse.headers.get('access-control-allow-origin'), CAPACITOR_ORIGIN);
+    assert.match(deleteResponse.headers.get('access-control-allow-methods') ?? '', /DELETE/);
   });
 });
 

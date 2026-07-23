@@ -327,8 +327,8 @@ export function EditMarketForm({
           </FormSectionDisclosure>
 
           <FormSectionDisclosure
-            title="備註"
-            description="主辦規定與現場注意事項"
+            title="主辦／場地備註"
+            description="整場市集共用的固定資訊"
             icon={FileText}
             tone="pink"
           >

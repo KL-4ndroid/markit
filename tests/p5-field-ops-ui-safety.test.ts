@@ -16,6 +16,7 @@ function readProjectFile(path: string): string {
 }
 
 const fieldNotesPanelSource = readProjectFile('components/markets/FieldNotesPanel.tsx');
+const marketReferenceNotePanelSource = readProjectFile('components/markets/MarketReferenceNotePanel.tsx');
 const checklistPanelSource = readProjectFile('components/markets/ChecklistPanel.tsx');
 const marketFieldOpsSectionSource = readProjectFile('components/markets/MarketFieldOpsSection.tsx');
 const staffMarketDetailSource = readProjectFile('components/markets/StaffMarketDetailView.tsx');
@@ -41,15 +42,19 @@ function assertNoForbiddenPanelImports(source: string, label: string): void {
 
 runTest('Field Ops panels remain prop-driven and avoid sensitive layers', () => {
   assertNoForbiddenPanelImports(fieldNotesPanelSource, 'FieldNotesPanel');
+  assertNoForbiddenPanelImports(marketReferenceNotePanelSource, 'MarketReferenceNotePanel');
   assertNoForbiddenPanelImports(checklistPanelSource, 'ChecklistPanel');
 
   assert.match(fieldNotesPanelSource, /interface FieldNotesPanelProps[\s\S]*canManage:\s*boolean/);
+  assert.match(marketReferenceNotePanelSource, /interface MarketReferenceNotePanelProps[\s\S]*note\?:\s*string \| null/);
   assert.match(checklistPanelSource, /interface ChecklistPanelProps[\s\S]*canManage:\s*boolean/);
   assert.match(checklistPanelSource, /interface ChecklistPanelProps[\s\S]*canToggle:\s*boolean/);
 });
 
 runTest('MarketFieldOpsSection only passes capability props to child panels', () => {
   assert.match(marketFieldOpsSectionSource, /canManageFieldNotes:\s*boolean/);
+  assert.match(marketFieldOpsSectionSource, /referenceNote\?:\s*string \| null/);
+  assert.match(marketFieldOpsSectionSource, /<MarketReferenceNotePanel note=\{referenceNote\}/);
   assert.match(marketFieldOpsSectionSource, /canManageChecklist:\s*boolean/);
   assert.match(marketFieldOpsSectionSource, /canToggleChecklistItem:\s*boolean/);
   assert.match(marketFieldOpsSectionSource, /<FieldNotesPanel[\s\S]*canManage=\{canManageFieldNotes\}/);
@@ -62,10 +67,12 @@ runTest('MarketFieldOpsSection only passes capability props to child panels', ()
 
 runTest('Staff and owner market detail keep Field Ops permission wiring explicit', () => {
   assert.match(staffMarketDetailSource, /canManageFieldNotes=\{canManageFieldNotes\}/);
+  assert.match(staffMarketDetailSource, /referenceNote=\{market\.notes\}/);
   assert.match(staffMarketDetailSource, /canManageChecklist=\{canManageChecklist\}/);
   assert.match(staffMarketDetailSource, /canToggleChecklistItem=\{canToggleChecklistItem\}/);
 
   assert.match(ownerMarketDetailSource, /canManageFieldNotes=\{true\}/);
+  assert.match(ownerMarketDetailSource, /referenceNote=\{market\.notes\}/);
   assert.match(ownerMarketDetailSource, /canManageChecklist=\{true\}/);
   assert.match(ownerMarketDetailSource, /canToggleChecklistItem=\{true\}/);
 });
@@ -73,6 +80,7 @@ runTest('Staff and owner market detail keep Field Ops permission wiring explicit
 runTest('Field Ops UI guardrail avoids Gate D production wiring', () => {
   const combinedSource = [
     fieldNotesPanelSource,
+    marketReferenceNotePanelSource,
     checklistPanelSource,
     marketFieldOpsSectionSource,
     staffMarketDetailSource,

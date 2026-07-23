@@ -5,16 +5,22 @@ import {
   Cloud,
   Database,
   MoreHorizontal,
+  Palette,
   Smartphone,
   Users,
   type LucideIcon,
 } from 'lucide-react';
 
-import { SettingsMenuRow, SettingsSection } from '@/components/settings/SettingsMenu';
+import {
+  SettingsActionRow,
+  SettingsMenuRow,
+  SettingsSection,
+} from '@/components/settings/SettingsMenu';
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { THEME_LAB_OPEN_EVENT } from '@/lib/theme-lab';
 import {
   getSettingsDestinationGroups,
   type SettingsDestinationId,
@@ -60,6 +66,15 @@ export default function SettingsPage() {
       {isStaff && <StaffModeNotice compact className="mb-6" />}
 
       <div className="space-y-6">
+        <SettingsSection title="個人化">
+          <SettingsActionRow
+            label="主題實驗室"
+            description="自由調整全 App 配色，並儲存在這台裝置"
+            icon={Palette}
+            onClick={() => window.dispatchEvent(new Event(THEME_LAB_OPEN_EVENT))}
+          />
+        </SettingsSection>
+
         {groups.map((group) => (
           <SettingsSection key={group.id} title={group.label}>
             {group.items.map((item) => (

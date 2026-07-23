@@ -441,6 +441,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
           <div className="mx-auto max-w-3xl">
           <MarketFieldOpsSection
             marketId={marketId}
+            referenceNote={market.notes}
             canManageFieldNotes={canManageFieldNotes}
             canManageChecklist={canManageChecklist}
             canToggleChecklistItem={canToggleChecklistItem}

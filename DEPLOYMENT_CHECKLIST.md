@@ -55,7 +55,7 @@ npm audit --omit=dev
 3. 先檢查遠端 migration history 與實際 schema
 4. 對既有環境只執行已審核且尚未套用的 migration，並確認無錯誤
 
-> 此 repository 的歷史 migration 含重複版本前綴。不得對既有 staging／production 直接執行完整 migration chain 或盲目執行 `supabase db push`。Phase 2 照片邊界必須使用經審核的 `057 -> 058 -> staging smoke -> 059 -> post-cutover smoke` 順序。
+> 此 repository 的歷史 migration 含重複版本前綴。不得對既有 staging／production 直接執行完整 migration chain 或盲目執行 `supabase db push`。Phase 2 照片邊界必須使用經審核的 `057 -> 058 -> staging smoke -> 059 -> post-cutover smoke -> 060 -> owner delete smoke` 順序。
 
 ### Migration 順序
 
@@ -111,6 +111,8 @@ SELECT id, email FROM auth.users LIMIT 5;
 | SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ALLOW_PRODUCTION | `0` → `1` after smoke | Production only |
 | SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ENABLED | `1` only while enabled | Preview first, then Production |
 | SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ALLOW_PRODUCTION | `0` → `1` after smoke | Production only |
+| SALES_PHOTO_EVIDENCE_DELETE_ROUTE_ENABLED | `1` only after migration 060 | Preview first, then Production |
+| SALES_PHOTO_EVIDENCE_DELETE_ROUTE_ALLOW_PRODUCTION | `0` → `1` after owner delete smoke | Production only |
 | R2_ACCOUNT_ID | Vercel secret | Preview/Production, preferably separate |
 | R2_ACCESS_KEY_ID | Vercel secret | Preview/Production, preferably separate |
 | R2_SECRET_ACCESS_KEY | Vercel secret | Preview/Production, preferably separate |
@@ -131,6 +133,8 @@ Phase 2 server-only mutation cutover:
 - [ ] Verify missing/invalid server secret returns retryable 503 before metadata or R2 writes.
 - [ ] Before and after migration 059, verify owner upload/read, active-staff upload, revoked-staff denial, revoke-during-upload finalize denial, and unrelated-user denial against staging.
 - [ ] Verify authenticated direct Supabase INSERT/UPDATE/DELETE is denied after migration 059 while approved BFF RPC writes still succeed.
+- [ ] Apply additive `060_add_sales_photo_evidence_owner_delete_rpcs.sql`; confirm the owner-only prepare/finalize RPCs exist before enabling the delete route.
+- [ ] After migration 060, confirm `service_role` can execute the five approved BFF mutation RPCs but still cannot mutate the table directly.
 - [x] Production API origin confirmed: `https://markit-app-mocha.vercel.app`.
 - [ ] Stable staging origin: pending first persistent branch deployment.
 
@@ -146,6 +150,7 @@ Phase 2 server-only mutation cutover:
 - [ ] Supabase 已套用 additive `058_add_sales_photo_evidence_server_mutation_rpcs.sql`，且 staging RPC smoke 通過
 - [ ] Supabase 僅在 smoke 通過後套用 `059_enforce_sales_photo_evidence_server_mutation_boundary.sql`
 - [ ] 059 後的 BFF smoke 與 direct-write denial 驗證均通過
+- [ ] Supabase 已套用 additive `060_add_sales_photo_evidence_owner_delete_rpcs.sql`，且 owner delete route 尚未在 migration 前啟用
 
 ### 3. 部署
 
@@ -163,7 +168,7 @@ Phase 2 server-only mutation cutover:
 ### 5. Phase 2 BFF 驗證
 
 - [ ] `GET /api/health` 回 200、`Cache-Control: no-store`
-- [ ] `capacitor://localhost` 對 upload/image 的 preflight 回 204
+- [ ] `capacitor://localhost` 對 upload/image/delete 的 preflight 回 204
 - [ ] 非 allowlist origin 在 auth、Supabase、R2 前回 403
 - [ ] 缺少或無效 Bearer token 回 401，且沒有 stack／secret
 - [ ] owner 可讀取自己已上傳的 image／thumbnail
@@ -172,6 +177,8 @@ Phase 2 server-only mutation cutover:
 - [ ] 上傳 MIME signature、單檔 1 MB、合計 1.5 MB、request 2 MB 上限生效
 - [ ] 058 後、059 前的 BFF RPC path staging smoke 通過，且 retry／lease／failure cleanup 行為正確
 - [ ] 059 後重跑相同 BFF smoke，並確認 direct authenticated 及 direct `service_role` table mutation 均被拒絕
+- [ ] owner 刪除成交照片時，縮圖與原圖都從 R2 移除，metadata 設定 `deleted_at`，相簿及最近成交照片同步消失
+- [ ] unrelated user、staff 及已刪除／非 uploaded 照片無法執行刪除，且 object-key 綁定失敗時不接觸 R2
 - [ ] Production 第一次部署保持所有 `*_ALLOW_PRODUCTION=0`
 - [ ] 回滾時先關閉 server production allow flags，再重新建置 client public flags
 

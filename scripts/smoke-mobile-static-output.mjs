@@ -75,6 +75,7 @@ try {
   for (const apiPath of [
     '/api/sales-photo-evidence/upload',
     '/api/sales-photo-evidence/image',
+    '/api/sales-photo-evidence/delete',
     '/api/health',
   ]) {
     const missingApi = await fetch(`${baseUrl}${apiPath}`);

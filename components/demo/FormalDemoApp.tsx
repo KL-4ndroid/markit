@@ -797,7 +797,7 @@ function DemoMarketForm({
         <FormSectionDisclosure title="設備租借" description="桌椅、陽傘與免費提供設定" icon={Package} tone="blue">
           <MarketEquipmentFields idPrefix="demo-market" rentals={{ tableRental: values.tableRental, chairRental: values.chairRental, umbrellaRental: values.umbrellaRental }} free={{ tableFree: values.tableFree, chairFree: values.chairFree, umbrellaFree: values.umbrellaFree }} onRentalChange={updateRental} onFreeChange={updateFree} />
         </FormSectionDisclosure>
-        <FormSectionDisclosure title="備註與成交照片" description="現場提醒與成交後紀錄方式" icon={FileText} tone="pink">
+        <FormSectionDisclosure title="主辦／場地備註與成交照片" description="固定資訊與成交後紀錄方式" icon={FileText} tone="pink">
           <div className="space-y-4">
             <MarketNotesField idPrefix="demo-market" value={values.notes} onChange={value => update('notes', value)} />
             <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-control border border-primary/15 bg-white px-3">
@@ -1038,7 +1038,7 @@ export function FormalDemoApp() {
       revenue: base?.revenue ?? 0,
       deals: base?.deals ?? 0,
       interactions: base?.interactions ?? 0,
-      note: marketFormValues.notes.trim() || '尚未填寫市集備註。',
+      note: marketFormValues.notes.trim() || '尚未填寫主辦／場地備註。',
       dates: [...marketFormValues.dates].sort(),
       checkInTime: marketFormValues.checkInTime,
       operatingStartTime: marketFormValues.operatingStartTime,

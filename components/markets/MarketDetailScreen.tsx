@@ -83,6 +83,7 @@ import {
   listOwnerSalesPhotoEvidenceAlbumMetadataRows,
 } from '@/lib/supabase/sales-photo-evidence';
 import type { SalesPhotoEvidenceAlbumSourceRow } from '@/lib/sales/photo-evidence-owner-album-read-model';
+import { deleteSalesPhotoEvidenceAsOwner } from '@/lib/sales/photo-evidence-owner-delete-client';
 import { findSalesPhotoEvidenceOwnerImageForSale } from '@/lib/sales/photo-evidence-owner-view';
 import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
@@ -929,6 +930,18 @@ export function MarketDetailScreen() {
     }
   }, [isStaff, isRoleLoading, marketId, ownerSalesPhotoEvidenceAlbumOwnerId]);
 
+  const handleDeleteOwnerSalesPhotoEvidence = useCallback(async (evidenceId: string): Promise<boolean> => {
+    const result = await deleteSalesPhotoEvidenceAsOwner(evidenceId);
+    if (!result.ok) {
+      toast.error(result.message);
+      return false;
+    }
+
+    setOwnerSalesPhotoEvidenceRows(rows => rows.filter(row => row.id !== evidenceId));
+    toast.success('成交照片已刪除');
+    return true;
+  }, []);
+
   useEffect(() => {
     void loadOwnerSalesPhotoEvidenceAlbumRows();
   }, [loadOwnerSalesPhotoEvidenceAlbumRows]);
@@ -1712,6 +1725,7 @@ export function MarketDetailScreen() {
           isLoading={isLoadingOwnerSalesPhotoEvidenceAlbum}
           loadError={ownerSalesPhotoEvidenceAlbumLoadError}
           onRefresh={loadOwnerSalesPhotoEvidenceAlbumRows}
+          onDelete={handleDeleteOwnerSalesPhotoEvidence}
           className="mb-6"
         />
         )}
@@ -1739,6 +1753,7 @@ export function MarketDetailScreen() {
         <div className="mx-auto max-w-3xl">
         <MarketFieldOpsSection
           marketId={marketId}
+          referenceNote={market.notes}
           canManageFieldNotes={true}
           canManageChecklist={true}
           canToggleChecklistItem={true}

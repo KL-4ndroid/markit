@@ -3,12 +3,10 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ChevronRight, Info, Smartphone } from 'lucide-react';
-import { useCallback, useEffect, useRef } from 'react';
 
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { useUserRole } from '@/hooks/useUserRole';
 import { APP_METADATA } from '@/lib/app-metadata';
-import { THEME_LAB_OPEN_EVENT } from '@/lib/theme-lab';
 
 const PWAInstallButton = dynamic(
   () => import('@/components/PWAInstallButton').then((module) => module.PWAInstallButton),
@@ -17,24 +15,6 @@ const PWAInstallButton = dynamic(
 
 export default function AppSettingsPage() {
   const { isStaff } = useUserRole();
-  const themeLabTapCount = useRef(0);
-  const themeLabResetTimer = useRef<number | null>(null);
-
-  useEffect(() => () => {
-    if (themeLabResetTimer.current) window.clearTimeout(themeLabResetTimer.current);
-  }, []);
-
-  const handleVersionTap = useCallback(() => {
-    themeLabTapCount.current += 1;
-    if (themeLabResetTimer.current) window.clearTimeout(themeLabResetTimer.current);
-    themeLabResetTimer.current = window.setTimeout(() => {
-      themeLabTapCount.current = 0;
-    }, 3000);
-
-    if (themeLabTapCount.current < 7) return;
-    themeLabTapCount.current = 0;
-    window.dispatchEvent(new Event(THEME_LAB_OPEN_EVENT));
-  }, []);
 
   const versionContent = (
     <>
@@ -61,14 +41,9 @@ export default function AppSettingsPage() {
         <PWAInstallButton />
 
         <section className="rounded-card border border-primary/10 bg-white" aria-labelledby="version-title">
-          <button
-            type="button"
-            onClick={handleVersionTap}
-            aria-label="App 版本資訊"
-            className="flex w-full items-center gap-3 px-4 py-4 text-left"
-          >
+          <div className="flex w-full items-center gap-3 px-4 py-4 text-left">
             {versionContent}
-          </button>
+          </div>
 
           <Link
             href="/about"

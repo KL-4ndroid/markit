@@ -19,6 +19,7 @@ interface SalesPhotoEvidenceOwnerAlbumRouteSectionProps {
   isLoading?: boolean;
   loadError?: string | null;
   onRefresh?: () => void;
+  onDelete?: (evidenceId: string) => Promise<boolean>;
   className?: string;
 }
 
@@ -32,6 +33,7 @@ export function SalesPhotoEvidenceOwnerAlbumRouteSection({
   isLoading = false,
   loadError = null,
   onRefresh,
+  onDelete,
   className,
 }: SalesPhotoEvidenceOwnerAlbumRouteSectionProps) {
   if (!isRoleReady || actorRole !== 'owner' || !ownerId || !marketId) {
@@ -57,6 +59,7 @@ export function SalesPhotoEvidenceOwnerAlbumRouteSection({
       isLoading={isLoading}
       loadError={loadError}
       onRefresh={onRefresh}
+      onDelete={onDelete}
       transactionBySaleId={transactionBySaleId}
       className={className}
     />

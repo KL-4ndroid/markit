@@ -47,9 +47,11 @@ runTest('market detail routes do not call field ops write or read services direc
 });
 
 runTest('shared section is the only component that owns field notes and checklist panel composition', () => {
+  assert.match(marketFieldOpsSectionSource, /import \{ MarketReferenceNotePanel \}/);
   assert.match(marketFieldOpsSectionSource, /import \{ FieldNotesPanel \}/);
   assert.match(marketFieldOpsSectionSource, /import \{ ChecklistPanel \}/);
   assert.match(marketFieldOpsSectionSource, /<FieldNotesPanel[\s\S]*marketId=\{marketId\}[\s\S]*canManage=\{canManageFieldNotes\}/);
+  assert.match(marketFieldOpsSectionSource, /<MarketReferenceNotePanel note=\{referenceNote\}/);
   assert.match(
     marketFieldOpsSectionSource,
     /<ChecklistPanel[\s\S]*marketId=\{marketId\}[\s\S]*canManage=\{canManageChecklist\}[\s\S]*canToggle=\{canToggleChecklistItem\}/
@@ -59,11 +61,11 @@ runTest('shared section is the only component that owns field notes and checklis
 runTest('owner and staff route permissions stay explicit at the section boundary', () => {
   assert.match(
     ownerMarketDetailSource,
-    /<MarketFieldOpsSection[\s\S]*marketId=\{marketId\}[\s\S]*canManageFieldNotes=\{true\}[\s\S]*canManageChecklist=\{true\}[\s\S]*canToggleChecklistItem=\{true\}/
+    /<MarketFieldOpsSection[\s\S]*marketId=\{marketId\}[\s\S]*referenceNote=\{market\.notes\}[\s\S]*canManageFieldNotes=\{true\}[\s\S]*canManageChecklist=\{true\}[\s\S]*canToggleChecklistItem=\{true\}/
   );
   assert.match(
     staffMarketDetailSource,
-    /<MarketFieldOpsSection[\s\S]*marketId=\{marketId\}[\s\S]*canManageFieldNotes=\{canManageFieldNotes\}[\s\S]*canManageChecklist=\{canManageChecklist\}[\s\S]*canToggleChecklistItem=\{canToggleChecklistItem\}/
+    /<MarketFieldOpsSection[\s\S]*marketId=\{marketId\}[\s\S]*referenceNote=\{market\.notes\}[\s\S]*canManageFieldNotes=\{canManageFieldNotes\}[\s\S]*canManageChecklist=\{canManageChecklist\}[\s\S]*canToggleChecklistItem=\{canToggleChecklistItem\}/
   );
 });
 

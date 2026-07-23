@@ -259,7 +259,7 @@ export function ThemeLab({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 id={titleId} className="text-lg font-bold text-gray-950">主題實驗室</h2>
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold tracking-wide text-amber-800">隱藏主題工具</span>
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">個人配色</span>
               {hasOverrides && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-800">本機覆寫中</span>}
             </div>
             <p className="mt-1 text-xs leading-5 text-gray-500">即時調整全 App 色彩；設定只存在這台裝置，不會同步到帳號。</p>

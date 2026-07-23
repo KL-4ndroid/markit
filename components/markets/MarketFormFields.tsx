@@ -433,7 +433,11 @@ export function MarketNotesField({
   onChange,
 }: MarketNotesFieldProps) {
   return (
-    <FormField id={`${idPrefix}-notes`} label="備註" hint="記錄主辦單位規定、進場提醒或其他注意事項。">
+    <FormField
+      id={`${idPrefix}-notes`}
+      label="主辦／場地備註"
+      hint="記錄整場市集共用的固定資訊，例如主辦規定、進場方式、停車資訊與場地限制。"
+    >
       {(fieldProps) => (
         <textarea
           {...fieldProps}
@@ -441,6 +445,7 @@ export function MarketNotesField({
           onChange={event => onChange(event.target.value)}
           rows={4}
           disabled={disabled}
+          placeholder="例如：攤商由東側入口進場；卸貨後請將車輛移至指定停車場。"
           className={`${inputClassName} resize-none py-2.5`}
         />
       )}

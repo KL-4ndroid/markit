@@ -1,0 +1,22 @@
+---
+description: Mandatory Web, iOS, and Android portability guardrail
+alwaysApply: true
+---
+
+# Cross-platform portability
+
+Capacitor implementation is paused while the Web product workflow is completed.
+Do not install Capacitor packages, create native projects, or implement native
+adapters until the user explicitly resumes that workstream.
+
+The product must remain shippable as Web, iOS, and Android from one shared
+business-logic codebase. Web should prioritize data presentation, historical
+review, analytics, comparison, and reporting.
+
+Every feature, fix, and refactor, including vibe coding, must comply with
+`docs/CROSS_PLATFORM_VIBE_CODING_GUARDRAILS.md`.
+
+Browser and device access belongs behind `lib/platform` ports. Shared
+components, hooks, domain code, synchronization code, and data services must not
+acquire browser-only assumptions or import `@capacitor/*`.
+

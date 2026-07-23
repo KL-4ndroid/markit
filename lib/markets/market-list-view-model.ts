@@ -1,4 +1,4 @@
-import type { Market } from '@/types/db';
+import type { Market, MarketStatus } from '@/types/db';
 
 export type MarketListStage = 'active' | 'preparing' | 'ended' | 'cancelled';
 
@@ -6,7 +6,9 @@ export interface MarketListViewItem {
   market: Market;
   stage: MarketListStage;
   stageLabel: string;
+  statusLabel: string;
   displayDate: string;
+  dateRangeLabel: string;
 }
 
 export type MarketListGroups = Record<MarketListStage, MarketListViewItem[]>;
@@ -15,6 +17,16 @@ const STAGE_LABEL: Record<MarketListStage, string> = {
   active: '進行中',
   preparing: '待準備',
   ended: '已結束',
+  cancelled: '已取消',
+};
+
+const MARKET_STATUS_LABEL: Record<MarketStatus, string> = {
+  registered: '已報名',
+  accepted: '已錄取',
+  paid: '已繳費',
+  ongoing: '如期舉行',
+  completed: '已完成',
+  postponed: '已延期',
   cancelled: '已取消',
 };
 
@@ -36,6 +48,37 @@ function minutes(value?: string): number | null {
 function sortedDates(market: Market): string[] {
   if (market.dates && market.dates.length > 0) return [...market.dates].sort();
   return [market.startDate, market.endDate].filter(Boolean).sort();
+}
+
+function dateParts(value: string): [string, string, string] | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return match ? [match[1], match[2], match[3]] : null;
+}
+
+export function formatMarketListDateRange(market: Market): string {
+  const dates = sortedDates(market);
+  const first = dateParts(dates[0] ?? market.startDate);
+  const last = dateParts(dates[dates.length - 1] ?? market.endDate);
+
+  if (!first || !last) {
+    return [market.startDate, market.endDate]
+      .filter(Boolean)
+      .filter((value, index, values) => values.indexOf(value) === index)
+      .join('~');
+  }
+
+  const [startYear, startMonth, startDay] = first;
+  const [endYear, endMonth, endDay] = last;
+  const startLabel = `${startYear}/${Number(startMonth)}/${startDay}`;
+
+  if (first.join('-') === last.join('-')) return startLabel;
+  if (startYear === endYear && startMonth === endMonth) {
+    return `${startLabel}~${endDay}`;
+  }
+  if (startYear === endYear) {
+    return `${startLabel}~${Number(endMonth)}/${endDay}`;
+  }
+  return `${startLabel}~${endYear}/${Number(endMonth)}/${endDay}`;
 }
 
 function occursToday(market: Market, today: string): boolean {
@@ -92,7 +135,9 @@ export function buildMarketListGroups(
       market,
       stage,
       stageLabel: STAGE_LABEL[stage],
+      statusLabel: stage === 'preparing' ? MARKET_STATUS_LABEL[market.status] : STAGE_LABEL[stage],
       displayDate: displayDateForStage(market, stage, today),
+      dateRangeLabel: formatMarketListDateRange(market),
     });
   }
 

@@ -237,10 +237,10 @@ export function SalesPhotoEvidenceFlowDialog({
                     </div>
                     <button
                       type="button"
-                      onClick={onBack}
+                      onClick={state.returnTo === 'closed' ? onBack : onClose}
                       className="mt-3 min-h-11 w-full text-sm font-medium text-muted-foreground hover:text-foreground"
                     >
-                      {state.returnTo === 'closed' ? '稍後補' : '返回待補清單'}
+                      {state.returnTo === 'closed' ? '稍後補' : '忽略'}
                     </button>
                   </div>
                 )}

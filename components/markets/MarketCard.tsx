@@ -235,7 +235,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
     router.push(buildMarketDetailHref(market.id));
   };
 
-  // 點擊備註圖示
+  // 點擊主辦／場地備註圖示
   const handleNotesClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // 阻止事件冒泡，避免觸發卡片點擊
     setShowNotesModal(true);
@@ -253,12 +253,13 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
           isOperating ? 'ring-4 ring-primary ring-opacity-50' : ''
         }`}
       >
-        {/* 備註提醒圖示 - 右上角 */}
+        {/* 主辦／場地備註提醒圖示 - 右上角 */}
         {hasNotes && (
           <button
             onClick={handleNotesClick}
             className="absolute top-4 right-4 bg-soft-yellow hover:bg-[#FFE4A3] text-secondary rounded-full p-2 transition-colors z-10"
-            title="查看備註"
+            title="查看主辦／場地備註"
+            aria-label="查看主辦／場地備註"
           >
             <AlertCircle className="w-5 h-5" />
           </button>
@@ -433,7 +434,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       )*/}
     </div>
 
-    {/* 備註彈窗 - 使用 Headless UI Dialog */}
+    {/* 主辦／場地備註彈窗 */}
     <Dialog open={showNotesModal} onClose={() => setShowNotesModal(false)} className="relative z-50">
       {/* 背景遮罩 */}
       <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
@@ -443,7 +444,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
         <DialogPanel className="bg-white rounded-[1.5rem] p-6 max-w-md w-full shadow-2xl">
           <div className="flex items-center gap-2 mb-4">
             <AlertCircle className="w-5 h-5 text-secondary" />
-            <DialogTitle className="text-lg font-medium text-foreground">市集備註</DialogTitle>
+            <DialogTitle className="text-lg font-medium text-foreground">主辦／場地備註</DialogTitle>
           </div>
           
           <div className="bg-soft-yellow rounded-xl p-4 mb-4">

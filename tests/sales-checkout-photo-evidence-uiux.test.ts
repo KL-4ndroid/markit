@@ -42,6 +42,8 @@ assert.equal((flowDialogSource.match(/<Dialog(?:\s|>)/g) ?? []).length, 1);
 assert.match(flowDialogSource, /DialogPanel/);
 assert.match(flowDialogSource, /state: SaleCompletionFlowState/);
 assert.match(flowDialogSource, /safe-area-inset-bottom/);
+assert.match(flowDialogSource, /state\.returnTo === 'closed' \? '稍後補' : '忽略'/);
+assert.match(flowDialogSource, /state\.returnTo === 'closed' \? onBack : onClose/);
 assert.match(flowHookSource, /reduceSaleCompletionFlow/);
 assert.match(flowHookSource, /pendingCreationFromSalesPhotoEvidenceResult/);
 assert.match(flowHookSource, /補登完成，照片已列入待補/);

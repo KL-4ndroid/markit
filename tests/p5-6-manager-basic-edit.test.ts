@@ -229,7 +229,7 @@ runTest('EditMarketForm manager mode strips owner-only market fields from submit
 runTest('ProductsPage routes manager edits through detail while keeping add owner-only', () => {
   assert.match(productsPageSource, /hasCapability\(roleCapabilities,\s*['"]canEditProductBasic['"]\)/);
   assert.match(productsPageSource, /canEdit=\{canEditProductBasic\}/);
-  assert.match(productsPageSource, /router\.push\(`\/products\/\$\{product\.id\}`\)/);
+  assert.match(productsPageSource, /router\.push\(buildProductDetailHref\(product\.id\)\)/);
   assert.match(productsPageSource, /!\s*isStaffMode\s*&&\s*\(/, 'AddProductForm trigger remains owner-only');
 });
 

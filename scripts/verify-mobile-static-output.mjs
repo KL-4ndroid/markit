@@ -36,6 +36,8 @@ const forbiddenBundlePatterns = [
   { pattern: 'SUPABASE_SERVICE_ROLE_KEY', label: 'legacy Supabase service-role environment name' },
   { pattern: 'sb_secret_', label: 'Supabase server secret key marker' },
   { pattern: 'bff_claim_sale_photo_evidence_upload', label: 'server mutation RPC marker' },
+  { pattern: 'bff_prepare_sale_photo_evidence_delete', label: 'server delete RPC marker' },
+  { pattern: 'bff_finalize_sale_photo_evidence_delete', label: 'server delete RPC marker' },
 ];
 
 const textExtensions = new Set(['.css', '.html', '.js', '.json', '.map', '.txt', '.webmanifest', '.xml']);

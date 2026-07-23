@@ -10,8 +10,11 @@ import {
   RefreshCw,
   ShieldCheck,
   Smartphone,
+  Trash2,
   XCircle,
 } from 'lucide-react';
+import { useState } from 'react';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import type {
   SalesPhotoEvidenceAlbumItem,
   SalesPhotoEvidenceAlbumItemDisplayStatus,
@@ -29,6 +32,7 @@ interface SalesPhotoEvidenceOwnerAlbumShellProps {
   isLoading?: boolean;
   loadError?: string | null;
   onRefresh?: () => void;
+  onDelete?: (evidenceId: string) => Promise<boolean>;
   transactionBySaleId?: ReadonlyMap<string, SalesPhotoEvidenceTransactionSummary>;
   className?: string;
 }
@@ -115,10 +119,18 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
   isLoading = false,
   loadError = null,
   onRefresh,
+  onDelete,
   transactionBySaleId = new Map(),
   className = '',
 }: SalesPhotoEvidenceOwnerAlbumShellProps) {
   const { summary } = viewModel;
+  const [deleteItem, setDeleteItem] = useState<SalesPhotoEvidenceAlbumItem | null>(null);
+
+  const confirmDelete = async () => {
+    if (!deleteItem || !onDelete) return;
+    const deleted = await onDelete(deleteItem.id);
+    if (deleted) setDeleteItem(null);
+  };
 
   return (
     <section className={`rounded-card border border-atelier-line bg-atelier-paper p-4 sm:p-5 ${className}`}>
@@ -188,12 +200,25 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
                       {formatDateTime(item.saleCompletedAt)}
                     </p>
                   </div>
-                  <span
-                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${DISPLAY_STATUS_STYLES[item.displayStatus]}`}
-                  >
-                    {getStatusIcon(item.displayStatus)}
-                    {DISPLAY_STATUS_LABELS[item.displayStatus]}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${DISPLAY_STATUS_STYLES[item.displayStatus]}`}
+                    >
+                      {getStatusIcon(item.displayStatus)}
+                      {DISPLAY_STATUS_LABELS[item.displayStatus]}
+                    </span>
+                    {onDelete && item.displayStatus === 'uploaded_private' && (
+                      <button
+                        type="button"
+                        onClick={() => setDeleteItem(item)}
+                        className="flex h-9 w-9 items-center justify-center rounded-control text-danger transition-colors hover:bg-status-danger-bg focus-visible:ring-2 focus-visible:ring-danger"
+                        aria-label="刪除成交照片"
+                        title="刪除成交照片"
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="aspect-[4/3] overflow-hidden rounded-card bg-atelier-paper">
@@ -239,6 +264,15 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
           })}
         </div>
       )}
+      <ConfirmDialog
+        open={deleteItem !== null}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={confirmDelete}
+        title="刪除成交照片？"
+        description="照片會從成交照片與每日表現的最近成交照片中移除，雲端檔案也會一併刪除。此操作無法復原。"
+        confirmLabel="刪除照片"
+        tone="danger"
+      />
     </section>
   );
 }

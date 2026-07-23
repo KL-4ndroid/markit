@@ -2,7 +2,14 @@
 
 ## Goal
 
-Keep Web/PWA and the future iOS application on one shared React and business-logic codebase. Platform-specific capabilities enter the application through small ports under `lib/platform`.
+Keep Web/PWA and the future iOS and Android applications on one shared React and business-logic codebase. Platform-specific capabilities enter the application through small ports under `lib/platform`.
+
+## Current product direction
+
+- Capacitor implementation is paused while the Web workflow is completed.
+- Web prioritizes data presentation, historical review, analytics, comparison, and reporting.
+- The pause does not permit browser-only assumptions in shared code. Every Web-first change must remain portable to future iOS and Android adapters.
+- The mandatory implementation checklist is `docs/CROSS_PLATFORM_VIBE_CODING_GUARDRAILS.md`.
 
 ## Rules
 
@@ -14,7 +21,7 @@ Keep Web/PWA and the future iOS application on one shared React and business-log
 
 ## First slice: camera selection
 
-The first port owns capability detection and camera/library image selection. Image decoding, compression, policy validation, Dexie persistence, and upload remain in the existing shared sales-photo-evidence pipeline. This prevents Web and iOS from developing different evidence safety behavior.
+The first port owns capability detection and camera/library image selection. Image decoding, compression, policy validation, Dexie persistence, and upload remain in the existing shared sales-photo-evidence pipeline. This prevents Web, iOS, and Android from developing different evidence safety behavior.
 
 ## Next slices
 
@@ -23,4 +30,4 @@ The first port owns capability detection and camera/library image selection. Ima
 3. Network state and foreground/background lifecycle (completed for sync core and relevant online UI).
 4. Secure authentication storage (Supabase async bridge completed; native Keychain implementation pending).
 5. Clipboard, share, external links, and deep links (ports and Web implementations completed; native implementations pending).
-6. Capacitor iOS implementations and native bootstrap.
+6. Capacitor iOS and Android implementations and native bootstrap (paused).

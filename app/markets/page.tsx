@@ -68,16 +68,6 @@ function writeReturnState(state: MarketListReturnState): void {
   }
 }
 
-function formatDateKey(value: string): string {
-  const [year, month, day] = value.split('-').map(Number);
-  return new Intl.DateTimeFormat('zh-TW', {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    weekday: 'short',
-  }).format(new Date(year, month - 1, day));
-}
-
 function stageClasses(stage: MarketListStage): string {
   if (stage === 'active') return 'bg-status-good-bg text-status-good-text';
   if (stage === 'preparing') return 'bg-status-warn-bg text-status-warn-text';
@@ -97,7 +87,7 @@ function MarketListCard({ item, isStaff, onOpen }: MarketListCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${stageClasses(item.stage)}`}>
-            {item.stageLabel}
+            {item.statusLabel}
           </span>
           <h2 className="mt-2 break-words text-base font-semibold text-foreground sm:text-lg">
             {item.market.name}
@@ -109,7 +99,7 @@ function MarketListCard({ item, isStaff, onOpen }: MarketListCardProps) {
       <div className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
         <p className="flex items-center gap-2">
           <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>{formatDateKey(item.displayDate)}</span>
+          <span>{item.dateRangeLabel}</span>
         </p>
         <p className="flex min-w-0 items-center gap-2">
           <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />

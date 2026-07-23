@@ -29,9 +29,9 @@ export type EventType =
   | 'deal_closed'              // 成交
   | 'deal_deleted'             // 刪除成交記錄
   // 現場交接相關事件
-  | 'field_note_created'       // 建立場次備註
-  | 'field_note_updated'       // 更新場次備註
-  | 'field_note_deleted'       // 刪除場次備註
+  | 'field_note_created'       // 建立現場交接筆記
+  | 'field_note_updated'       // 更新現場交接筆記
+  | 'field_note_deleted'       // 刪除現場交接筆記
   | 'checklist_item_created'   // 建立場次待辦
   | 'checklist_item_updated'   // 更新場次待辦
   | 'checklist_item_deleted'   // 刪除場次待辦
@@ -143,8 +143,8 @@ export interface Market {
   totalInteractions?: number;  // 總互動數
   totalDeals?: number;         // 總成交數
   
-  // 備註
-  notes?: string;              // 備註
+  // 整場市集共用的固定資訊
+  notes?: string;              // 主辦／場地備註
   
   // 時間戳
   createdAt: number;           // 建立時間

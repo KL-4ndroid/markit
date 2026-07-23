@@ -68,6 +68,7 @@ if (healthBody?.ok !== true || healthBody?.status !== 'healthy') {
 
 await assertPreflight('/api/sales-photo-evidence/upload', 'POST');
 await assertPreflight('/api/sales-photo-evidence/image', 'GET');
+await assertPreflight('/api/sales-photo-evidence/delete', 'DELETE');
 
 const denied = await request('/api/health', {
   headers: { Origin: deniedOrigin },

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildMarketListGroups,
+  formatMarketListDateRange,
   getMarketListActionLabel,
 } from '../lib/markets/market-list-view-model';
 import type { Market } from '../types/db';
@@ -34,6 +35,35 @@ assert.deepEqual(groups.preparing.map(item => item.market.id), ['prepare']);
 assert.deepEqual(groups.ended.map(item => item.market.id), ['ended']);
 assert.deepEqual(groups.cancelled.map(item => item.market.id), ['cancelled']);
 assert.equal(groups.preparing[0].displayDate, '2026-07-18');
+assert.equal(groups.preparing[0].statusLabel, '如期舉行');
+assert.equal(groups.active[0].statusLabel, '進行中');
+
+const preparingStatuses = buildMarketListGroups([
+  market({ id: 'registered', status: 'registered', startDate: '2026-07-20', endDate: '2026-07-20' }),
+  market({ id: 'accepted', status: 'accepted', startDate: '2026-07-21', endDate: '2026-07-21' }),
+  market({ id: 'paid', status: 'paid', startDate: '2026-07-22', endDate: '2026-07-22' }),
+  market({ id: 'postponed', status: 'postponed', startDate: '2026-07-23', endDate: '2026-07-23' }),
+], new Date(2026, 6, 15, 12, 0));
+assert.deepEqual(
+  preparingStatuses.preparing.map(item => item.statusLabel),
+  ['已報名', '已錄取', '已繳費', '已延期']
+);
+
+assert.equal(formatMarketListDateRange(market({
+  startDate: '2026-07-02',
+  endDate: '2026-07-31',
+  dates: ['2026-07-02', '2026-07-18', '2026-07-31'],
+})), '2026/7/02~31');
+assert.equal(formatMarketListDateRange(market({
+  startDate: '2026-07-30',
+  endDate: '2026-08-02',
+  dates: ['2026-07-30', '2026-08-02'],
+})), '2026/7/30~8/02');
+assert.equal(formatMarketListDateRange(market({
+  startDate: '2026-12-31',
+  endDate: '2027-01-02',
+  dates: ['2026-12-31', '2027-01-02'],
+})), '2026/12/31~2027/1/02');
 
 const afterClosing = buildMarketListGroups([
   market({ id: 'closed-today', operatingStartTime: '08:00', operatingEndTime: '11:00' }),
