@@ -46,7 +46,7 @@ runTest('role permission derivation remains fail-closed for loading error and un
 
 runTest('useUserRole exposes derived permissions and does not commit stale async role loads', () => {
   assert.match(useUserRoleSource, /import \{ deriveRolePermissions \}/);
-  assert.match(useUserRoleSource, /const shouldCommitRoleLoad = \(requestId: number, requestUserId: string \| null\)/);
+  assert.match(useUserRoleSource, /const shouldCommitRoleLoad = useCallback\(\(requestId: number, requestUserId: string \| null\)/);
   assert.match(useUserRoleSource, /mountedRef\.current &&[\s\S]*roleRequestIdRef\.current === requestId[\s\S]*currentUserIdRef\.current === requestUserId/);
   assert.match(useUserRoleSource, /setRoleError\(error instanceof Error \? error : new Error\(String\(error\)\)\)/);
   assert.match(
@@ -68,7 +68,7 @@ runTest('RoleGuard blocks protected routes through shared role refresh state', (
 
 runTest('BottomNavigation uses fail-closed role-aware navigation without disabled owner entries', () => {
   assert.match(bottomNavigationSource, /const \{ isStaff, roleRefreshState \} = useRoleContext\(\)/);
-  assert.match(bottomNavigationSource, /const isRoleUnresolved = roleRefreshState\.stage !== ['"]ready['"]/);
+  assert.match(bottomNavigationSource, /const isRoleUnresolved = !roleRefreshState\.shouldMountProtectedChildren/);
   assert.match(bottomNavigationSource, /getAppNavigationItems\(\{[\s\S]*isStaff,[\s\S]*roleReady:\s*!isRoleUnresolved/);
   assert.match(appNavigationSource, /const STAFF_NAVIGATION_IDS[\s\S]*'today'[\s\S]*'markets'[\s\S]*'products'[\s\S]*'more'/);
   assert.doesNotMatch(appNavigationSource.match(/const STAFF_NAVIGATION_IDS[\s\S]*?\];/)?.[0] ?? '', /'analytics'/);

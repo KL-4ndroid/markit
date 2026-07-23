@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
 import { getProductDetail } from '@/lib/products/detail-service';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 import type { Product, ProductCategory } from '@/types/db';
 
@@ -50,7 +50,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
     userRole,
     canViewSensitiveData,
     isLoading: isRoleLoading,
-  } = useUserRole();
+  } = useRoleContext();
   const roleCapabilities = deriveRoleCapabilities({
     isOwner,
     staffRole: userRole.staffRole,

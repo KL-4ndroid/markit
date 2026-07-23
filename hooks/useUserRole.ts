@@ -11,11 +11,12 @@
  *           殘留 stale userRole state
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { deriveRolePermissions } from '@/lib/permissions/role-fail-closed';
 import type { StaffRole } from '@/types/staff';
+import type { RoleRefreshReason } from '@/lib/permissions/role-refresh-state';
 
 export interface UserRole {
   isStaff: boolean;
@@ -156,6 +157,7 @@ export function clearRoleCache(): void {
 
 export function useUserRole() {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
 
   // ✅ 優化：初始化時先從緩存讀取，避免閃爍
   const [userRole, setUserRole] = useState<UserRole>(() => {
@@ -180,23 +182,26 @@ export function useUserRole() {
   const [isLoading, setIsLoading] = useState(true);
   // ✅ C2.28：明確追蹤角色查詢錯誤，確保 fail-closed 行為
   const [roleError, setRoleError] = useState<Error | null>(null);
+  const [refreshReason, setRefreshReason] = useState<RoleRefreshReason>('initial');
 
   // ✅ P5-4b：防止重複 revalidate（連續 invalidateRoleCache dispatch 時）
   // loadUserRole finally 區塊會釋放此旗標
   const revalidationInFlightRef = useRef(false);
   const mountedRef = useRef(false);
   const roleRequestIdRef = useRef(0);
-  const currentUserIdRef = useRef<string | null>(user?.id ?? null);
+  const currentUserIdRef = useRef<string | null>(userId);
+  const resolvedUserIdRef = useRef<string | null>(resolvedUserId);
 
-  currentUserIdRef.current = user?.id ?? null;
+  currentUserIdRef.current = userId;
+  resolvedUserIdRef.current = resolvedUserId;
 
-  const shouldCommitRoleLoad = (requestId: number, requestUserId: string | null): boolean => {
+  const shouldCommitRoleLoad = useCallback((requestId: number, requestUserId: string | null): boolean => {
     return (
       mountedRef.current &&
       roleRequestIdRef.current === requestId &&
       currentUserIdRef.current === requestUserId
     );
-  };
+  }, []);
 
   /**
    * ✅ P5-4b：抽出 loadUserRole 為 stable function
@@ -212,18 +217,21 @@ export function useUserRole() {
    * - fail-closed catch 不變
    * - 寫 cache 行為不變
    */
-  const loadUserRole = async (requestUser = user): Promise<void> => {
+  const loadUserRole = useCallback(async (
+    requestUserId: string | null,
+    reason: RoleRefreshReason,
+  ): Promise<void> => {
     const requestId = ++roleRequestIdRef.current;
-    const requestUserId = requestUser?.id ?? null;
     revalidationInFlightRef.current = true;
 
     // ✅ 如果沒有用戶,立即清除緩存並返回
-    if (!requestUser) {
+    if (!requestUserId) {
       clearRoleCache();
       if (shouldCommitRoleLoad(requestId, requestUserId)) {
         setUserRole({ isStaff: false });
         setResolvedUserId(null);
         setRoleError(null);
+        setRefreshReason(reason);
         setIsLoading(false);
         revalidationInFlightRef.current = false;
       }
@@ -234,13 +242,14 @@ export function useUserRole() {
       if (shouldCommitRoleLoad(requestId, requestUserId)) {
         setIsLoading(true);
         setRoleError(null);
+        setRefreshReason(reason);
       }
 
       // 查詢是否為員工
       const { data, error } = await supabase
         .from('staff_relationships')
         .select('owner_id, permissions, role')
-        .eq('staff_id', requestUser.id)
+        .eq('staff_id', requestUserId)
         .eq('status', 'active')
         .order('updated_at', { ascending: false })
         .order('created_at', { ascending: false })
@@ -270,17 +279,17 @@ export function useUserRole() {
         };
 
         setUserRole(role);
-        setResolvedUserId(requestUser.id);
+        setResolvedUserId(requestUserId);
         // ✅ 保存到緩存
-        setCachedRole(requestUser.id, role);
+        setCachedRole(requestUserId, role);
       } else {
         // 是老闆
         const role: UserRole = { isStaff: false, staffRole: null };
 
         setUserRole(role);
-        setResolvedUserId(requestUser.id);
+        setResolvedUserId(requestUserId);
         // ✅ 保存到緩存
-        setCachedRole(requestUser.id, role);
+        setCachedRole(requestUserId, role);
       }
     } catch (error: any) {
       if (!shouldCommitRoleLoad(requestId, requestUserId)) return;
@@ -289,8 +298,10 @@ export function useUserRole() {
       // ✅ C2.28：fail-closed —— 記錄錯誤並保持 userRole 為員工預設值
       // （不再 fallback 成 owner）讓 isOwner / canEdit / canViewSensitiveData 全部回傳 false
       setRoleError(error instanceof Error ? error : new Error(String(error)));
-      setUserRole({ isStaff: true, staffRole: null, permissions: { can_view: false, can_edit: false } });
-      setResolvedUserId(requestUser.id);
+      if (resolvedUserIdRef.current !== requestUserId) {
+        setUserRole({ isStaff: true, staffRole: null, permissions: { can_view: false, can_edit: false } });
+        setResolvedUserId(requestUserId);
+      }
     } finally {
       if (shouldCommitRoleLoad(requestId, requestUserId)) {
         setIsLoading(false);
@@ -298,7 +309,12 @@ export function useUserRole() {
         revalidationInFlightRef.current = false;
       }
     }
-  };
+  }, [shouldCommitRoleLoad]);
+
+  const revalidate = useCallback((reason: RoleRefreshReason = 'manual_retry'): void => {
+    if (revalidationInFlightRef.current) return;
+    void loadUserRole(userId, reason);
+  }, [loadUserRole, userId]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -308,12 +324,11 @@ export function useUserRole() {
     };
   }, []);
 
-  // ✅ 既有 user 變化時重新查（user 從 null 變 user / 切換帳號）
+  // Only identity changes trigger this query. Supabase may emit a fresh user
+  // object when the same session is reconfirmed after tab focus.
   useEffect(() => {
-    void loadUserRole(user);
-    // 依賴 [user]：user 變化時自動重查
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    void loadUserRole(userId, userId ? 'identity_changed' : 'initial');
+  }, [loadUserRole, userId]);
 
   // ✅ P5-4b：監聽 role cache invalidation event
   //
@@ -340,14 +355,11 @@ export function useUserRole() {
       if (revalidationInFlightRef.current) {
         return;
       }
-      void loadUserRole(user);
+      revalidate('role_invalidated');
     });
 
     return unsubscribe;
-    // 依賴 [user]：user 變化時重新註冊 listener
-    // （loadUserRole 透過 closure 讀取最新 user，無需加入依賴）
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [revalidate]);
 
   // ✅ C2.28：fail-closed 權限計算（loading / error / 未登入 → 全部鎖住）
   const permissions = deriveRolePermissions({ userRole, isLoading, roleError });
@@ -356,6 +368,8 @@ export function useUserRole() {
     userRole,
     isLoading,
     roleError, // ✅ C2.28：新增錯誤狀態出口
+    refreshReason,
+    revalidate,
     resolvedUserId,
     isStaff: userRole.isStaff, // ✅ 保留向後相容：語意維持「從 userRole 讀」
     isOwner: permissions.isOwner,

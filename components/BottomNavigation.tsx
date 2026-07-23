@@ -35,7 +35,7 @@ function ProtectedBottomNavigation() {
   const [isNavVisible, setIsNavVisible] = useState(true);
   const { isStaff, roleRefreshState } = useRoleContext();
 
-  const isRoleUnresolved = roleRefreshState.stage !== 'ready';
+  const isRoleUnresolved = !roleRefreshState.shouldMountProtectedChildren;
   const navItems = getAppNavigationItems({
     isStaff,
     roleReady: !isRoleUnresolved,

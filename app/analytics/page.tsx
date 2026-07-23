@@ -26,7 +26,7 @@ import { StateView } from '@/components/ui/StateView';
 import { Tabs, type TabItem } from '@/components/ui/Tabs';
 import { useAnalyticsCache, useAnalyticsCacheInvalidation } from '@/hooks/useAnalyticsCache';
 import { SyncStatus } from '@/hooks/useSync';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { db } from '@/lib/db';
 import { useMarkets, useProducts } from '@/lib/db/hooks';
 import {
@@ -111,7 +111,7 @@ function hasTopProductData(result: TopProductsResult): boolean {
 export default function AnalyticsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { isStaff, isLoading: isRoleLoading, roleError } = useUserRole();
+  const { isStaff, isLoading: isRoleLoading, roleError } = useRoleContext();
   const { status: syncStatus, pendingCount } = useSyncContext();
   const { clearAllCache } = useAnalyticsCache();
   const [dateRange, setDateRange] = useState<AnalyticsRange>('all');

@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { useSyncContext } from '@/lib/sync-context';
 import { 
   sanitizeObject, 
@@ -17,7 +17,7 @@ import {
 
 // 範例：產品列表組件
 export function ProductListExample() {
-  const { userRole } = useUserRole();
+  const { userRole } = useRoleContext();
   const { isDataSanitized } = useSyncContext();
 
   // 模擬產品資料
@@ -84,7 +84,7 @@ export function ProductListExample() {
 
 // 範例：統計資料組件
 export function StatsExample() {
-  const { userRole } = useUserRole();
+  const { userRole } = useRoleContext();
 
   // 模擬統計資料
   const stats = {

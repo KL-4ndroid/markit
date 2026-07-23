@@ -38,6 +38,8 @@ runTest('initial unknown role blocks protected children and fails closed', () =>
   assert.equal(state.shouldMountProtectedChildren, false);
   assert.equal(state.shouldShowBlockingFallback, true);
   assert.equal(state.isRefreshing, false);
+  assert.equal(state.isAuthorizationFresh, false);
+  assert.equal(state.needsRetry, false);
   assert.equal(state.permissions.isOwner, false);
   assert.equal(state.permissions.canEdit, false);
   assert.equal(state.permissions.canViewSensitiveData, false);
@@ -51,13 +53,15 @@ runTest('background refresh keeps children mounted but disables privileged behav
       isLoading: true,
       roleError: null,
     },
-    { hasUsablePreviousRole: true },
+    { hasUsablePreviousRole: true, refreshReason: 'app_resumed' },
   );
 
   assert.equal(state.stage, 'background_refreshing');
   assert.equal(state.shouldMountProtectedChildren, true);
   assert.equal(state.shouldShowBlockingFallback, false);
   assert.equal(state.isRefreshing, true);
+  assert.equal(state.isAuthorizationFresh, false);
+  assert.equal(state.refreshReason, 'app_resumed');
   assert.equal(state.permissions.isOwner, false);
   assert.equal(state.permissions.canEdit, false);
   assert.equal(state.permissions.canViewSensitiveData, false);
@@ -75,6 +79,7 @@ runTest('ready owner restores owner permissions and owner sync info level', () =
   assert.equal(state.shouldMountProtectedChildren, true);
   assert.equal(state.shouldShowBlockingFallback, false);
   assert.equal(state.isRefreshing, false);
+  assert.equal(state.isAuthorizationFresh, true);
   assert.equal(state.permissions.isOwner, true);
   assert.equal(state.permissions.canEdit, true);
   assert.equal(state.permissions.canViewSensitiveData, true);
@@ -96,22 +101,41 @@ runTest('ready staff remains staff-scoped and sanitized', () => {
   assert.equal(state.syncInfoLevel, 2);
 });
 
-runTest('refresh error blocks protected children and fails closed', () => {
+runTest('background refresh error keeps children mounted and fails closed', () => {
   const state = deriveRoleRefreshState(
     {
       userRole: ownerRole,
       isLoading: false,
       roleError: new Error('role refresh failed'),
     },
-    { hasUsablePreviousRole: true },
+    { hasUsablePreviousRole: true, refreshReason: 'app_resumed' },
   );
+
+  assert.equal(state.stage, 'background_refresh_failed');
+  assert.equal(state.shouldMountProtectedChildren, true);
+  assert.equal(state.shouldShowBlockingFallback, false);
+  assert.equal(state.isAuthorizationFresh, false);
+  assert.equal(state.needsRetry, true);
+  assert.equal(state.refreshReason, 'app_resumed');
+  assert.equal(state.permissions.isOwner, false);
+  assert.equal(state.permissions.canEdit, false);
+  assert.equal(state.permissions.canViewSensitiveData, false);
+  assert.equal(state.syncInfoLevel, 0);
+});
+
+runTest('initial role error still blocks protected children', () => {
+  const state = deriveRoleRefreshState({
+    userRole: null,
+    isLoading: false,
+    roleError: new Error('initial role load failed'),
+  });
 
   assert.equal(state.stage, 'blocked');
   assert.equal(state.shouldMountProtectedChildren, false);
   assert.equal(state.shouldShowBlockingFallback, true);
+  assert.equal(state.isAuthorizationFresh, false);
+  assert.equal(state.needsRetry, true);
   assert.equal(state.permissions.isOwner, false);
-  assert.equal(state.permissions.canEdit, false);
-  assert.equal(state.permissions.canViewSensitiveData, false);
   assert.equal(state.syncInfoLevel, 0);
 });
 

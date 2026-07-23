@@ -63,7 +63,7 @@ import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvi
 import { SalesPhotoEvidenceOwnerAlbumRouteSection } from '@/components/markets/SalesPhotoEvidenceOwnerAlbumRouteSection';
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { useSalesPhotoEvidenceFlow } from '@/hooks/useSalesPhotoEvidenceFlow';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
@@ -102,7 +102,7 @@ export function MarketDetailScreen() {
   const searchParams = useSearchParams();
   const marketId = normalizeMarketRouteId(searchParams.get('id') ?? undefined) ?? ''; // UUID 字符串，不需要 parseInt
   const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
-  const { isStaff, canViewSensitiveData, isLoading: isRoleLoading } = useUserRole(); // ✅ 員工權限檢查
+  const { isStaff, canViewSensitiveData, isLoading: isRoleLoading } = useRoleContext(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 檢查是否已登入
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);

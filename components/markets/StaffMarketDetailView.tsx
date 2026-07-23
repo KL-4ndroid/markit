@@ -69,7 +69,7 @@ import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceN
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { useSalesPhotoEvidenceFlow } from '@/hooks/useSalesPhotoEvidenceFlow';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useMarketStatsFromProjection } from '@/lib/db/hooks';
@@ -98,7 +98,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
   const router = useRouter();
   const marketId = market.id!;
   const { user } = useAuth();
-  const { userRole, isOwner, isLoading: isRoleLoading } = useUserRole();
+  const { userRole, isOwner, isLoading: isRoleLoading } = useRoleContext();
   const roleCapabilities = deriveRoleCapabilities({
     isOwner,
     staffRole: userRole.staffRole,

@@ -159,6 +159,7 @@ tsx tests/sync-reconciliation.test.ts
 tsx tests/conflict-sanitization.test.ts
 tsx tests/role-fail-closed.test.ts
 tsx tests/role-refresh-state.test.ts
+tsx tests/auth-focus-continuity.test.ts
 tsx tests/role-provider-r1.test.ts
 tsx tests/app-navigation.test.ts
 tsx tests/ui-primitives.test.ts

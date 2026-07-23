@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SyncStatus } from '@/hooks/useSync';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { isSignOutBlockedByLocalChanges } from '@/lib/auth/signout-confirmation';
 import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -52,7 +52,7 @@ function getSyncPresentation(status: SyncStatus, isOnline: boolean) {
 
 export function AccountSyncPanel() {
   const { user, signOut, isConfigured } = useAuth();
-  const { userRole, isStaff } = useUserRole();
+  const { userRole, isStaff } = useRoleContext();
   const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSyncContext();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [blockedReport, setBlockedReport] = useState<LocalPendingWriteReport | null>(null);

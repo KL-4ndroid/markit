@@ -37,16 +37,16 @@ const roleFreshnessSource = readFileSync(
   'utf-8'
 );
 
-runTest('StaffMarketDetailView consumes useUserRole and role-capabilities', () => {
+runTest('StaffMarketDetailView consumes shared role context and role-capabilities', () => {
   assert.match(
     staffViewSource,
-    /import\s*\{\s*useUserRole\s*\}\s*from\s*['"]@\/hooks\/useUserRole['"]/
+    /import\s*\{\s*useRoleContext\s*\}\s*from\s*['"]@\/lib\/role-context['"]/
   );
   assert.match(
     staffViewSource,
     /import\s*\{[^}]*deriveRoleCapabilities[^}]*hasCapability[^}]*\}\s*from\s*['"]@\/lib\/permissions\/role-capabilities['"]/
   );
-  assert.match(staffViewSource, /const\s*\{\s*userRole,\s*isOwner,\s*isLoading:\s*isRoleLoading\s*\}\s*=\s*useUserRole\(\)/);
+  assert.match(staffViewSource, /const\s*\{\s*userRole,\s*isOwner,\s*isLoading:\s*isRoleLoading\s*\}\s*=\s*useRoleContext\(\)/);
 });
 
 runTest('staff interaction recorder is gated by canRecordInteraction', () => {

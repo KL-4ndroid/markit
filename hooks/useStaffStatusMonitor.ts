@@ -49,7 +49,8 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { useUserRole, invalidateRoleCache } from '@/hooks/useUserRole';
+import { invalidateRoleCache } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { clearStaffLocalProjections } from '@/lib/db/clear-user-data';
 import { guardedAuthenticatedCacheReset } from '@/lib/sync/authenticated-cache-reset-guard';
 import { dispatchAuthCacheBlockedEvent } from '@/lib/auth/auth-cache-blocked-events';
@@ -350,7 +351,7 @@ interface StaffStatusMonitorOptions {
 export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
   const { enabled = true, pollIntervalMs = DEFAULT_STAFF_POLL_INTERVAL_MS } = options;
   const { user } = useAuth();
-  const { isStaff, userRole } = useUserRole();
+  const { isStaff, userRole } = useRoleContext();
 
   // 防止 React Strict Mode 雙重掛載導致重複清理
   const cleanupInFlightRef = useRef(false);
@@ -363,6 +364,7 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
 
     let isMounted = true;
     let pollInterval: ReturnType<typeof setInterval> | null = null;
+    let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
     /**
      * 員工被撤銷時的清理流程
@@ -525,7 +527,7 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
      *
      * 走 (staff_id, status) 複合索引，極輕量
      */
-    const checkStaffStatus = async () => {
+    const checkStaffStatus = async (revalidateAfterCheck = false) => {
       if (!isMounted) return;
 
       try {
@@ -576,7 +578,7 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
         }
 
         // 3. 處理 role 變化
-        handleRoleChangeDetection({
+        const roleChange = handleRoleChangeDetection({
           userId: user.id,
           ownerId: userRole.ownerId!,
           previousRole,
@@ -587,6 +589,26 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
             void handleDowngrade(from, to);
           },
         });
+
+        const previousInfoLevel = cached?.infoLevel;
+        const infoLevelChanged =
+          previousInfoLevel != null &&
+          currentInfoLevel != null &&
+          previousInfoLevel !== currentInfoLevel;
+
+        if (roleChange === 'upgrade' || (infoLevelChanged && currentInfoLevel > previousInfoLevel)) {
+          invalidateRoleCache();
+        } else if (
+          roleChange === 'same' &&
+          infoLevelChanged &&
+          currentInfoLevel < previousInfoLevel &&
+          previousRole &&
+          currentRole
+        ) {
+          void handleDowngrade(previousRole, currentRole);
+        } else if (revalidateAfterCheck && roleChange !== 'downgrade') {
+          invalidateRoleCache();
+        }
       } catch (error) {
         console.error('[StaffStatusMonitor] Polling 發生錯誤:', error);
       }
@@ -597,6 +619,25 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
       void checkStaffStatus();
     }, pollIntervalMs);
 
+    // Realtime is the fast path while the app is active. Polling and the
+    // foreground role revalidation remain the recovery paths for missed events,
+    // offline periods, or projects where this table is not in the publication.
+    realtimeChannel = supabase
+      .channel(`staff-status-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'staff_relationships',
+          filter: `staff_id=eq.${user.id}`,
+        },
+        () => {
+          void checkStaffStatus(true);
+        },
+      )
+      .subscribe();
+
     // 立即跑一次 polling（不等 pollIntervalMs）
     // 處理「掛載時剛好錯過 cache 過期事件」的情境
     void checkStaffStatus();
@@ -605,6 +646,9 @@ export function useStaffStatusMonitor(options: StaffStatusMonitorOptions = {}) {
       isMounted = false;
       if (pollInterval) {
         clearInterval(pollInterval);
+      }
+      if (realtimeChannel) {
+        void supabase.removeChannel(realtimeChannel);
       }
     };
   }, [enabled, user, isStaff, userRole.ownerId, userRole.staffRole, pollIntervalMs]);

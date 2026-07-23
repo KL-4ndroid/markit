@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronRight, Info, Smartphone } from 'lucide-react';
 
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { APP_METADATA } from '@/lib/app-metadata';
 
 const PWAInstallButton = dynamic(
@@ -14,7 +14,7 @@ const PWAInstallButton = dynamic(
 );
 
 export default function AppSettingsPage() {
-  const { isStaff } = useUserRole();
+  const { isStaff } = useRoleContext();
 
   const versionContent = (
     <>

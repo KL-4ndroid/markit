@@ -4,6 +4,9 @@ import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode }
 import { useUserRole, type UserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { deriveRoleRefreshState, type RoleRefreshState } from '@/lib/permissions/role-refresh-state';
+import { getLifecyclePort } from '@/lib/platform/lifecycle-capability';
+
+const FOREGROUND_ROLE_REVALIDATION_THROTTLE_MS = 5_000;
 
 export interface RoleContextValue {
   userRole: UserRole;
@@ -14,6 +17,7 @@ export interface RoleContextValue {
   canEdit: boolean;
   canViewSensitiveData: boolean;
   roleRefreshState: RoleRefreshState;
+  refreshRole: () => void;
 }
 
 const RoleContext = createContext<RoleContextValue | null>(null);
@@ -21,10 +25,12 @@ const RoleContext = createContext<RoleContextValue | null>(null);
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const roleState = useUserRole();
+  const revalidateRole = roleState.revalidate;
   const userId = user?.id ?? null;
   const isResolvedForCurrentUser = userId !== null && roleState.resolvedUserId === userId;
   const trackedUserIdRef = useRef<string | null>(userId);
   const hasUsablePreviousRoleRef = useRef(false);
+  const lastForegroundRevalidationAtRef = useRef(0);
 
   if (trackedUserIdRef.current !== userId) {
     trackedUserIdRef.current = userId;
@@ -37,8 +43,18 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       isLoading: roleState.isLoading || (userId !== null && !isResolvedForCurrentUser),
       roleError: roleState.roleError,
     },
-    { hasUsablePreviousRole: hasUsablePreviousRoleRef.current },
-  ), [isResolvedForCurrentUser, roleState.isLoading, roleState.roleError, roleState.userRole, userId]);
+    {
+      hasUsablePreviousRole: hasUsablePreviousRoleRef.current,
+      refreshReason: roleState.refreshReason,
+    },
+  ), [
+    isResolvedForCurrentUser,
+    roleState.isLoading,
+    roleState.refreshReason,
+    roleState.roleError,
+    roleState.userRole,
+    userId,
+  ]);
 
   useEffect(() => {
     if (isResolvedForCurrentUser && !roleState.isLoading && !roleState.roleError && roleState.userRole != null) {
@@ -46,10 +62,29 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
   }, [isResolvedForCurrentUser, roleState.isLoading, roleState.roleError, roleState.userRole, userId]);
 
+  useEffect(() => getLifecyclePort().subscribe(lifecycleState => {
+    if (lifecycleState !== 'active' || !userId) return;
+
+    const now = Date.now();
+    if (now - lastForegroundRevalidationAtRef.current < FOREGROUND_ROLE_REVALIDATION_THROTTLE_MS) {
+      return;
+    }
+
+    lastForegroundRevalidationAtRef.current = now;
+    revalidateRole('app_resumed');
+  }), [revalidateRole, userId]);
+
   const contextValue = useMemo<RoleContextValue>(() => ({
     ...roleState,
+    isLoading: roleRefreshState.shouldShowBlockingFallback,
+    roleError: roleRefreshState.shouldShowBlockingFallback ? roleState.roleError : null,
+    isStaff: roleState.userRole.isStaff,
+    isOwner: userId !== null && !roleState.userRole.isStaff,
+    canEdit: roleRefreshState.permissions.canEdit,
+    canViewSensitiveData: roleRefreshState.permissions.canViewSensitiveData,
     roleRefreshState,
-  }), [roleRefreshState, roleState]);
+    refreshRole: () => revalidateRole('manual_retry'),
+  }), [revalidateRole, roleRefreshState, roleState, userId]);
 
   return (
     <RoleContext.Provider value={contextValue}>

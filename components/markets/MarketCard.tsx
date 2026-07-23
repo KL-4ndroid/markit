@@ -5,7 +5,7 @@ import { Calendar, MapPin, DollarSign, Table, Armchair, Umbrella, Target, Users,
 import type { Market, MarketStatus } from '@/types/db';
 import type { MarketStatsFromProjection } from '@/lib/db/hooks';
 import { formatDate, formatCurrency, formatDateRanges, filterCurrentWeekDates } from '@/lib/utils';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { getShadowClass, getBorderClass } from '@/lib/theme-config';
 import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 import { useState } from 'react';
@@ -40,7 +40,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
   const [showNotesModal, setShowNotesModal] = useState(false);
   
   // ✅ 員工權限檢查
-  const { isStaff, canViewSensitiveData } = useUserRole();
+  const { isStaff, canViewSensitiveData } = useRoleContext();
   
   // 判斷市集營業狀態（根據時間判斷）
   const getOperatingStatus = () => {

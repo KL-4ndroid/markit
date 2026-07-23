@@ -117,10 +117,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setSession(null);
           setLoading(false);
-        } else if (event.data.type === 'SIGNED_IN') {
-          // 其他分頁登入，重新載入頁面以同步狀態
-          console.log('🔄 同步登入：其他分頁已登入，重新載入頁面');
-          window.location.reload();
         }
       };
     } else if (typeof window !== 'undefined') {
@@ -134,8 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
             setSession(null);
             setLoading(false);
-          } else if (data.type === 'SIGNED_IN') {
-            window.location.reload();
           }
         }
       };
@@ -319,25 +313,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
         
-        // 廣播登入事件到其他分頁
-        if (broadcastChannelRef.current) {
-          broadcastChannelRef.current.postMessage({ type: 'SIGNED_IN', timestamp: Date.now() });
-        } else {
-          try {
-            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ type: 'SIGNED_IN', timestamp: Date.now() }));
-            setTimeout(() => localStorage.removeItem(AUTH_STORAGE_KEY), 100);
-          } catch (e) {
-            console.error('廣播登入事件失敗:', e);
-          }
-        }
+        // Supabase already synchronizes sessions across same-origin tabs.
+        // SIGNED_IN can also fire when an existing session is reconfirmed after
+        // tab focus, so broadcasting it as a new login would reload peer tabs.
       }
       
       setSession(session);
-      setUser(session?.user ?? null);
+      setUser(currentUser => {
+        const nextUser = session?.user ?? null;
+        if (event !== 'USER_UPDATED' && currentUser?.id && currentUser.id === nextUser?.id) {
+          return currentUser;
+        }
+        return nextUser;
+      });
       setLoading(false);
       
       // 登入時拉取用戶設定
-      if (event === 'SIGNED_IN' && session?.user) {
+      if (event === 'SIGNED_IN' && session?.user && userRef.current?.id !== session.user.id) {
         syncUserSettingsRef.current(session.user.id);
       }
     });

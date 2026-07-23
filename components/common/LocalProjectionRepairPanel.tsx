@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Calculator, Eye, Lock, RefreshCw, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import {
   repairMarketProjectionsFromEvents,
   type MarketProjectionRepairResult,
@@ -18,7 +18,7 @@ function formatMoney(value: number): string {
 
 export function LocalProjectionRepairPanel() {
   const { user } = useAuth();
-  const { isStaff, isLoading: isRoleLoading } = useUserRole();
+  const { isStaff, isLoading: isRoleLoading } = useRoleContext();
   const [state, setState] = useState<PanelState>('idle');
   const [previewResult, setPreviewResult] = useState<MarketProjectionRepairResult | null>(null);
 

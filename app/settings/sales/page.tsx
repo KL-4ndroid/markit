@@ -6,7 +6,7 @@ import { Camera, ShieldAlert } from 'lucide-react';
 import { InteractionSettingsPanel } from '@/components/settings/InteractionSettingsPanel';
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { StateView } from '@/components/ui/StateView';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 
 const OwnerBrandSettingsCard = dynamic(
   () => import('@/components/settings/OwnerBrandSettingsCard').then((module) => module.OwnerBrandSettingsCard),
@@ -19,7 +19,7 @@ const SalesPhotoEvidenceSettingsCard = dynamic(
 );
 
 export default function SalesSettingsPage() {
-  const { isStaff, isOwner, isLoading } = useUserRole();
+  const { isStaff, isOwner, isLoading } = useRoleContext();
 
   return (
     <SettingsPageShell

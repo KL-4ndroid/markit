@@ -10,7 +10,7 @@ import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StateView } from '@/components/ui/StateView';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { clearLocalAppData } from '@/lib/settings/clear-local-app-data';
 import { getLocalPendingWriteReport, type LocalPendingWriteReport } from '@/lib/sync/local-pending-write-report';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -32,7 +32,7 @@ type ConfirmationKind = 'clear-local' | 'clear-online' | null;
 
 export default function DataSettingsPage() {
   const { user } = useAuth();
-  const { isStaff, isOwner, isLoading } = useUserRole();
+  const { isStaff, isOwner, isLoading } = useRoleContext();
   const [confirmation, setConfirmation] = useState<ConfirmationKind>(null);
   const [localPendingReport, setLocalPendingReport] = useState<LocalPendingWriteReport | null>(null);
 

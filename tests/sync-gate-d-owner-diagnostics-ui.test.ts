@@ -69,7 +69,8 @@ runTest('retry drain wrapper is single-row owner-created checklist toggle only',
 });
 
 runTest('diagnostics panel blocks staff and exposes only owner-confirmed one-row recovery and retry drain', () => {
-  assert.match(panelSource, /useUserRole/);
+  assert.match(panelSource, /useRoleContext/);
+  assert.doesNotMatch(panelSource, /useUserRole\(\)/);
   assert.match(panelSource, /useAuth/);
   assert.match(panelSource, /if \(isStaff\)/);
   assert.match(panelSource, /listOwnerPendingOperationDiagnostics\(user\.id\)/);

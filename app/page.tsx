@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { StateView } from '@/components/ui/StateView';
 import { SyncStatus } from '@/hooks/useSync';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { db } from '@/lib/db';
 import { useMarkets } from '@/lib/db/hooks';
 import {
@@ -197,7 +197,7 @@ function TodayMarketCard({ item, isStaff, onOpen }: TodayMarketCardProps) {
 export default function HomePage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { userRole, isStaff } = useUserRole();
+  const { userRole, isStaff } = useRoleContext();
   const { status, pendingCount, sync } = useSyncContext();
   const [now, setNow] = useState(() => new Date());
   const [ownerBrandName, setOwnerBrandName] = useState('Féria - 出攤筆記');

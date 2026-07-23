@@ -7,11 +7,11 @@ import { ImportSafetyStatusPanel } from '@/components/common/ImportSafetyStatusP
 import { LocalProjectionRepairPanel } from '@/components/common/LocalProjectionRepairPanel';
 import { OwnerRevenueGapRepairPanel } from '@/components/common/OwnerRevenueGapRepairPanel';
 import { OwnerPendingOperationDiagnosticsPanel } from '@/components/common/OwnerPendingOperationDiagnosticsPanel';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 
 export default function RecoveryPage() {
-  const { userRole, isOwner, isLoading: isRoleLoading } = useUserRole();
+  const { userRole, isOwner, isLoading: isRoleLoading } = useRoleContext();
   const roleCapabilities = deriveRoleCapabilities({
     isOwner,
     staffRole: userRole.staffRole,

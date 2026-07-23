@@ -18,7 +18,7 @@ import {
 } from '@/components/settings/SettingsMenu';
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { StaffModeNotice } from '@/components/staff/StaffModeNotice';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { THEME_LAB_OPEN_EVENT } from '@/lib/theme-lab';
 import {
@@ -36,7 +36,7 @@ const DESTINATION_ICONS: Record<SettingsDestinationId, LucideIcon> = {
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const { userRole, isStaff } = useUserRole();
+  const { userRole, isStaff } = useRoleContext();
   const groups = getSettingsDestinationGroups(isStaff);
   const roleLabel = isStaff
     ? userRole.staffRole === 'manager'

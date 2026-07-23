@@ -11,7 +11,7 @@ import { StaffPermissionCard } from '@/components/staff/StaffPermissionCard';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StateView } from '@/components/ui/StateView';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { clearLocalAppData } from '@/lib/settings/clear-local-app-data';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
@@ -30,7 +30,7 @@ const StaffManagement = dynamic(
 
 export default function TeamSettingsPage() {
   const { user } = useAuth();
-  const { userRole, isStaff, isLoading } = useUserRole();
+  const { userRole, isStaff, isLoading } = useRoleContext();
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
 
   const confirmLeaveTeam = async () => {

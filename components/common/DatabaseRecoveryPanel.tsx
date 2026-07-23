@@ -12,7 +12,7 @@ import {
   retryDatabaseRecovery,
   type DatabaseRecoveryStatus,
 } from '@/lib/db/recovery';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { resolveInfoLevel } from '@/lib/permissions/PermissionGate';
 
 async function saveJson(filename: string, content: string): Promise<void> {
@@ -28,7 +28,7 @@ export function DatabaseRecoveryPanel() {
   const [isExporting, setIsExporting] = useState(false);
   const [isRepairing, setIsRepairing] = useState(false);
   const [isRepairingProducts, setIsRepairingProducts] = useState(false);
-  const { userRole } = useUserRole();
+  const { userRole } = useRoleContext();
   const infoLevel = resolveInfoLevel(userRole);
 
   const handleCheck = async () => {

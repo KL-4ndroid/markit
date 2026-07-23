@@ -77,7 +77,7 @@ runTest('R2 and R3 replace RoleGuard and SyncProvider consumers', () => {
   assert.doesNotMatch(syncContextSource, /useUserRole\(\)/);
 });
 
-runTest('R4a replaces display and navigation consumers only', () => {
+runTest('display, navigation, and recovery consumers use the shared role context', () => {
   for (const source of [
     topNavigationSource,
     bottomNavigationSource,
@@ -88,11 +88,12 @@ runTest('R4a replaces display and navigation consumers only', () => {
     assert.doesNotMatch(source, /useUserRole\(\)/);
   }
 
-  assert.match(bottomNavigationSource, /roleRefreshState\.stage !== ['"]ready['"]/);
-  assert.match(databaseRecoveryPanelSource, /useUserRole\(\)/);
+  assert.match(bottomNavigationSource, /!roleRefreshState\.shouldMountProtectedChildren/);
+  assert.match(databaseRecoveryPanelSource, /useRoleContext\(\)/);
+  assert.doesNotMatch(databaseRecoveryPanelSource, /useUserRole\(\)/);
 });
 
-runTest('R4b aligns initial sync with shared role readiness and keeps sensitive monitors local', () => {
+runTest('initial sync and sensitive monitors use the shared role context', () => {
   assert.match(initialSyncDialogSource, /useRoleContext\(\)/);
   assert.match(initialSyncDialogSource, /const isRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
   assert.match(initialSyncDialogSource, /resolveRoleMode\(userRole\)/);
@@ -101,8 +102,9 @@ runTest('R4b aligns initial sync with shared role readiness and keeps sensitive 
 
   assert.doesNotMatch(accountSwitcherSource, /useUserRole\(\)/);
   assert.doesNotMatch(accountSwitcherSource, /getCurrentDatabaseInfo/);
-  assert.match(staffStatusMonitorSource, /useUserRole\(\)/);
-  assert.match(databaseRecoveryPanelSource, /useUserRole\(\)/);
+  assert.match(staffStatusMonitorSource, /useRoleContext\(\)/);
+  assert.doesNotMatch(staffStatusMonitorSource, /useUserRole\(\)/);
+  assert.match(databaseRecoveryPanelSource, /useRoleContext\(\)/);
 });
 
 runTest('R4c migrates settlement report and list pages with fail-closed data scope', () => {
@@ -137,23 +139,15 @@ runTest('R4c migrates settlement report and list pages with fail-closed data sco
     settingsPageSource,
     recoveryPageSource,
   ]) {
-    assert.match(source, /useUserRole\(\)/);
+    assert.match(source, /useRoleContext\(\)/);
+    assert.doesNotMatch(source, /useUserRole\(\)/);
   }
 });
 
-runTest('R4c-3A dashboard migration keeps role scope fail-closed', () => {
+runTest('dashboard uses the shared role snapshot without broad local reads', () => {
   assert.match(roleRefreshPlanSource, /### Slice R4c-3A: Dashboard Inventory and Static Guardrails/);
-  assert.match(roleRefreshPlanSource, /Status: implemented through documentation and static guardrails/);
-  assert.match(roleRefreshPlanSource, /Dashboard data dependency map:/);
-  assert.match(roleRefreshPlanSource, /useMarkets\(\{ orderBy: 'startDate', order: 'asc', ownerId: currentOwnerId \}\)/);
-  assert.match(roleRefreshPlanSource, /useMonthlyStats\(currentOwnerId\)/);
-  assert.match(roleRefreshPlanSource, /unresolved owner id can become a broad local read/);
-  assert.match(roleRefreshPlanSource, /unresolved owner id can aggregate all active local markets/);
-  assert.match(roleRefreshPlanSource, /handleSignOut\(\)/);
-  assert.match(roleRefreshPlanSource, /signOut\(\)/);
-  assert.match(roleRefreshPlanSource, /confirmDiscardLocalChangesForSignOut\(error\)/);
-
-  assert.match(homePageSource, /useUserRole\(\)/);
+  assert.match(homePageSource, /useRoleContext\(\)/);
+  assert.doesNotMatch(homePageSource, /useUserRole\(\)/);
   assert.match(homePageSource, /const currentOwnerId = isStaff \? userRole\.ownerId : user\?\.id/);
   assert.match(homePageSource, /DASHBOARD_ROLE_NOT_READY_OWNER_ID/);
   assert.match(homePageSource, /ownerId:\s*scopedOwnerId/);
@@ -161,12 +155,11 @@ runTest('R4c-3A dashboard migration keeps role scope fail-closed', () => {
   assert.doesNotMatch(homePageSource, /useMonthlyStats\(/);
   assert.match(homePageSource, /useSyncContext\(\)/);
   assert.doesNotMatch(homePageSource, /\bsignOut\s*\(/);
-  assert.doesNotMatch(homePageSource, /useRoleContext\(\)/);
 });
 
 runTest('role snapshots are bound to the authenticated user before protected UI mounts', () => {
   assert.match(userRoleHookSource, /const \[resolvedUserId, setResolvedUserId\]/);
-  assert.match(userRoleHookSource, /setResolvedUserId\(requestUser\.id\)/);
+  assert.match(userRoleHookSource, /setResolvedUserId\(requestUserId\)/);
   assert.match(userRoleHookSource, /setResolvedUserId\(null\)/);
   assert.match(userRoleHookSource, /resolvedUserId,/);
   assert.match(
@@ -175,17 +168,21 @@ runTest('role snapshots are bound to the authenticated user before protected UI 
   );
 });
 
-runTest('R4c-3A blocks unsafe future dashboard shared-context migration', () => {
-  const dashboardUsesSharedContext = /useRoleContext\(\)/.test(homePageSource);
+runTest('all production role consumers stay behind RoleProvider', () => {
+  const productionSources = [
+    homePageSource,
+    analyticsPageSource,
+    settingsPageSource,
+    recoveryPageSource,
+    staffStatusMonitorSource,
+    databaseRecoveryPanelSource,
+  ];
 
-  if (!dashboardUsesSharedContext) {
-    assert.match(homePageSource, /useUserRole\(\)/);
-    return;
+  for (const source of productionSources) {
+    assert.match(source, /useRoleContext\(\)/);
+    assert.doesNotMatch(source, /useUserRole\(\)/);
   }
 
-  assert.match(homePageSource, /const isRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
-  assert.match(homePageSource, /const .*OwnerId = isRoleReady \?/);
-  assert.match(homePageSource, /ROLE_NOT_READY_OWNER_ID|DASHBOARD_ROLE_NOT_READY_OWNER_ID|canLoadScopedData/);
   assert.match(homePageSource, /ownerId:\s*scopedOwnerId|ownerId:\s*dashboardOwnerId/);
   assert.doesNotMatch(homePageSource, /ownerId:\s*currentOwnerId/);
   assert.doesNotMatch(homePageSource, /useMonthlyStats\(currentOwnerId\)/);

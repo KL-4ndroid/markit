@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SalesPhotoEvidencePendingListDialog } from '@/components/markets/SalesPhotoEvidencePendingListDialog';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { useMarkets } from '@/lib/db/hooks';
 import { captureAndStoreSalesPhotoEvidenceWithFileInput } from '@/lib/sales/photo-evidence-browser-adapter';
 import { uploadPendingSalesPhotoEvidenceManually } from '@/lib/sales/photo-evidence-manual-upload-client';
@@ -65,7 +65,7 @@ export function SalesPhotoEvidenceTestWorkbench({
   routeReadiness,
 }: SalesPhotoEvidenceTestWorkbenchProps) {
   const { user } = useAuth();
-  const { userRole, isOwner } = useUserRole();
+  const { userRole, isOwner } = useRoleContext();
   const markets = useMarkets({ orderBy: 'startDate', order: 'desc' });
   const runtimeGate = useMemo(() => getSalesPhotoEvidenceRuntimeGateStatus(), []);
   const [selectedMarketId, setSelectedMarketId] = useState('');

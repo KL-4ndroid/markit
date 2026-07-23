@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Activity, AlertTriangle, Clock, Eye, Lock, RefreshCw, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import {
   listOwnerPendingOperationDiagnostics,
@@ -33,7 +33,7 @@ const STATE_STYLES: Record<PendingOperationDiagnosticsStateGroup, string> = {
 
 export function OwnerPendingOperationDiagnosticsPanel() {
   const { user } = useAuth();
-  const { isStaff, isLoading: isRoleLoading } = useUserRole();
+  const { isStaff, isLoading: isRoleLoading } = useRoleContext();
   const [state, setState] = useState<PanelState>('idle');
   const [rows, setRows] = useState<OwnerPendingOperationDiagnosticsRow[]>([]);
   const [recoveringOperationId, setRecoveringOperationId] = useState<string | null>(null);

@@ -17,7 +17,15 @@ function ProtectedRoleGuard({ children }: RoleGuardProps) {
     return <RoleLoadingFallback />;
   }
 
-  return <>{children}</>;
+  return (
+    <div
+      className="contents"
+      aria-busy={!roleRefreshState.isAuthorizationFresh || undefined}
+      inert={!roleRefreshState.isAuthorizationFresh || undefined}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function RoleGuard({ children }: RoleGuardProps) {

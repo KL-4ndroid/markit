@@ -4,10 +4,10 @@ import { Cloud } from 'lucide-react';
 
 import { AccountSyncPanel } from '@/components/settings/AccountSyncPanel';
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/lib/role-context';
 
 export default function AccountSettingsPage() {
-  const { isStaff } = useUserRole();
+  const { isStaff } = useRoleContext();
 
   return (
     <SettingsPageShell

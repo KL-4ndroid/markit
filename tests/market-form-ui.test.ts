@@ -18,7 +18,7 @@ for (const source of [addForm, editForm]) {
   assert.match(source, /getFirstMarketCoreError\(/);
   assert.match(source, /\.focus\(\)/);
   assert.match(source, /title="時間軸"/);
-  assert.match(source, /title="備註"/);
+  assert.match(source, /title="主辦／場地備註"/);
   assert.doesNotMatch(source, /\b(?:window\.)?alert\s*\(|\bwindow\.confirm\s*\(/);
 }
 

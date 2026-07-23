@@ -30,7 +30,7 @@ function matchCount(source: string, pattern: RegExp): number {
 runTest('ProductDetailPage derives staff product edit capability', () => {
   assert.match(
     productDetailSource,
-    /import\s*\{\s*useUserRole\s*\}\s*from\s*['"]@\/hooks\/useUserRole['"]/
+    /import\s*\{\s*useRoleContext\s*\}\s*from\s*['"]@\/lib\/role-context['"]/
   );
   assert.match(productDetailSource, /deriveRoleCapabilities/);
   assert.match(productDetailSource, /hasCapability\(roleCapabilities,\s*['"]canEditProductBasic['"]\)/);
