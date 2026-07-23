@@ -37,6 +37,7 @@ import {
   loadOwnerBrandName,
   readCachedOwnerBrandName,
 } from '@/lib/owner-brand';
+import { formatClockTimeRange } from '@/lib/presentation/formatters';
 import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
@@ -78,8 +79,7 @@ function formatDateKey(dateKey: string): string {
 function marketTimeLabel(market: Market): string | null {
   const start = market.operatingStartTime ?? market.startTime;
   const end = market.operatingEndTime ?? market.endTime;
-  if (start && end) return `${start} - ${end}`;
-  return start ?? end ?? null;
+  return formatClockTimeRange(start, end) || null;
 }
 
 function phaseClasses(phase: TodayMarketPhase): string {

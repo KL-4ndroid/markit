@@ -1,5 +1,6 @@
 import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3 } from 'lucide-react';
 import type { MarketTrendResult, MarketTrendDirection } from '@/lib/analytics/market-trend';
+import { formatCurrency, formatDisplayDate } from '@/lib/presentation/formatters';
 
 interface MarketTrendCardProps {
   trend: MarketTrendResult;
@@ -23,10 +24,6 @@ function getDirectionIcon(direction: MarketTrendDirection) {
   if (direction === 'improving') return ArrowUpRight;
   if (direction === 'declining') return ArrowDownRight;
   return ArrowRight;
-}
-
-function formatMoney(value: number): string {
-  return Math.round(value).toLocaleString('zh-TW');
 }
 
 export function MarketTrendCard({ trend }: MarketTrendCardProps) {
@@ -64,18 +61,18 @@ export function MarketTrendCard({ trend }: MarketTrendCardProps) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{point.marketName}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{point.date}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{formatDisplayDate(point.date)}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-xs text-muted-foreground">淨利估算</p>
                   <p className={`text-sm font-semibold ${point.netProfit >= 0 ? 'text-foreground' : 'text-[#B45F5F]'}`}>
-                    ${formatMoney(point.netProfit)}
+                    {formatCurrency(point.netProfit)}
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-muted-foreground">
-                <span>營收 ${formatMoney(point.revenue)}</span>
-                <span>固定成本 ${formatMoney(point.fixedCost)}</span>
+                <span>營收 {formatCurrency(point.revenue)}</span>
+                <span>固定成本 {formatCurrency(point.fixedCost)}</span>
               </div>
             </div>
           ))}

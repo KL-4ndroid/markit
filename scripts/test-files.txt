@@ -164,11 +164,13 @@ tsx tests/role-provider-r1.test.ts
 tsx tests/app-navigation.test.ts
 tsx tests/ui-primitives.test.ts
 tsx tests/sync-ui-consolidation.test.ts
+tsx tests/sync-presentation-state.test.ts
 tsx tests/app-shell-accessibility-performance.test.ts
 tsx tests/global-overlay-host.test.ts
 tsx tests/today-view-model.test.ts
 tsx tests/today-home-ui.test.ts
 tsx tests/market-list-view-model.test.ts
+tsx tests/presentation-formatters.test.ts
 tsx tests/market-list-ui.test.ts
 tsx tests/market-form.test.ts
 tsx tests/market-form-ui.test.ts
@@ -178,6 +180,8 @@ tsx tests/product-form.test.ts
 tsx tests/product-form-ui.test.ts
 tsx tests/settings-navigation.test.ts
 tsx tests/settings-information-architecture.test.ts
+tsx tests/subscription-capability-presentation.test.ts
+tsx tests/web-uiux-baseline-contract.test.ts
 tsx tests/role-capabilities.test.ts
 tsx tests/p5-4d-role-freshness-gate.test.ts
 tsx tests/p5-field-notes.test.ts

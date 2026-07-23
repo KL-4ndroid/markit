@@ -58,6 +58,7 @@ import {
   Edit
 } from 'lucide-react';
 import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
+import { formatClockTime, formatClockTimeRange } from '@/lib/presentation/formatters';
 import { InteractionButtons } from '@/components/sales/InteractionButtons';
 import { TransactionWorkspace } from '@/components/sales/TransactionWorkspace';
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
@@ -351,13 +352,11 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
 
         <MarketWorkspaceSummary
           phase={workspacePhase}
-          operatingTime={market.operatingStartTime && market.operatingEndTime
-            ? `${market.operatingStartTime}–${market.operatingEndTime}`
-            : null}
+          operatingTime={formatClockTimeRange(market.operatingStartTime, market.operatingEndTime) || null}
           items={workspaceView === 'tasks'
             ? [
-                { label: '開始', value: market.operatingStartTime || '--' },
-                { label: '結束', value: market.operatingEndTime || '--' },
+                { label: '開始', value: formatClockTime(market.operatingStartTime) || '--' },
+                { label: '結束', value: formatClockTime(market.operatingEndTime) || '--' },
                 { label: '待補照片', value: salesPhotoEvidenceFlow.pendingCount },
               ]
             : [
@@ -511,7 +510,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
                       <div>
                         <div className="font-medium text-foreground">營業中</div>
                         <div className="text-sm text-muted-foreground">
-                          {market.operatingStartTime} - {market.operatingEndTime}
+                          {formatClockTimeRange(market.operatingStartTime, market.operatingEndTime)}
                         </div>
                       </div>
                     </div>
@@ -528,7 +527,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
                       <Moon className="w-5 h-5 text-primary" />
                       <div>
                         <div className="font-medium text-foreground">營業結束</div>
-                        <div className="text-sm text-muted-foreground">{market.operatingEndTime}</div>
+                        <div className="text-sm text-muted-foreground">{formatClockTime(market.operatingEndTime)}</div>
                       </div>
                     </div>
                   </div>

@@ -1,189 +1,60 @@
-/**
- * 訂閱方案卡片組件
- * 
- * 顯示不同訂閱方案的價格和功能
- */
-
 'use client';
 
-import { Check, Sparkles, Crown, Building2 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { Building2, Check, Crown, Sparkles, type LucideIcon } from 'lucide-react';
 
-export type PlanType = 'free' | 'pro' | 'enterprise';
+import {
+  SUBSCRIPTION_PRESENTATION,
+  type PlanPreview,
+  type PlanType,
+} from '@/lib/subscription/subscription-presentation';
 
-interface PricingCardProps {
-  plan: PlanType;
-  isCurrentPlan?: boolean;
-  onSelect?: () => void;
-}
+export type { PlanType };
 
-interface PlanConfig {
-  name: string;
-  price: number;
-  period: string;
-  icon: LucideIcon;
-  color: string;
-  badge?: string;
-  badgeColor?: string;
-  features: string[];
-  limitations?: string[];
-}
-
-const planConfig: Record<PlanType, PlanConfig> = {
-  free: {
-    name: '免費版',
-    price: 0,
-    period: '',
-    icon: Sparkles,
-    color: 'from-muted-foreground to-muted-foreground/60',
-    features: [
-      '單一市集管理',
-      '基礎商品管理（最多 20 個）',
-      '本地數據存儲',
-      '基礎統計報表',
-      '離線使用',
-    ],
-    limitations: [
-      '無雲端同步',
-      '無員工協作',
-      '無進階分析',
-    ],
-  },
-  pro: {
-    name: '專業版',
-    price: 199,
-    period: '/月',
-    icon: Crown,
-    color: 'from-primary to-secondary',
-    badge: '最受歡迎',
-    badgeColor: 'bg-secondary',
-    features: [
-      '無限市集數量',
-      '無限商品管理',
-      '雲端同步備份',
-      '進階統計分析',
-      '多日期市集支援',
-      '員工協作（最多 3 人）',
-      '數據匯出功能',
-      '優先客服支援',
-    ],
-  },
-  enterprise: {
-    name: '企業版',
-    price: 499,
-    period: '/月',
-    icon: Building2,
-    color: 'from-primary to-primary/80',
-    badge: '完整功能',
-    badgeColor: 'bg-primary',
-    features: [
-      '專業版所有功能',
-      '無限員工協作',
-      '自訂報表匯出',
-      'API 存取權限',
-      '專屬客戶經理',
-      '優先技術支援',
-      '客製化功能開發',
-      '數據遷移協助',
-    ],
-  },
+const PLAN_ICON: Record<PlanType, LucideIcon> = {
+  free: Sparkles,
+  pro: Crown,
+  enterprise: Building2,
 };
 
-export function PricingCard({ plan, isCurrentPlan = false, onSelect }: PricingCardProps) {
-  const config = planConfig[plan];
-  const Icon = config.icon;
+const PLAN_TONE: Record<PlanType, string> = {
+  free: 'bg-atelier-blue-soft text-atelier-blue',
+  pro: 'bg-atelier-sage-soft text-primary',
+  enterprise: 'bg-atelier-apricot-soft text-atelier-clay',
+};
+
+interface PricingCardProps {
+  plan: PlanPreview;
+}
+
+export function PricingCard({ plan }: PricingCardProps) {
+  const Icon = PLAN_ICON[plan.id];
 
   return (
-    <div
-      className={`relative bg-white rounded-[1.5rem] p-6 shadow-lg transition-all ${
-        isCurrentPlan
-          ? 'ring-2 ring-primary shadow-primary/20'
-          : 'hover:shadow-xl hover:-translate-y-1'
-      }`}
-    >
-      {/* 徽章 */}
-      {config.badge && (
-        <div className={`absolute -top-3 left-1/2 -translate-x-1/2 ${config.badgeColor} text-white text-xs font-medium px-4 py-1 rounded-full shadow-md`}>
-          {config.badge}
-        </div>
-      )}
+    <article className="rounded-card border border-atelier-line bg-atelier-paper p-5 shadow-atelier">
+      <span className={`flex h-11 w-11 items-center justify-center rounded-control ${PLAN_TONE[plan.id]}`}>
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </span>
 
-      {/* 當前方案標記 */}
-      {isCurrentPlan && (
-        <div className="absolute -top-3 right-4 bg-primary text-white text-xs font-medium px-3 py-1 rounded-full shadow-md">
-          目前方案
-        </div>
-      )}
+      <h2 className="mt-4 text-lg font-semibold text-foreground">{plan.name}</h2>
+      <p className="mt-1 text-sm font-medium text-primary">{plan.priceLabel}</p>
+      <p className="mt-3 min-h-12 text-sm leading-6 text-muted-foreground">{plan.description}</p>
 
-      {/* 圖示 */}
-      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${config.color} flex items-center justify-center mb-4`}>
-        <Icon className="w-8 h-8 text-white" />
-      </div>
-
-      {/* 方案名稱 */}
-      <h3 className="text-xl font-bold text-foreground mb-2">{config.name}</h3>
-
-      {/* 價格 */}
-      <div className="mb-6">
-        <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-bold text-foreground tabular-nums">
-            NT$ {config.price}
-          </span>
-          {config.period && (
-            <span className="text-muted-foreground text-sm">{config.period}</span>
-          )}
-        </div>
-        {plan === 'free' && (
-          <p className="text-muted-foreground text-sm mt-1">永久免費</p>
-        )}
-      </div>
-
-      {/* 功能列表 */}
-      <div className="space-y-3 mb-6">
-        {config.features.map((feature, index) => (
-          <div key={index} className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-soft-green flex items-center justify-center mt-0.5">
-              <Check className="w-3 h-3 text-primary" />
-            </div>
-            <span className="text-sm text-foreground">{feature}</span>
-          </div>
+      <ul className="mt-5 space-y-3 border-t border-atelier-line pt-5">
+        {plan.features.map(feature => (
+          <li key={feature} className="flex items-start gap-2 text-sm text-foreground">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <span>{feature}</span>
+          </li>
         ))}
+      </ul>
 
-        {/* 限制項目（僅免費版） */}
-        {config.limitations && (
-          <div className="pt-3 border-t border-primary/10">
-            {config.limitations.map((limitation, index) => (
-              <div key={index} className="flex items-start gap-3 opacity-50">
-                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-soft-pink flex items-center justify-center mt-0.5">
-                  <span className="text-xs text-muted-foreground">✕</span>
-                </div>
-                <span className="text-sm text-muted-foreground">{limitation}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 按鈕 */}
-      {isCurrentPlan ? (
-        <button
-          disabled
-          className="w-full py-3 rounded-xl bg-soft-green text-primary font-medium text-sm cursor-not-allowed"
-        >
-          目前使用中
-        </button>
-      ) : (
-        <button
-          onClick={onSelect}
-          className={`w-full py-3 rounded-xl font-medium text-sm transition-all ${
-            plan === 'free'
-              ? 'bg-soft-pink text-foreground hover:bg-[#E8D8DA]'
-              : `bg-gradient-to-r ${config.color} text-white hover:shadow-lg hover:scale-[1.02]`
-          }`}
-        >
-          {plan === 'free' ? '降級至免費版' : '選擇此方案'}
-        </button>
-      )}
-    </div>
+      <button
+        type="button"
+        disabled
+        className="mt-6 min-h-11 w-full rounded-control border border-atelier-line bg-atelier-canvas px-4 text-sm font-medium text-muted-foreground"
+      >
+        {SUBSCRIPTION_PRESENTATION.actionLabel}
+      </button>
+    </article>
   );
 }

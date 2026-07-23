@@ -41,6 +41,7 @@ import {
   loadOwnerBrandName,
   readCachedOwnerBrandName,
 } from '@/lib/owner-brand';
+import { formatCurrency, formatDisplayDateRange } from '@/lib/presentation/formatters';
 
 type BuiltPreview = {
   report: SettlementReportModel;
@@ -68,14 +69,6 @@ function getDefaultMonthRange(): { startDate: string; endDate: string } {
     startDate: toDateInputValue(start),
     endDate: toDateInputValue(end),
   };
-}
-
-function formatMoney(value: number): string {
-  return new Intl.NumberFormat('zh-TW', {
-    style: 'currency',
-    currency: 'TWD',
-    maximumFractionDigits: 0,
-  }).format(value);
 }
 
 function formatNumber(value: number): string {
@@ -240,7 +233,7 @@ export default function SettlementReportPreviewPage() {
         kind,
         startDate,
         endDate,
-        label: `${startDate} - ${endDate}`,
+        label: formatDisplayDateRange(startDate, endDate),
       },
       brandName,
       markets,
@@ -393,11 +386,11 @@ export default function SettlementReportPreviewPage() {
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-xl bg-neutral-alt-warm p-4">
                     <p className="text-xs text-muted-foreground">總營收</p>
-                    <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">{formatMoney(preview.executiveSummary.totalRevenue)}</p>
+                    <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">{formatCurrency(preview.executiveSummary.totalRevenue)}</p>
                   </div>
                   <div className="rounded-xl bg-neutral-alt-warm p-4">
                     <p className="text-xs text-muted-foreground">淨利</p>
-                    <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">{formatMoney(preview.executiveSummary.netProfit)}</p>
+                    <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">{formatCurrency(preview.executiveSummary.netProfit)}</p>
                   </div>
                   <div className="rounded-xl bg-neutral-alt-warm p-4">
                     <p className="text-xs text-muted-foreground">成交數</p>
@@ -429,7 +422,7 @@ export default function SettlementReportPreviewPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-white p-4">
                     <p className="text-xs text-muted-foreground">平均客單價</p>
-                    <p className="mt-2 text-xl font-semibold text-foreground tabular-nums">{formatMoney(preview.executiveSummary.averageOrderValue)}</p>
+                    <p className="mt-2 text-xl font-semibold text-foreground tabular-nums">{formatCurrency(preview.executiveSummary.averageOrderValue)}</p>
                   </div>
                   <div className="bg-white p-4">
                     <p className="text-xs text-muted-foreground">信心等級</p>
@@ -542,15 +535,15 @@ export default function SettlementReportPreviewPage() {
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">營收</p>
-                        <p className="text-sm font-medium text-foreground tabular-nums">{formatMoney(row?.revenue ?? 0)}</p>
+                        <p className="text-sm font-medium text-foreground tabular-nums">{formatCurrency(row?.revenue ?? 0)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">淨利</p>
-                        <p className="text-sm font-medium text-foreground tabular-nums">{formatMoney(row?.netProfit ?? 0)}</p>
+                        <p className="text-sm font-medium text-foreground tabular-nums">{formatCurrency(row?.netProfit ?? 0)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">客單價</p>
-                        <p className="text-sm font-medium text-foreground tabular-nums">{formatMoney(row?.averageOrderValue ?? 0)}</p>
+                        <p className="text-sm font-medium text-foreground tabular-nums">{formatCurrency(row?.averageOrderValue ?? 0)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">評分</p>
@@ -580,9 +573,9 @@ export default function SettlementReportPreviewPage() {
                         <p className="mt-1 text-xs text-muted-foreground">售出 {formatNumber(product.quantity)} 件</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-foreground tabular-nums">{formatMoney(product.revenue)}</p>
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{formatCurrency(product.revenue)}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {product.estimatedGrossProfit === null ? '毛利不足' : `毛利 ${formatMoney(product.estimatedGrossProfit)}`}
+                          {product.estimatedGrossProfit === null ? '毛利不足' : `毛利 ${formatCurrency(product.estimatedGrossProfit)}`}
                         </p>
                       </div>
                     </div>
@@ -598,25 +591,25 @@ export default function SettlementReportPreviewPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-neutral-alt-warm p-4">
                     <p className="text-xs text-muted-foreground">商品成本</p>
-                    <p className="mt-2 text-lg font-semibold text-foreground tabular-nums">{formatMoney(report.money.productCost)}</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground tabular-nums">{formatCurrency(report.money.productCost)}</p>
                   </div>
                   <div className="bg-neutral-alt-warm p-4">
                     <p className="text-xs text-muted-foreground">固定市集成本</p>
-                    <p className="mt-2 text-lg font-semibold text-foreground tabular-nums">{formatMoney(report.money.fixedMarketCost)}</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground tabular-nums">{formatCurrency(report.money.fixedMarketCost)}</p>
                   </div>
                   <div className="bg-neutral-alt-warm p-4">
                     <p className="text-xs text-muted-foreground">毛利</p>
-                    <p className="mt-2 text-lg font-semibold text-foreground tabular-nums">{formatMoney(report.money.grossProfit)}</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground tabular-nums">{formatCurrency(report.money.grossProfit)}</p>
                   </div>
                   <div className="bg-neutral-alt-warm p-4">
                     <p className="text-xs text-muted-foreground">淨利</p>
-                    <p className="mt-2 text-lg font-semibold text-foreground tabular-nums">{formatMoney(report.money.netProfit)}</p>
+                    <p className="mt-2 text-lg font-semibold text-foreground tabular-nums">{formatCurrency(report.money.netProfit)}</p>
                   </div>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div className="border border-neutral-stripe px-4 py-3">
                     <p className="text-xs text-muted-foreground">抽成費</p>
-                    <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">{formatMoney(report.money.commissionFee)}</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">{formatCurrency(report.money.commissionFee)}</p>
                   </div>
                   <div className="border border-neutral-stripe px-4 py-3">
                     <p className="text-xs text-muted-foreground">成本覆蓋率</p>

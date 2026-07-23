@@ -1,4 +1,5 @@
 import type { Market, MarketStatus } from '@/types/db';
+import { formatDisplayDateRange } from '@/lib/presentation/formatters';
 
 export type MarketListStage = 'active' | 'preparing' | 'ended' | 'cancelled';
 
@@ -50,35 +51,11 @@ function sortedDates(market: Market): string[] {
   return [market.startDate, market.endDate].filter(Boolean).sort();
 }
 
-function dateParts(value: string): [string, string, string] | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  return match ? [match[1], match[2], match[3]] : null;
-}
-
 export function formatMarketListDateRange(market: Market): string {
   const dates = sortedDates(market);
-  const first = dateParts(dates[0] ?? market.startDate);
-  const last = dateParts(dates[dates.length - 1] ?? market.endDate);
-
-  if (!first || !last) {
-    return [market.startDate, market.endDate]
-      .filter(Boolean)
-      .filter((value, index, values) => values.indexOf(value) === index)
-      .join('~');
-  }
-
-  const [startYear, startMonth, startDay] = first;
-  const [endYear, endMonth, endDay] = last;
-  const startLabel = `${startYear}/${Number(startMonth)}/${startDay}`;
-
-  if (first.join('-') === last.join('-')) return startLabel;
-  if (startYear === endYear && startMonth === endMonth) {
-    return `${startLabel}~${endDay}`;
-  }
-  if (startYear === endYear) {
-    return `${startLabel}~${Number(endMonth)}/${endDay}`;
-  }
-  return `${startLabel}~${endYear}/${Number(endMonth)}/${endDay}`;
+  const first = dates[0] ?? market.startDate;
+  const last = dates[dates.length - 1] ?? market.endDate;
+  return formatDisplayDateRange(first, last);
 }
 
 function occursToday(market: Market, today: string): boolean {

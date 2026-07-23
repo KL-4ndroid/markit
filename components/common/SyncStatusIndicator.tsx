@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { SyncStatus } from '@/hooks/useSync';
 import { useSyncContext } from '@/lib/sync-context';
+import { getSyncPresentation } from '@/lib/sync/sync-presentation';
 import { useAuth } from '@/lib/supabase/auth-context';
 
 interface SyncStatusIndicatorProps {
@@ -14,14 +15,20 @@ interface SyncStatusIndicatorProps {
 
 export function SyncStatusIndicator({ tone = 'inverse' }: SyncStatusIndicatorProps) {
   const { user, isConfigured } = useAuth();
-  const { status, pendingCount, error, sync, isOnline } = useSyncContext();
+  const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSyncContext();
   const [isClickLocked, setIsClickLocked] = useState(false);
   const unlockTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const hasShownOfflineToastRef = useRef(false);
 
   const isSyncing = status === SyncStatus.SYNCING;
-  const isOffline = status === SyncStatus.OFFLINE || !isOnline;
   const hasError = status === SyncStatus.ERROR;
+  const presentation = getSyncPresentation({
+    status,
+    lastSyncAt,
+    pendingCount,
+    error,
+    isOnline,
+  });
 
   useEffect(() => {
     if (isSyncing || !isClickLocked) return;
@@ -49,21 +56,13 @@ export function SyncStatusIndicator({ tone = 'inverse' }: SyncStatusIndicatorPro
 
   if (!isConfigured || !user) return null;
 
-  const statusLabel = isSyncing
-    ? `同步中，${pendingCount} 筆待處理`
-    : isOffline
-      ? `離線，${pendingCount} 筆資料保存在本機`
-      : hasError
-        ? `同步失敗${error ? `：${error}` : ''}`
-        : pendingCount > 0
-          ? `${pendingCount} 筆待同步，點擊重試`
-          : '資料已同步，點擊檢查更新';
-
-  const indicatorClass = isOffline
+  const indicatorClass = presentation.kind === 'offline' || presentation.kind === 'waiting'
     ? 'bg-secondary'
-    : hasError
+    : presentation.kind === 'error'
       ? 'bg-danger'
-      : 'bg-status-good-text';
+      : presentation.kind === 'pending'
+        ? 'bg-atelier-clay'
+        : 'bg-status-good-text';
   const buttonClasses = tone === 'inverse'
     ? 'hover:bg-white/15 focus-visible:ring-white/60'
     : 'border border-atelier-line bg-atelier-paper hover:bg-atelier-canvas focus-visible:ring-primary/30';
@@ -85,8 +84,8 @@ export function SyncStatusIndicator({ tone = 'inverse' }: SyncStatusIndicatorPro
       type="button"
       onClick={handleSync}
       disabled={isSyncing || isClickLocked}
-      aria-label={statusLabel}
-      title={statusLabel}
+      aria-label={presentation.accessibleLabel}
+      title={presentation.accessibleLabel}
       className={`relative inline-flex h-11 w-11 items-center justify-center rounded-control transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-wait disabled:opacity-75 ${buttonClasses}`}
     >
       {isSyncing ? (

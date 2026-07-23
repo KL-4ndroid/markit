@@ -22,33 +22,19 @@ import { SyncStatus } from '@/hooks/useSync';
 import { useRoleContext } from '@/lib/role-context';
 import { isSignOutBlockedByLocalChanges } from '@/lib/auth/signout-confirmation';
 import { useSyncContext } from '@/lib/sync-context';
+import { getSyncPresentation } from '@/lib/sync/sync-presentation';
+import { SUBSCRIPTION_PRESENTATION } from '@/lib/subscription/subscription-presentation';
 import { useAuth } from '@/lib/supabase/auth-context';
 import type { LocalPendingWriteReport } from '@/lib/sync/local-pending-write-report';
 
-function formatLastSync(lastSyncAt: number | null): string {
-  if (!lastSyncAt) return '尚未同步';
-  const diff = Math.max(0, Date.now() - lastSyncAt);
-  if (diff < 60_000) return '剛剛';
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分鐘前`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小時前`;
-  return `${Math.floor(diff / 86_400_000)} 天前`;
-}
-
-function getSyncPresentation(status: SyncStatus, isOnline: boolean) {
-  if (!isOnline || status === SyncStatus.OFFLINE) {
-    return { label: '離線使用中', Icon: CloudOff, tone: 'text-muted-foreground bg-muted/60' };
-  }
-  if (status === SyncStatus.SYNCING) {
-    return { label: '同步中', Icon: Loader2, tone: 'text-primary bg-primary/10' };
-  }
-  if (status === SyncStatus.ERROR) {
-    return { label: '同步需要重試', Icon: WifiOff, tone: 'text-danger bg-status-danger-bg' };
-  }
-  if (status === SyncStatus.SUCCESS) {
-    return { label: '已同步', Icon: CheckCircle2, tone: 'text-primary bg-soft-green' };
-  }
-  return { label: '等待同步', Icon: Cloud, tone: 'text-muted-foreground bg-muted/60' };
-}
+const SYNC_STATUS_ICONS = {
+  waiting: Cloud,
+  syncing: Loader2,
+  offline: CloudOff,
+  error: WifiOff,
+  pending: Cloud,
+  synced: CheckCircle2,
+} as const;
 
 export function AccountSyncPanel() {
   const { user, signOut, isConfigured } = useAuth();
@@ -56,8 +42,14 @@ export function AccountSyncPanel() {
   const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSyncContext();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [blockedReport, setBlockedReport] = useState<LocalPendingWriteReport | null>(null);
-  const syncPresentation = getSyncPresentation(status, isOnline);
-  const StatusIcon = syncPresentation.Icon;
+  const syncPresentation = getSyncPresentation({
+    status,
+    lastSyncAt,
+    pendingCount,
+    error,
+    isOnline,
+  });
+  const StatusIcon = SYNC_STATUS_ICONS[syncPresentation.kind];
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -136,7 +128,7 @@ export function AccountSyncPanel() {
             className="mt-4 flex min-h-11 items-center justify-between rounded-control border border-primary/15 px-4 text-sm font-medium text-foreground transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <span className="flex items-center gap-2"><Crown className="h-4 w-4 text-primary" />查看方案</span>
-            <span className="text-xs text-muted-foreground">免費版</span>
+            <span className="text-xs text-muted-foreground">{SUBSCRIPTION_PRESENTATION.accountLabel}</span>
           </Link>
         )}
       </section>
@@ -156,7 +148,7 @@ export function AccountSyncPanel() {
         <dl className="mt-5 divide-y divide-primary/10 border-y border-primary/10 text-sm">
           <div className="flex items-center justify-between gap-4 py-3">
             <dt className="text-muted-foreground">最後同步</dt>
-            <dd className="font-medium text-foreground">{formatLastSync(lastSyncAt)}</dd>
+            <dd className="font-medium text-foreground">{syncPresentation.lastSyncLabel}</dd>
           </div>
           <div className="flex items-center justify-between gap-4 py-3">
             <dt className="text-muted-foreground">待同步項目</dt>

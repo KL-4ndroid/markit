@@ -39,6 +39,7 @@ import {
   getActiveInteractionEventsForMarket,
 } from '@/lib/events/active-event-service';
 import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
+import { formatClockTime, formatClockTimeRange } from '@/lib/presentation/formatters';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { InteractionButtons } from '@/components/sales/InteractionButtons';
@@ -1254,9 +1255,7 @@ export function MarketDetailScreen() {
 
         <MarketWorkspaceSummary
           phase={marketWorkspacePhase}
-          operatingTime={market.operatingStartTime && market.operatingEndTime
-            ? `${market.operatingStartTime}–${market.operatingEndTime}`
-            : null}
+          operatingTime={formatClockTimeRange(market.operatingStartTime, market.operatingEndTime) || null}
           items={resolvedOwnerWorkspaceView === 'manage'
             ? [
                 { label: '市集狀態', value: getStatusText(market.status) },
@@ -2051,7 +2050,7 @@ export function MarketDetailScreen() {
                           <Store className="w-5 h-5" />
                           <div>
                             <div className="font-semibold">營業中</div>
-                            <div className="text-sm opacity-70">{market.operatingStartTime}</div>
+                            <div className="text-sm opacity-70">{formatClockTime(market.operatingStartTime)}</div>
                           </div>
                         </div>
                         <div className="text-xs font-medium flex items-center gap-1 opacity-60">
@@ -2086,7 +2085,7 @@ export function MarketDetailScreen() {
                         <Moon className="w-5 h-5" />
                         <div>
                           <div className="font-semibold">營業結束</div>
-                          <div className="text-sm opacity-70">{market.operatingEndTime}</div>
+                          <div className="text-sm opacity-70">{formatClockTime(market.operatingEndTime)}</div>
                         </div>
                       </div>
                     </div>
