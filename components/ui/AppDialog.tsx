@@ -14,7 +14,7 @@ export interface AppDialogProps {
   description?: string;
   children: ReactNode;
   footer?: ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   layer?: 'dialog' | 'critical';
   dismissible?: boolean;
   className?: string;
@@ -24,6 +24,7 @@ const SIZE_CLASSES: Record<NonNullable<AppDialogProps['size']>, string> = {
   sm: 'max-w-sm',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
+  xl: 'max-w-6xl',
 };
 
 export function AppDialog({

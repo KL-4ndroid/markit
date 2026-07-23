@@ -16,6 +16,7 @@ import type {
 } from '@/types/db';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import type { LocalPendingSalesPhotoEvidencePayload } from '@/lib/sales/photo-evidence-pending-payload-storage';
+import type { LocalPendingProductCoverPhoto, LocalPendingProductCoverPhotoPayload } from '@/lib/products/product-cover-photo-pending';
 import {
   checkAppIntegrity,
   checkBackupIntegrity,
@@ -63,6 +64,8 @@ export class MarketPulseDB extends Dexie {
   syncQueue!: Table<SyncQueueItem, string>;
   salesPhotoEvidencePendingCreations!: Table<LocalPendingSalesPhotoEvidenceCreation, string>;
   salesPhotoEvidencePendingPayloads!: Table<LocalPendingSalesPhotoEvidencePayload, string>;
+  productCoverPhotoPendingUploads!: Table<LocalPendingProductCoverPhoto, string>;
+  productCoverPhotoPendingPayloads!: Table<LocalPendingProductCoverPhotoPayload, string>;
 
   constructor() {
     super('MarketPulseDB');
@@ -253,6 +256,19 @@ export class MarketPulseDB extends Dexie {
       syncQueue: 'id, status, created_at',
       salesPhotoEvidencePendingCreations: 'queueId, saleEventId, ownerId, marketId, status, updatedAt, createdAt',
       salesPhotoEvidencePendingPayloads: 'queueId, ownerId, marketId, updatedAt, createdAt',
+    });
+
+    this.version(7).stores({
+      events: 'id, type, timestamp, actor_id, market_id, sync_status',
+      markets: 'id, status, name, startDate, endDate, owner_id, is_collaborative, sync_status, isDeleted',
+      products: 'id, category, name, isActive, market_id, owner_id',
+      dailyStats: '++id, [date+marketId], date, marketId',
+      settings: '++id',
+      syncQueue: 'id, status, created_at',
+      salesPhotoEvidencePendingCreations: 'queueId, saleEventId, ownerId, marketId, status, updatedAt, createdAt',
+      salesPhotoEvidencePendingPayloads: 'queueId, ownerId, marketId, updatedAt, createdAt',
+      productCoverPhotoPendingUploads: 'productId, status, updatedAt, createdAt',
+      productCoverPhotoPendingPayloads: 'productId, updatedAt',
     });
   }
 }

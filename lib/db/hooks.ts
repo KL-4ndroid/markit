@@ -9,6 +9,7 @@
 
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './index';
+import { generateUUID } from './uuid';
 import { recordEvent } from './events';
 import type {
   Market,
@@ -286,6 +287,12 @@ export function useProduct(id: string | undefined) {
  */
 export async function createProduct(data: ProductCreatedPayload): Promise<string> {
   return await recordEvent('product_created', data);
+}
+
+export async function createProductWithResult(data: ProductCreatedPayload): Promise<{ productId: string; eventId: string }> {
+  const productId = generateUUID();
+  const eventId = await recordEvent('product_created', { ...data, productId } as ProductCreatedPayload & { productId: string });
+  return { productId, eventId };
 }
 
 /**

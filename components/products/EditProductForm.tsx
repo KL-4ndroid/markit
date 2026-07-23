@@ -2,12 +2,16 @@
 
 import { Ban, CheckCircle2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
+import { ProductCoverPhotoField } from '@/components/products/ProductCoverPhotoField';
 import { ProductFormFields } from '@/components/products/ProductFormFields';
 import { AppDialog } from '@/components/ui/AppDialog';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { deleteProduct, updateProduct } from '@/lib/db/hooks';
+import type { PreparedProductCoverPhoto } from '@/lib/products/product-cover-photo-model';
+import { uploadOrQueueProductCoverPhoto } from '@/lib/products/product-cover-photo-pending';
 import {
   createProductFormValues,
   getFirstProductFormError,
@@ -42,11 +46,13 @@ export function EditProductForm({
   const [formData, setFormData] = useState<ProductFormValues>(() => createProductFormValues(product));
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [coverPhoto, setCoverPhoto] = useState<PreparedProductCoverPhoto | null>(null);
 
   useEffect(() => {
     setFormData(createProductFormValues(product));
     setErrors({});
     setSubmitError(null);
+    setCoverPhoto(null);
   }, [product, isOpen]);
 
   const handleChange = <Field extends keyof ProductFormValues>(
@@ -95,6 +101,13 @@ export function EditProductForm({
       };
 
       await updateProduct(product.id!, isManagerMode ? managerUpdates : ownerUpdates);
+      if (coverPhoto) {
+        const outcome = await uploadOrQueueProductCoverPhoto(product.id!, coverPhoto);
+        if (outcome === 'queued') {
+          toast.info('商品資料已更新；照片已保留，待連線恢復後可再次上傳。');
+        }
+      }
+      setCoverPhoto(null);
       setShowZeroStockConfirm(false);
       onClose();
       onSuccess?.();
@@ -180,6 +193,15 @@ export function EditProductForm({
         )}
       >
         <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
+          <ProductCoverPhotoField
+            productId={product.id}
+            productName={formData.name || product.name}
+            value={coverPhoto}
+            onChange={setCoverPhoto}
+            disabled={isSubmitting}
+            onDeleted={onSuccess}
+          />
+          <div className="mt-5">
           <ProductFormFields
             idPrefix={FIELD_PREFIX}
             values={formData}
@@ -188,6 +210,7 @@ export function EditProductForm({
             onChange={handleChange}
             disabled={isSubmitting}
           />
+          </div>
 
           <section className="mt-6 space-y-3 border-t border-primary/10 pt-5" aria-labelledby="product-management-heading">
             <h3 id="product-management-heading" className="text-sm font-medium text-foreground">

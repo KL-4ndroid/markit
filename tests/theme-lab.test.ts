@@ -7,6 +7,8 @@ import {
   createThemeLabExport,
   DEFAULT_THEME_PALETTE,
   getContrastRatio,
+  getThemeContrastChecks,
+  isThemePaletteAccessible,
   normalizeHex,
   parseThemeLabImport,
   sanitizeThemePalette,
@@ -18,8 +20,8 @@ const root = join(__dirname, '..');
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
 assert.equal(THEME_TOKEN_KEYS.length, 15);
-assert.equal(DEFAULT_THEME_PALETTE.primary, '#7B9FA6');
-assert.equal(DEFAULT_THEME_PALETTE.secondary, '#D4A574');
+assert.equal(DEFAULT_THEME_PALETTE.primary, '#607B82');
+assert.equal(DEFAULT_THEME_PALETTE.secondary, '#8C6D4C');
 assert.equal(DEFAULT_THEME_PALETTE.homeEndedCard, '#E7EFF1');
 assert.equal(DEFAULT_THEME_PALETTE.upcomingSection, '#EFF3F4');
 assert.equal(DEFAULT_THEME_PALETTE.upcomingDateBadge, '#E7EFF1');
@@ -43,6 +45,14 @@ for (const presetId of ['honey-milk-tea', 'hydrangea-rain', 'forest-market', 'se
   assert.ok(getContrastRatio(preset.palette.foreground, preset.palette.background) >= 4.5);
   assert.ok(getContrastRatio(preset.palette.mutedForeground, preset.palette.card) >= 4.5);
 }
+for (const preset of BUILT_IN_THEME_PRESETS) {
+  assert.equal(isThemePaletteAccessible(preset.palette), true, `${preset.id} must pass core AA checks`);
+  assert.ok(getThemeContrastChecks(preset.palette).every((check) => check.ratio >= check.minimum));
+}
+assert.equal(
+  isThemePaletteAccessible({ ...DEFAULT_THEME_PALETTE, primary: '#F5F5F5' }),
+  false,
+);
 
 const exported = createThemeLabExport('測試色票', DEFAULT_THEME_PALETTE);
 const imported = parseThemeLabImport(JSON.stringify(exported));
@@ -75,10 +85,18 @@ assert.match(gate, /localStorage|loadThemeLabState/);
 assert.match(lab, /type="color"/);
 assert.match(lab, /匯入 JSON/);
 assert.match(lab, /文字對比檢查/);
+assert.match(lab, /isThemePaletteAccessible/);
+assert.match(lab, /不能儲存為配色/);
+assert.match(lab, /AppDialog/);
+assert.doesNotMatch(lab, /createPortal|role="dialog"/);
+assert.match(gate, /lastSafeStateRef/);
+assert.match(gate, /isThemePaletteAccessible/);
 assert.match(lab, /個人配色/);
 assert.doesNotMatch(lab, /隱藏主題工具/);
 assert.match(themeModel, /document\.documentElement/);
 assert.match(themeModel, /style\.setProperty/);
+assert.match(themeModel, /!isThemePaletteAccessible\(palette\)/);
+assert.match(themeModel, /!isThemePaletteAccessible\(state\.palette\)/);
 assert.match(home, /bg-home-ended-card/);
 assert.match(home, /bg-upcoming-section/);
 assert.match(home, /bg-upcoming-date-badge/);

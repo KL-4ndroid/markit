@@ -54,6 +54,16 @@ export interface ThemeLabExport {
   colors: ThemePalette;
 }
 
+export interface ThemeContrastCheck {
+  id: 'body' | 'muted' | 'primaryAction' | 'secondaryHero' | 'danger';
+  label: string;
+  foreground: string;
+  background: string;
+  minimum: number;
+  ratio: number;
+  passes: boolean;
+}
+
 export const THEME_TOKEN_DEFINITIONS: readonly ThemeTokenDefinition[] = [
   { key: 'primary', label: '霧藍主色', cssVariable: '--brand-primary', description: '頁首、主要按鈕與焦點', group: 'foundation' },
   { key: 'secondary', label: '暖木輔色', cssVariable: '--brand-secondary', description: '漸層、標記與溫暖點綴', group: 'foundation' },
@@ -93,8 +103,48 @@ const DEFAULT_THEME_RGB: Record<ThemeTokenKey, Rgb> = {
 const toHexChannel = (value: number) => Math.round(value).toString(16).padStart(2, '0').toUpperCase();
 const rgbToHex = ([red, green, blue]: Rgb) => `#${toHexChannel(red)}${toHexChannel(green)}${toHexChannel(blue)}`;
 
-const paletteFromRgb = (colors: Record<ThemeTokenKey, Rgb>): ThemePalette =>
-  Object.fromEntries(THEME_TOKEN_KEYS.map((key) => [key, rgbToHex(colors[key])])) as ThemePalette;
+const WHITE = '#FFFFFF';
+
+const relativeLuminanceFromRgb = (rgb: Rgb): number => {
+  const channels = rgb.map((value) => {
+    const channel = value / 255;
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+};
+
+const contrastRatioFromRgb = (first: Rgb, second: Rgb): number => {
+  const firstLuminance = relativeLuminanceFromRgb(first);
+  const secondLuminance = relativeLuminanceFromRgb(second);
+  const lighter = Math.max(firstLuminance, secondLuminance);
+  const darker = Math.min(firstLuminance, secondLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+};
+
+const darkenUntilContrast = (color: Rgb, background: string, minimum = 4.5): Rgb => {
+  const backgroundRgb = /^#[0-9A-F]{6}$/i.test(background)
+    ? [
+        Number.parseInt(background.slice(1, 3), 16),
+        Number.parseInt(background.slice(3, 5), 16),
+        Number.parseInt(background.slice(5, 7), 16),
+      ] as Rgb
+    : [255, 255, 255] as Rgb;
+  let candidate: Rgb = color;
+  while (contrastRatioFromRgb(candidate, backgroundRgb) < minimum) {
+    candidate = candidate.map((channel) => Math.max(0, Math.round(channel * 0.92))) as unknown as Rgb;
+  }
+  return candidate;
+};
+
+const paletteFromRgb = (colors: Record<ThemeTokenKey, Rgb>): ThemePalette => {
+  const accessibleColors = {
+    ...colors,
+    primary: darkenUntilContrast(colors.primary, WHITE),
+    secondary: darkenUntilContrast(colors.secondary, WHITE),
+    danger: darkenUntilContrast(colors.danger, rgbToHex(colors.card)),
+  };
+  return Object.fromEntries(THEME_TOKEN_KEYS.map((key) => [key, rgbToHex(accessibleColors[key])])) as ThemePalette;
+};
 
 export const DEFAULT_THEME_PALETTE = Object.freeze(paletteFromRgb(DEFAULT_THEME_RGB));
 
@@ -299,7 +349,7 @@ export function loadThemeLabState(): ThemeLabState {
     if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     const palette = sanitizeThemePalette(parsed.palette);
-    if (!palette) return fallback;
+    if (!palette || !isThemePaletteAccessible(palette)) return fallback;
     const customPresets = Array.isArray(parsed.customPresets)
       ? parsed.customPresets.map(sanitizePreset).filter((preset): preset is ThemePreset => Boolean(preset))
       : [];
@@ -315,7 +365,7 @@ export function loadThemeLabState(): ThemeLabState {
 }
 
 export function saveThemeLabState(state: ThemeLabState): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !isThemePaletteAccessible(state.palette)) return;
   try {
     window.localStorage.setItem(THEME_LAB_STORAGE_KEY, JSON.stringify(state));
   } catch {
@@ -374,11 +424,7 @@ export function clearThemePaletteOverrides(): void {
 const relativeLuminance = (color: string): number => {
   const rgb = hexToRgb(color);
   if (!rgb) return 0;
-  const channels = rgb.map((value) => {
-    const channel = value / 255;
-    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  return relativeLuminanceFromRgb(rgb);
 };
 
 export function getContrastRatio(first: string, second: string): number {
@@ -387,6 +433,25 @@ export function getContrastRatio(first: string, second: string): number {
   const lighter = Math.max(firstLuminance, secondLuminance);
   const darker = Math.min(firstLuminance, secondLuminance);
   return (lighter + 0.05) / (darker + 0.05);
+}
+
+export function getThemeContrastChecks(palette: ThemePalette): ThemeContrastCheck[] {
+  const definitions = [
+    { id: 'body', label: '主要文字 / 頁面背景', foreground: palette.foreground, background: palette.background, minimum: 4.5 },
+    { id: 'muted', label: '次要文字 / 卡片', foreground: palette.mutedForeground, background: palette.card, minimum: 4.5 },
+    { id: 'primaryAction', label: '白字 / 主要按鈕', foreground: WHITE, background: palette.primary, minimum: 4.5 },
+    { id: 'secondaryHero', label: '白字 / 漸層輔色', foreground: WHITE, background: palette.secondary, minimum: 4.5 },
+    { id: 'danger', label: '危險文字 / 卡片', foreground: palette.danger, background: palette.card, minimum: 4.5 },
+  ] as const;
+
+  return definitions.map((definition) => {
+    const ratio = getContrastRatio(definition.foreground, definition.background);
+    return { ...definition, ratio, passes: ratio >= definition.minimum };
+  });
+}
+
+export function isThemePaletteAccessible(palette: ThemePalette): boolean {
+  return getThemeContrastChecks(palette).every((check) => check.passes);
 }
 
 export function createThemeLabExport(name: string, palette: ThemePalette): ThemeLabExport {

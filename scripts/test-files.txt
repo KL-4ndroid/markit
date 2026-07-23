@@ -233,3 +233,4 @@ tsx tests/app-api-server-cors.test.ts
 tsx tests/app-api-health-route.test.ts
 tsx tests/mobile-runtime-smoke-boundary.test.ts
 tsx tests/app-startup-resilience.test.ts
+tsx tests/product-cover-photo.test.ts

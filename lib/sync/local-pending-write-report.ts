@@ -7,6 +7,7 @@ export type LocalPendingWriteBlockingReason =
   | 'local_pending_events'
   | 'local_sync_queue_unfinished'
   | 'local_pending_sales_photo_evidence'
+  | 'local_pending_product_cover_photo'
   | 'actor_mismatch'
   | 'offline'
   | 'sync_locked'
@@ -28,6 +29,9 @@ export interface LocalPendingWriteReport {
   pendingSalesPhotoEvidenceCreationCountByStatus: Record<string, number>;
   pendingSalesPhotoEvidencePayloadCount: number;
   pendingSalesPhotoEvidencePayloadIds: string[];
+  pendingProductCoverPhotoUploadCount: number;
+  pendingProductCoverPhotoUploadIds: string[];
+  pendingProductCoverPhotoPayloadCount: number;
   blockingReasonCodes: LocalPendingWriteBlockingReason[];
   isClean: boolean;
 }
@@ -81,6 +85,8 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       .toArray();
 
     const pendingSalesPhotoEvidencePayloads = await db.salesPhotoEvidencePendingPayloads.toArray();
+    const pendingProductCoverPhotoUploads = await db.productCoverPhotoPendingUploads.toArray();
+    const pendingProductCoverPhotoPayloadCount = await db.productCoverPhotoPendingPayloads.count();
 
     const pendingEventIds: string[] = [];
     const actorMismatchEventIds: string[] = [];
@@ -114,6 +120,9 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
     if (pendingSalesPhotoEvidencePayloads.length > 0) {
       blockingReasonCodes.add('local_pending_sales_photo_evidence');
     }
+    if (pendingProductCoverPhotoUploads.length > 0 || pendingProductCoverPhotoPayloadCount > 0) {
+      blockingReasonCodes.add('local_pending_product_cover_photo');
+    }
     if (actorMismatchEventIds.length > 0) blockingReasonCodes.add('actor_mismatch');
 
     const codes = Array.from(blockingReasonCodes);
@@ -134,6 +143,9 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       pendingSalesPhotoEvidenceCreationCountByStatus,
       pendingSalesPhotoEvidencePayloadCount: pendingSalesPhotoEvidencePayloads.length,
       pendingSalesPhotoEvidencePayloadIds,
+      pendingProductCoverPhotoUploadCount: pendingProductCoverPhotoUploads.length,
+      pendingProductCoverPhotoUploadIds: pendingProductCoverPhotoUploads.map(item => item.productId),
+      pendingProductCoverPhotoPayloadCount,
       blockingReasonCodes: codes,
       isClean: codes.length === 0,
     };
@@ -157,6 +169,9 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       pendingSalesPhotoEvidenceCreationCountByStatus,
       pendingSalesPhotoEvidencePayloadCount: 0,
       pendingSalesPhotoEvidencePayloadIds: [],
+      pendingProductCoverPhotoUploadCount: 0,
+      pendingProductCoverPhotoUploadIds: [],
+      pendingProductCoverPhotoPayloadCount: 0,
       blockingReasonCodes: codes,
       isClean: false,
     };

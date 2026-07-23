@@ -21,6 +21,7 @@ assert.match(iconButton, /aria-label=\{label\}/);
 assert.match(iconButton, /h-11 w-11/);
 assert.match(dialog, /layer === 'critical'/);
 assert.match(dialog, /DialogTitle/);
+assert.match(dialog, /xl: 'max-w-6xl'/);
 assert.match(confirm, /confirmationText/);
 assert.match(confirm, /layer="critical"/);
 assert.match(confirm, /variant=\{tone === 'danger' \? 'danger' : 'primary'\}/);

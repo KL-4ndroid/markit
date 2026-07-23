@@ -291,6 +291,8 @@ export async function resetAuthenticatedCache(
     db.syncQueue,
     db.salesPhotoEvidencePendingCreations,
     db.salesPhotoEvidencePendingPayloads,
+    db.productCoverPhotoPendingUploads,
+    db.productCoverPhotoPendingPayloads,
   ], async () => {
     await db.events.clear();
     await db.markets.clear();
@@ -299,6 +301,8 @@ export async function resetAuthenticatedCache(
     await db.syncQueue.clear();
     await db.salesPhotoEvidencePendingCreations.clear();
     await db.salesPhotoEvidencePendingPayloads.clear();
+    await db.productCoverPhotoPendingUploads.clear();
+    await db.productCoverPhotoPendingPayloads.clear();
   });
 
   // Clear sync-related state

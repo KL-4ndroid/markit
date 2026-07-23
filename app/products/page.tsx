@@ -21,6 +21,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { ProductCard } from '@/components/products/ProductCard';
+import { fetchProductCoverPhotoMetadata } from '@/lib/products/product-cover-photo-client';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { StateView } from '@/components/ui/StateView';
@@ -164,6 +165,28 @@ export default function ProductsPage() {
     isActive: isStaffMode ? true : undefined,
     ownerId: scopedOwnerId,
   });
+  const [coverPhotoVersions, setCoverPhotoVersions] = useState<Record<string, number>>({});
+  const productIdKey = useMemo(() => allProducts
+    .map(product => product.id)
+    .filter((id): id is string => Boolean(id))
+    .sort()
+    .join(','), [allProducts]);
+
+  useEffect(() => {
+    let active = true;
+    const productIds = productIdKey ? productIdKey.split(',') : [];
+    if (productIds.length === 0) {
+      setCoverPhotoVersions({});
+      return;
+    }
+    const batches = Array.from({ length: Math.ceil(productIds.length / 100) }, (_, index) => (
+      productIds.slice(index * 100, (index + 1) * 100)
+    ));
+    void Promise.all(batches.map(fetchProductCoverPhotoMetadata)).then(results => {
+      if (active) setCoverPhotoVersions(Object.assign({}, ...results));
+    });
+    return () => { active = false; };
+  }, [productIdKey]);
   const categorySource = useMemo(
     () => allProducts.filter(product => showInactive || product.isActive),
     [allProducts, showInactive],
@@ -330,6 +353,7 @@ export default function ProductsPage() {
                 key={product.id ?? `${product.name}-${product.createdAt}`}
                 product={product}
                 canEdit={canEditProductBasic}
+                coverPhotoVersion={product.id ? coverPhotoVersions[product.id] : null}
                 onOpen={openProduct}
               />
             ))}

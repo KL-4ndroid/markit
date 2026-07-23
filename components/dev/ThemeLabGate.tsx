@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ThemeLab } from '@/components/dev/ThemeLab';
 import {
@@ -8,6 +8,7 @@ import {
   clearThemePaletteOverrides,
   DEFAULT_THEME_PALETTE,
   loadThemeLabState,
+  isThemePaletteAccessible,
   saveThemeLabState,
   THEME_LAB_OPEN_EVENT,
   type ThemeLabState,
@@ -28,10 +29,12 @@ export function ThemeLabGate() {
     customPresets: [],
     hasOverrides: false,
   });
+  const lastSafeStateRef = useRef<ThemeLabState>(state);
 
   useEffect(() => {
     const storedState = loadThemeLabState();
     setState(storedState);
+    lastSafeStateRef.current = storedState;
     if (storedState.hasOverrides) applyThemePalette(storedState.palette);
   }, []);
 
@@ -54,6 +57,7 @@ export function ThemeLabGate() {
 
   const commitState = useCallback((nextState: ThemeLabState) => {
     setState(nextState);
+    lastSafeStateRef.current = nextState;
     saveThemeLabState(nextState);
   }, []);
 
@@ -61,7 +65,10 @@ export function ThemeLabGate() {
     applyThemePalette(palette);
     setState((current) => {
       const nextState = { ...current, palette, hasOverrides: true };
-      saveThemeLabState(nextState);
+      if (isThemePaletteAccessible(palette)) {
+        lastSafeStateRef.current = nextState;
+        saveThemeLabState(nextState);
+      }
       return nextState;
     });
   }, []);
@@ -99,13 +106,22 @@ export function ThemeLabGate() {
     });
   }, [commitState, state]);
 
+  const closeLab = useCallback(() => {
+    if (!isThemePaletteAccessible(state.palette)) {
+      const safeState = lastSafeStateRef.current;
+      applyThemePalette(safeState.palette);
+      setState(safeState);
+    }
+    setOpen(false);
+  }, [state.palette]);
+
   return (
     <ThemeLab
       open={open}
       palette={state.palette}
       customPresets={state.customPresets}
       hasOverrides={state.hasOverrides}
-      onClose={() => setOpen(false)}
+      onClose={closeLab}
       onPaletteChange={updatePalette}
       onSavePreset={savePreset}
       onDeletePreset={deletePreset}

@@ -6,21 +6,22 @@ import {
   Copy,
   Download,
   Keyboard,
-  Palette,
   RotateCcw,
   Save,
   Sparkles,
   Trash2,
   Upload,
-  X,
 } from 'lucide-react';
-import { type ChangeEvent, useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { type ChangeEvent, useEffect, useRef, useState } from 'react';
+
+import { AppDialog } from '@/components/ui/AppDialog';
 
 import {
   BUILT_IN_THEME_PRESETS,
   createThemeLabExport,
   getContrastRatio,
+  getThemeContrastChecks,
+  isThemePaletteAccessible,
   normalizeHex,
   parseThemeLabImport,
   THEME_TOKEN_DEFINITIONS,
@@ -48,7 +49,7 @@ interface ColorFieldProps {
 }
 
 const buttonClass =
-  'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 disabled:cursor-not-allowed disabled:opacity-45';
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 disabled:cursor-not-allowed disabled:opacity-45';
 
 function ColorField({ definition, value, onChange }: ColorFieldProps) {
   const [draft, setDraft] = useState(value);
@@ -125,7 +126,7 @@ function PresetCard({
             type="button"
             onClick={onDelete}
             aria-label={`刪除配色 ${preset.name}`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-700"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-700"
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -168,22 +169,9 @@ export function ThemeLab({
   onDeletePreset,
   onRestoreDefaults,
 }: ThemeLabProps) {
-  const titleId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [mounted, setMounted] = useState(false);
   const [presetName, setPresetName] = useState('');
   const [message, setMessage] = useState('');
-
-  useEffect(() => setMounted(true), []);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, open]);
 
   useEffect(() => {
     if (!message) return;
@@ -191,7 +179,8 @@ export function ThemeLab({
     return () => window.clearTimeout(timeout);
   }, [message]);
 
-  if (!mounted || !open) return null;
+  const contrastChecks = getThemeContrastChecks(palette);
+  const paletteIsAccessible = isThemePaletteAccessible(palette);
 
   const updateToken = (key: keyof ThemePalette, value: string) => {
     onPaletteChange({ ...palette, [key]: value });
@@ -239,42 +228,25 @@ export function ThemeLab({
       setMessage('請先輸入配色名稱');
       return;
     }
+    if (!paletteIsAccessible) {
+      setMessage('目前配色有未通過 AA 的文字組合，請調整後再儲存');
+      return;
+    }
     onSavePreset(normalizedName);
     setPresetName('');
     setMessage('已儲存在這台裝置');
   };
 
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 sm:items-center sm:p-5" role="presentation">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="flex max-h-[96dvh] w-full max-w-6xl flex-col overflow-hidden rounded-t-3xl border border-gray-200 bg-gray-50 text-gray-900 shadow-2xl sm:max-h-[92dvh] sm:rounded-3xl"
-      >
-        <header className="flex shrink-0 items-start gap-4 border-b border-gray-200 bg-white px-4 py-4 sm:px-6">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gray-900 text-white">
-            <Palette className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 id={titleId} className="text-lg font-bold text-gray-950">主題實驗室</h2>
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">個人配色</span>
-              {hasOverrides && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-800">本機覆寫中</span>}
-            </div>
-            <p className="mt-1 text-xs leading-5 text-gray-500">即時調整全 App 色彩；設定只存在這台裝置，不會同步到帳號。</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="關閉主題實驗室"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
-          >
-            <X className="h-5 w-5" aria-hidden="true" />
-          </button>
-        </header>
-
-        <div className="overflow-y-auto">
+  return (
+    <AppDialog
+      open={open}
+      onClose={onClose}
+      title="主題實驗室"
+      description={`個人配色，只存在這台裝置，不會同步到帳號。${hasOverrides ? '目前已套用本機配色。' : ''}`}
+      size="xl"
+      className="bg-gray-50 text-gray-900"
+    >
+        <div>
           <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
             <main className="min-w-0 space-y-5">
               <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
@@ -301,12 +273,12 @@ export function ThemeLab({
               </section>
 
               <section aria-labelledby="theme-color-title">
-                <div className="mb-3 flex items-end justify-between gap-3">
+                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <h3 id="theme-color-title" className="text-sm font-bold text-gray-950">核心色彩</h3>
                     <p className="mt-1 text-xs text-gray-500">輸入六位 HEX 色碼，或使用左側選色器。</p>
                   </div>
-                  <button type="button" onClick={onRestoreDefaults} className={buttonClass}>
+                  <button type="button" onClick={onRestoreDefaults} className={`${buttonClass} w-full sm:w-auto`}>
                     <RotateCcw className="h-4 w-4" aria-hidden="true" />
                     恢復專案預設
                   </button>
@@ -328,6 +300,12 @@ export function ThemeLab({
               <section className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-950">儲存目前組合</h3>
                 <p className="mt-1 text-xs leading-5 text-gray-500">保留多組方案，方便來回比較。</p>
+                {!paletteIsAccessible && (
+                  <p id="theme-save-contrast-error" className="mt-2 flex gap-2 text-xs font-medium leading-5 text-amber-800" role="alert">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    請先修正未通過 AA 的文字組合，再儲存這組配色。
+                  </p>
+                )}
                 <div className="mt-3 flex gap-2">
                   <input
                     value={presetName}
@@ -335,9 +313,15 @@ export function ThemeLab({
                     maxLength={40}
                     placeholder="例如：秋日市集 A"
                     aria-label="自訂配色名稱"
-                    className="min-h-10 min-w-0 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none"
+                    className="min-h-11 min-w-0 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none"
                   />
-                  <button type="button" onClick={savePreset} className={buttonClass}>
+                  <button
+                    type="button"
+                    onClick={savePreset}
+                    className={buttonClass}
+                    disabled={!paletteIsAccessible}
+                    aria-describedby={!paletteIsAccessible ? 'theme-save-contrast-error' : undefined}
+                  >
                     <Save className="h-4 w-4" aria-hidden="true" />
                     儲存
                   </button>
@@ -350,14 +334,13 @@ export function ThemeLab({
                   <span className="text-[11px] font-semibold text-gray-500">AA ≥ 4.5:1</span>
                 </div>
                 <div className="mt-3 space-y-2">
-                  <ContrastRow label="主要文字 / 背景" first={palette.foreground} second={palette.background} />
-                  <ContrastRow label="次要文字 / 卡片" first={palette.mutedForeground} second={palette.card} />
-                  <ContrastRow label="白字 / 主色" first={palette.card} second={palette.primary} />
-                  <ContrastRow label="危險色 / 卡片" first={palette.danger} second={palette.card} />
+                  {contrastChecks.map((check) => (
+                    <ContrastRow key={check.id} label={check.label} first={check.foreground} second={check.background} />
+                  ))}
                 </div>
                 <p className="mt-3 flex gap-2 text-xs leading-5 text-gray-500">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  低於標準仍可預覽，但正式採用前建議調深文字或主色。
+                  低於標準仍可自由預覽，但不能儲存為配色；關閉後會回復最近一次通過檢查的配色。
                 </p>
               </section>
 
@@ -420,8 +403,6 @@ export function ThemeLab({
             {message}
           </div>
         )}
-      </section>
-    </div>,
-    document.body,
+      </AppDialog>
   );
 }

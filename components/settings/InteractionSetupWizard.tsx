@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { X, Check } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle, ArrowLeft, BarChart3, Check, Pencil } from 'lucide-react';
+
+import { AppDialog } from '@/components/ui/AppDialog';
 import { 
   DEFAULT_SCENARIOS, 
   BOOTH_TYPES, 
   saveInteractionButtons,
-  type BoothType,
   type InteractionButton 
 } from '@/lib/interaction-buttons-store';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -29,7 +29,6 @@ type Step = 'intro' | 'select-type' | 'preview' | 'customize-1' | 'customize-2' 
 export function InteractionSetupWizard({ isOpen, onClose, onComplete }: InteractionSetupWizardProps) {
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('intro');
-  const [selectedType, setSelectedType] = useState<BoothType | null>(null);
   const [buttons, setButtons] = useState<InteractionButton[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -38,7 +37,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
     <div className="text-center py-8">
       <div className="mb-6">
         <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full mx-auto mb-4 flex items-center justify-center">
-          <span className="text-3xl">📊</span>
+          <BarChart3 className="h-8 w-8 text-white" aria-hidden="true" />
         </div>
         <h2 className="text-2xl font-medium text-foreground mb-3">
           記錄顧客互動
@@ -49,6 +48,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
       </div>
 
       <button
+        type="button"
         onClick={() => setStep('select-type')}
         className="bg-primary text-white px-8 py-4 rounded-2xl hover:bg-primary/85 transition-colors text-lg font-medium"
       >
@@ -67,15 +67,15 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
       <div className="grid grid-cols-1 gap-3">
         {BOOTH_TYPES.map((type) => (
           <button
+            type="button"
             key={type.id}
             onClick={() => {
-              setSelectedType(type.id);
               setButtons(DEFAULT_SCENARIOS[type.id]);
               setStep('preview');
             }}
             className="flex items-center gap-4 p-5 rounded-2xl border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all"
           >
-            <div className="text-4xl">{type.emoji}</div>
+            <div className="text-4xl" aria-hidden="true">{type.emoji}</div>
             <div className="text-lg font-medium text-foreground">{type.label}</div>
           </button>
         ))}
@@ -94,14 +94,14 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
       </p>
 
       {/* 預覽三個按鈕 */}
-      <div className="bg-background rounded-2xl p-6 mb-6">
+      <div className="mb-6 rounded-2xl bg-background p-3 sm:p-6">
         <div className="grid grid-cols-3 gap-3">
           {buttons.map((button, index) => (
             <div
               key={button.id}
-              className="bg-white rounded-xl p-4 text-center border-2 border-primary/20"
+              className="min-w-0 rounded-xl border-2 border-primary/20 bg-white p-2 text-center sm:p-4"
             >
-              <div className="text-3xl mb-2">{button.emoji}</div>
+              <div className="text-3xl mb-2" aria-hidden="true">{button.emoji}</div>
               <div className="text-sm font-medium text-foreground">
                 {button.label}
               </div>
@@ -111,19 +111,23 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
       </div>
 
       {/* 按鈕 */}
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <button
+          type="button"
           onClick={() => handleSave()}
           disabled={isSaving}
-          className="flex-1 bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium disabled:opacity-50"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-medium text-white transition-colors hover:bg-primary/85 disabled:opacity-50"
         >
-          {isSaving ? '儲存中...' : '✅ 就用這組'}
+          {!isSaving && <Check className="h-5 w-5" aria-hidden="true" />}
+          {isSaving ? '儲存中...' : '就用這組'}
         </button>
         <button
+          type="button"
           onClick={() => setStep('customize-1')}
-          className="flex-1 bg-white text-foreground py-4 rounded-2xl border-2 border-primary/20 hover:bg-background transition-colors font-medium"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-primary/20 bg-white px-4 py-3 font-medium text-foreground transition-colors hover:bg-background"
         >
-          ✏️ 我想調整
+          <Pencil className="h-5 w-5" aria-hidden="true" />
+          我想調整
         </button>
       </div>
     </div>
@@ -170,7 +174,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={4}
-              className="w-full px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="min-h-11 w-full px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
           <div>
@@ -186,7 +190,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={2}
-              className="w-16 px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center text-xl"
+              className="min-h-11 w-16 px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center text-xl"
             />
           </div>
         </div>
@@ -194,6 +198,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
 
       {/* 按鈕 */}
       <button
+        type="button"
         onClick={() => setStep('customize-2')}
         className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
       >
@@ -243,7 +248,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={4}
-              className="w-full px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="min-h-11 w-full px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
           <div>
@@ -259,7 +264,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={2}
-              className="w-16 px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center text-xl"
+              className="min-h-11 w-16 px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center text-xl"
             />
           </div>
         </div>
@@ -267,6 +272,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
 
       {/* 按鈕 */}
       <button
+        type="button"
         onClick={() => setStep('customize-3')}
         className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium"
       >
@@ -299,8 +305,9 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
           例如：加 IG / 加 Line / 留下聯絡 / 加入追蹤
         </p>
         <div className="bg-white/80 rounded-lg p-3 border border-secondary/20">
-          <p className="text-xs text-secondary font-medium">
-            ⚠️ 這裡記錄的是「有價值的互動結果」，實際銷售、成交使用「商品交易」功能
+          <p className="flex gap-2 text-xs font-medium text-secondary">
+            <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>這裡記錄的是「有價值的互動結果」，實際銷售、成交使用「商品交易」功能</span>
           </p>
         </div>
       </div>
@@ -321,7 +328,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={4}
-              className="w-full px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="min-h-11 w-full px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
           <div>
@@ -337,7 +344,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
                 setButtons(newButtons);
               }}
               maxLength={2}
-              className="w-16 px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center text-xl"
+              className="min-h-11 w-16 px-3 py-2 border-2 border-primary/15 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-center text-xl"
             />
           </div>
         </div>
@@ -345,6 +352,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
 
       {/* 按鈕 */}
       <button
+        type="button"
         onClick={() => handleSave()}
         disabled={isSaving}
         className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors font-medium disabled:opacity-50"
@@ -365,7 +373,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
       
       // ✅ 使用 setTimeout 確保窗口關閉動畫完成後再顯示訊息
       setTimeout(() => {
-        toast.success('✅ 互動方式已設定完成');
+        toast.success('互動方式已設定完成');
         onComplete();
       }, 300);
     } catch (error) {
@@ -375,75 +383,38 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
     }
   };
 
+  const goBack = () => {
+    if (step === 'select-type') setStep('intro');
+    else if (step === 'preview') setStep('select-type');
+    else if (step === 'customize-1') setStep('preview');
+    else if (step === 'customize-2') setStep('customize-1');
+    else if (step === 'customize-3') setStep('customize-2');
+  };
+
   return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
-        {/* 背景遮罩 */}
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
+    <AppDialog
+      open={isOpen}
+      onClose={onClose}
+      title="互動記錄設定"
+      description="設定營業畫面的三個快速互動動作"
+      size="md"
+    >
+      {step !== 'intro' && (
+        <button
+          type="button"
+          onClick={goBack}
+          className="inline-flex min-h-11 items-center gap-2 rounded-control px-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary/5 hover:text-foreground"
         >
-          <div className="fixed inset-0 bg-black/50" />
-        </Transition.Child>
-
-        {/* 對話框容器 */}
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-[2rem] bg-white shadow-xl transition-all">
-                {/* Header */}
-                <div className="sticky top-0 bg-white border-b border-primary/10 px-6 py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {step !== 'intro' && (
-                      <button
-                        onClick={() => {
-                          if (step === 'select-type') setStep('intro');
-                          else if (step === 'preview') setStep('select-type');
-                          else if (step === 'customize-1') setStep('preview');
-                          else if (step === 'customize-2') setStep('customize-1');
-                          else if (step === 'customize-3') setStep('customize-2');
-                        }}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        ← 上一步
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    onClick={onClose}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-
-                {/* Content */}
-                <div className="px-6 pb-6 max-h-[calc(90vh-5rem)] overflow-y-auto">
-                  {step === 'intro' && renderIntro()}
-                  {step === 'select-type' && renderSelectType()}
-                  {step === 'preview' && renderPreview()}
-                  {step === 'customize-1' && renderCustomize1()}
-                  {step === 'customize-2' && renderCustomize2()}
-                  {step === 'customize-3' && renderCustomize3()}
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
-        </div>
-      </Dialog>
-    </Transition>
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          上一步
+        </button>
+      )}
+      {step === 'intro' && renderIntro()}
+      {step === 'select-type' && renderSelectType()}
+      {step === 'preview' && renderPreview()}
+      {step === 'customize-1' && renderCustomize1()}
+      {step === 'customize-2' && renderCustomize2()}
+      {step === 'customize-3' && renderCustomize3()}
+    </AppDialog>
   );
 }

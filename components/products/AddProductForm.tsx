@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 
+import { ProductCoverPhotoField } from '@/components/products/ProductCoverPhotoField';
 import { ProductFormFields } from '@/components/products/ProductFormFields';
 import { AppDialog } from '@/components/ui/AppDialog';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { createProduct } from '@/lib/db/hooks';
+import { createProductWithResult } from '@/lib/db/hooks';
+import type { PreparedProductCoverPhoto } from '@/lib/products/product-cover-photo-model';
+import { uploadOrQueueProductCoverPhoto } from '@/lib/products/product-cover-photo-pending';
 import {
   createEmptyProductFormValues,
   getFirstProductFormError,
@@ -31,6 +35,7 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
   const [formData, setFormData] = useState<ProductFormValues>(createEmptyProductFormValues);
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [coverPhoto, setCoverPhoto] = useState<PreparedProductCoverPhoto | null>(null);
 
   const handleChange = <Field extends keyof ProductFormValues>(
     field: Field,
@@ -59,8 +64,15 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
     setSubmitError(null);
 
     try {
-      await createProduct(toProductCreatedPayload(formData));
+      const { productId } = await createProductWithResult(toProductCreatedPayload(formData));
+      if (coverPhoto) {
+        const outcome = await uploadOrQueueProductCoverPhoto(productId, coverPhoto);
+        if (outcome === 'queued') {
+          toast.info('商品已新增；照片已保留，待連線恢復後可再次上傳。');
+        }
+      }
       setFormData(createEmptyProductFormValues());
+      setCoverPhoto(null);
       setErrors({});
       setShowZeroStockConfirm(false);
       onClose();
@@ -119,6 +131,13 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
         )}
       >
         <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
+          <ProductCoverPhotoField
+            productName={formData.name}
+            value={coverPhoto}
+            onChange={setCoverPhoto}
+            disabled={isSubmitting}
+          />
+          <div className="mt-5">
           <ProductFormFields
             idPrefix={FIELD_PREFIX}
             values={formData}
@@ -126,6 +145,7 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
             onChange={handleChange}
             disabled={isSubmitting}
           />
+          </div>
           {submitError && (
             <p className="mt-5 rounded-control border border-status-danger-border bg-status-danger-bg p-3 text-sm text-status-danger-text" role="alert">
               {submitError}

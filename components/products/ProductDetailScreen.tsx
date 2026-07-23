@@ -21,6 +21,7 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
+import { ProductCoverPhotoImage } from '@/components/products/ProductCoverPhotoImage';
 import { getProductDetail } from '@/lib/products/detail-service';
 import { useRoleContext } from '@/lib/role-context';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
@@ -44,6 +45,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [coverPhotoRevision, setCoverPhotoRevision] = useState(0);
   const {
     isStaff,
     isOwner,
@@ -184,6 +186,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   // 處理編輯成功
   const handleEditSuccess = () => {
     toast.success('商品已更新');
+    setCoverPhotoRevision(previous => previous + 1);
     showNavigation(); // 顯示導航列
   };
 
@@ -329,8 +332,14 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
       {/* Content */}
       <div className="max-w-lg mx-auto px-6 -mt-4 pb-6 space-y-4">
         {/* 商品圖示 */}
-        <div className={`${categoryStyle.bg} rounded-[1.5rem] p-12 flex items-center justify-center shadow-lg shadow-primary/10`}>
-          <div className="text-secondary/20xl">{categoryStyle.emoji}</div>
+        <div className={`${categoryStyle.bg} aspect-[4/3] overflow-hidden rounded-card flex items-center justify-center shadow-lg shadow-primary/10`}>
+          <ProductCoverPhotoImage
+            key={`${product.id}-${coverPhotoRevision}`}
+            productId={product.id}
+            productName={product.name}
+            variant="display"
+            fallback={<div className="text-6xl" aria-hidden="true">{categoryStyle.emoji}</div>}
+          />
         </div>
 
         {/* 價格資訊 */}
