@@ -7,7 +7,8 @@
 
 'use client';
 
-import { useSync, SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
+import { SyncStatus as SyncStatusEnum } from '@/hooks/useSync';
+import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { 
   Cloud, 
@@ -21,9 +22,7 @@ import { useState } from 'react';
 
 export function SyncStatus() {
   const { user, isConfigured } = useAuth();
-  const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSync({
-    enabled: !!user && isConfigured,
-  });
+  const { status, lastSyncAt, pendingCount, error, sync, isOnline } = useSyncContext();
   const [showTooltip, setShowTooltip] = useState(false);
 
   // 如果未配置或未登入，不顯示
@@ -50,15 +49,15 @@ export function SyncStatus() {
   const getStatusColor = () => {
     switch (status) {
       case SyncStatusEnum.SYNCING:
-        return 'text-[#7B9FA6]';
+        return 'text-primary';
       case SyncStatusEnum.SUCCESS:
-        return 'text-[#7B9FA6]';
+        return 'text-primary';
       case SyncStatusEnum.ERROR:
-        return 'text-[#d4183d]';
+        return 'text-danger';
       case SyncStatusEnum.OFFLINE:
-        return 'text-[#6B6B6B]';
+        return 'text-muted-foreground';
       default:
-        return 'text-[#6B6B6B]';
+        return 'text-muted-foreground';
     }
   };
 
@@ -80,15 +79,15 @@ export function SyncStatus() {
   const getStatusBgColor = () => {
     switch (status) {
       case SyncStatusEnum.SYNCING:
-        return 'bg-[#7B9FA6]/10';
+        return 'bg-primary/10';
       case SyncStatusEnum.SUCCESS:
-        return 'bg-[#E8F3E8]';
+        return 'bg-soft-green';
       case SyncStatusEnum.ERROR:
-        return 'bg-[#F5E6E8]';
+        return 'bg-soft-pink';
       case SyncStatusEnum.OFFLINE:
-        return 'bg-[#F0F0F0]';
+        return 'bg-cat-other';
       default:
-        return 'bg-[#F0F0F0]';
+        return 'bg-cat-other';
     }
   };
 
@@ -124,7 +123,7 @@ export function SyncStatus() {
           {getStatusText()}
         </span>
         {pendingCount > 0 && (
-          <span className="ml-1 px-2 py-0.5 bg-[#7B9FA6] text-white text-xs rounded-full">
+          <span className="ml-1 px-2 py-0.5 bg-primary text-white text-xs rounded-full">
             {pendingCount}
           </span>
         )}
@@ -132,11 +131,11 @@ export function SyncStatus() {
 
       {/* Tooltip */}
       {showTooltip && (
-        <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-4 min-w-[280px] z-50 border border-[#7B9FA6]/10">
+        <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl shadow-xl p-4 min-w-[280px] z-50 border border-primary/10">
           <div className="space-y-3">
             {/* 狀態 */}
             <div className="flex items-center justify-between">
-              <span className="text-sm text-[#6B6B6B]">狀態</span>
+              <span className="text-sm text-muted-foreground">狀態</span>
               <div className={`flex items-center gap-2 ${getStatusColor()}`}>
                 {getStatusIcon()}
                 <span className="text-sm font-medium">{getStatusText()}</span>
@@ -145,16 +144,16 @@ export function SyncStatus() {
 
             {/* 網路狀態 */}
             <div className="flex items-center justify-between">
-              <span className="text-sm text-[#6B6B6B]">網路</span>
-              <span className={`text-sm font-medium ${isOnline ? 'text-[#7B9FA6]' : 'text-[#6B6B6B]'}`}>
+              <span className="text-sm text-muted-foreground">網路</span>
+              <span className={`text-sm font-medium ${isOnline ? 'text-primary' : 'text-muted-foreground'}`}>
                 {isOnline ? '🟢 已連線' : '⚪ 離線'}
               </span>
             </div>
 
             {/* 最後同步時間 */}
             <div className="flex items-center justify-between">
-              <span className="text-sm text-[#6B6B6B]">最後同步</span>
-              <span className="text-sm font-medium text-[#3A3A3A]">
+              <span className="text-sm text-muted-foreground">最後同步</span>
+              <span className="text-sm font-medium text-foreground">
                 {formatLastSync()}
               </span>
             </div>
@@ -162,8 +161,8 @@ export function SyncStatus() {
             {/* 待同步事件 */}
             {pendingCount > 0 && (
               <div className="flex items-center justify-between">
-                <span className="text-sm text-[#6B6B6B]">待同步</span>
-                <span className="text-sm font-medium text-[#7B9FA6]">
+                <span className="text-sm text-muted-foreground">待同步</span>
+                <span className="text-sm font-medium text-primary">
                   {pendingCount} 個事件
                 </span>
               </div>
@@ -171,8 +170,8 @@ export function SyncStatus() {
 
             {/* 錯誤訊息 */}
             {error && (
-              <div className="pt-3 border-t border-[#7B9FA6]/10">
-                <p className="text-xs text-[#d4183d]">
+              <div className="pt-3 border-t border-primary/10">
+                <p className="text-xs text-danger">
                   ⚠️ {error}
                 </p>
               </div>
@@ -186,7 +185,7 @@ export function SyncStatus() {
                   sync();
                   setShowTooltip(false);
                 }}
-                className="w-full bg-[#7B9FA6] text-white py-2 rounded-xl hover:bg-[#6A8E95] transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                className="w-full bg-primary text-white py-2 rounded-xl hover:bg-primary/85 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
               >
                 <RefreshCw className="w-4 h-4" />
                 立即同步

@@ -1,0 +1,46 @@
+name: lint
+
+on:
+  pull_request:
+    paths:
+      - '**.tsx'
+      - '**.ts'
+      - '**.css'
+      - 'tailwind.config.ts'
+      - 'package.json'
+      - '.cursorrules'
+  push:
+    branches: [main]
+    paths:
+      - '**.tsx'
+      - '**.ts'
+      - '**.css'
+      - 'tailwind.config.ts'
+      - 'package.json'
+      - '.cursorrules'
+
+jobs:
+  hex-budget:
+    name: Hex token budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Budget is allowed to be tightened but not loosened without an
+      # explicit PR to docs/audit/known-violations.md (see .cursorrules).
+      - name: Run hex budget check
+        env:
+          # Default: 0. Any new hex violation fails the build. To add a hex:
+          # 1. Add the new hex to HEX_ALLOWLIST in eslint.config.mjs (justified)
+          # 2. Update docs/audit/known-violations.md
+          MAX_HEX_BUDGET: '0'
+        run: node scripts/lint-hex.js

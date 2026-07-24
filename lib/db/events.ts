@@ -1,14 +1,31 @@
 /**
- * Market Pulse - 事件溯源核心邏輯
+ * Féria - 事件溯源核心邏輯
  * 
  * 本檔案實作事件溯源 (Event Sourcing) 的核心功能
  * 所有資料變更都透過事件記錄，確保完整的歷史追蹤
  */
 
 import { db, generateUUID } from './index';
+import {
+  pickMarketId,
+  productCreatedPayloadToLocal,
+} from '@/lib/data-mappers';
+import {
+  checkBackupIntegrity,
+  type BackupData,
+} from './integrity';
+import { assertFreshStaffCapability } from '@/lib/permissions/role-freshness';
+import {
+  getDealClosedManualProjection,
+  getDealClosedMode,
+  getDealClosedTransactionDate,
+} from './deal-closed-projection';
+import { isBackfillDealEvent } from '@/lib/events/event-read-model';
+import { timestampToLocalDateString } from '@/lib/time-utils';
 import type {
   Event,
   EventType,
+  EventPayloadMap,
   EventHandler,
   Market,
   MarketCreatedPayload,
@@ -16,7 +33,10 @@ import type {
   ProductCreatedPayload,
   ProductUpdatedPayload,
   InteractionRecordedPayload,
+  InteractionDeletedPayload,
   DealClosedPayload,
+  DealDeletedPayload,
+  DailyStats,
   Settings,
 } from '@/types/db';
 
@@ -34,8 +54,271 @@ export function registerEventHandler(type: EventType, handler: EventHandler): vo
   eventHandlers[type] = handler;
 }
 
+type ProductSoldEntry = DailyStats['productsSold'][number];
+
+type EventPayload = EventPayloadMap[EventType] | Record<string, unknown>;
+
+function finiteNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function nonNegativeNumber(value: unknown, fallback = 0): number {
+  return Math.max(0, finiteNumber(value, fallback));
+}
+
+function safeProductsSold(value: unknown): ProductSoldEntry[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function prepareEventForInsert(
+  type: EventType,
+  payload: EventPayload
+): { payload: EventPayload; market_id?: string } {
+  if (!payload || typeof payload !== 'object') {
+    return { payload };
+  }
+
+  const record = payload as Record<string, unknown>;
+
+  if (type === 'market_created') {
+    const marketId = pickMarketId(record) || generateUUID();
+    return {
+      payload: {
+        ...record,
+        marketId,
+      },
+      market_id: marketId,
+    };
+  }
+
+  if (type === 'product_created') {
+    const productPayload = productCreatedPayloadToLocal(record as ProductCreatedPayload & Record<string, unknown>);
+    const productId = productPayload.productId || generateUUID();
+    return {
+      payload: {
+        ...productPayload,
+        productId,
+      },
+      market_id: pickMarketId(productPayload),
+    };
+  }
+
+  return {
+    payload,
+    market_id: pickMarketId(record),
+  };
+}
+
+function assertRecord(payload: EventPayload, type: EventType): Record<string, unknown> {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error(`Invalid ${type} payload: expected an object`);
+  }
+
+  return payload as Record<string, unknown>;
+}
+
+function assertString(value: unknown, field: string, type: EventType): void {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`Invalid ${type} payload: missing ${field}`);
+  }
+}
+
+function assertNumber(value: unknown, field: string, type: EventType): void {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`Invalid ${type} payload: ${field} must be a finite number`);
+  }
+}
+
+function assertMarketId(record: Record<string, unknown>, type: EventType): void {
+  if (!pickMarketId(record)) {
+    throw new Error(`Invalid ${type} payload: missing market_id`);
+  }
+}
+
+function validateEventPayload(type: EventType, payload: EventPayload): void {
+  const record = assertRecord(payload, type);
+
+  switch (type) {
+    case 'market_created':
+      assertString(record.name, 'name', type);
+      assertString(record.location, 'location', type);
+      assertString(record.startDate ?? record.start_date, 'startDate', type);
+      assertString(record.endDate ?? record.end_date, 'endDate', type);
+      assertNumber(record.registrationFee ?? record.registration_fee, 'registrationFee', type);
+      assertNumber(record.boothCost ?? record.booth_cost, 'boothCost', type);
+      return;
+
+    case 'market_updated':
+      assertMarketId(record, type);
+      if (!record.updates || typeof record.updates !== 'object' || Array.isArray(record.updates)) {
+        throw new Error(`Invalid ${type} payload: updates must be an object`);
+      }
+      return;
+
+    case 'market_status_changed':
+      assertMarketId(record, type);
+      assertString(record.oldStatus, 'oldStatus', type);
+      assertString(record.newStatus, 'newStatus', type);
+      return;
+
+    case 'market_started':
+    case 'market_ended':
+    case 'market_deleted':
+      assertMarketId(record, type);
+      return;
+
+    case 'product_created':
+      assertString(record.name, 'name', type);
+      assertString(record.category, 'category', type);
+      assertNumber(record.price, 'price', type);
+      return;
+
+    case 'product_updated':
+      assertString(record.productId, 'productId', type);
+      if (!record.updates || typeof record.updates !== 'object' || Array.isArray(record.updates)) {
+        throw new Error(`Invalid ${type} payload: updates must be an object`);
+      }
+      return;
+
+    case 'product_deleted':
+      assertString(record.productId, 'productId', type);
+      return;
+
+    case 'interaction_recorded':
+      assertMarketId(record, type);
+      assertString(record.type, 'type', type);
+      return;
+
+    case 'interaction_deleted':
+      assertString(record.eventId, 'eventId', type);
+      assertMarketId(record, type);
+      return;
+
+    case 'deal_closed':
+      assertMarketId(record, type);
+      assertNumber(record.totalAmount, 'totalAmount', type);
+      if (record.isManualEntry === true) return;
+      if (!Array.isArray(record.items)) {
+        throw new Error(`Invalid ${type} payload: items must be an array`);
+      }
+      for (const [index, item] of record.items.entries()) {
+        const saleItem = item as Record<string, unknown>;
+        assertString(saleItem.productId, `items[${index}].productId`, type);
+        assertNumber(saleItem.quantity, `items[${index}].quantity`, type);
+        assertNumber(saleItem.price, `items[${index}].price`, type);
+        if ((saleItem.quantity as number) <= 0) {
+          throw new Error(`Invalid ${type} payload: items[${index}].quantity must be greater than zero`);
+        }
+      }
+      return;
+
+    case 'deal_deleted':
+      assertString(record.eventId, 'eventId', type);
+      assertMarketId(record, type);
+      assertString(record.dealDate, 'dealDate', type);
+      assertNumber(record.totalAmount, 'totalAmount', type);
+      assertNumber(record.totalCost, 'totalCost', type);
+      assertNumber(record.dealCount, 'dealCount', type);
+      return;
+
+    case 'field_note_created':
+    case 'field_note_updated':
+      assertMarketId(record, type);
+      assertString(record.noteId, 'noteId', type);
+      assertString(record.text, 'text', type);
+      return;
+
+    case 'field_note_deleted':
+      assertMarketId(record, type);
+      assertString(record.noteId, 'noteId', type);
+      return;
+
+    case 'checklist_item_created':
+      assertMarketId(record, type);
+      assertString(record.itemId, 'itemId', type);
+      assertString(record.text, 'text', type);
+      if (record.completed !== undefined && typeof record.completed !== 'boolean') {
+        throw new Error(`Invalid ${type} payload: completed must be a boolean`);
+      }
+      return;
+
+    case 'checklist_item_updated':
+      assertMarketId(record, type);
+      assertString(record.itemId, 'itemId', type);
+      if (record.text !== undefined) assertString(record.text, 'text', type);
+      if (record.completed !== undefined && typeof record.completed !== 'boolean') {
+        throw new Error(`Invalid ${type} payload: completed must be a boolean`);
+      }
+      if (record.text === undefined && record.completed === undefined) {
+        throw new Error(`Invalid ${type} payload: text or completed is required`);
+      }
+      return;
+
+    case 'checklist_item_deleted':
+      assertMarketId(record, type);
+      assertString(record.itemId, 'itemId', type);
+      return;
+
+    case 'settings_updated':
+      return;
+  }
+}
+
+export function mergeProductsSold(
+  existing: ProductSoldEntry[] = [],
+  additions: ProductSoldEntry[] = []
+): ProductSoldEntry[] {
+  const merged = new Map<string, ProductSoldEntry>();
+
+  for (const item of existing) {
+    merged.set(item.productId, { ...item });
+  }
+
+  for (const item of additions) {
+    const current = merged.get(item.productId);
+    merged.set(item.productId, {
+      productId: item.productId,
+      quantity: (current?.quantity || 0) + item.quantity,
+      revenue: (current?.revenue || 0) + item.revenue,
+    });
+  }
+
+  return [...merged.values()];
+}
+
+export function subtractProductsSold(
+  existing: ProductSoldEntry[] = [],
+  removals: ProductSoldEntry[] = []
+): ProductSoldEntry[] {
+  const merged = new Map<string, ProductSoldEntry>();
+
+  for (const item of existing) {
+    merged.set(item.productId, { ...item });
+  }
+
+  for (const item of removals) {
+    const current = merged.get(item.productId);
+    if (!current) continue;
+
+    const quantity = Math.max(0, current.quantity - item.quantity);
+    const revenue = Math.max(0, current.revenue - item.revenue);
+
+    if (quantity > 0 || revenue > 0) {
+      merged.set(item.productId, {
+        productId: item.productId,
+        quantity,
+        revenue,
+      });
+    } else {
+      merged.delete(item.productId);
+    }
+  }
+
+  return [...merged.values()];
+}
+
 /**
- * 核心函數：記錄事件（UUID 版本）
+ * 核心函數：記錄事件（UUID 版本）- 優化版本
  * 
  * 這是整個事件溯源系統的核心函數
  * 流程：
@@ -50,9 +333,19 @@ export function registerEventHandler(type: EventType, handler: EventHandler): vo
  * @param eventId - 可選的事件 ID（用於同步）
  * @returns 事件 ID（UUID）
  */
-export async function recordEvent<T = Record<string, unknown>>(
+export async function recordEvent<T extends EventType>(
+  type: T,
+  payload: EventPayloadMap[T],
+  eventId?: string
+): Promise<string>;
+export async function recordEvent(
   type: EventType,
-  payload: T,
+  payload: Record<string, unknown>,
+  eventId?: string
+): Promise<string>;
+export async function recordEvent(
+  type: EventType,
+  payload: EventPayload,
   eventId?: string
 ): Promise<string> {
   try {
@@ -64,31 +357,74 @@ export async function recordEvent<T = Record<string, unknown>>(
     // 生成或使用提供的 UUID
     const id = eventId || generateUUID();
 
+    // ✅ 獲取真實的用戶 ID（用於同步）
+    let actor_id = 'local'; // 預設值
+    let authenticatedUserId: string | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        const { supabase } = await import('@/lib/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          actor_id = user.id;
+          authenticatedUserId = user.id;
+        }
+      } catch (error) {
+        console.warn('⚠️ 無法獲取用戶 ID，使用預設值 "local"');
+      }
+    }
+
+    // ✅ 計算時間戳：只有補登交易使用指定日期的 23:59，正常交易使用當前時間
+    if (authenticatedUserId) {
+      assertFreshStaffCapability({
+        userId: authenticatedUserId,
+        eventType: type,
+        payload,
+      });
+    }
+
+    validateEventPayload(type, payload);
+
+    let timestamp = Date.now();
+    
+    if (type === 'deal_closed' && payload && typeof payload === 'object') {
+      const dealPayload = payload as unknown as DealClosedPayload;
+      
+      // ✅ 關鍵修正：只有明確標記為補登（isBackfill = true）時才使用 23:59
+      // 正常交易（快速新增收入、商品銷售）使用當前時間
+      if (dealPayload.isBackfill === true && dealPayload.dealDate) {
+        // 解析日期字串 (YYYY-MM-DD)
+        const [year, month, day] = dealPayload.dealDate.split('-').map(Number);
+        
+        // 建立該日期的 23:59:59 時間戳
+        const backfillDate = new Date(year, month - 1, day, 23, 59, 59, 999);
+        timestamp = backfillDate.getTime();
+        
+        console.log(`⏰ 補登時間設置為：${dealPayload.dealDate} 23:59:59`);
+      }
+      // ✅ 正常交易：使用當前時間（已在上面設置）
+      else {
+        console.log(`⏰ 正常交易時間：${new Date(timestamp).toLocaleString('zh-TW')}`);
+      }
+    }
+
+    const preparedEvent = prepareEventForInsert(type, payload);
+
     // 建立事件物件
-    const event: Event<T> = {
+    const event: Event<EventPayload> = {
       id,
       type,
-      payload,
-      timestamp: Date.now(),
-      actor_id: 'local', // 本地用戶標記
+      payload: preparedEvent.payload,
+      timestamp,
+      actor_id, // ✅ 使用真實的用戶 ID
       sync_status: 'local_only',
       metadata: {
         version: '1.0.0',
       },
     };
 
-    // 從 payload 中提取 market_id（如果有）
-    if (payload && typeof payload === 'object') {
-      // ✅ 統一使用 market_id（底線式）
-      if ('market_id' in payload) {
-        event.market_id = (payload as Record<string, unknown>).market_id as string;
-      } else if ('marketId' in payload) {
-        // 兼容舊的駝峰式命名
-        event.market_id = (payload as Record<string, unknown>).marketId as string;
-      }
-    }
+    // ✅ 優化：使用 transaction 確保原子性，並減少不必要的等待
+    event.market_id = preparedEvent.market_id ?? pickMarketId(preparedEvent.payload);
 
-    // 使用 transaction 確保原子性
     await db.transaction(
       'rw',
       [db.events, db.markets, db.products, db.dailyStats],
@@ -108,14 +444,13 @@ export async function recordEvent<T = Record<string, unknown>>(
 
     console.log(`✅ 事件已記錄：${type} (ID: ${id.substring(0, 8)}...)`);
     
-    // ✅ 立即觸發同步（如果在瀏覽器環境）
+    // ✅ 優化：使用 queueMicrotask 非阻塞觸發同步
     if (typeof window !== 'undefined') {
-      // 使用 setTimeout 避免阻塞，延遲 100ms 讓事件處理完成
-      setTimeout(() => {
+      queueMicrotask(() => {
         window.dispatchEvent(new CustomEvent('trigger-sync', {
           detail: { eventType: type, eventId: id }
         }));
-      }, 100);
+      });
     }
     
     return id;
@@ -139,6 +474,7 @@ export async function recordEvent<T = Record<string, unknown>>(
  * 當 market_created 事件發生時：
  * 1. 在 markets 表中新增一筆記錄
  * 2. 初始狀態設為 'registered'（已報名）
+ * 3. ✅ 支持多選日期（dates 陣列）
  */
 registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>, db) => {
   const { payload } = event;
@@ -148,13 +484,29 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
   const payloadWithId = payload as MarketCreatedPayload & { market_id?: string; marketId?: string };
   const market_id = payloadWithId.market_id || payloadWithId.marketId || generateUUID();
   
+  // ✅ 處理日期：優先使用 dates 陣列，否則使用 startDate/endDate
+  let dates: string[] = [];
+  if (payload.dates && payload.dates.length > 0) {
+    // 使用提供的日期陣列
+    dates = [...payload.dates].sort();
+  } else {
+    // 降級：從 startDate 和 endDate 生成連續日期
+    const { generateDateRange } = await import('@/lib/utils');
+    dates = generateDateRange(payload.startDate, payload.endDate);
+  }
+  
+  // ✅ 自動計算 startDate 和 endDate（取最早和最晚）
+  const startDate = dates[0];
+  const endDate = dates[dates.length - 1];
+  
   // 建立市集快照
-  const market: Market = {
+  const market: Market & { salesPhotoEvidenceRequired?: boolean } = {
     id: market_id,
     name: payload.name,
     location: payload.location,
-    startDate: payload.startDate,
-    endDate: payload.endDate,
+    dates,                       // ✅ 新增：日期陣列
+    startDate,                   // ✅ 自動計算：最早日期
+    endDate,                     // ✅ 自動計算：最晚日期
     startTime: payload.startTime,
     endTime: payload.endTime,
     status: 'registered', // 初始狀態：已報名
@@ -186,6 +538,7 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
     chairFree: payload.chairFree,
     umbrellaFree: payload.umbrellaFree,
     tableclothFree: payload.tableclothFree,
+    salesPhotoEvidenceRequired: payload.salesPhotoEvidenceRequired ?? false,
     
     notes: payload.notes,
     
@@ -203,44 +556,25 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
   // 寫入 markets 表
   await db.markets.add(market);
   
-  // ✅ 更新事件的 market_id 和 payload（統一使用 market_id 和底線式命名）
-  const updates: { market_id: string; payload?: Record<string, unknown> } = { market_id };
+  console.log(`📅 市集已建立：${market.name} (ID: ${market_id.substring(0, 8)}..., ${dates.length} 天)`);
+});
+
+/**
+ * 處理「市集更新」事件
+ * 
+ * 當 market_updated 事件發生時：
+ * 更新 markets 表中對應市集的資料
+ */
+registerEventHandler('market_updated', async (event: Event<{ market_id: string; updates: Partial<Market> }>, db) => {
+  const { market_id, updates } = event.payload;
   
-  // ✅ 總是轉換 payload 為底線式命名（用於 Supabase 同步）
-  // 檢查是否已經有底線式欄位，如果沒有則添加
-  const payloadWithSnakeCase = payload as MarketCreatedPayload & { start_date?: string; end_date?: string };
-  if (!payloadWithSnakeCase.start_date || !payloadWithSnakeCase.end_date) {
-    updates.payload = {
-      ...payload,
-      market_id,
-      start_date: payload.startDate,
-      end_date: payload.endDate,
-      start_time: payload.startTime,
-      end_time: payload.endTime,
-      early_entry_enabled: payload.earlyEntryEnabled,
-      early_entry_time: payload.earlyEntryTime,
-      check_in_time: payload.checkInTime,
-      operating_start_time: payload.operatingStartTime,
-      operating_end_time: payload.operatingEndTime,
-      registration_fee: payload.registrationFee,
-      booth_cost: payload.boothCost,
-      deposit: payload.deposit,  // ✅ 添加 deposit
-      table_rental: payload.tableRental,
-      chair_rental: payload.chairRental,
-      umbrella_rental: payload.umbrellaRental,
-      tablecloth_rental: payload.tableclothRental,
-      commission_rate: payload.commissionRate,
-      table_free: payload.tableFree,
-      chair_free: payload.chairFree,
-      umbrella_free: payload.umbrellaFree,
-      tablecloth_free: payload.tableclothFree,
-      notes: payload.notes,  // ✅ 添加 notes
-    };
-  }
+  // 更新市集資料
+  await db.markets.update(market_id, {
+    ...updates,
+    updatedAt: event.timestamp,
+  });
   
-  await db.events.update(event.id!, updates);
-  
-  console.log(`📅 市集已建立：${market.name} (ID: ${market_id.substring(0, 8)}...)`);
+  console.log(`📅 市集已更新：ID ${market_id.substring(0, 8)}...`);
 });
 
 /**
@@ -250,15 +584,17 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
  * 更新 markets 表中對應市集的狀態
  */
 registerEventHandler('market_status_changed', async (event: Event<MarketStatusChangedPayload>, db) => {
-  const payloadWithMarketId = event.payload as MarketStatusChangedPayload & { market_id?: string };
-  const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+  const market_id = pickMarketId(event.payload)!;
   const { newStatus } = event.payload;
   
   // 更新市集狀態
-  await db.markets.update(market_id, {
+  const updated = await db.markets.update(market_id, {
     status: newStatus,
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Market not found for ${event.type}: ${market_id}`);
+  }
   
   console.log(`📅 市集狀態已更新：ID ${market_id} -> ${newStatus}`);
 });
@@ -273,11 +609,14 @@ registerEventHandler('market_status_changed', async (event: Event<MarketStatusCh
 registerEventHandler('market_started', async (event: Event<{ market_id: string }>, db) => {
   const { market_id } = event.payload;
   
-  await db.markets.update(market_id, {
+  const updated = await db.markets.update(market_id, {
     status: 'ongoing',
     operationPhase: 'operating',
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Market not found for ${event.type}: ${market_id}`);
+  }
   
   console.log(`🎪 市集開始營業：ID ${market_id}`);
 });
@@ -292,11 +631,14 @@ registerEventHandler('market_started', async (event: Event<{ market_id: string }
 registerEventHandler('market_ended', async (event: Event<{ market_id: string }>, db) => {
   const { market_id } = event.payload;
   
-  await db.markets.update(market_id, {
+  const updated = await db.markets.update(market_id, {
     status: 'completed',
     operationPhase: undefined,
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Market not found for ${event.type}: ${market_id}`);
+  }
   
   console.log(`✅ 市集已結束：ID ${market_id}`);
 });
@@ -312,13 +654,16 @@ registerEventHandler('market_ended', async (event: Event<{ market_id: string }>,
  * - 已取消（cancelled）：市集狀態，仍顯示在列表中
  * - 已刪除（isDeleted）：軟刪除標記，不顯示在列表中
  */
-registerEventHandler('market_deleted', async (event: Event<{ marketId: string; reason?: string }>, db) => {
-  const { marketId } = event.payload;
+registerEventHandler('market_deleted', async (event: Event<{ marketId?: string; market_id?: string; reason?: string }>, db) => {
+  const marketId = pickMarketId(event.payload)!;
   
-  await db.markets.update(marketId, {
+  const updated = await db.markets.update(marketId, {
     isDeleted: true,
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Market not found for ${event.type}: ${marketId}`);
+  }
   
   console.log(`🗑️ 市集已刪除（軟刪除）：ID ${marketId.substring(0, 8)}...`);
 });
@@ -332,7 +677,7 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
   const { payload } = event;
   
   // 生成商品 UUID（如果 payload 中已有則使用，否則生成新的）
-  const payloadWithId = payload as ProductCreatedPayload & { productId?: string };
+  const payloadWithId = productCreatedPayloadToLocal(payload as ProductCreatedPayload & Record<string, unknown>);
   const productId = payloadWithId.productId || generateUUID();
   
   await db.products.add({
@@ -355,13 +700,6 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
     updatedAt: event.timestamp,
   });
   
-  // 將 productId 寫回 payload（用於同步）
-  if (!payloadWithId.productId) {
-    await db.events.update(event.id!, {
-      payload: { ...payload, productId },
-    });
-  }
-  
   console.log(`📦 商品已建立：${payload.name}${payload.unlimitedStock ? ' (不限庫存)' : ''} (ID: ${productId.substring(0, 8)}...)`);
 });
 
@@ -371,10 +709,13 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
 registerEventHandler('product_updated', async (event: Event<ProductUpdatedPayload>, db) => {
   const { productId, updates } = event.payload;
   
-  await db.products.update(productId, {
+  const updated = await db.products.update(productId, {
     ...updates,
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    throw new Error(`Product not found for ${event.type}: ${productId}`);
+  }
   
   console.log(`📦 商品已更新：ID ${productId}`);
 });
@@ -383,13 +724,17 @@ registerEventHandler('product_updated', async (event: Event<ProductUpdatedPayloa
  * 處理「商品刪除」事件
  * 注意：我們不真正刪除商品，只是標記為不啟用
  */
-registerEventHandler('product_deleted', async (event: Event<{ productId: number }>, db) => {
+registerEventHandler('product_deleted', async (event: Event<{ productId: string }>, db) => {
   const { productId } = event.payload;
   
-  await db.products.update(productId, {
+  const updated = await db.products.update(productId, {
     isActive: false,
     updatedAt: event.timestamp,
   });
+  if (updated === 0) {
+    console.warn(`[events] Product not found for ${event.type}, treating as idempotent tombstone: ${productId}`);
+    return;
+  }
   
   console.log(`📦 商品已停用：ID ${productId}`);
 });
@@ -398,16 +743,15 @@ registerEventHandler('product_deleted', async (event: Event<{ productId: number 
 
 /**
  * 處理「互動記錄」事件
- * 
- * 當記錄互動（摸摸、詢問）時：
+ *
+ * 當記錄互動時：
  * 1. 更新市集的互動統計
- * 2. 更新每日統計
+ * 2. 更新每日統計（支持自定義按鈕）
  */
 registerEventHandler('interaction_recorded', async (event: Event<InteractionRecordedPayload>, db) => {
-  const payloadWithMarketId = event.payload as InteractionRecordedPayload & { market_id?: string };
-  const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
+  const market_id = pickMarketId(event.payload)!;
   const { type } = event.payload;
-  
+
   // 更新市集統計
   const market = await db.markets.get(market_id);
   if (market) {
@@ -416,23 +760,43 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
       updatedAt: event.timestamp,
     });
   }
-  
+
   // 更新每日統計（使用複合索引查詢）
-  const date = new Date(event.timestamp).toISOString().split('T')[0];
+  // ✅ 使用本地日期，避免時區問題
+  const eventDate = new Date(event.timestamp);
+  const date = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
   const dailyStat = await db.dailyStats
     .where('[date+marketId]')
     .equals([date, market_id])
     .first();
-  
+
   if (dailyStat) {
-    // 更新現有統計
-    const updates: { updatedAt: number; touchCount?: number; inquiryCount?: number } = { updatedAt: event.timestamp };
-    if (type === 'touch') updates.touchCount = dailyStat.touchCount + 1;
-    if (type === 'inquiry') updates.inquiryCount = dailyStat.inquiryCount + 1;
-    
+    // ✅ 構建更新對象（支持自定義按鈕）
+    const updates: { updatedAt: number; touchCount?: number; inquiryCount?: number; extraInteractions?: Record<string, number> } = { updatedAt: event.timestamp };
+
+    // 預設類型
+    if (type === 'touch') updates.touchCount = (dailyStat.touchCount || 0) + 1;
+    if (type === 'inquiry') updates.inquiryCount = (dailyStat.inquiryCount || 0) + 1;
+
+    // ✅ 自定義按鈕：使用 extraInteractions 記錄
+    if (type !== 'touch' && type !== 'inquiry') {
+      const currentExtra = dailyStat.extraInteractions || {};
+      updates.extraInteractions = {
+        ...currentExtra,
+        [type]: (currentExtra[type] || 0) + 1,
+      };
+    }
+
     await db.dailyStats.update(dailyStat.id!, updates);
   } else {
-    // 建立新的每日統計
+    // ✅ 建立新的每日統計（支持自定義按鈕）
+    const extraInteractions: Record<string, number> = {};
+
+    // 自定義按鈕計入 extraInteractions
+    if (type !== 'touch' && type !== 'inquiry') {
+      extraInteractions[type] = 1;
+    }
+
     await db.dailyStats.add({
       date,
       marketId: market_id,
@@ -443,12 +807,20 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
       cost: 0,
       profit: 0,
       productsSold: [],
+      extraInteractions: Object.keys(extraInteractions).length > 0 ? extraInteractions : undefined,
       updatedAt: event.timestamp,
     });
   }
-  
+
   console.log(`👋 互動已記錄：${type} (市集 ID: ${market_id})`);
 });
+
+registerEventHandler('field_note_created', async () => {});
+registerEventHandler('field_note_updated', async () => {});
+registerEventHandler('field_note_deleted', async () => {});
+registerEventHandler('checklist_item_created', async () => {});
+registerEventHandler('checklist_item_updated', async () => {});
+registerEventHandler('checklist_item_deleted', async () => {});
 
 /**
  * 處理「成交」事件（UUID 版本 + 交易快照 + 每日收入記錄 + 補登支持）
@@ -461,22 +833,25 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
  * 5. ✅ 支持簡化補登（手動輸入金額）和完整補登（選擇商品）
  */
 registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) => {
-  const payloadWithMarketId = event.payload as DealClosedPayload & { market_id?: string };
-  const market_id = payloadWithMarketId.market_id || payloadWithMarketId.marketId;
-  const { dealDate, isBackfill, isManualEntry } = event.payload;
+  const market_id = pickMarketId(event.payload)!;
+  const dealMode = getDealClosedMode(event);
+  const isBackfill = dealMode === 'backfill';
+  const isManualEntry = dealMode === 'manual';
   
-  // ✅ 使用指定的交易日期，如果沒有則使用事件時間戳
-  const transactionDate = dealDate || new Date(event.timestamp).toISOString().split('T')[0];
+  // ✅ 使用指定的交易日期，如果沒有則使用本地日期
+  const transactionDate = getDealClosedTransactionDate(event);
   
   let totalAmount = event.payload.totalAmount;
   let totalCost = 0;
   let dealCount = 1;
+  const productsSold: ProductSoldEntry[] = [];
   
   // ========== 簡化模式：手動輸入 ==========
   if (isManualEntry) {
-    totalAmount = event.payload.manualRevenue || 0;
-    totalCost = event.payload.manualCost || 0;
-    dealCount = event.payload.manualDealCount || 1;
+    const manualProjection = getDealClosedManualProjection(event);
+    totalAmount = manualProjection.revenue;
+    totalCost = manualProjection.cost;
+    dealCount = manualProjection.dealCount;
     
     console.log(`📝 簡化補登：收入 NT$${totalAmount}，成本 NT$${totalCost}，成交 ${dealCount} 筆`);
   }
@@ -493,6 +868,11 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
         item.price_at_time_of_sale = item.price || product.price;
         item.cost_at_time_of_sale = product.cost;
         item.product_name = product.name;
+        productsSold.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          revenue: (item.price || product.price) * item.quantity,
+        });
         
         if (product.cost) {
           totalCost += product.cost * item.quantity;
@@ -504,9 +884,16 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
           updatedAt: event.timestamp,
         };
         
-        // ✅ 關鍵：補登時不扣庫存
-        if (!isBackfill && !product.unlimitedStock && product.stock !== undefined) {
-          updates.stock = Math.max(0, product.stock - item.quantity);
+        // ✅ 正常交易不得超賣；補登不扣庫存
+        if (!isBackfill && !product.unlimitedStock) {
+          const currentStock = product.stock ?? 0;
+          if (currentStock < item.quantity) {
+            throw new Error(
+              `${product.name} 庫存不足！目前庫存：${currentStock}，需要：${item.quantity}`
+            );
+          }
+
+          updates.stock = currentStock - item.quantity;
         }
         
         await db.products.update(item.productId, updates);
@@ -550,11 +937,16 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
     .first();
   
   if (dailyStat) {
+    const currentDealCount = nonNegativeNumber(dailyStat.dealCount);
+    const currentRevenue = nonNegativeNumber(dailyStat.revenue);
+    const currentCost = nonNegativeNumber(dailyStat.cost);
+    const currentProfit = finiteNumber(dailyStat.profit);
     await db.dailyStats.update(dailyStat.id!, {
-      dealCount: dailyStat.dealCount + dealCount,
-      revenue: dailyStat.revenue + totalAmount,
-      cost: dailyStat.cost + totalCost,
-      profit: dailyStat.profit + (totalAmount - totalCost),
+      dealCount: currentDealCount + dealCount,
+      revenue: currentRevenue + totalAmount,
+      cost: currentCost + totalCost,
+      profit: currentProfit + (totalAmount - totalCost),
+      productsSold: mergeProductsSold(safeProductsSold(dailyStat.productsSold), productsSold),
       updatedAt: event.timestamp,
     });
   } else {
@@ -567,13 +959,212 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
       revenue: totalAmount,
       cost: totalCost,
       profit: totalAmount - totalCost,
-      productsSold: [],
+      productsSold,
       updatedAt: event.timestamp,
     });
   }
   
   const modeText = isManualEntry ? '簡化補登' : isBackfill ? '完整補登' : '正常交易';
   console.log(`💰 ${modeText}已記錄：NT$${totalAmount} (日期: ${transactionDate}, 市集 ID: ${market_id.substring(0, 8)}...)`);
+});
+
+/**
+ * 處理「刪除互動記錄」事件
+ *
+ * 當刪除互動記錄時：
+ * 1. 保留原始事件，由 interaction_deleted 作為 tombstone
+ * 2. 更新市集統計（扣除互動次數）
+ * 3. 更新每日統計（扣除互動次數，支持自定義按鈕）
+ */
+registerEventHandler('interaction_deleted', async (event: Event<InteractionDeletedPayload>, db) => {
+  const { eventId, market_id, interactionType } = event.payload;
+
+  // 2. 更新市集統計
+  const market = await db.markets.get(market_id);
+  if (market) {
+    await db.markets.update(market_id, {
+      totalInteractions: Math.max(0, (market.totalInteractions || 0) - 1),
+      updatedAt: event.timestamp,
+    });
+  }
+
+  // ✅ 更新每日統計（支持自定義按鈕）
+  const eventDate = new Date(event.timestamp);
+  const date = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+  const dailyStat = await db.dailyStats
+    .where('[date+marketId]')
+    .equals([date, market_id])
+    .first();
+
+  if (dailyStat) {
+    const updates: { updatedAt: number; touchCount?: number; inquiryCount?: number; extraInteractions?: Record<string, number> } = { updatedAt: event.timestamp };
+
+    // 預設類型
+    if (interactionType === 'touch') updates.touchCount = Math.max(0, (dailyStat.touchCount || 0) - 1);
+    if (interactionType === 'inquiry') updates.inquiryCount = Math.max(0, (dailyStat.inquiryCount || 0) - 1);
+
+    // ✅ 自定義按鈕：從 extraInteractions 扣除
+    if (interactionType && interactionType !== 'touch' && interactionType !== 'inquiry') {
+      const currentExtra = dailyStat.extraInteractions || {};
+      const currentCount = currentExtra[interactionType] || 0;
+      const newExtra = { ...currentExtra };
+      if (currentCount > 0) {
+        newExtra[interactionType] = currentCount - 1;
+        if (newExtra[interactionType] === 0) delete newExtra[interactionType];
+      }
+      updates.extraInteractions = newExtra;
+    }
+
+    await db.dailyStats.update(dailyStat.id!, updates);
+  }
+
+  console.log(`🗑️ 互動記錄已刪除：ID ${eventId.substring(0, 8)}...`);
+});
+
+/**
+ * 處理「刪除成交記錄」事件
+ *
+ * 當刪除成交記錄時：
+ * 1. 保留原始事件，由 deal_deleted 作為 tombstone
+ * 2. 查回原始 deal_closed event，推斷是否為完整補登
+ * 3. 根據原始類型，安全恢復或扣回商品狀態
+ * 4. 更新市集統計（扣除金額）
+ * 5. 更新每日統計（扣除金額）
+ *
+ * 刪除對稱性：
+ * - 一般成交刪除：扣回 totalSold + 恢復 stock
+ * - 完整補登刪除：扣回 totalSold，不恢復 stock
+ * - Unlimited 商品刪除：扣回 totalSold，不修改 stock
+ * - 簡易補登刪除：無商品異動
+ * - Legacy 非法 quantity：跳過商品異動
+ */
+registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db) => {
+  const { eventId, dealDate, totalAmount, totalCost = 0, dealCount, productsSold = [] } = event.payload;
+  const market_id = pickMarketId(event.payload) ?? event.market_id;
+
+  if (!market_id) {
+    throw new Error(`deal_deleted is missing market_id: ${event.id ?? eventId}`);
+  }
+
+  const totalProfit = totalAmount - totalCost;
+
+  // ==========================================================
+  // Step 0: 查回原始 deal_closed event，推斷補登狀態（tri-state 安全）
+  // ==========================================================
+  let originalWasBackfill = false;
+  let canDetermineBackfillStatus = false;
+
+  if (eventId) {
+    const originalDealEvent = await db.events.get(eventId);
+    if (originalDealEvent && originalDealEvent.type === 'deal_closed') {
+      const payload = originalDealEvent.payload as Record<string, unknown>;
+      const hasExplicitBackfillFlag =
+        typeof payload.isBackfill === 'boolean' ||
+        typeof payload.is_backfill === 'boolean';
+
+      if (hasExplicitBackfillFlag) {
+        canDetermineBackfillStatus = true;
+        originalWasBackfill = isBackfillDealEvent(originalDealEvent);
+      }
+      // 若無明確欄位，canDetermineBackfillStatus 保持 false → 保守不恢復 stock
+    }
+  }
+
+  // ==========================================================
+  // Step 1: 恢復商品狀態（stock + totalSold）
+  // ==========================================================
+  for (const soldItem of productsSold) {
+    const product = await db.products.get(soldItem.productId);
+    if (!product) continue;
+
+    const quantity = soldItem.quantity;
+
+    // ==========================================================
+    // Step 1a: Legacy 非法 quantity — 跳過，避免污染
+    // ==========================================================
+    if (
+      typeof quantity !== 'number' ||
+      !Number.isFinite(quantity) ||
+      quantity <= 0
+    ) {
+      console.warn(
+        `[deal_deleted] skip product mutation for non-positive quantity: ` +
+        `${soldItem.productId} qty=${quantity}`
+      );
+      continue;
+    }
+
+    const updates: { stock?: number; totalSold: number; updatedAt: number } = {
+      totalSold: Math.max(0, (product.totalSold || 0) - quantity),
+      updatedAt: event.timestamp,
+    };
+
+    // ==========================================================
+    // Step 1b: stock 恢復 — 只有非補登的一般成交才執行
+    // ==========================================================
+    if (canDetermineBackfillStatus && !originalWasBackfill) {
+      // 一般成交：可以恢復 stock
+      if (!product.unlimitedStock && product.stock !== undefined) {
+        updates.stock = product.stock + quantity;
+        console.log(
+          `📦 已恢復庫存：${product.name} x${quantity}（市集 ID: ${market_id.substring(0, 8)}...）`
+        );
+      }
+    } else if (!canDetermineBackfillStatus) {
+      // 無法確認原始事件，保守策略：不上漲 stock
+      console.warn(
+        `[deal_deleted] cannot determine backfill status for eventId=${eventId}; ` +
+        `skipping stock restoration to avoid corruption`
+      );
+    }
+    // 若為補登：完全不恢復 stock（無論如何都不增加）
+
+    await db.products.update(soldItem.productId, updates);
+  }
+
+  // ==========================================================
+  // Step 2: 更新市集統計（扣除金額）
+  // ==========================================================
+  const market = await db.markets.get(market_id);
+  if (market) {
+    await db.markets.update(market_id, {
+      totalRevenue: Math.max(0, (market.totalRevenue || 0) - totalAmount),
+      totalProfit: (market.totalProfit || 0) - totalProfit,
+      totalDeals: Math.max(0, (market.totalDeals || 0) - dealCount),
+      updatedAt: event.timestamp,
+    });
+  }
+
+  // ==========================================================
+  // Step 3: 更新每日統計（扣除金額）
+  // ==========================================================
+  const dailyStat = await db.dailyStats
+    .where('[date+marketId]')
+    .equals([dealDate, market_id])
+    .first();
+
+  if (dailyStat) {
+    const newDealCount = Math.max(0, nonNegativeNumber(dailyStat.dealCount) - dealCount);
+    const newRevenue = Math.max(0, nonNegativeNumber(dailyStat.revenue) - totalAmount);
+    const newCost = Math.max(0, nonNegativeNumber(dailyStat.cost) - totalCost);
+    const newProfit = finiteNumber(dailyStat.profit) - totalProfit;
+    const newProductsSold = subtractProductsSold(safeProductsSold(dailyStat.productsSold), productsSold);
+
+    if (newDealCount === 0 && newRevenue === 0) {
+      await db.dailyStats.delete(dailyStat.id!);
+    } else {
+      await db.dailyStats.update(dailyStat.id!, {
+        dealCount: newDealCount,
+        revenue: newRevenue,
+        cost: newCost,
+        profit: newProfit,
+        productsSold: newProductsSold,
+        updatedAt: event.timestamp,
+      });
+    }
+  }
+
+  console.log(`🗑️ 成交記錄已刪除：NT$${totalAmount} (日期: ${dealDate}, 市集 ID: ${market_id.substring(0, 8)}...)`);
 });
 
 // ==================== 設定相關事件處理器 ====================
@@ -634,6 +1225,18 @@ export async function queryEvents(options: {
  * ⚠️ 這是一個高級功能，通常不需要使用
  * 只在資料不一致時才需要重建
  */
+async function collectIntegritySnapshot(): Promise<BackupData> {
+  return {
+    version: 1,
+    exportedAt: Date.now(),
+    events: await db.events.toArray(),
+    markets: await db.markets.toArray(),
+    products: await db.products.toArray(),
+    dailyStats: await db.dailyStats.toArray(),
+    settings: await db.settings.toArray(),
+  };
+}
+
 export async function rebuildSnapshots(): Promise<void> {
   console.log('🔄 開始重建快照...');
   
@@ -653,6 +1256,15 @@ export async function rebuildSnapshots(): Promise<void> {
       if (handler) {
         await handler(event, db);
       }
+    }
+
+    const integrity = checkBackupIntegrity(await collectIntegritySnapshot());
+    if (!integrity.ok) {
+      throw new Error(`Snapshot rebuild produced inconsistent data:\n${integrity.errors.join('\n')}`);
+    }
+
+    if (integrity.warnings.length > 0) {
+      console.warn('Snapshot rebuild completed with integrity warnings:', integrity.warnings);
     }
     
     console.log(`✅ 快照重建完成：處理了 ${events.length} 個事件`);

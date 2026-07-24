@@ -1,39 +1,143 @@
-# Market Pulse - Cursor AI 開發規則
+# 出攤本 BoothBook - Cursor AI 開發規則
+
+> 最近重構：2026-07-14（套用 `docs/audit/2026-07-14-cursorrules-audit.md` 的 4 項 P0 修正）
+> 對齊版本：Féria VI（2026-06-17）+ Local-First v2 + hex violations = 0（2026-07-14 達標）
 
 ## 專案概述
-Market Pulse 是一個專為市集攤販設計的離線優先數位助手。
-核心原則：3秒操作、100%離線、日系美學。
 
-## 技術棧
-- Next.js 14+ (App Router)
-- TypeScript (嚴格模式)
-- Tailwind CSS
-- Dexie.js (IndexedDB)
-- Zustand (狀態管理)
-- Lucide React (圖標)
+出攤本 BoothBook 是一個專為市集攤販設計的 **Local-First（本地優先）** 數位助手。
+（內部代號：Markit）
+
+**核心原則**：3秒操作、本地優先、日系美學。
+
+---
+
+## 🎯 Local-First 架構原則
+
+### 核心理念
+
+**本地 Dexie 是 UI 的唯一資料來源**
+- 所有讀取操作必須針對 Dexie（使用 `useLiveQuery` 或自訂 Hooks）
+- 雲端 Supabase 僅作為備份和協作工具
+- 即使斷網一小時，本地操作也必須完全正常
+
+### 資料流向
+
+```
+┌─────────────────────────────────────────────┐
+│           使用者操作 (UI)                    │
+└─────────────────┬───────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────────┐
+│     寫入 Dexie (Event Sourcing)             │
+│     - 記錄事件到 events 表                   │
+│     - 更新快照表 (markets, products)         │
+└─────────────────┬───────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────────┐
+│     UI 自動更新 (useLiveQuery)              │
+└─────────────────┬───────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────────┐
+│     背景同步至 Supabase（非阻塞）            │
+│     - 自動重試 / 衝突解決                    │
+└─────────────────────────────────────────────┘
+```
+
+### 雲端回流規則
+
+```
+Supabase 新資料
+        ↓
+寫入 Dexie（events 表）
+        ↓
+觸發事件處理器（更新快照表）
+        ↓
+UI 自動更新（useLiveQuery）
+```
+
+**⚠️ 嚴格禁止**：直接從 Supabase 讀取資料並渲染 UI。
+
+---
 
 ## 設計系統規範
 
-### 必須遵循的色彩
-- 主色：#7B9FA6 (霧藍)
-- 次色：#D4A574 (暖木)
-- 背景：#FAFAF8 (米白)
-- 輔助色：#F5E6E8 (柔粉)、#E8F3E8 (柔綠)、#FFF8E7 (柔黃)
+> ⚠️ **本節已於 2026-07-13 精簡化**：色票詳細值請查閱 `docs/brand/VI_DESIGN_TOKENS.md`（2026-07-14 修正：原 `VI_DESIGN_SYSTEM.md` 不存在，已併入 `VI_DESIGN_TOKENS.md`）。
+> `.cursorrules` 只保留「使用 Tailwind token」的精神指引，避免雙重維護造成的不一致。
+
+### 色彩使用原則
+
+| 語意 | Tailwind Token | 用途 |
+|---|---|---|
+| 主色 | `bg-primary` / `text-primary` | 老闆模式主色、按鈕、品牌元素 |
+| 次色 | `bg-secondary` | 強調、輔助 |
+| 柔色背景 | `bg-soft-pink` / `bg-soft-green` / `bg-soft-yellow` | 卡片底色、區分區塊 |
+| 商品分類 | `bg-cat-clothing` / `bg-cat-art` / `bg-cat-stationery` / `bg-cat-other` | 商品分類 chip |
+| 功能 | `bg-danger` / `bg-warn` / `bg-info` | 狀態色 |
+| 中性 | `bg-muted` / `text-foreground` / `text-deep` | 分隔、次要文字 |
+
+### ⚠️ 禁止在 `.tsx` 內直接寫 hex 色碼
+
+```tsx
+// ❌ 錯誤（會被 ESLint rule 阻擋）
+<div className="bg-[#E8F0F8]">
+
+// ✅ 正確（使用 token）
+<div className="bg-cat-clothing">
+```
+
+ESLint 已內建 `no-hex-colors/no-hex-colors` 規則（`.cursorrules` 第 120 行原禁止條款的**機器強制版**）。詳見 `eslint.config.mjs`。
+
+> ✅ **截至 2026-07-14**：hex violations = **0**（P0-P3 全部完成）。
+> 完整對照（good/warn/danger × border/bg/text + warning + gold + 41 allowList）：見 `docs/audit/known-violations.md`。
 
 ### 圓角系統
-- 主卡片：rounded-[1.5rem] (24px)
-- 次卡片：rounded-[1.25rem] (20px)
-- 按鈕：rounded-2xl (16px)
-- 標籤：rounded-full
+
+> ⚠️ **2026-07-14 修正**：以下用 Tailwind **內建 class 命名**直接對應，取代舊的「var(--radius-*) token 變數」描述（該變數從未實際定義於 `app/globals.css`）。
+>
+> 對照 `tailwind.config.ts:85-89`：`xl=1rem=16px`、`2xl=1.25rem=20px`、`3xl=1.5rem=24px`。
+
+| 元素 | 類別 | 實際尺寸 |
+|---|---|---|
+| 主卡片 | `rounded-3xl` | 24px |
+| 次卡片 | `rounded-2xl` | 20px |
+| 對話框 / 大面板 | `rounded-2xl` | 20px |
+| 按鈕 | `rounded-xl` | 16px（**注意：不是 12px**） |
+| 較小的 chip / 輸入框 | `rounded-md` 或 `rounded-lg` | 6-8px |
+| 標籤 / 圓形 pill | `rounded-full` | 50% |
 
 ### 陰影
-- 主卡片：shadow-lg shadow-[#7B9FA6]/10
-- 次卡片：shadow-md shadow-[#7B9FA6]/5
-- Hover：hover:shadow-xl
+
+- 主卡片：`shadow-lg shadow-primary/10`
+- 次卡片：`shadow-md shadow-primary/5`
+- Hover：`hover:shadow-xl`
+
+### 員工模式
+
+沿用主色 `primary`，以透明度區分：
+- 主背景：`primary/10`
+- 漸層 header：`from-primary/80 to-primary/60`
+- 邊框：`primary/15`
+
+---
+
+## 技術棧
+
+- Next.js 14+ (App Router)
+- TypeScript (嚴格模式)
+- Tailwind CSS（自訂 token 透過 `app/globals.css` 的 `:root` 定義）
+- **Dexie.js (IndexedDB) - 唯一資料來源**
+- **Supabase (PostgreSQL) - 備份 + 協作**
+- React 內建狀態（`useState` / `useReducer` / Context）+ 自訂 Hooks（`hooks/useSync`、`hooks/useUserRole` 等）
+- Lucide React（圖標）
+- ESLint 9（flat config）+ 自訂 `no-hex-colors` 規則
+
+---
 
 ## 程式碼規範
 
 ### 組件結構
+
 ```tsx
 'use client'; // 客戶端組件必須標記
 
@@ -51,12 +155,13 @@ export function ComponentName({ props }: ComponentProps) {
 ```
 
 ### 頁面結構
+
 ```tsx
 export default function PageName() {
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
+    <div className="min-h-screen bg-background">
       {/* Header with gradient */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
           <h1 className="text-2xl font-medium text-white opacity-90">標題</h1>
         </div>
@@ -72,36 +177,53 @@ export default function PageName() {
 ```
 
 ### 命名規範
-- 組件：PascalCase (例：BottomNavigation)
-- 函數：camelCase (例：formatDate)
-- 常數：UPPER_SNAKE_CASE (例：MAX_ITEMS)
-- 檔案：與組件同名或小寫 (page.tsx, utils.ts)
+
+| 類型 | 規範 | 範例 |
+|---|---|---|
+| 組件 | PascalCase | `BottomNavigation` |
+| 函數 | camelCase | `formatDate` |
+| 常數 | UPPER_SNAKE_CASE | `MAX_ITEMS` |
+| 檔案 | 與組件同名 | `page.tsx`, `utils.ts` |
+
+---
 
 ## 開發約束
 
 ### 禁止事項
-❌ 不允許圖片上傳或 Base64 儲存
-❌ 不使用外部 API（離線優先）
-❌ 不使用 Emoji 圖片（使用 Lucide Icons）
-❌ 不偏離設計系統色彩
+
+| ID | 規則 | 強制層級 |
+|---|---|---|
+| ❌ | **禁止以 Base64 儲存於資料表欄位**；圖片走 IndexedDB 二進位 + 雲端物件儲存（R2） | 設計決策 |
+| ❌ | 不直接從 Supabase 讀取資料渲染 UI | Local-First 核心 |
+| ❌ | 不使用 Emoji 作為 UI icon（使用 Lucide Icons） | 設計系統 |
+| ❌ | 不繞過 `recordEvent` 直接寫 Dexie 快照表 | 事件溯源 |
+| ❌ | 不自刻同步 `setInterval` 邏輯（使用 `useSync`） | 集中化 |
+| ❌ | 不偏離 Tailwind token 直接寫 hex 色碼 | **ESLint 強制** |
+| ❌ | 不在主執行緒執行同步操作（會阻塞 UI） | 效能 |
+
+> 🆕 **2026-07-13 改進**：
+> - 「禁止圖片上傳」改寫為「禁止 Base64 儲存」（圖片上傳本身已支援 IndexedDB + R2）
+> - 「不偏離設計系統色彩」具體化為「不寫 hex」並由 ESLint 強制
 
 ### 必須遵循
-✅ 所有資料存於 IndexedDB (Dexie.js)
-✅ 使用事件溯源模式
-✅ 單手操作優化（按鈕至少 44x44px）
-✅ 頁面底部預留 pb-24 給導航
-✅ 使用 max-w-lg mx-auto 限制內容寬度
-✅ 添加適當的 transition 動畫
 
-## 工具函數使用
+- ✅ 使用 Tailwind token 色彩（不要寫 hex）
+- ✅ 所有資料存於 IndexedDB (Dexie.js)
+- ✅ 所有讀取使用 `useLiveQuery` 或自訂 Hooks
+- ✅ 業務寫入使用 `recordEvent`（事件溯源）
+- ✅ 雲端同步透過 `useSync` Hook（非阻塞、優雅降級）
+- ✅ 單手操作優化（按鈕至少 44x44px）
+- ✅ 頁面底部預留 `pb-24` 給導航
+- ✅ 使用 `max-w-lg mx-auto` 限制內容寬度
+- ✅ 添加適當的 `transition` 動畫
 
-### 類名合併
+### 工具函數使用
+
 ```tsx
 import { cn } from '@/lib/utils';
 className={cn('base-class', condition && 'conditional-class')}
 ```
 
-### 格式化
 ```tsx
 import { formatDate, formatCurrency, formatNumber } from '@/lib/utils';
 formatDate(new Date())        // "2026/01/21"
@@ -109,71 +231,280 @@ formatCurrency(1000)          // "NT$1,000"
 formatNumber(1234567)         // "1,234,567"
 ```
 
-## 移動裝置優化
-
-### 必須檢查
-- [ ] 使用 max-w-lg mx-auto
-- [ ] 頁面底部 pb-24
-- [ ] 按鈕尺寸足夠大
-- [ ] 添加 hover 和 transition
-- [ ] 使用大圓角
-- [ ] 適當的 emoji 使用
+---
 
 ## 資料庫規範
 
+### Local-First 資料流
+
+#### 寫入流程（必須遵循）
+
+```typescript
+// ✅ 正確：Local-First 寫入流程
+import { recordEvent } from '@/lib/db/events';
+
+async function handleUserAction(data: any) {
+  // 步驟 1: 寫入本地 Dexie（立即完成）
+  await recordEvent({
+    type: 'market_created',
+    payload: data,
+    timestamp: Date.now(),
+    actor_id: userId,
+    market_id: marketId,
+  });
+
+  // 步驟 2: UI 自動更新（useLiveQuery 觸發）
+  // 不需要手動更新狀態
+
+  // 步驟 3: 背景同步（由 useSync Hook 自動處理）
+  // 失敗會自動重試，不影響用戶體驗
+}
+
+// ❌ 錯誤：直接寫入 Supabase
+async function handleUserAction(data: any) {
+  await supabase.from('markets').insert(data); // 斷網會失敗
+}
+
+// ❌ 錯誤：同時寫入兩處
+async function handleUserAction(data: any) {
+  await db.markets.add(data);
+  await supabase.from('markets').insert(data); // 重複邏輯
+}
+```
+
+#### 讀取流程（必須遵循）
+
+```typescript
+// ✅ 正確：從 Dexie 讀取
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/lib/db';
+
+function MarketsList() {
+  const markets = useLiveQuery(
+    () => db.markets.where('status').equals('paid').toArray()
+  );
+
+  if (!markets) return <Loading />;
+
+  return (
+    <div>
+      {markets.map(market => (
+        <MarketCard key={market.id} market={market} />
+      ))}
+    </div>
+  );
+}
+
+// ✅ 正確：使用自訂 Hook（推薦）
+import { useMarkets } from '@/lib/db/hooks';
+
+function MarketsList() {
+  const markets = useMarkets({ orderBy: 'startDate', order: 'desc' });
+
+  if (!markets) return <Loading />;
+
+  return (
+    <div>
+      {markets.map(market => (
+        <MarketCard key={market.id} market={market} />
+      ))}
+    </div>
+  );
+}
+
+// ❌ 錯誤：從 Supabase 讀取
+function MarketsList() {
+  const [markets, setMarkets] = useState([]);
+  useEffect(() => {
+    supabase.from('markets').select('*').then(({ data }) => setMarkets(data));
+  }, []);
+}
+
+// ❌ 錯誤：混合讀取
+function MarketsList() {
+  const localMarkets = useLiveQuery(() => db.markets.toArray());
+  const [cloudMarkets, setCloudMarkets] = useState([]);
+  // 不應該有兩個資料來源
+}
+```
+
+#### 雲端回流（由 `useSync` 自動處理）
+
+```typescript
+// ✅ 正確：雲端資料必須先寫入 Dexie
+async function pullEventsFromCloud(userId: string) {
+  // 1. 從 Supabase 拉取新事件
+  const { data: newEvents } = await supabase
+    .from('events')
+    .select('*')
+    .gt('timestamp', lastSyncAt);
+
+  // 2. 寫入本地 Dexie
+  for (const event of newEvents) {
+    await db.events.add({ ...event, sync_status: 'synced' });
+    const handler = eventHandlers[event.type];
+    if (handler) await handler(event, db);
+  }
+  // 3. UI 自動更新（useLiveQuery 觸發）
+}
+
+// ❌ 錯誤：直接使用雲端資料更新 UI
+async function pullEventsFromCloud(userId: string) {
+  const { data: markets } = await supabase.from('markets').select('*');
+  setMarkets(markets); // 違反 Local-First
+}
+```
+
 ### 事件溯源架構
+
 - ✅ 所有操作記錄為不可變事件
 - ✅ 維護快照表以供快速讀取
 - ✅ 使用 transaction 確保原子性
 - ✅ 可從事件歷史重建快照
 
 ### 資料表結構
-- **events**: 歷史事件（不可變）
-- **markets**: 市集快照
-- **products**: 商品清單（⚠️ 禁止圖片欄位）
-- **dailyStats**: 每日統計
-- **settings**: 用戶設定
 
-### 使用規範
+- **events**：歷史事件（不可變，唯一真實來源）
+- **markets**：市集快照（從 events 計算）
+- **products**：商品清單（圖片走獨立 IndexedDB 二進位，不入欄位）
+- **dailyStats**：每日統計（從 events 計算）
+- **settings**：用戶設定
+
+### 同步機制
+
 ```typescript
-// ✅ 正確：使用 Hooks
-import { useMarkets, createMarket } from '@/lib/db/hooks';
-const markets = useMarkets();
-await createMarket(data);
+// ✅ 正確：使用 useSync Hook
+import { useSync } from '@/hooks/useSync';
 
-// ❌ 錯誤：直接修改資料庫
-await db.markets.add(data); // 應該使用 createMarket()
+function MyComponent() {
+  const { status, lastSyncAt, pendingCount, sync } = useSync({
+    enabled: true,
+    interval: 30000,
+  });
 
-// ✅ 正確：記錄事件
-await recordEvent('market_created', payload);
+  const handleManualSync = () => sync();
 
-// ✅ 正確：查詢資料
-const market = await db.markets.get(id);
+  return (
+    <div>
+      <p>同步狀態: {status}</p>
+      <p>待同步事件: {pendingCount}</p>
+      <button onClick={handleManualSync}>立即同步</button>
+    </div>
+  );
+}
+
+// ❌ 錯誤：自己實作同步邏輯
+function MyComponent() {
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      await supabase.from('events').insert(localEvents); // 不應該
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+}
 ```
 
 ### 事件類型
-- 市集：market_created, market_status_changed, market_started, market_ended
-- 商品：product_created, product_updated, product_deleted
-- 互動：interaction_recorded, deal_closed
-- 設定：settings_updated
+
+- **市集**：`market_created`, `market_updated`, `market_status_changed`, `market_started`, `market_ended`, `market_deleted`
+- **商品**：`product_created`, `product_updated`, `product_deleted`
+- **互動**：`interaction_recorded`, `deal_closed`
+- **設定**：`settings_updated`
+
+---
+
+## 移動裝置優化
+
+### 必須檢查
+
+- [ ] 使用 `max-w-lg mx-auto`
+- [ ] 頁面底部 `pb-24`
+- [ ] 按鈕尺寸足夠大（至少 44x44px）
+- [ ] 添加 hover 和 transition
+- [ ] 使用大圓角
+- [ ] 適當的圖示使用（Lucide Icons）
+
+---
+
+## 錯誤處理
+
+### 網路錯誤處理
+
+```typescript
+// ✅ 正確：優雅降級
+async function syncToCloud() {
+  try {
+    await supabase.from('events').insert(events);
+  } catch (error) {
+    if (error.message?.includes('Failed to fetch')) {
+      console.warn('⚠️ 網路連線失敗，將在下次自動重試');
+      return; // 不拋出錯誤，讓用戶繼續使用
+    }
+    throw error;
+  }
+}
+
+// ❌ 錯誤：阻塞用戶操作
+async function syncToCloud() {
+  await supabase.from('events').insert(events); // 斷網會拋出錯誤
+}
+```
+
+---
+
+## 工具鏈
+
+### ESLint 規則
+
+| 規則 | 用途 |
+|---|---|
+| `no-hex-colors/no-hex-colors` | 阻擋 `bg-[#xxxxxx]` 等任意 hex 值 |
+| `@typescript-eslint/no-unused-vars` | off（本專案習慣寬鬆） |
+| `@typescript-eslint/no-explicit-any` | off |
+| `react-hooks/*` | 部分子規則 off（依需求評估） |
+
+### Pre-commit 檢查
+
+- `npx eslint .`：必須 0 errors 才允許 commit（hex 違規即會失敗）
+- `node scripts/normalize-eol.js`：如發現 CRLF 污染，執行此腳本修復
+
+### 行尾規範（`.gitattributes`）
+
+- 原始碼（`*.ts`/`*.tsx`/`*.js`/`*.css`/`*.md`）：**強制 LF**
+- Windows 腳本（`*.ps1`/`*.bat`/`*.cmd`）：強制 CRLF
+- 二進位（圖片/字型/PDF）：binary
+
+---
 
 ## 參考文件優先級
 
-1. PROJECT_CONTEXT.md - 專案核心原則
-2. JAPANESE_UI_DESIGN_SYSTEM.md - 設計系統
-3. QUICK_START.md - 開發指南
-4. STEP1_COMPLETION_REPORT.md - 當前進度
+1. **`docs/brand/VI_DESIGN_SYSTEM.md`** + **`docs/brand/VI_DESIGN_TOKENS.md`** - 設計 token 完整對照表
+2. **`.cursorrules`**（本檔）- 精神指引與強制規則
+3. **`docs/audit/`** - 規則稽核報告與已知偏離追蹤
+4. **`AI_ASSISTANT_COMPLETE_GUIDE.md`** - AI 助手完整指南
+5. **`PROJECT_CONTEXT.md`** - 專案核心原則
+6. **`QUICK_START.md`** - 開發指南
+
+---
 
 ## AI 助手指引
 
 當協助開發時：
-1. 始終參考設計系統文件
-2. 保持日系美學風格
-3. 優先考慮移動裝置體驗
-4. 確保離線優先原則
-5. 遵循 3 秒操作原則
-6. 使用 TypeScript 嚴格型別
-7. 添加適當的註解說明
+
+1. **嚴格遵循 Local-First 架構**（讀取 Dexie / 寫入 `recordEvent` / 同步交 `useSync`）
+2. 所有讀取必須從 Dexie（使用 `useLiveQuery` 或自訂 Hooks）
+3. 所有業務寫入必須先到 Dexie（使用 `recordEvent`）
+4. 雲端同步由 `useSync` 自動處理，不要自己刻
+5. 設計系統**只用 Tailwind token**（不要寫 hex）
+6. 保持日系美學風格
+7. 優先考慮移動裝置體驗
+8. 確保斷網時完全可用
+9. 遵循 3 秒操作原則
+10. 使用 TypeScript 嚴格型別
+11. 添加適當的註解說明
+12. **修改 `.cursorrules` 前**：查 `docs/audit/` 看相關歷史決策
+
+---
 
 ## 提交訊息規範
 
@@ -189,4 +520,21 @@ chore: 雜項任務
 
 ---
 
-遵循這些規則，確保專案保持一致性與高品質！
+## 🎯 Local-First 檢查清單
+
+在實作任何功能前，請確認：
+
+- [ ] 資料讀取是否使用 `useLiveQuery` 或自訂 Hook？
+- [ ] 資料寫入是否使用 `recordEvent`？
+- [ ] 是否避免直接從 Supabase 讀取資料？
+- [ ] 是否避免在主執行緒執行同步操作？
+- [ ] 斷網時功能是否完全可用？
+- [ ] 是否有適當的錯誤處理（優雅降級）？
+- [ ] UI 更新是否由 Dexie 驅動（不是手動 setState）？
+- [ ] 顏色是否使用 Tailwind token（沒寫 hex）？
+- [ ] 圖示是否使用 Lucide Icons（沒用 emoji）？
+
+---
+
+**核心原則**：本地 Dexie 是唯一真實來源，雲端 Supabase 是備份和協作工具。
+遵循這些規則，確保專案保持 Local-First 架構的一致性與高品質！

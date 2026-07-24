@@ -1,27 +1,18 @@
-/**
- * Migration Modal - 資料遷移詢問對話框
- * 
- * 當登入時檢測到本地有匿名資料時彈出
- * 讓用戶選擇如何處理本地資料
- */
-
 'use client';
 
 import { useState } from 'react';
-import { 
-  executeMigration, 
-  MigrationOption 
-} from '@/lib/supabase/migration';
-import { 
-  Upload, 
-  Trash2, 
-  X, 
-  Loader2, 
-  CheckCircle, 
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import {
   AlertCircle,
+  Calendar,
+  CheckCircle,
   Database,
-  Calendar
+  Loader2,
+  Trash2,
+  Upload,
+  X,
 } from 'lucide-react';
+import { executeMigration, MigrationOption } from '@/lib/supabase/migration';
 import { toast } from 'sonner';
 
 interface MigrationModalProps {
@@ -47,10 +38,14 @@ export function MigrationModal({
   const [selectedOption, setSelectedOption] = useState<MigrationOption | null>(null);
   const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-
-  if (!isOpen) return null;
+  const [clearConfirmation, setClearConfirmation] = useState('');
 
   const handleMigration = async (option: MigrationOption) => {
+    if (option === MigrationOption.CLEAR && clearConfirmation.trim() !== '清除') {
+      toast.error('請先輸入「清除」以確認此操作。');
+      return;
+    }
+
     setSelectedOption(option);
     setIsLoading(true);
     setStatus('processing');
@@ -58,77 +53,74 @@ export function MigrationModal({
 
     try {
       await executeMigration(option, userId);
-      
+
       setStatus('success');
-      
-      // 根據選項顯示不同的成功訊息
+
       if (option === MigrationOption.SYNC) {
-        toast.success('資料已同步到雲端！');
+        toast.success('本機資料已準備同步到雲端。');
       } else if (option === MigrationOption.CLEAR) {
-        toast.success('已從雲端載入資料！');
+        toast.success('此裝置的本機資料已清除，將使用雲端帳號資料。');
       } else {
-        toast.info('已取消登入');
+        toast.info('已取消登入。');
       }
 
-      // 延遲關閉，讓用戶看到成功訊息
       setTimeout(() => {
         onMigrationComplete();
         onClose();
       }, 1500);
-      
-    } catch (error: any) {
-      console.error('遷移失敗:', error);
+    } catch (error) {
+      console.error('資料處理失敗:', error);
+      const message = error instanceof Error ? error.message : '請稍後再試。';
       setStatus('error');
-      setErrorMessage(error.message || '遷移失敗，請稍後再試');
-      toast.error('遷移失敗：' + (error.message || '未知錯誤'));
+      setErrorMessage(message);
+      toast.error(`資料處理失敗：${message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 如果正在處理或已完成，顯示狀態畫面
   if (status === 'processing' || status === 'success' || status === 'error') {
     return (
-      <>
-        <div className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm" />
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-          <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl">
+      <Dialog open={isOpen} onClose={() => {}} className="relative z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-6">
+          <DialogPanel className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl">
             <div className="text-center">
               {status === 'processing' && (
                 <>
-                  <Loader2 className="w-16 h-16 text-[#7B9FA6] mx-auto mb-4 animate-spin" />
-                  <h3 className="text-xl font-medium text-[#3A3A3A] mb-2">
+                  <Loader2 className="w-16 h-16 text-primary mx-auto mb-4 animate-spin" />
+                  <h3 className="text-xl font-medium text-foreground mb-2">
                     處理中...
                   </h3>
-                  <p className="text-[#6B6B6B]">
-                    {selectedOption === MigrationOption.SYNC && '正在同步資料到雲端'}
-                    {selectedOption === MigrationOption.CLEAR && '正在從雲端載入資料'}
-                    {selectedOption === MigrationOption.CANCEL && '正在登出'}
+                  <p className="text-muted-foreground">
+                    {selectedOption === MigrationOption.SYNC && '正在將本機資料標記為可同步。'}
+                    {selectedOption === MigrationOption.CLEAR && '正在清除此裝置的本機資料。'}
+                    {selectedOption === MigrationOption.CANCEL && '正在取消登入。'}
                   </p>
                 </>
               )}
 
               {status === 'success' && (
                 <>
-                  <CheckCircle className="w-16 h-16 text-[#7B9FA6] mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-[#3A3A3A] mb-2">
-                    完成！
+                  <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
+                  <h3 className="text-xl font-medium text-foreground mb-2">
+                    已完成
                   </h3>
-                  <p className="text-[#6B6B6B]">
-                    {selectedOption === MigrationOption.SYNC && '資料已成功同步到雲端'}
-                    {selectedOption === MigrationOption.CLEAR && '已從雲端載入資料'}
-                    {selectedOption === MigrationOption.CANCEL && '已取消登入'}
+                  <p className="text-muted-foreground">
+                    {selectedOption === MigrationOption.SYNC && '本機資料會在同步時上傳到雲端。'}
+                    {selectedOption === MigrationOption.CLEAR && '此裝置將改用雲端帳號資料。'}
+                    {selectedOption === MigrationOption.CANCEL && '已取消登入，資料未變更。'}
                   </p>
                 </>
               )}
 
               {status === 'error' && (
                 <>
-                  <AlertCircle className="w-16 h-16 text-[#d4183d] mx-auto mb-4" />
-                  <h3 className="text-xl font-medium text-[#3A3A3A] mb-2">
-                    發生錯誤
+                  <AlertCircle className="w-16 h-16 text-danger mx-auto mb-4" />
+                  <h3 className="text-xl font-medium text-foreground mb-2">
+                    處理失敗
                   </h3>
-                  <p className="text-[#6B6B6B] mb-4">
+                  <p className="text-muted-foreground mb-4">
                     {errorMessage}
                   </p>
                   <button
@@ -136,89 +128,77 @@ export function MigrationModal({
                       setStatus('idle');
                       setSelectedOption(null);
                     }}
-                    className="bg-[#7B9FA6] text-white px-6 py-3 rounded-2xl hover:bg-[#6A8E95] transition-colors"
+                    className="bg-primary text-white px-6 py-3 rounded-2xl hover:bg-primary/85 transition-colors"
                   >
-                    重試
+                    重新選擇
                   </button>
                 </>
               )}
             </div>
-          </div>
+          </DialogPanel>
         </div>
-      </>
+      </Dialog>
     );
   }
 
   return (
-    <>
-      {/* 背景遮罩 */}
-      <div className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm" />
-      
-      {/* 對話框 */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-[2rem] p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
-          {/* 標題 */}
-          <div className="flex items-start justify-between mb-6">
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden="true" />
+
+      <div className="fixed inset-0 flex items-center justify-center p-6">
+        <DialogPanel className="bg-white rounded-[2rem] p-8 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h2 className="text-2xl font-medium text-[#3A3A3A] mb-2">
-                發現本地資料
-              </h2>
-              <p className="text-sm text-[#6B6B6B]">
-                登入帳號：<span className="font-medium text-[#7B9FA6]">{userEmail}</span>
+              <DialogTitle className="text-2xl font-medium text-foreground mb-2">
+                此裝置已有本機資料
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                你正在登入 <span className="font-medium text-primary">{userEmail}</span>。
+                系統偵測到此裝置已有尚未綁定到這個帳號的資料，請選擇如何處理。
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-[#F5E6E8] rounded-full transition-colors"
+              className="p-2 hover:bg-soft-pink rounded-full transition-colors"
               disabled={isLoading}
+              aria-label="關閉"
             >
-              <X className="w-5 h-5 text-[#6B6B6B]" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
 
-          {/* 資料統計 */}
-          <div className="bg-[#E8F3E8] rounded-2xl p-6 mb-6">
+          <div className="bg-soft-green rounded-2xl p-6 mb-6">
             <div className="flex items-center gap-2 mb-3">
-              <Database className="w-5 h-5 text-[#7B9FA6]" />
-              <h3 className="font-medium text-[#3A3A3A]">本地資料統計</h3>
+              <Database className="w-5 h-5 text-primary" />
+              <h3 className="font-medium text-foreground">本機資料摘要</h3>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Calendar className="w-4 h-4 text-[#7B9FA6]" />
-                  <span className="text-xs text-[#6B6B6B]">市集</span>
+                  <Calendar className="w-4 h-4 text-primary" />
+                  <span className="text-xs text-muted-foreground">市集</span>
                 </div>
-                <div className="text-2xl font-medium text-[#3A3A3A]">
+                <div className="text-2xl font-medium text-foreground">
                   {marketCount}
                 </div>
               </div>
               <div className="bg-white rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <Database className="w-4 h-4 text-[#7B9FA6]" />
-                  <span className="text-xs text-[#6B6B6B]">事件</span>
+                  <Database className="w-4 h-4 text-primary" />
+                  <span className="text-xs text-muted-foreground">事件紀錄</span>
                 </div>
-                <div className="text-2xl font-medium text-[#3A3A3A]">
+                <div className="text-2xl font-medium text-foreground">
                   {eventCount}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 說明 */}
-          <div className="mb-6">
-            <p className="text-[#6B6B6B] leading-relaxed">
-              此裝置目前有 <strong className="text-[#3A3A3A]">{marketCount} 個市集</strong> 和 <strong className="text-[#3A3A3A]">{eventCount} 個事件</strong> 尚未綁定到任何帳號。
-              請選擇如何處理這些資料：
-            </p>
-          </div>
-
-          {/* 選項 */}
           <div className="space-y-3">
-            {/* 選項一：確認同步 */}
             <button
               onClick={() => handleMigration(MigrationOption.SYNC)}
               disabled={isLoading}
-              className="w-full bg-[#7B9FA6] text-white p-6 rounded-2xl hover:bg-[#6A8E95] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left group"
+              className="w-full bg-primary text-white p-6 rounded-2xl hover:bg-primary/85 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left group"
             >
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
@@ -226,67 +206,78 @@ export function MigrationModal({
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium text-lg mb-1">
-                    ✅ 確認同步
+                    保留本機資料並同步到雲端
                   </h3>
-                  <p className="text-sm text-white/80">
-                    將此裝置的所有資料同步到帳號 <strong>{userEmail}</strong>
+                  <p className="text-sm text-white/85">
+                    建議選項。保留此裝置上的市集與紀錄，並綁定到目前登入的帳號。
                   </p>
                 </div>
               </div>
             </button>
 
-            {/* 選項二：清除並登入 */}
-            <button
-              onClick={() => handleMigration(MigrationOption.CLEAR)}
-              disabled={isLoading}
-              className="w-full bg-[#FFF8E7] text-[#3A3A3A] p-6 rounded-2xl hover:bg-[#F5E6D8] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left group border-2 border-[#D4A574]/20"
-            >
+            <div className="w-full bg-soft-yellow text-foreground p-6 rounded-2xl border-2 border-secondary/20">
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-[#D4A574]/20 rounded-xl group-hover:bg-[#D4A574]/30 transition-colors">
-                  <Trash2 className="w-6 h-6 text-[#D4A574]" />
+                <div className="p-3 bg-secondary/20 rounded-xl group-hover:bg-secondary/30 transition-colors">
+                  <Trash2 className="w-6 h-6 text-secondary" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium text-lg mb-1">
-                    🗑️ 清除並登入
+                    清除此裝置的本機資料，使用雲端帳號
                   </h3>
-                  <p className="text-sm text-[#6B6B6B]">
-                    清空本地資料，改從雲端載入該帳號的既有資料
+                  <p className="text-sm text-muted-foreground">
+                    只清除此裝置上的本機資料，不會刪除雲端資料。若不確定，請選擇保留並同步。
                   </p>
+                  <label className="block text-xs font-medium text-muted-foreground mt-4 mb-2">
+                    若要使用此選項，請輸入「清除」
+                  </label>
+                  <input
+                    value={clearConfirmation}
+                    onChange={(event) => setClearConfirmation(event.target.value)}
+                    disabled={isLoading}
+                    placeholder="清除"
+                    className="w-full bg-white px-3 py-2 rounded-xl border border-secondary/30 focus:border-secondary focus:outline-none text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleMigration(MigrationOption.CLEAR)}
+                    disabled={isLoading || clearConfirmation.trim() !== '清除'}
+                    className="mt-3 w-full bg-secondary text-white py-3 rounded-xl hover:bg-[#C29565] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    清除此裝置的本機資料
+                  </button>
                 </div>
               </div>
-            </button>
+            </div>
 
-            {/* 選項三：取消登入 */}
             <button
               onClick={() => handleMigration(MigrationOption.CANCEL)}
               disabled={isLoading}
-              className="w-full bg-[#F5E6E8] text-[#3A3A3A] p-6 rounded-2xl hover:bg-[#E5D6D8] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left group border-2 border-[#d4183d]/20"
+              className="w-full bg-soft-pink text-foreground p-6 rounded-2xl hover:bg-soft-pink/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left group border-2 border-danger/20"
             >
               <div className="flex items-start gap-4">
-                <div className="p-3 bg-[#d4183d]/10 rounded-xl group-hover:bg-[#d4183d]/20 transition-colors">
-                  <X className="w-6 h-6 text-[#d4183d]" />
+                <div className="p-3 bg-danger/10 rounded-xl group-hover:bg-danger/20 transition-colors">
+                  <X className="w-6 h-6 text-danger" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium text-lg mb-1">
-                    ❌ 取消登入
+                    先不要登入
                   </h3>
-                  <p className="text-sm text-[#6B6B6B]">
-                    登出帳號，保留本地資料，恢復匿名狀態
+                  <p className="text-sm text-muted-foreground">
+                    取消登入並保留目前本機資料。你可以稍後再登入。
                   </p>
                 </div>
               </div>
             </button>
           </div>
 
-          {/* 警告 */}
-          <div className="mt-6 p-4 bg-[#FFF8E7] rounded-2xl border-2 border-[#D4A574]/20">
-            <p className="text-xs text-[#6B6B6B] leading-relaxed">
-              ⚠️ <strong>注意：</strong>選擇「清除並登入」將會永久刪除本地資料，此操作無法復原。
-              請確保您已備份重要資料。
+          <div className="mt-6 p-4 bg-soft-yellow rounded-2xl border-2 border-secondary/20">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              注意：這裡處理的是「此裝置上的本機資料」。若你已經有雲端資料，系統會在登入後重新同步。
+              不確定時，請優先選擇「保留本機資料並同步到雲端」。
             </p>
           </div>
-        </div>
+        </DialogPanel>
       </div>
-    </>
+    </Dialog>
   );
 }

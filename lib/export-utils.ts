@@ -3,6 +3,7 @@
  */
 
 import type { Market } from '@/types/db';
+import { getAppPlatform } from '@/lib/platform';
 
 /**
  * 將市集數據匯出為 CSV 格式
@@ -114,25 +115,17 @@ export function exportMarketsToCSV(markets: Market[]): string {
  * @param csvContent - CSV 內容
  * @param filename - 檔案名稱（不含副檔名）
  */
-export function downloadCSV(csvContent: string, filename: string): void {
+export async function downloadCSV(csvContent: string, filename: string): Promise<void> {
   // 建立 Blob
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  await getAppPlatform().files.saveFile({ filename: `${filename}.csv`, data: blob });
 
   // 建立下載連結
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
 
-  link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}.csv`);
-  link.style.visibility = 'hidden';
 
   // 觸發下載
-  document.body.appendChild(link);
-  link.click();
 
   // 清理
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }
 
 /**
@@ -155,8 +148,8 @@ export function generateFilename(prefix: string = 'MarketPulse_Report'): string 
  * 
  * @param markets - 市集列表
  */
-export function exportMarketReport(markets: Market[]): void {
+export async function exportMarketReport(markets: Market[]): Promise<void> {
   const csvContent = exportMarketsToCSV(markets);
   const filename = generateFilename('MarketPulse_Report');
-  downloadCSV(csvContent, filename);
+  await downloadCSV(csvContent, filename);
 }

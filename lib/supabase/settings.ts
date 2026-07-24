@@ -6,10 +6,14 @@
 
 import { supabase } from './client';
 import type { QuickActionButton } from '@/lib/quick-actions-store';
+import type { InteractionButton } from '@/lib/interaction-buttons-store';
 
 export interface UserSettings {
   user_id: string;
-  quick_action_buttons: QuickActionButton[];
+  brand_name?: string | null;
+  default_sales_photo_evidence_required?: boolean | null;
+  quick_action_buttons?: QuickActionButton[];
+  interaction_buttons?: InteractionButton[];
   theme?: 'light' | 'dark' | 'auto';
   language?: string;
   created_at?: string;
@@ -95,6 +99,33 @@ export async function getQuickActionButtons(userId: string): Promise<QuickAction
 }
 
 /**
+ * 保存互動按鈕設定（新版）
+ * 注意：儲存到 quick_action_buttons 欄位（複用現有欄位）
+ */
+export async function saveInteractionButtons(
+  userId: string,
+  buttons: InteractionButton[]
+): Promise<void> {
+  return saveUserSettings(userId, {
+    quick_action_buttons: buttons as any,  // 複用 quick_action_buttons 欄位
+  });
+}
+
+/**
+ * 獲取互動按鈕設定（新版）
+ * 注意：從 quick_action_buttons 欄位讀取（複用現有欄位）
+ */
+export async function getInteractionButtons(userId: string): Promise<InteractionButton[] | null> {
+  try {
+    const settings = await getUserSettings(userId);
+    return settings?.quick_action_buttons as any || null;  // 從 quick_action_buttons 讀取
+  } catch (error) {
+    console.error('獲取互動按鈕設定失敗:', error);
+    return null;
+  }
+}
+
+/**
  * 初始化用戶設定（首次登入時調用）
  */
 export async function initializeUserSettings(userId: string): Promise<void> {
@@ -103,15 +134,34 @@ export async function initializeUserSettings(userId: string): Promise<void> {
     const existing = await getUserSettings(userId);
     
     if (!existing) {
-      // 創建預設設定
+      // 創建預設設定（儲存到 quick_action_buttons 欄位）
       await saveUserSettings(userId, {
         quick_action_buttons: [
-          { id: 'button_1', label: '詢問', emoji: '💬' },
-          { id: 'button_2', label: '試吃', emoji: '🍰' },
-          { id: 'button_3', label: '拍照', emoji: '📸' },
-        ],
+          { 
+            id: 'interest', 
+            role: 'interest',
+            label: '看看', 
+            emoji: '👀',
+            description: '顧客停下來看、拿起、試試看'
+          },
+          { 
+            id: 'engage', 
+            role: 'engage',
+            label: '詢問', 
+            emoji: '💬',
+            description: '顧客開始跟你說話、問問題'
+          },
+          { 
+            id: 'convert', 
+            role: 'convert',
+            label: '後續聯絡', 
+            emoji: '📞',
+            description: '顧客完成你想要的行為（建立未來聯繫）'
+          },
+        ] as any,  // 複用 quick_action_buttons 欄位
         theme: 'auto',
         language: 'zh-TW',
+        default_sales_photo_evidence_required: false,
       });
       
       console.log('✅ 用戶設定已初始化');

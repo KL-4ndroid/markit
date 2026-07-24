@@ -1,63 +1,139 @@
-/**
- * Login Modal - 登入對話框
- * 
- * 簡單的 Email 登入介面
- * 串接 Supabase Auth
- */
-
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { supabase } from '@/lib/supabase/client';
-import { Mail, Lock, X, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLoginSuccess: (userId: string, email: string) => void;
+  onLoginSuccess: (
+    userId: string,
+    email: string,
+    meta?: { invitationAccepted?: boolean; invitationLogin?: boolean }
+  ) => void;
+  defaultMode?: 'login' | 'signup';
 }
 
-export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps) {
+function getFriendlyAuthError(error: unknown, mode: 'login' | 'signup'): string {
+  const message = error instanceof Error ? error.message : String(error || '');
+  const lowerMessage = message.toLowerCase();
+
+  if (message.includes('Invalid login credentials')) {
+    return 'Email 或密碼不正確，請確認後再試一次。';
+  }
+
+  if (message.includes('User already registered') || lowerMessage.includes('already registered')) {
+    return '此 Email 已註冊，請改用登入。';
+  }
+
+  if (lowerMessage.includes('password') && (lowerMessage.includes('6') || lowerMessage.includes('short'))) {
+    return '密碼至少需要 6 位字元。';
+  }
+
+  if (lowerMessage.includes('email')) {
+    return '請輸入有效的 Email。';
+  }
+
+  return `${mode === 'login' ? '登入' : '註冊'}失敗：${message || '請稍後再試。'}`;
+}
+
+export function LoginModal({
+  isOpen,
+  onClose,
+  onLoginSuccess,
+  defaultMode = 'login',
+}: LoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>(defaultMode);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [isSlowAuth, setIsSlowAuth] = useState(false);
 
-  if (!isOpen) return null;
+  const isSignup = mode === 'signup';
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
-      toast.error('請填寫所有欄位');
+  useEffect(() => {
+    setMode(defaultMode);
+    setAuthError('');
+    setIsSlowAuth(false);
+  }, [defaultMode]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setAuthError('');
+    setIsSlowAuth(false);
+
+    const savedEmail = localStorage.getItem('remembered_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setAuthError('');
+
+    const normalizedEmail = email.trim();
+
+    if (!normalizedEmail || !password) {
+      const message = '請輸入 Email 和密碼。';
+      setAuthError(message);
+      toast.error(message);
+      return;
+    }
+
+    if (isSignup && password.length < 6) {
+      const message = '密碼至少需要 6 位字元。';
+      setAuthError(message);
+      toast.error(message);
       return;
     }
 
     setIsLoading(true);
+    const slowAuthTimer = window.setTimeout(() => {
+      setIsSlowAuth(true);
+    }, 8000);
 
     try {
       if (mode === 'login') {
-        // 登入
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: normalizedEmail,
           password,
         });
 
         if (error) throw error;
 
         if (data.user) {
-          toast.success('登入成功！');
-          onLoginSuccess(data.user.id, data.user.email!);
+          const invitationToken = sessionStorage.getItem('invitation_token');
+          if (rememberMe) {
+            localStorage.setItem('remembered_email', normalizedEmail);
+          } else {
+            localStorage.removeItem('remembered_email');
+          }
+
+          toast.success('登入成功。');
+          onLoginSuccess(
+            data.user.id,
+            data.user.email || normalizedEmail,
+            invitationToken ? { invitationLogin: true } : undefined
+          );
+        } else {
+          throw new Error('登入失敗，請確認 Email 和密碼後再試一次。');
         }
       } else {
-        // 註冊
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: normalizedEmail,
           password,
           options: {
             data: {
-              display_name: email.split('@')[0],
+              display_name: normalizedEmail.split('@')[0],
             },
           },
         });
@@ -65,163 +141,208 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
         if (error) throw error;
 
         if (data.user) {
-          toast.success('註冊成功！請檢查您的信箱以驗證帳號');
-          onLoginSuccess(data.user.id, data.user.email!);
+          const invitationToken = sessionStorage.getItem('invitation_token');
+          let invitationAccepted = false;
+
+          if (invitationToken) {
+            try {
+              const { acceptInvitationAndBind } = await import('@/lib/supabase/staff-invitations');
+              const result = await acceptInvitationAndBind(invitationToken, data.user.id);
+
+              if (result.success) {
+                const { invalidateRoleCache } = await import('@/hooks/useUserRole');
+                invalidateRoleCache();
+                invitationAccepted = true;
+                toast.success('帳號已建立，並已加入團隊。');
+                sessionStorage.removeItem('invitation_token');
+              } else {
+                toast.warning('帳號已建立，但加入團隊失敗。', {
+                  description: result.message,
+                });
+              }
+            } catch (bindError) {
+              console.error('加入團隊失敗:', bindError);
+              toast.warning('帳號已建立，但加入團隊失敗。', {
+                description: '請聯繫邀請人重新發送邀請連結。',
+              });
+            }
+          } else {
+            toast.success('帳號建立成功。');
+          }
+
+          onLoginSuccess(data.user.id, data.user.email || normalizedEmail, { invitationAccepted });
+        } else {
+          throw new Error('帳號建立失敗，請稍後再試。');
         }
       }
-    } catch (error: any) {
-      console.error('認證失敗:', error);
-      
-      if (error.message.includes('Invalid login credentials')) {
-        toast.error('帳號或密碼錯誤');
-      } else if (error.message.includes('User already registered')) {
-        toast.error('此 Email 已註冊');
-      } else {
-        toast.error(error.message || '認證失敗，請稍後再試');
-      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      const message = getFriendlyAuthError(error, mode);
+      setAuthError(message);
+      toast.error(message);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleMagicLink = async () => {
-    if (!email) {
-      toast.error('請輸入 Email');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
-      });
-
-      if (error) throw error;
-
-      toast.success('Magic Link 已發送至您的信箱！');
-      onClose();
-    } catch (error: any) {
-      console.error('發送 Magic Link 失敗:', error);
-      toast.error(error.message || '發送失敗，請稍後再試');
-    } finally {
+      window.clearTimeout(slowAuthTimer);
+      setIsSlowAuth(false);
       setIsLoading(false);
     }
   };
 
   return (
-    <>
-      {/* 背景遮罩 */}
-      <div 
-        className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
-      {/* 對話框 */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl">
-          {/* 標題 */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-medium text-[#3A3A3A]">
-              {mode === 'login' ? '登入帳號' : '註冊帳號'}
-            </h2>
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      <div className="fixed inset-0 bg-deep/35 backdrop-blur-sm" aria-hidden="true" />
+
+      <div className="fixed inset-0 flex items-center justify-center p-6">
+        <DialogPanel className="japanese-surface-card w-full max-w-md p-8">
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div>
+              <DialogTitle className="text-2xl font-medium text-foreground mb-2">
+                {isSignup ? '建立 Féria 帳號' : '登入 Féria'}
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {isSignup
+                  ? '建立帳號後即可同步資料。若你是透過邀請連結加入團隊，註冊後會自動加入。'
+                  : '登入後可同步雲端資料，並在不同裝置使用。'}
+              </p>
+            </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-[#F5E6E8] rounded-full transition-colors"
+              className="p-2 hover:bg-soft-pink rounded-full transition-colors"
+              aria-label="關閉"
+              disabled={isLoading}
             >
-              <X className="w-5 h-5 text-[#6B6B6B]" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
 
-          {/* 表單 */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
-              <label className="block text-sm text-[#6B6B6B] mb-2">
+              <label className="block text-sm text-muted-foreground mb-2">
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7B9FA6]" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    if (authError) setAuthError('');
+                  }}
                   placeholder="your@email.com"
-                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-[#7B9FA6]/20 focus:border-[#7B9FA6] focus:outline-none transition-colors"
+                  autoComplete="email"
+                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-primary/20 focus:border-primary focus:outline-none transition-colors"
                   disabled={isLoading}
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-sm text-[#6B6B6B] mb-2">
-                密碼
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm text-muted-foreground">
+                  密碼
+                </label>
+                {isSignup && (
+                  <span className="text-xs text-[#8A8A8A]">至少 6 位字元</span>
+                )}
+              </div>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7B9FA6]" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-[#7B9FA6]/20 focus:border-[#7B9FA6] focus:outline-none transition-colors"
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (authError) setAuthError('');
+                  }}
+                  placeholder="輸入密碼"
+                  autoComplete={isSignup ? 'new-password' : 'current-password'}
+                  className="w-full pl-12 pr-12 py-3 rounded-2xl border border-primary/20 focus:border-primary focus:outline-none transition-colors"
                   disabled={isLoading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                  aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}
+                  disabled={isLoading}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
-            {/* 提交按鈕 */}
+            {!isSignup && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  className="w-4 h-4 rounded border-primary/20 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                  disabled={isLoading}
+                />
+                <label
+                  htmlFor="rememberMe"
+                  className="text-sm text-muted-foreground cursor-pointer select-none"
+                >
+                  記住 Email
+                </label>
+              </div>
+            )}
+
+            {authError && (
+              <div
+                role="alert"
+                className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700"
+              >
+                {authError}
+              </div>
+            )}
+
+            {isSlowAuth && !authError && (
+              <div className="rounded-2xl border border-secondary/30 bg-soft-yellow px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+                正在等待伺服器回應。若持續太久，請確認網路連線後再試一次。
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-[#7B9FA6] text-white py-4 rounded-2xl hover:bg-[#6A8E95] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+              className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  處理中...
+                  {isSignup ? '建立帳號中...' : '登入中...'}
                 </>
               ) : (
-                mode === 'login' ? '登入' : '註冊'
+                isSignup ? '建立帳號' : '登入'
               )}
             </button>
           </form>
 
-          {/* Magic Link */}
-          <div className="mt-4">
-            <button
-              onClick={handleMagicLink}
-              disabled={isLoading}
-              className="w-full bg-[#E8F3E8] text-[#3A3A3A] py-4 rounded-2xl hover:bg-[#D8E3D8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              使用 Magic Link 登入
-            </button>
-          </div>
-
-          {/* 切換模式 */}
           <div className="mt-6 text-center">
             <button
-              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-              className="text-[#7B9FA6] hover:text-[#6A8E95] transition-colors text-sm"
+              onClick={() => {
+                setAuthError('');
+                setMode(isSignup ? 'login' : 'signup');
+              }}
+              className="text-primary hover:text-primary/85 transition-colors text-sm"
               disabled={isLoading}
             >
-              {mode === 'login' ? '還沒有帳號？立即註冊' : '已有帳號？立即登入'}
+              {isSignup ? '已有帳號？登入' : '還沒有帳號？建立帳號'}
             </button>
           </div>
 
-          {/* 說明 */}
-          <div className="mt-6 p-4 bg-[#FFF8E7] rounded-2xl">
-            <p className="text-xs text-[#6B6B6B] leading-relaxed">
-              💡 <strong>提示：</strong>登入後，系統會詢問您是否要將本地資料同步到雲端。
-              您可以選擇同步、清除或取消登入。
+          <div className="mt-6 p-4 bg-soft-yellow rounded-2xl">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {isSignup
+                ? '註冊後，資料會綁定到此 Email 帳號。請使用你之後會固定登入的信箱。'
+                : '登入後，系統會自動同步你的雲端資料。若此裝置已有本機資料，系統會先詢問你如何處理。'}
             </p>
           </div>
-        </div>
+        </DialogPanel>
       </div>
-    </>
+    </Dialog>
   );
 }

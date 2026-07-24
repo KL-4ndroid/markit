@@ -6,14 +6,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { RefreshCw, X } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import { type CoordinatedOverlayProps } from '@/components/global-overlays/overlay-types';
+import { getAppPlatform } from '@/lib/platform';
 
-export function PWAUpdatePrompt() {
+export function PWAUpdatePrompt({
+  isSuppressed = false,
+  onVisibilityChange,
+}: CoordinatedOverlayProps) {
   const [showPrompt, setShowPrompt] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
+    onVisibilityChange?.(showPrompt);
+  }, [onVisibilityChange, showPrompt]);
+
+  useEffect(() => () => onVisibilityChange?.(false), [onVisibilityChange]);
+
+  useEffect(() => {
+    if (getAppPlatform().kind !== 'web') return;
+
     if ('serviceWorker' in navigator) {
       // 監聽更新事件
       navigator.serviceWorker.ready.then((reg) => {
@@ -27,7 +40,6 @@ export function PWAUpdatePrompt() {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 // 有新版本可用
-                console.log('[PWA] 發現新版本');
                 setShowPrompt(true);
               }
             });
@@ -36,7 +48,6 @@ export function PWAUpdatePrompt() {
 
         // 定期檢查更新（每 30 分鐘）
         const checkInterval = setInterval(() => {
-          console.log('[PWA] 檢查更新...');
           reg.update();
         }, 30 * 60 * 1000);
 
@@ -69,31 +80,31 @@ export function PWAUpdatePrompt() {
     setShowPrompt(false);
   };
 
-  if (!showPrompt) {
+  if (!showPrompt || isSuppressed) {
     return null;
   }
 
   return (
     <>
       {/* 背景遮罩 */}
-      <div className="fixed inset-0 bg-black/50 z-[9998] backdrop-blur-sm" />
+      <div className="fixed inset-0 z-overlay bg-deep/35 backdrop-blur-sm" />
 
       {/* 更新提示卡片 */}
-      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[9999] max-w-sm mx-auto">
-        <div className="bg-white rounded-[2rem] p-6 shadow-2xl shadow-[#7B9FA6]/30 animate-in fade-in zoom-in duration-300">
+      <div className="fixed inset-x-4 top-1/2 z-dialog mx-auto max-w-sm -translate-y-1/2">
+        <div className="japanese-surface-card rounded-[2rem] p-6 animate-in fade-in zoom-in duration-300">
           {/* 圖標 */}
-          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] rounded-2xl flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center">
             <RefreshCw className="w-8 h-8 text-white" />
           </div>
 
           {/* 標題 */}
-          <h3 className="text-xl font-bold text-[#3A3A3A] text-center mb-2">
+          <h3 className="text-xl font-bold text-foreground text-center mb-2">
             發現新版本！
           </h3>
 
           {/* 描述 */}
-          <p className="text-sm text-[#6B6B6B] text-center mb-6">
-            市集誌有新版本可用，包含功能改進和錯誤修復。
+          <p className="text-sm text-muted-foreground text-center mb-6">
+            Féria 有新版本可用，包含功能改進和錯誤修復。
             <br />
             建議立即更新以獲得最佳體驗。
           </p>
@@ -104,7 +115,7 @@ export function PWAUpdatePrompt() {
             <button
               onClick={handleUpdate}
               disabled={isUpdating}
-              className="w-full bg-gradient-to-r from-[#7B9FA6] to-[#6A8E95] text-white px-6 py-4 rounded-2xl font-medium hover:shadow-lg hover:shadow-[#7B9FA6]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-primary to-primary/85 text-white px-6 py-4 rounded-2xl font-medium hover:shadow-lg hover:shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isUpdating ? (
                 <>
@@ -123,14 +134,14 @@ export function PWAUpdatePrompt() {
             <button
               onClick={handleDismiss}
               disabled={isUpdating}
-              className="w-full bg-[#F5F5F0] text-[#6B6B6B] px-6 py-4 rounded-2xl font-medium hover:bg-[#ECECEC] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-neutral-alt text-muted-foreground px-6 py-4 rounded-2xl font-medium hover:bg-border-hairline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               稍後提醒
             </button>
           </div>
 
           {/* 提示文字 */}
-          <p className="text-xs text-[#6B6B6B] text-center mt-4 opacity-60">
+          <p className="text-xs text-muted-foreground text-center mt-4 opacity-60">
             更新過程約需 3-5 秒
           </p>
         </div>

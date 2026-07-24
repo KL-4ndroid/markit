@@ -45,14 +45,14 @@ export function DataAnalyticsPage() {
       label: "總收入",
       value: "$96,000",
       change: "+23%",
-      color: "from-[#7B9FA6] to-[#7B9FA6]/70",
+      color: "from-primary to-primary/70",
     },
     {
       icon: TrendingUp,
       label: "平均利潤",
       value: "67.8%",
       change: "+5.2%",
-      color: "from-[#D4A574] to-[#D4A574]/70",
+      color: "from-secondary to-secondary/70",
     },
     {
       icon: Users,
@@ -71,9 +71,9 @@ export function DataAnalyticsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
           <h1 className="text-white mb-2">數據分析</h1>
           <p className="text-white/80 text-sm">過去 6 個月表現</p>
@@ -88,26 +88,26 @@ export function DataAnalyticsPage() {
             return (
               <div
                 key={index}
-                className="bg-white rounded-[1.25rem] p-4 shadow-md shadow-[#7B9FA6]/5"
+                className="bg-white rounded-[1.25rem] p-4 shadow-md shadow-primary/5"
               >
                 <div
                   className={`bg-gradient-to-br ${stat.color} w-10 h-10 rounded-xl flex items-center justify-center mb-3`}
                 >
-                  <Icon className="w-5 h-5 text-[#3A3A3A]" />
+                  <Icon className="w-5 h-5 text-foreground" />
                 </div>
                 <div className="text-xs text-[#6B6B6B] mb-1">{stat.label}</div>
-                <div className="text-[#3A3A3A] text-xl mb-1">{stat.value}</div>
-                <div className="text-[#7B9FA6] text-xs">{stat.change}</div>
+                <div className="text-foreground text-xl mb-1">{stat.value}</div>
+                <div className="text-primary text-xs">{stat.change}</div>
               </div>
             );
           })}
         </div>
 
         {/* Revenue Trend */}
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-[#7B9FA6]" />
-            <h3 className="text-[#3A3A3A]">收入趨勢</h3>
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <h3 className="text-foreground">收入趨勢</h3>
           </div>
 
           <div className="h-48">
@@ -163,21 +163,21 @@ export function DataAnalyticsPage() {
             </ResponsiveContainer>
           </div>
 
-          <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-[#7B9FA6]/10">
+          <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-primary/10">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#7B9FA6]" />
+              <div className="w-3 h-3 rounded-full bg-primary" />
               <span className="text-sm text-[#6B6B6B]">收入</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#D4A574]" />
+              <div className="w-3 h-3 rounded-full bg-secondary" />
               <span className="text-sm text-[#6B6B6B]">利潤</span>
             </div>
           </div>
         </div>
 
         {/* Conversion Funnel */}
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
-          <h3 className="text-[#3A3A3A] mb-4">轉換漏斗</h3>
+        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
+          <h3 className="text-foreground mb-4">轉換漏斗</h3>
 
           <div className="space-y-3">
             {funnelData.map((item, index) => {
@@ -185,7 +185,7 @@ export function DataAnalyticsPage() {
               return (
                 <div key={item.name}>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-[#3A3A3A]">{item.name}</span>
+                    <span className="text-sm text-foreground">{item.name}</span>
                     <span className="text-sm text-[#6B6B6B] tabular-nums">
                       {item.value} ({percentage}%)
                     </span>
@@ -201,17 +201,17 @@ export function DataAnalyticsPage() {
             })}
           </div>
 
-          <div className="mt-4 pt-4 border-t border-[#7B9FA6]/10 text-center">
+          <div className="mt-4 pt-4 border-t border-primary/10 text-center">
             <span className="text-sm text-[#6B6B6B]">整體轉換率</span>
-            <div className="text-2xl text-[#7B9FA6] tabular-nums mt-1">
+            <div className="text-2xl text-primary tabular-nums mt-1">
               {((funnelData[3].value / funnelData[0].value) * 100).toFixed(1)}%
             </div>
           </div>
         </div>
 
         {/* Category Sales */}
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 mb-6">
-          <h3 className="text-[#3A3A3A] mb-4">商品類別銷售</h3>
+        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 mb-6">
+          <h3 className="text-foreground mb-4">商品類別銷售</h3>
 
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">

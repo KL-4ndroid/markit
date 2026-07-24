@@ -8,35 +8,44 @@
 
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { supabase } from '@/lib/supabase/client';
 import { db } from '@/lib/db';
-import { recordEvent } from '@/lib/db/events';
-import type { Event } from '@/types/db';
-
-/**
- * 同步狀態
- */
-export enum SyncStatus {
-  IDLE = 'idle',           // 閒置
-  SYNCING = 'syncing',     // 同步中
-  SUCCESS = 'success',     // 同步成功
-  ERROR = 'error',         // 同步失敗
-  OFFLINE = 'offline',     // 離線
-}
+import { pullOwnerEvents } from '@/lib/sync/owner-pull-service';
+import { pullEventsFromViews } from '@/lib/sync/staff-pull-service';
+import { handlePermissionSyncError } from '@/lib/sync/sync-error-policy';
+import { pushEvents } from '@/lib/sync/sync-push-service';
+import { getNetworkPort } from '@/lib/platform/network-capability';
+import { getLifecyclePort } from '@/lib/platform/lifecycle-capability';
+import {
+  acquireSyncLock,
+  getActiveSyncIdentity,
+  getGlobalSyncState,
+  hasExecutedInitialSyncFlag,
+  hasSetupSyncIntervals,
+  markInitialSyncExecuted,
+  markSyncIntervalsSetup,
+  releaseSyncLock,
+  resetSyncRuntimeState,
+  setActiveSyncIdentity,
+  subscribeGlobalSyncState,
+  SyncStatus,
+  type SyncState,
+  updateGlobalState,
+} from '@/lib/sync/sync-runtime-state';
+export { getLocalPendingCount, getCloudEventCount } from '@/lib/sync/sync-count-service';
+export { detectAndResolveConflict } from '@/lib/sync/sync-conflict-resolution-service';
+export { resetInitialSyncFlag, SyncStatus } from '@/lib/sync/sync-runtime-state';
+import {
+  getSyncPauseUntil,
+} from '@/lib/sync/sync-permission-pause-service';
+import type { InfoLevel } from '@/lib/data-sanitization';
 
 interface UseSyncOptions {
   enabled?: boolean;       // 是否啟用同步
   interval?: number;       // 同步間隔（毫秒）
   throttle?: number;       // 節流延遲（毫秒）
-}
-
-interface SyncState {
-  status: SyncStatus;
-  lastSyncAt: number | null;
-  pendingCount: number;
-  error: string | null;
+  roleInfoLevel?: InfoLevel;  // 角色資訊揭露層級（3=老闆, 0-2=員工）
 }
 
 /**
@@ -45,21 +54,71 @@ interface SyncState {
 export function useSync(options: UseSyncOptions = {}) {
   const {
     enabled = true,
-    interval = 30000,      // 預設 30 秒
-    throttle = 5000,       // 預設 5 秒節流
+    interval = 30000,
+    throttle = 5000,
+    roleInfoLevel,
   } = options;
 
   const { user, isConfigured } = useAuth();
-  const [state, setState] = useState<SyncState>({
-    status: SyncStatus.IDLE,
-    lastSyncAt: null,
-    pendingCount: 0,
-    error: null,
-  });
+
+  // ✅ 解析角色資訊揭露層級
+  // 預設為 Level 3（老闆），由 SyncProvider 傳入精確值
+  const effectiveInfoLevel = roleInfoLevel ?? 3;
+  const effectiveStaffMode = effectiveInfoLevel < 3;
+  const syncIdentity = enabled && isConfigured && user
+    ? `${user.id}:${effectiveStaffMode ? 'staff' : 'owner'}`
+    : null;
+  
+  // ✅ 使用全局狀態，並訂閱更新
+  const [state, setState] = useState<SyncState>(getGlobalSyncState());
+  const [isOnline, setIsOnline] = useState(() => getNetworkPort().getCurrentStatus().connected);
 
   const syncTimeoutRef = useRef<NodeJS.Timeout>();
   const intervalRef = useRef<NodeJS.Timeout>();
   const isSyncingRef = useRef(false);
+  const syncFnRef = useRef<() => Promise<void>>();
+  const throttledSyncFnRef = useRef<() => void>();
+  /** ✅ 只允許 force_initial_sync 消耗一次的本地標記（不受 module-level 重置影響） */
+  const forceSyncExecutedRef = useRef(false);
+
+  // ✅ 訂閱全局狀態更新
+  useEffect(() => {
+    const listener = (newState: SyncState) => {
+      setState(newState);
+    };
+    
+    return subscribeGlobalSyncState(listener);
+  }, []);
+
+  useEffect(() => {
+    if (getActiveSyncIdentity() === syncIdentity) {
+      return;
+    }
+
+    setActiveSyncIdentity(syncIdentity);
+    forceSyncExecutedRef.current = false;
+    resetSyncRuntimeState();
+  }, [syncIdentity]);
+
+  // ✅ force_initial_sync 專用 effect
+  // 不被 hasSetupIntervals 阻擋，確保條件就緒時才消耗 flag
+  useEffect(() => {
+    if (
+      !enabled ||
+      !isConfigured ||
+      !user ||
+      !syncFnRef.current ||
+      forceSyncExecutedRef.current
+    ) {
+      return;
+    }
+
+    if (typeof window !== 'undefined' && sessionStorage.getItem('force_initial_sync') === '1') {
+      forceSyncExecutedRef.current = true;
+      sessionStorage.removeItem('force_initial_sync');
+      syncFnRef.current();
+    }
+  }, [enabled, isConfigured, user]);
 
   /**
    * 執行同步
@@ -70,36 +129,80 @@ export function useSync(options: UseSyncOptions = {}) {
       return;
     }
 
+    if (getLifecyclePort().getCurrentState() !== 'active') return;
+
+    const pauseUntil = getSyncPauseUntil();
+    if (pauseUntil > Date.now()) {
+      updateGlobalState(prev => ({
+        ...prev,
+        status: SyncStatus.ERROR,
+        error: '同步因權限錯誤暫停，稍後會自動重試',
+      }));
+      return;
+    }
+
+    // ✅ 原子操作：檢查並獲取全局同步鎖（防止並發同步）
+    if (!acquireSyncLock()) {
+      console.log('⏸️ 同步已在進行中，跳過此次請求');
+      return;
+    }
+
     // 檢查網路狀態
-    if (!navigator.onLine) {
+    if (!getNetworkPort().getCurrentStatus().connected) {
+      releaseSyncLock();
       setState(prev => ({ ...prev, status: SyncStatus.OFFLINE }));
       return;
     }
 
+    // ✅ 在同步開始前記錄 pendingCount（用於決定是否顯示大彈窗）
+    const initialPendingCount = await db.events
+      .where('sync_status')
+      .anyOf(['pending', 'local_only'])
+      .count();
+
+    // ✅ 設置本地同步標記
     isSyncingRef.current = true;
-    setState(prev => ({ ...prev, status: SyncStatus.SYNCING, error: null }));
+    updateGlobalState(prev => ({ 
+      ...prev, 
+      status: SyncStatus.SYNCING, 
+      error: null,
+      pendingCount: initialPendingCount, // ✅ 立即更新 pendingCount
+    }));
 
     try {
-      // 1. Push: 上傳本地未同步的事件
-      await pushEvents(user.id);
+      // 1. Push local pending events.
+      await pushEvents(user.id, (current, total, currentItem) => {
+        updateGlobalState(prev => ({
+          ...prev,
+          uploadProgress: { current, total, currentItem },
+        }));
+      });
 
-      // 2. Pull: 下載雲端新事件
-      await pullEvents(user.id);
+      // 2. Pull cloud events directly. Snapshot sync is disabled until it can be redesigned around
+      // complete event history rather than projection-only tables.
+      await pullAllEvents(user.id, (current, total, currentItem, phase) => {
+        updateGlobalState(prev => ({
+          ...prev,
+          downloadProgress: { current, total, currentItem, phase },
+        }));
+      }, effectiveInfoLevel);
 
       // 3. 更新狀態
       const pendingCount = await db.events
         .where('sync_status')
         .equals('pending')
         .count();
-
-      setState({
+      
+      updateGlobalState(prev => ({
+        ...prev,
         status: SyncStatus.SUCCESS,
         lastSyncAt: Date.now(),
         pendingCount,
         error: null,
-      });
+        uploadProgress: undefined,
+        downloadProgress: undefined,
+      }));
 
-      console.log('✅ 同步完成');
     } catch (error: any) {
       console.error('❌ 同步失敗:', error);
       
@@ -108,7 +211,7 @@ export function useSync(options: UseSyncOptions = {}) {
           error.message?.includes('ERR_CONNECTION') ||
           error.code === 'ECONNREFUSED') {
         console.warn('⚠️ 網路連線失敗，將在下次自動重試');
-        setState(prev => ({
+        updateGlobalState(prev => ({
           ...prev,
           status: SyncStatus.OFFLINE,
           error: '網路連線失敗',
@@ -118,18 +221,38 @@ export function useSync(options: UseSyncOptions = {}) {
       
       // 檢查是否為權限錯誤
       if (error.code === 'PGRST301' || error.message?.includes('403')) {
-        await handlePermissionRevoked();
+        console.warn('⚠️ 偵測到權限錯誤，暫停同步並保留本地資料', {
+          errorCode: error.code,
+          errorMessage: error.message,
+          timestamp: new Date().toISOString(),
+          userId: user.id,
+        });
+        await handlePermissionSyncError(error, user.id, () => {
+          updateGlobalState(prev => ({
+            ...prev,
+            status: SyncStatus.ERROR,
+            error: '同步因權限錯誤暫停，稍後會自動重試',
+            uploadProgress: undefined,
+            downloadProgress: undefined,
+          }));
+        });
+        return;
       }
 
-      setState(prev => ({
+      updateGlobalState(prev => ({
         ...prev,
         status: SyncStatus.ERROR,
         error: error.message || '同步失敗',
       }));
     } finally {
+      // ✅ 釋放全局同步鎖
+      releaseSyncLock();
       isSyncingRef.current = false;
     }
-  }, [enabled, isConfigured, user]);
+  }, [enabled, isConfigured, user, effectiveInfoLevel]);
+
+  // 將 sync 存儲到 ref 中
+  syncFnRef.current = sync;
 
   /**
    * 節流同步
@@ -140,325 +263,119 @@ export function useSync(options: UseSyncOptions = {}) {
     }
 
     syncTimeoutRef.current = setTimeout(() => {
-      sync();
+      syncFnRef.current?.();
     }, throttle);
-  }, [sync, throttle]);
+  }, [throttle]);
+
+  // 將 throttledSync 存儲到 ref 中
+  throttledSyncFnRef.current = throttledSync;
 
   /**
    * 手動觸發同步
    */
   const triggerSync = useCallback(() => {
-    sync();
-  }, [sync]);
+    syncFnRef.current?.();
+  }, []);
 
   // 監聽網路狀態和即時同步事件
   useEffect(() => {
-    const handleOnline = () => {
-      console.log('🌐 網路已連線，觸發同步');
-      throttledSync();
-    };
-
-    const handleOffline = () => {
-      console.log('📴 網路已斷線');
-      setState(prev => ({ ...prev, status: SyncStatus.OFFLINE }));
-    };
+    const network = getNetworkPort();
+    setIsOnline(network.getCurrentStatus().connected);
+    const unsubscribeNetwork = network.subscribe(status => {
+      setIsOnline(status.connected);
+      if (status.connected) throttledSyncFnRef.current?.();
+      else updateGlobalState(prev => ({ ...prev, status: SyncStatus.OFFLINE }));
+    });
 
     // ✅ 監聽即時同步事件
     const handleTriggerSync = (event: any) => {
-      const customEvent = event as CustomEvent;
-      const { eventType, eventId } = customEvent.detail || {};
-      console.log(`⚡ 即時同步觸發：${eventType} (ID: ${eventId?.substring(0, 8)}...)`);
-      throttledSync();
+      throttledSyncFnRef.current?.();
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
     window.addEventListener('trigger-sync', handleTriggerSync as EventListener);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      unsubscribeNetwork();
       window.removeEventListener('trigger-sync', handleTriggerSync as EventListener);
     };
-  }, [throttledSync]);
+  }, []);
+
+  useEffect(() => getLifecyclePort().subscribe(lifecycleState => {
+    if (lifecycleState === 'active') throttledSyncFnRef.current?.();
+  }), []);
 
   // 定期同步
   useEffect(() => {
-    if (!enabled || !isConfigured || !user) {
+    if (!enabled || !isConfigured || !user || !syncIdentity) {
       return;
     }
 
-    // 初始同步
-    throttledSync();
+    // ✅ 防止重複設置（全局鎖）
+    if (hasSetupSyncIntervals()) {
+      return;
+    }
 
-    // 設置定期同步
-    intervalRef.current = setInterval(() => {
-      sync();
+    markSyncIntervalsSetup();
+
+    // ✅ 初始同步（只執行一次）
+    if (!hasExecutedInitialSyncFlag()) {
+      markInitialSyncExecuted();
+      throttledSyncFnRef.current?.();
+    }
+
+    // 策略 1: 定期檢查待同步事件（每 5 分鐘）
+    // Check local pending events periodically.
+    intervalRef.current = setInterval(async () => {
+      const pendingCount = await db.events
+        .where('sync_status')
+        .anyOf(['pending', 'local_only'])
+        .count();
+      
+      if (pendingCount > 0) {
+        syncFnRef.current?.();
+      }
     }, interval);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
-      }
     };
-  }, [enabled, isConfigured, user, interval, sync, throttledSync]);
+  }, [enabled, isConfigured, user, interval, syncIdentity]);
 
-  return {
+  // ✅ 使用 useMemo 避免每次渲染都創建新對象
+  return useMemo(() => ({
     ...state,
     sync: triggerSync,
-    isOnline: navigator.onLine,
-  };
+    isOnline,
+  }), [isOnline, state, triggerSync]);
 }
 
 /**
- * Push: 上傳本地未同步的事件
+ * Pull cloud events, routing staff sessions through authorized views.
  */
-async function pushEvents(userId: string): Promise<void> {
-  // 獲取待同步的事件
-  const pendingEvents = await db.events
-    .where('sync_status')
-    .anyOf(['pending', 'local_only'])
-    .toArray();
-
-  if (pendingEvents.length === 0) {
-    return;
-  }
-
-  // ✅ 時間順序嚴格化：按 timestamp 升序排序，確保 market_created 先執行
-  const sortedEvents = pendingEvents.sort((a, b) => a.timestamp - b.timestamp);
-
-  console.log(`📤 上傳 ${sortedEvents.length} 個事件...`);
-
-  // 批次上傳
-  for (const event of sortedEvents) {
+async function pullAllEvents(
+  userId: string,
+  onProgress: (current: number, total: number, currentItem?: string, phase?: 'incremental') => void,
+  infoLevel: InfoLevel
+): Promise<void> {
+  // ✅ 檢查是否啟用員工模式（infoLevel < 3 表示員工）
+  if (infoLevel < 3) {
     try {
-      const { error } = await supabase
-        .from('events')
-        .upsert({
-          id: event.id,
-          type: event.type,
-          payload: event.payload,
-          actor_id: userId,
-          market_id: event.market_id,
-          timestamp: new Date(event.timestamp).toISOString(),
-          metadata: event.metadata,
-        }, {
-          onConflict: 'id',
-        });
-
-      if (error) {
-        // ✅ 防禦性程式碼：409 Conflict 代表雲端已有此 ID
-        if (error.code === '23505') {
-          console.log(`⚠️ 事件 ${event.id} 已存在於雲端，標記為已同步`);
-          await db.events.update(event.id!, {
-            sync_status: 'synced',
-          });
-          continue;
-        }
-        
-        // ✅ 遞歸同步檢查：外鍵衝突時檢查 market_created 事件
-        if (error.code === '23503' && error.message?.includes('events_market_id_fkey')) {
-          console.warn(`⚠️ 外鍵衝突：market_id ${event.market_id} 不存在`);
-          
-          // 檢查是否有對應的 market_created 事件待同步
-          const marketCreatedEvent = sortedEvents.find(
-            e => e.type === 'market_created' && 
-                 (e.market_id === event.market_id || e.payload?.marketId === event.market_id)
-          );
-          
-          if (marketCreatedEvent && marketCreatedEvent.id !== event.id) {
-            console.log(`🔄 發現 market_created 事件 ${marketCreatedEvent.id}，將優先處理`);
-            // 跳過當前事件，等待下一輪同步
-            continue;
-          } else {
-            console.error(`❌ 找不到對應的 market_created 事件，跳過此事件`);
-            // 標記為錯誤狀態（可選）
-            continue;
-          }
-        }
-        
-        throw error;
-      } else {
-        // 標記為已同步
-        await db.events.update(event.id!, {
-          sync_status: 'synced',
-        });
-      }
-    } catch (error: any) {
-      console.error(`❌ 上傳事件失敗: ${event.id}`, error);
-      console.log('失敗的事件類型:', event.type);
-      console.log('失敗的 Payload:', JSON.stringify(event.payload, null, 2));
-      console.log('失敗的 market_id:', event.market_id);
-      
-      // ✅ 防禦性程式碼：不讓同步卡死，繼續處理下一個事件
-      if (error.code === '23503') {
-        console.warn(`⚠️ 跳過外鍵衝突事件，繼續同步其他事件`);
-        continue;
-      }
-      
-      // 其他錯誤也繼續處理
-      continue;
+      console.log('📊 員工模式已啟用（infoLevel=' + infoLevel + '），嘗試從視圖拉取數據...');
+      await pullEventsFromViews(userId, onProgress, infoLevel);
+      console.log('✅ 視圖拉取成功');
+      return;
+    } catch (error) {
+      // ⚠️ 降級漏洞已修補：員工模式下視圖失敗直接拋錯，不降級到老闆邏輯
+      // 否則員工可能短暫看到未脫敏資料
+      console.error('❌ 員工模式視圖拉取失敗，拒絕降級到老闆邏輯（安全策略）:', error);
+      throw error;
     }
   }
-
-  console.log(`✅ 上傳完成`);
+  
+  // ✅ 原邏輯（降級方案）
+  await pullOwnerEvents(userId, onProgress, infoLevel);
 }
 
-/**
- * Pull: 下載雲端新事件
- */
-async function pullEvents(userId: string): Promise<void> {
-  // 獲取本地最後同步時間
-  const lastSyncAt = await getLastSyncTimestamp();
-
-  // 獲取用戶參與的市集
-  const { data: memberMarkets, error: memberError } = await supabase
-    .from('market_members')
-    .select('market_id')
-    .eq('user_id', userId);
-
-  if (memberError) throw memberError;
-
-  const marketIds = memberMarkets?.map(m => m.market_id) || [];
-
-  // ✅ 查詢新事件：包含市集事件 + 用戶自己的全局事件（如商品）
-  let query = supabase
-    .from('events')
-    .select('*')
-    .order('timestamp', { ascending: true });
-
-  // 只拉取新事件
-  if (lastSyncAt) {
-    query = query.gt('timestamp', new Date(lastSyncAt).toISOString());
-  }
-
-  // ✅ 過濾條件：市集事件 OR 用戶自己的事件
-  if (marketIds.length > 0) {
-    query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.eq.${userId},market_id.is.null)`);
-  } else {
-    // 如果沒有參與任何市集，只拉取自己的全局事件
-    query = query.eq('actor_id', userId).is('market_id', null);
-  }
-
-  const { data: newEvents, error: eventsError } = await query;
-
-  if (eventsError) throw eventsError;
-
-  if (!newEvents || newEvents.length === 0) {
-    return;
-  }
-
-  console.log(`📥 下載 ${newEvents.length} 個新事件...`);
-
-  // 重放事件到本地
-  for (const event of newEvents) {
-    // 檢查是否已存在
-    const existing = await db.events.get(event.id);
-
-    if (!existing) {
-      // 直接插入事件（不通過 recordEvent，避免重複處理）
-      await db.events.add({
-        id: event.id,
-        type: event.type,
-        payload: event.payload,
-        actor_id: event.actor_id,
-        market_id: event.market_id,
-        timestamp: new Date(event.timestamp).getTime(),
-        sync_status: 'synced',
-        metadata: event.metadata,
-      });
-
-      // 本地也需要更新讀取模型（重放事件）
-      const { eventHandlers } = await import('@/lib/db/events');
-      const handler = eventHandlers[event.type as keyof typeof eventHandlers];
-      
-      if (handler) {
-        await handler({
-          id: event.id,
-          type: event.type,
-          payload: event.payload,
-          timestamp: new Date(event.timestamp).getTime(),
-          actor_id: event.actor_id,
-          market_id: event.market_id,
-        } as Event, db);
-      }
-    }
-  }
-
-  // 更新最後同步時間
-  await updateLastSyncTimestamp();
-
-  console.log(`✅ 下載完成`);
-}
-
-/**
- * 獲取最後同步時間戳
- */
-async function getLastSyncTimestamp(): Promise<number | null> {
-  try {
-    const settings = await db.settings.toArray();
-    return settings[0]?.lastSyncAt || null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * 更新最後同步時間戳
- */
-async function updateLastSyncTimestamp(): Promise<void> {
-  try {
-    const settings = await db.settings.toArray();
-    if (settings[0]) {
-      await db.settings.update(settings[0].id!, {
-        lastSyncAt: Date.now(),
-      });
-    }
-  } catch (error) {
-    console.error('更新同步時間戳失敗:', error);
-  }
-}
-
-/**
- * 處理權限被撤銷（403 Forbidden）
- */
-async function handlePermissionRevoked(): Promise<void> {
-  console.warn('⚠️ 權限已被撤銷，清除本地協作資料');
-
-  try {
-    // 獲取所有協作市集
-    const collaborativeMarkets = await db.markets
-      .where('is_collaborative')
-      .equals(1)
-      .toArray();
-
-    // 清除這些市集的資料
-    for (const market of collaborativeMarkets) {
-      if (market.id) {
-        // 刪除市集
-        await db.markets.delete(market.id);
-
-        // 刪除相關商品
-        await db.products.where('market_id').equals(market.id).delete();
-
-        // 刪除相關事件
-        await db.events.where('market_id').equals(market.id).delete();
-      }
-    }
-
-    console.log(`✅ 已清除 ${collaborativeMarkets.length} 個協作市集的資料`);
-
-    // 提示用戶
-    if (typeof window !== 'undefined') {
-      const { toast } = await import('sonner');
-      toast.error('您已被移除出部分市集，相關資料已清除');
-    }
-  } catch (error) {
-    console.error('清除協作資料失敗:', error);
-  }
-}
-
-
+// ==================== 員工模式：視圖拉取函數 ====================
