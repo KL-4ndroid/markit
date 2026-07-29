@@ -146,6 +146,11 @@ function countPdfPages(buffer: Buffer): number {
   return pdfSource.match(/\/Type \/Page\b/g)?.length ?? 0;
 }
 
+function readMediaBoxes(buffer: Buffer): Array<{ width: number; height: number }> {
+  return Array.from(buffer.toString('latin1').matchAll(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/g))
+    .map(match => ({ width: Number(match[1]), height: Number(match[2]) }));
+}
+
 console.log('\n=== Settlement report PDF template ===');
 
 runTest('renders the settlement report view model into a five-page A4 PDF buffer', async () => {
@@ -158,6 +163,12 @@ runTest('renders the settlement report view model into a five-page A4 PDF buffer
   assert.equal(Buffer.isBuffer(buffer), true);
   assert.match(buffer.subarray(0, 8).toString('latin1'), /^%PDF-/);
   assert.equal(countPdfPages(buffer), 5);
+  const mediaBoxes = readMediaBoxes(buffer);
+  assert.equal(mediaBoxes.length, 5);
+  for (const mediaBox of mediaBoxes) {
+    assert.ok(Math.abs(mediaBox.width - 595.28) < 0.02);
+    assert.ok(Math.abs(mediaBox.height - 841.89) < 0.02);
+  }
   assert.match(pdfSource, /ToUnicode/);
   assert.match(pdfSource, /NotoSansTC/);
 });
@@ -174,6 +185,9 @@ runTest('template covers all five report page keys', () => {
   assert.match(templateSource, /case 'market_performance'/);
   assert.match(templateSource, /case 'product_performance'/);
   assert.match(templateSource, /case 'cost_profit_actions'/);
+  assert.match(templateSource, /minHeight: 841\.89/);
+  assert.match(templateSource, /styles\.scoreList/);
+  assert.match(templateSource, /styles\.summaryBand/);
 });
 
 runTest('plans record fixture-only PDF template without approving browser UI', () => {

@@ -9,18 +9,25 @@ const viewModelSource = readFileSync(
   'utf8',
 );
 const metricsSource = readFileSync(join(root, 'lib/analytics/metrics-engine.ts'), 'utf8');
+const subscriptionViewSource = readFileSync(
+  join(root, 'lib/analytics/subscription-view.ts'),
+  'utf8',
+);
 const manifestSource = readFileSync(join(root, 'scripts/test-files.txt'), 'utf8');
 
-assert.match(pageSource, /type AnalyticsTab = 'summary' \| 'trends' \| 'products' \| 'advanced'/);
+assert.match(subscriptionViewSource, /type AnalyticsTab = 'summary' \| 'trends' \| 'products' \| 'advanced'/);
 assert.match(pageSource, /label: '摘要'/);
 assert.match(pageSource, /label: '趨勢'/);
 assert.match(pageSource, /label: '商品'/);
 assert.match(pageSource, /label: '進階'/);
 
-assert.match(pageSource, /const needsMetrics = activeTab === 'summary' \|\| activeTab === 'advanced'/);
-assert.match(pageSource, /if \(activeTab !== 'summary'/);
-assert.match(pageSource, /if \(activeTab !== 'trends'/);
-assert.match(pageSource, /if \(activeTab !== 'products'/);
+assert.match(
+  pageSource,
+  /const needsMetrics = analyticsView\.canComputeMarketMetrics\s*&& \(activeTab === 'summary' \|\| activeTab === 'advanced'\)/,
+);
+assert.match(pageSource, /if \(!analyticsView\.canReadSummaryEvents \|\| activeTab !== 'summary'/);
+assert.match(pageSource, /if \(!analyticsView\.canReadDailyRevenue \|\| activeTab !== 'trends'/);
+assert.match(pageSource, /if \(!analyticsView\.canReadFullProductRanking \|\| activeTab !== 'products'/);
 assert.match(pageSource, /dynamic\([\s\S]*DailyRevenueChart/);
 assert.match(pageSource, /dynamic\([\s\S]*AdvancedAnalyticsSection/);
 

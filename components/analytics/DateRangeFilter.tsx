@@ -1,9 +1,10 @@
 'use client';
 
 import { BarChart3 } from 'lucide-react';
+import type { AnalyticsRange } from '@/lib/analytics/subscription-view';
 import type { Market } from '@/types/db';
 
-export type AnalyticsRange = 'all' | 'recent3' | 'recent10' | 'single';
+export type { AnalyticsRange };
 
 interface DateRangeFilterProps {
   value: AnalyticsRange;

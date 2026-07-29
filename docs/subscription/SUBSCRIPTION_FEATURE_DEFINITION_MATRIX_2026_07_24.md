@@ -4,7 +4,7 @@ Date: 2026-07-24
 
 Last updated: 2026-07-29
 
-Status: canonical product and AI implementation contract for subscription capability definitions. This document does not approve runtime enforcement, billing, referral attribution, reward grants, production uploads, exports, role changes, RLS changes, or marketplace behavior.
+Status: canonical product and AI implementation contract for subscription capability definitions. This document approves only the current owner-only Pro/Team client-generated PDF gate. It does not approve billing, referral attribution, reward grants, production uploads, Excel generation, custom download UI, role changes, RLS changes, or marketplace behavior.
 
 Authority order:
 
@@ -112,7 +112,7 @@ type AccessBlockReason =
 | `analytics.trend.recent10` | not available | included | included | server_required | not applicable |
 | `analytics.trend.all` | not available | included | included | server_required | not applicable |
 | `report.settlement.preview` | limited | included | included | server_required | retain read |
-| `report.pdf.generate` | not available | coming soon | coming soon | server_required | block new write |
+| `report.pdf.generate` | not available | included | included | server_required | block new generation; no stored artifact today |
 | `report.excel.generate` | not available | coming soon | coming soon | server_required | block new write |
 | `photo.product_cover.upload` | not available | included | included | server_required | block new write; retain read/delete |
 | `photo.sales_evidence.upload` | not available | not available | included | server_required | block new write; retain owner read/delete |
@@ -154,6 +154,30 @@ Pro and Team may include, only when supported by data:
 - settlement report preview.
 
 Plan entitlement never overrides data completeness. A Pro or Team owner with insufficient data receives a limitation state, not fabricated confidence.
+
+### Free Settlement Limited Preview
+
+The Free settlement preview is a separate basic reporting model, not a hidden full report. It may show:
+
+- selected weekly or monthly period;
+- total revenue;
+- deal count;
+- included-market and recorded-market counts;
+- qualitative data-completeness guidance.
+
+It must not query the product catalog or expose net profit, average order value, scores, grades, rejoin recommendations, market decisions, product rankings, cost breakdowns, or PDF generation. Capability-unavailable, stale, owner-mismatch, and role-forbidden states fail closed before report data queries.
+
+### Pro/Team Designed PDF
+
+The designed PDF is an owner-only presentation of the same paid settlement report truth:
+
+- it requires both the Pro/Team `report.settlement.preview` capability and the independent Pro/Team `report.pdf.generate` capability;
+- it also requires the existing owner `canImportExport` and `canViewOwnerFinance` role permissions;
+- it is generated on the current device from `SettlementReportModel` through a platform-neutral file preview port;
+- it must not perform its own IndexedDB, Supabase, sync, recovery, or server-report reads;
+- it does not grant manager or staff access through Team inheritance;
+- Free must not build the paid report or PDF view model and must not mount the PDF action;
+- downgrade blocks new PDF generation. No generated-PDF storage or retained PDF artifact exists in the current implementation.
 
 ## 7. Limit Semantics
 

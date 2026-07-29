@@ -37,6 +37,23 @@ export type CapabilityAccessDecision =
       requiredPlan?: AccountPlanCode;
     };
 
+export type CapabilityAccessInput = {
+  authenticated: boolean;
+  ownerWorkspaceAvailable: boolean;
+  workspaceOwnerId?: string | null;
+  requestedOwnerId?: string | null;
+  actorRole: SubscriptionActorRole;
+  rolePermission: boolean;
+  capabilities: AccountCapabilities | null;
+  feature: AccountCapabilityFeature;
+  operation: SubscriptionCapabilityOperation;
+  runtimeEnabled: boolean;
+  dataReady: boolean;
+  nowMs: number;
+  network: 'online' | 'offline';
+  offlineLeaseEndsAt?: string | null;
+};
+
 const FEATURE_REQUIRED_PLAN: Record<AccountCapabilityFeature, AccountPlanCode> = {
   productCoverPhoto: 'pro',
   salesPhotoEvidence: 'team',
@@ -66,22 +83,7 @@ function unavailable(reason: CapabilityAccessBlockReason, requiredPlan?: Account
   return requiredPlan ? { allowed: false, reason, requiredPlan } : { allowed: false, reason };
 }
 
-export function evaluateCapabilityAccess(input: {
-  authenticated: boolean;
-  ownerWorkspaceAvailable: boolean;
-  workspaceOwnerId?: string | null;
-  requestedOwnerId?: string | null;
-  actorRole: SubscriptionActorRole;
-  rolePermission: boolean;
-  capabilities: AccountCapabilities | null;
-  feature: AccountCapabilityFeature;
-  operation: SubscriptionCapabilityOperation;
-  runtimeEnabled: boolean;
-  dataReady: boolean;
-  nowMs: number;
-  network: 'online' | 'offline';
-  offlineLeaseEndsAt?: string | null;
-}): CapabilityAccessDecision {
+export function evaluateCapabilityAccess(input: CapabilityAccessInput): CapabilityAccessDecision {
   if (!input.authenticated) return unavailable('authentication_required');
   if (!input.ownerWorkspaceAvailable) return unavailable('owner_workspace_unavailable');
   if (

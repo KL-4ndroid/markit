@@ -63,6 +63,7 @@ tsx tests/settlement-report-model.test.ts
 tsx tests/settlement-report-preview-spec.test.ts
 tsx tests/settlement-report-preview-model.test.ts
 tsx tests/settlement-report-preview-ui.test.ts
+tsx tests/settlement-report-subscription-access.test.ts
 tsx tests/settlement-report-pdf-visual-spec.test.ts
 tsx tests/settlement-report-pdf-technical-plan.test.ts
 tsx tests/settlement-report-pdf-view-model.test.ts
@@ -186,6 +187,10 @@ tsx tests/subscription-plan-model.test.ts
 tsx tests/subscription-feature-gates.test.ts
 tsx tests/subscription-feature-gate-mapping.test.ts
 tsx tests/subscription-account-capability-api.test.ts
+tsx tests/analytics-subscription-access.test.ts
+tsx tests/advanced-analytics-subscription-access.test.ts
+tsx tests/analytics-free-preview.test.ts
+tsx tests/subscription-read-model-smoke-script.test.ts
 tsx tests/web-uiux-baseline-contract.test.ts
 tsx tests/role-capabilities.test.ts
 tsx tests/p5-4d-role-freshness-gate.test.ts

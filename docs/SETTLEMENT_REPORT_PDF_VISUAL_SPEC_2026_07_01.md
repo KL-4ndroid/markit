@@ -2,11 +2,11 @@
 
 Date: 2026-07-01
 
-Status: visual specification completed; PDF generation remains deferred.
+Status: visual specification implemented and revalidated as true five-page portrait A4 output on 2026-07-29.
 
 Scope: define the first formal visual and content structure for the owner-only weekly/monthly settlement report PDF.
 
-This document does not approve PDF generation, browser downloads, PDF library selection, Excel generation, CSV export UI, Supabase reads, manager access, report permission changes, scoring changes, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+Current approval: owner-only client-generated PDF presentation is enabled for server-confirmed Pro/Team accounts. Custom download UI, Excel generation, CSV export UI, Supabase report reads, manager access, report permission changes, scoring changes, data repair, projection rebuilds, duplicate cleanup, and sync/recovery behavior remain unapproved.
 
 ## 1. Product Intent
 
@@ -306,12 +306,10 @@ Rules:
 
 ## 11. Implementation Boundary
 
-This visual spec approves only document design direction.
+This visual spec originally approved only document design direction. The later technical and subscription S6D approvals now authorize the existing client-generated owner-only Pro/Team implementation.
 
-It explicitly does not approve:
+It still does not approve:
 
-- installing a PDF library;
-- adding PDF generation code;
 - adding download buttons;
 - adding file storage;
 - sending report data to Supabase;
@@ -321,11 +319,11 @@ It explicitly does not approve:
 - changing analytics page behavior;
 - changing sync or recovery behavior.
 
-## 12. Next Slice
+## 12. Completed Implementation Follow-Up
 
-The next safe slice is PDF Technical Plan.
+The PDF technical plan and subscription S6D runtime approval are complete.
 
-That plan should decide:
+The completed plan decided:
 
 - PDF generation strategy;
 - library choice;
@@ -335,4 +333,4 @@ That plan should decide:
 - test strategy;
 - owner-only export guardrails.
 
-No PDF implementation should begin until that technical plan is approved.
+Current validation requires five portrait A4 media boxes plus rendered PNG inspection for clipping, overlap, typography, headers, footers, and table readability.

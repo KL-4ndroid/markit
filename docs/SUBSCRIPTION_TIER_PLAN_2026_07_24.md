@@ -4,7 +4,7 @@ Date: 2026-07-24
 
 Last updated: 2026-07-29
 
-Status: product planning document after subscription and platform-strategy discussion. This document defines the intended subscription direction, data-asset strategy, and future platform reserve space. It does not approve billing launch, payment collection, App Store / Play Store subscription setup, Supabase schema changes, RLS changes, upload enablement, or marketplace implementation by itself.
+Status: product planning document after subscription and platform-strategy discussion. This document defines the intended subscription direction, data-asset strategy, and future platform reserve space. Owner-only client-generated PDF reporting is approved for Pro/Team as of 2026-07-29. This document does not approve billing launch, payment collection, App Store / Play Store subscription setup, Supabase schema changes, RLS changes, Excel generation, upload enablement, or marketplace implementation by itself.
 
 ## 0. 繁中摘要
 
@@ -133,6 +133,7 @@ The free plan should help a small brand start using Feria in real market conditi
 - Basic cloud sync for text and event data.
 - Basic CSV export for owner data when reporting export is approved.
 - Data completeness guidance that teaches the owner what to record next.
+- Limited weekly/monthly settlement summary with total revenue, deal count, included-market coverage, and record-completeness guidance.
 
 ### Excluded
 
@@ -205,7 +206,7 @@ Everything in Free, plus:
 - Recent 3 / recent 10 / all-market trend comparison.
 - Deterministic market recap.
 - Weekly and monthly settlement report preview.
-- Designed PDF report when report generation is separately implemented and approved.
+- Owner-only designed PDF report generated from the same local settlement report truth.
 - Excel export when separately approved.
 - Brand data completeness guidance.
 - Early "collaboration readiness" private preview, if implemented, visible only to the owner.
@@ -386,7 +387,8 @@ Summary:
 | Product cover photo upload | No | Yes | Yes |
 | Sales photo evidence upload | No | No | Yes |
 | Formal staff collaboration | No | No | Yes |
-| Designed PDF / Excel generation | No | Yes when separately implemented | Yes when separately implemented |
+| Designed PDF generation | No | Yes | Yes |
+| Excel generation | No | Yes when separately implemented | Yes when separately implemented |
 
 Strategic capabilities such as collaboration readiness, public partner snapshots, and anonymous benchmarks are not subscription tiers. Publication and benchmark participation require separate owner consent in addition to any future capability access.
 
@@ -655,7 +657,7 @@ Policy:
 
 - Owner-only financial reporting remains the default.
 - Manager report/export access requires a separate permission decision and redaction tests.
-- PDF reports can become a Pro/Team value driver.
+- Client-generated designed PDF reports are a Pro/Team value driver and remain owner-only.
 - Excel can become a Pro/Team value driver after separate dependency and security approval.
 - Public partner snapshots must be separate from owner financial reports.
 

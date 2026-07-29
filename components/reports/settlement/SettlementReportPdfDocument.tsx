@@ -54,8 +54,10 @@ const colors = {
   line: '#DED6CA',
   softLine: '#ECE5DA',
   brand: '#26392F',
+  brandMid: '#446354',
   brandSoft: '#E7EFE4',
   accent: '#9A6A42',
+  accentSoft: '#F2E8DB',
   warningBg: '#FFF7E6',
   warningLine: '#EDD8A6',
   warningText: '#4A3B28',
@@ -63,29 +65,40 @@ const colors = {
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 30,
-    paddingRight: 34,
-    paddingBottom: 30,
-    paddingLeft: 34,
+    minHeight: 841.89,
+    paddingTop: 34,
+    paddingRight: 36,
+    paddingBottom: 36,
+    paddingLeft: 36,
     fontFamily: PDF_FONT_FAMILY,
     color: colors.ink,
     backgroundColor: colors.paper,
   },
+  topRule: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 6,
+    backgroundColor: colors.brand,
+  },
   pageHeader: {
-    marginBottom: 16,
-    paddingBottom: 10,
+    marginBottom: 18,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   pageHeaderText: {
     width: '78%',
   },
   pageMeta: {
-    fontSize: 8,
-    color: colors.muted,
-    marginBottom: 5,
+    fontSize: 7.5,
+    color: colors.accent,
+    marginBottom: 6,
+    fontWeight: 500,
   },
   pageTitle: {
     fontSize: 20,
@@ -94,15 +107,15 @@ const styles = StyleSheet.create({
     fontWeight: 700,
   },
   pagePurpose: {
-    marginTop: 5,
-    fontSize: 9,
+    marginTop: 6,
+    fontSize: 8.5,
     color: colors.muted,
     lineHeight: 1.45,
   },
   pageBadge: {
-    minWidth: 54,
-    height: 26,
-    paddingTop: 6,
+    minWidth: 48,
+    height: 24,
+    paddingTop: 5,
     paddingRight: 8,
     paddingLeft: 8,
     backgroundColor: colors.brand,
@@ -113,21 +126,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   section: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: colors.accent,
-    marginBottom: 7,
+    marginBottom: 8,
+    paddingLeft: 7,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.accent,
     fontWeight: 700,
   },
   coverHero: {
-    paddingTop: 18,
-    paddingRight: 18,
-    paddingBottom: 16,
-    paddingLeft: 18,
+    paddingTop: 22,
+    paddingRight: 22,
+    paddingBottom: 20,
+    paddingLeft: 22,
     backgroundColor: colors.brand,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   coverBrand: {
     fontSize: 13,
@@ -135,7 +151,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   coverRecommendation: {
-    fontSize: 25,
+    fontSize: 27,
     lineHeight: 1.25,
     color: '#FFFFFF',
     fontWeight: 700,
@@ -156,7 +172,7 @@ const styles = StyleSheet.create({
     paddingRight: 8,
     paddingBottom: 5,
     paddingLeft: 8,
-    backgroundColor: '#F4EFE6',
+    backgroundColor: colors.surfaceWarm,
   },
   coverStatusText: {
     fontSize: 8,
@@ -187,6 +203,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.softLine,
+    borderTopWidth: 2,
+    borderTopColor: colors.accent,
   },
   metricLabel: {
     fontSize: 8,
@@ -215,6 +233,40 @@ const styles = StyleSheet.create({
   rowHeader: {
     backgroundColor: colors.surfaceWarm,
     borderBottomColor: colors.line,
+  },
+  rowHighlight: {
+    backgroundColor: colors.brandSoft,
+  },
+  rankCell: {
+    width: '8%',
+    paddingRight: 6,
+  },
+  marketNameCell: {
+    width: '29%',
+    paddingRight: 7,
+  },
+  marketMoneyCell: {
+    width: '17%',
+    paddingRight: 7,
+  },
+  marketScoreCell: {
+    width: '12%',
+    paddingRight: 6,
+  },
+  marketDecisionCell: {
+    width: '17%',
+  },
+  productNameCell: {
+    width: '38%',
+    paddingRight: 7,
+  },
+  productQuantityCell: {
+    width: '17%',
+    paddingRight: 7,
+  },
+  productMoneyCell: {
+    width: '18.5%',
+    paddingRight: 7,
   },
   cellWide: {
     width: '38%',
@@ -245,8 +297,8 @@ const styles = StyleSheet.create({
     paddingLeft: 9,
     marginBottom: 6,
     backgroundColor: colors.warningBg,
-    borderWidth: 1,
-    borderColor: colors.warningLine,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.warningLine,
   },
   warningMessage: {
     fontSize: 9,
@@ -263,6 +315,29 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.softLine,
+  },
+  actionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 7,
+  },
+  actionIndex: {
+    width: 18,
+    height: 18,
+    paddingTop: 3,
+    marginRight: 7,
+    backgroundColor: colors.brand,
+  },
+  actionIndexText: {
+    color: '#FFFFFF',
+    fontSize: 7.5,
+    textAlign: 'center',
+    fontWeight: 700,
+  },
+  actionTitle: {
+    color: colors.accent,
+    fontSize: 10,
+    fontWeight: 700,
   },
   actionItem: {
     fontSize: 9,
@@ -294,11 +369,88 @@ const styles = StyleSheet.create({
     color: colors.brand,
     fontWeight: 700,
   },
+  summaryBand: {
+    marginBottom: 12,
+    paddingTop: 10,
+    paddingRight: 12,
+    paddingBottom: 10,
+    paddingLeft: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.brandSoft,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.brandMid,
+  },
+  summaryBandLabel: {
+    fontSize: 8,
+    color: colors.muted,
+    marginBottom: 3,
+  },
+  summaryBandValue: {
+    fontSize: 11,
+    color: colors.brand,
+    fontWeight: 700,
+  },
+  summaryBandSide: {
+    maxWidth: '56%',
+    textAlign: 'right',
+  },
+  scoreList: {
+    borderTopWidth: 1,
+    borderTopColor: colors.softLine,
+  },
+  scoreRow: {
+    paddingTop: 8,
+    paddingRight: 10,
+    paddingBottom: 8,
+    paddingLeft: 10,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.softLine,
+  },
+  scoreRowTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  scoreRowLabel: {
+    width: '34%',
+    fontSize: 9,
+    color: colors.ink,
+    fontWeight: 700,
+  },
+  scoreRowMeta: {
+    width: '64%',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  scoreMetaText: {
+    marginLeft: 9,
+    fontSize: 7.5,
+    color: colors.muted,
+  },
+  scoreStatusText: {
+    marginLeft: 9,
+    paddingTop: 2,
+    paddingRight: 5,
+    paddingBottom: 2,
+    paddingLeft: 5,
+    fontSize: 7,
+    color: colors.brand,
+    backgroundColor: colors.brandSoft,
+  },
+  scoreReason: {
+    fontSize: 7.5,
+    lineHeight: 1.4,
+    color: colors.body,
+  },
   footer: {
     position: 'absolute',
-    left: 34,
-    right: 34,
-    bottom: 18,
+    left: 36,
+    right: 36,
+    bottom: 20,
     paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: colors.line,
@@ -409,21 +561,18 @@ function renderDataConfidencePage(page: SettlementReportPdfDataConfidencePage): 
       </View>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>評分組成</Text>
-        <View style={styles.table}>
-          <View style={[styles.row, styles.rowHeader]}>
-            <Text style={[styles.headerText, styles.cellWide]}>項目</Text>
-            <Text style={[styles.headerText, styles.cellSmall]}>權重</Text>
-            <Text style={[styles.headerText, styles.cellSmall]}>分數</Text>
-            <Text style={[styles.headerText, styles.cell]}>狀態</Text>
-            <Text style={[styles.headerText, styles.cell]}>原因</Text>
-          </View>
+        <View style={styles.scoreList}>
           {page.scoreRows.map(row => (
-            <View key={row.key} style={styles.row}>
-              <Text style={[styles.cellText, styles.cellWide]}>{row.label}</Text>
-              <Text style={[styles.cellText, styles.cellSmall]}>{row.weightLabel}</Text>
-              <Text style={[styles.cellText, styles.cellSmall]}>{row.scoreLabel}</Text>
-              <Text style={[styles.cellText, styles.cell]}>{row.statusLabel}</Text>
-              <Text style={[styles.cellText, styles.cell]}>{row.reason}</Text>
+            <View key={row.key} style={styles.scoreRow}>
+              <View style={styles.scoreRowTop}>
+                <Text style={styles.scoreRowLabel}>{row.label}</Text>
+                <View style={styles.scoreRowMeta}>
+                  <Text style={styles.scoreMetaText}>權重 {row.weightLabel}</Text>
+                  <Text style={styles.scoreMetaText}>分數 {row.scoreLabel}</Text>
+                  <Text style={styles.scoreStatusText}>{row.statusLabel}</Text>
+                </View>
+              </View>
+              <Text style={styles.scoreReason}>{row.reason}</Text>
             </View>
           ))}
         </View>
@@ -440,21 +589,35 @@ function renderMarketPage(page: SettlementReportPdfMarketPage): React.ReactNode 
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>市集表現排行</Text>
+      <View style={styles.summaryBand}>
+        <View>
+          <Text style={styles.summaryBandLabel}>本期納入排行</Text>
+          <Text style={styles.summaryBandValue}>{page.rows.length} 場市集</Text>
+        </View>
+        <View style={styles.summaryBandSide}>
+          <Text style={styles.summaryBandLabel}>排名第一</Text>
+          <Text style={styles.summaryBandValue}>
+            {page.rows[0].marketName} · {page.rows[0].revenueLabel}
+          </Text>
+        </View>
+      </View>
       <View style={styles.table}>
         <View style={[styles.row, styles.rowHeader]}>
-          <Text style={[styles.headerText, styles.cellWide]}>市集</Text>
-          <Text style={[styles.headerText, styles.cell]}>營收</Text>
-          <Text style={[styles.headerText, styles.cell]}>淨利</Text>
-          <Text style={[styles.headerText, styles.cellSmall]}>分數</Text>
-          <Text style={[styles.headerText, styles.cellSmall]}>建議</Text>
+          <Text style={[styles.headerText, styles.rankCell]}>排名</Text>
+          <Text style={[styles.headerText, styles.marketNameCell]}>市集</Text>
+          <Text style={[styles.headerText, styles.marketMoneyCell]}>營收</Text>
+          <Text style={[styles.headerText, styles.marketMoneyCell]}>淨利</Text>
+          <Text style={[styles.headerText, styles.marketScoreCell]}>分數</Text>
+          <Text style={[styles.headerText, styles.marketDecisionCell]}>建議</Text>
         </View>
-        {page.rows.map(row => (
-          <View key={row.marketId} style={styles.row}>
-            <Text style={[styles.cellText, styles.cellWide]}>{row.marketName}</Text>
-            <Text style={[styles.cellText, styles.cell]}>{row.revenueLabel}</Text>
-            <Text style={[styles.cellText, styles.cell]}>{row.netProfitLabel}</Text>
-            <Text style={[styles.cellText, styles.cellSmall]}>{row.scoreLabel}</Text>
-            <Text style={[styles.cellText, styles.cellSmall]}>{row.recommendationLabel}</Text>
+        {page.rows.map((row, index) => (
+          <View key={row.marketId} style={[styles.row, index === 0 ? styles.rowHighlight : {}]}>
+            <Text style={[styles.cellText, styles.rankCell]}>{index + 1}</Text>
+            <Text style={[styles.cellText, styles.marketNameCell]}>{row.marketName}</Text>
+            <Text style={[styles.cellText, styles.marketMoneyCell]}>{row.revenueLabel}</Text>
+            <Text style={[styles.cellText, styles.marketMoneyCell]}>{row.netProfitLabel}</Text>
+            <Text style={[styles.cellText, styles.marketScoreCell]}>{row.scoreLabel}</Text>
+            <Text style={[styles.cellText, styles.marketDecisionCell]}>{row.recommendationLabel}</Text>
           </View>
         ))}
       </View>
@@ -479,19 +642,33 @@ function renderProductPage(page: SettlementReportPdfProductPage): React.ReactNod
       ) : null}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>商品表現</Text>
+        <View style={styles.summaryBand}>
+          <View>
+            <Text style={styles.summaryBandLabel}>本期納入排行</Text>
+            <Text style={styles.summaryBandValue}>{page.rows.length} 項商品</Text>
+          </View>
+          <View style={styles.summaryBandSide}>
+            <Text style={styles.summaryBandLabel}>銷售第一</Text>
+            <Text style={styles.summaryBandValue}>
+              {page.rows[0].productName} · {page.rows[0].quantityLabel}
+            </Text>
+          </View>
+        </View>
         <View style={styles.table}>
           <View style={[styles.row, styles.rowHeader]}>
-            <Text style={[styles.headerText, styles.cellWide]}>商品</Text>
-            <Text style={[styles.headerText, styles.cell]}>售出</Text>
-            <Text style={[styles.headerText, styles.cell]}>營收</Text>
-            <Text style={[styles.headerText, styles.cell]}>毛利</Text>
+            <Text style={[styles.headerText, styles.rankCell]}>排名</Text>
+            <Text style={[styles.headerText, styles.productNameCell]}>商品</Text>
+            <Text style={[styles.headerText, styles.productQuantityCell]}>售出</Text>
+            <Text style={[styles.headerText, styles.productMoneyCell]}>營收</Text>
+            <Text style={[styles.headerText, styles.productMoneyCell]}>毛利</Text>
           </View>
-          {page.rows.map(row => (
-            <View key={row.productId} style={styles.row}>
-              <Text style={[styles.cellText, styles.cellWide]}>{row.productName}</Text>
-              <Text style={[styles.cellText, styles.cell]}>{row.quantityLabel}</Text>
-              <Text style={[styles.cellText, styles.cell]}>{row.revenueLabel}</Text>
-              <Text style={[styles.cellText, styles.cell]}>{row.grossProfitLabel}</Text>
+          {page.rows.map((row, index) => (
+            <View key={row.productId} style={[styles.row, index === 0 ? styles.rowHighlight : {}]}>
+              <Text style={[styles.cellText, styles.rankCell]}>{index + 1}</Text>
+              <Text style={[styles.cellText, styles.productNameCell]}>{row.productName}</Text>
+              <Text style={[styles.cellText, styles.productQuantityCell]}>{row.quantityLabel}</Text>
+              <Text style={[styles.cellText, styles.productMoneyCell]}>{row.revenueLabel}</Text>
+              <Text style={[styles.cellText, styles.productMoneyCell]}>{row.grossProfitLabel}</Text>
             </View>
           ))}
         </View>
@@ -503,10 +680,15 @@ function renderProductPage(page: SettlementReportPdfProductPage): React.ReactNod
   );
 }
 
-function renderActionGroup(group: SettlementReportPdfActionGroup): React.ReactNode {
+function renderActionGroup(group: SettlementReportPdfActionGroup, index: number): React.ReactNode {
   return (
     <View key={group.title} style={styles.actionBox}>
-      <Text style={styles.sectionTitle}>{group.title}</Text>
+      <View style={styles.actionTitleRow}>
+        <View style={styles.actionIndex}>
+          <Text style={styles.actionIndexText}>{index + 1}</Text>
+        </View>
+        <Text style={styles.actionTitle}>{group.title}</Text>
+      </View>
       {group.actions.slice(0, 4).map(action => (
         <Text key={action} style={styles.actionItem}>
           - {action}
@@ -574,6 +756,7 @@ export function SettlementReportPdfDocument({
           style={styles.page}
           wrap={false}
         >
+          <View style={styles.topRule} fixed />
           <View style={styles.pageHeader}>
             <View style={styles.pageHeaderText}>
               <Text style={styles.pageMeta}>

@@ -71,6 +71,8 @@ runTest('settlement report model and preview carry owner brand name', () => {
   assert.match(previewModelSource, /brandName: report\.brandName/);
   assert.match(reportPageSource, /brandName,\s*markets,/);
   assert.match(reportPageSource, /preview\.header\.brandName/);
+  assert.match(reportPageSource, /buildSettlementFreePreview/);
+  assert.match(reportPageSource, /freePreview\.brandName/);
 });
 
 runTest('brand name wiring stays out of sync recovery and custom export side effects', () => {
@@ -79,8 +81,10 @@ runTest('brand name wiring stays out of sync recovery and custom export side eff
     assert.doesNotMatch(source, /Excel|CSV|download|下載|匯出/);
     assert.doesNotMatch(source, /db\.(events|markets|products|dailyStats)\.(add|put|update|delete|clear|bulkAdd|bulkPut|bulkDelete)/);
   }
+  assert.match(reportPageSource, /SETTLEMENT_PDF_RUNTIME_ENABLED/);
+  assert.match(reportPageSource, /if \(!settlementView\.canBuildPdfViewModel \|\| !built\?\.report\) return null/);
   assert.match(reportPageSource, /buildSettlementReportPdfViewModel/);
-  assert.match(reportPageSource, /SettlementReportPdfPreviewButton/);
+  assert.match(reportPageSource, /canPreview=\{settlementView\.pdfDecision\.allowed\}/);
   assert.doesNotMatch(homePageSource, /@\/lib\/db\/recovery|@\/lib\/db\/events/);
 });
 

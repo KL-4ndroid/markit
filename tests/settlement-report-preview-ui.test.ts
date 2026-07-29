@@ -76,21 +76,26 @@ runTest('preview UI separates decision tasks without changing report formulas', 
   assert.match(pageSource, /isReportDataLoading/);
 });
 
-runTest('preview UI exposes owner PDF preview without Excel CSV or custom download actions', () => {
+runTest('preview UI connects approved PDF generation only through the paid capability gate', () => {
+  assert.match(pageSource, /SETTLEMENT_PDF_RUNTIME_ENABLED/);
+  assert.match(pageSource, /feature: 'settlementPdf'/);
+  assert.match(pageSource, /settlementView\.canBuildPdfViewModel/);
   assert.match(pageSource, /buildSettlementReportPdfViewModel/);
   assert.match(pageSource, /SettlementReportPdfPreviewButton/);
-  assert.match(pageSource, /正式 PDF 報告預覽/);
-  assert.match(pageSource, /<SettlementReportPdfPreviewButton viewModel=\{pdfViewModel\} canPreview=\{canPreview\} \/>/);
+  assert.match(pageSource, /Pro／Team 可將目前的週／月結算內容整理為五頁 A4 報告/);
   assert.doesNotMatch(pageSource, /Excel|CSV|download/);
   assert.doesNotMatch(pageSource, /<a\s+[^>]*download|download=/i);
 });
 
-runTest('preview UI keeps PDF generation behind owner finance and export capabilities', () => {
+runTest('preview UI intersects owner permission with authoritative report capabilities', () => {
   assert.match(pageSource, /useRoleContext\(\)/);
   assert.match(pageSource, /const isRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
   assert.match(pageSource, /isOwner:\s*isRoleReady && roleRefreshState\.permissions\.isOwner/);
-  assert.match(pageSource, /const canPreview =\s*isRoleReady &&[\s\S]*hasCapability\(capabilities, 'canImportExport'\)[\s\S]*hasCapability\(capabilities, 'canViewOwnerFinance'\)/);
-  assert.match(pageSource, /const pdfViewModel = report \? buildSettlementReportPdfViewModel\(\{ report \}\) : null/);
+  assert.match(pageSource, /const hasOwnerReportRole =\s*isRoleReady &&[\s\S]*hasCapability\(capabilities, 'canImportExport'\)[\s\S]*hasCapability\(capabilities, 'canViewOwnerFinance'\)/);
+  assert.match(pageSource, /useAccountCapabilities/);
+  assert.match(pageSource, /feature: 'settlementReportPreview'/);
+  assert.match(pageSource, /settlementView\.canReadProducts/);
+  assert.match(pageSource, /settlementView\.canBuildFullReport/);
 });
 
 runTest('analytics page exposes owner-only entry without changing bottom navigation', () => {

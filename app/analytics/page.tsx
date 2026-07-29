@@ -18,12 +18,16 @@ import { toast } from 'sonner';
 import { ActionableInsightsCard } from '@/components/analytics/ActionableInsightsCard';
 import { AnalyticsSummaryHighlights } from '@/components/analytics/AnalyticsSummaryHighlights';
 import { AdvancedAnalysisGate } from '@/components/analytics/AdvancedAnalysisGate';
-import { DateRangeFilter, type AnalyticsRange } from '@/components/analytics/DateRangeFilter';
+import { BasicProductRankingCard } from '@/components/analytics/BasicProductRankingCard';
+import { DateRangeFilter } from '@/components/analytics/DateRangeFilter';
 import { MarketRecapCard } from '@/components/analytics/MarketRecapCard';
 import { MarketTrendCard } from '@/components/analytics/MarketTrendCard';
+import { RecentMarketRevenuePreview } from '@/components/analytics/RecentMarketRevenuePreview';
+import { UpgradePrompt } from '@/components/subscription/UpgradePrompt';
 import { IconButton } from '@/components/ui/IconButton';
 import { StateView } from '@/components/ui/StateView';
 import { Tabs, type TabItem } from '@/components/ui/Tabs';
+import { useAccountCapabilities } from '@/hooks/useAccountCapabilities';
 import { useAnalyticsCache, useAnalyticsCacheInvalidation } from '@/hooks/useAnalyticsCache';
 import { SyncStatus } from '@/hooks/useSync';
 import { useRoleContext } from '@/lib/role-context';
@@ -34,6 +38,10 @@ import {
   getActiveInteractionEventsForMarkets,
 } from '@/lib/events/active-event-service';
 import { buildActionableAnalytics } from '@/lib/analytics/actionable-insights';
+import {
+  calculateBasicProductRankingFromEvents,
+  type BasicProductRankingResult,
+} from '@/lib/analytics/basic-product-ranking';
 import { buildMarketRecapReport } from '@/lib/analytics/market-recap';
 import { buildMarketTrend } from '@/lib/analytics/market-trend';
 import {
@@ -44,6 +52,12 @@ import {
   loadMarketMetricsViewModel,
   type MarketMetricsViewModel,
 } from '@/lib/analytics/market-metrics-view-model';
+import { buildRecentMarketRevenuePreview } from '@/lib/analytics/recent-market-revenue-preview';
+import {
+  resolveAnalyticsSubscriptionView,
+  type AnalyticsRange,
+  type AnalyticsTab,
+} from '@/lib/analytics/subscription-view';
 import {
   calculateTopProductsFromEvents,
   createEmptyTopProductsResult,
@@ -51,6 +65,7 @@ import {
 } from '@/lib/analytics/top-products';
 import { getDataReliability } from '@/lib/analytics/unlock-logic';
 import { useSyncContext } from '@/lib/sync-context';
+import { evaluateAccountCapabilityClientAccess } from '@/lib/subscription/account-capability-access';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { getGradientClass } from '@/lib/theme-config';
 import type { DailyStats, Event } from '@/types/db';
@@ -78,8 +93,6 @@ const AdvancedAnalyticsSection = dynamic(
     loading: () => <StateView title="正在整理進階指標" description="這些比較只會在開啟進階頁籤時運算。" />,
   },
 );
-
-type AnalyticsTab = 'summary' | 'trends' | 'products' | 'advanced';
 
 interface QueryResult<T> {
   data: T;
@@ -110,11 +123,11 @@ function hasTopProductData(result: TopProductsResult): boolean {
 
 export default function AnalyticsPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, session, loading: isAuthLoading } = useAuth();
   const { isStaff, isLoading: isRoleLoading, roleError } = useRoleContext();
   const { status: syncStatus, pendingCount } = useSyncContext();
   const { clearAllCache } = useAnalyticsCache();
-  const [dateRange, setDateRange] = useState<AnalyticsRange>('all');
+  const [dateRange, setDateRange] = useState<AnalyticsRange>('recent3');
   const [selectedMarketId, setSelectedMarketId] = useState('');
   const [activeTab, setActiveTab] = useState<AnalyticsTab>('summary');
   const [refreshRevision, setRefreshRevision] = useState(0);
@@ -128,6 +141,72 @@ export default function AnalyticsPage() {
   }, []);
 
   const currentOwnerId = !isRoleLoading && !roleError && !isStaff ? user?.id : undefined;
+  const shouldLoadAnalyticsCapability = !isRoleLoading
+    && !roleError
+    && !isStaff;
+  const capabilityQuery = useAccountCapabilities({
+    accessToken: session?.access_token,
+    enabled: shouldLoadAnalyticsCapability,
+  });
+  const basicAnalyticsAccess = useMemo(() => (
+    evaluateAccountCapabilityClientAccess({
+      capabilityResult: capabilityQuery.result,
+      authenticated: Boolean(user && session?.access_token),
+      ownerWorkspaceAvailable: Boolean(currentOwnerId),
+      workspaceOwnerId: currentOwnerId,
+      requestedOwnerId: currentOwnerId,
+      actorRole: 'owner',
+      rolePermission: true,
+      feature: 'basicAnalytics',
+      operation: 'execute',
+      runtimeEnabled: true,
+      dataReady: true,
+      nowMs: Date.now(),
+      network: capabilityQuery.network,
+    })
+  ), [
+    capabilityQuery.network,
+    capabilityQuery.result,
+    currentOwnerId,
+    session?.access_token,
+    user,
+  ]);
+  const advancedAnalyticsAccess = useMemo(() => (
+    evaluateAccountCapabilityClientAccess({
+      capabilityResult: capabilityQuery.result,
+      authenticated: Boolean(user && session?.access_token),
+      ownerWorkspaceAvailable: Boolean(currentOwnerId),
+      workspaceOwnerId: currentOwnerId,
+      requestedOwnerId: currentOwnerId,
+      actorRole: 'owner',
+      rolePermission: true,
+      feature: 'advancedAnalytics',
+      operation: 'execute',
+      runtimeEnabled: true,
+      dataReady: true,
+      nowMs: Date.now(),
+      network: capabilityQuery.network,
+    })
+  ), [
+    capabilityQuery.network,
+    capabilityQuery.result,
+    currentOwnerId,
+    session?.access_token,
+    user,
+  ]);
+  const analyticsView = useMemo(() => resolveAnalyticsSubscriptionView({
+    range: dateRange,
+    tab: activeTab,
+    basicAccess: basicAnalyticsAccess,
+    advancedAccess: advancedAnalyticsAccess,
+  }), [
+    activeTab,
+    advancedAnalyticsAccess,
+    basicAnalyticsAccess,
+    dateRange,
+  ]);
+  const isAnalyticsCapabilityLoading = shouldLoadAnalyticsCapability
+    && (isAuthLoading || capabilityQuery.isLoading || capabilityQuery.result === null);
   const scopedOwnerId = currentOwnerId ?? ANALYTICS_ROLE_BLOCKED_OWNER_ID;
   const allMarkets = useMarkets({ ownerId: scopedOwnerId });
   const products = useProducts({ ownerId: scopedOwnerId });
@@ -175,7 +254,14 @@ export default function AnalyticsPage() {
     [markets],
   );
   const reliability = useMemo(() => getDataReliability(validMarketCount), [validMarketCount]);
-  const needsMetrics = activeTab === 'summary' || activeTab === 'advanced';
+  const recentMarketPreview = useMemo(
+    () => analyticsView.canBuildRecentMarketPreview
+      ? buildRecentMarketRevenuePreview(markets)
+      : null,
+    [analyticsView.canBuildRecentMarketPreview, markets],
+  );
+  const needsMetrics = analyticsView.canComputeMarketMetrics
+    && (activeTab === 'summary' || activeTab === 'advanced');
 
   const metricsResult = useLiveQuery<QueryResult<MarketMetricsViewModel>>(async () => {
     if (!needsMetrics || markets.length === 0) {
@@ -190,7 +276,7 @@ export default function AnalyticsPage() {
   }, [needsMetrics, marketIdsKey, refreshRevision]);
 
   const summaryResult = useLiveQuery<QueryResult<SummaryQueryData>>(async () => {
-    if (activeTab !== 'summary' || marketIds.length === 0) {
+    if (!analyticsView.canReadSummaryEvents || activeTab !== 'summary' || marketIds.length === 0) {
       return { data: { events: [], dailyStats: [] }, error: null };
     }
     try {
@@ -211,10 +297,12 @@ export default function AnalyticsPage() {
       console.error('分析摘要資料失敗:', error);
       return { data: { events: [], dailyStats: [] }, error: toErrorMessage(error) };
     }
-  }, [activeTab, marketIdsKey, startDate, endDate, refreshRevision]);
+  }, [activeTab, analyticsView.canReadSummaryEvents, marketIdsKey, startDate, endDate, refreshRevision]);
 
   const dailyRevenueResult = useLiveQuery<QueryResult<Map<string, number>>>(async () => {
-    if (activeTab !== 'trends' || markets.length === 0) return { data: new Map(), error: null };
+    if (!analyticsView.canReadDailyRevenue || activeTab !== 'trends' || markets.length === 0) {
+      return { data: new Map(), error: null };
+    }
     try {
       const { calculateDailyRevenue } = await import('@/lib/analytics/product-affinity-engine');
       return { data: await calculateDailyRevenue(markets, db, startDate, endDate), error: null };
@@ -222,10 +310,40 @@ export default function AnalyticsPage() {
       console.error('每日收入趨勢失敗:', error);
       return { data: new Map(), error: toErrorMessage(error) };
     }
-  }, [activeTab, marketIdsKey, startDate, endDate, refreshRevision]);
+  }, [activeTab, analyticsView.canReadDailyRevenue, marketIdsKey, startDate, endDate, refreshRevision]);
+
+  const basicProductRankingResult = useLiveQuery<QueryResult<BasicProductRankingResult | null>>(async () => {
+    if (!analyticsView.canReadBasicProductRanking || activeTab !== 'products' || marketIds.length === 0) {
+      return { data: null, error: null };
+    }
+    try {
+      const marketIdSet = new Set(marketIds);
+      const activeDeals = await getActiveDealEventsForMarkets(marketIdSet);
+      const productNames = new Map<string, string>(products.flatMap(product => (
+        product.id ? [[product.id, product.name] as [string, string]] : []
+      )));
+      return {
+        data: await calculateBasicProductRankingFromEvents(
+          activeDeals,
+          marketIdSet,
+          async productId => productNames.get(productId),
+        ),
+        error: null,
+      };
+    } catch (error) {
+      console.error('基本商品排行失敗:', error);
+      return { data: null, error: toErrorMessage(error) };
+    }
+  }, [
+    activeTab,
+    analyticsView.canReadBasicProductRanking,
+    marketIdsKey,
+    productNameKey,
+    refreshRevision,
+  ]);
 
   const topProductsResult = useLiveQuery<QueryResult<TopProductsResult>>(async () => {
-    if (activeTab !== 'products' || marketIds.length === 0) {
+    if (!analyticsView.canReadFullProductRanking || activeTab !== 'products' || marketIds.length === 0) {
       return { data: createEmptyTopProductsResult(), error: null };
     }
     try {
@@ -246,10 +364,12 @@ export default function AnalyticsPage() {
       console.error('商品排行分析失敗:', error);
       return { data: createEmptyTopProductsResult(), error: toErrorMessage(error) };
     }
-  }, [activeTab, marketIdsKey, productNameKey, refreshRevision]);
+  }, [activeTab, analyticsView.canReadFullProductRanking, marketIdsKey, productNameKey, refreshRevision]);
 
   const affinityResult = useLiveQuery<QueryResult<ProductPair[]>>(async () => {
-    if (activeTab !== 'products' || validMarketCount < 15) return { data: [], error: null };
+    if (!analyticsView.canReadProductAffinity || activeTab !== 'products' || validMarketCount < 15) {
+      return { data: [], error: null };
+    }
     try {
       const { calculateProductAffinity } = await import('@/lib/analytics/product-affinity-engine');
       return { data: await calculateProductAffinity(markets, db), error: null };
@@ -257,17 +377,26 @@ export default function AnalyticsPage() {
       console.error('商品關聯分析失敗:', error);
       return { data: [], error: toErrorMessage(error) };
     }
-  }, [activeTab, marketIdsKey, validMarketCount, refreshRevision]);
+  }, [activeTab, analyticsView.canReadProductAffinity, marketIdsKey, validMarketCount, refreshRevision]);
 
   const analyticsInput = useMemo(() => ({
-    markets,
-    events: summaryResult?.data.events ?? [],
-    dailyStats: summaryResult?.data.dailyStats ?? [],
-    products,
-  }), [markets, products, summaryResult]);
-  const actionableAnalytics = useMemo(() => buildActionableAnalytics(analyticsInput), [analyticsInput]);
-  const marketRecap = useMemo(() => buildMarketRecapReport(analyticsInput), [analyticsInput]);
-  const marketTrend = useMemo(() => buildMarketTrend(markets), [markets]);
+    markets: analyticsView.canReadSummaryEvents ? markets : [],
+    events: analyticsView.canReadSummaryEvents ? summaryResult?.data.events ?? [] : [],
+    dailyStats: analyticsView.canReadSummaryEvents ? summaryResult?.data.dailyStats ?? [] : [],
+    products: analyticsView.canReadSummaryEvents ? products : [],
+  }), [analyticsView.canReadSummaryEvents, markets, products, summaryResult]);
+  const actionableAnalytics = useMemo(
+    () => analyticsView.canComputeActionableInsights ? buildActionableAnalytics(analyticsInput) : null,
+    [analyticsInput, analyticsView.canComputeActionableInsights],
+  );
+  const marketRecap = useMemo(
+    () => analyticsView.canComputeMarketRecap ? buildMarketRecapReport(analyticsInput) : null,
+    [analyticsInput, analyticsView.canComputeMarketRecap],
+  );
+  const marketTrend = useMemo(
+    () => analyticsView.canComputeFullMarketTrend ? buildMarketTrend(markets) : null,
+    [analyticsView.canComputeFullMarketTrend, markets],
+  );
 
   const handleRecalculate = async () => {
     setIsRecalculating(true);
@@ -374,10 +503,49 @@ export default function AnalyticsPage() {
             title="目前範圍沒有可分析的市集"
             description="調整分析範圍，或完成第一場市集的營運紀錄。"
           />
+        ) : isAnalyticsCapabilityLoading ? (
+          <StateView
+            className="mt-5"
+            title="正在確認分析權限"
+            description="完成後會依方案載入可使用的分析範圍。"
+          />
+        ) : analyticsView.blockDecision ? (
+          <div className="mt-5">
+            <UpgradePrompt
+              reason={analyticsView.blockDecision.reason}
+              requiredPlan={analyticsView.blockDecision.requiredPlan}
+              showClose={false}
+              onRetry={capabilityQuery.result?.ok === false && capabilityQuery.result.retryable
+                ? capabilityQuery.refresh
+                : undefined}
+              isRetrying={capabilityQuery.isLoading}
+            />
+          </div>
         ) : (
           <div className="mt-5">
             {activeTab === 'summary' && (
-              summaryResult === undefined || metricsResult === undefined ? (
+              analyticsView.mode === 'free_preview' && recentMarketPreview ? (
+                <div className="space-y-5">
+                  <section className={`rounded-card border px-4 py-3 ${
+                    reliability.level === 'high'
+                      ? 'border-status-good-border bg-status-good-bg'
+                      : reliability.level === 'medium'
+                        ? 'border-status-warn-border bg-status-warn-bg'
+                        : 'border-primary/10 bg-white'
+                  }`}>
+                    <p className="text-sm font-semibold text-foreground">{reliability.label}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{reliability.description}，目前包含 {validMarketCount} 場有效市集。</p>
+                  </section>
+                  <RecentMarketRevenuePreview preview={recentMarketPreview} />
+                  {analyticsView.previewUpgradeDecision && (
+                    <UpgradePrompt
+                      reason={analyticsView.previewUpgradeDecision.reason}
+                      requiredPlan={analyticsView.previewUpgradeDecision.requiredPlan}
+                      showClose={false}
+                    />
+                  )}
+                </div>
+              ) : summaryResult === undefined || metricsResult === undefined ? (
                 <StateView title="正在整理摘要" description="只會讀取目前範圍內的成交、互動與統計資料。" />
               ) : summaryResult.error || metricsResult.error ? (
                 <StateView
@@ -398,28 +566,64 @@ export default function AnalyticsPage() {
                     <p className="mt-1 text-xs text-muted-foreground">{reliability.description}，目前包含 {validMarketCount} 場有效市集。</p>
                   </section>
                   {dateRange === 'single'
-                    ? <MarketRecapCard report={marketRecap} />
-                    : <ActionableInsightsCard result={actionableAnalytics} />}
+                    ? marketRecap && <MarketRecapCard report={marketRecap} />
+                    : actionableAnalytics && <ActionableInsightsCard result={actionableAnalytics} />}
                   <AnalyticsSummaryHighlights viewModel={metricsResult.data} />
                 </div>
               )
             )}
 
             {activeTab === 'trends' && (
-              <div className="space-y-5">
-                <MarketTrendCard trend={marketTrend} />
-                {dailyRevenueResult === undefined ? (
-                  <StateView title="正在整理每日趨勢" />
-                ) : dailyRevenueResult.error ? (
-                  <StateView title="每日趨勢暫時無法完成" description={dailyRevenueResult.error} />
-                ) : (
-                  <DailyRevenueChart revenueMap={dailyRevenueResult.data} startDate={startDate} endDate={endDate} />
-                )}
-              </div>
+              analyticsView.mode === 'free_preview' && recentMarketPreview ? (
+                <div className="space-y-5">
+                  <RecentMarketRevenuePreview preview={recentMarketPreview} />
+                  {analyticsView.previewUpgradeDecision && (
+                    <UpgradePrompt
+                      reason={analyticsView.previewUpgradeDecision.reason}
+                      requiredPlan={analyticsView.previewUpgradeDecision.requiredPlan}
+                      showClose={false}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {marketTrend && <MarketTrendCard trend={marketTrend} />}
+                  {dailyRevenueResult === undefined ? (
+                    <StateView title="正在整理每日趨勢" />
+                  ) : dailyRevenueResult.error ? (
+                    <StateView title="每日趨勢暫時無法完成" description={dailyRevenueResult.error} />
+                  ) : (
+                    <DailyRevenueChart revenueMap={dailyRevenueResult.data} startDate={startDate} endDate={endDate} />
+                  )}
+                </div>
+              )
             )}
 
             {activeTab === 'products' && (
-              topProductsResult === undefined ? (
+              analyticsView.canReadBasicProductRanking ? (
+                <div className="space-y-5">
+                  {basicProductRankingResult === undefined ? (
+                    <StateView title="正在整理基本商品排行" />
+                  ) : basicProductRankingResult.error ? (
+                    <StateView title="商品分析暫時無法完成" description={basicProductRankingResult.error} />
+                  ) : basicProductRankingResult.data === null ? (
+                    <StateView
+                      icon={<PackageSearch className="h-5 w-5" aria-hidden="true" />}
+                      title="尚無商品層級銷售資料"
+                      description="成交時選擇售出商品後，這裡會顯示銷量第一的商品。"
+                    />
+                  ) : (
+                    <BasicProductRankingCard ranking={basicProductRankingResult.data} />
+                  )}
+                  {analyticsView.previewUpgradeDecision && (
+                    <UpgradePrompt
+                      reason={analyticsView.previewUpgradeDecision.reason}
+                      requiredPlan={analyticsView.previewUpgradeDecision.requiredPlan}
+                      showClose={false}
+                    />
+                  )}
+                </div>
+              ) : topProductsResult === undefined ? (
                 <StateView title="正在整理商品表現" />
               ) : topProductsResult.error ? (
                 <StateView title="商品分析暫時無法完成" description={topProductsResult.error} />

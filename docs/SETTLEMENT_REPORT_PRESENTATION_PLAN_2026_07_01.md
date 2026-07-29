@@ -2,9 +2,9 @@
 
 Date: 2026-07-01
 
-Status: preview repositioning, owner-only browser PDF preview, and fixture visual validation are completed.
+Status: preview repositioning, owner-only Pro/Team PDF enablement, and true-A4 visual validation are completed locally.
 
-Scope: define the product relationship between the settlement report preview page and the future designed PDF output.
+Scope: define the product relationship between the settlement report preview page and the implemented designed PDF output.
 
 This document does not approve custom download buttons, Excel generation, CSV export, Supabase reads, manager access, report permission changes, scoring changes, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
@@ -308,3 +308,16 @@ Result:
 - adds a readable fixture PDF validation path that does not depend on production data;
 - records that in-app browser direct PDF viewing is not a reliable automation surface because file URLs are blocked and browser PDF viewer error pages can use blocked `data:` URLs;
 - keeps custom download UI, server-side PDF generation, generated-PDF storage, manager/staff export, Supabase access, sync, recovery, and data writes out of scope.
+
+### Slice N: Pro/Team PDF Enablement And True-A4 Polish
+
+Status: completed locally on 2026-07-29.
+
+Result:
+
+- Free keeps the basic settlement summary and cannot build or open the designed PDF;
+- server-confirmed Pro/Team owners can open the five-page designed PDF from the full settlement report;
+- the PDF uses the same settlement report truth and remains local/client-generated;
+- every page is verified as portrait A4 and rendered to PNG for visual inspection;
+- score explanations wrap without clipping, market/product rows show clear rank hierarchy, and action groups scan as numbered decisions;
+- Excel, custom download UI, billing, generated-PDF storage, server generation, and manager/staff export remain unapproved.

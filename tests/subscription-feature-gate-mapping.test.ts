@@ -58,7 +58,8 @@ for (const requiredRule of [
   'returns `open_access` in pre-subscription open mode',
   'rollout controls, not Team entitlement',
   'No current paid-only server route accepts a plan',
-  'does not turn any `server_required` launch target into active server enforcement',
+  'S6A and S6B now consume S4 for the official analytics UI',
+  'S6C consumes S4 for the owner-only settlement report UI',
 ]) {
   assert.ok(mapping.includes(requiredRule), requiredRule);
 }

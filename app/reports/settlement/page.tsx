@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/lib/supabase/auth-context';
 import { useRoleContext } from '@/lib/role-context';
 import { db } from '@/lib/db';
+import { useAccountCapabilities } from '@/hooks/useAccountCapabilities';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 import {
   buildSettlementReportModel,
@@ -32,6 +33,16 @@ import {
   type SettlementReportPreviewReadiness,
 } from '@/lib/reporting/settlement-report-preview';
 import { buildSettlementReportPdfViewModel } from '@/lib/reporting/settlement-report-pdf-view-model';
+import {
+  buildSettlementFreePreview,
+  type SettlementFreePreviewModel,
+} from '@/lib/reporting/settlement-free-preview';
+import {
+  resolveSettlementReportSubscriptionView,
+  SETTLEMENT_PDF_RUNTIME_ENABLED,
+} from '@/lib/reporting/settlement-subscription-view';
+import { evaluateAccountCapabilityClientAccess } from '@/lib/subscription/account-capability-access';
+import { UpgradePrompt } from '@/components/subscription/UpgradePrompt';
 import { SettlementReportPdfPreviewButton } from '@/components/reports/settlement/SettlementReportPdfPreviewButton';
 import { StateView } from '@/components/ui/StateView';
 import { Tabs, type TabItem } from '@/components/ui/Tabs';
@@ -140,7 +151,7 @@ function gradeClasses(grade: string): string {
 }
 
 export default function SettlementReportPreviewPage() {
-  const { user } = useAuth();
+  const { user, session, loading: isAuthLoading } = useAuth();
   const { userRole, roleRefreshState } = useRoleContext();
   const [kind, setKind] = useState<SettlementReportKind>('monthly');
   const defaultRange = useMemo(() => getDefaultMonthRange(), []);
@@ -154,14 +165,68 @@ export default function SettlementReportPreviewPage() {
     isOwner: isRoleReady && roleRefreshState.permissions.isOwner,
     staffRole: userRole.staffRole,
   }), [isRoleReady, roleRefreshState.permissions.isOwner, userRole.staffRole]);
-  const canPreview =
+  const hasOwnerReportRole =
     isRoleReady &&
     hasCapability(capabilities, 'canImportExport') &&
     hasCapability(capabilities, 'canViewOwnerFinance');
+  const shouldLoadReportCapability = isRoleReady && hasOwnerReportRole;
+  const capabilityQuery = useAccountCapabilities({
+    accessToken: session?.access_token,
+    enabled: shouldLoadReportCapability,
+  });
+  const reportAccess = useMemo(() => evaluateAccountCapabilityClientAccess({
+    capabilityResult: capabilityQuery.result,
+    authenticated: Boolean(user && session?.access_token),
+    ownerWorkspaceAvailable: Boolean(user?.id && hasOwnerReportRole),
+    workspaceOwnerId: user?.id,
+    requestedOwnerId: user?.id,
+    actorRole: 'owner',
+    rolePermission: hasOwnerReportRole,
+    feature: 'settlementReportPreview',
+    operation: 'execute',
+    runtimeEnabled: true,
+    dataReady: true,
+    nowMs: Date.now(),
+    network: capabilityQuery.network,
+  }), [
+    capabilityQuery.network,
+    capabilityQuery.result,
+    hasOwnerReportRole,
+    session?.access_token,
+    user,
+  ]);
+  const pdfAccess = useMemo(() => evaluateAccountCapabilityClientAccess({
+    capabilityResult: capabilityQuery.result,
+    authenticated: Boolean(user && session?.access_token),
+    ownerWorkspaceAvailable: Boolean(user?.id && hasOwnerReportRole),
+    workspaceOwnerId: user?.id,
+    requestedOwnerId: user?.id,
+    actorRole: 'owner',
+    rolePermission: hasOwnerReportRole,
+    feature: 'settlementPdf',
+    operation: 'execute',
+    runtimeEnabled: SETTLEMENT_PDF_RUNTIME_ENABLED,
+    dataReady: true,
+    nowMs: Date.now(),
+    network: capabilityQuery.network,
+  }), [
+    capabilityQuery.network,
+    capabilityQuery.result,
+    hasOwnerReportRole,
+    session?.access_token,
+    user,
+  ]);
+  const settlementView = useMemo(() => resolveSettlementReportSubscriptionView({
+    reportAccess,
+    pdfAccess,
+  }), [pdfAccess, reportAccess]);
+  const isReportCapabilityLoading = shouldLoadReportCapability && (
+    isAuthLoading || capabilityQuery.isLoading || capabilityQuery.result === null
+  );
 
   useEffect(() => {
     let cancelled = false;
-    if (!user?.id || !canPreview) return;
+    if (!user?.id || !hasOwnerReportRole) return;
 
     const cached = readCachedOwnerBrandName(user.id);
     if (cached) setBrandName(cached);
@@ -187,21 +252,21 @@ export default function SettlementReportPreviewPage() {
       cancelled = true;
       window.removeEventListener(OWNER_BRAND_NAME_UPDATED_EVENT, handleBrandNameUpdated);
     };
-  }, [user?.id, canPreview]);
+  }, [user?.id, hasOwnerReportRole]);
 
   const marketsQuery = useLiveQuery(async () => {
-    if (!user?.id || !canPreview) return [];
+    if (!user?.id || !settlementView.canReadMarkets) return [];
     return db.markets
       .where('owner_id')
       .equals(user.id)
       .and(market => !market.isDeleted)
       .toArray();
-  }, [user?.id, canPreview]);
+  }, [user?.id, settlementView.canReadMarkets]);
 
   const productsQuery = useLiveQuery(async () => {
-    if (!user?.id || !canPreview) return [];
+    if (!user?.id || !settlementView.canReadProducts) return [];
     return db.products.where('owner_id').equals(user.id).toArray();
-  }, [user?.id, canPreview]);
+  }, [user?.id, settlementView.canReadProducts]);
 
   const markets = useMemo(() => marketsQuery ?? [], [marketsQuery]);
   const products = useMemo(() => productsQuery ?? [], [productsQuery]);
@@ -212,20 +277,24 @@ export default function SettlementReportPreviewPage() {
   const marketIdsKey = marketIds.join('|');
 
   const dailyStatsQuery = useLiveQuery(async () => {
-    if (!canPreview || marketIds.length === 0) return [];
+    if (!settlementView.canReadDailyStats || marketIds.length === 0) return [];
     return db.dailyStats
       .where('marketId')
       .anyOf(marketIds)
       .and(stat => stat.date >= startDate && stat.date <= endDate)
       .toArray();
-  }, [canPreview, marketIdsKey, startDate, endDate]);
+  }, [settlementView.canReadDailyStats, marketIdsKey, startDate, endDate]);
   const dailyStats = useMemo(() => dailyStatsQuery ?? [], [dailyStatsQuery]);
-  const isReportDataLoading = marketsQuery === undefined
-    || productsQuery === undefined
-    || dailyStatsQuery === undefined;
+  const isReportDataLoading = (
+    settlementView.canReadMarkets && marketsQuery === undefined
+  ) || (
+    settlementView.canReadProducts && productsQuery === undefined
+  ) || (
+    settlementView.canReadDailyStats && dailyStatsQuery === undefined
+  );
 
   const built = useMemo<BuiltPreview | null>(() => {
-    if (!canPreview || isReportDataLoading) return null;
+    if (!settlementView.canBuildFullReport || isReportDataLoading) return null;
 
     const report = buildSettlementReportModel({
       capabilities,
@@ -248,7 +317,39 @@ export default function SettlementReportPreviewPage() {
         report,
       }),
     };
-  }, [canPreview, isReportDataLoading, capabilities, kind, startDate, endDate, brandName, markets, dailyStats, products]);
+  }, [settlementView.canBuildFullReport, isReportDataLoading, capabilities, kind, startDate, endDate, brandName, markets, dailyStats, products]);
+
+  const freePreview = useMemo<SettlementFreePreviewModel | null>(() => {
+    if (!settlementView.canBuildFreePreview || isReportDataLoading) return null;
+
+    return buildSettlementFreePreview({
+      capabilities,
+      period: {
+        kind,
+        startDate,
+        endDate,
+        label: formatDisplayDateRange(startDate, endDate),
+      },
+      brandName,
+      markets,
+      dailyStats,
+    });
+  }, [
+    settlementView.canBuildFreePreview,
+    isReportDataLoading,
+    capabilities,
+    kind,
+    startDate,
+    endDate,
+    brandName,
+    markets,
+    dailyStats,
+  ]);
+
+  const pdfViewModel = useMemo(() => {
+    if (!settlementView.canBuildPdfViewModel || !built?.report) return null;
+    return buildSettlementReportPdfViewModel({ report: built.report });
+  }, [built, settlementView.canBuildPdfViewModel]);
 
   if (!isRoleReady) {
     return (
@@ -262,7 +363,7 @@ export default function SettlementReportPreviewPage() {
     );
   }
 
-  if (!canPreview) {
+  if (!hasOwnerReportRole) {
     return (
       <div className="min-h-screen bg-background px-4 py-6">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
@@ -282,9 +383,41 @@ export default function SettlementReportPreviewPage() {
     );
   }
 
+  if (isReportCapabilityLoading) {
+    return (
+      <div className="min-h-screen bg-background px-4 py-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+          <StateView
+            title="正在確認結算報告權限"
+            description="確認完成前不會讀取報表資料。"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (settlementView.mode === 'blocked' && settlementView.blockDecision) {
+    return (
+      <div className="min-h-screen bg-background px-4 py-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+          <Link href="/analytics" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <ArrowLeft size={16} />
+            返回分析
+          </Link>
+          <UpgradePrompt
+            reason={settlementView.blockDecision.reason}
+            requiredPlan={settlementView.blockDecision.requiredPlan}
+            showClose={false}
+            onRetry={capabilityQuery.refresh}
+            isRetrying={capabilityQuery.isLoading}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const report = built?.report ?? null;
   const preview = built?.preview ?? null;
-  const pdfViewModel = report ? buildSettlementReportPdfViewModel({ report }) : null;
 
   return (
     <div className="min-h-screen bg-background px-4 pb-12 pt-5">
@@ -302,7 +435,11 @@ export default function SettlementReportPreviewPage() {
               <div className="min-w-0">
                 <h1 className="text-2xl font-semibold text-foreground">結算報告檢查</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {preview ? `${preview.header.brandName} · ${preview.header.periodLabel} · 信心度 ${confidenceLabel(preview.header.confidence)}` : '正在整理本機資料'}
+                  {preview
+                    ? `${preview.header.brandName} · ${preview.header.periodLabel} · 信心度 ${confidenceLabel(preview.header.confidence)}`
+                    : freePreview
+                      ? `${freePreview.brandName} · ${freePreview.period.label} · Free 基本摘要`
+                      : '正在整理本機資料'}
                 </p>
               </div>
             </div>
@@ -338,21 +475,114 @@ export default function SettlementReportPreviewPage() {
         {isReportDataLoading && (
           <StateView
             title="正在整理結算資料"
-            description="只讀取目前帳號與日期範圍內的市集、商品和統計。"
+            description={settlementView.canReadProducts
+              ? '只讀取目前帳號與日期範圍內的市集、商品和統計。'
+              : '只讀取目前帳號與日期範圍內的市集和基本統計。'}
           />
+        )}
+
+        {freePreview && settlementView.previewUpgradeDecision && (
+          <>
+            <UpgradePrompt
+              reason={settlementView.previewUpgradeDecision.reason}
+              requiredPlan={settlementView.previewUpgradeDecision.requiredPlan}
+              showClose={false}
+            />
+
+            <section className="japanese-surface-card p-5">
+              <div className="flex flex-col gap-3 border-b border-neutral-stripe pb-5 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-medium text-primary">Free 基本結算摘要</p>
+                  <h2 className="mt-1 text-xl font-semibold text-foreground">
+                    {freePreview.period.kind === 'monthly' ? '本月紀錄概況' : '本週紀錄概況'}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    保留最實用的營收、成交與紀錄完整度；決策評分、成本利潤分析與商品建議屬於 Pro。
+                  </p>
+                </div>
+                <span className={`inline-flex w-fit border px-3 py-1 text-xs font-medium ${
+                  freePreview.readiness === 'ready'
+                    ? statusClasses('available')
+                    : freePreview.readiness === 'empty'
+                      ? statusClasses('unavailable')
+                      : statusClasses('limited')
+                }`}>
+                  {freePreview.readiness === 'ready'
+                    ? '基本紀錄齊全'
+                    : freePreview.readiness === 'empty'
+                      ? '尚無可用紀錄'
+                      : '仍有紀錄可補強'}
+                </span>
+              </div>
+
+              <div className="grid gap-3 py-5 sm:grid-cols-3">
+                <div className="bg-neutral-alt-warm p-4">
+                  <p className="text-xs text-muted-foreground">期間總營收</p>
+                  <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">
+                    {formatCurrency(freePreview.totalRevenue)}
+                  </p>
+                </div>
+                <div className="bg-neutral-alt-warm p-4">
+                  <p className="text-xs text-muted-foreground">成交筆數</p>
+                  <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">
+                    {formatNumber(freePreview.totalDeals)}
+                  </p>
+                </div>
+                <div className="bg-neutral-alt-warm p-4">
+                  <p className="text-xs text-muted-foreground">納入市集</p>
+                  <p className="mt-2 text-xl font-semibold tabular-nums text-foreground">
+                    {freePreview.marketsWithStatsCount} / {freePreview.includedMarketCount}
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-t border-neutral-stripe pt-5">
+                <div className="mb-3 flex items-center gap-2 text-foreground">
+                  <CheckCircle2 size={18} className="text-accent-green" />
+                  <h2 className="text-base font-semibold">下一步補強紀錄</h2>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {freePreview.dataGuidance.map(guidance => (
+                    <p key={guidance} className="border-t border-neutral-stripe pt-3 text-sm leading-6 text-muted-foreground">
+                      {guidance}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </>
         )}
 
         {preview && report && (
           <>
             <section className="japanese-surface-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-base font-semibold text-foreground">正式 PDF 報告預覽</h2>
+                <h2 className="text-base font-semibold text-foreground">設計版 PDF 報告</h2>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  使用目前頁面的資料產生 PDF 預覽，開啟後可用瀏覽器內建功能查看。
+                  Pro／Team 可將目前的週／月結算內容整理為五頁 A4 報告，檔案只在目前裝置產生。
                 </p>
               </div>
-              <SettlementReportPdfPreviewButton viewModel={pdfViewModel} canPreview={canPreview} />
+              {settlementView.canBuildPdfViewModel && pdfViewModel ? (
+                <SettlementReportPdfPreviewButton
+                  viewModel={pdfViewModel}
+                  canPreview={settlementView.pdfDecision.allowed}
+                />
+              ) : (
+                <span className="inline-flex w-fit border border-neutral-stripe-dark bg-neutral-alt-warm px-3 py-1 text-xs font-medium text-muted-foreground">
+                  目前不可用
+                </span>
+              )}
             </section>
+
+            {!settlementView.canBuildPdfViewModel && !settlementView.pdfDecision.allowed && (
+              <UpgradePrompt
+                reason={settlementView.pdfDecision.reason}
+                requiredPlan={settlementView.pdfDecision.requiredPlan}
+                showClose={false}
+                onRetry={capabilityQuery.refresh}
+                isRetrying={capabilityQuery.isLoading}
+              />
+            )}
 
             <Tabs
               items={REPORT_TABS}

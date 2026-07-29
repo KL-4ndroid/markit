@@ -75,7 +75,7 @@ assert.equal(
 );
 assert.equal(
   PLAN_PREVIEWS.find(plan => plan.id === 'pro')?.features.find(feature => feature.code === 'report.pdf')?.status,
-  'coming_soon',
+  'included',
 );
 
 assert.match(subscriptionPage, /SUBSCRIPTION_PRESENTATION\.notice/);

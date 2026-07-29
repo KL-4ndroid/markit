@@ -2,11 +2,11 @@
 
 Date: 2026-07-01
 
-Status: browser-only owner PDF preview shell and fixture visual validation are implemented.
+Status: owner-only Pro/Team client PDF preview and true-A4 visual validation are implemented locally.
 
-Scope: decide the recommended technical approach for the future owner-only settlement report PDF generation feature.
+Scope: record the implemented technical approach and boundaries for the owner-only Pro/Team settlement report PDF feature.
 
-This document records the approved `@react-pdf/renderer` installation, font smoke test, PDF template, owner-only browser preview shell, and fixture visual validation. It does not approve custom download buttons, browser file APIs beyond opening a generated blob URL, Supabase reads, changing report permissions, changing settlement scoring, changing analytics page behavior, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
+This document records the approved `@react-pdf/renderer` installation, font smoke test, PDF template, owner-only Pro/Team browser preview, and fixture visual validation. It does not approve custom download buttons, browser file APIs beyond the platform preview port, Supabase report reads, changing report permissions, changing settlement scoring, changing analytics page behavior, data repair, projection rebuilds, duplicate cleanup, or sync/recovery behavior.
 
 ## 1. Recommended Approach
 
@@ -409,6 +409,23 @@ Still blocked:
 - scoring/model changes;
 - sync/recovery changes.
 
+### Slice O: Pro/Team Runtime Enablement And True-A4 Polish
+
+Status: completed locally on 2026-07-29.
+
+Result:
+
+- changes `report.pdf` from `coming_soon` to `included` for Pro/Team while Free remains unavailable;
+- reconnects `SettlementReportPdfPreviewButton` only after the owner role gate, full-report capability, PDF capability, and runtime switch allow;
+- keeps PDF blob generation local and delegates preview to `lib/platform`;
+- adds an explicit runtime-disabled rollback test;
+- corrects React PDF's content-height shrink under `wrap={false}` with a fixed A4 minimum page height;
+- verifies all five `/MediaBox` values are approximately `595.28 x 841.89 pt`;
+- replaces the cramped score table with readable score rows and adds ranked market/product summaries plus structured action blocks;
+- renders all five pages to PNG and inspects them for clipped text, overlap, missing headers/footers, and unreadable tables.
+
+Still blocked: Excel, custom download UI, server-side PDF generation, generated-PDF storage, manager/staff export, Supabase report reads/writes, scoring changes, and sync/recovery changes.
+
 ## 11. Stop Conditions
 
 Stop for decision before:
@@ -436,12 +453,13 @@ Completed:
 - fixture-only five-page PDF template prototype.
 - owner-only browser PDF preview shell.
 - fixture visual validation and PDF template polish.
+- Pro/Team capability enablement, true-A4 correction, and second visual-polish pass.
 
 Recommended next path:
 
-1. Run owner-page manual smoke with real local owner data when the user is available to log in.
+1. Run owner-page manual smoke with a server-confirmed paid fixture or paid account when available.
 2. If typography still appears too light in the actual browser viewer, replace the variable font with static Noto Sans TC regular/medium/bold files as a separate low-risk asset slice.
 3. Add overflow-focused fixtures if real reports show long warnings, long product names, or many action items.
 4. Keep custom download UI, server-side generation, Supabase reads, manager/staff export, and generated-PDF storage blocked until separate approval.
 
-The next step is owner-page manual smoke with authenticated local data. Treat any custom download UI, role expansion, server route, or generated-PDF storage as a separate decision boundary.
+The next step is owner-page manual smoke with an authenticated paid state. Treat any custom download UI, role expansion, server route, or generated-PDF storage as a separate decision boundary.

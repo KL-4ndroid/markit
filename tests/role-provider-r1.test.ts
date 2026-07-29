@@ -111,7 +111,8 @@ runTest('R4c migrates settlement report and list pages with fail-closed data sco
   assert.match(settlementReportPageSource, /useRoleContext\(\)/);
   assert.match(settlementReportPageSource, /const isRoleReady = roleRefreshState\.stage === ['"]ready['"]/);
   assert.match(settlementReportPageSource, /isOwner:\s*isRoleReady && roleRefreshState\.permissions\.isOwner/);
-  assert.match(settlementReportPageSource, /const canPreview =\s*isRoleReady &&/);
+  assert.match(settlementReportPageSource, /const hasOwnerReportRole =\s*isRoleReady &&/);
+  assert.match(settlementReportPageSource, /settlementView\.canReadMarkets/);
   assert.match(settlementReportPageSource, /if \(!isRoleReady\)/);
   assert.doesNotMatch(settlementReportPageSource, /useUserRole\(\)/);
 

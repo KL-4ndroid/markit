@@ -61,13 +61,15 @@ runTest('browser preview shell does not add custom download UI or data access', 
   assert.doesNotMatch(buttonSource, /localStorage|sessionStorage/);
 });
 
-runTest('settlement report page wires preview shell after existing owner-only guard', () => {
-  assert.match(pageSource, /buildSettlementReportPdfViewModel/);
-  assert.match(pageSource, /SettlementReportPdfPreviewButton/);
+runTest('settlement report page mounts the preview shell behind owner and subscription gates', () => {
   assert.match(pageSource, /hasCapability\(capabilities, 'canImportExport'\)/);
   assert.match(pageSource, /hasCapability\(capabilities, 'canViewOwnerFinance'\)/);
-  assert.match(pageSource, /const pdfViewModel = report \? buildSettlementReportPdfViewModel\(\{ report \}\) : null/);
-  assert.match(pageSource, /<SettlementReportPdfPreviewButton viewModel=\{pdfViewModel\} canPreview=\{canPreview\} \/>/);
+  assert.match(pageSource, /SETTLEMENT_PDF_RUNTIME_ENABLED/);
+  assert.match(pageSource, /feature: 'settlementPdf'/);
+  assert.match(pageSource, /settlementView\.canBuildPdfViewModel/);
+  assert.match(pageSource, /buildSettlementReportPdfViewModel/);
+  assert.match(pageSource, /<SettlementReportPdfPreviewButton/);
+  assert.match(pageSource, /canPreview=\{settlementView\.pdfDecision\.allowed\}/);
 });
 
 runTest('PDF document remains data-source free after browser shell wiring', () => {

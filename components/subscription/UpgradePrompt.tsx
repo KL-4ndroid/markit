@@ -1,6 +1,6 @@
 'use client';
 
-import { Info, X } from 'lucide-react';
+import { Info, RefreshCw, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -12,12 +12,16 @@ interface UpgradePromptProps {
   reason: CapabilityAccessBlockReason;
   requiredPlan?: AccountPlanCode;
   showClose?: boolean;
+  onRetry?: () => void;
+  isRetrying?: boolean;
 }
 
 export function UpgradePrompt({
   reason,
   requiredPlan,
   showClose = true,
+  onRetry,
+  isRetrying = false,
 }: UpgradePromptProps) {
   const [isVisible, setIsVisible] = useState(true);
   const router = useRouter();
@@ -39,6 +43,17 @@ export function UpgradePrompt({
               className="mt-2 text-sm font-medium text-primary underline underline-offset-4"
             >
               {presentation.actionLabel}
+            </button>
+          )}
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={isRetrying}
+              className="mt-2 inline-flex min-h-10 items-center gap-2 text-sm font-medium text-primary disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} aria-hidden="true" />
+              重新檢查權限
             </button>
           )}
         </div>

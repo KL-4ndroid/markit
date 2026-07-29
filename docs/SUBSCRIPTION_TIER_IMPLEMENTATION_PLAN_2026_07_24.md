@@ -6,7 +6,7 @@ Last updated: 2026-07-29
 
 Status: AI execution plan for implementing the subscription foundation in small verified slices. This document does not approve payment collection, billing provider setup, native in-app purchase setup, public marketplace workflows, production upload enablement, destructive recovery actions, or broad permission changes.
 
-Implementation progress (2026-07-29): S0A through S5 are implemented and validated locally. Local server configuration, R2 read access, production build, unauthenticated capability routes, CORS, and live 063 RPC permission smoke passed. The live project currently has no explicit subscription rows or inactive-staff fixture, so those state paths are covered by deterministic resolver/route tests rather than production mutations. Authenticated deployment smoke and deployment evidence are still required. Product-cover `open` mode remains active and no subscription enforcement, billing, promotion grant, referral reward, or founder price assignment is active.
+Implementation progress (2026-07-29): S0A through S5 and S6A through S6D are implemented and validated locally. Local server configuration, R2 read access, production build, capability routes, CORS, live 063 RPC permission smoke, and authenticated local Free UI smoke passed. S6A protects single-market basic analysis and review; S6B provides a bounded recent-three Free preview; S6C separates the Free settlement summary from the Pro/Team full report; S6D enables the owner-only client-generated designed PDF for Pro/Team and keeps Free blocked. The live project currently has no explicit paid subscription row or inactive-staff fixture, so those state paths are covered by deterministic resolver/route tests rather than production mutations. Authenticated paid-state deployment smoke and deployment evidence are still required. Product-cover `open` mode remains active and no billing, Excel generation, promotion grant, referral reward, founder price assignment, or Team enforcement is active.
 
 Primary product plan:
 
@@ -454,15 +454,21 @@ Acceptance:
 
 ### Slice S6: Analytics And Report Tier Gates
 
+Status: S6A single-market basic analysis/review, S6B advanced analytics tiers, S6C settlement report tiers, and S6D Pro/Team designed PDF implemented locally on 2026-07-29; deployment evidence remains pending.
+
 Goal:
 
 Gate analytics value without weakening free recording usefulness.
 
 Deliver:
 
-- Free keeps source records and data-completeness guidance, but does not receive analytics results.
-- Pro unlocks single-market basic analysis and review, simple rejoin guidance, advanced comparison, product recommendations, and report preview/PDF when implemented.
+- Free keeps source records and data-completeness guidance, plus the approved recent-three limited preview: revenue-only market comparison/trend and quantity-only top-product ranking.
+- Free does not receive single-market recap, recent-10/all results, cost/profit recommendations, complete product financial rankings, product affinity, daily revenue detail, or advanced scorecards.
+- Pro unlocks single-market basic analysis and review, simple rejoin guidance, advanced comparison, product recommendations, full report preview, and owner-only designed PDF generation.
 - Team inherits Pro analytics.
+- Free settlement reporting is limited to period selection, total revenue, deal count, included-market coverage, and data-completeness guidance. It does not query products or build the paid decision model.
+- Pro and Team owners receive the existing full settlement preview when the authoritative capability is available.
+- PDF generation is enabled only for server-confirmed Pro/Team owners with the existing financial/export role permissions. Free does not build the PDF view model or generate a file.
 - Data completeness remains independent from plan. A Pro user with weak data still sees low-confidence limitations.
 
 Acceptance:
@@ -471,6 +477,62 @@ Acceptance:
 - Data-completeness gates still block product/time/interaction insights when data is insufficient.
 - Report owner-only permission remains unchanged.
 - No manager export access is added.
+
+S6A implementation evidence:
+
+- only the `single` analytics range requests the authoritative account capability in this slice;
+- Free, inactive, stale, unavailable, or owner-mismatched capability states do not run the selected-range Dexie analytics queries or build the single-market recap;
+- Pro and Team capability fixtures allow the same shared analysis path;
+- non-single analytics behavior remains unchanged until S6B defines its Free preview and paid boundaries;
+- unavailable capability is presented as a retryable service state, not as a false upgrade claim;
+- the hook receives the bearer token from the active auth context, uses the shared application API client and platform network port, and does not read browser storage;
+- `npm run smoke:subscription:read-model` performs the repeatable live read-only RPC permission check without creating or changing subscription rows;
+- focused tests, the full test manifest, full ESLint, production build, client-bundle secret/RPC scan, live read-only RPC smoke, and authenticated local Free UI smoke passed.
+- the non-API mobile static build and artifact verification passed; the API-enabled mobile build correctly remains blocked until a stable HTTPS `NEXT_PUBLIC_API_BASE_URL` exists after staging deployment.
+
+S6B implementation evidence:
+
+- the analytics owner surface now reads the authoritative account capability for every analytics range; no plan or tier is accepted from browser storage, query strings, public environment values, or UI state;
+- `lib/analytics/subscription-view.ts` is a platform-neutral policy that distinguishes `free_preview`, `basic`, `full`, and fail-closed `blocked` modes;
+- Free defaults to `recent3`; summary and trend use a revenue-only three-market projection, while the product tab uses a separate quantity-only calculator that does not compute price, cost, revenue, profit, affinity, or recommendations;
+- Free does not query summary events/daily stats, market metrics, daily revenue, full product ranking, or product affinity for the preview; recent-10, all, advanced-tab, and single-market selection render the matching Pro gate without running those selected-range analytics paths;
+- Pro and Team deterministic capability fixtures retain the full existing analytics path. Capability unavailable/stale/offline failures block the preview and expose retry instead of being presented as Free;
+- authenticated local Free UI smoke passed summary, trend, product, advanced, recent-10, all, single-market, and recent-three recovery checks with no console errors or horizontal overflow;
+- focused tests, the full test manifest, full ESLint, production build, client-bundle secret/RPC scan, and live read-only subscription smoke passed;
+- the mobile export generated a complete 240-file artifact and `verify:mobile` passed. On this Windows run, Turbopack exited after generation with `kill EPERM`; this toolchain exit remains a follow-up and is not recorded as a clean `build:mobile` pass. API-enabled mobile still requires the future stable HTTPS API base.
+
+S6C implementation evidence:
+
+- the owner-only settlement surface now intersects the existing `canImportExport` and `canViewOwnerFinance` role checks with the authenticated S4 account-capability read;
+- `lib/reporting/settlement-subscription-view.ts` is a platform-neutral policy for fail-closed, Free limited, and Pro/Team full report modes, with independent PDF runtime state;
+- Free reads only owner-scoped markets and daily statistics, uses `lib/reporting/settlement-free-preview.ts`, and does not query products or build the existing profit, score, recommendation, market-decision, product-ranking, or PDF view models;
+- Pro and Team deterministic fixtures retain the existing complete settlement report and data-quality path. A capability outage blocks all report queries and exposes retry instead of presenting a false upgrade state;
+- S6C deliberately left PDF `coming_soon` and runtime-disabled pending the separate S6D approval recorded below;
+- owner-only role behavior remains unchanged and Team does not grant manager or staff access to owner financial reports;
+- focused S6C policy, Free model, historical preview UI, disconnected PDF-shell, owner-brand, role-provider, and registry guardrails pass locally;
+- the complete test manifest, full ESLint, production Web build, client-bundle server-only/secret scan, disabled-PDF bundle scan, and live read-only subscription smoke passed;
+- mobile static export completed cleanly with 305 files (16.93 MiB); artifact verification and the nine-route generic static smoke passed without adding Capacitor or native projects;
+- the latest production Web server is healthy at `http://localhost:3010`. Both available browsers reached the unauthenticated route guard with no console error or horizontal overflow;
+- authenticated Free UI smoke could not be repeated on the latest build because another unrelated process owns `localhost:3000`, while the existing Féria browser session is scoped to that origin. The unrelated process was not stopped and no auth storage/token was inspected or copied. Deterministic Free UI/model tests plus the live missing-row Free RPC smoke cover this launch boundary until a signed-in session is established on port 3010.
+
+### Slice S6D: Pro/Team PDF Enablement And A4 Visual Polish
+
+Status: implemented and validated locally on 2026-07-29; authenticated paid-state deployment smoke remains pending.
+
+Result:
+
+- `report.pdf` is `not_available` for Free and `included` for Pro/Team;
+- the settlement page builds the PDF view model only after owner role checks, a server-authoritative full-report capability, and an independently allowed PDF capability all pass;
+- `SETTLEMENT_PDF_RUNTIME_ENABLED` is true, with an explicit runtime-disabled rollback policy test;
+- the PDF remains client-generated from the existing local report model and opens through the platform-neutral file preview port; no report payload is sent to a server route and no generated PDF is stored;
+- all five pages now render as true portrait A4 media boxes, use stable headers/footers, readable score rows, ranked market/product tables, and structured next-action blocks;
+- Free does not query products, build the paid report/PDF model, or mount the PDF action;
+- Team inheritance does not grant manager or staff access to owner financial reporting;
+- focused PDF/subscription tests, the complete test manifest, full ESLint, final Web production build, client-bundle secret/RPC/legacy-copy scan, and live read-only capability smoke pass;
+- mobile static build and verification pass with 308 files (18.34 MiB), without adding Capacitor or native projects;
+- the latest Web production server is healthy at `http://localhost:3010` and includes the approved PDF client chunk;
+- authenticated paid-state UI smoke remains pending because the live subscription source has no explicit paid row and browser automation cannot control the local URL under the current browser safety policy; no production subscription data was mutated to manufacture coverage;
+- Excel, custom in-app download UI, server-side PDF generation, billing, generated-PDF storage, and role expansion remain out of scope.
 
 ### Slice S7: Strategic Growth Capability Data Design
 

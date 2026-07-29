@@ -29,13 +29,13 @@ function runTest(name: string, fn: TestFn): void {
 
 console.log('\n=== Settlement report PDF visual spec ===');
 
-runTest('visual spec exists and stays non-runtime', () => {
+runTest('visual spec records the approved owner-only Pro/Team runtime boundary', () => {
   assert.match(pdfVisualSpecSource, /# Settlement Report PDF Visual Specification/);
-  assert.match(pdfVisualSpecSource, /Status: visual specification completed; PDF generation remains deferred/);
-  assert.match(pdfVisualSpecSource, /This document does not approve PDF generation/);
-  assert.match(pdfVisualSpecSource, /does not approve[\s\S]*PDF library selection/);
-  assert.match(pdfVisualSpecSource, /does not approve[\s\S]*Supabase reads/);
-  assert.match(pdfVisualSpecSource, /does not approve[\s\S]*sync\/recovery behavior/);
+  assert.match(pdfVisualSpecSource, /Status: visual specification implemented and revalidated as true five-page portrait A4 output/);
+  assert.match(pdfVisualSpecSource, /owner-only client-generated PDF presentation is enabled for server-confirmed Pro\/Team accounts/);
+  assert.match(pdfVisualSpecSource, /Custom download UI[\s\S]*remain unapproved/);
+  assert.match(pdfVisualSpecSource, /Supabase report reads[\s\S]*remain unapproved/);
+  assert.match(pdfVisualSpecSource, /sync\/recovery behavior remain unapproved/);
 });
 
 runTest('visual spec keeps preview and PDF sharing the same report truth', () => {
@@ -105,7 +105,7 @@ runTest('presentation and preview plans point to PDF visual spec before technica
   assert.match(presentationPlanSource, /Slice F: PDF Visual Specification[\s\S]*Status: completed/);
   assert.match(presentationPlanSource, /docs\/SETTLEMENT_REPORT_PDF_VISUAL_SPEC_2026_07_01\.md/);
   assert.match(presentationPlanSource, /Slice G: PDF Technical Plan[\s\S]*Status: completed/);
-  assert.match(presentationPlanSource, /No implementation is approved by this plan/);
+  assert.match(presentationPlanSource, /Slice N: Pro\/Team PDF Enablement And True-A4 Polish[\s\S]*Status: completed locally/);
   assert.match(previewSpecSource, /Future PDF Relationship/);
   assert.match(previewSpecSource, /Those decisions require a later PDF technical plan/);
 });

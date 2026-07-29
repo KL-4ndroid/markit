@@ -71,7 +71,7 @@ const PRO_FEATURES: Readonly<Record<SubscriptionPlanFeatureCode, SubscriptionPla
   'analytics.basic': 'included',
   'analytics.advanced': 'included',
   'report.settlement_preview': 'included',
-  'report.pdf': 'coming_soon',
+  'report.pdf': 'included',
   'report.excel': 'coming_soon',
   'photo.product_cover': 'included',
 };

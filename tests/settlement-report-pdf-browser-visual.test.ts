@@ -173,6 +173,11 @@ function countPdfPages(buffer: Buffer): number {
   return pdfSource.match(/\/Type \/Page\b/g)?.length ?? 0;
 }
 
+function readMediaBoxes(buffer: Buffer): Array<{ width: number; height: number }> {
+  return Array.from(buffer.toString('latin1').matchAll(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/g))
+    .map(match => ({ width: Number(match[1]), height: Number(match[2]) }));
+}
+
 console.log('\n=== Settlement report PDF browser visual validation ===');
 
 runTest('renders a readable owner-only fixture PDF for browser visual validation', async () => {
@@ -183,6 +188,10 @@ runTest('renders a readable owner-only fixture PDF for browser visual validation
 
   assert.match(buffer.subarray(0, 8).toString('latin1'), /^%PDF-/);
   assert.equal(countPdfPages(buffer), 5);
+  const mediaBoxes = readMediaBoxes(buffer);
+  assert.equal(mediaBoxes.length, 5);
+  assert.ok(mediaBoxes.every(box => Math.abs(box.width - 595.28) < 0.02));
+  assert.ok(mediaBoxes.every(box => Math.abs(box.height - 841.89) < 0.02));
   assert.ok(buffer.length > 20_000, `Expected non-trivial PDF output, got ${buffer.length} bytes`);
 
   if (process.env.WRITE_SETTLEMENT_PDF_ARTIFACT === '1') {

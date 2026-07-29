@@ -28,10 +28,10 @@ function runTest(name: string, fn: TestFn): void {
 
 console.log('\n=== Settlement report PDF technical plan ===');
 
-runTest('technical plan exists and remains non-runtime', () => {
+runTest('technical plan records the approved Pro/Team runtime and retained boundaries', () => {
   assert.match(technicalPlanSource, /# Settlement Report PDF Technical Plan/);
-  assert.match(technicalPlanSource, /Status: browser-only owner PDF preview shell and fixture visual validation are implemented/);
-  assert.match(technicalPlanSource, /approved `@react-pdf\/renderer` installation, font smoke test, PDF template, owner-only browser preview shell, and fixture visual validation/);
+  assert.match(technicalPlanSource, /Status: owner-only Pro\/Team client PDF preview and true-A4 visual validation are implemented locally/);
+  assert.match(technicalPlanSource, /approved `@react-pdf\/renderer` installation, font smoke test, PDF template, owner-only Pro\/Team browser preview, and fixture visual validation/);
   assert.match(technicalPlanSource, /does not approve custom download buttons/);
   assert.match(technicalPlanSource, /does not approve[\s\S]*Supabase reads/);
   assert.match(technicalPlanSource, /does not approve[\s\S]*sync\/recovery behavior/);
@@ -75,6 +75,8 @@ runTest('technical plan defines owner-only preview guardrails and staged impleme
   assert.match(technicalPlanSource, /Slice K: Minimal Font Smoke Test[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /Slice M: Owner-Only Browser PDF Preview UI[\s\S]*Status: completed/);
   assert.match(technicalPlanSource, /Slice N: Browser Visual Validation And Template Polish[\s\S]*Status: completed/);
+  assert.match(technicalPlanSource, /Slice O: Pro\/Team Runtime Enablement And True-A4 Polish[\s\S]*Status: completed locally/);
+  assert.match(technicalPlanSource, /595\.28 x 841\.89 pt/);
   assert.match(technicalPlanSource, /does not add a custom download button/);
 });
 

@@ -47,13 +47,11 @@ export function SettlementReportPdfPreviewButton({
       });
 
       if (!preview.opened) {
-        setErrorMessage('瀏覽器封鎖了 PDF 預覽視窗，請允許此網站開啟新分頁後再試一次。');
-        return;
+        setErrorMessage('目前無法開啟 PDF 預覽，請確認瀏覽器允許開啟新分頁後再試一次。');
       }
-
     } catch (error) {
-      console.error('開啟結算報告 PDF 預覽失敗:', error);
-      setErrorMessage('PDF 預覽產生失敗，請稍後再試。');
+      console.error('建立結算報告 PDF 失敗:', error);
+      setErrorMessage('PDF 建立失敗，請稍後再試。');
     } finally {
       setIsOpening(false);
     }
@@ -70,13 +68,13 @@ export function SettlementReportPdfPreviewButton({
         className="inline-flex h-10 items-center justify-center gap-2 border border-accent-green-deep bg-accent-green-deep px-4 text-sm font-medium text-white transition hover:bg-accent-green disabled:cursor-not-allowed disabled:border-muted disabled:bg-muted"
       >
         {isOpening ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-        {isOpening ? '正在產生 PDF' : '開啟 PDF 預覽'}
+        {isOpening ? '正在建立 PDF' : '預覽 PDF 報告'}
       </button>
       {errorMessage ? (
         <p className="max-w-xs text-xs leading-5 text-danger">{errorMessage}</p>
       ) : (
         <p className="max-w-xs text-xs leading-5 text-muted-foreground">
-          會以瀏覽器 PDF viewer 開啟，不會上傳或儲存報告。
+          報告只會在目前裝置產生，並交由裝置的 PDF 預覽器開啟。
         </p>
       )}
     </div>
