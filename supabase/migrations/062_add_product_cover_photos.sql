@@ -81,7 +81,8 @@ CREATE OR REPLACE FUNCTION public.claim_product_cover_photo_upload(
   p_photo_id uuid,
   p_version integer,
   p_requested_bytes integer,
-  p_max_account_bytes bigint
+  p_max_account_bytes bigint,
+  p_require_entitlement boolean
 ) RETURNS public.product_cover_photos
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
 DECLARE
@@ -100,7 +101,7 @@ BEGIN
       AND sr.status = 'active' AND sr.role = 'manager'
   );
   IF NOT v_allowed THEN RAISE EXCEPTION 'permission_denied'; END IF;
-  IF NOT EXISTS (
+  IF p_require_entitlement AND NOT EXISTS (
     SELECT 1 FROM public.account_entitlements ae
     WHERE ae.owner_id = v_product.owner_id AND ae.product_cover_photo_enabled = true
   ) THEN RAISE EXCEPTION 'paid_entitlement_required'; END IF;
@@ -139,12 +140,12 @@ CREATE OR REPLACE FUNCTION public.finalize_product_cover_photo_upload(
   p_display_content_hash text, p_thumbnail_content_hash text,
   p_display_mime_type text, p_thumbnail_mime_type text,
   p_display_size_bytes integer, p_thumbnail_size_bytes integer,
-  p_width integer, p_height integer
+  p_width integer, p_height integer, p_require_entitlement boolean
 ) RETURNS public.product_cover_photos
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
 DECLARE v_row public.product_cover_photos%ROWTYPE;
 BEGIN
-  IF NOT EXISTS (
+  IF p_require_entitlement AND NOT EXISTS (
     SELECT 1 FROM public.product_cover_photos p
     JOIN public.account_entitlements ae ON ae.owner_id = p.owner_id
     WHERE p.product_id = p_product_id AND p.deleted_at IS NULL
@@ -211,12 +212,12 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.claim_product_cover_photo_upload(uuid, uuid, uuid, integer, integer, bigint) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.finalize_product_cover_photo_upload(uuid, uuid, uuid, integer, text, text, text, text, text, text, integer, integer, integer, integer) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.claim_product_cover_photo_upload(uuid, uuid, uuid, integer, integer, bigint, boolean) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.finalize_product_cover_photo_upload(uuid, uuid, uuid, integer, text, text, text, text, text, text, integer, integer, integer, integer, boolean) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.mark_product_cover_photo_upload_failed(uuid, uuid, uuid, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.delete_product_cover_photo(uuid, uuid) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.claim_product_cover_photo_upload(uuid, uuid, uuid, integer, integer, bigint) TO service_role;
-GRANT EXECUTE ON FUNCTION public.finalize_product_cover_photo_upload(uuid, uuid, uuid, integer, text, text, text, text, text, text, integer, integer, integer, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.claim_product_cover_photo_upload(uuid, uuid, uuid, integer, integer, bigint, boolean) TO service_role;
+GRANT EXECUTE ON FUNCTION public.finalize_product_cover_photo_upload(uuid, uuid, uuid, integer, text, text, text, text, text, text, integer, integer, integer, integer, boolean) TO service_role;
 GRANT EXECUTE ON FUNCTION public.mark_product_cover_photo_upload_failed(uuid, uuid, uuid, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.delete_product_cover_photo(uuid, uuid) TO service_role;
 

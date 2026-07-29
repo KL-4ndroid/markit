@@ -3,7 +3,16 @@ import { NextResponse } from 'next/server';
 import { authenticateAppApiRequest } from '@/lib/api/server/auth';
 import { buildProductCoverPhotoObjectKey, PRODUCT_COVER_PHOTO_POLICY } from '@/lib/products/product-cover-photo-model';
 import { deleteProductCoverPhotoObject, putProductCoverPhotoObject } from '@/lib/products/product-cover-photo-r2.server';
-import { createProductCoverPhotoServiceClient, getProductCoverPhotoAccountByteLimit, isProductCoverPhotoUploadEnabled, resolveProductCoverPhotoAccess } from '@/lib/products/product-cover-photo-server';
+import {
+  createProductCoverPhotoServiceClient,
+  getProductCoverPhotoAccountByteLimit,
+  isProductCoverPhotoEntitlementRequired,
+  isProductCoverPhotoUploadEnabled,
+  resolveProductCoverPhotoAccess,
+  resolveProductCoverPhotoPlanAccess,
+  type ProductCoverPhotoPlanAccess,
+} from '@/lib/products/product-cover-photo-server';
+import { createAccountCapabilityRepository } from '@/lib/subscription/account-capability-storage.server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,6 +23,15 @@ const hash = async (blob: Blob) => createHash('sha256').update(new Uint8Array(aw
 
 function error(code: string, status: number, keep = true) {
   return NextResponse.json({ ok: false, code, shouldKeepLocalPayload: keep }, { status, headers: { 'Cache-Control': 'no-store' } });
+}
+
+function planAccessError(access: Extract<ProductCoverPhotoPlanAccess, { allowed: false }>): {
+  code: string;
+  status: number;
+} {
+  if (access.reason === 'free_plan') return { code: 'paid_entitlement_required', status: 403 };
+  if (access.reason === 'subscription_inactive') return { code: 'subscription_inactive', status: 403 };
+  return { code: 'entitlement_unavailable', status: 503 };
 }
 
 export async function POST(request: Request) {
@@ -37,7 +55,19 @@ export async function POST(request: Request) {
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || Math.max(width, height) > PRODUCT_COVER_PHOTO_POLICY.displayMaxEdgePx || !Number.isInteger(version) || version < 1) return error('invalid_dimensions', 400, false);
   const access = await resolveProductCoverPhotoAccess(client, auth.actor.actorId, productId);
   if (!access || !access.canEdit) return error('permission_denied', 403);
-  if (!access.paid) return error('paid_entitlement_required', 403);
+  const entitlementRequired = isProductCoverPhotoEntitlementRequired();
+  const capabilityRepository = entitlementRequired ? createAccountCapabilityRepository() : null;
+  const planAccess = await resolveProductCoverPhotoPlanAccess({
+    actorId: auth.actor.actorId,
+    ownerId: access.ownerId,
+    entitlementRequired,
+    repository: capabilityRepository,
+    nowMs: Date.now(),
+  });
+  if (!planAccess.allowed) {
+    const denied = planAccessError(planAccess);
+    return error(denied.code, denied.status);
+  }
 
   const { data: previous } = await client.from('product_cover_photos').select('display_object_key,thumbnail_object_key').eq('product_id', productId).is('deleted_at', null).maybeSingle();
   const displayKey = buildProductCoverPhotoObjectKey({ ownerId: access.ownerId, productId, photoId, version, variant: 'display', mimeType: display.type });
@@ -49,30 +79,52 @@ export async function POST(request: Request) {
     p_version: version,
     p_requested_bytes: display.size + thumbnail.size,
     p_max_account_bytes: getProductCoverPhotoAccountByteLimit(),
+    p_require_entitlement: false,
   });
   if (claimError) {
     if (claimError.message.includes('paid_entitlement_required')) return error('paid_entitlement_required', 403);
     if (claimError.message.includes('storage_quota_exceeded')) return error('storage_quota_exceeded', 413);
     return error('claim_failed', 403);
   }
+  let finalError = { code: 'upload_failed', status: 503 };
+  let failureMarkCode = 'upload_or_finalize_failed';
   try {
     if (!await putProductCoverPhotoObject(displayKey, display)) throw new Error('r2_unavailable');
     if (!await putProductCoverPhotoObject(thumbnailKey, thumbnail)) throw new Error('r2_unavailable');
     const displayHash = await hash(display);
     const thumbnailHash = await hash(thumbnail);
+    const currentAccess = await resolveProductCoverPhotoAccess(client, auth.actor.actorId, productId);
+    if (!currentAccess?.canEdit || currentAccess.ownerId !== access.ownerId) {
+      finalError = { code: 'permission_denied', status: 403 };
+      failureMarkCode = 'permission_changed';
+      throw new Error('permission_changed');
+    }
+    const currentPlanAccess = await resolveProductCoverPhotoPlanAccess({
+      actorId: auth.actor.actorId,
+      ownerId: currentAccess.ownerId,
+      entitlementRequired,
+      repository: capabilityRepository,
+      nowMs: Date.now(),
+    });
+    if (!currentPlanAccess.allowed) {
+      finalError = planAccessError(currentPlanAccess);
+      failureMarkCode = 'entitlement_changed';
+      throw new Error('entitlement_changed');
+    }
     const { error: finalizeError } = await client.rpc('finalize_product_cover_photo_upload', {
       p_actor_id: auth.actor.actorId, p_product_id: productId, p_photo_id: photoId, p_version: version,
       p_display_object_key: displayKey, p_thumbnail_object_key: thumbnailKey,
       p_display_content_hash: displayHash, p_thumbnail_content_hash: thumbnailHash,
       p_display_mime_type: display.type, p_thumbnail_mime_type: thumbnail.type,
       p_display_size_bytes: display.size, p_thumbnail_size_bytes: thumbnail.size, p_width: width, p_height: height,
+      p_require_entitlement: false,
     });
     if (finalizeError) throw new Error('finalize_failed');
     await Promise.all([deleteProductCoverPhotoObject(previous?.display_object_key), deleteProductCoverPhotoObject(previous?.thumbnail_object_key)]);
     return NextResponse.json({ ok: true, productId, photoId, version }, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
     await Promise.all([deleteProductCoverPhotoObject(displayKey), deleteProductCoverPhotoObject(thumbnailKey)]);
-    await client.rpc('mark_product_cover_photo_upload_failed', { p_actor_id: auth.actor.actorId, p_product_id: productId, p_photo_id: photoId, p_error_code: 'upload_or_finalize_failed' });
-    return error('upload_failed', 503);
+    await client.rpc('mark_product_cover_photo_upload_failed', { p_actor_id: auth.actor.actorId, p_product_id: productId, p_photo_id: photoId, p_error_code: failureMarkCode });
+    return error(finalError.code, finalError.status);
   }
 }

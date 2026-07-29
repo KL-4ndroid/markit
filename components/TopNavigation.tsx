@@ -13,9 +13,10 @@ import { useRoleContext } from '@/lib/role-context';
 import { getTheme } from '@/lib/theme-config';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { confirmDiscardLocalChangesForSignOut } from '@/lib/auth/signout-confirmation';
-import { LogIn, LogOut, User, Shield, Eye, Edit3, Crown } from 'lucide-react';
+import { LogIn, LogOut, User, Shield, Eye, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { SUBSCRIPTION_PRESENTATION } from '@/lib/subscription/subscription-presentation';
 
 export function TopNavigation() {
   const { user, signOut, isConfigured } = useAuth();
@@ -26,9 +27,6 @@ export function TopNavigation() {
   // ✅ 依角色套用主題（員工模式沿用主色 + 透明度，避免兩套品牌色並行）
   const theme = getTheme(userRole.isStaff);
   
-  // TODO: 從實際訂閱狀態獲取
-  const currentPlan: 'free' | 'pro' | 'enterprise' = 'free';
-
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -110,46 +108,25 @@ export function TopNavigation() {
                       </p>
                     </div>
 
-                    {/* 訂閱狀態（僅老闆身份顯示） */}
+                    {/* 方案預覽（僅老闆身份顯示，等待 authoritative account capability） */}
                     {!userRole.isStaff && (
                       <div className="px-3 py-2 border-b border-primary/10">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-muted-foreground">目前方案</span>
-                          {currentPlan === 'free' && (
-                            <Crown className="w-4 h-4 text-secondary" />
-                          )}
-                        </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-foreground">
-                            {currentPlan === "free"
-                              ? "免費版"
-                              : currentPlan === "pro"
-                              ? "專業版"
-                              : currentPlan === "enterprise"
-                              ? "企業版"
-                              : ""}
-                          </span>
-                          {currentPlan === 'free' ? (
-                            <button
-                              onClick={() => {
-                                setShowUserMenu(false);
-                                router.push('/subscription');
-                              }}
-                              className="text-xs text-primary hover:underline"
-                            >
-                              升級
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setShowUserMenu(false);
-                                router.push('/subscription');
-                              }}
-                              className="text-xs text-primary hover:underline"
-                            >
-                              管理
-                            </button>
-                          )}
+                          <div>
+                            <p className="text-xs text-muted-foreground">方案</p>
+                            <p className="mt-1 text-sm font-medium text-foreground">
+                              {SUBSCRIPTION_PRESENTATION.accountLabel}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false);
+                              router.push('/subscription');
+                            }}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            查看
+                          </button>
                         </div>
                       </div>
                     )}

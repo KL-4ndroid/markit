@@ -92,6 +92,9 @@ function report(overrides: Partial<LocalPendingWriteReport>): LocalPendingWriteR
     pendingSalesPhotoEvidenceCreationCountByStatus: {},
     pendingSalesPhotoEvidencePayloadCount: 0,
     pendingSalesPhotoEvidencePayloadIds: [],
+    pendingProductCoverPhotoUploadCount: 0,
+    pendingProductCoverPhotoUploadIds: [],
+    pendingProductCoverPhotoPayloadCount: 0,
     blockingReasonCodes,
     isClean: blockingReasonCodes.length === 0,
     ...overrides,
@@ -121,6 +124,8 @@ runTest('local pending write report is read-only and classifies blocking reasons
     db.salesPhotoEvidencePendingCreations
   );
   const originalSalesPhotoEvidencePendingPayloads = (db as any).salesPhotoEvidencePendingPayloads;
+  const originalProductCoverPhotoPendingUploads = (db as any).productCoverPhotoPendingUploads;
+  const originalProductCoverPhotoPendingPayloads = (db as any).productCoverPhotoPendingPayloads;
   const restoreNavigator = mockNavigatorOnline(false);
 
   try {
@@ -159,6 +164,14 @@ runTest('local pending write report is read-only and classifies blocking reasons
       { queueId: 'photo-payload-1' },
       { queueId: 'photo-payload-2' },
     ]);
+    (db as any).productCoverPhotoPendingUploads = createTableMock([
+      { productId: 'product-cover-1' },
+    ]);
+    (db as any).productCoverPhotoPendingPayloads = {
+      async count() {
+        return 1;
+      },
+    };
 
     const report = await getLocalPendingWriteReport('user-1');
 
@@ -177,9 +190,13 @@ runTest('local pending write report is read-only and classifies blocking reasons
     assert.equal(report.pendingSalesPhotoEvidenceCreationCountByStatus.failed_retryable, 1);
     assert.equal(report.pendingSalesPhotoEvidencePayloadCount, 2);
     assert.deepEqual(report.pendingSalesPhotoEvidencePayloadIds, ['photo-payload-1', 'photo-payload-2']);
+    assert.equal(report.pendingProductCoverPhotoUploadCount, 1);
+    assert.deepEqual(report.pendingProductCoverPhotoUploadIds, ['product-cover-1']);
+    assert.equal(report.pendingProductCoverPhotoPayloadCount, 1);
     assert.ok(report.blockingReasonCodes.includes('local_pending_events'));
     assert.ok(report.blockingReasonCodes.includes('local_sync_queue_unfinished'));
     assert.ok(report.blockingReasonCodes.includes('local_pending_sales_photo_evidence'));
+    assert.ok(report.blockingReasonCodes.includes('local_pending_product_cover_photo'));
     assert.ok(report.blockingReasonCodes.includes('actor_mismatch'));
     assert.ok(report.blockingReasonCodes.includes('offline'));
   } finally {
@@ -187,6 +204,8 @@ runTest('local pending write report is read-only and classifies blocking reasons
     (db.syncQueue as any).where = originalSyncQueueWhere;
     (db.salesPhotoEvidencePendingCreations as any).where = originalSalesPhotoEvidencePendingCreationsWhere;
     (db as any).salesPhotoEvidencePendingPayloads = originalSalesPhotoEvidencePendingPayloads;
+    (db as any).productCoverPhotoPendingUploads = originalProductCoverPhotoPendingUploads;
+    (db as any).productCoverPhotoPendingPayloads = originalProductCoverPhotoPendingPayloads;
     restoreNavigator();
   }
 });
@@ -198,6 +217,8 @@ runTest('local pending write report observes active sync lock', async () => {
     db.salesPhotoEvidencePendingCreations
   );
   const originalSalesPhotoEvidencePendingPayloads = (db as any).salesPhotoEvidencePendingPayloads;
+  const originalProductCoverPhotoPendingUploads = (db as any).productCoverPhotoPendingUploads;
+  const originalProductCoverPhotoPendingPayloads = (db as any).productCoverPhotoPendingPayloads;
   const restoreNavigator = mockNavigatorOnline(true);
 
   try {
@@ -205,6 +226,12 @@ runTest('local pending write report observes active sync lock', async () => {
     (db.syncQueue as any).where = createTableMock([]).where;
     (db.salesPhotoEvidencePendingCreations as any).where = createTableMock([]).where;
     (db as any).salesPhotoEvidencePendingPayloads = createTableMock([]);
+    (db as any).productCoverPhotoPendingUploads = createTableMock([]);
+    (db as any).productCoverPhotoPendingPayloads = {
+      async count() {
+        return 0;
+      },
+    };
 
     assert.equal(acquireSyncLock(), true);
     const report = await getLocalPendingWriteReport('user-1');
@@ -218,6 +245,8 @@ runTest('local pending write report observes active sync lock', async () => {
     (db.syncQueue as any).where = originalSyncQueueWhere;
     (db.salesPhotoEvidencePendingCreations as any).where = originalSalesPhotoEvidencePendingCreationsWhere;
     (db as any).salesPhotoEvidencePendingPayloads = originalSalesPhotoEvidencePendingPayloads;
+    (db as any).productCoverPhotoPendingUploads = originalProductCoverPhotoPendingUploads;
+    (db as any).productCoverPhotoPendingPayloads = originalProductCoverPhotoPendingPayloads;
     restoreNavigator();
   }
 });
@@ -358,6 +387,34 @@ runTest('guard blocks pending local photo payloads without using the event push 
   assert.deepEqual(calls, []);
 });
 
+runTest('guard blocks pending product cover photos without using the event push path', async () => {
+  const calls: string[] = [];
+
+  const result = await guardedAuthenticatedCacheReset(
+    { scope: 'full', reason: 'manual_signout', userId: 'user-1', allowSyncAttempt: true },
+    {
+      getReport: async () => report({
+        pendingProductCoverPhotoUploadCount: 1,
+        pendingProductCoverPhotoUploadIds: ['product-cover-1'],
+        pendingProductCoverPhotoPayloadCount: 1,
+        blockingReasonCodes: ['local_pending_product_cover_photo'],
+        isClean: false,
+      }),
+      push: async () => {
+        calls.push('push');
+        return 0;
+      },
+      reset: async () => {
+        calls.push('reset');
+      },
+    }
+  );
+
+  assert.equal(result.decision, 'blocked');
+  assert.deepEqual(result.blockingReasonCodes, ['local_pending_product_cover_photo']);
+  assert.deepEqual(calls, []);
+});
+
 runTest('guard requires explicit force flag before discarding local changes', async () => {
   const calls: string[] = [];
 
@@ -401,6 +458,8 @@ runTest('force discard removes every pending-write table so sign-out cannot re-b
     ['syncQueue', db.syncQueue],
     ['salesPhotoEvidencePendingCreations', db.salesPhotoEvidencePendingCreations],
     ['salesPhotoEvidencePendingPayloads', db.salesPhotoEvidencePendingPayloads],
+    ['productCoverPhotoPendingUploads', db.productCoverPhotoPendingUploads],
+    ['productCoverPhotoPendingPayloads', db.productCoverPhotoPendingPayloads],
   ] as const;
   const originalClearMethods = tables.map(([, table]) => table.clear.bind(table));
 

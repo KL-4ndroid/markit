@@ -14,6 +14,7 @@ import type {
   ProductCoverPhotoCapability,
 } from '@/lib/products/product-cover-photo-model';
 import { retryPendingProductCoverPhoto } from '@/lib/products/product-cover-photo-pending';
+import { getSubscriptionBlockedPresentation } from '@/lib/subscription/subscription-presentation';
 import { ProductCoverPhotoImage } from './ProductCoverPhotoImage';
 
 interface ProductCoverPhotoFieldProps {
@@ -96,6 +97,12 @@ export function ProductCoverPhotoField({
 
   const canChoose = capability.canManage;
   const canDeleteCloud = Boolean(productId && cloudPhotoExists && capability.canDelete);
+  const planBlock = capability.reason === 'free_plan' || capability.reason === 'subscription_inactive'
+    ? getSubscriptionBlockedPresentation(
+        capability.reason === 'free_plan' ? 'plan_required' : 'entitlement_inactive',
+        'pro',
+      )
+    : null;
 
   return (
     <section className="space-y-3 border-b border-primary/10 pb-5" aria-labelledby={`${productId ?? 'new'}-cover-title`}>
@@ -163,9 +170,19 @@ export function ProductCoverPhotoField({
           <Lock className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground">
-              {capability.reason === 'unavailable' ? '商品照片目前無法使用' : '商品照片為付費版功能'}
+              {planBlock
+                ? planBlock.title
+                : capability.reason === 'permission_denied'
+                  ? '目前身分無法管理商品照片'
+                  : capability.reason === 'paid_active' || capability.reason === 'open_access'
+                    ? '商品照片目前尚未開放'
+                    : '商品照片目前無法使用'}
             </p>
-            {capability.reason !== 'unavailable' && <a href="/subscription" className="text-xs text-primary underline underline-offset-2">查看方案</a>}
+            {planBlock?.showPlanPreviewLink && (
+              <a href="/subscription" className="text-xs text-primary underline underline-offset-2">
+                {planBlock.actionLabel}
+              </a>
+            )}
           </div>
           {canDeleteCloud && (
             <Button type="button" variant="ghost" disabled={disabled || processing} onClick={() => void removeCloud()} leadingIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}>

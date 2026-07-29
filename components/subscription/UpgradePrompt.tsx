@@ -1,55 +1,57 @@
-/**
- * 升級提示組件
- * 
- * 在頁面頂部顯示升級提示橫幅
- */
-
 'use client';
 
-import { Sparkles, X } from 'lucide-react';
-import { useState } from 'react';
+import { Info, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+
+import type { CapabilityAccessBlockReason } from '@/lib/subscription/subscription-access';
+import { getSubscriptionBlockedPresentation } from '@/lib/subscription/subscription-presentation';
+import type { AccountPlanCode } from '@/lib/subscription/subscription-plans';
 
 interface UpgradePromptProps {
-  message?: string;
+  reason: CapabilityAccessBlockReason;
+  requiredPlan?: AccountPlanCode;
   showClose?: boolean;
 }
 
-export function UpgradePrompt({ 
-  message = '升級至專業版，解鎖無限市集和雲端同步功能',
-  showClose = true 
+export function UpgradePrompt({
+  reason,
+  requiredPlan,
+  showClose = true,
 }: UpgradePromptProps) {
   const [isVisible, setIsVisible] = useState(true);
   const router = useRouter();
+  const presentation = getSubscriptionBlockedPresentation(reason, requiredPlan);
 
   if (!isVisible) return null;
 
   return (
-    <div className="bg-gradient-to-r from-primary to-secondary text-white">
-      <div className="max-w-lg mx-auto px-6 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-1">
-          <Sparkles className="w-5 h-5 flex-shrink-0" />
-          <p className="text-sm font-medium">{message}</p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => router.push('/subscription')}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
-          >
-            立即升級
-          </button>
-          
-          {showClose && (
+    <div className="border-y border-atelier-line bg-atelier-paper px-4 py-3">
+      <div className="mx-auto flex max-w-3xl items-start gap-3">
+        <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-foreground">{presentation.title}</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">{presentation.description}</p>
+          {presentation.showPlanPreviewLink && presentation.actionLabel && (
             <button
-              onClick={() => setIsVisible(false)}
-              className="p-1 hover:bg-white/20 rounded-full transition-colors"
-              aria-label="關閉"
+              type="button"
+              onClick={() => router.push('/subscription')}
+              className="mt-2 text-sm font-medium text-primary underline underline-offset-4"
             >
-              <X className="w-4 h-4" />
+              {presentation.actionLabel}
             </button>
           )}
         </div>
+        {showClose && (
+          <button
+            type="button"
+            onClick={() => setIsVisible(false)}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-atelier-canvas"
+            aria-label="關閉"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        )}
       </div>
     </div>
   );

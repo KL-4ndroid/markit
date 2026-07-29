@@ -1,5 +1,40 @@
 # Role / Permission Distribution Notes
 
+## 2026-07-29｜S4 authoritative account capability read model
+
+### Change summary
+
+Added a read-only `GET /api/account-capabilities` BFF route and a server-only subscription account repository. The public endpoint always resolves the authenticated actor's own account id and does not accept an owner-workspace override.
+
+### Permission impact
+
+- an authenticated owner may read their own safe capability snapshot;
+- a staff client cannot request the owner's full account capability or billing state through this endpoint;
+- future feature-specific server routes may use the internal repository contract only after independently verifying an active owner/staff relationship;
+- `subscription_accounts` grants no direct table access to `anon` or `authenticated`;
+- only the server-only `service_role` RPC may read through the guarded relationship check;
+- no role capability is added or broadened;
+- staff still receive no owner billing controls, owner financial permission, or checkout action;
+- unresolved, foreign, inactive, malformed, and unavailable states remain fail-closed.
+
+S4 does not change product-cover, sales-evidence, analytics, report, Team, Dexie, or sync runtime behavior.
+
+## 2026-07-29｜Subscription preview presentation alignment
+
+### Change summary
+
+Subscription UI now uses the shared Free / Pro / Team preview model. `TopNavigation` no longer hardcodes a current Free plan when no authoritative account capability source exists.
+
+### Permission impact
+
+- owners may see the non-transactional plan preview link;
+- staff continue to see no billing controls or checkout actions;
+- a plan presentation never overrides owner / manager / operator / viewer permissions;
+- unresolved roles remain fail-closed;
+- no role capability, staff relationship, RLS, RPC, data visibility, Dexie, or sync behavior changed.
+
+This is a presentation-only change. Paid feature enforcement remains outside S2.
+
 ## 2026-06-26｜Féria Demo Mode public route
 
 ### Change summary

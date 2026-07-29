@@ -1,10 +1,12 @@
 # Féria Product Cover Photo Execution Plan
 
 Date: 2026-07-24  
-Status: Web implementation completed locally on 2026-07-24; production activation remains gated by migration, entitlement, environment, and deployment verification.  
+Status: Web implementation and S5 shared subscription-capability alignment completed locally; production activation remains gated by environment and deployment verification.
 Scope: one private cover photo per product for paid accounts, including add-product upload, edit/replace/delete, compressed list/detail delivery, offline retry, and future Capacitor adapters.
 
 Implementation note: migration `062` consolidates the metadata table and service-role mutation RPCs because it has not been deployed yet. Web and Capacitor WebView use the shared product-image adapter port; a native HEIC adapter remains part of the paused Capacitor workstream.
+
+Current pre-subscription policy (confirmed through S5 on 2026-07-29): `PRODUCT_COVER_PHOTO_ENTITLEMENT_MODE=open`. Until formal subscription enforcement is separately approved, every authenticated owner or manager who already has product-edit permission may add, replace, and delete a cover photo. General staff remain read-only. The capability route reports this honestly as `open_access`. Future `required` mode uses the shared `subscription_accounts` server capability from migration `063`; the feature-specific `account_entitlements` bridge in migration `062` is no longer the application authority.
 
 ## 1. Product Decisions
 
@@ -28,7 +30,7 @@ The following decisions are fixed for the first release:
 - The local `products` Dexie table is a projection used by offline and sync behavior, not binary storage.
 - Product cards currently use category icons as the visual fallback.
 - Sales photo evidence already provides useful compression, private R2, BFF, local-pending, and server-mutation patterns, but product cover photos have different lifetime and entitlement rules.
-- `SUBSCRIPTION_PRESENTATION.availability` is currently `preview`; there is no authoritative paid-plan source. UI-only free/paid checks are therefore prohibited.
+- `SUBSCRIPTION_PRESENTATION.availability` is currently `preview`. Migration `063` provides an authoritative Free/admin capability source, but billing is not connected and production smoke is incomplete. UI-only free/paid checks remain prohibited.
 
 ## 3. Non-Negotiable Boundaries
 
@@ -47,17 +49,18 @@ The following decisions are fixed for the first release:
 
 ### 4.1 Required source of truth
 
-Introduce an authoritative server-side account entitlement keyed by the product owner account, not the acting device:
+Use the shared server-side account capability keyed by the product owner account, not the acting device:
 
 ```ts
-type ProductPhotoEntitlement = {
-  canManageProductCoverPhoto: boolean;
-  reason: 'paid_active' | 'free_plan' | 'subscription_inactive' | 'entitlement_unavailable';
-  checkedAt: string;
-};
+type ProductCoverPhotoPlanAccess =
+  | { allowed: true; reason: 'open_access' | 'paid_active' }
+  | {
+      allowed: false;
+      reason: 'free_plan' | 'subscription_inactive' | 'entitlement_unavailable';
+    };
 ```
 
-The server must derive this value from a real subscription/account record. The default for missing, stale, or unavailable entitlement data is fail closed.
+In `open` mode the server returns `open_access` without claiming a paid plan. In `required` mode the server resolves `subscription_accounts` through the S4 repository and shared `productCoverPhoto` capability. Missing, stale, malformed, inactive, or unavailable capability data fails closed.
 
 ### 4.2 Required capability decision
 
@@ -67,7 +70,7 @@ Upload or replacement is allowed only when all conditions are true:
 role state is ready and current
 AND actor can edit the target product
 AND target product belongs to the entitlement owner
-AND owner entitlement canManageProductCoverPhoto = true
+AND owner account capability productCoverPhoto = true in required mode
 AND product is active and not deleted
 ```
 
@@ -75,12 +78,9 @@ Deletion does not require a currently paid plan, but still requires ownership an
 
 ### 4.3 Preview subscription blocker
 
-The current pricing preview cannot be treated as billing state. Before production enablement, one of these must exist:
+The current pricing preview cannot be treated as billing state. Migration `063` supports trusted admin Pro/Team assignments before billing launches; billing and promotion rows remain fail closed until their later approved runtimes exist. Required mode must not be enabled until the S4 server environment and authenticated production smoke gates are complete.
 
-- an active production subscription table and provider reconciliation flow; or
-- an approved account entitlement table managed by administrators until billing launches.
-
-A local/staging-only entitlement override may be used for tests. It must be server-only, default disabled, explicitly scoped to non-production, and impossible to enable through browser storage or a `NEXT_PUBLIC_*` variable.
+Tests may inject an `AccountCapabilityRepository` into the pure resolver. Browser storage, `NEXT_PUBLIC_*` variables, query parameters, and client headers can never grant paid capability.
 
 ## 5. Image Policy
 
@@ -210,11 +210,11 @@ All routes use the existing app API authentication and CORS contracts.
 
 1. Authenticate the actor.
 2. Load the product and resolve its owner.
-3. Re-check current role permission and paid entitlement.
+3. Re-check current role permission and shared account capability when required mode is active.
 4. Validate content type, dimensions, output sizes, hashes, and the one-cover invariant.
 5. Claim or renew an idempotent upload lease through a service-role RPC.
 6. Upload thumbnail and display objects to private R2.
-7. Finalize metadata only after both objects are confirmed.
+7. Re-check current role and shared account capability, then finalize metadata only after both objects are confirmed.
 8. On failure, record a sanitized failure code and compensate uploaded objects where safe.
 9. Never return secrets, object keys, service credentials, or raw provider errors.
 
@@ -531,6 +531,7 @@ PRODUCT_COVER_PHOTO_READ_ENABLED
 PRODUCT_COVER_PHOTO_UPLOAD_ENABLED
 PRODUCT_COVER_PHOTO_UPLOAD_ALLOW_PRODUCTION
 PRODUCT_COVER_PHOTO_DELETE_ENABLED
+PRODUCT_COVER_PHOTO_ENTITLEMENT_MODE
 ```
 
 Release order:

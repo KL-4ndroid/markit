@@ -12,7 +12,13 @@ export const PRODUCT_COVER_PHOTO_POLICY = Object.freeze({
 export type ProductCoverPhotoCapability = {
   canManage: boolean;
   canDelete: boolean;
-  reason: 'paid_active' | 'free_plan' | 'permission_denied' | 'unavailable';
+  reason:
+    | 'open_access'
+    | 'paid_active'
+    | 'free_plan'
+    | 'subscription_inactive'
+    | 'permission_denied'
+    | 'unavailable';
 };
 
 export type PreparedProductCoverPhoto = {

@@ -1,8 +1,14 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
+import { evaluateCapabilityAccess } from '../subscription/subscription-access';
+import {
+  resolveServerAccountCapabilities,
+  type AccountCapabilityRepository,
+} from '../subscription/account-capability-server';
+
 export function createProductCoverPhotoServiceClient(env: Record<string, string | undefined> = process.env): SupabaseClient | null {
   const url = env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const key = env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const key = env.SUPABASE_SECRET_KEY?.trim() || env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!url || !key) return null;
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 }
@@ -26,6 +32,72 @@ export function getProductCoverPhotoAccountByteLimit(env: Record<string, string 
   return Number.isSafeInteger(configured) && configured >= 750_000 ? configured : 25_000_000;
 }
 
+export function isProductCoverPhotoEntitlementRequired(env: Record<string, string | undefined> = process.env): boolean {
+  return env.PRODUCT_COVER_PHOTO_ENTITLEMENT_MODE === 'required';
+}
+
+export type ProductCoverPhotoPlanAccess =
+  | { allowed: true; reason: 'open_access' | 'paid_active' }
+  | {
+      allowed: false;
+      reason: 'free_plan' | 'subscription_inactive' | 'entitlement_unavailable';
+    };
+
+export async function resolveProductCoverPhotoPlanAccess(input: {
+  actorId: string;
+  ownerId: string;
+  entitlementRequired: boolean;
+  repository: AccountCapabilityRepository | null;
+  nowMs: number;
+}): Promise<ProductCoverPhotoPlanAccess> {
+  if (!input.entitlementRequired) {
+    return { allowed: true, reason: 'open_access' };
+  }
+  if (!input.repository) {
+    return { allowed: false, reason: 'entitlement_unavailable' };
+  }
+
+  const resolution = await resolveServerAccountCapabilities({
+    actorId: input.actorId,
+    ownerId: input.ownerId,
+    repository: input.repository,
+    nowMs: input.nowMs,
+  });
+  if (resolution.outcome !== 'available') {
+    return { allowed: false, reason: 'entitlement_unavailable' };
+  }
+
+  const decision = evaluateCapabilityAccess({
+    authenticated: true,
+    ownerWorkspaceAvailable: true,
+    workspaceOwnerId: input.ownerId,
+    requestedOwnerId: input.ownerId,
+    actorRole: input.actorId === input.ownerId ? 'owner' : 'manager',
+    rolePermission: true,
+    capabilities: resolution.response.capabilities,
+    feature: 'productCoverPhoto',
+    operation: 'create',
+    runtimeEnabled: true,
+    dataReady: true,
+    nowMs: input.nowMs,
+    network: 'online',
+  });
+
+  if (decision.allowed) {
+    return { allowed: true, reason: 'paid_active' };
+  }
+  if (decision.reason === 'plan_required') {
+    return { allowed: false, reason: 'free_plan' };
+  }
+  if (
+    decision.reason === 'entitlement_inactive'
+    || decision.reason === 'promotion_reward_expired'
+  ) {
+    return { allowed: false, reason: 'subscription_inactive' };
+  }
+  return { allowed: false, reason: 'entitlement_unavailable' };
+}
+
 export async function resolveProductCoverPhotoAccess(client: SupabaseClient, actorId: string, productId?: string | null) {
   let ownerId = actorId;
   let canEdit = true;
@@ -40,7 +112,5 @@ export async function resolveProductCoverPhotoAccess(client: SupabaseClient, act
       canEdit = relationship?.role === 'manager';
     }
   }
-  const { data: entitlement } = await client.from('account_entitlements')
-    .select('product_cover_photo_enabled').eq('owner_id', ownerId).maybeSingle();
-  return { ownerId, canEdit, paid: entitlement?.product_cover_photo_enabled === true };
+  return { ownerId, canEdit };
 }

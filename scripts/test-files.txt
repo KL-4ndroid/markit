@@ -182,6 +182,10 @@ tsx tests/product-form-ui.test.ts
 tsx tests/settings-navigation.test.ts
 tsx tests/settings-information-architecture.test.ts
 tsx tests/subscription-capability-presentation.test.ts
+tsx tests/subscription-plan-model.test.ts
+tsx tests/subscription-feature-gates.test.ts
+tsx tests/subscription-feature-gate-mapping.test.ts
+tsx tests/subscription-account-capability-api.test.ts
 tsx tests/web-uiux-baseline-contract.test.ts
 tsx tests/role-capabilities.test.ts
 tsx tests/p5-4d-role-freshness-gate.test.ts
