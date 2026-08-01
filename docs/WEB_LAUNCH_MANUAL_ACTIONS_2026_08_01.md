@@ -30,6 +30,11 @@ addresses, invitation links, cookies, or customer data in the evidence artifact.
 
 ## Authenticated release matrix
 
+Current sanitized partial evidence is recorded in
+`WEB_AUTHENTICATED_RELEASE_MATRIX_2026_08_01.md`. It covers a deployed Free owner and
+the loopback-only Free/Pro/Team presentation harness; it does not replace the remaining
+paid deployment, staff-role, recovery, PDF-output, media, or release-candidate evidence.
+
 - Exercise explicit Free, Pro, Team owner, viewer, operator, and manager states against
   the selected production-like deployment.
 - Complete Team invitation, role change, downgrade cleanup, re-upgrade, and explicit

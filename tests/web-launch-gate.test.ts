@@ -12,8 +12,10 @@ import {
 const root = process.cwd();
 const structuredPath = join(root, 'docs/WEB_LAUNCH_GATES_2026_08_01.json');
 const readinessPath = join(root, 'docs/WEB_LAUNCH_READINESS_2026_07_30.md');
+const authenticatedMatrixPath = join(root, 'docs/WEB_AUTHENTICATED_RELEASE_MATRIX_2026_08_01.md');
 const structured = JSON.parse(readFileSync(structuredPath, 'utf8')) as unknown;
 const readiness = readFileSync(readinessPath, 'utf8');
+const authenticatedMatrix = readFileSync(authenticatedMatrixPath, 'utf8');
 const document = parseWebLaunchGateDocument(structured);
 const report = evaluateWebLaunchReadiness(document);
 
@@ -54,6 +56,12 @@ assert.equal(
   'Markdown launch matrix must not contain untracked gate rows',
 );
 assert.match(readiness, /General availability is `NO-GO` while any row above is not `complete`/);
+assert.match(readiness, /`WEB_AUTHENTICATED_RELEASE_MATRIX_2026_08_01\.md`/);
+assert.match(authenticatedMatrix, /Status: partial evidence only; `STAGING-E2E` remains `evidence_missing`/);
+assert.match(authenticatedMatrix, /Application revision: `cac6fa6f7ffcf02779b0f3e66fb00ec9f4314250`/);
+assert.match(authenticatedMatrix, /paid Production Pro and Team owner states/);
+assert.match(authenticatedMatrix, /No credential was entered/);
+assert.match(authenticatedMatrix, /Local subscription simulation was disabled before the browser run ended/);
 
 const allComplete = parseWebLaunchGateDocument({
   ...document,

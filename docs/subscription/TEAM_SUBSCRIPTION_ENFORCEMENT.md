@@ -166,6 +166,13 @@ Recorded on 2026-07-30 with an authenticated owner at `localhost:3010`:
 This proves authenticated UI gating and simulation write suppression. It still
 does not prove server-authoritative Team mutation success or state transitions.
 
+The matrix was revalidated on 2026-08-01 against application revision
+`cac6fa6`. The authenticated Production Free owner showed the Team requirement,
+kept a suspended relationship readable, blocked invitation and restore, and
+retained only the contract-approved revoke cleanup action. No mutation was
+executed. The sanitized partial evidence is recorded in
+`docs/WEB_AUTHENTICATED_RELEASE_MATRIX_2026_08_01.md`.
+
 ## Isolated Live State-Transition Evidence
 
 Recorded on 2026-08-01 with a disposable owner/staff Auth pair, one disposable
