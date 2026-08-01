@@ -1,7 +1,8 @@
 # BoothBook Web Operational Observability
 
-Date: 2026-07-30
-Status: local server-event baseline implemented; production sink and alerts pending
+Date: 2026-08-01
+Status: local server-event and deterministic alert-evaluation baseline implemented;
+production sink, routing, ownership, and drill pending
 
 ## Scope
 
@@ -57,12 +58,15 @@ are not operational errors and are not emitted by this baseline.
 
 ## Initial Alert Policy
 
-The production monitoring sink must implement these launch thresholds before the
-media production gate can pass:
+`lib/observability/operational-alert-policy.ts` is the vendor-neutral source of truth
+for the currently implemented thresholds. It is pure shared logic and has no filesystem,
+browser, provider, or server dependency. The production monitoring sink must implement
+equivalent behavior before the media production gate can pass:
 
 | Signal | Warning | Page / release blocker |
 | --- | --- | --- |
 | `/api/health` external probe | one failed five-minute probe | two consecutive failures or release SHA mismatch |
+| `/api/health` probe delivery | no probe within 5 minutes | no probe within 10 minutes |
 | expiration cron | job has not produced a success event within 30 hours | any `partial`/`failure`, or no success within 36 hours |
 | upload | at least 3 failures in 15 minutes | at least 5 failures in 15 minutes, or failure rate >= 10% with at least 10 attempts |
 | upload compensation | none | any failure event |
@@ -71,6 +75,60 @@ media production gate can pass:
 
 Low traffic must use absolute-count thresholds; percentage-only alerts are invalid
 when there are fewer than ten attempts.
+
+## Deterministic Evaluator
+
+The bounded CLI evaluates a sanitized export without connecting to Vercel, Supabase,
+R2, a log provider, or a notification provider:
+
+```powershell
+npm.cmd run check:operational-alerts -- --input=<sanitized-snapshot.json>
+```
+
+The input must cover at least 36 complete hours and use this projection only:
+
+```json
+{
+  "now": "2026-08-01T12:00:00.000Z",
+  "observationStartedAt": "2026-07-30T12:00:00.000Z",
+  "events": [
+    {
+      "schemaVersion": 1,
+      "timestamp": "2026-08-01T10:00:00.000Z",
+      "event": "media.sales_photo.expiration.run",
+      "outcome": "success",
+      "metrics": { "attemptedCount": 1, "failedCount": 0 }
+    }
+  ],
+  "healthProbes": [
+    {
+      "timestamp": "2026-08-01T11:59:00.000Z",
+      "healthy": true,
+      "releaseMatches": true
+    }
+  ]
+}
+```
+
+The upstream query must be complete for the stated window. Before the file reaches the
+CLI, discard all fields except the projection above. Never export identifiers, event
+codes, routes, raw provider records, request data, URLs, error details, or environment
+values. The CLI caps files at 2 MiB, events at 10,000, probes at 1,000, and numeric
+counts at 1,000,000,000.
+
+The process writes only a policy version, timestamps, aggregate counts, fixed signal
+names, and fixed alert IDs. Exit codes are stable:
+
+| Exit | Meaning |
+| --- | --- |
+| `0` | no threshold crossed |
+| `1` | warning present |
+| `2` | release blocker present |
+| `64` | missing, malformed, oversized, incomplete-window, or failed evaluation |
+
+This command does not prove production log delivery or alert routing. It is a repeatable
+policy oracle for configuring provider rules and evaluating a sanitized incident-drill
+fixture; provider delivery and paging still require external evidence.
 
 ## Incident Procedure
 
@@ -90,7 +148,8 @@ when there are fewer than ten attempts.
 
 ## Production Exit Evidence
 
-The `OBSERVABILITY` launch gate remains incomplete until all of the following exist:
+The `OBSERVABILITY` launch gate remains externally incomplete until all of the following
+exist:
 
 - a production log/metric sink that parses schema version `1` JSON events;
 - saved queries or dashboards for each current event plus `/api/health`;
@@ -99,5 +158,6 @@ The `OBSERVABILITY` launch gate remains incomplete until all of the following ex
 - retention and access settings reviewed for privacy and operations;
 - future billing callback, reconciliation, and payment signals added only with S9.
 
-Local tests and build success prove the contract shape only. They do not prove Vercel
-log delivery, alert routing, cron execution, provider availability, or incident response.
+Local tests and build success prove the event contract and deterministic policy behavior
+only. They do not prove Vercel log delivery, alert routing, cron execution, provider
+availability, or incident response.

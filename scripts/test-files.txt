@@ -131,6 +131,8 @@ tsx tests/sales-photo-evidence-owner-image-read.test.ts
 tsx tests/sales-photo-evidence-owner-delete.test.ts
 tsx tests/sales-photo-evidence-expiration.test.ts
 tsx tests/server-operational-observability.test.ts
+tsx tests/operational-alert-policy.test.ts
+tsx tests/operational-alert-cli.test.ts
 tsx tests/supabase-sales-photo-evidence-owner-delete-migration.test.ts
 tsx tests/sales-photo-evidence-api-cors-integration.test.ts
 tsx tests/sales-photo-evidence-post-sale.test.ts

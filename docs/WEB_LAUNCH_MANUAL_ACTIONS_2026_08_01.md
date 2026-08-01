@@ -43,8 +43,15 @@ addresses, invitation links, cookies, or customer data in the evidence artifact.
 - Apply and verify the approved media migrations.
 - Configure private R2, CORS, quota, lifecycle, and expiration cron behavior.
 - Prove upload, private read, delete, expiration, partial failure, and cleanup with disposable data.
-- Connect production logs to a bounded sink and create alerts for media cleanup and sync incidents.
-- Assign alert owners, thresholds, escalation paths, and complete one incident drill.
+- Connect production logs and five-minute health probes to a bounded sink; transform a
+  complete 36-hour window into the sanitized projection in `WEB_OPERATIONAL_OBSERVABILITY.md`.
+- Run `npm.cmd run check:operational-alerts -- --input=<sanitized-snapshot.json>` and
+  configure provider alerts with equivalent fixed thresholds; retain counts, status,
+  release SHA, and timestamp only.
+- Prove provider ingestion and alert delivery, assign primary/backup owners and escalation,
+  review retention/access, then complete one non-production fixture incident drill.
+- Add sync-incident signals separately; add callback, reconciliation, and payment signals
+  only when the S9 billing runtime is approved and implemented.
 
 ## Legal, support, and billing
 

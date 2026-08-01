@@ -22,6 +22,7 @@
     "smoke:web:pwa": "node scripts/smoke-web-pwa-resources.mjs",
     "smoke:web:legal-support": "node scripts/smoke-web-public-legal.mjs",
     "check:production-config": "tsx scripts/check-web-production-config.ts",
+    "check:operational-alerts": "tsx scripts/evaluate-web-operational-alerts.ts",
     "start": "next start",
     "lint": "eslint .",
     "lint:hex": "node scripts/lint-hex.js",
