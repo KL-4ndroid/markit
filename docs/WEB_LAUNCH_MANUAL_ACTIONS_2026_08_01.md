@@ -65,6 +65,8 @@ addresses, invitation links, cookies, or customer data in the evidence artifact.
 
 ## Go/no-go record
 
+- Keep `WEB_LAUNCH_GATES_2026_08_01.json` synchronized with the reviewed Markdown matrix;
+  run `npm.cmd run check:web-launch-readiness` and retain the aggregate result.
 - Select the final release-candidate SHA and repeat CI, remote smoke, configuration,
   authenticated matrix, PWA install/update, and media evidence against that exact SHA.
 - Assign the rollback owner and canary cohort, define the daily review window, and record

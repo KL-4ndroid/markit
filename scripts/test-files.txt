@@ -257,6 +257,8 @@ tsx tests/team-subscription-enforcement.test.ts
 tsx tests/team-subscription-transition-live-smoke.test.ts
 tsx tests/subscription-price-foundation-live-smoke.test.ts
 tsx tests/web-launch-ci.test.ts
+tsx tests/web-launch-gate.test.ts
+tsx tests/web-launch-gate-cli.test.ts
 tsx tests/web-production-config.test.ts
 tsx tests/public-legal-support.test.ts
 tsx tests/web-public-legal-smoke.test.ts

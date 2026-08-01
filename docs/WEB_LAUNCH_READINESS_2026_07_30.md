@@ -18,6 +18,10 @@ deployment is configured correctly.
 External and human follow-up is consolidated in
 `WEB_LAUNCH_MANUAL_ACTIONS_2026_08_01.md`.
 
+Machine-readable gate states are mirrored in `WEB_LAUNCH_GATES_2026_08_01.json` and
+validated with `npm.cmd run check:web-launch-readiness`. Both records must change in the
+same reviewed commit.
+
 Allowed status values:
 
 ```text
@@ -66,7 +70,7 @@ evidence_missing
 
 ## Go/no-go rule
 
-General availability is `NO-GO` while any row above is `pending_external`,
-`pending_approval`, or `evidence_missing`. `implemented_local` becomes `complete` only
-after the matching remote or production evidence exists. No single local build, payment
-smoke, migration apply, or UI walkthrough can override this matrix.
+General availability is `NO-GO` while any row above is not `complete`.
+`implemented_local` becomes `complete` only after the matching remote or production
+evidence exists. No single local build, payment smoke, migration apply, or UI walkthrough
+can override this matrix or the signed go/no-go record.
