@@ -13,8 +13,12 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { db } from '@/lib/db';
 import { pullOwnerEvents } from '@/lib/sync/owner-pull-service';
 import { pullEventsFromViews } from '@/lib/sync/staff-pull-service';
-import { handlePermissionSyncError } from '@/lib/sync/sync-error-policy';
+import {
+  classifySyncFailure,
+  handlePermissionSyncError,
+} from '@/lib/sync/sync-error-policy';
 import { pushEvents } from '@/lib/sync/sync-push-service';
+import { reportSyncIncident } from '@/lib/observability/sync-incident-client';
 import { getNetworkPort } from '@/lib/platform/network-capability';
 import { getLifecyclePort } from '@/lib/platform/lifecycle-capability';
 import {
@@ -59,7 +63,8 @@ export function useSync(options: UseSyncOptions = {}) {
     roleInfoLevel,
   } = options;
 
-  const { user, isConfigured } = useAuth();
+  const { user, session, isConfigured } = useAuth();
+  const accessToken = session?.access_token ?? null;
 
   // ✅ 解析角色資訊揭露層級
   // 預設為 Level 3（老闆），由 SyncProvider 傳入精確值
@@ -203,13 +208,10 @@ export function useSync(options: UseSyncOptions = {}) {
         downloadProgress: undefined,
       }));
 
-    } catch (error: any) {
-      console.error('❌ 同步失敗:', error);
-      
-      // ✅ 檢查是否為網路錯誤
-      if (error.message?.includes('Failed to fetch') || 
-          error.message?.includes('ERR_CONNECTION') ||
-          error.code === 'ECONNREFUSED') {
+    } catch (error: unknown) {
+      const failureKind = classifySyncFailure(error);
+
+      if (failureKind === 'network') {
         console.warn('⚠️ 網路連線失敗，將在下次自動重試');
         updateGlobalState(prev => ({
           ...prev,
@@ -219,15 +221,15 @@ export function useSync(options: UseSyncOptions = {}) {
         return;
       }
       
-      // 檢查是否為權限錯誤
-      if (error.code === 'PGRST301' || error.message?.includes('403')) {
-        console.warn('⚠️ 偵測到權限錯誤，暫停同步並保留本地資料', {
-          errorCode: error.code,
-          errorMessage: error.message,
-          timestamp: new Date().toISOString(),
-          userId: user.id,
-        });
-        await handlePermissionSyncError(error, user.id, () => {
+      if (failureKind === 'permission') {
+        if (accessToken) {
+          void reportSyncIncident({
+            accessToken,
+            kind: 'permission_blocked',
+            pendingCount: initialPendingCount,
+          });
+        }
+        await handlePermissionSyncError(() => {
           updateGlobalState(prev => ({
             ...prev,
             status: SyncStatus.ERROR,
@@ -239,17 +241,25 @@ export function useSync(options: UseSyncOptions = {}) {
         return;
       }
 
+      if (accessToken) {
+        void reportSyncIncident({
+          accessToken,
+          kind: 'unexpected_failure',
+          pendingCount: initialPendingCount,
+        });
+      }
+
       updateGlobalState(prev => ({
         ...prev,
         status: SyncStatus.ERROR,
-        error: error.message || '同步失敗',
+        error: '同步失敗，請稍後重試',
       }));
     } finally {
       // ✅ 釋放全局同步鎖
       releaseSyncLock();
       isSyncingRef.current = false;
     }
-  }, [enabled, isConfigured, user, effectiveInfoLevel]);
+  }, [enabled, isConfigured, user, accessToken, effectiveInfoLevel]);
 
   // 將 sync 存儲到 ref 中
   syncFnRef.current = sync;
@@ -369,7 +379,7 @@ async function pullAllEvents(
     } catch (error) {
       // ⚠️ 降級漏洞已修補：員工模式下視圖失敗直接拋錯，不降級到老闆邏輯
       // 否則員工可能短暫看到未脫敏資料
-      console.error('❌ 員工模式視圖拉取失敗，拒絕降級到老闆邏輯（安全策略）:', error);
+      console.error('Staff-view pull failed; owner fallback remains disabled.');
       throw error;
     }
   }

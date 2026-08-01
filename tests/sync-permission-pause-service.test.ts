@@ -53,10 +53,17 @@ function main(): void {
     assert.equal(getSyncPauseUntil(), 0);
     console.log('PASS clearSyncPause removes pause key');
 
+    localStorage.setItem(SYNC_PERMISSION_ERROR_LOG_KEY, JSON.stringify([{
+      event: 'sync_permission_error',
+      timestamp: '2026-06-19T23:59:59.000Z',
+      reason: '403_forbidden_or_policy_violation',
+      userId: 'legacy-user',
+      errorCode: 'PGRST301',
+      errorMessage: 'legacy raw error',
+      pauseUntil: now - 1,
+    }]));
     for (let index = 0; index < 12; index++) {
       recordSyncPermissionError(
-        { code: 'PGRST301', message: `permission ${index}` },
-        'user-1',
         now + index,
         `2026-06-20T00:00:${String(index).padStart(2, '0')}.000Z`
       );
@@ -64,13 +71,17 @@ function main(): void {
 
     const history = JSON.parse(localStorage.getItem(SYNC_PERMISSION_ERROR_LOG_KEY) || '[]');
     assert.equal(history.length, 10);
-    assert.equal(history[0].errorMessage, 'permission 2');
-    assert.equal(history[9].errorMessage, 'permission 11');
+    assert.equal(history[0].timestamp, '2026-06-20T00:00:02.000Z');
+    assert.equal(history[9].timestamp, '2026-06-20T00:00:11.000Z');
+    assert.equal(history[9].schemaVersion, 1);
     assert.equal(history[9].event, 'sync_permission_error');
     assert.equal(history[9].reason, '403_forbidden_or_policy_violation');
-    assert.equal(history[9].userId, 'user-1');
-    assert.equal(history[9].errorCode, 'PGRST301');
-    console.log('PASS recordSyncPermissionError caps local history at 10 entries');
+    assert.deepEqual(
+      Object.keys(history[9]).sort(),
+      ['event', 'pauseUntil', 'reason', 'schemaVersion', 'timestamp'],
+    );
+    assert.doesNotMatch(JSON.stringify(history), /legacy-user|PGRST301|legacy raw error/);
+    console.log('PASS recordSyncPermissionError sanitizes and caps local history');
   } finally {
     console.error = originalConsoleError;
     restore();

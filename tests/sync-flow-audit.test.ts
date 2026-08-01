@@ -77,7 +77,7 @@ runTest('useSync callback tracks infoLevel used by pull routing', () => {
   assert.match(hookSource, /await pullAllEvents\(user\.id,[\s\S]*effectiveInfoLevel\)/);
   assert.match(
     hookSource,
-    /\}, \[enabled,\s*isConfigured,\s*user,\s*effectiveInfoLevel\]\);/
+    /\}, \[enabled,\s*isConfigured,\s*user,\s*accessToken,\s*effectiveInfoLevel\]\);/
   );
 });
 
@@ -193,12 +193,15 @@ runTest('pushEvents profile helper preserves profile creation contract', () => {
 runTest('permission sync error policy preserves pause and state cleanup', () => {
   const body = findFunctionBody(syncSources, 'handlePermissionSyncError');
 
-  assert.match(hookSource, /import \{ handlePermissionSyncError \} from ['"]@\/lib\/sync\/sync-error-policy['"]/);
-  assert.match(hookSource, /await handlePermissionSyncError\(error,\s*user\.id,\s*\(\)\s*=>\s*\{/);
+  assert.match(hookSource, /handlePermissionSyncError,[\s\S]*from ['"]@\/lib\/sync\/sync-error-policy['"]/);
+  assert.match(hookSource, /await handlePermissionSyncError\(\(\)\s*=>\s*\{/);
+  assert.match(hookSource, /kind:\s*['"]permission_blocked['"]/);
+  assert.match(hookSource, /kind:\s*['"]unexpected_failure['"]/);
+  assert.doesNotMatch(hookSource, /errorMessage:\s*error\.message|userId:\s*user\.id/);
   assert.match(hookSource, /uploadProgress:\s*undefined/);
   assert.match(hookSource, /downloadProgress:\s*undefined/);
   assert.match(body, /const pauseUntil\s*=\s*pauseSyncTemporarily\(\)/);
-  assert.match(body, /recordSyncPermissionError\(error,\s*userId,\s*pauseUntil\)/);
+  assert.match(body, /recordSyncPermissionError\(pauseUntil\)/);
 });
 
 runTest('pullAllEvents sends staff sessions to view pull and refuses owner fallback', () => {

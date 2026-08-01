@@ -69,6 +69,7 @@ runTest('event records keep a bounded allowlist and release identity', () => {
       completedCount: 0,
       failedCount: 1,
       imageBytes: 120_000,
+      pendingCount: 7,
     },
     actorId: 'owner-secret',
     objectKey: 'private/object/key',
@@ -93,6 +94,7 @@ runTest('event records keep a bounded allowlist and release identity', () => {
       completedCount: 0,
       failedCount: 1,
       imageBytes: 120_000,
+      pendingCount: 7,
     },
     releaseCommitSha: 'abcdef1234567',
   });

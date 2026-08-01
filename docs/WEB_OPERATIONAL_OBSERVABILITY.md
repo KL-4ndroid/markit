@@ -1,17 +1,23 @@
 # BoothBook Web Operational Observability
 
 Date: 2026-08-01
-Status: local server-event and deterministic alert-evaluation baseline implemented;
-production sink, routing, ownership, and drill pending
+Status: local server-event, sync-incident intake, and deterministic alert-evaluation
+baseline implemented; production sink, routing, ownership, and drill pending
 
 ## Scope
 
-This baseline makes the existing sales-photo media routes and expiration cron
-observable without adding a monitoring vendor or changing client behavior. It covers:
+This baseline makes the existing sales-photo media routes, expiration cron, and
+bounded sync failures observable without adding a monitoring vendor. It covers:
 
 - sales-photo upload, image read, owner deletion, and compensating cleanup;
 - the daily sales-photo expiration job;
+- authenticated, de-identified permission-blocked and unexpected sync failures;
 - bounded release correlation through `VERCEL_GIT_COMMIT_SHA` when available.
+
+The sync client submits schema-v1 reports through the portable application API URL
+boundary. Reports are attempted at most once per incident kind per client session in
+five minutes, never retry a mutating request, and never change sync state, pause policy,
+or local pending-write retention when reporting is unavailable.
 
 Billing callback backlog, payment failures, and reconciliation delay remain reserved
 until the separately approved billing runtime exists. This document does not treat
@@ -52,9 +58,18 @@ response, retry decision, local-payload retention rule, or cleanup result.
 | `media.sales_photo.image_read` | `image_read_completed` | storage adapter code, `invalid_image_object`, `image_route_unavailable` |
 | `media.sales_photo.delete` | `delete_completed` | `r2_thumbnail_delete_failed`, `r2_image_delete_failed`, `metadata_finalize_failed`, `delete_route_unavailable` |
 | `media.sales_photo.expiration.run` | `expiration_cleanup_completed` | `expiration_dependencies_unavailable`, `expiration_cleanup_incomplete`, `expiration_route_unavailable` |
+| `sync.permission_blocked` | none | `permission_sync_blocked` |
+| `sync.unexpected_failure` | none | `unexpected_sync_failure` |
 
 Expected authentication denials, invalid client requests, and disabled feature flags
-are not operational errors and are not emitted by this baseline.
+are not operational errors and are not emitted by this baseline. Expected offline or
+network-unavailable sync outcomes are also excluded.
+
+`POST /api/operational-events/sync` requires a valid application bearer token and an
+`application/json` body no larger than 512 bytes. Its body accepts exactly
+`schemaVersion`, `kind`, and bounded `pendingCount`; identifiers, raw errors, URLs, and
+extra fields are rejected rather than ignored. The authenticated actor is used only to
+authorize intake and is never copied into the operational event.
 
 ## Initial Alert Policy
 
@@ -72,6 +87,8 @@ equivalent behavior before the media production gate can pass:
 | upload compensation | none | any failure event |
 | image read | at least 3 failures in 15 minutes | at least 5 failures in 15 minutes |
 | owner delete | none | any `partial`/`failure` because cleanup may be incomplete |
+| sync permission blocked | at least 1 report in 15 minutes | at least 3 reports in 15 minutes |
+| unexpected sync failure | at least 3 reports in 15 minutes | at least 5 reports in 15 minutes |
 
 Low traffic must use absolute-count thresholds; percentage-only alerts are invalid
 when there are fewer than ten attempts.
@@ -135,15 +152,19 @@ fixture; provider delivery and paging still require external evidence.
 1. Confirm the event `releaseCommitSha` matches the intended deployment. Do not debug
    an unidentified revision.
 2. Group by `event`, `code`, and five-minute window. Do not search by private IDs.
-3. For upload failures, preserve the client local payload and disable only the affected
+3. For a sync permission alert, confirm authorization/RLS health and keep the ten-minute
+   client pause in place. Never clear pending local events to silence the alert.
+4. For unexpected sync failures, compare fixed event counts across Web releases and
+   account roles without querying by user or workspace identifiers.
+5. For upload failures, preserve the client local payload and disable only the affected
    server route flag if errors continue.
-4. For delete, compensation, or expiration partial failures, assume storage cleanup is
+6. For delete, compensation, or expiration partial failures, assume storage cleanup is
    incomplete. Do not delete metadata or invent a bulk cleanup action.
-5. Check Supabase, R2, cron, and Vercel health using their approved operational access;
+7. Check Supabase, R2, cron, and Vercel health using their approved operational access;
    never paste secrets or raw payloads into support notes.
-6. Record start time, release SHA, event counts, decision owner, mitigation, and recovery
+8. Record start time, release SHA, event counts, decision owner, mitigation, and recovery
    evidence in the incident log.
-7. Re-enable a route only after an authorized and unauthorized staging smoke passes and
+9. Re-enable a route only after an authorized and unauthorized staging smoke passes and
    the alert window is clean.
 
 ## Production Exit Evidence
@@ -152,7 +173,7 @@ The `OBSERVABILITY` launch gate remains externally incomplete until all of the f
 exist:
 
 - a production log/metric sink that parses schema version `1` JSON events;
-- saved queries or dashboards for each current event plus `/api/health`;
+- saved queries or dashboards for each current media and sync event plus `/api/health`;
 - alert destinations, primary owner, backup owner, and escalation contact;
 - a dated test alert and one incident drill using a non-production fixture;
 - retention and access settings reviewed for privacy and operations;

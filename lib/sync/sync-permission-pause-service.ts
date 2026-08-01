@@ -3,13 +3,42 @@ export const SYNC_PERMISSION_ERROR_LOG_KEY = 'sync_permission_error_history';
 export const PERMISSION_ERROR_PAUSE_MS = 10 * 60 * 1000;
 
 export interface SyncPermissionErrorLog {
+  schemaVersion: 1;
   event: 'sync_permission_error';
   timestamp: string;
   reason: '403_forbidden_or_policy_violation';
-  userId: string;
-  errorCode?: unknown;
-  errorMessage?: unknown;
   pauseUntil: number;
+}
+
+function sanitizePermissionErrorLog(value: unknown): SyncPermissionErrorLog | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const timestamp = typeof record.timestamp === 'string' && Number.isFinite(Date.parse(record.timestamp))
+    ? record.timestamp
+    : null;
+  const pauseUntil = typeof record.pauseUntil === 'number'
+    && Number.isSafeInteger(record.pauseUntil)
+    && record.pauseUntil >= 0
+    ? record.pauseUntil
+    : null;
+  if (!timestamp || pauseUntil === null) return null;
+
+  return {
+    schemaVersion: 1,
+    event: 'sync_permission_error',
+    timestamp,
+    reason: '403_forbidden_or_policy_violation',
+    pauseUntil,
+  };
+}
+
+function readSanitizedPermissionErrorHistory(): SyncPermissionErrorLog[] {
+  const value = JSON.parse(localStorage.getItem(SYNC_PERMISSION_ERROR_LOG_KEY) || '[]') as unknown;
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(sanitizePermissionErrorLog)
+    .filter((entry): entry is SyncPermissionErrorLog => entry !== null)
+    .slice(-9);
 }
 
 export function clearSyncPause(): void {
@@ -17,8 +46,8 @@ export function clearSyncPause(): void {
 
   try {
     localStorage.removeItem(SYNC_PAUSE_UNTIL_KEY);
-  } catch (error) {
-    console.error('清除同步暫停標記失敗:', error);
+  } catch {
+    console.error('Failed to clear the sync pause marker.');
   }
 }
 
@@ -28,8 +57,8 @@ export function getSyncPauseUntil(): number {
   try {
     const value = Number(localStorage.getItem(SYNC_PAUSE_UNTIL_KEY) || '0');
     return Number.isFinite(value) ? value : 0;
-  } catch (error) {
-    console.error('讀取同步暫停標記失敗:', error);
+  } catch {
+    console.error('Failed to read the sync pause marker.');
     return 0;
   }
 }
@@ -40,8 +69,8 @@ export function pauseSyncTemporarily(now = Date.now()): number {
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(SYNC_PAUSE_UNTIL_KEY, String(pauseUntil));
-    } catch (error) {
-      console.error('保存同步暫停標記失敗:', error);
+    } catch {
+      console.error('Failed to save the sync pause marker.');
     }
   }
 
@@ -49,34 +78,25 @@ export function pauseSyncTemporarily(now = Date.now()): number {
 }
 
 export function recordSyncPermissionError(
-  error: { code?: unknown; message?: unknown } | undefined,
-  userId: string,
   pauseUntil: number,
   timestamp = new Date().toISOString()
 ): SyncPermissionErrorLog {
   const permissionErrorLog: SyncPermissionErrorLog = {
+    schemaVersion: 1,
     event: 'sync_permission_error',
     timestamp,
     reason: '403_forbidden_or_policy_violation',
-    userId,
-    errorCode: error?.code,
-    errorMessage: error?.message,
     pauseUntil,
   };
 
-  console.error('🚫 同步權限錯誤，已保留本地資料並暫停同步:', permissionErrorLog);
-
   try {
     if (typeof window !== 'undefined') {
-      const history = JSON.parse(localStorage.getItem(SYNC_PERMISSION_ERROR_LOG_KEY) || '[]');
+      const history = readSanitizedPermissionErrorHistory();
       history.push(permissionErrorLog);
-      if (history.length > 10) {
-        history.shift();
-      }
       localStorage.setItem(SYNC_PERMISSION_ERROR_LOG_KEY, JSON.stringify(history));
     }
-  } catch (storageError) {
-    console.error('保存同步權限錯誤記錄失敗:', storageError);
+  } catch {
+    console.error('Failed to save the sanitized sync permission history.');
   }
 
   return permissionErrorLog;

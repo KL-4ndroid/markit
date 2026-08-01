@@ -120,6 +120,44 @@ const uploadWarning = evaluate({
 assert.equal(uploadWarning.status, 'warning');
 assert.equal(alert(uploadWarning, 'media.sales_photo.upload_failure_spike')?.observedCount, 3);
 
+const permissionBlockedWarning = evaluate({
+  events: [
+    event('media.sales_photo.expiration.run', 'success', '2026-08-01T10:00:00.000Z'),
+    event('sync.permission_blocked', 'failure'),
+  ],
+});
+assert.equal(permissionBlockedWarning.status, 'warning');
+assert.equal(alert(permissionBlockedWarning, 'sync.permission_blocked_spike')?.observedCount, 1);
+
+const permissionBlockedBlocker = evaluate({
+  events: [
+    event('media.sales_photo.expiration.run', 'success', '2026-08-01T10:00:00.000Z'),
+    event('sync.permission_blocked', 'failure'),
+    event('sync.permission_blocked', 'failure'),
+    event('sync.permission_blocked', 'failure'),
+  ],
+});
+assert.equal(permissionBlockedBlocker.status, 'release_blocker');
+assert.equal(alert(permissionBlockedBlocker, 'sync.permission_blocked_spike')?.observedCount, 3);
+
+const unexpectedSyncWarning = evaluate({
+  events: [
+    event('media.sales_photo.expiration.run', 'success', '2026-08-01T10:00:00.000Z'),
+    event('sync.unexpected_failure', 'failure', undefined, { failedCount: 3 }),
+  ],
+});
+assert.equal(unexpectedSyncWarning.status, 'warning');
+assert.equal(alert(unexpectedSyncWarning, 'sync.unexpected_failure_spike')?.observedCount, 3);
+
+const unexpectedSyncBlocker = evaluate({
+  events: [
+    event('media.sales_photo.expiration.run', 'success', '2026-08-01T10:00:00.000Z'),
+    event('sync.unexpected_failure', 'failure', undefined, { failedCount: 5 }),
+  ],
+});
+assert.equal(unexpectedSyncBlocker.status, 'release_blocker');
+assert.equal(alert(unexpectedSyncBlocker, 'sync.unexpected_failure_spike')?.observedCount, 5);
+
 const uploadCountBlocker = evaluate({
   events: [
     event('media.sales_photo.expiration.run', 'success', '2026-08-01T10:00:00.000Z'),

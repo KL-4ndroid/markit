@@ -55,8 +55,10 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
   release SHA, and timestamp only.
 - Prove provider ingestion and alert delivery, assign primary/backup owners and escalation,
   review retention/access, then complete one non-production fixture incident drill.
-- Add sync-incident signals separately; add callback, reconciliation, and payment signals
-  only when the S9 billing runtime is approved and implemented.
+- Include `sync.permission_blocked` and `sync.unexpected_failure` in the production sink
+  and reproduce the fixed 15-minute thresholds from `WEB_OPERATIONAL_OBSERVABILITY.md`.
+- Add callback, reconciliation, and payment signals only when the S9 billing runtime is
+  approved and implemented.
 
 ## Legal, support, and billing
 

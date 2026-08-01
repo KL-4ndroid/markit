@@ -8,6 +8,7 @@ export type ServerOperationalMetricName =
   | 'failedCount'
   | 'imageBytes'
   | 'invalidBindingCount'
+  | 'pendingCount'
   | 'scannedCount'
   | 'thumbnailBytes';
 
@@ -49,6 +50,7 @@ const METRIC_NAMES: readonly ServerOperationalMetricName[] = [
   'failedCount',
   'imageBytes',
   'invalidBindingCount',
+  'pendingCount',
   'scannedCount',
   'thumbnailBytes',
 ];

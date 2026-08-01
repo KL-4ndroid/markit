@@ -25,7 +25,9 @@ export type OperationalAlertId =
   | 'media.sales_photo.expiration_overdue'
   | 'media.sales_photo.image_read_failure_spike'
   | 'media.sales_photo.upload_compensation_failure'
-  | 'media.sales_photo.upload_failure_spike';
+  | 'media.sales_photo.upload_failure_spike'
+  | 'sync.permission_blocked_spike'
+  | 'sync.unexpected_failure_spike';
 
 export type OperationalAlertEvent = Readonly<{
   schemaVersion: number;
@@ -240,6 +242,56 @@ export function evaluateOperationalAlertPolicy(
 
   const recentCutoffMs = nowMs - FAILURE_WINDOW_MS;
   const recentEvents = events.filter(item => item.timestampMs >= recentCutoffMs);
+  const permissionBlockedFailures = recentEvents
+    .filter(item => item.event.event === 'sync.permission_blocked')
+    .reduce((total, item) => total + failureUnits(item.event), 0);
+  if (permissionBlockedFailures >= 3) {
+    alerts.push(createAlert(
+      'sync.permission_blocked_spike',
+      'release_blocker',
+      'failure_count_threshold',
+      {
+        observedCount: permissionBlockedFailures,
+        windowMinutes: FAILURE_WINDOW_MS / MINUTE_MS,
+      },
+    ));
+  } else if (permissionBlockedFailures >= 1) {
+    alerts.push(createAlert(
+      'sync.permission_blocked_spike',
+      'warning',
+      'failure_count_threshold',
+      {
+        observedCount: permissionBlockedFailures,
+        windowMinutes: FAILURE_WINDOW_MS / MINUTE_MS,
+      },
+    ));
+  }
+
+  const unexpectedSyncFailures = recentEvents
+    .filter(item => item.event.event === 'sync.unexpected_failure')
+    .reduce((total, item) => total + failureUnits(item.event), 0);
+  if (unexpectedSyncFailures >= 5) {
+    alerts.push(createAlert(
+      'sync.unexpected_failure_spike',
+      'release_blocker',
+      'failure_count_threshold',
+      {
+        observedCount: unexpectedSyncFailures,
+        windowMinutes: FAILURE_WINDOW_MS / MINUTE_MS,
+      },
+    ));
+  } else if (unexpectedSyncFailures >= 3) {
+    alerts.push(createAlert(
+      'sync.unexpected_failure_spike',
+      'warning',
+      'failure_count_threshold',
+      {
+        observedCount: unexpectedSyncFailures,
+        windowMinutes: FAILURE_WINDOW_MS / MINUTE_MS,
+      },
+    ));
+  }
+
   const uploadEvents = recentEvents
     .filter(item => item.event.event === 'media.sales_photo.upload')
     .map(item => item.event);

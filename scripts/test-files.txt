@@ -12,6 +12,7 @@ tsx tests/staff-relationship-id-fallback.test.ts
 tsx tests/sync-cursor-service.test.ts
 tsx tests/synced-event-factory.test.ts
 tsx tests/sync-permission-pause-service.test.ts
+tsx tests/sync-incident-observability.test.ts
 tsx tests/sync-flow-audit.test.ts
 tsx tests/sync-phase3-phase4-guardrails.test.ts
 tsx tests/sync-gate-d-feature-flags.test.ts
