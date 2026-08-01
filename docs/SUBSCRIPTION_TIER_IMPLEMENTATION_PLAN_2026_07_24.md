@@ -2,11 +2,11 @@
 
 Date: 2026-07-24
 
-Last updated: 2026-07-30
+Last updated: 2026-08-01
 
 Status: AI execution plan for implementing the subscription foundation in small verified slices. This document does not approve payment collection, billing provider setup, native in-app purchase setup, public marketplace workflows, production upload enablement, destructive recovery actions, or broad permission changes.
 
-Implementation progress (2026-07-30): S0A through S5 and S6A through S6E are implemented and validated locally; S7 is complete as a planning-only data and consent contract; LV1 adds a local-only Free/Pro/Team validation harness without changing billing data. Local server configuration, R2 read access, production build, capability routes, CORS, live 063 RPC permission smoke, authenticated local Free/Pro/Team simulation UI smoke, and user-completed local PDF UI verification passed. S6A protects single-market basic analysis and review; S6B provides a bounded recent-three Free preview; S6C separates the Free settlement summary from the Pro/Team full report; S6D enables the owner-only client-generated designed PDF for Pro/Team and keeps Free blocked. S6E migrations `064` and `065` are applied, and all 22 live structural, cleanup, anonymous-write, and protected-RPC checks pass. F3A catalog / price-assignment foundation is implemented locally as migration `066_add_subscription_price_catalog_foundation.sql`, but it has not been applied to Supabase and remains non-billable. The live project currently has no explicit paid subscription row or active-staff test fixture, so authenticated server-authoritative Free/Pro/Team mutation, downgrade, re-upgrade, and explicit-restore evidence remains pending. Product-cover `open` mode remains active and no billing, Excel generation, promotion grant, referral reward, active founder price assignment, marketplace route, partner exposure, or benchmark runtime is active.
+Implementation progress (2026-08-01): S0A through S5 and S6A through S6E are implemented; S7 is complete as a planning-only data and consent contract; LV1 remains a local-only Free/Pro/Team validation harness without billing authority. S6A protects single-market basic analysis and review; S6B provides a bounded recent-three Free preview; S6C separates the Free settlement summary from the Pro/Team full report; S6D enables the owner-only client-generated designed PDF for Pro/Team and keeps Free blocked. S6E migrations `064` and `065` are applied: all 22 structural/permission checks and the isolated 57-check server-authoritative Free/Pro/Team mutation, downgrade, re-upgrade, no-auto-restore, explicit-restore, cleanup, and zero-residual smoke pass. F3A migration `066_add_subscription_price_catalog_foundation.sql` is user-confirmed applied; anonymous, server-secret, and authenticated denial probes pass, while the masked apply record, all-true read-only SQL verifier, and Security Advisor evidence remain external gates. F3A remains private and non-billable. Commit-bound Production surface, API, PWA-resource, draft legal-page, and responsive browser smokes pass on `0d5b9db`; authenticated paid analytics/PDF and the broader owner/staff deployment matrix remain pending. Product-cover `open` mode remains active and no billing, Excel generation, promotion grant, referral reward, active founder price assignment, marketplace route, partner exposure, or benchmark runtime is active.
 
 Primary product plan:
 
@@ -537,7 +537,7 @@ Result:
 
 ### Slice S6E: Team Subscription Enforcement And Retained Staff Access
 
-Status: implemented and statically validated locally on 2026-07-29. Migrations `064_enforce_team_subscription.sql` and `065_fix_team_invitation_verification_return_type.sql` were applied on 2026-07-30; live structural and authenticated local simulation UI smoke pass, while server-authoritative state-transition smoke remains required.
+Status: implemented and validated through live structural and isolated server-authoritative transition smoke. Migrations `064_enforce_team_subscription.sql` and `065_fix_team_invitation_verification_return_type.sql` were applied on 2026-07-30; release-deployment owner/staff UI and client cleanup evidence remains under the Web staging matrix.
 
 Goal:
 
@@ -572,11 +572,19 @@ Authenticated local simulation UI evidence (2026-07-30):
 - Team inherited Pro analytics/report/PDF and removed the Team presentation gate, while every cloud-mutating Team control remained disabled because simulation is not write authorization;
 - subscription, Team, and settlement surfaces had no horizontal overflow at 390px, 768px, 1440px, and 1920px widths; no console error was observed, and the only warning was the expected small-sample analytics notice.
 
+Isolated server-authoritative transition evidence (2026-08-01):
+
+- `npm.cmd run smoke:subscription:team-transition` passed all 57 checks with disposable owner, staff, market, membership, invitation, and subscription fixtures;
+- direct authenticated table mutations and Free/Pro protected RPC calls failed closed;
+- Team invitation, link, acceptance, viewer-to-operator-to-manager changes, downgrade suspension and scope removal, Pro-to-Free retention, re-upgrade without auto-restore, and explicit restore all matched the contract;
+- cleanup passed and the independent residual audit found zero fixture Auth users, profiles, markets, subscriptions, relationships, invitations, memberships, and journal residue;
+- the guarded smoke does not prove billing, provider callbacks, or production UI state and does not create a durable paid customer record.
+
 Remaining activation gate:
 
 - retain the `064` then `065` migration order in every environment;
-- verify server-authoritative Free, Pro, Team, downgrade, explicit restore, direct-table denial, and role-cache cleanup with an approved isolated owner/staff fixture;
-- do not manufacture a paid billing row or use the local simulator as database-write evidence.
+- repeat the isolated transition smoke on the final selected environment and complete release-deployment owner/staff UI plus client role-cache cleanup evidence;
+- do not treat the disposable fixture or local simulator as billing, checkout, renewal, or commercial price-assignment evidence.
 
 ### Slice S7: Strategic Growth Capability Data Design
 
@@ -778,9 +786,10 @@ Acceptance:
 ### Slice F3: Server Price Assignment And Audit Ledger
 
 Status: data/security design completed on 2026-07-30. The separately reviewed F3A
-candidate catalog and assignment foundation is implemented locally but not applied to
-Supabase. F3B-F3E, writer, callback, provider implementation, checkout, and runtime
-mutation remain not approved.
+candidate catalog and assignment foundation was user-confirmed applied on 2026-08-01;
+direct-client denial smoke passes, while the read-only SQL verifier and Security Advisor
+record remain external gates. F3B-F3E, writer, callback, provider implementation,
+checkout, and runtime mutation remain not approved.
 
 Requires separately approved schema, RLS, identity, idempotency, webhook, support, and migration design. The server must own eligibility, price version, assigned amount, continuity, dormancy, forfeiture, and audit history. Operational market events and local IndexedDB are not the trusted price ledger.
 
@@ -804,8 +813,11 @@ Result:
 
 #### Slice F3A: Catalog And Price-Assignment Foundation
 
-Status: implemented locally on 2026-07-30; migration `066` is not applied to any
-Supabase environment.
+Status: implemented locally on 2026-07-30 and user-confirmed applied on 2026-08-01.
+Anonymous and server-secret table probes fail with PostgreSQL `42501`; the authenticated
+smoke passed all 12 table and 3 function denial probes. F3A remains incomplete until the
+masked target/hash/timestamp, all-true read-only verifier, and Security Advisor result
+are recorded.
 
 Canonical artifacts:
 

@@ -159,8 +159,16 @@ assert.ok(runbook.includes('不得在 SQL Editor 臨時 drop'));
 assert.ok(runbook.includes('F3B event/transaction ledger'));
 
 assert.ok(
-  implementationPlan.includes('F3A catalog / price-assignment foundation'),
-  'implementation plan must track F3A separately',
+  implementationPlan.includes(
+    'F3A migration `066_add_subscription_price_catalog_foundation.sql` is user-confirmed applied',
+  ),
+  'implementation plan must track the user-confirmed F3A apply separately',
+);
+assert.ok(implementationPlan.includes('F3A remains private and non-billable'));
+assert.ok(implementationPlan.includes('all-true read-only SQL verifier'));
+assert.match(
+  implementationPlan,
+  /F3B-F3E,[\s\S]*runtime mutation remain not approved/,
 );
 assert.ok(
   testManifest.includes('tsx tests/subscription-price-catalog-foundation.test.ts'),

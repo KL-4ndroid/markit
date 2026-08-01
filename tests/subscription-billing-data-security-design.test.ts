@@ -175,10 +175,10 @@ assert.ok(
   ),
 );
 assert.ok(
-  implementationPlan.includes(
-    'F3B-F3E, writer, callback, provider implementation, checkout, and runtime',
-  ),
+  /F3B-F3E,[\s\S]*runtime mutation remain not approved/.test(implementationPlan),
 );
+assert.ok(implementationPlan.includes('user-confirmed applied on 2026-08-01'));
+assert.ok(implementationPlan.includes('read-only SQL verifier and Security Advisor'));
 assert.ok(
   implementationPlan.includes(
     'A server-signed quote must use provider-confirmed transaction inputs',
