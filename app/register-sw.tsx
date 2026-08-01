@@ -3,6 +3,13 @@
 import { useEffect } from 'react';
 import { getAppPlatform } from '@/lib/platform';
 
+let registrationPromise: Promise<void> | null = null;
+
+function ensureServiceWorkerRegistration(): Promise<void> {
+  registrationPromise ??= registerServiceWorker();
+  return registrationPromise;
+}
+
 /**
  * Service Worker 註冊組件
  * 功能：僅提供 PWA 基礎功能（安裝到主畫面、推送通知、背景同步）
@@ -20,9 +27,13 @@ export function RegisterServiceWorker() {
       process.env.NODE_ENV === 'production'
     ) {
       // 等待頁面完全載入後再註冊
-      window.addEventListener('load', () => {
-        registerServiceWorker();
-      });
+      const handleLoad = () => { void ensureServiceWorkerRegistration(); };
+      if (document.readyState === 'complete') {
+        handleLoad();
+      } else {
+        window.addEventListener('load', handleLoad, { once: true });
+      }
+      return () => window.removeEventListener('load', handleLoad);
     }
   }, []);
 

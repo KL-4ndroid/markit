@@ -11,6 +11,10 @@ import {
   createAppApiCorsRejectionResponse,
 } from '@/lib/api/server/cors';
 import {
+  getSafeOperationalErrorName,
+  recordServerOperationalEvent,
+} from '@/lib/observability/server-operational-event';
+import {
   executeSalesPhotoEvidenceMetadataClaimAdapter,
   type SalesPhotoEvidenceMetadataClaimAdapterResult,
   type SalesPhotoEvidenceMetadataClaimedRow,
@@ -94,6 +98,7 @@ const DISABLED_RESPONSE_BODY = Object.freeze({
 
 // 1.5 MB validated binary payload plus a bounded amount of multipart metadata.
 const SALES_PHOTO_EVIDENCE_MAX_MULTIPART_REQUEST_BYTES = 2_000_000;
+const OPERATIONAL_ROUTE = '/api/sales-photo-evidence/upload';
 
 function jsonResponse(body: unknown, status: number): NextResponse {
   const responseBody = (
@@ -196,7 +201,7 @@ function mapClaimResultToResponse(result: SalesPhotoEvidenceMetadataClaimAdapter
 export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvidenceUploadRouteDeps) {
   const isR2UploadEnabled = deps.isR2UploadEnabled ?? (() => false);
 
-  async function postInternal(request: Request): Promise<NextResponse> {
+  async function postInternal(request: Request, startedAt: number): Promise<NextResponse> {
     if (!deps.isMetadataClaimEnabled()) {
       return disabledUploadResponse();
     }
@@ -239,15 +244,22 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       }, 401);
     }
 
-    return handleFormDataUpload(request, actor);
+    return handleFormDataUpload(request, actor, startedAt);
   }
 
   async function post(request: Request): Promise<NextResponse> {
+    const startedAt = Date.now();
     try {
-      return await postInternal(request);
+      return await postInternal(request, startedAt);
     } catch (error) {
-      console.error('sales photo evidence upload route failed', {
-        name: error instanceof Error ? error.name : 'UnknownError',
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.upload',
+        outcome: 'failure',
+        code: 'upload_route_unexpected_error',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        errorName: getSafeOperationalErrorName(error),
       });
       return jsonResponse({
         ok: false,
@@ -274,9 +286,13 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     try {
       await repository.markEvidenceUploadFailed(input);
     } catch (error) {
-      console.error('sales photo evidence failure status update failed', {
-        reason,
-        name: error instanceof Error ? error.name : 'UnknownError',
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.upload_failure_status',
+        outcome: 'failure',
+        code: reason,
+        route: OPERATIONAL_ROUTE,
+        errorName: getSafeOperationalErrorName(error),
       });
     }
   }
@@ -292,14 +308,23 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
         const result = await adapter.deleteObject({ key });
         if (!result.ok) {
           cleanupIncomplete = true;
-          console.error('sales photo evidence R2 compensation failed', {
+          recordServerOperationalEvent({
+            level: 'error',
+            event: 'media.sales_photo.upload_compensation',
+            outcome: 'failure',
             code: result.code,
+            route: OPERATIONAL_ROUTE,
           });
         }
       } catch (error) {
         cleanupIncomplete = true;
-        console.error('sales photo evidence R2 compensation failed', {
-          name: error instanceof Error ? error.name : 'UnknownError',
+        recordServerOperationalEvent({
+          level: 'error',
+          event: 'media.sales_photo.upload_compensation',
+          outcome: 'failure',
+          code: 'r2_compensation_unavailable',
+          route: OPERATIONAL_ROUTE,
+          errorName: getSafeOperationalErrorName(error),
         });
       }
     }
@@ -309,7 +334,8 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
 
   async function handleFormDataUpload(
     request: Request,
-    actor: SalesPhotoEvidenceUploadRouteActor
+    actor: SalesPhotoEvidenceUploadRouteActor,
+    startedAt: number
   ): Promise<NextResponse> {
     const r2UploadAdapter = deps.r2UploadAdapter ?? await deps.createR2UploadAdapter?.();
     if (!r2UploadAdapter) {
@@ -401,6 +427,21 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     });
     if (!imageUpload.ok) {
       await markUploadFailedIfPossible(row, 'r2_image_upload_failed', repository);
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.upload',
+        outcome: 'failure',
+        code: 'r2_image_upload_failed',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        metrics: {
+          attemptedCount: 1,
+          completedCount: 0,
+          failedCount: 1,
+          imageBytes: body.imageMetadata.fileSizeBytes,
+          thumbnailBytes: body.thumbnailMetadata.fileSizeBytes,
+        },
+      });
       return jsonResponse({
         ok: false,
         code: 'r2_image_upload_failed',
@@ -429,6 +470,21 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     if (!thumbnailUpload.ok) {
       const cleanup = await compensateConfirmedR2Uploads(r2UploadAdapter, [imageObjectKey]);
       await markUploadFailedIfPossible(row, 'r2_thumbnail_upload_failed', repository);
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.upload',
+        outcome: cleanup.cleanupIncomplete ? 'partial' : 'failure',
+        code: 'r2_thumbnail_upload_failed',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        metrics: {
+          attemptedCount: 1,
+          completedCount: 0,
+          failedCount: 1,
+          imageBytes: body.imageMetadata.fileSizeBytes,
+          thumbnailBytes: body.thumbnailMetadata.fileSizeBytes,
+        },
+      });
       return jsonResponse({
         ok: false,
         code: 'r2_thumbnail_upload_failed',
@@ -469,6 +525,22 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
         imageObjectKey,
       ]);
       await markUploadFailedIfPossible(row, 'metadata_finalize_failed', repository);
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.upload',
+        outcome: cleanup.cleanupIncomplete ? 'partial' : 'failure',
+        code: 'metadata_finalize_failed',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        errorName: getSafeOperationalErrorName(error),
+        metrics: {
+          attemptedCount: 1,
+          completedCount: 0,
+          failedCount: 1,
+          imageBytes: body.imageMetadata.fileSizeBytes,
+          thumbnailBytes: body.thumbnailMetadata.fileSizeBytes,
+        },
+      });
       return jsonResponse({
         ok: false,
         code: 'metadata_finalize_failed',
@@ -478,6 +550,21 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       }, 500);
     }
 
+    recordServerOperationalEvent({
+      level: 'info',
+      event: 'media.sales_photo.upload',
+      outcome: 'success',
+      code: 'upload_completed',
+      route: OPERATIONAL_ROUTE,
+      durationMs: Date.now() - startedAt,
+      metrics: {
+        attemptedCount: 1,
+        completedCount: 1,
+        failedCount: 0,
+        imageBytes: body.imageMetadata.fileSizeBytes,
+        thumbnailBytes: body.thumbnailMetadata.fileSizeBytes,
+      },
+    });
     return jsonResponse({
       ok: true,
       action: 'upload_completed',

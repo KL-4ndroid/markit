@@ -1,7 +1,14 @@
+import {
+  assertHealthReleaseIdentity,
+  requireExpectedCommitSha,
+} from './web-smoke-release-identity.mjs';
+import { assertWebSecurityHeaders } from './web-smoke-security-headers.mjs';
+
 const configuredBaseUrl = process.env.APP_API_SMOKE_BASE_URL?.trim();
 const allowedOrigin = process.env.APP_API_SMOKE_ALLOWED_ORIGIN?.trim() || 'capacitor://localhost';
 const deniedOrigin = process.env.APP_API_SMOKE_DENIED_ORIGIN?.trim() || 'https://not-allowed.invalid';
 const timeoutMs = 15_000;
+const expectedCommitSha = requireExpectedCommitSha(process.env.WEB_SMOKE_EXPECTED_COMMIT_SHA);
 
 function requireHttpsBase(value) {
   if (!value) throw new Error('APP_API_SMOKE_BASE_URL is required.');
@@ -61,10 +68,9 @@ const baseUrl = requireHttpsBase(configuredBaseUrl);
 const health = await request('/api/health');
 assertEqual(health.status, 200, 'health status');
 assertEqual(health.headers.get('cache-control'), 'no-store', 'health cache control');
+assertWebSecurityHeaders(health.headers);
 const healthBody = await health.json();
-if (healthBody?.ok !== true || healthBody?.status !== 'healthy') {
-  throw new Error('health response contract is invalid');
-}
+assertHealthReleaseIdentity(healthBody, expectedCommitSha);
 
 await assertPreflight('/api/sales-photo-evidence/upload', 'POST');
 await assertPreflight('/api/sales-photo-evidence/image', 'GET');
@@ -90,4 +96,4 @@ assertEqual(invalidToken.status, 401, 'invalid token status');
 const invalidTokenBody = await invalidToken.json();
 assertEqual(invalidTokenBody?.code, 'authentication_required', 'invalid token code');
 
-console.log('PASS Vercel API boundary smoke (health, CORS, invalid token)');
+console.log('PASS commit-bound Vercel API smoke (health, CORS, invalid token)');

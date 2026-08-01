@@ -158,6 +158,12 @@ export function getAccountCapabilitySourcePresentation(
         description: '保留指派紀錄，但不開放新的付費能力操作。',
         activePaidClaim: false,
       };
+    case 'simulation_enabled':
+      return {
+        label: '本機模擬方案',
+        description: '目前能力來自本機測試工具，不代表付款、正式訂閱或雲端寫入授權。',
+        activePaidClaim: false,
+      };
     case 'billing_not_connected':
       return {
         label: '付款尚未連接',

@@ -8,6 +8,11 @@ Scope: non-billing authoritative read path only
 
 `GET /api/account-capabilities` is the only public account-capability read endpoint introduced by S4. It derives the owner id from the verified bearer token and does not accept a plan, tier, owner id, entitlement, feature list, or freshness flag from the client.
 
+The separately gated local test harness is documented in
+`docs/subscription/LOCAL_SUBSCRIPTION_SIMULATION.md`. Its authenticated mutation
+route is available only with a server-only local flag and a loopback request. It
+does not change the production S4 authority boundary or persist an entitlement.
+
 The endpoint has no `POST`, `PUT`, `PATCH`, or `DELETE` handler. Users cannot self-upgrade or create an admin assignment.
 
 ## Shared And Platform Boundaries
@@ -26,6 +31,7 @@ The endpoint has no `POST`, `PUT`, `PATCH`, or `DELETE` handler. Users cannot se
 | `explicit_free` | server row explicitly records Free | Free; paid features false |
 | `admin_enabled` | trusted admin Pro/Team assignment has active or grace entitlement | shared plan capabilities, subject to role/runtime/data gates |
 | `admin_inactive` | admin assignment exists but entitlement is inactive or expired | new paid writes fail closed |
+| `simulation_enabled` | local, authenticated, loopback-only in-memory test state | plan-model capabilities for local validation only; never a paid or server-write claim |
 | `billing_not_connected` | a billing-sourced row exists before billing reconciliation is implemented | safe Free snapshot; no paid claim |
 | `promotion_not_connected` | a promotion-sourced row exists before approved reward runtime exists | safe Free snapshot; no paid claim |
 | unavailable error | auth, repository, record validation, or service configuration failed | unavailable snapshot; paid features false |
@@ -60,6 +66,7 @@ Rows marked `billing` or `promotion` are reserved for later migrations and recon
 - Admin inactive/expired entitlement cannot pass paid-write access evaluation.
 - The API response is never accepted as authorization by a paid server write route; each later route must resolve capabilities server-side again.
 - Existing role, runtime, upload, data-completeness, RLS, and RPC gates remain independent.
+- Local simulation is disabled without its private flag, on non-loopback requests, and on detected Vercel deployments; it never authorizes paid server writes.
 
 ## Production Gates
 
@@ -87,6 +94,7 @@ Before this read model can be described as production-active:
 - 2026-07-29: S6B extended the same read model to every analytics range. The current Free account defaulted to the recent-three revenue/quantity preview; recent-10, all, advanced, and single-market paths rendered the Pro gate without paid analysis results, and returning to recent-three restored the preview. No console error, horizontal overflow, subscription mutation, or browser plan cache was observed.
 - 2026-07-29: S6C extended the read model to the owner-only settlement report. Free is limited to a separate revenue, deal-count, market-coverage, and completeness summary; product queries and full report/PDF models are suppressed. Deterministic Free, Pro, Team, capability-unavailable, and role-denied guardrails, the full test manifest, ESLint, Web/mobile builds, client-bundle scans, and the repeated live missing-row Free smoke passed locally. Authenticated latest-build UI smoke remained pending because the existing signed-in browser origin was occupied by an unrelated local service; no session data was inspected or moved.
 - 2026-07-29: S6D changed `report.pdf` to Pro/Team `included` and enabled the independent PDF runtime. The owner-only report page mounts generation only when the authoritative full-report and PDF capabilities both allow; Free still suppresses paid model/PDF construction. The generated report remains local/client-side through the platform file preview port. Deterministic plan, runtime rollback, source-boundary, five-page, true-A4, and rendered-PNG visual checks pass locally. Authenticated paid-state deployment smoke remains pending.
+- 2026-07-29: LV1 added the explicitly marked `simulation_enabled` local validation source. It requires a private local flag, loopback URL, verified bearer token, and in-memory owner state with a four-hour expiry. Focused/full tests, ESLint, Web/mobile builds, mobile verification/smoke, and unauthenticated 401 plus local CORS preflight smoke passed. It does not modify subscription rows or authorize server writes; authenticated UI switching remains a manual local smoke.
 - Local S4 route, repository, capability lifecycle, client parsing, CORS, fail-closed, lint, build, full-test, and client-bundle guardrails passed before this confirmation.
 - S5 local verification passed focused product-cover/subscription tests, full ESLint, production build, full test manifest, client-bundle secret/RPC scan, and unauthenticated 401 smoke for both capability endpoints.
 - Live inactive-staff denial and explicit Free/admin Pro/admin Team/inactive-admin state smoke remain fixture-dependent. Authenticated route smoke against the real deployment and deployment evidence also remain open. S4 must not yet be described as production-active.

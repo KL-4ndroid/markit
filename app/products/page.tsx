@@ -28,7 +28,9 @@ import { StateView } from '@/components/ui/StateView';
 import { Tabs, type TabItem } from '@/components/ui/Tabs';
 import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { useProducts } from '@/lib/db/hooks';
+import { isEntityCreateDeepLink } from '@/lib/navigation/entity-create-deep-link';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
+import { getDeepLinkPort } from '@/lib/platform/interaction-capabilities';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 import { buildProductDetailHref } from '@/lib/navigation/product-detail-route';
 import {
@@ -126,6 +128,7 @@ export default function ProductsPage() {
     showInactive: false,
     scrollY: 0,
   });
+  const shortcutHandledRef = useRef(false);
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
@@ -254,6 +257,22 @@ export default function ProductsPage() {
     setSearchQuery('');
     showNavigation();
   };
+
+  useEffect(() => {
+    if (shortcutHandledRef.current || !isRoleReady || dbStatus === null) return;
+
+    let active = true;
+    void getDeepLinkPort().getInitialUrl().then(url => {
+      if (!active || shortcutHandledRef.current || !isEntityCreateDeepLink(url, '/products')) return;
+      shortcutHandledRef.current = true;
+      router.replace('/products');
+      if (isStaffMode || !canLoadScopedData || dbStatus.ok === false) return;
+      setIsFormOpen(true);
+      hideNavigation();
+    }).catch(() => undefined);
+
+    return () => { active = false; };
+  }, [canLoadScopedData, dbStatus, isRoleReady, isStaffMode, router]);
 
   if (!canLoadScopedData || dbStatus === null) return <ProductsLoading />;
 

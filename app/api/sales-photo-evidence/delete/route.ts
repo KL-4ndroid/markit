@@ -7,6 +7,10 @@ import {
   createAppApiCorsPreflightResponse,
   createAppApiCorsRejectionResponse,
 } from '@/lib/api/server/cors';
+import {
+  getSafeOperationalErrorName,
+  recordServerOperationalEvent,
+} from '@/lib/observability/server-operational-event';
 import { isSalesPhotoEvidenceObjectKeyBoundToIdentity } from '@/lib/sales/photo-evidence-model';
 import type { SalesPhotoEvidenceR2UploadAdapter } from '@/lib/sales/photo-evidence-r2-upload-adapter';
 import type {
@@ -29,6 +33,7 @@ export type SalesPhotoEvidenceDeleteRouteDeps = {
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const OPERATIONAL_ROUTE = '/api/sales-photo-evidence/delete';
 
 function jsonResponse(body: unknown, status: number): NextResponse {
   const normalized = body && typeof body === 'object' && !Array.isArray(body)
@@ -77,7 +82,7 @@ function keysAreBound(row: SalesPhotoEvidenceDeletePreparedRow): boolean {
 }
 
 export function createSalesPhotoEvidenceDeleteRouteHandlers(deps: SalesPhotoEvidenceDeleteRouteDeps) {
-  async function deleteInternal(request: Request): Promise<Response> {
+  async function deleteInternal(request: Request, startedAt: number): Promise<Response> {
     if (!deps.isEnabled()) return disabledResponse();
 
     const evidenceId = getEvidenceId(request);
@@ -135,6 +140,15 @@ export function createSalesPhotoEvidenceDeleteRouteHandlers(deps: SalesPhotoEvid
 
     const thumbnailDelete = await adapter.deleteObject({ key: row.thumbnailObjectKey });
     if (!thumbnailDelete.ok) {
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.delete',
+        outcome: 'partial',
+        code: 'r2_thumbnail_delete_failed',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        metrics: { attemptedCount: 1, completedCount: 0, failedCount: 1 },
+      });
       return jsonResponse({
         ok: false,
         code: 'r2_delete_failed',
@@ -145,6 +159,15 @@ export function createSalesPhotoEvidenceDeleteRouteHandlers(deps: SalesPhotoEvid
 
     const imageDelete = await adapter.deleteObject({ key: row.imageObjectKey });
     if (!imageDelete.ok) {
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.delete',
+        outcome: 'partial',
+        code: 'r2_image_delete_failed',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        metrics: { attemptedCount: 1, completedCount: 0, failedCount: 1 },
+      });
       return jsonResponse({
         ok: false,
         code: 'r2_delete_failed',
@@ -155,7 +178,17 @@ export function createSalesPhotoEvidenceDeleteRouteHandlers(deps: SalesPhotoEvid
 
     try {
       await repository.finalizeDeletion(row);
-    } catch {
+    } catch (error) {
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.delete',
+        outcome: 'partial',
+        code: 'metadata_finalize_failed',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        errorName: getSafeOperationalErrorName(error),
+        metrics: { attemptedCount: 1, completedCount: 0, failedCount: 1 },
+      });
       return jsonResponse({
         ok: false,
         code: 'metadata_finalize_failed',
@@ -164,15 +197,31 @@ export function createSalesPhotoEvidenceDeleteRouteHandlers(deps: SalesPhotoEvid
       }, 503);
     }
 
+    recordServerOperationalEvent({
+      level: 'info',
+      event: 'media.sales_photo.delete',
+      outcome: 'success',
+      code: 'delete_completed',
+      route: OPERATIONAL_ROUTE,
+      durationMs: Date.now() - startedAt,
+      metrics: { attemptedCount: 1, completedCount: 1, failedCount: 0 },
+    });
     return jsonResponse({ ok: true, evidenceId: row.id }, 200);
   }
 
   async function deleteRequest(request: Request): Promise<Response> {
+    const startedAt = Date.now();
     try {
-      return await deleteInternal(request);
+      return await deleteInternal(request, startedAt);
     } catch (error) {
-      console.error('sales photo evidence delete route failed', {
-        name: error instanceof Error ? error.name : 'UnknownError',
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.delete',
+        outcome: 'failure',
+        code: 'delete_route_unavailable',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        errorName: getSafeOperationalErrorName(error),
       });
       return jsonResponse({
         ok: false,

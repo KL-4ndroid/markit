@@ -5,7 +5,6 @@
  */
 
 import { supabase } from './client';
-import { nanoid } from 'nanoid';
 import { getDeepLinkPort } from '@/lib/platform/interaction-capabilities';
 
 /**
@@ -35,37 +34,18 @@ export interface InvitationVerification {
  * @returns 邀請資訊（包含 token）
  */
 export async function createInvitation(): Promise<StaffInvitation> {
-  // 1. 產生唯一的 token（使用 nanoid，更短且安全）
-  const token = nanoid(32);
-  
-  // 2. 計算過期時間（3 天後）
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 3);
-  
-  // 3. 獲取當前用戶 ID
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) {
-    throw new Error('未登入，無法建立邀請');
-  }
-  
-  // 4. 寫入資料庫
-  const { data, error } = await supabase
-    .from('staff_invitations')
-    .insert({
-      owner_id: user.id,
-      token,
-      expires_at: expiresAt.toISOString(),
-    })
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc('create_staff_invitation');
   
   if (error) {
     console.error('建立邀請失敗:', error);
     throw error;
   }
   
-  return data as StaffInvitation;
+  const invitation = Array.isArray(data) ? data[0] : data;
+  if (!invitation || typeof invitation !== 'object') {
+    throw new Error('伺服器未回傳有效的邀請資料');
+  }
+  return invitation as StaffInvitation;
 }
 
 /**
@@ -102,10 +82,9 @@ export async function getMyInvitations(): Promise<StaffInvitation[]> {
  * @param invitationId - 邀請 ID
  */
 export async function deleteInvitation(invitationId: string): Promise<void> {
-  const { error } = await supabase
-    .from('staff_invitations')
-    .delete()
-    .eq('id', invitationId);
+  const { error } = await supabase.rpc('delete_staff_invitation', {
+    p_invitation_id: invitationId,
+  });
   
   if (error) {
     console.error('刪除邀請失敗:', error);

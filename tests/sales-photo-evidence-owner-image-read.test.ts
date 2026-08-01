@@ -1,11 +1,22 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import Module, { createRequire } from 'node:module';
 import { join } from 'node:path';
 
-import {
+const testRequire = createRequire(import.meta.url);
+const serverOnlyPath = testRequire.resolve('server-only');
+const serverOnlyMarker = new Module(serverOnlyPath);
+serverOnlyMarker.filename = serverOnlyPath;
+serverOnlyMarker.loaded = true;
+serverOnlyMarker.exports = {};
+testRequire.cache[serverOnlyPath] = serverOnlyMarker;
+
+const {
   createSalesPhotoEvidenceImageRouteHandlers,
   isSalesPhotoEvidenceImageReadRouteEnabledForEnv,
-} from '../app/api/sales-photo-evidence/image/route';
+} = testRequire('../app/api/sales-photo-evidence/image/route') as typeof import(
+  '../app/api/sales-photo-evidence/image/route'
+);
 import {
   fetchSalesPhotoEvidenceOwnerImageObjectUrl,
 } from '../lib/sales/photo-evidence-owner-image-client';

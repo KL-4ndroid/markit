@@ -171,7 +171,9 @@ async function main(): Promise<void> {
   const handlers = createAccountCapabilityRouteHandlers({
     resolveActor: async () => ({ actorId: OWNER_ID }),
     resolveCapabilities: async input => {
-      assert.deepEqual(input, { actorId: OWNER_ID, ownerId: OWNER_ID });
+      assert.equal(input.actorId, OWNER_ID);
+      assert.equal(input.ownerId, OWNER_ID);
+      assert.equal(input.request.url, 'https://app.example.test/api/account-capabilities');
       return adminTeam;
     },
   });
@@ -258,6 +260,7 @@ async function main(): Promise<void> {
   assert.equal(staleClientResult.capabilities.features.productCoverPhoto, false);
 
   assert.equal(getAccountCapabilitySourcePresentation('admin_enabled').activePaidClaim, true);
+  assert.equal(getAccountCapabilitySourcePresentation('simulation_enabled').activePaidClaim, false);
   assert.equal(getAccountCapabilitySourcePresentation('billing_not_connected').activePaidClaim, false);
   assert.equal(getAccountCapabilitySourcePresentation('unavailable').activePaidClaim, false);
 

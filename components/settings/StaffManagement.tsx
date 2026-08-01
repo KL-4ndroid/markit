@@ -13,7 +13,7 @@
 
 import { useCallback, useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { Users, Mail, Shield, Trash2, Plus, X, Eye, Edit3, AlertCircle, Link2, Copy, QrCode, Clock, Check } from 'lucide-react';
+import { Users, Mail, Shield, Trash2, Plus, X, Eye, Edit3, AlertCircle, Link2, Copy, QrCode, Clock, Check, RotateCcw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
@@ -26,7 +26,14 @@ import {
   formatRemainingTime,
   type StaffInvitation,
 } from '@/lib/supabase/staff-invitations';
-import { getMyStaffMembers, type StaffMember, inviteStaff, removeStaff, updateStaffRole } from '@/lib/supabase/staff';
+import {
+  getMyStaffMembers,
+  type StaffMember,
+  inviteStaff,
+  removeStaff,
+  restoreStaffRelationship,
+  updateStaffRole,
+} from '@/lib/supabase/staff';
 import type { StaffRole } from '@/types/staff';
 import { RoleBadge } from '@/components/staff/RoleBadge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -57,8 +64,21 @@ const ROLE_DIALOG_COPY: Record<StaffRole, string> = {
   manager: '適合協助管理基本資料；敏感財務資料仍不開放。',
 };
 
-export function StaffManagement() {
+type StaffManagementProps = {
+  teamFeatureAllowed: boolean;
+  managerWorkflowAllowed: boolean;
+  simulationActive: boolean;
+};
+
+export function StaffManagement({
+  teamFeatureAllowed,
+  managerWorkflowAllowed,
+  simulationActive,
+}: StaffManagementProps) {
   const { user } = useAuth();
+  const canCreateTeamData = teamFeatureAllowed && !simulationActive;
+  const canChangeStaffRole = managerWorkflowAllowed && !simulationActive;
+  const canRunCleanup = !simulationActive;
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
@@ -80,6 +100,7 @@ export function StaffManagement() {
   const [confirmation, setConfirmation] = useState<
     | { type: 'delete-invitation'; invitationId: string }
     | { type: 'remove-staff'; staffId: string; email: string }
+    | { type: 'restore-staff'; relationshipId: string; email: string }
     | null
   >(null);
 
@@ -101,6 +122,10 @@ export function StaffManagement() {
   // 邀請員工
   const handleInvite = async () => {
     if (!user) return;
+    if (!canCreateTeamData) {
+      toast.error(simulationActive ? '訂閱模擬不會執行雲端寫入' : '邀請員工需要有效的 Team 方案');
+      return;
+    }
     if (!inviteEmail.trim()) {
       toast.error('請輸入員工的 email');
       return;
@@ -160,9 +185,13 @@ export function StaffManagement() {
 
   // 產生邀請連結
   const handleCreateInvitation = async () => {
+    if (!canCreateTeamData) {
+      toast.error(simulationActive ? '訂閱模擬不會建立雲端邀請' : '建立邀請連結需要有效的 Team 方案');
+      return;
+    }
     setCreatingInvitation(true);
     try {
-      const invitation = await createInvitation();
+      await createInvitation();
       toast.success('邀請連結已建立！', {
         description: '有效期限為 3 天',
       });
@@ -180,6 +209,10 @@ export function StaffManagement() {
   // 刪除邀請連結
   const confirmDeleteInvitation = async () => {
     if (confirmation?.type !== 'delete-invitation') return;
+    if (!canRunCleanup) {
+      toast.error('訂閱模擬不會刪除雲端邀請');
+      return;
+    }
     try {
       await deleteInvitation(confirmation.invitationId);
       setConfirmation(null);
@@ -210,6 +243,10 @@ export function StaffManagement() {
   // 移除員工
   const confirmRemoveStaff = async () => {
     if (confirmation?.type !== 'remove-staff') return;
+    if (!canRunCleanup) {
+      toast.error('訂閱模擬不會移除雲端員工關係');
+      return;
+    }
     try {
       await removeStaff(confirmation.staffId);
       setConfirmation(null);
@@ -224,8 +261,30 @@ export function StaffManagement() {
     }
   };
 
+  const confirmRestoreStaff = async () => {
+    if (confirmation?.type !== 'restore-staff') return;
+    if (!canCreateTeamData) {
+      toast.error(simulationActive ? '訂閱模擬不會恢復雲端權限' : '恢復員工需要有效的 Team 方案');
+      return;
+    }
+
+    try {
+      await restoreStaffRelationship(confirmation.relationshipId);
+      setConfirmation(null);
+      toast.success(`已恢復員工 ${confirmation.email}`);
+      await loadStaffList();
+    } catch (error: any) {
+      console.error('恢復員工失敗:', error);
+      toast.error('恢復失敗：' + error.message);
+    }
+  };
+
   // P4c-2：開啟角色修改 Dialog
   const openRoleDialog = (staff: StaffMember) => {
+    if (!canChangeStaffRole) {
+      toast.error(simulationActive ? '訂閱模擬不會變更雲端角色' : '修改員工角色需要有效的 Team 方案');
+      return;
+    }
     setEditingStaff(staff);
     setSelectedRole(staff.role ?? 'viewer');
     setShowRoleDialog(true);
@@ -243,6 +302,10 @@ export function StaffManagement() {
   // P4c-2：送出角色修改
   const handleUpdateRole = async () => {
     if (!editingStaff) return;
+    if (!canChangeStaffRole) {
+      toast.error(simulationActive ? '訂閱模擬不會變更雲端角色' : '修改員工角色需要有效的 Team 方案');
+      return;
+    }
 
     if (!editingStaff.relationship_id) {
       toast.error('缺少員工關係識別碼，請重新整理後再試');
@@ -355,6 +418,11 @@ export function StaffManagement() {
                         待接受
                       </span>
                     )}
+                    {staff.status === 'suspended_by_plan' && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-soft-pink text-danger font-medium">
+                        方案暫停
+                      </span>
+                    )}
                     <RoleBadge role={staff.role} />
                   </div>
                   <div className="flex items-center gap-2">
@@ -367,6 +435,11 @@ export function StaffManagement() {
                       • {staff.status === 'pending' ? '邀請於' : '加入於'} {new Date(staff.joined_at).toLocaleDateString('zh-TW')}
                     </span>
                   </div>
+                  {staff.status === 'suspended_by_plan' && (
+                    <p className="mt-1 text-xs text-danger">
+                      關係與歷史已保留，目前無法存取品牌工作區。
+                    </p>
+                  )}
                   {ROLE_HELPER_COPY[staff.role ?? 'undefined'] && (
                     <p className="text-xs text-muted-foreground mt-1">
                       {ROLE_HELPER_COPY[staff.role ?? 'undefined']}
@@ -374,14 +447,36 @@ export function StaffManagement() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 ml-4">
+                  {staff.status === 'suspended_by_plan' && (
+                    <button
+                      onClick={() => staff.relationship_id && setConfirmation({
+                        type: 'restore-staff',
+                        relationshipId: staff.relationship_id,
+                        email: staff.email,
+                      })}
+                      disabled={!canCreateTeamData || !staff.relationship_id}
+                      title={simulationActive
+                        ? '訂閱模擬不會恢復雲端權限'
+                        : !teamFeatureAllowed
+                        ? '升級 Team 後可恢復'
+                        : '恢復員工存取權'}
+                      className="p-2 rounded-xl bg-soft-green text-primary hover:bg-soft-green/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => openRoleDialog(staff)}
-                    disabled={staff.status !== 'active' || !staff.relationship_id}
+                    disabled={staff.status !== 'active' || !staff.relationship_id || !canChangeStaffRole}
                     title={
                       staff.status !== 'active'
                         ? '員工接受邀請後才能修改角色'
                         : !staff.relationship_id
                         ? '資料異常，請重新整理'
+                        : simulationActive
+                        ? '訂閱模擬不會變更雲端角色'
+                        : !managerWorkflowAllowed
+                        ? '修改角色需要 Team 方案'
                         : '修改員工角色'
                     }
                     className="p-2 rounded-xl bg-soft-green text-primary hover:bg-soft-green/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -394,8 +489,11 @@ export function StaffManagement() {
                       staffId: staff.id,
                       email: staff.email,
                     })}
-                    className="p-2 rounded-xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors"
-                    title={staff.status === 'pending' ? '取消邀請' : '移除員工'}
+                    disabled={!canRunCleanup}
+                    className="p-2 rounded-xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={simulationActive
+                      ? '訂閱模擬不會修改雲端資料'
+                      : staff.status === 'pending' ? '取消邀請' : '移除員工'}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -409,7 +507,9 @@ export function StaffManagement() {
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setShowInviteDialog(true)}
-            className="px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium flex items-center justify-center gap-2"
+            disabled={!canCreateTeamData}
+            title={simulationActive ? '訂閱模擬不會建立雲端邀請' : !teamFeatureAllowed ? '需要 Team 方案' : 'Email 邀請'}
+            className="px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Mail className="w-4 h-4" />
             Email 邀請
@@ -433,7 +533,8 @@ export function StaffManagement() {
               </h3>
               <button
                 onClick={handleCreateInvitation}
-                disabled={creatingInvitation}
+                disabled={creatingInvitation || !canCreateTeamData}
+                title={simulationActive ? '訂閱模擬不會建立雲端邀請' : !teamFeatureAllowed ? '需要 Team 方案' : '產生新連結'}
                 className="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
               >
                 {creatingInvitation ? '建立中...' : '產生新連結'}
@@ -460,6 +561,7 @@ export function StaffManagement() {
                 {invitations.map((invitation) => {
                   const url = generateInvitationUrl(invitation.token);
                   const expired = isExpired(invitation.expires_at);
+                  const unavailableByPlan = !teamFeatureAllowed || simulationActive;
 
                   return (
                     <div
@@ -472,7 +574,11 @@ export function StaffManagement() {
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            {expired ? (
+                            {unavailableByPlan ? (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-soft-pink text-danger">
+                                方案暫停
+                              </span>
+                            ) : expired ? (
                               <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-soft-pink text-danger">
                                 已過期
                               </span>
@@ -483,7 +589,9 @@ export function StaffManagement() {
                             )}
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Clock className="w-3 h-3" />
-                              {expired ? '已過期' : `剩餘 ${formatRemainingTime(invitation.expires_at)}`}
+                              {unavailableByPlan
+                                ? '目前無法使用'
+                                : expired ? '已過期' : `剩餘 ${formatRemainingTime(invitation.expires_at)}`}
                             </div>
                           </div>
                           <div className="bg-white rounded-lg p-2 border border-muted">
@@ -498,7 +606,8 @@ export function StaffManagement() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleCopyLink(invitation.token)}
-                          disabled={expired}
+                          disabled={expired || unavailableByPlan}
+                          title={unavailableByPlan ? '需要有效的 Team 方案' : '複製邀請連結'}
                           className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
                         >
                           <Copy className="w-3 h-3" />
@@ -506,7 +615,8 @@ export function StaffManagement() {
                         </button>
                         <button
                           onClick={() => setShowQRCode(showQRCode === invitation.token ? null : invitation.token)}
-                          disabled={expired}
+                          disabled={expired || unavailableByPlan}
+                          title={unavailableByPlan ? '需要有效的 Team 方案' : '顯示 QR Code'}
                           className="flex items-center justify-center gap-1 px-3 py-1.5 bg-soft-green text-foreground rounded-lg hover:bg-soft-green/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
                         >
                           <QrCode className="w-3 h-3" />
@@ -517,14 +627,16 @@ export function StaffManagement() {
                             type: 'delete-invitation',
                             invitationId: invitation.id,
                           })}
-                          className="flex items-center justify-center px-3 py-1.5 bg-soft-pink text-danger rounded-lg hover:bg-soft-pink/80 transition-colors text-xs font-medium"
+                          disabled={!canRunCleanup}
+                          title={simulationActive ? '訂閱模擬不會刪除雲端邀請' : '刪除邀請連結'}
+                          className="flex items-center justify-center px-3 py-1.5 bg-soft-pink text-danger rounded-lg hover:bg-soft-pink/80 transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
 
                       {/* QR Code 顯示 */}
-                      {showQRCode === invitation.token && !expired && (
+                      {showQRCode === invitation.token && !expired && !unavailableByPlan && (
                         <div className="mt-3 pt-3 border-t border-muted">
                           <div className="bg-white rounded-lg p-3 flex flex-col items-center">
                             <p className="text-xs font-medium text-foreground mb-2">
@@ -641,7 +753,7 @@ export function StaffManagement() {
                       </button>
                       <button
                         onClick={handleInvite}
-                        disabled={isInviting || !inviteEmail.trim()}
+                        disabled={isInviting || !inviteEmail.trim() || !canCreateTeamData}
                         className="flex-1 px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isInviting ? '邀請中...' : '確認邀請'}
@@ -763,6 +875,7 @@ export function StaffManagement() {
                         onClick={handleUpdateRole}
                         disabled={
                           isUpdatingRole ||
+                          !canChangeStaffRole ||
                           !editingStaff?.relationship_id ||
                           selectedRole === editingStaff?.role
                         }
@@ -799,6 +912,17 @@ export function StaffManagement() {
           : ''}
         confirmLabel="移除員工"
         tone="danger"
+      />
+
+      <ConfirmDialog
+        open={confirmation?.type === 'restore-staff'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={confirmRestoreStaff}
+        title="恢復這位員工的存取權？"
+        description={confirmation?.type === 'restore-staff'
+          ? `恢復「${confirmation.email}」後，對方會再次取得目前進行中市集的團隊權限。`
+          : ''}
+        confirmLabel="恢復員工"
       />
     </div>
   );

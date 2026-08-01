@@ -10,13 +10,15 @@ const appEntry = read('components/demo/FeriaDemoApp.tsx');
 const app = read('components/demo/FormalDemoApp.tsx');
 const data = read('lib/demo/formal-demo-data.ts');
 const appChrome = read('components/AppChrome.tsx');
+const publicRoutes = read('lib/navigation/public-route.ts');
 const bottomNavigation = read('components/BottomNavigation.tsx');
 const combinedDemoSource = `${route}\n${appEntry}\n${app}\n${data}`;
 
 assert.match(route, /FeriaDemoApp/);
 assert.match(appEntry, /FormalDemoApp as FeriaDemoApp/);
 assert.match(route, /免登入、使用記憶體假資料/);
-assert.match(appChrome, /STANDALONE_PUBLIC_ROUTES[\s\S]*['"]\/demo['"]/);
+assert.match(publicRoutes, /STANDALONE_PUBLIC_ROUTES[\s\S]*['"]\/demo['"]/);
+assert.match(appChrome, /\.\.\.STANDALONE_PUBLIC_ROUTES/);
 assert.match(bottomNavigation, /HIDDEN_ROUTES[\s\S]*['"]\/demo['"]/);
 
 for (const formalStyleContract of [

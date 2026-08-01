@@ -35,6 +35,17 @@ Subscription UI now uses the shared Free / Pro / Team preview model. `TopNavigat
 
 This is a presentation-only change. Paid feature enforcement remains outside S2.
 
+## 2026-07-30｜Production internal test surface boundary
+
+Root `proxy.ts` denies every `/debug/*` request with an HTTP `404` before rendering in
+production, while `app/debug/layout.tsx` remains a second server-side denial. Local
+development remains available; preview/staging requires the explicit
+`INTERNAL_TEST_SURFACES_ENABLED=1` gate. This route boundary does not grant or change
+owner, manager, operator, viewer, Supabase, Dexie, sync, or subscription permissions.
+
+`/demo` is intentionally excluded from this internal-route gate and retains the public,
+static-example-data contract documented below.
+
 ## 2026-06-26｜Féria Demo Mode public route
 
 ### Change summary

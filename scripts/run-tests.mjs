@@ -17,7 +17,10 @@ const testFiles = readFileSync(manifestPath, 'utf8')
   .map(line => line.replace(/^tsx\s+/, ''));
 
 for (const testFile of testFiles) {
-  const env = testFile === 'tests/app-api-server-mutation-client.test.ts'
+  const env = [
+    'tests/app-api-server-mutation-client.test.ts',
+    'tests/subscription-simulation.test.ts',
+  ].includes(testFile)
     ? {
         ...process.env,
         NODE_OPTIONS: [process.env.NODE_OPTIONS, '--conditions=react-server']

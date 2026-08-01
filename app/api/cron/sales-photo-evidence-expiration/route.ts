@@ -3,6 +3,10 @@ import { timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 
 import { normalizeAppApiErrorBody } from '@/lib/api/contract';
+import {
+  getSafeOperationalErrorName,
+  recordServerOperationalEvent,
+} from '@/lib/observability/server-operational-event';
 import { isSalesPhotoEvidenceObjectKeyBoundToIdentity } from '@/lib/sales/photo-evidence-model';
 import type { SalesPhotoEvidenceR2UploadAdapter } from '@/lib/sales/photo-evidence-r2-upload-adapter';
 import type {
@@ -23,6 +27,7 @@ export type SalesPhotoEvidenceExpirationRouteDeps = {
 };
 
 const CLEANUP_LIMIT = 25;
+const OPERATIONAL_ROUTE = '/api/cron/sales-photo-evidence-expiration';
 
 function jsonResponse(body: unknown, status: number): NextResponse {
   const normalized = body && typeof body === 'object' && !Array.isArray(body)
@@ -56,7 +61,7 @@ function keysAreBound(candidate: Awaited<ReturnType<SalesPhotoEvidenceExpiration
 export function createSalesPhotoEvidenceExpirationRouteHandlers(
   deps: SalesPhotoEvidenceExpirationRouteDeps
 ) {
-  async function getInternal(request: Request): Promise<Response> {
+  async function getInternal(request: Request, startedAt: number): Promise<Response> {
     if (!deps.isEnabled()) {
       return jsonResponse({
         ok: false,
@@ -75,6 +80,14 @@ export function createSalesPhotoEvidenceExpirationRouteHandlers(
     const repository = await deps.createRepository();
     const adapter = await deps.createR2DeleteAdapter();
     if (!repository || !adapter) {
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.expiration.run',
+        outcome: 'failure',
+        code: 'expiration_dependencies_unavailable',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+      });
       return jsonResponse({
         ok: false,
         code: 'expiration_dependencies_unavailable',
@@ -85,14 +98,13 @@ export function createSalesPhotoEvidenceExpirationRouteHandlers(
     const candidates = await repository.listExpired(CLEANUP_LIMIT);
     let expiredCount = 0;
     let failedCount = 0;
+    let invalidBindingCount = 0;
 
     for (const candidate of candidates) {
       try {
         if (!keysAreBound(candidate)) {
           failedCount += 1;
-          console.error('sales photo evidence expiration rejected invalid object binding', {
-            evidenceId: candidate.id,
-          });
+          invalidBindingCount += 1;
           continue;
         }
 
@@ -109,16 +121,26 @@ export function createSalesPhotoEvidenceExpirationRouteHandlers(
 
         await repository.finalizeExpiration(candidate);
         expiredCount += 1;
-      } catch (error) {
+      } catch {
         failedCount += 1;
-        console.error('sales photo evidence expiration item failed', {
-          evidenceId: candidate.id,
-          name: error instanceof Error ? error.name : 'UnknownError',
-        });
       }
     }
 
     if (failedCount > 0) {
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.expiration.run',
+        outcome: 'partial',
+        code: 'expiration_cleanup_incomplete',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        metrics: {
+          scannedCount: candidates.length,
+          completedCount: expiredCount,
+          failedCount,
+          invalidBindingCount,
+        },
+      });
       return jsonResponse({
         ok: false,
         code: 'expiration_cleanup_incomplete',
@@ -127,6 +149,20 @@ export function createSalesPhotoEvidenceExpirationRouteHandlers(
       }, 503);
     }
 
+    recordServerOperationalEvent({
+      level: 'info',
+      event: 'media.sales_photo.expiration.run',
+      outcome: 'success',
+      code: 'expiration_cleanup_completed',
+      route: OPERATIONAL_ROUTE,
+      durationMs: Date.now() - startedAt,
+      metrics: {
+        scannedCount: candidates.length,
+        completedCount: expiredCount,
+        failedCount,
+        invalidBindingCount,
+      },
+    });
     return jsonResponse({
       ok: true,
       scannedCount: candidates.length,
@@ -135,11 +171,18 @@ export function createSalesPhotoEvidenceExpirationRouteHandlers(
   }
 
   async function get(request: Request): Promise<Response> {
+    const startedAt = Date.now();
     try {
-      return await getInternal(request);
+      return await getInternal(request, startedAt);
     } catch (error) {
-      console.error('sales photo evidence expiration route failed', {
-        name: error instanceof Error ? error.name : 'UnknownError',
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.expiration.run',
+        outcome: 'failure',
+        code: 'expiration_route_unavailable',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        errorName: getSafeOperationalErrorName(error),
       });
       return jsonResponse({
         ok: false,

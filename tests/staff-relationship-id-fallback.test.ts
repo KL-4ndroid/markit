@@ -79,7 +79,11 @@ runTest('fallback query is owner-scoped and only runs for missing ids', () => {
 });
 
 runTest('staff role button still requires a resolved relationship id', () => {
-  assert.match(staffManagementSource, /disabled=\{staff\.status !== 'active' \|\| !staff\.relationship_id\}/);
+  assert.match(
+    staffManagementSource,
+    /disabled=\{staff\.status !== 'active' \|\| !staff\.relationship_id \|\| !canChangeStaffRole\}/,
+  );
+  assert.match(staffManagementSource, /const canChangeStaffRole = managerWorkflowAllowed && !simulationActive/);
   assert.match(staffManagementSource, /updateStaffRole\(editingStaff\.relationship_id, selectedRole\)/);
 });
 

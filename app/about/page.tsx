@@ -53,8 +53,8 @@ export default function AboutPage() {
               <li className="flex items-start gap-3">
                 <span className="text-2xl">🔒</span>
                 <div>
-                  <h3 className="font-semibold text-foreground">本機儲存</h3>
-                  <p className="text-muted-foreground text-sm">資料保存在此裝置，登入後可同步到雲端備份</p>
+                  <h3 className="font-semibold text-foreground">離線暫存</h3>
+                  <p className="text-muted-foreground text-sm">雲端是登入帳號的主要可信來源，裝置端支援離線操作與快速存取</p>
                 </div>
               </li>
             </ul>

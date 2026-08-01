@@ -28,6 +28,20 @@ function getGitCommitSha() {
 }
 
 const appCommitSha = getGitCommitSha();
+const webContentSecurityPolicy = [
+  "base-uri 'self'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+].join('; ');
+const webSecurityHeaders = [
+  { key: 'Content-Security-Policy', value: webContentSecurityPolicy },
+  { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Strict-Transport-Security', value: 'max-age=31536000' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-XSS-Protection', value: '0' },
+];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -79,6 +93,10 @@ const nextConfig = {
         },
         async headers() {
           return [
+            {
+              source: '/:path*',
+              headers: webSecurityHeaders,
+            },
             {
               source: '/sw.js',
               headers: [

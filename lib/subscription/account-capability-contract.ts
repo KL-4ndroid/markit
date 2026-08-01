@@ -5,6 +5,7 @@ export const ACCOUNT_CAPABILITY_READ_STATUSES = [
   'explicit_free',
   'admin_enabled',
   'admin_inactive',
+  'simulation_enabled',
   'billing_not_connected',
   'promotion_not_connected',
 ] as const;

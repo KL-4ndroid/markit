@@ -2,17 +2,20 @@
 
 import dynamic from 'next/dynamic';
 import { LogOut, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { OwnerInfoCard } from '@/components/staff/OwnerInfoCard';
 import { StaffPermissionCard } from '@/components/staff/StaffPermissionCard';
+import { UpgradePrompt } from '@/components/subscription/UpgradePrompt';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StateView } from '@/components/ui/StateView';
+import { useAccountCapabilities } from '@/hooks/useAccountCapabilities';
 import { useRoleContext } from '@/lib/role-context';
 import { clearLocalAppData } from '@/lib/settings/clear-local-app-data';
+import { evaluateAccountCapabilityClientAccess } from '@/lib/subscription/account-capability-access';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 
@@ -29,9 +32,58 @@ const StaffManagement = dynamic(
 );
 
 export default function TeamSettingsPage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { userRole, isStaff, isLoading } = useRoleContext();
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+  const ownerId = !isLoading && !isStaff ? user?.id : undefined;
+  const capabilityQuery = useAccountCapabilities({
+    accessToken: session?.access_token,
+    enabled: Boolean(ownerId),
+  });
+  const staffCollaborationAccess = useMemo(() => evaluateAccountCapabilityClientAccess({
+    capabilityResult: capabilityQuery.result,
+    authenticated: Boolean(user && session?.access_token),
+    ownerWorkspaceAvailable: Boolean(ownerId),
+    workspaceOwnerId: ownerId,
+    requestedOwnerId: ownerId,
+    actorRole: 'owner',
+    rolePermission: true,
+    feature: 'staffCollaboration',
+    operation: 'execute',
+    runtimeEnabled: true,
+    dataReady: true,
+    nowMs: Date.now(),
+    network: capabilityQuery.network,
+  }), [
+    capabilityQuery.network,
+    capabilityQuery.result,
+    ownerId,
+    session?.access_token,
+    user,
+  ]);
+  const managerWorkflowAccess = useMemo(() => evaluateAccountCapabilityClientAccess({
+    capabilityResult: capabilityQuery.result,
+    authenticated: Boolean(user && session?.access_token),
+    ownerWorkspaceAvailable: Boolean(ownerId),
+    workspaceOwnerId: ownerId,
+    requestedOwnerId: ownerId,
+    actorRole: 'owner',
+    rolePermission: true,
+    feature: 'managerWorkflow',
+    operation: 'execute',
+    runtimeEnabled: true,
+    dataReady: true,
+    nowMs: Date.now(),
+    network: capabilityQuery.network,
+  }), [
+    capabilityQuery.network,
+    capabilityQuery.result,
+    ownerId,
+    session?.access_token,
+    user,
+  ]);
+  const simulationActive = capabilityQuery.result?.ok === true
+    && capabilityQuery.result.status === 'simulation_enabled';
 
   const confirmLeaveTeam = async () => {
     if (!user || !userRole.ownerId) return;
@@ -90,7 +142,26 @@ export default function TeamSettingsPage() {
           </section>
         </div>
       ) : (
-        <StaffManagement />
+        <div className="space-y-4">
+          {!capabilityQuery.isLoading && !staffCollaborationAccess.allowed && (
+            <UpgradePrompt
+              reason={staffCollaborationAccess.reason}
+              requiredPlan={staffCollaborationAccess.requiredPlan ?? 'team'}
+              showClose={false}
+              onRetry={capabilityQuery.refresh}
+            />
+          )}
+          {simulationActive && (
+            <div className="border-y border-atelier-line bg-atelier-paper px-4 py-3 text-sm leading-6 text-muted-foreground">
+              目前為本機訂閱模擬。可檢查 Team 控制項是否正確顯示，但所有團隊資料寫入仍由伺服器拒絕，不會修改雲端資料。
+            </div>
+          )}
+          <StaffManagement
+            teamFeatureAllowed={staffCollaborationAccess.allowed}
+            managerWorkflowAllowed={managerWorkflowAccess.allowed}
+            simulationActive={simulationActive}
+          />
+        </div>
       )}
 
       <ConfirmDialog

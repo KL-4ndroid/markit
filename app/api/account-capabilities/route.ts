@@ -24,6 +24,7 @@ export type AccountCapabilityRouteDeps = {
   resolveCapabilities(input: {
     actorId: string;
     ownerId: string;
+    request: Request;
   }): Promise<ServerAccountCapabilityResolution>;
 };
 
@@ -53,6 +54,7 @@ export function createAccountCapabilityRouteHandlers(deps: AccountCapabilityRout
       const resolution = await deps.resolveCapabilities({
         actorId: actor.actorId,
         ownerId: actor.actorId,
+        request,
       });
       if (resolution.outcome === 'forbidden') {
         return errorResponse(403, 'owner_workspace_forbidden', 'The requested owner workspace is not available.');
@@ -75,7 +77,17 @@ async function resolveActor(request: Request): Promise<CapabilityRouteActor | 'u
 async function resolveCapabilities(input: {
   actorId: string;
   ownerId: string;
+  request: Request;
 }): Promise<ServerAccountCapabilityResolution> {
+  const { resolveSubscriptionSimulationForRequest } = await import(
+    '@/lib/subscription/subscription-simulation.server'
+  );
+  const simulated = resolveSubscriptionSimulationForRequest({
+    ...input,
+    nowMs: Date.now(),
+  });
+  if (simulated) return simulated;
+
   const { createAccountCapabilityRepository } = await import(
     '@/lib/subscription/account-capability-storage.server'
   );

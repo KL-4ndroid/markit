@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 
 import {
+  createHealthReleaseIdentity,
   GET,
   OPTIONS,
   maxDuration,
   runtime,
 } from '../app/api/health/route';
+import { APP_METADATA } from '../lib/app-metadata';
 
 type TestFn = () => void | Promise<void>;
 
@@ -57,7 +59,11 @@ runTest('returns only a no-store, non-secret health payload', async () => {
       assert.equal(response.headers.get('Cache-Control'), 'no-store');
       assert.equal(response.headers.get('Access-Control-Allow-Origin'), 'https://app.example.test');
       assert.equal(response.headers.get('Vary'), 'Origin');
-      assert.deepEqual(JSON.parse(rawBody), { ok: true, status: 'healthy' });
+      assert.deepEqual(JSON.parse(rawBody), {
+        ok: true,
+        status: 'healthy',
+        release: createHealthReleaseIdentity(APP_METADATA),
+      });
       assert.equal(rawBody.includes(secretSentinel), false);
     } finally {
       if (originalSecret === undefined) {
@@ -67,6 +73,33 @@ runTest('returns only a no-store, non-secret health payload', async () => {
       }
     }
   });
+});
+
+runTest('bounds and normalizes public release identity fields', () => {
+  assert.deepEqual(
+    createHealthReleaseIdentity({
+      version: ' 1.2.3 ',
+      commitSha: ' ABCDEF1 ',
+      buildTime: '2026-07-30T12:34:56+08:00',
+    }),
+    {
+      version: '1.2.3',
+      commitSha: 'abcdef1',
+      buildTime: '2026-07-30T04:34:56.000Z',
+    },
+  );
+  assert.deepEqual(
+    createHealthReleaseIdentity({
+      version: 'x'.repeat(65),
+      commitSha: 'not-a-sha',
+      buildTime: 'not-a-date',
+    }),
+    {
+      version: 'unknown',
+      commitSha: 'unknown',
+      buildTime: null,
+    },
+  );
 });
 
 runTest('serves an exact Capacitor preflight without credentials wildcard', async () => {

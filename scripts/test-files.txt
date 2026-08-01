@@ -130,6 +130,7 @@ tsx tests/sales-photo-evidence-owner-album.test.ts
 tsx tests/sales-photo-evidence-owner-image-read.test.ts
 tsx tests/sales-photo-evidence-owner-delete.test.ts
 tsx tests/sales-photo-evidence-expiration.test.ts
+tsx tests/server-operational-observability.test.ts
 tsx tests/supabase-sales-photo-evidence-owner-delete-migration.test.ts
 tsx tests/sales-photo-evidence-api-cors-integration.test.ts
 tsx tests/sales-photo-evidence-post-sale.test.ts
@@ -184,9 +185,15 @@ tsx tests/settings-navigation.test.ts
 tsx tests/settings-information-architecture.test.ts
 tsx tests/subscription-capability-presentation.test.ts
 tsx tests/subscription-plan-model.test.ts
+tsx tests/subscription-pricing.test.ts
+tsx tests/subscription-billing-data-security-design.test.ts
+tsx tests/subscription-price-catalog-foundation.test.ts
 tsx tests/subscription-feature-gates.test.ts
 tsx tests/subscription-feature-gate-mapping.test.ts
+tsx tests/subscription-strategic-growth-data-reserve.test.ts
+tsx tests/subscription-billing-provider-decision.test.ts
 tsx tests/subscription-account-capability-api.test.ts
+tsx tests/subscription-simulation.test.ts
 tsx tests/analytics-subscription-access.test.ts
 tsx tests/advanced-analytics-subscription-access.test.ts
 tsx tests/analytics-free-preview.test.ts
@@ -243,3 +250,12 @@ tsx tests/app-api-health-route.test.ts
 tsx tests/mobile-runtime-smoke-boundary.test.ts
 tsx tests/app-startup-resilience.test.ts
 tsx tests/product-cover-photo.test.ts
+tsx tests/team-subscription-enforcement.test.ts
+tsx tests/web-launch-ci.test.ts
+tsx tests/web-production-config.test.ts
+tsx tests/public-legal-support.test.ts
+tsx tests/web-public-legal-smoke.test.ts
+tsx tests/web-production-surface-boundary.test.ts
+tsx tests/web-deployment-release-identity.test.ts
+tsx tests/web-security-headers.test.ts
+tsx tests/web-pwa-release-smoke.test.ts

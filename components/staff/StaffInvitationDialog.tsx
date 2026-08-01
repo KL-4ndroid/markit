@@ -25,6 +25,7 @@ import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { type CoordinatedOverlayProps } from '@/components/global-overlays/overlay-types';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { acceptInvitation, declineInvitation } from '@/lib/supabase/staff';
 
 interface PendingInvitation {
   id: string;
@@ -105,53 +106,7 @@ export function StaffInvitationDialog({
     try {
       toast.loading('正在接受邀請...', { id: 'accept-invitation' });
 
-      const { error: updateError } = await supabase
-        .from('staff_relationships')
-        .update({
-          status: 'active',
-          accepted_at: new Date().toISOString(),
-        })
-        .eq('id', invitation.id)
-        .eq('staff_id', user.id);
-
-      if (updateError) throw updateError;
-
-      const { data: ownerMarkets, error: ownerMarketsError } = await supabase
-        .from('markets')
-        .select('id')
-        .eq('owner_id', invitation.owner_id)
-        .in('status', ['ongoing', 'registered', 'accepted', 'paid']);
-
-      if (ownerMarketsError) throw ownerMarketsError;
-
-      const marketIds = ownerMarkets?.map(market => market.id) || [];
-      if (marketIds.length > 0) {
-        const { data: existingMembers, error: existingMembersError } = await supabase
-          .from('market_members')
-          .select('market_id')
-          .eq('user_id', user.id)
-          .in('market_id', marketIds);
-
-        if (existingMembersError) throw existingMembersError;
-
-        const existingMarketIds = new Set((existingMembers || []).map(member => member.market_id));
-        const memberRecords = marketIds
-          .filter(marketId => !existingMarketIds.has(marketId))
-          .map(marketId => ({
-            market_id: marketId,
-            user_id: user.id,
-            role: 'staff',
-            joined_at: new Date().toISOString(),
-          }));
-
-        if (memberRecords.length > 0) {
-          const { error: membersError } = await supabase
-            .from('market_members')
-            .insert(memberRecords);
-
-          if (membersError) throw membersError;
-        }
-      }
+      await acceptInvitation(invitation.id);
 
       const { clearAllData } = await import('@/lib/db');
       const { resetInitialSyncFlag } = await import('@/hooks/useSync');
@@ -182,14 +137,7 @@ export function StaffInvitationDialog({
     try {
       toast.loading('正在處理...', { id: 'reject-invitation' });
 
-      // ✅ 直接刪除記錄（而不是更新 status 為 revoked）
-      // 這樣老闆可以再次邀請同一個員工
-      const { error } = await supabase
-        .from('staff_relationships')
-        .delete()
-        .eq('id', invitation.id);
-
-      if (error) throw error;
+      await declineInvitation(invitation.id);
 
       toast.success('✅ 已拒絕邀請', { id: 'reject-invitation' });
 

@@ -12,17 +12,21 @@ import { BottomNavigation } from '@/components/BottomNavigation';
 import { GlobalOverlayHost } from '@/components/global-overlays/GlobalOverlayHost';
 import { PWASplashScreen } from '@/components/PWASplashScreen';
 import { RegisterServiceWorker } from '@/app/register-sw';
+import {
+  AUTH_FLOW_PUBLIC_ROUTES,
+  isPathWithinAnyRoute,
+  STANDALONE_PUBLIC_ROUTES,
+} from '@/lib/navigation/public-route';
 
 const ThemeLabGate = dynamic(
   () => import('@/components/dev/ThemeLabGate').then((module) => module.ThemeLabGate),
   { ssr: false },
 );
 
-const STANDALONE_PUBLIC_ROUTES = [
-  '/demo',
+const RUNTIME_STANDALONE_PUBLIC_ROUTES = [
+  ...STANDALONE_PUBLIC_ROUTES,
   ...(process.env.NEXT_PUBLIC_APP_RUNTIME_SMOKE === '1' ? ['/mobile-runtime-smoke'] : []),
 ];
-const AUTH_FLOW_PUBLIC_ROUTES = ['/join'];
 
 function AppToaster() {
   return (
@@ -43,13 +47,14 @@ function AppToaster() {
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isStandalonePublicRoute = STANDALONE_PUBLIC_ROUTES.some(route => pathname?.startsWith(route));
-  const isAuthFlowPublicRoute = AUTH_FLOW_PUBLIC_ROUTES.some(route => pathname?.startsWith(route));
+  const isStandalonePublicRoute = isPathWithinAnyRoute(pathname, RUNTIME_STANDALONE_PUBLIC_ROUTES);
+  const isAuthFlowPublicRoute = isPathWithinAnyRoute(pathname, AUTH_FLOW_PUBLIC_ROUTES);
 
   if (isStandalonePublicRoute) {
     return (
       <>
         <main className="japanese-app">{children}</main>
+        <RegisterServiceWorker />
         <AppToaster />
         <ThemeLabGate />
       </>
@@ -64,6 +69,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
         <AuthManager />
         <SessionExpiredHandler />
         <AuthCacheBlockedDialog />
+        <RegisterServiceWorker />
         <ThemeLabGate />
       </>
     );
@@ -80,7 +86,6 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
             </main>
             <BottomNavigation />
             <GlobalOverlayHost />
-            <RegisterServiceWorker />
             <AppToaster />
           </div>
         </RoleGuard>
@@ -88,6 +93,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <AuthManager />
       <SessionExpiredHandler />
       <AuthCacheBlockedDialog />
+      <RegisterServiceWorker />
       <ThemeLabGate />
     </>
   );

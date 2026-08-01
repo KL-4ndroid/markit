@@ -18,8 +18,10 @@ import {
   type MarketListStage,
   type MarketListViewItem,
 } from '@/lib/markets/market-list-view-model';
+import { isEntityCreateDeepLink } from '@/lib/navigation/entity-create-deep-link';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
+import { getDeepLinkPort } from '@/lib/platform/interaction-capabilities';
 import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { getGradientClass } from '@/lib/theme-config';
@@ -135,6 +137,7 @@ export default function MarketsPage() {
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [now, setNow] = useState(() => new Date());
   const activeViewRef = useRef<MarketListStage>('active');
+  const shortcutHandledRef = useRef(false);
 
   useEffect(() => {
     if (!isRoleReady || !currentOwnerId) {
@@ -220,6 +223,22 @@ export default function MarketsPage() {
     setIsFormOpen(false);
     showNavigation();
   };
+
+  useEffect(() => {
+    if (shortcutHandledRef.current || !isRoleReady || dbStatus === null) return;
+
+    let active = true;
+    void getDeepLinkPort().getInitialUrl().then(url => {
+      if (!active || shortcutHandledRef.current || !isEntityCreateDeepLink(url, '/markets')) return;
+      shortcutHandledRef.current = true;
+      router.replace('/markets');
+      if (isStaffMode || !canLoadScopedData || dbStatus.ok === false) return;
+      setIsFormOpen(true);
+      hideNavigation();
+    }).catch(() => undefined);
+
+    return () => { active = false; };
+  }, [canLoadScopedData, dbStatus, isRoleReady, isStaffMode, router]);
 
   if (!canLoadScopedData || dbStatus === null) return <MarketsLoading />;
 

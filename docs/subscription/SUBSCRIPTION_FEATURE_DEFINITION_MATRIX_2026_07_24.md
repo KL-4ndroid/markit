@@ -4,7 +4,7 @@ Date: 2026-07-24
 
 Last updated: 2026-07-29
 
-Status: canonical product and AI implementation contract for subscription capability definitions. This document approves only the current owner-only Pro/Team client-generated PDF gate. It does not approve billing, referral attribution, reward grants, production uploads, Excel generation, custom download UI, role changes, RLS changes, or marketplace behavior.
+Status: canonical product and AI implementation contract for subscription capability definitions. This document approves the current owner-only Pro/Team client-generated PDF gate and records the separately reviewed local F3A non-billable foundation. It does not approve billing runtime, referral attribution, reward grants, production uploads, Excel generation, custom download UI, role changes, additional RLS changes, or marketplace behavior.
 
 Authority order:
 
@@ -262,7 +262,8 @@ Founder pricing rules:
 - the founder price does not stack with referral paid credit, another percentage discount, or checkout promotion without a separately approved precedence policy;
 - Pro-to-Team uses the current Team price version and never applies the Pro founder percentage to Team;
 - unused Pro value is based on the actual paid amount, including founder pricing, and the provider owns the final credit, refund, charge, effective time, and renewal date;
-- if a provider exposes no exact pre-purchase proration quote, unavailable money or date fields remain `null` and the provider-owned confirmation sheet is authoritative;
+- if a provider exposes no exact pre-purchase proration quote, an approved server-signed quote may calculate exact values only from provider-confirmed transaction inputs, UTC boundaries, integer minor units, approved rounding, expiry, and single-use semantics;
+- when neither a provider quote, server-signed quote, nor provider confirmation can establish an exact value, unavailable money or date fields remain `null` and the flow is support-required;
 - Team access begins only after the provider confirms the immediate upgrade transaction;
 - Team-to-Pro defaults to the renewal boundary and restores the dormant founder amount only when paid continuity was never broken;
 - cancelling Team without a replacement forfeits the dormant founder lock when Team paid entitlement actually lapses, not when cancellation is first scheduled;
@@ -278,6 +279,21 @@ Internal candidate public price versions:
 | V3 | NT$299 | NT$2,990 | NT$799 | NT$7,990 | blocked_pending_commercial_approval |
 
 V2 and V3 are internal hypotheses, not scheduled price changes. Each requires explicit approval after the matching product-value, retention, support, storage, and Team-operation evidence is reviewed.
+
+F1 implementation status as of 2026-07-30:
+
+- `lib/subscription/subscription-pricing.ts` contains only platform-neutral candidate catalog and decision resolvers;
+- `tests/subscription-pricing.test.ts` is the canonical F1 guardrail;
+- no catalog entry is billable or effective, and no resolver persists an assignment, signs a quote, calls a provider, or grants entitlement;
+- runtime enforcement in the matrix remains unchanged: acquisition, renewal, upgrade, downgrade, restoration, and forfeiture still require future server and provider slices.
+
+F3-design status as of 2026-07-30:
+
+- `BILLING_DATA_SECURITY_DESIGN.md` defines private logical billing records, projection boundaries, RLS / service-role controls, idempotency, retention, support, and migration slices;
+- `billing-provider-contract.ts` defines only provider-neutral notification verification and authoritative read snapshots;
+- local migration `066_add_subscription_price_catalog_foundation.sql` defines private candidate price versions, empty storefront mappings, and empty price assignments; it is not applied to Supabase and cannot bill or grant entitlement;
+- `subscription_accounts` remains the narrow capability projection and receives no raw provider payload, customer identity, transaction amount, quote, or payment method data;
+- no F3B-F3E migration, writer, callback route, provider network implementation, checkout, refund, cancellation, or entitlement mutation is approved or present.
 
 ## 10. Referral Reward Matrix
 
@@ -360,6 +376,12 @@ Team downgrade retains staff relationships and history but suspends owner-worksp
 
 ## 13. Strategic Capabilities And Consent
 
+S7 canonical design: `docs/subscription/STRATEGIC_GROWTH_DATA_RESERVE_DESIGN.md`.
+It defines logical records rather than a runtime schema. The reserved records are
+`brand_profile`, `product_commerce_profile`, `market_context`,
+`collaboration_readiness_snapshot`, `public_partner_snapshot`, and
+`benchmark_opt_in`.
+
 ```ts
 type StrategicCapabilityCode =
   | 'collaboration_readiness'
@@ -373,6 +395,9 @@ type StrategicCapabilityCode =
 - Anonymous benchmark participation requires explicit opt-in and a separate consent record.
 - Consent is not an entitlement and cannot default to opt-out participation.
 - Owner-private cost, profit, supplier notes, staff activity, and private market details never become public merely because a capability exists.
+- A public partner snapshot is a detached, allowlisted publication copy, not a live view into owner-private source data.
+- Partner publication and anonymous benchmark consent are separate, purpose-specific, revocable owner actions.
+- All strategic capabilities remain `model_only`; S7 adds no schema, route, partner exposure, marketplace, or matching runtime.
 
 ## 14. AI Rules
 
@@ -381,8 +406,9 @@ type StrategicCapabilityCode =
 - Presentation locks are not security gates.
 - Role permission, plan capability, runtime readiness, data readiness, and consent stay separate.
 - Referral planning does not authorize attribution, reward grants, Pro Pass activation, billing credit, schema, RLS, contact import, or affiliate payouts.
-- Founder-price planning does not authorize provider prices, discounts, offer codes, checkout, eligibility assignment, price-lock tables, webhooks, or billing mutations.
+- Founder-price planning and local F3A tables do not authorize active provider prices, discounts, checkout, eligibility assignment, webhooks, or billing mutations.
 - A current public price must never overwrite a stored founder price assignment.
 - A Pro founder assignment cannot discount Team. A plan-change quote must use actual-paid Pro value and the current Team price version.
 - Client arithmetic cannot be the source of a final plan-change charge, credit, refund, effective time, or renewal date.
 - Update this matrix and focused tests whenever a subscription, pricing, or referral feature boundary changes.
+- Local subscription simulation is validation infrastructure, not an entitlement, plan source, billing state, or deployment fixture. It must obey `docs/subscription/LOCAL_SUBSCRIPTION_SIMULATION.md` and never authorize a paid server write.

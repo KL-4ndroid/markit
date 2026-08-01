@@ -140,7 +140,9 @@ export function parseAccountCapabilityApiSuccess(value: unknown): AccountCapabil
   if (!recordsEqual(capabilities.features, rawFeatures) || !recordsEqual(capabilities.limits, rawLimits)) {
     return null;
   }
-  const adminStatus = value.status === 'admin_enabled' || value.status === 'admin_inactive';
+  const adminStatus = value.status === 'admin_enabled'
+    || value.status === 'admin_inactive'
+    || value.status === 'simulation_enabled';
   if (adminStatus !== (capabilities.planSource === 'admin')) return null;
   if (!adminStatus && (capabilities.planCode !== 'free' || capabilities.planSource !== 'free')) return null;
 

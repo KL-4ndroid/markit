@@ -1,7 +1,7 @@
 # Subscription Feature-Gate Registry
 
-Date: 2026-07-29  
-Status: S3 mapping and S6A-S6D analytics/report/PDF tier gates complete locally; deployment evidence remains pending
+Date: 2026-07-30
+Status: S3 mapping, S6A-S6E analytics/report/PDF/Team tier gates, and LV1 local simulation harness complete locally; S7 strategic reserve design complete as planning only; Team migrations 064/065 and live structural smoke pass, while authenticated transition and deployment evidence remain pending
 Authority: derived from current repository inspection; it records runtime truth and does not activate a product-plan decision
 
 ## Status Vocabulary
@@ -10,6 +10,7 @@ Authority: derived from current repository inspection; it records runtime truth 
 - `active_role_gated`: available today through role/data rules, not plan rules;
 - `gated_non_plan`: controlled by rollout, environment, permission, or feature-specific gates;
 - `local_complete_production_unverified`: implemented locally without complete production evidence;
+- `live_structural_smoke_complete`: migrations and non-destructive live structural/permission probes pass, but authenticated state-transition evidence is incomplete;
 - `presentation_only`: visible but non-transactional;
 - `model_only`: no runtime capability;
 - `not_implemented`: no usable runtime capability;
@@ -23,6 +24,7 @@ Risk is assessed against a future paid launch, not against current free operatio
 | --- | --- | --- | --- | --- | --- | --- |
 | `subscription.account.current_plan` | analytics and settlement report gates; neutral account preview | S4 authenticated client reader mounted on protected analytics/report surfaces | `GET /api/account-capabilities`, server resolver, guarded subscription account source | `local_complete_migration_user_confirmed` | medium: deployment evidence and explicit paid-state UI smoke remain | keep production unverified; no user mutation route |
 | `subscription.plan.preview` | `/subscription`, `PricingCard` | static presentation | none; actions disabled | `presentation_only` | medium: `enterprise` drift | S1A/S2 use Free/Pro/Team source |
+| `subscription.local_simulation` | owner-only `/subscription` local test panel | authenticated, loopback-only, four-hour in-memory state | private server flag, loopback request, bearer auth; never accepted by paid write routes | `gated_non_plan` | critical if enabled outside local validation | authenticated Free/Pro/Team UI smoke passed; keep deployment flag absent |
 | `market.create` / `market.manage` | market list/forms | local events plus sync | auth/role/sync policies, no plan | `active_unmetered` | low; intended Free core | keep unchanged |
 | `sale.record.fast` / `sale.manual_total` | sales workspace and market detail | local event workflow plus sync | auth/role/sync policies, no plan | `active_unmetered` | low; intended Free core | keep unchanged |
 | `cost.record.basic` | market forms/detail | local events/projections | auth/role policies, no plan | `active_unmetered` | low; intended Free core | keep unchanged |
@@ -42,13 +44,15 @@ Risk is assessed against a future paid launch, not against current free operatio
 | `photo.product_cover.delete` | product cover field | private BFF delete | auth/editor role and delete/read env gates; no paid requirement | `gated_non_plan` | low; retained delete is intended | keep unchanged |
 | `photo.sales_evidence.upload` | post-sale/pending flow | local pending payload plus BFF upload | runtime double opt-in, auth, relationship, route gates, RLS/RPC, R2 | `gated_non_plan` | high: no Team plan gate and staging result pending | S1 model only; S3/S5 later |
 | `photo.sales_evidence.owner_read_delete` | owner album | metadata reader/private image/delete routes | owner scope, route gates, RLS/RPC | `gated_non_plan` | medium: retention/delete must survive downgrade | model retention only; no runtime change |
-| `team.staff_collaboration` | team settings, invitations, staff mode | Supabase relationships and shared local-first flows | auth, relationship status, role capabilities, RLS/RPC; no plan | `active_role_gated` | high: planned Team feature is open | S1 model only; S3 audit |
-| `team.manager_workflow` | team settings and manager surfaces | role-capability matrix | auth, active relationship, role/RLS/RPC; no plan | `active_role_gated` | high: planned Team feature is open | S1 model only; S3 audit |
+| `team.staff_collaboration` | team settings, invitations, staff mode | Supabase relationships and shared local-first flows | S6E UI capability intersection plus live migration 064 authoritative Team RPC/RLS and suspension contract; migration 065 fixes invitation verification typing | `live_structural_smoke_complete` | high until authenticated Free/Pro/Team transition and restore smoke pass | create an approved isolated owner/staff fixture, then run state-transition smoke |
+| `team.manager_workflow` | team settings and manager surfaces | role-capability matrix | S6E owner capability intersection plus live migration 064 Team-required role RPC | `live_structural_smoke_complete` | high until authenticated role mutation, downgrade, and role-cache cleanup pass | preserve role capability intersection and prove Free/Pro denial with approved accounts |
 | `team.owner_financial_report` | analytics/report surfaces | local owner-scoped models | owner financial role; no plan | `active_role_gated` | low: owner-only remains independent of tier | preserve role-first behavior |
 | `promotion.referral.share` | none | none | none | `not_implemented` | low | P0/P1/P2 only after approval |
 | `promotion.pro_pass.grant` | none | none | none | `not_implemented` | high if client-created | remain blocked |
 | `founder.pro_annual_lock` | none | none | none | `model_only` | critical if implemented without server/provider | remain blocked through F0 only |
-| `strategic.collaboration_readiness` | none | none | none | `model_only` | medium consent/privacy risk | Growth Reserve, not a tier |
+| `strategic.collaboration_readiness` | none | documentation-only logical records | none | `model_only` | medium consent/privacy risk | follow the S7 private derived-snapshot contract; Growth Reserve is not a tier |
+| `strategic.public_partner_snapshot` | none | documentation-only detached publication contract | none | `model_only` | high privacy/publication risk | require a separately approved owner preview, explicit publish/withdraw, allowlist serializer, RLS, and abuse-control slice |
+| `strategic.anonymous_benchmark` | none | documentation-only consent and aggregation contract | none | `model_only` | high consent/re-identification risk | require separate explicit opt-in and privacy review; fail closed for small cohorts |
 
 ## S3 Paid-Looking Capability Mapping
 
@@ -69,8 +73,8 @@ This table is the S3 implementation contract. `Plan feature` is the shared produ
 | `report.excel.generate` | `report.excel` | Pro/Team coming soon | no mounted Excel UI | CSV/report helpers only | none | owner financial/export role in helpers | valid report data | `not_implemented`; no subscription or production route | block new generation; retain stored exports if storage is later added |
 | `photo.product_cover.upload` | `photo.product_cover` | Pro/Team included; pre-subscription `open` is explicit | `ProductCoverPhotoField` | Web image adapter plus local pending payload and upload client | auth, active product ownership, owner/manager edit role, upload env gates, quota, and shared server capability before claim and finalize in `required` mode | owner or active manager with product edit permission | active product in the owner workspace and valid image payload | `gated`; S5 aligned locally, `open_access` active, required-mode production evidence incomplete | block upload/replace; retain read and owner-authorized delete |
 | `photo.sales_evidence.upload` | `photo.sales_evidence` | Team included | post-sale pending evidence flow | runtime enqueue gate, local pending payload, manual upload client | auth, owner or active staff relationship, route env gates, claim RPC/RLS, payload policy, and R2 adapter; no shared account capability | owner or active staff allowed by the sales workflow | evidence-required market, trusted sale event, pending payload, retention policy | `gated`; non-plan rollout gates, staging result and production enablement incomplete | block new upload/replace; retain owner read/delete |
-| `team.staff_collaboration` | `team.staff_collaboration` | Team included | team settings, invitations, staff mode | Supabase staff relationships and shared local-first flows | auth, relationship status, role capability, RLS/RPC; no subscription gate | owner manages; staff requires active relationship | active relationship and fresh role state | `active`; role gated, subscription enforcement absent | suspend workspace access; retain relationship and activity history |
-| `team.manager_workflow` | `team.manager_workflow` | Team included | manager role surfaces and permission cards | shared role-capability and event preflight models | auth, active manager relationship, role capability, RLS/RPC; no subscription gate | owner or active manager for each existing allowed action | active relationship, fresh role state, feature-specific data | `active`; role gated, subscription enforcement absent | suspend manager workspace access; retain relationship/history |
+| `team.staff_collaboration` | `team.staff_collaboration` | Team included | team settings, invitations, staff mode | Supabase staff relationships and shared local-first flows | S6E code uses authoritative owner capability; live 064 revokes direct writes, checks Team in mutation RPCs, suspends downgrade access, and keeps cleanup available; live 065 fixes invitation verification typing | owner manages; staff additionally requires active Team-backed relationship | active Team entitlement, relationship, and fresh role state | `live_structural_smoke_complete`; all 22 structural/anonymous checks pass, authenticated transition smoke pending | implemented as `suspended_by_plan`; relationship/history retained and owner explicitly restores |
+| `team.manager_workflow` | `team.manager_workflow` | Team included | manager role surfaces and permission cards | shared role-capability and event preflight models | S6E code intersects manager workflow capability; live 064 requires Team in role mutation and Team-backed active staff reads | owner or active manager for each existing allowed action | active Team entitlement, relationship, fresh role state, feature-specific data | `live_structural_smoke_complete`; authenticated role and transition smoke pending | implemented suspension contract; no automatic role/access restore |
 | `team.owner_financial_report` | role-only; not a plan unlock | owner only in every tier | analytics and settlement report surfaces | local owner-scoped analytics/report models | owner financial/export role checks; no plan gate | owner only | report data and data-completeness rules | `active`; correctly independent from tier | retain owner read; Team never grants staff financial access |
 
 ### S3 Mapping Rules
@@ -112,11 +116,11 @@ The S4 read layer now feeds the S6 analytics/report presentation gates and the S
 
 1. Product-cover local environment and private-R2 read smoke passed; real deployment and authorized upload/read/delete smoke remain incomplete.
 2. Sales-photo staging smoke result is still pending.
-3. S4 migration, local server configuration, live RPC permissions, and authenticated local Free UI smoke passed; authenticated real-deployment and explicit live-state evidence remain incomplete.
+3. S4 migration, local server configuration, live RPC permissions, and authenticated local Free/Pro/Team simulation UI smoke passed; authenticated real-deployment and explicit live-state evidence remain incomplete.
 4. No payment provider or webhook reconciliation exists.
-5. No tested downgrade transition currently suspends Team access or blocks new paid writes.
+5. Migrations 064/065 are live and all 22 structural, cleanup, anonymous-write, protected-RPC, and invitation-verification checks pass. Authenticated simulation confirms Free/Pro/Team UI boundaries, but server-authoritative mutations, downgrade/re-upgrade behavior, explicit restore, and authenticated direct-table privilege evidence remain incomplete because no approved active-staff/paid fixture exists.
 6. No trusted offline entitlement lease has been approved for market-day Team workflows.
-7. S6A and S6B are locally gated, while S6C report enforcement remains pending. Explicit live Pro/Team UI fixtures and authenticated deployment evidence are still absent.
+7. S6A-S6D are locally gated; local simulated Free/Pro/Team UI smoke and PDF action smoke pass. Explicit live paid subscription fixtures and authenticated deployment evidence are still absent.
 8. The mobile static artifact passes, but an API-enabled mobile build still requires the future stable HTTPS staging API base.
 
 These gaps block paid launch but do not block S0B through S2 pure model and presentation work.

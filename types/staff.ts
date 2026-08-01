@@ -13,6 +13,12 @@ export type AccessType = 'owner' | 'staff';
 // owner 不在 StaffRole union，owner capability 由 isOwner boolean 推導。）
 export type StaffRole = 'viewer' | 'operator' | 'manager';
 
+export type StaffRelationshipStatus =
+  | 'pending'
+  | 'active'
+  | 'suspended_by_plan'
+  | 'revoked';
+
 // 員工權限設定
 // 046 起：infoLevel 為選填 runtime 欄位，由 update_staff_role RPC 同步
 //   viewer   → infoLevel=0
@@ -96,7 +102,7 @@ export interface StaffRelationship {
   owner_id: string;           // 老闆的 user_id
   staff_id: string;           // 員工的 user_id
   staff_email: string;        // 員工的 Email
-  status: 'pending' | 'active' | 'revoked';  // 狀態
+  status: StaffRelationshipStatus;  // 狀態
   permissions: StaffPermissions;  // 權限設定
   role?: StaffRole;           // ✅ P5-2：optional；DB 欄位 043 已套用，useUserRole 開始 read-only 讀取（userRole.staffRole 出口）
   invited_at?: string;        // ✅ 邀請時間

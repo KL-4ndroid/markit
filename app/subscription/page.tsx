@@ -4,6 +4,7 @@ import { ArrowLeft, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { PricingCard } from '@/components/subscription/PricingCard';
+import { SubscriptionSimulationPanel } from '@/components/subscription/SubscriptionSimulationPanel';
 import {
   PLAN_PREVIEWS,
   SUBSCRIPTION_PRESENTATION,
@@ -32,6 +33,8 @@ export default function SubscriptionPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-7 sm:px-6">
+        <SubscriptionSimulationPanel />
+
         <section className="flex items-start gap-3 border-y border-atelier-line bg-atelier-paper px-4 py-4 sm:rounded-card sm:border">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <div>

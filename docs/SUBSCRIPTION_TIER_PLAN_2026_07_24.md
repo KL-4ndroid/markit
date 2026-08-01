@@ -288,9 +288,29 @@ Adopted product behavior:
 5. A scheduled Team-to-Pro downgrade takes effect at the next verified renewal boundary. If paid continuity was never broken, annual Pro resumes at the dormant founder amount.
 6. Cancelling all paid service and allowing Team entitlement to lapse forfeits the dormant founder lock. A later Pro purchase uses the then-current public Pro price.
 7. Monthly-to-annual changes may take effect immediately with provider-confirmed credit. Annual-to-monthly changes should default to the next renewal boundary to avoid unnecessary refunds and balance complexity.
-8. The Feria UI or provider-owned confirmation sheet must show every exact charge, credit or refund, effective time, and next renewal date that the provider exposes. If a provider does not expose an exact pre-purchase proration quote, its confirmation sheet and final transaction are authoritative; Feria must not estimate a final payable amount from client time or a local formula.
+8. The Feria UI or provider-owned confirmation sheet must show every exact charge, credit or refund, effective time, and next renewal date that the provider exposes. If a provider has no proration quote, an approved server-side resolver may produce an immutable, expiring, single-use quote only from provider-confirmed paid transaction inputs, UTC boundaries, integer minor units, and an audited rounding rule. If neither exact mode exists, the flow is support-required. Feria client code must never estimate a final payable amount from client time or a local formula.
 
 Provider implementations may differ in whether they refund unused Pro value, charge only a prorated difference, move the renewal date, or preserve it. Those mechanics may differ, but the shared product guarantees remain: immediate Team access after confirmed payment, no loss of unused actual-paid Pro value, no 65% Team discount, and no loss of the dormant founder Pro lock while paid continuity remains unbroken.
+
+### S8 Billing Provider Direction
+
+Planning decision as of 2026-07-30, not approved billing implementation:
+
+- Taiwan Web launch conditionally selects NewebPay recurring payment after merchant review, required API approval, sandbox, fee, refund, invoice, tax, and reconciliation gates pass;
+- ECPay recurring payment is the single fallback if a blocking NewebPay requirement fails;
+- Paddle is not the Taiwan launch provider because its current supported-currency list does not include TWD;
+- Stripe is not selected while an eligible supported-country legal entity and account remain unconfirmed;
+- future iOS purchases use Apple IAP and Android purchases use Google Play Billing; RevenueCat may later aggregate native storefront state but does not replace BoothBook server authorization;
+- Founder acquisition starts on Web. Native storefront acquisition remains closed until each store proves the required cancellation, price-cohort, plan-switch, and dormant-lock behavior in sandbox;
+- one workspace may have only one active paid billing origin. Cross-origin migration is an explicit support flow, not automatic cancel-and-rebuy.
+
+Canonical S8 contracts:
+
+```text
+docs/subscription/BILLING_PROVIDER_DECISION.md
+docs/subscription/BILLING_LIFECYCLE_STATE_MACHINE.md
+docs/subscription/BILLING_TEST_MATRIX.md
+```
 
 ## 8. Team Plan
 
@@ -773,7 +793,7 @@ These require later discussion:
 2. Exact storage quota for product cover photos.
 3. Team staff-seat count after support and role-usage data.
 4. PDF and Excel export limits.
-5. Billing provider and native-store compliance route.
+5. Activation evidence for the conditionally selected NewebPay Web route; native-store implementation remains a later Apple / Google review.
 6. Pro Pass redemption window and rolling reward ceiling after beta abuse data.
 7. Whether to test fixed paid-conversion credit after billing is stable.
 8. Past-due grace and offline entitlement lease duration.
@@ -781,9 +801,9 @@ These require later discussion:
 10. Marketplace commission or partner referral fee structure.
 11. Anonymous benchmark consent and aggregation thresholds.
 12. Founder-offer enrollment end date, eligible-owner cap, or both.
-13. Exact supported storefront amount corresponding to the 65% launch policy.
+13. Final merchant-catalog approval for Web `NT$1,290`; exact Apple / Google storefront amounts remain unresolved until native sandbox.
 14. Whether qualified Pro Pass trials join the founder cohort at billing launch; recommended default is server-marked eligibility without discount stacking.
-15. Provider-specific mapping for immediate Team upgrade, actual-paid Pro credit/refund, renewal date, and dormant-lock restoration.
+15. Sandbox proof for the documented NewebPay exact-quote saga, actual-paid Pro credit/refund, renewal date, and dormant-lock restoration.
 16. Exact evidence thresholds that activate V2 or V3 public price versions.
 
 ## 21. AI Guidance

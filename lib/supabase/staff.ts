@@ -5,7 +5,13 @@
  */
 
 import { supabase } from './client';
-import type { StaffRelationship, StaffInviteForm, StaffPermissions, StaffRole } from '@/types/staff';
+import type {
+  StaffRelationship,
+  StaffInviteForm,
+  StaffPermissions,
+  StaffRelationshipStatus,
+  StaffRole,
+} from '@/types/staff';
 
 /**
  * 員工列表 UI 顯示型別
@@ -14,7 +20,7 @@ import type { StaffRelationship, StaffInviteForm, StaffPermissions, StaffRole } 
 export interface StaffMember {
   id: string;
   email: string;
-  status: 'pending' | 'active' | 'revoked';
+  status: StaffRelationshipStatus;
   permissions: {
     can_view: boolean;
     can_edit: boolean;
@@ -22,6 +28,14 @@ export interface StaffMember {
   role?: StaffRole;
   relationship_id?: string;
   joined_at: string;
+}
+
+function unwrapStaffRelationshipRpc(data: unknown): StaffRelationship {
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || typeof row !== 'object') {
+    throw new Error('伺服器未回傳有效的員工關係資料');
+  }
+  return row as StaffRelationship;
 }
 
 /**
@@ -170,102 +184,29 @@ export async function isStaffOf(ownerId: string): Promise<boolean> {
 /**
  * 邀請員工
  *
- * 邏輯：
- * 1. 查詢用戶是否存在
- * 2. 檢查雙方是否已有 staff_relationships 記錄
- *    - 有 revoked 記錄 → 復原為 pending（重新邀請）
- *    - 有 pending / active 記錄 → 擋住（已是員工）
- * 3. 無記錄 → 新增 pending 記錄
- * 4. 保留 23505 fallback 作為 race condition 最後防線
+ * 寫入由 invite_staff_member RPC 原子處理，並在資料庫驗證 Team entitlement。
+ * revoked 關係可重新邀請；suspended_by_plan 關係必須由擁有者明確恢復。
  *
  * @param inviteData - 邀請數據
  * @returns 創建的員工關係記錄
  */
 export async function inviteStaff(inviteData: StaffInviteForm): Promise<StaffRelationship> {
-  // 0. 獲取當前用戶
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    throw new Error('請先登入');
-  }
-
-  // 1. 查詢用戶是否存在
-  const { data: userData, error: userError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('email', inviteData.staff_email.toLowerCase())
-    .single();
-
-  if (userError || !userData) {
-    throw new Error('找不到此用戶，請確認 Email 是否正確');
-  }
-
-  // 2. 檢查是否已有 staff_relationships 記錄
-  const { data: existing, error: existingError } = await supabase
-    .from('staff_relationships')
-    .select('id, status')
-    .eq('owner_id', user.id)
-    .eq('staff_id', userData.id)
-    .limit(1);
-
-  if (existingError) {
-    console.error('查詢員工關係失敗:', existingError);
-    throw existingError;
-  }
-
-  if (existing && existing.length > 0) {
-    const record = existing[0];
-
-    if (record.status === 'revoked') {
-      // 3a. revoked → 復原為 pending（重新邀請）
-      const { data, error: updateError } = await supabase
-        .from('staff_relationships')
-        .update({
-          status: 'pending',
-          accepted_at: null,
-          staff_email: inviteData.staff_email.toLowerCase(),
-          permissions: inviteData.permissions || { can_view: true, can_edit: false, infoLevel: 0 },
-        })
-        .eq('id', record.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('重新邀請員工失敗:', updateError);
-        throw updateError;
-      }
-
-      return data as StaffRelationship;
-    }
-
-    // 3b. pending / active → 擋住
-    throw new Error('此用戶已經是你的員工');
-  }
-
-  // 4. 無記錄 → 新增 pending 記錄
-  const { data, error } = await supabase
-    .from('staff_relationships')
-    .insert({
-      owner_id: user.id,
-      staff_id: userData.id,
-      staff_email: inviteData.staff_email.toLowerCase(),
-      status: 'pending',
-      permissions: inviteData.permissions || { can_view: true, can_edit: false, infoLevel: 0 },
-    })
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc('invite_staff_member', {
+    p_staff_email: inviteData.staff_email.trim().toLowerCase(),
+  });
 
   if (error) {
     console.error('邀請員工失敗:', error);
-
-    // 5. 23505 fallback — race condition 最後防線
-    if (error.code === '23505') {
+    if (error.code === '23505' || error.message?.includes('already')) {
       throw new Error('此用戶已經是你的員工');
     }
-
+    if (error.code === 'P0002') {
+      throw new Error('找不到此用戶，請確認 Email 是否正確');
+    }
     throw error;
   }
 
-  return data as StaffRelationship;
+  return unwrapStaffRelationshipRpc(data);
 }
 
 /**
@@ -275,23 +216,27 @@ export async function inviteStaff(inviteData: StaffInviteForm): Promise<StaffRel
  * @returns 更新後的員工關係記錄
  */
 export async function acceptInvitation(relationshipId: string): Promise<StaffRelationship> {
-  const { data, error } = await supabase
-    .from('staff_relationships')
-    .update({
-      status: 'active',
-      accepted_at: new Date().toISOString(),
-    })
-    .eq('id', relationshipId)
-    .eq('status', 'pending')  // 只能接受待處理的邀請
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc('accept_staff_email_invitation', {
+    p_relationship_id: relationshipId,
+  });
 
   if (error) {
     console.error('接受邀請失敗:', error);
     throw error;
   }
 
-  return data as StaffRelationship;
+  return unwrapStaffRelationshipRpc(data);
+}
+
+export async function declineInvitation(relationshipId: string): Promise<void> {
+  const { error } = await supabase.rpc('decline_staff_email_invitation', {
+    p_relationship_id: relationshipId,
+  });
+
+  if (error) {
+    console.error('拒絕邀請失敗:', error);
+    throw error;
+  }
 }
 
 /**
@@ -301,82 +246,47 @@ export async function acceptInvitation(relationshipId: string): Promise<StaffRel
  * @returns 更新後的員工關係記錄
  */
 export async function revokeStaff(relationshipId: string): Promise<StaffRelationship> {
-  const { data, error } = await supabase
-    .from('staff_relationships')
-    .update({
-      status: 'revoked',
-    })
-    .eq('id', relationshipId)
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc('revoke_staff_relationship', {
+    p_relationship_id: relationshipId,
+  });
 
   if (error) {
     console.error('撤銷員工權限失敗:', error);
     throw error;
   }
 
-  return data as StaffRelationship;
+  return unwrapStaffRelationshipRpc(data);
 }
 
 /**
  * 移除員工（revoke + 清除 market_members 存取權）
  *
- * 流程：查 staff_relationships → revoke → 刪除 market_members
+ * 流程由 revoke_staff_member RPC 原子處理，降級後仍允許擁有者清理。
  *
  * @param staffId - 員工 user_id
  */
 export async function removeStaff(staffId: string): Promise<void> {
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    throw new Error('請先登入');
+  const { error } = await supabase.rpc('revoke_staff_member', {
+    p_staff_id: staffId,
+  });
+
+  if (error) {
+    console.error('移除員工失敗:', error);
+    throw error;
+  }
+}
+
+export async function restoreStaffRelationship(relationshipId: string): Promise<StaffRelationship> {
+  const { data, error } = await supabase.rpc('restore_staff_relationship', {
+    p_relationship_id: relationshipId,
+  });
+
+  if (error) {
+    console.error('恢復員工關係失敗:', error);
+    throw error;
   }
 
-  const { data: relationships, error: relError } = await supabase
-    .from('staff_relationships')
-    .select('id')
-    .eq('owner_id', user.id)
-    .eq('staff_id', staffId)
-    .in('status', ['pending', 'active'])
-    .limit(1);
-
-  if (relError) {
-    console.error('查詢員工關係失敗:', relError);
-    throw relError;
-  }
-
-  if (!relationships || relationships.length === 0) {
-    throw new Error('找不到此員工關係');
-  }
-
-  await revokeStaff(relationships[0].id);
-
-  const { data: markets, error: marketsError } = await supabase
-    .from('markets')
-    .select('id')
-    .eq('owner_id', user.id);
-
-  if (marketsError) {
-    console.error('查詢市集失敗:', marketsError);
-    throw marketsError;
-  }
-
-  if (!markets || markets.length === 0) {
-    return;
-  }
-
-  const marketIds = markets.map(m => m.id);
-
-  const { error: membersError } = await supabase
-    .from('market_members')
-    .delete()
-    .eq('user_id', staffId)
-    .eq('role', 'staff')
-    .in('market_id', marketIds);
-
-  if (membersError) {
-    console.error('刪除 market_members 失敗:', membersError);
-    throw membersError;
-  }
+  return unwrapStaffRelationshipRpc(data);
 }
 
 /**
@@ -390,33 +300,28 @@ export async function updateStaffPermissions(
   relationshipId: string,
   permissions: StaffPermissions
 ): Promise<StaffRelationship> {
-  const { data, error } = await supabase
-    .from('staff_relationships')
-    .update({
-      permissions,
-    })
-    .eq('id', relationshipId)
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc('update_staff_permissions', {
+    p_relationship_id: relationshipId,
+    p_permissions: permissions,
+  });
 
   if (error) {
     console.error('更新員工權限失敗:', error);
     throw error;
   }
 
-  return data as StaffRelationship;
+  return unwrapStaffRelationshipRpc(data);
 }
 
 /**
- * 刪除員工關係（永久刪除）
+ * 永久刪除已撤銷的員工關係
  * 
  * @param relationshipId - 員工關係 ID
  */
 export async function deleteStaffRelationship(relationshipId: string): Promise<void> {
-  const { error } = await supabase
-    .from('staff_relationships')
-    .delete()
-    .eq('id', relationshipId);
+  const { error } = await supabase.rpc('delete_revoked_staff_relationship', {
+    p_relationship_id: relationshipId,
+  });
 
   if (error) {
     console.error('刪除員工關係失敗:', error);

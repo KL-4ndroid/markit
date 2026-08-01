@@ -167,7 +167,10 @@ Phase 2 server-only mutation cutover:
 
 ### 5. Phase 2 BFF 驗證
 
-- [ ] `GET /api/health` 回 200、`Cache-Control: no-store`
+- [ ] 設定 `WEB_SMOKE_EXPECTED_COMMIT_SHA` 為候選版本的 trusted Git SHA
+- [ ] `GET /api/health` 回 200、`Cache-Control: no-store`，且 version、commit SHA、build time 與候選版本一致
+- [ ] `/api/health` 與頁面回應包含 `WEB_SECURITY_HEADERS.md` 定義的完整 baseline headers
+- [ ] 從不相關 HTTPS origin 嵌入正式頁面會被 CSP／`X-Frame-Options` 阻擋
 - [ ] `capacitor://localhost` 對 upload/image/delete 的 preflight 回 204
 - [ ] 非 allowlist origin 在 auth、Supabase、R2 前回 403
 - [ ] 缺少或無效 Bearer token 回 401，且沒有 stack／secret

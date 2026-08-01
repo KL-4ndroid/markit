@@ -1,12 +1,23 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import Module, { createRequire } from 'node:module';
 import { join } from 'node:path';
 
-import {
+const testRequire = createRequire(import.meta.url);
+const serverOnlyPath = testRequire.resolve('server-only');
+const serverOnlyMarker = new Module(serverOnlyPath);
+serverOnlyMarker.filename = serverOnlyPath;
+serverOnlyMarker.loaded = true;
+serverOnlyMarker.exports = {};
+testRequire.cache[serverOnlyPath] = serverOnlyMarker;
+
+const {
   createSalesPhotoEvidenceExpirationRouteHandlers,
   isSalesPhotoEvidenceExpirationCronAuthorized,
   isSalesPhotoEvidenceExpirationRouteEnabledForEnv,
-} from '../app/api/cron/sales-photo-evidence-expiration/route';
+} = testRequire('../app/api/cron/sales-photo-evidence-expiration/route') as typeof import(
+  '../app/api/cron/sales-photo-evidence-expiration/route'
+);
 import type { SalesPhotoEvidenceR2UploadAdapter } from '../lib/sales/photo-evidence-r2-upload-adapter';
 import type {
   SalesPhotoEvidenceExpirationCandidate,

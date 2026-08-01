@@ -11,6 +11,10 @@ import {
   createAppApiCorsRejectionResponse,
 } from '@/lib/api/server/cors';
 import {
+  getSafeOperationalErrorName,
+  recordServerOperationalEvent,
+} from '@/lib/observability/server-operational-event';
+import {
   isSalesPhotoEvidenceObjectKeyBoundToIdentity,
   isSalesPhotoEvidenceStatus,
 } from '@/lib/sales/photo-evidence-model';
@@ -47,6 +51,8 @@ type SalesPhotoEvidenceImageRouteDeps = {
   createR2ReadAdapter(): Promise<SalesPhotoEvidenceR2ReadAdapter | null>;
   now?: () => Date;
 };
+
+const OPERATIONAL_ROUTE = '/api/sales-photo-evidence/image';
 
 function jsonResponse(body: unknown, status: number): NextResponse {
   const responseBody = (
@@ -89,7 +95,7 @@ function getQuery(request: Request): { evidenceId: string; variant: 'image' | 't
 }
 
 export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvidenceImageRouteDeps) {
-  async function getInternal(request: Request): Promise<Response> {
+  async function getInternal(request: Request, startedAt: number): Promise<Response> {
     if (!deps.isEnabled()) return disabledResponse();
 
     const query = getQuery(request);
@@ -188,6 +194,15 @@ export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvide
 
     const result = await adapter.readObject({ key: contract.contract.objectKey });
     if (!result.ok) {
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.image_read',
+        outcome: 'failure',
+        code: result.code,
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        metrics: { attemptedCount: 1, completedCount: 0, failedCount: 1 },
+      });
       return jsonResponse({
         ok: false,
         code: result.code,
@@ -200,6 +215,20 @@ export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvide
       || result.body.byteLength <= 0
       || result.body.byteLength > 1_000_000
     ) {
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.image_read',
+        outcome: 'failure',
+        code: 'invalid_image_object',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        metrics: {
+          attemptedCount: 1,
+          completedCount: 0,
+          failedCount: 1,
+          imageBytes: result.body.byteLength,
+        },
+      });
       return jsonResponse({
         ok: false,
         code: 'invalid_image_object',
@@ -210,6 +239,20 @@ export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvide
     const body = new ArrayBuffer(result.body.byteLength);
     new Uint8Array(body).set(result.body);
 
+    recordServerOperationalEvent({
+      level: 'info',
+      event: 'media.sales_photo.image_read',
+      outcome: 'success',
+      code: 'image_read_completed',
+      route: OPERATIONAL_ROUTE,
+      durationMs: Date.now() - startedAt,
+      metrics: {
+        attemptedCount: 1,
+        completedCount: 1,
+        failedCount: 0,
+        imageBytes: result.body.byteLength,
+      },
+    });
     return new Response(body, {
       status: 200,
       headers: {
@@ -221,11 +264,18 @@ export function createSalesPhotoEvidenceImageRouteHandlers(deps: SalesPhotoEvide
   }
 
   async function get(request: Request): Promise<Response> {
+    const startedAt = Date.now();
     try {
-      return await getInternal(request);
+      return await getInternal(request, startedAt);
     } catch (error) {
-      console.error('sales photo evidence image route failed', {
-        name: error instanceof Error ? error.name : 'UnknownError',
+      recordServerOperationalEvent({
+        level: 'error',
+        event: 'media.sales_photo.image_read',
+        outcome: 'failure',
+        code: 'image_route_unavailable',
+        route: OPERATIONAL_ROUTE,
+        durationMs: Date.now() - startedAt,
+        errorName: getSafeOperationalErrorName(error),
       });
       return jsonResponse({
         ok: false,

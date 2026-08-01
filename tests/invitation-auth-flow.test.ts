@@ -17,6 +17,7 @@ function readProjectFile(path: string): string {
 }
 
 const appChromeSource = readProjectFile('components/AppChrome.tsx');
+const publicRouteSource = readProjectFile('lib/navigation/public-route.ts');
 const authGuardSource = readProjectFile('components/auth/AuthGuard.tsx');
 const roleGuardSource = readProjectFile('components/auth/RoleGuard.tsx');
 const authManagerSource = readProjectFile('components/auth/AuthManager.tsx');
@@ -25,8 +26,12 @@ const loginModalSource = readProjectFile('components/auth/LoginModal.tsx');
 console.log('\n=== Invitation auth flow ===');
 
 runTest('join route uses the lightweight auth-flow shell with AuthManager mounted', () => {
-  assert.match(appChromeSource, /const AUTH_FLOW_PUBLIC_ROUTES = \[['"]\/join['"]\]/);
-  assert.match(appChromeSource, /const isAuthFlowPublicRoute = AUTH_FLOW_PUBLIC_ROUTES\.some/);
+  assert.match(publicRouteSource, /AUTH_FLOW_PUBLIC_ROUTES = \[['"]\/join['"]\]/);
+  assert.match(appChromeSource, /AUTH_FLOW_PUBLIC_ROUTES,[\s\S]*isPathWithinAnyRoute/);
+  assert.match(
+    appChromeSource,
+    /const isAuthFlowPublicRoute = isPathWithinAnyRoute\(pathname, AUTH_FLOW_PUBLIC_ROUTES\)/,
+  );
   assert.match(
     appChromeSource,
     /if \(isAuthFlowPublicRoute\)[\s\S]*<main(?:\s[^>]*)?>\{children\}<\/main>[\s\S]*<AppToaster \/>[\s\S]*<AuthManager \/>[\s\S]*<SessionExpiredHandler \/>/

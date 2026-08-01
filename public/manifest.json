@@ -2,6 +2,7 @@
   "name": "Féria - 出攤筆記",
   "short_name": "Féria",
   "description": "手作品牌的市集經營筆記 - 輕鬆管理銷售、統計數據、追蹤成本",
+  "id": "/",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FAFAF8",
@@ -63,7 +64,8 @@
       "src": "/screenshots/home.png",
       "sizes": "540x720",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Féria 今日營運與市集工作台"
     }
   ],
   "categories": ["business", "productivity", "finance"],

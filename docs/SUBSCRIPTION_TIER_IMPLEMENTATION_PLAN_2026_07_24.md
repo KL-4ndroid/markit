@@ -2,11 +2,11 @@
 
 Date: 2026-07-24
 
-Last updated: 2026-07-29
+Last updated: 2026-07-30
 
 Status: AI execution plan for implementing the subscription foundation in small verified slices. This document does not approve payment collection, billing provider setup, native in-app purchase setup, public marketplace workflows, production upload enablement, destructive recovery actions, or broad permission changes.
 
-Implementation progress (2026-07-29): S0A through S5 and S6A through S6D are implemented and validated locally. Local server configuration, R2 read access, production build, capability routes, CORS, live 063 RPC permission smoke, and authenticated local Free UI smoke passed. S6A protects single-market basic analysis and review; S6B provides a bounded recent-three Free preview; S6C separates the Free settlement summary from the Pro/Team full report; S6D enables the owner-only client-generated designed PDF for Pro/Team and keeps Free blocked. The live project currently has no explicit paid subscription row or inactive-staff fixture, so those state paths are covered by deterministic resolver/route tests rather than production mutations. Authenticated paid-state deployment smoke and deployment evidence are still required. Product-cover `open` mode remains active and no billing, Excel generation, promotion grant, referral reward, founder price assignment, or Team enforcement is active.
+Implementation progress (2026-07-30): S0A through S5 and S6A through S6E are implemented and validated locally; S7 is complete as a planning-only data and consent contract; LV1 adds a local-only Free/Pro/Team validation harness without changing billing data. Local server configuration, R2 read access, production build, capability routes, CORS, live 063 RPC permission smoke, authenticated local Free/Pro/Team simulation UI smoke, and user-completed local PDF UI verification passed. S6A protects single-market basic analysis and review; S6B provides a bounded recent-three Free preview; S6C separates the Free settlement summary from the Pro/Team full report; S6D enables the owner-only client-generated designed PDF for Pro/Team and keeps Free blocked. S6E migrations `064` and `065` are applied, and all 22 live structural, cleanup, anonymous-write, and protected-RPC checks pass. F3A catalog / price-assignment foundation is implemented locally as migration `066_add_subscription_price_catalog_foundation.sql`, but it has not been applied to Supabase and remains non-billable. The live project currently has no explicit paid subscription row or active-staff test fixture, so authenticated server-authoritative Free/Pro/Team mutation, downgrade, re-upgrade, and explicit-restore evidence remains pending. Product-cover `open` mode remains active and no billing, Excel generation, promotion grant, referral reward, active founder price assignment, marketplace route, partner exposure, or benchmark runtime is active.
 
 Primary product plan:
 
@@ -454,7 +454,7 @@ Acceptance:
 
 ### Slice S6: Analytics And Report Tier Gates
 
-Status: S6A single-market basic analysis/review, S6B advanced analytics tiers, S6C settlement report tiers, and S6D Pro/Team designed PDF implemented locally on 2026-07-29; deployment evidence remains pending.
+Status: S6A single-market basic analysis/review, S6B advanced analytics tiers, S6C settlement report tiers, and S6D Pro/Team designed PDF implemented locally on 2026-07-29. User-completed local PDF UI verification is recorded; deployment evidence remains pending.
 
 Goal:
 
@@ -517,7 +517,7 @@ S6C implementation evidence:
 
 ### Slice S6D: Pro/Team PDF Enablement And A4 Visual Polish
 
-Status: implemented and validated locally on 2026-07-29; authenticated paid-state deployment smoke remains pending.
+Status: implemented and validated locally on 2026-07-29, including user-completed manual PDF UI verification; authenticated paid-state deployment smoke remains pending.
 
 Result:
 
@@ -531,10 +531,56 @@ Result:
 - focused PDF/subscription tests, the complete test manifest, full ESLint, final Web production build, client-bundle secret/RPC/legacy-copy scan, and live read-only capability smoke pass;
 - mobile static build and verification pass with 308 files (18.34 MiB), without adding Capacitor or native projects;
 - the latest Web production server is healthy at `http://localhost:3010` and includes the approved PDF client chunk;
-- authenticated paid-state UI smoke remains pending because the live subscription source has no explicit paid row and browser automation cannot control the local URL under the current browser safety policy; no production subscription data was mutated to manufacture coverage;
+- the user completed manual local PDF UI verification at `http://localhost:3010` on 2026-07-29; this is local UI evidence, not paid-state deployment evidence;
+- authenticated paid-state deployment smoke remains pending because the live subscription source has no explicit paid row; no production subscription data was mutated to manufacture coverage;
 - Excel, custom in-app download UI, server-side PDF generation, billing, generated-PDF storage, and role expansion remain out of scope.
 
+### Slice S6E: Team Subscription Enforcement And Retained Staff Access
+
+Status: implemented and statically validated locally on 2026-07-29. Migrations `064_enforce_team_subscription.sql` and `065_fix_team_invitation_verification_return_type.sql` were applied on 2026-07-30; live structural and authenticated local simulation UI smoke pass, while server-authoritative state-transition smoke remains required.
+
+Goal:
+
+Make Team collaboration a database-authoritative capability without deleting staff relationships or activity history on downgrade.
+
+Result:
+
+- Free and Pro owners may read retained staff relationships and revoke members or delete invitation links, but cannot invite, create links, change roles, or restore suspended access;
+- only a server-authoritative active/grace `admin` Team row authorizes current database writes; billing, promotion, local simulation, client state, and public environment flags cannot grant them;
+- direct authenticated mutations on `staff_relationships` and `staff_invitations` are revoked and replaced by owner/staff-scoped `SECURITY DEFINER` RPCs;
+- Team downgrade changes active relationships to `suspended_by_plan`, removes their `market_members`, and retains relationship/history rows;
+- a later Team upgrade never auto-restores staff; the owner must explicitly restore each retained relationship;
+- `current_user_market_ids`, staff relationship reads, `is_staff_of`, and `get_my_owners` intersect active relationship state with authoritative Team entitlement;
+- the owner Team settings surface consumes `staffCollaboration` and `managerWorkflow`; local simulation changes presentation only and disables all cloud mutation controls;
+- `tests/team-subscription-enforcement.test.ts` locks the tier, migration, direct-write, UI, simulation, and shared service boundaries;
+- `docs/subscription/TEAM_SUBSCRIPTION_ENFORCEMENT.md` is the required preflight, deployment-order, and live-smoke runbook;
+- current offline behavior remains fail-closed: a disconnected client cannot acquire or extend Team entitlement, and rejected cloud writes do not become valid because they were queued locally.
+
+Live structural evidence (2026-07-30):
+
+- migrations `064` and `065` are applied; `065` resolves the PostgreSQL `42804` return-type mismatch in read-only invitation verification;
+- `npm.cmd run smoke:subscription:team-enforcement` passes all 22 checks, including anonymous direct-write denial, anonymous protected-RPC denial, Team backing for every active relationship, and invitation-token verification;
+- two existing relationships are retained as `suspended_by_plan`, with no matching staff `market_members` leak;
+- the live subscription source has no explicit subscription rows and resolves the current owner as default Free; there is no active-staff fixture for an authenticated Team transition test;
+- no paid subscription row or authentication fixture was manufactured to complete missing coverage.
+
+Authenticated local simulation UI evidence (2026-07-30):
+
+- an authenticated owner switched Free, Pro, and Team through the loopback-only LV1 harness without exposing or copying browser authentication state;
+- Free retained the recent-three revenue preview and basic settlement summary while blocking recent-10, single-market review, advanced analytics, PDF, Team invitation, role change, restore, and new invitation-link creation;
+- Pro opened single-market review, advanced analytics, the full settlement report, and PDF preview while retaining the Team collaboration gate;
+- Team inherited Pro analytics/report/PDF and removed the Team presentation gate, while every cloud-mutating Team control remained disabled because simulation is not write authorization;
+- subscription, Team, and settlement surfaces had no horizontal overflow at 390px, 768px, 1440px, and 1920px widths; no console error was observed, and the only warning was the expected small-sample analytics notice.
+
+Remaining activation gate:
+
+- retain the `064` then `065` migration order in every environment;
+- verify server-authoritative Free, Pro, Team, downgrade, explicit restore, direct-table denial, and role-cache cleanup with an approved isolated owner/staff fixture;
+- do not manufacture a paid billing row or use the local simulator as database-write evidence.
+
 ### Slice S7: Strategic Growth Capability Data Design
+
+Status: completed as planning-only data, publication, consent, and redaction design on 2026-07-29. No runtime or schema was added.
 
 Goal:
 
@@ -561,7 +607,41 @@ Acceptance:
 - No owner financial private data appears in public snapshot examples.
 - Owner opt-in is explicit in the design.
 
+Result:
+
+- `docs/subscription/STRATEGIC_GROWTH_DATA_RESERVE_DESIGN.md` is the canonical S7 contract for all six logical records;
+- owner-private source data, owner-private derived readiness, and the detached owner-published partner snapshot are separate boundaries;
+- partner publication and anonymous benchmark participation have independent, explicit, revocable state machines;
+- partner-facing serialization is allowlist-based and excludes private finance, supplier, staff, market, transaction, customer, exact capacity, and internal scoring data;
+- no creator/partner model, marketplace route, public API, matching, chat, fee, payout, Supabase migration, RLS, or runtime capability was added;
+- `tests/subscription-strategic-growth-data-reserve.test.ts` locks the planning-only, consent, redaction, route, plan-code, registry, and manifest boundaries.
+
+### Slice LV1: Local Subscription Identity Simulation
+
+Status: implemented locally on 2026-07-29; authenticated Free/Pro/Team UI smoke passed on 2026-07-30; production and deployment use are prohibited.
+
+Goal:
+
+Validate Free, Pro, and Team capability intersections without payment, a database
+subscription mutation, or a client-authoritative plan override.
+
+Result:
+
+- an authenticated owner-only panel on `/subscription` switches a four-hour in-memory simulation on or off and selects Free, Pro, or Team;
+- the server requires the private `SUBSCRIPTION_SIMULATION_ENABLED` flag, a loopback URL, no Vercel deployment marker, and a verified bearer token;
+- `GET /api/account-capabilities` returns the explicit `simulation_enabled` status and derives features from the canonical plan model;
+- role, runtime, data-completeness, RLS, RPC, upload, and server-write authorization remain independent and cannot be bypassed;
+- state is never stored in Supabase, Dexie, browser storage, cookies, operational events, or billing records;
+- `docs/subscription/LOCAL_SUBSCRIPTION_SIMULATION.md` is the operating and stop-condition contract;
+- `tests/subscription-simulation.test.ts` covers environment, loopback, deployment, authentication, expiry, plan switching, API, client, and static source boundaries.
+- focused subscription tests, the complete test manifest, full ESLint, production Web build, mobile static build, mobile artifact verification, and generic mobile route smoke pass;
+- the final Web build is healthy at `http://localhost:3010`; unauthenticated account-capability and simulation GET/POST requests return 401, while the approved local preflight returns 204;
+- authenticated browser smoke passed for Free/Pro/Team analytics, settlement/PDF, and Team presentation/write-suppression boundaries at 390px, 768px, 1440px, and 1920px widths; no auth token or browser storage was inspected.
+
 ### Slice S8: Billing Provider Decision Plan
+
+Status: completed as planning-only on 2026-07-30. No provider SDK, checkout,
+callback route, schema, migration, or billing runtime was added.
 
 Goal:
 
@@ -588,6 +668,19 @@ Acceptance:
 - No subscription mutation route.
 - AI notes that Apple, Google, and provider policies must be freshly verified before launch.
 
+Result:
+
+- `docs/subscription/BILLING_PROVIDER_DECISION.md` is the canonical provider and storefront decision;
+- `docs/subscription/BILLING_LIFECYCLE_STATE_MACHINE.md` is the canonical normalized lifecycle, callback, reconciliation, Founder lock, and plan-change saga contract;
+- `docs/subscription/BILLING_TEST_MATRIX.md` is the canonical sandbox, security, cross-platform, and launch-gate matrix;
+- Taiwan Web launch conditionally selects NewebPay recurring payment after merchant, API, sandbox, fee, tax, invoice, refund, and reconciliation gates pass;
+- ECPay is a single fallback, not a concurrently maintained provider;
+- Paddle is not the Taiwan launch provider because its current official currency list omits TWD, and Stripe remains blocked until an eligible supported-country entity and account are confirmed;
+- future iOS uses Apple IAP and Android uses Google Play Billing; RevenueCat remains an optional native-store aggregation adapter, and Capacitor stays paused;
+- Web Founder acquisition is the first supported route. Native Founder acquisition remains blocked until storefront sandbox proves cancellation, cohort, plan-switch, and dormant-restore behavior;
+- a provider exact quote is preferred. For a Taiwan provider without proration quotes, only a server-signed, immutable, single-use quote derived from provider-confirmed transaction truth may provide exact values; otherwise the flow is `support_required`;
+- S9 remains not approved.
+
 ### Slice S9: Billing Implementation
 
 Status:
@@ -598,17 +691,17 @@ Requires a separate user approval after S8.
 
 Minimum future gates:
 
-- provider selected;
-- native policy route selected;
-- server webhook and reconciliation plan approved;
+- conditionally selected Web provider completes merchant and API activation;
+- native policy route has a fresh pre-implementation review and later store-sandbox evidence;
+- server callback and reconciliation design is approved for implementation;
 - security review complete;
 - entitlement migration approved;
 - price-version and immutable price-assignment schema approved;
 - founder eligibility, continuity, forfeiture, and offer-cap policy approved;
-- every storefront's exact founder amount and existing-price behavior verified;
+- Web exact Founder amount is approved in the active merchant catalog; every future native storefront amount and existing-price behavior is separately verified;
 - plan-change quote, actual-paid-value, provider-credit, immediate-upgrade, deferred-downgrade, and reconciliation contracts approved;
 - support and refund policy drafted;
-- staging payment tests pass.
+- the required `docs/subscription/BILLING_TEST_MATRIX.md` sandbox and staging payment tests pass.
 
 ## 7. Founder Annual Price Slices
 
@@ -635,7 +728,7 @@ Acceptance:
 
 ### Slice F1: Pure Price Catalog And Lock Model
 
-Status: requires explicit approval after S1B and F0.
+Status: implemented locally on 2026-07-30 under the approved Web-first progression.
 
 Possible files:
 
@@ -654,12 +747,23 @@ Acceptance:
 - cancellation scheduling differs from effective lapse;
 - Pro-to-Team resolves to immediate after confirmed payment, current Team price, actual-paid Pro value, and `to_dormant` for an active founder lock;
 - Team-to-Pro resolves to the renewal boundary and `restore_active` when paid continuity remains unbroken;
-- the pure model supports providers without an exact pre-purchase quote and never fabricates a charge, credit, refund, effective time, or renewal date;
+- the pure model supports `provider_quote`, `server_signed_quote`, `provider_confirmation`, and `support_required`; only `server_signed_quote` may calculate exact values, using explicit provider-confirmed transaction inputs, UTC boundaries, integer minor units, approved rounding, expiry, and single-use semantics;
+- client presentation never fabricates a charge, credit, refund, effective time, or renewal date, and unavailable output remains `null`;
 - all server-trust inputs are explicit and no client flag can grant founder eligibility.
+
+Result:
+
+- `lib/subscription/subscription-pricing.ts` is the platform-neutral canonical F1 model;
+- `tests/subscription-pricing.test.ts` covers candidate price versions, trusted Founder eligibility, immutable renewal amount, cancellation versus lapse, grace recovery, dormancy, restoration, forfeiture, plan-change timing, exact quote modes, integer half-up rounding, and fail-closed invalid inputs;
+- every catalog price remains `candidate` with no effective date, and the Founder assignment resolver returns `billable: false`;
+- Pro-to-Team remains Pro until trusted provider confirmation and moves an active / grace Founder lock to dormant only with paid continuity;
+- Team-to-Pro remains Team until the verified renewal boundary and provider confirmation, restoring the stored Founder price version only when continuity is unbroken;
+- `server_signed_quote` returns only `ready_for_server_signature`; F1 does not sign, persist, charge, refund, grant entitlement, or call a provider;
+- no React, Next.js, Supabase, Dexie, browser, provider SDK, platform API, schema, RLS, checkout, callback, or billing route was added.
 
 ### Slice F2: Founder Offer Presentation
 
-Status: requires explicit approval after F1 and an approved truthful billing-availability state.
+Status: blocked until an approved truthful billing-availability state exists. F1 completion alone does not authorize offer or checkout presentation.
 
 Deliver owner-only presentation for eligible, ineligible, acquired, cancellation-scheduled, grace, dormant, forfeited, upgrade-quoted, upgrade-pending, upgrade-active, and downgrade-scheduled states. Before S9, the UI may only say `coming soon` or show an approved non-transactional preview.
 
@@ -668,14 +772,59 @@ Acceptance:
 - one exact annual amount is shown; no floating price or dynamic 65% renewal claim;
 - copy states that cancellation forfeiture occurs only after the paid period ends and subscription lapses;
 - Team upgrade copy separates unused actual-paid Pro value from any discount and never claims the 65% Pro price applies to Team;
-- a transactional flow must show every exact value the provider exposes. If an exact proration quote is unavailable, the provider-owned confirmation sheet is authoritative and Feria must not invent a credit, refund, net due, effective time, or renewal date;
+- a transactional flow must show every exact value from an approved `provider_quote`, `server_signed_quote`, or provider confirmation. A server-signed quote must use provider-confirmed transaction inputs and remain immutable, expiring, and single-use. If no exact mode exists, the flow is support-required; Feria client code must not invent a credit, refund, net due, effective time, or renewal date;
 - no staff billing controls, fake checkout, fake renewal date, or client-authoritative eligibility.
 
 ### Slice F3: Server Price Assignment And Audit Ledger
 
-Status: not approved by this plan.
+Status: data/security design completed on 2026-07-30. The separately reviewed F3A
+candidate catalog and assignment foundation is implemented locally but not applied to
+Supabase. F3B-F3E, writer, callback, provider implementation, checkout, and runtime
+mutation remain not approved.
 
 Requires separately approved schema, RLS, identity, idempotency, webhook, support, and migration design. The server must own eligibility, price version, assigned amount, continuity, dormancy, forfeiture, and audit history. Operational market events and local IndexedDB are not the trusted price ledger.
+
+Canonical design and read/reconciliation contract:
+
+```text
+docs/subscription/BILLING_DATA_SECURITY_DESIGN.md
+docs/subscription/BILLING_PROVIDER_ADAPTER_CONTRACT.md
+lib/subscription/billing-provider-contract.ts
+tests/subscription-billing-data-security-design.test.ts
+```
+
+Result:
+
+- keeps `subscription_accounts` as the narrow capability projection instead of mixing provider customer, transaction, amount, quote, or raw-event data into it;
+- defines logical customer links, subscriptions, transactions, price versions, storefront mappings, immutable price assignments, single-use quotes, event inbox, reconciliation runs, adjustment obligations, and support actions;
+- defines no-direct-client billing table access, service-role server boundaries, `SECURITY DEFINER` restrictions, compare-and-swap projection writes, fixed lock order, provider-query reconciliation, and at-least-once event handling with idempotent business effects;
+- defines privacy, retention, deletion, support approval, dual-origin, refund-failure, callback-forgery, replay, out-of-order, service-key, and simulator threat controls;
+- splits physical work into separately approved F3A-F3E migrations and requires denial, cross-owner, service-role, rollback, and production-readiness evidence for every slice;
+- the provider-neutral TypeScript contract exposes only raw-notification verification and authoritative customer/subscription/transaction queries. It contains no checkout, charge, refund, cancel, provider SDK, secret, network client, database writer, or entitlement mutation.
+
+#### Slice F3A: Catalog And Price-Assignment Foundation
+
+Status: implemented locally on 2026-07-30; migration `066` is not applied to any
+Supabase environment.
+
+Canonical artifacts:
+
+```text
+supabase/migrations/066_add_subscription_price_catalog_foundation.sql
+supabase/verification/066_subscription_price_foundation_read_only.sql
+docs/subscription/F3A_PRICE_CATALOG_MIGRATION_RUNBOOK.md
+tests/subscription-price-catalog-foundation.test.ts
+```
+
+Acceptance boundary:
+
+- creates only private price versions, storefront mappings, and price assignments;
+- seeds the five F1 catalog entries as `candidate`, with no active mapping or assignment;
+- denies direct table and trigger-function access to public, anon, authenticated, and service-role clients;
+- provides no RLS policy, public RPC, `SECURITY DEFINER`, checkout, callback, provider adapter, writer, or entitlement mutation;
+- keeps `subscription_accounts` unchanged and uses `ON DELETE RESTRICT` for audit-linked rows;
+- requires explicit target confirmation, manual migration application, read-only verification, denial smoke, and recorded evidence before F3A is considered live;
+- does not approve F3B-F3E or S9.
 
 ### Slice F4: Provider Price Cohort And Checkout
 
