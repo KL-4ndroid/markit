@@ -14,8 +14,8 @@ testRequire.cache[serverOnlyPath] = serverOnlyMarker;
 const {
   createSalesPhotoEvidenceImageRouteHandlers,
   isSalesPhotoEvidenceImageReadRouteEnabledForEnv,
-} = testRequire('../app/api/sales-photo-evidence/image/route') as typeof import(
-  '../app/api/sales-photo-evidence/image/route'
+} = testRequire('../lib/sales/photo-evidence-image-route-handlers') as typeof import(
+  '../lib/sales/photo-evidence-image-route-handlers'
 );
 import {
   fetchSalesPhotoEvidenceOwnerImageObjectUrl,
