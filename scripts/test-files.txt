@@ -188,6 +188,7 @@ tsx tests/subscription-plan-model.test.ts
 tsx tests/subscription-pricing.test.ts
 tsx tests/subscription-billing-data-security-design.test.ts
 tsx tests/subscription-price-catalog-foundation.test.ts
+tsx tests/subscription-price-foundation-authenticated-smoke.test.ts
 tsx tests/subscription-feature-gates.test.ts
 tsx tests/subscription-feature-gate-mapping.test.ts
 tsx tests/subscription-strategic-growth-data-reserve.test.ts

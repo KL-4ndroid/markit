@@ -59,12 +59,22 @@ assert.ok(
 );
 assert.match(runWithCors, /404, 'dev_tool_unavailable'/);
 
+const priceSmokeRoute = read('app/api/dev/subscription-price-foundation-smoke/route.ts');
+const priceSmokeRunWithCors = priceSmokeRoute.slice(priceSmokeRoute.indexOf('async function runWithCors'));
+assert.ok(
+  priceSmokeRunWithCors.indexOf('isSubscriptionSimulationRequestAllowed(request)')
+    < priceSmokeRunWithCors.indexOf('createAppApiCorsRejectionResponse(request'),
+  'price smoke deployment denial must happen before CORS or authentication work',
+);
+assert.match(priceSmokeRunWithCors, /404, 'dev_tool_unavailable'/);
+
 const smoke = read('scripts/smoke-web-production-boundary.mjs');
 for (const route of [
   '/debug/flicker-test',
   '/debug/staff-role-test',
   '/debug/sales-photo-evidence',
   '/api/dev/subscription-simulation',
+  '/api/dev/subscription-price-foundation-smoke',
   '/demo',
 ]) {
   assert.ok(smoke.includes(route), `production boundary smoke must cover ${route}`);

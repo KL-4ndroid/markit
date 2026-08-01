@@ -13,6 +13,7 @@ Production keeps these internal surfaces unavailable:
 /debug/staff-role-test
 /debug/sales-photo-evidence
 /api/dev/subscription-simulation
+/api/dev/subscription-price-foundation-smoke
 ```
 
 `/demo` remains intentionally public because it uses only static example data and local

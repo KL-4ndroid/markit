@@ -2,8 +2,9 @@
 
 日期：2026-08-01
 
-狀態：使用者已確認 migration 066 套用；read-only SQL verifier、authenticated denial
-與 Security Advisor 證據仍待補齊，因此 F3A 尚未結案
+狀態：使用者已確認 migration 066 套用；anonymous、authenticated 與 server-secret
+denial smoke 已通過。read-only SQL verifier 與 Security Advisor 證據仍待補齊，因此
+F3A 尚未結案
 
 ## 1. Artifact
 
@@ -140,5 +141,6 @@ provider activation、S9 與 F4 仍未核准。
 - server secret：三張表的 select / insert / update / delete 全部為 `403/42501`；
 - capability regression：owner missing-row Free、active staff 與 foreign actor boundary 通過；
 - Team regression：active relationship 全部有 admin Team backing，無 suspended membership leak；
-- authenticated denial：提供的 password grant 未建立 session，需以有效 isolated fixture 重跑；
+- authenticated denial：內建瀏覽器既有 session 執行 12 個 table 與 3 個 function probe，`15/15` 通過；
+- authenticated smoke surface：只限 loopback、非 deployed 且明確開啟測試旗標；production 固定 `404`；
 - read-only SQL verifier 與 Security Advisor：待人工保存輸出。

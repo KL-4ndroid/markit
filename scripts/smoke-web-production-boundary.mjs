@@ -52,11 +52,11 @@ async function assertPageNotFound(path) {
   await response.body?.cancel();
 }
 
-async function assertDevApiNotFound(method, init = {}) {
-  const response = await request('/api/dev/subscription-simulation', { method, ...init });
-  assertEqual(response.status, 404, `subscription simulation ${method} status`);
+async function assertDevApiNotFound(path, method, init = {}) {
+  const response = await request(path, { method, ...init });
+  assertEqual(response.status, 404, `${path} ${method} status`);
   const body = await response.json();
-  assertEqual(body?.code, 'dev_tool_unavailable', `subscription simulation ${method} code`);
+  assertEqual(body?.code, 'dev_tool_unavailable', `${path} ${method} code`);
 }
 
 const baseUrl = requireBaseUrl(configuredBaseUrl);
@@ -80,15 +80,22 @@ assertEqual(demo.status, 200, 'intentional public demo status');
 assertWebSecurityHeaders(demo.headers);
 await demo.body?.cancel();
 
-await assertDevApiNotFound('GET');
-await assertDevApiNotFound('POST', {
+await assertDevApiNotFound('/api/dev/subscription-simulation', 'GET');
+await assertDevApiNotFound('/api/dev/subscription-simulation', 'POST', {
   headers: { 'Content-Type': 'application/json' },
   body: '{"enabled":true,"planCode":"team"}',
 });
-await assertDevApiNotFound('OPTIONS', {
+await assertDevApiNotFound('/api/dev/subscription-simulation', 'OPTIONS', {
   headers: {
     Origin: 'https://not-allowed.invalid',
     'Access-Control-Request-Method': 'POST',
+  },
+});
+await assertDevApiNotFound('/api/dev/subscription-price-foundation-smoke', 'GET');
+await assertDevApiNotFound('/api/dev/subscription-price-foundation-smoke', 'OPTIONS', {
+  headers: {
+    Origin: 'https://not-allowed.invalid',
+    'Access-Control-Request-Method': 'GET',
   },
 });
 

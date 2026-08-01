@@ -19,6 +19,7 @@ const testFiles = readFileSync(manifestPath, 'utf8')
 for (const testFile of testFiles) {
   const env = [
     'tests/app-api-server-mutation-client.test.ts',
+    'tests/subscription-price-foundation-authenticated-smoke.test.ts',
     'tests/subscription-simulation.test.ts',
   ].includes(testFile)
     ? {

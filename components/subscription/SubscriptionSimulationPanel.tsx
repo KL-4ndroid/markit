@@ -18,6 +18,7 @@ import {
   updateSubscriptionSimulation,
   type SubscriptionSimulationClientState,
 } from '@/lib/subscription/subscription-simulation-client';
+import { runSubscriptionPriceFoundationSmoke } from '@/lib/subscription/subscription-price-foundation-smoke-client';
 import type { AccountPlanCode } from '@/lib/subscription/subscription-plans';
 
 const PLAN_OPTIONS: ReadonlyArray<{
@@ -43,6 +44,9 @@ export function SubscriptionSimulationPanel() {
   const [isBusy, setIsBusy] = useState(false);
   const [isUnavailable, setIsUnavailable] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPermissionSmokeBusy, setIsPermissionSmokeBusy] = useState(false);
+  const [permissionSmokeMessage, setPermissionSmokeMessage] = useState<string | null>(null);
+  const [permissionSmokePassed, setPermissionSmokePassed] = useState<boolean | null>(null);
   const accessToken = session?.access_token ?? '';
 
   useEffect(() => {
@@ -95,6 +99,26 @@ export function SubscriptionSimulationPanel() {
   const handlePlanChange = (planCode: AccountPlanCode) => {
     setSelectedPlan(planCode);
     if (state.enabled) void applySimulation(true, planCode);
+  };
+
+  const handlePermissionSmoke = async () => {
+    setIsPermissionSmokeBusy(true);
+    setPermissionSmokeMessage(null);
+    setPermissionSmokePassed(null);
+    const result = await runSubscriptionPriceFoundationSmoke({ accessToken });
+    setIsPermissionSmokeBusy(false);
+
+    if (!result.ok) {
+      setPermissionSmokePassed(false);
+      setPermissionSmokeMessage('資料庫權限驗證無法完成。');
+      return;
+    }
+    setPermissionSmokePassed(result.passed);
+    setPermissionSmokeMessage(
+      result.passed
+        ? `資料庫權限驗證通過 ${result.passedChecks}/${result.totalChecks}`
+        : `資料庫權限驗證失敗 ${result.passedChecks}/${result.totalChecks}`,
+    );
   };
 
   return (
@@ -183,6 +207,20 @@ export function SubscriptionSimulationPanel() {
           </div>
 
           <nav className="flex flex-wrap gap-2" aria-label="訂閱阻擋驗證入口">
+            <button
+              type="button"
+              data-testid="subscription-price-foundation-smoke"
+              disabled={isPermissionSmokeBusy}
+              onClick={() => void handlePermissionSmoke()}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-control border border-amber-300 bg-white px-3 text-xs font-semibold text-foreground transition-colors hover:bg-amber-100 disabled:cursor-wait disabled:opacity-60"
+            >
+              {isPermissionSmokeBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              )}
+              驗證資料庫權限
+            </button>
             {VERIFY_LINKS.map(item => {
               const Icon = item.icon;
               return (
@@ -201,6 +239,15 @@ export function SubscriptionSimulationPanel() {
 
         {errorMessage && (
           <p role="alert" className="text-xs font-medium text-red-700">{errorMessage}</p>
+        )}
+        {permissionSmokeMessage && (
+          <p
+            role={permissionSmokePassed ? 'status' : 'alert'}
+            data-testid="subscription-price-foundation-smoke-result"
+            className={`text-xs font-medium ${permissionSmokePassed ? 'text-emerald-700' : 'text-red-700'}`}
+          >
+            {permissionSmokeMessage}
+          </p>
         )}
       </div>
     </section>
