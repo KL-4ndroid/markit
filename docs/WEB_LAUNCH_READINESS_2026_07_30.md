@@ -29,11 +29,11 @@ evidence_missing
 
 | ID | Gate | Current status | Current evidence | Required exit evidence |
 | --- | --- | --- | --- | --- |
-| `CI-WEB` | Every PR and `main` push runs hex, lint, complete tests, secret-free production build, and clean-diff checks | `complete` | GitHub Actions run `30693689805` passed both jobs on commit `9d1dfaa64cfa51b8bd461a77749784533579b670` on 2026-08-01 | Preserve the gate and repeat it on the final release candidate revision |
-| `LOCAL-QUALITY` | Current worktree passes lint, complete tests, production build, and `git diff --check` | `complete` | 2026-07-30 local run | Repeat on release candidate revision |
+| `CI-WEB` | Every PR and `main` push runs hex, lint, complete tests, secret-free production build, and clean-diff checks | `complete` | Push run `30694328117` and PR run `30694330156` passed both jobs on commit `4dffaf20b2466871cce286ecf1cc0edb4551efb8` on 2026-08-01 | Preserve the gate and repeat it on the final release candidate revision |
+| `LOCAL-QUALITY` | Current worktree passes lint, complete tests, production build, and `git diff --check` | `complete` | 2026-08-01 Node 24/npm 11 full lint, complete manifest, production build, and diff check | Repeat on release candidate revision |
 | `DB-063-065` | Shared capability and Team enforcement migrations are live | `complete` | user-confirmed apply plus prior RPC/structural smoke | Preserve dated environment and smoke output in release evidence |
 | `DB-066` | F3A private candidate price catalog foundation is live and denied to direct clients | `pending_external` | User-confirmed apply on 2026-08-01; anon and server-secret table probes denied with `42501`; authenticated browser session passed all 12 table and 3 function probes; capability and Team read regressions passed | Record masked target/hash/timestamp; all read-only verifier rows true; Security Advisor result recorded |
-| `TEAM-LIVE` | Server-authoritative Free/Pro/Team mutation, downgrade, re-upgrade, and restore behavior is proven | `evidence_missing` | local simulator UI and structural tests only | Isolated owner plus active viewer/operator/manager fixture; state-transition and cross-role smoke output |
+| `TEAM-LIVE` | Server-authoritative Free/Pro/Team mutation, downgrade, re-upgrade, and restore behavior is proven | `complete` | 2026-08-01 isolated 57-check live run passed direct-write and Free/Pro denial, Team invitation and viewer/operator/manager transitions, downgrade suspension, no-auto-restore, explicit restore, cleanup, and zero-residual audit | Preserve the guarded smoke and repeat against the selected release environment; deployment UI evidence remains under `STAGING-E2E` |
 | `PROD-CONFIG` | Production Supabase, CORS, cron, R2, media gates, and server secrets are configured | `evidence_missing` | Read-only preflight implemented; local `.env.production.local` snapshot is 4/18 passing and is not Vercel evidence | Passing preflight against deployed names, dated Vercel review with no values, and production route smoke |
 | `PROD-SURFACE` | Debug pages and dev subscription API are unreachable while the static fake-data demo remains public | `implemented_local` | 2026-07-30 production-mode local smoke passed even with both internal enable flags deliberately set | Run the same smoke against the release deployment and record commit-bound evidence |
 | `DEPLOY-IDENTITY` | Remote smoke proves it reached the intended release revision | `implemented_local` | 2026-07-30 commit-bound production-mode smoke passed on a dirty local worktree | Commit changes, deploy that exact revision, then pass both remote smokes against its trusted SHA |
@@ -51,15 +51,14 @@ evidence_missing
 
 ## Required order from current state
 
-1. Push the Web CI gate and obtain a green GitHub Actions run.
-2. Confirm the intended Supabase environment, apply `066`, and collect F3A live evidence.
-3. Run the production-surface and PWA resource smokes locally and against the selected deployment.
-4. Create isolated Team role fixtures and finish the live state-transition matrix.
-5. Complete production configuration and media staging evidence without enabling billing.
-6. Finish NewebPay merchant/API activation while implementing only separately approved
+1. Complete the remaining migration 066 verifier and Security Advisor evidence.
+2. Select the release deployment and run commit-bound production-surface, PWA,
+   security-header, legal/support, and authenticated owner/staff smokes.
+3. Complete production configuration and media staging evidence without enabling billing.
+4. Finish NewebPay merchant/API activation while implementing only separately approved
    F3B-F3E slices.
-7. Implement S9 provider runtime and pass the complete billing sandbox matrix.
-8. Resolve the promotion launch decision, observability, legal/support, staging E2E, and
+5. Implement S9 provider runtime and pass the complete billing sandbox matrix.
+6. Resolve the promotion launch decision, observability, legal/support, staging E2E, and
    production canary gates.
 
 ## Go/no-go rule

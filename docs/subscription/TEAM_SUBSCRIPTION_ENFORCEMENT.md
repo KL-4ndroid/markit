@@ -1,7 +1,7 @@
 # Team Subscription Enforcement Runbook
 
-Date: 2026-07-30
-Status: migrations 064/065 applied; all 22 live structural checks and authenticated local simulation UI smoke pass; server-authoritative state-transition smoke pending
+Date: 2026-08-01
+Status: migrations 064/065, all 22 live structural checks, authenticated local simulation UI smoke, and the isolated 57-check server-authoritative state-transition smoke pass; release-deployment UI evidence remains pending
 
 ## Purpose
 
@@ -166,6 +166,42 @@ Recorded on 2026-07-30 with an authenticated owner at `localhost:3010`:
 This proves authenticated UI gating and simulation write suppression. It still
 does not prove server-authoritative Team mutation success or state transitions.
 
+## Isolated Live State-Transition Evidence
+
+Recorded on 2026-08-01 with a disposable owner/staff Auth pair, one disposable
+market, and one admin-source subscription projection created only for the smoke:
+
+- all 57 checks passed, including fixture cleanup;
+- all six authenticated direct relationship/invitation table mutations were
+  denied with PostgreSQL `42501`;
+- default Free and explicit Pro denied invitation, link creation, role change,
+  and restore RPCs with `42501`;
+- Team allowed email invitation, invitation-link create/delete, acceptance, and
+  viewer to operator to manager role transitions;
+- Team to Pro changed the active manager relationship to `suspended_by_plan`,
+  removed its market membership, and removed the staff owner/market RPC scopes;
+- Pro to Free preserved suspension;
+- Team re-upgrade did not auto-restore the relationship or membership;
+- explicit owner restore reactivated the relationship and recreated the staff
+  membership and owner/market scopes;
+- a separate residual audit found zero smoke Auth users, profiles, markets, or
+  recovery-journal files after cleanup;
+- the original 22-check structural smoke and subscription read-model regression
+  remained green after the transition run.
+
+Run the guarded smoke only against an explicitly confirmed project ref:
+
+```powershell
+npm.cmd run smoke:subscription:team-transition -- --execute=isolated-fixture-only --project-ref=<project-ref>
+```
+
+The script never reuses existing accounts or relationships. It keeps only user
+IDs and the project ref in a temporary recovery journal that requests mode
+`0600` on platforms that honor POSIX modes, never stores the generated password,
+and refuses a new run while a prior journal exists. To recover after
+interruption, use the same exact confirmation plus
+`--cleanup-leftover`; cleanup targets only the two recorded Auth user IDs.
+
 ## State Transition Smoke
 
 Use approved test accounts. The local subscription simulator is presentation
@@ -202,7 +238,7 @@ evidence only and must not be used for database-write evidence.
 
 ### Minimum Approved Fixture
 
-Complete the remaining state-transition smoke only with an isolated fixture:
+Repeat the state-transition smoke only with an isolated fixture:
 
 1. Use one dedicated owner test account and one dedicated staff test account.
 2. Record the original subscription, relationship, invitation, and market-member
@@ -237,11 +273,8 @@ owner-confirmed restoration procedure after the authorization model is repaired.
 
 ## Remaining Launch Evidence
 
-- authenticated direct-table privilege and Free/Pro RPC-denial evidence;
-- authenticated server-authoritative Free, Pro, and Team UI evidence using an
-  approved isolated owner/staff fixture;
-- Team mutation-success, downgrade, re-upgrade-without-auto-restore, and
-  explicit-restore database evidence;
-- staff role-cache/local-projection cleanup evidence;
+- authenticated owner/staff UI evidence on the selected release deployment;
+- real-client staff role-cache/local-projection cleanup evidence during a
+  production-like downgrade session;
 - deployment smoke on the real HTTPS environment;
 - future billing-webhook reconciliation before billing can become authoritative.
