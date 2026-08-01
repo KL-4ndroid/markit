@@ -15,14 +15,18 @@ testRequire.cache[serverOnlyPath] = serverOnlyMarker;
 // that marker before loading the route; the route and its server dependencies
 // still execute normally in these handler-level tests.
 const {
+  createSalesPhotoEvidenceUploadRouteHandlers,
+  isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv,
+  isSalesPhotoEvidenceR2UploadRouteEnabledForEnv,
+} = testRequire('../lib/sales/photo-evidence-upload-route-handlers') as typeof import(
+  '../lib/sales/photo-evidence-upload-route-handlers'
+);
+const {
   DELETE,
   GET,
   PATCH,
   POST,
   PUT,
-  createSalesPhotoEvidenceUploadRouteHandlers,
-  isSalesPhotoEvidenceMetadataClaimRouteEnabledForEnv,
-  isSalesPhotoEvidenceR2UploadRouteEnabledForEnv,
 } = testRequire('../app/api/sales-photo-evidence/upload/route') as typeof import(
   '../app/api/sales-photo-evidence/upload/route'
 );
