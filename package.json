@@ -2,6 +2,9 @@
   "name": "feria",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,6 +15,7 @@
     "smoke:mobile": "node scripts/smoke-mobile-static-output.mjs",
     "smoke:api:staging": "node scripts/smoke-vercel-api.mjs",
     "smoke:subscription:read-model": "node scripts/smoke-subscription-read-model.mjs",
+    "smoke:subscription:price-foundation": "node scripts/smoke-subscription-price-foundation.mjs",
     "smoke:subscription:team-enforcement": "node scripts/smoke-team-subscription-enforcement.mjs",
     "smoke:web:production-boundary": "node scripts/smoke-web-production-boundary.mjs",
     "smoke:web:pwa": "node scripts/smoke-web-pwa-resources.mjs",

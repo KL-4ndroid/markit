@@ -251,6 +251,7 @@ tsx tests/mobile-runtime-smoke-boundary.test.ts
 tsx tests/app-startup-resilience.test.ts
 tsx tests/product-cover-photo.test.ts
 tsx tests/team-subscription-enforcement.test.ts
+tsx tests/subscription-price-foundation-live-smoke.test.ts
 tsx tests/web-launch-ci.test.ts
 tsx tests/web-production-config.test.ts
 tsx tests/public-legal-support.test.ts

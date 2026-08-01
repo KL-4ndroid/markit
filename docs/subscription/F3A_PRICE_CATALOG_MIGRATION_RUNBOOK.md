@@ -1,8 +1,9 @@
 # F3A Price Catalog Migration Runbook
 
-日期：2026-07-30
+日期：2026-08-01
 
-狀態：migration 066 已建立於 repository；尚未套用到任何 Supabase environment
+狀態：使用者已確認 migration 066 套用；read-only SQL verifier、authenticated denial
+與 Security Advisor 證據仍待補齊，因此 F3A 尚未結案
 
 ## 1. Artifact
 
@@ -10,6 +11,8 @@
 supabase/migrations/066_add_subscription_price_catalog_foundation.sql
 supabase/verification/066_subscription_price_foundation_read_only.sql
 tests/subscription-price-catalog-foundation.test.ts
+scripts/smoke-subscription-price-foundation.mjs
+tests/subscription-price-foundation-live-smoke.test.ts
 ```
 
 Migration 066 只建立：
@@ -84,6 +87,20 @@ subscription_accounts: unchanged
 Service secret 也沒有 direct table grant。未來 writer 必須是另行審查的 narrow
 `SECURITY DEFINER` transaction contract，不能在 application code 直接 `.from(...).insert()`。
 
+可重跑的 REST denial smoke：
+
+```powershell
+npm.cmd run smoke:subscription:price-foundation
+
+$env:SUBSCRIPTION_SMOKE_USER_EMAIL='<isolated-test-email>'
+$env:SUBSCRIPTION_SMOKE_USER_PASSWORD='<isolated-test-password>'
+npm.cmd run smoke:subscription:price-foundation -- --require-authenticated
+Remove-Item Env:SUBSCRIPTION_SMOKE_USER_EMAIL,Env:SUBSCRIPTION_SMOKE_USER_PASSWORD
+```
+
+第一個指令驗證 anonymous 與 server secret。第二個指令才可完成 authenticated
+證據；測試帳密不得寫入 repository、`.env*` 或執行輸出。
+
 ## 6. Stop and rollback decision
 
 發生以下任一情形就停止後續 F3B：
@@ -115,3 +132,13 @@ Service secret 也沒有 direct table grant。未來 writer 必須是另行審�
 
 完成這些證據只代表 F3A foundation live。F3B event/transaction ledger、F3C writer、
 provider activation、S9 與 F4 仍未核准。
+
+## 8. 2026-08-01 live evidence snapshot
+
+- migration apply：使用者確認已執行；target 遮蔽識別、timestamp 與 migration hash 待補；
+- anonymous：三張表的 select / insert / update / delete 全部為 `401/42501`；
+- server secret：三張表的 select / insert / update / delete 全部為 `403/42501`；
+- capability regression：owner missing-row Free、active staff 與 foreign actor boundary 通過；
+- Team regression：active relationship 全部有 admin Team backing，無 suspended membership leak；
+- authenticated denial：提供的 password grant 未建立 session，需以有效 isolated fixture 重跑；
+- read-only SQL verifier 與 Security Advisor：待人工保存輸出。

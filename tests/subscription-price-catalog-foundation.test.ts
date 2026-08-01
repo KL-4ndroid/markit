@@ -147,7 +147,11 @@ for (const checkName of [
   assert.ok(verification.includes(`'${checkName}'`), `missing read-only check: ${checkName}`);
 }
 
-assert.ok(runbook.includes('尚未套用到任何 Supabase environment'));
+assert.ok(runbook.includes('使用者已確認 migration 066 套用'));
+assert.ok(runbook.includes('F3A 尚未結案'));
+assert.ok(runbook.includes('read-only SQL verifier'));
+assert.ok(runbook.includes('authenticated denial'));
+assert.ok(runbook.includes('Security Advisor'));
 assert.ok(runbook.includes('5 candidate, 0 active'));
 assert.ok(runbook.includes('billing_storefront_price_mappings: 0'));
 assert.ok(runbook.includes('subscription_price_assignments: 0'));

@@ -13,6 +13,8 @@ for (const path of [workflowPath, readinessPath]) {
 const workflow = readFileSync(join(root, workflowPath), 'utf8');
 const readiness = readFileSync(join(root, readinessPath), 'utf8');
 const manifest = readFileSync(join(root, 'scripts/test-files.txt'), 'utf8');
+const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const nvmVersion = readFileSync(join(root, '.nvmrc'), 'utf8').trim();
 
 for (const requiredWorkflowContract of [
   'name: Web launch quality gates',
@@ -41,6 +43,14 @@ assert.doesNotMatch(workflow, /^\s+paths(?:-ignore)?:/m, 'all repository changes
 assert.doesNotMatch(workflow, /continue-on-error:\s*true/i);
 assert.doesNotMatch(workflow, /SUBSCRIPTION_SIMULATION_ENABLED|SUPABASE_SECRET_KEY|R2_SECRET_ACCESS_KEY/);
 assert.doesNotMatch(workflow, /secrets\./, 'quality gates must not require deployment secrets');
+assert.equal(
+  workflow.match(/node-version: '24'/g)?.length,
+  2,
+  'every Web CI job must run on Node 24 LTS',
+);
+assert.doesNotMatch(workflow, /node-version: '20'/);
+assert.equal(packageJson.engines?.node, '24.x');
+assert.equal(nvmVersion, '24');
 
 for (const readinessBoundary of [
   'Overall status: `NOT_READY`',
