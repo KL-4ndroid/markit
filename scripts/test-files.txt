@@ -264,6 +264,8 @@ tsx tests/public-legal-support.test.ts
 tsx tests/web-public-legal-smoke.test.ts
 tsx tests/web-production-surface-boundary.test.ts
 tsx tests/web-deployment-release-identity.test.ts
+tsx tests/web-release-smoke-orchestrator.test.ts
+tsx tests/web-release-smoke-cli.test.ts
 tsx tests/web-security-headers.test.ts
 tsx tests/web-pwa-release-smoke.test.ts
 tsx tests/main-landmark-ownership.test.ts

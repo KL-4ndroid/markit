@@ -69,6 +69,8 @@ addresses, invitation links, cookies, or customer data in the evidence artifact.
   run `npm.cmd run check:web-launch-readiness` and retain the aggregate result.
 - Select the final release-candidate SHA and repeat CI, remote smoke, configuration,
   authenticated matrix, PWA install/update, and media evidence against that exact SHA.
+- Run the four public remote checks through `npm.cmd run smoke:web:release` with the
+  stable Production origin, exact release-candidate SHA, and approved legal mode.
 - Assign the rollback owner and canary cohort, define the daily review window, and record
   an explicit go/no-go decision.
 - General availability remains no-go until every external, approval, evidence, and canary

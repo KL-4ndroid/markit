@@ -45,6 +45,10 @@ The smoke rejects missing/invalid expected SHA, `development` or `unknown` versi
 missing build time, and a deployment whose returned commit does not match the first
 seven characters of the expected revision.
 
+For the final public-surface pass, use `npm.cmd run smoke:web:release` so Production,
+PWA, legal/support, and API checks share one origin, expected commit, and explicit legal
+mode. See `WEB_RELEASE_SMOKE_ORCHESTRATOR.md` for its bounded output and exit contract.
+
 ## Evidence
 
 Record:
