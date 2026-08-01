@@ -65,11 +65,11 @@ export function PublicDocumentShell({
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-5 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-3xl px-5 py-8 sm:px-6 sm:py-10">
         <div className="divide-y divide-primary/10 border-y border-primary/10 px-1 sm:px-2">
           {children}
         </div>
-      </main>
+      </div>
 
       <footer className="border-t border-primary/10 bg-atelier-paper">
         <div className="mx-auto flex max-w-3xl flex-wrap gap-x-5 gap-y-3 px-5 py-7 text-sm sm:px-6">

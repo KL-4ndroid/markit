@@ -278,7 +278,7 @@ export default function ProductsPage() {
 
   if (dbStatus.ok === false) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-xl items-center px-4 py-10">
+      <div className="mx-auto flex min-h-screen max-w-xl items-center px-4 py-10">
         <StateView
           icon={<AlertCircle className="h-5 w-5" aria-hidden="true" />}
           title="本機資料庫無法正常存取"
@@ -291,7 +291,7 @@ export default function ProductsPage() {
             </div>
           )}
         />
-      </main>
+      </div>
     );
   }
 
@@ -317,7 +317,7 @@ export default function ProductsPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 pb-8 sm:px-6">
+      <div className="mx-auto max-w-4xl px-4 pb-8 sm:px-6">
         <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur-sm sm:-mx-6 sm:px-6">
           <div className="relative">
             <label htmlFor="product-search" className="sr-only">搜尋商品</label>
@@ -390,7 +390,7 @@ export default function ProductsPage() {
                 : undefined}
           />
         )}
-      </main>
+      </div>
 
       {isFormOpen && (
         <AddProductForm isOpen onClose={handleCloseForm} onSuccess={handleAddSuccess} />

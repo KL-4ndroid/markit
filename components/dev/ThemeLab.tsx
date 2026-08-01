@@ -248,7 +248,7 @@ export function ThemeLab({
     >
         <div>
           <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-            <main className="min-w-0 space-y-5">
+            <div className="min-w-0 space-y-5">
               <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
                 <div
                   className="relative min-h-40 p-5 text-white"
@@ -294,7 +294,7 @@ export function ThemeLab({
                   ))}
                 </div>
               </section>
-            </main>
+            </div>
 
             <aside className="min-w-0 space-y-5">
               <section className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">

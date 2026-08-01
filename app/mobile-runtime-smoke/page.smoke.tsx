@@ -63,7 +63,7 @@ export default function MobileRuntimeSmokePage() {
   }, []);
 
   return (
-    <main className="mx-auto min-h-screen max-w-lg space-y-6 px-6 py-10 pb-28">
+    <div className="mx-auto min-h-screen max-w-lg space-y-6 px-6 py-10 pb-28">
       <div>
         <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Mobile static bundle
@@ -94,6 +94,6 @@ export default function MobileRuntimeSmokePage() {
       </p>
 
       <BottomNavigation />
-    </main>
+    </div>
   );
 }

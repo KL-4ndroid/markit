@@ -218,7 +218,7 @@ export function SalesPhotoEvidenceTestWorkbench({
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-8 px-5 py-8">
+      <div className="mx-auto max-w-3xl space-y-8 px-5 py-8">
         <section>
           <h2 className="mb-3 text-base font-medium text-foreground">環境狀態</h2>
           <div className="border-y border-border bg-white px-4">
@@ -287,7 +287,7 @@ export function SalesPhotoEvidenceTestWorkbench({
             </p>
           )}
         </section>
-      </main>
+      </div>
 
       <SalesPhotoEvidencePendingListDialog
         isOpen={showPending}

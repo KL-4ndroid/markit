@@ -324,7 +324,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 pb-8 pt-7 sm:px-6">
+      <div className="mx-auto max-w-3xl px-4 pb-8 pt-7 sm:px-6">
         <section aria-labelledby="today-focus-title">
           <div className="mb-4">
             <div>
@@ -453,7 +453,7 @@ export default function HomePage() {
             <p className="mt-3 py-4 text-sm text-muted-foreground">目前沒有即將到來的市集。</p>
           )}
         </section>
-      </main>
+      </div>
     </div>
   );
 }

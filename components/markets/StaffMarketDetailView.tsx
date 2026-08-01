@@ -338,7 +338,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
       </header>
 
       {/* Content */}
-      <main className="mx-auto max-w-5xl px-4 pb-6">
+      <div className="mx-auto max-w-5xl px-4 pb-6">
         <MarketWorkspaceNavigation
           value={workspaceView}
           onChange={setWorkspaceView}
@@ -636,7 +636,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
           </div>
         </section>
         )}
-      </main>
+      </div>
 
       {/* 補登收入對話框（透過 DailyRevenueStats 觸發） */}
       <AddRevenueDialog

@@ -419,14 +419,14 @@ export default function AnalyticsPage() {
 
   if (roleError || isStaff) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-xl items-center px-4 py-10">
+      <div className="mx-auto flex min-h-screen max-w-xl items-center px-4 py-10">
         <StateView
           className="w-full"
           icon={<ShieldAlert className="h-5 w-5" aria-hidden="true" />}
           title="分析功能僅限老闆使用"
           description="分析包含營收、成本與利潤資料，員工帳號不會載入這些內容。"
         />
-      </main>
+      </div>
     );
   }
 
@@ -467,7 +467,7 @@ export default function AnalyticsPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">
+      <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">
         <DateRangeFilter
           value={dateRange}
           onChange={setDateRange}
@@ -668,7 +668,7 @@ export default function AnalyticsPage() {
             )}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

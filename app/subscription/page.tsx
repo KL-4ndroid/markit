@@ -32,7 +32,7 @@ export default function SubscriptionPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-7 sm:px-6">
+      <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6">
         <SubscriptionSimulationPanel />
 
         <section className="flex items-start gap-3 border-y border-atelier-line bg-atelier-paper px-4 py-4 sm:rounded-card sm:border">
@@ -48,7 +48,7 @@ export default function SubscriptionPage() {
         <section className="mt-7 grid gap-4 md:grid-cols-3" aria-label="未來方案預覽">
           {PLAN_PREVIEWS.map(plan => <PricingCard key={plan.id} plan={plan} />)}
         </section>
-      </main>
+      </div>
     </div>
   );
 }

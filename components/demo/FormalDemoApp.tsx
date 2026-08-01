@@ -400,7 +400,7 @@ function TodayPage({
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 pb-8 pt-7 sm:px-6">
+      <div className="mx-auto max-w-3xl px-4 pb-8 pt-7 sm:px-6">
         <section aria-labelledby="today-focus-title">
           <div className="mb-4">
             <p className="text-xs font-semibold text-atelier-clay">現在</p>
@@ -429,7 +429,7 @@ function TodayPage({
             ))}
           </div>
         </section>
-      </main>
+      </div>
     </div>
   );
 }
@@ -473,12 +473,12 @@ function MarketsPage({ markets, view, onViewChange, onAdd, onOpen }: { markets: 
           <IconButton label="新增市集" tone="inverse" icon={<Plus className="h-5 w-5" />} onClick={onAdd} />
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6">
+      <div className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6">
         <Tabs items={tabs} value={view} onChange={onViewChange} ariaLabel="市集狀態篩選" />
         <div className="mt-5 space-y-3">
           {filtered.map(market => <MarketListCard key={market.id} market={market} onOpen={() => onOpen(market)} />)}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
@@ -498,7 +498,7 @@ function ProductsPage({ products, query, view, showInactive, onQueryChange, onVi
           <IconButton label="新增商品" tone="inverse" icon={<Plus className="h-5 w-5" />} onClick={onAdd} />
         </div>
       </header>
-      <main className="mx-auto max-w-4xl px-4 pb-8 sm:px-6">
+      <div className="mx-auto max-w-4xl px-4 pb-8 sm:px-6">
         <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur-sm sm:-mx-6 sm:px-6">
           <div className="relative">
             <label htmlFor="demo-product-search" className="sr-only">搜尋商品</label>
@@ -512,7 +512,7 @@ function ProductsPage({ products, query, view, showInactive, onQueryChange, onVi
         <div className="grid gap-3 py-4 sm:grid-cols-2">
           {filtered.map(product => <ProductCard key={product.id} product={product} canEdit onOpen={() => onOpen(products.find(item => item.id === product.id)!)} />)}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
@@ -590,7 +590,7 @@ function AnalyticsPage({ markets, products }: { markets: DemoMarket[]; products:
           <div className="flex items-center gap-1"><IconButton label="開啟結算報表" tone="inverse" icon={<FileText className="h-5 w-5" />} onClick={() => toast.info('Demo 不會產生正式報表')} /><IconButton label="重新計算分析" tone="inverse" icon={<RefreshCw className="h-5 w-5" />} onClick={() => toast.success('分析已重新計算')} /></div>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">
+      <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">
         <DateRangeFilter value={range} onChange={setRange} markets={formalMarkets} selectedMarketId={selectedMarketId} onMarketChange={setSelectedMarketId} />
         <Tabs className="mt-5" items={tabs} value={activeTab} onChange={setActiveTab} ariaLabel="分析分頁" />
         <div className="mt-5">
@@ -614,7 +614,7 @@ function AnalyticsPage({ markets, products }: { markets: DemoMarket[]; products:
           )}
           {activeTab === 'advanced' && <AdvancedAnalysisGate title="進階分析正在累積資料" description="進階健康分數與象限分析會在資料量足夠後顯示。" requirement="至少需要 15 場具有完整營業額、成本與互動資料的市集" />}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
@@ -651,7 +651,7 @@ function DemoSettingsShell({ title, description, icon: Icon, onBack, children }:
           <div className="min-w-0 pt-0.5"><div className="flex items-center gap-2"><Icon className="h-5 w-5" /><h1 className="text-2xl font-semibold">{title}</h1></div><p className="mt-1 max-w-2xl text-sm leading-6 text-white/80">{description}</p></div>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">{children}</main>
+      <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">{children}</div>
     </div>
   );
 }
@@ -721,7 +721,7 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
   return (
     <div className="min-h-screen bg-background">
       <header className="japanese-gradient-header rounded-b-[2rem] border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier"><div className="mx-auto flex max-w-3xl items-start gap-3"><div className="min-w-0 pt-0.5"><div className="flex items-center gap-2"><MoreHorizontal className="h-5 w-5" /><h1 className="text-2xl font-semibold">更多</h1></div><p className="mt-1 max-w-2xl text-sm leading-6 text-white/80">管理帳號、團隊、營運資料與應用程式設定。</p></div></div></header>
-      <main className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6"><section className="mb-6 flex items-center justify-between gap-4 border-b border-primary/10 pb-5"><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">demo@feria.app</p><p className="mt-1 text-xs text-muted-foreground">目前角色：老闆</p></div><span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">老闆模式</span></section><div className="space-y-6"><SettingsSection title="帳號與協作"><SettingsRow icon={Cloud} label="帳號與同步" description="管理帳號、備份與跨裝置同步" onClick={() => setView('account')} /><SettingsRow icon={Users} label="團隊成員" description="邀請夥伴並設定工作權限" onClick={() => setView('team')} /></SettingsSection><SettingsSection title="營運與資料"><SettingsRow icon={Camera} label="成交照片" description="設定成交後的照片紀錄流程" onClick={() => { setPhotoDraft(defaultPhotoRequired); setView('sales'); }} /><SettingsRow icon={Database} label="資料管理" description="匯入、匯出與復原市集資料" onClick={() => setView('data')} /></SettingsSection><SettingsSection title="應用程式"><SettingsRow icon={Smartphone} label="App 設定" description="調整顯示、操作與主題偏好" onClick={() => setView('app')} /></SettingsSection></div></main>
+      <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6"><section className="mb-6 flex items-center justify-between gap-4 border-b border-primary/10 pb-5"><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">demo@feria.app</p><p className="mt-1 text-xs text-muted-foreground">目前角色：老闆</p></div><span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">老闆模式</span></section><div className="space-y-6"><SettingsSection title="帳號與協作"><SettingsRow icon={Cloud} label="帳號與同步" description="管理帳號、備份與跨裝置同步" onClick={() => setView('account')} /><SettingsRow icon={Users} label="團隊成員" description="邀請夥伴並設定工作權限" onClick={() => setView('team')} /></SettingsSection><SettingsSection title="營運與資料"><SettingsRow icon={Camera} label="成交照片" description="設定成交後的照片紀錄流程" onClick={() => { setPhotoDraft(defaultPhotoRequired); setView('sales'); }} /><SettingsRow icon={Database} label="資料管理" description="匯入、匯出與復原市集資料" onClick={() => setView('data')} /></SettingsSection><SettingsSection title="應用程式"><SettingsRow icon={Smartphone} label="App 設定" description="調整顯示、操作與主題偏好" onClick={() => setView('app')} /></SettingsSection></div></div>
     </div>
   );
 }
@@ -932,14 +932,14 @@ function MarketWorkspace({ market, products, activities, onBack, onCartSale, onM
       <header className="japanese-gradient-header rounded-b-[2rem] px-4 pb-6 pt-[calc(1rem+env(safe-area-inset-top))] text-white">
         <div className="mx-auto max-w-5xl"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 flex-1 items-start gap-3"><button type="button" onClick={onBack} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-atelier-paper text-atelier-muted shadow-sm hover:bg-atelier-blue-soft" aria-label="返回市集列表"><ArrowLeft className="h-5 w-5" /></button><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-white/85">一場一場，好好經營市集</p><h1 className="mt-1 break-words text-2xl font-semibold leading-tight text-white">{market.name}</h1><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/80"><div className="flex items-start gap-1.5"><Calendar className="mt-0.5 h-3.5 w-3.5" /><span>{market.dateLabel}</span></div><div className="flex min-w-0 items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /><span className="truncate">{market.location}</span></div></div><p className="mt-2 text-xs leading-5 text-white/80">現場、回顧與管理都集中在這裡，依照現在的節奏使用就好。</p></div></div><div className="flex shrink-0 items-center gap-1"><StaticSyncStatus /><button type="button" onClick={onEditMarket} className="flex min-h-11 items-center gap-1.5 rounded-control bg-atelier-paper px-3 text-sm font-medium text-atelier-ink shadow-sm"><Edit className="h-4 w-4" />編輯</button></div></div></div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 pb-6">
+      <div className="mx-auto max-w-5xl px-4 pb-6">
         <MarketWorkspaceNavigation value={view} onChange={setView} ariaLabel="市集工作區" items={tabs} />
         <MarketWorkspaceSummary phase={phase} operatingTime={market.time} items={summaryItems} />
         {view === 'live' && market.status === 'operating' && <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]"><section className="rounded-card bg-atelier-blue-soft/65 p-4 shadow-atelier lg:col-start-2 lg:row-start-1"><h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-atelier-ink"><TrendingUp className="h-5 w-5 text-primary" />記錄互動</h2><div className="relative grid grid-cols-3 gap-2">{['停留詢問','追蹤 IG','試用體驗'].map((label, index) => <button key={label} type="button" onClick={() => onInteraction(label)} className={`relative min-h-24 overflow-hidden rounded-control p-3 shadow-atelier-key ${['bg-atelier-sage-soft','bg-atelier-apricot-soft','bg-atelier-blue-soft'][index]}`}><div className="mb-2 text-center text-2xl">{['💬','♡','✦'][index]}</div><div className="text-center text-sm font-semibold text-atelier-ink">{label}</div></button>)}</div></section><div className="lg:col-start-1 lg:row-start-1 lg:row-span-2"><DemoTransactionWorkspace products={products} onCartSale={onCartSale} onManualSale={onManualSale} /></div><div className="rounded-card bg-atelier-paper p-4 shadow-atelier lg:col-start-2 lg:row-start-2"><h2 className="mb-3 text-base font-semibold text-atelier-ink">最近紀錄</h2><div className="space-y-2">{activities.slice(0, 4).map(activity => <div key={activity.id} className="rounded-control bg-atelier-canvas px-3 py-2"><p className="text-sm font-medium text-foreground">{activity.label}</p><p className="mt-1 text-xs text-muted-foreground">{activity.time}・{activity.detail}</p></div>)}</div></div></div>}
         {view === 'live' && market.status !== 'operating' && <div className="rounded-card bg-atelier-apricot-soft/70 px-4 py-4 text-sm text-atelier-muted shadow-sm">這場市集目前不在營運時間，仍可切換到「回顧」或「管理」查看資料。</div>}
         {view === 'overview' && <div className="grid gap-4 sm:grid-cols-2"><div className="rounded-card bg-atelier-paper p-5 shadow-atelier"><h2 className="text-base font-semibold text-atelier-ink">營運表現</h2><div className="mt-4 grid grid-cols-2 gap-3"><div className="rounded-control bg-soft-green p-4"><p className="text-xs text-muted-foreground">互動</p><p className="mt-1 text-xl font-semibold">{market.interactions}</p></div><div className="rounded-control bg-soft-yellow p-4"><p className="text-xs text-muted-foreground">轉換率</p><p className="mt-1 text-xl font-semibold">{market.interactions > 0 ? Math.round(market.deals / market.interactions * 100) : 0}%</p></div></div></div><div className="rounded-card bg-atelier-paper p-5 shadow-atelier"><h2 className="text-base font-semibold text-atelier-ink">市集筆記</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">{market.note}</p></div></div>}
         {view === 'manage' && <div className="space-y-4"><section className="rounded-card border border-primary/10 bg-atelier-paper p-5 shadow-atelier"><div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold text-foreground">營運狀態</h2><p className="mt-1 text-sm text-muted-foreground">依照現場進度開始或結束本場營運。</p></div>{market.status === 'preparing' ? <Button onClick={() => onStatusChange('operating')}>開始營運</Button> : market.status === 'operating' ? <Button variant="secondary" onClick={() => onStatusChange('ended')}>結束營運</Button> : <span className="rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">已結束</span>}</div></section><section className="rounded-card border border-primary/10 bg-atelier-paper p-5 shadow-atelier"><h2 className="text-lg font-semibold text-foreground">基本設定</h2><div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded-control bg-background p-4"><p className="text-xs text-muted-foreground">營運時間</p><p className="mt-1 text-sm font-medium">{market.time}</p></div><div className="rounded-control bg-background p-4"><p className="text-xs text-muted-foreground">市集地點</p><p className="mt-1 text-sm font-medium">{market.location}</p></div></div><Button variant="secondary" onClick={onEditMarket} className="mt-4" leadingIcon={<Edit className="h-4 w-4" />}>編輯完整設定</Button></section><section className="rounded-card border border-primary/10 bg-atelier-paper p-5 shadow-atelier"><h2 className="text-lg font-semibold text-foreground">成本與紀錄</h2><p className="mt-2 text-sm text-muted-foreground">固定成本 {formatCurrency(calculateMarketFixedCost(market))}・成交照片{market.salesPhotoEvidenceRequired ? '必須補拍' : '依需要補拍'}。</p></section></div>}
-      </main>
+      </div>
     </div>
   );
 }

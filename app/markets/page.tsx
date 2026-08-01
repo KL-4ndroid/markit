@@ -244,7 +244,7 @@ export default function MarketsPage() {
 
   if (dbStatus.ok === false) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-xl items-center px-4 py-10">
+      <div className="mx-auto flex min-h-screen max-w-xl items-center px-4 py-10">
         <StateView
           icon={<AlertCircle className="h-5 w-5" aria-hidden="true" />}
           title="本機資料庫無法正常存取"
@@ -257,7 +257,7 @@ export default function MarketsPage() {
             </div>
           )}
         />
-      </main>
+      </div>
     );
   }
 
@@ -283,7 +283,7 @@ export default function MarketsPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6">
+      <div className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6">
         {activeView === 'cancelled' ? (
           <div className="mb-5 flex items-center gap-3">
             <IconButton
@@ -343,7 +343,7 @@ export default function MarketsPage() {
             查看已取消市集 ({groups.cancelled.length})
           </button>
         )}
-      </main>
+      </div>
 
       {isFormOpen && (
         <AddMarketForm

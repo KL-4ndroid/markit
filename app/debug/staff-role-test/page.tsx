@@ -72,7 +72,7 @@ export default function StaffRoleTestPage() {
         </div>
       </div>
 
-      <main className="mx-auto -mt-4 max-w-3xl space-y-4 px-6">
+      <div className="mx-auto -mt-4 max-w-3xl space-y-4 px-6">
         <section className="rounded-xl border border-primary/10 bg-white p-4 shadow-sm">
           <p className="mb-3 text-sm font-medium text-foreground">切換測試角色</p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -176,7 +176,7 @@ export default function StaffRoleTestPage() {
             </button>
           </div>
         </section>
-      </main>
+      </div>
     </div>
   );
 }
