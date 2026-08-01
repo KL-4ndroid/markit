@@ -1,8 +1,8 @@
 # Web Deployment Release Identity
 
-Date: 2026-07-30
+Date: 2026-08-01
 
-Status: local production-mode commit-bound smoke passed on 2026-07-30; remote evidence pending
+Status: commit-bound Production deployment and remote smokes passed on 2026-08-01
 
 ## Purpose
 
@@ -71,3 +71,28 @@ PASS commit-bound production surface (debug 404, dev API 404, public demo availa
 The worktree contained uncommitted launch-preparation changes, so this result proves the
 runtime identity mechanism and boundary behavior only. It is not release evidence until
 the exact changes are committed, deployed from that commit, and the remote smoke passes.
+
+## Production evidence
+
+Vercel Production deployment `5703908874` completed successfully for:
+
+```text
+0d5b9dbadc4cb3a22371171c1dfa9b11d5481630
+```
+
+The commit-specific deployment URL is protected by Vercel SSO and returned `302` to the
+SSO endpoint. The public stable alias `https://markit-app-mocha.vercel.app` returned:
+
+```text
+version: 0.1.0
+commitSha: 0d5b9db
+buildTime: 2026-08-01T10:54:23.733Z
+```
+
+After validating that identity, the Production boundary, PWA resource, draft legal
+page, and API/CORS/invalid-token smokes all passed. GitHub push run `30696620921` and
+pull-request run `30696623265` also completed successfully for the same full SHA.
+
+This proves deployment identity and the checked HTTP contracts only. It does not prove
+production Supabase/R2 configuration, legal publication, billing, authenticated paid
+states, PWA installation, or canary readiness.

@@ -1,6 +1,6 @@
 # Web Production Configuration Check
 
-Date: 2026-07-30
+Date: 2026-08-01
 
 Status: local read-only preflight implemented; production evidence not yet collected
 
@@ -71,7 +71,7 @@ canary.
 
 ## Latest local snapshot
 
-The 2026-07-30 read-only check of `.env.production.local` produced `4 passed / 17
+The 2026-08-01 read-only check of `.env.production.local` produced `4 passed / 17
 failed`. No values were emitted or recorded. Failed check IDs:
 
 ```text

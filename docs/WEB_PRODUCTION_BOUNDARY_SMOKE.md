@@ -1,8 +1,8 @@
 # Web Production Surface Boundary Smoke
 
-Date: 2026-07-30
+Date: 2026-08-01
 
-Status: local production-mode smoke passed on 2026-07-30; remote evidence pending
+Status: local and commit-bound Production smokes passed
 
 ## Contract
 
@@ -74,3 +74,17 @@ No authentication token, cookie, database mutation, storage operation, or extern
 network service was used. The smoke first matched the health release SHA against the
 trusted local HEAD. Because the worktree was dirty, this remains runtime evidence rather
 than release-deployment evidence.
+
+## Production evidence
+
+On 2026-08-01 the stable Production alias passed the same smoke after `/api/health`
+matched full expected SHA `0d5b9dbadc4cb3a22371171c1dfa9b11d5481630` to deployed short SHA
+`0d5b9db`:
+
+```text
+PASS commit-bound production surface (debug 404, dev API 404, public demo available)
+```
+
+Vercel deployment `5703908874`, GitHub push run `30696620921`, and pull-request run
+`30696623265` all succeeded for the same commit. No authentication token, cookie, data
+mutation, or storage operation was used by this public-boundary smoke.

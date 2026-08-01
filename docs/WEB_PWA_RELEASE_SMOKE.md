@@ -1,7 +1,7 @@
 # BoothBook Web PWA Release Smoke
 
-Date: 2026-07-30
-Status: local production build and browser smoke passed; remote install evidence pending
+Date: 2026-08-01
+Status: commit-bound remote resource smoke passed; remote install evidence pending
 
 ## Scope
 
@@ -76,3 +76,19 @@ Before general availability, record all of the following against the same deploy
 
 Localhost evidence is compatibility evidence only. It does not prove HTTPS, edge
 headers, install prompts, update delivery, or production deployment identity.
+
+## Production resource evidence
+
+On 2026-08-01 the public stable alias first matched `/api/health` to full expected SHA
+`0d5b9dbadc4cb3a22371171c1dfa9b11d5481630`, then passed:
+
+```text
+PASS commit-bound PWA resources (9 unique image assets, service worker, manifest, demo)
+```
+
+Browser verification on the same alias confirmed that `/demo` was controlled by the
+service worker, the representative public and subscription shells each exposed one
+`main` landmark, and the 390x844 subscription view had no horizontal overflow. Real
+install prompts, installed-icon launch, update activation after another deployment,
+owner/staff shortcut behavior, and public install screenshots still require human or
+device-level evidence.

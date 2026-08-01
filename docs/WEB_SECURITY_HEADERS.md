@@ -1,8 +1,8 @@
 # Web Security Headers
 
-Date: 2026-07-30
+Date: 2026-08-01
 
-Status: baseline passed local production-mode API/page/PWA smoke on 2026-07-30; remote anti-frame evidence pending
+Status: baseline passed commit-bound Production API/page/PWA smoke; remote anti-frame evidence pending
 
 ## Enforced baseline
 
@@ -72,3 +72,16 @@ the in-app browser rejected the inline probe URL and no bypass was attempted.
 
 The dirty local worktree means this is compatibility/runtime evidence, not final
 deployment evidence.
+
+## Production evidence
+
+On 2026-08-01 the Production boundary, PWA, legal-page, and Vercel API smokes first
+matched `/api/health` to `0d5b9db`, then passed the exact header contract on the public
+stable alias. Browser verification found no console errors, confirmed the service worker
+controlled `/demo`, found one `main` landmark on representative public, subscription,
+and authenticated Team routes, and found no horizontal overflow at 390x844.
+
+The unrelated-origin HTTPS anti-frame browser probe remains open. The in-app browser
+blocked the inline probe URL by policy; no alternate browser, raw-CDP bypass, or policy
+workaround was attempted. This gate therefore remains below `complete` even though the
+remote response headers pass.

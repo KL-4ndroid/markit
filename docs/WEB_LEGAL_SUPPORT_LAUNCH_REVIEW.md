@@ -1,9 +1,9 @@
 # Web Legal And Support Launch Review
 
-Date: 2026-07-30
+Date: 2026-08-01
 
-Status: local product and configuration baseline implemented; legal, accounting, and
-operational approval evidence missing
+Status: commit-bound Production draft smoke passed; legal, accounting, and operational
+approval evidence missing
 
 This document is an engineering launch gate, not legal advice. It prevents public
 policy pages, a placeholder email address, or an unchecked environment variable from
@@ -130,3 +130,17 @@ The gate can move from `evidence_missing` only when:
   release SHA;
 - a real support case and incident escalation drill pass;
 - signed approvals and the final retention table are stored with the release record.
+
+## Production draft evidence
+
+On 2026-08-01 the unauthenticated Production smoke first matched `/api/health` to
+`0d5b9db`, then passed `/support`, `/terms`, `/privacy`, and `/about` in fail-closed
+`draft` mode:
+
+```text
+PASS commit-bound public legal/support pages (draft mode, 4 routes)
+```
+
+This confirms route reachability, headers, and truthful draft behavior only. It does
+not satisfy publication: operator/contact values, the final effective date, signed
+approvals, the real support-case drill, and the incident escalation drill remain open.

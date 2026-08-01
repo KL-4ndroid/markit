@@ -1,6 +1,6 @@
 # BoothBook Web Launch Readiness
 
-Date: 2026-07-30
+Date: 2026-08-01
 
 Overall status: `NOT_READY`
 
@@ -14,6 +14,9 @@ Local success is not production evidence. A gate is complete only when its requi
 artifact and environment-specific result are both recorded. Repository tests cannot
 prove that a migration, secret, object store, provider account, callback, or production
 deployment is configured correctly.
+
+External and human follow-up is consolidated in
+`WEB_LAUNCH_MANUAL_ACTIONS_2026_08_01.md`.
 
 Allowed status values:
 
@@ -29,31 +32,31 @@ evidence_missing
 
 | ID | Gate | Current status | Current evidence | Required exit evidence |
 | --- | --- | --- | --- | --- |
-| `CI-WEB` | Every PR and `main` push runs hex, lint, complete tests, secret-free production build, and clean-diff checks | `complete` | Push run `30694328117` and PR run `30694330156` passed both jobs on commit `4dffaf20b2466871cce286ecf1cc0edb4551efb8` on 2026-08-01 | Preserve the gate and repeat it on the final release candidate revision |
-| `LOCAL-QUALITY` | Current worktree passes lint, complete tests, production build, and `git diff --check` | `complete` | 2026-08-01 Node 24/npm 11 full lint, complete manifest, production build, and diff check | Repeat on release candidate revision |
+| `CI-WEB` | Every PR and `main` push runs hex, lint, complete tests, secret-free production build, and clean-diff checks | `complete` | Push run `30696620921` and PR run `30696623265` passed both jobs on commit `0d5b9dbadc4cb3a22371171c1dfa9b11d5481630` on 2026-08-01 | Preserve the gate and repeat it on the final release candidate revision |
+| `LOCAL-QUALITY` | Current worktree passes lint, complete tests, production build, and `git diff --check` | `complete` | 2026-08-01 Node 24/npm 11 full lint, complete manifest including single-main ownership, production build, diff check, and changed-file secret scan on commit `0d5b9db` | Repeat on release candidate revision |
 | `DB-063-065` | Shared capability and Team enforcement migrations are live | `complete` | user-confirmed apply plus prior RPC/structural smoke | Preserve dated environment and smoke output in release evidence |
 | `DB-066` | F3A private candidate price catalog foundation is live and denied to direct clients | `pending_external` | User-confirmed apply on 2026-08-01; anon and server-secret table probes denied with `42501`; authenticated browser session passed all 12 table and 3 function probes; capability and Team read regressions passed | Record masked target/hash/timestamp; all read-only verifier rows true; Security Advisor result recorded |
 | `TEAM-LIVE` | Server-authoritative Free/Pro/Team mutation, downgrade, re-upgrade, and restore behavior is proven | `complete` | 2026-08-01 isolated 57-check live run passed direct-write and Free/Pro denial, Team invitation and viewer/operator/manager transitions, downgrade suspension, no-auto-restore, explicit restore, cleanup, and zero-residual audit | Preserve the guarded smoke and repeat against the selected release environment; deployment UI evidence remains under `STAGING-E2E` |
-| `PROD-CONFIG` | Production Supabase, CORS, cron, R2, media gates, and server secrets are configured | `evidence_missing` | Read-only preflight implemented; local `.env.production.local` snapshot is 4/18 passing and is not Vercel evidence | Passing preflight against deployed names, dated Vercel review with no values, and production route smoke |
-| `PROD-SURFACE` | Debug pages and dev subscription API are unreachable while the static fake-data demo remains public | `implemented_local` | 2026-07-30 production-mode local smoke passed even with both internal enable flags deliberately set | Run the same smoke against the release deployment and record commit-bound evidence |
-| `DEPLOY-IDENTITY` | Remote smoke proves it reached the intended release revision | `implemented_local` | 2026-07-30 commit-bound production-mode smoke passed on a dirty local worktree | Commit changes, deploy that exact revision, then pass both remote smokes against its trusted SHA |
-| `SECURITY-HEADERS` | Pages and APIs receive the reviewed baseline without breaking PWA/media/auth flows | `implemented_local` | 2026-07-30 production-mode API/page/PWA resource smoke and service-worker browser activation passed; unrelated-origin browser probe pending | Release deployment headers and unrelated-origin anti-frame evidence |
-| `PWA-WEB` | Manifest assets, service-worker lifecycle, install presentation, responsive shell, and app shortcuts work | `implemented_local` | commit-bound local smoke passed 9 unique assets plus manifest/service worker/demo; browser activation and 390/768/1440/1920 overflow checks passed; missing screenshot and load-event race repaired | Same smoke against release SHA, real install/update evidence, owner/staff shortcut smoke, install screenshots |
+| `PROD-CONFIG` | Production Supabase, CORS, cron, R2, media gates, and server secrets are configured | `evidence_missing` | Read-only preflight implemented; 2026-08-01 local `.env.production.local` snapshot is 4/17 passing and is not Vercel evidence | Passing preflight against deployed names, dated Vercel review with no values, and production route smoke |
+| `PROD-SURFACE` | Debug pages and dev subscription API are unreachable while the static fake-data demo remains public | `complete` | 2026-08-01 stable Production alias passed the commit-bound debug 404, dev API 404, and public demo smoke on `0d5b9db` | Preserve the smoke and repeat it on the final release candidate revision |
+| `DEPLOY-IDENTITY` | Remote smoke proves it reached the intended release revision | `complete` | Vercel Production deployment `5703908874` succeeded; stable alias health and four remote smokes matched `0d5b9db` with version `0.1.0` on 2026-08-01 | Preserve deployment/health identity and repeat it on the final release candidate revision |
+| `SECURITY-HEADERS` | Pages and APIs receive the reviewed baseline without breaking PWA/media/auth flows | `pending_external` | 2026-08-01 commit-bound Production API, page, legal, and PWA smokes passed exact headers; browser service worker, console, responsive shell, and single-main checks passed | Unrelated-origin HTTPS anti-frame evidence and final release-candidate repeat |
+| `PWA-WEB` | Manifest assets, service-worker lifecycle, install presentation, responsive shell, and app shortcuts work | `pending_external` | 2026-08-01 commit-bound Production smoke passed 9 unique assets, manifest, service worker, and demo; browser remained controlled and responsive with one main landmark | Real desktop/Android-class install and launch, update activation, owner/staff shortcut smoke, install screenshots |
 | `MEDIA-PROD` | Product-cover and sales-evidence storage paths are production-ready at approved entitlement modes | `evidence_missing` | local tests and guides exist | Migration/R2/CORS/quota/cleanup evidence and authorized/unauthorized production smoke |
-| `STAGING-E2E` | Owner, staff roles, Free/Pro/Team, offline recovery, PDF, and media workflows pass in a production-like deployment | `evidence_missing` | local browser and automated tests are partial evidence | Signed staging matrix for required viewports, roles, account states, and recovery cases |
+| `STAGING-E2E` | Owner, staff roles, Free/Pro/Team, offline recovery, PDF, and media workflows pass in a production-like deployment | `evidence_missing` | 57-check live Team transition smoke passed; authenticated Production browser session confirmed non-Team Team-page denial and disabled mutation controls on `0d5b9db`; remaining matrix is open | Signed staging matrix for required viewports, roles, account states, and recovery cases |
 | `BILLING-MERCHANT` | NewebPay recurring payment merchant, API, sandbox, refund, and reconciliation capabilities are approved | `pending_external` | provider decision is conditional | Dated merchant/API activation evidence and sanitized sandbox fixtures |
 | `F3B-F3E` | Billing event ledger, projection writer, quote/obligation, and support audit slices are implemented | `pending_approval` | F3 design and F3A local foundation only | Separate reviewed migrations, adversarial tests, live verification, rollback and operations evidence per slice |
 | `S9` | Provider adapter, callback, reconciliation, checkout, cancellation, refund, and entitlement mutation are implemented | `pending_approval` | S8 decision and billing contracts only | Complete billing test matrix, staging lifecycle evidence, security review, support runbooks, production canary approval |
 | `PROMOTION-RUNTIME` | Launch referral attribution and Pro Pass rewards are abuse-resistant and reconciled with paid billing policy | `pending_approval` | policy/design only | Approved P1-P4 slices or an explicit decision to launch without the promotion |
 | `OBSERVABILITY` | Health, callback backlog, reconciliation delay, payment failures, media cleanup, and sync incidents are observable | `evidence_missing` | health route plus local schema-v1 sales-photo API/cleanup events, safety tests, thresholds, and incident runbook; production sink and future billing signals are absent | Production dashboards/alerts, owner, thresholds, escalation and incident drill evidence |
-| `LEGAL-SUPPORT` | Terms, privacy, billing/refund/cancellation, data retention, support and incident policies are approved | `evidence_missing` | exact public `/support`, `/terms`, `/privacy`, `/about` routes; fail-closed operator/contact/policy preflight; truthful no-billing boundary; 2026-07-30 commit-bound local draft smoke passed four routes and browser checks at 390/1440 without login, overflow, or console errors | Real operator/contact values, final retention table, published-mode remote public-page and real support-case smoke, incident drill, dated product/legal/accounting/privacy approvals |
+| `LEGAL-SUPPORT` | Terms, privacy, billing/refund/cancellation, data retention, support and incident policies are approved | `evidence_missing` | exact public routes and fail-closed configuration; 2026-08-01 commit-bound Production `draft` smoke passed four routes on `0d5b9db` without treating placeholders as publication | Real operator/contact values, final retention table, published-mode remote public-page and real support-case smoke, incident drill, dated product/legal/accounting/privacy approvals |
 | `RELEASE-CANARY` | A bounded production cohort proves the release before general availability | `pending_external` | not started | Go/no-go record, rollback owner, daily review window, zero unresolved release-blocking defects |
 
 ## Required order from current state
 
 1. Complete the remaining migration 066 verifier and Security Advisor evidence.
-2. Select the release deployment and run commit-bound production-surface, PWA,
-   security-header, legal/support, and authenticated owner/staff smokes.
+2. Complete the remaining install/update, unrelated-origin anti-frame, and authenticated
+   owner/staff production-like browser matrix against the selected deployment.
 3. Complete production configuration and media staging evidence without enabling billing.
 4. Finish NewebPay merchant/API activation while implementing only separately approved
    F3B-F3E slices.
