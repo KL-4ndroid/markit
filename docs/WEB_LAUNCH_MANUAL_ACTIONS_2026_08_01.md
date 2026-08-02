@@ -37,6 +37,9 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
 
 - Exercise explicit Free, Pro, Team owner, viewer, operator, and manager states against
   the selected production-like deployment.
+- Create or confirm a dedicated test account in the Supabase target embedded by the
+  selected Production release. The current local target is different, and the supplied
+  test account was rejected by the Production target without submitting an event.
 - Complete Team invitation, role change, downgrade cleanup, re-upgrade, and explicit
   restore UI evidence without recording invitation tokens or account identifiers.
 - Complete offline pending-write, reconnect, blocked sign-out, and cloud-rebuild recovery.
@@ -57,6 +60,8 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
   review retention/access, then complete one non-production fixture incident drill.
 - Include `sync.permission_blocked` and `sync.unexpected_failure` in the production sink
   and reproduce the fixed 15-minute thresholds from `WEB_OPERATIONAL_OBSERVABILITY.md`.
+- After the Production-target test account is confirmed, run the guarded authenticated
+  sync-intake smoke and retain only exact SHA, timestamp, fixed check names, and statuses.
 - Add callback, reconciliation, and payment signals only when the S9 billing runtime is
   approved and implemented.
 

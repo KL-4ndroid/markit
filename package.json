@@ -18,6 +18,7 @@
     "smoke:subscription:price-foundation": "node scripts/smoke-subscription-price-foundation.mjs",
     "smoke:subscription:team-enforcement": "node scripts/smoke-team-subscription-enforcement.mjs",
     "smoke:subscription:team-transition": "node scripts/smoke-team-subscription-transition.mjs",
+    "smoke:sync:incident-intake": "node scripts/smoke-sync-incident-intake.mjs",
     "smoke:web:production-boundary": "node scripts/smoke-web-production-boundary.mjs",
     "smoke:web:pwa": "node scripts/smoke-web-pwa-resources.mjs",
     "smoke:web:legal-support": "node scripts/smoke-web-public-legal.mjs",

@@ -1,10 +1,12 @@
 # Web Authenticated Release Matrix Evidence
 
-Date: 2026-08-01
+Date: 2026-08-02
 
 Status: partial evidence only; `STAGING-E2E` remains `evidence_missing`
 
-Application revision: `cac6fa6f7ffcf02779b0f3e66fb00ec9f4314250`
+Latest public release revision: `3369ff622ca1214bedc9aa43beee77dc96f6c3ae`
+
+Original browser matrix revision: `cac6fa6f7ffcf02779b0f3e66fb00ec9f4314250`
 
 Origins checked:
 
@@ -13,8 +15,8 @@ Origins checked:
 
 ## Safety And Evidence Boundary
 
-- Existing authenticated browser sessions were reused. No credential was entered,
-  copied, persisted, or included in this artifact.
+- The original browser matrix reused existing authenticated sessions. No credential was
+  entered during that browser run or copied, persisted, or included in this artifact.
 - No subscription, billing, invitation, role, staff, market, product, or media row was
   created, changed, or deleted.
 - Evidence contains only plan decisions, control states, release identity, and sanitized
@@ -52,11 +54,49 @@ not expose the generated blob preview as an inspectable tab, so this run does no
 representative PDF output artifact. Existing deterministic PDF render tests remain the
 local artifact evidence.
 
+## 2026-08-02 Backend Transition Evidence
+
+The guarded live transition smoke ran against the cloud target configured by
+`.env.local`, using two random confirmed auth fixtures and one isolated market. All 57
+checks passed and cleanup removed both auth users and cascading fixture rows.
+
+The covered lifecycle was:
+
+- default/explicit Free and admin Pro denied invitation, link, role, and restore writes;
+- admin Team allowed email invitation, link creation and cleanup, staff acceptance, and
+  viewer to operator to manager transitions;
+- Team to Pro suspended the relationship, removed staff membership, and removed owner
+  and market scope;
+- Pro to Free preserved suspension;
+- Team re-upgrade did not auto-restore access;
+- explicit owner restore recreated membership and staff scope.
+
+This is server/RPC lifecycle evidence, not Production UI evidence. The configured local
+cloud target and the Supabase target embedded in Production are different, as confirmed
+by value-free public-config comparison.
+
+## 2026-08-02 Production Sync Intake Attempt
+
+Production commit `3369ff6` passed exact health, both GitHub Actions runs, Production
+deployment, all four public release checks, unauthenticated `401` denial, and
+`capacitor://localhost` preflight. The guarded authenticated intake then failed closed:
+
+- a disposable auth fixture from the local cloud target was rejected by Production and
+  was deleted successfully;
+- the supplied test account was rejected as invalid by the Production auth target;
+- no synthetic sync incident was accepted in either attempt;
+- no credential, token, public config value, target identifier, or account identifier was
+  recorded.
+
+A valid dedicated account in the Production target is required before authenticated
+sync-incident intake can be claimed.
+
 ## Still Required
 
 This run does not prove or close:
 
 - paid Production Pro and Team owner states;
+- authenticated sync-incident intake using a valid Production-target test account;
 - Production viewer, operator, and manager sessions;
 - real Team invitation, role transition, downgrade client cleanup, re-upgrade, and
   explicit restore UI flows on the selected release deployment;

@@ -147,6 +147,49 @@ This command does not prove production log delivery or alert routing. It is a re
 policy oracle for configuring provider rules and evaluating a sanitized incident-drill
 fixture; provider delivery and paging still require external evidence.
 
+## Guarded Authenticated Intake Smoke
+
+The mutating intake smoke is intentionally separate from automatic CI and public release
+smoke. It verifies an exact deployed release, proves that an authenticated report with
+an extra field is rejected, and submits one fixed `sync.unexpected_failure` report with
+`pendingCount: 0`.
+
+Use isolated-fixture mode only when the local Supabase target is the target embedded in
+the deployed application. It creates one confirmed auth user and deletes it in `finally`:
+
+```powershell
+npm.cmd run smoke:sync:incident-intake -- `
+  --execute=isolated-fixture-only `
+  --project-ref=<confirmed-project-ref> `
+  --base-url=https://<confirmed-production-origin> `
+  --expected-commit=<exact-seven-character-release-sha>
+```
+
+If the local and deployed Supabase targets differ, use a dedicated existing test account
+that belongs to the deployed target. Supply its credentials through temporary process
+environment values; the command discovers exactly one bounded public Supabase config
+from the exact release and does not modify or delete the account:
+
+```powershell
+$env:SYNC_INCIDENT_SMOKE_USER_EMAIL='<production-test-account>'
+$env:SYNC_INCIDENT_SMOKE_USER_PASSWORD='<production-test-password>'
+npm.cmd run smoke:sync:incident-intake -- `
+  --execute=existing-test-account-only `
+  --base-url=https://<confirmed-production-origin> `
+  --expected-commit=<exact-seven-character-release-sha>
+Remove-Item Env:SYNC_INCIDENT_SMOKE_USER_EMAIL,Env:SYNC_INCIDENT_SMOKE_USER_PASSWORD
+```
+
+Isolated mode requires local public and server Supabase environment values, refuses a
+project-ref mismatch, and verifies the deployed public auth project before creating any
+fixture. It persists only a bounded cleanup marker in the OS temporary directory and
+supports `--cleanup-leftover`. Existing-account mode refuses fixture and cleanup
+arguments, bounds release HTML and script downloads, and requires exactly one public
+Supabase URL and publishable key. Neither mode prints credentials, tokens,
+identifiers, endpoint bodies, or environment values. The one accepted synthetic event
+is below the unexpected-failure warning threshold; record its execution time in release
+evidence so it is not mistaken for a customer incident.
+
 ## Incident Procedure
 
 1. Confirm the event `releaseCommitSha` matches the intended deployment. Do not debug
@@ -201,3 +244,12 @@ This evidence proves deployment and the public rejection/CORS boundary. It does 
 prove authenticated event ingestion into a production monitoring provider, threshold
 delivery, notification ownership, retention/access settings, or an incident drill, so
 the `OBSERVABILITY` launch gate remains `implemented_local`.
+
+Follow-up commit `3369ff6` passed both GitHub Actions runs, Production deployment
+`5709434279`, exact stable-alias health, and all four public release checks. Its public
+client config was intentionally compared without exposing values and does not match the
+current `.env.local` Supabase target. The isolated local-target fixture therefore failed
+closed at Production authentication and was deleted; the supplied test account was also
+rejected by the Production target as invalid credentials. No synthetic event was
+accepted in either attempt. A valid dedicated Production-target test account remains a
+manual prerequisite for authenticated intake proof.
