@@ -101,3 +101,9 @@ Open only the returned `probeUrl` in Chromium and retain a public-data-only scre
 showing that the frame was refused. `https://httpbin.org` is a temporary evidence origin,
 not an application dependency. Repeat both the commit-bound header smoke and this browser
 probe on the final release candidate before changing the launch gate to `complete`.
+
+Probe-generator commit `b83cb14` passed GitHub Actions push run `30726585404` and
+pull-request run `30726587060`, Production deployment `5709814312`, exact stable-alias
+health, and all four public release checks. The released command then generated an
+unrelated-origin probe URL only after matching exact release `b83cb14`. This proves the
+repeat procedure is deployed; the final release-candidate repetition remains open.
