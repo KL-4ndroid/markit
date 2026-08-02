@@ -4,7 +4,7 @@ Date: 2026-08-02
 
 Status: partial evidence only; `STAGING-E2E` remains `evidence_missing`
 
-Latest public release revision: `b83cb14a2c81eec733bb82ee9709e8d7049fffd2`
+Latest evidence-bearing implementation revision: `b83cb14a2c81eec733bb82ee9709e8d7049fffd2`
 
 Original browser matrix revision: `cac6fa6f7ffcf02779b0f3e66fb00ec9f4314250`
 

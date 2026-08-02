@@ -58,7 +58,7 @@ assert.equal(
 assert.match(readiness, /General availability is `NO-GO` while any row above is not `complete`/);
 assert.match(readiness, /`WEB_AUTHENTICATED_RELEASE_MATRIX_2026_08_01\.md`/);
 assert.match(authenticatedMatrix, /Status: partial evidence only; `STAGING-E2E` remains `evidence_missing`/);
-assert.match(authenticatedMatrix, /Latest public release revision: `b83cb14a2c81eec733bb82ee9709e8d7049fffd2`/);
+assert.match(authenticatedMatrix, /Latest evidence-bearing implementation revision: `b83cb14a2c81eec733bb82ee9709e8d7049fffd2`/);
 assert.match(authenticatedMatrix, /Original browser matrix revision: `cac6fa6f7ffcf02779b0f3e66fb00ec9f4314250`/);
 assert.match(authenticatedMatrix, /paid Production Pro and Team owner states/);
 assert.match(authenticatedMatrix, /valid dedicated account in the Production target is required/);
