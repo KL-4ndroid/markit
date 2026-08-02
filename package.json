@@ -23,6 +23,7 @@
     "smoke:web:pwa": "node scripts/smoke-web-pwa-resources.mjs",
     "smoke:web:legal-support": "node scripts/smoke-web-public-legal.mjs",
     "smoke:web:release": "tsx scripts/run-web-release-smoke.ts",
+    "prepare:web:anti-frame-probe": "node scripts/create-web-anti-frame-probe.mjs",
     "check:production-config": "tsx scripts/check-web-production-config.ts",
     "check:operational-alerts": "tsx scripts/evaluate-web-operational-alerts.ts",
     "check:web-launch-readiness": "tsx scripts/check-web-launch-readiness.ts",

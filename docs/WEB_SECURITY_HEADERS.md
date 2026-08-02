@@ -1,8 +1,8 @@
 # Web Security Headers
 
-Date: 2026-08-01
+Date: 2026-08-02
 
-Status: baseline passed commit-bound Production API/page/PWA smoke; remote anti-frame evidence pending
+Status: baseline and current-release anti-frame evidence passed; final release-candidate repeat pending
 
 ## Enforced baseline
 
@@ -67,8 +67,8 @@ PASS commit-bound production surface (debug 404, dev API 404, public demo availa
 The separate commit-bound PWA smoke fetched every declared icon and screenshot, the
 manifest, service worker, and demo page with the same header contract. Browser evidence
 confirmed service-worker activation, no console errors, and no horizontal overflow at
-four viewports. The unrelated-origin anti-frame browser probe remains pending because
-the in-app browser rejected the inline probe URL and no bypass was attempted.
+four viewports. An initial inline anti-frame probe was rejected by browser policy, so no
+bypass was attempted; the unrelated-origin HTTPS method below replaced it.
 
 The dirty local worktree means this is compatibility/runtime evidence, not final
 deployment evidence.
@@ -81,7 +81,23 @@ stable alias. Browser verification found no console errors, confirmed the servic
 controlled `/demo`, found one `main` landmark on representative public, subscription,
 and authenticated Team routes, and found no horizontal overflow at 390x844.
 
-The unrelated-origin HTTPS anti-frame browser probe remains open. The in-app browser
-blocked the inline probe URL by policy; no alternate browser, raw-CDP bypass, or policy
-workaround was attempted. This gate therefore remains below `complete` even though the
-remote response headers pass.
+On 2026-08-02, commit `62bd881` passed both GitHub Actions runs, Production deployment
+`5709665655`, exact stable-alias health, and all four public release checks. A public-only
+probe page served from unrelated origin `https://httpbin.org` then framed the stable
+Production origin. Chromium rendered only its connection-refused frame state and no
+BoothBook content, matching the exact `frame-ancestors 'none'` and `X-Frame-Options:
+DENY` response evidence. No login, cookie inspection, inline URL, raw CDP, or application
+write was used.
+
+Generate the bounded probe URL only after exact release identity succeeds:
+
+```powershell
+npm.cmd run prepare:web:anti-frame-probe -- `
+  --base-url=https://markit-app-mocha.vercel.app `
+  --expected-commit=<exact-seven-character-release-sha>
+```
+
+Open only the returned `probeUrl` in Chromium and retain a public-data-only screenshot
+showing that the frame was refused. `https://httpbin.org` is a temporary evidence origin,
+not an application dependency. Repeat both the commit-bound header smoke and this browser
+probe on the final release candidate before changing the launch gate to `complete`.

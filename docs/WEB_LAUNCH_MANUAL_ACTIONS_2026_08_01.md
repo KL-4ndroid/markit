@@ -25,8 +25,8 @@ addresses, invitation links, cookies, or customer data in the evidence artifact.
 - Launch from each installed icon and capture public-data-only screenshots.
 - Deploy a second reviewed revision and verify service-worker update activation.
 - Verify owner create-market/create-product shortcuts and staff fail-closed behavior.
-- Run the anti-frame probe from an unrelated HTTPS origin. The in-app browser blocked the
-  inline probe by policy, so no bypass was attempted.
+- Repeat the commit-bound unrelated-origin HTTPS anti-frame probe on the final release
+  candidate using `prepare:web:anti-frame-probe`; the 2026-08-02 `62bd881` probe passed.
 
 ## Authenticated release matrix
 

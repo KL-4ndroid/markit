@@ -269,5 +269,6 @@ tsx tests/web-deployment-release-identity.test.ts
 tsx tests/web-release-smoke-orchestrator.test.ts
 tsx tests/web-release-smoke-cli.test.ts
 tsx tests/web-security-headers.test.ts
+tsx tests/web-anti-frame-probe.test.ts
 tsx tests/web-pwa-release-smoke.test.ts
 tsx tests/main-landmark-ownership.test.ts

@@ -21,6 +21,7 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8');
 const nextConfig = read('next.config.mjs');
 const stagingSmoke = read('scripts/smoke-vercel-api.mjs');
 const productionSmoke = read('scripts/smoke-web-production-boundary.mjs');
+const antiFrameProbe = read('scripts/create-web-anti-frame-probe.mjs');
 const manifest = read('scripts/test-files.txt');
 const runbook = read('docs/WEB_SECURITY_HEADERS.md');
 
@@ -47,5 +48,8 @@ assert.ok(productionSmoke.includes('assertWebSecurityHeaders(demo.headers)'));
 assert.ok(manifest.includes('tsx tests/web-security-headers.test.ts'));
 assert.ok(runbook.includes('resource-loading CSP is deliberately deferred'));
 assert.ok(runbook.includes('does not prove the final deployment headers'));
+assert.match(antiFrameProbe, /release_identity_mismatch/);
+assert.match(antiFrameProbe, /https:\/\/httpbin\.org/);
+assert.match(runbook, /final release candidate/);
 
 console.log('PASS Web baseline security header contract');
