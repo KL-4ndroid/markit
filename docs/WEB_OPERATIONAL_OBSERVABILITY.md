@@ -253,3 +253,10 @@ closed at Production authentication and was deleted; the supplied test account w
 rejected by the Production target as invalid credentials. No synthetic event was
 accepted in either attempt. A valid dedicated Production-target test account remains a
 manual prerequisite for authenticated intake proof.
+
+Guarded-harness commit `62bd881` then passed GitHub Actions push run `30725783802` and
+pull-request run `30725785670`, Production deployment `5709665655`, exact stable-alias
+health, and all four public release checks. The shipped isolated-fixture path now verifies
+the deployed public auth project before it can create a fixture. This verifies the
+harness and its public release boundary only; authenticated Production intake remains
+unproven until a valid dedicated Production-target test account is available.

@@ -4,7 +4,7 @@ Date: 2026-08-02
 
 Status: partial evidence only; `STAGING-E2E` remains `evidence_missing`
 
-Latest public release revision: `3369ff622ca1214bedc9aa43beee77dc96f6c3ae`
+Latest public release revision: `62bd881efb4306b708867d23508da1049306a09f`
 
 Original browser matrix revision: `cac6fa6f7ffcf02779b0f3e66fb00ec9f4314250`
 
@@ -90,6 +90,13 @@ deployment, all four public release checks, unauthenticated `401` denial, and
 
 A valid dedicated account in the Production target is required before authenticated
 sync-incident intake can be claimed.
+
+The guarded smoke harness was then released in commit `62bd881`. GitHub Actions push run
+`30725783802` and pull-request run `30725785670` succeeded, Production deployment
+`5709665655` succeeded, the stable health route returned exact commit `62bd881`, and all
+four public release checks passed. Isolated mode now compares the deployed auth project
+before creating a fixture. No authenticated synthetic event was submitted during this
+release verification, so the manual prerequisite and evidence gap remain unchanged.
 
 ## Still Required
 
