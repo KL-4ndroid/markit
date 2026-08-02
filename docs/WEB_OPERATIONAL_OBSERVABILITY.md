@@ -1,6 +1,6 @@
 # BoothBook Web Operational Observability
 
-Date: 2026-08-01
+Date: 2026-08-02
 Status: local server-event, sync-incident intake, and deterministic alert-evaluation
 baseline implemented; production sink, routing, ownership, and drill pending
 
@@ -182,3 +182,22 @@ exist:
 Local tests and build success prove the event contract and deterministic policy behavior
 only. They do not prove Vercel log delivery, alert routing, cron execution, provider
 availability, or incident response.
+
+## 2026-08-02 Release Verification
+
+Runtime commit `74eb996` passed the following bounded evidence:
+
+- local production build and the complete repository test manifest;
+- GitHub Actions push run `30724274838` and pull-request run `30724276302`;
+- GitHub Production deployment `5709384567`, followed by a stable-alias health response
+  whose release identity was exactly `74eb996`;
+- all four public release checks: production surface, PWA resources, legal/support in
+  `draft` mode, and application API boundary;
+- unauthenticated sync-incident POST returned `401 authentication_required`;
+- `capacitor://localhost` sync-incident preflight returned `204` with only
+  `POST, OPTIONS` allowed.
+
+This evidence proves deployment and the public rejection/CORS boundary. It does not
+prove authenticated event ingestion into a production monitoring provider, threshold
+delivery, notification ownership, retention/access settings, or an incident drill, so
+the `OBSERVABILITY` launch gate remains `implemented_local`.
