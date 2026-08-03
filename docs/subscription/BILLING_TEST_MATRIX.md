@@ -1,8 +1,8 @@
 # Billing Test Matrix
 
-日期：2026-07-30
+日期：2026-08-03
 
-狀態：S8 planning-only complete；F3A local foundation complete but not applied；S9 尚未核准
+狀態：S8 planning-only complete；F3A live；F3B local foundation complete but not applied；S9 尚未核准
 
 ## 1. 測試策略
 
@@ -210,8 +210,8 @@ S8 的完成只代表：
 - provider direction 與 fallback 已文件化；
 - shared lifecycle、Founder 與 plan-change contract 已文件化；
 - launch test matrix 與 stop conditions 已建立；
-- 沒有 SDK、checkout、callback route 或 production billing state 被建立；F3A local migration 是另行審查的 non-billable foundation，尚未套用。
+- 沒有 SDK、checkout、callback route 或 production billing state 被建立；F3A 是已套用的 non-billable foundation，F3B migration 067 只在 repo 建立且尚未套用。
 
-F1 純 model、F3 data/security/read-contract design 與 F3A local migration `066` 已完成；
-`066` 尚未套用，F3B-F3E、S9、provider implementations 與 F4 仍需各自明確核准，
+F1 純 model、F3 data/security/read-contract design、F3A migration `066` 與 F3B local migration `067` 已完成；
+`067` 尚未套用，F3C-F3E、S9、provider implementations 與 F4 仍需各自明確核准，
 F2 仍受 truthful billing availability 阻擋。

@@ -16,6 +16,7 @@
     "smoke:api:staging": "node scripts/smoke-vercel-api.mjs",
     "smoke:subscription:read-model": "node scripts/smoke-subscription-read-model.mjs",
     "smoke:subscription:price-foundation": "node scripts/smoke-subscription-price-foundation.mjs",
+    "smoke:subscription:billing-ledger-foundation": "node scripts/smoke-subscription-billing-ledger-foundation.mjs",
     "smoke:subscription:team-enforcement": "node scripts/smoke-team-subscription-enforcement.mjs",
     "smoke:subscription:team-transition": "node scripts/smoke-team-subscription-transition.mjs",
     "smoke:sync:incident-intake": "node scripts/smoke-sync-incident-intake.mjs",

@@ -13,6 +13,8 @@ addresses, invitation links, cookies, or customer data in the evidence artifact.
 - Record the migration 066 target classification, migration hash, and apply timestamp.
 - Run the read-only migration 066 verifier and retain the all-true result without row data.
 - Capture the Supabase Security Advisor result for the selected project.
+- Record the migration 067 target classification and SHA-256, apply the reviewed F3B
+  migration, then retain the all-true read-only verifier and guarded denial-smoke result.
 - Configure the approved Production environment names, then run the structural preflight
   until all checks pass; retain check IDs and counts only.
 - Review Vercel environment names and scopes without exporting or photographing values.
@@ -72,7 +74,7 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
 - Run one real received/replied/closed support case and one incident escalation drill.
 - Store dated product, legal, accounting, privacy/security, and support-owner approvals.
 - Complete NewebPay merchant/API/sandbox activation before any billing runtime is enabled.
-- Keep F3B-F3E, S9 provider runtime, referral rewards, and production canary behind their
+- Keep F3C-F3E, S9 provider runtime, referral rewards, and production canary behind their
   separate implementation and approval gates.
 
 ## Go/no-go record

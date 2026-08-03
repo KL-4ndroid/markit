@@ -287,13 +287,14 @@ F1 implementation status as of 2026-07-30:
 - no catalog entry is billable or effective, and no resolver persists an assignment, signs a quote, calls a provider, or grants entitlement;
 - runtime enforcement in the matrix remains unchanged: acquisition, renewal, upgrade, downgrade, restoration, and forfeiture still require future server and provider slices.
 
-F3-design status as of 2026-07-30:
+F3-design status as of 2026-08-03:
 
 - `BILLING_DATA_SECURITY_DESIGN.md` defines private logical billing records, projection boundaries, RLS / service-role controls, idempotency, retention, support, and migration slices;
 - `billing-provider-contract.ts` defines only provider-neutral notification verification and authoritative read snapshots;
-- local migration `066_add_subscription_price_catalog_foundation.sql` defines private candidate price versions, empty storefront mappings, and empty price assignments; it is not applied to Supabase and cannot bill or grant entitlement;
+- migration `066_add_subscription_price_catalog_foundation.sql` defines live private candidate price versions, empty storefront mappings, and empty price assignments; it cannot bill or grant entitlement;
+- local migration `067_add_billing_event_transaction_ledger.sql` defines five empty private customer/subscription/transaction/event/reconciliation records; it is not applied and provides no writer or runtime authority;
 - `subscription_accounts` remains the narrow capability projection and receives no raw provider payload, customer identity, transaction amount, quote, or payment method data;
-- no F3B-F3E migration, writer, callback route, provider network implementation, checkout, refund, cancellation, or entitlement mutation is approved or present.
+- no F3C-F3E migration, writer, callback route, provider network implementation, checkout, refund, cancellation, or entitlement mutation is approved or present.
 
 ## 10. Referral Reward Matrix
 

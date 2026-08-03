@@ -66,7 +66,7 @@ deployment assertion, not a substitute for the signed review required by
 7. immediate clearing of any temporary test or fault-injection configuration.
 
 The result updates `PROD-CONFIG` from `evidence_missing` only after those remote checks
-are recorded. It does not approve F3B-F3E, S9, billing, referral rewards, or a production
+are recorded. It does not approve F3C-F3E, S9, billing, referral rewards, or a production
 canary.
 
 ## Latest local snapshot

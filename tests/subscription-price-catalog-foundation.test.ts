@@ -165,10 +165,10 @@ assert.ok(
   'implementation plan must track the user-confirmed F3A apply separately',
 );
 assert.ok(implementationPlan.includes('F3A remains private and non-billable'));
-assert.ok(implementationPlan.includes('all-true read-only SQL verifier'));
+assert.ok(implementationPlan.includes('external evidence is user-confirmed complete'));
 assert.match(
   implementationPlan,
-  /F3B-F3E,[\s\S]*runtime mutation remain not approved/,
+  /F3C-F3E,[\s\S]*runtime mutation remain not approved/,
 );
 assert.ok(
   testManifest.includes('tsx tests/subscription-price-catalog-foundation.test.ts'),
@@ -180,6 +180,7 @@ const physicalBillingMigrations = readdirSync(join(root, 'supabase', 'migrations
 );
 assert.deepEqual(physicalBillingMigrations, [
   '066_add_subscription_price_catalog_foundation.sql',
+  '067_add_billing_event_transaction_ledger.sql',
 ]);
 
 console.log('PASS F3A private candidate price catalog and assignment foundation');

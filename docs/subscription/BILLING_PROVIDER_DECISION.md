@@ -170,7 +170,7 @@ F1 純價格與鎖價 model、F3 logical data/security design、provider-neutral
 
 1. 商家申請、定期定額 / 異動 API activation 與 sandbox 帳號準備。
 2. 依 `F3A_PRICE_CATALOG_MIGRATION_RUNBOOK.md` 人工確認 target、套用 `066`，再執行 read-only verification 與 denial smoke。
-3. 上述資料庫與商務證據通過後，再個別核准 F3B 與 provider-specific read adapter。
+3. F3B migration 067 已核准並在 repo 完成但尚未套用；其 live verifier 與 denial evidence 通過後，再個別核准 F3C 與 provider-specific read adapter。
 4. Callback、writer、checkout 與 money mutation 維持後續分批審查。
 
 本文件沒有授權：

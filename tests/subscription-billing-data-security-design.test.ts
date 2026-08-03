@@ -47,8 +47,8 @@ for (const logicalRecord of [
 }
 
 for (const dataBoundary of [
-  'F3A local migration complete but not applied',
-  '只有 F3A 的三個 foundation records 已由',
+  'F3B local migration complete but not applied',
+  'F3A 的三個 foundation records 已由',
   '`subscription_accounts` 保持一個 owner 一列的有效方案 projection',
   'Founder acquisition 每 owner 最多一次',
   'single-use',
@@ -64,8 +64,8 @@ for (const dataBoundary of [
   'adjustment obligation',
   'second approver',
   '不是台灣稅務或法律保存期限的最終判定',
-  'F3B-F3E 或 runtime 核准',
-  'F3B-F3E、writer、callback route、provider SDK、checkout、refund 與 entitlement mutation 仍未核准',
+  'F3B 尚未套用且不提供 runtime authority',
+  'F3C-F3E、writer、callback route、provider SDK、checkout、refund 與 entitlement mutation 仍未核准',
 ]) {
   assert.ok(dataDesign.includes(dataBoundary), `missing F3 data boundary: ${dataBoundary}`);
 }
@@ -175,10 +175,10 @@ assert.ok(
   ),
 );
 assert.ok(
-  /F3B-F3E,[\s\S]*runtime mutation remain not approved/.test(implementationPlan),
+  /F3C-F3E,[\s\S]*runtime mutation remain not approved/.test(implementationPlan),
 );
 assert.ok(implementationPlan.includes('user-confirmed applied on 2026-08-01'));
-assert.ok(implementationPlan.includes('read-only SQL verifier and Security Advisor'));
+assert.ok(implementationPlan.includes('guarded denial smoke, and runbook are implemented'));
 assert.ok(
   implementationPlan.includes(
     'A server-signed quote must use provider-confirmed transaction inputs',
@@ -195,8 +195,11 @@ const billingMigrations = readdirSync(join(root, 'supabase', 'migrations')).filt
 );
 assert.deepEqual(
   billingMigrations,
-  ['066_add_subscription_price_catalog_foundation.sql'],
-  'only the separately guarded F3A non-billable foundation migration may exist',
+  [
+    '066_add_subscription_price_catalog_foundation.sql',
+    '067_add_billing_event_transaction_ledger.sql',
+  ],
+  'only the separately guarded F3A and F3B non-billable foundation migrations may exist',
 );
 
 for (const forbiddenRuntimePath of [

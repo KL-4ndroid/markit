@@ -2,7 +2,7 @@
 
 日期：2026-07-24
 
-最後更新：2026-07-30
+最後更新：2026-08-03
 
 狀態：S7、S8 planning-only 已完成；S9 未核准
 
@@ -100,7 +100,7 @@ S8 已完成條件式 provider 選定、policy route、callback / reconciliation
 - F0：產品政策與單位經濟，本次已完成 docs-only 方向。
 - F1：2026-07-30 已完成純 price catalog / lock / plan-change quote resolver；所有價格仍是 candidate，resolver 不可收款或授權。
 - F2：owner-only 誠實呈現，需明確批准，S9 前不得顯示可交易或已取得。
-- F3：2026-07-30 已完成 data/security 與 provider-neutral read/reconciliation contract；F3A candidate catalog / price-assignment foundation 已在 repo 完成但 migration `066` 尚未套用，F3B-F3E、writer、callback 與 runtime 未批准。
+- F3：data/security 與 provider-neutral read/reconciliation contract 已完成；F3A migration `066` 已套用且外部證據由使用者確認完成；F3B migration `067`、read-only verifier、denial smoke 與 runbook 已在 repo 完成但尚未套用；F3C-F3E、writer、callback 與 runtime 未批准。
 - F4：provider price cohort / checkout / reconciliation，未批准。
 
 鎖價是固定續訂金額，不是有限期折扣到期後回到標準價的一般 coupon。任何 provider 實作都必須能與 server-owned `SubscriptionPriceAssignment` 對帳。
@@ -128,10 +128,14 @@ supabase/migrations/066_add_subscription_price_catalog_foundation.sql
 supabase/verification/066_subscription_price_foundation_read_only.sql
 docs/subscription/F3A_PRICE_CATALOG_MIGRATION_RUNBOOK.md
 tests/subscription-price-catalog-foundation.test.ts
+supabase/migrations/067_add_billing_event_transaction_ledger.sql
+supabase/verification/067_billing_event_transaction_ledger_read_only.sql
+docs/subscription/F3B_BILLING_LEDGER_MIGRATION_RUNBOOK.md
+tests/subscription-billing-ledger-foundation.test.ts
 ```
 
-下一步是依 runbook 人工確認 Supabase target、套用 `066`、執行 read-only verification
-與 denial smoke，並蒐集商家 / API activation 證據；不是 checkout 或 provider mutation。
+下一步是依 F3B runbook 人工確認 Supabase target、套用 `067`、執行 read-only
+verification 與 denial smoke；不是 checkout、callback、writer 或 provider mutation。
 
 方案異動額外規則：
 

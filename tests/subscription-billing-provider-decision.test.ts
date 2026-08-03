@@ -84,7 +84,7 @@ for (const testBoundary of [
   'actual Team state-transition smoke',
   'Production canary',
   'Stop conditions',
-  'F3B-F3E、S9、provider implementations 與 F4 仍需各自明確核准',
+  'F3C-F3E、S9、provider implementations 與 F4 仍需各自明確核准',
 ]) {
   assert.ok(matrix.includes(testBoundary), `missing billing test boundary: ${testBoundary}`);
 }
@@ -154,8 +154,11 @@ const billingMigrations = readdirSync(join(root, 'supabase', 'migrations')).filt
 );
 assert.deepEqual(
   billingMigrations,
-  ['066_add_subscription_price_catalog_foundation.sql'],
-  'post-S8 repository may contain only the separately guarded F3A non-billable migration',
+  [
+    '066_add_subscription_price_catalog_foundation.sql',
+    '067_add_billing_event_transaction_ledger.sql',
+  ],
+  'post-S8 repository may contain only the separately guarded F3A and F3B non-billable migrations',
 );
 
 console.log('PASS S8 provider decision, lifecycle, launch gates, and planning-only boundaries');

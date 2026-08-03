@@ -49,7 +49,7 @@ evidence_missing
 | `MEDIA-PROD` | Product-cover and sales-evidence storage paths are production-ready at approved entitlement modes | `evidence_missing` | local tests and guides exist | Migration/R2/CORS/quota/cleanup evidence and authorized/unauthorized production smoke |
 | `STAGING-E2E` | Owner, staff roles, Free/Pro/Team, offline recovery, PDF, and media workflows pass in a production-like deployment | `evidence_missing` | 57-check live Team transition smoke passed. On `cac6fa6`, an authenticated Production Free owner passed recent-three/basic-summary access and Pro/Team/PDF denial with no browser errors; the current local Free/Pro/Team simulator matrix also passed without cloud writes. Sanitized partial evidence is in `WEB_AUTHENTICATED_RELEASE_MATRIX_2026_08_01.md`; paid deployment roles, offline recovery, inspectable PDF output, and media remain open | Signed staging matrix for required viewports, roles, account states, and recovery cases |
 | `BILLING-MERCHANT` | NewebPay recurring payment merchant, API, sandbox, refund, and reconciliation capabilities are approved | `pending_external` | provider decision is conditional | Dated merchant/API activation evidence and sanitized sandbox fixtures |
-| `F3B-F3E` | Billing event ledger, projection writer, quote/obligation, and support audit slices are implemented | `pending_approval` | F3 design and F3A local foundation only | Separate reviewed migrations, adversarial tests, live verification, rollback and operations evidence per slice |
+| `F3B-F3E` | Billing event ledger, projection writer, quote/obligation, and support audit slices are implemented | `pending_approval` | F3A is live; F3B migration 067, read-only verifier, denial smoke, and runbook are implemented locally but not applied; F3C-F3E remain unapproved | Apply and verify F3B, then complete separate reviewed migrations, adversarial tests, live verification, rollback and operations evidence for F3C-F3E |
 | `S9` | Provider adapter, callback, reconciliation, checkout, cancellation, refund, and entitlement mutation are implemented | `pending_approval` | S8 decision and billing contracts only | Complete billing test matrix, staging lifecycle evidence, security review, support runbooks, production canary approval |
 | `PROMOTION-RUNTIME` | Launch referral attribution and Pro Pass rewards are abuse-resistant and reconciled with paid billing policy | `pending_approval` | policy/design only | Approved P1-P4 slices or an explicit decision to launch without the promotion |
 | `OBSERVABILITY` | Health, callback backlog, reconciliation delay, payment failures, media cleanup, and sync incidents are observable | `implemented_local` | Health and bounded schema-v1 media events are joined by authenticated, strict, client-throttled `sync.permission_blocked` and `sync.unexpected_failure` intake; the pure 36-hour evaluator now includes fixed sync thresholds, while production sink/routing and future billing signals remain absent | Production dashboards/alerts with equivalent policy, delivery proof, primary/backup owner, escalation, retention/access review, incident drill, and later S9 billing signals |
@@ -62,8 +62,8 @@ evidence_missing
 2. Complete the remaining install/update, unrelated-origin anti-frame, and authenticated
    owner/staff production-like browser matrix against the selected deployment.
 3. Complete production configuration and media staging evidence without enabling billing.
-4. Finish NewebPay merchant/API activation while implementing only separately approved
-   F3B-F3E slices.
+4. Apply and verify F3B, then finish NewebPay merchant/API activation while implementing
+   only separately approved F3C-F3E slices.
 5. Implement S9 provider runtime and pass the complete billing sandbox matrix.
 6. Resolve the promotion launch decision, observability, legal/support, staging E2E, and
    production canary gates.
