@@ -23,6 +23,9 @@ addresses, invitation links, cookies, or customer data in the evidence artifact.
 
 ## PWA and browser
 
+- Preserve the 2026-08-03 exact-SHA local desktop and Android-class compatibility
+  baseline; it passed manifest/resource and responsive checks but is not install proof.
+- Correct and retest the missing `main` landmark on the unauthenticated welcome screen.
 - Complete one Chromium desktop install and one Android-class install.
 - Launch from each installed icon and capture public-data-only screenshots.
 - Deploy a second reviewed revision and verify service-worker update activation.

@@ -92,3 +92,17 @@ service worker, the representative public and subscription shells each exposed o
 install prompts, installed-icon launch, update activation after another deployment,
 owner/staff shortcut behavior, and public install screenshots still require human or
 device-level evidence.
+
+## 2026-08-03 Local Desktop and Android Baseline
+
+Local production commit `097f2be303b543640a6685615632f3b058a67288` passed the
+commit-bound nine-asset PWA smoke. Chromium parsed the manifest without errors and
+reported standalone display mode with eight icons. The public launch screen had no
+horizontal overflow or visible overlap at 1440x900 desktop and 412x915 Android-class
+viewports.
+
+This run did not complete an operating-system install. It also found that the
+unauthenticated welcome screen exposes zero `main` landmarks. Full evidence and the
+remaining device steps are recorded in
+`WEB_PWA_DESKTOP_ANDROID_BASELINE_2026_08_03.md`; the `PWA-WEB` gate remains
+`pending_external`.
