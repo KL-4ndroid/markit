@@ -165,12 +165,13 @@ Team -> Pro：
 S8 完成後，S9 仍是 `NOT APPROVED`。
 
 F1 純價格與鎖價 model、F3 logical data/security design、provider-neutral read contract，
-以及 F3A local non-billable foundation 已於 2026-07-30 完成。Migration `066` 尚未套用。
+以及 F3A/F3B non-billable foundations 已完成；migration 066、067 已在選定 sandbox
+完成 external verification，但不是 Production evidence。
 下一個批次不是 checkout，而是：
 
-1. 商家申請、定期定額 / 異動 API activation 與 sandbox 帳號準備。
-2. 依 `F3A_PRICE_CATALOG_MIGRATION_RUNBOOK.md` 人工確認 target、套用 `066`，再執行 read-only verification 與 denial smoke。
-3. F3B migration 067 已核准並在 repo 完成但尚未套用；其 live verifier 與 denial evidence 通過後，再個別核准 F3C 與 provider-specific read adapter。
+1. 等待商家申請、定期定額 / 異動 API activation 與 sandbox 帳號回覆；目前仍是 `selected_pending_activation`。
+2. 保存 F3A/F3B selected-sandbox evidence，不重新套用 066 或 067。
+3. F3C-F3E 與 provider-specific read adapter 必須逐片另行核准。
 4. Callback、writer、checkout 與 money mutation 維持後續分批審查。
 
 本文件沒有授權：

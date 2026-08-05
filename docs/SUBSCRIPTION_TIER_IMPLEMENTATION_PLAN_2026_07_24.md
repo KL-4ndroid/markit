@@ -6,7 +6,7 @@ Last updated: 2026-08-03
 
 Status: AI execution plan for implementing the subscription foundation in small verified slices. This document does not approve payment collection, billing provider setup, native in-app purchase setup, public marketplace workflows, production upload enablement, destructive recovery actions, or broad permission changes.
 
-Implementation progress (2026-08-03): S0A through S5 and S6A through S6E are implemented; S7 is complete as a planning-only data and consent contract; LV1 remains a local-only Free/Pro/Team validation harness without billing authority. S6A protects single-market basic analysis and review; S6B provides a bounded recent-three Free preview; S6C separates the Free settlement summary from the Pro/Team full report; S6D enables the owner-only client-generated designed PDF for Pro/Team and keeps Free blocked. S6E migrations `064` and `065` are applied: all 22 structural/permission checks and the isolated 57-check server-authoritative Free/Pro/Team mutation, downgrade, re-upgrade, no-auto-restore, explicit-restore, cleanup, and zero-residual smoke pass. F3A migration `066_add_subscription_price_catalog_foundation.sql` is user-confirmed applied and its external evidence is user-confirmed complete. F3A remains private and non-billable. F3B migration `067_add_billing_event_transaction_ledger.sql`, its read-only verifier, guarded denial smoke, and runbook are implemented locally but not applied; they add no writer, callback route, checkout, provider runtime, or entitlement mutation. Aggregate commit-bound Production surface, API, PWA-resource, and draft legal-page smokes pass; an authenticated Production Free owner and the current local Free/Pro/Team presentation matrix also pass, while authenticated paid analytics/PDF and the broader owner/staff deployment matrix remain pending. Product-cover `open` mode remains active and no billing, Excel generation, promotion grant, referral reward, active founder price assignment, marketplace route, partner exposure, or benchmark runtime is active.
+Implementation progress (2026-08-05): S0A through S5 and S6A through S6E are implemented; S7 is complete as a planning-only data and consent contract; LV1 remains a local-only Free/Pro/Team validation harness without billing authority. S6A protects single-market basic analysis and review; S6B provides a bounded recent-three Free preview; S6C separates the Free settlement summary from the Pro/Team full report; S6D enables the owner-only client-generated designed PDF for Pro/Team and keeps Free blocked. S6E migrations `064` and `065` are applied: all 22 structural/permission checks and the isolated 57-check server-authoritative Free/Pro/Team mutation, downgrade, re-upgrade, no-auto-restore, explicit-restore, cleanup, and zero-residual smoke pass. F3A migration `066_add_subscription_price_catalog_foundation.sql` and F3B migration `067_add_billing_event_transaction_ledger.sql` have completed external verification in the selected sandbox. F3A/F3B remain private and non-billable, are not Production evidence, and add no writer, callback route, checkout, provider runtime, or entitlement mutation. Aggregate commit-bound Production surface, API, PWA-resource, and draft legal-page smokes pass; an authenticated Production Free owner and the current local Free/Pro/Team presentation matrix also pass, while authenticated paid analytics/PDF and the broader owner/staff deployment matrix remain pending. Product-cover `open` mode remains active and no billing, Excel generation, promotion grant, referral reward, active founder price assignment, marketplace route, partner exposure, or benchmark runtime is active.
 
 Primary product plan:
 
@@ -793,10 +793,9 @@ Acceptance:
 ### Slice F3: Server Price Assignment And Audit Ledger
 
 Status: data/security design completed on 2026-07-30. The separately reviewed F3A
-candidate catalog and assignment foundation was user-confirmed applied on 2026-08-01,
-and its remaining external evidence was user-confirmed complete on 2026-08-03. F3B
-migration 067, read-only verifier, guarded denial smoke, and runbook are implemented
-locally but not applied. F3C-F3E, writer, callback, provider implementation, checkout,
+candidate catalog and assignment foundation and F3B private ledger foundation completed
+external verification in the selected sandbox by 2026-08-05. This is not Production
+evidence. F3C-F3E, writer, callback, provider implementation, checkout,
 and runtime mutation remain not approved.
 
 Requires separately approved schema, RLS, identity, idempotency, webhook, support, and migration design. The server must own eligibility, price version, assigned amount, continuity, dormancy, forfeiture, and audit history. Operational market events and local IndexedDB are not the trusted price ledger.
@@ -821,11 +820,10 @@ Result:
 
 #### Slice F3A: Catalog And Price-Assignment Foundation
 
-Status: implemented locally on 2026-07-30 and user-confirmed applied on 2026-08-01.
-Anonymous and server-secret table probes fail with PostgreSQL `42501`; the authenticated
-smoke passed all 12 table and 3 function denial probes. F3A remains incomplete until the
-masked target/hash/timestamp, all-true read-only verifier, and Security Advisor result
-are recorded.
+Status: selected-sandbox external verification completed on 2026-08-05. The canonical
+evidence records the masked target, migration hash, prior apply without reapplication,
+all-true read-only verifier, expected candidate/empty state, and no F3A Security Advisor
+ERROR/WARN. This remains non-billable and is not Production evidence.
 
 Canonical artifacts:
 
@@ -843,13 +841,15 @@ Acceptance boundary:
 - denies direct table and trigger-function access to public, anon, authenticated, and service-role clients;
 - provides no RLS policy, public RPC, `SECURITY DEFINER`, checkout, callback, provider adapter, writer, or entitlement mutation;
 - keeps `subscription_accounts` unchanged and uses `ON DELETE RESTRICT` for audit-linked rows;
-- requires explicit target confirmation, manual migration application, read-only verification, denial smoke, and recorded evidence before F3A is considered live;
-- does not make F3B live and does not approve F3C-F3E or S9.
+- requires separate target confirmation and evidence if migration 066 is ever reviewed for another environment;
+- does not approve active prices, mappings, assignments, F3C-F3E, or S9.
 
 #### Slice F3B: Event And Transaction Ledger Foundation
 
-Status: explicitly approved and implemented locally on 2026-08-03; migration 067 has
-not been applied.
+Status: selected-sandbox external verification completed on 2026-08-04. Pre/post
+verifiers were all true, all 79 guarded denial checks passed, the five tables remained
+empty, and no F3B Security Advisor ERROR/WARN was recorded. This is not Production
+evidence and does not approve F3C-F3E or runtime authority.
 
 Canonical artifacts:
 

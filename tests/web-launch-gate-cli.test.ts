@@ -22,7 +22,7 @@ try {
   assert.equal(noGo.status, 1, noGo.stderr);
   const noGoOutput = JSON.parse(noGo.stdout);
   assert.equal(noGoOutput.report.ready, false);
-  assert.equal(noGoOutput.report.blockerCount, 13);
+  assert.equal(noGoOutput.report.blockerCount, 12);
 
   const canonical = JSON.parse(readFileSync(canonicalPath, 'utf8')) as {
     overallStatus: string;

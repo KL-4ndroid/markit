@@ -147,8 +147,8 @@ for (const checkName of [
   assert.ok(verification.includes(`'${checkName}'`), `missing read-only check: ${checkName}`);
 }
 
-assert.ok(runbook.includes('使用者已確認 migration 066 套用'));
-assert.ok(runbook.includes('F3A 尚未結案'));
+assert.ok(runbook.includes('migration 066 已在選定 sandbox 套用'));
+assert.ok(runbook.includes('external verification'));
 assert.ok(runbook.includes('read-only SQL verifier'));
 assert.ok(runbook.includes('authenticated denial'));
 assert.ok(runbook.includes('Security Advisor'));
@@ -157,15 +157,16 @@ assert.ok(runbook.includes('billing_storefront_price_mappings: 0'));
 assert.ok(runbook.includes('subscription_price_assignments: 0'));
 assert.ok(runbook.includes('不得在 SQL Editor 臨時 drop'));
 assert.ok(runbook.includes('F3B event/transaction ledger'));
+assert.ok(runbook.includes('所有 `passed` 均為 `true`'));
 
 assert.ok(
   implementationPlan.includes(
-    'F3A migration `066_add_subscription_price_catalog_foundation.sql` is user-confirmed applied',
+    'F3A migration `066_add_subscription_price_catalog_foundation.sql` and F3B migration',
   ),
-  'implementation plan must track the user-confirmed F3A apply separately',
+  'implementation plan must track the externally verified F3A foundation',
 );
-assert.ok(implementationPlan.includes('F3A remains private and non-billable'));
-assert.ok(implementationPlan.includes('external evidence is user-confirmed complete'));
+assert.ok(implementationPlan.includes('F3A/F3B remain private and non-billable'));
+assert.ok(implementationPlan.includes('selected-sandbox external verification completed on 2026-08-05'));
 assert.match(
   implementationPlan,
   /F3C-F3E,[\s\S]*runtime mutation remain not approved/,

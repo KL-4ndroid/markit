@@ -1,6 +1,6 @@
 # BoothBook Web Launch Manual Actions
 
-Date: 2026-08-01
+Date: 2026-08-05
 
 Status: open external and human evidence queue
 
@@ -10,11 +10,13 @@ addresses, invitation links, cookies, or customer data in the evidence artifact.
 
 ## Database and hosting
 
-- Record the migration 066 target classification, migration hash, and apply timestamp.
-- Run the read-only migration 066 verifier and retain the all-true result without row data.
-- Capture the Supabase Security Advisor result for the selected project.
-- Record the migration 067 target classification and SHA-256, apply the reviewed F3B
-  migration, then retain the all-true read-only verifier and guarded denial-smoke result.
+- Preserve the completed migration 066 selected-sandbox target/hash, all-true verifier,
+  and Security Advisor evidence. Do not reapply 066 to that target.
+- Preserve the completed migration 067 selected-sandbox target/hash, pre/post all-true
+  verifier, 79/79 denial-smoke, empty-ledger, and Security Advisor evidence. Do not
+  reapply 067 to that target.
+- Treat any future staging or Production migration target as a separate reviewed apply
+  with environment-specific evidence; sandbox verification is not Production evidence.
 - Configure the approved Production environment names, then run the structural preflight
   until all checks pass; retain check IDs and counts only.
 - Review Vercel environment names and scopes without exporting or photographing values.

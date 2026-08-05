@@ -2,9 +2,9 @@
 
 Date: 2026-07-24
 
-Last updated: 2026-07-29
+Last updated: 2026-08-05
 
-Status: canonical product and AI implementation contract for subscription capability definitions. This document approves the current owner-only Pro/Team client-generated PDF gate and records the separately reviewed local F3A non-billable foundation. It does not approve billing runtime, referral attribution, reward grants, production uploads, Excel generation, custom download UI, role changes, additional RLS changes, or marketplace behavior.
+Status: canonical product and AI implementation contract for subscription capability definitions. This document approves the current owner-only Pro/Team client-generated PDF gate and records the selected-sandbox external verification of the separately reviewed F3A/F3B non-billable foundations. It does not approve billing runtime, referral attribution, reward grants, production uploads, Excel generation, custom download UI, role changes, additional RLS changes, or marketplace behavior.
 
 Authority order:
 
@@ -292,7 +292,7 @@ F3-design status as of 2026-08-03:
 - `BILLING_DATA_SECURITY_DESIGN.md` defines private logical billing records, projection boundaries, RLS / service-role controls, idempotency, retention, support, and migration slices;
 - `billing-provider-contract.ts` defines only provider-neutral notification verification and authoritative read snapshots;
 - migration `066_add_subscription_price_catalog_foundation.sql` defines live private candidate price versions, empty storefront mappings, and empty price assignments; it cannot bill or grant entitlement;
-- local migration `067_add_billing_event_transaction_ledger.sql` defines five empty private customer/subscription/transaction/event/reconciliation records; it is not applied and provides no writer or runtime authority;
+- migration `067_add_billing_event_transaction_ledger.sql` defines five private customer/subscription/transaction/event/reconciliation records and is externally verified empty in the selected sandbox; it provides no writer or runtime authority and is not Production evidence;
 - `subscription_accounts` remains the narrow capability projection and receives no raw provider payload, customer identity, transaction amount, quote, or payment method data;
 - no F3C-F3E migration, writer, callback route, provider network implementation, checkout, refund, cancellation, or entitlement mutation is approved or present.
 

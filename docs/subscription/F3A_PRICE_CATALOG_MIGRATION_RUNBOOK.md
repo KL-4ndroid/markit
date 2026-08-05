@@ -1,10 +1,16 @@
 # F3A Price Catalog Migration Runbook
 
-日期：2026-08-01
+日期：2026-08-05
 
-狀態：使用者已確認 migration 066 套用；anonymous、authenticated 與 server-secret
-denial smoke 已通過。read-only SQL verifier 與 Security Advisor 證據仍待補齊，因此
-F3A 尚未結案
+狀態：migration 066 已在選定 sandbox 套用並完成 external verification；read-only
+verifier 全部為 true，F3A Security Advisor 無相關 ERROR/WARN。這不是 Production 證據，
+不得在相同 target 重複套用
+
+Canonical evidence：
+
+```text
+docs/subscription/evidence/billing/f3a/2026-08-05/F3A_PRICE_CATALOG_LIVE_VERIFICATION_2026-08-05.md
+```
 
 ## 1. Artifact
 
@@ -134,7 +140,7 @@ Remove-Item Env:SUBSCRIPTION_SMOKE_USER_EMAIL,Env:SUBSCRIPTION_SMOKE_USER_PASSWO
 完成這些證據只代表 F3A foundation live。F3B event/transaction ledger、F3C writer、
 provider activation、S9 與 F4 仍未核准。
 
-## 8. 2026-08-01 live evidence snapshot
+## 8. 2026-08-01 initial live evidence snapshot
 
 - migration apply：使用者確認已執行；target 遮蔽識別、timestamp 與 migration hash 待補；
 - anonymous：三張表的 select / insert / update / delete 全部為 `401/42501`；
@@ -143,4 +149,17 @@ provider activation、S9 與 F4 仍未核准。
 - Team regression：active relationship 全部有 admin Team backing，無 suspended membership leak；
 - authenticated denial：內建瀏覽器既有 session 執行 12 個 table 與 3 個 function probe，`15/15` 通過；
 - authenticated smoke surface：只限 loopback、非 deployed 且明確開啟測試旗標；production 固定 `404`；
-- read-only SQL verifier 與 Security Advisor：待人工保存輸出。
+- read-only SQL verifier 與 Security Advisor：當時待人工保存輸出；已由下節
+  2026-08-05 external verification evidence 補齊。
+
+## 9. 2026-08-05 external verification completion
+
+- environment：選定 sandbox；不宣稱 Production；
+- migration 066：先前已套用，本次沒有重新套用；
+- migration hash 與 masked target：已記錄於 canonical evidence；
+- read-only verifier：所有 `passed` 均為 `true`；
+- expected state：5 筆 candidate、0 active、0 storefront mapping、0 assignment；
+- Security Advisor：F3A objects 無相關 ERROR/WARN；`rls_enabled_no_policy` INFO 為
+  private foundation 預期結果；
+- F3A 因此完成本 gate 的 selected-sandbox external verification，但仍不能收款、
+  activate candidate price、建立 mapping/assignment 或授予 entitlement。

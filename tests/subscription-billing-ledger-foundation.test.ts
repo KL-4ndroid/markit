@@ -170,7 +170,7 @@ for (const table of createdTables) assert.ok(smoke.includes(`table: '${table}'`)
 for (const functionName of guardFunctions) assert.ok(smoke.includes(`'${functionName}'`));
 
 for (const phrase of [
-  'not applied',
+  'selected sandbox',
   'five empty tables',
   'read-only verifier',
   '--execute=denial-only',
@@ -181,7 +181,11 @@ for (const phrase of [
   assert.ok(runbook.includes(phrase), `missing F3B runbook boundary: ${phrase}`);
 }
 
-assert.match(implementationPlan, /F3B[^\n]*implemented locally[^\n]*not applied/i);
+assert.ok(
+  implementationPlan.includes(
+    'Status: selected-sandbox external verification completed on 2026-08-04',
+  ),
+);
 assert.match(dataDesign, /067_add_billing_event_transaction_ledger\.sql/);
 assert.match(packageJson, /"smoke:subscription:billing-ledger-foundation"/);
 assert.ok(

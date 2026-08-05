@@ -100,7 +100,7 @@ S8 已完成條件式 provider 選定、policy route、callback / reconciliation
 - F0：產品政策與單位經濟，本次已完成 docs-only 方向。
 - F1：2026-07-30 已完成純 price catalog / lock / plan-change quote resolver；所有價格仍是 candidate，resolver 不可收款或授權。
 - F2：owner-only 誠實呈現，需明確批准，S9 前不得顯示可交易或已取得。
-- F3：data/security 與 provider-neutral read/reconciliation contract 已完成；F3A migration `066` 已套用且外部證據由使用者確認完成；F3B migration `067`、read-only verifier、denial smoke 與 runbook 已在 repo 完成但尚未套用；F3C-F3E、writer、callback 與 runtime 未批准。
+- F3：data/security 與 provider-neutral read/reconciliation contract 已完成；F3A migration `066` 與 F3B migration `067` 已在選定 sandbox 完成 external verification；這不是 Production evidence；F3C-F3E、writer、callback 與 runtime 未批准。
 - F4：provider price cohort / checkout / reconciliation，未批准。
 
 鎖價是固定續訂金額，不是有限期折扣到期後回到標準價的一般 coupon。任何 provider 實作都必須能與 server-owned `SubscriptionPriceAssignment` 對帳。
@@ -134,8 +134,8 @@ docs/subscription/F3B_BILLING_LEDGER_MIGRATION_RUNBOOK.md
 tests/subscription-billing-ledger-foundation.test.ts
 ```
 
-下一步是依 F3B runbook 人工確認 Supabase target、套用 `067`、執行 read-only
-verification 與 denial smoke；不是 checkout、callback、writer 或 provider mutation。
+下一步是保存 F3A/F3B selected-sandbox evidence 並等待 NewebPay activation 回覆；
+不得重新套用 `066`/`067`，也不是 checkout、callback、writer 或 provider mutation。
 
 方案異動額外規則：
 

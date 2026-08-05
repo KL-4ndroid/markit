@@ -1,6 +1,6 @@
 # BoothBook Web Launch Readiness
 
-Date: 2026-08-01
+Date: 2026-08-05
 
 Overall status: `NOT_READY`
 
@@ -39,7 +39,7 @@ evidence_missing
 | `CI-WEB` | Every PR and `main` push runs hex, lint, complete tests, secret-free production build, and clean-diff checks | `complete` | Push run `30699586931` passed both Node 24 jobs and every step on commit `cac6fa6f7ffcf02779b0f3e66fb00ec9f4314250` on 2026-08-01 | Preserve the gate and repeat it on the final release candidate revision |
 | `LOCAL-QUALITY` | Current worktree passes lint, complete tests, production build, and `git diff --check` | `complete` | 2026-08-01 local full lint, complete manifest, production build, hex/diff checks, and changed-file credential-pattern scan passed on `cac6fa6`; the exact revision also passed CI on required Node 24 | Repeat on release candidate revision |
 | `DB-063-065` | Shared capability and Team enforcement migrations are live | `complete` | user-confirmed apply plus prior RPC/structural smoke | Preserve dated environment and smoke output in release evidence |
-| `DB-066` | F3A private candidate price catalog foundation is live and denied to direct clients | `pending_external` | User-confirmed apply on 2026-08-01; anon and server-secret table probes denied with `42501`; authenticated browser session passed all 12 table and 3 function probes; capability and Team read regressions passed | Record masked target/hash/timestamp; all read-only verifier rows true; Security Advisor result recorded |
+| `DB-066` | F3A private candidate price catalog foundation is live and denied to direct clients | `complete` | Selected sandbox evidence dated 2026-08-05 records the masked target, migration hash, prior apply, all-true read-only verifier, expected empty mappings/assignments, and no F3A Advisor ERROR/WARN; this is not Production evidence | Preserve the evidence and do not reapply migration 066 to the same target; a different target requires its own reviewed evidence |
 | `TEAM-LIVE` | Server-authoritative Free/Pro/Team mutation, downgrade, re-upgrade, and restore behavior is proven | `complete` | 2026-08-01 isolated 57-check live run passed direct-write and Free/Pro denial, Team invitation and viewer/operator/manager transitions, downgrade suspension, no-auto-restore, explicit restore, cleanup, and zero-residual audit | Preserve the guarded smoke and repeat against the selected release environment; deployment UI evidence remains under `STAGING-E2E` |
 | `PROD-CONFIG` | Production Supabase, CORS, cron, R2, media gates, and server secrets are configured | `evidence_missing` | Read-only preflight implemented; 2026-08-01 local `.env.production.local` snapshot is 4/17 passing and is not Vercel evidence | Passing preflight against deployed names, dated Vercel review with no values, and production route smoke |
 | `PROD-SURFACE` | Debug pages and dev subscription API are unreachable while the static fake-data demo remains public | `complete` | 2026-08-01 stable Production alias passed the aggregate commit-bound production-surface, PWA-resource, draft legal-page, and API-boundary release smoke on `cac6fa6` | Preserve the smoke and repeat it on the final release candidate revision |
@@ -49,7 +49,7 @@ evidence_missing
 | `MEDIA-PROD` | Product-cover and sales-evidence storage paths are production-ready at approved entitlement modes | `evidence_missing` | local tests and guides exist | Migration/R2/CORS/quota/cleanup evidence and authorized/unauthorized production smoke |
 | `STAGING-E2E` | Owner, staff roles, Free/Pro/Team, offline recovery, PDF, and media workflows pass in a production-like deployment | `evidence_missing` | 57-check live Team transition smoke passed. On `cac6fa6`, an authenticated Production Free owner passed recent-three/basic-summary access and Pro/Team/PDF denial with no browser errors; the current local Free/Pro/Team simulator matrix also passed without cloud writes. Sanitized partial evidence is in `WEB_AUTHENTICATED_RELEASE_MATRIX_2026_08_01.md`; paid deployment roles, offline recovery, inspectable PDF output, and media remain open | Signed staging matrix for required viewports, roles, account states, and recovery cases |
 | `BILLING-MERCHANT` | NewebPay recurring payment merchant, API, sandbox, refund, and reconciliation capabilities are approved | `pending_external` | provider decision is conditional | Dated merchant/API activation evidence and sanitized sandbox fixtures |
-| `F3B-F3E` | Billing event ledger, projection writer, quote/obligation, and support audit slices are implemented | `pending_approval` | F3A is live; F3B migration 067, read-only verifier, denial smoke, and runbook are implemented locally but not applied; F3C-F3E remain unapproved | Apply and verify F3B, then complete separate reviewed migrations, adversarial tests, live verification, rollback and operations evidence for F3C-F3E |
+| `F3B-F3E` | Billing event ledger, projection writer, quote/obligation, and support audit slices are implemented | `pending_approval` | F3B migration 067 is externally verified in the selected sandbox: pre/post verifier all true, 79 denial checks passed, five private tables remained empty, and no F3B Advisor ERROR/WARN; F3C-F3E remain unapproved and unimplemented | Preserve F3B evidence without reapplying 067; separately approve and complete F3C, F3D, and F3E migrations, adversarial tests, rollback/corrective-forward plans, and environment evidence |
 | `S9` | Provider adapter, callback, reconciliation, checkout, cancellation, refund, and entitlement mutation are implemented | `pending_approval` | S8 decision and billing contracts only | Complete billing test matrix, staging lifecycle evidence, security review, support runbooks, production canary approval |
 | `PROMOTION-RUNTIME` | Launch referral attribution and Pro Pass rewards are abuse-resistant and reconciled with paid billing policy | `pending_approval` | policy/design only | Approved P1-P4 slices or an explicit decision to launch without the promotion |
 | `OBSERVABILITY` | Health, callback backlog, reconciliation delay, payment failures, media cleanup, and sync incidents are observable | `implemented_local` | Health and bounded schema-v1 media events are joined by authenticated, strict, client-throttled `sync.permission_blocked` and `sync.unexpected_failure` intake; the pure 36-hour evaluator now includes fixed sync thresholds, while production sink/routing and future billing signals remain absent | Production dashboards/alerts with equivalent policy, delivery proof, primary/backup owner, escalation, retention/access review, incident drill, and later S9 billing signals |
@@ -58,12 +58,12 @@ evidence_missing
 
 ## Required order from current state
 
-1. Complete the remaining migration 066 verifier and Security Advisor evidence.
+1. Preserve the completed F3A/F3B sandbox evidence without reapplying migrations 066 or 067.
 2. Complete the remaining install/update, unrelated-origin anti-frame, and authenticated
    owner/staff production-like browser matrix against the selected deployment.
 3. Complete production configuration and media staging evidence without enabling billing.
-4. Apply and verify F3B, then finish NewebPay merchant/API activation while implementing
-   only separately approved F3C-F3E slices.
+4. Finish NewebPay merchant/API activation while implementing only separately approved
+   F3C-F3E slices after explicit review.
 5. Implement S9 provider runtime and pass the complete billing sandbox matrix.
 6. Resolve the promotion launch decision, observability, legal/support, staging E2E, and
    production canary gates.

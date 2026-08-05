@@ -1,8 +1,15 @@
 # F3B Billing Ledger Migration Runbook
 
-Date: 2026-08-03
+Date: 2026-08-05
 
-Status: migration, read-only verifier, and denial smoke implemented locally; not applied
+Status: migration 067 applied and externally verified in the selected sandbox; do not
+reapply to the same target; no Production evidence or billing runtime is claimed
+
+Canonical evidence:
+
+```text
+docs/subscription/evidence/billing/f3b/2026-08-04/F3B_BILLING_LEDGER_LIVE_VERIFICATION_2026-08-04.md
+```
 
 ## Scope
 
@@ -30,7 +37,9 @@ Pro/Team capability.
 
 ## Preconditions
 
-Stop before applying migration 067 unless all conditions are true:
+For a different future target, stop before applying migration 067 unless all conditions
+are true. Migration 067 is already verified in the selected sandbox and must not be
+reapplied there:
 
 1. Confirm the exact Supabase project reference and classify it as sandbox, staging, or
    production.
@@ -72,11 +81,13 @@ Review the SQL and verify all of the following before approval:
 - no raw callback body column exists;
 - the event inbox stores only a bounded ciphertext reference when separately configured.
 
-## Manual Apply
+## Manual Apply For A Different Target
 
 Apply the exact reviewed migration through the approved Supabase migration workflow or
 SQL editor. Do not paste any rollback, `DROP`, or cleanup statement into the same
 execution.
+
+Do not use this procedure to repeat the already completed selected-sandbox apply.
 
 The expected immediate result is five empty tables. There is intentionally no positive
 write path in F3B.
@@ -152,3 +163,12 @@ empty schema and evidence, and prepare a separately reviewed corrective migratio
 Completion of this runbook proves only that the private F3B ledger foundation is live.
 F3C projection writer, F3D quote/obligation, F3E support audit, S9 provider runtime,
 checkout, billing callbacks, and entitlement mutation remain separately blocked.
+
+## Selected Sandbox Verification Result
+
+The 2026-08-04 canonical evidence records migration apply PASS, pre/post read-only
+verifier all true, authenticated password grant PASS, 26/26 anonymous denial, 26/26
+authenticated denial, 26/26 server-secret denial, 79 total PASS with exit code 0, five
+empty ledger tables after smoke, and no F3B Security Advisor ERROR/WARN. This evidence
+is sandbox-only and authorizes no callback, writer, checkout, payment, refund,
+cancellation, reconciliation mutation, or entitlement mutation.

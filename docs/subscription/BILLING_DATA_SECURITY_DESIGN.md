@@ -1,8 +1,8 @@
 # Billing Data Security Design
 
-日期：2026-08-03
+日期：2026-08-05
 
-狀態：F3-design complete；F3A live；F3B local migration complete but not applied；F3C-F3E 與 writer/runtime 未核准
+狀態：F3-design complete；F3A 與 F3B 已在選定 sandbox 完成 external verification；F3C-F3E 與 writer/runtime 未核准
 
 依賴：
 
@@ -26,9 +26,9 @@ F3 採用「private billing ledger + narrow capability projection」架構：
 - client 只收到 allowlisted capability / billing presentation，不收到 raw provider references、payload、secret 或 internal risk state；
 - local IndexedDB、localStorage、subscription simulator 與 market events 都不是 billing truth。
 
-本文件描述完整 logical records 與 constraints。F3A 的三個 foundation records 已由
-`066_add_subscription_price_catalog_foundation.sql` 實作並套用；F3B 的五個 private ledger
-records 已由 `067_add_billing_event_transaction_ledger.sql` 在 repo 實作但尚未套用。F3C-F3E
+本文件描述完整 logical records 與 constraints。F3A 的三個 foundation records 與 F3B
+的五個 private ledger records 已分別由 migration 066、067 實作，並在選定 sandbox
+完成 environment-specific external verification。這不是 Production 證據。F3C-F3E
 records 仍是 future design，不構成 writer、callback、provider 或 runtime 核准。
 
 ## 2. Current-state boundary
@@ -47,8 +47,9 @@ writer 修改 `admin` 或 `promotion` rows。
 
 ## 3. Logical record model
 
-除 3.4 到 3.6 已由本機 F3A migration 定義但尚未套用外，以下名稱都是設計名稱，
-不是 live physical tables。
+3.4 到 3.6 是已在選定 sandbox 驗證的 F3A physical records；3.1 到 3.3、3.8、
+3.9 是已在同一類別 sandbox 驗證的 F3B physical records。其餘名稱仍是 future
+design，不是已核准的 live runtime records。
 
 ### 3.1 `billing_customer_links`
 
@@ -524,10 +525,10 @@ Launch 前必須具備：
 
 ## 10. Future migration slices
 
-每一片都需另行核准。F3A 已套用；F3B 已核准並完成本機實作，但尚未套用：
+每一片都需另行核准。F3A 與 F3B 已在選定 sandbox 完成 external verification：
 
-1. `F3A catalog-and-assignment foundation`：migration `066_add_subscription_price_catalog_foundation.sql` 已套用；只建立 candidate price versions、空 storefront mapping、空 assignment constraints；無 provider event writer。
-2. `F3B event-and-transaction ledger`：migration `067_add_billing_event_transaction_ledger.sql` 已在 repo 完成但尚未套用；建立空 customer link、subscription、transaction、event inbox、reconciliation records；仍無 public route、writer 或 direct grant。
+1. `F3A catalog-and-assignment foundation`：migration `066_add_subscription_price_catalog_foundation.sql` 已在選定 sandbox 驗證；只建立 candidate price versions、空 storefront mapping、空 assignment constraints；無 provider event writer。
+2. `F3B event-and-transaction ledger`：migration `067_add_billing_event_transaction_ledger.sql` 已在選定 sandbox 驗證；五張 private ledger tables 在 denial smoke 後仍為空；仍無 public route、writer 或 direct grant。
 3. `F3C projection writer`：service-role-only CAS writer 與 read-only verification SQL。
 4. `F3D quote-and-obligation`：single-use quote、plan-change saga state、adjustment obligation。
 5. `F3E support audit`：read-only timeline 與 narrow approved action RPC；不含任意 mutation console。
@@ -542,9 +543,9 @@ evidence。不得用一個大型 migration 同時開 schema、writer、callback�
 
 - logical records、ownership、uniqueness、immutability 與 projection boundary 已定義；
 - RLS、service-role、SECURITY DEFINER、idempotency、concurrency、retention 與 support threat model 已定義；
-- migration 已拆成可個別審查 slices；F3A 已套用，F3B migration、read-only verifier、denial smoke 與 runbook 已在 repo 完成但尚未套用；
+- migration 已拆成可個別審查 slices；F3A 與 F3B 已有選定 sandbox 的 target/hash、read-only verifier、denial/Advisor evidence；
 - provider-neutral read / reconciliation adapter contract 可以進行；
-- F3C-F3E、writer、callback route、provider SDK、checkout、refund 與 entitlement mutation 仍未核准；F3B 尚未套用且不提供 runtime authority。
+- F3C-F3E、writer、callback route、provider SDK、checkout、refund 與 entitlement mutation 仍未核准；F3B 的 sandbox schema 不提供 runtime authority。
 
 ## 12. 官方安全參考
 

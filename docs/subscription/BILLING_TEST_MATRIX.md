@@ -1,8 +1,8 @@
 # Billing Test Matrix
 
-日期：2026-08-03
+日期：2026-08-05
 
-狀態：S8 planning-only complete；F3A live；F3B local foundation complete but not applied；S9 尚未核准
+狀態：S8 planning-only complete；F3A 與 F3B 已在選定 sandbox 完成 external verification；S9 尚未核准
 
 ## 1. 測試策略
 
@@ -170,7 +170,7 @@ Billing 上線前仍必須保留現有 capability 與資料安全證據：
 | --- | --- | --- |
 | B0 Commercial | merchant、費率、稅務、發票、terms、refund policy | owner sign-off and dated evidence |
 | B1 Domain | F1 price / lock / quote resolver | pure tests pass; no provider import |
-| B2 Data security | F3 logical schema -> separately approved migrations / RLS | F3A local guard passes; live verification and later slice reviews remain required |
+| B2 Data security | F3 logical schema -> separately approved migrations / RLS | F3A/F3B selected-sandbox verification passes; F3C-F3E reviews and Production evidence remain required |
 | B3 Provider contract | callback verifier、adapter、sandbox query | W01-W20 required set passes |
 | B4 Lifecycle | reconciliation worker、support recovery、observability | duplicate/out-of-order/outage tests pass |
 | B5 Checkout | owner-only Web purchase/cancel/upgrade UI | truthful states and accessibility pass |
@@ -210,8 +210,8 @@ S8 的完成只代表：
 - provider direction 與 fallback 已文件化；
 - shared lifecycle、Founder 與 plan-change contract 已文件化；
 - launch test matrix 與 stop conditions 已建立；
-- 沒有 SDK、checkout、callback route 或 production billing state 被建立；F3A 是已套用的 non-billable foundation，F3B migration 067 只在 repo 建立且尚未套用。
+- 沒有 SDK、checkout、callback route 或 production billing state 被建立；F3A 與 F3B 只在選定 sandbox 完成 non-billable private foundation verification。
 
-F1 純 model、F3 data/security/read-contract design、F3A migration `066` 與 F3B local migration `067` 已完成；
-`067` 尚未套用，F3C-F3E、S9、provider implementations 與 F4 仍需各自明確核准，
+F1 純 model、F3 data/security/read-contract design、F3A migration `066` 與 F3B migration `067` 的 selected-sandbox external verification 已完成；
+F3C-F3E、S9、provider implementations 與 F4 仍需各自明確核准，
 F2 仍受 truthful billing availability 阻擋。

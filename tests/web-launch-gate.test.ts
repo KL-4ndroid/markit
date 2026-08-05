@@ -22,14 +22,14 @@ const report = evaluateWebLaunchReadiness(document);
 assert.equal(report.ready, false);
 assert.equal(report.overallStatus, 'not_ready');
 assert.equal(report.totalCount, 19);
-assert.equal(report.completeCount, 6);
-assert.equal(report.blockerCount, 13);
+assert.equal(report.completeCount, 7);
+assert.equal(report.blockerCount, 12);
 assert.equal(document.updatedAt, readiness.match(/^Date: (\d{4}-\d{2}-\d{2})$/m)?.[1]);
 assert.match(readiness, /Overall status: `NOT_READY`/);
 assert.deepEqual(report.counts, {
-  complete: 6,
+  complete: 7,
   implemented_local: 1,
-  pending_external: 5,
+  pending_external: 4,
   pending_approval: 3,
   evidence_missing: 4,
 });
@@ -39,6 +39,7 @@ assert.deepEqual(
     'CI-WEB',
     'LOCAL-QUALITY',
     'DB-063-065',
+    'DB-066',
     'TEAM-LIVE',
     'PROD-SURFACE',
     'DEPLOY-IDENTITY',
