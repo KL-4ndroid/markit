@@ -63,9 +63,9 @@ Billing 不能靠一筆成功付款 smoke 判定完成。正式上架需要四�
 | D14 | simulation / query / localStorage claims Team | no billing or protected-write authority |
 | D15 | provider state unknown | paid writes fail closed with visible recovery action |
 
-## 5. Web provider sandbox matrix
+## 5. Deferred Web provider sandbox matrix
 
-NewebPay is not activated until every required case has dated evidence from the actual merchant sandbox / contract.
+ECPay Web checkout is deferred and is not activated until every required case has dated evidence from the actual merchant sandbox / contract. This matrix does not block native launch.
 
 | ID | Case | Evidence / acceptance |
 | --- | --- | --- |
@@ -90,7 +90,7 @@ NewebPay is not activated until every required case has dated evidence from the 
 | W19 | settlement reconciliation | provider report totals match transaction ledger by currency |
 | W20 | cancellation UX | owner can schedule/revoke where supported and sees exact effective date |
 
-If NewebPay fails a blocking case, record the failure before testing ECPay. ECPay must pass the same business outcomes; provider-specific API names do not lower the acceptance bar.
+ECPay must pass every applicable business outcome before the Web paid track resumes; provider-specific API names do not lower the acceptance bar. NewebPay is not selected and receives no new activation work.
 
 ## 6. Upgrade / downgrade matrix
 
@@ -134,7 +134,8 @@ Self-serve Pro -> Team remains disabled if `server_signed_quote` correctness, pr
 
 ## 8. Native and cross-platform matrix
 
-這一節是未來 Gate 2，不能被解讀為恢復 Capacitor 實作。
+這一節是 native-first launch matrix。Platform-neutral contracts and fake adapters
+可先完成；Capacitor/native adapters 仍須等待既有 Phase 2 Gate 2 evidence。
 
 | ID | Case | Expected |
 | --- | --- | --- |
@@ -146,7 +147,7 @@ Self-serve Pro -> Team remains disabled if `server_signed_quote` correctness, pr
 | N06 | app account email changes | billing identity remains owner UUID |
 | N07 | Apple / Google price change | existing cohort and consent behavior match current store rules |
 | N08 | store grace / account hold | current store status queried; duration not hardcoded |
-| N09 | Web Founder uses native app | entitlement works without a second subscription |
+| N09 | native subscriber uses another app surface | entitlement works without a second subscription |
 | N10 | native Founder acquisition | remains disabled until cancellation and dormant restore are proven |
 | N11 | active Web and store purchase collide | no double entitlement; self-service changes frozen for support |
 | N12 | account transfer | blocked or completed only by audited migration flow |

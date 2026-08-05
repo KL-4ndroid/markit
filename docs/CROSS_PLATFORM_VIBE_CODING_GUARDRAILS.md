@@ -2,9 +2,10 @@
 
 ## Decision
 
-As of 2026-07-22, Capacitor implementation is paused while the Web product
-workflow is completed. This pause changes delivery priority, not the target
-architecture.
+As of 2026-08-06, the native subscription readiness workstream is resumed.
+iOS App Store and Google Play subscriptions are the first paid acquisition
+routes; Web ECPay checkout is a later release track. This changes delivery
+priority, not the shared architecture or the existing safety gates.
 
 The product is intended to ship on three surfaces:
 
@@ -105,20 +106,20 @@ For every task, confirm before completion:
 If any answer exposes a Web-only assumption in shared code, the task is not
 complete.
 
-## Capacitor Pause Boundary
+## Capacitor Resumption Boundary
 
-During the pause, do not:
+Platform-neutral subscription domain work and IAP contracts may proceed now.
+Until the existing Phase 2 Gate 2 evidence is complete, do not:
 
 - install or upgrade `@capacitor/*` packages;
 - create `capacitor.config.*`, `ios/`, or `android/` native projects;
 - implement native adapters or native signing/build pipelines;
 - claim simulator, physical-device, TestFlight, Play Console, or store readiness.
 
-It is allowed and expected to add or improve platform-neutral contracts, Web
-adapters, contract tests, mobile-compatible API boundaries, and responsive UI
-when required by current Web work.
+It is allowed and expected to add or improve platform-neutral contracts, fake
+adapters, contract tests, mobile-compatible API boundaries, and responsive UI.
+These artifacts must not claim that a native storefront or entitlement writer is
+active.
 
-When Capacitor work resumes, continue from
-`docs/IOS_CAPACITOR_PROGRESS.md`; do not reopen completed Gate 1 or Phase 2
-decisions unless current evidence shows that they have regressed.
-
+Continue from `docs/IOS_CAPACITOR_PROGRESS.md`; do not reopen completed Gate 1
+or Phase 2 decisions unless current evidence shows that they have regressed.

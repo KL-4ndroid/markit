@@ -1,0 +1,168 @@
+# Native Subscription Execution Plan
+
+Date: 2026-08-06
+
+Status: approved direction; implementation is staged and billing remains disabled
+
+Canonical machine state:
+`docs/subscription/NATIVE_SUBSCRIPTION_LAUNCH_GATES_2026_08_06.json`
+
+## 1. Product Decision
+
+The first paid acquisition routes are Apple App Store subscriptions on iOS and
+Google Play subscriptions on Android. Web remains available to Free users and
+to users whose paid account entitlement was verified from a native store. Web
+checkout is deferred; ECPay is the selected later Web recurring provider.
+
+Subscription access binds to the authenticated Féria owner account, never to a
+device. The originating store remains responsible for purchase management,
+renewal, cancellation, refund, and chargeback. Féria's server-owned entitlement
+projection determines application capabilities on every surface.
+
+## 2. Non-negotiable Invariants
+
+1. Login is required before purchase or restore begins.
+2. Apple uses an account binding token derived for the authenticated owner;
+   Google uses an obfuscated account identifier. Raw owner UUIDs are not exposed
+   to the storefront when a one-way binding can be used.
+3. A client purchase result, local receipt, IndexedDB row, device identifier, or
+   simulator flag never grants Pro or Team by itself.
+4. Store evidence is verified by the server before billing ledger or entitlement
+   projection changes.
+5. One owner workspace may have at most one active paid transaction origin.
+6. A valid Apple entitlement is usable after login on Android and Web, and a
+   valid Google entitlement is usable after login on iOS and Web.
+7. Users manage billing in the originating store. Cross-store upgrade or
+   cancellation is never represented as an in-place mutation.
+8. Restore may recover a purchase only for the same trusted Féria account
+   binding. Arbitrary purchase transfer is a support-reviewed migration.
+9. Unknown or stale paid state fails closed for protected writes and presents a
+   retry/support recovery state; it is not silently downgraded to Free.
+10. Secrets, full receipts, purchase tokens, and provider identifiers are not
+    stored in client logs or general application logs.
+
+## 3. Release Tracks
+
+| Track | Acquisition | Access | Current state |
+| --- | --- | --- | --- |
+| iOS | Apple In-App Purchase | iOS, Android, Web after server verification | priority; not ready |
+| Android | Google Play Billing | Android, iOS, Web after server verification | priority; not ready |
+| Web | ECPay recurring payment | Web, iOS, Android after server verification | deferred |
+
+The Web launch matrix remains a separate release artifact. An incomplete ECPay
+merchant gate does not block native acquisition, but it does block paid Web
+checkout. Native launch cannot reuse Web readiness evidence as store evidence.
+
+## 4. Implementation Slices
+
+### N0: Decision And Gates
+
+- synchronize provider, subscription, Capacitor, and launch documents;
+- establish a separate machine-readable Native launch matrix;
+- record manual dependencies without secrets.
+
+### N1: Store-neutral Entitlement Core
+
+- define native store, purchase state, account binding, restore, active-origin,
+  and cross-platform access contracts in shared TypeScript;
+- keep billing status, entitlement status, and price-lock status independent;
+- add pure validation and fail-closed decision tests.
+
+No database mutation or provider SDK is allowed in N1.
+
+### N2: Platform IAP Port
+
+- define a `lib/platform` purchase capability with catalog, purchase, restore,
+  billing-management, and availability operations;
+- add deterministic unavailable and fake adapters for shared orchestration tests;
+- prohibit Apple, Google, browser, React, Dexie, and entitlement mutation imports
+  from the contract.
+
+### N3: Verification Contracts
+
+- normalize Apple transaction/JWS and Google purchase-token verification inputs;
+- define bounded server request/response and safe error contracts;
+- add official-sandbox fixture placeholders and corrupted-fixture tests;
+- do not add live verification endpoints before secrets, app identifiers, and a
+  separate server-runtime review are available.
+
+### N4: Entitlement Reconciliation Writer
+
+Requires separate approval. Implement server-only idempotent reconciliation from
+verified store state into the F3 ledger and account projection. This includes
+cross-owner denial, duplicate/out-of-order handling, stale-state rejection,
+audit evidence, and corrective-forward procedures.
+
+### N5: Capacitor And Native Store Adapters
+
+Requires Phase 2 Gate 2 completion. Install reviewed Capacitor/store packages,
+create native projects, isolate native imports under `lib/platform/capacitor`,
+and implement Apple and Google adapters. No Production signing or purchase is
+part of the baseline.
+
+### N6: Store Configuration And Sandbox
+
+Human-operated Apple/Google accounts provide bundle/package identifiers,
+agreements, tax/bank profiles, subscription products, prices, testers, and
+server-notification configuration. Execute purchase, renewal, cancellation,
+grace, restore, refund, duplicate-origin, account-switch, and cross-platform
+access tests.
+
+### N7: Compliance And Release Candidate
+
+Complete App Privacy, Data Safety, terms, privacy, subscription disclosures,
+support, restore/manage-subscription UI, store metadata, screenshots, review
+notes, observability, incident drill, and a bounded canary.
+
+### N8: Deferred Web Billing
+
+Only after a separate decision, complete ECPay merchant activation, sandbox,
+adapter, callback, reconciliation, checkout, cancellation, refund, legal,
+accounting, and Web canary gates. Native entitlement behavior must remain
+unchanged.
+
+## 5. Duplicate-origin Policy
+
+Before starting a purchase, the server checks the current verified entitlement.
+If another paid origin is active, purchase is blocked and the UI directs the
+owner to manage the existing subscription in its originating store. If two
+origins are later observed because of race, offline purchase, family/account
+change, or delayed notification, the server must:
+
+1. preserve access from the latest verified paid state;
+2. freeze self-service plan changes and additional checkout;
+3. avoid automatically cancelling or refunding either store;
+4. create an auditable support reconciliation case;
+5. resolve financial responsibility using original-store evidence.
+
+## 6. Human Handoff Inputs
+
+The implementation can consume the following values after the owner provides
+them through approved secret/configuration channels:
+
+- Apple Developer team/account type, bundle ID, App Store Connect app ID,
+  subscription group and product IDs, sandbox testers, agreements/tax/bank
+  readiness, and notification environment;
+- Google Play account type, package name, app entry, base-plan/product IDs,
+  license testers, payments profile readiness, service account/RTDN readiness,
+  and notification environment;
+- approved public price points, localized names/descriptions, trial/offer policy,
+  grace/account-hold policy, refund/support policy, and Founder eligibility;
+- physical iPhone, Android device, and macOS/Xcode access for real builds and
+  sandbox evidence.
+
+No credentials, tokens, bank data, legal identity, or full provider references
+belong in this repository.
+
+## 7. Stop Conditions
+
+Stop before any action that requires a secret, Production migration, real charge,
+refund/cancellation mutation, entitlement write, store submission, Production
+notification endpoint, legal/accounting policy decision, or destructive change.
+
+## 8. Definition Of Native Launch Ready
+
+Native launch is ready only when every gate in the Native launch JSON is
+`complete`, store sandbox evidence is preserved without secrets, the final
+release revision passes the complete repository test/build/mobile manifest, and
+Apple/Google canaries have an approved rollback and support owner.

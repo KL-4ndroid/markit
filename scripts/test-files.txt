@@ -198,6 +198,7 @@ tsx tests/subscription-feature-gates.test.ts
 tsx tests/subscription-feature-gate-mapping.test.ts
 tsx tests/subscription-strategic-growth-data-reserve.test.ts
 tsx tests/subscription-billing-provider-decision.test.ts
+tsx tests/native-subscription-direction.test.ts
 tsx tests/subscription-account-capability-api.test.ts
 tsx tests/subscription-simulation.test.ts
 tsx tests/analytics-subscription-access.test.ts

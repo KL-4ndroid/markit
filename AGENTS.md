@@ -2,8 +2,15 @@
 
 ## Current Product Priority
 
-- Capacitor implementation is paused until the Web product workflow is complete.
-- Do not install Capacitor packages, create native projects, or implement native adapters unless the user explicitly resumes that workstream.
+- Native subscription readiness is resumed as of 2026-08-06, with iOS App Store
+  and Google Play subscription launches ahead of Web checkout.
+- Platform-neutral subscription contracts, entitlement rules, tests, and mobile
+  packaging readiness may proceed now.
+- Do not install Capacitor packages, create native projects, or implement native
+  store adapters until the existing Phase 2 Gate 2 evidence is complete and the
+  corresponding implementation slice is reviewed.
+- Web recurring checkout is deferred. ECPay is the selected future Web provider;
+  no ECPay runtime or merchant activation is required for the native-first launch.
 - The product must remain capable of shipping as Web, iOS, and Android applications from one shared business-logic codebase.
 - Web UX should prioritize data presentation, review, analytics, comparison, and reporting.
 
@@ -19,4 +26,3 @@ Before implementation, identify platform-dependent capabilities. Keep domain
 rules, validation, data models, sync behavior, and API contracts shared. Put
 browser/device access behind `lib/platform` ports with a Web adapter now and a
 future Capacitor adapter later.
-

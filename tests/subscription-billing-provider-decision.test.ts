@@ -29,16 +29,18 @@ const testManifest = read('scripts/test-files.txt');
 
 for (const boundary of [
   'S8 planning-only complete',
-  'NewebPay recurring payment',
-  'selected_pending_activation',
-  'ECPay recurring payment',
-  '官方支援貨幣清單目前沒有 `TWD`',
   'Apple In-App Purchase',
   'Google Play Billing',
+  'Féria 帳號，不綁裝置',
+  'ECPay recurring payment',
+  'deferred_web_phase',
+  'NewebPay 不再是選定供應商',
+  'not_selected',
+  '官方支援貨幣清單目前沒有 `TWD`',
   'RevenueCat 僅是未來可選的 native store adapter / aggregator',
   'Supabase owner UUID',
   '一個 active paid billing origin',
-  'Web Founder acquisition',
+  'Founder acquisition 是否在 Apple / Google 首發開放',
   'server_signed_quote',
   'support_required',
   'S9 仍是 `NOT APPROVED`',
@@ -98,11 +100,12 @@ assert.ok(
   'implementation plan must keep S9 unapproved',
 );
 assert.ok(
-  executionPack.includes('S7、S8 planning-only 已完成；S9 未核准'),
+  executionPack.includes('S7、S8 planning-only 已完成；Apple/Google native-first groundwork 已核准；S9 money/entitlement runtime 未核准'),
   'execution pack must record the same S8/S9 boundary',
 );
 assert.ok(productPlan.includes('### S8 Billing Provider Direction'));
-assert.ok(productPlan.includes('Founder acquisition starts on Web'));
+assert.ok(productPlan.includes('native paid acquisition launches first'));
+assert.ok(productPlan.includes('ECPay recurring payment is the selected later Web route'));
 assert.ok(featureMatrix.includes('approved server-signed quote'));
 assert.ok(
   testManifest.includes('tsx tests/subscription-billing-provider-decision.test.ts'),

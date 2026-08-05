@@ -2,9 +2,9 @@
 
 日期：2026-07-24
 
-最後更新：2026-08-03
+最後更新：2026-08-06
 
-狀態：S7、S8 planning-only 已完成；S9 未核准
+狀態：S7、S8 planning-only 已完成；Apple/Google native-first groundwork 已核准；S9 money/entitlement runtime 未核准
 
 # S7｜Brand Growth Reserve Data Design
 
@@ -55,8 +55,10 @@ docs/subscription/BILLING_TEST_MATRIX.md
 - 綠界定期定額只作單一備援，不同時接入；
 - Paddle 因官方貨幣清單目前無 `TWD`，不作台灣首發主方案；
 - Stripe 在台灣法律主體資格未確認前不採用；
-- 未來 iOS 使用 Apple IAP、Android 使用 Google Play Billing，RevenueCat 僅保留為 native store aggregation 候選；
-- Capacitor、native SDK 與 store product 實作仍受 Web-first Gate 2 阻擋。
+- iOS 使用 Apple IAP、Android 使用 Google Play Billing，作為第一批付費 acquisition；
+- ECPay 是延後的 Web provider，NewebPay 不再選用；
+- RevenueCat 僅保留為 native store aggregation 候選；
+- platform-neutral contracts 已恢復，Capacitor/native SDK/store product 實作仍受既有 Gate 2 阻擋。
 
 跨平台共同核心由 BoothBook server-owned billing ledger、price assignment、
 plan-change quote 與 Supabase entitlement projection 組成。支付 callback 只觸發
@@ -76,10 +78,9 @@ authority。
 - provider 能提供 exact quote 時回傳 charge、credit / refund、effective time、next renewal date、quote id 與 expiry；若台灣 provider 沒有 proration quote，只有經核准的 server-side resolver 能以 provider-confirmed transaction snapshot 產生 immutable、single-use、expiring signed quote；兩者皆無法做到時 flow 必須 `support_required`，且無法確定的欄位留 `null`；
 - 已採用的 dormant 商業規則如何 mapping 到 Web、Apple、Google，不得以 provider 差異改成 Team 65% 折扣或沒收鎖價。
 
-Founder acquisition 初始只規劃於 Web。原生商店能否取得 Founder 價，需先在
-Apple / Google sandbox 證明取消、價格 cohort、plan switch 與 dormant restore；
-Web Founder 未來可在原生 App 登入後使用共同 entitlement，但不得建立第二份
-subscription。
+原生商店能否取得 Founder 價，需先在 Apple / Google sandbox 證明取消、價格 cohort、
+plan switch 與 dormant restore。任何已驗證 paid origin 都可在另一平台登入後使用共同
+entitlement，但不得建立第二份 subscription。
 
 Apple、Google 與 provider 政策必須在實作、staging 與送審前重新查證。
 
@@ -134,8 +135,9 @@ docs/subscription/F3B_BILLING_LEDGER_MIGRATION_RUNBOOK.md
 tests/subscription-billing-ledger-foundation.test.ts
 ```
 
-下一步是保存 F3A/F3B selected-sandbox evidence 並等待 NewebPay activation 回覆；
-不得重新套用 `066`/`067`，也不是 checkout、callback、writer 或 provider mutation。
+下一步是保存 F3A/F3B selected-sandbox evidence，完成 account-bound entitlement core、
+IAP platform port 與 fake adapter tests；不得重新套用 `066`/`067`，也不是 live purchase、
+store notification、writer 或 provider mutation。ECPay activation 延後。
 
 方案異動額外規則：
 

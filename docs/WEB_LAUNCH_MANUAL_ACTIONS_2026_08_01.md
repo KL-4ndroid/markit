@@ -78,7 +78,11 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
   effective date, retention table, cross-border processing, and deletion procedure.
 - Run one real received/replied/closed support case and one incident escalation drill.
 - Store dated product, legal, accounting, privacy/security, and support-owner approvals.
-- Complete NewebPay merchant/API/sandbox activation before any billing runtime is enabled.
+- Keep ECPay merchant/API/sandbox activation deferred. It is required only before
+  enabling paid Web checkout, not before native Apple/Google subscription launch.
+- Complete the Apple and Google account, agreement, tax/bank, product catalog,
+  tester, device, privacy, and store-review inputs listed in
+  `subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md`.
 - Keep F3C-F3E, S9 provider runtime, referral rewards, and production canary behind their
   separate implementation and approval gates.
 

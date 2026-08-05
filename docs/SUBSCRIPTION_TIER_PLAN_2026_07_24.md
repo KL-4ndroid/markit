@@ -296,12 +296,13 @@ Provider implementations may differ in whether they refund unused Pro value, cha
 
 Planning decision as of 2026-07-30, not approved billing implementation:
 
-- Taiwan Web launch conditionally selects NewebPay recurring payment after merchant review, required API approval, sandbox, fee, refund, invoice, tax, and reconciliation gates pass;
-- ECPay recurring payment is the single fallback if a blocking NewebPay requirement fails;
+- native paid acquisition launches first through Apple In-App Purchase and Google Play Billing;
+- verified entitlement binds to the Féria owner account and is usable on iOS, Android, and Web, while billing management remains with the originating store;
+- Web checkout is deferred; ECPay recurring payment is the selected later Web route and NewebPay is not selected;
 - Paddle is not the Taiwan launch provider because its current supported-currency list does not include TWD;
 - Stripe is not selected while an eligible supported-country legal entity and account remain unconfirmed;
-- future iOS purchases use Apple IAP and Android purchases use Google Play Billing; RevenueCat may later aggregate native storefront state but does not replace BoothBook server authorization;
-- Founder acquisition starts on Web. Native storefront acquisition remains closed until each store proves the required cancellation, price-cohort, plan-switch, and dormant-lock behavior in sandbox;
+- RevenueCat may later aggregate native storefront state but does not replace Féria server authorization or original store evidence;
+- native Founder acquisition remains closed until each store proves the required cancellation, price-cohort, plan-switch, and dormant-lock behavior in sandbox;
 - one workspace may have only one active paid billing origin. Cross-origin migration is an explicit support flow, not automatic cancel-and-rebuy.
 
 Canonical S8 contracts:
@@ -793,7 +794,7 @@ These require later discussion:
 2. Exact storage quota for product cover photos.
 3. Team staff-seat count after support and role-usage data.
 4. PDF and Excel export limits.
-5. Activation evidence for the conditionally selected NewebPay Web route; native-store implementation remains a later Apple / Google review.
+5. Apple/Google account, catalog, sandbox, notification, cross-platform entitlement, compliance, and canary evidence; ECPay Web activation is deferred.
 6. Pro Pass redemption window and rolling reward ceiling after beta abuse data.
 7. Whether to test fixed paid-conversion credit after billing is stable.
 8. Past-due grace and offline entitlement lease duration.
@@ -803,7 +804,7 @@ These require later discussion:
 12. Founder-offer enrollment end date, eligible-owner cap, or both.
 13. Final merchant-catalog approval for Web `NT$1,290`; exact Apple / Google storefront amounts remain unresolved until native sandbox.
 14. Whether qualified Pro Pass trials join the founder cohort at billing launch; recommended default is server-marked eligibility without discount stacking.
-15. Sandbox proof for the documented NewebPay exact-quote saga, actual-paid Pro credit/refund, renewal date, and dormant-lock restoration.
+15. Store-specific sandbox proof for exact plan changes, actual-paid Pro credit/refund behavior, renewal date, and dormant-lock restoration.
 16. Exact evidence thresholds that activate V2 or V3 public price versions.
 
 ## 21. AI Guidance

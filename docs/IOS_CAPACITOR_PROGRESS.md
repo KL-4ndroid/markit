@@ -2,14 +2,21 @@
 
 ## Current Phase
 
-Phase 2 / Backend API boundary (paused)
+Phase 2 / Backend API boundary (resumed; Gate 2 evidence pending)
 
 ## Status
 
-PAUSED BY PRODUCT PRIORITY - On 2026-07-22 the user paused the Capacitor workstream until the Web product workflow is complete. Gate 1 remains passed. Phase 2 keeps its verified BFF, API, CORS, role, upload, read, retry, and lease/idempotency evidence, but Gate 2 remains not passed pending deployed storage-failure compensation and remote cleanup evidence. No Capacitor packages or native projects are authorized during the pause. Web-first work must follow `docs/CROSS_PLATFORM_VIBE_CODING_GUARDRAILS.md` so future iOS and Android delivery does not require a broad rewrite.
+RESUMED WITH EXISTING GATE - On 2026-08-06 the user resumed native subscription readiness and prioritized Apple App Store and Google Play subscriptions ahead of Web checkout. Gate 1 remains passed. Phase 2 keeps its verified BFF, API, CORS, role, upload, read, retry, and lease/idempotency evidence, but Gate 2 remains not passed pending deployed storage-failure compensation and remote cleanup evidence. Platform-neutral subscription domain work and IAP contracts are authorized; Capacitor packages, native projects, store SDKs, signing, and real purchase runtime remain blocked until Gate 2 and their own review gates pass.
 
 ## Decisions
 
+- On 2026-08-06 the user resumed the native workstream for a native-first paid
+  launch. Purchases must bind to the authenticated Féria owner account, not a
+  device; a verified Apple or Google subscription grants the same account plan
+  on iOS, Android, and Web. Purchase management remains with the originating
+  store, and duplicate active origins must be prevented or reconciled.
+- Web recurring checkout is deferred. ECPay is the selected later Web provider;
+  NewebPay is no longer selected.
 - On 2026-07-22 the user paused the Capacitor series of tasks to prioritize completing the Web workflow. Web will emphasize data presentation and historical review, while all new work must preserve a shared, platform-neutral core for future iOS and Android Capacitor applications.
 - The user authorized direct implementation on 2026-07-16, with work pausing only for material product decisions, external credentials, or manual actions.
 - The user confirmed on 2026-07-17 that the production Web application is deployed on Vercel and authorized reusing that Vercel deployment for the BFF/API routes.
@@ -32,7 +39,7 @@ PAUSED BY PRODUCT PRIORITY - On 2026-07-22 the user paused the Capacitor workstr
 - On 2026-07-20 the user explicitly authorized creating one disposable account without an invitation or relationship for the unrelated-user denial test. No existing account relationship was changed.
 - On 2026-07-20 the user approved narrow same-request R2 compensation: delete only object keys confirmed uploaded by the current attempt when thumbnail upload or metadata finalize fails, keep the local payload and failed metadata diagnostics, and expose an explicit cleanup-incomplete result without adding a broad batch or retention cleanup executor.
 - On 2026-07-20 the user approved the recommended login/sign-out UI stabilization. Role snapshots must be bound to the current authenticated user before protected content mounts; manual sign-out must not be treated as session expiry; successful sign-out uses Next client navigation and deliberately opens the login dialog; and initial sync remains blocking but must be visible on its first mounted frame rather than covering an already-painted dashboard.
-- Phase 3 Capacitor/native bootstrap is not authorized by the current Gate status.
+- Phase 3 Capacitor/native bootstrap remains blocked by the current Gate 2 status.
 
 ## Changed Files
 
@@ -131,4 +138,10 @@ PAUSED BY PRODUCT PRIORITY - On 2026-07-22 the user paused the Capacitor workstr
 
 ## Next Authorized Slice
 
-None - the Capacitor workstream is paused by product priority. When the user explicitly resumes it, continue with the previously approved Gate 2 compensation evidence: choose the authenticated Chrome or manual in-app-browser file-selection path, execute the thumbnail/finalize probes, prove physical R2 deletion and metadata/local-payload behavior, remove all temporary variables, redeploy safely, and perform the normal retry. Gate 2 stays closed and Phase 3 remains unauthorized until that evidence passes.
+Proceed with platform-neutral native subscription contracts, account-bound
+entitlement rules, fake IAP adapters, and deterministic tests. In parallel, the
+remaining Gate 2 compensation evidence is still required: use an authenticated
+manual file-selection path, execute the thumbnail/finalize probes, prove physical
+R2 deletion and metadata/local-payload behavior, remove all temporary variables,
+redeploy safely, and perform the normal retry. Gate 2 stays closed and Phase 3
+native project/bootstrap work remains unauthorized until that evidence passes.

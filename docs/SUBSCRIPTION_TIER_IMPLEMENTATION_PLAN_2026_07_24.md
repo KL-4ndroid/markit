@@ -688,11 +688,13 @@ Result:
 - `docs/subscription/BILLING_PROVIDER_DECISION.md` is the canonical provider and storefront decision;
 - `docs/subscription/BILLING_LIFECYCLE_STATE_MACHINE.md` is the canonical normalized lifecycle, callback, reconciliation, Founder lock, and plan-change saga contract;
 - `docs/subscription/BILLING_TEST_MATRIX.md` is the canonical sandbox, security, cross-platform, and launch-gate matrix;
-- Taiwan Web launch conditionally selects NewebPay recurring payment after merchant, API, sandbox, fee, tax, invoice, refund, and reconciliation gates pass;
-- ECPay is a single fallback, not a concurrently maintained provider;
+- native paid acquisition launches first through Apple In-App Purchase and Google Play Billing;
+- verified entitlement binds to the Féria owner account and is shared across iOS, Android, and Web, while billing management remains with the originating store;
+- ECPay is the selected deferred Web provider; NewebPay is not selected;
 - Paddle is not the Taiwan launch provider because its current official currency list omits TWD, and Stripe remains blocked until an eligible supported-country entity and account are confirmed;
-- future iOS uses Apple IAP and Android uses Google Play Billing; RevenueCat remains an optional native-store aggregation adapter, and Capacitor stays paused;
-- Web Founder acquisition is the first supported route. Native Founder acquisition remains blocked until storefront sandbox proves cancellation, cohort, plan-switch, and dormant-restore behavior;
+- RevenueCat remains an optional native-store aggregation adapter and cannot replace original store evidence or server authorization;
+- platform-neutral native subscription work is resumed, while Capacitor Phase 3 remains blocked by the existing Gate 2 evidence;
+- Native Founder acquisition remains blocked until storefront sandbox proves cancellation, cohort, plan-switch, and dormant-restore behavior;
 - a provider exact quote is preferred. For a Taiwan provider without proration quotes, only a server-signed, immutable, single-use quote derived from provider-confirmed transaction truth may provide exact values; otherwise the flow is `support_required`;
 - S9 remains not approved.
 

@@ -1,6 +1,6 @@
 # BoothBook Web Launch Readiness
 
-Date: 2026-08-05
+Date: 2026-08-06
 
 Overall status: `NOT_READY`
 
@@ -48,7 +48,7 @@ evidence_missing
 | `PWA-WEB` | Manifest assets, service-worker lifecycle, install presentation, responsive shell, and app shortcuts work | `pending_external` | 2026-08-03 local production baseline on `097f2be` passed the commit-bound 9-asset smoke, zero-error standalone manifest parsing, and no-overflow desktop 1440x900 plus Android-class 412x915 views; on 2026-08-05 the unauthenticated `main` code fix and focused unauthenticated/public-demo/authenticated landmark guardrails completed | Complete real desktop/Android install and installed-icon launch, service-worker update after a second deployment, owner shortcuts, staff fail-closed shortcuts, and public-data-only install screenshots against one HTTPS release candidate |
 | `MEDIA-PROD` | Product-cover and sales-evidence storage paths are production-ready at approved entitlement modes | `evidence_missing` | local tests and guides exist | Migration/R2/CORS/quota/cleanup evidence and authorized/unauthorized production smoke |
 | `STAGING-E2E` | Owner, staff roles, Free/Pro/Team, offline recovery, PDF, and media workflows pass in a production-like deployment | `evidence_missing` | 57-check live Team transition smoke passed. On `cac6fa6`, an authenticated Production Free owner passed recent-three/basic-summary access and Pro/Team/PDF denial with no browser errors; the current local Free/Pro/Team simulator matrix also passed without cloud writes. Sanitized partial evidence is in `WEB_AUTHENTICATED_RELEASE_MATRIX_2026_08_01.md`; paid deployment roles, offline recovery, inspectable PDF output, and media remain open | Signed staging matrix for required viewports, roles, account states, and recovery cases |
-| `BILLING-MERCHANT` | NewebPay recurring payment merchant, API, sandbox, refund, and reconciliation capabilities are approved | `pending_external` | provider decision is conditional | Dated merchant/API activation evidence and sanitized sandbox fixtures |
+| `BILLING-MERCHANT` | Deferred ECPay Web recurring merchant, API, sandbox, refund, and reconciliation capabilities are approved | `pending_external` | Web checkout is deliberately deferred while Apple/Google native subscriptions are prioritized; NewebPay is not selected | When the Web paid track resumes, collect dated ECPay merchant/API activation evidence and sanitized sandbox fixtures |
 | `F3B-F3E` | Billing event ledger, projection writer, quote/obligation, and support audit slices are implemented | `pending_approval` | F3B migration 067 is externally verified in the selected sandbox: pre/post verifier all true, 79 denial checks passed, five private tables remained empty, and no F3B Advisor ERROR/WARN; F3C-F3E remain unapproved and unimplemented | Preserve F3B evidence without reapplying 067; separately approve and complete F3C, F3D, and F3E migrations, adversarial tests, rollback/corrective-forward plans, and environment evidence |
 | `S9` | Provider adapter, callback, reconciliation, checkout, cancellation, refund, and entitlement mutation are implemented | `pending_approval` | S8 decision and billing contracts only | Complete billing test matrix, staging lifecycle evidence, security review, support runbooks, production canary approval |
 | `PROMOTION-RUNTIME` | Launch referral attribution and Pro Pass rewards are abuse-resistant and reconciled with paid billing policy | `pending_approval` | policy/design only | Approved P1-P4 slices or an explicit decision to launch without the promotion |
@@ -62,9 +62,10 @@ evidence_missing
 2. Complete the remaining install/update, unrelated-origin anti-frame, and authenticated
    owner/staff production-like browser matrix against the selected deployment.
 3. Complete production configuration and media staging evidence without enabling billing.
-4. Finish NewebPay merchant/API activation while implementing only separately approved
-   F3C-F3E slices after explicit review.
-5. Implement S9 provider runtime and pass the complete billing sandbox matrix.
+4. Keep ECPay Web merchant activation deferred; track Apple/Google native launch in
+   `subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md`.
+5. Implement only separately approved F3C-F3E/provider runtime slices and pass the
+   applicable provider sandbox matrix.
 6. Resolve the promotion launch decision, observability, legal/support, staging E2E, and
    production canary gates.
 

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "sourceDocument": "subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md",
+  "updatedAt": "2026-08-06",
+  "overallStatus": "not_ready",
+  "gates": [
+    { "id": "NATIVE-DIRECTION", "status": "complete" },
+    { "id": "ACCOUNT-ENTITLEMENT-CORE", "status": "pending_implementation" },
+    { "id": "IAP-PLATFORM-PORT", "status": "pending_implementation" },
+    { "id": "CAPACITOR-GATE2", "status": "pending_external" },
+    { "id": "APPLE-DEVELOPER", "status": "pending_manual" },
+    { "id": "GOOGLE-PLAY-DEVELOPER", "status": "pending_manual" },
+    { "id": "STORE-CATALOG", "status": "pending_manual" },
+    { "id": "STORE-VERIFICATION", "status": "pending_approval" },
+    { "id": "ENTITLEMENT-WRITER", "status": "pending_approval" },
+    { "id": "NATIVE-ADAPTERS", "status": "blocked_dependency" },
+    { "id": "SANDBOX-LIFECYCLE", "status": "pending_external" },
+    { "id": "CROSS-PLATFORM-ACCESS", "status": "pending_external" },
+    { "id": "STORE-COMPLIANCE", "status": "pending_manual" },
+    { "id": "NATIVE-CANARY", "status": "pending_external" }
+  ]
+}

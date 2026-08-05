@@ -197,30 +197,32 @@ Full provider references 只進 access-controlled billing records；一般 logs 
 
 ## 10. Provider-specific activation
 
-### NewebPay Web
+### Apple App Store / Google Play priority
 
-- F3A storefront mapping 使用 `mapping_mode='server_amount'`；內部 price version 保存
-  BoothBook 核准金額，不建立虛構的 NewebPay provider price object/reference；
-- merchant / domain approval；
-- recurring payment enabled；
-- required modification APIs approved；
-- current callback checksum / encryption specification fixture；
+- 原始 store transaction、product、environment 與 account-binding evidence 必須保留；
+- client purchase result 只能送交 server verification，不能直接授予 entitlement；
+- Apple signed transaction / server notification 與 Google purchase token / RTDN
+  都必須以當時官方規格驗證；
+- restore 只能恢復至同一 trusted Féria owner binding；
+- active paid origin 衝突時凍結新購買與方案異動，轉 support reconciliation；
 - authoritative subscription / transaction query verified；
 - duplicate and out-of-order behavior recorded；
 - refund / cancellation / failed renewal evidence；
 - sandbox and production secret separation。
 
-### ECPay fallback
+### ECPay deferred Web phase
 
-只有 NewebPay blocking requirement 失敗並記錄後才實作。ECPay adapter 必須符合完全相同
-normalized contract；storefront mapping 同樣使用 `server_amount`，不因 API 能力較少而降低
-quote、refund 或 idempotency acceptance。
+ECPay 不屬於 native launch blocker。Web checkout 重新啟動後，adapter 必須符合完全相同
+normalized contract；storefront mapping 使用 `server_amount`，不因 API 能力較少而降低
+quote、refund、verification 或 idempotency acceptance。
 
-### Apple / Google future
+### NewebPay historical status
 
-保持 Web-first Gate 2。RevenueCat 若採用，是 native aggregation adapter；原始 store、
-transaction id 與 environment 仍須保留。不得用 RevenueCat customer alias 取代 trusted
-Supabase owner binding。
+NewebPay 是 `not_selected`，只保留歷史決策與 evidence，不建立新 adapter、SDK、callback
+或 activation 工作。
+
+RevenueCat 若採用，只是 native aggregation adapter；原始 store、transaction id 與
+environment 仍須保留。不得用 RevenueCat customer alias 取代 trusted Supabase owner binding。
 
 ## 11. Test contract
 

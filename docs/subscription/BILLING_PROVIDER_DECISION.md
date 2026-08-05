@@ -1,36 +1,38 @@
 # Billing Provider Decision
 
-日期：2026-07-30
+日期：2026-08-06
 
 狀態：S8 planning-only complete
 
-適用範圍：BoothBook Web-first 訂閱收費與未來 iOS / Android 相容路線
+適用範圍：Féria native-first 訂閱收費與延後的 Web 收費路線
 
 ## 1. 決策摘要
 
 本文件只凍結供應商方向、責任邊界與上架閘門，不代表已核准收款實作。
 
-1. Web 台灣首發的首選是 `NewebPay recurring payment`（藍新信用卡定期定額）。
-2. 首選成立的前提是商店審核通過、定期定額與必要異動 API 獲准、sandbox 完成，並由會計確認稅務、發票與退款責任。
-3. `ECPay recurring payment`（綠界信用卡定期定額）是備援，不與藍新同時接入。它可補授權與取消，但目前公開文件呈現的方案異動能力較弱，因此不能在未驗證前承諾同等的自助升級體驗。
-4. 未來 iOS 使用 Apple In-App Purchase，Android 使用 Google Play Billing；原生購買聚合可再評估 RevenueCat，但本階段不安裝 RevenueCat 或 Capacitor。
-5. Paddle 不作為台灣首發主方案，因為官方支援貨幣清單目前沒有 `TWD`。它只保留為未來國際 SaaS、使用支援貨幣時的 Merchant of Record 候選。
-6. Stripe 不作為僅有台灣法律主體時的預設，因為 Stripe 官方全球可用地區目前未列出台灣。只有在可合法使用的支援地區主體與帳號完成驗證後才能重評估。
-7. BoothBook 的 server-owned billing ledger 與 entitlement projection 是跨供應商的共同核心。客戶端、localStorage、IndexedDB、模擬訂閱身分和付款返回頁都不能授予付費權限。
+1. 第一批付費 acquisition 使用 Apple In-App Purchase 與 Google Play Billing。
+2. 已驗證的訂閱綁定 Supabase owner UUID 對應的 Féria 帳號，不綁裝置；同一帳號的方案可在 iOS、Android 與 Web 使用。
+3. 原始商店仍負責續訂、取消、退款與爭議；Féria server-owned entitlement projection 負責跨平台功能授權。
+4. Web checkout 延後。未來 Web 台灣定期定額選擇 `ECPay recurring payment`（綠界），目前狀態是 `deferred_web_phase`，不是 native launch blocker。
+5. NewebPay 不再是選定供應商，狀態為 `not_selected`；不繼續 activation、SDK 或 callback 工作。
+6. 原生購買聚合可再評估 RevenueCat，但目前不安裝；它不能取代原始 store evidence 或 trusted Supabase owner binding。
+7. Paddle 不作為台灣首發主方案，因為官方支援貨幣清單目前沒有 `TWD`。它只保留為未來國際 SaaS、使用支援貨幣時的 Merchant of Record 候選。
+8. Stripe 不作為僅有台灣法律主體時的預設，因為 Stripe 官方全球可用地區目前未列出台灣。只有在可合法使用的支援地區主體與帳號完成驗證後才能重評估。
+9. 客戶端、localStorage、IndexedDB、模擬訂閱身分、purchase success callback 和裝置狀態都不能授予付費權限。
 
-這是條件式選定，不是已可上線的金流選定。任何首選前提失敗時，S9 必須停下，不得以未驗證的備援自動取代。
+這是發行方向，不是已可上線的金流。Apple、Google 與延後的 ECPay 各自需要獨立 adapter、sandbox、法律、支援與 canary evidence；任何供應商不得自動替代另一個 origin。
 
 ## 2. 為什麼不是單一跨平台供應商
 
-BoothBook 的首發客群是台灣市集品牌，公開方案也以新台幣呈現。台灣 Web 收費、Apple StoreKit 與 Google Play Billing 是三個不同交易來源；把它們強行視為同一 checkout 會同時傷害台幣付款體驗、商店政策合規與 Founder 鎖價可稽核性。
+Féria 的首發客群是台灣市集品牌。Apple StoreKit、Google Play Billing 與未來 ECPay 是三個不同交易來源；把它們強行視為同一 checkout 會傷害商店政策合規、退款責任與 Founder 鎖價可稽核性。
 
 因此採用以下分工：
 
 | 層級 | 責任 | 初始決策 |
 | --- | --- | --- |
-| Web payment origin | 台幣信用卡收款、續扣、退款與交易查詢 | 藍新，通過 activation gates 後才生效 |
-| Native payment origin | 原生 App 的數位功能購買 | Apple IAP / Google Play Billing，Web 完成後另案實作 |
-| Shared billing domain | price version、Founder assignment、continuity、quote、plan change、idempotency | BoothBook server-owned shared core |
+| Native payment origin | 原生 App 的數位功能購買 | Apple IAP / Google Play Billing，第一優先 |
+| Web payment origin | 台幣信用卡收款、續扣、退款與交易查詢 | ECPay，延後且通過 activation gates 後才生效 |
+| Shared billing domain | price version、Founder assignment、continuity、quote、plan change、idempotency | Féria server-owned shared core |
 | Entitlement projection | 將已驗證交易映射為 Free / Pro / Team capability | Supabase authoritative projection |
 | Client cache | 顯示最近一次 server 結果 | 僅快取；過期或不明時付費寫入 fail closed |
 
@@ -40,23 +42,24 @@ BoothBook 的首發客群是台灣市集品牌，公開方案也以新台幣呈�
 
 | 選項 | TWD 定期收款 | 方案異動 | 稅務角色 | 跨原生商店 | 結論 |
 | --- | --- | --- | --- | --- | --- |
-| NewebPay | 是 | 官方定期定額文件包含暫停、終止，以及申請制的金額與週期異動 | BoothBook 商家仍須自行處理營業、稅務與發票責任 | 否 | Web 首選，需完成申請與 sandbox |
-| ECPay | 是 | 官方公開 API 支援補授權與取消；更複雜異動需實測或重建委託 | BoothBook 商家自行負責 | 否 | 單一備援 |
+| NewebPay | 是 | 官方定期定額文件包含暫停、終止，以及申請制的金額與週期異動 | 商家仍須自行處理營業、稅務與發票責任 | 否 | 不選用；保留歷史決策證據 |
+| ECPay | 是 | 官方公開 API 支援補授權與取消；更複雜異動需實測或重建委託 | 商家自行負責 | 否 | 延後的單一 Web provider |
 | Paddle Billing | 官方清單目前無 TWD | 有內建 proration modes | Merchant of Record | 可與 RevenueCat 整合，但不是原生商店替代 | 不適合台灣 TWD 首發；保留國際化候選 |
 | RevenueCat Billing / Stripe Billing | 依 Stripe 帳號與地區資格 | 成熟的 subscription / proration | 通常不是台灣本地主體的 MoR 解法 | RevenueCat 可聚合 entitlement | 台灣主體資格未確認前不採用 |
-| Apple / Google stores | 使用商店支援價格點 | 依各商店規則 | 商店交易規則適用 | 各自只負責其 storefront | 未來原生 App 必備路線 |
+| Apple / Google stores | 使用商店支援價格點 | 依各商店規則 | 商店交易規則適用 | 各自只負責其 storefront | 第一批付費 acquisition 路線 |
 | 自建卡號扣款 | 不適用 | 可完全客製 | 全部責任自負 | 否 | 拒絕；不持有卡號、不自建 PCI 收單 |
 
 重要限制：Paddle 的 Acceptable Use Policy 禁止讓非 Paddle sellers 在產品內銷售的 digital marketplace。BoothBook 現階段販售的是自己的 SaaS 訂閱，仍屬可評估範圍；未來品牌媒合、帶貨抽成或 marketplace 收費必須與 SaaS billing 分離並重新做供應商與法規審查。
 
-## 4. Web 首選啟用條件
+## 4. 延後的 Web ECPay 啟用條件
 
-以下全部完成前，`NewebPay` 仍是 `selected_pending_activation`，不是 production-ready：
+ECPay 目前是 `deferred_web_phase`。以下全部完成前不得改成
+`selected_pending_activation` 或 production-ready：
 
-- BoothBook 的實際收款主體完成藍新帳戶、商店與網域審核；
+- Féria 的實際收款主體完成綠界商務帳戶、商店與網域審核；
 - 書面確認可販售本專案的 B2B / prosumer SaaS 訂閱；
 - 開通信用卡定期定額、交易查詢、取消 / 退款與每期通知；
-- 申請並確認修改委託狀態、修改委託內容等需要的 API 權限；
+- 申請並確認定期定額、補授權、取消、退款、交易查詢與通知所需權限；
 - 確認月繳、年繳、最大期數、首期扣款與卡片更新規則能支援預期續訂年限；
 - 在 sandbox 驗證每個 callback 欄位、驗證碼 / 加密規則、重送行為、timeout 與正式 endpoint；
 - 取得正式費率、請退款費用、撥款週期、reserve、爭議款與 chargeback 規則；
@@ -64,7 +67,7 @@ BoothBook 的首發客群是台灣市集品牌，公開方案也以新台幣呈�
 - 確認隱私權政策、服務條款、退款政策、付款人同意與取消方式；
 - 完成 `BILLING_TEST_MATRIX.md` 的 Web P0 launch gates。
 
-若藍新拒絕必要功能或無法安全完成 Pro -> Team，才啟動綠界 sandbox 比較。不得同時維護兩套 Web recurring provider 以換取表面備援。
+此清單不阻擋 native launch。Web 工作流重新啟動時，再依當時官方文件和商務核准重新驗證，不得直接沿用舊假設。
 
 ## 5. Source Of Truth 與身分
 
@@ -108,7 +111,7 @@ Notification 是觸發 reconciliation 的訊號，不是單憑一個 callback �
 - `planCode`、`priceVersionId`、`providerPriceRef` 與 `assignedAmount` 分開保存。
 - Founder 是 server 指派的固定年繳金額，不是之後依公開價重算 65%，也不是到期回原價的一般 coupon。
 - 公開價調漲要建立新 `priceVersionId`，不得原地改寫既有 Founder assignment。
-- Web Founder acquisition 可先於原生 Founder acquisition 上線；已在 Web 合法取得的 entitlement 未來可在原生 App 登入後使用。
+- Founder acquisition 是否在 Apple / Google 首發開放，需由各 store sandbox 與價格 cohort evidence 決定；不得把 Web 候選價格直接視為 store price。
 
 ### 6.2 原生 storefront
 
@@ -118,20 +121,20 @@ Apple 可保留既有訂閱者價格，Google 也有 legacy price cohort，但�
 
 - 原生 Founder acquisition 在 Apple / Google sandbox 證明前保持關閉；
 - 不對外承諾原生商店可取得 Founder 價；
-- Web Founder 使用者進入原生 App 時只讀取共同 entitlement，不建立第二份 store subscription；
+- 任何既有 paid origin 使用者在另一平台登入時只讀取共同 entitlement，不建立第二份 store subscription；
 - billing origin 變更必須是明示 migration/support flow，不能由 App 自動 cancel and rebuy；
 - 同一 workspace 偵測到兩個 active paid origins 時，保留已驗證權限但凍結自助方案異動並建立人工對帳案件。
 
 ## 7. Pro -> Team 與 Team -> Pro
 
-藍新公開文件沒有 Stripe / Paddle 類型的 subscription proration quote。BoothBook 必須採用以下其中一種模式，不能由前端自行估算：
+各商店與 ECPay 的方案異動能力不同。Féria 必須採用以下其中一種模式，不能由前端自行估算：
 
 1. `provider_quote`：供應商回傳具期限的 exact quote。
 2. `server_signed_quote`：server 先查詢 provider-confirmed 已付款交易，再以核准的純函式計算實付 Pro 未使用價值，保存不可變 quote input/output、`quoteId`、expiry、rounding rule 與 provider snapshot reference。
 3. `provider_confirmation`：供應商確認頁能顯示最終金額與日期。
 4. `support_required`：前三者都無法滿足時，禁止自助升級；不可顯示虛構金額。
 
-Web 首發預期採 `server_signed_quote`，但必須先通過 F1、F3 與 S9 的獨立核准。
+任何 origin 的自助升級都必須先通過 F1、F3 與 provider runtime 的獨立核准；無法證明 exact quote 時只能使用 `support_required` 或商店原生方案切換流程。
 
 Pro -> Team saga：
 
@@ -154,9 +157,9 @@ Team -> Pro：
 ## 8. 原生商店政策路線
 
 - iOS / Android App 內販售數位功能時，預設使用 Apple IAP / Google Play Billing。
-- 多平台使用者可以登入存取在 Web 購買的同一服務，但 App 內是否能導向外部付款受 storefront、地區與 entitlement 規則限制。
+- 多平台使用者可以登入存取在另一商店購買的同一服務，但 App 內是否能導向外部付款受 storefront、地區與 entitlement 規則限制。
 - 台灣原生 App 首版不放外部 checkout steering link；先提供登入、權限同步與商店內購買。
-- 一般 Pro / Team 必須各自在原生商店提供相應產品，不能只讓 Web 買家解鎖而完全不提供 IAP。
+- 一般 Pro / Team 必須各自在原生商店提供相應產品，不能只讓其他平台買家解鎖而完全不提供 IAP。
 - Store fee、grace、account hold、價格點與通知期限都是 deployment configuration / evidence，不硬編碼進 shared business rules。
 - RevenueCat 僅是未來可選的 native store adapter / aggregator；即使採用，Supabase projection 仍是 protected server writes 的授權來源。
 
@@ -167,19 +170,20 @@ S8 完成後，S9 仍是 `NOT APPROVED`。
 F1 純價格與鎖價 model、F3 logical data/security design、provider-neutral read contract，
 以及 F3A/F3B non-billable foundations 已完成；migration 066、067 已在選定 sandbox
 完成 external verification，但不是 Production evidence。
-下一個批次不是 checkout，而是：
+下一個批次不是 live checkout，而是：
 
-1. 等待商家申請、定期定額 / 異動 API activation 與 sandbox 帳號回覆；目前仍是 `selected_pending_activation`。
+1. 完成 account-bound entitlement core、IAP platform port 與 fake adapter tests。
 2. 保存 F3A/F3B selected-sandbox evidence，不重新套用 066 或 067。
-3. F3C-F3E 與 provider-specific read adapter 必須逐片另行核准。
-4. Callback、writer、checkout 與 money mutation 維持後續分批審查。
+3. F3C-F3E、Apple/Google verification runtime 與 provider-specific adapters 必須逐片另行核准。
+4. Store notification、writer、purchase UI 與 money/entitlement mutation 維持後續分批審查。
+5. ECPay 商務申請與 Web runtime 保持延後，不阻擋 native groundwork。
 
 本文件沒有授權：
 
-- 安裝藍新、綠界、RevenueCat、Stripe、Paddle、StoreKit 或 Play Billing 套件；
+- 安裝綠界、RevenueCat、Stripe、Paddle、StoreKit 或 Play Billing 套件；
 - 建立 checkout、payment method UI、付款成功畫面或取消 endpoint；
 - 以 S8 本身建立 webhook / callback route 或超出已另行審查的 F3A migration / RLS；
-- 建立 native project 或 Capacitor adapter；
+- 在 Phase 2 Gate 2 完成前建立 native project 或 Capacitor adapter；
 - 公開 Founder offer、實際扣款或聲稱通過商店審查。
 
 ## 10. 官方查證來源
