@@ -7,8 +7,21 @@ export type { ClipboardPort } from '@/lib/platform/contracts/clipboard';
 export type { ShareInput, SharePort, ShareResult } from '@/lib/platform/contracts/share';
 export type { ExternalLinkPort } from '@/lib/platform/contracts/external-link';
 export type { DeepLinkPort } from '@/lib/platform/contracts/deep-link';
+export type {
+  InAppPurchaseAvailability,
+  InAppPurchaseEnvironment,
+  InAppPurchaseErrorCode,
+  InAppPurchasePort,
+  InAppPurchaseProduct,
+  InAppPurchaseRequest,
+  InAppPurchaseRestoreRequest,
+  InAppPurchaseResult,
+  InAppPurchaseStore,
+  StoreAccountBinding,
+  StorePurchaseEvidence,
+} from '@/lib/platform/contracts/in-app-purchase';
 
-export type AppPlatformKind = 'web' | 'ios';
+export type AppPlatformKind = 'web' | 'ios' | 'android';
 
 export interface AppPlatform {
   kind: AppPlatformKind;
@@ -21,4 +34,5 @@ export interface AppPlatform {
   share: import('@/lib/platform/contracts/share').SharePort;
   externalLinks: import('@/lib/platform/contracts/external-link').ExternalLinkPort;
   deepLinks: import('@/lib/platform/contracts/deep-link').DeepLinkPort;
+  inAppPurchase: import('@/lib/platform/contracts/in-app-purchase').InAppPurchasePort;
 }

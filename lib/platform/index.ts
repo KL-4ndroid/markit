@@ -16,6 +16,17 @@ export type {
   ShareResult,
   ExternalLinkPort,
   DeepLinkPort,
+  InAppPurchaseAvailability,
+  InAppPurchaseEnvironment,
+  InAppPurchaseErrorCode,
+  InAppPurchasePort,
+  InAppPurchaseProduct,
+  InAppPurchaseRequest,
+  InAppPurchaseRestoreRequest,
+  InAppPurchaseResult,
+  InAppPurchaseStore,
+  StoreAccountBinding,
+  StorePurchaseEvidence,
 } from '@/lib/platform/contracts';
 export { getAppPlatform, installAppPlatform } from '@/lib/platform/platform';
 export { getFilePort, installFilePort } from '@/lib/platform/file-capability';
@@ -29,3 +40,7 @@ export {
   getDeepLinkPort,
   installInteractionPorts,
 } from '@/lib/platform/interaction-capabilities';
+export {
+  getInAppPurchasePort,
+  installInAppPurchasePort,
+} from '@/lib/platform/in-app-purchase-capability';

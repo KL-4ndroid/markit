@@ -39,6 +39,8 @@ async function main() {
   assert.doesNotMatch(mobileRoutes, /products\/\[id\]/);
   assert.doesNotMatch(mobileRoutes, /\/api\//);
   assert.doesNotMatch(mobileRoutes, /debug\/sales-photo-evidence/);
+  assert.doesNotMatch(mobileRoutes, /debug\/flicker-test/);
+  assert.doesNotMatch(mobileRoutes, /debug\/staff-role-test/);
   assert.doesNotMatch(mobileRoutes, /mobile-runtime-smoke/);
 
   const mobileRuntimeSmokeRoutes = JSON.stringify(
@@ -55,6 +57,8 @@ async function main() {
   assert.match(webRoutes, /api\/sales-photo-evidence/);
   assert.match(webRoutes, /api\/health/);
   assert.match(webRoutes, /debug\/sales-photo-evidence/);
+  assert.match(webRoutes, /debug\/flicker-test/);
+  assert.match(webRoutes, /debug\/staff-role-test/);
   assert.doesNotMatch(webRoutes, /mobile-runtime-smoke/);
 
   const appFiles = listFiles(appDir).map(path => path.replaceAll('\\', '/'));

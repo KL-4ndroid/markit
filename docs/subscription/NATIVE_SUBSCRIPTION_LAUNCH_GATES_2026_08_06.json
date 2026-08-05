@@ -5,8 +5,8 @@
   "overallStatus": "not_ready",
   "gates": [
     { "id": "NATIVE-DIRECTION", "status": "complete" },
-    { "id": "ACCOUNT-ENTITLEMENT-CORE", "status": "pending_implementation" },
-    { "id": "IAP-PLATFORM-PORT", "status": "pending_implementation" },
+    { "id": "ACCOUNT-ENTITLEMENT-CORE", "status": "complete" },
+    { "id": "IAP-PLATFORM-PORT", "status": "complete" },
     { "id": "CAPACITOR-GATE2", "status": "pending_external" },
     { "id": "APPLE-DEVELOPER", "status": "pending_manual" },
     { "id": "GOOGLE-PLAY-DEVELOPER", "status": "pending_manual" },

@@ -15,6 +15,7 @@ assert.equal(typeof getAppPlatform().camera.selectImage, 'function');
 console.log('PASS web is the default platform');
 
 const fakePlatform: AppPlatform = {
+  ...getAppPlatform(),
   kind: 'ios',
   camera: {
     getCapabilitySnapshot: () => ({

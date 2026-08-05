@@ -8,6 +8,7 @@ import { webClipboard } from '@/lib/platform/web/clipboard';
 import { webShare } from '@/lib/platform/web/share';
 import { webExternalLinks } from '@/lib/platform/web/external-links';
 import { webDeepLinks } from '@/lib/platform/web/deep-links';
+import { webInAppPurchase } from '@/lib/platform/web/in-app-purchase';
 
 export const webPlatform: AppPlatform = Object.freeze({
   kind: 'web',
@@ -20,4 +21,5 @@ export const webPlatform: AppPlatform = Object.freeze({
   share: webShare,
   externalLinks: webExternalLinks,
   deepLinks: webDeepLinks,
+  inAppPurchase: webInAppPurchase,
 });

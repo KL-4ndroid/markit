@@ -63,6 +63,8 @@ checkout. Native launch cannot reuse Web readiness evidence as store evidence.
 
 ### N1: Store-neutral Entitlement Core
 
+Status: complete locally on 2026-08-06; no writer or provider runtime
+
 - define native store, purchase state, account binding, restore, active-origin,
   and cross-platform access contracts in shared TypeScript;
 - keep billing status, entitlement status, and price-lock status independent;
@@ -71,6 +73,8 @@ checkout. Native launch cannot reuse Web readiness evidence as store evidence.
 No database mutation or provider SDK is allowed in N1.
 
 ### N2: Platform IAP Port
+
+Status: complete locally on 2026-08-06 with unavailable Web and deterministic fake adapters
 
 - define a `lib/platform` purchase capability with catalog, purchase, restore,
   billing-management, and availability operations;

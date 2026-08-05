@@ -5,6 +5,7 @@ import { installNetworkPort } from '@/lib/platform/network-capability';
 import { installLifecyclePort } from '@/lib/platform/lifecycle-capability';
 import { installSecureStorage } from '@/lib/platform/secure-storage-capability';
 import { installInteractionPorts } from '@/lib/platform/interaction-capabilities';
+import { installInAppPurchasePort } from '@/lib/platform/in-app-purchase-capability';
 
 let activePlatform: AppPlatform = webPlatform;
 
@@ -24,6 +25,7 @@ export function installAppPlatform(platform: AppPlatform): () => void {
   const restoreLifecyclePort = installLifecyclePort(platform.lifecycle);
   const restoreSecureStorage = installSecureStorage(platform.secureStorage);
   const restoreInteractionPorts = installInteractionPorts(platform);
+  const restoreInAppPurchasePort = installInAppPurchasePort(platform.inAppPurchase);
   activePlatform = platform;
 
   return () => {
@@ -34,6 +36,7 @@ export function installAppPlatform(platform: AppPlatform): () => void {
       restoreLifecyclePort();
       restoreSecureStorage();
       restoreInteractionPorts();
+      restoreInAppPurchasePort();
     }
   };
 }

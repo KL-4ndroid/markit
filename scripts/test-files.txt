@@ -199,6 +199,8 @@ tsx tests/subscription-feature-gate-mapping.test.ts
 tsx tests/subscription-strategic-growth-data-reserve.test.ts
 tsx tests/subscription-billing-provider-decision.test.ts
 tsx tests/native-subscription-direction.test.ts
+tsx tests/native-account-entitlement.test.ts
+tsx tests/platform-in-app-purchase-boundary.test.ts
 tsx tests/subscription-account-capability-api.test.ts
 tsx tests/subscription-simulation.test.ts
 tsx tests/analytics-subscription-access.test.ts
@@ -247,6 +249,7 @@ tsx tests/market-detail-static-route.test.ts
 tsx tests/product-detail-static-route.test.ts
 tsx tests/platform-service-worker-boundary.test.ts
 tsx tests/mobile-route-discovery.test.ts
+tsx tests/next-build-dev-types-isolation.test.ts
 tsx tests/app-api-client.test.ts
 tsx tests/app-api-error-contract.test.ts
 tsx tests/app-api-request-policy.test.ts

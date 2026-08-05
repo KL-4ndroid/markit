@@ -39,7 +39,7 @@ assert.equal(gates.updatedAt, '2026-08-06');
 assert.equal(gates.gates.length, 14);
 assert.deepEqual(
   gates.gates.filter(gate => gate.status === 'complete').map(gate => gate.id),
-  ['NATIVE-DIRECTION'],
+  ['NATIVE-DIRECTION', 'ACCOUNT-ENTITLEMENT-CORE', 'IAP-PLATFORM-PORT'],
 );
 assert.ok(gates.gates.some(gate => (
   gate.id === 'CAPACITOR-GATE2' && gate.status === 'pending_external'
