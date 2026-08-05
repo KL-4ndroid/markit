@@ -84,6 +84,8 @@ Status: complete locally on 2026-08-06 with unavailable Web and deterministic fa
 
 ### N3: Verification Contracts
 
+Status: contract complete locally on 2026-08-06; store adapters, routes, notifications, and writers remain pending approval
+
 - normalize Apple transaction/JWS and Google purchase-token verification inputs;
 - define bounded server request/response and safe error contracts;
 - add official-sandbox fixture placeholders and corrupted-fixture tests;
