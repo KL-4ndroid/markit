@@ -1,5 +1,26 @@
 # Role / Permission Distribution Notes
 
+## 2026-08-05 | Security Advisor remediation planning boundary
+
+`docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md`
+records a planning-only workstream for pre-existing definer views, mutable
+function search paths, permissive INSERT policies, function EXECUTE grants, and
+Auth leaked-password protection.
+
+No migration, RLS policy, RPC grant, provider setting, application permission,
+data visibility, `PermissionGate`, `useUserRole`, sync, or Dexie behavior changes
+in this documentation batch. In particular:
+
+- owner remains the only complete data/finance administrator;
+- viewer remains read-only;
+- operator and manager retain only their existing capability-gated operations;
+- staff continue to read the current redacted `staff_accessible_*` views until a
+  separately approved replacement passes role, cross-owner, sync and Dexie tests;
+- directly converting those views to invoker views is prohibited because the
+  current owner-only base-table RLS would break staff reads;
+- any later remediation that changes role behavior must update this file and the
+  canonical staff role documents in the same commit.
+
 ## 2026-07-29｜S4 authoritative account capability read model
 
 ### Change summary

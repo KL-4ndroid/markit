@@ -273,3 +273,4 @@ tsx tests/web-security-headers.test.ts
 tsx tests/web-anti-frame-probe.test.ts
 tsx tests/web-pwa-release-smoke.test.ts
 tsx tests/main-landmark-ownership.test.ts
+tsx tests/supabase-security-advisor-remediation-plan.test.ts
