@@ -9,7 +9,7 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
   return (
-    <div className="japanese-app fixed inset-0 flex items-center justify-center p-6 z-50">
+    <main className="japanese-app fixed inset-0 flex items-center justify-center p-6 z-50">
       <div
         className="absolute inset-0 pointer-events-none bg-gradient-to-br from-soft-yellow/45 via-transparent to-soft-green/50"
         aria-hidden="true"
@@ -80,7 +80,7 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

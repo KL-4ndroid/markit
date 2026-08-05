@@ -106,3 +106,14 @@ unauthenticated welcome screen exposes zero `main` landmarks. Full evidence and 
 remaining device steps are recorded in
 `WEB_PWA_DESKTOP_ANDROID_BASELINE_2026_08_03.md`; the `PWA-WEB` gate remains
 `pending_external`.
+
+## 2026-08-05 Main Landmark Code Remediation
+
+The unauthenticated welcome screen now has one semantic `main`, with focused
+guardrails for the mutually exclusive unauthenticated, `/demo`, and authenticated
+route shells. The historical 2026-08-03 observation above remains unchanged as
+evidence of what that earlier commit rendered. A local production build, nine-asset
+PWA resource smoke, and desktop/Android-class unauthenticated browser checks passed;
+these remain local compatibility evidence. Real desktop/Android installation,
+installed-icon launch, update activation after a second deployment, owner shortcuts,
+and staff fail-closed shortcuts remain external requirements.

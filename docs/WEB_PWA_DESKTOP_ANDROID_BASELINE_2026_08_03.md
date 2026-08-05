@@ -40,6 +40,30 @@ The unauthenticated welcome screen rendered zero `main` landmarks at both viewpo
 This does not invalidate the manifest or resource smoke, but it must be corrected and
 retested before the final accessibility and PWA release evidence is accepted.
 
+## 2026-08-05 Landmark Remediation Status
+
+The unauthenticated welcome shell now owns one semantic `main`. It is mutually
+exclusive with the authenticated `AppChrome` main, while `/demo` keeps its standalone
+public main. Focused source guardrails cover unauthenticated, public-demo, and
+authenticated representative layouts. This code evidence does not replace real
+installation or device evidence.
+
+A local production build and nine-asset PWA resource smoke passed from the same code
+checkout. Browser runtime verification found one non-nested `main`, no horizontal
+overflow, and no browser errors on the unauthenticated shell at 1440x900 and 412x915;
+`/demo` also exposed one non-nested `main`. The authenticated representative layout
+was covered by the focused source guardrail, not a retained signed-in browser session.
+
+```text
+main landmark code fix: complete
+real desktop installation: pending external
+real Android installation: pending external
+installed-icon launch: pending external
+service-worker update after second deployment: pending external
+owner shortcuts: pending external
+staff fail-closed shortcuts: pending external
+```
+
 ## External Evidence Still Required
 
 The browser-control surface cannot operate Chromium or Android operating-system
