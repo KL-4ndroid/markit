@@ -84,6 +84,11 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
 - Complete the Apple and Google account, agreement, tax/bank, product catalog,
   tester, device, privacy, and store-review inputs listed in
   `subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md`.
+- Update only check statuses in
+  `subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json` as those external
+  actions are evidenced, then run `npm.cmd run check:native-external-readiness`.
+  Never add names, addresses, email, bundle/package values, tester identities, bank/tax
+  data, credentials, or provider references to the handoff.
 - Review `subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md` before creating
   subscription products. Approve Apple group/levels, Google product/base plans, and a
   sandbox-proven Founder mechanism that can actually preserve the promised renewal

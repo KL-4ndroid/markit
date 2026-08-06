@@ -147,6 +147,13 @@ server-notification configuration. Execute purchase, renewal, cancellation,
 grace, restore, refund, duplicate-origin, account-switch, and cross-platform
 access tests.
 
+The status-only external handoff is
+`docs/subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json`, with operating
+instructions in `docs/subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.md`.
+Run `npm.cmd run check:native-external-readiness` after manual console work. The
+current expected exit is `1` with 22 manual and four runtime-dependent blockers.
+The file rejects external values and cannot activate or close a launch gate.
+
 The candidate product/base-plan structure, Founder price-lock compatibility issue,
 activation sequence, and exact trust boundary are recorded in
 `docs/subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md`. `STORE-CATALOG`
