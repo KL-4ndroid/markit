@@ -212,6 +212,8 @@ tsx tests/native-store-verification-contract.test.ts
 tsx tests/subscription-capability-implementation.test.ts
 tsx tests/f3c-entitlement-projection-writer-proposal.test.ts
 tsx tests/native-store-catalog.test.ts
+tsx tests/native-store-catalog-config.test.ts
+tsx tests/native-store-catalog-config-cli.test.ts
 tsx tests/native-purchase-workflow.test.ts
 tsx tests/subscription-center-view.test.ts
 tsx tests/account-capability-billing-read-contract.test.ts

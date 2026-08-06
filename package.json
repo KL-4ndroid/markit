@@ -30,6 +30,7 @@
     "check:web-launch-readiness": "tsx scripts/check-web-launch-readiness.ts",
     "check:native-launch-readiness": "tsx scripts/check-native-launch-readiness.ts",
     "check:native-store-assets": "tsx scripts/check-native-store-assets.ts",
+    "check:native-store-catalog": "tsx scripts/check-native-store-catalog-config.ts",
     "start": "next start",
     "lint": "eslint .",
     "lint:hex": "node scripts/lint-hex.js",

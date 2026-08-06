@@ -6,6 +6,20 @@ Status: platform-neutral selector contract complete; store topology and identifi
 
 Gate: `STORE-CATALOG` remains `pending_manual`
 
+Canonical non-activating sandbox handoff file:
+`docs/subscription/NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json`
+
+Canonical local preflight:
+
+```powershell
+npm.cmd run check:native-store-catalog
+```
+
+The current expected exit is `1`: all ten mappings are intentionally
+`unconfigured`. Exit `0` means each mapping is explicitly `candidate` or `deferred`
+and both stores have at least one candidate for sandbox query. It does not activate a
+mapping, approve a price, query a store, or close `STORE-CATALOG`.
+
 ## 1. Why `productId` Alone Is Insufficient
 
 The first catalog contract treated every internal price version as one store
@@ -105,11 +119,14 @@ path.
 2. Resolve the Founder permanent renewal price decision above.
 3. Approve public TWD price points and regional/tax handling.
 4. Create sandbox products without committing credentials, account references, or bank data.
-5. Record stable `productId`, `basePlanId`, and optional `offerId` mappings as `candidate`.
-6. Query products through reviewed native adapters and validate exact selectors and localized prices.
-7. Verify purchase, renewal, cancellation, grace, refund, restore, duplicate origin, and every Pro/Team transition.
-8. Approve immutable internal price versions and store mappings in the same release decision.
-9. Change mappings to `active` only after the server verifier and entitlement writer are independently approved.
+5. In `NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json`, record stable `productId`,
+   `basePlanId`, and optional `offerId` mappings as `candidate`; mark an intentionally
+   omitted launch item `deferred` with all identifier fields `null`.
+6. Run `npm.cmd run check:native-store-catalog`; resolve every `unconfigured` row.
+7. Query products through reviewed native adapters and validate exact selectors and localized prices.
+8. Verify purchase, renewal, cancellation, grace, refund, restore, duplicate origin, and every Pro/Team transition.
+9. Approve immutable internal price versions and store mappings in the same release decision.
+10. Change mappings to `active` only in a separately approved server-owned configuration after the verifier and entitlement writer are approved. The handoff JSON rejects `active`.
 
 Current mappings and internal prices remain non-billable. This document does not
 install a native SDK, create a store product, activate a price, enable checkout, write

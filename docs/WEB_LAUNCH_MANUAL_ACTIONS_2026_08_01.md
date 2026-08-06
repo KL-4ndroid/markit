@@ -89,6 +89,10 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
   sandbox-proven Founder mechanism that can actually preserve the promised renewal
   price without exposing it to ineligible users. Keep every mapping non-billable until
   store verification and entitlement writing are separately approved.
+- Fill only stable sandbox `productId`, Google `basePlanId`, and optional `offerId`
+  values in `subscription/NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json`; mark omitted
+  launch items `deferred`, never add offer tokens or credentials, and run
+  `npm.cmd run check:native-store-catalog`. Exit `0` is configuration preflight only.
 - Review every row and blocking question in
   `subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md` against the
   final native dependency lockfile, permissions, provider terms, and submitted binary.
