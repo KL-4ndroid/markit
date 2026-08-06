@@ -31,6 +31,7 @@ const productSale = read('components/sales/QuickTransactionGrid.tsx');
 const paymentSelector = read('components/sales/PaymentMethodSelector.tsx');
 const interactions = read('components/sales/InteractionButtons.tsx');
 const bottomNavigation = read('components/BottomNavigation.tsx');
+const bottomNavigationBar = read('components/navigation/AppBottomNavigationBar.tsx');
 const implementationNote = read('docs/ATELIER_VISUAL_PILOT_IMPLEMENTATION_2026_07_15.md');
 
 for (const token of ['atelier-canvas', 'atelier-paper', 'atelier-ink', 'atelier-line', 'atelier-clay', 'atelier-blue', 'atelier-rose']) {
@@ -60,9 +61,10 @@ assert.match(marketFormFields, /bg-soft-pink/);
 assert.match(appLayout, /#7B9FA6/);
 assert.equal(manifest.background_color, '#FAFAF8');
 assert.equal(manifest.theme_color, '#7B9FA6');
-assert.match(bottomNavigation, /bg-atelier-paper\/95/);
-assert.match(bottomNavigation, /bg-primary text-white/);
-assert.match(bottomNavigation, /bg-atelier-clay/);
+assert.match(bottomNavigation, /AppBottomNavigationBar/);
+assert.match(bottomNavigationBar, /bg-atelier-paper\/95/);
+assert.match(bottomNavigationBar, /bg-primary text-white/);
+assert.match(bottomNavigationBar, /bg-atelier-clay/);
 
 assert.match(ownerMarket, /<MarketOverviewPhotoStory/);
 assert.match(ownerMarket, /bg-atelier-canvas/);

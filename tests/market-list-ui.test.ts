@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 const root = join(__dirname, '..');
 const source = readFileSync(join(root, 'app/markets/page.tsx'), 'utf8');
+const cardSource = readFileSync(join(root, 'components/markets/MarketListCard.tsx'), 'utf8');
 
 assert.match(source, /buildMarketListGroups\(allMarkets, now\)/);
 assert.match(source, /label: '進行中'/);
@@ -13,8 +14,9 @@ assert.match(source, /查看已取消市集/);
 assert.match(source, /<Tabs/);
 assert.match(source, /MARKET_LIST_RETURN_STATE_KEY/);
 assert.match(source, /scrollY: window\.scrollY/);
-assert.match(source, /\{item\.statusLabel\}/);
-assert.match(source, /\{item\.dateRangeLabel\}/);
+assert.match(source, /<MarketListCard/);
+assert.match(cardSource, /\{item\.statusLabel\}/);
+assert.match(cardSource, /\{item\.dateRangeLabel\}/);
 assert.doesNotMatch(source, /formatDateKey\(item\.displayDate\)/);
 assert.match(source, /dynamic\(/);
 assert.match(source, /isFormOpen &&/);

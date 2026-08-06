@@ -1,11 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { AlertCircle, ArrowLeft, CalendarDays, MapPin, Plus, Store } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CalendarDays, Plus, Store } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
+import { MarketListCard } from '@/components/markets/MarketListCard';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { StateView } from '@/components/ui/StateView';
@@ -14,9 +16,7 @@ import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { useMarkets } from '@/lib/db/hooks';
 import {
   buildMarketListGroups,
-  getMarketListActionLabel,
   type MarketListStage,
-  type MarketListViewItem,
 } from '@/lib/markets/market-list-view-model';
 import { isEntityCreateDeepLink } from '@/lib/navigation/entity-create-deep-link';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
@@ -24,7 +24,6 @@ import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 import { getDeepLinkPort } from '@/lib/platform/interaction-capabilities';
 import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { getGradientClass } from '@/lib/theme-config';
 import MarketsLoading from './loading';
 
 const AddMarketForm = dynamic(
@@ -68,58 +67,6 @@ function writeReturnState(state: MarketListReturnState): void {
   } catch {
     // Session storage is an enhancement; navigation remains usable without it.
   }
-}
-
-function stageClasses(stage: MarketListStage): string {
-  if (stage === 'active') return 'bg-status-good-bg text-status-good-text';
-  if (stage === 'preparing') return 'bg-status-warn-bg text-status-warn-text';
-  if (stage === 'cancelled') return 'bg-status-danger-bg text-status-danger-text';
-  return 'bg-muted text-muted-foreground';
-}
-
-interface MarketListCardProps {
-  item: MarketListViewItem;
-  isStaff: boolean;
-  onOpen: () => void;
-}
-
-function MarketListCard({ item, isStaff, onOpen }: MarketListCardProps) {
-  return (
-    <article className="rounded-card border border-primary/10 bg-atelier-paper p-4 shadow-atelier transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-atelier-lift sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${stageClasses(item.stage)}`}>
-            {item.statusLabel}
-          </span>
-          <h2 className="mt-2 break-words text-base font-semibold text-foreground sm:text-lg">
-            {item.market.name}
-          </h2>
-        </div>
-        <Store className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-      </div>
-
-      <div className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-        <p className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>{item.dateRangeLabel}</span>
-        </p>
-        <p className="flex min-w-0 items-center gap-2">
-          <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="truncate">{item.market.location || '尚未設定地點'}</span>
-        </p>
-      </div>
-
-      <div className="mt-4 flex justify-end">
-        <Button
-          variant={item.stage === 'active' ? 'primary' : 'secondary'}
-          onClick={onOpen}
-          className="w-full sm:w-auto"
-        >
-          {getMarketListActionLabel(item.stage, isStaff)}
-        </Button>
-      </div>
-    </article>
-  );
 }
 
 export default function MarketsPage() {
@@ -263,25 +210,20 @@ export default function MarketsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className={`${getGradientClass(isStaffMode)} rounded-b-[2rem] border-b border-white/15 px-5 pb-8 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier`}>
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-white/80">{isStaffMode ? '團隊工作區' : '營運管理'}</p>
-            <h1 className="mt-1 flex items-center gap-2 text-2xl font-semibold">
-              <Store className="h-6 w-6" aria-hidden="true" />
-              市集
-            </h1>
-          </div>
-          {!isStaffMode && (
+      <WorkspacePageHeader
+        title="市集"
+        eyebrow={isStaffMode ? '團隊工作區' : '營運管理'}
+        icon={Store}
+        isStaff={isStaffMode}
+        action={!isStaffMode ? (
             <IconButton
               label="新增市集"
               tone="inverse"
               icon={<Plus className="h-5 w-5" aria-hidden="true" />}
               onClick={handleOpenForm}
             />
-          )}
-        </div>
-      </header>
+        ) : undefined}
+      />
 
       <div className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6">
         {activeView === 'cancelled' ? (

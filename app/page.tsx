@@ -6,11 +6,8 @@ import {
   CalendarDays,
   Camera,
   ChevronRight,
-  Clock3,
-  MapPin,
   RefreshCw,
   Settings,
-  Store,
   WifiOff,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -18,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
+import { TodayMarketCard, todayMarketPhaseClasses } from '@/components/home/TodayMarketCard';
 import { StaffBadge } from '@/components/staff/StaffBadge';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -28,20 +26,16 @@ import { db } from '@/lib/db';
 import { useMarkets } from '@/lib/db/hooks';
 import {
   buildTodayViewModel,
-  getTodayMarketActionLabel,
   type TodayMarketPhase,
-  type TodayMarketViewItem,
 } from '@/lib/home/today-view-model';
 import {
   OWNER_BRAND_NAME_UPDATED_EVENT,
   loadOwnerBrandName,
   readCachedOwnerBrandName,
 } from '@/lib/owner-brand';
-import { formatClockTimeRange } from '@/lib/presentation/formatters';
 import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
-import type { Market } from '@/types/db';
 
 const DASHBOARD_ROLE_NOT_READY_OWNER_ID = '__role_not_ready__';
 
@@ -74,18 +68,6 @@ function formatDateKey(dateKey: string): string {
     day: 'numeric',
     weekday: 'short',
   }).format(new Date(year, month - 1, day));
-}
-
-function marketTimeLabel(market: Market): string | null {
-  const start = market.operatingStartTime ?? market.startTime;
-  const end = market.operatingEndTime ?? market.endTime;
-  return formatClockTimeRange(start, end) || null;
-}
-
-function phaseClasses(phase: TodayMarketPhase): string {
-  if (phase === 'operating') return 'bg-primary text-white';
-  if (phase === 'ended') return 'bg-atelier-blue-soft text-atelier-blue';
-  return 'bg-atelier-apricot-soft text-atelier-clay';
 }
 
 interface TaskRowProps {
@@ -131,66 +113,6 @@ function TaskRow({ icon, title, description, actionLabel, onClick, tone = 'sage'
     >
       {content}
     </button>
-  );
-}
-
-interface TodayMarketCardProps {
-  item: TodayMarketViewItem;
-  isStaff: boolean;
-  onOpen: () => void;
-}
-
-function TodayMarketCard({ item, isStaff, onOpen }: TodayMarketCardProps) {
-  const timeLabel = marketTimeLabel(item.market);
-  const surfaceClass = item.phase === 'operating'
-    ? 'bg-atelier-sage-soft'
-    : item.phase === 'ended'
-      ? 'bg-home-ended-card'
-      : 'bg-atelier-apricot-soft';
-  const companionLine = item.phase === 'operating'
-    ? '現場辛苦了，今天的每筆記錄都會留在這裡。'
-    : item.phase === 'ended'
-      ? '今天辛苦了，回顧與待處理都整理好了。'
-      : '準備好了，就從這裡進入今天的市集。';
-
-  return (
-    <article className={`overflow-hidden rounded-card shadow-atelier-lift ${surfaceClass}`}>
-      <div className="p-5 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${phaseClasses(item.phase)}`}>
-            {item.phaseLabel}
-          </span>
-          <h2 className="mt-3 break-words text-[1.4rem] font-semibold leading-tight text-atelier-ink">{item.market.name}</h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-atelier-muted">{companionLine}</p>
-        </div>
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control bg-atelier-paper/80 text-primary shadow-atelier">
-          <Store className="h-5 w-5" aria-hidden="true" />
-        </span>
-      </div>
-
-      <div className="mt-5 grid gap-2.5 text-sm text-atelier-muted sm:grid-cols-2">
-        <p className="flex min-w-0 items-center gap-2">
-          <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <span className="truncate">{item.market.location || '尚未設定地點'}</span>
-        </p>
-        {timeLabel && (
-          <p className="flex items-center gap-2">
-            <Clock3 className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>{timeLabel}</span>
-          </p>
-        )}
-      </div>
-
-      <Button
-        onClick={onOpen}
-        className="mt-5 min-h-12 w-full bg-primary shadow-atelier hover:bg-primary/90 sm:w-auto"
-        leadingIcon={<ArrowRight className="h-4 w-4" aria-hidden="true" />}
-      >
-        {getTodayMarketActionLabel(item.phase, isStaff)}
-      </Button>
-      </div>
-    </article>
   );
 }
 
@@ -402,7 +324,7 @@ export default function HomePage() {
                   onClick={() => openMarket(item.market.id)}
                   className="flex min-h-16 w-full items-center gap-3 rounded-card bg-atelier-paper px-3 py-3 text-left shadow-atelier transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-atelier-lift focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${phaseClasses(item.phase)}`}>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${todayMarketPhaseClasses(item.phase)}`}>
                     {item.phaseLabel}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{item.market.name}</span>

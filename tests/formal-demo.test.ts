@@ -12,6 +12,12 @@ const data = read('lib/demo/formal-demo-data.ts');
 const appChrome = read('components/AppChrome.tsx');
 const publicRoutes = read('lib/navigation/public-route.ts');
 const bottomNavigation = read('components/BottomNavigation.tsx');
+const sharedBottomNavigation = read('components/navigation/AppBottomNavigationBar.tsx');
+const sharedWorkspaceHeader = read('components/layout/WorkspacePageHeader.tsx');
+const sharedMarketListCard = read('components/markets/MarketListCard.tsx');
+const sharedTodayMarketCard = read('components/home/TodayMarketCard.tsx');
+const sharedSettingsShell = read('components/settings/SettingsPageShell.tsx');
+const sharedSettingsMenu = read('components/settings/SettingsMenu.tsx');
 const combinedDemoSource = `${route}\n${appEntry}\n${app}\n${data}`;
 
 assert.match(route, /FeriaDemoApp/);
@@ -39,6 +45,11 @@ for (const formalStyleContract of [
   '<AnalyticsSummaryHighlights',
   '<MarketWorkspaceNavigation',
   '<MarketWorkspaceSummary',
+  '<WorkspacePageHeader',
+  '<MarketListCard',
+  '<AppBottomNavigationBar',
+  '<TodayMarketCard',
+  '<SettingsPageShell',
   '<MarketBasicFields',
   '<MarketTimelineFields',
   '<MarketCostFields',
@@ -70,20 +81,32 @@ const formalProducts = read('app/products/page.tsx');
 const formalAnalytics = read('app/analytics/page.tsx');
 const formalBottomNavigation = read('components/BottomNavigation.tsx');
 
-for (const sharedFormalClass of [
-  'rounded-b-[2rem]',
-  'border-b border-white/15',
-  'shadow-atelier',
-]) {
-  assert.ok(formalMarkets.includes(sharedFormalClass));
-  assert.ok(formalProducts.includes(sharedFormalClass));
-  assert.ok(formalAnalytics.includes(sharedFormalClass));
-  assert.ok(app.includes(sharedFormalClass));
+for (const formalPage of [formalMarkets, formalProducts, formalAnalytics]) {
+  assert.match(formalPage, /WorkspacePageHeader/);
 }
+assert.match(app, /WorkspacePageHeader/);
+assert.match(formalMarkets, /MarketListCard/);
+assert.match(app, /MarketListCard/);
+assert.match(formalMarkets, /buildMarketListGroups/);
+assert.match(app, /buildMarketListGroups/);
 assert.ok(formalHome.includes('bg-upcoming-section'));
 assert.ok(app.includes('bg-upcoming-section'));
-assert.ok(formalBottomNavigation.includes('max-w-lg'));
-assert.ok(app.includes('max-w-lg'));
+assert.match(formalHome, /TodayMarketCard/);
+assert.match(app, /TodayMarketCard/);
+assert.match(formalHome, /buildTodayViewModel/);
+assert.match(app, /buildTodayViewModel/);
+assert.match(app, /SharedSettingsActionRow/);
+assert.match(app, /SharedSettingsSection/);
+assert.match(formalBottomNavigation, /AppBottomNavigationBar/);
+assert.match(app, /AppBottomNavigationBar/);
+assert.match(sharedBottomNavigation, /max-w-lg/);
+assert.match(sharedWorkspaceHeader, /rounded-b-\[2rem\][\s\S]*border-b border-white\/15[\s\S]*shadow-atelier/);
+assert.match(sharedMarketListCard, /getMarketListActionLabel/);
+assert.doesNotMatch(
+  `${sharedBottomNavigation}\n${sharedWorkspaceHeader}\n${sharedMarketListCard}\n${sharedTodayMarketCard}\n${sharedSettingsShell}\n${sharedSettingsMenu}`,
+  /@\/lib\/db|supabase|useAuth|useUserRole|indexedDB|localStorage|sessionStorage|fetch\s*\(/i,
+  'shared demo/formal presentation components must remain platform-neutral and data-source free',
+);
 assert.doesNotMatch(app, /展示資料|安全的展示環境/);
 
 for (const viewLabel of ['今日', '市集', '商品', '分析', '更多']) {

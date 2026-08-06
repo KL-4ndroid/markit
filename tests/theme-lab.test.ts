@@ -67,6 +67,7 @@ const gate = read('components/dev/ThemeLabGate.tsx');
 const lab = read('components/dev/ThemeLab.tsx');
 const themeModel = read('lib/theme-lab.ts');
 const home = read('app/page.tsx');
+const todayMarketCard = read('components/home/TodayMarketCard.tsx');
 const tailwind = read('tailwind.config.ts');
 
 assert.match(appChrome, /dynamic\(/);
@@ -97,7 +98,8 @@ assert.match(themeModel, /document\.documentElement/);
 assert.match(themeModel, /style\.setProperty/);
 assert.match(themeModel, /!isThemePaletteAccessible\(palette\)/);
 assert.match(themeModel, /!isThemePaletteAccessible\(state\.palette\)/);
-assert.match(home, /bg-home-ended-card/);
+assert.match(home, /TodayMarketCard/);
+assert.match(todayMarketCard, /bg-home-ended-card/);
 assert.match(home, /bg-upcoming-section/);
 assert.match(home, /bg-upcoming-date-badge/);
 assert.match(tailwind, /'home-ended-card'/);

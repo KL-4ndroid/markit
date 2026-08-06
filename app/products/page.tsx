@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { ProductCard } from '@/components/products/ProductCard';
 import { fetchProductCoverPhotoMetadata } from '@/lib/products/product-cover-photo-client';
 import { Button } from '@/components/ui/Button';
@@ -39,7 +40,6 @@ import {
 } from '@/lib/products/product-list-view-model';
 import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { getGradientClass } from '@/lib/theme-config';
 import type { Product, ProductCategory } from '@/types/db';
 import ProductsLoading from './loading';
 
@@ -297,25 +297,21 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className={`${getGradientClass(isStaffMode)} rounded-b-[2rem] border-b border-white/15 px-5 pb-8 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier`}>
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-white/80">{isStaffMode ? '銷售商品' : '商品管理'}</p>
-            <h1 className="mt-1 flex items-center gap-2 text-2xl font-semibold">
-              <Package className="h-6 w-6" aria-hidden="true" />
-              商品
-            </h1>
-          </div>
-          {!isStaffMode && (
+      <WorkspacePageHeader
+        title="商品"
+        eyebrow={isStaffMode ? '銷售商品' : '商品管理'}
+        icon={Package}
+        isStaff={isStaffMode}
+        maxWidthClass="max-w-4xl"
+        action={!isStaffMode ? (
             <IconButton
               label="新增商品"
               tone="inverse"
               icon={<Plus className="h-5 w-5" aria-hidden="true" />}
               onClick={handleOpenForm}
             />
-          )}
-        </div>
-      </header>
+        ) : undefined}
+      />
 
       <div className="mx-auto max-w-4xl px-4 pb-8 sm:px-6">
         <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur-sm sm:-mx-6 sm:px-6">

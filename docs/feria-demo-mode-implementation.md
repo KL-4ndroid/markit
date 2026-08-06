@@ -83,9 +83,9 @@ demo calculation helpers
 
 專案已包含 Next.js、React、Tailwind、lucide-react、recharts 等套件。Demo Mode 第一版不需要新增外部套件。
 
-### 2.4 不與正式 App 互相污染
+### 2.4 資料隔離，但共用正式版純 UI
 
-Demo Mode 應放在獨立 route 與獨立 components：
+Demo Mode 的 route、記憶體資料與操作控制器維持獨立：
 
 ```txt
 app/demo/page.tsx
@@ -93,7 +93,41 @@ components/demo/*
 lib/demo/*
 ```
 
-避免改動正式首頁 `app/page.tsx`，除非只是增加一個前往 demo 的入口，而且必須不影響登入與正式資料載入。
+正式版與 Demo 應共用不讀取資料來源、不判斷登入身分的純 UI 元件，避免正式介面更新後 Demo 成為另一套設計系統。目前共用邊界為：
+
+```txt
+components/navigation/AppBottomNavigationBar.tsx
+components/layout/WorkspacePageHeader.tsx
+components/home/TodayMarketCard.tsx
+components/markets/MarketListCard.tsx
+components/products/ProductCard.tsx
+components/settings/SettingsPageShell.tsx
+components/settings/SettingsMenu.tsx
+components/markets/MarketWorkspaceNavigation.tsx
+components/markets/MarketWorkspaceSummary.tsx
+components/markets/MarketFormFields.tsx
+components/products/ProductFormFields.tsx
+components/analytics/*（純展示元件）
+lib/navigation/app-navigation.ts
+lib/markets/market-list-view-model.ts
+lib/markets/market-form.ts
+lib/products/product-form.ts
+```
+
+這些共用元件不得反向依賴 Demo，也不得讀取 Auth、Dexie、Supabase、sync、localStorage 或 sessionStorage。正式 route 負責提供正式資料與權限結果；Demo controller 只提供記憶體假資料與 callback。
+
+避免改動正式首頁 `app/page.tsx` 的資料流程。若需要同步首頁視覺，應先抽出純 presentation component，再由正式首頁與 Demo 各自提供 view model。
+
+### 2.5 目前整合狀態（2026-08-06）
+
+- 主導覽：正式版與 Demo 共用同一個 bottom navigation renderer 與 navigation item 定義。
+- 今日焦點：正式首頁與 Demo 共用 today view model 與 market card presentation。
+- 市集／商品／分析頁首：共用正式 workspace header。
+- 市集清單：共用正式 market list view model、卡片與 action label。
+- 更多與設定：共用正式 settings shell、section 與 action row；Demo 子頁以 callback 返回，不建立正式 route navigation。
+- 商品卡、表單欄位、市集工作台導覽、分析展示：沿用既有正式元件。
+- Demo 寫入：仍只更新 React 記憶體 state，不會呼叫正式 repository、權限或同步服務。
+- 尚待後續批次：訂閱方案展示與各設定子頁內容區塊的進一步共用。
 
 ---
 

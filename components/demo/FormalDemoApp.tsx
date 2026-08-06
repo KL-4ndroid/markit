@@ -19,7 +19,6 @@ import {
   FileText,
   Gem,
   Hand,
-  Home,
   MapPin,
   Minus,
   MoreHorizontal,
@@ -50,6 +49,9 @@ import { DailyRevenueChart } from '@/components/analytics/DailyRevenueChart';
 import { DateRangeFilter, type AnalyticsRange } from '@/components/analytics/DateRangeFilter';
 import { MarketTrendCard } from '@/components/analytics/MarketTrendCard';
 import { TopProductsCard } from '@/components/analytics/TopProductsCard';
+import { TodayMarketCard } from '@/components/home/TodayMarketCard';
+import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
+import { MarketListCard } from '@/components/markets/MarketListCard';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import {
@@ -64,6 +66,12 @@ import {
 } from '@/components/markets/MarketFormFields';
 import { ProductCard } from '@/components/products/ProductCard';
 import { ProductFormFields } from '@/components/products/ProductFormFields';
+import { AppBottomNavigationBar } from '@/components/navigation/AppBottomNavigationBar';
+import {
+  SettingsActionRow as SharedSettingsActionRow,
+  SettingsSection as SharedSettingsSection,
+} from '@/components/settings/SettingsMenu';
+import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { PaymentMethodSelector } from '@/components/sales/PaymentMethodSelector';
 import { AppDialog } from '@/components/ui/AppDialog';
 import { Button } from '@/components/ui/Button';
@@ -94,6 +102,12 @@ import {
   validateMarketCoreForm,
   type MarketCoreFormErrors,
 } from '@/lib/markets/market-form';
+import { buildMarketListGroups } from '@/lib/markets/market-list-view-model';
+import { buildTodayViewModel } from '@/lib/home/today-view-model';
+import {
+  getAppNavigationItems,
+  type AppNavigationItemId,
+} from '@/lib/navigation/app-navigation';
 import {
   createEmptyProductFormValues,
   createProductFormValues,
@@ -111,13 +125,8 @@ type AnalyticsView = 'summary' | 'trends' | 'products' | 'advanced';
 type WorkspaceView = 'live' | 'overview' | 'manage';
 type TransactionMode = 'quick' | 'products';
 
-const DEMO_NAV_ITEMS: readonly { id: DemoView; label: string; icon: LucideIcon }[] = [
-  { id: 'today', label: '今日', icon: Home },
-  { id: 'markets', label: '市集', icon: Calendar },
-  { id: 'products', label: '商品', icon: Package },
-  { id: 'analytics', label: '分析', icon: BarChart3 },
-  { id: 'more', label: '更多', icon: MoreHorizontal },
-];
+const DEMO_NAV_ITEMS = getAppNavigationItems({ isStaff: false, roleReady: true });
+const DEMO_NOW = new Date(2026, 6, 18, 15, 30);
 
 const CATEGORY_MAP: Record<DemoProduct['category'], ProductCategory> = {
   手作: 'handmade',
@@ -281,12 +290,6 @@ function stageLabel(stage: MarketView): string {
   return '已結束';
 }
 
-function stageClasses(stage: MarketView): string {
-  if (stage === 'active') return 'bg-status-good-bg text-status-good-text';
-  if (stage === 'preparing') return 'bg-status-warn-bg text-status-warn-text';
-  return 'bg-muted text-muted-foreground';
-}
-
 function StaticSyncStatus() {
   return (
     <span
@@ -296,71 +299,6 @@ function StaticSyncStatus() {
     >
       <Cloud className="h-5 w-5" aria-hidden="true" />
     </span>
-  );
-}
-
-function DemoBottomNavigation({ activeView, onChange }: { activeView: DemoView; onChange: (view: DemoView) => void }) {
-  return (
-    <nav
-      aria-label="主要導覽"
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-primary/10 bg-atelier-paper/95 px-2 pb-[calc(0.6rem+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-10px_30px_rgb(123_159_166_/_0.10)] backdrop-blur-md ease-in-out"
-    >
-      <div className="mx-auto flex max-w-lg items-stretch justify-around">
-        {DEMO_NAV_ITEMS.map(item => {
-          const Icon = item.icon;
-          const isActive = activeView === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              aria-current={isActive ? 'page' : undefined}
-              onClick={() => onChange(item.id)}
-              className="group relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-control transition-colors"
-            >
-              <span className={`flex h-8 min-w-10 items-center justify-center rounded-control px-2 transition-colors ${isActive ? 'scale-105 bg-primary text-white shadow-atelier-key' : 'bg-transparent text-atelier-muted group-hover:bg-soft-pink group-hover:text-atelier-ink'}`}>
-                <Icon className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <span className={`text-xs ${isActive ? 'font-semibold text-primary' : 'text-atelier-muted'}`}>{item.label}</span>
-              {isActive && <span className="absolute bottom-0 h-1 w-1 rounded-full bg-atelier-clay" aria-hidden="true" />}
-            </button>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
-
-function TodayMarketCard({ market, onOpen }: { market: DemoMarket; onOpen: () => void }) {
-  const stage = stageForMarket(market.status);
-  const surfaceClass = stage === 'active' ? 'bg-atelier-sage-soft' : stage === 'ended' ? 'bg-home-ended-card' : 'bg-atelier-apricot-soft';
-  const companionLine = stage === 'active'
-    ? '今天的市集正在進行中，打開營運工作台記錄每一次互動吧。'
-    : stage === 'ended'
-      ? '今天的紀錄都收好了，回顧一下這場市集的成果。'
-      : '營運時間還沒開始，可以先確認今天的準備事項。';
-
-  return (
-    <article className={`overflow-hidden rounded-card shadow-atelier-lift ${surfaceClass}`}>
-      <div className="p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${stageClasses(stage)}`}>{stageLabel(stage)}</span>
-            <h2 className="mt-3 break-words text-[1.4rem] font-semibold leading-tight text-atelier-ink">{market.name}</h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-atelier-muted">{companionLine}</p>
-          </div>
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control bg-atelier-paper/80 text-primary shadow-atelier">
-            <Store className="h-5 w-5" aria-hidden="true" />
-          </span>
-        </div>
-        <div className="mt-5 grid gap-2.5 text-sm text-atelier-muted sm:grid-cols-2">
-          <p className="flex min-w-0 items-center gap-2"><MapPin className="h-4 w-4 shrink-0" /><span className="truncate">{market.location}</span></p>
-          <p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 shrink-0" /><span>{market.time}</span></p>
-        </div>
-        <Button onClick={onOpen} className="mt-5 min-h-12 w-full bg-primary shadow-atelier hover:bg-primary/90 sm:w-auto" leadingIcon={<ArrowRight className="h-4 w-4" />}>
-          {stage === 'active' ? '進入今日營運' : stage === 'ended' ? '查看今日回顧' : '查看準備事項'}
-        </Button>
-      </div>
-    </article>
   );
 }
 
@@ -377,6 +315,11 @@ function TodayPage({
   onShowMarkets: () => void;
   onOpenSettings: () => void;
 }) {
+  const todayView = buildTodayViewModel(
+    [activeMarket, ...upcomingMarkets].map(toFormalMarket),
+    DEMO_NOW,
+  );
+
   return (
     <div className="min-h-screen bg-atelier-canvas/80 text-atelier-ink">
       <header className="japanese-warm-header overflow-hidden rounded-b-[2rem] px-5 pb-9 pt-[calc(1.25rem+env(safe-area-inset-top))] text-white shadow-atelier-lift">
@@ -406,7 +349,13 @@ function TodayPage({
             <p className="text-xs font-semibold text-atelier-clay">現在</p>
             <h2 id="today-focus-title" className="mt-1 text-lg font-semibold text-atelier-ink">今天的營運重點</h2>
           </div>
-          <TodayMarketCard market={activeMarket} onOpen={() => onOpenMarket(activeMarket)} />
+          {todayView.primaryMarket && (
+            <TodayMarketCard
+              item={todayView.primaryMarket}
+              isStaff={false}
+              onOpen={() => onOpenMarket(activeMarket)}
+            />
+          )}
         </section>
 
         <section className="-mx-4 mt-9 bg-upcoming-section px-4 py-6 sm:-mx-6 sm:px-6" aria-labelledby="upcoming-title">
@@ -434,49 +383,33 @@ function TodayPage({
   );
 }
 
-function MarketListCard({ market, onOpen }: { market: DemoMarket; onOpen: () => void }) {
-  const stage = stageForMarket(market.status);
-  return (
-    <article className="rounded-card border border-primary/10 bg-atelier-paper p-4 shadow-atelier transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-atelier-lift sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${stageClasses(stage)}`}>{stageLabel(stage)}</span>
-          <h2 className="mt-2 break-words text-base font-semibold text-foreground sm:text-lg">{market.name}</h2>
-        </div>
-        <Store className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-      </div>
-      <div className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-        <p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 shrink-0" /><span>{market.dateLabel}</span></p>
-        <p className="flex min-w-0 items-center gap-2"><MapPin className="h-4 w-4 shrink-0" /><span className="truncate">{market.location}</span></p>
-      </div>
-      <div className="mt-4 flex justify-end">
-        <Button variant={stage === 'active' ? 'primary' : 'secondary'} onClick={onOpen} className="w-full sm:w-auto">
-          {stage === 'active' ? '進入現場' : stage === 'preparing' ? '繼續準備' : '查看回顧'}
-        </Button>
-      </div>
-    </article>
-  );
-}
-
 function MarketsPage({ markets, view, onViewChange, onAdd, onOpen }: { markets: DemoMarket[]; view: MarketView; onViewChange: (view: MarketView) => void; onAdd: () => void; onOpen: (market: DemoMarket) => void }) {
-  const filtered = markets.filter(market => stageForMarket(market.status) === view);
+  const groups = buildMarketListGroups(markets.map(toFormalMarket), DEMO_NOW);
+  const filtered = groups[view];
   const tabs = [
-    { id: 'active' as const, label: '營運中', count: markets.filter(m => m.status === 'operating').length },
-    { id: 'preparing' as const, label: '準備中', count: markets.filter(m => m.status === 'preparing').length },
-    { id: 'ended' as const, label: '已結束', count: markets.filter(m => m.status === 'ended').length },
+    { id: 'active' as const, label: '進行中', count: groups.active.length },
+    { id: 'preparing' as const, label: '待準備', count: groups.preparing.length },
+    { id: 'ended' as const, label: '已結束', count: groups.ended.length },
   ];
   return (
     <div className="min-h-screen bg-background">
-      <header className="japanese-gradient-header rounded-b-[2rem] border-b border-white/15 px-5 pb-8 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
-          <div><p className="text-sm text-white/80">老闆模式</p><h1 className="mt-1 flex items-center gap-2 text-2xl font-semibold"><Store className="h-6 w-6" />市集</h1></div>
-          <IconButton label="新增市集" tone="inverse" icon={<Plus className="h-5 w-5" />} onClick={onAdd} />
-        </div>
-      </header>
+      <WorkspacePageHeader
+        title="市集"
+        eyebrow="營運管理"
+        icon={Store}
+        action={<IconButton label="新增市集" tone="inverse" icon={<Plus className="h-5 w-5" />} onClick={onAdd} />}
+      />
       <div className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6">
-        <Tabs items={tabs} value={view} onChange={onViewChange} ariaLabel="市集狀態篩選" />
+        <Tabs items={tabs} value={view} onChange={onViewChange} ariaLabel="市集工作階段" />
         <div className="mt-5 space-y-3">
-          {filtered.map(market => <MarketListCard key={market.id} market={market} onOpen={() => onOpen(market)} />)}
+          {filtered.map(item => (
+            <MarketListCard
+              key={item.market.id}
+              item={item}
+              isStaff={false}
+              onOpen={() => onOpen(markets.find(market => market.id === item.market.id)!)}
+            />
+          ))}
         </div>
       </div>
     </div>
@@ -492,12 +425,13 @@ function ProductsPage({ products, query, view, showInactive, onQueryChange, onVi
   ];
   return (
     <div className="min-h-screen bg-background">
-      <header className="japanese-gradient-header rounded-b-[2rem] border-b border-white/15 px-5 pb-8 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
-          <div><p className="text-sm text-white/80">商品管理</p><h1 className="mt-1 flex items-center gap-2 text-2xl font-semibold"><Package className="h-6 w-6" />商品</h1></div>
-          <IconButton label="新增商品" tone="inverse" icon={<Plus className="h-5 w-5" />} onClick={onAdd} />
-        </div>
-      </header>
+      <WorkspacePageHeader
+        title="商品"
+        eyebrow="商品管理"
+        icon={Package}
+        maxWidthClass="max-w-4xl"
+        action={<IconButton label="新增商品" tone="inverse" icon={<Plus className="h-5 w-5" />} onClick={onAdd} />}
+      />
       <div className="mx-auto max-w-4xl px-4 pb-8 sm:px-6">
         <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur-sm sm:-mx-6 sm:px-6">
           <div className="relative">
@@ -584,12 +518,12 @@ function AnalyticsPage({ markets, products }: { markets: DemoMarket[]; products:
   ];
   return (
     <div className="min-h-screen bg-background">
-      <header className="japanese-gradient-header rounded-b-[2rem] border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier">
-        <div className="mx-auto flex max-w-3xl items-start justify-between gap-4">
-          <div><p className="text-sm text-white/80">營運分析</p><h1 className="mt-1 flex items-center gap-2 text-2xl font-semibold"><BarChart3 className="h-6 w-6" />分析</h1></div>
-          <div className="flex items-center gap-1"><IconButton label="開啟結算報表" tone="inverse" icon={<FileText className="h-5 w-5" />} onClick={() => toast.info('Demo 不會產生正式報表')} /><IconButton label="重新計算分析" tone="inverse" icon={<RefreshCw className="h-5 w-5" />} onClick={() => toast.success('分析已重新計算')} /></div>
-        </div>
-      </header>
+      <WorkspacePageHeader
+        title="分析"
+        eyebrow="營運決策"
+        icon={BarChart3}
+        action={<div className="flex items-center gap-1"><IconButton label="開啟結算報表" tone="inverse" icon={<FileText className="h-5 w-5" />} onClick={() => toast.info('Demo 不會產生正式報表')} /><IconButton label="重新計算分析" tone="inverse" icon={<RefreshCw className="h-5 w-5" />} onClick={() => toast.success('分析已重新計算')} /></div>}
+      />
       <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">
         <DateRangeFilter value={range} onChange={setRange} markets={formalMarkets} selectedMarketId={selectedMarketId} onMarketChange={setSelectedMarketId} />
         <Tabs className="mt-5" items={tabs} value={activeTab} onChange={setActiveTab} ariaLabel="分析分頁" />
@@ -627,32 +561,20 @@ interface SettingsRowProps {
 }
 
 function SettingsRow({ icon: Icon, label, description, onClick }: SettingsRowProps) {
-  return (
-    <button type="button" onClick={onClick} className="group flex min-h-[72px] w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-soft-pink/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon className="h-5 w-5" /></span>
-      <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-foreground">{label}</span><span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{description}</span></span>
-      <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-    </button>
-  );
+  return <SharedSettingsActionRow icon={Icon} label={label} description={description} onClick={onClick} />;
 }
 
 function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
-  return <section aria-label={title}><h2 className="mb-2 px-1 text-xs font-semibold text-muted-foreground">{title}</h2><div className="divide-y divide-primary/10 overflow-hidden rounded-card border border-primary/10 bg-white shadow-atelier">{children}</div></section>;
+  return <SharedSettingsSection title={title}>{children}</SharedSettingsSection>;
 }
 
 type DemoSettingsView = 'root' | 'account' | 'team' | 'sales' | 'data' | 'app';
 
 function DemoSettingsShell({ title, description, icon: Icon, onBack, children }: { title: string; description: string; icon: LucideIcon; onBack: () => void; children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="japanese-gradient-header rounded-b-[2rem] border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier">
-        <div className="mx-auto flex max-w-3xl items-start gap-3">
-          <button type="button" onClick={onBack} aria-label="返回更多" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-white/15 transition-colors hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"><ArrowLeft className="h-5 w-5" /></button>
-          <div className="min-w-0 pt-0.5"><div className="flex items-center gap-2"><Icon className="h-5 w-5" /><h1 className="text-2xl font-semibold">{title}</h1></div><p className="mt-1 max-w-2xl text-sm leading-6 text-white/80">{description}</p></div>
-        </div>
-      </header>
-      <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">{children}</div>
-    </div>
+    <SettingsPageShell title={title} description={description} icon={Icon} isStaff={false} onBack={onBack}>
+      {children}
+    </SettingsPageShell>
   );
 }
 
@@ -719,10 +641,14 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="japanese-gradient-header rounded-b-[2rem] border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier"><div className="mx-auto flex max-w-3xl items-start gap-3"><div className="min-w-0 pt-0.5"><div className="flex items-center gap-2"><MoreHorizontal className="h-5 w-5" /><h1 className="text-2xl font-semibold">更多</h1></div><p className="mt-1 max-w-2xl text-sm leading-6 text-white/80">管理帳號、團隊、營運資料與應用程式設定。</p></div></div></header>
-      <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6"><section className="mb-6 flex items-center justify-between gap-4 border-b border-primary/10 pb-5"><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">demo@feria.app</p><p className="mt-1 text-xs text-muted-foreground">目前角色：老闆</p></div><span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">老闆模式</span></section><div className="space-y-6"><SettingsSection title="帳號與協作"><SettingsRow icon={Cloud} label="帳號與同步" description="管理帳號、備份與跨裝置同步" onClick={() => setView('account')} /><SettingsRow icon={Users} label="團隊成員" description="邀請夥伴並設定工作權限" onClick={() => setView('team')} /></SettingsSection><SettingsSection title="營運與資料"><SettingsRow icon={Camera} label="成交照片" description="設定成交後的照片紀錄流程" onClick={() => { setPhotoDraft(defaultPhotoRequired); setView('sales'); }} /><SettingsRow icon={Database} label="資料管理" description="匯入、匯出與復原市集資料" onClick={() => setView('data')} /></SettingsSection><SettingsSection title="應用程式"><SettingsRow icon={Smartphone} label="App 設定" description="調整顯示、操作與主題偏好" onClick={() => setView('app')} /></SettingsSection></div></div>
-    </div>
+    <SettingsPageShell
+      title="更多"
+      description="帳號、團隊、營業偏好與系統工具都集中在這裡。"
+      icon={MoreHorizontal}
+      isStaff={false}
+    >
+      <section className="mb-6 flex items-center justify-between gap-4 border-b border-primary/10 pb-5"><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">demo@feria.app</p><p className="mt-1 text-xs text-muted-foreground">目前身分：老闆</p></div><span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">營運者</span></section><div className="space-y-6"><SettingsSection title="營運設定"><SettingsRow icon={Cloud} label="帳號與同步" description="登入帳號、同步狀態與登出" onClick={() => setView('account')} /><SettingsRow icon={Users} label="團隊與權限" description="邀請成員並管理每位員工的角色" onClick={() => setView('team')} /><SettingsRow icon={Camera} label="銷售與照片" description="品牌名稱、成交照片與互動記錄偏好" onClick={() => { setPhotoDraft(defaultPhotoRequired); setView('sales'); }} /></SettingsSection><SettingsSection title="系統"><SettingsRow icon={Database} label="資料與救援" description="檢查資料健康、修復與清除資料" onClick={() => setView('data')} /><SettingsRow icon={Smartphone} label="App 與版本" description="安裝到主畫面、版本與關於 Féria" onClick={() => setView('app')} /></SettingsSection></div>
+    </SettingsPageShell>
   );
 }
 
@@ -1161,7 +1087,7 @@ export function FormalDemoApp() {
     setDefaultPhotoRequired(false);
     toast.success('Demo 已還原成初始狀態');
   };
-  const changeMainView = (view: DemoView) => { setWorkspaceMarketId(null); setDetailProductId(null); setActiveView(view); };
+  const changeMainView = (view: AppNavigationItemId) => { setWorkspaceMarketId(null); setDetailProductId(null); setActiveView(view); };
 
   let page: ReactNode = null;
   if (activeMarket) {
@@ -1181,7 +1107,7 @@ export function FormalDemoApp() {
   return (
     <>
       {content}
-      <DemoBottomNavigation activeView={activeView} onChange={changeMainView} />
+      <AppBottomNavigationBar items={DEMO_NAV_ITEMS} activeItemId={activeView} onSelect={changeMainView} />
 
       <DemoMarketForm open={marketFormMode !== null} title={marketFormMode === 'edit' ? '編輯市集' : '新增市集'} submitLabel={marketFormMode === 'edit' ? '儲存變更' : '建立市集'} values={marketFormValues} errors={marketFormErrors} onChange={values => { setMarketFormValues(values); setMarketFormErrors({}); }} onClose={() => setMarketFormMode(null)} onSubmit={submitMarketForm} />
       <DemoProductForm open={productFormMode !== null} title={productFormMode === 'edit' ? '編輯商品' : '新增商品'} submitLabel={productFormMode === 'edit' ? '儲存變更' : '建立商品'} values={productFormValues} errors={productFormErrors} onChange={changeProductForm} onClose={() => setProductFormMode(null)} onSubmit={submitProductForm} />

@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { toast } from 'sonner';
 
+import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { ActionableInsightsCard } from '@/components/analytics/ActionableInsightsCard';
 import { AnalyticsSummaryHighlights } from '@/components/analytics/AnalyticsSummaryHighlights';
 import { AdvancedAnalysisGate } from '@/components/analytics/AdvancedAnalysisGate';
@@ -67,7 +68,6 @@ import { getDataReliability } from '@/lib/analytics/unlock-logic';
 import { useSyncContext } from '@/lib/sync-context';
 import { evaluateAccountCapabilityClientAccess } from '@/lib/subscription/account-capability-access';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { getGradientClass } from '@/lib/theme-config';
 import type { DailyStats, Event } from '@/types/db';
 import type { ProductPair } from '@/lib/analytics/types';
 
@@ -436,15 +436,11 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className={`${getGradientClass(false)} rounded-b-[2rem] border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier`}>
-        <div className="mx-auto flex max-w-3xl items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-white/80">營運決策</p>
-            <h1 className="mt-1 flex items-center gap-2 text-2xl font-semibold">
-              <BarChart3 className="h-6 w-6" aria-hidden="true" />
-              分析
-            </h1>
-          </div>
+      <WorkspacePageHeader
+        title="分析"
+        eyebrow="營運決策"
+        icon={BarChart3}
+        action={(
           <div className="flex items-center gap-1">
             {!isStaff && !isRoleLoading && !roleError && (
               <IconButton
@@ -464,8 +460,8 @@ export default function AnalyticsPage() {
               onClick={() => void handleRecalculate()}
             />
           </div>
-        </div>
-      </header>
+        )}
+      />
 
       <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">
         <DateRangeFilter
