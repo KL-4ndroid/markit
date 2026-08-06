@@ -1,5 +1,5 @@
 /**
- * Market Pulse - 資料庫類型定義
+ * Féria - 資料庫類型定義
  * 
  * 本檔案定義所有資料庫相關的 TypeScript 介面
  * 遵循事件溯源 (Event Sourcing) 架構
@@ -14,6 +14,7 @@
 export type EventType =
   // 市集相關事件
   | 'market_created'           // 市集建立
+  | 'market_updated'           // 市集更新
   | 'market_status_changed'    // 市集狀態變更
   | 'market_started'           // 市集開始營業
   | 'market_ended'             // 市集結束營業
@@ -24,7 +25,16 @@ export type EventType =
   | 'product_deleted'          // 商品刪除
   // 互動相關事件
   | 'interaction_recorded'     // 記錄互動（摸摸、詢問）
+  | 'interaction_deleted'      // 刪除互動記錄
   | 'deal_closed'              // 成交
+  | 'deal_deleted'             // 刪除成交記錄
+  // 現場交接相關事件
+  | 'field_note_created'       // 建立現場交接筆記
+  | 'field_note_updated'       // 更新現場交接筆記
+  | 'field_note_deleted'       // 刪除現場交接筆記
+  | 'checklist_item_created'   // 建立場次待辦
+  | 'checklist_item_updated'   // 更新場次待辦
+  | 'checklist_item_deleted'   // 刪除場次待辦
   // 設定相關事件
   | 'settings_updated';        // 設定更新
 
@@ -39,7 +49,7 @@ export interface Event<T = any> {
   timestamp: number;           // 事件發生時間戳（毫秒）
   actor_id?: string;           // 新增：操作者 UUID（用於多人協作）
   market_id?: string;          // 新增：關聯市集 UUID
-  sync_status?: 'local_only' | 'pending' | 'synced' | 'conflict'; // 新增：同步狀態
+  sync_status?: 'local_only' | 'pending' | 'synced' | 'conflict' | 'error'; // 新增：同步狀態
   metadata?: {                 // 可選的元數據
     userId?: string;           // 未來可能的用戶 ID
     deviceId?: string;         // 裝置 ID
@@ -79,8 +89,9 @@ export interface Market {
   id?: string;                 // UUID（由前端生成）
   name: string;                // 市集名稱
   location: string;            // 地點
-  startDate: string;           // 開始日期（ISO 8601 格式）
-  endDate: string;             // 結束日期（ISO 8601 格式）
+  dates?: string[];            // ✅ 新增：日期陣列（支持多選日期，可選以保持向後兼容）
+  startDate: string;           // 開始日期（ISO 8601 格式）- 保留作為最早日期
+  endDate: string;             // 結束日期（ISO 8601 格式）- 保留作為最晚日期
   startTime?: string;          // 開始時間（HH:mm）
   endTime?: string;            // 結束時間（HH:mm）
   status: MarketStatus;        // 當前狀態
@@ -90,6 +101,14 @@ export interface Market {
   owner_id?: string;           // 擁有者 UUID
   is_collaborative?: boolean;  // 是否為協作市集
   sync_status?: 'local_only' | 'synced' | 'conflict'; // 同步狀態
+  
+  // ✅ 新增：員工權限欄位（可選，向後兼容）
+  access_type?: 'owner' | 'staff';  // 訪問類型
+  permissions?: {                    // 權限設定
+    can_view: boolean;
+    can_edit: boolean;
+  };
+  relationship_owner_id?: string;    // 關係中的老闆 ID
   
   // 軟刪除標記
   isDeleted?: boolean;         // 是否已刪除（軟刪除，不顯示在列表中）
@@ -116,6 +135,7 @@ export interface Market {
   chairFree?: boolean;         // 椅子免費提供
   umbrellaFree?: boolean;      // 傘免費提供
   tableclothFree?: boolean;    // 桌巾免費提供
+  salesPhotoEvidenceRequired?: boolean; // 是否要求成交照片證明
   
   // 統計資訊（從事件計算得出）
   totalRevenue?: number;       // 總收入
@@ -123,8 +143,8 @@ export interface Market {
   totalInteractions?: number;  // 總互動數
   totalDeals?: number;         // 總成交數
   
-  // 備註
-  notes?: string;              // 備註
+  // 整場市集共用的固定資訊
+  notes?: string;              // 主辦／場地備註
   
   // 時間戳
   createdAt: number;           // 建立時間
@@ -137,8 +157,9 @@ export interface Market {
 export interface MarketCreatedPayload {
   name: string;
   location: string;
-  startDate: string;
-  endDate: string;
+  dates?: string[];            // ✅ 新增：日期陣列（多選日期）
+  startDate: string;           // 保留：最早日期（向後兼容）
+  endDate: string;             // 保留：最晚日期（向後兼容）
   startTime?: string;
   endTime?: string;
   
@@ -166,13 +187,22 @@ export interface MarketCreatedPayload {
   tableclothFree?: boolean;
   
   notes?: string;
+  salesPhotoEvidenceRequired?: boolean;
+}
+
+/**
+ * 市集更新事件的 Payload
+ */
+export interface MarketUpdatedPayload {
+  market_id: string;           // 市集 UUID
+  updates: Partial<Omit<Market, 'id' | 'createdAt' | 'updatedAt'>>;
 }
 
 /**
  * 市集狀態變更事件的 Payload
  */
 export interface MarketStatusChangedPayload {
-  marketId: string;            // 改為 UUID
+  market_id: string;            // 市集 UUID
   oldStatus: MarketStatus;
   newStatus: MarketStatus;
   reason?: string;             // 變更原因
@@ -182,7 +212,7 @@ export interface MarketStatusChangedPayload {
  * 市集刪除事件的 Payload
  */
 export interface MarketDeletedPayload {
-  marketId: string;            // 市集 UUID
+  market_id: string;            // 市集 UUID
   reason?: string;             // 刪除原因
 }
 
@@ -223,6 +253,14 @@ export interface Product {
   unlimitedStock?: boolean;    // 不限庫存（販售服務或接單訂製，預設 false）
   isActive: boolean;           // 是否啟用
   isShared?: boolean;          // ✅ 新增：是否為共享商品（團隊可見）
+  
+  // ✅ 新增：員工權限欄位（可選，向後兼容）
+  access_type?: 'owner' | 'staff';  // 訪問類型
+  permissions?: {                    // 權限設定
+    can_view: boolean;
+    can_edit: boolean;
+  };
+  relationship_owner_id?: string;    // 關係中的老闆 ID
   
   // 統計資訊
   totalSold?: number;          // 總銷售數量
@@ -273,32 +311,53 @@ export type InteractionType = string;
  * 互動記錄事件的 Payload
  */
 export interface InteractionRecordedPayload {
-  marketId: string;            // 所屬市集（改為 UUID）
+  market_id: string;            // 所屬市集 UUID
   type: InteractionType;       // 互動類型（使用按鈕 ID）
-  productIds?: string[];       // 相關商品 ID（改為 UUID）
+  productIds?: string[];       // 相關商品 ID（UUID）
   notes?: string;              // 備註
+}
+
+/**
+ * 刪除互動記錄事件的 Payload
+ */
+export interface InteractionDeletedPayload {
+  eventId: string;             // 要刪除的互動事件 ID
+  market_id: string;            // 所屬市集 ID
+  interactionType?: string;    // ✅ 互動類型（用於扣除統計）
+}
+
+/**
+ * 刪除成交記錄事件的 Payload
+ */
+export interface DealDeletedPayload {
+  eventId: string;             // 要刪除的成交事件 ID
+  market_id: string;            // 所屬市集 ID
+  dealDate: string;            // 成交日期（用於更新每日統計）
+  totalAmount: number;         // 要扣除的金額
+  totalCost: number;           // 要扣除的成本
+  dealCount: number;           // 要扣除的成交次數
+  productsSold?: DailyStats['productsSold']; // 要扣除的商品銷售統計
 }
 
 /**
  * 成交事件的 Payload
  */
 export interface DealClosedPayload {
-  marketId: string;            // 所屬市集（改為 UUID）
-  dealDate?: string;           // ✅ 成交日期（YYYY-MM-DD），用於多天市集區分每日收入
-  isBackfill?: boolean;        // ✅ 補登標記（補登時不扣庫存）
-  isManualEntry?: boolean;     // ✅ 手動輸入標記（簡化模式）
+  market_id: string;            // 所屬市集 UUID
+  dealDate?: string;           // 成交日期（YYYY-MM-DD），用於多天市集區分每日收入
+  isBackfill?: boolean;        // 補登標記（補登時不扣庫存）
+  isManualEntry?: boolean;     // 手動輸入標記（簡化模式）
   
-  // ✅ 簡化模式專用（當 isManualEntry = true）
+  // 簡化模式專用（當 isManualEntry = true）
   manualRevenue?: number;      // 手動輸入的收入
   manualCost?: number;         // 手動輸入的成本
   manualDealCount?: number;    // 手動輸入的成交次數
   
   // 完整模式（當 isManualEntry = false 或未設置）
   items: {
-    productId: string;         // 商品 ID（改為 UUID）
+    productId: string;         // 商品 ID（UUID）
     quantity: number;          // 數量
     price: number;             // 實際售價（可能有折扣）
-    // 新增：交易時快照（防止歷史數據錯誤）
     price_at_time_of_sale?: number;  // 成交時的售價
     cost_at_time_of_sale?: number;   // 成交時的成本
     product_name?: string;           // 成交時的商品名稱
@@ -315,26 +374,32 @@ export interface DealClosedPayload {
  * 用於快速查詢每日數據
  */
 export interface DailyStats {
+  id?: number;                 // 自動遞增 ID（Dexie 生成）
   date: string;                // 日期（YYYY-MM-DD）
   marketId?: string;           // 關聯的市集 ID（改為 UUID）
-  
-  // 互動統計
+
+  // 互動統計（預設類型）
   touchCount: number;          // 摸摸次數
   inquiryCount: number;        // 詢問次數
   dealCount: number;           // 成交次數
-  
+
+  // ✅ 靈活互動統計：用於存儲自定義按鈕的互動次數
+  // key: 互動按鈕 ID（如 'interest', 'engage', 'button_1' 等）
+  // value: 該類型的互動次數
+  extraInteractions?: Record<string, number>;
+
   // 財務統計
   revenue: number;             // 收入
   cost: number;                // 成本
   profit: number;              // 利潤
-  
+
   // 商品統計
   productsSold: {
     productId: string;         // 改為 UUID
     quantity: number;
     revenue: number;
   }[];
-  
+
   // 時間戳
   updatedAt: number;           // 最後更新時間
 }
@@ -373,6 +438,72 @@ export interface Settings {
  * 事件處理器函數類型
  * 用於處理特定類型的事件並更新快照
  */
+export type MarketIdPayload = {
+  market_id: string;            // 統一使用 market_id (snake_case)
+};
+
+export type MarketStatusChangedEventPayload = MarketIdPayload & {
+  oldStatus: MarketStatus;
+  newStatus: MarketStatus;
+  reason?: string;
+};
+
+export type ProductCreatedEventPayload = ProductCreatedPayload & {
+  productId?: string;
+  product_id?: string;
+  market_id?: string;
+};
+
+export type InteractionRecordedEventPayload = InteractionRecordedPayload & {};
+
+export type DealClosedEventPayload = DealClosedPayload & {};
+
+export type FieldNoteEventPayload = MarketIdPayload & {
+  noteId: string;
+  text?: string;
+};
+
+export type ChecklistItemEventPayload = MarketIdPayload & {
+  itemId: string;
+  text?: string;
+  completed?: boolean;
+};
+
+export type EventPayloadMap = {
+  market_created: MarketCreatedPayload & {
+    market_id?: string;
+  };
+  market_updated: MarketUpdatedPayload;
+  market_status_changed: MarketStatusChangedEventPayload;
+  market_started: MarketIdPayload;
+  market_ended: MarketIdPayload;
+  market_deleted: MarketDeletedPayload & {
+    market_id?: string;
+  };
+  product_created: ProductCreatedEventPayload;
+  product_updated: ProductUpdatedPayload;
+  product_deleted: {
+    productId: string;
+  };
+  interaction_recorded: InteractionRecordedEventPayload;
+  interaction_deleted: InteractionDeletedPayload;
+  deal_closed: DealClosedEventPayload;
+  deal_deleted: DealDeletedPayload;
+  field_note_created: FieldNoteEventPayload & {
+    text: string;
+  };
+  field_note_updated: FieldNoteEventPayload & {
+    text: string;
+  };
+  field_note_deleted: FieldNoteEventPayload;
+  checklist_item_created: ChecklistItemEventPayload & {
+    text: string;
+  };
+  checklist_item_updated: ChecklistItemEventPayload;
+  checklist_item_deleted: ChecklistItemEventPayload;
+  settings_updated: Partial<Settings>;
+};
+
 export type EventHandler<T = any> = (
   event: Event<T>,
   db: any // Dexie 資料庫實例

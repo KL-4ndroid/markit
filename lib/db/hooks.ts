@@ -1,5 +1,5 @@
 /**
- * Market Pulse - 資料庫 React Hooks
+ * Féria - 資料庫 React Hooks
  * 
  * 本檔案提供 React Hooks 供組件使用
  * 使用 Dexie React Hooks 實現響應式資料查詢
@@ -9,8 +9,10 @@
 
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './index';
+import { generateUUID } from './uuid';
 import { recordEvent } from './events';
 import type {
+  Market,
   Product,
   Settings,
   MarketStatus,
@@ -22,43 +24,64 @@ import type {
 
 // ==================== 市集相關 Hooks ====================
 
+export function resolveDealModeFlags(
+  data: Pick<DealClosedPayload, 'isBackfill' | 'isManualEntry'>,
+  dealDate?: string
+): { isBackfill: boolean; isManualEntry: boolean } {
+  return {
+    isBackfill: Boolean(dealDate || data.isBackfill),
+    isManualEntry: Boolean(data.isManualEntry),
+  };
+}
+
 /**
  * 查詢所有市集
  * 
  * @param options - 查詢選項
- * @returns 市集列表（自動過濾已刪除的市集）
+ * @returns 市集列表（自動過濾已刪除的市集和無權限的市集）
  */
 export function useMarkets(options?: {
   status?: MarketStatus;
   orderBy?: 'startDate' | 'createdAt';
   order?: 'asc' | 'desc';
-  includeDeleted?: boolean;  // ✅ 新增：是否包含已刪除的市集（預設 false）
+  includeDeleted?: boolean;  // ✅ 是否包含已刪除的市集（預設 false）
+  ownerId?: string;  // ✅ 新增：根據擁有者 ID 過濾（用於權限控制）
 }) {
   return useLiveQuery(async () => {
-    let query = db.markets.toCollection();
-    
-    // 篩選狀態
-    if (options?.status) {
-      query = db.markets.where('status').equals(options.status);
+    try {
+      let query = db.markets.toCollection();
+      
+      // 篩選狀態
+      if (options?.status) {
+        query = db.markets.where('status').equals(options.status);
+      }
+      
+      // 排序
+      const markets = await query.toArray();
+      
+      // ✅ 過濾已刪除的市集（除非明確要求包含）
+      let filteredMarkets = options?.includeDeleted 
+        ? markets 
+        : markets.filter(m => !m.isDeleted);
+      
+      // ✅ 根據擁有者 ID 過濾（權限控制）
+      if (options?.ownerId) {
+        filteredMarkets = filteredMarkets.filter(m => m.owner_id === options.ownerId);
+      }
+      
+      const orderBy = options?.orderBy || 'startDate';
+      const order = options?.order || 'desc';
+      
+      return filteredMarkets.sort((a, b) => {
+        const aValue = orderBy === 'startDate' ? new Date(a.startDate).getTime() : a.createdAt;
+        const bValue = orderBy === 'startDate' ? new Date(b.startDate).getTime() : b.createdAt;
+        return order === 'asc' ? aValue - bValue : bValue - aValue;
+      });
+    } catch (error) {
+      console.error('❌ useMarkets 查詢失敗:', error);
+      return []; // 返回空數組而不是 undefined
     }
-    
-    // 排序
-    const markets = await query.toArray();
-    
-    // ✅ 過濾已刪除的市集（除非明確要求包含）
-    const filteredMarkets = options?.includeDeleted 
-      ? markets 
-      : markets.filter(m => !m.isDeleted);
-    
-    const orderBy = options?.orderBy || 'startDate';
-    const order = options?.order || 'desc';
-    
-    return filteredMarkets.sort((a, b) => {
-      const aValue = orderBy === 'startDate' ? new Date(a.startDate).getTime() : a.createdAt;
-      const bValue = orderBy === 'startDate' ? new Date(b.startDate).getTime() : b.createdAt;
-      return order === 'asc' ? aValue - bValue : bValue - aValue;
-    });
-  }, [options?.status, options?.orderBy, options?.order, options?.includeDeleted]);
+  }, [options?.status, options?.orderBy, options?.order, options?.includeDeleted, options?.ownerId]) || []; // 確保永遠不返回 undefined
 }
 
 /**
@@ -85,22 +108,47 @@ export function useMarket(id: string | undefined) {
  */
 export function useUpcomingMarkets(limit: number = 5) {
   return useLiveQuery(async () => {
-    const now = new Date().toISOString().split('T')[0];
-    
+    // ✅ 使用本地日期，避免時區問題
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
     const markets = await db.markets.toArray();
-    
+
     return markets
       .filter(m => {
         // 過濾已刪除、已取消、已完成的市集
         if (m.isDeleted || m.status === 'cancelled' || m.status === 'completed') {
           return false;
         }
-        
-        // ✅ 修復：檢查市集日期區間是否包含今天或未來
-        // 只要 endDate >= 今天，就應該顯示
-        return m.endDate >= now;
+
+        // ✅ 優先使用 dates 陣列（多選日期）
+        if (m.dates && m.dates.length > 0) {
+          // 找出最近一個未來的日期
+          const futureDates = m.dates.filter(date => date >= today);
+          if (futureDates.length === 0) {
+            // 所有日期都已過期，不顯示
+            return false;
+          }
+          // ✅ 有未來日期，顯示該市集
+          return true;
+        }
+
+        // ✅ 降級：使用 endDate（連續日期，向後兼容）
+        return m.endDate >= today;
       })
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+      .sort((a, b) => {
+        // 使用第一個未來日期或 startDate 排序
+        const getNextDate = (m: typeof a) => {
+          if (m.dates && m.dates.length > 0) {
+            const futureDates = m.dates.filter(date => date >= today);
+            return futureDates.length > 0 ? futureDates.sort()[0] : m.endDate;
+          }
+          return m.startDate;
+        };
+        const dateA = getNextDate(a);
+        const dateB = getNextDate(b);
+        return new Date(dateA).getTime() - new Date(dateB).getTime();
+      })
       .slice(0, limit);
   }, [limit]);
 }
@@ -127,11 +175,18 @@ export async function updateMarketStatus(
   newStatus: MarketStatus,
   reason?: string
 ): Promise<void> {
+  // 先查詢市集
   const market = await db.markets.get(marketId);
   if (!market) {
     throw new Error(`市集不存在：ID ${marketId.substring(0, 8)}...`);
   }
   
+  // 如果狀態相同，直接返回，避免不必要的操作
+  if (market.status === newStatus) {
+    return;
+  }
+  
+  // 記錄事件（recordEvent 內部會管理自己的事務）
   await recordEvent('market_status_changed', {
     market_id: marketId,  // ✅ 統一使用 market_id
     oldStatus: market.status,
@@ -174,27 +229,38 @@ export async function deleteMarket(marketId: string, reason?: string): Promise<v
  * 查詢所有商品
  * 
  * @param options - 查詢選項
- * @returns 商品列表
+ * @returns 商品列表（自動根據當前用戶過濾）
  */
 export function useProducts(options?: {
   category?: string;
   isActive?: boolean;
+  ownerId?: string;  // ✅ 新增：根據擁有者 ID 過濾（用於權限控制）
 }) {
   return useLiveQuery(async () => {
-    let query = db.products.toCollection();
-    
-    if (options?.category) {
-      query = db.products.where('category').equals(options.category);
+    try {
+      let query = db.products.toCollection();
+      
+      if (options?.category) {
+        query = db.products.where('category').equals(options.category);
+      }
+      
+      let products = await query.toArray();
+      
+      // ✅ 根據擁有者 ID 過濾（權限控制）
+      if (options?.ownerId) {
+        products = products.filter(p => p.owner_id === options.ownerId);
+      }
+      
+      if (options?.isActive !== undefined) {
+        products = products.filter(p => p.isActive === options.isActive);
+      }
+      
+      return products;
+    } catch (error) {
+      console.error('❌ useProducts 查詢失敗:', error);
+      return []; // 返回空數組而不是 undefined
     }
-    
-    const products = await query.toArray();
-    
-    if (options?.isActive !== undefined) {
-      return products.filter(p => p.isActive === options.isActive);
-    }
-    
-    return products;
-  }, [options?.category, options?.isActive]);
+  }, [options?.category, options?.isActive, options?.ownerId]) || []; // 確保永遠不返回 undefined
 }
 
 /**
@@ -221,6 +287,28 @@ export function useProduct(id: string | undefined) {
  */
 export async function createProduct(data: ProductCreatedPayload): Promise<string> {
   return await recordEvent('product_created', data);
+}
+
+export async function createProductWithResult(data: ProductCreatedPayload): Promise<{ productId: string; eventId: string }> {
+  const productId = generateUUID();
+  const eventId = await recordEvent('product_created', { ...data, productId } as ProductCreatedPayload & { productId: string });
+  return { productId, eventId };
+}
+
+/**
+ * 更新市集資料（UUID 版本）
+ * 
+ * @param marketId - 市集 ID（UUID）
+ * @param updates - 要更新的欄位
+ */
+export async function updateMarket(
+  marketId: string,
+  updates: Partial<Omit<Market, 'id' | 'createdAt' | 'updatedAt'>>
+): Promise<void> {
+  await recordEvent('market_updated', {
+    market_id: marketId,
+    updates,
+  });
 }
 
 /**
@@ -262,7 +350,8 @@ export async function recordInteraction(
   notes?: string
 ): Promise<void> {
   await recordEvent('interaction_recorded', {
-    market_id: marketId,  // ✅ 統一使用 market_id
+    marketId,  // ✅ 使用 marketId（符合 InteractionRecordedPayload 介面）
+    market_id: marketId,  // ✅ 同時提供 market_id（用於事件的 market_id 欄位）
     type,
     productIds,
     notes,
@@ -272,47 +361,72 @@ export async function recordInteraction(
 /**
  * 記錄成交
  * 
- * @param data - 成交資料
+ * @param data - 成交資料（支援 marketId 或 market_id）
  * @param dealDate - 可選：指定交易日期（用於補登收入），格式：YYYY-MM-DD
  */
-export async function recordDeal(data: DealClosedPayload, dealDate?: string): Promise<void> {
-  const isBackfill = !!dealDate || data.isBackfill;
-  const isManualEntry = data.isManualEntry || false;
+export async function recordDeal(
+  data: DealClosedPayload | { marketId: string } & Omit<DealClosedPayload, 'market_id'>,
+  dealDate?: string
+): Promise<string> {
+  const { isBackfill, isManualEntry } = resolveDealModeFlags(data, dealDate);
+  const marketId = 'marketId' in data ? data.marketId : data.market_id;
   
-  // ✅ 補登時跳過庫存檢查（簡化模式或完整模式）
-  if (!isBackfill && !isManualEntry) {
-    // 結帳前庫存檢查（只在正常交易時檢查）
-    for (const item of data.items || []) {
+  // ✅ 預先查詢商品資訊並儲存商品名稱（避免顯示時出現 ID）
+  const itemsWithProductInfo = [];
+  
+  if (data.items && data.items.length > 0) {
+    for (const item of data.items) {
       const product = await db.products.get(item.productId);
       
       if (!product) {
         throw new Error(`商品不存在：ID ${item.productId}`);
       }
       
-      // 只檢查「有限庫存」商品
-      if (!product.unlimitedStock) {
-        const currentStock = product.stock || 0;
-        
-        if (currentStock < item.quantity) {
-          throw new Error(
-            `${product.name} 庫存不足！\n目前庫存：${currentStock}，需要：${item.quantity}`
-          );
+      // ✅ 補登時跳過庫存檢查
+      if (!isBackfill && !isManualEntry) {
+        // 只檢查「有限庫存」商品
+        if (!product.unlimitedStock) {
+          const currentStock = product.stock || 0;
+          
+          if (currentStock < item.quantity) {
+            throw new Error(
+              `${product.name} 庫存不足！\n目前庫存：${currentStock}，需要：${item.quantity}`
+            );
+          }
         }
       }
+      
+      // ✅ 儲存商品名稱和價格快照到 item 中
+      itemsWithProductInfo.push({
+        ...item,
+        product_name: product.name,
+        price_at_time_of_sale: item.price || product.price,
+        cost_at_time_of_sale: product.cost,
+      });
     }
   }
   
-  // ✅ 將 marketId 轉換為 market_id（統一使用底線式）
   // ✅ 添加交易日期（用於多天市集的每日收入記錄）
-  const payload = {
-    ...data,
-    market_id: data.marketId,
-    dealDate: dealDate || data.dealDate || new Date().toISOString().split('T')[0],
+  // ✅ 使用本地日期，避免時區問題
+  const now = new Date();
+  const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
+  const payload: DealClosedPayload = {
+    market_id: marketId || '',
+    dealDate: dealDate || data.dealDate || todayLocal,
     isBackfill: isBackfill,
+    isManualEntry: isManualEntry,
+    manualRevenue: data.manualRevenue,
+    manualCost: data.manualCost,
+    manualDealCount: data.manualDealCount,
+    items: itemsWithProductInfo.length > 0 ? itemsWithProductInfo : data.items,
+    totalAmount: data.totalAmount,
+    paymentMethod: data.paymentMethod,
+    notes: data.notes,
   };
   
   // 庫存檢查通過，記錄成交事件
-  await recordEvent('deal_closed', payload);
+  return await recordEvent('deal_closed', payload);
 }
 
 // ==================== 統計相關 Hooks ====================
@@ -321,12 +435,16 @@ export async function recordDeal(data: DealClosedPayload, dealDate?: string): Pr
  * 查詢每日統計
  * 
  * @param date - 日期（YYYY-MM-DD）
+ * @param marketId - 市集 ID
  * @returns 每日統計
  */
-export function useDailyStats(date: string) {
+export function useDailyStats(date: string, marketId: string) {
   return useLiveQuery(
-    async () => await db.dailyStats.get(date),
-    [date]
+    async () => await db.dailyStats
+      .where('[date+marketId]')
+      .equals([date, marketId])
+      .first(),
+    [date, marketId]
   );
 }
 
@@ -349,9 +467,10 @@ export function useDateRangeStats(startDate: string, endDate: string) {
 /**
  * 查詢本月統計摘要
  * 
- * @returns 本月統計（自動過濾已刪除的市集）
+ * @param ownerId - 擁有者 ID（用於權限控制）
+ * @returns 本月統計（自動過濾已刪除的市集和無權限的市集，只統計已繳費和如期舉行的市集）
  */
-export function useMonthlyStats() {
+export function useMonthlyStats(ownerId?: string) {
   return useLiveQuery(async () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -367,7 +486,17 @@ export function useMonthlyStats() {
       .toArray();
     
     // ✅ 過濾已刪除的市集
-    const activeMarkets = markets.filter(m => !m.isDeleted);
+    let activeMarkets = markets.filter(m => !m.isDeleted);
+    
+    // ✅ 根據擁有者 ID 過濾（權限控制）
+    if (ownerId) {
+      activeMarkets = activeMarkets.filter(m => m.owner_id === ownerId);
+    }
+    
+    // ✅ 只統計「已繳費」和「如期舉行」狀態的市集
+    const validMarkets = activeMarkets.filter(m => 
+      m.status === 'paid' || m.status === 'ongoing'
+    );
     
     // 彙總統計
     const summary = {
@@ -375,11 +504,11 @@ export function useMonthlyStats() {
       totalProfit: 0,
       totalDeals: 0,
       totalInteractions: 0,
-      marketCount: activeMarkets.length,  // ✅ 直接使用市集數量（已過濾刪除的）
+      marketCount: validMarkets.length,  // ✅ 只計算有效狀態的市集數量
     };
     
     // ✅ 從 markets 表累加統計（更準確）
-    for (const market of activeMarkets) {
+    for (const market of validMarkets) {
       summary.totalRevenue += market.totalRevenue || 0;
       summary.totalProfit += market.totalProfit || 0;
       summary.totalDeals += market.totalDeals || 0;
@@ -387,7 +516,7 @@ export function useMonthlyStats() {
     }
     
     return summary;
-  }, []);
+  }, [ownerId]);
 }
 
 // ==================== 設定相關 Hooks ====================
@@ -411,6 +540,166 @@ export function useSettings() {
  */
 export async function updateSettings(updates: Partial<Settings>): Promise<void> {
   await recordEvent('settings_updated', updates);
+}
+
+// ==================== 市場統計 Projection Hook ====================
+
+function getDateRange(startDate: string, endDate: string): string[] {
+  const dates: string[] = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  }
+  return dates;
+}
+
+export interface MarketStatsFromProjection {
+  totalRevenue: number;
+  totalDeals: number;
+  totalInteractions: number;
+  source: 'projection' | 'market_field';
+  projectionRevenue: number;
+  projectionDeals: number;
+  projectionInteractions: number;
+  hasMismatch: boolean;
+}
+
+/**
+ * 從 dailyStats projection cache 讀取市場統計
+ *
+ * 用途：市場詳情頁的「即時統計」區塊，取代直接讀取
+ * market.totalRevenue / market.totalDeals / market.totalInteractions。
+ * 當 projection 與 market 欄位不一致時，會標記 hasMismatch。
+ *
+ * C2.16B 確認 interaction 統計已統一至 dailyStats.extraInteractions，
+ * 此 Hook 進一步將 revenue / deals 也統一至 dailyStats projection。
+ */
+export function useMarketStatsFromProjection(market: Market | null | undefined): MarketStatsFromProjection | undefined {
+  return useLiveQuery(async () => {
+    const fallback: MarketStatsFromProjection = {
+      totalRevenue: market?.totalRevenue ?? 0,
+      totalDeals: market?.totalDeals ?? 0,
+      totalInteractions: market?.totalInteractions ?? 0,
+      source: 'market_field',
+      projectionRevenue: 0,
+      projectionDeals: 0,
+      projectionInteractions: 0,
+      hasMismatch: false,
+    };
+
+    if (!market?.id) return fallback;
+
+    const dates = market.dates && market.dates.length > 0
+      ? market.dates
+      : getDateRange(market.startDate, market.endDate);
+
+    if (dates.length === 0) return fallback;
+
+    const stats = await db.dailyStats
+      .where('marketId')
+      .equals(market.id)
+      .toArray();
+
+    const filteredStats = stats.filter(s => dates.includes(s.date));
+
+    const projectionRevenue = filteredStats.reduce((sum, s) => sum + (s.revenue ?? 0), 0);
+    const projectionDeals = filteredStats.reduce((sum, s) => sum + (s.dealCount ?? 0), 0);
+    const projectionInteractions = filteredStats.reduce((sum, s) => {
+      const extra = s.extraInteractions
+        ? Object.values(s.extraInteractions).reduce((a, b) => a + b, 0)
+        : 0;
+      return sum + (s.touchCount ?? 0) + (s.inquiryCount ?? 0) + extra;
+    }, 0);
+
+    const hasMismatch =
+      projectionRevenue !== (market.totalRevenue ?? 0) ||
+      projectionDeals !== (market.totalDeals ?? 0);
+
+    return {
+      totalRevenue: projectionRevenue,
+      totalDeals: projectionDeals,
+      totalInteractions: projectionInteractions,
+      source: 'projection',
+      projectionRevenue,
+      projectionDeals,
+      projectionInteractions,
+      hasMismatch,
+    };
+  }, [market?.id, market?.startDate, market?.endDate, JSON.stringify(market?.dates), market?.totalRevenue, market?.totalDeals]);
+}
+
+/**
+ * 批次從 dailyStats projection cache 讀取多個市場的統計
+ *
+ * 用途：C3.5 — 市場列表頁的 MarketCard，避免每張卡片單獨呼叫
+ * useMarketStatsFromProjection 而產生 N 次 dailyStats 查詢。
+ * 一次查詢所有市場的 dailyStats，再依 marketId + dates 過濾。
+ *
+ * 與 useMarketStatsFromProjection 的差異：
+ * - 單一市場查詢（useMarketStatsFromProjection）：适合詳情頁
+ * - 批次查詢（本 Hook）：適合列表頁，減少 DB 查詢次數
+ *
+ * 當 market.totalRevenue === projectionRevenue 時，視為一致；
+ * 否則顯示 projection 數值並標記 hasMismatch。
+ */
+export interface MarketBatchStatsMap {
+  [marketId: string]: MarketStatsFromProjection;
+}
+
+export function useMarketStatsBatch(markets: Market[] | undefined): MarketBatchStatsMap | undefined {
+  return useLiveQuery(async () => {
+    if (!markets || markets.length === 0) return undefined;
+
+    const marketIds = markets.map(m => m.id).filter(Boolean) as string[];
+    const allStats = await db.dailyStats
+      .where('marketId')
+      .anyOf(marketIds)
+      .toArray();
+
+    const statsMap: MarketBatchStatsMap = {};
+
+    for (const market of markets) {
+      if (!market.id) continue;
+
+      const dates = market.dates && market.dates.length > 0
+        ? market.dates
+        : getDateRange(market.startDate, market.endDate);
+
+      // ✅ C3.4 防禦性補強：明確加上 marketId 過濾
+      // 雖然 allStats 已經由 anyOf(marketIds) 縮限為這批 markets 的 stats，
+      // 但若未來 allStats 來源改變（如全 markets 一次查），此 filter 就是 latent bug 的保險。
+      const filteredStats = allStats.filter(
+        s => s.marketId === market.id && dates.includes(s.date)
+      );
+
+      const projectionRevenue = filteredStats.reduce((sum, s) => sum + (s.revenue ?? 0), 0);
+      const projectionDeals = filteredStats.reduce((sum, s) => sum + (s.dealCount ?? 0), 0);
+      const projectionInteractions = filteredStats.reduce((sum, s) => {
+        const extra = s.extraInteractions
+          ? Object.values(s.extraInteractions).reduce((a, b) => a + b, 0)
+          : 0;
+        return sum + (s.touchCount ?? 0) + (s.inquiryCount ?? 0) + extra;
+      }, 0);
+
+      const hasMismatch =
+        projectionRevenue !== (market.totalRevenue ?? 0) ||
+        projectionDeals !== (market.totalDeals ?? 0);
+
+      statsMap[market.id] = {
+        totalRevenue: projectionRevenue,
+        totalDeals: projectionDeals,
+        totalInteractions: projectionInteractions,
+        source: 'projection',
+        projectionRevenue,
+        projectionDeals,
+        projectionInteractions,
+        hasMismatch,
+      };
+    }
+
+    return statsMap;
+  }, [markets?.length, JSON.stringify(markets?.map(m => m.id).sort())]);
 }
 
 // ==================== 事件歷史 Hooks ====================

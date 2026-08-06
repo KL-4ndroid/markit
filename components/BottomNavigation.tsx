@@ -1,106 +1,44 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Home, Calendar, Package, BarChart3, Settings } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+
+import { AppBottomNavigationBar } from '@/components/navigation/AppBottomNavigationBar';
+import {
+  getAppNavigationItems,
+  isAppNavigationItemActive,
+} from '@/lib/navigation/app-navigation';
 import { navigationStore } from '@/lib/navigation-store';
+import { useRoleContext } from '@/lib/role-context';
 
-export function BottomNavigation() {
+const HIDDEN_ROUTES = ['/demo'];
+
+function ProtectedBottomNavigation() {
   const pathname = usePathname();
-  const router = useRouter();
   const [isNavVisible, setIsNavVisible] = useState(true);
+  const { isStaff, roleRefreshState } = useRoleContext();
 
-  // 訂閱全局導航狀態
+  const isRoleUnresolved = !roleRefreshState.shouldMountProtectedChildren;
+  const navItems = getAppNavigationItems({
+    isStaff,
+    roleReady: !isRoleUnresolved,
+  });
+  const activeItemId = navItems.find(item => isAppNavigationItemActive(pathname, item))?.id ?? 'today';
+
   useEffect(() => {
-    const unsubscribe = navigationStore.subscribe((visible) => {
-      setIsNavVisible(visible);
-    });
+    const unsubscribe = navigationStore.subscribe(setIsNavVisible);
     return () => {
       unsubscribe();
     };
   }, []);
 
-  // 預載所有路由
-  useEffect(() => {
-    // 預載主要路由以減少首次點擊延遲
-    const routesToPrefetch = ['/markets', '/products', '/analytics', '/settings'];
-    routesToPrefetch.forEach(route => {
-      router.prefetch(route);
-    });
-  }, [router]);
+  return <AppBottomNavigationBar items={navItems} activeItemId={activeItemId} visible={isNavVisible} />;
+}
 
-  const navItems = [
-    {
-      id: 'home',
-      label: '首頁',
-      icon: Home,
-      path: '/',
-    },
-    {
-      id: 'markets',
-      label: '市集',
-      icon: Calendar,
-      path: '/markets',
-    },
-    {
-      id: 'products',
-      label: '商品',
-      icon: Package,
-      path: '/products',
-    },
-    {
-      id: 'analytics',
-      label: '分析',
-      icon: BarChart3,
-      path: '/analytics',
-    },
-    {
-      id: 'settings',
-      label: '設置',
-      icon: Settings,
-      path: '/settings',
-    },
-  ];
+export function BottomNavigation() {
+  const pathname = usePathname();
+  const isHiddenRoute = HIDDEN_ROUTES.some(route => pathname?.startsWith(route));
 
-  return (
-    <>
-      <nav className={`fixed left-0 right-0 bg-white border-t border-[#7B9FA6]/20 px-4 py-3 z-50 transition-transform duration-300 ease-in-out hardware-accelerated ${
-        isNavVisible ? 'bottom-0 translate-y-0' : '-bottom-24 translate-y-24'
-      }`}>
-        <div className="max-w-lg mx-auto flex justify-around items-center">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.path;
-
-            return (
-              <Link
-                key={item.id}
-                href={item.path}
-                prefetch={true}
-                className="flex flex-col items-center gap-1 min-w-[60px] transition-all hardware-accelerated"
-              >
-                <div
-                  className={`p-2.5 rounded-2xl transition-all hardware-accelerated ${
-                    isActive
-                      ? 'bg-[#7B9FA6] text-white'
-                      : 'bg-transparent text-[#6B6B6B] hover:bg-[#F5E6E8]'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                </div>
-                <span
-                  className={`text-xs transition-colors ${
-                    isActive ? 'text-[#7B9FA6] font-medium' : 'text-[#6B6B6B]'
-                  }`}
-                >
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
-    </>
-  );
+  if (isHiddenRoute) return null;
+  return <ProtectedBottomNavigation />;
 }

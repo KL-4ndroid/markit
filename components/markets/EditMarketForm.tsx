@@ -1,9 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Calendar, MapPin, DollarSign, Clock, Package, FileText } from 'lucide-react';
-import { db } from '@/lib/db';
+import { Clock, DollarSign, FileText, Package } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+
+import {
+  MarketBasicFields,
+  MarketCostFields,
+  MarketEquipmentFields,
+  MarketNotesField,
+  MarketTimelineFields,
+  type MarketEquipmentField,
+  type MarketEquipmentFreeField,
+  type MarketTimelineField,
+} from '@/components/markets/MarketFormFields';
+import { Button } from '@/components/ui/Button';
+import { FormSectionDisclosure } from '@/components/ui/FormSectionDisclosure';
+import { FullScreenForm } from '@/components/ui/FullScreenForm';
+import { updateMarket } from '@/lib/db/hooks';
+import {
+  calculateMarketDurationLabel,
+  calculateMarketFixedCost,
+  deriveMarketDateBounds,
+  getFirstMarketCoreError,
+  validateMarketCoreForm,
+  type MarketCoreFormErrors,
+} from '@/lib/markets/market-form';
 import type { Market } from '@/types/db';
 
 interface EditMarketFormProps {
@@ -11,84 +33,156 @@ interface EditMarketFormProps {
   onClose: () => void;
   market: Market;
   onSuccess?: () => void;
+  mode?: 'owner' | 'manager';
 }
 
-/**
- * 編輯市集表單組件
- */
-export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarketFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tableFree, setTableFree] = useState(market.tableFree || false);
-  const [chairFree, setChairFree] = useState(market.chairFree || false);
-  const [umbrellaFree, setUmbrellaFree] = useState(market.umbrellaFree || false);
-  
-  const [formData, setFormData] = useState({
+interface EditMarketFormValues {
+  name: string;
+  location: string;
+  dates: string[];
+  startDate: string;
+  endDate: string;
+  earlyEntryTime: string;
+  checkInTime: string;
+  operatingStartTime: string;
+  operatingEndTime: string;
+  boothCost: number;
+  deposit: number;
+  tableRental: number;
+  chairRental: number;
+  umbrellaRental: number;
+  commissionRate: number;
+  notes: string;
+}
+
+const FORM_ID = 'edit-market-form';
+const FIELD_PREFIX = 'edit-market';
+
+function getMarketDates(market: Market): string[] {
+  if (market.dates?.length) return market.dates;
+  return Array.from(new Set([market.startDate, market.endDate].filter(Boolean)));
+}
+
+function createEditMarketFormValues(market: Market): EditMarketFormValues {
+  return {
     name: market.name,
     location: market.location,
+    dates: getMarketDates(market),
     startDate: market.startDate,
     endDate: market.endDate,
+    earlyEntryTime: market.earlyEntryTime || '09:00',
     checkInTime: market.checkInTime || '09:30',
     operatingStartTime: market.operatingStartTime || '10:00',
     operatingEndTime: market.operatingEndTime || '18:00',
-    boothCost: market.boothCost || 0,
-    deposit: market.deposit || 0,
-    tableRental: market.tableRental || 0,
-    chairRental: market.chairRental || 0,
-    umbrellaRental: market.umbrellaRental || 0,
-    commissionRate: market.commissionRate || 0,
+    boothCost: Number(market.boothCost || 0),
+    deposit: Number(market.deposit || 0),
+    tableRental: Number(market.tableRental || 0),
+    chairRental: Number(market.chairRental || 0),
+    umbrellaRental: Number(market.umbrellaRental || 0),
+    commissionRate: Number(market.commissionRate || 0),
     notes: market.notes || '',
-  });
+  };
+}
 
-  // 當 market 變更時更新表單
+export function EditMarketForm({
+  isOpen,
+  onClose,
+  market,
+  onSuccess,
+  mode = 'owner',
+}: EditMarketFormProps) {
+  const isManagerMode = mode === 'manager';
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tableFree, setTableFree] = useState(Boolean(market.tableFree));
+  const [chairFree, setChairFree] = useState(Boolean(market.chairFree));
+  const [umbrellaFree, setUmbrellaFree] = useState(Boolean(market.umbrellaFree));
+  const [noEarlyEntry, setNoEarlyEntry] = useState(!market.earlyEntryEnabled);
+  const [formData, setFormData] = useState<EditMarketFormValues>(() => createEditMarketFormValues(market));
+  const [errors, setErrors] = useState<MarketCoreFormErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (market) {
-      setFormData({
-        name: market.name,
-        location: market.location,
-        startDate: market.startDate,
-        endDate: market.endDate,
-        checkInTime: market.checkInTime || '09:30',
-        operatingStartTime: market.operatingStartTime || '10:00',
-        operatingEndTime: market.operatingEndTime || '18:00',
-        boothCost: market.boothCost || 0,
-        deposit: market.deposit || 0,
-        tableRental: market.tableRental || 0,
-        chairRental: market.chairRental || 0,
-        umbrellaRental: market.umbrellaRental || 0,
-        commissionRate: market.commissionRate || 0,
-        notes: market.notes || '',
-      });
-      setTableFree(market.tableFree || false);
-      setChairFree(market.chairFree || false);
-      setUmbrellaFree(market.umbrellaFree || false);
-    }
-  }, [market]);
+    setFormData(createEditMarketFormValues(market));
+    setTableFree(Boolean(market.tableFree));
+    setChairFree(Boolean(market.chairFree));
+    setUmbrellaFree(Boolean(market.umbrellaFree));
+    setNoEarlyEntry(!market.earlyEntryEnabled);
+    setErrors({});
+    setSubmitError(null);
+  }, [isOpen, market]);
 
-  const handleChange = (field: string, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (
+    field: keyof EditMarketFormValues,
+    value: string | number | string[],
+  ) => {
+    setFormData(previous => {
+      const updated = { ...previous, [field]: value } as EditMarketFormValues;
+      if (field === 'dates' && Array.isArray(value)) {
+        Object.assign(updated, deriveMarketDateBounds(value));
+      }
+      return updated;
+    });
+    if (field === 'name' || field === 'location' || field === 'dates') {
+      setErrors(previous => {
+        const next = { ...previous };
+        delete next[field];
+        return next;
+      });
+    }
+    setSubmitError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.location || !formData.startDate || !formData.endDate) {
-      toast.error('請填寫所有必填欄位');
-      return;
-    }
+  const handleEquipmentFreeChange = (field: MarketEquipmentFreeField, value: boolean) => {
+    const rentalField: Record<MarketEquipmentFreeField, MarketEquipmentField> = {
+      tableFree: 'tableRental',
+      chairFree: 'chairRental',
+      umbrellaFree: 'umbrellaRental',
+    };
+    if (field === 'tableFree') setTableFree(value);
+    if (field === 'chairFree') setChairFree(value);
+    if (field === 'umbrellaFree') setUmbrellaFree(value);
+    if (value) handleChange(rentalField[field], 0);
+  };
 
-    if (formData.endDate < formData.startDate) {
-      toast.error('結束日期不能早於開始日期');
+  const focusFirstError = (nextErrors: MarketCoreFormErrors) => {
+    const firstError = getFirstMarketCoreError(nextErrors);
+    if (!firstError) return;
+    window.requestAnimationFrame(() => {
+      document.getElementById(`${FIELD_PREFIX}-${firstError}`)?.focus();
+    });
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextErrors = validateMarketCoreForm(formData, { requireIdentity: !isManagerMode });
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      focusFirstError(nextErrors);
       return;
     }
 
     setIsSubmitting(true);
-
+    setSubmitError(null);
     try {
-      await db.markets.update(market.id!, {
-        name: formData.name,
-        location: formData.location,
+      const managerUpdates = {
+        dates: formData.dates,
         startDate: formData.startDate,
         endDate: formData.endDate,
+        earlyEntryEnabled: !noEarlyEntry,
+        earlyEntryTime: formData.earlyEntryTime,
+        checkInTime: formData.checkInTime,
+        operatingStartTime: formData.operatingStartTime,
+        operatingEndTime: formData.operatingEndTime,
+        notes: formData.notes.trim(),
+      };
+      const ownerUpdates = {
+        name: formData.name.trim(),
+        location: formData.location.trim(),
+        dates: formData.dates,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        earlyEntryEnabled: !noEarlyEntry,
+        earlyEntryTime: formData.earlyEntryTime,
         checkInTime: formData.checkInTime,
         operatingStartTime: formData.operatingStartTime,
         operatingEndTime: formData.operatingEndTime,
@@ -101,286 +195,159 @@ export function EditMarketForm({ isOpen, onClose, market, onSuccess }: EditMarke
         chairFree,
         umbrellaFree,
         commissionRate: formData.commissionRate,
-        notes: formData.notes,
-        updatedAt: Date.now(),
-      });
+        notes: formData.notes.trim(),
+      };
 
+      await updateMarket(market.id!, isManagerMode ? managerUpdates : ownerUpdates);
       toast.success('市集資訊已更新');
       onClose();
       onSuccess?.();
     } catch (error) {
       console.error('更新市集失敗：', error);
-      toast.error('更新失敗，請稍後再試');
+      setSubmitError('變更尚未儲存，請確認連線後再試一次。');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!isOpen) return null;
+  const fixedCostTotal = calculateMarketFixedCost({
+    boothCost: formData.boothCost,
+    tableRental: formData.tableRental,
+    chairRental: formData.chairRental,
+    umbrellaRental: formData.umbrellaRental,
+    tableFree,
+    chairFree,
+    umbrellaFree,
+  });
+  const totalStartTime = noEarlyEntry ? formData.checkInTime : formData.earlyEntryTime;
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-        <div className="bg-[#FAFAF8] w-full h-[95vh] sm:h-auto sm:max-h-[95vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up relative">
-          {/* Header */}
-          <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] px-6 py-6 flex items-center justify-between flex-shrink-0">
-            <h2 className="text-xl font-medium text-white">編輯市集</h2>
-            <button onClick={onClose} className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
-              <X className="w-5 h-5 text-white" />
-            </button>
+    <FullScreenForm
+      open={isOpen}
+      onClose={onClose}
+      eyebrow="市集管理"
+      title="編輯市集"
+      description={isManagerMode ? '調整營業日期、時間與現場備註。' : '基本資料優先，其餘設定可按需要展開。'}
+      dismissible={!isSubmitting}
+      footer={(
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
+            取消
+          </Button>
+          <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
+            儲存變更
+          </Button>
+        </>
+      )}
+    >
+      <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
+        <div className="japanese-surface-card p-5 sm:p-6">
+          <MarketBasicFields
+            idPrefix={FIELD_PREFIX}
+            name={formData.name}
+            location={formData.location}
+            dates={formData.dates}
+            errors={errors}
+            mode={mode}
+            disabled={isSubmitting}
+            onNameChange={value => handleChange('name', value)}
+            onLocationChange={value => handleChange('location', value)}
+            onDatesChange={value => handleChange('dates', value)}
+          />
+        </div>
+
+        <div className="mt-6">
+          <div className="mb-3 px-1">
+            <p className="text-sm font-semibold text-foreground">細節設定</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">依主辦資訊調整，未變動的設定會維持原樣。</p>
           </div>
 
-          {/* 表單內容 */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pb-24">
-            <div className="px-6 py-6 space-y-6">
-              {/* 基本資訊 */}
-              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
-                <h2 className="text-lg font-medium mb-4 text-[#3A3A3A] flex items-center gap-2">
-                  <Package className="w-5 h-5 text-[#7B9FA6]" />
-                  基本資訊
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                      市集名稱 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleChange('name', e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                      地點 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => handleChange('location', e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                        開始日期 <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.startDate}
-                        onChange={(e) => handleChange('startDate', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#3A3A3A] mb-2">
-                        結束日期 <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.endDate}
-                        onChange={(e) => handleChange('endDate', e.target.value)}
-                        min={formData.startDate}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div className="space-y-3">
 
-              {/* 時間設定 */}
-              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
-                <h2 className="text-lg font-medium mb-4 text-[#3A3A3A] flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-[#7B9FA6]" />
-                  時間設定
-                </h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">報到時間</label>
-                    <input
-                      type="time"
-                      value={formData.checkInTime}
-                      onChange={(e) => handleChange('checkInTime', e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">營業開始</label>
-                      <input
-                        type="time"
-                        value={formData.operatingStartTime}
-                        onChange={(e) => handleChange('operatingStartTime', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">營業結束</label>
-                      <input
-                        type="time"
-                        value={formData.operatingEndTime}
-                        onChange={(e) => handleChange('operatingEndTime', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 成本資訊 */}
-              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
-                <h2 className="text-lg font-medium mb-4 text-[#3A3A3A] flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-[#7B9FA6]" />
-                  成本資訊
-                </h2>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">攤位費 (NT$)</label>
-                      <input
-                        type="number"
-                        value={formData.boothCost}
-                        onChange={(e) => handleChange('boothCost', Number(e.target.value))}
-                        min="0"
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">保證金 (NT$)</label>
-                      <input
-                        type="number"
-                        value={formData.deposit}
-                        onChange={(e) => handleChange('deposit', Number(e.target.value))}
-                        min="0"
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-[#FAFAF8] rounded-xl p-4 space-y-3">
-                    <h3 className="text-sm font-medium text-[#3A3A3A]">設備租賃</h3>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">桌子租金 (NT$)</label>
-                      <input
-                        type="number"
-                        value={formData.tableRental}
-                        onChange={(e) => handleChange('tableRental', Number(e.target.value))}
-                        min="0"
-                        disabled={tableFree}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all disabled:bg-gray-100"
-                      />
-                      <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={tableFree}
-                          onChange={(e) => setTableFree(e.target.checked)}
-                          className="w-4 h-4 text-[#7B9FA6] border-[#7B9FA6]/30 rounded"
-                        />
-                        <span className="text-sm text-[#6B6B6B]">免費提供</span>
-                      </label>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">椅子租金 (NT$)</label>
-                      <input
-                        type="number"
-                        value={formData.chairRental}
-                        onChange={(e) => handleChange('chairRental', Number(e.target.value))}
-                        min="0"
-                        disabled={chairFree}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all disabled:bg-gray-100"
-                      />
-                      <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={chairFree}
-                          onChange={(e) => setChairFree(e.target.checked)}
-                          className="w-4 h-4 text-[#7B9FA6] border-[#7B9FA6]/30 rounded"
-                        />
-                        <span className="text-sm text-[#6B6B6B]">免費提供</span>
-                      </label>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">傘租金 (NT$)</label>
-                      <input
-                        type="number"
-                        value={formData.umbrellaRental}
-                        onChange={(e) => handleChange('umbrellaRental', Number(e.target.value))}
-                        min="0"
-                        disabled={umbrellaFree}
-                        className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all disabled:bg-gray-100"
-                      />
-                      <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={umbrellaFree}
-                          onChange={(e) => setUmbrellaFree(e.target.checked)}
-                          className="w-4 h-4 text-[#7B9FA6] border-[#7B9FA6]/30 rounded"
-                        />
-                        <span className="text-sm text-[#6B6B6B]">免費提供</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">抽成 (%)</label>
-                    <input
-                      type="number"
-                      value={formData.commissionRate}
-                      onChange={(e) => handleChange('commissionRate', Number(e.target.value))}
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 備註 */}
-              <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6">
-                <h2 className="text-lg font-medium mb-4 text-[#3A3A3A] flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-[#7B9FA6]" />
-                  備註
-                </h2>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => handleChange('notes', e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 border-2 border-[#7B9FA6]/15 rounded-xl focus:ring-2 focus:ring-[#7B9FA6]/20 focus:border-[#7B9FA6] transition-all resize-none"
+          {!isManagerMode && (
+            <>
+              <FormSectionDisclosure
+                title="成本與抽成"
+                description="攤位費、保證金與營業額抽成"
+                icon={DollarSign}
+                tone="yellow"
+              >
+                <MarketCostFields
+                  idPrefix={FIELD_PREFIX}
+                  boothCost={formData.boothCost}
+                  deposit={formData.deposit}
+                  commissionRate={formData.commissionRate}
+                  fixedCostTotal={fixedCostTotal}
+                  disabled={isSubmitting}
+                  onChange={(field, value) => handleChange(field, value)}
                 />
-              </div>
-            </div>
-          </form>
+              </FormSectionDisclosure>
 
-          {/* 底部按鈕 - 固定在彈窗底部 */}
-          <div className="absolute bottom-0 left-0 right-0 px-6 py-4 border-t border-[#7B9FA6]/10 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-6 py-3 rounded-2xl bg-[#F5E6E8] text-[#3A3A3A] hover:bg-[#E5D6D8] transition-colors font-medium"
+              <FormSectionDisclosure
+                title="設備"
+                description="桌椅與傘具租金或免費提供狀態"
+                icon={Package}
+                tone="green"
               >
-                取消
-              </button>
-              <button
-                type="submit"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="flex-1 px-6 py-3 rounded-2xl bg-[#7B9FA6] text-white hover:bg-[#6A8E95] transition-colors font-medium disabled:opacity-50"
-              >
-                {isSubmitting ? '更新中...' : '儲存變更'}
-              </button>
-            </div>
+                <MarketEquipmentFields
+                  idPrefix={FIELD_PREFIX}
+                  rentals={{
+                    tableRental: formData.tableRental,
+                    chairRental: formData.chairRental,
+                    umbrellaRental: formData.umbrellaRental,
+                  }}
+                  free={{ tableFree, chairFree, umbrellaFree }}
+                  disabled={isSubmitting}
+                  onRentalChange={(field, value) => handleChange(field, value)}
+                  onFreeChange={handleEquipmentFreeChange}
+                />
+              </FormSectionDisclosure>
+            </>
+          )}
+
+          <FormSectionDisclosure
+            title="時間軸"
+            description="進場、報到與營業起訖時間"
+            icon={Clock}
+            tone="blue"
+          >
+            <MarketTimelineFields
+              idPrefix={FIELD_PREFIX}
+              noEarlyEntry={noEarlyEntry}
+              earlyEntryTime={formData.earlyEntryTime}
+              checkInTime={formData.checkInTime}
+              operatingStartTime={formData.operatingStartTime}
+              operatingEndTime={formData.operatingEndTime}
+              operatingDuration={calculateMarketDurationLabel(formData.operatingStartTime, formData.operatingEndTime)}
+              totalDuration={calculateMarketDurationLabel(totalStartTime, formData.operatingEndTime)}
+              disabled={isSubmitting}
+              onNoEarlyEntryChange={setNoEarlyEntry}
+              onChange={(field: MarketTimelineField, value) => handleChange(field, value)}
+            />
+          </FormSectionDisclosure>
+
+          <FormSectionDisclosure
+            title="主辦／場地備註"
+            description="整場市集共用的固定資訊"
+            icon={FileText}
+            tone="pink"
+          >
+            <MarketNotesField
+              idPrefix={FIELD_PREFIX}
+              value={formData.notes}
+              disabled={isSubmitting}
+              onChange={value => handleChange('notes', value)}
+            />
+          </FormSectionDisclosure>
           </div>
         </div>
-      </div>
-    </>
+
+        {submitError && (
+          <p className="mt-5 rounded-control border border-status-danger-border bg-status-danger-bg p-3 text-sm text-status-danger-text" role="alert">
+            {submitError}
+          </p>
+        )}
+      </form>
+    </FullScreenForm>
   );
 }

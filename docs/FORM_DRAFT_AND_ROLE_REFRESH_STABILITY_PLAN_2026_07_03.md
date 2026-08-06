@@ -1,0 +1,846 @@
+# Form Draft and Role Refresh Stability Plan
+
+Date: 2026-07-03
+
+Status: active sliced execution. Slice 1 and Slice 2 have been implemented as low-risk form-draft protection. Slice 3 dirty close guard is implemented in the same bounded AddMarketForm surface. Slice 4A role refresh state model is implemented as a pure non-runtime contract. Slice R1 adds a RoleProvider shell under AuthProvider. Slice R2 migrates RoleGuard to the shared role refresh state. Slice R3 migrates SyncProvider to the shared role refresh state while keeping sync paused until the role snapshot is ready. Slice R4a migrates display/navigation role consumers. Slice R4b aligns initial-sync role readiness and removes an unused account-switcher role read. Slice R4c-1 migrates only the owner-only settlement report page. Slice R4c-2 migrates the core markets/products list pages with fail-closed role readiness and owner-scope guards. Dashboard/analytics/settings/recovery pages, staff status monitor, and repair panels remain on their existing `useUserRole()` calls until later slices.
+
+## Problem
+
+When a user opens the add-market form, switches away to another browser page or app, and then returns, the app can briefly show the role/auth loading skeleton again. If that loading path unmounts the protected route tree, the add-market form is remounted and its local React state resets.
+
+This is disruptive for the intended workflow: users often copy market details from another page while filling out a new market.
+
+## Current Evidence
+
+Read-only checks found the active risk path:
+
+- `AppChrome` wraps protected routes with `AuthGuard` and `RoleGuard`.
+- `RoleGuard` currently returns `RoleLoadingFallback` whenever `useUserRole()` reports loading or error.
+- `RoleLoadingFallback` now renders a skeleton, but it still replaces the protected route children.
+- `AddMarketForm` stores draft input in component-local state.
+- `lib/form-autosave.ts` already exists, but `AddMarketForm` does not use it.
+- `useUserRole()` has existing stale async commit guards and role-cache invalidation handling.
+- Current role safety tests pass:
+  - `tests/role-fail-closed.test.ts`
+  - `tests/p5-4b-role-cache-invalidation.test.ts`
+  - `tests/c2-28b-render-guard-static-audit.test.ts`
+
+## Non-Goals
+
+- Do not change market creation calculations.
+- Do not change sync event semantics.
+- Do not weaken owner/staff permission boundaries.
+- Do not make local browser drafts a durable backup or recovery feature.
+- Do not expose staff-sensitive or owner-only data while role state is unresolved.
+
+## Execution Readiness Assessment
+
+This plan should not be executed as one direct implementation.
+
+Overall readiness:
+
+- Phase 1 is executable soon, but only as small slices.
+- Phase 2 is not directly executable. It touches auth, role, sync, route mounting, and permission fail-closed behavior.
+- Phase 3 is not urgent and should wait until Phase 1 proves stable.
+
+The immediate safest path is to start with draft protection, because it solves the user-visible data-loss problem without changing role semantics.
+
+However, the current codebase has one important blocker before directly wiring `AddMarketForm` to `lib/form-autosave.ts`:
+
+- `lib/form-autosave.ts` currently logs saved and loaded form data to `console`.
+- The security requirement in this plan says draft content must not be written to logs.
+- Therefore Phase 1 must start with a utility hardening slice before form integration.
+
+## Direct Execution Decision
+
+Do not execute the full plan directly.
+
+Execute only the following low-risk slices automatically:
+
+1. Documentation and static guardrail tests.
+2. `form-autosave` utility hardening that removes draft payload logging and preserves existing sessionStorage behavior.
+3. `AddMarketForm` draft save/restore integration with user-scoped keys.
+4. Targeted tests for draft restore, submit-clear, close-preserve, empty-default non-overwrite, and user isolation.
+
+Stop before:
+
+- RoleProvider introduction.
+- Changing `RoleGuard` mount/unmount behavior.
+- Changing `useUserRole()` load-state semantics.
+- Changing sync enablement or `deriveSafeInfoLevel(...)`.
+- Adding broad navigation blockers.
+- Persisting drafts to Supabase, Dexie, localStorage, analytics, or recovery flows.
+
+Reason:
+
+The role refresh work can improve UX, but it changes the app-wide auth/permission contract. That is a higher-sensitivity architecture slice and needs its own design review after draft autosave is proven.
+
+## Safe Slice Plan
+
+### Slice 0: Plan and Guardrail Alignment
+
+Status: planning/documentation only.
+
+Scope:
+
+- Keep this document aligned with the actual codebase.
+- Confirm the risk boundary between form draft protection and role refresh architecture.
+- Add or update tests that check the plan text if useful.
+
+Allowed:
+
+- Docs.
+- Static tests.
+
+Not allowed:
+
+- Runtime behavior changes.
+- Auth, role, sync, or storage behavior changes.
+
+### Slice 1: Form Autosave Utility Hardening
+
+Status: implemented.
+
+Goal: make the existing autosave helper safe enough to reuse.
+
+Scope:
+
+- Remove or sanitize console logging that includes draft payloads.
+- Keep `sessionStorage` as the storage backend.
+- Keep the existing expiration behavior unless a later product decision changes it.
+- Do not add cloud, Dexie, sync, or analytics integration.
+
+Acceptance:
+
+- Tests verify saved draft payloads are not logged.
+- Existing form autosave behavior still works.
+- `npm.cmd run build` passes.
+
+Risk: low.
+
+### Slice 2: AddMarketForm Draft Restore and Autosave
+
+Status: implemented.
+
+Goal: preserve add-market input through remount, tab switching, and accidental route loading replacement.
+
+Scope:
+
+- Add a user-scoped draft id, for example `add-market:${user.id}`.
+- Save a single draft object containing:
+  - `formData`
+  - `noEarlyEntry`
+  - `tableFree`
+  - `chairFree`
+  - `umbrellaFree`
+- Restore once when the form opens and before autosave can overwrite the saved draft.
+- Save only when `isOpen=true` and the draft contains meaningful user input.
+- Clear only after successful `createMarket()`.
+- Preserve draft when the modal closes without successful submit.
+
+Acceptance:
+
+- Remount restores draft.
+- Close and reopen restores draft.
+- Successful submit clears draft.
+- Empty default state does not overwrite a saved draft.
+- Drafts are isolated by authenticated user id.
+- No draft data appears in console logs.
+- `npm.cmd run build` passes.
+
+Risk: low to medium.
+
+Reason for medium edge:
+
+- `AddMarketForm` has multiple independent local states beyond `formData`, so restore order matters.
+
+### Slice 3: Dirty Close Guard for AddMarketForm
+
+Status: implemented for AddMarketForm modal close, backdrop close, cancel button, and browser reload/close guard.
+
+Goal: prevent accidental discard from close/backdrop/reload after draft autosave exists.
+
+Scope:
+
+- Confirm dirty state from meaningful draft content.
+- Intercept modal close and backdrop close first.
+- Add `beforeunload` only while dirty.
+- Offer two choices:
+  - keep draft
+  - discard draft
+
+Acceptance:
+
+- Dirty close prompts.
+- Keep draft preserves draft.
+- Discard draft clears draft.
+- Successful submit bypasses warning.
+- `beforeunload` is active only while dirty.
+
+Risk: medium.
+
+Reason:
+
+- UX can become annoying if dirty detection is too broad.
+- Browser unload prompts have limited custom UI support.
+
+### Slice 4: Role Refresh Architecture Design and Model Only
+
+Status: partially implemented as a pure model and tests. No runtime wiring.
+
+Goal: prepare a safe future change without touching runtime behavior yet.
+
+Scope:
+
+- Design `RoleProvider` / shared role snapshot contract.
+- Define `isInitialLoading`, `isRefreshing`, and hard error semantics.
+- Define how `RoleGuard`, `SyncProvider`, `BottomNavigation`, and pages consume the same snapshot.
+- Define fail-closed rules during refresh.
+
+Acceptance:
+
+- Design document or this plan is updated.
+- Static tests can assert intended boundaries.
+- No runtime auth/role/sync behavior changes.
+- `deriveRoleRefreshState(...)` defines:
+  - initial loading blocks protected children;
+  - background refresh keeps protected children mounted only when a previous usable role snapshot exists;
+  - background refresh still disables owner privileges and uses sync info level `0`;
+  - refresh errors block and fail closed.
+
+Risk: low as design only; high if implemented directly.
+
+Implemented files:
+
+- `lib/permissions/role-refresh-state.ts`
+- `tests/role-refresh-state.test.ts`
+
+### Slice R1: RoleProvider Shell
+
+Status: implemented.
+
+Goal: establish a shared role context boundary without changing existing runtime consumers.
+
+Scope:
+
+- Add `RoleProvider` and `useRoleContext()` as a thin wrapper around existing `useUserRole()`.
+- Mount `RoleProvider` under `AuthProvider` and above `SyncProvider`.
+- Keep `RoleGuard`, `SyncProvider`, pages, navigation, and repair panels on their existing `useUserRole()` calls.
+- Add static tests proving this is only a provider shell and not a consumer replacement.
+
+Acceptance:
+
+- `RoleProvider` does not query Supabase directly.
+- `RoleProvider` does not read or write storage directly.
+- `RoleProvider` does not import sync, Dexie, Gate D, recovery, or pending operation code.
+- Layout order is `AuthProvider -> RoleProvider -> SyncProvider -> NavigationProvider -> AppChrome`.
+- `RoleGuard` and `SyncProvider` still use the existing hook until their own dedicated slices.
+
+Risk: low to medium.
+
+Reason:
+
+- The shell itself is low risk, but it introduces one additional provider-level call to the existing role hook until consumers are migrated. This is acceptable only as a short-lived transition slice.
+
+Implemented files:
+
+- `lib/role-context.tsx`
+- `tests/role-provider-r1.test.ts`
+- `app/layout.tsx`
+
+### Slice R2: RoleGuard Consumer Replacement
+
+Status: implemented.
+
+Goal: let `RoleGuard` read the shared RoleProvider snapshot and use `deriveRoleRefreshState(...)` so background refresh can keep protected children mounted while privileged behavior remains fail-closed.
+
+Scope:
+
+- `RoleProvider` tracks whether the same authenticated user has previously completed a successful role resolution.
+- Account/user changes synchronously reset that previous-role marker.
+- `RoleGuard` reads `roleRefreshState.shouldShowBlockingFallback` from `useRoleContext()`.
+- `RoleGuard` no longer owns a separate `useUserRole()` instance.
+- `SyncProvider` and page-level consumers remain unchanged.
+
+Acceptance:
+
+- First unresolved role load still blocks protected children.
+- Background refresh after a successful same-user role resolution can keep protected children mounted.
+- Background refresh state remains fail-closed through `deriveRoleRefreshState(...)`.
+- SyncProvider remains on its existing fail-closed `useUserRole()` path until Slice R3.
+
+Implemented files:
+
+- `lib/role-context.tsx`
+- `components/auth/RoleGuard.tsx`
+- `tests/role-provider-r1.test.ts`
+- `tests/c2-28b-render-guard-static-audit.test.ts`
+
+### Slice R3: SyncProvider Consumer Replacement
+
+Status: implemented.
+
+Goal: let `SyncProvider` consume shared role refresh state without allowing sync to run with stale owner permissions during background refresh.
+
+Scope:
+
+- `SyncProvider` reads `roleRefreshState` from `useRoleContext()`.
+- `SyncProvider` no longer owns a separate `useUserRole()` instance.
+- Sync `roleInfoLevel` uses `roleRefreshState.syncInfoLevel`.
+- Sync runs only when `roleRefreshState.stage === 'ready'`.
+- Initial loading, background refresh, and blocked role states all keep sync at info level `0`.
+- `useSync()` internals, event upload/download logic, cloud routing, and pending operation behavior are unchanged.
+
+Acceptance:
+
+- Background role refresh does not run sync with stale owner permissions.
+- Initial role loading and role errors keep sync disabled.
+- Owner/staff info levels still come from the shared fail-closed role refresh model.
+- RoleGuard remains on the same shared role refresh state from Slice R2.
+
+Implemented files:
+
+- `lib/sync-context.tsx`
+- `tests/role-provider-r1.test.ts`
+- `tests/c2-28b-render-guard-static-audit.test.ts`
+
+### Slice R4: Page and Local Consumer Consolidation
+
+Status: active sliced execution. R4a, R4b, R4c-1, and R4c-2 are implemented; dashboard/analytics, settings/recovery, staff-status-monitor, and repair-tool consumers are not implemented.
+
+Goal: gradually replace page-level and local component `useUserRole()` calls with shared role context where it reduces duplicate role reads without weakening local fail-closed gates. The goal is not to remove every `useUserRole()` call.
+
+Stop before implementation unless this slice is explicitly approved after R3 verification.
+
+### R4 Role Consumer Replacement Policy
+
+Decision: do not blindly replace every `useUserRole()` call. Use the shared `RoleProvider` for ordinary UI and page-level role snapshots, and keep local `useUserRole()` or purpose-built safety hooks for high-risk monitoring, recovery, destructive controls, or role-change cleanup.
+
+Replace with `useRoleContext()` when all of these are true:
+
+- The consumer only needs the current role snapshot, permissions, or display mode.
+- The consumer can safely show a blocking/loading state while `roleRefreshState.stage !== 'ready'`.
+- The consumer does not directly execute destructive local data actions, cloud writes, repair actions, or staff revoke/downgrade cleanup.
+- Any owner/staff data scope has a fail-closed unresolved-role behavior, such as a sentinel owner id or explicit no-read branch.
+- A static guardrail or model test can lock the expected ready/non-ready semantics.
+
+Keep `useUserRole()` or a dedicated safety hook when any of these are true:
+
+- The consumer monitors staff relationship changes and performs downgrade/revoke cleanup.
+- The consumer owns account switching, sign-out, local database clearing, recovery, repair, or diagnostics execution.
+- The consumer executes Supabase RPCs, cloud writes, pending-operation drain/retry, or local IndexedDB mutation beyond normal page reads.
+- The consumer needs an independent, latest role check immediately before a destructive or privileged action.
+- Reusing a shared snapshot could accidentally keep stale owner capability active during background refresh.
+
+Current classification:
+
+- Shared-context consumers already implemented:
+  - `RoleGuard`
+  - `SyncProvider`
+  - `TopNavigation`
+  - `BottomNavigation`
+  - `StaffModeNotice`
+  - `RoleStatusBanner`
+  - `InitialSyncDialog`
+  - `app/reports/settlement/page.tsx`
+  - `app/markets/page.tsx`
+  - `app/products/page.tsx`
+- Candidate consumers, not yet implemented:
+  - `app/page.tsx`
+  - `app/analytics/page.tsx`
+  - selected non-destructive subparts of `app/settings/page.tsx`
+  - selected read-only subparts of `app/recovery/page.tsx`
+- Keep local or special guard until separate high-risk review:
+  - `useStaffStatusMonitor`
+  - owner repair panels
+  - diagnostics/drain/retry actions
+  - destructive account/cache/local-data controls
+  - any final preflight check before privileged mutation
+
+Global acceptance for any future replacement:
+
+- Non-ready role state must never run a privileged write or destructive action.
+- Non-ready role state must never use `undefined` owner id as a broad local read.
+- Background refresh may keep the UI mounted only if permissions and sync/data actions remain fail-closed.
+- Tests must prove both the migration target and the consumers intentionally left local.
+
+### Slice R4a: Display and Navigation Consumer Replacement
+
+Status: implemented.
+
+Goal: reduce duplicate role reads in display-only and navigation-only components without changing page data loading, sync, repair tools, or cloud write behavior.
+
+Scope:
+
+- `TopNavigation` reads `userRole` from `useRoleContext()`.
+- `StaffModeNotice` reads staff display state from `useRoleContext()`.
+- `RoleStatusBanner` reads staff/loading display state from `useRoleContext()`.
+- `BottomNavigation` reads shared role state and treats any non-ready role stage as unresolved for analytics access.
+- Page components, `InitialSyncDialog`, market/product cards, recovery panels, diagnostics panels, and repair panels remain unchanged.
+
+Acceptance:
+
+- Display/navigation components no longer create independent `useUserRole()` reads.
+- Analytics navigation remains disabled for staff and unresolved/background-refresh role states.
+- High-sensitivity data-loading and repair components are not migrated in this slice.
+
+Implemented files:
+
+- `components/TopNavigation.tsx`
+- `components/BottomNavigation.tsx`
+- `components/staff/StaffModeNotice.tsx`
+- `components/auth/RoleStatusBanner.tsx`
+- `tests/role-provider-r1.test.ts`
+- `tests/c2-28b-render-guard-static-audit.test.ts`
+
+### Slice R4b: Initial Sync and Account Mode Consumers
+
+Status: implemented for the low-risk portion only.
+
+Goal: evaluate whether `InitialSyncDialog`, account-switching surfaces, and role-mode helpers can safely consume shared role state without changing session keys, initial-sync completion behavior, or account-switch recovery behavior.
+
+Scope:
+
+- `InitialSyncDialog` reads `userRole` and `roleRefreshState` from `useRoleContext()`.
+- `InitialSyncDialog` only evaluates the initial-sync session key after `roleRefreshState.stage === 'ready'`.
+- `InitialSyncDialog` keeps the existing `resolveRoleMode(userRole)` session-key shape.
+- `AccountSwitcher` removes an unused `useUserRole()` read and an unused `getCurrentDatabaseInfo` import.
+- Account switching, local database switching/deletion, `sessionStorage` key shape, and `SyncStatus` completion behavior are unchanged.
+- `useStaffStatusMonitor` remains unchanged because it owns downgrade/revoke cleanup and IndexedDB/cache reset behavior.
+
+Acceptance:
+
+- Initial sync dialog readiness matches the shared role state used by `SyncProvider`.
+- Initial sync session key remains `hasCompletedInitialSync:${user.id}:${roleMode}`.
+- AccountSwitcher no longer creates a redundant role read.
+- Staff status monitor and repair panels remain on local `useUserRole()` guards.
+
+Implemented files:
+
+- `components/sync/InitialSyncDialog.tsx`
+- `components/account/AccountSwitcher.tsx`
+- `tests/role-provider-r1.test.ts`
+- `docs/FORM_DRAFT_AND_ROLE_REFRESH_STABILITY_PLAN_2026_07_03.md`
+
+Remaining R4b boundary:
+
+- Do not migrate `useStaffStatusMonitor` without a separate high-risk downgrade/revoke safety review.
+
+### Slice R4c: Page Data-Loading Consumers
+
+Status: active sliced execution. R4c-1 is implemented for the owner-only settlement report page. R4c-2 is implemented for the core markets/products list pages.
+
+Goal: evaluate page-level consumers that use role state to choose `owner_full` vs `staff_scoped` database initialization and cloud fallback behavior.
+
+Stop before implementation. These consumers are high-sensitivity because incorrect role state can load the wrong local projection or expose owner/staff data incorrectly.
+
+### Slice R4c-0: Page Consumer Inventory and Guardrails
+
+Status: implemented through static guardrails.
+
+Goal: prevent page-level role consumer migration from expanding into high-sensitivity data-loading pages without explicit review.
+
+Classification:
+
+- Lower-risk page consumer:
+  - `app/reports/settlement/page.tsx`: owner-only report preview gate, no DB profile switching, no staff scoped fallback.
+- High-sensitivity page consumers:
+  - `app/page.tsx`: ownerId filters dashboard market and stats queries.
+  - `app/markets/page.tsx`: chooses `owner_full` vs `staff_scoped` database profile and filters by ownerId.
+  - `app/products/page.tsx`: chooses database profile, filters by ownerId, gates product edit capability.
+  - `app/analytics/page.tsx`: filters multiple analytics query inputs by ownerId and controls report access.
+  - `app/settings/page.tsx`: staff leave-team RPC and destructive local/cloud data controls.
+  - `app/recovery/page.tsx`: owner-only repair tools.
+
+### Slice R4c-1: Settlement Report Page Consumer Replacement
+
+Status: implemented.
+
+Goal: reduce one page-level duplicate role read without touching database profile selection, staff scoped local projection, or repair tools.
+
+Scope:
+
+- `app/reports/settlement/page.tsx` reads `userRole` and `roleRefreshState` from `useRoleContext()`.
+- Report preview requires `roleRefreshState.stage === 'ready'`.
+- Owner capability derivation uses `roleRefreshState.permissions.isOwner` only when the role state is ready.
+- Existing `canImportExport` and `canViewOwnerFinance` capability checks remain unchanged.
+- Local report data reads remain blocked when `canPreview` is false.
+
+Acceptance:
+
+- Background role refresh cannot generate owner finance report data with stale owner permissions.
+- Staff and unresolved roles remain blocked from report preview.
+- High-sensitivity core pages remain on local `useUserRole()` until their own review.
+
+Implemented files:
+
+- `app/reports/settlement/page.tsx`
+- `tests/role-provider-r1.test.ts`
+- `docs/FORM_DRAFT_AND_ROLE_REFRESH_STABILITY_PLAN_2026_07_03.md`
+
+### Slice R4c-2: Core List Page Consumer Replacement
+
+Status: implemented.
+
+Scope:
+
+- `app/markets/page.tsx`
+- `app/products/page.tsx`
+
+Implemented semantics:
+
+- During `roleRefreshState.stage !== 'ready'`, both pages show the existing blocking loading state instead of preserving the previous list view.
+- During non-ready role state, both pages pass a sentinel owner id to `useMarkets(...)` / `useProducts(...)` so an unresolved owner id cannot fall through into an unscoped local-data read.
+- `initializeDatabaseSafely({ profile: ... })` runs only after the role is ready and the effective owner id is known.
+- Staff mode uses `staff_scoped`; owner mode uses `owner_full`, but only after the ready-state guard has passed.
+- Product edit capability remains fail-closed and requires `roleRefreshState.permissions.isOwner` or the relevant staff capability while the role is ready.
+- Add/edit handlers return early while scoped data is not loadable.
+
+Implemented files:
+
+- `app/markets/page.tsx`
+- `app/products/page.tsx`
+- `tests/role-provider-r1.test.ts`
+- `docs/FORM_DRAFT_AND_ROLE_REFRESH_STABILITY_PLAN_2026_07_03.md`
+
+### Slice R4c-3: Dashboard and Analytics Consumer Replacement
+
+Status: not implemented. Split into smaller slices; do not migrate dashboard and analytics together.
+
+Candidate scope:
+
+- `app/page.tsx`
+- `app/analytics/page.tsx`
+
+Stop before implementation. These pages derive ownerId and aggregate financial/analytics data, so they need separate data-scope tests before migration.
+
+### Slice R4c-3A: Dashboard Inventory and Static Guardrails
+
+Status: implemented through documentation and static guardrails. No runtime behavior changes.
+
+Scope:
+
+- Inspect `app/page.tsx` role reads, ownerId filters, dashboard summary hooks, market stats hooks, and any cloud/local fallback.
+- Document every data-read path that depends on owner/staff identity.
+- Add or update static guardrails proving dashboard migration cannot proceed without:
+  - explicit `roleRefreshState.stage === 'ready'` check,
+  - fail-closed ownerId handling,
+  - no broad local read on unresolved owner id,
+  - no sync/write/cache mutation.
+
+Acceptance:
+
+- No runtime behavior changes.
+- Dashboard risk map exists in this plan.
+- Tests fail if dashboard is migrated without ready-state and owner-scope guards.
+
+Dashboard data dependency map:
+
+- Role source:
+  - `app/page.tsx` currently reads `userRole`, `isStaff`, `isLoading`, and `roleError` from `useUserRole()`.
+  - This remains unchanged in R4c-3A.
+- Owner scope:
+  - `currentOwnerId = isStaff ? userRole.ownerId : user?.id`.
+  - This value is the root scope for dashboard market and monthly summary reads.
+- Market list reads:
+  - `useMarkets({ orderBy: 'startDate', order: 'asc', ownerId: currentOwnerId })`.
+  - Risk: `useMarkets(...)` only filters when `ownerId` is truthy, so unresolved owner id can become a broad local read.
+  - Future migration requirement: do not pass `undefined` owner id after switching to shared role context; use a sentinel owner id or explicit no-read branch.
+- Monthly summary reads:
+  - `useMonthlyStats(currentOwnerId)`.
+  - Risk: `useMonthlyStats(...)` only filters when `ownerId` is truthy, so unresolved owner id can aggregate all active local markets.
+  - Future migration requirement: monthly stats must be blocked, scoped to a sentinel/no-result owner id, or otherwise prevented from aggregating all records while role is not ready.
+- Derived dashboard sections:
+  - `todayMarkets` derives from `allMarkets`.
+  - `todayMarketIds` derives from `todayMarkets`.
+  - `upcomingMarkets` derives from `allMarkets` and excludes `todayMarketIds`.
+  - Risk: these are safe only if `allMarkets` is already owner-scoped.
+- Owner brand name:
+  - `loadOwnerBrandName(user.id)` runs only when `user?.id` exists and `isStaff` is false.
+  - Risk: display-only and owner-local, lower sensitivity than market/stats reads.
+- Sync display:
+  - `useSyncContext()` is used for status display and manual sync-related UI state.
+  - R4c-3A does not change sync behavior. Future dashboard migration must not add sync writes, cache resets, or local data clearing.
+- Destructive/account behavior:
+  - `handleSignOut()` uses `signOut()` and `confirmDiscardLocalChangesForSignOut(error)`.
+  - This is not part of dashboard role consumer replacement and must not be changed by R4c-3B.
+
+Implemented guardrail:
+
+- `tests/role-provider-r1.test.ts` now records the dashboard inventory and keeps `app/page.tsx` on `useUserRole()` until R4c-3B.
+- If `app/page.tsx` is later migrated to `useRoleContext()`, the test requires explicit ready-state, fail-closed owner scope, and scoped dashboard reads.
+
+### Slice R4c-3B: Dashboard Consumer Replacement
+
+Status: not implemented; only after R4c-3A passes.
+
+Scope:
+
+- Replace dashboard page role read with `useRoleContext()`.
+- Use blocking loading while role is not ready.
+- Resolve owner id only when role is ready.
+- Pass a sentinel owner id or no-read path to dashboard local hooks while unresolved.
+- Keep dashboard UI behavior unchanged after ready state.
+
+Acceptance:
+
+- Owner dashboard sees only owner-scoped data.
+- Staff dashboard sees only staff-scoped owner data allowed by existing hooks.
+- Background refresh cannot display or compute dashboard data with unresolved owner id.
+- No sync, repair, settings, or analytics migration in this slice.
+
+### Slice R4c-3C: Analytics Inventory and Static Guardrails
+
+Status: not implemented; separate from dashboard because analytics includes financial aggregates and report access.
+
+Scope:
+
+- Inspect `app/analytics/page.tsx` ownerId filters, financial calculations, role gates, and report/export entry points.
+- Define which analytics reads are owner-only, staff-visible, or blocked.
+- Add tests that require fail-closed role readiness before analytics data derivation.
+
+Acceptance:
+
+- No runtime behavior changes.
+- Analytics data-scope map exists before code migration.
+- Report/export access remains owner-only unless separately approved.
+
+### Slice R4c-3D: Analytics Consumer Replacement
+
+Status: not implemented; only after R4c-3C passes and receives explicit approval.
+
+Scope:
+
+- Replace analytics page role read with `useRoleContext()` only for safe page-level snapshot usage.
+- Keep owner-only report/export gates strict.
+- Use ready-state and owner-scope guards before financial aggregate reads.
+
+Acceptance:
+
+- Staff/unresolved roles cannot access owner-only analytics or report/export paths.
+- No destructive local data, recovery, or settings behavior changes.
+- Tests cover unresolved role, owner, and staff cases.
+
+### Slice R4c-4: Settings and Recovery Page Consumer Replacement
+
+Status: not implemented.
+
+Candidate scope:
+
+- `app/settings/page.tsx`
+- `app/recovery/page.tsx`
+
+Stop before implementation. These pages include destructive local/cloud data controls, staff leave-team RPC, and owner-only repair tools.
+
+Recommended split:
+
+- R4c-4A settings inventory only: classify display-only role reads versus destructive account/cache/local-data actions.
+- R4c-4B settings display-only replacement: only if actions remain behind local or dedicated final preflight guards.
+- R4c-4C recovery inventory only: classify read-only owner status display versus repair/diagnostics execution.
+- R4c-4D recovery read-only replacement: only for non-mutating display surfaces.
+
+Do not migrate destructive settings controls, repair execution, diagnostics execution, pending-operation drain/retry, or local-data reset buttons to shared context without a separate high-risk review and final-action revalidation design.
+
+### Slice R4d: Repair and Diagnostics Consumers
+
+Status: not implemented.
+
+Goal: evaluate recovery, diagnostics, and repair panels only after page-level role consolidation is stable.
+
+Stop before implementation. These remain owner-only or local-repair sensitive and should keep redundant local guards until explicitly reviewed.
+
+Default decision: keep repair and diagnostics execution on local `useUserRole()` or a dedicated owner-only preflight hook. Shared context may be used only for read-only labels or non-actionable status display after a separate review.
+
+Any future repair/diagnostics migration must prove:
+
+- The action re-checks owner permission immediately before execution.
+- Background refresh cannot keep a stale owner repair button enabled.
+- Unresolved role state disables execution, not just hides UI text.
+- Tests cover owner, staff, unresolved, and role-error states.
+
+### Slice 5: Role Refresh Implementation
+
+Status: not approved by this plan for broad automatic execution.
+
+This is a separate high-sensitivity implementation track.
+
+Minimum prerequisites:
+
+- Phase 1 draft autosave is complete and verified.
+- Existing role fail-closed tests pass.
+- New tests prove background refresh keeps children mounted while disabling privileged writes and sensitive reads.
+- Sync behavior during refresh is explicitly tested with safe info level `0`.
+
+Stop for human confirmation before starting this slice.
+
+## Recommended Execution Order
+
+### Phase 1: Add AddMarketForm Draft Autosave
+
+Goal: protect user input immediately, even if the page is remounted or reloaded.
+
+Use the existing `lib/form-autosave.ts` utilities, but scope the draft carefully.
+
+Implementation requirements:
+
+- Use a draft id scoped by user and form, for example `add-market:${user.id}`.
+- Save all form-controlled state, not only `formData`:
+  - `formData`
+  - `noEarlyEntry`
+  - `tableFree`
+  - `chairFree`
+  - `umbrellaFree`
+- Restore draft before autosave begins, so default empty values do not overwrite an existing draft.
+- Save only when the form is open and contains meaningful data.
+- Clear draft only after successful `createMarket()`.
+- Closing the modal should not silently clear the draft.
+- If a saved draft exists, reopening the form should restore it.
+
+Safety requirements:
+
+- Use `sessionStorage`, not `localStorage`, unless a later product decision explicitly asks for durable drafts.
+- Never save auth tokens or derived permission state in the form draft.
+- Do not sync draft data to Supabase or Dexie.
+- Do not include draft data in analytics, logs, or toast messages.
+- Draft restore must be user-scoped to prevent account-switch leakage.
+
+Suggested tests:
+
+- Add-market draft is saved after user enters required fields.
+- Remounting `AddMarketForm` restores the draft.
+- Successful submit clears the draft.
+- Closing and reopening the modal restores the draft.
+- Empty default form does not overwrite an existing saved draft on mount.
+- Drafts are isolated by user id.
+- Independent state values restore correctly:
+  - `noEarlyEntry`
+  - `tableFree`
+  - `chairFree`
+  - `umbrellaFree`
+
+Acceptance gate:
+
+- Targeted autosave tests pass.
+- Existing role/security tests still pass.
+- `npm.cmd run build` passes.
+
+### Phase 2: Split Initial Role Loading From Background Refresh
+
+Goal: avoid unmounting the protected app when role state is being refreshed after an already-resolved role exists.
+
+This should be treated as an auth/role architecture change, not a UI-only change.
+
+Implementation direction:
+
+- Introduce a shared role state layer, preferably a `RoleProvider`, under `AuthProvider`.
+- Make `RoleGuard`, `SyncProvider`, `BottomNavigation`, and approved page-level consumers use the shared role snapshot instead of creating unnecessary independent `useUserRole()` state.
+- Preserve local `useUserRole()` or dedicated final preflight hooks for staff revoke/downgrade monitors, destructive controls, recovery/repair execution, and any privileged mutation path that needs an immediate permission re-check.
+- Split role load state into at least:
+  - `isInitialLoading`: no usable current role snapshot exists yet.
+  - `isRefreshing`: a previous role snapshot exists, and the app is validating freshness in the background.
+  - `roleError`: role refresh failed or role state cannot be trusted.
+- `RoleGuard` should only replace children with a blocking fallback during `isInitialLoading` or hard `roleError`.
+- During `isRefreshing`, keep children mounted.
+
+Critical safety rule:
+
+Keeping children mounted during refresh does not mean keeping full permissions active.
+
+During `isRefreshing`, privileged behavior must remain fail-closed:
+
+- `canEdit=false`
+- `canViewSensitiveData=false`
+- owner-only actions disabled
+- `deriveSafeInfoLevel(...)` should return `0` or an explicitly safe refreshing level
+- sync should either pause or use the lowest safe info level
+
+Important design detail:
+
+The UI may remain visible to preserve user input, but sensitive actions and data access must be gated by the refreshed permission snapshot. Do not use stale owner permissions for writes or sensitive reads during refresh.
+
+Suggested tests:
+
+- Initial unknown role still blocks protected route rendering.
+- Background refresh with existing role keeps route children mounted.
+- Background refresh disables owner-only actions.
+- Background refresh uses safe info level `0` for sync/data sanitization.
+- Role refresh success restores normal role permissions.
+- Role refresh error fails closed and surfaces a visible blocked or limited state.
+- Existing stale async commit tests continue to pass.
+- Bottom navigation still treats unresolved/refreshing role as staff-like for restricted areas such as analytics.
+
+Acceptance gate:
+
+- `tests/role-fail-closed.test.ts`
+- `tests/p5-4b-role-cache-invalidation.test.ts`
+- updated `tests/c2-28b-render-guard-static-audit.test.ts`
+- new role refresh persistence tests
+- `npm.cmd run build`
+
+### Phase 3: Add Dirty-Form Navigation Guard
+
+Goal: avoid accidental data loss when the user intentionally closes the form, navigates away, reloads, or accepts a PWA update.
+
+This is a UX guard, not the primary data-protection mechanism. It must complement autosave.
+
+Implementation requirements:
+
+- Track whether `AddMarketForm` has meaningful unsaved data.
+- Intercept high-risk exits first:
+  - close button
+  - backdrop click
+  - browser reload/close via `beforeunload`
+  - PWA update reload flow
+- Show a simple choice:
+  - keep draft
+  - discard draft
+- Keep draft should close or navigate while preserving session draft.
+- Discard draft should clear the autosaved draft and reset local state.
+
+Risks to avoid:
+
+- Do not attempt a broad custom App Router navigation blocker unless needed. Next App Router cancellation is easy to make brittle.
+- Do not block background auth/session handling.
+- Do not show sensitive draft content in confirmation text.
+
+Suggested tests:
+
+- Dirty close asks for confirmation.
+- Keep draft preserves draft and allows reopening.
+- Discard draft clears draft.
+- Successful submit bypasses dirty warning and clears draft.
+- `beforeunload` guard is active only when form is dirty.
+
+Acceptance gate:
+
+- Targeted dirty-form tests pass.
+- Existing add-market behavior remains unchanged after successful submit.
+- `npm.cmd run build` passes.
+
+## Security Review Checklist
+
+Before shipping any phase:
+
+- Loading or refreshing role state must not grant owner permissions.
+- Staff users must not gain analytics, repair tools, owner-only market controls, or sensitive financial data while role state is unresolved.
+- Sync must not run with stale owner-level `infoLevel` during role refresh.
+- Drafts must be scoped to the authenticated user.
+- Drafts must not be written to cloud, Dexie event tables, or backup/recovery flows.
+- Account switch must not reveal another user's draft.
+- Staff revoked / role invalidated paths must still trigger fail-closed behavior.
+
+## Recommended First Implementation Slice
+
+Start with Phase 1 only:
+
+1. Add user-scoped draft save/load to `AddMarketForm`.
+2. Add tests for restore, submit-clear, close-preserve, and user isolation.
+3. Run targeted tests plus `npm.cmd run build`.
+
+Reasoning:
+
+- It directly prevents user input loss.
+- It does not require changing auth, role, sync, or data permissions.
+- It remains useful even after RoleProvider work, because browser tab discard or full reload can still happen.
+
+After Phase 1 is stable, plan Phase 2 as a controlled auth/role safety slice with updated fail-closed guardrail tests.

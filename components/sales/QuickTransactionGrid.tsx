@@ -1,15 +1,36 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { ShoppingCart, Plus, Minus } from 'lucide-react';
-import { useProducts } from '@/lib/db/hooks';
-import { recordDeal } from '@/lib/db/hooks';
-import { toast } from 'sonner';
-import type { Product } from '@/types/db';
+import {
+  Loader2,
+  Minus,
+  Package,
+  Plus,
+  ShoppingCart,
+  Trash2,
+} from 'lucide-react';
 import Link from 'next/link';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
+
+import { useProducts } from '@/lib/db/hooks';
+import type { SalesPaymentMethod } from '@/lib/sales/payment-methods';
+import {
+  recordDealWithOptionalSalesPhotoEvidence,
+  type SalesPhotoEvidenceRuntimeResultHandler,
+  type SalesPhotoEvidenceTransactionContext,
+} from '@/lib/sales/photo-evidence-runtime-enqueue';
+import type { Product } from '@/types/db';
+import { PaymentMethodSelector } from './PaymentMethodSelector';
 
 interface QuickTransactionGridProps {
   marketId: string;
+  isExpanded?: boolean;
+  onToggle?: () => void;
+  embedded?: boolean;
+  paymentMethod?: SalesPaymentMethod;
+  onPaymentMethodChange?: (value: SalesPaymentMethod) => void;
+  salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
+  onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
 }
 
 interface CartItem {
@@ -17,322 +38,269 @@ interface CartItem {
   quantity: number;
 }
 
-type PaymentMethod = 'cash' | 'card' | 'mobile' | 'other';
+const PRODUCT_SURFACES = [
+  'bg-atelier-sage-soft',
+  'bg-atelier-apricot-soft',
+  'bg-atelier-blue-soft',
+  'bg-atelier-rose-soft',
+] as const;
 
-/**
- * 快速交易網格組件
- * 一頁式購物車操作，點擊支付方式即可快速完成交易
- */
-export function QuickTransactionGrid({ marketId }: QuickTransactionGridProps) {
+export function QuickTransactionGrid({
+  marketId,
+  isExpanded = true,
+  onToggle,
+  embedded = false,
+  paymentMethod,
+  onPaymentMethodChange,
+  salesPhotoEvidenceContext,
+  onSalesPhotoEvidenceResult,
+}: QuickTransactionGridProps) {
   const products = useProducts({ isActive: true });
-  const [showProducts, setShowProducts] = useState(true);
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
   const [isProcessing, setIsProcessing] = useState(false);
+  const [localPaymentMethod, setLocalPaymentMethod] = useState<SalesPaymentMethod>('cash');
+  const selectedPaymentMethod = paymentMethod ?? localPaymentMethod;
 
-  // 分類樣式
-  const getCategoryStyle = (category: string) => {
-    const styles: Record<string, { bg: string; emoji: string }> = {
-      handmade: { bg: 'bg-[#FAFAF8]', emoji: '🧵' },
-      food: { bg: 'bg-[#FAFAF8]', emoji: '🍪' },
-      accessory: { bg: 'bg-[#FAFAF8]', emoji: '💎' },
-      clothing: { bg: 'bg-[#FAFAF8]', emoji: '👕' },
-      art: { bg: 'bg-[#FAFAF8]', emoji: '🎨' },
-      stationery: { bg: 'bg-[#FAFAF8]', emoji: '📚' },
-      other: { bg: 'bg-[#FAFAF8]', emoji: '📦' },
-    };
-    return styles[category] || styles.other;
-  };
-
-  // 計算總金額
   const totalAmount = useMemo(() => {
     let total = 0;
-    cart.forEach((item) => {
+    cart.forEach(item => {
       total += item.product.price * item.quantity;
     });
     return total;
   }, [cart]);
 
-  // 添加商品到購物車
+  const changePaymentMethod = (next: SalesPaymentMethod) => {
+    if (onPaymentMethodChange) onPaymentMethodChange(next);
+    else setLocalPaymentMethod(next);
+  };
+
   const addToCart = (product: Product) => {
-    setCart((prev) => {
-      const newCart = new Map(prev);
-      const existing = newCart.get(product.id!);
-      
-      if (existing) {
-        newCart.set(product.id!, {
-          ...existing,
-          quantity: existing.quantity + 1,
-        });
-      } else {
-        newCart.set(product.id!, {
-          product,
-          quantity: 1,
-        });
-      }
-      
-      return newCart;
+    if (!product.id) return;
+    setCart(previous => {
+      const next = new Map(previous);
+      const existing = next.get(product.id!);
+      next.set(product.id!, {
+        product,
+        quantity: (existing?.quantity ?? 0) + 1,
+      });
+      return next;
     });
   };
 
-  // 減少商品數量
-  const decreaseQuantity = (productId: string) => {
-    setCart((prev) => {
-      const newCart = new Map(prev);
-      const existing = newCart.get(productId);
-      
-      if (existing) {
-        if (existing.quantity > 1) {
-          newCart.set(productId, {
-            ...existing,
-            quantity: existing.quantity - 1,
-          });
-        } else {
-          newCart.delete(productId);
-        }
-      }
-      
-      return newCart;
+  const changeQuantity = (productId: string, delta: number) => {
+    setCart(previous => {
+      const next = new Map(previous);
+      const existing = next.get(productId);
+      if (!existing) return previous;
+
+      const quantity = existing.quantity + delta;
+      if (quantity <= 0) next.delete(productId);
+      else next.set(productId, { ...existing, quantity });
+      return next;
     });
   };
 
-  // 增加商品數量
-  const increaseQuantity = (productId: string) => {
-    setCart((prev) => {
-      const newCart = new Map(prev);
-      const existing = newCart.get(productId);
-      
-      if (existing) {
-        newCart.set(productId, {
-          ...existing,
-          quantity: existing.quantity + 1,
-        });
-      }
-      
-      return newCart;
-    });
-  };
+  const handleCheckout = async () => {
+    if (cart.size === 0 || isProcessing) return;
+    setIsProcessing(true);
 
-  // 清空購物車
-  const clearCart = () => {
-    setCart(new Map());
-  };
-
-  // 處理支付（快速結帳）
-  const handlePayment = async (paymentMethod: PaymentMethod) => {
-    if (cart.size === 0) {
-      toast.error('購物車是空的');
+    let result;
+    try {
+      const submittedAt = new Date().toISOString();
+      result = await recordDealWithOptionalSalesPhotoEvidence({
+        marketId,
+        items: Array.from(cart.values()).map(item => ({
+          productId: item.product.id!,
+          quantity: item.quantity,
+          price: item.product.price,
+        })),
+        totalAmount,
+        paymentMethod: selectedPaymentMethod,
+      }, undefined, {
+        evidenceContext: salesPhotoEvidenceContext
+          ? {
+              ...salesPhotoEvidenceContext,
+              marketId,
+              saleCompletedAt: submittedAt,
+              now: submittedAt,
+            }
+          : undefined,
+      });
+    } catch (error) {
+      console.error('記錄商品交易失敗：', error);
+      toast.error('記錄失敗，資料已保留在本機等待同步');
+      setIsProcessing(false);
       return;
     }
 
-    if (isProcessing) return;
-
-    setIsProcessing(true);
+    setCart(new Map());
+    window.dispatchEvent(new CustomEvent('deal-closed', {
+      detail: { marketId, amount: totalAmount, paymentMethod: selectedPaymentMethod },
+    }));
 
     try {
-      // 準備成交資料
-      const items = Array.from(cart.values()).map((item) => ({
-        productId: item.product.id!,
-        quantity: item.quantity,
-        price: item.product.price,
-      }));
-
-      // 記錄成交
-      await recordDeal({
-        marketId,
-        items,
-        totalAmount,
-        paymentMethod,
-      });
-
-      // 支付方式文字
-      const paymentText = {
-        cash: '現金',
-        mobile: 'LINE Pay',
-        card: '轉帳',
-        other: '其他',
-      }[paymentMethod];
-
-      // 成功提示
-      toast.success(`🎉 交易完成！`, {
-        description: `${paymentText} - NT$${totalAmount.toLocaleString()}`,
-        duration: 2000,
-      });
-
-      // 清空購物車
-      clearCart();
+      if (onSalesPhotoEvidenceResult) await onSalesPhotoEvidenceResult(result);
+      else toast.success('成交完成', { description: `NT$${totalAmount.toLocaleString()}` });
     } catch (error) {
-      console.error('交易失敗：', error);
-      toast.error('交易失敗，請稍後再試');
+      console.error('開啟成交照片流程失敗：', error);
+      toast.warning('交易已完成，請從待補照片補上紀錄');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  return (
-    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-[#7B9FA6]/10 p-6 mb-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium flex items-center gap-2 text-[#3A3A3A]">
-          <ShoppingCart className="w-5 h-5 text-[#7B9FA6]" />
-          快速交易
-        </h2>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/products"
-            className="text-sm text-[#7B9FA6] hover:underline font-medium"
-          >
-            管理商品 →
-          </Link>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <span className="text-sm font-medium text-[#6B6B6B]">顯示商品</span>
-            <button
-              onClick={() => setShowProducts(!showProducts)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                showProducts ? 'bg-[#7B9FA6]' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  showProducts ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              ></span>
-            </button>
-          </label>
+  const content = (
+    <div>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-atelier-ink">選擇商品</p>
+          <p className="mt-0.5 text-xs text-atelier-muted">再次點選可增加數量</p>
         </div>
+        <Link href="/products" className="inline-flex min-h-11 items-center rounded-control px-2 text-sm font-medium text-primary hover:bg-atelier-canvas">
+          管理商品
+        </Link>
       </div>
 
-      {/* 商品網格 */}
-      {showProducts && (
-        <>
-          {products && products.length > 0 ? (
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {products.map((product) => {
-                const categoryStyle = getCategoryStyle(product.category);
-
-                return (
-                  <button
-                    key={product.id}
-                    onClick={() => addToCart(product)}
-                    className="bg-[#FAFAF8] hover:bg-[#7B9FA6]/10 border-2 border-[#7B9FA6]/15 rounded-[1.25rem] p-3 active:scale-95 transition-all"
-                  >
-                    <div className="text-4xl mb-2">{categoryStyle.emoji}</div>
-                    <div className="text-sm font-medium mb-1 line-clamp-1 text-[#3A3A3A]">
-                      {product.name}
-                    </div>
-                    <div className="text-xs text-[#7B9FA6] font-medium">
-                      ${product.price}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-sm text-[#6B6B6B] mb-2">尚無商品</p>
-              <Link
-                href="/products"
-                className="text-sm text-[#7B9FA6] hover:underline font-medium"
+      {products && products.length > 0 ? (
+        <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {products.map((product, productIndex) => {
+            const quantity = product.id ? cart.get(product.id)?.quantity ?? 0 : 0;
+            return (
+              <button
+                key={product.id}
+                type="button"
+                onClick={() => addToCart(product)}
+                disabled={isProcessing}
+                className={`relative min-h-28 rounded-control p-3 text-left shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm disabled:opacity-50 ${
+                  quantity > 0
+                    ? 'bg-atelier-sage-soft ring-2 ring-primary'
+                    : `${PRODUCT_SURFACES[productIndex % PRODUCT_SURFACES.length]} hover:brightness-[0.98]`
+                }`}
               >
-                前往新增商品 →
-              </Link>
-            </div>
-          )}
-        </>
+                {quantity > 0 && (
+                  <span className="absolute right-2 top-2 min-w-6 rounded-full bg-primary px-1.5 py-0.5 text-center text-xs font-medium text-white">
+                    {quantity}
+                  </span>
+                )}
+                <Package className="mb-3 h-5 w-5 text-primary" aria-hidden="true" />
+                <span className="block truncate text-sm font-semibold text-atelier-ink">{product.name}</span>
+                <span className="mt-1 block text-sm tabular-nums text-atelier-muted">
+                  NT${product.price.toLocaleString()}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mb-5 rounded-card border border-dashed border-atelier-line px-4 py-8 text-center">
+          <Package className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">尚未建立可銷售商品</p>
+          <Link href="/products" className="mt-2 inline-block text-sm font-medium text-primary hover:underline">
+            前往新增商品
+          </Link>
+        </div>
       )}
 
-      {/* 購物車區域 */}
       {cart.size > 0 && (
-        <div className="border-t border-[#7B9FA6]/10 pt-4 mt-4">
-          {/* 購物車標題 */}
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-medium text-[#3A3A3A]">購物車內容</h3>
+        <div className="-mx-4 mb-5 bg-atelier-blue-soft/45 px-4 py-4 sm:-mx-5 sm:px-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-medium text-foreground">本次商品</h3>
             <button
-              onClick={clearCart}
-              className="text-sm text-red-600 hover:text-red-700 font-medium"
+              type="button"
+              onClick={() => setCart(new Map())}
+              disabled={isProcessing}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-sm text-atelier-clay hover:bg-atelier-clay/10 disabled:opacity-50"
             >
+              <Trash2 className="h-4 w-4" />
               清空
             </button>
           </div>
 
-          {/* 購物車項目 */}
-          <div className="space-y-2 mb-4">
-            {Array.from(cart.values()).map((item) => {
-              const categoryStyle = getCategoryStyle(item.product.category);
-              
-              return (
-                <div
-                  key={item.product.id}
-                  className="flex items-center justify-between bg-[#FAFAF8] rounded-xl p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{categoryStyle.emoji}</span>
-                    <div>
-                      <div className="font-medium text-sm text-[#3A3A3A]">
-                        {item.product.name}
-                      </div>
-                      <div className="text-xs text-[#6B6B6B]">
-                        ${item.product.price}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => decreaseQuantity(item.product.id!)}
-                      className="bg-gray-300 hover:bg-gray-400 text-[#3A3A3A] w-7 h-7 rounded-full font-medium active:scale-95 transition-transform text-sm"
-                    >
-                      −
-                    </button>
-                    <span className="w-6 text-center font-medium text-sm text-[#3A3A3A]">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() => increaseQuantity(item.product.id!)}
-                      className="bg-[#7B9FA6] hover:bg-[#7B9FA6]/90 text-white w-7 h-7 rounded-full font-medium active:scale-95 transition-transform text-sm"
-                    >
-                      +
-                    </button>
-                  </div>
+          <div className="space-y-2">
+            {Array.from(cart.values()).map(item => (
+              <div key={item.product.id} className="flex min-h-16 items-center justify-between gap-3 rounded-control bg-atelier-paper px-3 py-2 shadow-sm">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">{item.product.name}</p>
+                  <p className="text-xs tabular-nums text-muted-foreground">
+                    NT${(item.product.price * item.quantity).toLocaleString()}
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* 總計 */}
-          <div className="bg-[#7B9FA6]/10 rounded-xl p-3 mb-3">
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-sm text-[#3A3A3A]">總計</span>
-              <span className="text-xl font-medium text-[#7B9FA6]">
-                ${totalAmount.toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          {/* 支付方式按鈕 */}
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => handlePayment('cash')}
-              disabled={isProcessing}
-              className="bg-[#E8F3E8] hover:opacity-90 text-[#3A3A3A] py-3 rounded-xl font-medium text-sm shadow-md active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              💵 現金
-            </button>
-            <button
-              onClick={() => handlePayment('mobile')}
-              disabled={isProcessing}
-              className="bg-[#00B900] hover:bg-[#009900] text-white py-3 rounded-xl font-medium text-sm shadow-md active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              💳 LINE Pay
-            </button>
-            <button
-              onClick={() => handlePayment('card')}
-              disabled={isProcessing}
-              className="bg-[#7B9FA6] hover:bg-[#7B9FA6]/90 text-white py-3 rounded-xl font-medium text-sm shadow-md active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              🏦 轉帳
-            </button>
+                <div className="flex shrink-0 items-center gap-1" aria-label={`${item.product.name} 數量`}>
+                  <button
+                    type="button"
+                    onClick={() => changeQuantity(item.product.id!, -1)}
+                    disabled={isProcessing}
+                    className="flex h-11 w-11 items-center justify-center rounded-control bg-atelier-canvas text-atelier-ink transition-colors hover:bg-atelier-rose-soft disabled:opacity-50"
+                    aria-label={`減少 ${item.product.name} 數量`}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="w-8 text-center text-sm font-medium tabular-nums text-foreground">
+                    {item.quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => changeQuantity(item.product.id!, 1)}
+                    disabled={isProcessing}
+                    className="flex h-11 w-11 items-center justify-center rounded-control bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
+                    aria-label={`增加 ${item.product.name} 數量`}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
+
+      <div className="relative mb-5 flex items-center justify-between overflow-hidden rounded-card bg-deep px-4 py-4 text-white shadow-atelier">
+        <span className="absolute inset-y-0 left-0 w-1.5 bg-atelier-clay" aria-hidden="true" />
+        <span className="text-sm font-medium text-white/75">交易總額</span>
+        <span className="text-2xl font-semibold tabular-nums">NT${totalAmount.toLocaleString()}</span>
+      </div>
+
+      <PaymentMethodSelector
+        value={selectedPaymentMethod}
+        onChange={changePaymentMethod}
+        disabled={isProcessing}
+      />
+
+      <button
+        type="button"
+        onClick={() => void handleCheckout()}
+        disabled={isProcessing || cart.size === 0}
+        className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100"
+      >
+        {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
+        {isProcessing ? '正在記錄交易' : `完成交易 NT$${totalAmount.toLocaleString()}`}
+      </button>
     </div>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <section className="mb-6 overflow-hidden rounded-card bg-atelier-paper shadow-atelier">
+      <div className="flex items-center justify-between gap-3 bg-atelier-apricot-soft/65 px-5 py-4">
+        <h2 className="flex items-center gap-2 text-base font-medium text-foreground">
+          <ShoppingCart className="h-5 w-5 text-primary" />
+          商品銷售
+        </h2>
+        {onToggle && (
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isExpanded}
+            onClick={onToggle}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isExpanded ? 'bg-primary' : 'bg-gray-300'}`}
+            aria-label="切換商品銷售區塊"
+          >
+            <span className={`h-4 w-4 rounded-full bg-white transition-transform ${isExpanded ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        )}
+      </div>
+      {isExpanded && <div className="p-5">{content}</div>}
+    </section>
   );
 }

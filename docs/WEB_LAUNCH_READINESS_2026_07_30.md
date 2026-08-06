@@ -1,0 +1,77 @@
+# BoothBook Web Launch Readiness
+
+Date: 2026-08-06
+
+Overall status: `NOT_READY`
+
+Target: production Web launch with trustworthy Free, Pro, and Team behavior, paid
+billing, operational recovery, and deployment evidence. This document tracks evidence;
+it does not approve a blocked subscription, database, media, or billing slice.
+
+## Evidence rule
+
+Local success is not production evidence. A gate is complete only when its required
+artifact and environment-specific result are both recorded. Repository tests cannot
+prove that a migration, secret, object store, provider account, callback, or production
+deployment is configured correctly.
+
+External and human follow-up is consolidated in
+`WEB_LAUNCH_MANUAL_ACTIONS_2026_08_01.md`.
+
+Machine-readable gate states are mirrored in `WEB_LAUNCH_GATES_2026_08_01.json` and
+validated with `npm.cmd run check:web-launch-readiness`. Both records must change in the
+same reviewed commit.
+
+Allowed status values:
+
+```text
+complete
+implemented_local
+pending_external
+pending_approval
+evidence_missing
+```
+
+## Launch gate matrix
+
+| ID | Gate | Current status | Current evidence | Required exit evidence |
+| --- | --- | --- | --- | --- |
+| `CI-WEB` | Every PR and `main` push runs hex, lint, complete tests, secret-free production build, and clean-diff checks | `complete` | Push run `30699586931` passed both Node 24 jobs and every step on commit `cac6fa6f7ffcf02779b0f3e66fb00ec9f4314250` on 2026-08-01 | Preserve the gate and repeat it on the final release candidate revision |
+| `LOCAL-QUALITY` | Current worktree passes lint, complete tests, production build, and `git diff --check` | `complete` | 2026-08-01 local full lint, complete manifest, production build, hex/diff checks, and changed-file credential-pattern scan passed on `cac6fa6`; the exact revision also passed CI on required Node 24 | Repeat on release candidate revision |
+| `DB-063-065` | Shared capability and Team enforcement migrations are live | `complete` | user-confirmed apply plus prior RPC/structural smoke | Preserve dated environment and smoke output in release evidence |
+| `DB-066` | F3A private candidate price catalog foundation is live and denied to direct clients | `complete` | Selected sandbox evidence dated 2026-08-05 records the masked target, migration hash, prior apply, all-true read-only verifier, expected empty mappings/assignments, and no F3A Advisor ERROR/WARN; this is not Production evidence | Preserve the evidence and do not reapply migration 066 to the same target; a different target requires its own reviewed evidence |
+| `TEAM-LIVE` | Server-authoritative Free/Pro/Team mutation, downgrade, re-upgrade, and restore behavior is proven | `complete` | 2026-08-01 isolated 57-check live run passed direct-write and Free/Pro denial, Team invitation and viewer/operator/manager transitions, downgrade suspension, no-auto-restore, explicit restore, cleanup, and zero-residual audit | Preserve the guarded smoke and repeat against the selected release environment; deployment UI evidence remains under `STAGING-E2E` |
+| `PROD-CONFIG` | Production Supabase, CORS, cron, R2, media gates, and server secrets are configured | `evidence_missing` | Read-only preflight implemented; 2026-08-01 local `.env.production.local` snapshot is 4/17 passing and is not Vercel evidence | Passing preflight against deployed names, dated Vercel review with no values, and production route smoke |
+| `PROD-SURFACE` | Debug pages and dev subscription API are unreachable while the static fake-data demo remains public | `complete` | 2026-08-01 stable Production alias passed the aggregate commit-bound production-surface, PWA-resource, draft legal-page, and API-boundary release smoke on `cac6fa6` | Preserve the smoke and repeat it on the final release candidate revision |
+| `DEPLOY-IDENTITY` | Remote smoke proves it reached the intended release revision | `complete` | Vercel status target `Fhoqn6RYz5BJBDeTL3CEx9JiJv82` succeeded; stable alias health and all four aggregate release smokes matched `cac6fa6`, version `0.1.0`, build time `2026-08-01T12:23:18.390Z` | Preserve deployment/health identity and repeat it on the final release candidate revision |
+| `SECURITY-HEADERS` | Pages and APIs receive the reviewed baseline without breaking PWA/media/auth flows | `pending_external` | Exact Production headers and authenticated Free-owner regressions passed; on 2026-08-02 an unrelated `https://httpbin.org` page visibly failed to frame `62bd881` after exact health and 4/4 public release checks | Repeat the commit-bound header and unrelated-origin browser probes on the final release candidate |
+| `PWA-WEB` | Manifest assets, service-worker lifecycle, install presentation, responsive shell, and app shortcuts work | `pending_external` | 2026-08-03 local production baseline on `097f2be` passed the commit-bound 9-asset smoke, zero-error standalone manifest parsing, and no-overflow desktop 1440x900 plus Android-class 412x915 views; on 2026-08-05 the unauthenticated `main` code fix and focused unauthenticated/public-demo/authenticated landmark guardrails completed | Complete real desktop/Android install and installed-icon launch, service-worker update after a second deployment, owner shortcuts, staff fail-closed shortcuts, and public-data-only install screenshots against one HTTPS release candidate |
+| `MEDIA-PROD` | Product-cover and sales-evidence storage paths are production-ready at approved entitlement modes | `evidence_missing` | local tests and guides exist | Migration/R2/CORS/quota/cleanup evidence and authorized/unauthorized production smoke |
+| `STAGING-E2E` | Owner, staff roles, Free/Pro/Team, offline recovery, PDF, and media workflows pass in a production-like deployment | `evidence_missing` | 57-check live Team transition smoke passed. On `cac6fa6`, an authenticated Production Free owner passed recent-three/basic-summary access and Pro/Team/PDF denial with no browser errors; the current local Free/Pro/Team simulator matrix also passed without cloud writes. Sanitized partial evidence is in `WEB_AUTHENTICATED_RELEASE_MATRIX_2026_08_01.md`; paid deployment roles, offline recovery, inspectable PDF output, and media remain open | Signed staging matrix for required viewports, roles, account states, and recovery cases |
+| `BILLING-MERCHANT` | Deferred ECPay Web recurring merchant, API, sandbox, refund, and reconciliation capabilities are approved | `pending_external` | Web checkout is deliberately deferred while Apple/Google native subscriptions are prioritized; NewebPay is not selected | When the Web paid track resumes, collect dated ECPay merchant/API activation evidence and sanitized sandbox fixtures |
+| `F3B-F3E` | Billing event ledger, projection writer, quote/obligation, and support audit slices are implemented | `pending_approval` | F3B migration 067 is externally verified in the selected sandbox: pre/post verifier all true, 79 denial checks passed, five private tables remained empty, and no F3B Advisor ERROR/WARN; F3C-F3E remain unapproved and unimplemented | Preserve F3B evidence without reapplying 067; separately approve and complete F3C, F3D, and F3E migrations, adversarial tests, rollback/corrective-forward plans, and environment evidence |
+| `S9` | Provider adapter, callback, reconciliation, checkout, cancellation, refund, and entitlement mutation are implemented | `pending_approval` | S8 decision and billing contracts only | Complete billing test matrix, staging lifecycle evidence, security review, support runbooks, production canary approval |
+| `PROMOTION-RUNTIME` | Launch referral attribution and Pro Pass rewards are abuse-resistant and reconciled with paid billing policy | `pending_approval` | policy/design only | Approved P1-P4 slices or an explicit decision to launch without the promotion |
+| `OBSERVABILITY` | Health, callback backlog, reconciliation delay, payment failures, media cleanup, and sync incidents are observable | `implemented_local` | Health and bounded schema-v1 media events are joined by authenticated, strict, client-throttled `sync.permission_blocked` and `sync.unexpected_failure` intake; the pure 36-hour evaluator now includes fixed sync thresholds, while production sink/routing and future billing signals remain absent | Production dashboards/alerts with equivalent policy, delivery proof, primary/backup owner, escalation, retention/access review, incident drill, and later S9 billing signals |
+| `LEGAL-SUPPORT` | Terms, privacy, billing/refund/cancellation, data retention, support and incident policies are approved | `evidence_missing` | exact public routes and fail-closed configuration; 2026-08-01 aggregate commit-bound Production `draft` smoke passed four routes on `cac6fa6` without treating placeholders as publication | Real operator/contact values, final retention table, published-mode remote public-page and real support-case smoke, incident drill, dated product/legal/accounting/privacy approvals |
+| `RELEASE-CANARY` | A bounded production cohort proves the release before general availability | `pending_external` | not started | Go/no-go record, rollback owner, daily review window, zero unresolved release-blocking defects |
+
+## Required order from current state
+
+1. Preserve the completed F3A/F3B sandbox evidence without reapplying migrations 066 or 067.
+2. Complete the remaining install/update, unrelated-origin anti-frame, and authenticated
+   owner/staff production-like browser matrix against the selected deployment.
+3. Complete production configuration and media staging evidence without enabling billing.
+4. Keep ECPay Web merchant activation deferred; track Apple/Google native launch in
+   `subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md`.
+5. Implement only separately approved F3C-F3E/provider runtime slices and pass the
+   applicable provider sandbox matrix.
+6. Resolve the promotion launch decision, observability, legal/support, staging E2E, and
+   production canary gates.
+
+## Go/no-go rule
+
+General availability is `NO-GO` while any row above is not `complete`.
+`implemented_local` becomes `complete` only after the matching remote or production
+evidence exists. No single local build, payment smoke, migration apply, or UI walkthrough
+can override this matrix or the signed go/no-go record.

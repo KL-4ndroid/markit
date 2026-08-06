@@ -99,7 +99,6 @@ export async function pullQuickActionButtonsFromCloud(
     if (buttons) {
       // 同步到本地
       saveQuickActionButtonsLocal(buttons);
-      console.log('✅ 已從雲端拉取快速互動按鈕設定');
       return buttons;
     }
     

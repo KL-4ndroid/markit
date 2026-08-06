@@ -3,25 +3,147 @@
 @tailwind utilities;
 
 :root {
-  /* 日系設計系統色彩變數 */
-  --mist-blue: #7B9FA6;
-  --warm-wood: #D4A574;
-  --soft-pink: #F5E6E8;
-  --soft-green: #E8F3E8;
-  --soft-yellow: #FFF8E7;
-  --background: #FAFAF8;
-  --foreground: #3A3A3A;
-  --muted-foreground: #6B6B6B;
-  --card: #ffffff;
-  --destructive: #d4183d;
-  --border: rgba(123, 159, 166, 0.15);
-  
+  /* ============================================================
+   * Féria - 出攤筆記 視覺識別（VI）設計 token
+   * 文件：docs/brand/VI_DESIGN_SYSTEM.md
+   * 變更：2026-07-17（參考 JapaneseD，恢復霧藍、暖木與米白的日系溫度）
+   *
+   * ⚠️ 重要：以下所有 rgb 數值都跟 tailwind.config.ts 的
+   *   rgb(var(--xxx) / <alpha-value>) 配對使用。
+   *   不要把這裡改成 hex，否則 /10 / /20 透明度會失效。
+   * ============================================================ */
+
+  /* 主色：霧藍 */
+  --brand-primary: 96 123 130;           /* #607B82 — 保留霧藍調並讓白字符合 AA */
+
+  /* 次色：暖木 */
+  --brand-secondary: 140 109 76;         /* #8C6D4C — 保留暖木調並讓白字符合 AA */
+
+  /* 文字主色：柔黑 */
+  --brand-foreground: 58 58 58;          /* #3A3A3A */
+  --brand-muted-foreground: 107 107 107; /* #6B6B6B 保留 */
+
+  /* 背景 / 卡片：米白與暖白 */
+  --brand-background: 250 250 248;       /* #FAFAF8 */
+  --brand-card: 255 255 255;             /* #ffffff 保留 */
+
+  /* 中性：淺霧灰 / 深灰綠（新增） */
+  --brand-muted: 239 238 233;            /* 柔和紙張灰 */
+  --brand-deep: 67 78 76;                /* 霧藍系深色 */
+
+  /* 柔色（保留原有日式柔色系） */
+  --brand-soft-pink: 245 230 232;        /* #F5E6E8 */
+  --brand-soft-green: 232 243 232;       /* #E8F3E8 */
+  --brand-soft-yellow: 255 248 231;      /* #FFF8E7 */
+  --brand-home-ended-card: 231 239 241;  /* #E7EFF1 首頁「今日已收班」卡片 */
+  --brand-upcoming-section: 239 243 244; /* #EFF3F4 首頁「近期市集」區塊 */
+  --brand-upcoming-date-badge: 231 239 241; /* #E7EFF1 近期市集日期標籤 */
+
+  /* 功能色：危險 / 提醒 / 資訊 */
+  --brand-danger: 168 100 93;            /* #A8645D — 一般文字在白底符合 AA */
+  --brand-warn: 229 196 107;             /* #E5C46B 柔霧黃（舊 #FFF8E7 柔黃） */
+  --brand-info: 126 154 160;             /* #7E9AA0 霧藍灰 */
+
+  /* === 階段一新增：商品分類柔色（從現有 hex 提煉） === */
+  --brand-cat-clothing: 232 240 248;     /* #E8F0F8 柔藍（服飾） */
+  --brand-cat-art: 248 232 240;          /* #F8E8F0 柔紫（藝術） */
+  --brand-cat-stationery: 255 240 232;   /* #FFF0E8 柔橘（文具） */
+  --brand-cat-other: 240 240 240;        /* #F0F0F0 淺灰（其他） */
+
+  /* === 段階二新增：灰階替換色（從既有 hex 提煉，2026-07-13） === */
+  /* 高頻使用但未列入 VI 色票的替換方案 */
+  --brand-neutral-stripe: 232 227 216;      /* #E8E3D8 暖灰（表格交替列） */
+  --brand-neutral-stripe-dark: 216 208 195;   /* #D8D0C3 交替列深色 */
+  --brand-neutral-alt: 245 245 240;           /* #F5F5F0 近白灰（卡片替換背景） */
+  --brand-neutral-alt-warm: 247 245 239;      /* #F7F5EF 暖米（替換背景） */
+  --brand-accent-green: 49 95 67;             /* #315F43 深綠強調 */
+
+  /* === 段階三新增：細粒度灰階與強調色（2026-07-13） === */
+  /* 對應 known-violations.md A 級色票（頻率 ≥ 4） */
+  --brand-border-hairline: 236 236 236;       /* #ECECEC 細髮絲邊 */
+  --brand-cream-soft: 245 243 238;            /* #F5F3EE 柔米白 */
+  --brand-cream-lighter: 245 245 243;         /* #F5F5F3 極淺米白 */
+  --brand-warm-mist: 240 236 228;             /* #F0ECE4 暖霧 */
+  --brand-accent-green-deep: 38 57 47;        /* #26392F 深綠強調 */
+  --brand-mist-light: 232 232 232;            /* #E8E8E8 中性霧 */
+
+  /* === 段階四新增：狀態語義色票（2026-07-14） === */
+  /* 對應 known-violations.md P0：補齊設計系統缺少的狀態語義色票 */
+  /* good = 庫存充足 / 正常 / 通過 */
+  --brand-status-good-border: 184 216 195;     /* #B8D8C3 狀態良好邊框 */
+  --brand-status-good-bg: 241 248 243;         /* #F1F8F3 狀態良好背景 */
+  --brand-status-good-text: 47 107 70;         /* #2F6B46 狀態良好文字 */
+  /* warn = 庫存緊張 / 中等 / 提醒 */
+  --brand-status-warn-border: 231 214 160;     /* #E7D6A0 狀態警告邊框 */
+  --brand-status-warn-bg: 255 248 230;         /* #FFF8E6 狀態警告背景 */
+  --brand-status-warn-text: 122 90 18;         /* #7A5A12 狀態警告文字 */
+  /* danger = 缺貨 / 危險 / 失敗 */
+  --brand-status-danger-border: 230 185 176;   /* #E6B9B0 狀態危險邊框 */
+  --brand-status-danger-bg: 255 241 238;       /* #FFF1EE 狀態危險背景 */
+  --brand-status-danger-text: 155 58 42;       /* #9B3A2A 狀態危險文字 */
+  /* warning = 結算頁 / 損壞資料警告（與 status-warn 區分：偏紅而非偏黃） */
+  --brand-warning-border: 227 167 156;         /* #E3A79C 警告邊框 */
+  --brand-warning-bg: 255 242 238;             /* #FFF2EE 警告背景 */
+  /* 段階四延伸：B 級暖深文字（settlement grade B 用） */
+  --brand-text-warm-deep: 110 90 62;           /* #6E5A3E 暖深棕（B 級暖色文字） */
+  /* 金幣/獎盃裝飾色（2026-07-14 — 設計意圖明確，保留為 token） */
+  --brand-gold: 255 215 0;                     /* #FFD700 金幣金 */
+  --brand-gold-warm: 255 165 0;                /* #FFA500 暖橙（gradient 終點） */
+
+  /* === Atelier companion：溫暖的市集工作夥伴（2026-07-16） === */
+  /* 中性底維持工作效率，柔色表面與暖陰影負責陪伴感與內容節奏。 */
+  --atelier-canvas: 250 250 248;                /* 舊版米白底，像自然紙張 */
+  --atelier-paper: 255 255 253;                 /* 不刺眼的暖白內容表面 */
+  --atelier-ink: 58 58 58;                      /* 舊版柔黑主文字 */
+  --atelier-muted: 107 107 107;                 /* 中性暖灰次要資訊 */
+  --atelier-line: 229 228 220;                  /* 低存在感米灰線 */
+  --atelier-clay: 212 165 116;                  /* 舊版暖木色 */
+  --atelier-blue: 123 159 166;                  /* 舊版霧藍 */
+  --atelier-rose: 184 119 116;                  /* 乾燥玫瑰內容分類 */
+  --atelier-sage-soft: 230 239 233;             /* 鼠尾草柔面 */
+  --atelier-apricot-soft: 247 232 216;          /* 杏色柔面 */
+  --atelier-blue-soft: 231 239 241;             /* 霧藍柔面 */
+  --atelier-rose-soft: 244 229 228;             /* 玫瑰柔面 */
+  --atelier-sun: 226 185 104;                   /* 日光黃點綴 */
+  --atelier-shadow: 0 10px 28px rgb(var(--brand-primary) / 0.10);
+  --atelier-key-shadow: 0 2px 0 rgb(var(--brand-primary) / 0.10), 0 8px 18px rgb(var(--brand-primary) / 0.10);
+  --atelier-lift-shadow: 0 18px 42px rgb(var(--brand-primary) / 0.15);
+
   /* 圓角系統 */
   --radius: 1.25rem;
   --radius-sm: 0.75rem;
-  --radius-md: 1.125rem;
+  --radius-md: 1rem;
   --radius-lg: 1.25rem;
   --radius-xl: 1.5rem;
+}
+
+/* ✅ 自訂動畫 */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
 }
 
 * {
@@ -37,45 +159,154 @@ body {
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  color: rgb(var(--brand-foreground));
+  background: rgb(var(--brand-background));
+  font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei',
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   position: relative;
-  /* 防止下拉回彈 */
-  overscroll-behavior-y: none;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgb(var(--brand-soft-yellow) / 0.62), transparent 28rem),
+    radial-gradient(circle at 92% 24%, rgb(var(--brand-soft-green) / 0.46), transparent 32rem);
+  background-attachment: fixed;
 }
 
-/* 頁面切換過渡效果 - 輕量淡入動畫 */
+/* JapaneseD 的招牌霧藍 × 暖木漸層，降低飽和度以維持新版可讀性。 */
+.japanese-warm-header {
+  background:
+    radial-gradient(circle at 86% 12%, rgb(255 255 255 / 0.18), transparent 15rem),
+    linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-primary) / 0.94) 46%, rgb(var(--brand-secondary)) 100%);
+}
+
+/* JapaneseD 全專案視覺基準。 */
+.japanese-app {
+  min-height: 100vh;
+  color: rgb(var(--brand-foreground));
+  background:
+    radial-gradient(circle at 10% 4%, rgb(var(--brand-soft-yellow) / 0.52), transparent 25rem),
+    radial-gradient(circle at 96% 20%, rgb(var(--brand-soft-green) / 0.42), transparent 30rem),
+    rgb(var(--brand-background));
+}
+
+.japanese-gradient-header {
+  background:
+    radial-gradient(circle at 86% 12%, rgb(255 255 255 / 0.18), transparent 15rem),
+    linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-primary) / 0.94) 46%, rgb(var(--brand-secondary)) 100%);
+  box-shadow: var(--atelier-lift-shadow);
+}
+
+.japanese-gradient-header-staff {
+  background:
+    radial-gradient(circle at 86% 12%, rgb(255 255 255 / 0.14), transparent 15rem),
+    linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-primary) / 0.88) 100%);
+}
+
+.japanese-surface-card {
+  border: 1px solid rgb(var(--brand-primary) / 0.12);
+  border-radius: 1.5rem;
+  background: rgb(var(--brand-card));
+  box-shadow: var(--atelier-shadow);
+}
+
+.japanese-soft-panel {
+  border: 1px solid rgb(var(--brand-primary) / 0.10);
+  border-radius: 1.25rem;
+  background: rgb(var(--brand-soft-green) / 0.58);
+}
+
+.japanese-form-scroll {
+  background:
+    radial-gradient(circle at 8% 2%, rgb(var(--brand-soft-yellow) / 0.50), transparent 20rem),
+    radial-gradient(circle at 100% 28%, rgb(var(--brand-soft-green) / 0.42), transparent 24rem),
+    rgb(var(--atelier-canvas));
+}
+
+.japanese-form-footer {
+  box-shadow: 0 -12px 30px rgb(var(--brand-primary) / 0.08);
+}
+
+.japanese-app ::selection {
+  color: rgb(var(--brand-foreground));
+  background: rgb(var(--brand-soft-pink));
+}
+
+.japanese-app :where(input, textarea, select) {
+  color: rgb(var(--brand-foreground));
+  background-color: rgb(var(--brand-card));
+}
+
+.japanese-app :where(input, textarea, select)::placeholder {
+  color: rgb(var(--brand-muted-foreground) / 0.72);
+}
+
+/* 將仍在舊頁面中的冷灰 utility 收斂到 JapaneseD 暖中性色。 */
+.japanese-app :where(.text-gray-800, .text-gray-700) {
+  color: rgb(var(--brand-foreground));
+}
+
+.japanese-app :where(.text-gray-600, .text-gray-500) {
+  color: rgb(var(--brand-muted-foreground));
+}
+
+.japanese-app .text-gray-300 {
+  color: rgb(var(--brand-neutral-stripe-dark));
+}
+
+.japanese-app .bg-gray-50 {
+  background-color: rgb(var(--brand-background));
+}
+
+.japanese-app .bg-gray-100 {
+  background-color: rgb(var(--brand-muted));
+}
+
+.japanese-app .bg-gray-200 {
+  background-color: rgb(var(--brand-neutral-stripe));
+}
+
+.japanese-app :where(.border-gray-100, .border-gray-200) {
+  border-color: rgb(var(--brand-primary) / 0.12);
+}
+
+.japanese-app [class~="bg-black/50"] {
+  background-color: rgb(var(--brand-deep) / 0.36);
+}
+
 .page-transition {
-  animation: pageEnter 0.15s ease-out;
-  will-change: opacity;
-  /* 強制硬體加速 */
-  transform: translateZ(0);
-  backface-visibility: hidden;
+  background-color: rgb(var(--brand-background));
+  min-height: 100vh;
 }
 
-@keyframes pageEnter {
-  from {
-    opacity: 0;
+.route-fade-in {
+  animation: page-fade-in 120ms ease-out;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0.98; }
+  to   { opacity: 1; }
+}
+
+/* 尊重用戶的動畫偏好設定 */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
-  to {
-    opacity: 1;
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
 /* 數字對齊 */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
-}
-
-/* 平滑滾動 */
-html {
-  scroll-behavior: smooth;
 }
 
 /* 自定義滾動條 */
@@ -89,66 +320,40 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--mist-blue);
+  background: rgb(var(--brand-primary));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6A8E95;
+  background: rgb(var(--brand-primary) / 0.85);
 }
 
-/* 動畫 */
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+.scrollbar-none {
+  scrollbar-width: none;
 }
 
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* 動畫 - 移除所有動畫效果 */
 .animate-slide-up {
-  animation: slide-up 0.3s ease-out;
-}
-
-@keyframes bounce-up {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: translateY(-20px) scale(1.2);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-40px) scale(0.8);
-    opacity: 0;
-  }
+  /* 無動畫 - 直接顯示 */
 }
 
 .animate-bounce-up {
-  animation: bounce-up 0.6s ease-out forwards;
+  /* 無動畫 - 直接顯示 */
 }
 
-/* 漸層 Header */
+/* 漸層 Header — 霧松綠 → 暖杏橘（VI 主色組合） */
 .gradient-header {
-  background: linear-gradient(135deg, #7B9FA6 0%, #D4A574 100%);
+  background: linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-secondary)) 100%);
 }
 
 /* 防止頁面切換閃爍 - 保持背景色 */
 #__next,
 [data-nextjs-scroll-focus-boundary] {
   background: var(--background);
-}
-
-/* 優化觸摸反饋 */
-* {
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  /* 優化觸摸滾動 */
-  -webkit-overflow-scrolling: touch;
 }
 
 /* 移除點擊延遲 */
@@ -156,29 +361,12 @@ a, button {
   touch-action: manipulation;
 }
 
-/* 防止頁面切換閃爍 - 保持背景色 */
-#__next,
-[data-nextjs-scroll-focus-boundary] {
-  background: var(--background);
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid rgb(var(--brand-primary));
+  outline-offset: 2px;
 }
 
-/* 硬體加速 */
-.hardware-accelerated {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000px;
-}
-
-/* 骨架屏動畫 - 防止閃爍 + 流光效果 */
-@keyframes skeleton-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
+/* 骨架屏動畫 - 移除透明度變化 */
 @keyframes skeleton-shimmer {
   0% {
     background-position: -200% 0;
@@ -188,11 +376,8 @@ a, button {
   }
 }
 
-/* 骨架屏基礎樣式 */
+/* 骨架屏基礎樣式 - 移除呼吸燈效果 */
 .skeleton-shimmer {
-  /* 呼吸燈效果 */
-  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  
   /* 流光效果 */
   background: linear-gradient(
     90deg,
@@ -201,17 +386,12 @@ a, button {
     rgba(240, 240, 240, 0) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  
-  /* 防止閃爍：延遲顯示 */
-  animation-delay: 0.2s;
-  opacity: 0;
-  animation-fill-mode: forwards;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+  opacity: 1;
 }
 
-/* Header 骨架專用（半透明白色流光） */
+/* Header 骨架專用（半透明白色流光）- 移除呼吸燈效果 */
 .skeleton-shimmer-header {
-  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0.1) 0%,
@@ -219,15 +399,12 @@ a, button {
     rgba(255, 255, 255, 0.1) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation-delay: 0.2s;
-  opacity: 0;
-  animation-fill-mode: forwards;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+  opacity: 1;
 }
 
-/* 深色骨架（卡片內容） */
+/* 深色骨架（卡片內容）- 移除呼吸燈效果 */
 .skeleton-shimmer-dark {
-  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   background: linear-gradient(
     90deg,
     rgba(229, 229, 229, 0.8) 0%,
@@ -235,15 +412,12 @@ a, button {
     rgba(229, 229, 229, 0.8) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation-delay: 0.2s;
-  opacity: 0;
-  animation-fill-mode: forwards;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+  opacity: 1;
 }
 
-/* 淺色骨架（背景區域） */
+/* 淺色骨架（背景區域）- 移除呼吸燈效果 */
 .skeleton-shimmer-light {
-  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   background: linear-gradient(
     90deg,
     rgba(249, 249, 249, 0.8) 0%,
@@ -251,8 +425,6 @@ a, button {
     rgba(249, 249, 249, 0.8) 100%
   );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 2s ease-in-out infinite, skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation-delay: 0.2s;
-  opacity: 0;
-  animation-fill-mode: forwards;
+  animation: skeleton-shimmer 2s ease-in-out infinite;
+  opacity: 1;
 }
