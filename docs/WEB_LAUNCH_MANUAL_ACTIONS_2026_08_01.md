@@ -96,6 +96,12 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
 - Review every row and blocking question in
   `subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md` against the
   final native dependency lockfile, permissions, provider terms, and submitted binary.
+- Review the candidate zh-TW store copy and eleven manual checks in
+  `subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.md`. Publish stable HTTPS
+  support, privacy, and account-deletion resources; configure reviewer contact,
+  reviewer access, and Google contact email only in protected store fields. Update the
+  status-only JSON without credentials and run `npm.cmd run check:native-store-metadata`.
+  Exit `0` is a console-entry preflight, not store submission or compliance approval.
 - Create the Apple/Google icon and Google feature graphic from a brand-approved
   high-resolution source; do not promote an upscaled PWA icon as final artwork.
 - Capture the zh-TW storefront screenshots from the final authenticated native release

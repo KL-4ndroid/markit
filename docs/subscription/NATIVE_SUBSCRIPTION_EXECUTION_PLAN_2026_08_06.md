@@ -171,6 +171,15 @@ The planning-only implementation boundary is recorded in
 `docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md`; its AD1-AD4
 slices require separate review and do not authorize destructive migration or runtime.
 
+The candidate zh-TW listing copy, official field limits, reviewer-access boundary,
+and eleven external completion checks are recorded in
+`docs/subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.md`. The non-secret
+handoff is `docs/subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.json`; run
+`npm.cmd run check:native-store-metadata` after publishing approved URLs and recording
+status-only evidence. Exit `1` is expected while URLs, review access, legal approval,
+and final-binary review remain pending. Exit `0` is preflight only and does not close
+`STORE-COMPLIANCE` or submit either store listing.
+
 The store listing inventory, canonical delivery paths, screenshot truth boundaries,
 and manual completion evidence are recorded in
 `docs/subscription/NATIVE_STORE_LISTING_ASSET_BASELINE_2026_08_06.md`. Run

@@ -83,7 +83,9 @@ state as production store evidence.
 
 Avoid claims about rankings, discounts, prices, awards, or features that cannot be
 verified in the submitted build. Promotional overlays and device frames require a
-separate manual policy and legibility review.
+separate manual policy and legibility review. Screenshot captions and overlays must
+also match the approved copy and truth boundaries in
+`NATIVE_STORE_LISTING_METADATA_2026_08_06.md`.
 
 ## 5. Completion Evidence
 
