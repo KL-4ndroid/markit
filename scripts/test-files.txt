@@ -199,6 +199,7 @@ tsx tests/subscription-feature-gate-mapping.test.ts
 tsx tests/subscription-strategic-growth-data-reserve.test.ts
 tsx tests/subscription-billing-provider-decision.test.ts
 tsx tests/native-subscription-direction.test.ts
+tsx tests/ios-phase2-gate2-compensation-runbook.test.ts
 tsx tests/native-account-entitlement.test.ts
 tsx tests/platform-in-app-purchase-boundary.test.ts
 tsx tests/native-store-verification-contract.test.ts

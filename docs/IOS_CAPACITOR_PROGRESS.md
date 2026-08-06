@@ -145,3 +145,9 @@ manual file-selection path, execute the thumbnail/finalize probes, prove physica
 R2 deletion and metadata/local-payload behavior, remove all temporary variables,
 redeploy safely, and perform the normal retry. Gate 2 stays closed and Phase 3
 native project/bootstrap work remains unauthorized until that evidence passes.
+
+Use the existing runtime through these canonical manual artifacts; do not create a
+second fault route, cleanup worker, probe script, or verifier:
+
+- `docs/IOS_PHASE2_GATE2_COMPENSATION_RUNBOOK.md`
+- `docs/IOS_PHASE2_GATE2_COMPENSATION_EVIDENCE_TEMPLATE.md`
