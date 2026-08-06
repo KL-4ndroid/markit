@@ -1,7 +1,7 @@
 # Subscription Feature-Gate Registry
 
-Date: 2026-08-01
-Status: S3 mapping, S6A-S6E analytics/report/PDF/Team tier gates, and LV1 local simulation harness complete locally; S7 strategic reserve design complete as planning only; Team migrations 064/065 and isolated authenticated transition smoke pass, while release-deployment evidence remains pending
+Date: 2026-08-06
+Status: S3 mapping, S6A-S6E analytics/report/PDF/Team tier gates, LV1 local simulation, and the read-only native pre-runtime subscription center are complete locally; S7 and F3C remain planning only; Team migrations 064/065 and isolated authenticated transition smoke pass, while release-deployment and native store evidence remain pending
 Authority: derived from current repository inspection; it records runtime truth and does not activate a product-plan decision
 
 ## Status Vocabulary
@@ -24,6 +24,8 @@ Risk is assessed against a future paid launch, not against current free operatio
 | Capability ID | UI source | Runtime source | Server enforcement today | Current status | Paid-launch risk | First approved action |
 | --- | --- | --- | --- | --- | --- | --- |
 | `subscription.account.current_plan` | analytics and settlement report gates; neutral account preview | S4 authenticated client reader mounted on protected analytics/report surfaces | `GET /api/account-capabilities`, server resolver, guarded subscription account source | `local_complete_migration_user_confirmed` | medium: deployment evidence and explicit paid-state UI smoke remain | keep production unverified; no user mutation route |
+| `subscription.account.center` | `/subscription` account summary and originating-store status | S4 authenticated capability read plus pure view model | read only; future billing/promotion statuses are accepted by the client contract while the server still emits disconnected Free snapshots | `local_complete_production_unverified` | high if purchase evidence is mistaken for entitlement | keep purchase/restore disabled until account binding, native adapter, verification runtime, and F3C are approved |
+| `subscription.native.catalog` | no purchasable UI while unconfigured | platform-neutral Apple/Google sandbox mapping template | active mapping requires an active internal price and matching store product; default template fails closed | `model_only` | critical if candidate prices or unverified product IDs become purchasable | populate only from approved store configuration and activate through a reviewed release |
 | `subscription.plan.preview` | `/subscription`, `PricingCard` | static presentation | none; actions disabled | `presentation_only` | medium: `enterprise` drift | S1A/S2 use Free/Pro/Team source |
 | `subscription.local_simulation` | owner-only `/subscription` local test panel | authenticated, loopback-only, four-hour in-memory state | private server flag, loopback request, bearer auth; never accepted by paid write routes | `gated_non_plan` | critical if enabled outside local validation | authenticated Free/Pro/Team UI smoke passed; keep deployment flag absent |
 | `market.create` / `market.manage` | market list/forms | local events plus sync | auth/role/sync policies, no plan | `active_unmetered` | low; intended Free core | keep unchanged |

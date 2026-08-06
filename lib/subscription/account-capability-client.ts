@@ -140,11 +140,18 @@ export function parseAccountCapabilityApiSuccess(value: unknown): AccountCapabil
   if (!recordsEqual(capabilities.features, rawFeatures) || !recordsEqual(capabilities.limits, rawLimits)) {
     return null;
   }
-  const adminStatus = value.status === 'admin_enabled'
-    || value.status === 'admin_inactive'
-    || value.status === 'simulation_enabled';
-  if (adminStatus !== (capabilities.planSource === 'admin')) return null;
-  if (!adminStatus && (capabilities.planCode !== 'free' || capabilities.planSource !== 'free')) return null;
+  const expectedPlanSource: AccountPlanSource = value.status.startsWith('admin_')
+    || value.status === 'simulation_enabled'
+    ? 'admin'
+    : value.status.startsWith('billing_') && value.status !== 'billing_not_connected'
+      ? 'billing'
+      : value.status.startsWith('promotion_') && value.status !== 'promotion_not_connected'
+        ? 'promotion'
+        : 'free';
+  if (capabilities.planSource !== expectedPlanSource) return null;
+  if (expectedPlanSource === 'free' && capabilities.planCode !== 'free') return null;
+  if (expectedPlanSource === 'promotion' && capabilities.planCode !== 'pro') return null;
+  if (expectedPlanSource !== 'free' && capabilities.planCode === 'free') return null;
 
   return {
     ok: true,

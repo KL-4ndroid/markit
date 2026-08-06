@@ -15,7 +15,7 @@ export type PaidPlanCode = Exclude<AccountPlanCode, 'free'>;
 export type BillingCadence = 'monthly' | 'annual';
 export type PricePolicy = 'standard' | 'founder_locked';
 export type PriceLockStatus = 'active' | 'grace' | 'dormant' | 'forfeited';
-export type PriceRuntimeStatus = 'candidate' | 'blocked_pending_commercial_approval';
+export type PriceRuntimeStatus = 'candidate' | 'active' | 'blocked_pending_commercial_approval';
 
 export type SubscriptionPriceVersion = Readonly<{
   id: SubscriptionPriceVersionId;

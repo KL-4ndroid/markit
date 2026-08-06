@@ -164,6 +164,18 @@ export function getAccountCapabilitySourcePresentation(
         description: '目前能力來自本機測試工具，不代表付款、正式訂閱或雲端寫入授權。',
         activePaidClaim: false,
       };
+    case 'billing_enabled':
+      return {
+        label: '商店訂閱',
+        description: '方案能力來自伺服器已驗證的付款來源。',
+        activePaidClaim: true,
+      };
+    case 'billing_inactive':
+      return {
+        label: '商店訂閱未啟用',
+        description: '保留帳務紀錄，但目前不開放新的付費能力操作。',
+        activePaidClaim: false,
+      };
     case 'billing_not_connected':
       return {
         label: '付款尚未連接',
@@ -174,6 +186,18 @@ export function getAccountCapabilitySourcePresentation(
       return {
         label: '推廣獎勵尚未連接',
         description: '系統不會在推廣資格與獎勵流程尚未完成時授予 Pro。',
+        activePaidClaim: false,
+      };
+    case 'promotion_enabled':
+      return {
+        label: '推廣獎勵',
+        description: '方案能力來自伺服器已驗證的限期推廣資格，不代表已付款。',
+        activePaidClaim: false,
+      };
+    case 'promotion_inactive':
+      return {
+        label: '推廣獎勵已結束',
+        description: '保留獎勵紀錄，但目前不開放新的 Pro 能力操作。',
         activePaidClaim: false,
       };
     case 'unavailable':

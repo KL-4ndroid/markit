@@ -231,6 +231,7 @@ type PriceRuntimeStatus =
   | 'presentation_only'
   | 'disabled'
   | 'candidate'
+  | 'active'
   | 'blocked_pending_commercial_approval';
 
 type PriceEnforcement = 'server_required' | 'provider_and_server';

@@ -202,6 +202,12 @@ tsx tests/native-subscription-direction.test.ts
 tsx tests/native-account-entitlement.test.ts
 tsx tests/platform-in-app-purchase-boundary.test.ts
 tsx tests/native-store-verification-contract.test.ts
+tsx tests/subscription-capability-implementation.test.ts
+tsx tests/native-store-catalog.test.ts
+tsx tests/native-purchase-workflow.test.ts
+tsx tests/subscription-center-view.test.ts
+tsx tests/account-capability-billing-read-contract.test.ts
+tsx tests/subscription-center-ui.test.ts
 tsx tests/subscription-account-capability-api.test.ts
 tsx tests/subscription-simulation.test.ts
 tsx tests/analytics-subscription-access.test.ts

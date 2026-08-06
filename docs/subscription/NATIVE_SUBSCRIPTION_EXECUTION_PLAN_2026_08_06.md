@@ -55,6 +55,25 @@ checkout. Native launch cannot reuse Web readiness evidence as store evidence.
 
 ## 4. Implementation Slices
 
+### Local Pre-runtime Readiness Update
+
+Completed locally on 2026-08-06 without enabling billing or paid authority:
+
+- read-only account subscription center with plan, source, billing, entitlement,
+  expiry, and originating-store presentation;
+- platform-neutral purchase and restore workflow in which store success always waits
+  for server verification and never grants access;
+- unconfigured Apple/Google sandbox catalog template with fail-closed mapping and
+  active internal-price validation;
+- client read-contract preparation for future billing and promotion states while the
+  server continues returning disconnected Free snapshots;
+- capability implementation consistency audit.
+
+Restore and manage-subscription controls remain disabled until a native adapter,
+authenticated account-binding token, and approved verification runtime are available.
+No Apple/Google SDK, Capacitor project, server verification route, notification route,
+writer, or entitlement mutation was added.
+
 ### N0: Decision And Gates
 
 - synchronize provider, subscription, Capacitor, and launch documents;

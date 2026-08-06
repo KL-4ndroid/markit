@@ -6,7 +6,11 @@ export const ACCOUNT_CAPABILITY_READ_STATUSES = [
   'admin_enabled',
   'admin_inactive',
   'simulation_enabled',
+  'billing_enabled',
+  'billing_inactive',
   'billing_not_connected',
+  'promotion_enabled',
+  'promotion_inactive',
   'promotion_not_connected',
 ] as const;
 
