@@ -150,6 +150,9 @@ The local disclosure audit is recorded in
 draft input, not a completed store form. `STORE-COMPLIANCE` remains manual and
 `ACCOUNT-DELETION` remains pending separate implementation approval because local
 Dexie deletion and support copy do not delete an authenticated cloud account.
+The planning-only implementation boundary is recorded in
+`docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md`; its AD1-AD4
+slices require separate review and do not authorize destructive migration or runtime.
 
 ### N8: Deferred Web Billing
 

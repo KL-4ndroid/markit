@@ -1,5 +1,19 @@
 # Staff Role Matrix
 
+## 2026-08-06 Account Deletion Planning Boundary
+
+- `viewer`, `operator`, and `manager` may eventually initiate deletion of only their
+  own authenticated Féria account; role capability never grants deletion of the owner
+  workspace or another staff account.
+- Only the owner may initiate deletion of their own owner workspace. An owner removing
+  staff remains relationship revoke and must not delete the staff member's auth account.
+- Staff-authored events in an owner workspace require an approved irreversible actor
+  tombstone or nullable-reference design before staff account deletion can be safe.
+- Local Dexie deletion, sign-out, role downgrade, staff revoke, and account deletion are
+  different operations and must retain separate confirmations and tests.
+- Runtime is not implemented or approved. The canonical proposal is
+  `docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md`.
+
 ## 2026-06-19 Decision Update
 
 - Deal/revenue writes are open to `operator` and `manager` through `canRecordDeal`.
