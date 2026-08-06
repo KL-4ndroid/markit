@@ -84,6 +84,11 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
 - Complete the Apple and Google account, agreement, tax/bank, product catalog,
   tester, device, privacy, and store-review inputs listed in
   `subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md`.
+- Review `subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md` before creating
+  subscription products. Approve Apple group/levels, Google product/base plans, and a
+  sandbox-proven Founder mechanism that can actually preserve the promised renewal
+  price without exposing it to ineligible users. Keep every mapping non-billable until
+  store verification and entitlement writing are separately approved.
 - Review every row and blocking question in
   `subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md` against the
   final native dependency lockfile, permissions, provider terms, and submitted binary.

@@ -6,6 +6,7 @@ import {
   NATIVE_STORE_VERIFICATION_PAYLOAD_MAX_LENGTH,
   isValidNativeStoreVerificationContext,
   parseNativeStoreVerificationRequest,
+  type VerifiedNativeStoreSubscription,
 } from '../lib/subscription/native-store-verification-contract';
 import {
   TEST_APPLE_VERIFICATION_REQUEST,
@@ -51,6 +52,34 @@ assert.equal(isValidNativeStoreVerificationContext({
   environment: 'sandbox',
 }), false);
 
+const verifiedGoogleSnapshot: VerifiedNativeStoreSubscription = Object.freeze({
+  verification: 'verified',
+  accountBinding: 'matched',
+  ownerId: 'server-derived-owner',
+  origin: 'google_play',
+  environment: 'sandbox',
+  providerSubscriptionRef: 'test-only-subscription-reference',
+  providerTransactionRef: 'test-only-transaction-reference',
+  productId: 'test.feria.pro',
+  basePlanId: 'annual',
+  offerId: 'founder-annual',
+  mappedPriceVersionId: 'pro_founder_annual_twd_launch_v1',
+  mappedPlanCode: 'pro',
+  mappedCadence: 'annual',
+  status: 'active',
+  autoRenewEnabled: true,
+  currentPeriodStartsAt: '2026-08-01T00:00:00.000Z',
+  currentPeriodEndsAt: '2027-08-01T00:00:00.000Z',
+  storeObservedAt: '2026-08-01T00:00:01.000Z',
+  verifiedAt: '2026-08-01T00:00:02.000Z',
+  snapshotHash: 'test-only-snapshot-hash',
+});
+assert.equal(verifiedGoogleSnapshot.basePlanId, 'annual');
+assert.equal(
+  verifiedGoogleSnapshot.mappedPriceVersionId,
+  'pro_founder_annual_twd_launch_v1',
+);
+
 const root = join(__dirname, '..');
 const contract = readFileSync(
   join(root, 'lib/subscription/native-store-verification-contract.ts'),
@@ -66,5 +95,6 @@ for (const source of [contract, documentation]) {
 assert.doesNotMatch(contract, /subscription_accounts|update\(|insert\(|upsert\(/i);
 assert.match(documentation, /does not add an API route/);
 assert.match(documentation, /STORE-VERIFICATION.*remains incomplete/s);
+assert.match(documentation, /productId.*basePlanId.*offerId.*mappedPriceVersionId/s);
 
 console.log('PASS bounded native store verification request and trusted server context');

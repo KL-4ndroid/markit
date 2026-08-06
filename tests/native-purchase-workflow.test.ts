@@ -20,8 +20,13 @@ async function main(): Promise<void> {
     store: 'apple_app_store' as const,
     productId: evidence.productId,
     displayName: 'Pro Annual',
-    displayPrice: 'NT$1,990',
-    currencyCode: 'TWD',
+    purchaseOptions: [{
+      purchaseOptionId: 'test-only-apple-standard-option',
+      basePlanId: null,
+      offerId: null,
+      displayPrice: 'NT$1,990',
+      currencyCode: 'TWD',
+    }],
   };
   const successful = createFakeInAppPurchasePort({
     availability: { available: true, store: 'apple_app_store', reason: 'available' },
@@ -43,7 +48,11 @@ async function main(): Promise<void> {
   });
   assert.equal((await runNativePurchase({
     port: successful.port,
-    request: { productId: product.productId, accountBinding: binding },
+    request: {
+      productId: product.productId,
+      purchaseOptionId: product.purchaseOptions[0].purchaseOptionId,
+      accountBinding: binding,
+    },
   })).phase, 'awaiting_server_verification');
   assert.equal((await runNativePurchaseRestore({
     port: successful.port,
@@ -60,7 +69,11 @@ async function main(): Promise<void> {
   });
   assert.equal((await runNativePurchase({
     port: pending.port,
-    request: { productId: product.productId, accountBinding: binding },
+    request: {
+      productId: product.productId,
+      purchaseOptionId: product.purchaseOptions[0].purchaseOptionId,
+      accountBinding: binding,
+    },
   })).phase, 'pending');
 
   const cancelled = createFakeInAppPurchasePort({
@@ -72,7 +85,11 @@ async function main(): Promise<void> {
   });
   assert.equal((await runNativePurchase({
     port: cancelled.port,
-    request: { productId: product.productId, accountBinding: binding },
+    request: {
+      productId: product.productId,
+      purchaseOptionId: product.purchaseOptions[0].purchaseOptionId,
+      accountBinding: binding,
+    },
   })).phase, 'cancelled');
 
   const web = createFakeInAppPurchasePort({

@@ -68,6 +68,8 @@ Completed locally on 2026-08-06 without enabling billing or paid authority:
   for server verification and never grants access;
 - unconfigured Apple/Google sandbox catalog template with fail-closed mapping and
   active internal-price validation;
+- offer-aware product/base-plan selector contract with adapter-local purchase options
+  and server-verified immutable price-version mapping;
 - client read-contract preparation for future billing and promotion states while the
   server continues returning disconnected Free snapshots;
 - capability implementation consistency audit;
@@ -105,6 +107,8 @@ Status: complete locally on 2026-08-06 with unavailable Web and deterministic fa
 
 - define a `lib/platform` purchase capability with catalog, purchase, restore,
   billing-management, and availability operations;
+- represent one product with multiple purchasable options; keep Google offer tokens and
+  Apple purchase options behind an opaque, non-persistent `purchaseOptionId`;
 - add deterministic unavailable and fake adapters for shared orchestration tests;
 - prohibit Apple, Google, browser, React, Dexie, and entitlement mutation imports
   from the contract.
@@ -114,6 +118,8 @@ Status: complete locally on 2026-08-06 with unavailable Web and deterministic fa
 Status: contract complete locally on 2026-08-06; store adapters, routes, notifications, and writers remain pending approval
 
 - normalize Apple transaction/JWS and Google purchase-token verification inputs;
+- require provider-observed product, base-plan, and offer identity to resolve the exact
+  immutable internal price version;
 - define bounded server request/response and safe error contracts;
 - add official-sandbox fixture placeholders and corrupted-fixture tests;
 - do not add live verification endpoints before secrets, app identifiers, and a
@@ -140,6 +146,11 @@ agreements, tax/bank profiles, subscription products, prices, testers, and
 server-notification configuration. Execute purchase, renewal, cancellation,
 grace, restore, refund, duplicate-origin, account-switch, and cross-platform
 access tests.
+
+The candidate product/base-plan structure, Founder price-lock compatibility issue,
+activation sequence, and exact trust boundary are recorded in
+`docs/subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md`. `STORE-CATALOG`
+remains manual; no product, base plan, offer, price, or mapping is active.
 
 ### N7: Compliance And Release Candidate
 

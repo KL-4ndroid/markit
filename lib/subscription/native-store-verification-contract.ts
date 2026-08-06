@@ -4,7 +4,11 @@ import type {
   ProviderResult,
 } from './billing-provider-contract';
 import type { NativeBillingOrigin } from './native-account-entitlement';
-import type { BillingCadence, PaidPlanCode } from './subscription-pricing';
+import type {
+  BillingCadence,
+  PaidPlanCode,
+  SubscriptionPriceVersionId,
+} from './subscription-pricing';
 
 export const NATIVE_STORE_VERIFICATION_SCHEMA_VERSION = 1 as const;
 export const NATIVE_STORE_PRODUCT_ID_MAX_LENGTH = 256;
@@ -38,6 +42,9 @@ export type VerifiedNativeStoreSubscription = Readonly<{
   providerSubscriptionRef: string;
   providerTransactionRef: string;
   productId: string;
+  basePlanId: string | null;
+  offerId: string | null;
+  mappedPriceVersionId: SubscriptionPriceVersionId;
   mappedPlanCode: PaidPlanCode;
   mappedCadence: BillingCadence;
   status: ProviderSubscriptionStatus;

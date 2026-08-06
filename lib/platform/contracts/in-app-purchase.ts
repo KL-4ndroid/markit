@@ -30,12 +30,21 @@ export type InAppPurchaseAvailability = Readonly<{
   reason: 'available' | 'web_checkout_deferred' | 'native_adapter_not_installed' | 'store_unavailable';
 }>;
 
+export type InAppPurchaseOption = Readonly<{
+  // Adapter-local handle. Google may back this with an offer token; Apple may
+  // back it with purchase options. Shared code must not parse or persist it.
+  purchaseOptionId: string;
+  basePlanId: string | null;
+  offerId: string | null;
+  displayPrice: string;
+  currencyCode: string | null;
+}>;
+
 export type InAppPurchaseProduct = Readonly<{
   store: InAppPurchaseStore;
   productId: string;
   displayName: string;
-  displayPrice: string;
-  currencyCode: string | null;
+  purchaseOptions: readonly InAppPurchaseOption[];
 }>;
 
 export type StoreAccountBinding = Readonly<{
@@ -51,6 +60,7 @@ export type StorePurchaseEvidence = Readonly<{
 
 export type InAppPurchaseRequest = Readonly<{
   productId: string;
+  purchaseOptionId: string;
   accountBinding: StoreAccountBinding;
 }>;
 

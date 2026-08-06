@@ -34,7 +34,8 @@ The adapter may return `verification: verified` only after all of these pass:
 
 1. current Apple/Google cryptographic or authenticated API verification;
 2. app/bundle/package and environment match;
-3. product maps to an approved immutable internal price version;
+3. verified product, base-plan, and offer identifiers map to one approved immutable
+   internal price version; a client-selected purchase option never performs this mapping;
 4. transaction and subscription identity are authoritative;
 5. store account binding matches the authenticated Féria owner;
 6. current store state is queried when notification or client evidence can be stale;
@@ -49,10 +50,17 @@ becomes a `VerifiedNativeStoreSubscription`.
 - opaque verification payload: 65,536 characters maximum;
 - expected account binding: 512 characters maximum;
 - reject extra request fields and unknown schema versions;
-- never log the opaque payload, account binding, full transaction/subscription
-  reference, signed data, authorization header, owner ID, or email;
+- never log the opaque payload, account binding, adapter-local purchase option ID,
+  Google offer token, full transaction/subscription reference, signed data,
+  authorization header, owner ID, or email;
 - general logs may contain only store, environment, operation, safe error code,
   latency bucket, retry count, correlation ID, and hash prefix.
+
+`VerifiedNativeStoreSubscription` records the provider-observed `productId`,
+`basePlanId`, and `offerId` plus the exact `mappedPriceVersionId`. Google requires
+base-plan/offer identity to distinguish purchasable options under one subscription;
+Apple offer identity is nullable for a standard product. These fields come from the
+trusted adapter response, never from client entitlement claims.
 
 ## Future Runtime Gate
 

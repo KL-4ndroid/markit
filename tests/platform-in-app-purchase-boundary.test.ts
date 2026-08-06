@@ -17,6 +17,7 @@ async function main(): Promise<void> {
   });
   assert.deepEqual(await webPort.purchase({
     productId: 'pro.annual',
+    purchaseOptionId: 'web-unavailable-option',
     accountBinding: { opaqueAccountToken: 'opaque-test-binding' },
   }), {
     ok: false,
@@ -35,8 +36,13 @@ async function main(): Promise<void> {
       store: 'apple_app_store',
       productId: 'pro.annual',
       displayName: 'Pro Annual',
-      displayPrice: 'NT$ 1,990',
-      currencyCode: 'TWD',
+      purchaseOptions: [{
+        purchaseOptionId: 'test-only-apple-standard-option',
+        basePlanId: null,
+        offerId: null,
+        displayPrice: 'NT$ 1,990',
+        currencyCode: 'TWD',
+      }],
     }],
     purchaseResult: { ok: true, value: evidence },
     restoreResult: { ok: true, value: [evidence] },
@@ -50,6 +56,7 @@ async function main(): Promise<void> {
     assert.equal(products.ok && products.value.length, 1);
     assert.deepEqual(await getInAppPurchasePort().purchase({
       productId: 'pro.annual',
+      purchaseOptionId: 'test-only-apple-standard-option',
       accountBinding: { opaqueAccountToken: 'opaque-test-binding' },
     }), { ok: true, value: evidence });
     assert.deepEqual(await getInAppPurchasePort().restore({
