@@ -33,6 +33,11 @@ export type NativeStoreCatalogValidationCode =
   | 'base_plan_forbidden'
   | 'offer_id_invalid'
   | 'purchase_option_id_invalid'
+  | 'price_phase_missing'
+  | 'price_phase_invalid'
+  | 'price_phase_currency_mismatch'
+  | 'price_phase_recurring_invalid'
+  | 'standard_option_has_intro_phase'
   | 'candidate_mapping_missing_product'
   | 'active_mapping_missing_product'
   | 'unconfigured_mapping_has_selector'
@@ -97,6 +102,67 @@ function selectorKey(value: Readonly<{
   offerId: string | null;
 }>): string {
   return `${value.productId}:${value.basePlanId ?? ''}:${value.offerId ?? ''}`;
+}
+
+export function validateInAppPurchaseOptionPricing(
+  option: InAppPurchaseOption,
+): NativeStoreCatalogValidationCode | null {
+  if (option.pricePhases.length === 0) return 'price_phase_missing';
+  if (option.pricePhases.length > 8) return 'price_phase_invalid';
+
+  let paidCurrency: string | null = null;
+  let recurringCount = 0;
+
+  for (const [index, phase] of option.pricePhases.entries()) {
+    if (
+      phase.displayPrice.length === 0
+      || phase.displayPrice.length > 128
+      || phase.displayPrice.trim() !== phase.displayPrice
+      || /[\u0000-\u001f\u007f]/.test(phase.displayPrice)
+      || !/^P(?:[1-9]\d?)(?:D|W|M|Y)$/.test(phase.billingPeriod)
+      || !['free_trial', 'pay_as_you_go', 'pay_up_front', 'recurring'].includes(
+        phase.paymentMode,
+      )
+    ) {
+      return 'price_phase_invalid';
+    }
+    if (phase.currencyCode !== null && !/^[A-Z]{3}$/.test(phase.currencyCode)) {
+      return 'price_phase_invalid';
+    }
+
+    if (phase.paymentMode === 'recurring') {
+      recurringCount += 1;
+      if (
+        phase.billingCycleCount !== null
+        || index !== option.pricePhases.length - 1
+        || !['P1M', 'P1Y'].includes(phase.billingPeriod)
+      ) {
+        return 'price_phase_recurring_invalid';
+      }
+    } else if (
+      !Number.isSafeInteger(phase.billingCycleCount)
+      || phase.billingCycleCount === null
+      || phase.billingCycleCount < 1
+      || phase.billingCycleCount > 99
+    ) {
+      return 'price_phase_invalid';
+    }
+
+    if (phase.paymentMode !== 'free_trial' && phase.currencyCode !== null) {
+      if (paidCurrency !== null && paidCurrency !== phase.currencyCode) {
+        return 'price_phase_currency_mismatch';
+      }
+      paidCurrency = phase.currencyCode;
+    }
+  }
+
+  if (recurringCount !== 1) return 'price_phase_recurring_invalid';
+  if (option.offerId === null && (
+    option.pricePhases.length !== 1 || option.pricePhases[0].paymentMode !== 'recurring'
+  )) {
+    return 'standard_option_has_intro_phase';
+  }
+  return null;
 }
 
 function validateStoreSelector(input: Readonly<{
@@ -219,6 +285,8 @@ export function validateNativeStoreCatalog(input: {
         offerId: option.offerId,
       });
       if (selectorError) return { ok: false, code: selectorError, priceVersionId: null };
+      const pricingError = validateInAppPurchaseOptionPricing(option);
+      if (pricingError) return { ok: false, code: pricingError, priceVersionId: null };
       const selectedKey = selectorKey({ productId: product.productId, ...option });
       if (optionSelectors.has(selectedKey)) {
         return { ok: false, code: 'store_option_duplicate', priceVersionId: null };

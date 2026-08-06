@@ -58,11 +58,21 @@ The shared contract now separates four concepts:
 | `basePlanId` | Google Play configuration and verified subscription | Distinguishes monthly, annual, or other Google base plans; always `null` for Apple. |
 | `offerId` | Store configuration and verified subscription | Distinguishes a configured discounted offer; nullable for standard options. |
 | `purchaseOptionId` | Native adapter catalog response only | Opaque local handle used to start the selected purchase option. It may encapsulate a Google offer token or Apple purchase option. |
+| `pricePhases` | Localized store catalog response only | Ordered trial/introductory phases followed by the recurring price and billing period shown before purchase. |
 
 `purchaseOptionId` is not a price, product mapping, receipt, entitlement, or durable
 identifier. Shared code must not parse, log, persist, sync, or send it to the
 entitlement writer. The server maps only provider-verified `productId`, `basePlanId`,
 and `offerId` to an immutable `mappedPriceVersionId`.
+
+The shared validator limits final recurring periods to the approved monthly (`P1M`) and
+annual (`P1Y`) products while allowing bounded introductory phases to preserve their
+store-returned ISO 8601 day, week, month, or year period. Standard options require one
+recurring phase. Offers require bounded introductory phases followed by exactly one
+recurring phase. Shared code displays the
+store-localized price and must not derive monthly equivalents, discounts, taxes, or
+renewal amounts. The pre-purchase fail-closed boundary is documented in
+`NATIVE_PURCHASE_DISCLOSURE_CONTRACT_2026_08_06.md`.
 
 ## 2. Candidate Standard Topology
 

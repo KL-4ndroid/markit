@@ -66,6 +66,8 @@ Completed locally on 2026-08-06 without enabling billing or paid authority:
   expiry, and originating-store presentation;
 - platform-neutral purchase and restore workflow in which store success always waits
   for server verification and never grants access;
+- store-authoritative monthly/annual price-phase modeling and a fail-closed
+  pre-purchase disclosure decision required before the purchase port may be called;
 - unconfigured Apple/Google sandbox catalog template with fail-closed mapping and
   active internal-price validation;
 - offer-aware product/base-plan selector contract with adapter-local purchase options
@@ -107,6 +109,8 @@ Status: complete locally on 2026-08-06 with unavailable Web and deterministic fa
 
 - define a `lib/platform` purchase capability with catalog, purchase, restore,
   billing-management, and availability operations;
+- normalize localized store price phases without calculating or hard-coding prices in
+  shared business logic;
 - represent one product with multiple purchasable options; keep Google offer tokens and
   Apple purchase options behind an opaque, non-persistent `purchaseOptionId`;
 - add deterministic unavailable and fake adapters for shared orchestration tests;
@@ -173,6 +177,13 @@ Exit `1` is expected until all ten rows are explicitly resolved.
 Complete App Privacy, Data Safety, terms, privacy, subscription disclosures,
 support, restore/manage-subscription UI, store metadata, screenshots, review
 notes, observability, incident drill, and a bounded canary.
+
+The platform-neutral disclosure boundary is recorded in
+`docs/subscription/NATIVE_PURCHASE_DISCLOSURE_CONTRACT_2026_08_06.md`. It validates
+store-returned price phases and blocks the purchase port unless owner authorization,
+account binding, verification runtime, reviewed copy, Free-plan disclosure,
+store-management access, and legal URLs are all ready. It does not enable purchase UI,
+SDKs, adapters, verification routes, or billing mutations.
 
 The local disclosure audit is recorded in
 `docs/subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md`. It is a

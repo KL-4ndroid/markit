@@ -5,6 +5,7 @@ import type {
   InAppPurchaseRestoreRequest,
   StorePurchaseEvidence,
 } from '@/lib/platform/contracts/in-app-purchase';
+import type { NativePurchaseDisclosureDecision } from './native-purchase-disclosure';
 
 export type NativePurchaseWorkflowPhase =
   | 'idle'
@@ -68,7 +69,15 @@ export async function loadNativePurchaseProducts(input: {
 export async function runNativePurchase(input: {
   port: InAppPurchasePort;
   request: InAppPurchaseRequest;
+  disclosure: NativePurchaseDisclosureDecision;
 }): Promise<NativePurchaseWorkflowState> {
+  if (!input.disclosure.ready) return failed('purchase_disclosure_required', false);
+  if (
+    input.disclosure.disclosure.productId !== input.request.productId
+    || input.disclosure.disclosure.purchaseOptionId !== input.request.purchaseOptionId
+  ) {
+    return failed('purchase_disclosure_mismatch', false);
+  }
   const result = await input.port.purchase(input.request);
   if (!result.ok) return failed(result.error.code, result.error.retryable);
   return {

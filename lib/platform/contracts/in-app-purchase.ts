@@ -30,14 +30,25 @@ export type InAppPurchaseAvailability = Readonly<{
   reason: 'available' | 'web_checkout_deferred' | 'native_adapter_not_installed' | 'store_unavailable';
 }>;
 
+export type InAppPurchaseBillingPeriod = `P${number}${'D' | 'W' | 'M' | 'Y'}`;
+
+export type InAppPurchasePricePhase = Readonly<{
+  // Store-localized price text is authoritative. Shared code must not derive
+  // or reformat monetary amounts from this value.
+  displayPrice: string;
+  currencyCode: string | null;
+  billingPeriod: InAppPurchaseBillingPeriod;
+  billingCycleCount: number | null;
+  paymentMode: 'free_trial' | 'pay_as_you_go' | 'pay_up_front' | 'recurring';
+}>;
+
 export type InAppPurchaseOption = Readonly<{
   // Adapter-local handle. Google may back this with an offer token; Apple may
   // back it with purchase options. Shared code must not parse or persist it.
   purchaseOptionId: string;
   basePlanId: string | null;
   offerId: string | null;
-  displayPrice: string;
-  currencyCode: string | null;
+  pricePhases: readonly InAppPurchasePricePhase[];
 }>;
 
 export type InAppPurchaseProduct = Readonly<{

@@ -40,8 +40,13 @@ const appleProduct: InAppPurchaseProduct = {
     purchaseOptionId: 'test-only-apple-standard-option',
     basePlanId: null,
     offerId: null,
-    displayPrice: 'NT$1,990',
-    currencyCode: 'TWD',
+    pricePhases: [{
+      displayPrice: 'NT$1,990',
+      currencyCode: 'TWD',
+      billingPeriod: 'P1Y',
+      billingCycleCount: null,
+      paymentMode: 'recurring',
+    }],
   }],
 };
 assert.deepEqual(validateNativeStoreCatalog({
@@ -95,15 +100,25 @@ const googleProduct: InAppPurchaseProduct = {
       purchaseOptionId: 'test-only-google-monthly-offer-token',
       basePlanId: 'monthly',
       offerId: null,
-      displayPrice: 'NT$199',
-      currencyCode: 'TWD',
+      pricePhases: [{
+        displayPrice: 'NT$199',
+        currencyCode: 'TWD',
+        billingPeriod: 'P1M',
+        billingCycleCount: null,
+        paymentMode: 'recurring',
+      }],
     },
     {
       purchaseOptionId: 'test-only-google-annual-offer-token',
       basePlanId: 'annual',
       offerId: null,
-      displayPrice: 'NT$1,990',
-      currencyCode: 'TWD',
+      pricePhases: [{
+        displayPrice: 'NT$1,990',
+        currencyCode: 'TWD',
+        billingPeriod: 'P1Y',
+        billingCycleCount: null,
+        paymentMode: 'recurring',
+      }],
     },
   ],
 };
@@ -178,6 +193,44 @@ assert.deepEqual(validateNativeStoreCatalog({
 }), {
   ok: false,
   code: 'purchase_option_duplicate',
+  priceVersionId: null,
+});
+assert.deepEqual(validateNativeStoreCatalog({
+  store: 'google_play',
+  environment: 'sandbox',
+  mappings: [googleMonthly],
+  storeProducts: [{
+    ...googleProduct,
+    purchaseOptions: [{
+      ...googleProduct.purchaseOptions[0],
+      pricePhases: [],
+    }],
+  }],
+}), {
+  ok: false,
+  code: 'price_phase_missing',
+  priceVersionId: null,
+});
+assert.deepEqual(validateNativeStoreCatalog({
+  store: 'google_play',
+  environment: 'sandbox',
+  mappings: [googleMonthly],
+  storeProducts: [{
+    ...googleProduct,
+    purchaseOptions: [{
+      ...googleProduct.purchaseOptions[0],
+      pricePhases: [{
+        displayPrice: '免費',
+        currencyCode: null,
+        billingPeriod: 'P1M',
+        billingCycleCount: 1,
+        paymentMode: 'free_trial',
+      }, ...googleProduct.purchaseOptions[0].pricePhases],
+    }],
+  }],
+}), {
+  ok: false,
+  code: 'standard_option_has_intro_phase',
   priceVersionId: null,
 });
 

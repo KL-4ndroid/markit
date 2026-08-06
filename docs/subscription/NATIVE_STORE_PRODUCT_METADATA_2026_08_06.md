@@ -71,6 +71,12 @@ The actual purchase screen must use store-returned localized price and billing p
 and must separately disclose renewal, cancellation, and any offer terms before the user
 confirms purchase.
 
+The platform-neutral enforcement contract now exists in
+`NATIVE_PURCHASE_DISCLOSURE_CONTRACT_2026_08_06.md`: sequential store price phases are
+preserved, and the purchase port fails closed unless the reviewed disclosure is ready
+and matches the exact product and adapter-local purchase option. Purchase UI and billing
+runtime remain disabled.
+
 ## 4. Founder Boundary
 
 `pro_founder_annual_twd_launch_v1` remains
