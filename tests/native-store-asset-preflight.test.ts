@@ -78,6 +78,8 @@ assert.match(baseline, /developer\.apple\.com\/design\/human-interface-guideline
 assert.match(baseline, /support\.google\.com\/googleplay\/android-developer\/answer\/9866151/);
 assert.match(baseline, /store-assets\/ios\/app-icon-1024\.png/);
 assert.match(baseline, /Do not upscale the 406 x 406 source/);
+assert.match(baseline, /three of five structural checks/);
+assert.match(baseline, /candidate, not brand approval/);
 assert.match(baseline, /final store assets pending manual production/);
 assert.ok(gates.gates.some(gate => (
   gate.id === 'STORE-LISTING-ASSETS' && gate.status === 'pending_manual'

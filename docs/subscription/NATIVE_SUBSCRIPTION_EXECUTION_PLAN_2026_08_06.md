@@ -184,7 +184,9 @@ The store listing inventory, canonical delivery paths, screenshot truth boundari
 and manual completion evidence are recorded in
 `docs/subscription/NATIVE_STORE_LISTING_ASSET_BASELINE_2026_08_06.md`. Run
 `npm.cmd run check:native-store-assets` for structural preflight. The current expected
-exit is `1`, and `STORE-LISTING-ASSETS` remains manual until approved high-resolution
+exit is `1`: candidate iOS/Google icons and the Google feature graphic pass three of
+five checks, while both final native screenshot groups are missing. The candidates
+still require brand approval, and `STORE-LISTING-ASSETS` remains manual until approved
 artwork and final native release-candidate screenshots exist.
 
 ### N8: Deferred Web Billing

@@ -102,8 +102,10 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
   reviewer access, and Google contact email only in protected store fields. Update the
   status-only JSON without credentials and run `npm.cmd run check:native-store-metadata`.
   Exit `0` is a console-entry preflight, not store submission or compliance approval.
-- Create the Apple/Google icon and Google feature graphic from a brand-approved
-  high-resolution source; do not promote an upscaled PWA icon as final artwork.
+- Review the generated high-resolution Apple/Google icon and Google feature-graphic
+  candidates recorded in `subscription/NATIVE_STORE_LISTING_ASSET_BASELINE_2026_08_06.md`.
+  Approve or replace them from a brand-reviewed source; do not promote the legacy
+  upscaled PWA icon or an unreviewed generated candidate as final artwork.
 - Capture the zh-TW storefront screenshots from the final authenticated native release
   candidates with disposable data. Do not use `/demo`, simulated paid state, placeholder
   prices, or Web/PWA screenshots as native submission evidence.

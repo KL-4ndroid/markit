@@ -6,6 +6,9 @@ Status: local inventory and preflight complete; final store assets pending manua
 
 Gate: `STORE-LISTING-ASSETS` remains `pending_manual`
 
+Current structural result: three of five structural checks pass; final iOS and
+Android screenshot groups remain missing.
+
 ## 1. Scope And Authority
 
 This baseline records what can be verified locally before native projects and store
@@ -18,9 +21,10 @@ Canonical local check:
 npm.cmd run check:native-store-assets
 ```
 
-Exit `1` is the expected current result. Exit `0` means the required files pass the
-bounded structural checks below; it does not mean that Apple, Google, product, legal,
-or brand review has approved their content. Exit `64` means the command could not
+Exit `1` remains the expected current result with two missing screenshot checks. Exit
+`0` means the required files pass the bounded structural checks below; it does not
+mean that Apple, Google, product, legal, or brand review has approved their content.
+Exit `64` means the command could not
 reliably inspect its input.
 
 Recheck the official requirements immediately before production because store rules
@@ -39,13 +43,34 @@ can change:
 | `public/icons/icon-512x512.png` | PWA icon generated from the 406 x 406 source | PWA resource only; not approved Google Play artwork. |
 | `public/apple-touch-icon.png` | 180 x 180 browser touch icon | PWA/browser resource only. |
 | `public/screenshots/home.png` | 540 x 720 Web/PWA screenshot | Does not meet this launch baseline for either native storefront. |
-| Google Play feature graphic | Not present | Required asset is missing. |
+| `store-assets/source/feria-app-icon-master-candidate.png` | New 1254 x 1254 opaque reconstruction based on the legacy mark | High-resolution candidate, not brand approval or final design source. |
+| Canonical iOS and Google app icons | Structurally valid outputs derived from the new candidate | Local preflight passes; brand, device, and store-console review remain manual. |
+| Canonical Google Play feature graphic | Structurally valid 1024 x 500 candidate | Local preflight passes; brand and store-policy review remain manual. |
 | Final native iOS/Android screenshots | Not present | Must be captured from the final native release candidate. |
 
 Do not upscale the 406 x 406 source and label the result as approved master artwork.
 Create or export a brand-approved high-resolution source, verify safe zones and
 legibility on physical devices, and retain the design source outside generated PWA
 artifacts.
+
+### Candidate provenance
+
+The 2026-08-06 candidates were created with the built-in ImageGen workflow. The
+legacy mark was used as a visual reference for a fresh high-resolution opaque
+reconstruction; it was not directly upscaled and relabeled. A separate wide image was
+generated from that reconstruction for the feature graphic. The generated source
+candidates are preserved under `store-assets/source/`.
+
+The canonical outputs were produced deterministically with the repository's existing
+`sharp` dependency:
+
+- iOS: 1024 x 1024 opaque PNG;
+- Google Play icon: 512 x 512 four-channel PNG, under 1 MiB;
+- Google feature graphic: center-cropped 1024 x 500 opaque PNG.
+
+This is candidate, not brand approval. Product/brand review may approve, reject, or
+replace either source. Replacing a source requires regenerating the canonical outputs
+and rerunning the same preflight; no gate state changes solely because files exist.
 
 ## 3. Canonical Delivery Paths
 

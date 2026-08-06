@@ -38,7 +38,13 @@ async function main(): Promise<void> {
     assert.equal(current.status, 1, current.stderr);
     const currentOutput = JSON.parse(current.stdout);
     assert.equal(currentOutput.report.ready, false);
-    assert.equal(currentOutput.report.blockerCount, 5);
+    assert.equal(currentOutput.report.passedCount, 3);
+    assert.equal(currentOutput.report.blockerCount, 2);
+    assert.deepEqual(
+      currentOutput.report.checks.filter((check: { ok: boolean }) => !check.ok)
+        .map((check: { id: string }) => check.id),
+      ['ios_phone_screenshots', 'google_phone_screenshots'],
+    );
 
     await writePng(join(temporaryDirectory, 'store-assets/ios/app-icon-1024.png'), 1024, 1024);
     await writePng(
