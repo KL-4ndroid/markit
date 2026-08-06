@@ -17,17 +17,25 @@ function stageClasses(stage: MarketListStage): string {
 interface MarketListCardProps {
   item: MarketListViewItem;
   isStaff: boolean;
+  contextLabel?: string;
   onOpen: () => void;
 }
 
-export function MarketListCard({ item, isStaff, onOpen }: MarketListCardProps) {
+export function MarketListCard({ item, isStaff, contextLabel, onOpen }: MarketListCardProps) {
   return (
     <article className="rounded-card border border-primary/10 bg-atelier-paper p-4 shadow-atelier transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-atelier-lift sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${stageClasses(item.stage)}`}>
-            {item.statusLabel}
-          </span>
+          <div className="flex flex-wrap gap-2">
+            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${stageClasses(item.stage)}`}>
+              {item.statusLabel}
+            </span>
+            {contextLabel ? (
+              <span className="inline-flex rounded-full bg-atelier-blue-soft px-2.5 py-1 text-xs font-medium text-atelier-blue">
+                {contextLabel}
+              </span>
+            ) : null}
+          </div>
           <h2 className="mt-2 break-words text-base font-semibold text-foreground sm:text-lg">
             {item.market.name}
           </h2>

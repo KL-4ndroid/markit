@@ -2,6 +2,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import {
+  INITIAL_DEMO_ACTIVITIES,
+  INITIAL_DEMO_MARKETS,
+  INITIAL_DEMO_PRODUCTS,
+} from '../lib/demo/formal-demo-data';
+
 const root = join(__dirname, '..');
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
@@ -102,6 +108,7 @@ assert.match(app, /AppBottomNavigationBar/);
 assert.match(sharedBottomNavigation, /max-w-lg/);
 assert.match(sharedWorkspaceHeader, /rounded-b-\[2rem\][\s\S]*border-b border-white\/15[\s\S]*shadow-atelier/);
 assert.match(sharedMarketListCard, /getMarketListActionLabel/);
+assert.match(sharedMarketListCard, /contextLabel/);
 assert.doesNotMatch(
   `${sharedBottomNavigation}\n${sharedWorkspaceHeader}\n${sharedMarketListCard}\n${sharedTodayMarketCard}\n${sharedSettingsShell}\n${sharedSettingsMenu}`,
   /@\/lib\/db|supabase|useAuth|useUserRole|indexedDB|localStorage|sessionStorage|fetch\s*\(/i,
@@ -116,6 +123,44 @@ for (const viewLabel of ['今日', '市集', '商品', '分析', '更多']) {
 assert.match(data, /INITIAL_DEMO_MARKETS/);
 assert.match(data, /INITIAL_DEMO_PRODUCTS/);
 assert.match(data, /INITIAL_DEMO_ACTIVITIES/);
+assert.ok(INITIAL_DEMO_MARKETS.length >= 13, 'demo should include a useful market history');
+assert.equal(INITIAL_DEMO_MARKETS.filter(market => market.status === 'operating').length, 1);
+assert.ok(INITIAL_DEMO_MARKETS.filter(market => market.status === 'preparing').length >= 2);
+assert.ok(INITIAL_DEMO_MARKETS.filter(market => market.status === 'ended').length >= 10);
+
+const scenarioLabels = INITIAL_DEMO_MARKETS.map(market => market.scenarioLabel);
+assert.ok(scenarioLabels.every(Boolean), 'every demo market should explain its scenario');
+assert.equal(new Set(scenarioLabels).size, scenarioLabels.length, 'demo scenarios should be distinct');
+
+const completedConversions = INITIAL_DEMO_MARKETS
+  .filter(market => market.status === 'ended' && market.interactions > 0)
+  .map(market => market.deals / market.interactions);
+assert.ok(completedConversions.some(conversion => conversion >= 0.6), 'demo should include a high-conversion market');
+assert.ok(completedConversions.some(conversion => conversion <= 0.15), 'demo should include a low-conversion market');
+
+const netResults = INITIAL_DEMO_MARKETS
+  .filter(market => market.status === 'ended')
+  .map(market => Math.round(market.revenue * market.grossMargin)
+    - market.boothCost
+    - market.tableRental
+    - market.chairRental
+    - market.umbrellaRental);
+assert.ok(netResults.some(result => result > 0), 'demo should include profitable markets');
+assert.ok(netResults.some(result => result < 0), 'demo should include a loss-making market');
+
+assert.ok(INITIAL_DEMO_PRODUCTS.length >= 12, 'demo should include a varied product catalog');
+assert.deepEqual(
+  [...new Set(INITIAL_DEMO_PRODUCTS.map(product => product.category))].sort(),
+  ['其他', '手作', '文具', '服飾', '藝術', '食品', '飾品'].sort(),
+);
+assert.ok(INITIAL_DEMO_PRODUCTS.some(product => !product.isActive), 'demo should include an inactive product');
+assert.ok(INITIAL_DEMO_PRODUCTS.some(product => product.unlimitedStock), 'demo should include a service or unlimited-stock item');
+
+assert.ok(INITIAL_DEMO_ACTIVITIES.length >= 10, 'demo should include a useful activity stream');
+assert.ok(INITIAL_DEMO_ACTIVITIES.some(activity => activity.type === 'sale'));
+assert.ok(INITIAL_DEMO_ACTIVITIES.some(activity => activity.type === 'interaction'));
+assert.match(app, /analyticsMarkets[\s\S]*market\.status === 'ongoing'[\s\S]*market\.status === 'completed'/);
+assert.match(app, /contextLabel=\{sourceMarket\?\.scenarioLabel\}/);
 assert.doesNotMatch(
   combinedDemoSource,
   /@\/lib\/db|supabase|useAuth|useUserRole|indexedDB|localStorage|sessionStorage|fetch\s*\(/i,
