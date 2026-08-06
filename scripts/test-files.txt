@@ -203,6 +203,7 @@ tsx tests/native-account-entitlement.test.ts
 tsx tests/platform-in-app-purchase-boundary.test.ts
 tsx tests/native-store-verification-contract.test.ts
 tsx tests/subscription-capability-implementation.test.ts
+tsx tests/f3c-entitlement-projection-writer-proposal.test.ts
 tsx tests/native-store-catalog.test.ts
 tsx tests/native-purchase-workflow.test.ts
 tsx tests/subscription-center-view.test.ts

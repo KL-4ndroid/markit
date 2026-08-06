@@ -67,7 +67,8 @@ Completed locally on 2026-08-06 without enabling billing or paid authority:
   active internal-price validation;
 - client read-contract preparation for future billing and promotion states while the
   server continues returning disconnected Free snapshots;
-- capability implementation consistency audit.
+- capability implementation consistency audit;
+- F3C entitlement projection writer proposal as planning only.
 
 Restore and manage-subscription controls remain disabled until a native adapter,
 authenticated account-binding token, and approved verification runtime are available.
