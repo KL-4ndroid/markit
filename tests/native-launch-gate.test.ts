@@ -19,13 +19,13 @@ const report = evaluateNativeLaunchReadiness(document);
 
 assert.equal(report.ready, false);
 assert.equal(report.overallStatus, 'not_ready');
-assert.equal(report.totalCount, 15);
+assert.equal(report.totalCount, 16);
 assert.equal(report.completeCount, 3);
-assert.equal(report.blockerCount, 12);
+assert.equal(report.blockerCount, 13);
 assert.deepEqual(report.counts, {
   complete: 3,
   pending_external: 4,
-  pending_manual: 4,
+  pending_manual: 5,
   pending_approval: 3,
   blocked_dependency: 1,
 });

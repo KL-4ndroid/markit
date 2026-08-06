@@ -87,6 +87,15 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
 - Review every row and blocking question in
   `subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md` against the
   final native dependency lockfile, permissions, provider terms, and submitted binary.
+- Create the Apple/Google icon and Google feature graphic from a brand-approved
+  high-resolution source; do not promote an upscaled PWA icon as final artwork.
+- Capture the zh-TW storefront screenshots from the final authenticated native release
+  candidates with disposable data. Do not use `/demo`, simulated paid state, placeholder
+  prices, or Web/PWA screenshots as native submission evidence.
+- Place reviewed files at the canonical paths in
+  `subscription/NATIVE_STORE_LISTING_ASSET_BASELINE_2026_08_06.md`, run
+  `npm.cmd run check:native-store-assets`, and retain the revision, check IDs, and exit
+  code. Structural exit `0` still requires product/brand and current store-rule review.
 - Keep `ACCOUNT-DELETION` open until the approved in-app initiation flow, public Web
   deletion resource, server deletion procedure, retention exceptions, and denial/
   lifecycle evidence are complete. Local Dexie deletion is not account deletion.

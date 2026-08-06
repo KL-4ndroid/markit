@@ -73,7 +73,9 @@ Completed locally on 2026-08-06 without enabling billing or paid authority:
 - capability implementation consistency audit;
 - F3C entitlement projection writer proposal as planning only;
 - native Apple/Google data-disclosure baseline with code evidence, negative claims,
-  provider review fields, and a separate account-deletion blocker.
+  provider review fields, and a separate account-deletion blocker;
+- native store listing asset inventory, fail-closed structural preflight, and scenario
+  matrix without fabricating final native screenshots or upscaling the PWA logo.
 
 Restore and manage-subscription controls remain disabled until a native adapter,
 authenticated account-binding token, and approved verification runtime are available.
@@ -153,6 +155,13 @@ Dexie deletion and support copy do not delete an authenticated cloud account.
 The planning-only implementation boundary is recorded in
 `docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md`; its AD1-AD4
 slices require separate review and do not authorize destructive migration or runtime.
+
+The store listing inventory, canonical delivery paths, screenshot truth boundaries,
+and manual completion evidence are recorded in
+`docs/subscription/NATIVE_STORE_LISTING_ASSET_BASELINE_2026_08_06.md`. Run
+`npm.cmd run check:native-store-assets` for structural preflight. The current expected
+exit is `1`, and `STORE-LISTING-ASSETS` remains manual until approved high-resolution
+artwork and final native release-candidate screenshots exist.
 
 ### N8: Deferred Web Billing
 

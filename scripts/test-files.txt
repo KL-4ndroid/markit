@@ -203,6 +203,8 @@ tsx tests/ios-phase2-gate2-compensation-runbook.test.ts
 tsx tests/native-store-data-disclosure-baseline.test.ts
 tsx tests/native-launch-gate.test.ts
 tsx tests/native-launch-gate-cli.test.ts
+tsx tests/native-store-asset-preflight.test.ts
+tsx tests/native-store-asset-preflight-cli.test.ts
 tsx tests/account-deletion-implementation-proposal.test.ts
 tsx tests/native-account-entitlement.test.ts
 tsx tests/platform-in-app-purchase-boundary.test.ts

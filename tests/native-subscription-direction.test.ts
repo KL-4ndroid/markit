@@ -36,7 +36,7 @@ for (const invariant of [
 assert.equal(gates.schemaVersion, 1);
 assert.equal(gates.overallStatus, 'not_ready');
 assert.equal(gates.updatedAt, '2026-08-06');
-assert.equal(gates.gates.length, 15);
+assert.equal(gates.gates.length, 16);
 assert.deepEqual(
   gates.gates.filter(gate => gate.status === 'complete').map(gate => gate.id),
   ['NATIVE-DIRECTION', 'ACCOUNT-ENTITLEMENT-CORE', 'IAP-PLATFORM-PORT'],
@@ -52,6 +52,9 @@ assert.ok(gates.gates.some(gate => (
 )));
 assert.ok(gates.gates.some(gate => (
   gate.id === 'ACCOUNT-DELETION' && gate.status === 'pending_approval'
+)));
+assert.ok(gates.gates.some(gate => (
+  gate.id === 'STORE-LISTING-ASSETS' && gate.status === 'pending_manual'
 )));
 
 assert.ok(providerDecision.includes('ECPay recurring payment'));
