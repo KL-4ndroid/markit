@@ -33,6 +33,7 @@
     "check:native-store-assets": "tsx scripts/check-native-store-assets.ts",
     "check:native-store-catalog": "tsx scripts/check-native-store-catalog-config.ts",
     "check:native-store-metadata": "tsx scripts/check-native-store-listing-metadata.ts",
+    "check:native-store-product-metadata": "tsx scripts/check-native-store-product-metadata.ts",
     "start": "next start",
     "lint": "eslint .",
     "lint:hex": "node scripts/lint-hex.js",

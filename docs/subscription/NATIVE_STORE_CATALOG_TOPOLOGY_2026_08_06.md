@@ -9,16 +9,25 @@ Gate: `STORE-CATALOG` remains `pending_manual`
 Canonical non-activating sandbox handoff file:
 `docs/subscription/NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json`
 
+Canonical localized product-copy handoff:
+`docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json`
+
 Canonical local preflight:
 
 ```powershell
 npm.cmd run check:native-store-catalog
+npm.cmd run check:native-store-product-metadata
 ```
 
 The current expected exit is `1`: all ten mappings are intentionally
 `unconfigured`. Exit `0` means each mapping is explicitly `candidate` or `deferred`
 and both stores have at least one candidate for sandbox query. It does not activate a
 mapping, approve a price, query a store, or close `STORE-CATALOG`.
+
+The product-metadata command also currently exits `1` with six manual review blockers.
+Its Pro/Team copy is structurally valid and capability-bound, while the Founder product
+remains `deferred_pending_mechanism`. Passing that command means console-entry copy is
+reviewed, not that any identifier, price, product, base plan, or offer is active.
 
 ## 1. Why `productId` Alone Is Insufficient
 
@@ -118,15 +127,18 @@ path.
 1. Approve Apple group/levels and Google product/base-plan topology.
 2. Resolve the Founder permanent renewal price decision above.
 3. Approve public TWD price points and regional/tax handling.
-4. Create sandbox products without committing credentials, account references, or bank data.
-5. In `NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json`, record stable `productId`,
+4. Review localized Pro/Team subscription names and benefits in
+   `NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json`; keep price, trial, unlimited,
+   unapproved seat/quota, and Founder-renewal claims out of generic benefits.
+5. Create sandbox products without committing credentials, account references, or bank data.
+6. In `NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json`, record stable `productId`,
    `basePlanId`, and optional `offerId` mappings as `candidate`; mark an intentionally
    omitted launch item `deferred` with all identifier fields `null`.
-6. Run `npm.cmd run check:native-store-catalog`; resolve every `unconfigured` row.
-7. Query products through reviewed native adapters and validate exact selectors and localized prices.
-8. Verify purchase, renewal, cancellation, grace, refund, restore, duplicate origin, and every Pro/Team transition.
-9. Approve immutable internal price versions and store mappings in the same release decision.
-10. Change mappings to `active` only in a separately approved server-owned configuration after the verifier and entitlement writer are approved. The handoff JSON rejects `active`.
+7. Run both catalog and product-metadata preflights; resolve every required blocker.
+8. Query products through reviewed native adapters and validate exact selectors and localized prices.
+9. Verify purchase, renewal, cancellation, grace, refund, restore, duplicate origin, and every Pro/Team transition.
+10. Approve immutable internal price versions and store mappings in the same release decision.
+11. Change mappings to `active` only in a separately approved server-owned configuration after the verifier and entitlement writer are approved. The handoff JSON rejects `active`.
 
 Current mappings and internal prices remain non-billable. This document does not
 install a native SDK, create a store product, activate a price, enable checkout, write

@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "sourceDocument": "subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.md",
+  "updatedAt": "2026-08-06",
+  "locale": "zh-TW",
+  "activationStatus": "disabled",
+  "submissionStatus": "disabled",
+  "brandReviewStatus": "pending_manual",
+  "productTruthReviewStatus": "pending_manual",
+  "storePolicyReviewStatus": "pending_manual",
+  "legalReviewStatus": "pending_manual",
+  "finalBinaryReviewStatus": "pending_manual",
+  "founderPolicyDecisionStatus": "pending_manual",
+  "apple": {
+    "subscriptionGroupDisplayName": "Feria 方案",
+    "products": [
+      {
+        "priceVersionId": "pro_monthly_twd_launch_v1",
+        "planCode": "pro",
+        "disposition": "candidate_requires_manual_review",
+        "displayName": "Féria Pro 月繳",
+        "description": "單場復盤、跨市集分析、PDF 報告與商品封面照片",
+        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover"]
+      },
+      {
+        "priceVersionId": "pro_annual_twd_launch_v1",
+        "planCode": "pro",
+        "disposition": "candidate_requires_manual_review",
+        "displayName": "Féria Pro 年繳",
+        "description": "單場復盤、跨市集分析、PDF 報告與商品封面照片",
+        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover"]
+      },
+      {
+        "priceVersionId": "pro_founder_annual_twd_launch_v1",
+        "planCode": "pro",
+        "disposition": "deferred_pending_mechanism",
+        "displayName": "Féria Pro 創始年繳",
+        "description": "單場復盤、跨市集分析、PDF 報告與商品封面照片",
+        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover"]
+      },
+      {
+        "priceVersionId": "team_monthly_twd_launch_v1",
+        "planCode": "team",
+        "disposition": "candidate_requires_manual_review",
+        "displayName": "Féria Team 月繳",
+        "description": "包含 Pro，提供員工協作、Manager 流程與成交照片證據",
+        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
+      },
+      {
+        "priceVersionId": "team_annual_twd_launch_v1",
+        "planCode": "team",
+        "disposition": "candidate_requires_manual_review",
+        "displayName": "Féria Team 年繳",
+        "description": "包含 Pro，提供員工協作、Manager 流程與成交照片證據",
+        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
+      }
+    ]
+  },
+  "google": {
+    "subscriptions": [
+      {
+        "planCode": "pro",
+        "disposition": "candidate_requires_manual_review",
+        "name": "Féria Pro",
+        "benefits": ["單場市集分析與復盤", "跨市集比較與商品決策建議", "週月結算與設計版 PDF 報告", "商品封面照片"],
+        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover"]
+      },
+      {
+        "planCode": "team",
+        "disposition": "candidate_requires_manual_review",
+        "name": "Féria Team",
+        "benefits": ["包含完整 Pro 功能", "正式員工協作", "Manager 分工流程", "成交照片證據"],
+        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
+      }
+    ]
+  }
+}

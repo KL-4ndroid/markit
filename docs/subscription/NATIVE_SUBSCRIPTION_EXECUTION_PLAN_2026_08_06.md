@@ -158,6 +158,11 @@ The candidate product/base-plan structure, Founder price-lock compatibility issu
 activation sequence, and exact trust boundary are recorded in
 `docs/subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md`. `STORE-CATALOG`
 remains manual; no product, base plan, offer, price, or mapping is active.
+The capability-bound zh-TW subscription names and benefits are recorded in
+`docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json`, with the review
+boundary in `docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.md`. Run
+`npm.cmd run check:native-store-product-metadata`; exit `1` is expected while six
+manual reviews remain pending and Founder is deferred pending an approved mechanism.
 The non-activating handoff file is
 `docs/subscription/NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json`; run
 `npm.cmd run check:native-store-catalog` after recording candidate/deferred decisions.

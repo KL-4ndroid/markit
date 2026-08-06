@@ -94,6 +94,11 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
   sandbox-proven Founder mechanism that can actually preserve the promised renewal
   price without exposing it to ineligible users. Keep every mapping non-billable until
   store verification and entitlement writing are separately approved.
+- Review the capability-bound zh-TW Pro/Team names and benefits in
+  `subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json`; resolve the six manual
+  review statuses and run `npm.cmd run check:native-store-product-metadata`. Keep Free
+  out of store subscription products and do not add price, trial, unlimited, seat,
+  quota, or Founder-renewal claims without their separately approved evidence.
 - Fill only stable sandbox `productId`, Google `basePlanId`, and optional `offerId`
   values in `subscription/NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json`; mark omitted
   launch items `deferred`, never add offer tokens or credentials, and run
