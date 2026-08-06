@@ -97,6 +97,9 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
 
 - Keep `WEB_LAUNCH_GATES_2026_08_01.json` synchronized with the reviewed Markdown matrix;
   run `npm.cmd run check:web-launch-readiness` and retain the aggregate result.
+- Keep the separate native matrix synchronized with its execution plan; run
+  `npm.cmd run check:native-launch-readiness` and treat exit `1` as the expected
+  valid result until every native gate is complete.
 - Select the final release-candidate SHA and repeat CI, remote smoke, configuration,
   authenticated matrix, PWA install/update, and media evidence against that exact SHA.
 - Run the four public remote checks through `npm.cmd run smoke:web:release` with the

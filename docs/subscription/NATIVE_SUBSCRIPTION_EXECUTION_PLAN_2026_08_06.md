@@ -7,6 +7,9 @@ Status: approved direction; implementation is staged and billing remains disable
 Canonical machine state:
 `docs/subscription/NATIVE_SUBSCRIPTION_LAUNCH_GATES_2026_08_06.json`
 
+Canonical local check:
+`npm.cmd run check:native-launch-readiness`
+
 ## 1. Product Decision
 
 The first paid acquisition routes are Apple App Store subscriptions on iOS and
@@ -200,3 +203,7 @@ Native launch is ready only when every gate in the Native launch JSON is
 `complete`, store sandbox evidence is preserved without secrets, the final
 release revision passes the complete repository test/build/mobile manifest, and
 Apple/Google canaries have an approved rollback and support owner.
+
+Run `npm.cmd run check:native-launch-readiness` after every gate update. Exit `1`
+is expected while any gate remains incomplete; exit `64` indicates a malformed or
+inconsistent machine document and must be fixed before relying on the report.

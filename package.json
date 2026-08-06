@@ -28,6 +28,7 @@
     "check:production-config": "tsx scripts/check-web-production-config.ts",
     "check:operational-alerts": "tsx scripts/evaluate-web-operational-alerts.ts",
     "check:web-launch-readiness": "tsx scripts/check-web-launch-readiness.ts",
+    "check:native-launch-readiness": "tsx scripts/check-native-launch-readiness.ts",
     "start": "next start",
     "lint": "eslint .",
     "lint:hex": "node scripts/lint-hex.js",
