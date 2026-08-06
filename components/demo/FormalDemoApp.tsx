@@ -1115,7 +1115,12 @@ export function FormalDemoApp() {
 
   return (
     <>
-      {content}
+      <div
+        data-demo-content-root
+        className="min-h-screen pb-[calc(6rem+env(safe-area-inset-bottom))]"
+      >
+        {content}
+      </div>
       <AppBottomNavigationBar items={DEMO_NAV_ITEMS} activeItemId={activeView} onSelect={changeMainView} />
 
       <DemoMarketForm open={marketFormMode !== null} title={marketFormMode === 'edit' ? '編輯市集' : '新增市集'} submitLabel={marketFormMode === 'edit' ? '儲存變更' : '建立市集'} values={marketFormValues} errors={marketFormErrors} onChange={values => { setMarketFormValues(values); setMarketFormErrors({}); }} onClose={() => setMarketFormMode(null)} onSubmit={submitMarketForm} />

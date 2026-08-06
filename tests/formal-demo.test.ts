@@ -109,6 +109,9 @@ assert.match(sharedBottomNavigation, /max-w-lg/);
 assert.match(sharedWorkspaceHeader, /rounded-b-\[2rem\][\s\S]*border-b border-white\/15[\s\S]*shadow-atelier/);
 assert.match(sharedMarketListCard, /getMarketListActionLabel/);
 assert.match(sharedMarketListCard, /contextLabel/);
+assert.match(app, /data-demo-content-root/);
+assert.match(app, /pb-\[calc\(6rem\+env\(safe-area-inset-bottom\)\)\]/);
+assert.match(sharedBottomNavigation, /fixed bottom-0/);
 assert.doesNotMatch(
   `${sharedBottomNavigation}\n${sharedWorkspaceHeader}\n${sharedMarketListCard}\n${sharedTodayMarketCard}\n${sharedSettingsShell}\n${sharedSettingsMenu}`,
   /@\/lib\/db|supabase|useAuth|useUserRole|indexedDB|localStorage|sessionStorage|fetch\s*\(/i,
