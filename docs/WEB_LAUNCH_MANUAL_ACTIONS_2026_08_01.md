@@ -27,7 +27,8 @@ addresses, invitation links, cookies, or customer data in the evidence artifact.
 
 - Preserve the 2026-08-03 exact-SHA local desktop and Android-class compatibility
   baseline; it passed manifest/resource and responsive checks but is not install proof.
-- Correct and retest the missing `main` landmark on the unauthenticated welcome screen.
+- Preserve the completed unauthenticated `main` landmark fix and focused regression
+  coverage; repeat the landmark check on the final release candidate.
 - Complete one Chromium desktop install and one Android-class install.
 - Launch from each installed icon and capture public-data-only screenshots.
 - Deploy a second reviewed revision and verify service-worker update activation.
@@ -83,6 +84,12 @@ paid deployment, staff-role, recovery, PDF-output, media, or release-candidate e
 - Complete the Apple and Google account, agreement, tax/bank, product catalog,
   tester, device, privacy, and store-review inputs listed in
   `subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md`.
+- Review every row and blocking question in
+  `subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md` against the
+  final native dependency lockfile, permissions, provider terms, and submitted binary.
+- Keep `ACCOUNT-DELETION` open until the approved in-app initiation flow, public Web
+  deletion resource, server deletion procedure, retention exceptions, and denial/
+  lifecycle evidence are complete. Local Dexie deletion is not account deletion.
 - Keep F3C-F3E, S9 provider runtime, referral rewards, and production canary behind their
   separate implementation and approval gates.
 

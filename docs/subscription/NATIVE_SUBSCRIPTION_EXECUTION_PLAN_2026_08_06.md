@@ -68,7 +68,9 @@ Completed locally on 2026-08-06 without enabling billing or paid authority:
 - client read-contract preparation for future billing and promotion states while the
   server continues returning disconnected Free snapshots;
 - capability implementation consistency audit;
-- F3C entitlement projection writer proposal as planning only.
+- F3C entitlement projection writer proposal as planning only;
+- native Apple/Google data-disclosure baseline with code evidence, negative claims,
+  provider review fields, and a separate account-deletion blocker.
 
 Restore and manage-subscription controls remain disabled until a native adapter,
 authenticated account-binding token, and approved verification runtime are available.
@@ -139,6 +141,12 @@ access tests.
 Complete App Privacy, Data Safety, terms, privacy, subscription disclosures,
 support, restore/manage-subscription UI, store metadata, screenshots, review
 notes, observability, incident drill, and a bounded canary.
+
+The local disclosure audit is recorded in
+`docs/subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md`. It is a
+draft input, not a completed store form. `STORE-COMPLIANCE` remains manual and
+`ACCOUNT-DELETION` remains pending separate implementation approval because local
+Dexie deletion and support copy do not delete an authenticated cloud account.
 
 ### N8: Deferred Web Billing
 

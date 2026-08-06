@@ -17,6 +17,7 @@
     { "id": "SANDBOX-LIFECYCLE", "status": "pending_external" },
     { "id": "CROSS-PLATFORM-ACCESS", "status": "pending_external" },
     { "id": "STORE-COMPLIANCE", "status": "pending_manual" },
+    { "id": "ACCOUNT-DELETION", "status": "pending_approval" },
     { "id": "NATIVE-CANARY", "status": "pending_external" }
   ]
 }
