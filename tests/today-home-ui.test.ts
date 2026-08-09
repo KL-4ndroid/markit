@@ -10,7 +10,11 @@ const detail = read('components/markets/MarketDetailScreen.tsx');
 const staffDetail = read('components/markets/StaffMarketDetailView.tsx');
 const photoFlow = read('hooks/useSalesPhotoEvidenceFlow.ts');
 
-assert.match(home, /<h1[^>]*>今日<\/h1>/);
+assert.match(home, /<h1[^>]*>\{greeting\}<\/h1>/);
+assert.match(home, /\{formatDateLabel\(now\)\}/);
+assert.doesNotMatch(home, /<h1[^>]*>今日<\/h1>/);
+assert.doesNotMatch(home, /logo-alpha\.png/);
+assert.doesNotMatch(home, /<SyncStatusIndicator|<IconButton/);
 assert.match(home, /buildTodayViewModel\(allMarkets, now\)/);
 assert.match(home, /isStaff \? '你的今日工作' : '今天的營運重點'/);
 assert.match(home, /待補照片 \$\{pendingPhotoItems\.length\} 筆/);

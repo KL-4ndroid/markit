@@ -7,18 +7,14 @@ import {
   Camera,
   ChevronRight,
   RefreshCw,
-  Settings,
   WifiOff,
 } from 'lucide-react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { TodayMarketCard, todayMarketPhaseClasses } from '@/components/home/TodayMarketCard';
 import { StaffBadge } from '@/components/staff/StaffBadge';
 import { Button } from '@/components/ui/Button';
-import { IconButton } from '@/components/ui/IconButton';
 import { StateView } from '@/components/ui/StateView';
 import { SyncStatus } from '@/hooks/useSync';
 import { useRoleContext } from '@/lib/role-context';
@@ -26,7 +22,6 @@ import { db } from '@/lib/db';
 import { useMarkets } from '@/lib/db/hooks';
 import {
   buildTodayViewModel,
-  type TodayMarketPhase,
 } from '@/lib/home/today-view-model';
 import {
   OWNER_BRAND_NAME_UPDATED_EVENT,
@@ -52,13 +47,6 @@ function getGreeting(date: Date): string {
   if (hour < 11) return '早安，慢慢準備好今天';
   if (hour < 17) return '午安，現場辛苦了';
   return '晚安，今天也辛苦了';
-}
-
-function getCompanionMessage(phase?: TodayMarketPhase): string {
-  if (phase === 'operating') return '我們一起把現場的每筆成交收好。';
-  if (phase === 'ended') return '今天的記錄都在這裡，放心收攤吧。';
-  if (phase === 'preparing') return '出攤前的大小事，我們一起顧好。';
-  return '沒有出攤的日子，也可以照自己的步調整理。';
 }
 
 function formatDateKey(dateKey: string): string {
@@ -196,52 +184,23 @@ export default function HomePage() {
     ? `${userRole.ownerEmail.split('@')[0]} 團隊`
     : '團隊工作區';
   const greeting = getGreeting(now);
-  const companionMessage = getCompanionMessage(todayView.primaryMarket?.phase);
 
   return (
     <div className="min-h-screen bg-atelier-canvas/80 text-atelier-ink">
-      <header className="japanese-warm-header overflow-hidden rounded-b-[2rem] px-5 pb-9 pt-[calc(1.25rem+env(safe-area-inset-top))] text-white shadow-atelier-lift">
+      <header className="japanese-warm-header overflow-hidden rounded-b-[2rem] px-5 pb-6 pt-[calc(1.25rem+env(safe-area-inset-top))] text-white shadow-atelier-lift">
         <div className="mx-auto max-w-3xl">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
+          <div className="min-w-0">
             {isStaff ? (
               <p className="truncate text-xs font-semibold text-white/90">{staffWorkspaceName}</p>
             ) : (
               <p className="truncate text-xs font-semibold text-white/90">{ownerBrandName}</p>
             )}
-
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1">
-              <SyncStatusIndicator tone="default" />
-              <IconButton
-                label="開啟更多設定"
-                tooltip="更多"
-                className="bg-white/20 text-white shadow-sm backdrop-blur-sm hover:bg-white/30 hover:text-white"
-                icon={<Settings className="h-5 w-5" aria-hidden="true" />}
-                onClick={() => router.push('/settings')}
-              />
-            </div>
           </div>
 
-          <div className="mt-6 flex items-end justify-between gap-5">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-white/85">{greeting}</p>
-              <h1 className="mt-1 text-[2rem] font-semibold leading-none text-white">今日</h1>
-              <p className="mt-3 text-sm text-white/80">{formatDateLabel(now)}</p>
-              <p className="mt-2 max-w-md text-sm leading-6 text-white/85">{companionMessage}</p>
-              {isStaff && <div className="mt-3"><StaffBadge tone="default" /></div>}
-            </div>
-            <Image
-              src="/logo-alpha.png"
-              alt=""
-              width={88}
-              height={88}
-              priority
-              unoptimized
-              aria-hidden="true"
-              className="h-[4.75rem] w-[4.75rem] shrink-0 rounded-full bg-white/15 object-cover opacity-95 sm:h-[5.5rem] sm:w-[5.5rem]"
-            />
+          <div className="mt-5 min-w-0">
+            <h1 className="text-[1.65rem] font-semibold leading-tight text-white">{greeting}</h1>
+            <p className="mt-2 text-sm text-white/80">{formatDateLabel(now)}</p>
+            {isStaff && <div className="mt-3"><StaffBadge tone="default" /></div>}
           </div>
         </div>
       </header>
