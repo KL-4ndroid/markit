@@ -29,6 +29,7 @@
     "check:operational-alerts": "tsx scripts/evaluate-web-operational-alerts.ts",
     "check:web-launch-readiness": "tsx scripts/check-web-launch-readiness.ts",
     "check:native-launch-readiness": "tsx scripts/check-native-launch-readiness.ts",
+    "check:launch-execution-plan": "tsx scripts/check-launch-execution-plan.ts",
     "check:native-external-readiness": "tsx scripts/check-native-external-account-readiness.ts",
     "check:native-store-assets": "tsx scripts/check-native-store-assets.ts",
     "check:native-store-catalog": "tsx scripts/check-native-store-catalog-config.ts",
