@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "LAUNCH_EXECUTION_MASTER_PLAN_2026_08_09.md",
-  "updatedAt": "2026-08-09",
+  "updatedAt": "2026-08-10",
   "overallStatus": "not_ready",
   "releaseOrder": ["web_core", "ios_native_paid", "android_native_paid", "web_paid_deferred"],
   "tasks": [
@@ -30,7 +30,7 @@
       "status": "pending_manual",
       "dependsOn": ["SEC-SRA000-ARTIFACT"],
       "gateRefs": [],
-      "evidence": ["docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md"]
+      "evidence": ["docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "SEC-REMEDIATION",
@@ -48,7 +48,7 @@
       "status": "pending_manual",
       "dependsOn": [],
       "gateRefs": ["native:CAPACITOR-GATE2"],
-      "evidence": ["docs/IOS_PHASE2_GATE2_COMPENSATION_RUNBOOK.md", "docs/IOS_PHASE2_GATE2_COMPENSATION_EVIDENCE_TEMPLATE.md"]
+      "evidence": ["docs/IOS_PHASE2_GATE2_COMPENSATION_RUNBOOK.md", "docs/IOS_PHASE2_GATE2_COMPENSATION_EVIDENCE_TEMPLATE.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "APPLE-ACCOUNT-READINESS",
@@ -57,7 +57,7 @@
       "status": "pending_manual",
       "dependsOn": [],
       "gateRefs": ["native:APPLE-DEVELOPER"],
-      "evidence": ["docs/subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json"]
+      "evidence": ["docs/subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "GOOGLE-ACCOUNT-READINESS",
@@ -66,7 +66,7 @@
       "status": "pending_manual",
       "dependsOn": [],
       "gateRefs": ["native:GOOGLE-PLAY-DEVELOPER"],
-      "evidence": ["docs/subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json"]
+      "evidence": ["docs/subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "COMMERCIAL-POLICY",
@@ -75,7 +75,7 @@
       "status": "pending_manual",
       "dependsOn": [],
       "gateRefs": ["native:STORE-CATALOG"],
-      "evidence": ["docs/subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md", "docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json"]
+      "evidence": ["docs/subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md", "docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "STORE-CATALOG-CONFIG",
@@ -120,7 +120,7 @@
       "status": "pending_manual",
       "dependsOn": [],
       "gateRefs": ["native:ACCOUNT-DELETION"],
-      "evidence": ["docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md"]
+      "evidence": ["docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "ACCOUNT-DELETION-RUNTIME",
@@ -138,7 +138,7 @@
       "status": "pending_manual",
       "dependsOn": [],
       "gateRefs": ["web:LEGAL-SUPPORT", "native:STORE-COMPLIANCE"],
-      "evidence": ["docs/WEB_LEGAL_SUPPORT_LAUNCH_REVIEW.md", "docs/subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md"]
+      "evidence": ["docs/WEB_LEGAL_SUPPORT_LAUNCH_REVIEW.md", "docs/subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "STORE-COMPLIANCE",
@@ -192,7 +192,7 @@
       "status": "pending_manual",
       "dependsOn": [],
       "gateRefs": ["web:PROD-CONFIG"],
-      "evidence": ["docs/WEB_LAUNCH_MANUAL_ACTIONS_2026_08_01.md"]
+      "evidence": ["docs/WEB_LAUNCH_MANUAL_ACTIONS_2026_08_01.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "WEB-SECURITY-HEADERS-FINAL",
@@ -201,7 +201,7 @@
       "status": "pending_manual",
       "dependsOn": ["WEB-PRODUCTION-CONFIG"],
       "gateRefs": ["web:SECURITY-HEADERS"],
-      "evidence": ["docs/WEB_SECURITY_HEADERS.md"]
+      "evidence": ["docs/WEB_SECURITY_HEADERS.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "WEB-PWA-INSTALL",
@@ -210,7 +210,7 @@
       "status": "pending_manual",
       "dependsOn": ["WEB-PRODUCTION-CONFIG"],
       "gateRefs": ["web:PWA-WEB"],
-      "evidence": ["docs/WEB_PWA_RELEASE_SMOKE.md"]
+      "evidence": ["docs/WEB_PWA_RELEASE_SMOKE.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "WEB-MEDIA-PRODUCTION",
@@ -237,7 +237,7 @@
       "status": "pending_manual",
       "dependsOn": ["WEB-PRODUCTION-CONFIG"],
       "gateRefs": ["web:OBSERVABILITY"],
-      "evidence": ["docs/WEB_OPERATIONAL_OBSERVABILITY.md"]
+      "evidence": ["docs/WEB_OPERATIONAL_OBSERVABILITY.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
     },
     {
       "id": "WEB-CANARY",

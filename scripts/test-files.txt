@@ -305,4 +305,5 @@ tsx tests/unauthenticated-main-landmark.test.ts
 tsx tests/supabase-security-advisor-remediation-plan.test.ts
 tsx tests/launch-execution-plan.test.ts
 tsx tests/launch-execution-plan-cli.test.ts
+tsx tests/manual-launch-operations-guide.test.ts
 tsx tests/supabase-security-advisor-inventory.test.ts

@@ -46,6 +46,11 @@ repository evidence.
 
 ## 3. Human Action Queue
 
+Step-by-step prerequisites, evidence boundaries, completion criteria, and a sanitized
+report-back template for this queue are consolidated in
+`docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md`. The guide coordinates the
+canonical runbooks below; it is not completion evidence and does not change any gate.
+
 ### Immediate And Independent
 
 1. Execute both controlled R2 compensation cases in
