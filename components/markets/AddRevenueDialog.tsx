@@ -537,8 +537,7 @@ export function AddRevenueDialog({
           </div>
 
           {/* Footer */}
-          {((mode === 'simple' && revenue) || (mode === 'full' && cart.length > 0)) && (
-            <div className="border-t border-soft-green p-6">
+            <div className="border-t border-soft-green p-4 sm:p-6">
               {mode === 'simple' ? (
                 <>
                   <div className="flex items-center justify-between mb-4">
@@ -550,7 +549,7 @@ export function AddRevenueDialog({
                   
                   <button
                     onClick={handleSimpleSubmit}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !revenue || Number(revenue) <= 0}
                     className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors disabled:opacity-50 font-medium"
                   >
                     {isSubmitting ? '處理中...' : '確認補登'}
@@ -567,7 +566,7 @@ export function AddRevenueDialog({
                   
                   <button
                     onClick={handleFullSubmit}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || cart.length === 0}
                     className="w-full bg-primary text-white py-4 rounded-2xl hover:bg-primary/85 transition-colors disabled:opacity-50 font-medium"
                   >
                     {isSubmitting ? '處理中...' : '確認補登'}
@@ -575,7 +574,6 @@ export function AddRevenueDialog({
                 </>
               )}
             </div>
-          )}
         </div>
       </div>
     </>,

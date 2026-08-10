@@ -70,7 +70,30 @@ const afterClosing = buildMarketListGroups([
 ], new Date(2026, 6, 15, 12, 0));
 assert.equal(afterClosing.ended[0].market.id, 'closed-today');
 
-assert.equal(getMarketListActionLabel('preparing', false), '完成設定');
+const multiDayAfterClosing = buildMarketListGroups([
+  market({
+    id: 'next-session-remains',
+    dates: ['2026-07-15', '2026-07-18'],
+    startDate: '2026-07-15',
+    endDate: '2026-07-18',
+    operatingStartTime: '08:00',
+    operatingEndTime: '11:00',
+  }),
+  market({
+    id: 'closing-with-next-session',
+    operationPhase: 'closing',
+    dates: ['2026-07-15', '2026-07-18'],
+    startDate: '2026-07-15',
+    endDate: '2026-07-18',
+  }),
+], new Date(2026, 6, 15, 12, 0));
+assert.deepEqual(
+  multiDayAfterClosing.preparing.map(item => item.market.id),
+  ['next-session-remains', 'closing-with-next-session']
+);
+assert.equal(multiDayAfterClosing.preparing[0].displayDate, '2026-07-18');
+
+assert.equal(getMarketListActionLabel('preparing', false), '查看準備');
 assert.equal(getMarketListActionLabel('preparing', true), '查看任務');
 assert.equal(getMarketListActionLabel('active', true), '繼續現場');
 

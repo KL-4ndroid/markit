@@ -18,10 +18,11 @@ interface MarketListCardProps {
   item: MarketListViewItem;
   isStaff: boolean;
   contextLabel?: string;
+  isOpening?: boolean;
   onOpen: () => void;
 }
 
-export function MarketListCard({ item, isStaff, contextLabel, onOpen }: MarketListCardProps) {
+export function MarketListCard({ item, isStaff, contextLabel, isOpening = false, onOpen }: MarketListCardProps) {
   return (
     <article className="rounded-card border border-primary/10 bg-atelier-paper p-4 shadow-atelier transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-atelier-lift sm:p-5">
       <div className="flex items-start justify-between gap-3">
@@ -58,9 +59,11 @@ export function MarketListCard({ item, isStaff, contextLabel, onOpen }: MarketLi
         <Button
           variant={item.stage === 'active' ? 'primary' : 'secondary'}
           onClick={onOpen}
+          disabled={isOpening}
+          aria-busy={isOpening}
           className="w-full sm:w-auto"
         >
-          {getMarketListActionLabel(item.stage, isStaff)}
+          {isOpening ? '開啟中...' : getMarketListActionLabel(item.stage, isStaff)}
         </Button>
       </div>
     </article>

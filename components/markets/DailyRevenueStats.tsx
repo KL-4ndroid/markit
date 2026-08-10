@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Calendar, TrendingUp, Plus } from 'lucide-react';
 import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -23,6 +23,7 @@ interface DailyRevenueStatsProps {
   hideProfit?: boolean;
   showTotals?: boolean;
   showInteractions?: boolean;
+  reviewMode?: boolean;
 }
 
 /**
@@ -39,8 +40,11 @@ export function DailyRevenueStats({
   hideProfit = false,
   showTotals = true,
   showInteractions = false,
+  reviewMode = false,
 }: DailyRevenueStatsProps) {
   const stats = useDateRangeStats(market.startDate, market.endDate);
+  const [dateView, setDateView] = useState<'auto' | 'recorded' | 'all' | 'empty'>('auto');
+  const [showEmptyReviewDates, setShowEmptyReviewDates] = useState(false);
   const dailyListRef = useRef<HTMLDivElement | null>(null);
   const focusedDayRef = useRef<HTMLDivElement | null>(null);
 
@@ -133,21 +137,55 @@ export function DailyRevenueStats({
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   }, []);
+  const recordedDays = useMemo(() => dailyData.filter(day => (
+    day.revenue !== 0 ||
+    day.profit !== 0 ||
+    day.deals !== 0 ||
+    Object.values(day.interactions).some(count => count > 0)
+  )), [dailyData]);
+  const emptyPastDays = useMemo(() => dailyData.filter(day => (
+    day.date <= today &&
+    day.revenue === 0 &&
+    day.profit === 0 &&
+    day.deals === 0 &&
+    !Object.values(day.interactions).some(count => count > 0)
+  )), [dailyData, today]);
+  const effectiveDateView = dateView === 'auto'
+    ? market.status === 'completed' && dailyData.length > 7 && recordedDays.length > 0
+      ? 'recorded'
+      : 'all'
+    : dateView;
+  const visibleDailyData = effectiveDateView === 'recorded'
+    ? recordedDays
+    : effectiveDateView === 'empty'
+      ? emptyPastDays
+      : dailyData;
+  const isEmptyReview = reviewMode && recordedDays.length === 0;
+  const latestRecordableDate = useMemo(
+    () => [...dailyData].reverse().find(day => day.date <= today)?.date ?? null,
+    [dailyData, today]
+  );
+
+  useEffect(() => {
+    setDateView('auto');
+    setShowEmptyReviewDates(false);
+  }, [market.id]);
+
   const focusedWindowStartDate = useMemo(() => {
-    if (dailyData.length <= 3) return dailyData[0]?.date;
+    if (visibleDailyData.length <= 3) return visibleDailyData[0]?.date;
 
-    const todayIndex = dailyData.findIndex((day) => day.date === today);
+    const todayIndex = visibleDailyData.findIndex((day) => day.date === today);
     if (todayIndex >= 0) {
-      return dailyData[Math.max(0, todayIndex - 1)]?.date;
+      return visibleDailyData[Math.max(0, todayIndex - 1)]?.date;
     }
 
-    const nextIndex = dailyData.findIndex((day) => day.date > today);
+    const nextIndex = visibleDailyData.findIndex((day) => day.date > today);
     if (nextIndex >= 0) {
-      return dailyData[Math.max(0, nextIndex - 1)]?.date;
+      return visibleDailyData[Math.max(0, nextIndex - 1)]?.date;
     }
 
-    return dailyData[Math.max(0, dailyData.length - 3)]?.date;
-  }, [dailyData, today]);
+    return visibleDailyData[Math.max(0, visibleDailyData.length - 3)]?.date;
+  }, [visibleDailyData, today]);
 
   useEffect(() => {
     const list = dailyListRef.current;
@@ -176,11 +214,69 @@ export function DailyRevenueStats({
         )}
       </div>
 
-      <div
-        ref={dailyListRef}
-        className={`relative py-1 ${dailyData.length > 5 ? 'max-h-[28rem] overflow-y-auto overscroll-contain' : ''}`}
-      >
-        {dailyData.map((day, dayIndex) => {
+      {!isEmptyReview && !isSingleDay && dateRange.length > 5 && (
+        <div className="border-b border-atelier-line bg-atelier-paper px-4 py-3 sm:px-5">
+          <div className="grid grid-cols-3 rounded-control bg-atelier-canvas p-1" role="group" aria-label="每日表現顯示範圍">
+            {([
+              ['recorded', `有紀錄 ${recordedDays.length}`],
+              ['all', `全部 ${dailyData.length}`],
+              ['empty', `尚無紀錄 ${emptyPastDays.length}`],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={effectiveDateView === value}
+                onClick={() => setDateView(value)}
+                className={`min-h-10 rounded-control px-2 text-xs font-medium transition-colors ${
+                  effectiveDateView === value
+                    ? 'bg-white text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isEmptyReview && (
+        <div className="border-b border-atelier-line bg-atelier-paper px-4 py-7 text-center sm:px-5">
+          <p className="text-sm font-semibold text-foreground">這場市集尚無營運紀錄</p>
+          <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">
+            目前沒有收入、成交或顧客互動資料。可補登最近場次，或展開日期確認各日狀態。
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {canAddRevenue && latestRecordableDate && (
+              <button
+                type="button"
+                onClick={() => onAddRevenue(latestRecordableDate)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                補登最近場次
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowEmptyReviewDates(value => !value)}
+              aria-expanded={showEmptyReviewDates}
+              className="min-h-11 rounded-control border border-atelier-line bg-atelier-canvas px-4 text-sm font-medium text-atelier-ink transition-colors hover:bg-atelier-sage-soft"
+            >
+              {showEmptyReviewDates ? '收合日期' : '查看全部日期'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {(!isEmptyReview || showEmptyReviewDates) && (
+        <div
+          ref={dailyListRef}
+          className={`relative py-1 ${visibleDailyData.length > 5 ? 'max-h-[28rem] overflow-y-auto overscroll-contain' : ''}`}
+        >
+          {visibleDailyData.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">這個篩選條件目前沒有日期。</p>
+          ) : visibleDailyData.map((day, dayIndex) => {
           const isToday = day.date === today;
           const isFuture = day.date > today;
 
@@ -193,7 +289,7 @@ export function DailyRevenueStats({
                 isFuture ? 'cursor-not-allowed opacity-55' : 'cursor-pointer hover:bg-atelier-canvas/70'
               } ${isToday ? 'bg-atelier-sage-soft/65' : 'bg-atelier-paper'}`}
             >
-              {dayIndex < dailyData.length - 1 && (
+              {dayIndex < visibleDailyData.length - 1 && (
                 <span className="absolute bottom-0 left-[1.22rem] top-8 w-px bg-atelier-line sm:left-[1.47rem]" aria-hidden="true" />
               )}
               <span
@@ -269,10 +365,11 @@ export function DailyRevenueStats({
               </div>
             </div>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
 
-      {showTotals && !isSingleDay && (
+      {showTotals && !isSingleDay && !isEmptyReview && (
         <div className="flex flex-wrap items-end justify-between gap-4 bg-atelier-apricot-soft/70 px-4 py-4 sm:px-5">
           <div>
             <div className="text-xs text-muted-foreground">這場市集合計</div>

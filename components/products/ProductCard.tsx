@@ -25,6 +25,7 @@ interface ProductCardProps {
   onOpen?: (product: Product) => void;
   canEdit?: boolean;
   coverPhotoVersion?: number | null;
+  isOpening?: boolean;
 }
 
 const CATEGORY_PRESENTATION: Record<ProductCategory, {
@@ -48,7 +49,7 @@ const STOCK_TONE_CLASSES: Record<ProductStockTone, string> = {
   neutral: 'bg-muted text-muted-foreground',
 };
 
-export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersion }: ProductCardProps) {
+export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersion, isOpening = false }: ProductCardProps) {
   const router = useRouter();
   const category = CATEGORY_PRESENTATION[product.category] ?? {
     label: '其他',
@@ -67,23 +68,28 @@ export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersio
   };
 
   return (
-    <article className="flex min-h-48 flex-col overflow-hidden rounded-card border border-primary/10 bg-atelier-paper shadow-atelier transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-atelier-lift">
-      <div className={`aspect-[4/3] flex items-center justify-center overflow-hidden ${category.background}`}>
-        {coverPhotoVersion ? (
+    <article className="flex flex-col overflow-hidden rounded-card border border-primary/10 bg-atelier-paper shadow-atelier transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-atelier-lift">
+      {coverPhotoVersion ? (
+        <div className={`aspect-[4/3] flex items-center justify-center overflow-hidden ${category.background}`}>
           <ProductCoverPhotoImage
             productId={product.id}
             productName={product.name}
             variant="thumbnail"
             fallback={<CategoryIcon className="h-8 w-8 text-foreground/60" aria-hidden="true" />}
           />
-        ) : (
-          <CategoryIcon className="h-8 w-8 text-foreground/60" aria-hidden="true" />
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <div className="flex flex-1 flex-col p-4">
       <div className="flex items-start justify-between gap-3">
-        <span className="text-xs text-muted-foreground">{category.label}</span>
+        <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+          {!coverPhotoVersion && (
+            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-control ${category.background}`}>
+              <CategoryIcon className="h-4 w-4 text-foreground/60" aria-hidden="true" />
+            </span>
+          )}
+          {category.label}
+        </span>
         <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${STOCK_TONE_CLASSES[stockState.tone]}`}>
           {stockState.label}
         </span>
@@ -94,8 +100,8 @@ export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersio
         <p className="mt-2 text-xl font-semibold tabular-nums text-primary">{formatCurrency(product.price)}</p>
       </div>
 
-      <Button variant="secondary" className="mt-4 w-full" onClick={handleOpen}>
-        {canEdit ? '查看與編輯' : '查看商品'}
+      <Button variant="secondary" className="mt-4 w-full" onClick={handleOpen} disabled={isOpening} aria-busy={isOpening}>
+        {isOpening ? '開啟中...' : canEdit ? '查看與編輯' : '查看商品'}
       </Button>
       </div>
     </article>

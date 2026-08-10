@@ -4,9 +4,11 @@ import dynamic from 'next/dynamic';
 import { AlertCircle, ArrowLeft, CalendarDays, Plus, Store } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 
 import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
+import { MarketDetailLoadingShell } from '@/components/markets/MarketDetailLoadingShell';
 import { MarketListCard } from '@/components/markets/MarketListCard';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -17,10 +19,15 @@ import { useMarkets } from '@/lib/db/hooks';
 import {
   buildMarketListGroups,
   type MarketListStage,
+  type MarketListViewItem,
 } from '@/lib/markets/market-list-view-model';
 import { isEntityCreateDeepLink } from '@/lib/navigation/entity-create-deep-link';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
+import {
+  beginMarketDetailTransition,
+  type MarketDetailTransitionSnapshot,
+} from '@/lib/navigation/market-detail-transition';
 import { getDeepLinkPort } from '@/lib/platform/interaction-capabilities';
 import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -82,6 +89,8 @@ export default function MarketsPage() {
   const [selectedView, setSelectedView] = useState<MarketListStage | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
+  const [openingMarketId, setOpeningMarketId] = useState<string | null>(null);
+  const [openingMarketSnapshot, setOpeningMarketSnapshot] = useState<MarketDetailTransitionSnapshot | null>(null);
   const [now, setNow] = useState(() => new Date());
   const activeViewRef = useRef<MarketListStage>('active');
   const shortcutHandledRef = useRef(false);
@@ -137,6 +146,12 @@ export default function MarketsPage() {
   activeViewRef.current = activeView;
   const filteredMarkets = groups[activeView];
 
+  useEffect(() => {
+    for (const item of filteredMarkets.slice(0, 8)) {
+      if (item.market.id) router.prefetch(buildMarketDetailHref(item.market.id));
+    }
+  }, [filteredMarkets, router]);
+
   const tabs: readonly TabItem<PrimaryMarketView>[] = [
     { id: 'active', label: '進行中', count: groups.active.length },
     { id: 'preparing', label: '待準備', count: groups.preparing.length },
@@ -148,11 +163,33 @@ export default function MarketsPage() {
     writeReturnState({ view, scrollY: 0 });
   };
 
-  const openMarket = (marketId?: string) => {
+  const openMarket = (item: MarketListViewItem) => {
+    const marketId = item.market.id;
     if (!marketId) return;
+    const snapshot = beginMarketDetailTransition({
+      marketId,
+      actorId: user?.id ?? '',
+      name: item.market.name,
+      dateRangeLabel: item.dateRangeLabel,
+      location: item.market.location || '尚未設定地點',
+    });
+    flushSync(() => {
+      setOpeningMarketId(marketId);
+      setOpeningMarketSnapshot(snapshot);
+    });
     writeReturnState({ view: activeView, scrollY: window.scrollY });
     router.push(buildMarketDetailHref(marketId));
   };
+
+  useEffect(() => {
+    if (!openingMarketSnapshot) return;
+    const timeoutId = window.setTimeout(() => {
+      setOpeningMarketId(null);
+      setOpeningMarketSnapshot(null);
+      toast.error('市集開啟時間較久，請再試一次');
+    }, 8_000);
+    return () => window.clearTimeout(timeoutId);
+  }, [openingMarketSnapshot]);
 
   const handleAddSuccess = () => {
     toast.success('市集建立成功', { description: '已加入待準備清單。' });
@@ -186,6 +223,8 @@ export default function MarketsPage() {
 
     return () => { active = false; };
   }, [canLoadScopedData, dbStatus, isRoleReady, isStaffMode, router]);
+
+  if (openingMarketSnapshot) return <MarketDetailLoadingShell snapshot={openingMarketSnapshot} />;
 
   if (!canLoadScopedData || dbStatus === null) return <MarketsLoading />;
 
@@ -254,7 +293,8 @@ export default function MarketsPage() {
                 key={item.market.id ?? `${item.market.name}-${item.displayDate}`}
                 item={item}
                 isStaff={isStaffMode}
-                onOpen={() => openMarket(item.market.id)}
+                  isOpening={openingMarketId === item.market.id}
+                  onOpen={() => openMarket(item)}
               />
             ))}
           </div>

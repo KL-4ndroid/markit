@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, CheckCircle2, DollarSign, ImagePlus, ShoppingBag } from 'lucide-react';
+import { CheckCircle2, DollarSign, ImagePlus, ShoppingBag } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import type {
@@ -109,37 +109,32 @@ export function TransactionWorkspace({
         <div className="min-w-0">
           <p className="text-xs font-semibold text-atelier-ink">現場收款</p>
           <h2 className="mt-1 text-lg font-semibold text-atelier-ink">把這筆交易收好</h2>
-          <p className="mt-1 text-xs text-foreground">成交後會先安全留在這台裝置</p>
+          <p className="mt-1 text-xs text-foreground">
+            成交後安全儲存 · {salesPhotoEvidenceRequired ? '本場需拍照' : '本場免拍照'}
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={onOpenPendingPhotos}
-          className={`relative flex min-h-11 shrink-0 items-center gap-2 rounded-control px-3 text-sm font-medium shadow-sm transition-colors ${
-            pendingPhotoCount > 0
-              ? 'bg-atelier-paper text-atelier-ink hover:bg-atelier-rose-soft'
-              : 'bg-atelier-paper/75 text-atelier-muted hover:bg-atelier-paper'
-          }`}
-          aria-label={`待補照片 ${pendingPhotoCount} 筆`}
-        >
-          <ImagePlus className="h-4 w-4 text-primary" aria-hidden="true" />
-          待補
-          <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-xs ${pendingPhotoCount > 0 ? 'bg-atelier-clay text-white' : 'bg-atelier-canvas text-atelier-muted'}`}>
-            {pendingPhotoCount}
-          </span>
-        </button>
+        {pendingPhotoCount > 0 ? (
+          <button
+            type="button"
+            onClick={onOpenPendingPhotos}
+            className="relative flex min-h-11 shrink-0 items-center gap-2 rounded-control bg-atelier-paper px-3 text-sm font-medium text-atelier-ink shadow-sm transition-colors hover:bg-atelier-rose-soft"
+            aria-label={`待補照片 ${pendingPhotoCount} 筆`}
+          >
+            <ImagePlus className="h-4 w-4 text-primary" aria-hidden="true" />
+            待補
+            <span className="min-w-5 rounded-full bg-atelier-clay px-1.5 py-0.5 text-center text-xs text-white">
+              {pendingPhotoCount}
+            </span>
+          </button>
+        ) : (
+          <div className="flex min-h-11 shrink-0 items-center gap-2 rounded-control bg-atelier-paper/75 px-3 text-sm font-medium text-status-good-text" role="status" aria-label="成交照片已齊">
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            照片已齊
+          </div>
+        )}
       </div>
 
       <div className="p-4 sm:p-5">
-        <div className="mb-4 flex items-center justify-between gap-3 px-1 py-1">
-          <span className="flex min-w-0 items-center gap-2 text-xs text-atelier-muted">
-            <Camera className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            成交照片
-          </span>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${salesPhotoEvidenceRequired ? 'bg-atelier-sage-soft text-primary' : 'bg-atelier-canvas text-atelier-muted'}`}>
-            {salesPhotoEvidenceRequired ? '本場需拍照' : '本場免拍照'}
-          </span>
-        </div>
-
         <div className="mb-5 grid grid-cols-2 rounded-control bg-atelier-sage-soft p-1" role="tablist" aria-label="交易方式">
           <button
             id={`transaction-tab-quick-${marketId}`}

@@ -71,10 +71,11 @@ runTest('Staff and owner market detail keep Field Ops permission wiring explicit
   assert.match(staffMarketDetailSource, /canManageChecklist=\{canManageChecklist\}/);
   assert.match(staffMarketDetailSource, /canToggleChecklistItem=\{canToggleChecklistItem\}/);
 
-  assert.match(ownerMarketDetailSource, /canManageFieldNotes=\{true\}/);
+  assert.match(ownerMarketDetailSource, /canManageFieldNotes=\{canManageOwnerFieldOps\}/);
   assert.match(ownerMarketDetailSource, /referenceNote=\{market\.notes\}/);
-  assert.match(ownerMarketDetailSource, /canManageChecklist=\{true\}/);
-  assert.match(ownerMarketDetailSource, /canToggleChecklistItem=\{true\}/);
+  assert.match(ownerMarketDetailSource, /canManageChecklist=\{canManageOwnerFieldOps\}/);
+  assert.match(ownerMarketDetailSource, /canToggleChecklistItem=\{canManageOwnerFieldOps\}/);
+  assert.match(ownerMarketDetailSource, /canManageOwnerFieldOps = marketWorkspacePhase !== 'ended'/);
 });
 
 runTest('Field Ops UI guardrail avoids Gate D production wiring', () => {

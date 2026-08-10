@@ -111,6 +111,7 @@ export function ProductCoverPhotoField({
         <p className="mt-1 text-xs text-muted-foreground">每項商品支援一張封面，系統會自動壓縮成適合顯示的尺寸。</p>
       </div>
 
+      {(canChoose || value || productId) && (
       <div className="aspect-[4/3] overflow-hidden rounded-control border border-primary/15 bg-background">
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -131,6 +132,7 @@ export function ProductCoverPhotoField({
           </div>
         )}
       </div>
+      )}
 
       {canChoose ? (
         <div className="flex flex-wrap gap-2">

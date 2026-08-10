@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, CheckSquare, Plus, Save, Trash2, X } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { toast } from 'sonner';
@@ -17,9 +17,10 @@ interface ChecklistPanelProps {
   marketId: string;
   canManage: boolean;
   canToggle: boolean;
+  onRemainingChange?: (remaining: number) => void;
 }
 
-export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPanelProps) {
+export function ChecklistPanel({ marketId, canManage, canToggle, onRemainingChange }: ChecklistPanelProps) {
   const [text, setText] = useState('');
   const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null);
   const [editingText, setEditingText] = useState('');
@@ -34,6 +35,10 @@ export function ChecklistPanel({ marketId, canManage, canToggle }: ChecklistPane
   const isLoading = items === undefined;
   const canToggleItems = canManage || canToggle;
   const remaining = visibleItems.filter(item => !item.completed).length;
+
+  useEffect(() => {
+    if (!isLoading) onRemainingChange?.(remaining);
+  }, [isLoading, onRemainingChange, remaining]);
 
   const resetEditing = () => {
     setEditingItem(null);

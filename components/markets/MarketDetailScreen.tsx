@@ -58,6 +58,8 @@ import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { InteractionDetailModal } from '@/components/markets/InteractionDetailModal';
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
+import { MarketDetailLoadingShell } from '@/components/markets/MarketDetailLoadingShell';
+import { MarketReferenceNotePanel } from '@/components/markets/MarketReferenceNotePanel';
 import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceDetailTabs';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
@@ -70,13 +72,17 @@ import { useRoleContext } from '@/lib/role-context';
 import { useSalesPhotoEvidenceFlow } from '@/hooks/useSalesPhotoEvidenceFlow';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
-import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
 import { normalizeMarketRouteId, shouldShowMarketDetailLoading } from '@/lib/markets/detail-loading';
 import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
 import { getDealEventDate, getDealEventRevenue, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
 import { buildMarketInteractionSummary } from '@/lib/markets/market-interaction-summary';
+import {
+  completeMarketDetailTransition,
+  readMarketDetailTransition,
+  type MarketDetailTransitionSnapshot,
+} from '@/lib/navigation/market-detail-transition';
 import {
   getDefaultOwnerMarketWorkspaceView,
   resolveMarketWorkspacePhase,
@@ -103,6 +109,7 @@ const EditMarketForm = dynamic(() =>
 );
 
 type OwnerOverviewDetail = 'performance' | 'interactions' | 'photos' | 'costs';
+type OwnerLiveMobileView = 'sales' | 'field-ops';
 
 type SalesPhotoEvidenceMarket = Market & {
   salesPhotoEvidenceRequired?: boolean;
@@ -117,6 +124,7 @@ export function MarketDetailScreen() {
   const { user } = useAuth(); // ✅ 檢查是否已登入
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [transitionSnapshot, setTransitionSnapshot] = useState<MarketDetailTransitionSnapshot | null>(null);
   const [directLocalMarket, setDirectLocalMarket] = useState<Market | undefined>(undefined);
   const [localLookupComplete, setLocalLookupComplete] = useState(false);
   const [supabaseMarket, setSupabaseMarket] = useState<any>(null); // Supabase 數據（員工模式使用）
@@ -272,6 +280,8 @@ export function MarketDetailScreen() {
   const [countdown, setCountdown] = useState<string>('--');
   const [isOperatingStatusCollapsed, setIsOperatingStatusCollapsed] = useState(true);  // 營業狀態折疊
   const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(false);  // 今日時間軸折疊（預設展開）
+  const [ownerLiveMobileView, setOwnerLiveMobileView] = useState<OwnerLiveMobileView>('sales');
+  const [ownerPendingChecklistCount, setOwnerPendingChecklistCount] = useState(0);
   const [showStatusChangeConfirm, setShowStatusChangeConfirm] = useState(false);  // 狀態變更確認
   const [pendingStatus, setPendingStatus] = useState<MarketStatus | null>(null);  // 待變更的狀態
   
@@ -312,7 +322,17 @@ export function MarketDetailScreen() {
   // 確保只在客戶端渲染
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    setTransitionSnapshot(readMarketDetailTransition(marketId, user?.id ?? ''));
+  }, [marketId, user?.id]);
+
+  useEffect(() => {
+    if (!transitionSnapshot) return;
+    const timeoutId = window.setTimeout(
+      () => setTransitionSnapshot(null),
+      Math.max(0, transitionSnapshot.expiresAt - Date.now()),
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [transitionSnapshot]);
 
   // 倒數計時邏輯
   useEffect(() => {
@@ -730,6 +750,19 @@ export function MarketDetailScreen() {
     endDate: market?.endDate,
     marketStatus: market?.status,
   });
+  const currentDate = new Date();
+  const currentDateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+  const hasFutureMarketDate = Boolean(market && (
+    market.dates && market.dates.length > 0
+      ? market.dates.some((date: string) => date > currentDateKey)
+      : market.endDate > currentDateKey
+  ));
+  const canManageOwnerFieldOps = marketWorkspacePhase !== 'ended';
+  const marketHeaderDescription = marketWorkspacePhase === 'ended'
+    ? '回顧這場市集的成果、照片與成本。'
+    : operatingPhase === 'ended' && hasFutureMarketDate
+      ? '今天已收攤，下一個場次仍可繼續準備。'
+      : '現場、照片與回顧，都替你整理在這裡。';
 
   // ✅ 當 market 數據變化時，立即重新判斷營業狀態
   useEffect(() => {
@@ -1089,21 +1122,24 @@ export function MarketDetailScreen() {
       setDealEvents(updatedDeals);
     }
   }, [marketId, selectedDeal, dbStatus, isStaff]);
-  // ✅ 防止 hydration 錯誤：在客戶端掛載前不渲染任何內容
-  if (!isMounted) {
-    return null;
-  }
-
-  // 載入中（初始化中或等待 Supabase fallback）
-  if (dbStatus === null || shouldShowMarketDetailLoading({
+  const isDetailLoading = dbStatus === null || shouldShowMarketDetailLoading({
     isInitialized: dbStatus?.ok !== false,
     localLookupComplete,
     hasUser: !!user && !!marketId,
     hasMarket: !!market,
     hasTriedSupabaseFallback,
     isLoadingSupabase,
-  })) {
-    return <DetailPageSkeleton />;
+  });
+
+  useEffect(() => {
+    if (!isMounted || isDetailLoading || !market || !user?.id) return;
+    completeMarketDetailTransition(marketId, user.id);
+    setTransitionSnapshot(null);
+  }, [isDetailLoading, isMounted, market, marketId, user?.id]);
+
+  // ✅ 防止 hydration 錯誤，同時維持目的地框架而不是空白畫面
+  if (!isMounted || isDetailLoading) {
+    return <MarketDetailLoadingShell snapshot={transitionSnapshot} />;
   }
 
   // DB 不健康
@@ -1252,7 +1288,7 @@ export function MarketDetailScreen() {
                     <span className="truncate">{market.location}</span>
                   </div>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-white/80">現場、照片與回顧，都替你整理在這裡。</p>
+                <p className={`mt-2 text-xs leading-5 text-white/80 ${isOperating ? 'hidden sm:block' : ''}`}>{marketHeaderDescription}</p>
               </div>
             </div>
             
@@ -1285,7 +1321,7 @@ export function MarketDetailScreen() {
           panelId="owner-market-workspace-panel"
           items={[
             { id: 'live', label: '現場', icon: Store, badge: salesPhotoEvidenceFlow.pendingCount },
-            { id: 'overview', label: '總覽', icon: BarChart3 },
+            { id: 'overview', label: '回顧', icon: BarChart3 },
             { id: 'manage', label: '管理', icon: ClipboardCheck },
           ]}
         />
@@ -1299,9 +1335,10 @@ export function MarketDetailScreen() {
         <MarketWorkspaceSummary
           phase={marketWorkspacePhase}
           operatingTime={formatClockTimeRange(market.operatingStartTime, market.operatingEndTime) || null}
+          compactOnMobile={marketWorkspacePhase === 'operating' && resolvedOwnerWorkspaceView === 'live'}
           items={resolvedOwnerWorkspaceView === 'manage'
             ? [
-                { label: '市集狀態', value: getStatusText(market.status) },
+                { label: '報名進度', value: getStatusText(market.status) },
                 {
                   label: '固定成本',
                   value: formatCurrency(
@@ -1335,11 +1372,39 @@ export function MarketDetailScreen() {
                 ]}
         />
 
+        {resolvedOwnerWorkspaceView === 'live' && isOperating && (
+          <div className="mb-4 grid grid-cols-2 rounded-control bg-atelier-paper p-1 shadow-atelier lg:hidden" role="group" aria-label="現場操作模式">
+            <button
+              type="button"
+              aria-pressed={ownerLiveMobileView === 'sales'}
+              onClick={() => setOwnerLiveMobileView('sales')}
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-control px-3 text-sm font-medium transition-colors ${ownerLiveMobileView === 'sales' ? 'bg-primary text-white shadow-sm' : 'text-atelier-muted'}`}
+            >
+              <DollarSign className="h-4 w-4" aria-hidden="true" />
+              收款與互動
+            </button>
+            <button
+              type="button"
+              aria-pressed={ownerLiveMobileView === 'field-ops'}
+              onClick={() => setOwnerLiveMobileView('field-ops')}
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-control px-3 text-sm font-medium transition-colors ${ownerLiveMobileView === 'field-ops' ? 'bg-primary text-white shadow-sm' : 'text-atelier-muted'}`}
+            >
+              <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+              現場工作
+              {ownerPendingChecklistCount > 0 && (
+                <span className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${ownerLiveMobileView === 'field-ops' ? 'bg-white/20 text-white' : 'bg-atelier-blue-soft text-atelier-ink'}`}>
+                  {ownerPendingChecklistCount}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
         {resolvedOwnerWorkspaceView === 'overview' && (
           <MarketWorkspaceDetailTabs
             value={ownerOverviewDetail}
             onChange={setOwnerOverviewDetail}
-            ariaLabel="總覽詳細資料"
+            ariaLabel="回顧詳細資料"
             panelId="owner-overview-detail-panel"
             items={[
               { id: 'performance', label: '每日表現', icon: Calendar },
@@ -1366,8 +1431,18 @@ export function MarketDetailScreen() {
         )}
         {/* 營業中時的操作區 - 根據自動判斷顯示 */}
         {resolvedOwnerWorkspaceView === 'live' && isOperating && (
-          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            {/* 1. 互動記錄按鈕 */}
+          <div className={`${ownerLiveMobileView === 'sales' ? 'grid' : 'hidden'} items-start gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem]`}>
+            <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
+              <TransactionWorkspace
+                marketId={marketId}
+                salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
+                pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
+                onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
+                salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+                onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+              />
+            </div>
+
             <section className="rounded-card bg-atelier-blue-soft/65 p-4 shadow-atelier lg:col-start-2 lg:row-start-1">
               <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-atelier-ink">
                 <TrendingUp className="w-5 h-5 text-primary" />
@@ -1382,22 +1457,13 @@ export function MarketDetailScreen() {
               />
             </section>
 
-            <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
-              <TransactionWorkspace
-                marketId={marketId}
-                salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
-                pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
-                onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
-                salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
-                onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
-              />
-            </div>
-
             <div className="lg:col-start-2 lg:row-start-2">
               <DailyTransactionLog
                 marketId={marketId}
                 limit={5}
                 showSummary={false}
+                compactEmpty
+                allowDelete
                 title="最近紀錄"
                 onViewAll={() => {
                   setOwnerOverviewDetail('performance');
@@ -1405,6 +1471,22 @@ export function MarketDetailScreen() {
                 }}
               />
             </div>
+          </div>
+        )}
+
+        {resolvedOwnerWorkspaceView === 'live' && (
+          <div className={`mx-auto mt-4 max-w-3xl ${isOperating && ownerLiveMobileView !== 'field-ops' ? 'hidden lg:block' : ''}`}>
+            <MarketFieldOpsSection
+              marketId={marketId}
+              referenceNote={market.notes}
+              canManageFieldNotes={canManageOwnerFieldOps}
+              canManageChecklist={canManageOwnerFieldOps}
+              canToggleChecklistItem={canManageOwnerFieldOps}
+              onChecklistRemainingChange={setOwnerPendingChecklistCount}
+              readOnlyReason={marketWorkspacePhase === 'ended'
+                ? '市集已完成，現場交接筆記與待辦清單已封存為唯讀紀錄。'
+                : undefined}
+            />
           </div>
         )}
 
@@ -1419,7 +1501,7 @@ export function MarketDetailScreen() {
               className="w-full flex items-center justify-between mb-4"
             >
               <div className="flex-1 text-left">
-                <h2 className="text-lg font-medium text-foreground">營業狀態</h2>
+                <h2 className="text-lg font-medium text-foreground">今日營業狀態</h2>
                 <p className="text-xs text-muted-foreground mt-1">
                   根據時間自動判斷
                 </p>
@@ -1435,12 +1517,12 @@ export function MarketDetailScreen() {
                   {operatingPhase === 'not-started' ? (
                     <>
                       <Clock className="w-5 h-5" />
-                      <span>未開始</span>
+                      <span>今日未開始</span>
                     </>
                   ) : (
                     <>
                       <Moon className="w-5 h-5" />
-                      <span>已結束</span>
+                      <span>今日已收攤</span>
                     </>
                   )}
                 </div>
@@ -1566,12 +1648,14 @@ export function MarketDetailScreen() {
                 <div className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">
                     <button
+                      type="button"
+                      aria-label="將報名狀態設為已報名"
                       onClick={() => {
                         if (market.status !== 'registered') {
                           handleStatusChangeRequest('registered');
                         }
                       }}
-                      className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
+                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition-all duration-300 ${
                         market.status === 'registered'
                           ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
                           : ['accepted', 'paid', 'ongoing', 'completed'].includes(market.status)
@@ -1598,12 +1682,14 @@ export function MarketDetailScreen() {
                 <div className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">
                     <button
+                      type="button"
+                      aria-label="將報名狀態設為已錄取"
                       onClick={() => {
                         if (market.status !== 'accepted') {
                           handleStatusChangeRequest('accepted');
                         }
                       }}
-                      className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
+                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition-all duration-300 ${
                         market.status === 'accepted'
                           ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
                           : ['paid', 'ongoing', 'completed'].includes(market.status)
@@ -1630,12 +1716,14 @@ export function MarketDetailScreen() {
                 <div className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">
                     <button
+                      type="button"
+                      aria-label="將報名狀態設為已繳費"
                       onClick={() => {
                         if (market.status !== 'paid') {
                           handleStatusChangeRequest('paid');
                         }
                       }}
-                      className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
+                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition-all duration-300 ${
                         market.status === 'paid'
                           ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
                           : ['ongoing', 'completed'].includes(market.status)
@@ -1662,12 +1750,14 @@ export function MarketDetailScreen() {
                 <div className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">
                     <button
+                      type="button"
+                      aria-label="將報名狀態設為如期舉行"
                       onClick={() => {
                         if (market.status !== 'ongoing') {
                           handleStatusChangeRequest('ongoing');
                         }
                       }}
-                      className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
+                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition-all duration-300 ${
                         market.status === 'ongoing'
                           ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
                           : market.status === 'completed'
@@ -1798,6 +1888,7 @@ export function MarketDetailScreen() {
             onAddRevenue={handleOpenAddRevenue}
             onDateClick={handleDateClick}
             showTotals={false}
+            reviewMode={marketWorkspacePhase === 'ended'}
           />
         </>
         )}
@@ -1821,13 +1912,7 @@ export function MarketDetailScreen() {
             </div>
           </div>
         </section>
-        <MarketFieldOpsSection
-          marketId={marketId}
-          referenceNote={market.notes}
-          canManageFieldNotes={true}
-          canManageChecklist={true}
-          canToggleChecklistItem={true}
-        />
+        <MarketReferenceNotePanel note={market.notes} />
         </div>
         )}
 
@@ -1968,7 +2053,7 @@ export function MarketDetailScreen() {
             </div>
             
             {/* 保證金 - 不計入成本，僅作提醒 */}
-            {market.deposit && market.deposit > 0 && (
+            {(market.deposit ?? 0) > 0 && (
               <div className="flex justify-between items-center bg-soft-yellow px-3 py-2 rounded-lg">
                 <span className="text-muted-foreground flex items-center gap-1">
                   保證金

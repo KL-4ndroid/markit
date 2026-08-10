@@ -193,15 +193,6 @@ export function EditProductForm({
         )}
       >
         <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
-          <ProductCoverPhotoField
-            productId={product.id}
-            productName={formData.name || product.name}
-            value={coverPhoto}
-            onChange={setCoverPhoto}
-            disabled={isSubmitting}
-            onDeleted={onSuccess}
-          />
-          <div className="mt-5">
           <ProductFormFields
             idPrefix={FIELD_PREFIX}
             values={formData}
@@ -210,6 +201,15 @@ export function EditProductForm({
             onChange={handleChange}
             disabled={isSubmitting}
           />
+          <div className="mt-6 border-t border-primary/10 pt-5">
+            <ProductCoverPhotoField
+              productId={product.id}
+              productName={formData.name || product.name}
+              value={coverPhoto}
+              onChange={setCoverPhoto}
+              disabled={isSubmitting}
+              onDeleted={onSuccess}
+            />
           </div>
 
           <section className="mt-6 space-y-3 border-t border-primary/10 pt-5" aria-labelledby="product-management-heading">

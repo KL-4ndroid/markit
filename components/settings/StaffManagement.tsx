@@ -378,7 +378,7 @@ export function StaffManagement({
                 <li>• <strong>可以做的事</strong>：查看市集和商品、記錄互動、記錄成交</li>
                 <li>• <strong>不能做的事</strong>：編輯市集、編輯商品、新增商品、新增市集</li>
                 <li>• <strong>敏感數據保護</strong>：員工無法查看成本、利潤、總收入</li>
-                <li>• 員工可以訪問<strong>所有進行中的市集</strong>（ongoing、registered、accepted、paid）</li>
+                <li>• 員工可以訪問<strong>尚未結束與正在營業的市集</strong></li>
                 <li>• 員工<strong>無法訪問</strong>已完成或已取消的市集</li>
               </ul>
             </div>
@@ -405,14 +405,16 @@ export function StaffManagement({
             {staffList.map(staff => (
               <div
                 key={staff.id}
-                className="bg-background rounded-xl p-4 flex items-center justify-between"
+                className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Mail className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium text-foreground">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex min-w-0 items-start gap-2">
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    <span className="min-w-0 break-all text-sm font-medium text-foreground">
                       {staff.email}
                     </span>
+                  </div>
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
                     {staff.status === 'pending' && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-soft-yellow text-secondary font-medium">
                         待接受
@@ -425,10 +427,10 @@ export function StaffManagement({
                     )}
                     <RoleBadge role={staff.role} />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-3 h-3 text-muted-foreground" />
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <Shield className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Eye className="w-3 h-3" />
+                      <Eye className="h-3 w-3" aria-hidden="true" />
                       可查看與記錄
                     </span>
                     <span className="text-xs text-muted-foreground">
@@ -446,7 +448,7 @@ export function StaffManagement({
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-1 ml-4">
+                <div className="flex w-full items-center justify-end gap-2 border-t border-primary/10 pt-3 sm:ml-4 sm:w-auto sm:border-0 sm:pt-0">
                   {staff.status === 'suspended_by_plan' && (
                     <button
                       onClick={() => staff.relationship_id && setConfirmation({
@@ -460,7 +462,8 @@ export function StaffManagement({
                         : !teamFeatureAllowed
                         ? '升級 Team 後可恢復'
                         : '恢復員工存取權'}
-                      className="p-2 rounded-xl bg-soft-green text-primary hover:bg-soft-green/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="恢復員工存取權"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl bg-soft-green text-primary transition-colors hover:bg-soft-green/80 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
@@ -479,7 +482,8 @@ export function StaffManagement({
                         ? '修改角色需要 Team 方案'
                         : '修改員工角色'
                     }
-                    className="p-2 rounded-xl bg-soft-green text-primary hover:bg-soft-green/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label={`修改 ${staff.email} 的角色`}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-soft-green text-primary transition-colors hover:bg-soft-green/80 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -490,10 +494,11 @@ export function StaffManagement({
                       email: staff.email,
                     })}
                     disabled={!canRunCleanup}
-                    className="p-2 rounded-xl bg-soft-pink text-danger hover:bg-soft-pink/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title={simulationActive
                       ? '訂閱模擬不會修改雲端資料'
                       : staff.status === 'pending' ? '取消邀請' : '移除員工'}
+                    aria-label={`${staff.status === 'pending' ? '取消邀請' : '移除員工'} ${staff.email}`}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-soft-pink text-danger transition-colors hover:bg-soft-pink/80 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

@@ -348,8 +348,8 @@ export async function recordInteraction(
   type: InteractionType,
   productIds?: string[],
   notes?: string
-): Promise<void> {
-  await recordEvent('interaction_recorded', {
+): Promise<string> {
+  return recordEvent('interaction_recorded', {
     marketId,  // ✅ 使用 marketId（符合 InteractionRecordedPayload 介面）
     market_id: marketId,  // ✅ 同時提供 market_id（用於事件的 market_id 欄位）
     type,

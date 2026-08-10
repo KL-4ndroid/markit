@@ -61,7 +61,7 @@ runTest('shared section is the only component that owns field notes and checklis
 runTest('owner and staff route permissions stay explicit at the section boundary', () => {
   assert.match(
     ownerMarketDetailSource,
-    /<MarketFieldOpsSection[\s\S]*marketId=\{marketId\}[\s\S]*referenceNote=\{market\.notes\}[\s\S]*canManageFieldNotes=\{true\}[\s\S]*canManageChecklist=\{true\}[\s\S]*canToggleChecklistItem=\{true\}/
+    /<MarketFieldOpsSection[\s\S]*marketId=\{marketId\}[\s\S]*referenceNote=\{market\.notes\}[\s\S]*canManageFieldNotes=\{canManageOwnerFieldOps\}[\s\S]*canManageChecklist=\{canManageOwnerFieldOps\}[\s\S]*canToggleChecklistItem=\{canManageOwnerFieldOps\}/
   );
   assert.match(
     staffMarketDetailSource,

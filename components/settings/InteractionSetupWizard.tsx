@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { AlertTriangle, ArrowLeft, BarChart3, Check, Pencil } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AlertTriangle, ArrowLeft, Check, Pencil } from 'lucide-react';
 
 import { AppDialog } from '@/components/ui/AppDialog';
 import { 
@@ -19,7 +19,7 @@ interface InteractionSetupWizardProps {
   onComplete: () => void;
 }
 
-type Step = 'intro' | 'select-type' | 'preview' | 'customize-1' | 'customize-2' | 'customize-3';
+type Step = 'select-type' | 'preview' | 'customize-1' | 'customize-2' | 'customize-3';
 
 /**
  * 互動設定精靈
@@ -28,34 +28,13 @@ type Step = 'intro' | 'select-type' | 'preview' | 'customize-1' | 'customize-2' 
  */
 export function InteractionSetupWizard({ isOpen, onClose, onComplete }: InteractionSetupWizardProps) {
   const { user } = useAuth();
-  const [step, setStep] = useState<Step>('intro');
+  const [step, setStep] = useState<Step>('select-type');
   const [buttons, setButtons] = useState<InteractionButton[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Step 0: 開場
-  const renderIntro = () => (
-    <div className="text-center py-8">
-      <div className="mb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-full mx-auto mb-4 flex items-center justify-center">
-          <BarChart3 className="h-8 w-8 text-white" aria-hidden="true" />
-        </div>
-        <h2 className="text-2xl font-medium text-foreground mb-3">
-          記錄顧客互動
-        </h2>
-        <p className="text-muted-foreground text-base leading-relaxed max-w-md mx-auto">
-          讓你知道哪一場市集效果最好
-        </p>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setStep('select-type')}
-        className="bg-primary text-white px-8 py-4 rounded-2xl hover:bg-primary/85 transition-colors text-lg font-medium"
-      >
-        開始設定
-      </button>
-    </div>
-  );
+  useEffect(() => {
+    if (isOpen) setStep('select-type');
+  }, [isOpen]);
 
   // Step 1: 選擇攤位類型
   const renderSelectType = () => (
@@ -384,8 +363,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
   };
 
   const goBack = () => {
-    if (step === 'select-type') setStep('intro');
-    else if (step === 'preview') setStep('select-type');
+    if (step === 'preview') setStep('select-type');
     else if (step === 'customize-1') setStep('preview');
     else if (step === 'customize-2') setStep('customize-1');
     else if (step === 'customize-3') setStep('customize-2');
@@ -399,7 +377,7 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
       description="設定營業畫面的三個快速互動動作"
       size="md"
     >
-      {step !== 'intro' && (
+      {step !== 'select-type' && (
         <button
           type="button"
           onClick={goBack}
@@ -409,7 +387,6 @@ export function InteractionSetupWizard({ isOpen, onClose, onComplete }: Interact
           上一步
         </button>
       )}
-      {step === 'intro' && renderIntro()}
       {step === 'select-type' && renderSelectType()}
       {step === 'preview' && renderPreview()}
       {step === 'customize-1' && renderCustomize1()}

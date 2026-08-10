@@ -41,6 +41,7 @@ interface DailyTransactionLogProps {
   showSummary?: boolean;
   title?: string;
   onViewAll?: () => void;
+  compactEmpty?: boolean;
 }
 
 interface LogEntry {
@@ -64,6 +65,7 @@ export function DailyTransactionLog({
   showSummary = true,
   title = '當日流水帳',
   onViewAll,
+  compactEmpty = false,
 }: DailyTransactionLogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -275,9 +277,12 @@ export function DailyTransactionLog({
 
       {/* 流水帳列表 */}
       {logs.length === 0 ? (
-        <div className="rounded-lg bg-background p-8 text-center">
-          <Package className="w-12 h-12 text-primary mx-auto mb-3 opacity-30" />
-          <p className="text-sm text-muted-foreground">今日尚無交易記錄</p>
+        <div className={`rounded-lg bg-background ${compactEmpty ? 'flex items-center gap-3 px-3 py-4 text-left' : 'p-8 text-center'}`}>
+          <Package className={`${compactEmpty ? 'h-6 w-6 shrink-0' : 'mx-auto mb-3 h-12 w-12'} text-primary opacity-30`} />
+          <div>
+            <p className="text-sm text-muted-foreground">今日尚無交易記錄</p>
+            {compactEmpty && <p className="mt-0.5 text-xs text-muted-foreground">完成第一筆收款或互動後會顯示在這裡。</p>}
+          </div>
         </div>
       ) : (
         <div className="max-h-[400px] divide-y divide-border overflow-y-auto">

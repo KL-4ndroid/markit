@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
 
 import { MarketDetailScreen } from '@/components/markets/MarketDetailScreen';
-import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
+import { MarketDetailLoadingShell } from '@/components/markets/MarketDetailLoadingShell';
 
 export default function MarketDetailPage() {
   return (
-    <Suspense fallback={<DetailPageSkeleton />}>
+    <Suspense fallback={<MarketDetailLoadingShell />}>
       <MarketDetailScreen />
     </Suspense>
   );

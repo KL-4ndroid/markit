@@ -254,7 +254,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
             </p>
           </div>
         </div>
-        {onRefresh && (
+        {onRefresh && (viewModel.items.length > 0 || Boolean(loadError)) && (
           <button
             type="button"
             onClick={onRefresh}
@@ -267,17 +267,19 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
         )}
       </div>
 
-      <div className="mb-5 flex flex-wrap gap-2" aria-label="照片狀態篩選">
-        {filterOptions.map(option => (
-          <FilterButton
-            key={option.id}
-            label={option.label}
-            value={option.value}
-            isActive={filter === option.id}
-            onClick={() => setFilter(option.id)}
-          />
-        ))}
-      </div>
+      {viewModel.items.length > 0 && (
+        <div className="mb-5 flex flex-wrap gap-2" aria-label="照片狀態篩選">
+          {filterOptions.map(option => (
+            <FilterButton
+              key={option.id}
+              label={option.label}
+              value={option.value}
+              isActive={filter === option.id}
+              onClick={() => setFilter(option.id)}
+            />
+          ))}
+        </div>
+      )}
 
       {onDelete && deleteCapabilityMessage && summary.countByDisplayStatus.uploaded_private > 0 && (
         <div className="mb-4 rounded-card border border-status-warn-border bg-status-warn-bg px-4 py-3 text-sm text-status-warn-text">
@@ -289,6 +291,11 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
         <div className="rounded-card border border-status-danger-border bg-status-danger-bg px-4 py-3 text-sm text-status-danger-text">
           {loadError}
         </div>
+      ) : isLoading && viewModel.items.length === 0 ? (
+        <div className="rounded-card border border-dashed border-atelier-line bg-atelier-canvas px-4 py-8 text-center" role="status">
+          <RefreshCw className="mx-auto h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
+          <p className="mt-3 text-sm font-medium text-foreground">正在載入成交照片</p>
+        </div>
       ) : filteredItems.length === 0 ? (
         <div className="rounded-card border border-dashed border-atelier-line bg-atelier-canvas px-4 py-8 text-center">
           <ImageOff className="mx-auto h-8 w-8 text-muted-foreground" />
@@ -297,7 +304,9 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {viewModel.items.length === 0
-              ? '啟用拍照流程後，這裡會顯示每筆成交對應的照片狀態。'
+              ? marketRequiresEvidence
+                ? '完成成交拍照與上傳後，照片會依成交時間顯示在這裡。'
+                : '有成交照片後，會依成交時間顯示在這裡。'
               : '可切換其他狀態查看歷史照片紀錄。'}
           </p>
         </div>

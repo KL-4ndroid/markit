@@ -52,11 +52,10 @@ export default function RecoveryPage() {
           <section className="japanese-surface-card px-4 py-5 text-sm text-muted-foreground">
             <div className="mb-3 flex items-center gap-3 text-foreground">
               <ShieldAlert className="h-5 w-5 text-danger" />
-              <h1 className="text-lg font-semibold">修復工具僅限 owner 使用</h1>
+              <h1 className="text-lg font-semibold">只有工作區擁有者可以使用修復工具</h1>
             </div>
             <p>
-              這些工具會重建本機統計或修補收入資料。為避免 staff scoped cache
-              或不完整事件資料造成誤修復，員工帳號不會載入修復面板。
+              這些操作可能重建裝置上的統計或修補收入資料。為避免使用不完整的資料進行修復，團隊成員不會載入這個頁面。
             </p>
           </section>
         </div>
@@ -92,20 +91,28 @@ export default function RecoveryPage() {
 
         <DatabaseRecoveryPanel />
 
-        <ImportSafetyStatusPanel />
-
-        <OwnerPendingOperationDiagnosticsPanel />
-
         <OwnerRevenueGapRepairPanel />
 
-        <LocalProjectionRepairPanel />
+        <details className="japanese-surface-card group px-4 py-4">
+          <summary className="cursor-pointer text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35">
+            進階診斷
+          </summary>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            僅在一般檢查無法排除問題，或依客服指示時使用以下工具。
+          </p>
+          <div className="mt-4 space-y-4">
+            <ImportSafetyStatusPanel />
+            <OwnerPendingOperationDiagnosticsPanel />
+            <LocalProjectionRepairPanel />
+          </div>
+        </details>
 
         <section className="japanese-surface-card px-4 py-4 text-sm text-muted-foreground">
           <h2 className="mb-2 text-base font-semibold text-foreground">使用建議</h2>
           <ol className="list-decimal space-y-2 pl-5">
-            <li>先按「檢查」確認本機資料庫狀態，若有 numeric cache 錯誤，再使用資料庫修復。</li>
+            <li>先按「檢查」確認這台裝置的資料狀態；只有檢查顯示異常時才執行修復。</li>
             <li>若新裝置或無痕登入後收入為 0 或與雲端不一致，先使用「收入差距修復」。</li>
-            <li>若本機收入出現倍增，但本機已經有 deal_closed events，使用「本機統計投影修復」。</li>
+            <li>若收入數字重複增加，請展開「進階診斷」並依檢查結果修復統計。</li>
             <li>修復完成後重新整理頁面，再檢查市集詳情與分析頁的數字是否一致。</li>
           </ol>
         </section>

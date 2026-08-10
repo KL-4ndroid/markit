@@ -44,11 +44,12 @@ runTest('owner panels render only after staff route returns', () => {
   assert.ok(fieldOpsIndex > staffReturnIndex, 'owner field ops section must be after staff return');
 });
 
-runTest('owner panels pass full management permissions', () => {
+runTest('owner panels keep management permission explicit and archive completed markets', () => {
   assert.match(
     ownerMarketDetailSource,
-    /<MarketFieldOpsSection[\s\S]*marketId=\{marketId\}[\s\S]*canManageFieldNotes=\{true\}[\s\S]*canManageChecklist=\{true\}[\s\S]*canToggleChecklistItem=\{true\}/
+    /<MarketFieldOpsSection[\s\S]*marketId=\{marketId\}[\s\S]*canManageFieldNotes=\{canManageOwnerFieldOps\}[\s\S]*canManageChecklist=\{canManageOwnerFieldOps\}[\s\S]*canToggleChecklistItem=\{canManageOwnerFieldOps\}/
   );
+  assert.match(ownerMarketDetailSource, /canManageOwnerFieldOps = marketWorkspacePhase !== 'ended'/);
   assert.match(marketFieldOpsSectionSource, /<FieldNotesPanel[\s\S]*canManage=\{canManageFieldNotes\}/);
   assert.match(
     marketFieldOpsSectionSource,

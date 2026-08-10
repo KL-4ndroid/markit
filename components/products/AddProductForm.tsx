@@ -131,13 +131,6 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
         )}
       >
         <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
-          <ProductCoverPhotoField
-            productName={formData.name}
-            value={coverPhoto}
-            onChange={setCoverPhoto}
-            disabled={isSubmitting}
-          />
-          <div className="mt-5">
           <ProductFormFields
             idPrefix={FIELD_PREFIX}
             values={formData}
@@ -145,6 +138,13 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
             onChange={handleChange}
             disabled={isSubmitting}
           />
+          <div className="mt-6 border-t border-primary/10 pt-5">
+            <ProductCoverPhotoField
+              productName={formData.name}
+              value={coverPhoto}
+              onChange={setCoverPhoto}
+              disabled={isSubmitting}
+            />
           </div>
           {submitError && (
             <p className="mt-5 rounded-control border border-status-danger-border bg-status-danger-bg p-3 text-sm text-status-danger-text" role="alert">

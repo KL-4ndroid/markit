@@ -51,6 +51,8 @@ assert.match(interactionButtonsSource, /InteractionRoleIcon/);
 assert.doesNotMatch(interactionButtonsSource, /button\.emoji/);
 assert.match(albumSource, /useState<AlbumFilter>\('current'\)/);
 assert.match(albumSource, /此篩選沒有照片紀錄/);
+assert.match(albumSource, /viewModel\.items\.length > 0 &&/);
+assert.match(albumSource, /正在載入成交照片/);
 assert.doesNotMatch(albumSource, /成交 {item\.saleId/);
 assert.match(checklistSource, />現場待辦</);
 

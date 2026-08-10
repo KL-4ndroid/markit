@@ -121,6 +121,7 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [openingProductId, setOpeningProductId] = useState<string | null>(null);
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const returnStateRef = useRef<ProductListReturnState>({
     category: 'all',
@@ -227,6 +228,12 @@ export default function ProductsPage() {
     includeInactive: !isStaffMode && showInactive,
   }), [activeCategory, allProducts, deferredSearchQuery, isStaffMode, showInactive]);
 
+  useEffect(() => {
+    for (const product of filteredProducts.slice(0, 8)) {
+      if (product.id) router.prefetch(buildProductDetailHref(product.id));
+    }
+  }, [filteredProducts, router]);
+
   returnStateRef.current = {
     category: activeCategory,
     query: searchQuery,
@@ -236,6 +243,7 @@ export default function ProductsPage() {
 
   const openProduct = (product: Product) => {
     if (!product.id) return;
+    setOpeningProductId(product.id);
     writeReturnState({ ...returnStateRef.current, scrollY: window.scrollY });
     router.push(buildProductDetailHref(product.id));
   };
@@ -369,6 +377,7 @@ export default function ProductsPage() {
                 product={product}
                 canEdit={canEditProductBasic}
                 coverPhotoVersion={product.id ? coverPhotoVersions[product.id] : null}
+                isOpening={openingProductId === product.id}
                 onOpen={openProduct}
               />
             ))}

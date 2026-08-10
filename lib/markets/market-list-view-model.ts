@@ -65,30 +65,48 @@ function occursToday(market: Market, today: string): boolean {
 
 function resolveStage(market: Market, now: Date): MarketListStage {
   if (market.status === 'cancelled') return 'cancelled';
-  if (market.status === 'completed' || market.operationPhase === 'closing') return 'ended';
+  if (market.status === 'completed') return 'ended';
 
   const today = dateKey(now);
   const dates = sortedDates(market);
   const lastDate = dates[dates.length - 1] ?? market.endDate;
   if (lastDate && lastDate < today) return 'ended';
 
-  if (market.operationPhase === 'operating') return 'active';
+  const hasFutureMarketDate = dates.some(date => date > today);
+  if (market.operationPhase === 'closing' && !hasFutureMarketDate) return 'ended';
+
+  if (market.operationPhase === 'operating' && occursToday(market, today)) return 'active';
   if (!occursToday(market, today)) return 'preparing';
 
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const startsAt = minutes(market.operatingStartTime ?? market.startTime);
   const endsAt = minutes(market.operatingEndTime ?? market.endTime);
 
-  if (endsAt !== null && nowMinutes >= endsAt) return 'ended';
+  if (endsAt !== null && nowMinutes >= endsAt) {
+    return hasFutureMarketDate ? 'preparing' : 'ended';
+  }
   if (startsAt !== null && nowMinutes >= startsAt && (endsAt === null || nowMinutes < endsAt)) {
     return 'active';
   }
   return 'preparing';
 }
 
-function displayDateForStage(market: Market, stage: MarketListStage, today: string): string {
+function displayDateForStage(
+  market: Market,
+  stage: MarketListStage,
+  today: string,
+  nowMinutes: number,
+): string {
   const dates = sortedDates(market);
-  if (stage === 'preparing') return dates.find(date => date >= today) ?? dates[0] ?? market.startDate;
+  if (stage === 'preparing') {
+    const endsAt = minutes(market.operatingEndTime ?? market.endTime);
+    const todayHasFinished = occursToday(market, today) && (
+      market.operationPhase === 'closing' || (endsAt !== null && nowMinutes >= endsAt)
+    );
+    return dates.find(date => date > today || (!todayHasFinished && date === today))
+      ?? dates[0]
+      ?? market.startDate;
+  }
   if (stage === 'active') return today;
   return dates[dates.length - 1] ?? market.endDate;
 }
@@ -98,6 +116,7 @@ export function buildMarketListGroups(
   now: Date = new Date(),
 ): MarketListGroups {
   const today = dateKey(now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const groups: MarketListGroups = {
     active: [],
     preparing: [],
@@ -113,7 +132,7 @@ export function buildMarketListGroups(
       stage,
       stageLabel: STAGE_LABEL[stage],
       statusLabel: stage === 'preparing' ? MARKET_STATUS_LABEL[market.status] : STAGE_LABEL[stage],
-      displayDate: displayDateForStage(market, stage, today),
+      displayDate: displayDateForStage(market, stage, today, nowMinutes),
       dateRangeLabel: formatMarketListDateRange(market),
     });
   }
@@ -132,7 +151,7 @@ export function buildMarketListGroups(
 
 export function getMarketListActionLabel(stage: MarketListStage, isStaff: boolean): string {
   if (stage === 'active') return '繼續現場';
-  if (stage === 'preparing') return isStaff ? '查看任務' : '完成設定';
+  if (stage === 'preparing') return isStaff ? '查看任務' : '查看準備';
   if (stage === 'ended') return isStaff ? '查看紀錄' : '查看回顧';
   return '查看內容';
 }

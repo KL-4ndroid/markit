@@ -37,6 +37,16 @@ assert.equal(resolveMarketWorkspacePhase({
   today: '2026-07-15',
 }), 'not-started');
 assert.equal(resolveMarketWorkspacePhase({
+  operatingPhase: 'ended',
+  dates: ['2026-07-15', '2026-07-18'],
+  today: '2026-07-15',
+}), 'not-started');
+assert.equal(resolveMarketWorkspacePhase({
+  operatingPhase: 'ended',
+  dates: ['2026-07-12', '2026-07-15'],
+  today: '2026-07-15',
+}), 'ended');
+assert.equal(resolveMarketWorkspacePhase({
   operatingPhase: 'not-started',
   startDate: '2026-07-18',
   endDate: '2026-07-18',
@@ -71,5 +81,11 @@ assert.match(staffPageSource, /workspaceView === 'records'/);
 assert.match(staffPageSource, /workspaceView === 'tasks'/);
 assert.match(revenueStatsSource, /showTotals = true/);
 assert.match(revenueStatsSource, /showInteractions = false/);
+assert.match(revenueStatsSource, /reviewMode = false/);
+assert.match(ownerPageSource, /label: '回顧'/);
+assert.match(ownerPageSource, /label: '報名進度'/);
+assert.match(ownerPageSource, /canManageOwnerFieldOps = marketWorkspacePhase !== 'ended'/);
+assert.match(ownerPageSource, />今日營業狀態</);
+assert.match(ownerPageSource, />今日已收攤</);
 
 console.log('market workspace tests passed');

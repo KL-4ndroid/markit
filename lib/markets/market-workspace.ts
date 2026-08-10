@@ -24,13 +24,16 @@ export function resolveMarketWorkspacePhase({
   marketStatus,
   today = getLocalDateString(),
 }: ResolveMarketWorkspacePhaseInput): MarketWorkspacePhase {
-  if (operatingPhase === 'operating') return 'operating';
-  if (operatingPhase === 'ended' || marketStatus === 'completed') return 'ended';
-
   const validDates = (dates ?? []).filter(Boolean).sort();
   const lastMarketDate = validDates[validDates.length - 1] ?? endDate ?? startDate;
 
+  if (marketStatus === 'completed') return 'ended';
   if (lastMarketDate && today > lastMarketDate) return 'ended';
+
+  if (operatingPhase === 'operating') return 'operating';
+  // A finished operating day must not close a multi-day market that still has future dates.
+  if (operatingPhase === 'ended' && (!lastMarketDate || today >= lastMarketDate)) return 'ended';
+
   return 'not-started';
 }
 

@@ -1,3 +1,8 @@
+'use client';
+
+import { usePathname } from 'next/navigation';
+
+import { MarketDetailLoadingShell } from '@/components/markets/MarketDetailLoadingShell';
 import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
 
 /**
@@ -8,5 +13,10 @@ import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
  * controls the visual loading surface.
  */
 export function RoleLoadingFallback() {
+  const pathname = usePathname();
+  if (pathname?.startsWith('/markets/detail')) {
+    return <MarketDetailLoadingShell />;
+  }
+
   return <DetailPageSkeleton />;
 }

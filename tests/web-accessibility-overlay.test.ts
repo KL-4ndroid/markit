@@ -28,7 +28,8 @@ assert.match(themeGate, /applyThemePalette\(safeState\.palette\)/);
 
 assert.match(wizard, /<AppDialog/);
 assert.doesNotMatch(wizard, /@headlessui\/react|<Dialog|<Transition/);
-assert.match(wizard, /BarChart3/);
+assert.match(wizard, /useState<Step>\('select-type'\)/);
+assert.match(wizard, /if \(isOpen\) setStep\('select-type'\)/);
 assert.match(wizard, /AlertTriangle/);
 assert.doesNotMatch(wizard, /📊|✅ 就用這組|✏️ 我想調整|⚠️ 這裡記錄的是/);
 assert.match(wizard, /aria-hidden="true">\{type\.emoji\}/);

@@ -353,6 +353,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
         <MarketWorkspaceSummary
           phase={workspacePhase}
           operatingTime={formatClockTimeRange(market.operatingStartTime, market.operatingEndTime) || null}
+          compactOnMobile={workspacePhase === 'operating' && workspaceView === 'live'}
           items={workspaceView === 'tasks'
             ? [
                 { label: '開始', value: formatClockTime(market.operatingStartTime) || '--' },
@@ -376,7 +377,20 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
         {/* ✅ 營業中時的操作區 - 員工核心工作功能 */}
         {workspaceView === 'live' && isOperating && (
           <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            {/* 1. 互動記錄按鈕 */}
+            {canRecordDeal && (
+              <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
+              <TransactionWorkspace
+                marketId={marketId}
+                salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
+                pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
+                onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
+                salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+                onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+                hideProfit
+              />
+              </div>
+            )}
+
             {canRecordInteraction && (
               <section className="rounded-card bg-atelier-blue-soft/65 p-4 shadow-atelier lg:col-start-2 lg:row-start-1">
                 <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-atelier-ink">
@@ -393,20 +407,6 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
               </section>
             )}
 
-            {canRecordDeal && (
-              <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
-              <TransactionWorkspace
-                marketId={marketId}
-                salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
-                pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
-                onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
-                salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
-                onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
-                hideProfit
-              />
-              </div>
-            )}
-
             <div className="lg:col-start-2 lg:row-start-2">
               <DailyTransactionLog
                 marketId={marketId}
@@ -415,6 +415,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
                 deleteSameDayOnly={canDeleteOwnRecord}
                 limit={5}
                 showSummary={false}
+                compactEmpty
                 title="最近紀錄"
                 onViewAll={() => setWorkspaceView('records')}
               />

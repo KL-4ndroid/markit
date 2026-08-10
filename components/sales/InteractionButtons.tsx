@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { recordInteraction } from '@/lib/db/hooks';
+import { deleteInteractionEventById } from '@/lib/markets/event-deletion-service';
 import { getInteractionButtons, type InteractionButton } from '@/lib/interaction-buttons-store';
 import { InteractionRoleIcon } from '@/components/interactions/InteractionRoleIcon';
 
@@ -24,8 +25,12 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
   const [buttons, setButtons] = useState<InteractionButton[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [clickingButton, setClickingButton] = useState<string | null>(null);
-  const [lastRecordedLabel, setLastRecordedLabel] = useState<string | null>(null);
+  const [lastRecordedInteraction, setLastRecordedInteraction] = useState<{
+    eventId: string;
+    label: string;
+  } | null>(null);
   const lastClickTime = useRef(0);
+  const undoingEventIds = useRef(new Set<string>());
 
   useEffect(() => {
     setButtons(getInteractionButtons());
@@ -34,6 +39,28 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
+  const handleUndoInteraction = async (eventId: string, label: string) => {
+    if (undoingEventIds.current.has(eventId)) return;
+
+    undoingEventIds.current.add(eventId);
+    setIsProcessing(true);
+    try {
+      await deleteInteractionEventById(eventId, {
+        allowDelete: true,
+        sameDayOnly: true,
+      });
+      setLastRecordedInteraction((current) => (current?.eventId === eventId ? null : current));
+      onInteractionRecorded?.();
+      toast.success(`${label}已復原`);
+    } catch (error) {
+      undoingEventIds.current.delete(eventId);
+      console.error('復原互動失敗：', error);
+      toast.error('復原失敗，請從最近紀錄處理');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleInteraction = async (buttonId: string, label: string) => {
     const now = Date.now();
@@ -52,12 +79,16 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
 
     let didRecord = false;
     try {
-      await recordInteraction(marketId, buttonId);
+      const eventId = await recordInteraction(marketId, buttonId);
       didRecord = true;
-      setLastRecordedLabel(label);
+      setLastRecordedInteraction({ eventId, label });
       toast.success(label, {
         description: '互動已記錄',
-        duration: 1500,
+        duration: 5000,
+        action: {
+          label: '復原',
+          onClick: () => void handleUndoInteraction(eventId, label),
+        },
       });
       onInteractionRecorded?.();
     } catch (error) {
@@ -68,7 +99,6 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
       if (didRecord) {
         window.setTimeout(() => {
           setClickingButton(null);
-          setLastRecordedLabel(null);
         }, 900);
       } else {
         setClickingButton(null);
@@ -85,7 +115,7 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
             type="button"
             onClick={() => void handleInteraction(button.id, button.label)}
             disabled={isProcessing}
-            className={`relative min-h-24 overflow-hidden rounded-control p-3 shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${
+            className={`relative min-h-16 overflow-hidden rounded-control p-2 shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-24 sm:p-3 ${
               clickingButton === button.id
                 ? 'bg-status-good-bg ring-2 ring-status-good-border'
                 : INTERACTION_SURFACES[buttonIndex % INTERACTION_SURFACES.length]
@@ -94,14 +124,28 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
             {clickingButton === button.id && (
               <CheckCircle2 className="absolute right-2 top-2 h-4 w-4 text-status-good-text" aria-hidden="true" />
             )}
-            <InteractionRoleIcon role={button.role} className="mx-auto mb-2 h-6 w-6 text-atelier-ink" />
+            <InteractionRoleIcon role={button.role} className="mx-auto mb-1 h-5 w-5 text-atelier-ink sm:mb-2 sm:h-6 sm:w-6" />
             <div className="text-center text-sm font-semibold text-atelier-ink">{button.label}</div>
           </button>
         ))}
       </div>
-      <p className="mt-2 min-h-5 text-center text-xs font-medium text-status-good-text" aria-live="polite">
-        {lastRecordedLabel ? `${lastRecordedLabel}已記錄` : ''}
-      </p>
+      <div className="mt-2 flex min-h-8 items-center justify-center gap-3 text-xs font-medium">
+        <span className="text-status-good-text" aria-live="polite">
+          {lastRecordedInteraction ? `${lastRecordedInteraction.label}已記錄` : ''}
+        </span>
+        {lastRecordedInteraction && (
+          <button
+            type="button"
+            onClick={() =>
+              void handleUndoInteraction(lastRecordedInteraction.eventId, lastRecordedInteraction.label)
+            }
+            disabled={isProcessing}
+            className="rounded-control px-2 py-1 font-semibold text-atelier-ink underline decoration-atelier-line underline-offset-4 disabled:opacity-50"
+          >
+            復原
+          </button>
+        )}
+      </div>
     </div>
   );
 }

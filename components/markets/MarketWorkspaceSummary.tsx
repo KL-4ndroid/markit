@@ -15,6 +15,7 @@ interface MarketWorkspaceSummaryProps {
   phase: MarketWorkspacePhase;
   operatingTime?: string | null;
   items: readonly MarketWorkspaceSummaryItem[];
+  compactOnMobile?: boolean;
 }
 
 const PHASE_STYLES: Record<MarketWorkspacePhase, string> = {
@@ -33,13 +34,14 @@ export function MarketWorkspaceSummary({
   phase,
   operatingTime,
   items,
+  compactOnMobile = false,
 }: MarketWorkspaceSummaryProps) {
   const primaryIndex = Math.max(0, items.findIndex(item => item.emphasis));
   const primaryItem = items[primaryIndex];
   const secondaryItems = items.filter((_, index) => index !== primaryIndex);
 
   return (
-    <section className={`mb-5 rounded-card p-5 shadow-atelier sm:p-6 ${PHASE_SURFACES[phase]}`} aria-label="市集摘要">
+    <section className={`rounded-card shadow-atelier ${compactOnMobile ? 'mb-3 p-4 sm:mb-5 sm:p-6' : 'mb-5 p-5 sm:p-6'} ${PHASE_SURFACES[phase]}`} aria-label="市集摘要">
       <div className="flex min-h-8 items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-atelier-ink">
           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${PHASE_STYLES[phase]}`} aria-hidden="true" />
@@ -53,12 +55,12 @@ export function MarketWorkspaceSummary({
         )}
       </div>
 
-      <dl className="mt-5 grid gap-5 sm:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] sm:items-end">
+      <dl className={`${compactOnMobile ? 'mt-3 grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-end gap-3 sm:mt-5 sm:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] sm:gap-5' : 'mt-5 gap-5 sm:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] sm:items-end'} grid`}>
         {primaryItem && (
           <div className="min-w-0">
             <dt className="text-xs font-medium text-atelier-muted">{primaryItem.label}</dt>
             <dd
-              className={`mt-1 break-words text-[1.75rem] font-semibold leading-tight tabular-nums sm:text-[2rem] ${
+              className={`mt-1 break-words font-semibold leading-tight tabular-nums ${compactOnMobile ? 'text-2xl sm:text-[2rem]' : 'text-[1.75rem] sm:text-[2rem]'} ${
                 primaryItem.emphasis ? 'text-primary' : 'text-atelier-ink'
               }`}
               title={typeof primaryItem.value === 'string' || typeof primaryItem.value === 'number' ? String(primaryItem.value) : undefined}
@@ -69,12 +71,12 @@ export function MarketWorkspaceSummary({
         )}
 
         {secondaryItems.length > 0 && (
-          <div className={`grid gap-x-5 gap-y-4 ${secondaryItems.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <div className={`grid gap-x-3 gap-y-2 sm:gap-x-5 sm:gap-y-4 ${secondaryItems.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
             {secondaryItems.map(item => (
               <div key={item.label} className="min-w-0">
                 <dt className="text-[11px] font-medium text-atelier-muted">{item.label}</dt>
                 <dd
-                  className={`mt-1 break-words text-base font-semibold tabular-nums sm:text-lg ${
+                  className={`mt-1 break-words font-semibold tabular-nums ${compactOnMobile ? 'text-sm sm:text-lg' : 'text-base sm:text-lg'} ${
                     item.emphasis ? 'text-primary' : 'text-atelier-ink'
                   }`}
                   title={typeof item.value === 'string' || typeof item.value === 'number' ? String(item.value) : undefined}
