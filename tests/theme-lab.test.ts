@@ -86,6 +86,8 @@ assert.match(gate, /localStorage|loadThemeLabState/);
 assert.match(lab, /type="color"/);
 assert.match(lab, /匯入 JSON/);
 assert.match(lab, /文字對比檢查/);
+assert.match(lab, /<details[\s\S]*進階調整[\s\S]*THEME_TOKEN_DEFINITIONS/);
+assert.doesNotMatch(lab, /快捷鍵：/);
 assert.match(lab, /isThemePaletteAccessible/);
 assert.match(lab, /不能儲存為配色/);
 assert.match(lab, /AppDialog/);

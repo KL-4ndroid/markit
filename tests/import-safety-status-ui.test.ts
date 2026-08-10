@@ -120,6 +120,13 @@ runTest('panel is mounted only on the existing owner-gated recovery page', () =>
   assert.match(recoveryPageSource, /<DatabaseRecoveryPanel \/>[\s\S]*<ImportSafetyStatusPanel \/>/);
 });
 
+runTest('panel presents recovery status in localized user-facing language', () => {
+  assert.match(panelSource, /匯入安全狀態/);
+  assert.match(panelSource, /下載備份/);
+  assert.match(panelSource, /此區塊只讀取備份狀態/);
+  assert.doesNotMatch(panelSource, /Import Safety Status|Download backup|Unknown size|Read error:/);
+});
+
 runTest('panel and helper remain read-only and isolated from import repair and cloud writes', () => {
   for (const source of [panelSource, helperSource]) {
     for (const blocked of [

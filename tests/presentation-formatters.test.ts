@@ -5,12 +5,16 @@ import {
   formatClockTimeRange,
   formatCurrency,
   formatDisplayDate,
+  formatDisplayDateTime,
   formatDisplayDateRange,
   formatDisplayDateRanges,
   formatRelativeTimestamp,
 } from '../lib/presentation/formatters';
 
 assert.equal(formatDisplayDate('2026-07-02'), '2026/7/02');
+assert.equal(formatDisplayDateTime(new Date(2026, 6, 2, 9, 5)), '2026/7/02 09:05');
+assert.equal(formatDisplayDateTime('not-a-date'), 'not-a-date');
+assert.equal(formatDisplayDateTime(null), '');
 assert.equal(formatDisplayDateRange('2026-07-02', '2026-07-31'), '2026/7/02~31');
 assert.equal(formatDisplayDateRange('2026-07-30', '2026-08-02'), '2026/7/30~8/02');
 assert.equal(formatDisplayDateRange('2026-12-31', '2027-01-02'), '2026/12/31~2027/1/02');

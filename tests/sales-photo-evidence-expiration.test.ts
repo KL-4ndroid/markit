@@ -185,6 +185,8 @@ runTest('migration and UI preserve history while removing expired object access'
   assert.match(imageRoute, /expires_at/);
   assert.match(album, /雲端清理排程中/);
   assert.match(album, /24 小時內到期/);
+  assert.match(album, /ExpiredPhotoHistory/);
+  assert.match(album, /依到期月份|expiredHistoryGroupLabel/);
   assert.match(dealDetail, /成交紀錄與營收統計仍會保留/);
   assert.match(vercel, /sales-photo-evidence-expiration/);
   assert.match(vercel, /0 3 \* \* \*/);

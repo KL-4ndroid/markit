@@ -5,6 +5,7 @@ import { Calendar, MapPin, DollarSign, Table, Armchair, Umbrella, Target, Users,
 import type { Market, MarketStatus } from '@/types/db';
 import type { MarketStatsFromProjection } from '@/lib/db/hooks';
 import { formatDate, formatCurrency, formatDateRanges, filterCurrentWeekDates } from '@/lib/utils';
+import { formatDisplayDateRange } from '@/lib/presentation/formatters';
 import { useRoleContext } from '@/lib/role-context';
 import { getShadowClass, getBorderClass } from '@/lib/theme-config';
 import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
@@ -205,10 +206,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
         return formatDateRanges(weekDates);
       } else {
         // 連續日期：顯示完整範圍
-        if (market.startDate === market.endDate) {
-          return formatDate(market.startDate);
-        }
-        return `${formatDate(market.startDate)} - ${formatDate(market.endDate)}`;
+        return formatDisplayDateRange(market.startDate, market.endDate);
       }
     }
     
@@ -218,10 +216,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
       return formatDateRanges(market.dates);
     } else {
       // 連續日期：顯示 startDate - endDate
-      if (market.startDate === market.endDate) {
-        return formatDate(market.startDate);
-      }
-      return `${formatDate(market.startDate)} - ${formatDate(market.endDate)}`;
+      return formatDisplayDateRange(market.startDate, market.endDate);
     }
   };
 

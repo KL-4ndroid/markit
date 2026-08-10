@@ -5,6 +5,7 @@ import { Camera, ImageIcon, ImagePlus, Loader2, RefreshCw, UploadCloud } from 'l
 import { useEffect, useState } from 'react';
 
 import { formatSalesPaymentMethod } from '@/lib/sales/payment-methods';
+import { formatDisplayDateTime } from '@/lib/presentation/formatters';
 import type { SalesPhotoEvidencePendingTaskItem } from '@/lib/sales/photo-evidence-pending-creation-read-model';
 import {
   getPendingSalesPhotoEvidencePayload,
@@ -18,17 +19,6 @@ interface SalesPhotoEvidencePendingTaskCardProps {
   onCapture: (source: 'camera' | 'library') => void;
   onPreview: (payload: LocalPendingSalesPhotoEvidencePayload) => void;
   onUpload: (payload: LocalPendingSalesPhotoEvidencePayload) => void;
-}
-
-function formatDateTime(value: string): string {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return value;
-  return new Intl.DateTimeFormat('zh-TW', {
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
 }
 
 function canActOnStatus(status: SalesPhotoEvidencePendingTaskItem['status']): boolean {
@@ -91,11 +81,11 @@ export function SalesPhotoEvidencePendingTaskCard({
           <p className="mt-1 truncate text-xs text-muted-foreground">
             {transaction
               ? `${formatSalesPaymentMethod(transaction.paymentMethod)} · ${transaction.itemLabel}`
-              : formatDateTime(item.saleCompletedAt)}
+              : formatDisplayDateTime(item.saleCompletedAt)}
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-xs text-muted-foreground">{formatDateTime(item.saleCompletedAt)}</p>
+          <p className="text-xs text-muted-foreground">{formatDisplayDateTime(item.saleCompletedAt)}</p>
           <p className={`mt-1 text-xs font-medium ${payload ? 'text-primary' : 'text-secondary'}`}>
             {stateLabel}
           </p>

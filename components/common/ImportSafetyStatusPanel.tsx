@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Download, FileWarning, RefreshCw, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAppPlatform } from '@/lib/platform';
+import { formatDisplayDateTime } from '@/lib/presentation/formatters';
 import {
   getImportSafetyStatus,
   readLocalImportEmergencyBackup,
@@ -11,33 +12,30 @@ import {
 } from '@/lib/db/import-safety-status';
 
 function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes < 0) return 'Unknown size';
+  if (!Number.isFinite(bytes) || bytes < 0) return '未知大小';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatDate(timestamp: number): string {
-  if (!Number.isFinite(timestamp)) return 'Unknown time';
-  return new Date(timestamp).toLocaleString('zh-TW', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+  if (!Number.isFinite(timestamp)) return '未知時間';
+  return formatDisplayDateTime(new Date(timestamp));
 }
 
 function storageModeLabel(status: ImportSafetyStatus): string {
   switch (status.storageMode) {
     case 'local_storage':
-      return 'Stored in this browser';
+      return '已儲存在此瀏覽器';
     case 'downloaded_file':
-      return 'Downloaded as file during import';
+      return '匯入時已下載為檔案';
     case 'metadata_only':
-      return 'Metadata exists, backup content is not in localStorage';
+      return '只有備份資訊，本機沒有備份內容';
     case 'unavailable':
-      return 'Unavailable in this environment';
+      return '目前環境無法使用';
     case 'none':
     default:
-      return 'No emergency import backup found';
+      return '找不到匯入前緊急備份';
   }
 }
 
@@ -55,7 +53,7 @@ export function ImportSafetyStatusPanel() {
   const handleDownload = async () => {
     const content = readLocalImportEmergencyBackup();
     if (!content) {
-      toast.error('No local emergency backup content is available to download.');
+      toast.error('目前沒有可下載的本機緊急備份');
       refresh();
       return;
     }
@@ -65,7 +63,7 @@ export function ImportSafetyStatusPanel() {
       filename: `feria-emergency-backup-${timestamp}.json`,
       data: new Blob([content], { type: 'application/json' }),
     });
-    toast.success('Emergency backup downloaded.');
+    toast.success('緊急備份已下載');
   };
 
   const hasBackup = !!status?.available;
@@ -83,9 +81,9 @@ export function ImportSafetyStatusPanel() {
             {hasBackup ? <ShieldCheck size={20} /> : <FileWarning size={20} />}
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-foreground">Import Safety Status</h2>
+            <h2 className="text-base font-semibold text-foreground">匯入安全狀態</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Read-only emergency backup status for the most recent import attempt.
+              顯示最近一次匯入前建立的緊急備份，不會執行修復或還原。
             </p>
           </div>
         </div>
@@ -97,7 +95,7 @@ export function ImportSafetyStatusPanel() {
             className="inline-flex h-10 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-cream-soft"
           >
             <RefreshCw size={16} />
-            Refresh
+            重新整理
           </button>
           <button
             type="button"
@@ -106,29 +104,29 @@ export function ImportSafetyStatusPanel() {
             className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-white disabled:opacity-50"
           >
             <Download size={16} />
-            Download backup
+            下載備份
           </button>
         </div>
       </div>
 
       <div className="mt-4 space-y-2 border-t border-warm-mist pt-3 text-sm">
         <p className="text-foreground">
-          Status: <span className="font-medium">{status ? storageModeLabel(status) : 'Loading'}</span>
+          狀態：<span className="font-medium">{status ? storageModeLabel(status) : '載入中'}</span>
         </p>
 
         {status?.metadata && (
           <div className="grid gap-2 text-muted-foreground sm:grid-cols-2">
-            <p>Created: {formatDate(status.metadata.createdAt)}</p>
-            <p>Size: {formatBytes(status.metadata.size)}</p>
+            <p>建立時間：{formatDate(status.metadata.createdAt)}</p>
+            <p>檔案大小：{formatBytes(status.metadata.size)}</p>
           </div>
         )}
 
         {status?.error && (
-          <p className="text-red-700">Read error: {status.error}</p>
+          <p className="text-red-700">備份狀態讀取失敗，請重新整理後再試。</p>
         )}
 
         <p className="text-muted-foreground">
-          This panel does not run import, repair IndexedDB, or write cloud data.
+          此區塊只讀取備份狀態，不會匯入資料、修復本機資料庫或寫入雲端。
         </p>
       </div>
     </section>

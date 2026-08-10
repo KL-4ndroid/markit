@@ -5,7 +5,6 @@ import {
   Check,
   Copy,
   Download,
-  Keyboard,
   RotateCcw,
   Save,
   Sparkles,
@@ -272,28 +271,35 @@ export function ThemeLab({
                 </div>
               </section>
 
-              <section aria-labelledby="theme-color-title">
-                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <h3 id="theme-color-title" className="text-sm font-bold text-gray-950">核心色彩</h3>
-                    <p className="mt-1 text-xs text-gray-500">輸入六位 HEX 色碼，或使用左側選色器。</p>
+              <details className="group rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900">
+                  <span>進階調整</span>
+                  <span className="text-xs font-medium text-gray-500 group-open:hidden">展開</span>
+                  <span className="hidden text-xs font-medium text-gray-500 group-open:inline">收合</span>
+                </summary>
+                <section aria-labelledby="theme-color-title" className="mt-4 border-t border-gray-200 pt-4">
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h3 id="theme-color-title" className="text-sm font-bold text-gray-950">核心色彩</h3>
+                      <p className="mt-1 text-xs text-gray-500">輸入六位 HEX 色碼，或使用左側選色器。</p>
+                    </div>
+                    <button type="button" onClick={onRestoreDefaults} className={`${buttonClass} w-full sm:w-auto`}>
+                      <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                      恢復專案預設
+                    </button>
                   </div>
-                  <button type="button" onClick={onRestoreDefaults} className={`${buttonClass} w-full sm:w-auto`}>
-                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                    恢復專案預設
-                  </button>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {THEME_TOKEN_DEFINITIONS.map((definition) => (
-                    <ColorField
-                      key={definition.key}
-                      definition={definition}
-                      value={palette[definition.key]}
-                      onChange={(value) => updateToken(definition.key, value)}
-                    />
-                  ))}
-                </div>
-              </section>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {THEME_TOKEN_DEFINITIONS.map((definition) => (
+                      <ColorField
+                        key={definition.key}
+                        definition={definition}
+                        value={palette[definition.key]}
+                        onChange={(value) => updateToken(definition.key, value)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              </details>
             </div>
 
             <aside className="min-w-0 space-y-5">
@@ -390,10 +396,6 @@ export function ThemeLab({
                 </div>
               </section>
 
-              <div className="flex items-center gap-2 px-1 text-xs text-gray-500">
-                <Keyboard className="h-4 w-4" aria-hidden="true" />
-                快捷鍵：Ctrl / ⌘ + Shift + L
-              </div>
             </aside>
           </div>
         </div>

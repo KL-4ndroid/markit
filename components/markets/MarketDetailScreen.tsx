@@ -39,8 +39,8 @@ import {
   getActiveDealEventsForMarket,
   getActiveInteractionEventsForMarket,
 } from '@/lib/events/active-event-service';
-import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
-import { formatClockTime, formatClockTimeRange } from '@/lib/presentation/formatters';
+import { formatCurrency, formatDateRanges } from '@/lib/utils';
+import { formatClockTime, formatClockTimeRange, formatDisplayDateRange } from '@/lib/presentation/formatters';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { InteractionButtons } from '@/components/sales/InteractionButtons';
@@ -1276,9 +1276,7 @@ export function MarketDetailScreen() {
                     <span className="flex-1">
                       {market.dates && market.dates.length > 0 
                         ? formatDateRanges(market.dates)
-                        : market.startDate === market.endDate 
-                          ? formatDate(market.startDate)
-                          : `${formatDate(market.startDate)} - ${formatDate(market.endDate)}`
+                        : formatDisplayDateRange(market.startDate, market.endDate)
                       }
                     </span>
                   </div>
@@ -1580,9 +1578,7 @@ export function MarketDetailScreen() {
                   } else {
                     // 降級：使用 startDate/endDate 範圍檢查（向後兼容）
                     isWithinMarketPeriod = today >= market.startDate && today <= market.endDate;
-                    dateRangeText = market.startDate === market.endDate 
-                      ? formatDate(market.startDate)
-                      : `${formatDate(market.startDate)} ~ ${formatDate(market.endDate)}`;
+                    dateRangeText = formatDisplayDateRange(market.startDate, market.endDate);
                   }
                   
                   if (!isStatusReady) {

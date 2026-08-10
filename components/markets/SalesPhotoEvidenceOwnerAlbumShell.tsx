@@ -3,6 +3,7 @@
 import {
   Banknote,
   Camera,
+  ChevronDown,
   Clock,
   CreditCard,
   ImageOff,
@@ -26,6 +27,7 @@ import {
   SALES_PAYMENT_METHOD_LABELS,
   type SalesPaymentMethod,
 } from '@/lib/sales/payment-methods';
+import { formatDisplayDate, formatDisplayDateTime } from '@/lib/presentation/formatters';
 import { SalesPhotoEvidenceOwnerAlbumImage } from './SalesPhotoEvidenceOwnerAlbumImage';
 
 interface SalesPhotoEvidenceOwnerAlbumShellProps {
@@ -61,17 +63,7 @@ const DISPLAY_STATUS_STYLES: Record<SalesPhotoEvidenceAlbumItemDisplayStatus, st
 };
 
 function formatDateTime(value: string | null): string {
-  if (!value) return '未記錄';
-
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return value;
-
-  return new Intl.DateTimeFormat('zh-TW', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+  return formatDisplayDateTime(value) || '未記錄';
 }
 
 function getRetentionNotice(
@@ -122,6 +114,88 @@ function getItemCaption(item: SalesPhotoEvidenceAlbumItem): string | null {
   }
 
   return '目前沒有可顯示的照片物件。';
+}
+
+function expiredHistoryGroupLabel(item: SalesPhotoEvidenceAlbumItem): string {
+  const date = new Date(item.expiresAt ?? item.saleCompletedAt ?? '');
+  if (!Number.isFinite(date.getTime())) return '日期未記錄';
+  return `${date.getFullYear()}年${date.getMonth() + 1}月`;
+}
+
+function ExpiredPhotoHistory({
+  items,
+  transactionBySaleId,
+}: {
+  items: readonly SalesPhotoEvidenceAlbumItem[];
+  transactionBySaleId: ReadonlyMap<string, SalesPhotoEvidenceTransactionSummary>;
+}) {
+  const groups = new Map<string, SalesPhotoEvidenceAlbumItem[]>();
+  for (const item of items) {
+    const label = expiredHistoryGroupLabel(item);
+    groups.set(label, [...(groups.get(label) ?? []), item]);
+  }
+
+  return (
+    <div className="space-y-4">
+      {[...groups.entries()].map(([label, groupItems]) => (
+        <section key={label} aria-label={`${label}過期照片`}>
+          <h3 className="mb-2 text-xs font-semibold text-atelier-muted">{label}</h3>
+          <div className="divide-y divide-atelier-line rounded-card border border-atelier-line bg-atelier-canvas px-3">
+            {groupItems.map(item => {
+              const transaction = item.saleId ? transactionBySaleId.get(item.saleId) : undefined;
+              const PaymentMethodIcon = transaction
+                ? PAYMENT_METHOD_ICONS[transaction.paymentMethod]
+                : null;
+
+              return (
+                <details key={item.id} className="group py-1">
+                  <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 [&::-webkit-details-marker]:hidden">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-gray-100 text-muted-foreground">
+                      <ImageOff className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-foreground">{formatDateTime(item.saleCompletedAt)}</span>
+                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                        {item.status === 'expired' ? '雲端檔案已清理' : '等待雲端清理'}
+                      </span>
+                    </span>
+                    {transaction && (
+                      <strong className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                        NT$ {transaction.amount.toLocaleString()}
+                      </strong>
+                    )}
+                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+                  </summary>
+                  <div className="pb-3 pl-12 pr-7">
+                    <p className="text-xs leading-relaxed text-muted-foreground">{getItemCaption(item)}</p>
+                    <dl className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                      <div>
+                        <dt>到期時間</dt>
+                        <dd className="mt-0.5 font-medium text-foreground">{formatDateTime(item.expiresAt)}</dd>
+                      </div>
+                      <div>
+                        <dt>上傳時間</dt>
+                        <dd className="mt-0.5 font-medium text-foreground">{formatDateTime(item.uploadedAt)}</dd>
+                      </div>
+                      {transaction && PaymentMethodIcon && (
+                        <div>
+                          <dt>支付方式</dt>
+                          <dd className="mt-0.5 inline-flex items-center gap-1.5 font-medium text-foreground">
+                            <PaymentMethodIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                            {SALES_PAYMENT_METHOD_LABELS[transaction.paymentMethod]}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
 }
 
 type AlbumFilter = 'current' | 'uploaded' | 'pending' | 'failed' | 'expired' | 'all';
@@ -312,7 +386,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {filteredItems.map(item => {
+          {filteredItems.filter(item => item.displayStatus !== 'expired').map(item => {
             const transaction = item.saleId ? transactionBySaleId.get(item.saleId) : undefined;
             const PaymentMethodIcon = transaction
               ? PAYMENT_METHOD_ICONS[transaction.paymentMethod]
@@ -407,6 +481,14 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
               </article>
             );
           })}
+          {filteredItems.some(item => item.displayStatus === 'expired') && (
+            <div className="sm:col-span-2">
+              <ExpiredPhotoHistory
+                items={filteredItems.filter(item => item.displayStatus === 'expired')}
+                transactionBySaleId={transactionBySaleId}
+              />
+            </div>
+          )}
         </div>
       )}
       <ConfirmDialog

@@ -30,6 +30,10 @@ const detailTabsSource = readFileSync(join(projectRoot, 'components/markets/Mark
 const interactionButtonsSource = readFileSync(join(projectRoot, 'components/sales/InteractionButtons.tsx'), 'utf8');
 const albumSource = readFileSync(join(projectRoot, 'components/markets/SalesPhotoEvidenceOwnerAlbumShell.tsx'), 'utf8');
 const checklistSource = readFileSync(join(projectRoot, 'components/markets/ChecklistPanel.tsx'), 'utf8');
+const marketCardSource = readFileSync(join(projectRoot, 'components/markets/MarketCard.tsx'), 'utf8');
+const staffPageSource = readFileSync(join(projectRoot, 'components/markets/StaffMarketDetailView.tsx'), 'utf8');
+const pendingPhotoSource = readFileSync(join(projectRoot, 'components/markets/SalesPhotoEvidencePendingTaskCard.tsx'), 'utf8');
+const photoStorySource = readFileSync(join(projectRoot, 'components/markets/MarketOverviewPhotoStory.tsx'), 'utf8');
 
 assert.match(ownerPageSource, /interactionSummary\.totalCount/);
 assert.doesNotMatch(ownerPageSource, /stats\?\.totalInteractions \?\? interactionEvents\.length/);
@@ -53,7 +57,18 @@ assert.match(albumSource, /useState<AlbumFilter>\('current'\)/);
 assert.match(albumSource, /此篩選沒有照片紀錄/);
 assert.match(albumSource, /viewModel\.items\.length > 0 &&/);
 assert.match(albumSource, /正在載入成交照片/);
+assert.match(albumSource, /function ExpiredPhotoHistory/);
+assert.match(albumSource, /expiredHistoryGroupLabel/);
+assert.match(albumSource, /group-open:rotate-180/);
 assert.doesNotMatch(albumSource, /成交 {item\.saleId/);
 assert.match(checklistSource, />現場待辦</);
+for (const source of [ownerPageSource, staffPageSource, marketCardSource]) {
+  assert.match(source, /formatDisplayDateRange/);
+  assert.doesNotMatch(source, /formatDate\(market\.startDate\).*[-~].*formatDate\(market\.endDate\)/s);
+}
+for (const source of [pendingPhotoSource, photoStorySource, albumSource]) {
+  assert.match(source, /formatDisplayDateTime/);
+  assert.doesNotMatch(source, /new Intl\.DateTimeFormat/);
+}
 
 console.log('market operating UIUX tests passed');

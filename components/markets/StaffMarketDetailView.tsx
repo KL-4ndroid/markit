@@ -57,8 +57,8 @@ import {
   DollarSign,
   Edit
 } from 'lucide-react';
-import { formatDate, formatCurrency, formatDateRanges } from '@/lib/utils';
-import { formatClockTime, formatClockTimeRange } from '@/lib/presentation/formatters';
+import { formatCurrency, formatDateRanges } from '@/lib/utils';
+import { formatClockTime, formatClockTimeRange, formatDisplayDateRange } from '@/lib/presentation/formatters';
 import { InteractionButtons } from '@/components/sales/InteractionButtons';
 import { TransactionWorkspace } from '@/components/sales/TransactionWorkspace';
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
@@ -304,9 +304,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
                     <span className="flex-1">
                       {market.dates && market.dates.length > 0 
                         ? formatDateRanges(market.dates)
-                        : market.startDate === market.endDate 
-                          ? formatDate(market.startDate)
-                          : `${formatDate(market.startDate)} - ${formatDate(market.endDate)}`
+                        : formatDisplayDateRange(market.startDate, market.endDate)
                       }
                     </span>
                   </div>

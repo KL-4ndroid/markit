@@ -18,6 +18,7 @@ import {
   getActiveInteractionEventsForDate,
 } from '@/lib/events/active-event-service';
 import { formatCurrency } from '@/lib/utils';
+import { formatDisplayDate } from '@/lib/presentation/formatters';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { deleteDealEventById, deleteInteractionEventById } from '@/lib/markets/event-deletion-service';
 import { canDeleteDailyLogEntry } from '@/lib/markets/daily-log-permissions';
@@ -252,10 +253,7 @@ export function DailyTransactionLog({
           {title}
         </h2>
         <div className="text-xs text-muted-foreground">
-          {new Date(getTargetDate()).toLocaleDateString('zh-TW', { 
-            month: 'long', 
-            day: 'numeric' 
-          })}
+          {formatDisplayDate(getTargetDate())}
         </div>
       </div>
 

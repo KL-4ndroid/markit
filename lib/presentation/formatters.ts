@@ -45,6 +45,16 @@ export function formatDisplayDate(value: Date | string): string {
   return `${date.getFullYear()}/${date.getMonth() + 1}/${String(date.getDate()).padStart(2, '0')}`;
 }
 
+export function formatDisplayDateTime(value: Date | string | null | undefined): string {
+  if (!value) return '';
+  if (typeof value === 'string' && parseDateOnly(value)) return formatDisplayDate(value);
+
+  const date = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return typeof value === 'string' ? value : '';
+  const clock = `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return `${formatDisplayDate(date)} ${formatClockTime(clock)}`;
+}
+
 export function formatDisplayDateRange(start: string, end: string): string {
   const startParts = parseDateOnly(start);
   const endParts = parseDateOnly(end);

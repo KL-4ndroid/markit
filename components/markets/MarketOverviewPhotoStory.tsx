@@ -23,6 +23,7 @@ import {
   type SalesPaymentMethod,
 } from '@/lib/sales/payment-methods';
 import type { DealClosedPayload, Event } from '@/types/db';
+import { formatDisplayDateTime } from '@/lib/presentation/formatters';
 import { SalesPhotoEvidenceOwnerAlbumImage } from './SalesPhotoEvidenceOwnerAlbumImage';
 
 interface MarketOverviewPhotoStoryProps {
@@ -41,18 +42,6 @@ const PAYMENT_METHOD_ICONS = {
   other: MoreHorizontal,
 } satisfies Record<SalesPaymentMethod, typeof Banknote>;
 
-function formatDateTime(value: string | null): string {
-  if (!value) return '未記錄時間';
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return value;
-  return new Intl.DateTimeFormat('zh-TW', {
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-}
-
 function TransactionCaption({
   transaction,
   saleCompletedAt,
@@ -67,7 +56,7 @@ function TransactionCaption({
   return (
     <div className="flex items-end justify-between gap-3 bg-atelier-paper px-3 py-3">
       <div className="min-w-0">
-        <p className="text-xs text-atelier-muted">{formatDateTime(saleCompletedAt)}</p>
+        <p className="text-xs text-atelier-muted">{formatDisplayDateTime(saleCompletedAt) || '未記錄時間'}</p>
         {transaction && (
           <p className="mt-1 text-base font-semibold tabular-nums text-atelier-ink">
             NT$ {transaction.amount.toLocaleString()}

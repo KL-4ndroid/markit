@@ -441,11 +441,11 @@ The progress below is an engineering estimate against Slices UX-M1 through UX-M7
 | UX-M2 Transition continuity | 85% | Detail prefetch, immediate destination-shell feedback, actor-bound display snapshots, transition timing measurement, and role-refresh continuity are in place. Actual data readiness and broader route coverage remain. |
 | UX-M3 Field-work information architecture | 95% | Field notes and checklist live under `現場`; fixed notes remain under `管理`; completed markets show a read-only archive; operating markets expose a direct shortcut with the pending-task count. Real-device keyboard validation remains. |
 | UX-M4 Product density and forms | 85% | Required fields precede cover photos, compact product cards and cover-photo states are implemented; software-keyboard checks remain. |
-| UX-M5 Review scanability | 75% | `回顧` naming, daily filters, zero-record review state, photo empty state, and backfill entry are complete. Compact expired-photo history remains. |
-| UX-M6 Recovery language and safety | 60% | Advanced diagnostics disclosure is implemented while fail-closed recovery remains; remaining technical copy still needs localization. |
-| UX-M7 Secondary friction | 70% | Market actions, disabled revenue submission, setup-wizard duplication, review terminology, and live-market interaction recovery are improved. Theme Lab simplification and date normalization remain. |
+| UX-M5 Review scanability | 95% | `回顧` naming, daily filters, zero-record review state, photo empty state, backfill entry, and grouped expired-photo history are complete. |
+| UX-M6 Recovery language and safety | 95% | Recovery states and import-safety status use user-facing Traditional Chinese; technical diagnostics remain inside an advanced disclosure and all fail-closed safeguards remain intact. |
+| UX-M7 Secondary friction | 95% | Market actions, disabled revenue submission, setup-wizard duplication, review terminology, live-market interaction recovery, mobile Theme Lab disclosure, and shared date presentation are complete. |
 
-Estimated overall completion: **approximately 80%**.
+Estimated overall completion: **approximately 91%**. The remaining work is release validation that requires dedicated visual-regression infrastructure, separate role accounts, or physical iOS/Android devices rather than additional approved Web UI implementation.
 
 This implementation also fixes the multi-day lifecycle defect found during browser audit: finishing today's operating window no longer marks the whole market as ended when future market dates remain. The verified `2026/8/10~12` market now appears under `待準備`, opens `管理`, and identifies the current-day state as `今日已收攤`. Truly ended markets open `回顧`, use a single zero-record recovery state, and archive field notes/checklists as read-only.
 
@@ -469,15 +469,17 @@ This implementation also fixes the multi-day lifecycle defect found during brows
 - [x] Add pending checklist count and a direct `現場工作` shortcut near the operating summary.
 - [x] Collapse the tall `今日尚無交易記錄` panel into a compact row while no records exist.
 - [ ] Validate field-note and checklist inputs with the software keyboard and fixed bottom navigation on iOS and Android.
-- [ ] Convert expired-photo history to compact grouped rows with optional detail expansion.
-- [ ] Finish user-facing recovery states and localize the remaining technical English copy.
+- [x] Convert expired-photo history to compact grouped rows with optional detail expansion.
+- [x] Finish user-facing recovery states and localize the remaining technical English copy.
 
 ### P2 - Consistency and release verification
 
-- [ ] Simplify Theme Lab on mobile and move token-level editing under `進階調整`.
-- [ ] Normalize date formatting across market list, detail, reports, pickers, and photo timestamps.
-- [ ] Complete owner, manager, and staff smoke tests independently.
+- [x] Simplify Theme Lab on mobile and move token-level editing under `進階調整`.
+- [x] Normalize date formatting across market list, detail, reports, pickers, and photo timestamps. Native date inputs retain the `YYYY-MM-DD` data contract while surrounding display labels use the shared presentation formatter.
+- [ ] Complete owner, manager, and staff smoke tests independently. Owner flow is covered by the browser audit; manager and staff still require dedicated authenticated test accounts.
 - [ ] Run real-device camera/gallery, offline/reconnect, background/resume, safe-area, and keyboard tests on iOS and Android.
+
+The Web implementation track for the approved UX-M1 through UX-M7 changes is complete. The unchecked items above are release-evidence tasks and must remain open until their required browser infrastructure, role accounts, or physical devices are available.
 
 ## 11. Operating-Market Browser Audit - 2026-08-11
 

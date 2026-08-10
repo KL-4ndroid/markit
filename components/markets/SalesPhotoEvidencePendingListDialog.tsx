@@ -18,6 +18,7 @@ import type {
   SalesPhotoEvidencePendingCreationListItem,
 } from '@/lib/sales/photo-evidence-pending-creation-read-model';
 import type { LocalPendingSalesPhotoEvidencePayload } from '@/lib/sales/photo-evidence-pending-payload-storage';
+import { formatDisplayDateTime } from '@/lib/presentation/formatters';
 import { SalesPhotoEvidenceLocalCaptureAction } from './SalesPhotoEvidenceLocalCaptureAction';
 import { SalesPhotoEvidenceLocalThumbnail } from './SalesPhotoEvidenceLocalThumbnail';
 import { SalesPhotoEvidenceManualUploadAction } from './SalesPhotoEvidenceManualUploadAction';
@@ -90,18 +91,6 @@ const RECOMMENDATION_LABELS: Record<
   manual_review_required: '來源資料異常或已達永久失敗，需人工檢查後再處理。',
 };
 
-function formatDateTime(value: string): string {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return value;
-
-  return new Intl.DateTimeFormat('zh-TW', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-}
-
 function getStatusIcon(status: SalesPhotoEvidencePendingCreationListItem['status']) {
   if (status === 'created') return <CheckCircle2 className="h-4 w-4" />;
   if (status === 'failed_permanent' || status === 'blocked_invalid_source') {
@@ -161,7 +150,7 @@ export function SalesPhotoEvidencePendingListDialog({
   const diagnostics = buildPendingSalesPhotoEvidenceCreationDiagnosticSummary(items);
   const diagnosticByQueueId = new Map(diagnostics.items.map(item => [item.queueId, item]));
   const needsAttentionCount = diagnostics.severityCounts.warning + diagnostics.severityCounts.critical;
-  const lastLoadedLabel = lastLoadedAt ? formatDateTime(new Date(lastLoadedAt).toISOString()) : null;
+  const lastLoadedLabel = lastLoadedAt ? formatDisplayDateTime(new Date(lastLoadedAt)) : null;
 
   return (
     <>
@@ -239,7 +228,7 @@ export function SalesPhotoEvidencePendingListDialog({
                           成交照片
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          成交時間 {formatDateTime(item.saleCompletedAt)}
+                          成交時間 {formatDisplayDateTime(item.saleCompletedAt)}
                         </p>
                       </div>
                       <span
