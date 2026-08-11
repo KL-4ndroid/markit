@@ -17,7 +17,7 @@ export function OperatingInteractionPanel({
   onInteractionRecorded,
 }: OperatingInteractionPanelProps) {
   return (
-    <section className="mb-4 lg:hidden" aria-labelledby="operating-interaction-title">
+    <section className="mb-3 lg:hidden" aria-labelledby="operating-interaction-title">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2

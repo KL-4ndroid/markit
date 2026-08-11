@@ -453,7 +453,7 @@ This implementation also fixes the multi-day lifecycle defect found during brows
 
 ### P0 - Operating-market workflow
 
-- [x] Move the transaction workspace ahead of the large interaction panel on mobile so the payment entry point is visible in the first viewport.
+- [x] Place compact quick-payment and product-sale actions directly below the interaction controls so both recording workflows remain in one scan path.
 - [x] Add an operating-phase compact summary variant that keeps status, revenue, deals, and pending photos in one shorter band.
 - [x] Reduce the three interaction buttons from `min-h-24` cards to compact one-tap controls on mobile.
 - [x] Add a bounded undo action after recording an interaction; do not add a confirmation dialog to every tap.
@@ -466,7 +466,7 @@ This implementation also fixes the multi-day lifecycle defect found during brows
 - [x] Instrument the market-detail transition and identify the remaining readiness delay. The local production browser baseline measured approximately 1.55-1.81 seconds.
 - [x] Replace page-wide loading with a persistent destination shell and section-level loading states.
 - [x] Preserve authorized content and scroll position during role revalidation while capabilities and sync remain fail closed.
-- [x] Add pending checklist count and a direct `現場工作` shortcut near the operating summary.
+- [x] Keep field operations below recent records in a collapsed in-place `現場工作` section.
 - [x] Collapse the tall `今日尚無交易記錄` panel into a compact row while no records exist.
 - [ ] Validate field-note and checklist inputs with the software keyboard and fixed bottom navigation on iOS and Android.
 - [x] Convert expired-photo history to compact grouped rows with optional detail expansion.
@@ -481,30 +481,30 @@ This implementation also fixes the multi-day lifecycle defect found during brows
 
 The Web implementation track for the approved UX-M1 through UX-M7 changes is complete. The unchecked items above are release-evidence tasks and must remain open until their required browser infrastructure, role accounts, or physical devices are available.
 
-### Version A operating workbench - 2026-08-11
+### Version A operating workbench - revised 2026-08-11
 
-The approved Version A interaction model replaces the long mobile operating page with a dedicated action dock while preserving the existing domain services:
+The Version A interaction model was revised after hands-on use while preserving the existing domain services:
 
-- the global app navigation is hidden only while the live operating workspace is active;
+- the familiar five-item global navigation (`今日 / 市集 / 商品 / 分析 / 更多`) remains visible during live operation;
 - three configured interaction actions sit directly below the operating summary and retain bounded undo;
 - owners see a compact reminder and direct link to `/settings/sales`; staff see the configured labels without an unauthorized settings link;
-- quick payment and product sales open focused bottom sheets with persistent completion actions;
-- the fixed operating dock contains only quick payment and product sales;
-- pending-photo access moves to the operating summary when work is pending, while zero pending photos render as the passive `照片已齊` state;
+- quick payment and product sales are page-level actions directly below the interaction controls instead of a separate fixed dock;
+- both sales actions still open focused bottom sheets with persistent completion actions;
+- pending-photo access stays in the operating summary when work is pending, while zero pending photos render as the passive `照片已齊` state;
 - a completed sale closes the transaction sheet before the existing photo state machine continues;
-- owner and staff use the same mobile workbench, while the existing desktop two-column workflow remains available;
-- field notes and checklist sit below recent records in a collapsed in-place `現場工作` section instead of replacing the operating view;
-- page padding and safe-area insets prevent the dock from covering recent records or device system UI.
+- owner and staff use the same mobile action order, while the existing desktop two-column workflow remains available;
+- field notes and checklist sit below recent records in a collapsed in-place `現場工作` section;
+- the shared app shell supplies bottom-navigation and safe-area clearance, so the live page no longer adds fixed-dock padding.
 
 This is a presentation-layer change. Event writes, offline durability, photo queueing, upload behavior, and permission decisions remain in their existing shared services.
 
 Implementation verification:
 
 - local production build passed and the active owner workflow was inspected with a temporary browser-only test clock; no interaction, transaction, photo, note, or checklist write was submitted;
-- 360 x 800, 390 x 844, and 430 x 932 passed without horizontal overflow or overlap with the hidden global navigation;
-- the refined two-action dock measured 67 px total height with two 48 px actions at 360, 390, and 430 px;
+- 360 x 800, 390 x 844, and 430 x 932 passed without horizontal overflow;
+- the page-level quick-payment and product-sale actions retain 48 px touch targets and no longer cover recent records while scrolling;
 - quick payment and product-sale sheets kept their 56 px completion actions visible and exposed no horizontal overflow;
-- the interaction controls render between the operating summary and recent records, with the owner settings link resolving to `/settings/sales`;
+- the interaction controls render first, followed immediately by quick payment and product sales, then recent records; the owner settings link resolves to `/settings/sales`;
 - the in-place field-work section defaults to collapsed and exposes the reference note, handoff notes, and checklist when expanded;
 - 1280 x 900 preserved the existing desktop transaction, interaction, field-note, and checklist workspace;
 - the tested workflow produced no browser console warnings or errors.
@@ -536,8 +536,8 @@ Recommended mobile order during `營業中`:
 
 1. compact market header and workspace tabs;
 2. compact operating summary;
-3. transaction workspace;
-4. compact interaction controls;
+3. compact interaction controls;
+4. compact quick-payment and product-sale actions;
 5. recent transactions;
 6. organizer note, handoff notes, and checklist with a top-level pending-work shortcut.
 
@@ -545,10 +545,10 @@ Desktop can retain the existing two-column transaction and interaction compositi
 
 Implemented and browser-verified:
 
-- mobile DOM order now puts the transaction workspace before interaction controls while desktop keeps the two-column composition;
+- mobile DOM order now puts interaction controls before compact transaction actions while desktop keeps the two-column composition;
 - the operating summary and empty recent-record state use compact mobile variants;
-- a `收款與互動 / 現場工作` segmented control exposes organizer notes, handoff notes, and checklist without a long scroll;
-- the `現場工作` shortcut displays the current pending checklist count when it is non-zero;
+- organizer notes, handoff notes, and checklist remain in a collapsed in-place `現場工作` section below recent records;
+- the field-work section expands without navigating away from the live operating view;
 - interaction recording offers both a five-second toast action and a persistent latest-interaction undo action;
 - owners can remove an interaction from recent records through the existing confirmation and tombstone flow;
 - zero pending photos renders as the non-interactive `照片已齊` status;

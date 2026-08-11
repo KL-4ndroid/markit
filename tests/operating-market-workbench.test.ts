@@ -2,12 +2,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import {
-  hideNavigation,
-  navigationStore,
-  showNavigation,
-} from '../lib/navigation-store';
-
 const root = join(__dirname, '..');
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
@@ -24,9 +18,8 @@ const productSale = read('components/sales/QuickTransactionGrid.tsx');
 const interactions = read('components/sales/InteractionButtons.tsx');
 const photoFlow = read('components/markets/SalesPhotoEvidenceFlowDialog.tsx');
 
-assert.match(workbench, /aria-label="營業工作台"/);
-assert.match(workbench, /fixed inset-x-0 bottom-0/);
-assert.match(workbench, /env\(safe-area-inset-bottom\)/);
+assert.match(workbench, /aria-label="收款與銷售"/);
+assert.doesNotMatch(workbench, /fixed inset-x-0 bottom-0/);
 assert.match(workbench, /grid grid-cols-2 gap-2/);
 assert.match(workbench, />快速收款</);
 assert.match(workbench, />商品銷售</);
@@ -41,17 +34,16 @@ assert.match(bottomNavigation, /navigationStore\.getVisible\(\)/);
 
 for (const source of [owner, staff]) {
   assert.match(source, /<OperatingMarketWorkbench/);
-  assert.match(source, /pb-28 lg:pb-6/);
+  assert.doesNotMatch(source, /pb-28 lg:pb-6/);
   assert.match(source, /hidden items-start gap-4 lg:grid/);
   assert.match(source, /<OperatingInteractionPanel/);
   assert.match(source, /collapsibleOnMobile/);
   assert.match(source, /handleOpenPendingSalesPhotoEvidence/);
+  assert.doesNotMatch(source, /operating-workbench'\)/);
 }
-assert.match(owner, /hideNavigation\('owner-operating-workbench'\)/);
-assert.match(staff, /hideNavigation\('staff-operating-workbench'\)/);
 assert.doesNotMatch(owner, /OwnerLiveMobileView|ownerLiveMobileView|開啟現場工作|返回營業概況/);
 assert.match(owner, /<OperatingInteractionPanel[\s\S]*canOpenSettings/);
-assert.match(staff, /workspaceView !== 'live' \|\| !canRecordDeal/);
+assert.doesNotMatch(staff, /hideNavigation|showNavigation/);
 
 assert.match(interactionPanel, /按鈕名稱可自由設定/);
 assert.match(interactionPanel, /按鈕名稱由老闆設定/);
@@ -75,18 +67,5 @@ assert.match(interactions, /bottom-\[calc\(100%\+0\.65rem\)\]/);
 assert.match(photoFlow, /items-end justify-center sm:items-center/);
 assert.match(photoFlow, /稍後上傳/);
 assert.match(photoFlow, /返回待補清單/);
-
-showNavigation('legacy');
-showNavigation('owner-operating-workbench');
-const visibility: boolean[] = [];
-const unsubscribe = navigationStore.subscribe(value => visibility.push(value));
-hideNavigation('owner-operating-workbench');
-hideNavigation('legacy');
-showNavigation('legacy');
-assert.equal(navigationStore.getVisible(), false);
-showNavigation('owner-operating-workbench');
-assert.equal(navigationStore.getVisible(), true);
-unsubscribe();
-assert.deepEqual(visibility, [false, true]);
 
 console.log('PASS operating market workbench contracts');

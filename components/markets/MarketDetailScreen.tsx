@@ -776,12 +776,6 @@ export function MarketDetailScreen() {
   const resolvedOwnerWorkspaceView = ownerWorkspaceView
     ?? getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase);
 
-  useEffect(() => {
-    if (isStaff || !isOperating || resolvedOwnerWorkspaceView !== 'live') return;
-    hideNavigation('owner-operating-workbench');
-    return () => showNavigation('owner-operating-workbench');
-  }, [isOperating, isStaff, resolvedOwnerWorkspaceView]);
-
   // ✅ 每分鐘自動更新一次營業狀態
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1316,7 +1310,7 @@ export function MarketDetailScreen() {
       </header>
 
       {/* Content */}
-      <div className={`mx-auto max-w-5xl px-4 ${isOperating && resolvedOwnerWorkspaceView === 'live' ? 'pb-28 lg:pb-6' : 'pb-6'}`}>
+      <div className="mx-auto max-w-5xl px-4 pb-6">
         <MarketWorkspaceNavigation
           value={resolvedOwnerWorkspaceView}
           onChange={setOwnerWorkspaceView}
@@ -1416,6 +1410,14 @@ export function MarketDetailScreen() {
         {/* 營業中時的操作區 - 根據自動判斷顯示 */}
         {resolvedOwnerWorkspaceView === 'live' && isOperating && (
           <>
+            <OperatingInteractionPanel
+              marketId={marketId}
+              canOpenSettings
+              onInteractionRecorded={() => {
+                window.dispatchEvent(new Event('interaction-recorded'));
+              }}
+            />
+
             <OperatingMarketWorkbench
               marketId={marketId}
               canRecordDeal
@@ -1424,14 +1426,6 @@ export function MarketDetailScreen() {
               onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
               salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
               onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
-            />
-
-            <OperatingInteractionPanel
-              marketId={marketId}
-              canOpenSettings
-              onInteractionRecorded={() => {
-                window.dispatchEvent(new Event('interaction-recorded'));
-              }}
             />
 
             <div className="lg:hidden">

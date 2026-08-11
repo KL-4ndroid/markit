@@ -85,7 +85,6 @@ import {
   type StaffMarketWorkspaceView,
 } from '@/lib/markets/market-workspace';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
-import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import type { Market, Event, DealClosedPayload } from '@/types/db';
 
@@ -197,11 +196,6 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
     getDefaultStaffMarketWorkspaceView(workspacePhase)
   );
 
-  useEffect(() => {
-    if (!isOperating || workspaceView !== 'live' || !canRecordDeal) return;
-    hideNavigation('staff-operating-workbench');
-    return () => showNavigation('staff-operating-workbench');
-  }, [canRecordDeal, isOperating, workspaceView]);
   const salesPhotoEvidenceRequired = Boolean(market.salesPhotoEvidenceRequired);
   const addRevenueSalesPhotoEvidenceContext = {
     ownerId: market.relationship_owner_id ?? market.owner_id ?? userRole.ownerId ?? null,
@@ -345,7 +339,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
       </header>
 
       {/* Content */}
-      <div className={`mx-auto max-w-5xl px-4 ${isOperating && workspaceView === 'live' && canRecordDeal ? 'pb-28 lg:pb-6' : 'pb-6'}`}>
+      <div className="mx-auto max-w-5xl px-4 pb-6">
         <MarketWorkspaceNavigation
           value={workspaceView}
           onChange={setWorkspaceView}
@@ -393,6 +387,15 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
         {/* ✅ 營業中時的操作區 - 員工核心工作功能 */}
         {workspaceView === 'live' && isOperating && (
           <>
+            {canRecordInteraction && (
+              <OperatingInteractionPanel
+                marketId={marketId}
+                onInteractionRecorded={() => {
+                  window.dispatchEvent(new Event('interaction-recorded'));
+                }}
+              />
+            )}
+
             <OperatingMarketWorkbench
               marketId={marketId}
               canRecordDeal={canRecordDeal}
@@ -403,15 +406,6 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
               onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
               hideProfit
             />
-
-            {canRecordInteraction && (
-              <OperatingInteractionPanel
-                marketId={marketId}
-                onInteractionRecorded={() => {
-                  window.dispatchEvent(new Event('interaction-recorded'));
-                }}
-              />
-            )}
 
             <div className="lg:hidden">
               <DailyTransactionLog

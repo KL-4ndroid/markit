@@ -69,31 +69,26 @@ export function OperatingMarketWorkbench({
 
   return (
     <>
-      <aside
-        className="fixed inset-x-0 bottom-0 z-[900] border-t border-primary/15 bg-atelier-paper/98 shadow-[0_-14px_34px_rgb(47_62_63_/_0.16)] backdrop-blur-md lg:hidden"
-        aria-label="營業工作台"
-      >
-        <div className="mx-auto max-w-lg px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2">
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => openTransaction('quick')}
-              className="flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-control bg-primary px-2 text-xs font-semibold text-white shadow-atelier-key transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              <Banknote className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">快速收款</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => openTransaction('products')}
-              className="flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-control bg-atelier-sage-soft px-2 text-xs font-semibold text-atelier-ink shadow-atelier-key transition-colors hover:bg-atelier-sage-soft/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              <ShoppingBag className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">商品銷售</span>
-            </button>
-          </div>
+      <section className="mb-4 lg:hidden" aria-label="收款與銷售">
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => openTransaction('quick')}
+            className="flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-control bg-primary px-2 text-xs font-semibold text-white shadow-atelier-key transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            <Banknote className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">快速收款</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => openTransaction('products')}
+            className="flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-control bg-atelier-sage-soft px-2 text-xs font-semibold text-atelier-ink shadow-atelier-key transition-colors hover:bg-atelier-sage-soft/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            <ShoppingBag className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">商品銷售</span>
+          </button>
         </div>
-      </aside>
+      </section>
 
       <Dialog
         open={activeTransactionMode !== null}

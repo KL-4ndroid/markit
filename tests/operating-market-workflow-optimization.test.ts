@@ -32,6 +32,14 @@ for (const source of [owner, staff]) {
     section.indexOf('<OperatingInteractionPanel') < section.indexOf('<DailyTransactionLog'),
     'mobile interaction controls must sit before the recent record log'
   );
+  assert.ok(
+    section.indexOf('<OperatingInteractionPanel') < section.indexOf('<OperatingMarketWorkbench'),
+    'mobile transaction actions must sit below the interaction controls'
+  );
+  assert.ok(
+    section.indexOf('<OperatingMarketWorkbench') < section.indexOf('<DailyTransactionLog'),
+    'mobile transaction actions must sit before the recent record log'
+  );
 }
 
 assert.doesNotMatch(owner, /OwnerLiveMobileView|ownerLiveMobileView|ownerPendingChecklistCount/);
