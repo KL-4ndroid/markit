@@ -9,6 +9,7 @@ import { formatDisplayDateRange } from '@/lib/presentation/formatters';
 import { useRoleContext } from '@/lib/role-context';
 import { getShadowClass, getBorderClass } from '@/lib/theme-config';
 import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
+import { resolveMarketOperatingSession } from '@/lib/markets/market-operating-session';
 import { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 
@@ -43,77 +44,17 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
   // ✅ 員工權限檢查
   const { isStaff, canViewSensitiveData } = useRoleContext();
   
-  // 判斷市集營業狀態（根據時間判斷）
-  const getOperatingStatus = () => {
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
-    // ✅ 修復：將時間字串轉換為分鐘數進行比較
-    const timeToMinutes = (timeStr: string) => {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      return hours * 60 + minutes;
-    };
-    
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    
-    // ✅ 檢查今天是否為市集日
-    let isMarketDay = false;
-    
-    // 優先檢查 dates 陣列（多選日期）
-    if (market.dates && market.dates.length > 0) {
-      isMarketDay = market.dates.includes(today);
-    } else {
-      // 降級：使用 startDate 和 endDate（連續日期，向後兼容）
-      isMarketDay = market.startDate <= today && market.endDate >= today;
-    }
-    
-    // 不在市集日期內
-    if (!isMarketDay) {
-      return { status: 'not_started', label: '尚未開始', color: 'bg-muted-foreground/10 text-muted-foreground' };
-    }
-    
-    // 在市集日期內，檢查時間
-    // 如果有提前進場時間且已啟用
-    if (market.earlyEntryEnabled && market.earlyEntryTime) {
-      const earlyEntryMinutes = timeToMinutes(market.earlyEntryTime);
-      const checkInMinutes = market.checkInTime ? timeToMinutes(market.checkInTime) : 570; // 預設 09:30
-      
-      if (currentMinutes >= earlyEntryMinutes && currentMinutes < checkInMinutes) {
-        return { status: 'early_entry', label: '提前進場中', color: 'bg-soft-yellow text-secondary' };
-      }
-    }
-    
-    // 報到時間
-    if (market.checkInTime && market.operatingStartTime) {
-      const checkInMinutes = timeToMinutes(market.checkInTime);
-      const operatingStartMinutes = timeToMinutes(market.operatingStartTime);
-      
-      if (currentMinutes >= checkInMinutes && currentMinutes < operatingStartMinutes) {
-        return { status: 'check_in', label: '報到中', color: 'bg-soft-green text-primary' };
-      }
-    }
-    
-    // 營業中
-    if (market.operatingStartTime && market.operatingEndTime) {
-      const operatingStartMinutes = timeToMinutes(market.operatingStartTime);
-      const operatingEndMinutes = timeToMinutes(market.operatingEndTime);
-      
-      if (currentMinutes >= operatingStartMinutes && currentMinutes < operatingEndMinutes) {
-        return { status: 'operating', label: '營業中', color: 'bg-primary text-white' };
-      }
-    }
-    
-    // 營業結束
-    if (market.operatingEndTime) {
-      const operatingEndMinutes = timeToMinutes(market.operatingEndTime);
-      
-      if (currentMinutes >= operatingEndMinutes) {
-        return { status: 'closed', label: '已結束', color: 'bg-soft-pink text-muted-foreground' };
-      }
-    }
-    
-    // 預設：尚未開始（當天但還沒到時間）
-    return { status: 'not_started', label: '尚未開始', color: 'bg-muted-foreground/10 text-muted-foreground' };
+  const operatingSession = resolveMarketOperatingSession(market, new Date());
+  const operatingStatus = {
+    status: operatingSession.canRecordLiveActivity ? 'operating' : operatingSession.phase,
+    label: operatingSession.label,
+    color: operatingSession.canRecordLiveActivity
+      ? 'bg-primary text-white'
+      : operatingSession.phase === 'early-window'
+        ? 'bg-soft-yellow text-secondary'
+        : operatingSession.workspacePhase === 'ended'
+          ? 'bg-soft-pink text-muted-foreground'
+          : 'bg-muted-foreground/10 text-muted-foreground',
   };
 
   // 計算轉換率（C3.5：優先使用 projection 數值）
@@ -236,7 +177,6 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
     setShowNotesModal(true);
   };
 
-  const operatingStatus = getOperatingStatus();
   const isOperating = operatingStatus.status === 'operating';
   const hasNotes = market.notes && market.notes.trim().length > 0;
 

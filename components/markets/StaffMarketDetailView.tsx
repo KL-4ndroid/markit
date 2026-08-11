@@ -68,6 +68,7 @@ import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
+import { MarketOperatingSessionControl } from '@/components/markets/MarketOperatingSessionControl';
 import { OperatingInteractionPanel } from '@/components/markets/OperatingInteractionPanel';
 import { OperatingMarketWorkbench } from '@/components/markets/OperatingMarketWorkbench';
 import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
@@ -75,16 +76,15 @@ import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useRoleContext } from '@/lib/role-context';
 import { useSalesPhotoEvidenceFlow } from '@/hooks/useSalesPhotoEvidenceFlow';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { useMarketStatsFromProjection } from '@/lib/db/hooks';
+import { updateMarket, useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { getActiveDealEventsForMarket } from '@/lib/events/active-event-service';
 import { getDealEventDate } from '@/lib/markets/event-view-utils';
 import {
   getDefaultStaffMarketWorkspaceView,
-  resolveMarketWorkspacePhase,
-  type MarketWorkspacePhase,
   type StaffMarketWorkspaceView,
 } from '@/lib/markets/market-workspace';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
+import { useMarketOperatingSession } from '@/hooks/useMarketOperatingSession';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import type { Market, Event, DealClosedPayload } from '@/types/db';
 
@@ -125,76 +125,75 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
   const isManagerRole = userRole.staffRole === 'manager';
   const deleteActorId = canDeleteOwnRecord && !isManagerRole ? user?.id : undefined;
   const [showEditMarketForm, setShowEditMarketForm] = useState(false);
-  
-  // 判斷營業狀態
-  const getOperatingStatus = () => {
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
-    // ✅ 修復：將時間字串轉換為分鐘數進行比較
-    const timeToMinutes = (timeStr: string) => {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      return hours * 60 + minutes;
-    };
-    
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    
-    // 檢查今天是否為市集日
-    let isMarketDay = false;
-    if (market.dates && market.dates.length > 0) {
-      isMarketDay = market.dates.includes(today);
-    } else {
-      isMarketDay = market.startDate <= today && market.endDate >= today;
-    }
-    
-    if (!isMarketDay) {
-      return { status: 'not_started', label: '尚未開始', color: 'bg-soft-yellow text-secondary' };
-    }
-    
-    // ✅ 修復：檢查狀態是否為「已繳費」或「如期舉行」
-    const isStatusReady = market.status === 'paid' || market.status === 'ongoing';
-    
-    if (!isStatusReady) {
-      return { status: 'not_started', label: '尚未開始', color: 'bg-soft-yellow text-secondary' };
-    }
-    
-    // ✅ 修復：使用分鐘數比較時間
-    if (market.operatingStartTime && market.operatingEndTime) {
-      const startMinutes = timeToMinutes(market.operatingStartTime);
-      const endMinutes = timeToMinutes(market.operatingEndTime);
-      
-      if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
-        return { status: 'operating', label: '營業中', color: 'bg-primary text-white' };
-      }
-    }
-    
-    if (market.operatingEndTime) {
-      const endMinutes = timeToMinutes(market.operatingEndTime);
-      
-      if (currentMinutes >= endMinutes) {
-        return { status: 'closed', label: '已結束', color: 'bg-gray-100 text-muted-foreground' };
-      }
-    }
-    
-    return { status: 'not_started', label: '尚未開始', color: 'bg-soft-yellow text-secondary' };
-  };
-
-  const operatingStatus = getOperatingStatus();
-  const isOperating = operatingStatus.status === 'operating';
-  const workspacePhase: MarketWorkspacePhase = resolveMarketWorkspacePhase({
-    operatingPhase: isOperating
+  const [isUpdatingOperationSession, setIsUpdatingOperationSession] = useState(false);
+  const operatingSession = useMarketOperatingSession(market);
+  const isOperating = operatingSession.canRecordLiveActivity;
+  const workspacePhase = operatingSession.workspacePhase;
+  const operatingStatus = {
+    status: isOperating
       ? 'operating'
-      : operatingStatus.status === 'closed'
-        ? 'ended'
-        : 'not-started',
-    dates: market.dates,
-    startDate: market.startDate,
-    endDate: market.endDate,
-    marketStatus: market.status,
-  });
+      : operatingSession.workspacePhase === 'ended'
+        ? 'closed'
+        : 'not_started',
+    label: operatingSession.label,
+    color: isOperating
+      ? 'bg-primary text-white'
+      : operatingSession.workspacePhase === 'ended'
+        ? 'bg-gray-100 text-muted-foreground'
+        : 'bg-soft-yellow text-secondary',
+  } as const;
   const [workspaceView, setWorkspaceView] = useState<StaffMarketWorkspaceView>(() =>
     getDefaultStaffMarketWorkspaceView(workspacePhase)
   );
+
+  const handleStartEarlyOperation = useCallback(async () => {
+    if (
+      !canEditMarketBasic ||
+      !operatingSession.canStartEarly ||
+      !operatingSession.sessionDate ||
+      isUpdatingOperationSession
+    ) return;
+
+    setIsUpdatingOperationSession(true);
+    try {
+      await updateMarket(marketId, {
+        operationPhase: 'operating',
+        operationSessionDate: operatingSession.sessionDate,
+      });
+      setWorkspaceView('live');
+      toast.success('已提前開始今日營業');
+    } catch (error) {
+      console.error('提前開始營業失敗：', error);
+      toast.error('無法提前開始營業，請稍後再試');
+    } finally {
+      setIsUpdatingOperationSession(false);
+    }
+  }, [canEditMarketBasic, isUpdatingOperationSession, marketId, operatingSession]);
+
+  const handleCloseTodayOperation = useCallback(async () => {
+    if (
+      !canEditMarketBasic ||
+      !operatingSession.canCloseToday ||
+      !operatingSession.sessionDate ||
+      isUpdatingOperationSession
+    ) return;
+
+    setIsUpdatingOperationSession(true);
+    try {
+      await updateMarket(marketId, {
+        operationPhase: 'closing',
+        operationSessionDate: operatingSession.sessionDate,
+      });
+      toast.success('今日現場操作已關閉', {
+        description: '遺漏收入仍可從紀錄頁補登。',
+      });
+    } catch (error) {
+      console.error('今日收攤失敗：', error);
+      toast.error('無法完成今日收攤，請稍後再試');
+    } finally {
+      setIsUpdatingOperationSession(false);
+    }
+  }, [canEditMarketBasic, isUpdatingOperationSession, marketId, operatingSession]);
 
   const salesPhotoEvidenceRequired = Boolean(market.salesPhotoEvidenceRequired);
   const addRevenueSalesPhotoEvidenceContext = {
@@ -353,6 +352,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
 
         <MarketWorkspaceSummary
           phase={workspacePhase}
+          phaseLabel={operatingSession.label}
           operatingTime={formatClockTimeRange(market.operatingStartTime, market.operatingEndTime) || null}
           compactOnMobile={workspacePhase === 'operating' && workspaceView === 'live'}
           items={workspaceView === 'tasks'
@@ -377,10 +377,23 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
               ]}
         />
 
-        {workspaceView === 'live' && !isOperating && (
+        {workspaceView !== 'records' && (
+          <MarketOperatingSessionControl
+            session={operatingSession}
+            canManage={canEditMarketBasic}
+            isUpdating={isUpdatingOperationSession}
+            onStartEarly={handleStartEarlyOperation}
+            onCloseToday={handleCloseTodayOperation}
+          />
+        )}
+
+        {workspaceView === 'live' && !isOperating && ![
+          'early-window',
+          'closed',
+        ].includes(operatingSession.phase) && (
           <div className="mb-4 flex items-start gap-3 rounded-lg border border-border bg-white px-4 py-3 text-sm text-muted-foreground">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-            <span>目前不在營業時段，交易功能會在營業期間顯示。</span>
+            <span>{operatingSession.message}</span>
           </div>
         )}
 

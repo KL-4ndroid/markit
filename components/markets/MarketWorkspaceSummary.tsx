@@ -15,6 +15,7 @@ interface MarketWorkspaceSummaryItem {
 
 interface MarketWorkspaceSummaryProps {
   phase: MarketWorkspacePhase;
+  phaseLabel?: string;
   operatingTime?: string | null;
   items: readonly MarketWorkspaceSummaryItem[];
   compactOnMobile?: boolean;
@@ -50,6 +51,7 @@ function SummaryValue({ item }: { item: MarketWorkspaceSummaryItem }) {
 
 export function MarketWorkspaceSummary({
   phase,
+  phaseLabel,
   operatingTime,
   items,
   compactOnMobile = false,
@@ -63,7 +65,7 @@ export function MarketWorkspaceSummary({
       <div className="flex min-h-8 items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-atelier-ink">
           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${PHASE_STYLES[phase]}`} aria-hidden="true" />
-          <span>{getMarketWorkspacePhaseLabel(phase)}</span>
+          <span>{phaseLabel ?? getMarketWorkspacePhaseLabel(phase)}</span>
         </div>
         {operatingTime && (
           <div className="flex min-w-0 items-center gap-1.5 text-xs text-atelier-muted">

@@ -1,4 +1,5 @@
 import type { Market } from '@/types/db';
+import { resolveMarketOperatingSession } from '@/lib/markets/market-operating-session';
 
 export type TodayMarketPhase = 'operating' | 'preparing' | 'ended';
 export type TodayFocusState = TodayMarketPhase | 'idle';
@@ -42,33 +43,11 @@ export function toLocalDateKey(date: Date): string {
   ].join('-');
 }
 
-function timeToMinutes(value?: string): number | null {
-  if (!value || !/^\d{1,2}:\d{2}$/.test(value)) return null;
-  const [hours, minutes] = value.split(':').map(Number);
-  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
-  return hours * 60 + minutes;
-}
-
 function marketOccursOnDate(market: Market, dateKey: string): boolean {
   if (market.dates && market.dates.length > 0) {
     return market.dates.includes(dateKey);
   }
   return market.startDate <= dateKey && market.endDate >= dateKey;
-}
-
-function resolveTodayMarketPhase(market: Market, nowMinutes: number): TodayMarketPhase {
-  if (market.status === 'completed' || market.operationPhase === 'closing') return 'ended';
-  if (market.operationPhase === 'operating') return 'operating';
-
-  const startsAt = timeToMinutes(market.operatingStartTime ?? market.startTime);
-  const endsAt = timeToMinutes(market.operatingEndTime ?? market.endTime);
-
-  if (endsAt !== null && nowMinutes >= endsAt) return 'ended';
-  if (startsAt !== null && nowMinutes >= startsAt && (endsAt === null || nowMinutes < endsAt)) {
-    return 'operating';
-  }
-  return 'preparing';
 }
 
 function nextFutureDate(market: Market, dateKey: string): string | null {
@@ -87,14 +66,22 @@ export function buildTodayViewModel(
   now: Date = new Date(),
 ): TodayViewModel {
   const dateKey = toLocalDateKey(now);
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
   const todayMarkets = markets
     .filter(market => !market.isDeleted && market.status !== 'cancelled')
     .filter(market => marketOccursOnDate(market, dateKey))
     .map(market => {
-      const phase = resolveTodayMarketPhase(market, nowMinutes);
-      return { market, phase, phaseLabel: PHASE_LABEL[phase] };
+      const session = resolveMarketOperatingSession(market, now);
+      const phase: TodayMarketPhase = session.canRecordLiveActivity
+        ? 'operating'
+        : session.phase === 'closed' || session.workspacePhase === 'ended'
+          ? 'ended'
+          : 'preparing';
+      return {
+        market,
+        phase,
+        phaseLabel: PHASE_LABEL[phase],
+      };
     })
     .sort((a, b) => (
       PHASE_PRIORITY[a.phase] - PHASE_PRIORITY[b.phase]

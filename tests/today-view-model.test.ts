@@ -35,7 +35,10 @@ assert.equal(preparing.primaryMarket?.phaseLabel, '今日待開場');
 const operating = buildTodayViewModel([market()], new Date(2026, 6, 15, 10, 0));
 assert.equal(operating.focusState, 'operating');
 
-const ended = buildTodayViewModel([market()], new Date(2026, 6, 15, 18, 0));
+const extended = buildTodayViewModel([market()], new Date(2026, 6, 15, 18, 0));
+assert.equal(extended.focusState, 'operating');
+
+const ended = buildTodayViewModel([market()], new Date(2026, 6, 15, 19, 0));
 assert.equal(ended.focusState, 'ended');
 
 const completed = buildTodayViewModel([

@@ -63,6 +63,7 @@ import { MarketReferenceNotePanel } from '@/components/markets/MarketReferenceNo
 import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceDetailTabs';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
+import { MarketOperatingSessionControl } from '@/components/markets/MarketOperatingSessionControl';
 import { MarketOverviewPhotoStory } from '@/components/markets/MarketOverviewPhotoStory';
 import { OperatingInteractionPanel } from '@/components/markets/OperatingInteractionPanel';
 import { OperatingMarketWorkbench } from '@/components/markets/OperatingMarketWorkbench';
@@ -72,6 +73,7 @@ import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import { getInteractionButtons, type InteractionButton } from '@/lib/interaction-buttons-store';
 import { useRoleContext } from '@/lib/role-context';
 import { useSalesPhotoEvidenceFlow } from '@/hooks/useSalesPhotoEvidenceFlow';
+import { useMarketOperatingSession } from '@/hooks/useMarketOperatingSession';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { normalizeMarketRouteId, shouldShowMarketDetailLoading } from '@/lib/markets/detail-loading';
@@ -87,7 +89,6 @@ import {
 } from '@/lib/navigation/market-detail-transition';
 import {
   getDefaultOwnerMarketWorkspaceView,
-  resolveMarketWorkspacePhase,
   type OwnerMarketWorkspaceView,
 } from '@/lib/markets/market-workspace';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
@@ -104,7 +105,7 @@ import {
   findSalesPhotoEvidenceOwnerExpiredStateForSale,
   findSalesPhotoEvidenceOwnerImageForSale,
 } from '@/lib/sales/photo-evidence-owner-view';
-import type { Market, MarketStatus, OperationPhase, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
+import type { Market, MarketStatus, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
 
 const EditMarketForm = dynamic(() =>
   import('@/components/markets/EditMarketForm').then(module => module.EditMarketForm)
@@ -279,7 +280,6 @@ export function MarketDetailScreen() {
     role: InteractionButton['role'];
   } | null>(null);
   const [countdown, setCountdown] = useState<string>('--');
-  const [isOperatingStatusCollapsed, setIsOperatingStatusCollapsed] = useState(true);  // 營業狀態折疊
   const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(false);  // 今日時間軸折疊（預設展開）
   const [showStatusChangeConfirm, setShowStatusChangeConfirm] = useState(false);  // 狀態變更確認
   const [pendingStatus, setPendingStatus] = useState<MarketStatus | null>(null);  // 待變更的狀態
@@ -649,106 +649,14 @@ export function MarketDetailScreen() {
     }
   }, [market, marketId, dbStatus]);
 
-  // ✅ 自動營業狀態（響應式）- 三種狀態：'not-started' | 'operating' | 'ended'
-  const [operatingPhase, setOperatingPhase] = useState<'not-started' | 'operating' | 'ended'>('not-started');
-  const [isOperatingPhaseReady, setIsOperatingPhaseReady] = useState(false);
   const [ownerWorkspaceView, setOwnerWorkspaceView] = useState<OwnerMarketWorkspaceView | null>(null);
   const [ownerOverviewDetail, setOwnerOverviewDetail] = useState<OwnerOverviewDetail>('performance');
-
-  // ✅ 自動判斷營業階段
-  const checkOperatingStatus = useCallback(() => {
-    if (!market) {
-      setOperatingPhase('not-started');
-      setIsOperatingPhaseReady(false);
-      return;
-    }
-
-    setIsOperatingPhaseReady(true);
-    
-    // ✅ 使用本地日期，避免時區問題
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
-    // ✅ 修復：檢查今天是否在市集日期中（支援多日期）
-    let isMarketDay = false;
-    if (market.dates && market.dates.length > 0) {
-      isMarketDay = market.dates.includes(today);
-    } else {
-      isMarketDay = today >= market.startDate && today <= market.endDate;
-    }
-    
-    if (!isMarketDay) {
-      setOperatingPhase('not-started');
-      return;
-    }
-    
-    // 檢查狀態是否為「已繳費」或「如期舉行」
-    const isStatusReady = market.status === 'paid' || market.status === 'ongoing';
-    
-    if (!isStatusReady) {
-      setOperatingPhase('not-started');
-      return;
-    }
-    
-    // ✅ 修復：使用營業開始時間（不是報到時間）
-    const startTime = market.operatingStartTime;
-    
-    if (!startTime) {
-      setOperatingPhase('not-started');
-      return;
-    }
-    
-    // 計算營業結束時間（營業結束 + 30 分鐘緩衝）
-    const endTime = market.operatingEndTime;
-    
-    if (!endTime) {
-      setOperatingPhase('not-started');
-      return;
-    }
-    
-    // ✅ 使用時間戳進行比較（避免跨午夜問題）
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    const [endHour, endMinute] = endTime.split(':').map(Number);
-    
-    // 創建今天的時間對象
-    const startDateTime = new Date(now);
-    startDateTime.setHours(startHour, startMinute - 60, 0, 0); // 提前 60 分鐘開始
-    
-    const endDateTime = new Date(now);
-    endDateTime.setHours(endHour, endMinute + 60, 0, 0); // 延後 60 分鐘結束
-    
-    // ✅ 如果結束時間小於開始時間，表示跨越午夜，需要加一天
-    if (endDateTime <= startDateTime) {
-      endDateTime.setDate(endDateTime.getDate() + 1);
-    }
-    
-    const currentTimestamp = now.getTime();
-    const startTimestamp = startDateTime.getTime();
-    const endTimestamp = endDateTime.getTime();
-    
-    // 判斷當前時間處於哪個階段
-    let newPhase: 'not-started' | 'operating' | 'ended';
-    
-    if (currentTimestamp < startTimestamp) {
-      newPhase = 'not-started';
-    } else if (currentTimestamp >= startTimestamp && currentTimestamp < endTimestamp) {
-      newPhase = 'operating';
-    } else {
-      newPhase = 'ended';
-    }
-    
-    setOperatingPhase(newPhase);
-  }, [market]);
-  
-  // ✅ 向後兼容：保留 isOperating 變數
-  const isOperating = operatingPhase === 'operating';
-  const marketWorkspacePhase = resolveMarketWorkspacePhase({
-    operatingPhase,
-    dates: market?.dates,
-    startDate: market?.startDate,
-    endDate: market?.endDate,
-    marketStatus: market?.status,
-  });
+  const [isUpdatingOperationSession, setIsUpdatingOperationSession] = useState(false);
+  const operatingSession = useMarketOperatingSession(market);
+  const operatingPhase = operatingSession?.workspacePhase ?? 'not-started';
+  const isOperatingPhaseReady = Boolean(market && operatingSession);
+  const isOperating = Boolean(operatingSession?.canRecordLiveActivity);
+  const marketWorkspacePhase = operatingPhase;
   const currentDate = new Date();
   const currentDateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
   const hasFutureMarketDate = Boolean(market && (
@@ -759,14 +667,9 @@ export function MarketDetailScreen() {
   const canManageOwnerFieldOps = marketWorkspacePhase !== 'ended';
   const marketHeaderDescription = marketWorkspacePhase === 'ended'
     ? '回顧這場市集的成果、照片與成本。'
-    : operatingPhase === 'ended' && hasFutureMarketDate
+    : operatingSession?.phase === 'closed' && hasFutureMarketDate
       ? '今天已收攤，下一個場次仍可繼續準備。'
       : '現場、照片與回顧，都替你整理在這裡。';
-
-  // ✅ 當 market 數據變化時，立即重新判斷營業狀態
-  useEffect(() => {
-    checkOperatingStatus();
-  }, [market, checkOperatingStatus]);
 
   useEffect(() => {
     if (!isOperatingPhaseReady || ownerWorkspaceView !== null) return;
@@ -776,14 +679,56 @@ export function MarketDetailScreen() {
   const resolvedOwnerWorkspaceView = ownerWorkspaceView
     ?? getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase);
 
-  // ✅ 每分鐘自動更新一次營業狀態
-  useEffect(() => {
-    const interval = setInterval(() => {
-      checkOperatingStatus();
-    }, 60000); // 每分鐘檢查一次
+  const handleStartEarlyOperation = useCallback(async () => {
+    if (
+      !market ||
+      !operatingSession?.canStartEarly ||
+      !operatingSession.sessionDate ||
+      isUpdatingOperationSession ||
+      dbStatus?.ok === false
+    ) return;
 
-    return () => clearInterval(interval);
-  }, [checkOperatingStatus]);
+    setIsUpdatingOperationSession(true);
+    try {
+      await updateMarket(marketId, {
+        operationPhase: 'operating',
+        operationSessionDate: operatingSession.sessionDate,
+      });
+      setOwnerWorkspaceView('live');
+      toast.success('已提前開始今日營業');
+    } catch (error) {
+      console.error('提前開始營業失敗：', error);
+      toast.error('無法提前開始營業，請稍後再試');
+    } finally {
+      setIsUpdatingOperationSession(false);
+    }
+  }, [dbStatus, isUpdatingOperationSession, market, marketId, operatingSession]);
+
+  const handleCloseTodayOperation = useCallback(async () => {
+    if (
+      !market ||
+      !operatingSession?.canCloseToday ||
+      !operatingSession.sessionDate ||
+      isUpdatingOperationSession ||
+      dbStatus?.ok === false
+    ) return;
+
+    setIsUpdatingOperationSession(true);
+    try {
+      await updateMarket(marketId, {
+        operationPhase: 'closing',
+        operationSessionDate: operatingSession.sessionDate,
+      });
+      toast.success('今日現場操作已關閉', {
+        description: '遺漏收入仍可從紀錄頁補登。',
+      });
+    } catch (error) {
+      console.error('今日收攤失敗：', error);
+      toast.error('無法完成今日收攤，請稍後再試');
+    } finally {
+      setIsUpdatingOperationSession(false);
+    }
+  }, [dbStatus, isUpdatingOperationSession, market, marketId, operatingSession]);
 
   // 處理報名狀態變更（帶二次確認）- 優化版本 + 防抖
   const handleStatusChangeRequest = useCallback(async (newStatus: MarketStatus) => {
@@ -1331,6 +1276,7 @@ export function MarketDetailScreen() {
 
         <MarketWorkspaceSummary
           phase={marketWorkspacePhase}
+          phaseLabel={operatingSession?.label}
           operatingTime={formatClockTimeRange(market.operatingStartTime, market.operatingEndTime) || null}
           compactOnMobile={marketWorkspacePhase === 'operating' && resolvedOwnerWorkspaceView === 'live'}
           items={resolvedOwnerWorkspaceView === 'manage'
@@ -1378,6 +1324,16 @@ export function MarketDetailScreen() {
                 ]}
         />
 
+        {operatingSession && resolvedOwnerWorkspaceView !== 'overview' && (
+          <MarketOperatingSessionControl
+            session={operatingSession}
+            canManage={!isRoleLoading}
+            isUpdating={isUpdatingOperationSession}
+            onStartEarly={handleStartEarlyOperation}
+            onCloseToday={handleCloseTodayOperation}
+          />
+        )}
+
         {resolvedOwnerWorkspaceView === 'overview' && (
           <MarketWorkspaceDetailTabs
             value={ownerOverviewDetail}
@@ -1401,10 +1357,13 @@ export function MarketDetailScreen() {
             : undefined}
         >
 
-        {resolvedOwnerWorkspaceView === 'live' && !isOperating && (
+        {resolvedOwnerWorkspaceView === 'live' && !isOperating && ![
+          'early-window',
+          'closed',
+        ].includes(operatingSession?.phase ?? '') && (
           <div className="mb-4 flex items-start gap-3 rounded-card bg-atelier-apricot-soft/70 px-4 py-3 text-sm text-atelier-muted shadow-sm">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-            <span>目前不在營業時段，交易功能會在營業期間顯示。</span>
+            <span>{operatingSession?.message ?? '目前不在營業時段，交易功能會在營業期間顯示。'}</span>
           </div>
         )}
         {/* 營業中時的操作區 - 根據自動判斷顯示 */}
@@ -1505,146 +1464,6 @@ export function MarketDetailScreen() {
 
         {/* ✅ 當日流水帳 - 營業中或已結束時顯示（僅員工模式） */}
         {/* 老闆模式不顯示流水帳 */}
-
-        {/* 3. 營業狀態卡片 - 自動判斷（折疊）- 營業中時隱藏 */}
-        {resolvedOwnerWorkspaceView === 'manage' && operatingPhase !== 'operating' && (
-          <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
-            <button
-              onClick={() => setIsOperatingStatusCollapsed(!isOperatingStatusCollapsed)}
-              className="w-full flex items-center justify-between mb-4"
-            >
-              <div className="flex-1 text-left">
-                <h2 className="text-lg font-medium text-foreground">今日營業狀態</h2>
-                <p className="text-xs text-muted-foreground mt-1">
-                  根據時間自動判斷
-                </p>
-              </div>
-              
-              {/* 狀態指示器 + 折疊按鈕 */}
-              <div className="flex items-center gap-2">
-                <div className={`px-4 py-2.5 rounded-full flex items-center gap-2 font-medium text-sm transition-all ${
-                  operatingPhase === 'not-started'
-                    ? 'bg-soft-yellow text-secondary border border-secondary/30'
-                    : 'bg-gray-100 text-muted-foreground'
-                }`}>
-                  {operatingPhase === 'not-started' ? (
-                    <>
-                      <Clock className="w-5 h-5" />
-                      <span>今日未開始</span>
-                    </>
-                  ) : (
-                    <>
-                      <Moon className="w-5 h-5" />
-                      <span>今日已收攤</span>
-                    </>
-                  )}
-                </div>
-                <div className={`text-muted-foreground transition-transform ${isOperatingStatusCollapsed ? '' : 'rotate-180'}`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            </button>
-
-            {/* 折疊內容 */}
-            {!isOperatingStatusCollapsed && (
-              <>
-                {/* 營業時段說明 */}
-                <div className="bg-primary/10 border border-primary/20 rounded-xl p-3">
-                  <div className="flex items-start gap-2">
-                    <Clock className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 text-sm text-foreground">
-                      <p className="font-medium mb-1">自動營業時段：</p>
-                      <p className="text-xs text-muted-foreground">
-                        開始：{market.operatingStartTime ? (() => {
-                          const [hour, minute] = market.operatingStartTime.split(':').map(Number);
-                          const startWithBuffer = new Date();
-                          startWithBuffer.setHours(hour, minute - 60, 0, 0);
-                          return `${String(startWithBuffer.getHours()).padStart(2, '0')}:${String(startWithBuffer.getMinutes()).padStart(2, '0')}`;
-                        })() : '--:--'} (營業開始前 60 分鐘)
-                        <br />
-                        結束：{market.operatingEndTime ? (() => {
-                          const [hour, minute] = market.operatingEndTime.split(':').map(Number);
-                          const endWithBuffer = new Date();
-                          endWithBuffer.setHours(hour, minute + 60, 0, 0);
-                          return `${String(endWithBuffer.getHours()).padStart(2, '0')}:${String(endWithBuffer.getMinutes()).padStart(2, '0')}`;
-                        })() : '--:--'} (營業結束後 60 分鐘)
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 條件提示 */}
-                {(() => {
-                  // ✅ 使用本地日期，避免時區問題
-                  const now = new Date();
-                  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                  const isStatusReady = market.status === 'paid' || market.status === 'ongoing';
-                  
-                  // ✅ 修復：檢查今天是否在市集日期中（支援多日期）
-                  let isWithinMarketPeriod = false;
-                  let dateRangeText = '';
-                  
-                  if (market.dates && market.dates.length > 0) {
-                    // 使用 dates 陣列檢查
-                    isWithinMarketPeriod = market.dates.includes(today);
-                    dateRangeText = formatDateRanges(market.dates);
-                  } else {
-                    // 降級：使用 startDate/endDate 範圍檢查（向後兼容）
-                    isWithinMarketPeriod = today >= market.startDate && today <= market.endDate;
-                    dateRangeText = formatDisplayDateRange(market.startDate, market.endDate);
-                  }
-                  
-                  if (!isStatusReady) {
-                    return (
-                      <div className="bg-soft-yellow border border-soft-yellow rounded-xl p-3 mt-3">
-                        <p className="text-sm text-foreground whitespace-pre-line flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4 text-secondary flex-shrink-0" />
-                          <span>需將狀態更新為「已繳費」或「如期舉行」才能自動營業</span>
-                        </p>
-                      </div>
-                    );
-                  }
-                  
-                  if (!isWithinMarketPeriod) {
-                    return (
-                      <div className="bg-soft-yellow border border-soft-yellow rounded-xl p-3 mt-3">
-                        <p className="text-sm text-foreground whitespace-pre-line flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4 text-secondary flex-shrink-0" />
-                          <span>僅限市集日期自動營業（{dateRangeText}）</span>
-                        </p>
-                      </div>
-                    );
-                  }
-                  
-                  // 根據營業階段顯示不同提示
-                  if (operatingPhase === 'not-started') {
-                    return (
-                      <div className="bg-soft-green border border-primary/20 rounded-xl p-3 mt-3">
-                        <p className="text-sm text-foreground whitespace-pre-line flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-primary flex-shrink-0" />
-                          <span>等待營業時間到達，系統將自動切換為「營業中」</span>
-                        </p>
-                      </div>
-                    );
-                  } else if (operatingPhase === 'ended') {
-                    return (
-                      <div className="bg-gray-100 border border-gray-200 rounded-xl p-3 mt-3">
-                        <p className="text-sm text-muted-foreground whitespace-pre-line flex items-center gap-2">
-                          <Moon className="w-4 h-4 flex-shrink-0" />
-                          <span>今日營業已結束，感謝您的辛勞！</span>
-                        </p>
-                      </div>
-                    );
-                  }
-                  
-                  return null;
-                })()}
-              </>
-            )}
-          </section>
-        )}
 
         {/* 4. 報名狀態 Stepper - 營業中時完全隱藏 */}
         {resolvedOwnerWorkspaceView === 'manage' && !isOperating && (

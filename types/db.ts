@@ -96,6 +96,7 @@ export interface Market {
   endTime?: string;            // 結束時間（HH:mm）
   status: MarketStatus;        // 當前狀態
   operationPhase?: OperationPhase; // 營業階段
+  operationSessionDate?: string; // operationPhase 所屬的每日場次（YYYY-MM-DD）
   
   // 新增：多人協作欄位
   owner_id?: string;           // 擁有者 UUID

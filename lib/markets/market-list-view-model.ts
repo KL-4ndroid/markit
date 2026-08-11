@@ -1,5 +1,9 @@
 import type { Market, MarketStatus } from '@/types/db';
 import { formatDisplayDateRange } from '@/lib/presentation/formatters';
+import {
+  resolveMarketOperatingSession,
+  type MarketOperatingSession,
+} from '@/lib/markets/market-operating-session';
 
 export type MarketListStage = 'active' | 'preparing' | 'ended' | 'cancelled';
 
@@ -39,13 +43,6 @@ function dateKey(date: Date): string {
   ].join('-');
 }
 
-function minutes(value?: string): number | null {
-  if (!value || !/^\d{1,2}:\d{2}$/.test(value)) return null;
-  const [hours, mins] = value.split(':').map(Number);
-  if (hours < 0 || hours > 23 || mins < 0 || mins > 59) return null;
-  return hours * 60 + mins;
-}
-
 function sortedDates(market: Market): string[] {
   if (market.dates && market.dates.length > 0) return [...market.dates].sort();
   return [market.startDate, market.endDate].filter(Boolean).sort();
@@ -58,11 +55,6 @@ export function formatMarketListDateRange(market: Market): string {
   return formatDisplayDateRange(first, last);
 }
 
-function occursToday(market: Market, today: string): boolean {
-  if (market.dates && market.dates.length > 0) return market.dates.includes(today);
-  return market.startDate <= today && market.endDate >= today;
-}
-
 function resolveStage(market: Market, now: Date): MarketListStage {
   if (market.status === 'cancelled') return 'cancelled';
   if (market.status === 'completed') return 'ended';
@@ -72,22 +64,9 @@ function resolveStage(market: Market, now: Date): MarketListStage {
   const lastDate = dates[dates.length - 1] ?? market.endDate;
   if (lastDate && lastDate < today) return 'ended';
 
-  const hasFutureMarketDate = dates.some(date => date > today);
-  if (market.operationPhase === 'closing' && !hasFutureMarketDate) return 'ended';
-
-  if (market.operationPhase === 'operating' && occursToday(market, today)) return 'active';
-  if (!occursToday(market, today)) return 'preparing';
-
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const startsAt = minutes(market.operatingStartTime ?? market.startTime);
-  const endsAt = minutes(market.operatingEndTime ?? market.endTime);
-
-  if (endsAt !== null && nowMinutes >= endsAt) {
-    return hasFutureMarketDate ? 'preparing' : 'ended';
-  }
-  if (startsAt !== null && nowMinutes >= startsAt && (endsAt === null || nowMinutes < endsAt)) {
-    return 'active';
-  }
+  const session = resolveMarketOperatingSession(market, now);
+  if (session.workspacePhase === 'operating') return 'active';
+  if (session.workspacePhase === 'ended') return 'ended';
   return 'preparing';
 }
 
@@ -95,15 +74,24 @@ function displayDateForStage(
   market: Market,
   stage: MarketListStage,
   today: string,
-  nowMinutes: number,
+  session: MarketOperatingSession,
 ): string {
   const dates = sortedDates(market);
   if (stage === 'preparing') {
-    const endsAt = minutes(market.operatingEndTime ?? market.endTime);
-    const todayHasFinished = occursToday(market, today) && (
-      market.operationPhase === 'closing' || (endsAt !== null && nowMinutes >= endsAt)
-    );
-    return dates.find(date => date > today || (!todayHasFinished && date === today))
+    if (market.operationPhase === 'closing' && !market.operationSessionDate) {
+      return dates.find(date => date > today)
+        ?? dates[dates.length - 1]
+        ?? market.endDate;
+    }
+    if (session.phase === 'closed' && session.sessionDate) {
+      const closedDate = session.sessionDate;
+      return dates.find(date => date > closedDate)
+        ?? closedDate;
+    }
+    if (session.sessionDate && session.sessionDate >= today && dates.includes(session.sessionDate)) {
+      return session.sessionDate;
+    }
+    return dates.find(date => date >= today)
       ?? dates[0]
       ?? market.startDate;
   }
@@ -116,7 +104,6 @@ export function buildMarketListGroups(
   now: Date = new Date(),
 ): MarketListGroups {
   const today = dateKey(now);
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const groups: MarketListGroups = {
     active: [],
     preparing: [],
@@ -126,13 +113,14 @@ export function buildMarketListGroups(
 
   for (const market of markets) {
     if (market.isDeleted) continue;
+    const session = resolveMarketOperatingSession(market, now);
     const stage = resolveStage(market, now);
     groups[stage].push({
       market,
       stage,
       stageLabel: STAGE_LABEL[stage],
       statusLabel: stage === 'preparing' ? MARKET_STATUS_LABEL[market.status] : STAGE_LABEL[stage],
-      displayDate: displayDateForStage(market, stage, today, nowMinutes),
+      displayDate: displayDateForStage(market, stage, today, session),
       dateRangeLabel: formatMarketListDateRange(market),
     });
   }
