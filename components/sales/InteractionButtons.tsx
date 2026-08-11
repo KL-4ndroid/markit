@@ -12,7 +12,7 @@ import { InteractionRoleIcon } from '@/components/interactions/InteractionRoleIc
 interface InteractionButtonsProps {
   marketId: string;
   onInteractionRecorded?: () => void;
-  variant?: 'card' | 'dock';
+  variant?: 'card' | 'dock' | 'inline';
 }
 
 const INTERACTION_SURFACES = [
@@ -32,6 +32,7 @@ export function InteractionButtons({ marketId, onInteractionRecorded, variant = 
   } | null>(null);
   const lastClickTime = useRef(0);
   const undoingEventIds = useRef(new Set<string>());
+  const isCompact = variant !== 'card';
 
   useEffect(() => {
     setButtons(getInteractionButtons());
@@ -116,7 +117,7 @@ export function InteractionButtons({ marketId, onInteractionRecorded, variant = 
             type="button"
             onClick={() => void handleInteraction(button.id, button.label)}
             disabled={isProcessing}
-            className={`relative overflow-hidden rounded-control shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${variant === 'dock' ? 'flex min-h-12 min-w-0 items-center justify-center gap-1.5 px-2 py-1.5' : 'min-h-16 p-2 sm:min-h-24 sm:p-3'} ${
+            className={`relative overflow-hidden rounded-control shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${isCompact ? 'flex min-h-12 min-w-0 items-center justify-center gap-1.5 px-2 py-1.5' : 'min-h-16 p-2 sm:min-h-24 sm:p-3'} ${
               clickingButton === button.id
                 ? 'bg-status-good-bg ring-2 ring-status-good-border'
                 : INTERACTION_SURFACES[buttonIndex % INTERACTION_SURFACES.length]
@@ -125,8 +126,8 @@ export function InteractionButtons({ marketId, onInteractionRecorded, variant = 
             {clickingButton === button.id && (
               <CheckCircle2 className="absolute right-2 top-2 h-4 w-4 text-status-good-text" aria-hidden="true" />
             )}
-            <InteractionRoleIcon role={button.role} className={`${variant === 'dock' ? 'h-4 w-4 shrink-0' : 'mx-auto mb-1 h-5 w-5 sm:mb-2 sm:h-6 sm:w-6'} text-atelier-ink`} />
-            <div className={`${variant === 'dock' ? 'truncate text-xs' : 'text-center text-sm'} min-w-0 font-semibold text-atelier-ink`}>{button.label}</div>
+            <InteractionRoleIcon role={button.role} className={`${isCompact ? 'h-4 w-4 shrink-0' : 'mx-auto mb-1 h-5 w-5 sm:mb-2 sm:h-6 sm:w-6'} text-atelier-ink`} />
+            <div className={`${isCompact ? 'truncate text-xs' : 'text-center text-sm'} min-w-0 font-semibold text-atelier-ink`}>{button.label}</div>
           </button>
         ))}
       </div>

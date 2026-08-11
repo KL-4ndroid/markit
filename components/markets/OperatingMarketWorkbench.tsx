@@ -3,14 +3,11 @@
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import {
   Banknote,
-  CheckCircle2,
-  ImagePlus,
   ShoppingBag,
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { InteractionButtons } from '@/components/sales/InteractionButtons';
 import {
   TransactionWorkspace,
   type TransactionMode,
@@ -23,13 +20,11 @@ import type {
 interface OperatingMarketWorkbenchProps {
   marketId: string;
   canRecordDeal: boolean;
-  canRecordInteraction: boolean;
   salesPhotoEvidenceRequired: boolean;
   pendingPhotoCount: number;
   onOpenPendingPhotos: () => void;
   salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
   onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
-  onInteractionRecorded?: () => void;
   hideProfit?: boolean;
 }
 
@@ -41,23 +36,24 @@ const MODE_TITLES: Record<TransactionMode, string> = {
 export function OperatingMarketWorkbench({
   marketId,
   canRecordDeal,
-  canRecordInteraction,
   salesPhotoEvidenceRequired,
   pendingPhotoCount,
   onOpenPendingPhotos,
   salesPhotoEvidenceContext,
   onSalesPhotoEvidenceResult,
-  onInteractionRecorded,
   hideProfit = false,
 }: OperatingMarketWorkbenchProps) {
   const [activeTransactionMode, setActiveTransactionMode] = useState<TransactionMode | null>(null);
   const [isTransactionProcessing, setIsTransactionProcessing] = useState(false);
 
   useEffect(() => {
-    if (!canRecordDeal) setActiveTransactionMode(null);
+    if (!canRecordDeal) {
+      setIsTransactionProcessing(false);
+      setActiveTransactionMode(null);
+    }
   }, [canRecordDeal]);
 
-  if (!canRecordDeal && !canRecordInteraction) return null;
+  if (!canRecordDeal) return null;
 
   const openTransaction = (mode: TransactionMode) => {
     setIsTransactionProcessing(false);
@@ -78,59 +74,23 @@ export function OperatingMarketWorkbench({
         aria-label="營業工作台"
       >
         <div className="mx-auto max-w-lg px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2">
-          {canRecordInteraction && (
-            <InteractionButtons
-              marketId={marketId}
-              onInteractionRecorded={onInteractionRecorded}
-              variant="dock"
-            />
-          )}
-
-          <div className={`grid gap-2 ${canRecordDeal ? 'mt-2 grid-cols-3' : 'grid-cols-1'}`}>
-            {canRecordDeal && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => openTransaction('quick')}
-                  className="flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-control bg-primary px-2 text-xs font-semibold text-white shadow-atelier-key transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  <Banknote className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span className="truncate">快速收款</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openTransaction('products')}
-                  className="flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-control bg-atelier-sage-soft px-2 text-xs font-semibold text-atelier-ink shadow-atelier-key transition-colors hover:bg-atelier-sage-soft/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  <ShoppingBag className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span className="truncate">商品銷售</span>
-                </button>
-              </>
-            )}
-
-            {pendingPhotoCount > 0 ? (
-              <button
-                type="button"
-                onClick={onOpenPendingPhotos}
-                className="relative flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-control bg-atelier-apricot-soft px-2 text-xs font-semibold text-atelier-ink shadow-atelier-key transition-colors hover:bg-atelier-rose-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                aria-label={`待補照片 ${pendingPhotoCount} 筆`}
-              >
-                <ImagePlus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="truncate">待補照片</span>
-                <span className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-atelier-clay px-1.5 py-0.5 text-[10px] leading-none text-white">
-                  {pendingPhotoCount > 99 ? '99+' : pendingPhotoCount}
-                </span>
-              </button>
-            ) : (
-              <div
-                className="flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-control bg-atelier-canvas px-2 text-xs font-semibold text-status-good-text"
-                role="status"
-                aria-label="成交照片已齊"
-              >
-                <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="truncate">照片已齊</span>
-              </div>
-            )}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => openTransaction('quick')}
+              className="flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-control bg-primary px-2 text-xs font-semibold text-white shadow-atelier-key transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <Banknote className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">快速收款</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => openTransaction('products')}
+              className="flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-control bg-atelier-sage-soft px-2 text-xs font-semibold text-atelier-ink shadow-atelier-key transition-colors hover:bg-atelier-sage-soft/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <ShoppingBag className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">商品銷售</span>
+            </button>
           </div>
         </div>
       </aside>

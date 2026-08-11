@@ -486,12 +486,14 @@ The Web implementation track for the approved UX-M1 through UX-M7 changes is com
 The approved Version A interaction model replaces the long mobile operating page with a dedicated action dock while preserving the existing domain services:
 
 - the global app navigation is hidden only while the live operating workspace is active;
-- three configured interaction actions remain one tap away in a fixed dock and retain bounded undo;
+- three configured interaction actions sit directly below the operating summary and retain bounded undo;
+- owners see a compact reminder and direct link to `/settings/sales`; staff see the configured labels without an unauthorized settings link;
 - quick payment and product sales open focused bottom sheets with persistent completion actions;
-- pending-photo access remains in the dock and respects the existing role and capture capability checks;
+- the fixed operating dock contains only quick payment and product sales;
+- pending-photo access moves to the operating summary when work is pending, while zero pending photos render as the passive `照片已齊` state;
 - a completed sale closes the transaction sheet before the existing photo state machine continues;
 - owner and staff use the same mobile workbench, while the existing desktop two-column workflow remains available;
-- field notes and checklist stay reachable without placing another transaction-mode tab above the workbench;
+- field notes and checklist sit below recent records in a collapsed in-place `現場工作` section instead of replacing the operating view;
 - page padding and safe-area insets prevent the dock from covering recent records or device system UI.
 
 This is a presentation-layer change. Event writes, offline durability, photo queueing, upload behavior, and permission decisions remain in their existing shared services.
@@ -500,9 +502,10 @@ Implementation verification:
 
 - local production build passed and the active owner workflow was inspected with a temporary browser-only test clock; no interaction, transaction, photo, note, or checklist write was submitted;
 - 360 x 800, 390 x 844, and 430 x 932 passed without horizontal overflow or overlap with the hidden global navigation;
-- dock actions measured 48 px high at every tested mobile width, with the dock fixed above the safe-area inset;
+- the refined two-action dock measured 67 px total height with two 48 px actions at 360, 390, and 430 px;
 - quick payment and product-sale sheets kept their 56 px completion actions visible and exposed no horizontal overflow;
-- switching to field notes and checklist kept the operating dock available;
+- the interaction controls render between the operating summary and recent records, with the owner settings link resolving to `/settings/sales`;
+- the in-place field-work section defaults to collapsed and exposes the reference note, handoff notes, and checklist when expanded;
 - 1280 x 900 preserved the existing desktop transaction, interaction, field-note, and checklist workspace;
 - the tested workflow produced no browser console warnings or errors.
 

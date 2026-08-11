@@ -7,6 +7,8 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
 const owner = read('components/markets/MarketDetailScreen.tsx');
 const staff = read('components/markets/StaffMarketDetailView.tsx');
+const interactionPanel = read('components/markets/OperatingInteractionPanel.tsx');
+const fieldOps = read('components/markets/MarketFieldOpsSection.tsx');
 const summary = read('components/markets/MarketWorkspaceSummary.tsx');
 const interactions = read('components/sales/InteractionButtons.tsx');
 const transaction = read('components/sales/TransactionWorkspace.tsx');
@@ -26,18 +28,27 @@ for (const source of [owner, staff]) {
   assert.match(section, /hidden items-start gap-4 lg:grid/);
   assert.match(source, /compactOnMobile=\{[^}]*'operating'[^}]*'live'/);
   assert.match(section, /compactEmpty/);
+  assert.ok(
+    section.indexOf('<OperatingInteractionPanel') < section.indexOf('<DailyTransactionLog'),
+    'mobile interaction controls must sit before the recent record log'
+  );
 }
 
-assert.match(owner, /OwnerLiveMobileView = 'sales' \| 'field-ops'/);
-assert.match(owner, /'開啟現場工作'/);
-assert.match(owner, /'返回營業概況'/);
-assert.match(owner, /ownerPendingChecklistCount/);
-assert.match(owner, /onChecklistRemainingChange=\{setOwnerPendingChecklistCount\}/);
-assert.match(owner, /ownerLiveMobileView !== 'field-ops'[\s\S]*hidden lg:block/);
+assert.doesNotMatch(owner, /OwnerLiveMobileView|ownerLiveMobileView|ownerPendingChecklistCount/);
+assert.match(owner, /<MarketFieldOpsSection[\s\S]*collapsibleOnMobile=\{isOperating\}/);
+assert.match(staff, /<DailyTransactionLog[\s\S]*<MarketFieldOpsSection[\s\S]*collapsibleOnMobile/);
 assert.match(owner, /isOperating \? 'hidden sm:block' : ''/);
 
 assert.match(summary, /compactOnMobile\?: boolean/);
 assert.match(summary, /grid-cols-\[minmax\(0,1\.15fr\)_minmax\(0,1fr\)\]/);
+assert.match(summary, /actionLabel\?: string/);
+assert.match(summary, /ChevronRight/);
+
+assert.match(interactionPanel, /記錄互動/);
+assert.match(interactionPanel, /前往設定/);
+assert.match(interactionPanel, /variant="inline"/);
+assert.match(fieldOps, /defaultMobileExpanded = false/);
+assert.match(fieldOps, /hidden lg:block/);
 
 assert.match(interactions, /deleteInteractionEventById/);
 assert.match(interactions, /const eventId = await recordInteraction/);

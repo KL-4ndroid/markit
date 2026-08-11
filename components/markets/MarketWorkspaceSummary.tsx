@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Clock3 } from 'lucide-react';
+import { ChevronRight, Clock3 } from 'lucide-react';
 import {
   getMarketWorkspacePhaseLabel,
   type MarketWorkspacePhase,
@@ -9,6 +9,8 @@ interface MarketWorkspaceSummaryItem {
   label: string;
   value: ReactNode;
   emphasis?: boolean;
+  onClick?: () => void;
+  actionLabel?: string;
 }
 
 interface MarketWorkspaceSummaryProps {
@@ -29,6 +31,22 @@ const PHASE_SURFACES: Record<MarketWorkspacePhase, string> = {
   operating: 'bg-atelier-sage-soft',
   ended: 'bg-atelier-blue-soft/80',
 };
+
+function SummaryValue({ item }: { item: MarketWorkspaceSummaryItem }) {
+  if (!item.onClick) return item.value;
+
+  return (
+    <button
+      type="button"
+      onClick={item.onClick}
+      aria-label={item.actionLabel ?? `${item.label}：${String(item.value)}`}
+      className="-my-2 inline-flex min-h-11 max-w-full items-center gap-0.5 text-left underline decoration-primary/30 underline-offset-4 transition-colors hover:text-primary"
+    >
+      <span className="min-w-0 break-words">{item.value}</span>
+      <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+    </button>
+  );
+}
 
 export function MarketWorkspaceSummary({
   phase,
@@ -65,7 +83,7 @@ export function MarketWorkspaceSummary({
               }`}
               title={typeof primaryItem.value === 'string' || typeof primaryItem.value === 'number' ? String(primaryItem.value) : undefined}
             >
-              {primaryItem.value}
+              <SummaryValue item={primaryItem} />
             </dd>
           </div>
         )}
@@ -81,7 +99,7 @@ export function MarketWorkspaceSummary({
                   }`}
                   title={typeof item.value === 'string' || typeof item.value === 'number' ? String(item.value) : undefined}
                 >
-                  {item.value}
+                  <SummaryValue item={item} />
                 </dd>
               </div>
             ))}

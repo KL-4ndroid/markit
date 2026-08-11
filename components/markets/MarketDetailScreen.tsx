@@ -64,6 +64,7 @@ import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceD
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import { MarketOverviewPhotoStory } from '@/components/markets/MarketOverviewPhotoStory';
+import { OperatingInteractionPanel } from '@/components/markets/OperatingInteractionPanel';
 import { OperatingMarketWorkbench } from '@/components/markets/OperatingMarketWorkbench';
 import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
 import { SalesPhotoEvidenceOwnerAlbumRouteSection } from '@/components/markets/SalesPhotoEvidenceOwnerAlbumRouteSection';
@@ -110,7 +111,6 @@ const EditMarketForm = dynamic(() =>
 );
 
 type OwnerOverviewDetail = 'performance' | 'interactions' | 'photos' | 'costs';
-type OwnerLiveMobileView = 'sales' | 'field-ops';
 
 type SalesPhotoEvidenceMarket = Market & {
   salesPhotoEvidenceRequired?: boolean;
@@ -281,8 +281,6 @@ export function MarketDetailScreen() {
   const [countdown, setCountdown] = useState<string>('--');
   const [isOperatingStatusCollapsed, setIsOperatingStatusCollapsed] = useState(true);  // 營業狀態折疊
   const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(false);  // 今日時間軸折疊（預設展開）
-  const [ownerLiveMobileView, setOwnerLiveMobileView] = useState<OwnerLiveMobileView>('sales');
-  const [ownerPendingChecklistCount, setOwnerPendingChecklistCount] = useState(0);
   const [showStatusChangeConfirm, setShowStatusChangeConfirm] = useState(false);  // 狀態變更確認
   const [pendingStatus, setPendingStatus] = useState<MarketStatus | null>(null);  // 待變更的狀態
   
@@ -1318,7 +1316,7 @@ export function MarketDetailScreen() {
       </header>
 
       {/* Content */}
-      <div className={`mx-auto max-w-5xl px-4 ${isOperating && resolvedOwnerWorkspaceView === 'live' ? 'pb-44 lg:pb-6' : 'pb-6'}`}>
+      <div className={`mx-auto max-w-5xl px-4 ${isOperating && resolvedOwnerWorkspaceView === 'live' ? 'pb-28 lg:pb-6' : 'pb-6'}`}>
         <MarketWorkspaceNavigation
           value={resolvedOwnerWorkspaceView}
           onChange={setOwnerWorkspaceView}
@@ -1373,28 +1371,18 @@ export function MarketDetailScreen() {
               : [
                   { label: '收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
                   { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
-                  { label: '待補照片', value: salesPhotoEvidenceFlow.pendingCount },
+                  {
+                    label: '待補照片',
+                    value: salesPhotoEvidenceFlow.pendingCount > 0
+                      ? `${salesPhotoEvidenceFlow.pendingCount} 筆`
+                      : '照片已齊',
+                    onClick: salesPhotoEvidenceFlow.pendingCount > 0
+                      ? handleOpenPendingSalesPhotoEvidence
+                      : undefined,
+                    actionLabel: `處理 ${salesPhotoEvidenceFlow.pendingCount} 筆待補照片`,
+                  },
                 ]}
         />
-
-        {resolvedOwnerWorkspaceView === 'live' && isOperating && (
-          <div className="mb-3 flex justify-end lg:hidden">
-            <button
-              type="button"
-              aria-label={ownerLiveMobileView === 'field-ops' ? '返回營業概況' : '開啟現場工作'}
-              onClick={() => setOwnerLiveMobileView(current => current === 'field-ops' ? 'sales' : 'field-ops')}
-              className={`flex min-h-11 items-center justify-center gap-2 rounded-control border px-3 text-sm font-medium transition-colors ${ownerLiveMobileView === 'field-ops' ? 'border-primary bg-primary text-white shadow-sm' : 'border-atelier-line bg-atelier-paper text-atelier-ink shadow-sm'}`}
-            >
-              <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
-              {ownerLiveMobileView === 'field-ops' ? '返回營業概況' : '現場工作'}
-              {ownerPendingChecklistCount > 0 && (
-                <span className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${ownerLiveMobileView === 'field-ops' ? 'bg-white/20 text-white' : 'bg-atelier-blue-soft text-atelier-ink'}`}>
-                  {ownerPendingChecklistCount}
-                </span>
-              )}
-            </button>
-          </div>
-        )}
 
         {resolvedOwnerWorkspaceView === 'overview' && (
           <MarketWorkspaceDetailTabs
@@ -1431,33 +1419,35 @@ export function MarketDetailScreen() {
             <OperatingMarketWorkbench
               marketId={marketId}
               canRecordDeal
-              canRecordInteraction
               salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
               pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
               onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
               salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
               onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+            />
+
+            <OperatingInteractionPanel
+              marketId={marketId}
+              canOpenSettings
               onInteractionRecorded={() => {
                 window.dispatchEvent(new Event('interaction-recorded'));
               }}
             />
 
-            {ownerLiveMobileView === 'sales' && (
-              <div className="lg:hidden">
-                <DailyTransactionLog
-                  marketId={marketId}
-                  limit={5}
-                  showSummary={false}
-                  compactEmpty
-                  allowDelete
-                  title="最近紀錄"
-                  onViewAll={() => {
-                    setOwnerOverviewDetail('performance');
-                    setOwnerWorkspaceView('overview');
-                  }}
-                />
-              </div>
-            )}
+            <div className="lg:hidden">
+              <DailyTransactionLog
+                marketId={marketId}
+                limit={5}
+                showSummary={false}
+                compactEmpty
+                allowDelete
+                title="最近紀錄"
+                onViewAll={() => {
+                  setOwnerOverviewDetail('performance');
+                  setOwnerWorkspaceView('overview');
+                }}
+              />
+            </div>
 
           <div className="hidden items-start gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem]">
             <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
@@ -1504,14 +1494,14 @@ export function MarketDetailScreen() {
         )}
 
         {resolvedOwnerWorkspaceView === 'live' && (
-          <div className={`mx-auto mt-4 max-w-3xl ${isOperating && ownerLiveMobileView !== 'field-ops' ? 'hidden lg:block' : ''}`}>
+          <div className="mx-auto mt-3 max-w-3xl">
             <MarketFieldOpsSection
               marketId={marketId}
               referenceNote={market.notes}
               canManageFieldNotes={canManageOwnerFieldOps}
               canManageChecklist={canManageOwnerFieldOps}
               canToggleChecklistItem={canManageOwnerFieldOps}
-              onChecklistRemainingChange={setOwnerPendingChecklistCount}
+              collapsibleOnMobile={isOperating}
               readOnlyReason={marketWorkspacePhase === 'ended'
                 ? '市集已完成，現場交接筆記與待辦清單已封存為唯讀紀錄。'
                 : undefined}

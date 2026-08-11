@@ -68,6 +68,7 @@ import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
+import { OperatingInteractionPanel } from '@/components/markets/OperatingInteractionPanel';
 import { OperatingMarketWorkbench } from '@/components/markets/OperatingMarketWorkbench';
 import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
@@ -197,10 +198,10 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
   );
 
   useEffect(() => {
-    if (!isOperating || workspaceView !== 'live') return;
+    if (!isOperating || workspaceView !== 'live' || !canRecordDeal) return;
     hideNavigation('staff-operating-workbench');
     return () => showNavigation('staff-operating-workbench');
-  }, [isOperating, workspaceView]);
+  }, [canRecordDeal, isOperating, workspaceView]);
   const salesPhotoEvidenceRequired = Boolean(market.salesPhotoEvidenceRequired);
   const addRevenueSalesPhotoEvidenceContext = {
     ownerId: market.relationship_owner_id ?? market.owner_id ?? userRole.ownerId ?? null,
@@ -344,7 +345,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
       </header>
 
       {/* Content */}
-      <div className={`mx-auto max-w-5xl px-4 ${isOperating && workspaceView === 'live' ? 'pb-44 lg:pb-6' : 'pb-6'}`}>
+      <div className={`mx-auto max-w-5xl px-4 ${isOperating && workspaceView === 'live' && canRecordDeal ? 'pb-28 lg:pb-6' : 'pb-6'}`}>
         <MarketWorkspaceNavigation
           value={workspaceView}
           onChange={setWorkspaceView}
@@ -369,7 +370,16 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
             : [
                 { label: '收入', value: formatCurrency(stats?.totalRevenue ?? 0), emphasis: true },
                 { label: '成交', value: stats?.totalDeals ?? 0 },
-                { label: '待補照片', value: salesPhotoEvidenceFlow.pendingCount },
+                {
+                  label: '待補照片',
+                  value: salesPhotoEvidenceFlow.pendingCount > 0
+                    ? `${salesPhotoEvidenceFlow.pendingCount} 筆`
+                    : '照片已齊',
+                  onClick: workspaceView === 'live' && salesPhotoEvidenceFlow.pendingCount > 0
+                    ? handleOpenPendingSalesPhotoEvidence
+                    : undefined,
+                  actionLabel: `處理 ${salesPhotoEvidenceFlow.pendingCount} 筆待補照片`,
+                },
               ]}
         />
 
@@ -386,17 +396,22 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
             <OperatingMarketWorkbench
               marketId={marketId}
               canRecordDeal={canRecordDeal}
-              canRecordInteraction={canRecordInteraction}
               salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
               pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
               onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
               salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
               onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
-              onInteractionRecorded={() => {
-                window.dispatchEvent(new Event('interaction-recorded'));
-              }}
               hideProfit
             />
+
+            {canRecordInteraction && (
+              <OperatingInteractionPanel
+                marketId={marketId}
+                onInteractionRecorded={() => {
+                  window.dispatchEvent(new Event('interaction-recorded'));
+                }}
+              />
+            )}
 
             <div className="lg:hidden">
               <DailyTransactionLog
@@ -409,6 +424,15 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
                 compactEmpty
                 title="最近紀錄"
                 onViewAll={() => setWorkspaceView('records')}
+              />
+
+              <MarketFieldOpsSection
+                marketId={marketId}
+                referenceNote={market.notes}
+                canManageFieldNotes={canManageFieldNotes}
+                canManageChecklist={canManageChecklist}
+                canToggleChecklistItem={canToggleChecklistItem}
+                collapsibleOnMobile
               />
             </div>
 
