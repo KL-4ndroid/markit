@@ -54,17 +54,16 @@ runTest('single flow dialog delegates capture and upload without owning runtime 
   assert.doesNotMatch(dialogSource, /SalesPhotoEvidencePendingListDialog|SalesPhotoEvidenceCapturePreviewDialog|SalesPhotoEvidencePostSalePrompt/);
 });
 
-runTest('capture flow stays in one centered accessible dialog with preview and retry actions', () => {
+runTest('capture flow stays in one responsive accessible dialog with preview and retry actions', () => {
   assert.match(dialogSource, /import \{ Dialog, DialogPanel, DialogTitle \} from '@headlessui\/react'/);
-  assert.match(dialogSource, /fixed inset-0 flex justify-center p-4/);
-  assert.match(dialogSource, /self-center/);
+  assert.match(dialogSource, /fixed inset-0 flex items-end justify-center sm:items-center sm:p-4/);
+  assert.match(dialogSource, /rounded-t-lg[\s\S]*sm:rounded-lg/);
   assert.match(dialogSource, /URL\.createObjectURL\(payload\.image\.blob\)/);
   assert.match(dialogSource, /拍照/);
   assert.match(dialogSource, /從相簿選擇/);
   assert.match(dialogSource, /使用這張照片/);
   assert.match(dialogSource, /重新上傳/);
   assert.match(dialogSource, /safe-area-inset-bottom/);
-  assert.doesNotMatch(dialogSource, /items-end/);
 });
 
 runTest('owner and staff share one scoped photo flow controller', () => {

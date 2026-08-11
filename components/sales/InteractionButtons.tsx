@@ -12,6 +12,7 @@ import { InteractionRoleIcon } from '@/components/interactions/InteractionRoleIc
 interface InteractionButtonsProps {
   marketId: string;
   onInteractionRecorded?: () => void;
+  variant?: 'card' | 'dock';
 }
 
 const INTERACTION_SURFACES = [
@@ -21,7 +22,7 @@ const INTERACTION_SURFACES = [
   'bg-atelier-rose-soft hover:bg-atelier-rose-soft/75',
 ] as const;
 
-export function InteractionButtons({ marketId, onInteractionRecorded }: InteractionButtonsProps) {
+export function InteractionButtons({ marketId, onInteractionRecorded, variant = 'card' }: InteractionButtonsProps) {
   const [buttons, setButtons] = useState<InteractionButton[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [clickingButton, setClickingButton] = useState<string | null>(null);
@@ -107,7 +108,7 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
   };
 
   return (
-    <div>
+    <div className="relative">
       <div className="relative grid grid-cols-3 gap-2">
         {buttons.map((button, buttonIndex) => (
           <button
@@ -115,7 +116,7 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
             type="button"
             onClick={() => void handleInteraction(button.id, button.label)}
             disabled={isProcessing}
-            className={`relative min-h-16 overflow-hidden rounded-control p-2 shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-24 sm:p-3 ${
+            className={`relative overflow-hidden rounded-control shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm disabled:cursor-not-allowed disabled:opacity-60 ${variant === 'dock' ? 'flex min-h-12 min-w-0 items-center justify-center gap-1.5 px-2 py-1.5' : 'min-h-16 p-2 sm:min-h-24 sm:p-3'} ${
               clickingButton === button.id
                 ? 'bg-status-good-bg ring-2 ring-status-good-border'
                 : INTERACTION_SURFACES[buttonIndex % INTERACTION_SURFACES.length]
@@ -124,12 +125,12 @@ export function InteractionButtons({ marketId, onInteractionRecorded }: Interact
             {clickingButton === button.id && (
               <CheckCircle2 className="absolute right-2 top-2 h-4 w-4 text-status-good-text" aria-hidden="true" />
             )}
-            <InteractionRoleIcon role={button.role} className="mx-auto mb-1 h-5 w-5 text-atelier-ink sm:mb-2 sm:h-6 sm:w-6" />
-            <div className="text-center text-sm font-semibold text-atelier-ink">{button.label}</div>
+            <InteractionRoleIcon role={button.role} className={`${variant === 'dock' ? 'h-4 w-4 shrink-0' : 'mx-auto mb-1 h-5 w-5 sm:mb-2 sm:h-6 sm:w-6'} text-atelier-ink`} />
+            <div className={`${variant === 'dock' ? 'truncate text-xs' : 'text-center text-sm'} min-w-0 font-semibold text-atelier-ink`}>{button.label}</div>
           </button>
         ))}
       </div>
-      <div className="mt-2 flex min-h-8 items-center justify-center gap-3 text-xs font-medium">
+      <div className={`${variant === 'dock' && lastRecordedInteraction ? 'absolute bottom-[calc(100%+0.65rem)] left-0 right-0 mx-auto w-fit max-w-full rounded-control border border-status-good-border bg-atelier-paper px-3 py-2 shadow-atelier-lift' : variant === 'dock' ? 'hidden' : 'mt-2 flex min-h-8'} items-center justify-center gap-3 text-xs font-medium`}>
         <span className="text-status-good-text" aria-live="polite">
           {lastRecordedInteraction ? `${lastRecordedInteraction.label}已記錄` : ''}
         </span>

@@ -101,8 +101,8 @@ export function SalesPhotoEvidenceFlowDialog({
       className="relative z-[1200]"
     >
       <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
-      <div className="fixed inset-0 flex justify-center p-4">
-        <DialogPanel className="relative flex max-h-[90dvh] w-full max-w-lg self-center flex-col overflow-hidden rounded-[2rem] bg-background shadow-2xl animate-slide-up">
+      <div className="fixed inset-0 flex items-end justify-center sm:items-center sm:p-4">
+        <DialogPanel className="relative flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-lg bg-background shadow-2xl animate-slide-up sm:rounded-lg">
           <header className="japanese-gradient-header flex shrink-0 items-center justify-between gap-3 px-5 py-5">
             <div className="flex min-w-0 items-center gap-2">
               {canGoBack && (
@@ -303,32 +303,41 @@ export function SalesPhotoEvidenceFlowDialog({
                       正在儲存照片
                     </button>
                   ) : (
-                    <div className="flex gap-2">
+                    <div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onCapture(state.item, 'camera')}
+                          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border bg-white text-foreground hover:bg-background"
+                          aria-label="重新拍照"
+                          title="重新拍照"
+                        >
+                          <RotateCcw className="h-5 w-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onCapture(state.item, 'library')}
+                          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border bg-white text-foreground hover:bg-background"
+                          aria-label="從相簿換照片"
+                          title="從相簿換照片"
+                        >
+                          <ImagePlus className="h-5 w-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onUpload(state.item, payload)}
+                          className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90"
+                        >
+                          {state.view === 'upload_failed' ? <RefreshCw className="h-5 w-5" /> : <UploadCloud className="h-5 w-5" />}
+                          {state.view === 'upload_failed' ? '重新上傳' : '使用這張照片'}
+                        </button>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => onCapture(state.item, 'camera')}
-                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border bg-white text-foreground hover:bg-background"
-                        aria-label="重新拍照"
-                        title="重新拍照"
+                        onClick={state.returnTo === 'pending_list' ? onBack : onClose}
+                        className="mt-2 min-h-11 w-full text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                       >
-                        <RotateCcw className="h-5 w-5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onCapture(state.item, 'library')}
-                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border bg-white text-foreground hover:bg-background"
-                        aria-label="從相簿換照片"
-                        title="從相簿換照片"
-                      >
-                        <ImagePlus className="h-5 w-5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onUpload(state.item, payload)}
-                        className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90"
-                      >
-                        {state.view === 'upload_failed' ? <RefreshCw className="h-5 w-5" /> : <UploadCloud className="h-5 w-5" />}
-                        {state.view === 'upload_failed' ? '重新上傳' : '使用這張照片'}
+                        {state.returnTo === 'pending_list' ? '返回待補清單' : '稍後上傳'}
                       </button>
                     </div>
                   )}

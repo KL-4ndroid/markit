@@ -15,7 +15,8 @@ import {
 import { QuickInteractionButtons } from './QuickInteractionButtons';
 import { QuickTransactionGrid } from './QuickTransactionGrid';
 
-type TransactionMode = 'quick' | 'products';
+export type TransactionMode = 'quick' | 'products';
+type TransactionPresentation = 'card' | 'sheet';
 
 interface TransactionWorkspaceProps {
   marketId: string;
@@ -24,7 +25,11 @@ interface TransactionWorkspaceProps {
   onOpenPendingPhotos: () => void;
   salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
   onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
+  onTransactionCompleted?: () => void;
+  onProcessingChange?: (isProcessing: boolean) => void;
   hideProfit?: boolean;
+  mode?: TransactionMode;
+  presentation?: TransactionPresentation;
 }
 
 const PAYMENT_STORAGE_KEY = 'markit:last-sales-payment-method';
@@ -36,12 +41,18 @@ export function TransactionWorkspace({
   onOpenPendingPhotos,
   salesPhotoEvidenceContext,
   onSalesPhotoEvidenceResult,
+  onTransactionCompleted,
+  onProcessingChange,
   hideProfit = false,
+  mode: controlledMode,
+  presentation = 'card',
 }: TransactionWorkspaceProps) {
   const [mode, setMode] = useState<TransactionMode>('quick');
   const [paymentMethod, setPaymentMethod] = useState<SalesPaymentMethod>('cash');
   const [recentSale, setRecentSale] = useState<{ amount: number; paymentMethod: SalesPaymentMethod } | null>(null);
   const noticeTimeoutRef = useRef<number | null>(null);
+  const selectedMode = controlledMode ?? mode;
+  const isSheet = presentation === 'sheet';
 
   useEffect(() => {
     try {
@@ -104,8 +115,8 @@ export function TransactionWorkspace({
   };
 
   return (
-    <section className="mb-6 overflow-hidden rounded-card bg-atelier-paper shadow-atelier-lift">
-      <div className="flex items-start justify-between gap-3 bg-atelier-apricot-soft/65 px-4 py-4 sm:px-5">
+    <section className={isSheet ? '' : 'mb-6 overflow-hidden rounded-card bg-atelier-paper shadow-atelier-lift'}>
+      {!isSheet && <div className="flex items-start justify-between gap-3 bg-atelier-apricot-soft/65 px-4 py-4 sm:px-5">
         <div className="min-w-0">
           <p className="text-xs font-semibold text-atelier-ink">現場收款</p>
           <h2 className="mt-1 text-lg font-semibold text-atelier-ink">把這筆交易收好</h2>
@@ -132,20 +143,20 @@ export function TransactionWorkspace({
             照片已齊
           </div>
         )}
-      </div>
+      </div>}
 
-      <div className="p-4 sm:p-5">
-        <div className="mb-5 grid grid-cols-2 rounded-control bg-atelier-sage-soft p-1" role="tablist" aria-label="交易方式">
+      <div className={isSheet ? '' : 'p-4 sm:p-5'}>
+        {!isSheet && <div className="mb-5 grid grid-cols-2 rounded-control bg-atelier-sage-soft p-1" role="tablist" aria-label="交易方式">
           <button
             id={`transaction-tab-quick-${marketId}`}
             type="button"
             role="tab"
-            aria-selected={mode === 'quick'}
+            aria-selected={selectedMode === 'quick'}
             aria-controls={`transaction-panel-quick-${marketId}`}
-            tabIndex={mode === 'quick' ? 0 : -1}
+            tabIndex={selectedMode === 'quick' ? 0 : -1}
             onClick={() => setMode('quick')}
             onKeyDown={event => changeModeFromKeyboard(event, 'products')}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${mode === 'quick' ? 'bg-atelier-paper text-primary shadow-sm' : 'text-atelier-muted hover:bg-atelier-paper/65 hover:text-atelier-ink'}`}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${selectedMode === 'quick' ? 'bg-atelier-paper text-primary shadow-sm' : 'text-atelier-muted hover:bg-atelier-paper/65 hover:text-atelier-ink'}`}
           >
             <DollarSign className="h-4 w-4" />
             快速收款
@@ -154,19 +165,19 @@ export function TransactionWorkspace({
             id={`transaction-tab-products-${marketId}`}
             type="button"
             role="tab"
-            aria-selected={mode === 'products'}
+            aria-selected={selectedMode === 'products'}
             aria-controls={`transaction-panel-products-${marketId}`}
-            tabIndex={mode === 'products' ? 0 : -1}
+            tabIndex={selectedMode === 'products' ? 0 : -1}
             onClick={() => setMode('products')}
             onKeyDown={event => changeModeFromKeyboard(event, 'quick')}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${mode === 'products' ? 'bg-atelier-paper text-primary shadow-sm' : 'text-atelier-muted hover:bg-atelier-paper/65 hover:text-atelier-ink'}`}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${selectedMode === 'products' ? 'bg-atelier-paper text-primary shadow-sm' : 'text-atelier-muted hover:bg-atelier-paper/65 hover:text-atelier-ink'}`}
           >
             <ShoppingBag className="h-4 w-4" />
             商品銷售
           </button>
-        </div>
+        </div>}
 
-        <div className="min-h-0" aria-live="polite" aria-atomic="true">
+        {!isSheet && <div className="min-h-0" aria-live="polite" aria-atomic="true">
           {recentSale && (
             <div className="mb-4 flex items-center gap-3 rounded-control bg-atelier-sage-soft px-3 py-3 text-status-good-text shadow-sm" role="status">
               <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" />
@@ -175,13 +186,13 @@ export function TransactionWorkspace({
               </p>
             </div>
           )}
-        </div>
+        </div>}
 
         <div
           id={`transaction-panel-quick-${marketId}`}
           role="tabpanel"
           aria-labelledby={`transaction-tab-quick-${marketId}`}
-          hidden={mode !== 'quick'}
+          hidden={selectedMode !== 'quick'}
         >
           <QuickInteractionButtons
             marketId={marketId}
@@ -190,13 +201,16 @@ export function TransactionWorkspace({
             onPaymentMethodChange={changePaymentMethod}
             salesPhotoEvidenceContext={salesPhotoEvidenceContext}
             onSalesPhotoEvidenceResult={onSalesPhotoEvidenceResult}
+            onTransactionCompleted={onTransactionCompleted}
+            onProcessingChange={onProcessingChange}
+            presentation={presentation}
           />
         </div>
         <div
           id={`transaction-panel-products-${marketId}`}
           role="tabpanel"
           aria-labelledby={`transaction-tab-products-${marketId}`}
-          hidden={mode !== 'products'}
+          hidden={selectedMode !== 'products'}
         >
           <QuickTransactionGrid
             marketId={marketId}
@@ -205,6 +219,9 @@ export function TransactionWorkspace({
             onPaymentMethodChange={changePaymentMethod}
             salesPhotoEvidenceContext={salesPhotoEvidenceContext}
             onSalesPhotoEvidenceResult={onSalesPhotoEvidenceResult}
+            onTransactionCompleted={onTransactionCompleted}
+            onProcessingChange={onProcessingChange}
+            presentation={presentation}
           />
         </div>
       </div>

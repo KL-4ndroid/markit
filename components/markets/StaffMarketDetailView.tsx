@@ -68,6 +68,7 @@ import { DailyDealsModal } from '@/components/markets/DailyDealsModal';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
+import { OperatingMarketWorkbench } from '@/components/markets/OperatingMarketWorkbench';
 import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
 import { SyncStatusIndicator } from '@/components/common/SyncStatusIndicator';
 import { useRoleContext } from '@/lib/role-context';
@@ -83,6 +84,7 @@ import {
   type StaffMarketWorkspaceView,
 } from '@/lib/markets/market-workspace';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
+import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import type { Market, Event, DealClosedPayload } from '@/types/db';
 
@@ -193,6 +195,12 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
   const [workspaceView, setWorkspaceView] = useState<StaffMarketWorkspaceView>(() =>
     getDefaultStaffMarketWorkspaceView(workspacePhase)
   );
+
+  useEffect(() => {
+    if (!isOperating || workspaceView !== 'live') return;
+    hideNavigation('staff-operating-workbench');
+    return () => showNavigation('staff-operating-workbench');
+  }, [isOperating, workspaceView]);
   const salesPhotoEvidenceRequired = Boolean(market.salesPhotoEvidenceRequired);
   const addRevenueSalesPhotoEvidenceContext = {
     ownerId: market.relationship_owner_id ?? market.owner_id ?? userRole.ownerId ?? null,
@@ -336,7 +344,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
       </header>
 
       {/* Content */}
-      <div className="mx-auto max-w-5xl px-4 pb-6">
+      <div className={`mx-auto max-w-5xl px-4 ${isOperating && workspaceView === 'live' ? 'pb-44 lg:pb-6' : 'pb-6'}`}>
         <MarketWorkspaceNavigation
           value={workspaceView}
           onChange={setWorkspaceView}
@@ -374,7 +382,37 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
 
         {/* ✅ 營業中時的操作區 - 員工核心工作功能 */}
         {workspaceView === 'live' && isOperating && (
-          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <>
+            <OperatingMarketWorkbench
+              marketId={marketId}
+              canRecordDeal={canRecordDeal}
+              canRecordInteraction={canRecordInteraction}
+              salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
+              pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
+              onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
+              salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+              onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+              onInteractionRecorded={() => {
+                window.dispatchEvent(new Event('interaction-recorded'));
+              }}
+              hideProfit
+            />
+
+            <div className="lg:hidden">
+              <DailyTransactionLog
+                marketId={marketId}
+                allowDelete={canDeleteOwnRecord}
+                deleteActorId={deleteActorId}
+                deleteSameDayOnly={canDeleteOwnRecord}
+                limit={5}
+                showSummary={false}
+                compactEmpty
+                title="最近紀錄"
+                onViewAll={() => setWorkspaceView('records')}
+              />
+            </div>
+
+          <div className="hidden items-start gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem]">
             {canRecordDeal && (
               <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
               <TransactionWorkspace
@@ -419,6 +457,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
               />
             </div>
           </div>
+          </>
         )}
         
         {/* ✅ 當日流水帳 - 營業中或已結束時顯示 */}

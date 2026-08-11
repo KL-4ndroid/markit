@@ -20,6 +20,9 @@ interface QuickInteractionButtonsProps {
   onPaymentMethodChange?: (value: SalesPaymentMethod) => void;
   salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
   onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
+  onTransactionCompleted?: () => void;
+  onProcessingChange?: (isProcessing: boolean) => void;
+  presentation?: 'card' | 'sheet';
 }
 
 export function QuickInteractionButtons({
@@ -29,6 +32,9 @@ export function QuickInteractionButtons({
   onPaymentMethodChange,
   salesPhotoEvidenceContext,
   onSalesPhotoEvidenceResult,
+  onTransactionCompleted,
+  onProcessingChange,
+  presentation = 'card',
 }: QuickInteractionButtonsProps) {
   const [displayAmount, setDisplayAmount] = useState('0');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -53,6 +59,7 @@ export function QuickInteractionButtons({
     if (isProcessing) return;
 
     setIsProcessing(true);
+    onProcessingChange?.(true);
     let result;
     try {
       const submittedAt = new Date().toISOString();
@@ -79,6 +86,7 @@ export function QuickInteractionButtons({
       console.error('記錄成交失敗：', error);
       toast.error('記錄失敗，資料已保留在本機等待同步');
       setIsProcessing(false);
+      onProcessingChange?.(false);
       return;
     }
 
@@ -87,6 +95,7 @@ export function QuickInteractionButtons({
       detail: { marketId, amount, paymentMethod: selectedPaymentMethod },
     }));
     onInteractionRecorded?.();
+    onTransactionCompleted?.();
 
     try {
       if (onSalesPhotoEvidenceResult) await onSalesPhotoEvidenceResult(result);
@@ -96,6 +105,7 @@ export function QuickInteractionButtons({
       toast.warning('交易已完成，請從待補照片補上紀錄');
     } finally {
       setIsProcessing(false);
+      onProcessingChange?.(false);
     }
   };
 
@@ -174,7 +184,7 @@ export function QuickInteractionButtons({
         type="button"
         onClick={() => void handleQuickDeal()}
         disabled={isProcessing || amount <= 0}
-        className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100"
+        className={`${presentation === 'sheet' ? 'sticky bottom-0 z-10 mt-5 shadow-[0_-10px_24px_rgb(255_255_255_/_0.92)]' : 'mt-4'} inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100`}
       >
         {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" aria-hidden="true" />}
         {isProcessing ? '正在記錄交易' : `完成收款 NT$${amount.toLocaleString()}`}

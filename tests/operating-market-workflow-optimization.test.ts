@@ -22,18 +22,15 @@ function operatingSection(source: string): string {
 
 for (const source of [owner, staff]) {
   const section = operatingSection(source);
-  assert.ok(
-    section.indexOf('<TransactionWorkspace') < section.indexOf('<InteractionButtons'),
-    'mobile DOM order must put transactions before interactions'
-  );
+  assert.match(section, /<OperatingMarketWorkbench/);
+  assert.match(section, /hidden items-start gap-4 lg:grid/);
   assert.match(source, /compactOnMobile=\{[^}]*'operating'[^}]*'live'/);
   assert.match(section, /compactEmpty/);
 }
 
 assert.match(owner, /OwnerLiveMobileView = 'sales' \| 'field-ops'/);
-assert.match(owner, /aria-label="現場操作模式"/);
-assert.match(owner, />\s*收款與互動\s*</);
-assert.match(owner, />\s*現場工作\s*\{ownerPendingChecklistCount/);
+assert.match(owner, /'開啟現場工作'/);
+assert.match(owner, /'返回營業概況'/);
 assert.match(owner, /ownerPendingChecklistCount/);
 assert.match(owner, /onChecklistRemainingChange=\{setOwnerPendingChecklistCount\}/);
 assert.match(owner, /ownerLiveMobileView !== 'field-ops'[\s\S]*hidden lg:block/);

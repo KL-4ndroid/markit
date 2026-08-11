@@ -481,6 +481,31 @@ This implementation also fixes the multi-day lifecycle defect found during brows
 
 The Web implementation track for the approved UX-M1 through UX-M7 changes is complete. The unchecked items above are release-evidence tasks and must remain open until their required browser infrastructure, role accounts, or physical devices are available.
 
+### Version A operating workbench - 2026-08-11
+
+The approved Version A interaction model replaces the long mobile operating page with a dedicated action dock while preserving the existing domain services:
+
+- the global app navigation is hidden only while the live operating workspace is active;
+- three configured interaction actions remain one tap away in a fixed dock and retain bounded undo;
+- quick payment and product sales open focused bottom sheets with persistent completion actions;
+- pending-photo access remains in the dock and respects the existing role and capture capability checks;
+- a completed sale closes the transaction sheet before the existing photo state machine continues;
+- owner and staff use the same mobile workbench, while the existing desktop two-column workflow remains available;
+- field notes and checklist stay reachable without placing another transaction-mode tab above the workbench;
+- page padding and safe-area insets prevent the dock from covering recent records or device system UI.
+
+This is a presentation-layer change. Event writes, offline durability, photo queueing, upload behavior, and permission decisions remain in their existing shared services.
+
+Implementation verification:
+
+- local production build passed and the active owner workflow was inspected with a temporary browser-only test clock; no interaction, transaction, photo, note, or checklist write was submitted;
+- 360 x 800, 390 x 844, and 430 x 932 passed without horizontal overflow or overlap with the hidden global navigation;
+- dock actions measured 48 px high at every tested mobile width, with the dock fixed above the safe-area inset;
+- quick payment and product-sale sheets kept their 56 px completion actions visible and exposed no horizontal overflow;
+- switching to field notes and checklist kept the operating dock available;
+- 1280 x 900 preserved the existing desktop transaction, interaction, field-note, and checklist workspace;
+- the tested workflow produced no browser console warnings or errors.
+
 ## 11. Operating-Market Browser Audit - 2026-08-11
 
 Tested the active `2026/8/10~12` market at 360, 375, 390, and 430 px without submitting a transaction. Temporary interaction and checklist records used to verify undo, delete, and pending-count behavior were removed after the test.

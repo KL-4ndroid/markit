@@ -31,6 +31,9 @@ interface QuickTransactionGridProps {
   onPaymentMethodChange?: (value: SalesPaymentMethod) => void;
   salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
   onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
+  onTransactionCompleted?: () => void;
+  onProcessingChange?: (isProcessing: boolean) => void;
+  presentation?: 'card' | 'sheet';
 }
 
 interface CartItem {
@@ -54,6 +57,9 @@ export function QuickTransactionGrid({
   onPaymentMethodChange,
   salesPhotoEvidenceContext,
   onSalesPhotoEvidenceResult,
+  onTransactionCompleted,
+  onProcessingChange,
+  presentation = 'card',
 }: QuickTransactionGridProps) {
   const products = useProducts({ isActive: true });
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
@@ -103,6 +109,7 @@ export function QuickTransactionGrid({
   const handleCheckout = async () => {
     if (cart.size === 0 || isProcessing) return;
     setIsProcessing(true);
+    onProcessingChange?.(true);
 
     let result;
     try {
@@ -130,6 +137,7 @@ export function QuickTransactionGrid({
       console.error('記錄商品交易失敗：', error);
       toast.error('記錄失敗，資料已保留在本機等待同步');
       setIsProcessing(false);
+      onProcessingChange?.(false);
       return;
     }
 
@@ -137,6 +145,7 @@ export function QuickTransactionGrid({
     window.dispatchEvent(new CustomEvent('deal-closed', {
       detail: { marketId, amount: totalAmount, paymentMethod: selectedPaymentMethod },
     }));
+    onTransactionCompleted?.();
 
     try {
       if (onSalesPhotoEvidenceResult) await onSalesPhotoEvidenceResult(result);
@@ -146,6 +155,7 @@ export function QuickTransactionGrid({
       toast.warning('交易已完成，請從待補照片補上紀錄');
     } finally {
       setIsProcessing(false);
+      onProcessingChange?.(false);
     }
   };
 
@@ -254,7 +264,7 @@ export function QuickTransactionGrid({
         </div>
       )}
 
-      <div className="relative mb-5 flex items-center justify-between overflow-hidden rounded-card bg-deep px-4 py-4 text-white shadow-atelier">
+      <div className={`${presentation === 'sheet' ? 'mb-3' : 'mb-5'} relative flex items-center justify-between overflow-hidden rounded-card bg-deep px-4 py-4 text-white shadow-atelier`}>
         <span className="absolute inset-y-0 left-0 w-1.5 bg-atelier-clay" aria-hidden="true" />
         <span className="text-sm font-medium text-white/75">交易總額</span>
         <span className="text-2xl font-semibold tabular-nums">NT${totalAmount.toLocaleString()}</span>
@@ -270,7 +280,7 @@ export function QuickTransactionGrid({
         type="button"
         onClick={() => void handleCheckout()}
         disabled={isProcessing || cart.size === 0}
-        className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100"
+        className={`${presentation === 'sheet' ? 'sticky bottom-0 z-10 mt-5 shadow-[0_-10px_24px_rgb(255_255_255_/_0.92)]' : 'mt-4'} inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100`}
       >
         {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
         {isProcessing ? '正在記錄交易' : `完成交易 NT$${totalAmount.toLocaleString()}`}
