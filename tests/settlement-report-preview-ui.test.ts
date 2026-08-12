@@ -39,6 +39,10 @@ runTest('formal preview UI exposes report-quality sections for owner decision ma
   assert.match(pageSource, /report\.marketDecisions/);
   assert.match(pageSource, /report\.productRows/);
   assert.match(pageSource, /preview\.nextActions/);
+  assert.match(pageSource, /preview\.header\.showFormalScores/);
+  assert.match(pageSource, /低可信度初稿/);
+  assert.match(pageSource, /preview\.nextActions\.slice\(0, 3\)/);
+  assert.match(pageSource, /查看完整建議/);
 });
 
 runTest('preview UI is positioned as an in-app report check workspace', () => {

@@ -82,6 +82,8 @@ tsx tests/analytics-insight-quality-model.test.ts
 tsx tests/settlement-report-insight-quality-equivalence.test.ts
 tsx tests/high-risk-sync-data-plan.test.ts
 tsx tests/analytics-data-completeness.test.ts
+tsx tests/analytics-confidence-presentation.test.ts
+tsx tests/analytics-chart-table-equivalence.test.ts
 tsx tests/actionable-analytics.test.ts
 tsx tests/market-recap.test.ts
 tsx tests/market-trend.test.ts

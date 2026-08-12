@@ -561,7 +561,9 @@ function renderDataConfidencePage(page: SettlementReportPdfDataConfidencePage): 
       </View>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>評分組成</Text>
-        <View style={styles.scoreList}>
+        {page.scoreRows.length === 0 ? (
+          <Text style={styles.bodyText}>目前為低可信度初稿，正式評分與權重拆解暫不顯示。請先依資料限制補強紀錄。</Text>
+        ) : <View style={styles.scoreList}>
           {page.scoreRows.map(row => (
             <View key={row.key} style={styles.scoreRow}>
               <View style={styles.scoreRowTop}>
@@ -575,7 +577,7 @@ function renderDataConfidencePage(page: SettlementReportPdfDataConfidencePage): 
               <Text style={styles.scoreReason}>{row.reason}</Text>
             </View>
           ))}
-        </View>
+        </View>}
       </View>
     </>
   );

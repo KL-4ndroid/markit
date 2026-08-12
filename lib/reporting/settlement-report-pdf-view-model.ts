@@ -265,6 +265,8 @@ function buildCoverPage(report: SettlementReportModel): SettlementReportPdfCover
     .slice(0, 3)
     .map(toPdfWarning);
 
+  const isLowConfidenceDraft = report.dataQuality.confidence === 'low';
+
   return {
     key: 'cover_summary',
     pageNumber: 1,
@@ -275,9 +277,9 @@ function buildCoverPage(report: SettlementReportModel): SettlementReportPdfCover
     periodLabel: report.period.label,
     recommendationLabel: recommendationLabel(report.decision.recommendation),
     recommendationSummary: report.decision.summary,
-    scoreLabel: `${Math.round(report.decision.overallScore)} / 100`,
-    gradeLabel: `等級 ${report.decision.grade}`,
-    confidenceLabel: confidenceLabel(report.decision.confidence),
+    scoreLabel: isLowConfidenceDraft ? '正式評分暫不顯示' : `${Math.round(report.decision.overallScore)} / 100`,
+    gradeLabel: isLowConfidenceDraft ? '低可信度初稿' : `等級 ${report.decision.grade}`,
+    confidenceLabel: `資料信心 ${confidenceLabel(report.decision.confidence)}`,
     readinessLabel: readinessLabel(report),
     metrics: [
       { label: '總營收', value: formatMoney(report.money.totalRevenue) },
@@ -306,7 +308,7 @@ function buildDataConfidencePage(report: SettlementReportModel): SettlementRepor
     warningCount: limitations.filter(limitation => limitation.severity === 'warning').length,
     infoCount: limitations.filter(limitation => limitation.severity === 'info').length,
     limitations,
-    scoreRows: report.decision.scoreComponents.map(component => ({
+    scoreRows: report.dataQuality.confidence === 'low' ? [] : report.decision.scoreComponents.map(component => ({
       key: component.key,
       label: component.label,
       weightLabel: `${component.weight}%`,
@@ -319,6 +321,7 @@ function buildDataConfidencePage(report: SettlementReportModel): SettlementRepor
 }
 
 function buildMarketPage(report: SettlementReportModel): SettlementReportPdfMarketPage {
+  const isLowConfidenceDraft = report.dataQuality.confidence === 'low';
   const rows = report.marketDecisions.slice(0, MARKET_ROW_LIMIT).map(decision => {
     const marketRow = report.marketRows.find(row => row.marketId === decision.marketId);
     return {
@@ -328,9 +331,9 @@ function buildMarketPage(report: SettlementReportModel): SettlementReportPdfMark
       netProfitLabel: formatMoney(marketRow?.netProfit ?? 0),
       dealCountLabel: formatNumber(marketRow?.dealCount ?? 0),
       averageOrderValueLabel: formatMoney(marketRow?.averageOrderValue ?? 0),
-      scoreLabel: `${Math.round(decision.rejoinScore)} / 100`,
-      gradeLabel: decision.grade,
-      recommendationLabel: recommendationLabel(decision.recommendation),
+      scoreLabel: isLowConfidenceDraft ? '暫不評分' : `${Math.round(decision.rejoinScore)} / 100`,
+      gradeLabel: isLowConfidenceDraft ? '初步觀察' : decision.grade,
+      recommendationLabel: isLowConfidenceDraft ? '待補資料後判讀' : recommendationLabel(decision.recommendation),
       warningCodes: marketWarningCodes(decision, report),
     };
   });

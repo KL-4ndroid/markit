@@ -42,8 +42,8 @@ The 768x1024 and 1920x1080 entries remain release-evidence work. UX-R0 did not c
 | Active market | No horizontal overflow; 44-48px main controls | Existing two-column workspace | Preserve in UX-R2 through UX-R9 |
 | Team | No overflow at 375px with long email | Focused page width | Previous responsive blocker is closed |
 | Product detail | UX-R2 mobile acceptance passed | Narrow/mobile composition retained until UX-R4 | Compact stable media and selling summary now lead the page |
-| Analytics | Four 44px tabs fit at 390px | Main content approximately 720-768px | UX-R5 must add confidence-safe wide composition |
-| Settlement | One-column mobile report | Effective wide report composition | Use as UX-R3/R5 reference |
+| Analytics | Four 44px tabs fit at 390px; recommendation-first order retained | Report-width KPI and decision workspace | UX-R5 confidence-safe composition completed |
+| Settlement | One-column mobile report | Effective wide report composition | Low-confidence draft and top-three actions completed in UX-R5 |
 | Settings | Clear grouped mobile index | Main content approximately 720px | UX-R3/R4 desktop navigation remains open |
 | Recovery | No horizontal overflow | Focused page width | Raw storage/event terminology remains for UX-R6 |
 | Subscription | Touch targets are usable | Same narrow presentation | Internal simulation controls require UX-R1 server gating |
@@ -132,9 +132,21 @@ The authenticated shell was verified against a local production build:
 - At 1024px, the authenticated sidebar is present while collection cards remain below the compact-table breakpoint, preventing narrow workspace overflow.
 - At 1440px, market and product comparison headers render as grids, Settings exposes its shared category index, the product form uses independent inventory/description columns, and the market form panel expands to 896px.
 
+## UX-R5 Implementation Evidence
+
+- `lib/analytics/confidence-presentation.ts` maps existing effective-market count, data-completeness output, and pending-sync state into `insufficient`, `emerging`, `usable`, and `strong` presentation states. No metric, score, ranking, subscription, or entitlement calculation changed.
+- Insufficient confidence hides formal comparisons, product rankings, advanced grades, and precise summary claims. Useful partial evidence is labeled `初步觀察` and paired with one concrete missing-data action.
+- Analytics now uses the shared report-width shell, a compact scope toolbar, KPI row, recommendation-first main column, and confidence/comparison supporting column on desktop. Mobile retains the existing one-column reading order.
+- Daily revenue keeps its visual chart and exposes an accessible date/revenue table driven by the same `chartData` array.
+- Formula, weighting, Z-score, smoothing, and source-data limitations are placed in an accessible disclosure instead of competing with primary decisions.
+- Settlement reports with low confidence are visibly labeled `低可信度初稿`; Web and PDF output hide formal overall grades, scores, score-component rows, and market ratings until the existing report quality model permits them.
+- Settlement summary shows the first three next actions and places remaining actions under `查看完整建議`. Owner-only access and paid PDF capability gates are unchanged.
+- Focused tests cover confidence mapping, chart/table equivalence, analytics information architecture, settlement preview, and low-confidence PDF output.
+- Local production-browser verification passed at 390x844, 1024x768, and 1440x900 with no horizontal overflow. The 390px view retained the five-item bottom navigation and recommendation-first order; 1024px and 1440px used the sidebar, four-column KPI row, and aligned recommendation/confidence columns.
+- The rendered Trends tab exposed the same 30-day `chartData` as a semantic table with date row headers and revenue cells. The rendered low-confidence settlement report hid formal scores and exposed only three actions before `查看完整建議`.
+
 ## Remaining Work
 
-- UX-R5 confidence-safe Analytics and reporting workspace.
 - UX-R6 recovery information architecture.
 - UX-R7 accessibility and overlay completion.
 - UX-R8 Free monetization placement readiness.

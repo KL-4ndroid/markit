@@ -187,6 +187,29 @@ runTest('data confidence page surfaces limitations before score rows', () => {
   assert.equal(dataPage.scoreRows.every(row => row.weightLabel.endsWith('%')), true);
 });
 
+runTest('low-confidence PDF remains a draft and hides formal score output', () => {
+  const report = buildSettlementReportModel({
+    capabilities: ownerCapabilities(),
+    brandName: '森木手作',
+    period: {
+      kind: 'weekly',
+      startDate: '2026-06-01',
+      endDate: '2026-06-07',
+      label: '2026-W23',
+    },
+    markets: [],
+    dailyStats: [],
+    products: [],
+  });
+  const viewModel = buildSettlementReportPdfViewModel({ report });
+
+  assert.equal(report.dataQuality.confidence, 'low');
+  assert.equal(viewModel.pages[0].gradeLabel, '低可信度初稿');
+  assert.equal(viewModel.pages[0].scoreLabel, '正式評分暫不顯示');
+  assert.equal(viewModel.pages[1].scoreRows.length, 0);
+  assert.equal(viewModel.pages[2].rows.every(row => row.scoreLabel === '暫不評分'), true);
+});
+
 runTest('market and product pages apply deterministic row caps and warning states', () => {
   const report = buildSettlementReportModel({
     capabilities: ownerCapabilities(),

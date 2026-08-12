@@ -3,6 +3,8 @@ import type { ActionableAnalyticsResult, AnalyticsActionCard } from '@/lib/analy
 
 interface ActionableInsightsCardProps {
   result: ActionableAnalyticsResult;
+  isPreliminary?: boolean;
+  preliminaryAction?: string;
 }
 
 const levelLabels = {
@@ -70,15 +72,32 @@ function InsightCard({ card, isPrimary = false }: { card: AnalyticsActionCard; i
   );
 }
 
-export function ActionableInsightsCard({ result }: ActionableInsightsCardProps) {
-  const supportingCards = result.cards.filter((card) => card.kind !== result.topAction.kind).slice(0, 2);
+export function ActionableInsightsCard({
+  result,
+  isPreliminary = false,
+  preliminaryAction = '持續累積完整的市集、成交與互動紀錄。',
+}: ActionableInsightsCardProps) {
+  const preliminaryCard: AnalyticsActionCard = {
+    kind: 'data_guidance',
+    tone: 'notice',
+    title: '資料準備',
+    headline: '先補足可比較的資料',
+    body: '目前仍容易受單一場次或缺漏紀錄影響，因此先不形成正式營運結論。',
+    nextAction: preliminaryAction,
+    confidence: result.confidence,
+    dataLevel: result.dataCompleteness.level,
+  };
+  const primaryCard = isPreliminary ? preliminaryCard : result.topAction;
+  const supportingCards = isPreliminary
+    ? []
+    : result.cards.filter((card) => card.kind !== primaryCard.kind).slice(0, 2);
 
   return (
-    <section className="bg-white rounded-[1.5rem] p-5 shadow-lg shadow-primary/10 mb-6">
+    <section className="rounded-card border border-primary/10 bg-white p-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <p className="text-xs font-medium text-primary mb-1">先看這裡</p>
-          <h2 className="text-xl font-semibold text-foreground">行動建議</h2>
+          <p className="mb-1 text-xs font-medium text-primary">先看這裡</p>
+          <h2 className="text-xl font-semibold text-foreground">{isPreliminary ? '初步觀察' : '行動建議'}</h2>
         </div>
         <div className="w-10 h-10 rounded-full bg-soft-yellow flex items-center justify-center flex-shrink-0">
           <Lightbulb className="w-5 h-5 text-secondary" />
@@ -92,9 +111,14 @@ export function ActionableInsightsCard({ result }: ActionableInsightsCardProps) 
         <span className="text-xs px-3 py-1 rounded-full bg-cream-lighter text-foreground">
           信心：{confidenceLabels[result.confidence]}
         </span>
+        {isPreliminary && (
+          <span className="rounded-full bg-status-warn-bg px-3 py-1 text-xs text-status-warn-text">
+            請勿視為正式結論
+          </span>
+        )}
       </div>
 
-      <InsightCard card={result.topAction} isPrimary />
+      <InsightCard card={primaryCard} isPrimary />
 
       {supportingCards.length > 0 && (
         <div className="mt-3 space-y-3">

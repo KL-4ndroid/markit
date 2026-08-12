@@ -40,6 +40,8 @@ export type SettlementReportPreviewModel = {
     confidence: SettlementReportConfidence;
     readiness: SettlementReportPreviewReadiness;
     readinessReason: string;
+    presentationStatus: 'draft_low_confidence' | 'review' | 'final';
+    showFormalScores: boolean;
   };
   executiveSummary: {
     totalRevenue: number;
@@ -122,6 +124,14 @@ function getDataQualityStatus(report: SettlementReportModel): SettlementReportSi
   return 'available';
 }
 
+function getPresentationStatus(
+  readiness: SettlementReportPreviewReadiness,
+): SettlementReportPreviewModel['header']['presentationStatus'] {
+  if (readiness === 'not_ready') return 'draft_low_confidence';
+  if (readiness === 'limited') return 'review';
+  return 'final';
+}
+
 function buildPreviewLimitations(report: SettlementReportModel): SettlementReportPreviewLimitation[] {
   return report.dataQuality.limitations.map(limitation => ({
     code: limitation.code,
@@ -154,6 +164,8 @@ export function buildSettlementReportPreviewModel({
       confidence: report.dataQuality.confidence,
       readiness: readiness.readiness,
       readinessReason: readiness.reason,
+      presentationStatus: getPresentationStatus(readiness.readiness),
+      showFormalScores: readiness.readiness !== 'not_ready',
     },
     executiveSummary: {
       totalRevenue: report.money.totalRevenue,

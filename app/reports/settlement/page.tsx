@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   FileText,
   LineChart,
   Package,
@@ -436,7 +437,7 @@ export default function SettlementReportPreviewPage() {
                 <h1 className="text-2xl font-semibold text-foreground">結算報告檢查</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {preview
-                    ? `${preview.header.brandName} · ${preview.header.periodLabel} · 信心度 ${confidenceLabel(preview.header.confidence)}`
+                    ? `${preview.header.brandName} · ${preview.header.periodLabel} · ${preview.header.showFormalScores ? `信心度 ${confidenceLabel(preview.header.confidence)}` : '低可信度初稿'}`
                     : freePreview
                       ? `${freePreview.brandName} · ${freePreview.period.label} · Free 基本摘要`
                       : '正在整理本機資料'}
@@ -606,7 +607,9 @@ export default function SettlementReportPreviewPage() {
                   </div>
                   <p className="mb-2 text-sm font-medium text-muted-foreground">{preview.header.brandName}</p>
                   <h2 className="text-2xl font-semibold leading-tight text-foreground md:text-3xl">
-                    {recommendationLabel(preview.executiveSummary.recommendation)}
+                    {preview.header.showFormalScores
+                      ? recommendationLabel(preview.executiveSummary.recommendation)
+                      : '初步觀察，暫不形成正式結論'}
                   </h2>
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                     {preview.executiveSummary.summary}
@@ -631,16 +634,26 @@ export default function SettlementReportPreviewPage() {
 
               <aside className="flex flex-col justify-between gap-5 rounded-2xl border border-neutral-stripe bg-neutral-alt-warm p-5">
                 <div>
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="text-xs font-medium text-muted-foreground">本期總評分</p>
-                    <span className={`border px-2 py-1 text-xs font-semibold ${gradeClasses(preview.executiveSummary.grade)}`}>
-                      等級 {preview.executiveSummary.grade}
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-end gap-3 border-b border-neutral-stripe-dark pb-5">
-                    <span className="text-6xl font-semibold leading-none text-accent-green-deep">{Math.round(preview.executiveSummary.overallScore)}</span>
-                    <span className="pb-2 text-sm font-medium text-muted-foreground">/ 100</span>
-                  </div>
+                  {preview.header.showFormalScores ? (
+                    <>
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-xs font-medium text-muted-foreground">本期總評分</p>
+                        <span className={`border px-2 py-1 text-xs font-semibold ${gradeClasses(preview.executiveSummary.grade)}`}>
+                          等級 {preview.executiveSummary.grade}
+                        </span>
+                      </div>
+                      <div className="mt-4 flex items-end gap-3 border-b border-neutral-stripe-dark pb-5">
+                        <span className="text-6xl font-semibold leading-none text-accent-green-deep">{Math.round(preview.executiveSummary.overallScore)}</span>
+                        <span className="pb-2 text-sm font-medium text-muted-foreground">/ 100</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="border-b border-neutral-stripe-dark pb-5">
+                      <p className="text-xs font-medium text-muted-foreground">報告狀態</p>
+                      <p className="mt-3 text-xl font-semibold text-status-warn-text">低可信度初稿</p>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">正式總分與等級會在資料足以支撐結論後顯示。</p>
+                    </div>
+                  )}
                   <div className={`mt-5 inline-flex border px-3 py-1 text-sm font-medium ${readinessClasses(preview.header.readiness)}`}>
                     {readinessLabel(preview.header.readiness)}
                   </div>
@@ -722,7 +735,11 @@ export default function SettlementReportPreviewPage() {
                   <h2 className="text-base font-semibold">評分拆解</h2>
                 </div>
                 <div className="space-y-4">
-                  {report.decision.scoreComponents.map((component) => (
+                  {!preview.header.showFormalScores ? (
+                    <div className="border border-status-warn-border bg-status-warn-bg p-4 text-sm leading-6 text-status-warn-text">
+                      目前為低可信度初稿，正式評分與權重拆解暫不顯示。請先依資料限制補強紀錄。
+                    </div>
+                  ) : report.decision.scoreComponents.map((component) => (
                     <div key={component.key}>
                       <div className="mb-1 flex items-center justify-between gap-3">
                         <span className="text-sm font-medium text-foreground">{component.label}</span>
@@ -757,11 +774,15 @@ export default function SettlementReportPreviewPage() {
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-semibold text-foreground">{decision.marketName}</p>
-                          <span className={`border px-2 py-0.5 text-xs font-medium ${gradeClasses(decision.grade)}`}>
-                            {decision.grade}
-                          </span>
+                          {preview.header.showFormalScores && (
+                            <span className={`border px-2 py-0.5 text-xs font-medium ${gradeClasses(decision.grade)}`}>
+                              {decision.grade}
+                            </span>
+                          )}
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">{recommendationLabel(decision.recommendation)}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {preview.header.showFormalScores ? recommendationLabel(decision.recommendation) : '初步觀察，待補資料後判讀'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">營收</p>
@@ -777,7 +798,9 @@ export default function SettlementReportPreviewPage() {
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">評分</p>
-                        <p className="text-sm font-medium text-foreground tabular-nums">{Math.round(decision.rejoinScore)}</p>
+                        <p className="text-sm font-medium text-foreground tabular-nums">
+                          {preview.header.showFormalScores ? Math.round(decision.rejoinScore) : '暫不評分'}
+                        </p>
                       </div>
                     </div>
                   );
@@ -857,7 +880,7 @@ export default function SettlementReportPreviewPage() {
                 <h2 className="text-base font-semibold">下一步行動</h2>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                {preview.nextActions.map((action, index) => (
+                {preview.nextActions.slice(0, 3).map((action, index) => (
                   <div key={action} className="grid grid-cols-[28px_1fr] gap-3 border-t border-neutral-stripe pt-3">
                     <span className="flex h-7 w-7 items-center justify-center bg-accent-green-deep text-xs font-semibold text-white">
                       {index + 1}
@@ -866,6 +889,24 @@ export default function SettlementReportPreviewPage() {
                   </div>
                 ))}
               </div>
+              {preview.nextActions.length > 3 && (
+                <details className="group mt-4 border-t border-neutral-stripe pt-3">
+                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-accent-green-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">
+                    查看完整建議（另有 {preview.nextActions.length - 3} 項）
+                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+                  </summary>
+                  <div className="mt-2 grid gap-3 md:grid-cols-2">
+                    {preview.nextActions.slice(3).map((action, index) => (
+                      <div key={action} className="grid grid-cols-[28px_1fr] gap-3 border-t border-neutral-stripe pt-3">
+                        <span className="flex h-7 w-7 items-center justify-center bg-neutral-stripe-dark text-xs font-semibold text-foreground">
+                          {index + 4}
+                        </span>
+                        <p className="text-sm leading-6 text-foreground">{action}</p>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
             </section>
             )}
           </>

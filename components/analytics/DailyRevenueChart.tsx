@@ -6,7 +6,7 @@
 
 'use client';
 
-import { TrendingUp, Calendar, Lightbulb } from 'lucide-react';
+import { TrendingUp, Calendar, ChevronDown, Lightbulb } from 'lucide-react';
 import { MetricGuide } from './MetricGuide';
 
 interface DailyRevenueChartProps {
@@ -109,11 +109,11 @@ export function DailyRevenueChart({
   };
 
   return (
-    <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
+    <section className="rounded-card border border-primary/10 bg-white p-4 sm:p-5" aria-labelledby="daily-revenue-title">
       {/* 標題 */}
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-2">
-          <h2 className="text-xl font-medium text-foreground">
+          <h2 id="daily-revenue-title" className="text-base font-semibold text-foreground">
             每日收入趨勢
           </h2>
           <MetricGuide
@@ -210,6 +210,32 @@ export function DailyRevenueChart({
           <span>低於平均</span>
         </div>
       </div>
-    </div>
+
+      <details className="group mt-5 border-t border-primary/10 pt-3">
+        <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">
+          查看每日收入表格
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+        </summary>
+        <div className="mt-2 max-h-72 overflow-auto rounded-lg border border-primary/10">
+          <table className="w-full border-collapse text-left text-sm">
+            <caption className="sr-only">每日收入趨勢的表格資料</caption>
+            <thead className="sticky top-0 bg-background text-xs text-muted-foreground">
+              <tr>
+                <th scope="col" className="px-3 py-2 font-medium">日期</th>
+                <th scope="col" className="px-3 py-2 text-right font-medium">營收</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-primary/10">
+              {chartData.map((data) => (
+                <tr key={data.date}>
+                  <th scope="row" className="px-3 py-2 font-medium text-foreground">{formatDate(data.date)}</th>
+                  <td className="px-3 py-2 text-right tabular-nums text-foreground">${data.revenue.toLocaleString('zh-TW')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
   );
 }

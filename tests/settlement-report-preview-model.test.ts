@@ -116,6 +116,8 @@ runTest('builds owner-only preview contract from settlement report model', () =>
   assert.equal(preview.header.kind, 'weekly');
   assert.equal(preview.header.periodLabel, '2026-W23');
   assert.equal(preview.header.readiness, 'limited');
+  assert.equal(preview.header.presentationStatus, 'review');
+  assert.equal(preview.header.showFormalScores, true);
   assert.equal(preview.reliability.infoCount > 0, true);
   assert.equal(preview.reliability.warningCount, 0);
   assert.equal(preview.sections.find(section => section.key === 'executive_summary')?.status, 'available');
@@ -145,6 +147,8 @@ runTest('marks critical warning reports as not ready and places warnings at top'
 
   assert.equal(preview.header.readiness, 'not_ready');
   assert.equal(preview.header.confidence, 'low');
+  assert.equal(preview.header.presentationStatus, 'draft_low_confidence');
+  assert.equal(preview.header.showFormalScores, false);
   assert.equal(preview.sections.find(section => section.key === 'executive_summary')?.status, 'unavailable');
   assert.equal(preview.sections.find(section => section.key === 'data_quality')?.status, 'unavailable');
   assert.equal(preview.topWarnings.some(warning => warning.code === 'no_markets_in_period'), true);

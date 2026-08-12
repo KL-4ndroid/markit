@@ -14,11 +14,15 @@ import {
 interface AdvancedAnalyticsSectionProps {
   viewModel: MarketMetricsViewModel;
   validMarketCount: number;
+  canShowFormalConclusions: boolean;
+  missingDataAction: string;
 }
 
 export function AdvancedAnalyticsSection({
   viewModel,
   validMarketCount,
+  canShowFormalConclusions,
+  missingDataAction,
 }: AdvancedAnalyticsSectionProps) {
   const advanced = useMemo(
     () => composeAdvancedMarketMetricsViewModel(viewModel),
@@ -31,6 +35,15 @@ export function AdvancedAnalyticsSection({
 
   if (viewModel.items.length === 0) {
     return <StateView title="尚無進階分析資料" description="至少完成一場有營運紀錄的市集後再查看。" />;
+  }
+
+  if (!canShowFormalConclusions) {
+    return (
+      <StateView
+        title="進階評分仍在累積"
+        description={missingDataAction}
+      />
+    );
   }
 
   return (

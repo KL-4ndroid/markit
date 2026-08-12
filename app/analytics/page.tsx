@@ -17,6 +17,9 @@ import { toast } from 'sonner';
 
 import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { ActionableInsightsCard } from '@/components/analytics/ActionableInsightsCard';
+import { AnalyticsConfidencePanel } from '@/components/analytics/AnalyticsConfidencePanel';
+import { AnalyticsKpiRow } from '@/components/analytics/AnalyticsKpiRow';
+import { AnalyticsMethodologyDisclosure } from '@/components/analytics/AnalyticsMethodologyDisclosure';
 import { AnalyticsSummaryHighlights } from '@/components/analytics/AnalyticsSummaryHighlights';
 import { AdvancedAnalysisGate } from '@/components/analytics/AdvancedAnalysisGate';
 import { BasicProductRankingCard } from '@/components/analytics/BasicProductRankingCard';
@@ -39,6 +42,8 @@ import {
   getActiveInteractionEventsForMarkets,
 } from '@/lib/events/active-event-service';
 import { buildActionableAnalytics } from '@/lib/analytics/actionable-insights';
+import { buildAnalyticsConfidencePresentation } from '@/lib/analytics/confidence-presentation';
+import { analyzeDataCompleteness } from '@/lib/analytics/data-completeness';
 import {
   calculateBasicProductRankingFromEvents,
   type BasicProductRankingResult,
@@ -64,7 +69,6 @@ import {
   createEmptyTopProductsResult,
   type TopProductsResult,
 } from '@/lib/analytics/top-products';
-import { getDataReliability } from '@/lib/analytics/unlock-logic';
 import { useSyncContext } from '@/lib/sync-context';
 import { evaluateAccountCapabilityClientAccess } from '@/lib/subscription/account-capability-access';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -253,7 +257,6 @@ export default function AnalyticsPage() {
     () => markets.filter(market => (market.totalRevenue ?? 0) > 0).length,
     [markets],
   );
-  const reliability = useMemo(() => getDataReliability(validMarketCount), [validMarketCount]);
   const recentMarketPreview = useMemo(
     () => analyticsView.canBuildRecentMarketPreview
       ? buildRecentMarketRevenuePreview(markets)
@@ -385,6 +388,22 @@ export default function AnalyticsPage() {
     dailyStats: analyticsView.canReadSummaryEvents ? summaryResult?.data.dailyStats ?? [] : [],
     products: analyticsView.canReadSummaryEvents ? products : [],
   }), [analyticsView.canReadSummaryEvents, markets, products, summaryResult]);
+  const dataCompleteness = useMemo(
+    () => analyzeDataCompleteness(analyticsInput),
+    [analyticsInput],
+  );
+  const confidencePresentation = useMemo(
+    () => buildAnalyticsConfidencePresentation({
+      validMarketCount,
+      dataCompleteness,
+      hasPendingSync: pendingCount > 0 || syncStatus === SyncStatus.ERROR,
+    }),
+    [dataCompleteness, pendingCount, syncStatus, validMarketCount],
+  );
+  const summaryKpis = useMemo(() => ({
+    totalRevenue: markets.reduce((sum, market) => sum + (market.totalRevenue ?? 0), 0),
+    totalDeals: markets.reduce((sum, market) => sum + (market.totalDeals ?? 0), 0),
+  }), [markets]);
   const actionableAnalytics = useMemo(
     () => analyticsView.canComputeActionableInsights ? buildActionableAnalytics(analyticsInput) : null,
     [analyticsInput, analyticsView.canComputeActionableInsights],
@@ -440,6 +459,7 @@ export default function AnalyticsPage() {
         title="分析"
         eyebrow="營運決策"
         icon={BarChart3}
+        widthMode="report"
         action={(
           <div className="flex items-center gap-1">
             {!isStaff && !isRoleLoading && !roleError && (
@@ -463,14 +483,23 @@ export default function AnalyticsPage() {
         )}
       />
 
-      <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">
-        <DateRangeFilter
-          value={dateRange}
-          onChange={setDateRange}
-          markets={selectableMarkets}
-          selectedMarketId={selectedMarketId}
-          onMarketChange={setSelectedMarketId}
-        />
+      <div className="mx-auto max-w-7xl px-4 pb-10 pt-6 sm:px-6">
+        <section className="space-y-3 lg:sticky lg:top-3 lg:z-20 lg:rounded-card lg:border lg:border-primary/10 lg:bg-background/95 lg:p-3 lg:shadow-sm lg:backdrop-blur" aria-label="分析範圍與內容">
+          <DateRangeFilter
+            value={dateRange}
+            onChange={setDateRange}
+            markets={selectableMarkets}
+            selectedMarketId={selectedMarketId}
+            onMarketChange={setSelectedMarketId}
+          />
+
+          <Tabs
+            items={ANALYTICS_TABS}
+            value={activeTab}
+            onChange={setActiveTab}
+            ariaLabel="分析內容"
+          />
+        </section>
 
         {isPotentiallyStale && (
           <section className="mt-4 flex items-start gap-3 rounded-card border border-status-warn-border bg-status-warn-bg px-4 py-3 text-sm">
@@ -483,14 +512,6 @@ export default function AnalyticsPage() {
             </div>
           </section>
         )}
-
-        <Tabs
-          className="mt-5"
-          items={ANALYTICS_TABS}
-          value={activeTab}
-          onChange={setActiveTab}
-          ariaLabel="分析內容"
-        />
 
         {markets.length === 0 ? (
           <StateView
@@ -518,27 +539,24 @@ export default function AnalyticsPage() {
             />
           </div>
         ) : (
-          <div className="mt-5">
+          <div className="mt-5 space-y-5">
+            <AnalyticsKpiRow
+              marketCount={validMarketCount}
+              totalRevenue={summaryKpis.totalRevenue}
+              totalDeals={summaryKpis.totalDeals}
+              confidenceLabel={confidencePresentation.label}
+            />
             {activeTab === 'summary' && (
               analyticsView.mode === 'free_preview' && recentMarketPreview ? (
-                <div className="space-y-5">
-                  <section className={`rounded-card border px-4 py-3 ${
-                    reliability.level === 'high'
-                      ? 'border-status-good-border bg-status-good-bg'
-                      : reliability.level === 'medium'
-                        ? 'border-status-warn-border bg-status-warn-bg'
-                        : 'border-primary/10 bg-white'
-                  }`}>
-                    <p className="text-sm font-semibold text-foreground">{reliability.label}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{reliability.description}，目前包含 {validMarketCount} 場有效市集。</p>
-                  </section>
-                  <RecentMarketRevenuePreview preview={recentMarketPreview} />
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] lg:items-start">
+                  <div><RecentMarketRevenuePreview preview={recentMarketPreview} /></div>
+                  <div className="space-y-5"><AnalyticsConfidencePanel presentation={confidencePresentation} /></div>
                   {analyticsView.previewUpgradeDecision && (
-                    <UpgradePrompt
-                      reason={analyticsView.previewUpgradeDecision.reason}
-                      requiredPlan={analyticsView.previewUpgradeDecision.requiredPlan}
-                      showClose={false}
-                    />
+                    <div className="lg:col-span-2"><UpgradePrompt
+                        reason={analyticsView.previewUpgradeDecision.reason}
+                        requiredPlan={analyticsView.previewUpgradeDecision.requiredPlan}
+                        showClose={false}
+                      /></div>
                   )}
                 </div>
               ) : summaryResult === undefined || metricsResult === undefined ? (
@@ -550,21 +568,29 @@ export default function AnalyticsPage() {
                   description={summaryResult.error ?? metricsResult.error ?? undefined}
                 />
               ) : (
-                <div className="space-y-5">
-                  <section className={`rounded-card border px-4 py-3 ${
-                    reliability.level === 'high'
-                      ? 'border-status-good-border bg-status-good-bg'
-                      : reliability.level === 'medium'
-                        ? 'border-status-warn-border bg-status-warn-bg'
-                        : 'border-primary/10 bg-white'
-                  }`}>
-                    <p className="text-sm font-semibold text-foreground">{reliability.label}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{reliability.description}，目前包含 {validMarketCount} 場有效市集。</p>
-                  </section>
-                  {dateRange === 'single'
-                    ? marketRecap && <MarketRecapCard report={marketRecap} />
-                    : actionableAnalytics && <ActionableInsightsCard result={actionableAnalytics} />}
-                  <AnalyticsSummaryHighlights viewModel={metricsResult.data} />
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] lg:items-start">
+                  <div className="min-w-0">
+                    {dateRange === 'single'
+                      ? marketRecap && <MarketRecapCard report={marketRecap} />
+                      : actionableAnalytics && (
+                        <ActionableInsightsCard
+                          result={actionableAnalytics}
+                          isPreliminary={confidencePresentation.isPreliminary}
+                          preliminaryAction={confidencePresentation.missingDataAction}
+                        />
+                      )}
+                  </div>
+                  <div className="min-w-0 space-y-5">
+                    <AnalyticsConfidencePanel presentation={confidencePresentation} />
+                    {confidencePresentation.canShowFormalConclusions ? (
+                      <AnalyticsSummaryHighlights viewModel={metricsResult.data} />
+                    ) : (
+                      <StateView
+                        title="比較結果仍在累積"
+                        description={confidencePresentation.missingDataAction}
+                      />
+                    )}
+                  </div>
                 </div>
               )
             )}
@@ -583,7 +609,7 @@ export default function AnalyticsPage() {
                 </div>
               ) : (
                 <div className="space-y-5">
-                  {marketTrend && <MarketTrendCard trend={marketTrend} />}
+                  {marketTrend && confidencePresentation.canShowFormalConclusions && <MarketTrendCard trend={marketTrend} />}
                   {dailyRevenueResult === undefined ? (
                     <StateView title="正在整理每日趨勢" />
                   ) : dailyRevenueResult.error ? (
@@ -608,8 +634,10 @@ export default function AnalyticsPage() {
                       title="尚無商品層級銷售資料"
                       description="成交時選擇售出商品後，這裡會顯示銷量第一的商品。"
                     />
-                  ) : (
+                  ) : confidencePresentation.canShowRankings ? (
                     <BasicProductRankingCard ranking={basicProductRankingResult.data} />
+                  ) : (
+                    <StateView title="商品排行仍在累積" description={confidencePresentation.missingDataAction} />
                   )}
                   {analyticsView.previewUpgradeDecision && (
                     <UpgradePrompt
@@ -629,7 +657,7 @@ export default function AnalyticsPage() {
                   title="尚無商品層級銷售資料"
                   description="成交時選擇售出商品後，這裡會顯示銷量、營收與利潤排行。"
                 />
-              ) : (
+              ) : confidencePresentation.canShowRankings ? (
                 <div className="space-y-5">
                   <TopProductsCard
                     topByQuantity={topProductsResult.data.topByQuantity}
@@ -650,6 +678,8 @@ export default function AnalyticsPage() {
                     <ProductAffinityCard pairs={affinityResult.data} isLoading={false} />
                   )}
                 </div>
+              ) : (
+                <StateView title="商品排行仍在累積" description={confidencePresentation.missingDataAction} />
               )
             )}
 
@@ -659,9 +689,16 @@ export default function AnalyticsPage() {
               ) : metricsResult.error ? (
                 <StateView title="進階分析暫時無法完成" description={metricsResult.error} />
               ) : (
-                <AdvancedAnalyticsSection viewModel={metricsResult.data} validMarketCount={validMarketCount} />
+                <AdvancedAnalyticsSection
+                  viewModel={metricsResult.data}
+                  validMarketCount={validMarketCount}
+                  canShowFormalConclusions={confidencePresentation.canShowFormalConclusions}
+                  missingDataAction={confidencePresentation.missingDataAction}
+                />
               )
             )}
+
+            <AnalyticsMethodologyDisclosure />
           </div>
         )}
       </div>

@@ -1,7 +1,7 @@
 # Féria Application-Wide UI/UX Remediation Execution Plan
 
 Date: 2026-08-12
-Status: In progress; UX-R0 through UX-R4 completed
+Status: In progress; UX-R0 through UX-R5 completed
 Supersedes for new UI/UX work: the remaining Web implementation recommendations in `WEB_UIUX_SCORE_IMPROVEMENT_EXECUTION_PLAN_2026_07_23.md`
 Continues release-evidence work from: `MOBILE_UIUX_FULL_FLOW_AUDIT_2026_08_10.md`
 

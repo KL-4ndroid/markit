@@ -44,6 +44,11 @@ assert.match(pageSource, /isPotentiallyStale/);
 assert.match(pageSource, /目前顯示這台裝置的資料/);
 assert.match(pageSource, /摘要暫時無法完成/);
 assert.match(pageSource, /尚無商品層級銷售資料/);
+assert.match(pageSource, /widthMode="report"/);
+assert.match(pageSource, /<AnalyticsKpiRow/);
+assert.match(pageSource, /<AnalyticsConfidencePanel/);
+assert.match(pageSource, /<AnalyticsMethodologyDisclosure/);
+assert.match(pageSource, /canShowFormalConclusions/);
 assert.match(manifestSource, /tsx tests\/analytics-information-architecture\.test\.ts/);
 
 console.log('PASS analytics information architecture and query boundaries');
