@@ -4,9 +4,10 @@ import { useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 
 import { AppBottomNavigationBar } from '@/components/navigation/AppBottomNavigationBar';
+import { AppDesktopNavigation } from '@/components/navigation/AppDesktopNavigation';
 import {
+  getActiveAppNavigationItemId,
   getAppNavigationItems,
-  isAppNavigationItemActive,
 } from '@/lib/navigation/app-navigation';
 import { navigationStore } from '@/lib/navigation-store';
 import { useRoleContext } from '@/lib/role-context';
@@ -27,14 +28,18 @@ function ProtectedBottomNavigation() {
   );
   const { isStaff, roleRefreshState } = useRoleContext();
 
-  const isRoleUnresolved = !roleRefreshState.shouldMountProtectedChildren;
   const navItems = getAppNavigationItems({
     isStaff,
-    roleReady: !isRoleUnresolved,
+    roleReady: roleRefreshState.isAuthorizationFresh,
   });
-  const activeItemId = navItems.find(item => isAppNavigationItemActive(pathname, item))?.id ?? 'today';
+  const activeItemId = getActiveAppNavigationItemId(pathname, navItems);
 
-  return <AppBottomNavigationBar items={navItems} activeItemId={activeItemId} visible={isNavVisible} />;
+  return (
+    <>
+      <AppBottomNavigationBar items={navItems} activeItemId={activeItemId} visible={isNavVisible} />
+      <AppDesktopNavigation items={navItems} activeItemId={activeItemId} />
+    </>
+  );
 }
 
 export function BottomNavigation() {

@@ -3,19 +3,22 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { 
-  ArrowLeft, 
-  Package, 
-  DollarSign, 
-  Tag,
+import {
+  ArrowLeft,
+  BookOpen,
+  Cookie,
+  Gem,
+  Hand,
+  MoreHorizontal,
+  Package,
+  Palette,
+  Shirt,
   TrendingUp,
   AlertCircle,
-  Trash2,
   Edit,
-  ToggleLeft,
-  ToggleRight
+  type LucideIcon,
 } from 'lucide-react';
-import { useProduct, updateProduct, deleteProduct } from '@/lib/db/hooks';
+import { useProduct } from '@/lib/db/hooks';
 import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -42,8 +45,6 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   const [localProductLookupComplete, setLocalProductLookupComplete] = useState(false);
   const product = liveProduct ?? directLocalProduct;
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [coverPhotoRevision, setCoverPhotoRevision] = useState(0);
   const {
@@ -61,7 +62,6 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
     !isRoleLoading && hasCapability(roleCapabilities, 'canEditProductBasic');
   const canShowSensitiveProductData = !isRoleLoading && canViewSensitiveData;
   const canEditProductActions = isOwner || canEditProductBasic;
-  const canDeleteProductAction = isOwner;
 
   // 初始化資料庫（使用安全初始化）
   useEffect(() => {
@@ -128,66 +128,27 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   }, [productId, dbStatus]);
 
   // 分類樣式
-  const getCategoryStyle = (category: ProductCategory) => {
-    const styles = {
-      handmade: { bg: 'bg-soft-pink', emoji: '🖐️', text: '手作' },
-      food: { bg: 'bg-soft-yellow', emoji: '🍰', text: '食品' },
-      accessory: { bg: 'bg-soft-green', emoji: '💎', text: '飾品' },
-      clothing: { bg: 'bg-cat-clothing', emoji: '👕', text: '服飾' },
-      art: { bg: 'bg-cat-art', emoji: '🎨', text: '藝術品' },
-      stationery: { bg: 'bg-[#FFF0E8]', emoji: '📚', text: '文具' },
-      other: { bg: 'bg-cat-other', emoji: '📦', text: '其他' },
+  const getCategoryStyle = (category: ProductCategory): {
+    bg: string;
+    text: string;
+    icon: LucideIcon;
+  } => {
+    const styles: Record<ProductCategory, { bg: string; text: string; icon: LucideIcon }> = {
+      handmade: { bg: 'bg-soft-pink', text: '手作', icon: Hand },
+      food: { bg: 'bg-soft-yellow', text: '食品', icon: Cookie },
+      accessory: { bg: 'bg-soft-green', text: '飾品', icon: Gem },
+      clothing: { bg: 'bg-cat-clothing', text: '服飾', icon: Shirt },
+      art: { bg: 'bg-cat-art', text: '藝術品', icon: Palette },
+      stationery: { bg: 'bg-cat-stationery', text: '文具', icon: BookOpen },
+      other: { bg: 'bg-cat-other', text: '其他', icon: MoreHorizontal },
     };
     return styles[category] || styles.other;
-  };
-
-  // 切換啟用狀態
-  const handleToggleActive = async () => {
-    if (!product || dbStatus?.ok === false || !canEditProductActions) return;
-
-    setIsUpdating(true);
-
-    try {
-      await updateProduct(productId, {
-        isActive: !product.isActive,
-      });
-
-      toast.success(product.isActive ? '商品已停用' : '商品已啟用');
-    } catch (error) {
-      console.error('更新失敗：', error);
-      toast.error('更新失敗，請稍後再試');
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  // 刪除商品
-  const handleDelete = async () => {
-    if (!product || dbStatus?.ok === false || !canDeleteProductAction) return;
-
-    setIsUpdating(true);
-
-    try {
-      await deleteProduct(productId);
-      toast.success('商品已刪除');
-      setShowDeleteConfirm(false);
-      
-      setTimeout(() => {
-        router.push('/products');
-      }, 1000);
-    } catch (error) {
-      console.error('刪除失敗：', error);
-      toast.error('刪除失敗，請稍後再試');
-    } finally {
-      setIsUpdating(false);
-    }
   };
 
   // 處理編輯成功
   const handleEditSuccess = () => {
     toast.success('商品已更新');
     setCoverPhotoRevision(previous => previous + 1);
-    showNavigation(); // 顯示導航列
   };
 
   // 處理打開編輯表單
@@ -203,6 +164,13 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
     showNavigation(); // 顯示導航列
   };
 
+  const handleProductDeleted = () => {
+    toast.success('商品已刪除');
+    setShowEditForm(false);
+    showNavigation();
+    router.replace('/products');
+  };
+
   // 載入中（初始化中）
   if (isRoleLoading || dbStatus === null || !localProductLookupComplete) {
     return <DetailPageSkeleton stats={2} sections={2} />;
@@ -216,7 +184,8 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push('/products')}
-              className="mb-4 text-white/80 hover:text-white transition-colors flex items-center gap-2"
+              aria-label="返回商品列表"
+              className="mb-4 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>返回</span>
@@ -269,7 +238,8 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push('/products')}
-              className="mb-4 text-white/80 hover:text-white transition-colors flex items-center gap-2"
+              aria-label="返回商品列表"
+              className="mb-4 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>返回</span>
@@ -302,9 +272,11 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   }
 
   const categoryStyle = getCategoryStyle(product.category);
+  const CategoryIcon = categoryStyle.icon;
   const profitMargin = canShowSensitiveProductData && product.cost && product.cost > 0 
     ? Math.round(((product.price - product.cost) / product.price) * 100)
     : null;
+  const stockLabel = product.unlimitedStock ? '不限' : String(product.stock ?? 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -313,16 +285,17 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
         <div className="max-w-lg mx-auto">
           <button
             onClick={() => router.push('/products')}
-            className="mb-4 text-white/80 hover:text-white transition-colors flex items-center gap-2"
+            aria-label="返回商品列表"
+            className="mb-3 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>返回</span>
           </button>
-          <div className="flex items-start justify-between">
-            <h1 className="text-2xl font-medium text-white opacity-90 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="min-w-0 flex-1 break-words text-2xl font-medium text-white">
               {product.name}
             </h1>
-            <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-white ml-3">
+            <span className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-xs text-white backdrop-blur-sm">
               {categoryStyle.text}
             </span>
           </div>
@@ -330,75 +303,76 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
       </div>
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-6 -mt-4 pb-6 space-y-4">
-        {/* 商品圖示 */}
-        <div className={`${categoryStyle.bg} aspect-[4/3] overflow-hidden rounded-card flex items-center justify-center shadow-lg shadow-primary/10`}>
-          <ProductCoverPhotoImage
-            key={`${product.id}-${coverPhotoRevision}`}
-            productId={product.id}
-            productName={product.name}
-            variant="display"
-            fallback={<div className="text-6xl" aria-hidden="true">{categoryStyle.emoji}</div>}
-          />
-        </div>
+      <div className="mx-auto -mt-4 max-w-lg space-y-4 px-4 pb-8 sm:px-6">
+        <section className="rounded-card border border-primary/10 bg-atelier-paper p-4 shadow-atelier" aria-labelledby="product-summary-heading">
+          <h2 id="product-summary-heading" className="sr-only">商品摘要</h2>
+          <div className="flex items-start gap-4">
+            <div className={`flex aspect-square h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-card ${categoryStyle.bg}`}>
+              <ProductCoverPhotoImage
+                key={`${product.id}-${coverPhotoRevision}`}
+                productId={product.id}
+                productName={product.name}
+                variant="display"
+                fallback={<CategoryIcon className="h-8 w-8 text-foreground/55" aria-hidden="true" />}
+              />
+            </div>
 
-        {/* 價格資訊 */}
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
-          <h2 className="text-lg font-medium text-foreground mb-4 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-secondary" />
-            價格資訊
-          </h2>
-          
-          <div className={`grid ${canShowSensitiveProductData ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
-            <div className="bg-soft-green rounded-2xl p-4">
-              <div className="text-xs text-muted-foreground mb-1">售價</div>
-              <div className="text-2xl font-medium text-foreground tabular-nums">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap gap-2 text-xs font-medium">
+                <span className={product.isActive
+                  ? 'rounded-full bg-status-good-bg px-2.5 py-1 text-status-good-text'
+                  : 'rounded-full bg-muted px-2.5 py-1 text-muted-foreground'}>
+                  {product.isActive ? '販售中' : '已停用'}
+                </span>
+                <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
+                  {categoryStyle.text}
+                </span>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">售價</p>
+              <p className="mt-0.5 break-words text-2xl font-semibold tabular-nums text-primary">
                 {formatCurrency(product.price)}
-              </div>
+              </p>
             </div>
+          </div>
+
+          <dl className={`mt-4 grid gap-2 ${canShowSensitiveProductData ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2'}`}>
             {canShowSensitiveProductData && (
-              <div className="bg-soft-yellow rounded-2xl p-4">
-                <div className="text-xs text-muted-foreground mb-1">成本</div>
-                <div className="text-2xl font-medium text-foreground tabular-nums">
-                  {product.cost ? formatCurrency(product.cost) : '-'}
+              <>
+                <div className="rounded-control bg-soft-yellow/70 p-3">
+                  <dt className="text-xs text-muted-foreground">成本</dt>
+                  <dd className="mt-1 font-semibold tabular-nums text-foreground">
+                    {product.cost ? formatCurrency(product.cost) : '-'}
+                  </dd>
                 </div>
-              </div>
+                <div className="rounded-control bg-soft-green/70 p-3">
+                  <dt className="text-xs text-muted-foreground">利潤率</dt>
+                  <dd className="mt-1 flex items-center gap-1 font-semibold tabular-nums text-foreground">
+                    {profitMargin === null ? '-' : `${profitMargin}%`}
+                    {profitMargin !== null && profitMargin > 50 && <TrendingUp className="h-4 w-4 text-primary" aria-hidden="true" />}
+                  </dd>
+                </div>
+              </>
             )}
-          </div>
-
-          {profitMargin !== null && (
-            <div className="mt-4 pt-4 border-t border-primary/10 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">利潤率</span>
-              <span className={`text-lg font-medium flex items-center gap-1 ${profitMargin > 50 ? 'text-primary' : 'text-secondary'}`}>
-                {profitMargin}%
-                {profitMargin > 50 && <TrendingUp className="w-4 h-4" />}
-              </span>
+            <div className="rounded-control bg-background p-3">
+              <dt className="text-xs text-muted-foreground">庫存</dt>
+              <dd className="mt-1 font-semibold tabular-nums text-foreground">{stockLabel}</dd>
             </div>
+            <div className="rounded-control bg-background p-3">
+              <dt className="text-xs text-muted-foreground">已售出</dt>
+              <dd className="mt-1 font-semibold tabular-nums text-foreground">{product.totalSold || 0}</dd>
+            </div>
+          </dl>
+
+          {canEditProductActions && (
+            <button
+              onClick={handleOpenEditForm}
+              className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/88 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+            >
+              <Edit className="h-4 w-4" aria-hidden="true" />
+              編輯與管理
+            </button>
           )}
-        </div>
-
-        {/* 庫存與銷售 */}
-        <div className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10">
-          <h2 className="text-lg font-medium text-foreground mb-4 flex items-center gap-2">
-            <Package className="w-5 h-5 text-primary" />
-            庫存與銷售
-          </h2>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-4 bg-background rounded-2xl">
-              <div className="text-xs text-muted-foreground mb-1">庫存數量</div>
-              <div className="text-2xl font-medium text-foreground tabular-nums">
-                {product.stock ?? '-'}
-              </div>
-            </div>
-            <div className="text-center p-4 bg-background rounded-2xl">
-              <div className="text-xs text-muted-foreground mb-1">已售出</div>
-              <div className="text-2xl font-medium text-foreground tabular-nums">
-                {product.totalSold || 0}
-              </div>
-            </div>
-          </div>
-        </div>
+        </section>
 
         {/* 商品描述 */}
         {product.description && (
@@ -410,52 +384,6 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
           </div>
         )}
 
-        {/* 操作按鈕 */}
-        <div className="space-y-2">
-          {canEditProductActions && (
-            <>
-              <button
-                onClick={handleToggleActive}
-                disabled={isUpdating}
-                className={`w-full px-6 py-3 rounded-2xl transition-colors flex items-center justify-center gap-2 font-medium ${
-                  product.isActive
-                    ? 'bg-soft-pink text-foreground hover:bg-soft-pink/80'
-                    : 'bg-soft-green text-foreground hover:bg-soft-green/80'
-                }`}
-              >
-                {product.isActive ? (
-                  <>
-                    <ToggleLeft className="w-5 h-5" />
-                    停用商品
-                  </>
-                ) : (
-                  <>
-                    <ToggleRight className="w-5 h-5" />
-                    啟用商品
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={handleOpenEditForm}
-                className="w-full bg-primary text-white px-6 py-3 rounded-2xl hover:bg-primary/85 transition-colors flex items-center justify-center gap-2 font-medium"
-              >
-                <Edit className="w-5 h-5" />
-                編輯商品
-              </button>
-            </>
-          )}
-
-          {canDeleteProductAction && (
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="w-full bg-soft-pink text-danger px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors flex items-center justify-center gap-2 font-medium"
-            >
-              <Trash2 className="w-5 h-5" />
-              刪除商品
-            </button>
-          )}
-        </div>
       </div>
 
       {/* 編輯商品表單 */}
@@ -466,37 +394,8 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
           onClose={handleCloseEditForm}
           mode={isStaff ? 'manager' : 'owner'}
           onSuccess={handleEditSuccess}
+          onDeleted={handleProductDeleted}
         />
-      )}
-
-      {/* 刪除確認對話框 */}
-      {canDeleteProductAction && showDeleteConfirm && (
-        <>
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowDeleteConfirm(false)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-[1.5rem] p-6 max-w-sm w-full shadow-xl">
-              <h3 className="text-lg font-medium text-foreground mb-2">確認刪除商品？</h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                刪除後，此商品將被標記為停用，此操作無法復原。
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors"
-                >
-                  返回
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={isUpdating}
-                  className="flex-1 px-4 py-3 rounded-2xl bg-danger text-white hover:bg-danger/85 transition-colors disabled:opacity-50"
-                >
-                  {isUpdating ? '處理中...' : '確認刪除'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
       )}
     </div>
   );

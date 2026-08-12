@@ -14,7 +14,12 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const auth = await authenticateAppApiRequest(request);
-  if (!auth.ok) return NextResponse.json({ canManage: false, canDelete: false, reason: 'unavailable' }, { status: 401 });
+  if (!auth.ok) {
+    return NextResponse.json(
+      { canManage: false, canDelete: false, reason: 'authentication_required' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
   const client = createProductCoverPhotoServiceClient();
   if (!client) return NextResponse.json({ canManage: false, canDelete: false, reason: 'unavailable' }, { status: 503 });
   const productId = new URL(request.url).searchParams.get('productId');
@@ -40,7 +45,7 @@ export async function GET(request: Request) {
     ? planAccess.reason
     : uploadEnabled
       ? planAccess.reason
-      : 'unavailable';
+      : 'runtime_disabled';
   return NextResponse.json({
     canManage,
     canDelete: isProductCoverPhotoDeleteEnabled(),

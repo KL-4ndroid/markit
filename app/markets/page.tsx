@@ -254,6 +254,7 @@ export default function MarketsPage() {
         eyebrow={isStaffMode ? '團隊工作區' : '營運管理'}
         icon={Store}
         isStaff={isStaffMode}
+        widthMode="workspace"
         action={!isStaffMode ? (
             <IconButton
               label="新增市集"
@@ -264,7 +265,7 @@ export default function MarketsPage() {
         ) : undefined}
       />
 
-      <div className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6">
+      <div className="mx-auto max-w-5xl px-4 pb-8 pt-6 sm:px-6">
         {activeView === 'cancelled' ? (
           <div className="mb-5 flex items-center gap-3">
             <IconButton
@@ -288,6 +289,13 @@ export default function MarketsPage() {
 
         {filteredMarkets.length > 0 ? (
           <div className="mt-5 space-y-3">
+            <div className="hidden grid-cols-[minmax(14rem,1.35fr)_minmax(10rem,.85fr)_minmax(10rem,1fr)_minmax(7rem,.65fr)_auto] gap-4 px-5 text-xs font-semibold text-muted-foreground xl:grid">
+              <span>市集與狀態</span>
+              <span>日期</span>
+              <span>地點</span>
+              <span>結果</span>
+              <span className="w-28 text-center">操作</span>
+            </div>
             {filteredMarkets.map(item => (
               <MarketListCard
                 key={item.market.id ?? `${item.market.name}-${item.displayDate}`}

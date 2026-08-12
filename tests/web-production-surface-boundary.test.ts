@@ -68,6 +68,11 @@ assert.ok(
 );
 assert.match(priceSmokeRunWithCors, /404, 'dev_tool_unavailable'/);
 
+const subscriptionPage = read('app/subscription/page.tsx');
+assert.match(subscriptionPage, /isInternalTestSurfaceAvailable\(\)/);
+assert.match(subscriptionPage, /showInternalTestTools &&/);
+assert.match(subscriptionPage, /<SubscriptionSimulationPanel \/>/);
+
 const smoke = read('scripts/smoke-web-production-boundary.mjs');
 for (const route of [
   '/debug/flicker-test',

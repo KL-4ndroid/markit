@@ -42,7 +42,8 @@ assert.match(addRevenue, /disabled=\{isSubmitting \|\| !revenue \|\| Number\(rev
 assert.match(addRevenue, /disabled=\{isSubmitting \|\| cart\.length === 0\}/);
 
 assert.ok(addProduct.indexOf('<ProductFormFields') < addProduct.indexOf('<ProductCoverPhotoField'));
-assert.match(productCard, /\{coverPhotoVersion \? \([\s\S]*aspect-\[4\/3\]/);
+assert.match(productCard, /aspect-square h-16 w-16/);
+assert.ok(productCard.indexOf('aspect-square h-16 w-16') < productCard.indexOf('coverPhotoVersion ?'));
 assert.match(productCard, /isOpening \? '開啟中\.\.\.'/);
 
 assert.match(marketsPage, /router\.prefetch\(buildMarketDetailHref\(item\.market\.id\)\)/);

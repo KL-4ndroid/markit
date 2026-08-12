@@ -143,3 +143,12 @@ export function getMarketListActionLabel(stage: MarketListStage, isStaff: boolea
   if (stage === 'ended') return isStaff ? '查看紀錄' : '查看回顧';
   return '查看內容';
 }
+
+export function getMarketListProgressLabel(item: MarketListViewItem): string {
+  if (item.stage === 'active') return '現場記錄中';
+  if (item.stage === 'preparing') return '尚未開始';
+  if (item.stage === 'cancelled') return '停止作業';
+
+  const dealCount = item.market.totalDeals ?? 0;
+  return dealCount > 0 ? `成交 ${dealCount} 筆` : '回顧可查看';
+}

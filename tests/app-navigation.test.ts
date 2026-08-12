@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 import {
+  getActiveAppNavigationItemId,
   getAppNavigationItems,
   isAppNavigationItemActive,
 } from '../lib/navigation/app-navigation';
@@ -33,5 +34,8 @@ assert.equal(isAppNavigationItemActive('/recovery', byId.get('more')!), true);
 assert.equal(isAppNavigationItemActive('/subscription', byId.get('more')!), true);
 assert.equal(isAppNavigationItemActive('/markets', byId.get('today')!), false);
 assert.equal(isAppNavigationItemActive('/analytics', byId.get('more')!), false);
+assert.equal(getActiveAppNavigationItemId('/products/detail', ownerItems), 'products');
+assert.equal(getActiveAppNavigationItemId('/reports/settlement', ownerItems), 'analytics');
+assert.equal(getActiveAppNavigationItemId('/analytics', unresolvedItems), 'today');
 
 console.log('PASS role-aware app navigation');

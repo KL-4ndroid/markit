@@ -15,6 +15,7 @@ interface FullScreenFormProps {
   children: ReactNode;
   footer: ReactNode;
   dismissible?: boolean;
+  desktopWidth?: 'focused' | 'workspace';
 }
 
 export function FullScreenForm({
@@ -26,6 +27,7 @@ export function FullScreenForm({
   children,
   footer,
   dismissible = true,
+  desktopWidth = 'focused',
 }: FullScreenFormProps) {
   const descriptionId = useId();
 
@@ -40,7 +42,7 @@ export function FullScreenForm({
         <div className="flex min-h-full items-center justify-center">
           <DialogPanel
             aria-describedby={description ? descriptionId : undefined}
-            className="flex h-[100dvh] w-full flex-col overflow-hidden bg-atelier-canvas shadow-atelier-lift sm:h-auto sm:max-h-[92dvh] sm:max-w-3xl sm:rounded-dialog sm:border sm:border-primary/10"
+            className={`flex h-[100dvh] w-full flex-col overflow-hidden bg-atelier-canvas shadow-atelier-lift sm:h-auto sm:max-h-[92dvh] sm:rounded-dialog sm:border sm:border-primary/10 ${desktopWidth === 'workspace' ? 'sm:max-w-4xl' : 'sm:max-w-3xl'}`}
           >
             <header className="japanese-gradient-header relative flex shrink-0 items-start justify-between gap-4 overflow-hidden rounded-b-[2rem] border-b border-white/15 px-5 pb-6 pt-[calc(1.25rem+env(safe-area-inset-top))] text-white sm:rounded-b-none sm:px-6 sm:pb-5 sm:pt-5">
               <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/10" aria-hidden="true" />

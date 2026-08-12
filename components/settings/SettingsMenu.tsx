@@ -64,13 +64,14 @@ export function SettingsActionRow({
 }
 
 interface SettingsSectionProps {
+  id?: string;
   title: string;
   children: ReactNode;
 }
 
-export function SettingsSection({ title, children }: SettingsSectionProps) {
+export function SettingsSection({ id, title, children }: SettingsSectionProps) {
   return (
-    <section aria-label={title}>
+    <section id={id} aria-label={title} className="scroll-mt-6">
       <h2 className="mb-2 px-1 text-xs font-semibold text-muted-foreground">{title}</h2>
       <div className="divide-y divide-primary/10 overflow-hidden rounded-card border border-primary/10 bg-white shadow-atelier">
         {children}

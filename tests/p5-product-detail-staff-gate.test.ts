@@ -22,10 +22,10 @@ const productDetailSource = readFileSync(
   join(projectRoot, 'components/products/ProductDetailScreen.tsx'),
   'utf-8'
 );
-
-function matchCount(source: string, pattern: RegExp): number {
-  return [...source.matchAll(pattern)].length;
-}
+const editProductSource = readFileSync(
+  join(projectRoot, 'components/products/EditProductForm.tsx'),
+  'utf-8'
+);
 
 runTest('ProductDetailPage derives staff product edit capability', () => {
   assert.match(
@@ -35,7 +35,6 @@ runTest('ProductDetailPage derives staff product edit capability', () => {
   assert.match(productDetailSource, /deriveRoleCapabilities/);
   assert.match(productDetailSource, /hasCapability\(roleCapabilities,\s*['"]canEditProductBasic['"]\)/);
   assert.match(productDetailSource, /const\s+canEditProductActions\s*=\s*isOwner\s*\|\|\s*canEditProductBasic/);
-  assert.match(productDetailSource, /const\s+canDeleteProductAction\s*=\s*isOwner/);
 });
 
 runTest('ProductDetailPage initializes Dexie with staff scoped profile', () => {
@@ -47,22 +46,16 @@ runTest('ProductDetailPage initializes Dexie with staff scoped profile', () => {
   assert.match(productDetailSource, /\},\s*\[isRoleLoading,\s*isStaff\]\)/);
 });
 
-runTest('ProductDetailPage blocks direct-route staff writes in handlers', () => {
-  assert.ok(
-    matchCount(
-      productDetailSource,
-      /if\s*\(!product\s*\|\|\s*dbStatus\?\.ok\s*===\s*false\s*\|\|\s*!canEditProductActions\)\s*return/g
-    ) >= 1,
-    'toggle handler must require canEditProductActions'
-  );
-  assert.match(
-    productDetailSource,
-    /if\s*\(!product\s*\|\|\s*dbStatus\?\.ok\s*===\s*false\s*\|\|\s*!canDeleteProductAction\)\s*return/
-  );
+runTest('ProductDetailPage delegates mutations to the permission-gated management form', () => {
+  assert.doesNotMatch(productDetailSource, /import\s*\{[^}]*\bupdateProduct\b[^}]*\}\s*from/);
+  assert.doesNotMatch(productDetailSource, /import\s*\{[^}]*\bdeleteProduct\b[^}]*\}\s*from/);
   assert.match(
     productDetailSource,
     /if\s*\(dbStatus\?\.ok\s*===\s*false\s*\|\|\s*!canEditProductActions\)\s*return/
   );
+  assert.match(productDetailSource, /onDeleted=\{handleProductDeleted\}/);
+  assert.match(editProductSource, /!isManagerMode\s*&&\s*\(/);
+  assert.match(editProductSource, /onConfirm=\{handleDelete\}/);
 });
 
 runTest('ProductDetailPage hides owner-sensitive product finance from staff', () => {
@@ -73,9 +66,9 @@ runTest('ProductDetailPage hides owner-sensitive product finance from staff', ()
 
 runTest('ProductDetailPage gates buttons and modal by role capability', () => {
   assert.match(productDetailSource, /\{canEditProductActions\s*&&\s*\(/);
-  assert.match(productDetailSource, /\{canDeleteProductAction\s*&&\s*\(/);
-  assert.match(productDetailSource, /\{canDeleteProductAction\s*&&\s*showDeleteConfirm\s*&&\s*\(/);
   assert.match(productDetailSource, /mode=\{isStaff\s*\?\s*['"]manager['"]\s*:\s*['"]owner['"]\}/);
+  assert.doesNotMatch(productDetailSource, />\s*(?:停用商品|啟用商品|刪除商品)\s*</);
+  assert.match(editProductSource, /mode\?:\s*['"]owner['"]\s*\|\s*['"]manager['"]/);
 });
 
 async function main(): Promise<void> {

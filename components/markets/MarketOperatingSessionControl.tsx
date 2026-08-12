@@ -8,8 +8,9 @@ interface MarketOperatingSessionControlProps {
   session: MarketOperatingSession;
   canManage: boolean;
   isUpdating?: boolean;
+  showCloseAction?: boolean;
   onStartEarly: () => Promise<void> | void;
-  onCloseToday: () => Promise<void> | void;
+  onCloseToday?: () => Promise<void> | void;
 }
 
 const VISIBLE_PHASES = new Set<MarketOperatingSession['phase']>([
@@ -24,14 +25,15 @@ export function MarketOperatingSessionControl({
   session,
   canManage,
   isUpdating = false,
+  showCloseAction = false,
   onStartEarly,
   onCloseToday,
 }: MarketOperatingSessionControlProps) {
   const [confirmingClose, setConfirmingClose] = useState(false);
 
   useEffect(() => {
-    if (!session.canCloseToday) setConfirmingClose(false);
-  }, [session.canCloseToday]);
+    if (!showCloseAction || !session.canCloseToday) setConfirmingClose(false);
+  }, [session.canCloseToday, showCloseAction]);
 
   if (!VISIBLE_PHASES.has(session.phase)) return null;
 
@@ -80,37 +82,42 @@ export function MarketOperatingSessionControl({
         </div>
       )}
 
-      {session.canCloseToday && canManage && !confirmingClose && (
-        <button
-          type="button"
-          onClick={() => setConfirmingClose(true)}
-          disabled={isUpdating}
-          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-white px-4 text-sm font-semibold text-atelier-ink transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Moon className="h-4 w-4" aria-hidden="true" />
-          今日收攤
-        </button>
-      )}
-
-      {session.canCloseToday && canManage && confirmingClose && (
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <span className="w-full text-xs text-atelier-muted sm:w-auto">收攤後將關閉今日現場操作。</span>
-          <button
-            type="button"
-            onClick={() => setConfirmingClose(false)}
-            disabled={isUpdating}
-            className="min-h-11 rounded-md border border-border bg-white px-3 text-sm font-medium text-atelier-ink disabled:opacity-50"
-          >
-            取消
-          </button>
-          <button
-            type="button"
-            onClick={() => void onCloseToday()}
-            disabled={isUpdating}
-            className="min-h-11 rounded-md bg-destructive px-3 text-sm font-semibold text-destructive-foreground disabled:opacity-50"
-          >
-            確認收攤
-          </button>
+      {showCloseAction && session.canCloseToday && canManage && onCloseToday && (
+        <div className="flex shrink-0 flex-col items-stretch gap-1.5 sm:items-end">
+          {!confirmingClose ? (
+            <button
+              type="button"
+              onClick={() => setConfirmingClose(true)}
+              disabled={isUpdating}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border bg-white px-4 text-sm font-semibold text-atelier-ink transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Moon className="h-4 w-4" aria-hidden="true" />
+              提前結束今日營業
+            </button>
+          ) : (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <span className="w-full text-xs text-atelier-muted sm:w-auto">提前結束後將立即關閉今日現場操作。</span>
+              <button
+                type="button"
+                onClick={() => setConfirmingClose(false)}
+                disabled={isUpdating}
+                className="min-h-11 rounded-md border border-border bg-white px-3 text-sm font-medium text-atelier-ink disabled:opacity-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => void onCloseToday()}
+                disabled={isUpdating}
+                className="min-h-11 rounded-md bg-destructive px-3 text-sm font-semibold text-destructive-foreground disabled:opacity-50"
+              >
+                確認提前結束
+              </button>
+            </div>
+          )}
+          {!confirmingClose && (
+            <p className="text-[11px] text-atelier-muted">未操作時會在延長時段結束後自動收攤。</p>
+          )}
         </div>
       )}
     </section>

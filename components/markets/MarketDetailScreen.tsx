@@ -723,8 +723,8 @@ export function MarketDetailScreen() {
         description: '遺漏收入仍可從紀錄頁補登。',
       });
     } catch (error) {
-      console.error('今日收攤失敗：', error);
-      toast.error('無法完成今日收攤，請稍後再試');
+      console.error('提前結束今日營業失敗：', error);
+      toast.error('無法提前結束今日營業，請稍後再試');
     } finally {
       setIsUpdatingOperationSession(false);
     }
@@ -1324,11 +1324,18 @@ export function MarketDetailScreen() {
                 ]}
         />
 
-        {operatingSession && resolvedOwnerWorkspaceView !== 'overview' && (
+        {operatingSession && (
+          resolvedOwnerWorkspaceView === 'manage' ||
+          (
+            resolvedOwnerWorkspaceView === 'live' &&
+            ['early-window', 'closed'].includes(operatingSession.phase)
+          )
+        ) && (
           <MarketOperatingSessionControl
             session={operatingSession}
             canManage={!isRoleLoading}
             isUpdating={isUpdatingOperationSession}
+            showCloseAction={resolvedOwnerWorkspaceView === 'manage'}
             onStartEarly={handleStartEarlyOperation}
             onCloseToday={handleCloseTodayOperation}
           />
@@ -1731,10 +1738,9 @@ export function MarketDetailScreen() {
             <div>
               <h2 className="text-base font-semibold text-atelier-ink">今日現場模式</h2>
               <p className="mt-1 text-sm leading-relaxed text-foreground">
-                系統會依設定的營業時間自動開啟與收起今日現場工具
-                {market.operatingEndTime
-                  ? `，今天預計於 ${formatClockTime(market.operatingEndTime)} 收起。`
-                  : '。請在編輯市集中補上營業時間。'}
+                {market.operatingStartTime && market.operatingEndTime
+                  ? '系統會在正式營業時間自動開啟現場工具；原定結束後保留 60 分鐘延長記錄，之後自動收起。'
+                  : '請在編輯市集中補上營業時間，系統才能自動開啟與收起現場工具。'}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 這不會提前結束整場多日市集；整場狀態仍依市集日期與管理設定保留。

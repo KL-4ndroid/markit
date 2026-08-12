@@ -103,6 +103,18 @@ assert.match(platformPort, /ProductImageAdapter/);
 assert.match(platformPort, /product-image-adapter\.web/);
 assert.match(webAdapter, /document\.createElement\('canvas'\)/);
 assert.doesNotMatch(photoField, /document\.createElement|createImageBitmap/);
+assert.match(photoField, /capabilityStatus/);
+assert.match(photoField, /正在確認商品照片功能/);
+assert.match(photoField, /重新確認/);
+assert.match(photoField, /runtime_disabled/);
+assert.match(photoField, /entitlement_unavailable/);
+
+const photoClient = read('lib/products/product-cover-photo-client.ts');
+assert.match(photoClient, /CAPABILITY_REASONS/);
+assert.match(photoClient, /authentication_required/);
+assert.match(photoClient, /runtime_disabled/);
+assert.match(capabilityRoute, /authentication_required/);
+assert.match(capabilityRoute, /runtime_disabled/);
 
 const hooks = read('lib/db/hooks.ts');
 assert.match(hooks, /createProductWithResult/);

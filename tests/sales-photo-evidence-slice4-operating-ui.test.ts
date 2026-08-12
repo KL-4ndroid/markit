@@ -50,7 +50,7 @@ runTest('owner operating screen shows compact photo status and keeps setting out
   const operatingBlock = section(
     ownerPageSource,
     "{resolvedOwnerWorkspaceView === 'live' && isOperating && (",
-    '/* 3. 營業狀態卡片'
+    "{resolvedOwnerWorkspaceView === 'live' && ("
   );
   assert.match(operatingBlock, /<TransactionWorkspace/);
   assert.match(operatingBlock, /salesPhotoEvidenceRequired=\{salesPhotoEvidenceRequired\}/);

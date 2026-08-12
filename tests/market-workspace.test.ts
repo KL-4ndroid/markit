@@ -64,6 +64,10 @@ const projectRoot = join(__dirname, '..');
 const ownerPageSource = readFileSync(join(projectRoot, 'components/markets/MarketDetailScreen.tsx'), 'utf8');
 const staffPageSource = readFileSync(join(projectRoot, 'components/markets/StaffMarketDetailView.tsx'), 'utf8');
 const revenueStatsSource = readFileSync(join(projectRoot, 'components/markets/DailyRevenueStats.tsx'), 'utf8');
+const operatingSessionControlSource = readFileSync(
+  join(projectRoot, 'components/markets/MarketOperatingSessionControl.tsx'),
+  'utf8',
+);
 
 for (const source of [ownerPageSource, staffPageSource]) {
   assert.match(source, /<MarketWorkspaceNavigation/);
@@ -85,7 +89,9 @@ assert.match(revenueStatsSource, /reviewMode = false/);
 assert.match(ownerPageSource, /label: '回顧'/);
 assert.match(ownerPageSource, /label: '報名進度'/);
 assert.match(ownerPageSource, /canManageOwnerFieldOps = marketWorkspacePhase !== 'ended'/);
-assert.match(ownerPageSource, />今日營業狀態</);
-assert.match(ownerPageSource, />今日已收攤</);
+assert.match(ownerPageSource, /<MarketOperatingSessionControl/);
+assert.match(ownerPageSource, /showCloseAction=\{resolvedOwnerWorkspaceView === 'manage'\}/);
+assert.match(operatingSessionControlSource, /aria-label="今日營業狀態"/);
+assert.match(operatingSessionControlSource, />\s*提前結束今日營業\s*</);
 
 console.log('market workspace tests passed');

@@ -103,7 +103,7 @@ export function ProductFormFields({
                 id={fieldProps.id}
                 role="group"
                 aria-label="商品分類"
-                className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+                className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4"
               >
                 {PRODUCT_CATEGORIES.map(option => {
                   const Icon = option.icon;
@@ -193,63 +193,65 @@ export function ProductFormFields({
           </p>
         </div>
 
-        <div>
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-control border border-primary/15 px-3">
-            <input
-              type="checkbox"
-              checked={values.unlimitedStock}
-              onChange={event => onChange('unlimitedStock', event.target.checked)}
-              disabled={disabled}
-              className="h-4 w-4 rounded border-primary/30 text-primary focus:ring-primary/40"
-            />
-            <span className="min-w-0">
-              <span className="block text-sm font-medium text-foreground">不限庫存</span>
-              <span className="block text-xs text-muted-foreground">適合服務或接單訂製商品</span>
-            </span>
-          </label>
-        </div>
-
-        {!values.unlimitedStock && (
-          <FormField
-            id={`${idPrefix}-stock`}
-            label="庫存數量"
-            error={errors.stock}
-          >
-            {(fieldProps) => (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)] lg:items-start">
+          <div className="space-y-4">
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-control border border-primary/15 px-3">
               <input
-                {...fieldProps}
-                type="number"
-                value={values.stock}
-                onChange={event => onChange('stock', Number(event.target.value))}
-                min="0"
-                step="1"
-                inputMode="numeric"
+                type="checkbox"
+                checked={values.unlimitedStock}
+                onChange={event => onChange('unlimitedStock', event.target.checked)}
                 disabled={disabled}
-                className={inputClassName}
+                className="h-4 w-4 rounded border-primary/30 text-primary focus:ring-primary/40"
               />
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-foreground">不限庫存</span>
+                <span className="block text-xs text-muted-foreground">適合服務或接單訂製商品</span>
+              </span>
+            </label>
+
+            {!values.unlimitedStock && (
+              <FormField
+                id={`${idPrefix}-stock`}
+                label="庫存數量"
+                error={errors.stock}
+              >
+                {(fieldProps) => (
+                  <input
+                    {...fieldProps}
+                    type="number"
+                    value={values.stock}
+                    onChange={event => onChange('stock', Number(event.target.value))}
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    disabled={disabled}
+                    className={inputClassName}
+                  />
+                )}
+              </FormField>
+            )}
+          </div>
+
+          <FormField id={`${idPrefix}-description`} label="商品描述">
+            {(fieldProps) => (
+              <div className="relative">
+                <FileText
+                  className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <textarea
+                  {...fieldProps}
+                  value={values.description}
+                  onChange={event => onChange('description', event.target.value)}
+                  placeholder="尺寸、材質或其他銷售時需要知道的資訊"
+                  rows={4}
+                  disabled={disabled}
+                  className={`${inputClassName} resize-none py-2.5 pl-9`}
+                />
+              </div>
             )}
           </FormField>
-        )}
-
-        <FormField id={`${idPrefix}-description`} label="商品描述">
-          {(fieldProps) => (
-            <div className="relative">
-              <FileText
-                className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <textarea
-                {...fieldProps}
-                value={values.description}
-                onChange={event => onChange('description', event.target.value)}
-                placeholder="尺寸、材質或其他銷售時需要知道的資訊"
-                rows={3}
-                disabled={disabled}
-                className={`${inputClassName} resize-none py-2.5 pl-9`}
-              />
-            </div>
-          )}
-        </FormField>
+        </div>
       </section>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, ImagePlus, Lock, Trash2 } from 'lucide-react';
+import { Camera, ImagePlus, Loader2, Lock, RefreshCw, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
@@ -36,6 +36,8 @@ export function ProductCoverPhotoField({
 }: ProductCoverPhotoFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const retriedProductRef = useRef<string | null>(null);
+  const [capabilityStatus, setCapabilityStatus] = useState<'loading' | 'resolved'>('loading');
+  const [capabilityRevision, setCapabilityRevision] = useState(0);
   const [capability, setCapability] = useState<ProductCoverPhotoCapability>({
     canManage: false,
     canDelete: false,
@@ -47,8 +49,17 @@ export function ProductCoverPhotoField({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    void getProductCoverPhotoCapability(productId).then(setCapability);
-  }, [productId]);
+    let active = true;
+    setCapabilityStatus('loading');
+    void getProductCoverPhotoCapability(productId).then(nextCapability => {
+      if (!active) return;
+      setCapability(nextCapability);
+      setCapabilityStatus('resolved');
+    });
+    return () => {
+      active = false;
+    };
+  }, [capabilityRevision, productId]);
 
   useEffect(() => {
     if (!productId || !capability.canManage || retriedProductRef.current === productId) return;
@@ -103,6 +114,18 @@ export function ProductCoverPhotoField({
         'pro',
       )
     : null;
+  const retryableCapability = capability.reason === 'authentication_required'
+    || capability.reason === 'entitlement_unavailable'
+    || capability.reason === 'unavailable';
+  const unavailableTitle = capability.reason === 'permission_denied'
+    ? '目前身分無法管理商品照片'
+    : capability.reason === 'runtime_disabled'
+      ? '商品照片功能尚未啟用'
+      : capability.reason === 'authentication_required'
+        ? '登入狀態需要重新確認'
+        : capability.reason === 'entitlement_unavailable'
+          ? '暫時無法確認商品照片權限'
+          : '暫時無法確認商品照片功能';
 
   return (
     <section className="space-y-3 border-b border-primary/10 pb-5" aria-labelledby={`${productId ?? 'new'}-cover-title`}>
@@ -134,7 +157,12 @@ export function ProductCoverPhotoField({
       </div>
       )}
 
-      {canChoose ? (
+      {capabilityStatus === 'loading' ? (
+        <div className="flex min-h-12 items-center gap-3 rounded-control border border-primary/10 bg-muted/40 p-3" role="status">
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" aria-hidden="true" />
+          <p className="text-sm font-medium text-foreground">正在確認商品照片功能</p>
+        </div>
+      ) : canChoose ? (
         <div className="flex flex-wrap gap-2">
           <input
             ref={inputRef}
@@ -174,16 +202,24 @@ export function ProductCoverPhotoField({
             <p className="text-sm font-medium text-foreground">
               {planBlock
                 ? planBlock.title
-                : capability.reason === 'permission_denied'
-                  ? '目前身分無法管理商品照片'
-                  : capability.reason === 'paid_active' || capability.reason === 'open_access'
-                    ? '商品照片目前尚未開放'
-                    : '商品照片目前無法使用'}
+                : unavailableTitle}
             </p>
             {planBlock?.showPlanPreviewLink && (
               <a href="/subscription" className="text-xs text-primary underline underline-offset-2">
                 {planBlock.actionLabel}
               </a>
+            )}
+            {retryableCapability && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="mt-1 min-h-11 px-0 text-xs text-primary"
+                disabled={disabled || processing}
+                onClick={() => setCapabilityRevision(previous => previous + 1)}
+                leadingIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
+              >
+                重新確認
+              </Button>
             )}
           </div>
           {canDeleteCloud && (

@@ -81,10 +81,12 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <AuthGuard>
         <RoleGuard>
           <div className="japanese-app min-h-screen bg-background">
-            <main className="pb-24">
-              {children}
-            </main>
-            <BottomNavigation />
+            <div className="lg:grid lg:min-h-dvh lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)]">
+              <BottomNavigation />
+              <main className="min-w-0 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
+                {children}
+              </main>
+            </div>
             <GlobalOverlayHost />
             <AppToaster />
           </div>

@@ -1,7 +1,28 @@
 'use client';
 
 import { supabase } from '@/lib/supabase/client';
-import type { PreparedProductCoverPhoto, ProductCoverPhotoCapability } from './product-cover-photo-model';
+import type {
+  PreparedProductCoverPhoto,
+  ProductCoverPhotoCapability,
+  ProductCoverPhotoCapabilityReason,
+} from './product-cover-photo-model';
+
+const CAPABILITY_REASONS: ReadonlySet<ProductCoverPhotoCapabilityReason> = new Set([
+  'open_access',
+  'paid_active',
+  'free_plan',
+  'subscription_inactive',
+  'entitlement_unavailable',
+  'permission_denied',
+  'runtime_disabled',
+  'authentication_required',
+  'unavailable',
+]);
+
+function isCapabilityReason(value: unknown): value is ProductCoverPhotoCapabilityReason {
+  return typeof value === 'string'
+    && CAPABILITY_REASONS.has(value as ProductCoverPhotoCapabilityReason);
+}
 
 async function token(): Promise<string> {
   const { data } = await supabase.auth.getSession();
@@ -14,9 +35,23 @@ export async function getProductCoverPhotoCapability(productId?: string): Promis
     const accessToken = await token();
     const query = productId ? `?productId=${encodeURIComponent(productId)}` : '';
     const response = await fetch(`/api/product-cover-photo/capability${query}`, { headers: { Authorization: `Bearer ${accessToken}` }, cache: 'no-store' });
-    if (!response.ok) throw new Error('capability_unavailable');
-    return await response.json() as ProductCoverPhotoCapability;
-  } catch { return { canManage: false, canDelete: false, reason: 'unavailable' }; }
+    const body = await response.json().catch(() => null) as Partial<ProductCoverPhotoCapability> | null;
+    if (
+      body
+      && typeof body.canManage === 'boolean'
+      && typeof body.canDelete === 'boolean'
+      && isCapabilityReason(body.reason)
+    ) {
+      return {
+        canManage: body.canManage,
+        canDelete: body.canDelete,
+        reason: body.reason,
+      };
+    }
+    return { canManage: false, canDelete: false, reason: 'unavailable' };
+  } catch {
+    return { canManage: false, canDelete: false, reason: 'unavailable' };
+  }
 }
 
 export async function uploadProductCoverPhoto(productId: string, photo: PreparedProductCoverPhoto, version = Date.now()) {

@@ -9,16 +9,21 @@ export const PRODUCT_COVER_PHOTO_POLICY = Object.freeze({
   minQuality: 0.65,
 });
 
+export type ProductCoverPhotoCapabilityReason =
+  | 'open_access'
+  | 'paid_active'
+  | 'free_plan'
+  | 'subscription_inactive'
+  | 'entitlement_unavailable'
+  | 'permission_denied'
+  | 'runtime_disabled'
+  | 'authentication_required'
+  | 'unavailable';
+
 export type ProductCoverPhotoCapability = {
   canManage: boolean;
   canDelete: boolean;
-  reason:
-    | 'open_access'
-    | 'paid_active'
-    | 'free_plan'
-    | 'subscription_inactive'
-    | 'permission_denied'
-    | 'unavailable';
+  reason: ProductCoverPhotoCapabilityReason;
 };
 
 export type PreparedProductCoverPhoto = {

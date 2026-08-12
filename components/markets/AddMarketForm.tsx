@@ -341,6 +341,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
     <>
       <FullScreenForm
         open={isOpen}
+        desktopWidth="workspace"
         onClose={handleRequestClose}
         eyebrow="市集管理"
         title="新增市集"

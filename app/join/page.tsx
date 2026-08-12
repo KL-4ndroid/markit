@@ -35,7 +35,7 @@ function JoinPageContent() {
     const token = searchParams.get('token');
 
     if (!token) {
-      setError('缺少邀請 Token。請確認邀請連結是否完整。');
+      setError('邀請資訊不完整，請確認收到的邀請連結是否完整。');
       setVerifying(false);
       return;
     }

@@ -20,6 +20,7 @@ assert.doesNotMatch(page, /EditProductForm|editingProduct|emoji/);
 assert.match(card, /getProductStockState\(product\)/);
 assert.match(card, /formatCurrency\(product\.price\)/);
 assert.match(card, /查看與編輯/);
-assert.doesNotMatch(card, /product\.cost|profitMargin|totalSold|canViewSensitiveData/);
+assert.match(card, /product\.totalSold \?\? 0/);
+assert.doesNotMatch(card, /product\.cost|profitMargin|canViewSensitiveData/);
 
 console.log('PASS focused searchable product list UI');

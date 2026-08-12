@@ -26,6 +26,7 @@ interface EditProductFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  onDeleted?: () => void;
   mode?: 'owner' | 'manager';
 }
 
@@ -37,11 +38,13 @@ export function EditProductForm({
   isOpen,
   onClose,
   onSuccess,
+  onDeleted,
   mode = 'owner',
 }: EditProductFormProps) {
   const isManagerMode = mode === 'manager';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showStatusConfirm, setShowStatusConfirm] = useState(false);
   const [showZeroStockConfirm, setShowZeroStockConfirm] = useState(false);
   const [formData, setFormData] = useState<ProductFormValues>(() => createProductFormValues(product));
   const [errors, setErrors] = useState<ProductFormErrors>({});
@@ -144,6 +147,7 @@ export function EditProductForm({
       const nextActive = !formData.isActive;
       await updateProduct(product.id!, { isActive: nextActive });
       setFormData(previous => ({ ...previous, isActive: nextActive }));
+      setShowStatusConfirm(false);
       onSuccess?.();
     } catch (error) {
       console.error('更新商品狀態失敗：', error);
@@ -158,7 +162,7 @@ export function EditProductForm({
       await deleteProduct(product.id!);
       setShowDeleteConfirm(false);
       onClose();
-      onSuccess?.();
+      onDeleted?.();
     } catch (error) {
       console.error('刪除商品失敗：', error);
       setSubmitError('商品尚未刪除，請稍後再試。');
@@ -179,7 +183,7 @@ export function EditProductForm({
         onClose={handleClose}
         title="編輯商品"
         description={isManagerMode ? '可調整銷售、庫存與現場需要的資訊。' : '更新商品資料與販售狀態。'}
-        size="md"
+        size="lg"
         dismissible={!isSubmitting}
         footer={(
           <>
@@ -219,7 +223,7 @@ export function EditProductForm({
             <Button
               variant="secondary"
               className="w-full"
-              onClick={handleToggleActive}
+              onClick={() => formData.isActive ? setShowStatusConfirm(true) : void handleToggleActive()}
               disabled={isSubmitting}
               leadingIcon={formData.isActive
                 ? <Ban className="h-4 w-4" aria-hidden="true" />
@@ -256,6 +260,15 @@ export function EditProductForm({
         title="儲存為零庫存？"
         description="儲存後商品會顯示為已售完，仍可稍後補上庫存。"
         confirmLabel="仍要儲存"
+      />
+
+      <ConfirmDialog
+        open={showStatusConfirm}
+        onClose={() => setShowStatusConfirm(false)}
+        onConfirm={handleToggleActive}
+        title="停用這項商品？"
+        description="停用後將不再出現於可銷售商品中，之後仍可重新啟用。"
+        confirmLabel="停用商品"
       />
 
       <ConfirmDialog

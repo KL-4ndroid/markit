@@ -87,8 +87,8 @@ export function getSyncPresentation(input: SyncPresentationInput): SyncPresentat
 
   return {
     kind: 'waiting',
-    label: '尚未完成同步檢查',
-    accessibleLabel: '尚未完成首次同步檢查，點擊立即檢查',
+    label: '正在確認同步狀態',
+    accessibleLabel: '正在確認同步狀態，亦可點擊立即檢查',
     lastSyncLabel,
     tone: 'text-muted-foreground bg-muted/60',
     canSync: true,

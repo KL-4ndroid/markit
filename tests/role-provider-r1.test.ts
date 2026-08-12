@@ -88,7 +88,9 @@ runTest('display, navigation, and recovery consumers use the shared role context
     assert.doesNotMatch(source, /useUserRole\(\)/);
   }
 
-  assert.match(bottomNavigationSource, /!roleRefreshState\.shouldMountProtectedChildren/);
+  assert.match(bottomNavigationSource, /roleReady:\s*roleRefreshState\.isAuthorizationFresh/);
+  assert.match(bottomNavigationSource, /getAppNavigationItems/);
+  assert.doesNotMatch(bottomNavigationSource, /shouldMountProtectedChildren/);
   assert.match(databaseRecoveryPanelSource, /useRoleContext\(\)/);
   assert.doesNotMatch(databaseRecoveryPanelSource, /useUserRole\(\)/);
 });

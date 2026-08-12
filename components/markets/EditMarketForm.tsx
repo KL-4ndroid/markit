@@ -224,6 +224,7 @@ export function EditMarketForm({
   return (
     <FullScreenForm
       open={isOpen}
+      desktopWidth="workspace"
       onClose={onClose}
       eyebrow="市集管理"
       title="編輯市集"

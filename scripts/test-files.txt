@@ -186,6 +186,8 @@ tsx tests/product-list-view-model.test.ts
 tsx tests/product-list-ui.test.ts
 tsx tests/product-form.test.ts
 tsx tests/product-form-ui.test.ts
+tsx tests/app-wide-uiux-product-workflow.test.ts
+tsx tests/app-wide-uiux-responsive-shell.test.ts
 tsx tests/settings-navigation.test.ts
 tsx tests/settings-information-architecture.test.ts
 tsx tests/subscription-capability-presentation.test.ts
@@ -313,3 +315,5 @@ tsx tests/manual-launch-operations-guide.test.ts
 tsx tests/supabase-security-advisor-inventory.test.ts
 tsx tests/mobile-uiux-optimization.test.ts
 tsx tests/operating-market-workflow-optimization.test.ts
+tsx tests/app-wide-uiux-presentation-contract.test.ts
+tsx tests/app-wide-uiux-desktop-density.test.ts

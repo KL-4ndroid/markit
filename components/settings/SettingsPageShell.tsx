@@ -13,6 +13,7 @@ interface SettingsPageShellProps {
   backHref?: string;
   onBack?: () => void;
   backLabel?: string;
+  maxWidthClass?: string;
 }
 
 export function SettingsPageShell({
@@ -24,11 +25,12 @@ export function SettingsPageShell({
   backHref,
   onBack,
   backLabel = '返回更多',
+  maxWidthClass = 'max-w-3xl',
 }: SettingsPageShellProps) {
   return (
     <div className="min-h-screen bg-background">
       <header className={`${getGradientClass(isStaff)} rounded-b-[2rem] border-b border-white/15 px-5 pb-7 pt-[calc(1.5rem+env(safe-area-inset-top))] text-white shadow-atelier`}>
-        <div className="mx-auto flex max-w-3xl items-start gap-3">
+        <div className={`mx-auto flex ${maxWidthClass} items-start gap-3`}>
           {onBack ? (
             <button
               type="button"
@@ -59,7 +61,7 @@ export function SettingsPageShell({
         </div>
       </header>
 
-      <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">
+      <div className={`mx-auto ${maxWidthClass} px-4 pb-10 pt-6 sm:px-6`}>
         {children}
       </div>
     </div>

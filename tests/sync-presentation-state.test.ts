@@ -13,7 +13,7 @@ const base = {
 
 const waiting = getSyncPresentation({ ...base, status: SyncStatus.IDLE });
 assert.equal(waiting.kind, 'waiting');
-assert.equal(waiting.label, '尚未完成同步檢查');
+assert.equal(waiting.label, '正在確認同步狀態');
 assert.doesNotMatch(waiting.accessibleLabel, /已同步/);
 
 const successWithoutTimestamp = getSyncPresentation({ ...base, status: SyncStatus.SUCCESS });

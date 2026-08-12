@@ -32,15 +32,20 @@ const albumSource = readFileSync(join(projectRoot, 'components/markets/SalesPhot
 const checklistSource = readFileSync(join(projectRoot, 'components/markets/ChecklistPanel.tsx'), 'utf8');
 const marketCardSource = readFileSync(join(projectRoot, 'components/markets/MarketCard.tsx'), 'utf8');
 const staffPageSource = readFileSync(join(projectRoot, 'components/markets/StaffMarketDetailView.tsx'), 'utf8');
+const sessionControlSource = readFileSync(join(projectRoot, 'components/markets/MarketOperatingSessionControl.tsx'), 'utf8');
 const pendingPhotoSource = readFileSync(join(projectRoot, 'components/markets/SalesPhotoEvidencePendingTaskCard.tsx'), 'utf8');
 const photoStorySource = readFileSync(join(projectRoot, 'components/markets/MarketOverviewPhotoStory.tsx'), 'utf8');
 
 assert.match(ownerPageSource, /interactionSummary\.totalCount/);
 assert.doesNotMatch(ownerPageSource, /stats\?\.totalInteractions \?\? interactionEvents\.length/);
-assert.match(ownerPageSource, /系統會依設定的營業時間自動開啟與收起今日現場工具/);
+assert.match(ownerPageSource, /原定結束後保留 60 分鐘延長記錄，之後自動收起/);
 assert.match(ownerPageSource, /aria-expanded={!isTimelineCollapsed}/);
 assert.match(ownerPageSource, /aria-controls="owner-market-timeline-panel"/);
 assert.doesNotMatch(ownerPageSource, /<main className="mx-auto max-w-5xl/);
+assert.match(ownerPageSource, /showCloseAction={resolvedOwnerWorkspaceView === 'manage'}/);
+assert.doesNotMatch(staffPageSource, /onCloseToday=/);
+assert.match(sessionControlSource, />\s*提前結束今日營業\s*</);
+assert.match(sessionControlSource, /未操作時會在延長時段結束後自動收攤/);
 
 for (const source of [workspaceNavigationSource, detailTabsSource]) {
   assert.match(source, /event\.key === 'ArrowRight'/);

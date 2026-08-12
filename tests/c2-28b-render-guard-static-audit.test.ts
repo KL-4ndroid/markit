@@ -68,8 +68,8 @@ runTest('RoleGuard blocks protected routes through shared role refresh state', (
 
 runTest('BottomNavigation uses fail-closed role-aware navigation without disabled owner entries', () => {
   assert.match(bottomNavigationSource, /const \{ isStaff, roleRefreshState \} = useRoleContext\(\)/);
-  assert.match(bottomNavigationSource, /const isRoleUnresolved = !roleRefreshState\.shouldMountProtectedChildren/);
-  assert.match(bottomNavigationSource, /getAppNavigationItems\(\{[\s\S]*isStaff,[\s\S]*roleReady:\s*!isRoleUnresolved/);
+  assert.match(bottomNavigationSource, /getAppNavigationItems\(\{[\s\S]*isStaff,[\s\S]*roleReady:\s*roleRefreshState\.isAuthorizationFresh/);
+  assert.doesNotMatch(bottomNavigationSource, /shouldMountProtectedChildren/);
   assert.match(appNavigationSource, /const STAFF_NAVIGATION_IDS[\s\S]*'today'[\s\S]*'markets'[\s\S]*'products'[\s\S]*'more'/);
   assert.doesNotMatch(appNavigationSource.match(/const STAFF_NAVIGATION_IDS[\s\S]*?\];/)?.[0] ?? '', /'analytics'/);
   assert.doesNotMatch(bottomNavigationSource, /isDisabled|僅供老闆/);

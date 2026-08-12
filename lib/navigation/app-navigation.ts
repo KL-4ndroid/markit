@@ -83,3 +83,10 @@ export function isAppNavigationItemActive(
     pathname === prefix || pathname.startsWith(`${prefix}/`)
   ));
 }
+
+export function getActiveAppNavigationItemId(
+  pathname: string | null,
+  items: readonly AppNavigationItem[],
+): AppNavigationItemId {
+  return items.find(item => isAppNavigationItemActive(pathname, item))?.id ?? 'today';
+}

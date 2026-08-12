@@ -170,31 +170,6 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
     }
   }, [canEditMarketBasic, isUpdatingOperationSession, marketId, operatingSession]);
 
-  const handleCloseTodayOperation = useCallback(async () => {
-    if (
-      !canEditMarketBasic ||
-      !operatingSession.canCloseToday ||
-      !operatingSession.sessionDate ||
-      isUpdatingOperationSession
-    ) return;
-
-    setIsUpdatingOperationSession(true);
-    try {
-      await updateMarket(marketId, {
-        operationPhase: 'closing',
-        operationSessionDate: operatingSession.sessionDate,
-      });
-      toast.success('今日現場操作已關閉', {
-        description: '遺漏收入仍可從紀錄頁補登。',
-      });
-    } catch (error) {
-      console.error('今日收攤失敗：', error);
-      toast.error('無法完成今日收攤，請稍後再試');
-    } finally {
-      setIsUpdatingOperationSession(false);
-    }
-  }, [canEditMarketBasic, isUpdatingOperationSession, marketId, operatingSession]);
-
   const salesPhotoEvidenceRequired = Boolean(market.salesPhotoEvidenceRequired);
   const addRevenueSalesPhotoEvidenceContext = {
     ownerId: market.relationship_owner_id ?? market.owner_id ?? userRole.ownerId ?? null,
@@ -377,13 +352,12 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
               ]}
         />
 
-        {workspaceView !== 'records' && (
+        {workspaceView === 'live' && ['early-window', 'closed'].includes(operatingSession.phase) && (
           <MarketOperatingSessionControl
             session={operatingSession}
             canManage={canEditMarketBasic}
             isUpdating={isUpdatingOperationSession}
             onStartEarly={handleStartEarlyOperation}
-            onCloseToday={handleCloseTodayOperation}
           />
         )}
 

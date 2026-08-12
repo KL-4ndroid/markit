@@ -310,7 +310,7 @@ export default function ProductsPage() {
         eyebrow={isStaffMode ? '銷售商品' : '商品管理'}
         icon={Package}
         isStaff={isStaffMode}
-        maxWidthClass="max-w-4xl"
+        widthMode="workspace"
         action={!isStaffMode ? (
             <IconButton
               label="新增商品"
@@ -321,7 +321,7 @@ export default function ProductsPage() {
         ) : undefined}
       />
 
-      <div className="mx-auto max-w-4xl px-4 pb-8 sm:px-6">
+      <div className="mx-auto max-w-5xl px-4 pb-8 sm:px-6">
         <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur-sm sm:-mx-6 sm:px-6">
           <div className="relative">
             <label htmlFor="product-search" className="sr-only">搜尋商品</label>
@@ -370,7 +370,14 @@ export default function ProductsPage() {
         </div>
 
         {filteredProducts.length > 0 ? (
-          <div className="grid gap-3 py-4 sm:grid-cols-2">
+          <div className="grid gap-3 py-4 sm:grid-cols-2 xl:grid-cols-1">
+            <div className="hidden grid-cols-[minmax(15rem,1.5fr)_minmax(7rem,.65fr)_minmax(7rem,.7fr)_minmax(6rem,.55fr)_auto] gap-4 px-5 text-xs font-semibold text-muted-foreground xl:grid">
+              <span>商品</span>
+              <span>售價</span>
+              <span>庫存</span>
+              <span>已售</span>
+              <span className="w-28 text-center">操作</span>
+            </div>
             {filteredProducts.map(product => (
               <ProductCard
                 key={product.id ?? `${product.name}-${product.createdAt}`}

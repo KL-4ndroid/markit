@@ -68,42 +68,48 @@ export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersio
   };
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-card border border-primary/10 bg-atelier-paper shadow-atelier transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-atelier-lift">
-      {coverPhotoVersion ? (
-        <div className={`aspect-[4/3] flex items-center justify-center overflow-hidden ${category.background}`}>
+    <article className="flex flex-col rounded-card border border-primary/10 bg-atelier-paper p-4 shadow-atelier transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-atelier-lift xl:grid xl:grid-cols-[minmax(15rem,1.5fr)_minmax(7rem,.65fr)_minmax(7rem,.7fr)_minmax(6rem,.55fr)_auto] xl:items-center xl:gap-4 xl:px-5 xl:py-3">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className={`flex aspect-square h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-control ${category.background}`}>
+          {coverPhotoVersion ? (
           <ProductCoverPhotoImage
             productId={product.id}
             productName={product.name}
             variant="thumbnail"
             fallback={<CategoryIcon className="h-8 w-8 text-foreground/60" aria-hidden="true" />}
           />
-        </div>
-      ) : null}
-
-      <div className="flex flex-1 flex-col p-4">
-      <div className="flex items-start justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-          {!coverPhotoVersion && (
-            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-control ${category.background}`}>
-              <CategoryIcon className="h-4 w-4 text-foreground/60" aria-hidden="true" />
-            </span>
+          ) : (
+            <CategoryIcon className="h-6 w-6 text-foreground/60" aria-hidden="true" />
           )}
-          {category.label}
-        </span>
-        <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${STOCK_TONE_CLASSES[stockState.tone]}`}>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-xs text-muted-foreground">{category.label}</span>
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium xl:hidden ${STOCK_TONE_CLASSES[stockState.tone]}`}>
+              {stockState.label}
+            </span>
+          </div>
+          <h2 className="mt-1 break-words text-base font-semibold text-foreground">{product.name}</h2>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-primary xl:hidden">{formatCurrency(product.price)}</p>
+        </div>
+      </div>
+
+      <p className="hidden text-sm font-semibold tabular-nums text-primary xl:block">
+        {formatCurrency(product.price)}
+      </p>
+      <div className="hidden xl:block">
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${STOCK_TONE_CLASSES[stockState.tone]}`}>
           {stockState.label}
         </span>
       </div>
+      <p className="hidden text-sm tabular-nums text-foreground xl:block">
+        {product.totalSold ?? 0} 件
+      </p>
 
-      <div className="mt-2 min-w-0 flex-1">
-        <h2 className="mt-1 break-words text-base font-semibold text-foreground">{product.name}</h2>
-        <p className="mt-2 text-xl font-semibold tabular-nums text-primary">{formatCurrency(product.price)}</p>
-      </div>
-
-      <Button variant="secondary" className="mt-4 w-full" onClick={handleOpen} disabled={isOpening} aria-busy={isOpening}>
+      <Button variant="secondary" className="mt-4 w-full whitespace-nowrap xl:mt-0 xl:w-auto" onClick={handleOpen} disabled={isOpening} aria-busy={isOpening}>
         {isOpening ? '開啟中...' : canEdit ? '查看與編輯' : '查看商品'}
       </Button>
-      </div>
     </article>
   );
 }
