@@ -25,9 +25,11 @@ interface TodayMarketCardProps {
   item: TodayMarketViewItem;
   isStaff: boolean;
   onOpen: () => void;
+  onStart?: () => void;
+  isStarting?: boolean;
 }
 
-export function TodayMarketCard({ item, isStaff, onOpen }: TodayMarketCardProps) {
+export function TodayMarketCard({ item, isStaff, onOpen, onStart, isStarting = false }: TodayMarketCardProps) {
   const timeLabel = marketTimeLabel(item.market);
   const surfaceClass = item.phase === 'operating'
     ? 'bg-atelier-sage-soft'
@@ -48,6 +50,11 @@ export function TodayMarketCard({ item, isStaff, onOpen }: TodayMarketCardProps)
             <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${todayMarketPhaseClasses(item.phase)}`}>
               {item.phaseLabel}
             </span>
+            {item.market.sessionOrigin === 'schedule' && (
+              <span className="ml-2 inline-flex rounded-full bg-white/65 px-2.5 py-1 text-xs font-medium text-atelier-muted">
+                固定
+              </span>
+            )}
             <h2 className="mt-3 break-words text-[1.4rem] font-semibold leading-tight text-atelier-ink">
               {item.market.name}
             </h2>
@@ -72,11 +79,12 @@ export function TodayMarketCard({ item, isStaff, onOpen }: TodayMarketCardProps)
         </div>
 
         <Button
-          onClick={onOpen}
+          onClick={onStart ?? onOpen}
+          isLoading={isStarting}
           className="mt-5 min-h-12 w-full bg-primary shadow-atelier hover:bg-primary/90 sm:w-auto"
           leadingIcon={<ArrowRight className="h-4 w-4" aria-hidden="true" />}
         >
-          {getTodayMarketActionLabel(item.phase, isStaff)}
+          {onStart ? '開始今天營業' : getTodayMarketActionLabel(item.phase, isStaff)}
         </Button>
       </div>
     </article>

@@ -58,6 +58,14 @@ const EVENT_CAPABILITY: Partial<Record<string, StaffCapability>> = {
 };
 
 const STAFF_OWNER_ONLY_EVENTS = new Set<EventType>([
+  'venue_created',
+  'venue_updated',
+  'venue_archived',
+  'operation_schedule_created',
+  'operation_schedule_updated',
+  'operation_schedule_paused',
+  'operation_schedule_resumed',
+  'operation_schedule_archived',
   'market_created',
   'market_status_changed',
   'market_started',

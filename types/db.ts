@@ -1,3 +1,11 @@
+import type {
+  OperationSchedule,
+  ScheduleOccurrenceState,
+  Venue,
+} from '@/lib/recurring-operations/types';
+
+export type { OperationSchedule, ScheduleOccurrenceState, Venue } from '@/lib/recurring-operations/types';
+
 /**
  * Féria - 資料庫類型定義
  * 
@@ -12,6 +20,14 @@
  * 所有可能的事件類型都在此定義
  */
 export type EventType =
+  | 'venue_created'
+  | 'venue_updated'
+  | 'venue_archived'
+  | 'operation_schedule_created'
+  | 'operation_schedule_updated'
+  | 'operation_schedule_paused'
+  | 'operation_schedule_resumed'
+  | 'operation_schedule_archived'
   // 市集相關事件
   | 'market_created'           // 市集建立
   | 'market_updated'           // 市集更新
@@ -97,6 +113,15 @@ export interface Market {
   status: MarketStatus;        // 當前狀態
   operationPhase?: OperationPhase; // 營業階段
   operationSessionDate?: string; // operationPhase 所屬的每日場次（YYYY-MM-DD）
+
+  // Recurring operations provenance. Optional for legacy/manual markets.
+  venueId?: string;
+  scheduleId?: string;
+  sessionOrigin?: 'manual' | 'schedule' | 'legacy';
+  scheduleOccurrenceKey?: string;
+  scheduleRevision?: number;
+  scheduleOccurrenceState?: ScheduleOccurrenceState;
+  isScheduleOverride?: boolean;
   
   // 新增：多人協作欄位
   owner_id?: string;           // 擁有者 UUID
@@ -189,6 +214,15 @@ export interface MarketCreatedPayload {
   
   notes?: string;
   salesPhotoEvidenceRequired?: boolean;
+
+  // Recurring operations provenance. Manual creation leaves these unset.
+  venueId?: string;
+  scheduleId?: string;
+  sessionOrigin?: 'manual' | 'schedule' | 'legacy';
+  scheduleOccurrenceKey?: string;
+  scheduleRevision?: number;
+  scheduleOccurrenceState?: ScheduleOccurrenceState;
+  isScheduleOverride?: boolean;
 }
 
 /**
@@ -470,7 +504,47 @@ export type ChecklistItemEventPayload = MarketIdPayload & {
   completed?: boolean;
 };
 
+export type VenueCreatedPayload = Omit<
+  Venue,
+  'id' | 'owner_id' | 'createdAt' | 'updatedAt' | 'sync_status'
+> & {
+  venueId: string;
+};
+
+export type VenueUpdatedPayload = {
+  venueId: string;
+  updates: Partial<Omit<Venue, 'id' | 'owner_id' | 'createdAt' | 'updatedAt'>>;
+};
+
+export type VenueIdPayload = {
+  venueId: string;
+};
+
+export type OperationScheduleCreatedPayload = Omit<
+  OperationSchedule,
+  'id' | 'owner_id' | 'createdAt' | 'updatedAt' | 'sync_status'
+> & {
+  scheduleId: string;
+};
+
+export type OperationScheduleUpdatedPayload = {
+  scheduleId: string;
+  updates: Partial<Omit<OperationSchedule, 'id' | 'owner_id' | 'createdAt' | 'updatedAt'>>;
+};
+
+export type OperationScheduleIdPayload = {
+  scheduleId: string;
+};
+
 export type EventPayloadMap = {
+  venue_created: VenueCreatedPayload;
+  venue_updated: VenueUpdatedPayload;
+  venue_archived: VenueIdPayload;
+  operation_schedule_created: OperationScheduleCreatedPayload;
+  operation_schedule_updated: OperationScheduleUpdatedPayload;
+  operation_schedule_paused: OperationScheduleIdPayload;
+  operation_schedule_resumed: OperationScheduleIdPayload;
+  operation_schedule_archived: OperationScheduleIdPayload;
   market_created: MarketCreatedPayload & {
     market_id?: string;
   };

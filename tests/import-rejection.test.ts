@@ -107,11 +107,16 @@ runTest('rejects version 0', () => {
   );
 });
 
-runTest('rejects version 2', () => {
-  assert.throws(
-    () => parseBackupData(JSON.stringify({ ...validBackup(), version: 2 })),
-    /不支援的備份版本/,
-  );
+runTest('accepts version 2 with recurring operation arrays', () => {
+  const parsed = parseBackupData(JSON.stringify({
+    ...validBackup(),
+    version: 2,
+    venues: [],
+    operationSchedules: [],
+  }));
+  assert.equal(parsed.version, 2);
+  assert.deepEqual(parsed.venues, []);
+  assert.deepEqual(parsed.operationSchedules, []);
 });
 
 runTest('rejects missing exportedAt', () => {

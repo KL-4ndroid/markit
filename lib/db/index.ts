@@ -13,6 +13,8 @@ import type {
   Product,
   DailyStats,
   Settings,
+  OperationSchedule,
+  Venue,
 } from '@/types/db';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import type { LocalPendingSalesPhotoEvidencePayload } from '@/lib/sales/photo-evidence-pending-payload-storage';
@@ -66,6 +68,8 @@ export class MarketPulseDB extends Dexie {
   salesPhotoEvidencePendingPayloads!: Table<LocalPendingSalesPhotoEvidencePayload, string>;
   productCoverPhotoPendingUploads!: Table<LocalPendingProductCoverPhoto, string>;
   productCoverPhotoPendingPayloads!: Table<LocalPendingProductCoverPhotoPayload, string>;
+  venues!: Table<Venue, string>;
+  operationSchedules!: Table<OperationSchedule, string>;
 
   constructor() {
     super('MarketPulseDB');
@@ -270,6 +274,21 @@ export class MarketPulseDB extends Dexie {
       productCoverPhotoPendingUploads: 'productId, status, updatedAt, createdAt',
       productCoverPhotoPendingPayloads: 'productId, updatedAt',
     });
+
+    this.version(8).stores({
+      events: 'id, type, timestamp, actor_id, market_id, sync_status',
+      markets: 'id, status, name, startDate, endDate, owner_id, is_collaborative, sync_status, isDeleted, venueId, scheduleId, &scheduleOccurrenceKey',
+      products: 'id, category, name, isActive, market_id, owner_id',
+      dailyStats: '++id, [date+marketId], date, marketId',
+      settings: '++id',
+      syncQueue: 'id, status, created_at',
+      salesPhotoEvidencePendingCreations: 'queueId, saleEventId, ownerId, marketId, status, updatedAt, createdAt',
+      salesPhotoEvidencePendingPayloads: 'queueId, ownerId, marketId, updatedAt, createdAt',
+      productCoverPhotoPendingUploads: 'productId, status, updatedAt, createdAt',
+      productCoverPhotoPendingPayloads: 'productId, updatedAt',
+      venues: 'id, owner_id, status, sync_status',
+      operationSchedules: 'id, owner_id, venueId, status, sync_status, [owner_id+venueId]',
+    });
   }
 }
 
@@ -351,11 +370,13 @@ export async function initializeDatabase(): Promise<void> {
  */
 export async function clearAllData(): Promise<void> {
   try {
-    await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats], async () => {
+    await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.venues, db.operationSchedules], async () => {
       await db.events.clear();
       await db.markets.clear();
       await db.products.clear();
       await db.dailyStats.clear();
+      await db.venues.clear();
+      await db.operationSchedules.clear();
     });
     
     console.log('🗑️ 所有資料已清空（設定保留）');
@@ -371,13 +392,15 @@ export async function clearAllData(): Promise<void> {
 export async function exportData(): Promise<string> {
   try {
     const data = {
-      version: 1,
+      version: 2,
       exportedAt: Date.now(),
       events: await db.events.toArray(),
       markets: await db.markets.toArray(),
       products: await db.products.toArray(),
       dailyStats: await db.dailyStats.toArray(),
       settings: await db.settings.toArray(),
+      venues: await db.venues.toArray(),
+      operationSchedules: await db.operationSchedules.toArray(),
     };
     
     return JSON.stringify(data, null, 2);
@@ -391,13 +414,15 @@ export async function checkCurrentDatabaseIntegrity(
   options: IntegrityCheckOptions = {}
 ): Promise<IntegrityResult> {
   return checkBackupIntegrity({
-    version: 1,
+    version: 2,
     exportedAt: Date.now(),
     events: await db.events.toArray(),
     markets: await db.markets.toArray(),
     products: await db.products.toArray(),
     dailyStats: await db.dailyStats.toArray(),
     settings: await db.settings.toArray(),
+    venues: await db.venues.toArray(),
+    operationSchedules: await db.operationSchedules.toArray(),
   }, options);
 }
 
@@ -410,13 +435,15 @@ export async function checkAppDatabaseIntegrity(
   options: IntegrityCheckOptions = {}
 ): Promise<IntegrityResult> {
   return checkAppIntegrity({
-    version: 1,
+    version: 2,
     exportedAt: Date.now(),
     events: await db.events.toArray(),
     markets: await db.markets.toArray(),
     products: await db.products.toArray(),
     dailyStats: await db.dailyStats.toArray(),
     settings: await db.settings.toArray(),
+    venues: await db.venues.toArray(),
+    operationSchedules: await db.operationSchedules.toArray(),
   }, options);
 }
 
@@ -516,18 +543,30 @@ function runReplayReadinessCheck(data: BackupData): IntegrityResult {
 
 async function replaceImportedData(data: BackupData): Promise<void> {
   // 清空現有資料並匯入
-  await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings], async () => {
+  await db.transaction('rw', [
+    db.events,
+    db.markets,
+    db.products,
+    db.dailyStats,
+    db.settings,
+    db.venues,
+    db.operationSchedules,
+  ], async () => {
     await db.events.clear();
     await db.markets.clear();
     await db.products.clear();
     await db.dailyStats.clear();
     await db.settings.clear();
+    await db.venues.clear();
+    await db.operationSchedules.clear();
     
     await db.events.bulkAdd(data.events);
     await db.markets.bulkAdd(data.markets);
     await db.products.bulkAdd(data.products);
     await db.dailyStats.bulkAdd(data.dailyStats);
     await db.settings.bulkAdd(data.settings);
+    await db.venues.bulkAdd(data.venues ?? []);
+    await db.operationSchedules.bulkAdd(data.operationSchedules ?? []);
   });
 }
 
@@ -540,6 +579,8 @@ async function readPostImportData(data: BackupData): Promise<BackupData> {
     products: await db.products.toArray(),
     dailyStats: await db.dailyStats.toArray(),
     settings: await db.settings.toArray(),
+    venues: await db.venues.toArray(),
+    operationSchedules: await db.operationSchedules.toArray(),
   };
 }
 

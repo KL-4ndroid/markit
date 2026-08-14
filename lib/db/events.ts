@@ -38,6 +38,12 @@ import type {
   DealDeletedPayload,
   DailyStats,
   Settings,
+  OperationScheduleCreatedPayload,
+  OperationScheduleIdPayload,
+  OperationScheduleUpdatedPayload,
+  VenueCreatedPayload,
+  VenueIdPayload,
+  VenueUpdatedPayload,
 } from '@/types/db';
 
 /**
@@ -146,6 +152,50 @@ function validateEventPayload(type: EventType, payload: EventPayload): void {
       assertString(record.endDate ?? record.end_date, 'endDate', type);
       assertNumber(record.registrationFee ?? record.registration_fee, 'registrationFee', type);
       assertNumber(record.boothCost ?? record.booth_cost, 'boothCost', type);
+      return;
+
+    case 'venue_created':
+      assertString(record.venueId, 'venueId', type);
+      assertString(record.name, 'name', type);
+      assertString(record.status, 'status', type);
+      return;
+
+    case 'venue_updated':
+      assertString(record.venueId, 'venueId', type);
+      if (!record.updates || typeof record.updates !== 'object' || Array.isArray(record.updates)) {
+        throw new Error(`Invalid ${type} payload: updates must be an object`);
+      }
+      return;
+
+    case 'venue_archived':
+      assertString(record.venueId, 'venueId', type);
+      return;
+
+    case 'operation_schedule_created':
+      assertString(record.scheduleId, 'scheduleId', type);
+      assertString(record.venueId, 'venueId', type);
+      assertString(record.timezone, 'timezone', type);
+      assertString(record.status, 'status', type);
+      assertNumber(record.revision, 'revision', type);
+      if (!record.recurrence || typeof record.recurrence !== 'object' || Array.isArray(record.recurrence)) {
+        throw new Error(`Invalid ${type} payload: recurrence must be an object`);
+      }
+      if (!record.defaults || typeof record.defaults !== 'object' || Array.isArray(record.defaults)) {
+        throw new Error(`Invalid ${type} payload: defaults must be an object`);
+      }
+      return;
+
+    case 'operation_schedule_updated':
+      assertString(record.scheduleId, 'scheduleId', type);
+      if (!record.updates || typeof record.updates !== 'object' || Array.isArray(record.updates)) {
+        throw new Error(`Invalid ${type} payload: updates must be an object`);
+      }
+      return;
+
+    case 'operation_schedule_paused':
+    case 'operation_schedule_resumed':
+    case 'operation_schedule_archived':
+      assertString(record.scheduleId, 'scheduleId', type);
       return;
 
     case 'market_updated':
@@ -427,7 +477,7 @@ export async function recordEvent(
 
     await db.transaction(
       'rw',
-      [db.events, db.markets, db.products, db.dailyStats],
+      [db.events, db.markets, db.products, db.dailyStats, db.venues, db.operationSchedules],
       async () => {
         // 步驟 1：寫入事件到 events 表
         await db.events.add(event);
@@ -467,6 +517,76 @@ export async function recordEvent(
 }
 
 // ==================== 市集相關事件處理器 ====================
+
+registerEventHandler('venue_created', async (event: Event<VenueCreatedPayload>, db) => {
+  const { venueId, ...payload } = event.payload;
+  await db.venues.add({
+    ...payload,
+    id: venueId,
+    owner_id: event.actor_id || 'local',
+    sync_status: 'local_only',
+    createdAt: event.timestamp,
+    updatedAt: event.timestamp,
+  });
+});
+
+registerEventHandler('venue_updated', async (event: Event<VenueUpdatedPayload>, db) => {
+  const updated = await db.venues.update(event.payload.venueId, {
+    ...event.payload.updates,
+    updatedAt: event.timestamp,
+  });
+  if (updated !== 1) throw new Error(`Venue not found: ${event.payload.venueId}`);
+});
+
+registerEventHandler('venue_archived', async (event: Event<VenueIdPayload>, db) => {
+  const updated = await db.venues.update(event.payload.venueId, {
+    status: 'archived',
+    updatedAt: event.timestamp,
+  });
+  if (updated !== 1) throw new Error(`Venue not found: ${event.payload.venueId}`);
+});
+
+registerEventHandler('operation_schedule_created', async (event: Event<OperationScheduleCreatedPayload>, db) => {
+  const { scheduleId, ...payload } = event.payload;
+  await db.operationSchedules.add({
+    ...payload,
+    id: scheduleId,
+    owner_id: event.actor_id || 'local',
+    sync_status: 'local_only',
+    createdAt: event.timestamp,
+    updatedAt: event.timestamp,
+  });
+});
+
+registerEventHandler('operation_schedule_updated', async (event: Event<OperationScheduleUpdatedPayload>, db) => {
+  const updated = await db.operationSchedules.update(event.payload.scheduleId, {
+    ...event.payload.updates,
+    updatedAt: event.timestamp,
+  });
+  if (updated !== 1) throw new Error(`Operation schedule not found: ${event.payload.scheduleId}`);
+});
+
+async function updateOperationScheduleStatus(
+  event: Event<OperationScheduleIdPayload>,
+  db: typeof import('./index').db,
+  status: 'active' | 'paused' | 'archived'
+): Promise<void> {
+  const updated = await db.operationSchedules.update(event.payload.scheduleId, {
+    status,
+    updatedAt: event.timestamp,
+  });
+  if (updated !== 1) throw new Error(`Operation schedule not found: ${event.payload.scheduleId}`);
+}
+
+registerEventHandler('operation_schedule_paused', (event, db) =>
+  updateOperationScheduleStatus(event as Event<OperationScheduleIdPayload>, db, 'paused')
+);
+registerEventHandler('operation_schedule_resumed', (event, db) =>
+  updateOperationScheduleStatus(event as Event<OperationScheduleIdPayload>, db, 'active')
+);
+registerEventHandler('operation_schedule_archived', (event, db) =>
+  updateOperationScheduleStatus(event as Event<OperationScheduleIdPayload>, db, 'archived')
+);
 
 /**
  * 處理「市集建立」事件（UUID 版本）
@@ -539,6 +659,13 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
     umbrellaFree: payload.umbrellaFree,
     tableclothFree: payload.tableclothFree,
     salesPhotoEvidenceRequired: payload.salesPhotoEvidenceRequired ?? false,
+    venueId: payload.venueId,
+    scheduleId: payload.scheduleId,
+    sessionOrigin: payload.sessionOrigin,
+    scheduleOccurrenceKey: payload.scheduleOccurrenceKey,
+    scheduleRevision: payload.scheduleRevision,
+    scheduleOccurrenceState: payload.scheduleOccurrenceState,
+    isScheduleOverride: payload.isScheduleOverride,
     
     notes: payload.notes,
     
@@ -1227,13 +1354,15 @@ export async function queryEvents(options: {
  */
 async function collectIntegritySnapshot(): Promise<BackupData> {
   return {
-    version: 1,
+    version: 2,
     exportedAt: Date.now(),
     events: await db.events.toArray(),
     markets: await db.markets.toArray(),
     products: await db.products.toArray(),
     dailyStats: await db.dailyStats.toArray(),
     settings: await db.settings.toArray(),
+    venues: await db.venues.toArray(),
+    operationSchedules: await db.operationSchedules.toArray(),
   };
 }
 
@@ -1242,10 +1371,12 @@ export async function rebuildSnapshots(): Promise<void> {
   
   try {
     // 清空所有快照表
-    await db.transaction('rw', [db.markets, db.products, db.dailyStats], async () => {
+    await db.transaction('rw', [db.markets, db.products, db.dailyStats, db.venues, db.operationSchedules], async () => {
       await db.markets.clear();
       await db.products.clear();
       await db.dailyStats.clear();
+      await db.venues.clear();
+      await db.operationSchedules.clear();
     });
     
     // 按時間順序重放所有事件

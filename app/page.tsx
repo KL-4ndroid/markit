@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
 
 import { TodayMarketCard, todayMarketPhaseClasses } from '@/components/home/TodayMarketCard';
 import { StaffBadge } from '@/components/staff/StaffBadge';
@@ -19,7 +20,7 @@ import { StateView } from '@/components/ui/StateView';
 import { SyncStatus } from '@/hooks/useSync';
 import { useRoleContext } from '@/lib/role-context';
 import { db } from '@/lib/db';
-import { useMarkets } from '@/lib/db/hooks';
+import { startMarket, useMarkets } from '@/lib/db/hooks';
 import {
   buildTodayViewModel,
 } from '@/lib/home/today-view-model';
@@ -31,6 +32,8 @@ import {
 import { useSyncContext } from '@/lib/sync-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
+import { canStartScheduledMarket } from '@/lib/recurring-operations';
+import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 
 const DASHBOARD_ROLE_NOT_READY_OWNER_ID = '__role_not_ready__';
 
@@ -107,10 +110,11 @@ function TaskRow({ icon, title, description, actionLabel, onClick, tone = 'sage'
 export default function HomePage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { userRole, isStaff } = useRoleContext();
+  const { userRole, isStaff, isOwner, roleRefreshState } = useRoleContext();
   const { status, pendingCount, sync } = useSyncContext();
   const [now, setNow] = useState(() => new Date());
   const [ownerBrandName, setOwnerBrandName] = useState('Féria - 出攤筆記');
+  const [startingMarketId, setStartingMarketId] = useState<string | null>(null);
 
   const currentOwnerId = isStaff ? userRole.ownerId : user?.id;
   const scopedOwnerId = currentOwnerId ?? DASHBOARD_ROLE_NOT_READY_OWNER_ID;
@@ -157,6 +161,12 @@ export default function HomePage() {
   }, [isStaff, user?.id]);
 
   const todayView = useMemo(() => buildTodayViewModel(allMarkets, now), [allMarkets, now]);
+  const canStartMarketByRole = roleRefreshState.stage === 'ready'
+    && roleRefreshState.isAuthorizationFresh
+    && hasCapability(deriveRoleCapabilities({
+      isOwner: roleRefreshState.permissions.isOwner,
+      staffRole: userRole.staffRole,
+    }), 'canEditMarketBasic');
   const todayMarketIds = useMemo(
     () => todayView.todayMarkets.flatMap(item => item.market.id ? [item.market.id] : []),
     [todayView.todayMarkets],
@@ -174,6 +184,30 @@ export default function HomePage() {
   const openMarket = (marketId?: string, task?: 'pending-photos') => {
     if (!marketId) return;
     router.push(buildMarketDetailHref(marketId, { task }));
+  };
+
+  const startScheduledMarket = async (marketId: string) => {
+    const market = allMarkets.find(candidate => candidate.id === marketId);
+    if (
+      !market
+      || !canStartMarketByRole
+      || !canStartScheduledMarket(market, now)
+    ) {
+      toast.error('目前無法開始這個固定場次，請重新整理後再試。');
+      return;
+    }
+
+    setStartingMarketId(marketId);
+    try {
+      await startMarket(marketId);
+      toast.success('今天的營業已開始');
+      openMarket(marketId);
+    } catch (error) {
+      console.error('開始固定營業失敗：', error);
+      toast.error('尚未開始營業，本機資料仍會保留，請再試一次。');
+    } finally {
+      setStartingMarketId(null);
+    }
   };
 
   const pendingPhotoMarketId = pendingPhotoItems[0]?.marketId;
@@ -221,6 +255,12 @@ export default function HomePage() {
               item={todayView.primaryMarket}
               isStaff={isStaff}
               onOpen={() => openMarket(todayView.primaryMarket?.market.id)}
+              onStart={todayView.primaryMarket.market.id
+                && canStartMarketByRole
+                && canStartScheduledMarket(todayView.primaryMarket.market, now)
+                ? () => void startScheduledMarket(todayView.primaryMarket!.market.id!)
+                : undefined}
+              isStarting={startingMarketId === todayView.primaryMarket.market.id}
             />
           ) : (
             <StateView

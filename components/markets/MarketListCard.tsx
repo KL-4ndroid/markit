@@ -37,6 +37,11 @@ export function MarketListCard({ item, isStaff, contextLabel, isOpening = false,
                 {contextLabel}
               </span>
             ) : null}
+            {item.market.sessionOrigin === 'schedule' ? (
+              <span className="inline-flex rounded-full bg-atelier-paper px-2.5 py-1 text-xs font-medium text-atelier-muted ring-1 ring-primary/10">
+                固定
+              </span>
+            ) : null}
           </div>
           <h2 className="mt-2 break-words text-base font-semibold text-foreground sm:text-lg">
             {item.market.name}

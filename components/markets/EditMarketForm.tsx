@@ -34,6 +34,7 @@ interface EditMarketFormProps {
   market: Market;
   onSuccess?: () => void;
   mode?: 'owner' | 'manager';
+  markScheduleOverride?: boolean;
 }
 
 interface EditMarketFormValues {
@@ -90,6 +91,7 @@ export function EditMarketForm({
   market,
   onSuccess,
   mode = 'owner',
+  markScheduleOverride = false,
 }: EditMarketFormProps) {
   const isManagerMode = mode === 'manager';
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -196,6 +198,7 @@ export function EditMarketForm({
         umbrellaFree,
         commissionRate: formData.commissionRate,
         notes: formData.notes.trim(),
+        ...(markScheduleOverride ? { isScheduleOverride: true } : {}),
       };
 
       await updateMarket(market.id!, isManagerMode ? managerUpdates : ownerUpdates);

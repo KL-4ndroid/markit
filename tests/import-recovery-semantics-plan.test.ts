@@ -102,7 +102,8 @@ runTest('importData source order matches documented safety semantics', () => {
 });
 
 runTest('importData replacement transaction still stays inside one helper transaction block', () => {
-  const transactionIndex = importSource.indexOf("await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings], async () => {");
+  const replacementFunctionIndex = importSource.indexOf('async function replaceImportedData');
+  const transactionIndex = importSource.indexOf("await db.transaction('rw', [", replacementFunctionIndex);
 
   assert.ok(transactionIndex > -1, 'replacement transaction must exist');
   for (const operation of [
@@ -111,11 +112,15 @@ runTest('importData replacement transaction still stays inside one helper transa
     'await db.products.clear();',
     'await db.dailyStats.clear();',
     'await db.settings.clear();',
+    'await db.venues.clear();',
+    'await db.operationSchedules.clear();',
     'await db.events.bulkAdd(data.events);',
     'await db.markets.bulkAdd(data.markets);',
     'await db.products.bulkAdd(data.products);',
     'await db.dailyStats.bulkAdd(data.dailyStats);',
     'await db.settings.bulkAdd(data.settings);',
+    'await db.venues.bulkAdd(data.venues ?? []);',
+    'await db.operationSchedules.bulkAdd(data.operationSchedules ?? []);',
   ]) {
     assert.match(importSource, new RegExp(operation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }

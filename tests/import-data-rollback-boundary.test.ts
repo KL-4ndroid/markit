@@ -149,10 +149,11 @@ runTest('replay-unsafe import precheck stops before backup table reads and trans
 });
 
 runTest('import replacement clear and bulkAdd operations stay inside one transaction block', () => {
-  const transactionStart = importSource.indexOf("await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings], async () => {");
+  const replacementFunctionStart = importSource.indexOf('async function replaceImportedData');
+  const transactionStart = importSource.indexOf("await db.transaction('rw', [", replacementFunctionStart);
   assert.notEqual(transactionStart, -1, 'importData must use one replacement transaction');
 
-  const transactionEnd = importSource.indexOf('\n    });', transactionStart);
+  const transactionEnd = importSource.indexOf('\n  });', transactionStart);
   assert.notEqual(transactionEnd, -1, 'importData transaction block must close before post-import validation');
 
   const transactionBlock = importSource.slice(transactionStart, transactionEnd);
@@ -163,11 +164,15 @@ runTest('import replacement clear and bulkAdd operations stay inside one transac
     'await db.products.clear();',
     'await db.dailyStats.clear();',
     'await db.settings.clear();',
+    'await db.venues.clear();',
+    'await db.operationSchedules.clear();',
     'await db.events.bulkAdd(data.events);',
     'await db.markets.bulkAdd(data.markets);',
     'await db.products.bulkAdd(data.products);',
     'await db.dailyStats.bulkAdd(data.dailyStats);',
     'await db.settings.bulkAdd(data.settings);',
+    'await db.venues.bulkAdd(data.venues ?? []);',
+    'await db.operationSchedules.bulkAdd(data.operationSchedules ?? []);',
   ]) {
     assert.match(transactionBlock, new RegExp(operation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }

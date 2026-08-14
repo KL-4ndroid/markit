@@ -12,6 +12,7 @@ import { BottomNavigation } from '@/components/BottomNavigation';
 import { GlobalOverlayHost } from '@/components/global-overlays/GlobalOverlayHost';
 import { PWASplashScreen } from '@/components/PWASplashScreen';
 import { RegisterServiceWorker } from '@/app/register-sw';
+import { RecurringOperationsMaterializationGate } from '@/components/recurring-operations/RecurringOperationsMaterializationGate';
 import {
   AUTH_FLOW_PUBLIC_ROUTES,
   isPathWithinAnyRoute,
@@ -80,6 +81,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <PWASplashScreen />
       <AuthGuard>
         <RoleGuard>
+          <RecurringOperationsMaterializationGate />
           <div className="japanese-app min-h-screen bg-background">
             <div className="lg:grid lg:min-h-dvh lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)]">
               <BottomNavigation />

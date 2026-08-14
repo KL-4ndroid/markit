@@ -64,6 +64,8 @@ import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceD
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import { MarketOperatingSessionControl } from '@/components/markets/MarketOperatingSessionControl';
+import { FutureScheduleEditDialog } from '@/components/recurring-operations/FutureScheduleEditDialog';
+import { AppDialog } from '@/components/ui/AppDialog';
 import { MarketOverviewPhotoStory } from '@/components/markets/MarketOverviewPhotoStory';
 import { OperatingInteractionPanel } from '@/components/markets/OperatingInteractionPanel';
 import { OperatingMarketWorkbench } from '@/components/markets/OperatingMarketWorkbench';
@@ -106,6 +108,10 @@ import {
   findSalesPhotoEvidenceOwnerImageForSale,
 } from '@/lib/sales/photo-evidence-owner-view';
 import type { Market, MarketStatus, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
+import {
+  restoreSkippedScheduledOccurrence,
+  skipScheduledOccurrence,
+} from '@/lib/recurring-operations';
 
 const EditMarketForm = dynamic(() =>
   import('@/components/markets/EditMarketForm').then(module => module.EditMarketForm)
@@ -126,6 +132,11 @@ export function MarketDetailScreen() {
   const { user } = useAuth(); // ✅ 檢查是否已登入
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [showScheduleEditScope, setShowScheduleEditScope] = useState(false);
+  const [showFutureScheduleEdit, setShowFutureScheduleEdit] = useState(false);
+  const [markScheduleOverride, setMarkScheduleOverride] = useState(false);
+  const [isSkippingOccurrence, setIsSkippingOccurrence] = useState(false);
+  const [isRestoringOccurrence, setIsRestoringOccurrence] = useState(false);
   const [transitionSnapshot, setTransitionSnapshot] = useState<MarketDetailTransitionSnapshot | null>(null);
   const [directLocalMarket, setDirectLocalMarket] = useState<Market | undefined>(undefined);
   const [localLookupComplete, setLocalLookupComplete] = useState(false);
@@ -857,8 +868,44 @@ export function MarketDetailScreen() {
   // 處理打開編輯表單
   const handleOpenEditForm = () => {
     if (dbStatus?.ok === false) return;
+    if (market?.sessionOrigin === 'schedule') {
+      setShowScheduleEditScope(true);
+      return;
+    }
+    setMarkScheduleOverride(false);
     setShowEditForm(true);
     hideNavigation(); // 隱藏導航列
+  };
+
+  const handleSkipScheduledOccurrence = async () => {
+    if (!market?.id || !user?.id || market.sessionOrigin !== 'schedule' || isSkippingOccurrence) return;
+    setIsSkippingOccurrence(true);
+    try {
+      await skipScheduledOccurrence(market.id, { ownerId: user.id, isOwner: true });
+      toast.success('這一次已略過');
+      router.push('/markets');
+    } catch (error) {
+      console.error('略過固定場次失敗：', error);
+      toast.error('無法略過已有營業活動的場次。');
+    } finally {
+      setIsSkippingOccurrence(false);
+    }
+  };
+
+  const handleRestoreScheduledOccurrence = async () => {
+    if (!market?.id || !user?.id || market.sessionOrigin !== 'schedule' || isRestoringOccurrence) return;
+    setIsRestoringOccurrence(true);
+    try {
+      await restoreSkippedScheduledOccurrence(market.id, { ownerId: user.id, isOwner: true });
+      toast.success('這一次已恢復', { description: '場次已重新放回今日或近期安排。' });
+    } catch (error) {
+      console.error('恢復固定場次失敗：', error);
+      toast.error('目前無法恢復這一次', {
+        description: '請確認固定安排仍在進行中、日期尚未過去，且仍符合目前的星期規則。',
+      });
+    } finally {
+      setIsRestoringOccurrence(false);
+    }
   };
 
   // 處理關閉編輯表單
@@ -1240,7 +1287,7 @@ export function MarketDetailScreen() {
               <SyncStatusIndicator tone="default" />
               
               {/* ✅ 編輯按鈕：員工模式下隱藏 */}
-              {!isStaff && (
+              {!isStaff && market.scheduleOccurrenceState !== 'skipped' && (
                 <button
                   onClick={handleOpenEditForm}
                   className="flex min-h-11 items-center gap-1.5 rounded-control bg-atelier-paper px-3 text-sm font-medium text-atelier-ink shadow-sm transition-colors hover:bg-atelier-blue-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -1281,7 +1328,7 @@ export function MarketDetailScreen() {
           compactOnMobile={marketWorkspacePhase === 'operating' && resolvedOwnerWorkspaceView === 'live'}
           items={resolvedOwnerWorkspaceView === 'manage'
             ? [
-                { label: '報名進度', value: getStatusText(market.status) },
+                { label: market.sessionOrigin === 'schedule' ? '營業安排' : '報名進度', value: market.sessionOrigin === 'schedule' ? '已排定' : getStatusText(market.status) },
                 {
                   label: '固定成本',
                   value: formatCurrency(
@@ -1473,7 +1520,7 @@ export function MarketDetailScreen() {
         {/* 老闆模式不顯示流水帳 */}
 
         {/* 4. 報名狀態 Stepper - 營業中時完全隱藏 */}
-        {resolvedOwnerWorkspaceView === 'manage' && !isOperating && (
+        {resolvedOwnerWorkspaceView === 'manage' && !isOperating && market.sessionOrigin !== 'schedule' && (
           <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-foreground">報名狀態</h2>
@@ -2157,15 +2204,39 @@ export function MarketDetailScreen() {
 
 
         {/* 次要操作 */}
+        {resolvedOwnerWorkspaceView === 'manage' && market.sessionOrigin === 'schedule' && market.scheduleOccurrenceState === 'skipped' && (
+          <div className="mx-auto max-w-3xl">
+            <button
+              onClick={() => void handleRestoreScheduledOccurrence()}
+              disabled={isRestoringOccurrence}
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-white shadow-atelier transition-colors hover:bg-primary/90 disabled:opacity-60"
+            >
+              <Play className="h-5 w-5" />
+              {isRestoringOccurrence ? '恢復中…' : '恢復這一次'}
+            </button>
+          </div>
+        )}
         {resolvedOwnerWorkspaceView === 'manage' && market.status !== 'cancelled' && market.status !== 'completed' && (
           <div className="mx-auto max-w-3xl space-y-2">
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-danger/20 bg-soft-pink px-6 py-3 text-danger transition-colors hover:bg-soft-pink/80"
-            >
-              <Trash2 className="w-5 h-5" />
-              刪除記錄
-            </button>
+            {market.sessionOrigin === 'schedule' && market.scheduleOccurrenceState === 'scheduled' && market.status === 'registered' && (
+              <button
+                onClick={() => void handleSkipScheduledOccurrence()}
+                disabled={isSkippingOccurrence}
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-primary/15 bg-atelier-paper px-6 py-3 text-foreground transition-colors hover:bg-soft-yellow disabled:opacity-60"
+              >
+                <Ban className="h-5 w-5" />
+                {isSkippingOccurrence ? '處理中…' : '略過這一次'}
+              </button>
+            )}
+            {market.sessionOrigin !== 'schedule' && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-danger/20 bg-soft-pink px-6 py-3 text-danger transition-colors hover:bg-soft-pink/80"
+              >
+                <Trash2 className="w-5 h-5" />
+                刪除記錄
+              </button>
+            )}
           </div>
         )}
         </div>
@@ -2320,11 +2391,54 @@ export function MarketDetailScreen() {
       )}
 
       {/* 編輯市集表單 */}
+      {market?.sessionOrigin === 'schedule' && (
+        <AppDialog
+          open={showScheduleEditScope}
+          onClose={() => setShowScheduleEditScope(false)}
+          title="要修改哪些場次？"
+          description="這次的臨時調整不會影響下週；修改未來則保留過去與已有活動的紀錄。"
+          size="sm"
+        >
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowScheduleEditScope(false);
+                setMarkScheduleOverride(true);
+                setShowEditForm(true);
+                hideNavigation();
+              }}
+              className="min-h-12 w-full rounded-xl border border-primary/15 bg-atelier-paper px-4 text-left text-sm font-medium text-foreground hover:border-primary"
+            >
+              只修改這一次
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowScheduleEditScope(false);
+                setShowFutureScheduleEdit(true);
+              }}
+              className="min-h-12 w-full rounded-xl border border-primary/15 bg-atelier-paper px-4 text-left text-sm font-medium text-foreground hover:border-primary"
+            >
+              從這次開始都修改
+            </button>
+          </div>
+        </AppDialog>
+      )}
+      {market?.scheduleId && (
+        <FutureScheduleEditDialog
+          open={showFutureScheduleEdit}
+          scheduleId={market.scheduleId}
+          effectiveDate={market.dates?.[0] ?? market.startDate}
+          onClose={() => setShowFutureScheduleEdit(false)}
+        />
+      )}
       {market && showEditForm && (
         <EditMarketForm
           isOpen={showEditForm}
           onClose={handleCloseEditForm}
           market={market}
+          markScheduleOverride={markScheduleOverride}
           onSuccess={() => {
             showNavigation(); // 顯示導航列
           }}

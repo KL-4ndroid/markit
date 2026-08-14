@@ -1,5 +1,13 @@
 # Role / Permission Distribution Notes
 
+## 2026-08-14 | Recurring operations owner-only contract
+
+Venue and weekly schedule management is owner-only. Manager, operator, viewer, and unresolved-role sessions receive no Venue/Schedule management read or write authority and no new role capability. Staff may read only the non-sensitive recurrence compatibility fields on an already materialized Market through `staff_accessible_markets`; existing Market operation capabilities continue to decide what each Staff role may do.
+
+The new event types are fail-closed in the local role-freshness gate. Remote Venue and Schedule tables use owner-scoped RLS and are not included in Staff views. This does not change Market, product, finance, reporting, billing, recovery, or Staff capability semantics.
+
+Migration 070 mirrors the same role rule remotely: an authenticated identity with an active Staff relationship cannot insert recurring-operation events or access Venue/Schedule management tables. A restrictive event policy and a before-insert trigger provide defense in depth while preserving the existing Market event policy.
+
 ## 2026-08-05 | Security Advisor remediation planning boundary
 
 `docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md`

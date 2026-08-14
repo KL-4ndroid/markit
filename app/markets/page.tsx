@@ -37,6 +37,14 @@ const AddMarketForm = dynamic(
   () => import('@/components/markets/AddMarketForm').then(module => module.AddMarketForm),
   { ssr: false },
 );
+const AddOperationDialog = dynamic(
+  () => import('@/components/recurring-operations/AddOperationDialog').then(module => module.AddOperationDialog),
+  { ssr: false },
+);
+const FixedScheduleForm = dynamic(
+  () => import('@/components/recurring-operations/FixedScheduleForm').then(module => module.FixedScheduleForm),
+  { ssr: false },
+);
 
 type PrimaryMarketView = Exclude<MarketListStage, 'cancelled'>;
 
@@ -88,6 +96,8 @@ export default function MarketsPage() {
 
   const [selectedView, setSelectedView] = useState<MarketListStage | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isAddChoiceOpen, setIsAddChoiceOpen] = useState(false);
+  const [isFixedFormOpen, setIsFixedFormOpen] = useState(false);
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [openingMarketId, setOpeningMarketId] = useState<string | null>(null);
   const [openingMarketSnapshot, setOpeningMarketSnapshot] = useState<MarketDetailTransitionSnapshot | null>(null);
@@ -197,15 +207,41 @@ export default function MarketsPage() {
     showNavigation();
   };
 
-  const handleOpenForm = () => {
+  const handleOpenAddChoice = () => {
     if (!canLoadScopedData || dbStatus?.ok === false) return;
-    setIsFormOpen(true);
+    setIsAddChoiceOpen(true);
     hideNavigation();
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
     showNavigation();
+  };
+
+  const handleCloseAddChoice = () => {
+    setIsAddChoiceOpen(false);
+    showNavigation();
+  };
+
+  const handleSelectSingle = () => {
+    setIsAddChoiceOpen(false);
+    setIsFormOpen(true);
+  };
+
+  const handleSelectWeekly = () => {
+    setIsAddChoiceOpen(false);
+    setIsFixedFormOpen(true);
+  };
+
+  const handleCloseFixedForm = () => {
+    setIsFixedFormOpen(false);
+    showNavigation();
+  };
+
+  const handleFixedSuccess = () => {
+    toast.success('固定安排已建立', { description: '可以在固定安排頁暫停、恢復或封存。' });
+    showNavigation();
+    router.push('/markets/schedules');
   };
 
   useEffect(() => {
@@ -257,10 +293,10 @@ export default function MarketsPage() {
         widthMode="workspace"
         action={!isStaffMode ? (
             <IconButton
-              label="新增市集"
+              label="新增營業"
               tone="inverse"
               icon={<Plus className="h-5 w-5" aria-hidden="true" />}
-              onClick={handleOpenForm}
+              onClick={handleOpenAddChoice}
             />
         ) : undefined}
       />
@@ -319,7 +355,7 @@ export default function MarketsPage() {
                   : '沒有已取消的市集'}
             description={activeView === 'preparing' && !isStaffMode ? '新增下一場市集後，會從這裡開始準備。' : '切換其他分類查看市集。'}
             action={activeView === 'preparing' && !isStaffMode
-              ? <Button onClick={handleOpenForm} leadingIcon={<Plus className="h-4 w-4" />}>新增市集</Button>
+              ? <Button onClick={handleOpenAddChoice} leadingIcon={<Plus className="h-4 w-4" />}>新增營業</Button>
               : undefined}
           />
         )}
@@ -342,6 +378,22 @@ export default function MarketsPage() {
           onSuccess={handleAddSuccess}
         />
       )}
+      <AddOperationDialog
+        open={isAddChoiceOpen}
+        onClose={handleCloseAddChoice}
+        onSingle={handleSelectSingle}
+        onWeekly={handleSelectWeekly}
+        onManage={() => {
+          setIsAddChoiceOpen(false);
+          showNavigation();
+          router.push('/markets/schedules');
+        }}
+      />
+      <FixedScheduleForm
+        open={isFixedFormOpen}
+        onClose={handleCloseFixedForm}
+        onSuccess={handleFixedSuccess}
+      />
     </div>
   );
 }

@@ -1,5 +1,19 @@
 # Staff Role Permissions
 
+## 2026-08-14 Recurring Operations Permission Boundary
+
+| Role | Read Venue/Schedule management | Write Venue/Schedule | Operate an already materialized Market |
+|---|---:|---:|---:|
+| `owner` | yes | yes | yes |
+| `manager` | no | no | existing Market capabilities only |
+| `operator` | no | no | existing Market capabilities only |
+| `viewer` | no | no | read-only under the existing contract |
+| unresolved role | no | no | no privileged write |
+
+Staff receives only the non-sensitive recurrence fields attached to a materialized Market. Schedule defaults and Venue/Schedule management rows remain owner-only. `canEditMarketBasic` does not grant schedule management, and no Staff role capability is added by this feature.
+
+This boundary is enforced in both places: the local role-freshness write gate and migration 070's restrictive remote event policy/table policies. Direct API access therefore does not grant Staff a path around the hidden UI.
+
 ## 2026-06-20 Field Notes / Checklist Permission Update
 
 Field notes and checklist are shared market-detail features for owner and staff views. They are stored as market-scoped events and shown through shared reusable panels.

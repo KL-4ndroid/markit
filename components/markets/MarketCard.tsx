@@ -82,6 +82,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
 
   // 狀態文字映射
   const getStatusText = (status: MarketStatus) => {
+    if (market.sessionOrigin === 'schedule' && status === 'registered') return '已排定';
     // ✅ 檢查是否已超過舉辦日期
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -209,6 +210,9 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusStyle(market.status)}`}>
                   {getStatusText(market.status)}
                 </span>
+              )}
+              {market.sessionOrigin === 'schedule' && (
+                <span className="rounded-full bg-atelier-paper px-2 py-1 text-xs font-medium text-atelier-muted ring-1 ring-primary/10">固定</span>
               )}
               
               <h3 className="font-medium text-lg text-foreground">

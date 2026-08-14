@@ -1,4 +1,13 @@
-import type { DailyStats, Event, EventType, Market, Product, Settings } from '@/types/db';
+import type {
+  DailyStats,
+  Event,
+  EventType,
+  Market,
+  OperationSchedule,
+  Product,
+  Settings,
+  Venue,
+} from '@/types/db';
 
 export interface BackupData {
   version: number;
@@ -8,6 +17,8 @@ export interface BackupData {
   products: Product[];
   dailyStats: DailyStats[];
   settings: Settings[];
+  venues?: Venue[];
+  operationSchedules?: OperationSchedule[];
 }
 
 export interface IntegrityResult {
@@ -22,8 +33,16 @@ export interface IntegrityCheckOptions {
   profile?: IntegrityProfile;
 }
 
-const SUPPORTED_BACKUP_VERSIONS = new Set([1]);
+const SUPPORTED_BACKUP_VERSIONS = new Set([1, 2]);
 const EVENT_TYPES: ReadonlySet<string> = new Set<EventType>([
+  'venue_created',
+  'venue_updated',
+  'venue_archived',
+  'operation_schedule_created',
+  'operation_schedule_updated',
+  'operation_schedule_paused',
+  'operation_schedule_resumed',
+  'operation_schedule_archived',
   'market_created',
   'market_updated',
   'market_status_changed',
@@ -109,6 +128,41 @@ function validateBackupEventPayload(event: Event, index: number): string[] {
   };
 
   switch (event.type) {
+    case 'venue_created':
+      if (!isNonEmptyString(payload.venueId)) errors.push(`${label} missing venueId`);
+      if (!isNonEmptyString(payload.name)) errors.push(`${label} missing name`);
+      if (!isNonEmptyString(payload.status)) errors.push(`${label} missing status`);
+      break;
+
+    case 'venue_updated':
+      if (!isNonEmptyString(payload.venueId)) errors.push(`${label} missing venueId`);
+      if (!isRecord(payload.updates)) errors.push(`${label} invalid updates`);
+      break;
+
+    case 'venue_archived':
+      if (!isNonEmptyString(payload.venueId)) errors.push(`${label} missing venueId`);
+      break;
+
+    case 'operation_schedule_created':
+      if (!isNonEmptyString(payload.scheduleId)) errors.push(`${label} missing scheduleId`);
+      if (!isNonEmptyString(payload.venueId)) errors.push(`${label} missing venueId`);
+      if (!isNonEmptyString(payload.timezone)) errors.push(`${label} missing timezone`);
+      if (!isRecord(payload.recurrence)) errors.push(`${label} invalid recurrence`);
+      if (!isRecord(payload.defaults)) errors.push(`${label} invalid defaults`);
+      if (!isNumber(payload.revision)) errors.push(`${label} invalid revision`);
+      break;
+
+    case 'operation_schedule_updated':
+      if (!isNonEmptyString(payload.scheduleId)) errors.push(`${label} missing scheduleId`);
+      if (!isRecord(payload.updates)) errors.push(`${label} invalid updates`);
+      break;
+
+    case 'operation_schedule_paused':
+    case 'operation_schedule_resumed':
+    case 'operation_schedule_archived':
+      if (!isNonEmptyString(payload.scheduleId)) errors.push(`${label} missing scheduleId`);
+      break;
+
     case 'market_created':
       if (!isNonEmptyString(payload.name)) errors.push(`${label} missing name`);
       if (!isNonEmptyString(payload.location)) errors.push(`${label} missing location`);
@@ -476,7 +530,20 @@ export function parseBackupData(jsonData: string): BackupData {
     }
   }
 
-  return data as BackupData;
+  if (data.version === 2) {
+    if (!Array.isArray(data.venues)) {
+      throw new Error('備份資料缺少有效陣列欄位：venues');
+    }
+    if (!Array.isArray(data.operationSchedules)) {
+      throw new Error('備份資料缺少有效陣列欄位：operationSchedules');
+    }
+  }
+
+  return {
+    ...(data as BackupData),
+    venues: data.venues ?? [],
+    operationSchedules: data.operationSchedules ?? [],
+  };
 }
 
 /**
@@ -575,15 +642,21 @@ export function checkBackupIntegrity(
 ): IntegrityResult {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const venues = data.venues ?? [];
+  const operationSchedules = data.operationSchedules ?? [];
 
   errors.push(...findDuplicateIds(data.events, 'events'));
   errors.push(...findDuplicateIds(data.markets, 'markets'));
   errors.push(...findDuplicateIds(data.products, 'products'));
   errors.push(...findDuplicateIds(data.dailyStats, 'dailyStats'));
   errors.push(...findDuplicateIds(data.settings, 'settings'));
+  errors.push(...findDuplicateIds(venues, 'venues'));
+  errors.push(...findDuplicateIds(operationSchedules, 'operationSchedules'));
 
   const marketIds = new Set(data.markets.map(market => market.id).filter(isNonEmptyString));
   const productIds = new Set(data.products.map(product => product.id).filter(isNonEmptyString));
+  const venueIds = new Set(venues.map(venue => venue.id).filter(isNonEmptyString));
+  const scheduleIds = new Set(operationSchedules.map(schedule => schedule.id).filter(isNonEmptyString));
   const eventById = new Map(
     data.events
       .filter(event => isNonEmptyString(event.id))
@@ -629,6 +702,67 @@ export function checkBackupIntegrity(
     } else if (market.dates?.some(date => !isValidDateString(date))) {
       errors.push(`markets[${index}] dates 包含無效日期`);
     }
+    if (market.venueId && !venueIds.has(market.venueId)) {
+      errors.push(`markets[${index}] 指向不存在的 venueId：${market.venueId}`);
+    }
+    if (market.scheduleId && !scheduleIds.has(market.scheduleId)) {
+      errors.push(`markets[${index}] 指向不存在的 scheduleId：${market.scheduleId}`);
+    }
+  });
+
+  const occurrenceKeys = new Set<string>();
+  data.markets.forEach((market, index) => {
+    if (!market.scheduleOccurrenceKey) return;
+    if (occurrenceKeys.has(market.scheduleOccurrenceKey)) {
+      errors.push(`markets duplicate scheduleOccurrenceKey: ${market.scheduleOccurrenceKey}`);
+      return;
+    }
+    occurrenceKeys.add(market.scheduleOccurrenceKey);
+    if (market.sessionOrigin !== 'schedule') {
+      errors.push(`markets[${index}] scheduleOccurrenceKey requires sessionOrigin=schedule`);
+    }
+  });
+
+  venues.forEach((venue, index) => {
+    if (!isNonEmptyString(venue.id)) errors.push(`venues[${index}] 缺少有效 id`);
+    if (!isNonEmptyString(venue.owner_id)) errors.push(`venues[${index}] 缺少有效 owner_id`);
+    if (!isNonEmptyString(venue.name)) errors.push(`venues[${index}] 缺少有效 name`);
+    if (!['active', 'archived'].includes(venue.status)) errors.push(`venues[${index}] status 無效`);
+    if (!isNumber(venue.createdAt)) errors.push(`venues[${index}] createdAt 無效`);
+    if (!isNumber(venue.updatedAt)) errors.push(`venues[${index}] updatedAt 無效`);
+  });
+
+  operationSchedules.forEach((schedule, index) => {
+    if (!isNonEmptyString(schedule.id)) errors.push(`operationSchedules[${index}] 缺少有效 id`);
+    if (!isNonEmptyString(schedule.owner_id)) errors.push(`operationSchedules[${index}] 缺少有效 owner_id`);
+    if (!isNonEmptyString(schedule.venueId) || !venueIds.has(schedule.venueId)) {
+      errors.push(`operationSchedules[${index}] 指向不存在的 venueId：${String(schedule.venueId)}`);
+    }
+    if (!isNonEmptyString(schedule.timezone)) errors.push(`operationSchedules[${index}] timezone 無效`);
+    if (!['active', 'paused', 'archived'].includes(schedule.status)) {
+      errors.push(`operationSchedules[${index}] status 無效`);
+    }
+    if (!isNumber(schedule.revision) || schedule.revision < 1) {
+      errors.push(`operationSchedules[${index}] revision 無效`);
+    }
+    if (schedule.recurrence?.frequency !== 'weekly' || schedule.recurrence?.interval !== 1) {
+      errors.push(`operationSchedules[${index}] recurrence 無效`);
+    } else {
+      if (!isValidDateString(schedule.recurrence.startDate)) {
+        errors.push(`operationSchedules[${index}] recurrence.startDate 無效`);
+      }
+      if (schedule.recurrence.endDate && !isValidDateString(schedule.recurrence.endDate)) {
+        errors.push(`operationSchedules[${index}] recurrence.endDate 無效`);
+      }
+      if (!Array.isArray(schedule.recurrence.weekdays) || schedule.recurrence.weekdays.some(day => !Number.isInteger(day) || day < 0 || day > 6)) {
+        errors.push(`operationSchedules[${index}] recurrence.weekdays 無效`);
+      }
+    }
+    if (!/^\d{2}:\d{2}$/.test(schedule.startTime) || !/^\d{2}:\d{2}$/.test(schedule.endTime)) {
+      errors.push(`operationSchedules[${index}] time 無效`);
+    }
+    if (!isNumber(schedule.createdAt)) errors.push(`operationSchedules[${index}] createdAt 無效`);
+    if (!isNumber(schedule.updatedAt)) errors.push(`operationSchedules[${index}] updatedAt 無效`);
   });
 
   data.products.forEach((product, index) => {

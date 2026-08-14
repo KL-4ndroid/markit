@@ -119,7 +119,11 @@ export function buildMarketListGroups(
       market,
       stage,
       stageLabel: STAGE_LABEL[stage],
-      statusLabel: stage === 'preparing' ? MARKET_STATUS_LABEL[market.status] : STAGE_LABEL[stage],
+      statusLabel: stage === 'preparing' && market.sessionOrigin === 'schedule'
+        ? '已排定'
+        : stage === 'preparing'
+          ? MARKET_STATUS_LABEL[market.status]
+          : STAGE_LABEL[stage],
       displayDate: displayDateForStage(market, stage, today, session),
       dateRangeLabel: formatMarketListDateRange(market),
     });

@@ -4,6 +4,8 @@ import type {
   MarketCreatedPayload,
   Product,
   ProductCreatedPayload,
+  OperationSchedule,
+  Venue,
 } from '@/types/db';
 import type { MarketWithAccess, ProductWithAccess } from '@/types/staff';
 
@@ -16,6 +18,13 @@ const MARKET_CAMEL_TO_SNAKE: Record<string, string> = {
   endTime: 'end_time',
   operationPhase: 'operation_phase',
   operationSessionDate: 'operation_session_date',
+  venueId: 'venue_id',
+  scheduleId: 'schedule_id',
+  sessionOrigin: 'session_origin',
+  scheduleOccurrenceKey: 'schedule_occurrence_key',
+  scheduleRevision: 'schedule_revision',
+  scheduleOccurrenceState: 'schedule_occurrence_state',
+  isScheduleOverride: 'is_schedule_override',
   earlyEntryEnabled: 'early_entry_enabled',
   earlyEntryTime: 'early_entry_time',
   checkInTime: 'check_in_time',
@@ -180,6 +189,13 @@ export function marketCreatedPayloadToCloud(
     umbrella_free: payload.umbrellaFree ?? payload.umbrella_free,
     tablecloth_free: payload.tableclothFree ?? payload.tablecloth_free,
     sales_photo_evidence_required: payload.salesPhotoEvidenceRequired ?? payload.sales_photo_evidence_required,
+    venue_id: payload.venueId ?? payload.venue_id,
+    schedule_id: payload.scheduleId ?? payload.schedule_id,
+    session_origin: payload.sessionOrigin ?? payload.session_origin,
+    schedule_occurrence_key: payload.scheduleOccurrenceKey ?? payload.schedule_occurrence_key,
+    schedule_revision: payload.scheduleRevision ?? payload.schedule_revision,
+    schedule_occurrence_state: payload.scheduleOccurrenceState ?? payload.schedule_occurrence_state,
+    is_schedule_override: payload.isScheduleOverride ?? payload.is_schedule_override,
   });
 }
 
@@ -197,6 +213,13 @@ export function marketRowToLocal(row: AnyRecord): Market {
     status: row.status ?? 'registered',
     operationPhase: row.operationPhase ?? row.operation_phase,
     operationSessionDate: row.operationSessionDate ?? row.operation_session_date,
+    venueId: row.venueId ?? row.venue_id,
+    scheduleId: row.scheduleId ?? row.schedule_id,
+    sessionOrigin: row.sessionOrigin ?? row.session_origin,
+    scheduleOccurrenceKey: row.scheduleOccurrenceKey ?? row.schedule_occurrence_key,
+    scheduleRevision: toNumber(row.scheduleRevision ?? row.schedule_revision),
+    scheduleOccurrenceState: row.scheduleOccurrenceState ?? row.schedule_occurrence_state,
+    isScheduleOverride: row.isScheduleOverride ?? row.is_schedule_override,
     owner_id: row.owner_id,
     is_collaborative: row.is_collaborative,
     sync_status: row.sync_status,
@@ -240,6 +263,43 @@ export function marketAccessRowToLocal(row: AnyRecord): MarketWithAccess & Marke
     permissions: row.permissions as MarketWithAccess['permissions'],
     access_type: row.access_type as MarketWithAccess['access_type'],
   } as unknown as MarketWithAccess & Market;
+}
+
+export function venueRowToLocal(row: AnyRecord): Venue {
+  return definedEntries({
+    ...row,
+    id: row.id,
+    owner_id: row.owner_id,
+    name: row.name,
+    address: row.address,
+    locationNote: row.locationNote ?? row.location_note,
+    status: row.status,
+    isDeleted: row.isDeleted ?? row.is_deleted,
+    createdAt: toEpoch(row.createdAt ?? row.created_at) ?? Date.now(),
+    updatedAt: toEpoch(row.updatedAt ?? row.updated_at) ?? Date.now(),
+    sync_status: row.sync_status ?? 'synced',
+  }) as unknown as Venue;
+}
+
+export function operationScheduleRowToLocal(row: AnyRecord): OperationSchedule {
+  return definedEntries({
+    ...row,
+    id: row.id,
+    owner_id: row.owner_id,
+    venueId: row.venueId ?? row.venue_id,
+    name: row.name,
+    timezone: row.timezone,
+    recurrence: row.recurrence,
+    startTime: row.startTime ?? row.start_time,
+    endTime: row.endTime ?? row.end_time,
+    endsNextDay: row.endsNextDay ?? row.ends_next_day ?? false,
+    defaults: row.defaults ?? {},
+    status: row.status,
+    revision: toNumber(row.revision) ?? 1,
+    createdAt: toEpoch(row.createdAt ?? row.created_at) ?? Date.now(),
+    updatedAt: toEpoch(row.updatedAt ?? row.updated_at) ?? Date.now(),
+    sync_status: row.sync_status ?? 'synced',
+  }) as unknown as OperationSchedule;
 }
 
 export function productRowToLocal(row: AnyRecord): Product {
