@@ -80,7 +80,7 @@ const nextConfig = {
         async redirects() {
           return [
             {
-              source: '/markets/:id((?!detail$)[^/]+)',
+              source: '/markets/:id((?!detail$|schedules$)[^/]+)',
               destination: '/markets/detail?id=:id',
               permanent: false,
             },

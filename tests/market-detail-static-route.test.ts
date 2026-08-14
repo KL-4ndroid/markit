@@ -16,6 +16,7 @@ assert.equal(
 assert.throws(() => buildMarketDetailHref('   '), /requires a market ID/);
 
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+const nextConfigSource = readFileSync(join(projectRoot, 'next.config.mjs'), 'utf8');
 const wrapperSource = readFileSync(join(projectRoot, 'app', 'markets', 'detail', 'page.tsx'), 'utf8');
 const legacyWebPagePath = join(projectRoot, 'app', 'markets', '[id]', 'page.web.tsx');
 const legacyWebPageSource = readFileSync(legacyWebPagePath, 'utf8');
@@ -36,5 +37,14 @@ assert.equal(existsSync(legacyWebPagePath), true, 'Web must retain legacy market
 assert.match(legacyWebPageSource, /import \{ redirect \} from ['"]next\/navigation['"]/);
 assert.match(legacyWebPageSource, /redirect\(buildMarketDetailHref\(id, \{ task \}\)\)/);
 assert.match(legacyWebPageSource, /Array\.isArray\(query\.task\)/);
+assert.ok(
+  nextConfigSource.includes("source: '/markets/:id((?!detail$|schedules$)[^/]+)'"),
+  'Web legacy market redirects must preserve the fixed-schedule management route.',
+);
+
+const legacyMarketRedirectPattern = /^\/markets\/((?!detail$|schedules$)[^/]+)$/;
+assert.match('/markets/market-1', legacyMarketRedirectPattern);
+assert.doesNotMatch('/markets/detail', legacyMarketRedirectPattern);
+assert.doesNotMatch('/markets/schedules', legacyMarketRedirectPattern);
 
 console.log('PASS market detail static route');
