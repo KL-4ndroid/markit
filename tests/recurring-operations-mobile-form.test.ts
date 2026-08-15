@@ -13,6 +13,11 @@ assert.match(form, /grid grid-cols-7 gap-2/);
 assert.match(form, /min-h-11/);
 assert.match(form, /grid gap-4 sm:grid-cols-2/);
 assert.match(form, /FormSectionDisclosure title="更多預設"/);
+assert.match(form, /import \{ DatePicker \} from '@\/components\/ui\/DatePicker';/);
+assert.equal((form.match(/<DatePicker/g) ?? []).length, 2);
+assert.match(form, /<DatePicker \{\.\.\.props\} minDate=\{today\} value=\{startDate\}/);
+assert.match(form, /<DatePicker \{\.\.\.props\} minDate=\{startDate\} value=\{endDate\}/);
+assert.doesNotMatch(form, /type="date"/);
 const requiredSection = form.slice(
   form.indexOf('<section className="japanese-surface-card'),
   form.indexOf('</section>') + '</section>'.length,

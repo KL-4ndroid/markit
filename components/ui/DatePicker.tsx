@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { CalendarDays } from 'lucide-react';
+import { useEffect, useRef, type InputHTMLAttributes } from 'react';
 
-interface DatePickerProps {
+interface DatePickerProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'value' | 'defaultValue' | 'onChange' | 'min' | 'max' | 'readOnly'
+> {
   value: string;
   onChange: (value: string) => void;
   minDate?: string;
   maxDate?: string;
-  className?: string;
-  placeholder?: string;
-  required?: boolean;
 }
 
 /**
@@ -25,12 +26,14 @@ export function DatePicker({
   className = '',
   placeholder = '選擇日期',
   required = false,
+  disabled = false,
+  ...inputProps
 }: DatePickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const pickerRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!inputRef.current) return;
+    if (!inputRef.current || disabled) return;
 
     // 動態載入 DateTimePicker
     const initPicker = async () => {
@@ -63,7 +66,7 @@ export function DatePicker({
         pickerRef.current.destroy();
       }
     };
-  }, [minDate, maxDate, onChange]);
+  }, [disabled, minDate, maxDate, onChange]);
 
   // 當 value 從外部改變時，更新 input
   useEffect(() => {
@@ -73,14 +76,22 @@ export function DatePicker({
   }, [value]);
 
   return (
-    <input
-      ref={inputRef}
-      type="text"
-      readOnly
-      value={value}
-      placeholder={placeholder}
-      required={required}
-      className={className}
-    />
+    <span className="relative block">
+      <input
+        {...inputProps}
+        ref={inputRef}
+        type="text"
+        readOnly
+        value={value}
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        className={`${className} pr-12`}
+      />
+      <CalendarDays
+        className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/65"
+        aria-hidden="true"
+      />
+    </span>
   );
 }

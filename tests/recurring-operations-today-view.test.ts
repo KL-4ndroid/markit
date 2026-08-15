@@ -16,6 +16,7 @@ const view = buildTodayViewModel([
   market({ id: 'fixed-today', name: '固定早場', startTime: '09:00', sessionOrigin: 'schedule', scheduleOccurrenceState: 'scheduled' }),
   market({ id: 'skipped', sessionOrigin: 'schedule', scheduleOccurrenceState: 'skipped' }),
   market({ id: 'suppressed', sessionOrigin: 'schedule', scheduleOccurrenceState: 'suppressed' }),
+  market({ id: 'rule-removed', sessionOrigin: 'schedule', scheduleOccurrenceState: 'rule_removed' }),
 ], new Date(2026, 7, 14, 8, 0));
 
 assert.deepEqual(view.todayMarkets.map(item => item.market.id), ['fixed-today']);

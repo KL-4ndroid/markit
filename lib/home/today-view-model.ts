@@ -1,5 +1,6 @@
 import type { Market } from '@/types/db';
 import { resolveMarketOperatingSession } from '@/lib/markets/market-operating-session';
+import { isScheduleOccurrenceVisible } from '@/lib/recurring-operations/occurrence-visibility';
 
 export type TodayMarketPhase = 'operating' | 'preparing' | 'ended';
 export type TodayFocusState = TodayMarketPhase | 'idle';
@@ -61,12 +62,6 @@ function marketStartSortValue(market: Market): string {
   return market.operatingStartTime ?? market.startTime ?? '23:59';
 }
 
-function isVisibleOccurrence(market: Market): boolean {
-  return market.sessionOrigin !== 'schedule'
-    || market.scheduleOccurrenceState === undefined
-    || market.scheduleOccurrenceState === 'scheduled';
-}
-
 export function buildTodayViewModel(
   markets: readonly Market[],
   now: Date = new Date(),
@@ -74,7 +69,7 @@ export function buildTodayViewModel(
   const dateKey = toLocalDateKey(now);
 
   const todayMarkets = markets
-    .filter(market => !market.isDeleted && market.status !== 'cancelled' && isVisibleOccurrence(market))
+    .filter(market => !market.isDeleted && market.status !== 'cancelled' && isScheduleOccurrenceVisible(market))
     .filter(market => marketOccursOnDate(market, dateKey))
     .map(market => {
       const session = resolveMarketOperatingSession(market, now);
@@ -96,7 +91,7 @@ export function buildTodayViewModel(
 
   const todayMarketIds = new Set(todayMarkets.map(item => item.market.id).filter(Boolean));
   const upcomingMarkets = markets
-    .filter(market => !market.isDeleted && market.status !== 'cancelled' && market.status !== 'completed' && isVisibleOccurrence(market))
+    .filter(market => !market.isDeleted && market.status !== 'cancelled' && market.status !== 'completed' && isScheduleOccurrenceVisible(market))
     .filter(market => !market.id || !todayMarketIds.has(market.id))
     .flatMap(market => {
       const nextDate = nextFutureDate(market, dateKey);
