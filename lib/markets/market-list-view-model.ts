@@ -1,4 +1,5 @@
 import type { Market, MarketStatus } from '@/types/db';
+import { calculateEstimatedMarketNetProfit } from '@/lib/analytics/market-financial-summary';
 import { formatDisplayDateRange } from '@/lib/presentation/formatters';
 import {
   resolveMarketOperatingSession,
@@ -7,14 +8,116 @@ import {
 import { isScheduleOccurrenceVisible } from '@/lib/recurring-operations/occurrence-visibility';
 
 export type MarketListStage = 'active' | 'preparing' | 'ended' | 'cancelled';
+export type MarketPreparationFilter = 'all' | 'awaiting_decision' | 'payment_due';
+export type MarketPreparationAttention = Exclude<MarketPreparationFilter, 'all'> | null;
+
+export interface MarketEquipmentSummaryItem {
+  id: 'table' | 'chair' | 'umbrella';
+  label: string;
+  status: 'rental' | 'provided' | 'self_supplied';
+  amount: number | null;
+}
+
+export interface MarketPreparationSummary {
+  timeStatus: 'provided' | 'preset' | 'missing';
+  checkInTime: string | null;
+  operatingStartTime: string | null;
+  operatingEndTime: string | null;
+  equipment: MarketEquipmentSummaryItem[];
+  estimatedExpense: number;
+  deposit: number;
+}
+
+export interface MarketCompletionSummary {
+  totalRevenue: number | null;
+  estimatedNetProfit: number | null;
+  totalDeals: number | null;
+}
 
 export interface MarketListViewItem {
   market: Market;
   stage: MarketListStage;
+  preparationAttention: MarketPreparationAttention;
+  preparationSummary: MarketPreparationSummary | null;
+  completionSummary: MarketCompletionSummary | null;
   stageLabel: string;
   statusLabel: string;
   displayDate: string;
   dateRangeLabel: string;
+}
+
+function positiveAmount(value: number | null | undefined): number | null {
+  const normalized = finiteAmount(value);
+  return normalized > 0 ? normalized : null;
+}
+
+function buildCompletionSummary(
+  market: Market,
+  stage: MarketListStage,
+): MarketCompletionSummary | null {
+  if (stage !== 'ended') return null;
+
+  const totalRevenue = positiveAmount(market.totalRevenue);
+  const totalDeals = positiveAmount(market.totalDeals);
+  if (totalRevenue === null && totalDeals === null) return null;
+
+  return {
+    totalRevenue,
+    estimatedNetProfit: totalRevenue === null ? null : calculateEstimatedMarketNetProfit(market),
+    totalDeals,
+  };
+}
+
+function finiteAmount(value: number | null | undefined): number {
+  return Number.isFinite(value) ? Math.max(0, Number(value)) : 0;
+}
+
+function equipmentSummaryItem(
+  id: MarketEquipmentSummaryItem['id'],
+  label: string,
+  rental: number | null | undefined,
+  isFree: boolean | undefined,
+): MarketEquipmentSummaryItem {
+  const amount = finiteAmount(rental);
+  if (isFree) return { id, label, status: 'provided', amount: null };
+  if (amount > 0) return { id, label, status: 'rental', amount };
+  return { id, label, status: 'self_supplied', amount: null };
+}
+
+function buildPreparationSummary(
+  market: Market,
+  stage: MarketListStage,
+): MarketPreparationSummary | null {
+  if (stage !== 'preparing') return null;
+
+  const tableRental = market.tableFree ? 0 : finiteAmount(market.tableRental);
+  const chairRental = market.chairFree ? 0 : finiteAmount(market.chairRental);
+  const umbrellaRental = market.umbrellaFree ? 0 : finiteAmount(market.umbrellaRental);
+  const hasAnyTime = Boolean(
+    market.checkInTime || market.operatingStartTime || market.operatingEndTime,
+  );
+  const usesSingleMarketPreset = market.sessionOrigin !== 'schedule'
+    && market.checkInTime === '12:00'
+    && market.operatingStartTime === '13:00'
+    && market.operatingEndTime === '19:00';
+
+  return {
+    timeStatus: usesSingleMarketPreset ? 'preset' : hasAnyTime ? 'provided' : 'missing',
+    checkInTime: market.checkInTime || null,
+    operatingStartTime: market.operatingStartTime || null,
+    operatingEndTime: market.operatingEndTime || null,
+    equipment: [
+      equipmentSummaryItem('table', '桌', market.tableRental, market.tableFree),
+      equipmentSummaryItem('chair', '椅', market.chairRental, market.chairFree),
+      equipmentSummaryItem('umbrella', '傘', market.umbrellaRental, market.umbrellaFree),
+    ],
+    estimatedExpense: finiteAmount(market.registrationFee)
+      + finiteAmount(market.boothCost)
+      + tableRental
+      + chairRental
+      + umbrellaRental,
+    deposit: finiteAmount(market.deposit),
+  };
 }
 
 export type MarketListGroups = Record<MarketListStage, MarketListViewItem[]>;
@@ -71,6 +174,23 @@ function resolveStage(market: Market, now: Date): MarketListStage {
   return 'preparing';
 }
 
+function resolvePreparationAttention(
+  market: Market,
+  stage: MarketListStage,
+): MarketPreparationAttention {
+  if (stage !== 'preparing' || market.sessionOrigin === 'schedule') return null;
+  if (market.status === 'registered') return 'awaiting_decision';
+  if (market.status === 'accepted') return 'payment_due';
+  return null;
+}
+
+function preparingStatusLabel(market: Market): string {
+  if (market.sessionOrigin === 'schedule') return '已排定';
+  if (market.status === 'registered') return '已報名 · 等待錄取';
+  if (market.status === 'accepted') return '已錄取 · 待繳費';
+  return MARKET_STATUS_LABEL[market.status];
+}
+
 function displayDateForStage(
   market: Market,
   stage: MarketListStage,
@@ -119,12 +239,11 @@ export function buildMarketListGroups(
     groups[stage].push({
       market,
       stage,
+      preparationAttention: resolvePreparationAttention(market, stage),
+      preparationSummary: buildPreparationSummary(market, stage),
+      completionSummary: buildCompletionSummary(market, stage),
       stageLabel: STAGE_LABEL[stage],
-      statusLabel: stage === 'preparing' && market.sessionOrigin === 'schedule'
-        ? '已排定'
-        : stage === 'preparing'
-          ? MARKET_STATUS_LABEL[market.status]
-          : STAGE_LABEL[stage],
+      statusLabel: stage === 'preparing' ? preparingStatusLabel(market) : STAGE_LABEL[stage],
       displayDate: displayDateForStage(market, stage, today, session),
       dateRangeLabel: formatMarketListDateRange(market),
     });
@@ -142,18 +261,10 @@ export function buildMarketListGroups(
   return groups;
 }
 
-export function getMarketListActionLabel(stage: MarketListStage, isStaff: boolean): string {
-  if (stage === 'active') return '繼續現場';
-  if (stage === 'preparing') return isStaff ? '查看任務' : '查看準備';
-  if (stage === 'ended') return isStaff ? '查看紀錄' : '查看回顧';
-  return '查看內容';
-}
-
 export function getMarketListProgressLabel(item: MarketListViewItem): string {
   if (item.stage === 'active') return '現場記錄中';
   if (item.stage === 'preparing') return '尚未開始';
   if (item.stage === 'cancelled') return '停止作業';
 
-  const dealCount = item.market.totalDeals ?? 0;
-  return dealCount > 0 ? `成交 ${dealCount} 筆` : '回顧可查看';
+  return item.completionSummary ? '成果已記錄' : '回顧可查看';
 }

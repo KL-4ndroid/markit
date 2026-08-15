@@ -18,6 +18,7 @@ import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { useMarkets } from '@/lib/db/hooks';
 import {
   buildMarketListGroups,
+  type MarketPreparationFilter,
   type MarketListStage,
   type MarketListViewItem,
 } from '@/lib/markets/market-list-view-model';
@@ -50,6 +51,7 @@ type PrimaryMarketView = Exclude<MarketListStage, 'cancelled'>;
 
 interface MarketListReturnState {
   view: MarketListStage;
+  preparationFilter: MarketPreparationFilter;
   scrollY: number;
 }
 
@@ -61,6 +63,10 @@ function isMarketListStage(value: unknown): value is MarketListStage {
   return value === 'active' || value === 'preparing' || value === 'ended' || value === 'cancelled';
 }
 
+function isMarketPreparationFilter(value: unknown): value is MarketPreparationFilter {
+  return value === 'all' || value === 'awaiting_decision' || value === 'payment_due';
+}
+
 function readReturnState(): MarketListReturnState | null {
   try {
     const raw = sessionStorage.getItem(MARKET_LIST_RETURN_STATE_KEY);
@@ -69,6 +75,7 @@ function readReturnState(): MarketListReturnState | null {
     if (!isMarketListStage(parsed.view)) return null;
     return {
       view: parsed.view,
+      preparationFilter: isMarketPreparationFilter(parsed.preparationFilter) ? parsed.preparationFilter : 'all',
       scrollY: Number.isFinite(parsed.scrollY) ? Math.max(0, Number(parsed.scrollY)) : 0,
     };
   } catch {
@@ -95,6 +102,7 @@ export default function MarketsPage() {
   const canLoadScopedData = isRoleReady && Boolean(currentOwnerId);
 
   const [selectedView, setSelectedView] = useState<MarketListStage | null>(null);
+  const [preparationFilter, setPreparationFilter] = useState<MarketPreparationFilter>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAddChoiceOpen, setIsAddChoiceOpen] = useState(false);
   const [isFixedFormOpen, setIsFixedFormOpen] = useState(false);
@@ -103,6 +111,7 @@ export default function MarketsPage() {
   const [openingMarketSnapshot, setOpeningMarketSnapshot] = useState<MarketDetailTransitionSnapshot | null>(null);
   const [now, setNow] = useState(() => new Date());
   const activeViewRef = useRef<MarketListStage>('active');
+  const preparationFilterRef = useRef<MarketPreparationFilter>('all');
   const shortcutHandledRef = useRef(false);
 
   useEffect(() => {
@@ -133,12 +142,13 @@ export default function MarketsPage() {
     const state = readReturnState();
     if (!state) return;
     setSelectedView(state.view);
+    setPreparationFilter(state.preparationFilter);
     const timerId = window.setTimeout(() => window.scrollTo({ top: state.scrollY }), 80);
     return () => window.clearTimeout(timerId);
   }, []);
 
   useEffect(() => () => {
-    writeReturnState({ view: activeViewRef.current, scrollY: window.scrollY });
+    writeReturnState({ view: activeViewRef.current, preparationFilter: preparationFilterRef.current, scrollY: window.scrollY });
   }, []);
 
   const allMarkets = useMarkets({
@@ -154,7 +164,15 @@ export default function MarketsPage() {
       : 'ended';
   const activeView = selectedView ?? defaultView;
   activeViewRef.current = activeView;
-  const filteredMarkets = groups[activeView];
+  preparationFilterRef.current = preparationFilter;
+  const filteredMarkets = activeView === 'preparing' && preparationFilter !== 'all'
+    ? groups.preparing.filter(item => item.preparationAttention === preparationFilter)
+    : groups[activeView];
+  const preparationFilters: readonly { id: MarketPreparationFilter; label: string; count: number }[] = [
+    { id: 'all', label: '全部', count: groups.preparing.length },
+    { id: 'awaiting_decision', label: '等待錄取', count: groups.preparing.filter(item => item.preparationAttention === 'awaiting_decision').length },
+    { id: 'payment_due', label: '待繳費', count: groups.preparing.filter(item => item.preparationAttention === 'payment_due').length },
+  ];
 
   useEffect(() => {
     for (const item of filteredMarkets.slice(0, 8)) {
@@ -168,9 +186,14 @@ export default function MarketsPage() {
     { id: 'ended', label: '已結束', count: groups.ended.length },
   ];
 
-  const selectView = (view: MarketListStage) => {
+  const selectView = (view: MarketListStage, nextPreparationFilter = preparationFilter) => {
     setSelectedView(view);
-    writeReturnState({ view, scrollY: 0 });
+    writeReturnState({ view, preparationFilter: nextPreparationFilter, scrollY: 0 });
+  };
+
+  const selectPreparationFilter = (filter: MarketPreparationFilter) => {
+    setPreparationFilter(filter);
+    writeReturnState({ view: 'preparing', preparationFilter: filter, scrollY: 0 });
   };
 
   const openMarket = (item: MarketListViewItem) => {
@@ -187,7 +210,7 @@ export default function MarketsPage() {
       setOpeningMarketId(marketId);
       setOpeningMarketSnapshot(snapshot);
     });
-    writeReturnState({ view: activeView, scrollY: window.scrollY });
+    writeReturnState({ view: activeView, preparationFilter, scrollY: window.scrollY });
     router.push(buildMarketDetailHref(marketId));
   };
 
@@ -203,7 +226,8 @@ export default function MarketsPage() {
 
   const handleAddSuccess = () => {
     toast.success('市集建立成功', { description: '已加入待準備清單。' });
-    selectView('preparing');
+    setPreparationFilter('all');
+    selectView('preparing', 'all');
     showNavigation();
   };
 
@@ -323,22 +347,48 @@ export default function MarketsPage() {
           />
         )}
 
+        {activeView === 'preparing' && (
+          <section className="mt-4" aria-labelledby="preparation-filter-label">
+            <p id="preparation-filter-label" className="text-xs font-semibold text-muted-foreground">報名進度</p>
+            <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label="待準備報名進度篩選">
+              {preparationFilters.map(filter => {
+                const selected = preparationFilter === filter.id;
+                return (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => selectPreparationFilter(filter.id)}
+                    className={`flex min-h-11 items-center justify-center gap-1.5 rounded-full border px-2 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary ${selected
+                      ? 'border-primary bg-primary text-white shadow-sm'
+                      : 'border-primary/15 bg-atelier-paper text-foreground hover:border-primary/35 hover:bg-atelier-blue-soft/55'}`}
+                  >
+                    <span>{filter.label}</span>
+                    <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-xs tabular-nums ${selected ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'}`}>
+                      {filter.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {filteredMarkets.length > 0 ? (
           <div className="mt-5 space-y-3">
-            <div className="hidden grid-cols-[minmax(14rem,1.35fr)_minmax(10rem,.85fr)_minmax(10rem,1fr)_minmax(7rem,.65fr)_auto] gap-4 px-5 text-xs font-semibold text-muted-foreground xl:grid">
+            <div className="hidden grid-cols-[minmax(14rem,1.35fr)_minmax(10rem,.85fr)_minmax(10rem,1fr)_minmax(7rem,.65fr)] gap-4 px-5 text-xs font-semibold text-muted-foreground xl:grid">
               <span>市集與狀態</span>
               <span>日期</span>
               <span>地點</span>
               <span>結果</span>
-              <span className="w-28 text-center">操作</span>
             </div>
             {filteredMarkets.map(item => (
               <MarketListCard
                 key={item.market.id ?? `${item.market.name}-${item.displayDate}`}
                 item={item}
                 isStaff={isStaffMode}
-                  isOpening={openingMarketId === item.market.id}
-                  onOpen={() => openMarket(item)}
+                isOpening={openingMarketId === item.market.id}
+                onOpen={() => openMarket(item)}
               />
             ))}
           </div>
@@ -349,12 +399,20 @@ export default function MarketsPage() {
             title={activeView === 'active'
               ? '目前沒有進行中的市集'
               : activeView === 'preparing'
-                ? '目前沒有待準備的市集'
+                ? preparationFilter === 'awaiting_decision'
+                  ? '目前沒有等待錄取的市集'
+                  : preparationFilter === 'payment_due'
+                    ? '目前沒有待繳費的市集'
+                    : '目前沒有待準備的市集'
                 : activeView === 'ended'
                   ? '尚無已結束的市集'
                   : '沒有已取消的市集'}
-            description={activeView === 'preparing' && !isStaffMode ? '新增下一場市集後，會從這裡開始準備。' : '切換其他分類查看市集。'}
-            action={activeView === 'preparing' && !isStaffMode
+            description={activeView === 'preparing' && preparationFilter !== 'all'
+              ? '切換其他報名進度查看市集。'
+              : activeView === 'preparing' && !isStaffMode
+                ? '新增下一場市集後，會從這裡開始準備。'
+                : '切換其他分類查看市集。'}
+            action={activeView === 'preparing' && preparationFilter === 'all' && !isStaffMode
               ? <Button onClick={handleOpenAddChoice} leadingIcon={<Plus className="h-4 w-4" />}>新增營業</Button>
               : undefined}
           />

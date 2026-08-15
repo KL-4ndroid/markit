@@ -24,12 +24,12 @@ const editMarket = read('components/markets/EditMarketForm.tsx');
 assert.match(plan, /UX-R4 - Desktop Collections, Details, And Settings/);
 
 assert.match(marketsPage, /widthMode="workspace"/);
-for (const label of ['市集與狀態', '日期', '地點', '結果', '操作']) {
+for (const label of ['市集與狀態', '日期', '地點', '結果']) {
   assert.ok(marketsPage.includes(label), `desktop market list missing ${label}`);
 }
 assert.match(marketCard, /xl:grid-cols-\[minmax\(14rem,1\.35fr\)/);
 assert.match(marketCard, /getMarketListProgressLabel\(item\)/);
-assert.match(marketModel, /item\.market\.totalDeals \?\? 0/);
+assert.match(marketModel, /item\.completionSummary \? '成果已記錄'/);
 
 assert.match(productsPage, /widthMode="workspace"/);
 assert.match(productsPage, /sm:grid-cols-2 xl:grid-cols-1/);

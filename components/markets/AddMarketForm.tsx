@@ -52,10 +52,10 @@ function createDefaultMarketFormData(): MarketCreatedPayload {
     startDate: '',
     endDate: '',
     earlyEntryEnabled: false,
-    earlyEntryTime: '11:00',
-    checkInTime: '12:00',
-    operatingStartTime: '13:00',
-    operatingEndTime: '19:00',
+    earlyEntryTime: '',
+    checkInTime: '',
+    operatingStartTime: '',
+    operatingEndTime: '',
     registrationFee: 0,
     boothCost: 0,
     deposit: 0,
@@ -250,8 +250,8 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
         Object.assign(updated, deriveMarketDateBounds(value));
       }
       if (field === 'checkInTime' && typeof value === 'string') {
-        updated.operatingStartTime = addMinutes(value, 60);
-        updated.operatingEndTime = addMinutes(value, 420);
+        updated.operatingStartTime = value ? addMinutes(value, 60) : '';
+        updated.operatingEndTime = value ? addMinutes(value, 420) : '';
       }
       return updated;
     });
@@ -302,6 +302,10 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
         name: formData.name.trim(),
         location: formData.location.trim(),
         earlyEntryEnabled: !noEarlyEntry,
+        earlyEntryTime: !noEarlyEntry && formData.earlyEntryTime ? formData.earlyEntryTime : undefined,
+        checkInTime: formData.checkInTime || undefined,
+        operatingStartTime: formData.operatingStartTime || undefined,
+        operatingEndTime: formData.operatingEndTime || undefined,
         tableFree,
         chairFree,
         umbrellaFree,
@@ -322,11 +326,17 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
     }
   };
 
-  const operatingStartTime = formData.operatingStartTime || '13:00';
-  const operatingEndTime = formData.operatingEndTime || '19:00';
+  const operatingStartTime = formData.operatingStartTime || '';
+  const operatingEndTime = formData.operatingEndTime || '';
   const totalStartTime = noEarlyEntry
-    ? (formData.checkInTime || '12:00')
-    : (formData.earlyEntryTime || '11:00');
+    ? (formData.checkInTime || '')
+    : (formData.earlyEntryTime || '');
+  const operatingDuration = operatingStartTime && operatingEndTime
+    ? calculateMarketDurationLabel(operatingStartTime, operatingEndTime)
+    : '尚未設定';
+  const totalDuration = totalStartTime && operatingEndTime
+    ? calculateMarketDurationLabel(totalStartTime, operatingEndTime)
+    : '尚未設定';
   const fixedCostTotal = calculateMarketFixedCost({
     boothCost: formData.boothCost,
     tableRental: formData.tableRental,
@@ -427,12 +437,12 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
               <MarketTimelineFields
                 idPrefix={FIELD_PREFIX}
                 noEarlyEntry={noEarlyEntry}
-                earlyEntryTime={formData.earlyEntryTime || '11:00'}
-                checkInTime={formData.checkInTime || '12:00'}
+                earlyEntryTime={formData.earlyEntryTime || ''}
+                checkInTime={formData.checkInTime || ''}
                 operatingStartTime={operatingStartTime}
                 operatingEndTime={operatingEndTime}
-                operatingDuration={calculateMarketDurationLabel(operatingStartTime, operatingEndTime)}
-                totalDuration={calculateMarketDurationLabel(totalStartTime, operatingEndTime)}
+                operatingDuration={operatingDuration}
+                totalDuration={totalDuration}
                 disabled={isSubmitting}
                 onNoEarlyEntryChange={setNoEarlyEntry}
                 onChange={(field: MarketTimelineField, value) => handleChange(field, value)}
