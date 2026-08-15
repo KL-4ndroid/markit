@@ -3,6 +3,7 @@
 import { MapPin, SlidersHorizontal } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { FormField } from '@/components/ui/FormField';
 import { FormSectionDisclosure } from '@/components/ui/FormSectionDisclosure';
 import { FullScreenForm } from '@/components/ui/FullScreenForm';
@@ -191,10 +192,10 @@ export function FixedScheduleForm({ open, onClose, onSuccess }: FixedScheduleFor
               {props => <TimePicker {...props} value={endTime} onChange={setEndTime} className={inputClass} disabled={isSubmitting} />}
             </FormField>
             <FormField id="fixed-start-date" label="起始日期" required error={errors.startDate}>
-              {props => <input {...props} type="date" min={today} value={startDate} onChange={event => setStartDate(event.target.value)} className={inputClass} disabled={isSubmitting} />}
+              {props => <DatePicker {...props} minDate={today} value={startDate} onChange={setStartDate} className={inputClass} disabled={isSubmitting} />}
             </FormField>
             <FormField id="fixed-end-date" label="結束日期" error={errors.endDate} hint="選填；留空表示持續進行。">
-              {props => <input {...props} type="date" min={startDate} value={endDate} onChange={event => setEndDate(event.target.value)} className={inputClass} disabled={isSubmitting} />}
+              {props => <DatePicker {...props} minDate={startDate} value={endDate} onChange={setEndDate} className={inputClass} disabled={isSubmitting} />}
             </FormField>
           </div>
         </section>

@@ -1,6 +1,9 @@
 /**
- * DateTimePicker 樣式
- * 現代化設計、響應式、iOS PWA 友好
+ * DateTimePicker visual redesign reference (not loaded at runtime).
+ *
+ * The three React adapters load the Féria runtime stylesheet from
+ * public/lib/date-time-picker/DateTimePicker.css. Do not rely on this draft
+ * for production behavior without an explicit design-system migration.
  */
 
 .datetime-picker {

@@ -1,5 +1,6 @@
 export * from './date-key';
 export * from './occurrence-identity';
+export * from './occurrence-visibility';
 export * from './reconciliation';
 export * from './local-repository';
 export * from './hooks';

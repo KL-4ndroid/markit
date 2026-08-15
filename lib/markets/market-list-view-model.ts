@@ -4,6 +4,7 @@ import {
   resolveMarketOperatingSession,
   type MarketOperatingSession,
 } from '@/lib/markets/market-operating-session';
+import { isScheduleOccurrenceVisible } from '@/lib/recurring-operations/occurrence-visibility';
 
 export type MarketListStage = 'active' | 'preparing' | 'ended' | 'cancelled';
 
@@ -112,7 +113,7 @@ export function buildMarketListGroups(
   };
 
   for (const market of markets) {
-    if (market.isDeleted) continue;
+    if (market.isDeleted || !isScheduleOccurrenceVisible(market)) continue;
     const session = resolveMarketOperatingSession(market, now);
     const stage = resolveStage(market, now);
     groups[stage].push({

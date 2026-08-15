@@ -19,10 +19,10 @@
 ```
 lib/date-time-picker/
 ├── DateTimePicker.js    # 核心 JS 邏輯
-└── DateTimePicker.css   # 樣式文件
+└── DateTimePicker.css   # 未載入的視覺改版參考稿
 
 public/lib/date-time-picker/
-└── DateTimePicker.css   # 公開訪問的 CSS
+└── DateTimePicker.css   # 執行時唯一載入的 CSS
 
 components/ui/
 ├── DatePicker.tsx       # React 日期選擇器組件
@@ -189,7 +189,7 @@ interface DateTimePickerOptions {
 
 ### 樣式不正確
 
-檢查 z-index 是否被其他元素覆蓋：
+先確認修改的是 `public/lib/date-time-picker/DateTimePicker.css`。React 包裝元件以 `/lib/date-time-picker/DateTimePicker.css` 網址載入這份公開檔案；`lib` 目錄中的同名檔案只是視覺改版參考稿，不會進入執行時。再檢查 z-index 是否被其他元素覆蓋：
 
 ```css
 .datetime-picker {

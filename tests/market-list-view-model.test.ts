@@ -38,6 +38,20 @@ assert.equal(groups.preparing[0].displayDate, '2026-07-18');
 assert.equal(groups.preparing[0].statusLabel, '如期舉行');
 assert.equal(groups.active[0].statusLabel, '進行中');
 
+const recurringVisibility = buildMarketListGroups([
+  market({ id: 'manual-visible', status: 'registered', startDate: '2026-07-20', endDate: '2026-07-20' }),
+  market({ id: 'legacy-schedule-visible', status: 'registered', startDate: '2026-07-21', endDate: '2026-07-21', sessionOrigin: 'schedule' }),
+  market({ id: 'scheduled-visible', status: 'registered', startDate: '2026-07-22', endDate: '2026-07-22', sessionOrigin: 'schedule', scheduleOccurrenceState: 'scheduled' }),
+  market({ id: 'suppressed-hidden', status: 'registered', startDate: '2026-07-23', endDate: '2026-07-23', sessionOrigin: 'schedule', scheduleOccurrenceState: 'suppressed' }),
+  market({ id: 'rule-removed-hidden', status: 'registered', startDate: '2026-07-24', endDate: '2026-07-24', sessionOrigin: 'schedule', scheduleOccurrenceState: 'rule_removed' }),
+  market({ id: 'skipped-hidden', status: 'cancelled', startDate: '2026-07-25', endDate: '2026-07-25', sessionOrigin: 'schedule', scheduleOccurrenceState: 'skipped' }),
+], new Date(2026, 6, 15, 12, 0));
+assert.deepEqual(
+  recurringVisibility.preparing.map(item => item.market.id),
+  ['manual-visible', 'legacy-schedule-visible', 'scheduled-visible'],
+);
+assert.deepEqual(recurringVisibility.cancelled, []);
+
 const preparingStatuses = buildMarketListGroups([
   market({ id: 'registered', status: 'registered', startDate: '2026-07-20', endDate: '2026-07-20' }),
   market({ id: 'accepted', status: 'accepted', startDate: '2026-07-21', endDate: '2026-07-21' }),
