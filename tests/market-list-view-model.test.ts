@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   buildMarketListGroups,
   formatMarketListDateRange,
-  getMarketListActionLabel,
 } from '../lib/markets/market-list-view-model';
 import type { Market } from '../types/db';
 
@@ -60,8 +59,97 @@ const preparingStatuses = buildMarketListGroups([
 ], new Date(2026, 6, 15, 12, 0));
 assert.deepEqual(
   preparingStatuses.preparing.map(item => item.statusLabel),
-  ['已報名', '已錄取', '已繳費', '已延期']
+  ['已報名 · 等待錄取', '已錄取 · 待繳費', '已繳費', '已延期']
 );
+assert.deepEqual(
+  preparingStatuses.preparing.map(item => item.preparationAttention),
+  ['awaiting_decision', 'payment_due', null, null],
+);
+
+const preparationDetails = buildMarketListGroups([
+  market({
+    id: 'prepared-details',
+    status: 'accepted',
+    startDate: '2026-07-25',
+    endDate: '2026-07-25',
+    checkInTime: '09:00',
+    operatingStartTime: '10:00',
+    operatingEndTime: '18:00',
+    registrationFee: 100,
+    boothCost: 1200,
+    deposit: 500,
+    tableRental: 200,
+    chairRental: 0,
+    umbrellaRental: 300,
+    umbrellaFree: true,
+  }),
+], new Date(2026, 6, 15, 12, 0)).preparing[0].preparationSummary;
+assert.ok(preparationDetails);
+assert.equal(preparationDetails.timeStatus, 'provided');
+assert.equal(preparationDetails.checkInTime, '09:00');
+assert.equal(preparationDetails.estimatedExpense, 1500);
+assert.equal(preparationDetails.deposit, 500);
+assert.deepEqual(
+  preparationDetails.equipment.map(item => [item.label, item.status, item.amount]),
+  [
+    ['桌', 'rental', 200],
+    ['椅', 'self_supplied', null],
+    ['傘', 'provided', null],
+  ],
+);
+assert.equal(groups.active[0].preparationSummary, null);
+assert.equal(groups.active[0].completionSummary, null);
+
+const presetTimeDetails = buildMarketListGroups([
+  market({
+    id: 'preset-time',
+    startDate: '2026-07-26',
+    endDate: '2026-07-26',
+    checkInTime: '12:00',
+    operatingStartTime: '13:00',
+    operatingEndTime: '19:00',
+  }),
+  market({ id: 'missing-time', startDate: '2026-07-27', endDate: '2026-07-27' }),
+], new Date(2026, 6, 15, 12, 0)).preparing;
+assert.equal(presetTimeDetails[0].preparationSummary?.timeStatus, 'preset');
+assert.equal(presetTimeDetails[1].preparationSummary?.timeStatus, 'missing');
+
+const completionDetails = buildMarketListGroups([
+  market({
+    id: 'ended-with-results',
+    status: 'completed',
+    startDate: '2026-07-10',
+    endDate: '2026-07-10',
+    totalRevenue: 5000,
+    totalProfit: 3000,
+    totalDeals: 8,
+    registrationFee: 100,
+    boothCost: 800,
+    tableRental: 200,
+    chairRental: 100,
+    umbrellaRental: 300,
+    umbrellaFree: true,
+    commissionRate: 10,
+  }),
+  market({
+    id: 'ended-without-results',
+    status: 'completed',
+    startDate: '2026-07-11',
+    endDate: '2026-07-11',
+    totalRevenue: 0,
+    totalProfit: 0,
+    totalDeals: 0,
+  }),
+], new Date(2026, 6, 15, 12, 0)).ended;
+const endedWithResults = completionDetails.find(item => item.market.id === 'ended-with-results');
+const endedWithoutResults = completionDetails.find(item => item.market.id === 'ended-without-results');
+assert.deepEqual(endedWithResults?.completionSummary, {
+  totalRevenue: 5000,
+  estimatedNetProfit: 1300,
+  totalDeals: 8,
+});
+assert.equal(endedWithoutResults?.completionSummary, null);
+assert.equal(endedWithResults?.preparationSummary, null);
 
 assert.equal(formatMarketListDateRange(market({
   startDate: '2026-07-02',
@@ -106,9 +194,5 @@ assert.deepEqual(
   ['next-session-remains', 'closing-with-next-session']
 );
 assert.equal(multiDayAfterClosing.preparing[0].displayDate, '2026-07-18');
-
-assert.equal(getMarketListActionLabel('preparing', false), '查看準備');
-assert.equal(getMarketListActionLabel('preparing', true), '查看任務');
-assert.equal(getMarketListActionLabel('active', true), '繼續現場');
 
 console.log('PASS work-stage market list model');

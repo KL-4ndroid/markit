@@ -5,6 +5,10 @@ import {
   type AnalyticsConfidence,
 } from './actionable-insights';
 import type { AnalyticsDataLevel } from './data-completeness';
+import {
+  calculateEstimatedMarketNetProfit,
+  calculateTrackedMarketFixedCost,
+} from './market-financial-summary';
 
 export interface MarketRecapReport {
   title: string;
@@ -21,30 +25,6 @@ function isPositiveNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0;
 }
 
-function getFixedCost(market: Market): number {
-  const tableRental = market.tableFree ? 0 : (market.tableRental ?? 0);
-  const chairRental = market.chairFree ? 0 : (market.chairRental ?? 0);
-  const umbrellaRental = market.umbrellaFree ? 0 : (market.umbrellaRental ?? 0);
-  const tableclothRental = market.tableclothFree ? 0 : (market.tableclothRental ?? 0);
-
-  return (
-    (market.registrationFee ?? 0) +
-    (market.boothCost ?? 0) +
-    tableRental +
-    chairRental +
-    umbrellaRental +
-    tableclothRental
-  );
-}
-
-function getNetProfit(market: Market): number {
-  const revenue = market.totalRevenue ?? 0;
-  const grossProfit = market.totalProfit ?? revenue;
-  const commission = revenue * ((market.commissionRate ?? 0) / 100);
-
-  return grossProfit - getFixedCost(market) - commission;
-}
-
 function getReportTitle(markets: Market[]): string {
   if (markets.length === 1) {
     return `${markets[0].name} 回顧`;
@@ -58,8 +38,8 @@ function getResultLabel(markets: Market[]): MarketRecapReport['resultLabel'] {
   if (marketsWithRevenue.length === 0) return 'not_enough_data';
 
   const totalRevenue = marketsWithRevenue.reduce((total, market) => total + (market.totalRevenue ?? 0), 0);
-  const totalNetProfit = marketsWithRevenue.reduce((total, market) => total + getNetProfit(market), 0);
-  const totalFixedCost = marketsWithRevenue.reduce((total, market) => total + getFixedCost(market), 0);
+  const totalNetProfit = marketsWithRevenue.reduce((total, market) => total + calculateEstimatedMarketNetProfit(market), 0);
+  const totalFixedCost = marketsWithRevenue.reduce((total, market) => total + calculateTrackedMarketFixedCost(market), 0);
   const costRatio = totalRevenue > 0 ? totalFixedCost / totalRevenue : 0;
 
   if (totalNetProfit > 0 && costRatio <= 0.35) return 'strong';
@@ -73,7 +53,7 @@ function buildSummary(label: MarketRecapReport['resultLabel'], markets: Market[]
   }
 
   const totalRevenue = markets.reduce((total, market) => total + (market.totalRevenue ?? 0), 0);
-  const totalNetProfit = markets.reduce((total, market) => total + getNetProfit(market), 0);
+  const totalNetProfit = markets.reduce((total, market) => total + calculateEstimatedMarketNetProfit(market), 0);
 
   if (label === 'strong') {
     return `這個範圍整體表現良好，收入約 ${Math.round(totalRevenue)}，估計淨利約 ${Math.round(totalNetProfit)}。`;

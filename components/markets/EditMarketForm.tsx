@@ -71,10 +71,10 @@ function createEditMarketFormValues(market: Market): EditMarketFormValues {
     dates: getMarketDates(market),
     startDate: market.startDate,
     endDate: market.endDate,
-    earlyEntryTime: market.earlyEntryTime || '09:00',
-    checkInTime: market.checkInTime || '09:30',
-    operatingStartTime: market.operatingStartTime || '10:00',
-    operatingEndTime: market.operatingEndTime || '18:00',
+    earlyEntryTime: market.earlyEntryTime || '',
+    checkInTime: market.checkInTime || '',
+    operatingStartTime: market.operatingStartTime || '',
+    operatingEndTime: market.operatingEndTime || '',
     boothCost: Number(market.boothCost || 0),
     deposit: Number(market.deposit || 0),
     tableRental: Number(market.tableRental || 0),
@@ -171,10 +171,10 @@ export function EditMarketForm({
         startDate: formData.startDate,
         endDate: formData.endDate,
         earlyEntryEnabled: !noEarlyEntry,
-        earlyEntryTime: formData.earlyEntryTime,
-        checkInTime: formData.checkInTime,
-        operatingStartTime: formData.operatingStartTime,
-        operatingEndTime: formData.operatingEndTime,
+        earlyEntryTime: !noEarlyEntry && formData.earlyEntryTime ? formData.earlyEntryTime : undefined,
+        checkInTime: formData.checkInTime || undefined,
+        operatingStartTime: formData.operatingStartTime || undefined,
+        operatingEndTime: formData.operatingEndTime || undefined,
         notes: formData.notes.trim(),
       };
       const ownerUpdates = {
@@ -223,6 +223,12 @@ export function EditMarketForm({
     umbrellaFree,
   });
   const totalStartTime = noEarlyEntry ? formData.checkInTime : formData.earlyEntryTime;
+  const operatingDuration = formData.operatingStartTime && formData.operatingEndTime
+    ? calculateMarketDurationLabel(formData.operatingStartTime, formData.operatingEndTime)
+    : '尚未設定';
+  const totalDuration = totalStartTime && formData.operatingEndTime
+    ? calculateMarketDurationLabel(totalStartTime, formData.operatingEndTime)
+    : '尚未設定';
 
   return (
     <FullScreenForm
@@ -322,8 +328,8 @@ export function EditMarketForm({
               checkInTime={formData.checkInTime}
               operatingStartTime={formData.operatingStartTime}
               operatingEndTime={formData.operatingEndTime}
-              operatingDuration={calculateMarketDurationLabel(formData.operatingStartTime, formData.operatingEndTime)}
-              totalDuration={calculateMarketDurationLabel(totalStartTime, formData.operatingEndTime)}
+              operatingDuration={operatingDuration}
+              totalDuration={totalDuration}
               disabled={isSubmitting}
               onNoEarlyEntryChange={setNoEarlyEntry}
               onChange={(field: MarketTimelineField, value) => handleChange(field, value)}
