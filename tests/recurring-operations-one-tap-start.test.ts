@@ -20,5 +20,5 @@ const listView = readFileSync('lib/markets/market-list-view-model.ts', 'utf8');
 assert.match(home, /startMarket\(marketId\)/);
 assert.match(home, /roleRefreshState\.isAuthorizationFresh/);
 assert.match(detail, /market\.sessionOrigin !== 'schedule'/);
-assert.match(listView, /market\.sessionOrigin === 'schedule'[\s\S]*\? '已排定'/);
+assert.match(listView, /function preparingStatusLabel[\s\S]*market\.sessionOrigin === 'schedule'[\s\S]*return '已排定'/);
 console.log('recurring operations one-tap start tests passed');
