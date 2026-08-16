@@ -1,0 +1,109 @@
+# Web Security Headers
+
+Date: 2026-08-02
+
+Status: baseline and current-release anti-frame evidence passed; final release-candidate repeat pending
+
+## Enforced baseline
+
+Every Web response receives:
+
+| Header | Contract | Purpose |
+| --- | --- | --- |
+| `Content-Security-Policy` | `base-uri 'self'; frame-ancestors 'none'; object-src 'none'` | Reject base-tag rewriting, framing, and plugin objects |
+| `Permissions-Policy` | camera self; microphone/geolocation/payment/USB disabled | Preserve file-input camera capture while denying unused browser capabilities |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Avoid leaking path/query data cross-origin |
+| `Strict-Transport-Security` | one year, no preload/subdomain expansion | Require HTTPS after the first trusted HTTPS visit |
+| `X-Content-Type-Options` | `nosniff` | Prevent MIME sniffing |
+| `X-Frame-Options` | `DENY` | Legacy anti-framing defense |
+| `X-XSS-Protection` | `0` | Disable obsolete browser XSS auditors |
+
+The policy intentionally does not add `Cross-Origin-Opener-Policy`, because external
+window and future authentication flows need staging verification first.
+
+## Deferred full CSP
+
+A resource-loading CSP is deliberately deferred. `script-src`, `style-src`,
+`connect-src`, `img-src`, `worker-src`, and nonce/hash handling require an inventory of:
+
+- Next.js inline/bootstrap scripts and styles;
+- Supabase HTTP and realtime endpoints;
+- R2 signed image URLs and blob/data previews;
+- service worker registration and PWA assets;
+- PDF preview/download behavior;
+- analytics and any future billing-provider redirects.
+
+Do not add broad `unsafe-inline`, `unsafe-eval`, wildcard, or `https:` sources merely to
+make a strict CSP pass. Start with report-only staging telemetry, then move reviewed
+directives to enforcement.
+
+## Evidence
+
+The deployment smokes assert every exact header on `/api/health` after first verifying
+the expected release SHA. A local build does not prove the final deployment headers;
+Vercel or another edge layer may add, replace, or remove them.
+
+Remote evidence must include:
+
+- commit-bound smoke output;
+- raw header names and public values, with cookies/auth headers omitted;
+- top-level page and API samples;
+- browser console and PWA/service-worker regression review;
+- anti-framing verification from an unrelated HTTPS origin.
+
+This baseline does not enable production media, billing, analytics, or third-party
+connections and does not replace application authorization or RLS.
+
+## Local evidence
+
+The 2026-07-30 production-mode smoke verified the exact baseline on both
+`/api/health` and the public `/demo` page after the release SHA check. It also retained
+the debug/dev-API denial contract:
+
+```text
+PASS commit-bound production surface (debug 404, dev API 404, public demo available)
+```
+
+The separate commit-bound PWA smoke fetched every declared icon and screenshot, the
+manifest, service worker, and demo page with the same header contract. Browser evidence
+confirmed service-worker activation, no console errors, and no horizontal overflow at
+four viewports. An initial inline anti-frame probe was rejected by browser policy, so no
+bypass was attempted; the unrelated-origin HTTPS method below replaced it.
+
+The dirty local worktree means this is compatibility/runtime evidence, not final
+deployment evidence.
+
+## Production evidence
+
+On 2026-08-01 the Production boundary, PWA, legal-page, and Vercel API smokes first
+matched `/api/health` to `0d5b9db`, then passed the exact header contract on the public
+stable alias. Browser verification found no console errors, confirmed the service worker
+controlled `/demo`, found one `main` landmark on representative public, subscription,
+and authenticated Team routes, and found no horizontal overflow at 390x844.
+
+On 2026-08-02, commit `62bd881` passed both GitHub Actions runs, Production deployment
+`5709665655`, exact stable-alias health, and all four public release checks. A public-only
+probe page served from unrelated origin `https://httpbin.org` then framed the stable
+Production origin. Chromium rendered only its connection-refused frame state and no
+BoothBook content, matching the exact `frame-ancestors 'none'` and `X-Frame-Options:
+DENY` response evidence. No login, cookie inspection, inline URL, raw CDP, or application
+write was used.
+
+Generate the bounded probe URL only after exact release identity succeeds:
+
+```powershell
+npm.cmd run prepare:web:anti-frame-probe -- `
+  --base-url=https://markit-app-mocha.vercel.app `
+  --expected-commit=<exact-seven-character-release-sha>
+```
+
+Open only the returned `probeUrl` in Chromium and retain a public-data-only screenshot
+showing that the frame was refused. `https://httpbin.org` is a temporary evidence origin,
+not an application dependency. Repeat both the commit-bound header smoke and this browser
+probe on the final release candidate before changing the launch gate to `complete`.
+
+Probe-generator commit `b83cb14` passed GitHub Actions push run `30726585404` and
+pull-request run `30726587060`, Production deployment `5709814312`, exact stable-alias
+health, and all four public release checks. The released command then generated an
+unrelated-origin probe URL only after matching exact release `b83cb14`. This proves the
+repeat procedure is deployed; the final release-candidate repetition remains open.

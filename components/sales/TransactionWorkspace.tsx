@@ -1,0 +1,230 @@
+'use client';
+
+import { CheckCircle2, DollarSign, ImagePlus, ShoppingBag } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+
+import type {
+  SalesPhotoEvidenceRuntimeResultHandler,
+  SalesPhotoEvidenceTransactionContext,
+} from '@/lib/sales/photo-evidence-runtime-enqueue';
+import {
+  formatSalesPaymentMethod,
+  isSalesPaymentMethod,
+  type SalesPaymentMethod,
+} from '@/lib/sales/payment-methods';
+import { QuickInteractionButtons } from './QuickInteractionButtons';
+import { QuickTransactionGrid } from './QuickTransactionGrid';
+
+export type TransactionMode = 'quick' | 'products';
+type TransactionPresentation = 'card' | 'sheet';
+
+interface TransactionWorkspaceProps {
+  marketId: string;
+  salesPhotoEvidenceRequired: boolean;
+  pendingPhotoCount?: number;
+  onOpenPendingPhotos: () => void;
+  salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
+  onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
+  onTransactionCompleted?: () => void;
+  onProcessingChange?: (isProcessing: boolean) => void;
+  hideProfit?: boolean;
+  mode?: TransactionMode;
+  presentation?: TransactionPresentation;
+}
+
+const PAYMENT_STORAGE_KEY = 'markit:last-sales-payment-method';
+
+export function TransactionWorkspace({
+  marketId,
+  salesPhotoEvidenceRequired,
+  pendingPhotoCount = 0,
+  onOpenPendingPhotos,
+  salesPhotoEvidenceContext,
+  onSalesPhotoEvidenceResult,
+  onTransactionCompleted,
+  onProcessingChange,
+  hideProfit = false,
+  mode: controlledMode,
+  presentation = 'card',
+}: TransactionWorkspaceProps) {
+  const [mode, setMode] = useState<TransactionMode>('quick');
+  const [paymentMethod, setPaymentMethod] = useState<SalesPaymentMethod>('cash');
+  const [recentSale, setRecentSale] = useState<{ amount: number; paymentMethod: SalesPaymentMethod } | null>(null);
+  const noticeTimeoutRef = useRef<number | null>(null);
+  const selectedMode = controlledMode ?? mode;
+  const isSheet = presentation === 'sheet';
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(PAYMENT_STORAGE_KEY);
+      if (isSalesPaymentMethod(saved)) setPaymentMethod(saved);
+    } catch {
+      // Storage availability should never block checkout.
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleDealClosed = (event: Event) => {
+      const detail = (event as CustomEvent<{
+        marketId?: string;
+        amount?: number;
+        paymentMethod?: unknown;
+      }>).detail;
+      if (
+        detail?.marketId !== marketId ||
+        typeof detail.amount !== 'number' ||
+        !Number.isFinite(detail.amount)
+      ) {
+        return;
+      }
+
+      setRecentSale({
+        amount: detail.amount,
+        paymentMethod: isSalesPaymentMethod(detail.paymentMethod) ? detail.paymentMethod : 'other',
+      });
+      if (noticeTimeoutRef.current) window.clearTimeout(noticeTimeoutRef.current);
+      noticeTimeoutRef.current = window.setTimeout(() => setRecentSale(null), 4000);
+    };
+
+    window.addEventListener('deal-closed', handleDealClosed);
+    return () => {
+      window.removeEventListener('deal-closed', handleDealClosed);
+      if (noticeTimeoutRef.current) window.clearTimeout(noticeTimeoutRef.current);
+    };
+  }, [marketId]);
+
+  const changePaymentMethod = (next: SalesPaymentMethod) => {
+    setPaymentMethod(next);
+    try {
+      window.localStorage.setItem(PAYMENT_STORAGE_KEY, next);
+    } catch {
+      // Keep the in-memory selection when storage is unavailable.
+    }
+  };
+
+  const changeModeFromKeyboard = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    nextMode: TransactionMode
+  ) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    setMode(nextMode);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`transaction-tab-${nextMode}-${marketId}`)?.focus();
+    });
+  };
+
+  return (
+    <section className={isSheet ? '' : 'mb-6 overflow-hidden rounded-card bg-atelier-paper shadow-atelier-lift'}>
+      {!isSheet && <div className="flex items-start justify-between gap-3 bg-atelier-apricot-soft/65 px-4 py-4 sm:px-5">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-atelier-ink">現場收款</p>
+          <h2 className="mt-1 text-lg font-semibold text-atelier-ink">把這筆交易收好</h2>
+          <p className="mt-1 text-xs text-foreground">
+            成交後安全儲存 · {salesPhotoEvidenceRequired ? '本場需拍照' : '本場免拍照'}
+          </p>
+        </div>
+        {pendingPhotoCount > 0 ? (
+          <button
+            type="button"
+            onClick={onOpenPendingPhotos}
+            className="relative flex min-h-11 shrink-0 items-center gap-2 rounded-control bg-atelier-paper px-3 text-sm font-medium text-atelier-ink shadow-sm transition-colors hover:bg-atelier-rose-soft"
+            aria-label={`待補照片 ${pendingPhotoCount} 筆`}
+          >
+            <ImagePlus className="h-4 w-4 text-primary" aria-hidden="true" />
+            待補
+            <span className="min-w-5 rounded-full bg-atelier-clay px-1.5 py-0.5 text-center text-xs text-white">
+              {pendingPhotoCount}
+            </span>
+          </button>
+        ) : (
+          <div className="flex min-h-11 shrink-0 items-center gap-2 rounded-control bg-atelier-paper/75 px-3 text-sm font-medium text-status-good-text" role="status" aria-label="成交照片已齊">
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            照片已齊
+          </div>
+        )}
+      </div>}
+
+      <div className={isSheet ? '' : 'p-4 sm:p-5'}>
+        {!isSheet && <div className="mb-5 grid grid-cols-2 rounded-control bg-atelier-sage-soft p-1" role="tablist" aria-label="交易方式">
+          <button
+            id={`transaction-tab-quick-${marketId}`}
+            type="button"
+            role="tab"
+            aria-selected={selectedMode === 'quick'}
+            aria-controls={`transaction-panel-quick-${marketId}`}
+            tabIndex={selectedMode === 'quick' ? 0 : -1}
+            onClick={() => setMode('quick')}
+            onKeyDown={event => changeModeFromKeyboard(event, 'products')}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${selectedMode === 'quick' ? 'bg-atelier-paper text-primary shadow-sm' : 'text-atelier-muted hover:bg-atelier-paper/65 hover:text-atelier-ink'}`}
+          >
+            <DollarSign className="h-4 w-4" />
+            快速收款
+          </button>
+          <button
+            id={`transaction-tab-products-${marketId}`}
+            type="button"
+            role="tab"
+            aria-selected={selectedMode === 'products'}
+            aria-controls={`transaction-panel-products-${marketId}`}
+            tabIndex={selectedMode === 'products' ? 0 : -1}
+            onClick={() => setMode('products')}
+            onKeyDown={event => changeModeFromKeyboard(event, 'quick')}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${selectedMode === 'products' ? 'bg-atelier-paper text-primary shadow-sm' : 'text-atelier-muted hover:bg-atelier-paper/65 hover:text-atelier-ink'}`}
+          >
+            <ShoppingBag className="h-4 w-4" />
+            商品銷售
+          </button>
+        </div>}
+
+        {!isSheet && <div className="min-h-0" aria-live="polite" aria-atomic="true">
+          {recentSale && (
+            <div className="mb-4 flex items-center gap-3 rounded-control bg-atelier-sage-soft px-3 py-3 text-status-good-text shadow-sm" role="status">
+              <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" />
+              <p className="text-sm font-medium">
+                這筆收好了，已安全儲存 NT${recentSale.amount.toLocaleString()} · {formatSalesPaymentMethod(recentSale.paymentMethod)}
+              </p>
+            </div>
+          )}
+        </div>}
+
+        <div
+          id={`transaction-panel-quick-${marketId}`}
+          role="tabpanel"
+          aria-labelledby={`transaction-tab-quick-${marketId}`}
+          hidden={selectedMode !== 'quick'}
+        >
+          <QuickInteractionButtons
+            marketId={marketId}
+            hideProfit={hideProfit}
+            paymentMethod={paymentMethod}
+            onPaymentMethodChange={changePaymentMethod}
+            salesPhotoEvidenceContext={salesPhotoEvidenceContext}
+            onSalesPhotoEvidenceResult={onSalesPhotoEvidenceResult}
+            onTransactionCompleted={onTransactionCompleted}
+            onProcessingChange={onProcessingChange}
+            presentation={presentation}
+          />
+        </div>
+        <div
+          id={`transaction-panel-products-${marketId}`}
+          role="tabpanel"
+          aria-labelledby={`transaction-tab-products-${marketId}`}
+          hidden={selectedMode !== 'products'}
+        >
+          <QuickTransactionGrid
+            marketId={marketId}
+            embedded
+            paymentMethod={paymentMethod}
+            onPaymentMethodChange={changePaymentMethod}
+            salesPhotoEvidenceContext={salesPhotoEvidenceContext}
+            onSalesPhotoEvidenceResult={onSalesPhotoEvidenceResult}
+            onTransactionCompleted={onTransactionCompleted}
+            onProcessingChange={onProcessingChange}
+            presentation={presentation}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}

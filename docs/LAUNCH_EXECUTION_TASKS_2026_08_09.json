@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "sourceDocument": "LAUNCH_EXECUTION_MASTER_PLAN_2026_08_09.md",
+  "updatedAt": "2026-08-10",
+  "overallStatus": "not_ready",
+  "releaseOrder": ["web_core", "ios_native_paid", "android_native_paid", "web_paid_deferred"],
+  "tasks": [
+    {
+      "id": "CONTROL-MASTER-PLAN",
+      "title": "Maintain the canonical launch execution matrix",
+      "owner": "agent",
+      "status": "complete",
+      "dependsOn": [],
+      "gateRefs": [],
+      "evidence": ["docs/LAUNCH_EXECUTION_MASTER_PLAN_2026_08_09.md", "docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json"]
+    },
+    {
+      "id": "SEC-SRA000-ARTIFACT",
+      "title": "Prepare the read-only Supabase security inventory artifact",
+      "owner": "agent",
+      "status": "complete",
+      "dependsOn": [],
+      "gateRefs": [],
+      "evidence": ["docs/security/SUPABASE_SECURITY_ADVISOR_INVENTORY_RUNBOOK_2026_08_09.md", "supabase/verification/security_advisor_read_only_inventory.sql"]
+    },
+    {
+      "id": "SEC-SRA000-EXECUTION",
+      "title": "Execute and retain the masked Supabase security inventory",
+      "owner": "human",
+      "status": "pending_manual",
+      "dependsOn": ["SEC-SRA000-ARTIFACT"],
+      "gateRefs": [],
+      "evidence": ["docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "SEC-REMEDIATION",
+      "title": "Review and apply bounded Supabase security remediation batches",
+      "owner": "shared",
+      "status": "blocked_dependency",
+      "dependsOn": ["SEC-SRA000-EXECUTION"],
+      "gateRefs": [],
+      "evidence": ["docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md"]
+    },
+    {
+      "id": "NATIVE-GATE2-EVIDENCE",
+      "title": "Complete deployed R2 compensation evidence for Capacitor Gate 2",
+      "owner": "human",
+      "status": "pending_manual",
+      "dependsOn": [],
+      "gateRefs": ["native:CAPACITOR-GATE2"],
+      "evidence": ["docs/IOS_PHASE2_GATE2_COMPENSATION_RUNBOOK.md", "docs/IOS_PHASE2_GATE2_COMPENSATION_EVIDENCE_TEMPLATE.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "APPLE-ACCOUNT-READINESS",
+      "title": "Complete Apple developer account and sandbox prerequisites",
+      "owner": "human",
+      "status": "pending_manual",
+      "dependsOn": [],
+      "gateRefs": ["native:APPLE-DEVELOPER"],
+      "evidence": ["docs/subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "GOOGLE-ACCOUNT-READINESS",
+      "title": "Complete Google Play account and sandbox prerequisites",
+      "owner": "human",
+      "status": "pending_manual",
+      "dependsOn": [],
+      "gateRefs": ["native:GOOGLE-PLAY-DEVELOPER"],
+      "evidence": ["docs/subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "COMMERCIAL-POLICY",
+      "title": "Approve prices offers lifecycle rules and Founder mechanism",
+      "owner": "human",
+      "status": "pending_manual",
+      "dependsOn": [],
+      "gateRefs": ["native:STORE-CATALOG"],
+      "evidence": ["docs/subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md", "docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "STORE-CATALOG-CONFIG",
+      "title": "Record and preflight activation-disabled store catalog mappings",
+      "owner": "shared",
+      "status": "blocked_dependency",
+      "dependsOn": ["APPLE-ACCOUNT-READINESS", "GOOGLE-ACCOUNT-READINESS", "COMMERCIAL-POLICY"],
+      "gateRefs": ["native:STORE-CATALOG"],
+      "evidence": ["docs/subscription/NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json"]
+    },
+    {
+      "id": "STORE-VERIFICATION-RUNTIME",
+      "title": "Implement approved Apple and Google server verification runtime",
+      "owner": "agent",
+      "status": "pending_approval",
+      "dependsOn": ["STORE-CATALOG-CONFIG"],
+      "gateRefs": ["native:STORE-VERIFICATION"],
+      "evidence": ["docs/subscription/NATIVE_STORE_VERIFICATION_CONTRACT_2026_08_06.md"]
+    },
+    {
+      "id": "ENTITLEMENT-WRITER-RUNTIME",
+      "title": "Implement approved idempotent entitlement reconciliation writer",
+      "owner": "agent",
+      "status": "pending_approval",
+      "dependsOn": ["STORE-VERIFICATION-RUNTIME"],
+      "gateRefs": ["native:ENTITLEMENT-WRITER"],
+      "evidence": ["docs/subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md", "docs/subscription/BILLING_TEST_MATRIX.md"]
+    },
+    {
+      "id": "NATIVE-ADAPTERS",
+      "title": "Create reviewed Capacitor projects and native store adapters",
+      "owner": "agent",
+      "status": "blocked_dependency",
+      "dependsOn": ["NATIVE-GATE2-EVIDENCE", "STORE-CATALOG-CONFIG"],
+      "gateRefs": ["native:NATIVE-ADAPTERS"],
+      "evidence": ["docs/IOS_CAPACITOR_PROGRESS.md", "docs/subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md"]
+    },
+    {
+      "id": "ACCOUNT-DELETION-POLICY",
+      "title": "Approve account deletion retention billing and support policy",
+      "owner": "human",
+      "status": "pending_manual",
+      "dependsOn": [],
+      "gateRefs": ["native:ACCOUNT-DELETION"],
+      "evidence": ["docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "ACCOUNT-DELETION-RUNTIME",
+      "title": "Implement approved account deletion initiation and server saga",
+      "owner": "agent",
+      "status": "pending_approval",
+      "dependsOn": ["ACCOUNT-DELETION-POLICY"],
+      "gateRefs": ["native:ACCOUNT-DELETION"],
+      "evidence": ["docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md"]
+    },
+    {
+      "id": "LEGAL-SUPPORT-APPROVAL",
+      "title": "Approve and publish legal privacy retention and support operations",
+      "owner": "human",
+      "status": "pending_manual",
+      "dependsOn": [],
+      "gateRefs": ["web:LEGAL-SUPPORT", "native:STORE-COMPLIANCE"],
+      "evidence": ["docs/WEB_LEGAL_SUPPORT_LAUNCH_REVIEW.md", "docs/subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "STORE-COMPLIANCE",
+      "title": "Complete final binary store privacy and subscription compliance review",
+      "owner": "shared",
+      "status": "blocked_dependency",
+      "dependsOn": ["NATIVE-ADAPTERS", "ACCOUNT-DELETION-RUNTIME", "LEGAL-SUPPORT-APPROVAL"],
+      "gateRefs": ["native:STORE-COMPLIANCE"],
+      "evidence": ["docs/subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.json", "docs/subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.json"]
+    },
+    {
+      "id": "STORE-ASSETS",
+      "title": "Approve artwork and capture final native storefront screenshots",
+      "owner": "shared",
+      "status": "blocked_dependency",
+      "dependsOn": ["NATIVE-ADAPTERS"],
+      "gateRefs": ["native:STORE-LISTING-ASSETS"],
+      "evidence": ["docs/subscription/NATIVE_STORE_LISTING_ASSET_BASELINE_2026_08_06.md"]
+    },
+    {
+      "id": "SANDBOX-LIFECYCLE",
+      "title": "Execute complete Apple and Google sandbox subscription lifecycle",
+      "owner": "shared",
+      "status": "blocked_dependency",
+      "dependsOn": ["STORE-VERIFICATION-RUNTIME", "ENTITLEMENT-WRITER-RUNTIME", "NATIVE-ADAPTERS", "STORE-COMPLIANCE"],
+      "gateRefs": ["native:SANDBOX-LIFECYCLE"],
+      "evidence": ["docs/subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md", "docs/subscription/BILLING_TEST_MATRIX.md"]
+    },
+    {
+      "id": "CROSS-PLATFORM-ACCESS",
+      "title": "Prove account-bound Apple and Google access across all platforms",
+      "owner": "shared",
+      "status": "blocked_dependency",
+      "dependsOn": ["SANDBOX-LIFECYCLE"],
+      "gateRefs": ["native:CROSS-PLATFORM-ACCESS"],
+      "evidence": ["docs/subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md"]
+    },
+    {
+      "id": "NATIVE-CANARY",
+      "title": "Run bounded native canaries and record go or no-go decision",
+      "owner": "shared",
+      "status": "blocked_dependency",
+      "dependsOn": ["CROSS-PLATFORM-ACCESS", "STORE-ASSETS", "STORE-COMPLIANCE"],
+      "gateRefs": ["native:NATIVE-CANARY"],
+      "evidence": ["docs/subscription/NATIVE_SUBSCRIPTION_LAUNCH_GATES_2026_08_06.json"]
+    },
+    {
+      "id": "WEB-PRODUCTION-CONFIG",
+      "title": "Complete protected Web production configuration evidence",
+      "owner": "human",
+      "status": "pending_manual",
+      "dependsOn": [],
+      "gateRefs": ["web:PROD-CONFIG"],
+      "evidence": ["docs/WEB_LAUNCH_MANUAL_ACTIONS_2026_08_01.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "WEB-SECURITY-HEADERS-FINAL",
+      "title": "Repeat security header and anti-frame evidence on final release",
+      "owner": "human",
+      "status": "pending_manual",
+      "dependsOn": ["WEB-PRODUCTION-CONFIG"],
+      "gateRefs": ["web:SECURITY-HEADERS"],
+      "evidence": ["docs/WEB_SECURITY_HEADERS.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "WEB-PWA-INSTALL",
+      "title": "Complete real desktop and Android PWA install lifecycle evidence",
+      "owner": "human",
+      "status": "pending_manual",
+      "dependsOn": ["WEB-PRODUCTION-CONFIG"],
+      "gateRefs": ["web:PWA-WEB"],
+      "evidence": ["docs/WEB_PWA_RELEASE_SMOKE.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "WEB-MEDIA-PRODUCTION",
+      "title": "Activate and prove authorized private media production behavior",
+      "owner": "shared",
+      "status": "blocked_dependency",
+      "dependsOn": ["NATIVE-GATE2-EVIDENCE", "WEB-PRODUCTION-CONFIG", "SEC-REMEDIATION"],
+      "gateRefs": ["web:MEDIA-PROD"],
+      "evidence": ["docs/WEB_LAUNCH_MANUAL_ACTIONS_2026_08_01.md"]
+    },
+    {
+      "id": "WEB-AUTHENTICATED-E2E",
+      "title": "Complete production-like roles plans recovery PDF and media matrix",
+      "owner": "shared",
+      "status": "blocked_dependency",
+      "dependsOn": ["WEB-PRODUCTION-CONFIG", "WEB-MEDIA-PRODUCTION", "LEGAL-SUPPORT-APPROVAL"],
+      "gateRefs": ["web:STAGING-E2E"],
+      "evidence": ["docs/WEB_AUTHENTICATED_RELEASE_MATRIX_2026_08_01.md"]
+    },
+    {
+      "id": "WEB-OBSERVABILITY",
+      "title": "Connect production telemetry alerts ownership and incident drill",
+      "owner": "shared",
+      "status": "pending_manual",
+      "dependsOn": ["WEB-PRODUCTION-CONFIG"],
+      "gateRefs": ["web:OBSERVABILITY"],
+      "evidence": ["docs/WEB_OPERATIONAL_OBSERVABILITY.md", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "WEB-CANARY",
+      "title": "Run bounded Web canary and record rollback and go or no-go",
+      "owner": "shared",
+      "status": "blocked_dependency",
+      "dependsOn": ["WEB-AUTHENTICATED-E2E", "WEB-OBSERVABILITY", "WEB-SECURITY-HEADERS-FINAL", "WEB-PWA-INSTALL"],
+      "gateRefs": ["web:RELEASE-CANARY"],
+      "evidence": ["docs/WEB_LAUNCH_READINESS_2026_07_30.md"]
+    },
+    {
+      "id": "WEB-F3C-F3E",
+      "title": "Implement separately approved remaining billing foundation slices",
+      "owner": "agent",
+      "status": "pending_approval",
+      "dependsOn": [],
+      "gateRefs": ["web:F3B-F3E"],
+      "evidence": ["docs/subscription/F3C_ENTITLEMENT_PROJECTION_WRITER_PROPOSAL_2026_08_06.md"]
+    },
+    {
+      "id": "WEB-ECPAY",
+      "title": "Resume ECPay merchant and sandbox activation for Web checkout",
+      "owner": "human",
+      "status": "deferred",
+      "dependsOn": [],
+      "gateRefs": ["web:BILLING-MERCHANT"],
+      "evidence": ["docs/WEB_LAUNCH_MANUAL_ACTIONS_2026_08_01.md"]
+    },
+    {
+      "id": "WEB-S9",
+      "title": "Implement approved Web provider checkout and reconciliation runtime",
+      "owner": "agent",
+      "status": "deferred",
+      "dependsOn": ["WEB-ECPAY", "WEB-F3C-F3E"],
+      "gateRefs": ["web:S9"],
+      "evidence": ["docs/SUBSCRIPTION_TIER_IMPLEMENTATION_PLAN_2026_07_24.md"]
+    },
+    {
+      "id": "PROMOTION-RUNTIME",
+      "title": "Implement approved promotion runtime or explicitly defer launch rewards",
+      "owner": "shared",
+      "status": "deferred",
+      "dependsOn": ["WEB-S9"],
+      "gateRefs": ["web:PROMOTION-RUNTIME"],
+      "evidence": ["docs/SUBSCRIPTION_TIER_IMPLEMENTATION_PLAN_2026_07_24.md"]
+    }
+  ]
+}
