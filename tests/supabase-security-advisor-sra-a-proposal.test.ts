@@ -14,7 +14,7 @@ const taskMatrix = JSON.parse(read('docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json'
 };
 
 for (const marker of [
-  'proposal complete; implementation, migration, non-Production execution, and',
+  'proposal accepted; review/local implementation and disposable evidence complete;',
   '`public.update_market_read_model()`',
   '`public.update_product_read_model()`',
   '`public.handle_new_user()`',
@@ -45,6 +45,11 @@ assert.match(proposal, /does not assume that `072` is available remotely/u);
 const remediationTask = taskMatrix.tasks.find(task => task.id === 'SEC-REMEDIATION');
 assert.equal(remediationTask?.status, 'pending_approval');
 assert.ok(remediationTask?.evidence.includes(proposalPath));
+assert.ok(
+  remediationTask?.evidence.includes(
+    'docs/security/SUPABASE_SECURITY_ADVISOR_SRA_A1_LOCAL_EVIDENCE_2026_08_24.md',
+  ),
+);
 
 const migrations = readdirSync(join(root, 'supabase', 'migrations'));
 assert.equal(
@@ -53,4 +58,4 @@ assert.equal(
   'proposal slice must not create an SRA-A migration',
 );
 
-console.log('PASS SRA-A minimal remediation proposal stays bounded and unapproved');
+console.log('PASS SRA-A minimal remediation proposal stays bounded and remote-unapproved');

@@ -2,8 +2,8 @@
 
 Date: 2026-08-24
 
-Status: proposal complete; implementation, migration, non-Production execution, and
-Production execution are not approved
+Status: proposal accepted; review/local implementation and disposable evidence complete;
+numbered migration, non-Production execution, and Production execution are not approved
 
 Related task: `SEC-REMEDIATION` (`pending_approval`)
 
@@ -154,15 +154,17 @@ is an immediate stop condition.
 
 The following are separate decisions:
 
-1. **Proposal acceptance:** security owner accepts this SRA-A1 scope. This does not
-   authorize code or SQL implementation.
-2. **Implementation authorization:** approve creation of the exact migration, static
-   tests, and disposable/local evidence. No remote target.
+1. **Proposal acceptance — complete 2026-08-24:** security owner accepted this SRA-A1
+   scope.
+2. **Review/local implementation — complete 2026-08-24:** exact local-only SQL draft,
+   static tests, and disposable evidence passed. No remote target was contacted.
 3. **Non-Production authorization:** approve one exact target, migration hash, operator,
    maintenance window, evidence reviewer, and corrective-forward artifact.
 4. **Production authorization:** only after non-Production evidence, a fresh Production
    read-only preflight, remote migration-history approval, release-bound smoke plan, and
    security/release-owner go/no-go.
+
+Evidence: `docs/security/SUPABASE_SECURITY_ADVISOR_SRA_A1_LOCAL_EVIDENCE_2026_08_24.md`.
 
 `SEC-REMEDIATION` remains `pending_approval`. It may become complete only after all
 approved SRA batches, including separately scoped SRA-B/C/D work as applicable, have

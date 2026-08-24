@@ -39,7 +39,7 @@
       "status": "pending_approval",
       "dependsOn": ["SEC-SRA000-EXECUTION"],
       "gateRefs": [],
-      "evidence": ["docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md", "docs/security/SUPABASE_SECURITY_ADVISOR_SRA_A_MINIMAL_REMEDIATION_PROPOSAL_2026_08_24.md"]
+      "evidence": ["docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md", "docs/security/SUPABASE_SECURITY_ADVISOR_SRA_A_MINIMAL_REMEDIATION_PROPOSAL_2026_08_24.md", "docs/security/SUPABASE_SECURITY_ADVISOR_SRA_A1_LOCAL_EVIDENCE_2026_08_24.md", "docs/security/drafts/SRA_A1_LOCAL_REVIEW_MIGRATION.sql", "supabase/tests/sra_a1_local.sql"]
     },
     {
       "id": "NATIVE-GATE2-EVIDENCE",
