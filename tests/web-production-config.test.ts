@@ -27,6 +27,9 @@ const validEnv: WebProductionConfigEnv = {
   LEGAL_POLICY_APPROVED_DATE: '2026-07-31',
   INTERNAL_TEST_SURFACES_ENABLED: '0',
   SUBSCRIPTION_SIMULATION_ENABLED: '0',
+  ACCOUNT_DELETION_ROUTE_ENABLED: '0',
+  ACCOUNT_DELETION_AD2_REPOSITORY_READY: '0',
+  ACCOUNT_DELETION_ROUTE_ALLOW_PRODUCTION: '0',
   SALES_PHOTO_EVIDENCE_TEST_PAGE_ENABLED: '0',
   NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ENABLED: '1',
   NEXT_PUBLIC_SALES_PHOTO_EVIDENCE_RUNTIME_ENQUEUE_ALLOW_PRODUCTION: '1',
@@ -168,6 +171,14 @@ assert.ok(
     .includes('development_surfaces_disabled'),
 );
 assert.ok(
+  failedIds(withChanges({ ACCOUNT_DELETION_ROUTE_ENABLED: '1' }))
+    .includes('account_deletion_runtime_closed'),
+);
+assert.ok(
+  failedIds(withChanges({ ACCOUNT_DELETION_HMAC_SECRET: 'must-remain-absent' }))
+    .includes('account_deletion_runtime_closed'),
+);
+assert.ok(
   failedIds(withChanges({ SALES_PHOTO_EVIDENCE_FAULT_INJECTION_TOKEN: 'leftover-token' }))
     .includes('fault_injection_cleared'),
 );
@@ -211,6 +222,9 @@ for (const requiredExampleContract of [
   'LEGAL_POLICY_APPROVED_DATE=',
   'INTERNAL_TEST_SURFACES_ENABLED=0',
   'SUBSCRIPTION_SIMULATION_ENABLED=0',
+  'ACCOUNT_DELETION_ROUTE_ENABLED=0',
+  'ACCOUNT_DELETION_AD2_REPOSITORY_READY=0',
+  'ACCOUNT_DELETION_ROUTE_ALLOW_PRODUCTION=0',
   'SUPABASE_SECRET_KEY=',
   'PRODUCT_COVER_PHOTO_ENTITLEMENT_MODE=open',
 ]) {

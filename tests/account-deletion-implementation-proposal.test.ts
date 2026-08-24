@@ -22,7 +22,8 @@ const pendingReport = read('lib/sync/local-pending-write-report.ts');
 const manifest = read('scripts/test-files.txt');
 
 for (const boundary of [
-  'planning only; destructive implementation is not approved',
+  'AD0–AD3 disposable evidence complete',
+  'deployment, real store/device evidence, public release alignment, and Production remain incomplete',
   'auth.admin.deleteUser()',
   'getLocalPendingWriteReport()',
   'viewer/operator/manager can delete only their own account',
@@ -70,4 +71,4 @@ assert.doesNotMatch(
   /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i,
 );
 
-console.log('PASS account deletion proposal remains planning-only and role-safe');
+console.log('PASS account deletion proposal keeps unexecuted runtime boundaries role-safe');

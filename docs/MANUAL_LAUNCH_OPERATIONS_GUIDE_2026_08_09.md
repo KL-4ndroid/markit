@@ -1,10 +1,27 @@
 # Feria 人工上架工作操作指南
 
-日期：2026-08-10
+日期：2026-08-16
 
-狀態：執行指南；所有列出的人工工作仍待完成
+狀態：執行指南；完成狀態以 canonical evidence 與自動化 Checklist 為準
 
 對應任務矩陣：`docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json`
+
+自動化 Checklist：`docs/MANUAL_LAUNCH_OPERATIONS_CHECKLIST_2026_08_09.md`
+
+更新與驗證：
+
+```powershell
+npm.cmd run update:manual-launch-checklist
+npm.cmd run check:manual-launch-checklist
+```
+
+Checklist 只會在 canonical task 為 `complete`，或 Apple／Google status-only check
+為 `complete`／`not_applicable`，或 manual item status 具有完整 `approved`／
+`not_applicable` 證據時自動勾選；`proposed_ai` 不算完成，不得直接修改 Checklist 宣告完成。
+
+Session 1 決策工作表：`docs/SESSION1_POLICY_DECISION_WORKSHEET_2026_08_17.md`
+
+逐項狀態來源：`docs/MANUAL_LAUNCH_ITEM_STATUS_2026_08_17.json`
 
 本文件把目前七類人工工作整理成單一操作入口。它不是完成證據、法律意見、
 Production 核准或上架核准。完成一項工作後，仍須由 Codex 依去識別化回報與
@@ -13,6 +30,83 @@ canonical evidence 更新任務狀態；不得僅因看過本文件而把 Gate �
 Web 綠界定期定額維持延後。這份指南的付費上架主線是 Apple App Store 與
 Google Play 帳號綁定訂閱；不得在本批工作中啟用 ECPay、Web checkout、
 付款 callback、退款 mutation 或 entitlement mutation。
+
+## 0. 最省人工的 Human／AI／Shared 執行方式
+
+### 0.1 三種 ownership mode
+
+| Mode | 誰做什麼 | AI 可以自動完成 | 不得由 AI 代替 |
+| --- | --- | --- | --- |
+| `AI` | Codex 執行本機、唯讀、secret-free 的檢查與文件同步 | 驗證 JSON／Gate、跑測試與 mobile artifact、重產 Checklist、檢查 drift、整理去識別結果 | 不得登入受保護 console、接受條款或推定實機結果 |
+| `Human` | 負責人做決策、簽署、付費／稅務／銀行、法律核准及需要人身／裝置的操作 | AI 提供表格、檢查必填欄位、指出缺漏 | 不得替負責人做商務、法律、稅務、價格或發布決定 |
+| `Shared` | 人類完成受保護或實體操作，AI 做前後檢查、證據驗證與狀態同步 | 將回報映射到 canonical source，安全地自動勾選 Checklist | 不得把截圖、口頭承諾、local mock 或部分成功當成完成 |
+
+剩餘的 canonical manual tasks 都至少包含 Human 或受保護外部步驟，因此沒有任何一項
+能在目前環境由 AI 單獨宣告完成。已完成的 Gate 2 與 SRA-000 是在 owner 明確授權、
+受保護 session 與去識別證據邊界下由 Human + AI 完成。AI 能直接完成的是「準備、檢查、驗證、同步」，而不是
+帳號持有人、法律核准人、Production 操作者或實機測試者的責任。
+
+### 0.2 建議逐次工作 Session
+
+每次只開一個 bounded session。完成後先交回去識別化資料，讓 AI 驗證與更新 Checklist，
+再進入下一個可能造成外部變更的 session。
+
+| Session | Mode | 本次完成目標 | 人工入口 | AI 接手內容 | 目前可執行 |
+| --- | --- | --- | --- | --- | --- |
+| 0 | AI | 本機基準與狀態重產 | 無 | 執行 launch/native/mobile/checklist 檢查，區分 PASS 與 expected blocked | 是 |
+| 1 | Human + AI | 商業、Founder、刪除、retention、法務、客服決策 | 本指南第 4～6 節 | 檢查必填決策與 dated approval，更新 task evidence | 是 |
+| 2A | Shared | Apple 帳號、協議、稅務、銀行、app record、tester、裝置 | Apple Developer／App Store Connect | 檢查 status-only handoff 並重跑 external readiness | 是；商品建立依賴 Session 1 |
+| 2B | Shared | Google 帳號、身分、merchant、payout、app record、測試要求、裝置 | Play Console | 同上 | 是；商品建立依賴 Session 1 |
+| 3 | Shared | SRA-000 唯讀盤點 | 授權的 Supabase read-only session | 驗證八個 sections、計數／hash／finding mapping | **已於 2026-08-24 完成** |
+| 4 | Shared | Gate 2 兩個 R2 Probe 與每次安全復原 | Vercel／應用程式／R2 read-only view | 執行前後檢查、驗證 template、更新 Gate | **已於 2026-08-24 完成** |
+| 5A | Shared | Web Production 設定、release identity、headers | deployment provider／最終 Web release | config checker、remote smoke、證據完整性 | 是；最終證據綁 release SHA |
+| 5B | Shared | PWA 安裝／更新與 observability | 桌面、Android、provider console | resource smoke、alerts checker、Checklist 同步 | 是；依賴正式 release/provider |
+| 6 | AI + Human reviewer | Capacitor `ios/`／`android/` bootstrap | repo、macOS、Android Studio | 安裝／產生／測試 reviewed slice | **否；Gate 2 已通過，仍待 implementation slice review 與 store catalog 依賴** |
+| 7 | Shared | Native adapters、商店 verifier/writer、sandbox、store compliance/assets、canary | repo、實機、store consoles | bounded implementation、測試與證據驗證 | **否；依賴 Session 6 與各 native gate** |
+
+Session 6／7 列在這裡是為了排完整條發布路徑，不代表已授權。它們解鎖後應把
+`STORE-CATALOG-CONFIG`、`STORE-VERIFICATION-RUNTIME`、`ENTITLEMENT-WRITER-RUNTIME`、
+`NATIVE-ADAPTERS`、`STORE-COMPLIANCE`、`STORE-ASSETS`、`SANDBOX-LIFECYCLE`、
+`CROSS-PLATFORM-ACCESS` 與 `NATIVE-CANARY` 逐一處理，不可合併成一次廣泛上架操作。
+
+### 0.3 每次交回 AI 的最小資料格式
+
+不要傳 secret 或原始敏感證據。使用以下格式逐項回報：
+
+```text
+taskId: <canonical task ID>
+checkId: <Apple/Google status-only ID；不適用則省略>
+observedAt: <ISO 8601 with timezone>
+environment: <production/staging/protected-console/physical-ios/physical-android>
+releaseSha: <適用時填 exact SHA>
+result: <PASS/FAIL/NOT_APPLICABLE>
+sanitizedEvidence: <固定 code、狀態、計數、hash、masked target 或受限 vault reference>
+reviewer: <角色，不填姓名或帳號>
+recoveryVerified: <true/false/not_applicable>
+```
+
+AI 收到後依序：驗證完成條件、拒絕含敏感資料或不完整證據、更新 canonical JSON／evidence
+pointer、執行 `npm.cmd run update:manual-launch-checklist`、執行 drift／readiness checks，最後才回報
+哪些項目已自動打勾。若 canonical 狀態沒有改變，Checklist 保持未勾選是正確結果。
+
+### 0.4 Session 0：AI 本機基準命令
+
+```powershell
+npm.cmd run check:launch-execution-plan
+npm.cmd run update:manual-launch-checklist
+npm.cmd run check:manual-launch-checklist
+npm.cmd run check:native-launch-readiness
+npm.cmd run check:native-external-readiness
+npm.cmd run check:native-store-assets
+npm.cmd run check:native-store-catalog
+npm.cmd run check:native-store-metadata
+npm.cmd run check:native-store-product-metadata
+npm.cmd run verify:mobile
+npm.cmd run smoke:mobile
+```
+
+Readiness／store checks 在仍有人工或依賴項目時以非零結束是預期的 fail-closed 訊號，
+不是把 Gate 改成完成的理由。AI 應記錄固定錯誤碼與缺少的 check ID，不應自動修改外部狀態。
 
 ## 1. 共通執行規則
 
@@ -190,6 +284,7 @@ Canonical design：
 - `docs/subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md`
 - `docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.md`
 - `docs/subscription/NATIVE_PURCHASE_DISCLOSURE_CONTRACT_2026_08_06.md`
+- `docs/SESSION1_POLICY_DECISION_WORKSHEET_2026_08_17.md`
 
 此工作是商業決策，不是在 store console 直接試填價格。請先建立一份有日期與核准人的
 決策紀錄，至少填完下表，再建立任何訂閱商品。
@@ -198,6 +293,8 @@ Canonical design：
 | --- | --- |
 | Pro | 月繳公開價、年繳公開價、台幣含稅呈現、首發地區 |
 | Team | 月繳公開價、年繳公開價、台幣含稅呈現、首發地區 |
+| 首發優惠碼政策 | 折扣期間、適用資格、可否與試用／Founder／其他優惠疊加、商店驗證方式 |
+| 首發優惠碼營運 | 活動起訖、總兌換上限、公開代碼與 server-owned counter |
 | 試用 | 哪些方案／週期可用、天數、每帳號或每 store account 的使用次數 |
 | Apple grace period | 是否啟用、適用期間、期間內 entitlement 與通知規則 |
 | Google grace/account hold | grace 與 account hold 天數、entitlement 何時保留／降級 |
@@ -220,6 +317,75 @@ Pro 年繳價的 65% 購買，之後只要付費連續性不中斷便維持該�
 
 若 Apple／Google 無法可靠實現「永久續訂 65% 且取消即失效」，不得用前端文案承諾；
 應選擇修改政策或原生首發暫緩 Founder。核准價格不等於啟用 catalog，也不授權扣款。
+
+首發 5 折優惠碼必須使用跨平台安全設計：入口可在兩端一致，但 Apple offer code 與
+Google offer phase 都是有限期折扣，不能單獨兌現「訂閱不中斷便持續維持五折」的政策。
+候選方案是由 Féria server 驗證 `FERIA50` 後，只讓合格者取得 store-supported 首發價格
+cohort／專用 catalog 方案；活動從原生公開上架起 90 天，不設產品端名額與提早停止門檻。
+畫面只能顯示 store 回傳的實際續訂價，不得由 client 自行計算五折、解鎖 entitlement 或
+宣告永久價格已成立。Apple／Google sandbox 必須先證明不合格阻擋、連續續訂、到期失效、
+restore、crossgrade 與活動關閉；證明前不得對外承諾或啟用。Canonical design：
+`docs/subscription/NATIVE_LAUNCH_PROMOTION_CODE_DESIGN_2026_08_17.md`。
+
+Step 1C 核准 Pro 月繳與年繳各提供一次 14 天免費試用，Team 首發不提供試用。
+`FERIA50` 可與該試用疊加：試用期間不扣款，試用結束後第一次成功續訂才按 store
+回傳的首發價格扣款。使用者在試用期間關閉續訂時，權益只保留到 verified expiry，
+且不得產生第一次續訂扣款；到期即失去首發價格連續性。重複試用、到期前恢復續訂、
+月／年週期及兩商店路徑都必須在 sandbox 驗證，不得以 client timer 判斷。
+`FERIA50` 適用 Pro 與 Team 的月繳／年繳；Team 無試用，第一次 verified charge 後才
+進入其首發價格 cohort。Pro／Team 切換是否延續優惠由升降級政策另行核准。
+
+Step 1D 核准 Apple app-wide Billing Grace Period 為 16 天。只有 verified Apple grace
+狀態可在付款失敗後暫時保留付費權益與 `FERIA50` 連續性；grace 內恢復付款則保留，
+verified expiry／revocation 則降級 Free 並失去首發價。App 必須顯示付款異常狀態及
+Apple 訂閱／付款管理入口，不得以本機計時器延長。`support_owner` 對文案、升級流程與
+值班責任由 Step 1K support policy 核准；實證仍待完成。政策核准不等於已設定 App Store Connect。
+
+Step 1E 核准 Google grace 為 7 天。verified grace 保留付費權益與 `FERIA50`；進入
+verified account hold 時暫停付費功能，但只要 Play 仍回報可恢復，就保留首發價格資格。
+付款恢復後才恢復權益，verified `EXPIRED`／`REVOKED` 則降級 Free 並失去首發價。
+account-hold 期間必須採 Play 回傳值，不得在程式寫死。`support_owner` 對 Google 付款
+異常／account-hold 文案、管理入口、升級與值班責任由 Step 1K support policy 核准；實證仍待完成。
+
+Step 1F 核准 Pro → Team 只在 active store 確認 replacement 與付款後立即生效；未用完
+價值與 proration 由 Apple／Google 處理，client 不計算差額。未中斷的 `FERIA50` 轉為
+對應 Team 月／年首發價；標準 Pro 則使用 Team 標準價。Pro 試用中升級必須先明確顯示
+即時付費與試用終止，確認後才開始無試用的 Team。失敗、取消、pending 或未驗證時維持
+原 Pro；Team 功能、seat 與角色只在 server verification 後開放。Founder 切換另案核准。
+
+Step 1G 核准 Team → Pro 預設在下一個 verified renewal boundary 生效且不立即退款；生效前
+維持 Team。未中斷的 `FERIA50` 轉為對應 Pro 月／年首發價，標準 Team 使用 Pro 標準價，
+且不提供新的 Pro 試用。降級生效後保留 staff relationship、營運歷史與 invitation record，
+但暫停 Team-only staff access、active invitation、seat 與寫入；重新升級可恢復既有關係。
+取消、失敗、pending 或未驗證時維持 Team。`support_owner` 的通知與恢復 runbook 已由
+Step 1K 核准，實證另行追蹤；Founder 切換另案核准。
+
+Step 1H 核准取消只關閉續訂，權益保留到 verified paid／trial expiry；到期前恢復續訂仍
+視為連續並保留 `FERIA50`。verified effective expiry、full refund、chargeback 或 revocation
+降級 Free 並失去首發價；到期後重訂使用當時公開標準價，不能重用已消耗的優惠碼。
+取消／到期不刪除 workspace：保留 readable data，阻擋 paid-only 新寫入，暫停 Team staff
+access，但保留 staff relationship 與營運歷史。所有轉換採 store/server state，不採 client
+日期。`support_owner` 的通知、申訴與誤判恢復 runbook 已由 Step 1K 核准，實證另行追蹤；
+帳號刪除是另一明確流程。
+
+Step 1I 核准新公開價只適用新訂戶；既有標準訂戶預設保留原 store price，`FERIA50`
+則保留首次取得的固定 Pro／Team 月／年首發 cohort 價格，不隨未來公開價重新計算五折。
+未中斷 crossgrade 使用 Steps 1F／1G 的對應固定 cohort。結束舊價／首發 cohort、遷移既有
+訂戶或把未來降價套用既有訂戶，都需另案 product＋accounting 核准並遵循當時 store
+通知、同意、拒絕與失敗規則；client 不計算遷移扣款。本核准不排程漲價也不授權 console 變更。
+
+Step 1J 核准第一版延後 Founder：不建立 `NT$1,290/year` 商品、不顯示公開文案、不接受
+登記、不執行 eligibility／continuity／crossgrade，也不需要第一版 Founder sandbox acquisition。
+`commercial.founder-mechanism` 以「明確延後」結案，其餘首發 Founder 項目以 dated deferral
+證據標為 `not_applicable`。未來若重新啟動，必須重開全部項目、定義與 `FERIA50` 不同的
+價值、重新取得 product／accounting／support 核准，並完成 Apple 與 Google sandbox 證明。
+
+Step 1K 由 `support_owner` 核准原生訂閱客服政策：台灣工作日 09:00–18:00、帳務／取消
+一個工作日內初次回覆、服務時間內持續扣款風險同日升級，以及 verified-state-only 的
+Apple grace、Google grace／account hold、降級、取消、到期、revocation 與誤判恢復流程。
+Canonical runbook：`docs/subscription/NATIVE_SUBSCRIPTION_SUPPORT_RUNBOOK_2026_08_17.md`。
+此核准不代表公開信箱、backup responder、store management links、synthetic cases 或 release
+evidence 已完成；它們仍由後續 Checklist 項目追蹤。
 
 ## 5. 帳號刪除、資料保留與有效訂閱政策
 
@@ -245,6 +411,96 @@ store transaction references、device cache／pending writes 與 backups。
 
 完成定義是有日期的七項決策與 retention table 均已核准。這只解除 runtime 設計前置；
 不代表刪除 API、server saga、billing detachment 或 store cancellation 已實作。
+
+Step 2A 由 `product_owner` 核准：recent reauthentication 後可立即刪除，不設強制等待期；
+所有可發現的 pending writes 必須先由使用者選擇同步、可用的安全匯出或明確知情放棄，
+不得靜默丟棄。有效 Apple／Google 訂閱不阻擋 Féria 刪除，但必須告知刪除帳號不會取消
+store billing 並提供管理入口。可另提供到期後刪除，但不能取代立即刪除。cleanup 失敗只能
+是 `failed_retryable`／`manual_review`，不得回報完成。`legal_privacy_owner` 簽核與其餘
+資料類別決策仍未完成；本核准不授權 destructive runtime 或 Production 操作。
+
+Step 2B 由 `product_owner` 核准一般營運資料工程上限：權限立即停用；identity、profile、
+workspace operational data 與 staff relationship／invitation 在 primary systems 最長 30 天內
+刪除或必要時不可逆匿名化；product covers 最長 30 天，sales photos 採既有 7 天 lifecycle
+或 deletion cleanup 較早者；controlled-device cache 完成後立即清除，不承諾不可存取裝置的
+遠端清除。encrypted restricted backups 最長 90 天，disaster restore 後重套 corrective-forward
+deletion；legal hold 只能限制於必要資料類別與期間。法律依據、regulated records、processor
+propagation 與 `legal_privacy_owner` 的完整 retention table 簽核仍未完成。
+
+Step 2C 由 product／accounting／support 核准受規範資料工程分類：audit／security logs
+180 天（僅 scoped incident／legal hold 延長）、minimized support cases 2 年、detached price／
+subscription／store transaction／refund evidence 5 年；只有依法實際分類為 Féria 帳簿者
+採 10 年、會計憑證採 5 年，不能套用到整個 workspace。raw receipt／purchase token 不進
+general logs，到期需自動刪除或不可逆匿名化。必要 billing evidence 必須先最小化並從
+`profiles.id`／email 解耦至 restricted pseudonymous billing subject。`legal_privacy_owner` 與
+`security_owner` 對精確分類、key、存取、事件例外、erasure boundary 與 purge evidence 的
+簽核仍未完成，本核准不授權 migration 或 runtime。
+
+Step 2D 由 `product_owner` 核准：staff 自刪移除自己的 identity、login、roles、pending
+invitations 與 workspace relationships，但不刪 owner workspace 或其他帳號。owner 的
+operational facts 可保留，但 actor 只能變成不可逆「已刪除成員」，不得保留 email、姓名、
+`profiles.id` 或可逆 lookup；owner 移除 staff 只是 relationship revoke。owner workspace
+刪除則依 object retention 移除／匿名化 workspace-controlled 第三方資料與 shared objects。
+`legal_privacy_owner`／`security_owner` 對 controller boundary、第三方權利、欄位／演算法、
+不可重新識別、shared-object treatment、appeal 與 evidence 的簽核仍未完成。
+
+Step 2E 由 product／support 核准：active Apple／Google billing 不阻擋立即刪除，確認畫面
+必須告知 Féria 刪除不會取消 store charging 並提供原 store 管理入口。刪除後不提供服務，
+直到新帳號完成 verified purchase restore；已刪 workspace 永不恢復。同一未中斷 store
+subscription 可保留 store-owned `FERIA50`，但只能在 prior binding 已釋放、未綁其他 owner
+及 anti-replay 通過後綁定一個新 owner。cleanup failure 維持 `failed_retryable`／`manual_review`，
+只提供 safe request ID、state、next-action timing 與 appeal；不索取 password、raw receipt、
+purchase token，也不依 screenshot 開權益。legal/privacy 已由 Step 2F 核准；security policy 已由 Step 2G 核准，實作與測試證據仍未完成。
+
+Step 2F 由 `legal_privacy_owner` 核准 deletion legal/privacy review packet：立即刪除與
+active-store disclosure、retention 法律基礎／table、backup／hold／processor requirements、
+billing-subject minimization／erasure boundary、staff／third-party controller boundary、restore
+data boundary、appeal 與 evidence requirements。`deletion.retention-table` 因此完成政策簽核。
+Step 2G 由 `security_owner` 核准 keys／access／encryption、匿名化 linkage resistance、
+audit／hold／purge、restore anti-replay／race、evidence integrity 與 fraud/error recovery 的
+政策級安全要求。至此有日期的跨角色 account-deletion policy approval 完成，
+`ACCOUNT-DELETION-POLICY` 可關閉；但 threat model、exact schema inventory、fixtures、runtime
+tests、purge／restore 證據與實際部署仍屬 `ACCOUNT-DELETION-RUNTIME`。本核准不授權 migration、
+destructive test、外部帳號變更、Production deletion 或 public legal publication，native
+`ACCOUNT-DELETION` gate 仍維持 `pending_approval`。
+
+Step 2H／AD1 已核准並完成 repository-local evidence：15 項 threat model、platform-neutral
+completion contract、含 RLS／no-client-grants／illegal-transition／incomplete-completion guards
+的 review-only SQL 草案，以及 synthetic/static tests。草案位於 `docs/subscription/drafts/`、
+內含 `ROLLBACK`，未加入 `supabase/migrations`、未套用、未部署。AD0 同時確認 migration 033
+的 legacy `delete_current_user_app_data()` 不符合完整刪除 saga；AD2 必須先建立 replacement，
+再撤銷其 authenticated execute。AD2～AD5 仍需各自核准並以自動化 Checklist 追蹤。
+
+Step 2I／AD2 已完成 local-only foundation：預設關閉的 GET／POST route、五分鐘 recent
+reauth、purpose-separated HMAC、canonical pending-write decision、leased ordered saga、bounded
+status／support contract、Production-off config guard，以及 Settings legacy RPC caller removal。
+AD2 完成時 AD1 SQL 尚未套用，當時 concrete repository 固定 unavailable，route 無法接受
+真實刪除請求。後續 AD3 必須在明確指定的 disposable non-Production target 套用 reviewed
+migration／repository、確認 database legacy RPC 已撤銷，並執行 destructive lifecycle／R2／
+restore evidence。
+
+Step 2J／AD3A 已核准使用全新、一次性的 local Supabase 與 fake R2。AI 已完成正式編號
+migration、private RLS tables、service-role-only RPC、concrete route／saga repository、legacy RPC
+revoke、local-target fail-closed guard 與 synthetic tests，並自動勾選 AD3A repository 子項。
+Step 2J 初次執行時本機沒有 Docker Engine 且尚無 `supabase/config.toml`，因此當時未套用
+migration、未執行真實 DB／RLS／race／purge／restore 測試；AD3 主項當時維持未勾選。
+
+2026-08-21 執行更新：Docker 啟動後，AI 已在全新 localhost-only Supabase stack 套用
+corrected disposable bootstrap 與正式 053–071 migrations，並完成 owner／staff destructive
+lifecycle、RLS／grant、雙連線 lease race、incomplete／terminal／immutable-audit guards、fake-R2
+purge／absence 與 entitlement-only restore boundary。所有 synthetic identities 已移除，未讀取
+`.env.local`、未 link 或接觸遠端專案。`deletion-runtime.ad3` 現由 canonical status 自動勾選；
+實機 store、公開政策／客服與 release-candidate evidence 仍屬 AD4。
+
+Step 2K／AD4 preparation 已於 2026-08-21 核准並完成 repository-only 準備：
+`docs/subscription/ACCOUNT_DELETION_AD4_PREPARATION_2026_08_21.md` 記錄執行順序、
+實機／store／公開政策 test matrix 與 evidence hygiene；
+`npm.cmd run check:account-deletion:ad4-prep` 會列出現況 blocker，而發布檢查必須使用
+`npm.cmd run check:account-deletion:ad4-prep -- --require-ready`。目前仍有 14 個 blocker，
+包含 Capacitor Gate 2、native projects／store adapters、confirm／cancel／cleanup executor、
+paid billing identity detachment、real R2 purge、external accounts、公開 legal／support、
+remote migration strategy 與 exact release candidate。因此僅自動勾選 AD4 preparation，
+`deletion-runtime.ad4` 與 Production runtime 均保持未勾選／關閉。
 
 ## 6. 正式法務、隱私、退款、取消、客服與 retention
 

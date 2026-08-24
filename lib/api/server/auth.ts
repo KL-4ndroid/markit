@@ -4,6 +4,7 @@ export type AppApiServerEnv = Record<string, string | undefined>;
 
 export type AppApiActor = {
   actorId: string;
+  lastSignInAt?: string;
 };
 
 export type AppApiAuthenticationResult =
@@ -18,7 +19,7 @@ export type AppApiAuthenticationResult =
 
 export type AppApiTokenVerifier = {
   getUser(token: string): Promise<{
-    data: { user: { id?: string | null } | null };
+    data: { user: { id?: string | null; last_sign_in_at?: string | null } | null };
     error: unknown | null;
   }>;
 };
@@ -105,9 +106,15 @@ export async function authenticateAppApiRequest(
       return { ok: false, code: 'authentication_required' };
     }
 
+    const lastSignInAt = data.user?.last_sign_in_at;
     return {
       ok: true,
-      actor: { actorId },
+      actor: {
+        actorId,
+        ...(typeof lastSignInAt === 'string' && Number.isFinite(Date.parse(lastSignInAt))
+          ? { lastSignInAt: new Date(Date.parse(lastSignInAt)).toISOString() }
+          : {}),
+      },
     };
   } catch {
     return { ok: false, code: 'authentication_unavailable' };

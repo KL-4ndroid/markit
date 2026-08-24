@@ -236,6 +236,15 @@ export function validatePaidWebProductionConfig(
       'Disable every debug/test surface and subscription simulation in production.',
     ),
     check(
+      'account_deletion_runtime_closed',
+      value(env, 'ACCOUNT_DELETION_ROUTE_ENABLED') === '0'
+        && value(env, 'ACCOUNT_DELETION_AD2_REPOSITORY_READY') === '0'
+        && value(env, 'ACCOUNT_DELETION_ROUTE_ALLOW_PRODUCTION') === '0'
+        && value(env, 'ACCOUNT_DELETION_HMAC_SECRET') === '',
+      'Unapproved account-deletion runtime, repository, production allow, and HMAC secret are absent.',
+      'Keep every account-deletion runtime flag at 0 and its HMAC secret absent until AD3/AD5 approval.',
+    ),
+    check(
       'fault_injection_cleared',
       value(env, 'SALES_PHOTO_EVIDENCE_FAULT_INJECTION_ENABLED') === '0'
         && value(env, 'SALES_PHOTO_EVIDENCE_FAULT_INJECTION_ALLOW_PRODUCTION') === '0'

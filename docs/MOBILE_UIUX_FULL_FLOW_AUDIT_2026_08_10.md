@@ -1,5 +1,14 @@
 # Mobile UI/UX Full-Flow Audit
 
+> **歷史基準與修正紀錄（2026-08-10 至 2026-08-11）**
+>
+> 本文件的 `7.1/10` 是原始唯讀 owner audit 分數，後段的「約 91%」是當時核准修正切片的
+> 實作進度；兩者都不應被解讀為 2026-08-16 的現況總分。現行差異盤點請見
+> `docs/MOBILE_UIUX_DELTA_AUDIT_2026_08_16.md`，應用程式全域基準與後續工作則以
+> `docs/APP_WIDE_UIUX_BASELINE_2026_08_12.md` 及
+> `docs/APP_WIDE_UIUX_REMEDIATION_EXECUTION_PLAN_2026_08_12.md` 為準。
+> 本文件保留原始觀察與證據，不回溯改寫已發生的 audit 結果。
+
 Date: 2026-08-10
 
 Target: `https://markit-app-mocha.vercel.app/`

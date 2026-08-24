@@ -217,6 +217,11 @@ tsx tests/native-store-listing-metadata-cli.test.ts
 tsx tests/native-store-product-metadata.test.ts
 tsx tests/native-store-product-metadata-cli.test.ts
 tsx tests/account-deletion-implementation-proposal.test.ts
+tsx tests/account-deletion-ad1-contract.test.ts
+tsx tests/account-deletion-ad2-foundation.test.ts
+tsx tests/account-deletion-ad3a-migration-repository.test.ts
+tsx tests/account-deletion-ad3a-fake-r2.test.ts
+tsx tests/account-deletion-ad4-readiness.test.ts
 tsx tests/native-account-entitlement.test.ts
 tsx tests/platform-in-app-purchase-boundary.test.ts
 tsx tests/native-store-verification-contract.test.ts
@@ -314,6 +319,7 @@ tsx tests/supabase-security-advisor-remediation-plan.test.ts
 tsx tests/launch-execution-plan.test.ts
 tsx tests/launch-execution-plan-cli.test.ts
 tsx tests/manual-launch-operations-guide.test.ts
+tsx tests/manual-launch-operations-checklist.test.ts
 tsx tests/supabase-security-advisor-inventory.test.ts
 tsx tests/mobile-uiux-optimization.test.ts
 tsx tests/operating-market-workflow-optimization.test.ts

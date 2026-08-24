@@ -1,7 +1,17 @@
 # Feria iOS／Capacitor 完整執行計畫
 
+> **歷史文件（v1，已由現行 v2 取代）**
+>
+> 本文件保留 2026-07-16 的架構方向與原始分期，不再代表目前進度或下一個可執行任務。
+> 現行 iOS／Android 工程路線請以
+> `docs/CAPACITOR_IOS_ANDROID_EXECUTION_PLAN_2026_08_16.md` 為準；Gate 與任務完成狀態仍以
+> `docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json`、Web／Native Gate JSON 為唯一機器真相。
+> 本文件被取代時 Gate 1 已完成、Gate 2 證據仍未完成；Gate 2 後續已於 2026-08-24
+> 完成。現在是否可安裝 Capacitor、建立 `ios/`／`android/` 或實作 native store adapters，
+> 請以現行 progress、canonical task 與 implementation-slice review 為準。
+
 - 文件日期：2026-07-16
-- 文件狀態：`PLANNED — 尚未開始執行`
+- 文件狀態：`HISTORICAL V1 — SUPERSEDED 2026-08-16`
 - 適用專案：Feria Next.js／PWA
 - 主要目標：以同一套 React、商業邏輯、資料模型及同步協議，同時維護 Web/PWA 與 iOS App
 - 目前開發環境：Windows

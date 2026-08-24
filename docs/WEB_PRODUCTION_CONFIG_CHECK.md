@@ -18,6 +18,7 @@ It checks:
 - bounded public support email, reviewed operator identity and business address, public
   policy effective date, and server-only legal approval date;
 - disabled internal debug routes, subscription simulation, test-page, and fault-injection controls;
+- account-deletion route/repository/Production gates remain `0` and its HMAC secret remains absent until AD3/AD5 approval;
 - paired sales-evidence client/server production gates and bounded cron authorization;
 - private R2 configuration structure;
 - product-cover read/upload/delete gates, quota, and paid entitlement mode;
@@ -52,6 +53,12 @@ The safe repository example intentionally keeps production gates disabled and
 separately managed environment with `PRODUCT_COVER_PHOTO_ENTITLEMENT_MODE=required`
 and can enable media gates only after migration, R2, authorization, quota, cleanup, and
 staging smoke evidence pass.
+
+Account deletion remains closed during AD2. Production must keep
+`ACCOUNT_DELETION_ROUTE_ENABLED=0`, `ACCOUNT_DELETION_AD2_REPOSITORY_READY=0`, and
+`ACCOUNT_DELETION_ROUTE_ALLOW_PRODUCTION=0`, with no `ACCOUNT_DELETION_HMAC_SECRET`.
+AD3/AD5 may revise this rule only after the concrete repository, destructive
+non-Production evidence, recovery plan, and exact Production approval exist.
 
 Passing this check is necessary but not sufficient. `LEGAL_POLICY_APPROVED_DATE` is a
 deployment assertion, not a substitute for the signed review required by

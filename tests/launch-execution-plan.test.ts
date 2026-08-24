@@ -29,18 +29,20 @@ assert.deepEqual(document.releaseOrder, LAUNCH_EXECUTION_RELEASE_ORDER);
 assert.equal(report.launchReady, false);
 assert.equal(report.totalTaskCount, 31);
 assert.deepEqual(report.counts, {
-  complete: 2,
+  complete: 5,
   ready_agent: 0,
-  pending_manual: 11,
-  pending_approval: 4,
-  blocked_dependency: 11,
+  pending_manual: 8,
+  pending_approval: 5,
+  blocked_dependency: 10,
   deferred: 3,
 });
 assert.deepEqual(report.agentReadyIds, []);
-assert.ok(report.humanActionIds.includes('NATIVE-GATE2-EVIDENCE'));
+assert.ok(!report.humanActionIds.includes('NATIVE-GATE2-EVIDENCE'));
+assert.ok(!report.humanActionIds.includes('SEC-SRA000-EXECUTION'));
 assert.ok(report.humanActionIds.includes('APPLE-ACCOUNT-READINESS'));
-assert.ok(report.humanActionIds.includes('ACCOUNT-DELETION-POLICY'));
+assert.ok(!report.humanActionIds.includes('ACCOUNT-DELETION-POLICY'));
 assert.ok(report.approvalIds.includes('STORE-VERIFICATION-RUNTIME'));
+assert.ok(report.approvalIds.includes('SEC-REMEDIATION'));
 assert.ok(report.deferredIds.includes('WEB-ECPAY'));
 
 for (const task of document.tasks) {
@@ -70,15 +72,15 @@ const duplicate = mutablePlan();
 assert.throws(() => parseLaunchExecutionPlan(duplicate, web, native), /task_duplicate/);
 
 const missingCoverage = mutablePlan();
-task(missingCoverage, 'NATIVE-GATE2-EVIDENCE').gateRefs = [];
+task(missingCoverage, 'APPLE-ACCOUNT-READINESS').gateRefs = [];
 assert.throws(
   () => parseLaunchExecutionPlan(missingCoverage, web, native),
   /gate_coverage_missing/,
 );
 
 const reopened = mutablePlan();
-task(reopened, 'NATIVE-GATE2-EVIDENCE').gateRefs = [
-  'native:CAPACITOR-GATE2',
+task(reopened, 'APPLE-ACCOUNT-READINESS').gateRefs = [
+  'native:APPLE-DEVELOPER',
   'web:CI-WEB',
 ];
 assert.throws(
@@ -92,14 +94,14 @@ task(cycle, 'SEC-SRA000-ARTIFACT').dependsOn = ['CONTROL-MASTER-PLAN'];
 assert.throws(() => parseLaunchExecutionPlan(cycle, web, native), /dependency_cycle/);
 
 const invalidBlocked = mutablePlan();
-task(invalidBlocked, 'SEC-SRA000-EXECUTION').status = 'complete';
+task(invalidBlocked, 'SEC-REMEDIATION').status = 'blocked_dependency';
 assert.throws(
   () => parseLaunchExecutionPlan(invalidBlocked, web, native),
   /dependency_status_invalid/,
 );
 
 const invalidOwner = mutablePlan();
-task(invalidOwner, 'NATIVE-GATE2-EVIDENCE').owner = 'agent';
+task(invalidOwner, 'APPLE-ACCOUNT-READINESS').owner = 'agent';
 assert.throws(
   () => parseLaunchExecutionPlan(invalidOwner, web, native),
   /task_status_owner_invalid/,

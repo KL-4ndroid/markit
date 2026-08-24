@@ -8,6 +8,9 @@ const sql = read('supabase/verification/security_advisor_read_only_inventory.sql
 const runbook = read(
   'docs/security/SUPABASE_SECURITY_ADVISOR_INVENTORY_RUNBOOK_2026_08_09.md',
 );
+const evidence = read(
+  'docs/security/SUPABASE_SECURITY_ADVISOR_INVENTORY_EVIDENCE_2026_08_24.md',
+);
 const remediation = read(
   'docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md',
 );
@@ -49,7 +52,10 @@ for (const view of [
   assert.match(sql, new RegExp(view));
 }
 assert.match(remediation, /`SRA-000` is a prerequisite/);
-assert.match(runbook, /execution pending manual target access/);
+assert.match(runbook, /Production SRA-000 executed 2026-08-24/);
+assert.match(evidence, /SRA-000 inventory complete; remediation not approved/);
+assert.match(evidence, /441/);
+assert.match(evidence, /8\/8|Required section completeness/);
 assert.match(runbook, /must not be committed/i);
 assert.match(runbook, /Auth leaked-password protection/);
 assert.match(masterPlan, /SRA-000 inventory/);

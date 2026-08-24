@@ -1,8 +1,11 @@
 # Supabase Security Advisor Remediation Plan
 
 Date: 2026-08-05
-Status: planning only; no remediation migration is approved or applied
+Status: SRA-000 live inventory captured; no remediation migration is approved or applied
 Scope: pre-existing non-billing findings only
+
+Sanitized live evidence:
+`docs/security/SUPABASE_SECURITY_ADVISOR_INVENTORY_EVIDENCE_2026_08_24.md`
 
 ## 1. Safety boundary
 

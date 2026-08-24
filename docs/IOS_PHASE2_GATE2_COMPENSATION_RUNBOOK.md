@@ -2,7 +2,7 @@
 
 Date: 2026-08-06
 
-Status: manual Production evidence required; Gate 2 remains open
+Status: Production evidence completed 2026-08-24; execution criteria retained as guardrails
 
 ## Purpose
 
@@ -134,7 +134,7 @@ safe deployment is treated as complete.
 
 ## Gate 2 Exit Criteria
 
-Gate 2 remains open unless every item below is proven for both probes:
+Gate 2 was required to remain open unless every item below was proven for both probes:
 
 - exact release identity before fault execution and after safe cleanup;
 - authenticated owner and exact-scope execution only;

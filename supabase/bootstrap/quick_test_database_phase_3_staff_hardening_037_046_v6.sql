@@ -1617,7 +1617,7 @@ $$;
 -- Verify the helper still exists and is SECURITY DEFINER
 DO $$
 DECLARE
-  v_security_type text;
+  v_security_type boolean;
 BEGIN
   SELECT p.prosecdef INTO v_security_type
   FROM pg_proc p

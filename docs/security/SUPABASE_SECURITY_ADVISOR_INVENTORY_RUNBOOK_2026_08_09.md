@@ -2,10 +2,13 @@
 
 Date: 2026-08-09
 
-Status: execution pending manual target access; repository artifact complete
+Status: Production SRA-000 executed 2026-08-24; sanitized evidence complete
 
 Related plan item: `SRA-000` in
 `docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md`
+
+Completed evidence:
+`docs/security/SUPABASE_SECURITY_ADVISOR_INVENTORY_EVIDENCE_2026_08_24.md`
 
 Canonical query:
 `supabase/verification/security_advisor_read_only_inventory.sql`

@@ -35,14 +35,14 @@ for (const invariant of [
 
 assert.equal(gates.schemaVersion, 1);
 assert.equal(gates.overallStatus, 'not_ready');
-assert.equal(gates.updatedAt, '2026-08-06');
+assert.equal(gates.updatedAt, '2026-08-24');
 assert.equal(gates.gates.length, 16);
 assert.deepEqual(
   gates.gates.filter(gate => gate.status === 'complete').map(gate => gate.id),
-  ['NATIVE-DIRECTION', 'ACCOUNT-ENTITLEMENT-CORE', 'IAP-PLATFORM-PORT'],
+  ['NATIVE-DIRECTION', 'ACCOUNT-ENTITLEMENT-CORE', 'IAP-PLATFORM-PORT', 'CAPACITOR-GATE2'],
 );
 assert.ok(gates.gates.some(gate => (
-  gate.id === 'CAPACITOR-GATE2' && gate.status === 'pending_external'
+  gate.id === 'CAPACITOR-GATE2' && gate.status === 'complete'
 )));
 assert.ok(gates.gates.some(gate => (
   gate.id === 'ENTITLEMENT-WRITER' && gate.status === 'pending_approval'
@@ -60,7 +60,7 @@ assert.ok(gates.gates.some(gate => (
 assert.ok(providerDecision.includes('ECPay recurring payment'));
 assert.ok(providerDecision.includes('deferred_web_phase'));
 assert.ok(providerDecision.includes('NewebPay 不再是選定供應商'));
-assert.ok(capacitorProgress.includes('RESUMED WITH EXISTING GATE'));
-assert.ok(capacitorProgress.includes('Gate 2 stays closed'));
+assert.ok(capacitorProgress.includes('GATE 2 COMPLETE'));
+assert.ok(capacitorProgress.includes('corresponding implementation slice is reviewed'));
 
 console.log('PASS native-first account entitlement direction and launch gates');

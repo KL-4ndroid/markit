@@ -20,11 +20,11 @@ const report = evaluateNativeLaunchReadiness(document);
 assert.equal(report.ready, false);
 assert.equal(report.overallStatus, 'not_ready');
 assert.equal(report.totalCount, 16);
-assert.equal(report.completeCount, 3);
-assert.equal(report.blockerCount, 13);
+assert.equal(report.completeCount, 4);
+assert.equal(report.blockerCount, 12);
 assert.deepEqual(report.counts, {
-  complete: 3,
-  pending_external: 4,
+  complete: 4,
+  pending_external: 3,
   pending_manual: 5,
   pending_approval: 3,
   blocked_dependency: 1,
@@ -35,6 +35,7 @@ assert.deepEqual(
     'NATIVE-DIRECTION',
     'ACCOUNT-ENTITLEMENT-CORE',
     'IAP-PLATFORM-PORT',
+    'CAPACITOR-GATE2',
   ].includes(id)),
 );
 

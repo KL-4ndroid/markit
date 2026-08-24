@@ -1,12 +1,16 @@
 # iOS Capacitor Execution Progress
 
+> 現行跨 iOS／Android 路線與人工／AI 分工請見
+> `docs/CAPACITOR_IOS_ANDROID_EXECUTION_PLAN_2026_08_16.md`。本文件保留 Phase 1／2 的詳細
+> 歷史證據；Gate／task 狀態以 canonical JSON 為準。
+
 ## Current Phase
 
-Phase 2 / Backend API boundary (resumed; Gate 2 evidence pending)
+Phase 2 / Backend API boundary complete; native packaging review is next
 
 ## Status
 
-RESUMED WITH EXISTING GATE - On 2026-08-06 the user resumed native subscription readiness and prioritized Apple App Store and Google Play subscriptions ahead of Web checkout. Gate 1 remains passed. Phase 2 keeps its verified BFF, API, CORS, role, upload, read, retry, and lease/idempotency evidence, but Gate 2 remains not passed pending deployed storage-failure compensation and remote cleanup evidence. Platform-neutral subscription domain work and IAP contracts are authorized; Capacitor packages, native projects, store SDKs, signing, and real purchase runtime remain blocked until Gate 2 and their own review gates pass.
+GATE 2 COMPLETE - On 2026-08-24 both bounded Production storage-failure probes passed compensation, physical-cleanup, single manual recovery, zero-duplicate, private-read, and final commit-bound release-smoke verification. The canonical `CAPACITOR-GATE2` gate and `NATIVE-GATE2-EVIDENCE` task are complete. Platform-neutral subscription domain work and IAP contracts remain authorized. Capacitor packages, native projects, store SDKs, signing, and real purchase runtime may begin only after the corresponding implementation slice is reviewed; Apple/Google account, catalog, verification, sandbox, signing, and release gates remain separately pending.
 
 ## Decisions
 
@@ -39,7 +43,8 @@ RESUMED WITH EXISTING GATE - On 2026-08-06 the user resumed native subscription 
 - On 2026-07-20 the user explicitly authorized creating one disposable account without an invitation or relationship for the unrelated-user denial test. No existing account relationship was changed.
 - On 2026-07-20 the user approved narrow same-request R2 compensation: delete only object keys confirmed uploaded by the current attempt when thumbnail upload or metadata finalize fails, keep the local payload and failed metadata diagnostics, and expose an explicit cleanup-incomplete result without adding a broad batch or retention cleanup executor.
 - On 2026-07-20 the user approved the recommended login/sign-out UI stabilization. Role snapshots must be bound to the current authenticated user before protected content mounts; manual sign-out must not be treated as session expiry; successful sign-out uses Next client navigation and deliberately opens the login dialog; and initial sync remains blocking but must be visible on its first mounted frame rather than covering an already-painted dashboard.
-- Phase 3 Capacitor/native bootstrap remains blocked by the current Gate 2 status.
+- Phase 3 Capacitor/native bootstrap remains blocked by implementation review and the
+  canonical `STORE-CATALOG-CONFIG` dependency; Gate 2 is complete.
 
 ## Changed Files
 
@@ -126,7 +131,8 @@ RESUMED WITH EXISTING GATE - On 2026-08-06 the user resumed native subscription 
 - The user reports migrations 057, 058, and 059 as applied, but their remote migration history and post-cutover privilege state have not been independently verified from this workspace. Real Supabase/R2 owner, active-staff, revoked-staff, revoke-during-upload, unrelated-user, canonical-retry, owner-read, and refresh-idempotency paths now pass.
 - Local `.env.local` points to Supabase project `tzhbirwchhqabkxhqjdl`, while the deployed production client uses `fgejncfsvvsayiequubm`. The first probe therefore created `codex.p2.unrelated.20260720-104547.3bff4551@example.com` (`8fbac317-1454-4f5d-abf0-88f14207e359`) only in the non-production project and received production BFF HTTP 401; it did not touch production market, evidence, or R2 data. This workspace has no Supabase secret/admin key, so that accidental non-production account and the successful production disposable account must be removed later from their respective Supabase Auth dashboards.
 - The application `刪除記錄` confirmation explicitly states that deleting a market only hides it from the list while retaining its data. No deployed photo-delete API or R2 object lifecycle cleanup exists, so the disposable fixture is retained for the remaining role tests rather than performing a misleading partial cleanup.
-- Capacitor packages and native projects are not installed. This remains intentional until Gate 2 passes and Phase 3 decisions are approved.
+- Capacitor packages and native projects are not installed. Gate 2 has passed; installation
+  remains intentionally blocked until the Phase 3 slice and catalog dependency are approved.
 - The active-staff smoke emitted `[useSync] Skipping event outside local scoped dataset` and `[useSync] Skipping semantic duplicate deal_closed event during staff sync` warnings. They did not block the transaction or photo upload and are recorded as baseline synchronization warnings rather than upload-route failures.
 - Revoke cleanup can remain on a skeleton when multiple App tabs hold the same IndexedDB during the delete-and-redirect sequence. Closing the extra test tabs allowed cleanup to complete and produced the correct revoked view. This multi-tab cleanup behavior is a Web UX/reliability gap and must not be mistaken for a successful denial screen.
 - A revoke/rejoin cycle can leave a local sale event sync marker stale and can separate the retained task's local sale ID from the canonical Cloud ID. Commit `1d81266` repairs both the same-ID sync marker path and the unique exact canonical-ID recovery path; the retained production fixture now passes. The broader semantic duplicate policy still matches by market/date/revenue and remains a separate synchronization-quality risk outside this completed photo retry.
@@ -138,13 +144,17 @@ RESUMED WITH EXISTING GATE - On 2026-08-06 the user resumed native subscription 
 
 ## Next Authorized Slice
 
-Proceed with platform-neutral native subscription contracts, account-bound
-entitlement rules, fake IAP adapters, and deterministic tests. In parallel, the
-remaining Gate 2 compensation evidence is still required: use an authenticated
-manual file-selection path, execute the thumbnail/finalize probes, prove physical
-R2 deletion and metadata/local-payload behavior, remove all temporary variables,
-redeploy safely, and perform the normal retry. Gate 2 stays closed and Phase 3
-native project/bootstrap work remains unauthorized until that evidence passes.
+The platform-neutral native subscription contracts, account-bound entitlement
+rules, fake IAP adapters, deterministic tests, purchase disclosure contract, and
+store metadata/config preflight tooling now exist. Their existence does not open
+the native runtime gate.
+
+Gate 2 compensation evidence is complete. The next engineering boundary is a
+separately reviewed, bounded Capacitor bootstrap slice. The canonical
+`NATIVE-ADAPTERS` task remains dependency-blocked by `STORE-CATALOG-CONFIG`, so
+packages, `ios/`／`android/`, native store SDKs, and adapters must not be created merely
+because Gate 2 passed. Repository-only bootstrap design, dependency review, and
+cross-platform port inventory may proceed without claiming native runtime readiness.
 
 Use the existing runtime through these canonical manual artifacts; do not create a
 second fault route, cleanup worker, probe script, or verifier:

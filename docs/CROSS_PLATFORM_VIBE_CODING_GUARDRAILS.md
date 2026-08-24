@@ -121,5 +121,7 @@ adapters, contract tests, mobile-compatible API boundaries, and responsive UI.
 These artifacts must not claim that a native storefront or entitlement writer is
 active.
 
-Continue from `docs/IOS_CAPACITOR_PROGRESS.md`; do not reopen completed Gate 1
-or Phase 2 decisions unless current evidence shows that they have regressed.
+Use `docs/CAPACITOR_IOS_ANDROID_EXECUTION_PLAN_2026_08_16.md` for the current
+cross-platform engineering route and `docs/IOS_CAPACITOR_PROGRESS.md` for detailed
+Phase 1／2 evidence; do not reopen completed Gate 1 or Phase 2 decisions unless
+current evidence shows that they have regressed.

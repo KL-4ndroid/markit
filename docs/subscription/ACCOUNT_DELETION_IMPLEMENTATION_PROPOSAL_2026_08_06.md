@@ -2,9 +2,9 @@
 
 Date: 2026-08-06
 
-Status: planning only; destructive implementation is not approved
+Status: AD0–AD3 disposable evidence complete; Steps 2A–2G policy approvals, Step 2H/AD1 design, Step 2I/AD2 disabled local foundation, and Step 2J/AD3A numbered migration/concrete repository plus localhost DB/RLS/lifecycle/two-session-race/fake-R2 evidence are complete as of 2026-08-21; deployment, real store/device evidence, public release alignment, and Production remain incomplete
 
-Gate: `ACCOUNT-DELETION` remains `pending_approval`
+Gate: `ACCOUNT-DELETION-POLICY` is complete; the native `ACCOUNT-DELETION` gate remains `pending_approval` until runtime implementation and release evidence pass
 
 ## 1. Objective
 
@@ -92,6 +92,136 @@ Product, legal/privacy, security, support, and accounting must approve:
 
 These are launch decisions. Placeholder text or a test-only simulator cannot answer
 them.
+
+### Step 2A product decision recorded on 2026-08-17
+
+The `product_owner` approved immediate deletion after recent reauthentication and
+explicit pending-write resolution, with no mandatory waiting period. The UI must
+offer sync, an available safe export path, or explicit informed discard for each
+discoverable local pending write and must never discard silently. Active Apple or
+Google billing does not block Féria deletion; the user is told that account deletion
+does not cancel storefront billing and receives the relevant store-management path.
+
+An optional delete-at-subscription-expiry path may coexist only if immediate deletion
+remains available. Cleanup failure remains `failed_retryable` or `manual_review`,
+never false `completed`. This is product policy only: `legal_privacy_owner` approval,
+the retention table, destructive runtime review, and Production evidence remain
+pending.
+
+### Step 2B product/engineering retention decision recorded on 2026-08-17
+
+The `product_owner` approved immediate access disable and a 30-day primary-system
+ceiling for identity, profile, workspace operational data, staff relationships, and
+invitations, using irreversible anonymization only where non-identifying owner facts
+must remain. Product-cover objects must be absent within 30 days; sales-photo objects
+use the earlier of their existing seven-day lifecycle or deletion cleanup. The
+controlled-device cache clears after completion, while the service must not promise
+remote deletion from inaccessible devices.
+
+Encrypted restricted backups have a 90-day product ceiling and require
+corrective-forward deletion after disaster restore. A legal hold must be limited to
+necessary data classes and duration. Ordinary user workspace data is not treated as
+Féria accounting books by default. This does not approve legal bases, regulated
+record periods, processor propagation, or destructive runtime.
+
+### Step 2C regulated-record direction recorded on 2026-08-17
+
+The `product_owner`, `accounting_owner`, and `support_owner` approved the engineering
+classification of audit/security logs at 180 days, minimized support cases at two
+years, and detached price/subscription/store transaction/refund evidence at five
+years. Only records legally classified as Féria accounting books use ten years and
+only legally classified vouchers use five years; unresolved matters and legal holds
+must be scoped. Raw receipts and purchase tokens are excluded from general logs, and
+expiry requires automatic deletion or irreversible anonymization.
+
+Before deleting `profiles.id`, necessary billing evidence must be minimized and moved
+to a restricted pseudonymous billing subject. Email and `profiles.id` cannot remain
+retained join keys, and ordinary workspace data cannot be retained as accounting
+evidence. `legal_privacy_owner` and `security_owner` approval of exact classifications,
+keys, access controls, incident exceptions, erasure boundaries, and reidentification
+prevention remains mandatory before migration or runtime approval.
+
+### Step 2D staff and third-party boundary recorded on 2026-08-17
+
+The `product_owner` approved staff self-deletion as removal of the staff identity,
+login, roles, invitations, and workspace relationships without deletion of the owner
+workspace or another account. Owner operational facts may retain an irreversible
+“deleted member” attribution, but no email, name, `profiles.id`, or reversible mapping.
+An owner removing staff remains relationship revocation, not account deletion.
+
+Owner workspace deletion removes or irreversibly anonymizes workspace-controlled
+staff/third-party data and shared objects under the approved object-retention policy.
+Staff-created content remains only where it is an owner operational fact and its
+attribution is irreversibly anonymized. Step 2F approved the legal/privacy ownership,
+third-party-rights, shared-object, appeal, and evidence policy. Step 2G approved the
+security requirements for fields, algorithm, linkage resistance, and evidence
+integrity; their implementation and test evidence remain required.
+
+### Step 2E active-store and support direction recorded on 2026-08-17
+
+The `product_owner` and `support_owner` approved immediate Féria deletion even while
+Apple/Google billing remains active, with an explicit warning that account deletion
+does not cancel storefront charging and with the originating-store management path.
+After deletion, service remains unavailable until a new account completes verified
+purchase restore; deleted workspace data never returns. An uninterrupted store
+subscription may retain its store-owned launch price and bind to one new owner only
+after prior-binding release, single-owner, and anti-replay verification.
+
+Cleanup failures remain `failed_retryable` or `manual_review`. Users receive a safe
+request ID, state, next-action timing, and appeal route. Support never requests a
+password, raw receipt, or purchase token and sends completion only after every
+required cleanup succeeds. Step 2F approved the legal/privacy disclosure, data
+boundary, appeal, and evidence policy. Step 2G approved the security requirements for
+restore ownership, anti-replay/races, evidence protection, and fraud/error recovery;
+their implementation and test evidence remain required.
+
+### Step 2F legal/privacy review recorded on 2026-08-17
+
+The designated `legal_privacy_owner` approved the legal/privacy portions of
+`ACCOUNT_DELETION_LEGAL_SECURITY_REVIEW_PACKET_2026_08_17.md`, including immediate
+timing, retention bases/table, backup and hold boundaries, processor propagation
+requirements, billing-subject minimization/erasure boundary, staff/third-party
+controller boundaries, active-billing/restore disclosure, appeal, and evidence
+requirements. The approval is subject to exact schema/processor evidence, future
+law/store-policy recheck, and the packet's pre-runtime conditions.
+
+### Step 2G security review recorded on 2026-08-17
+
+The designated `security_owner` approved the policy-level controls for pseudonymous
+keys/access/encryption, anonymization linkage resistance, audit/hold/purge controls,
+restore anti-replay/races, request-evidence protection, and fraud/error recovery.
+The dated cross-role policy approval is therefore complete.
+
+This approval accepts the required security outcomes; it does not prove their current
+implementation. Exact schema inventory, threat modeling, synthetic fixtures, runtime
+tests, and purge/restore evidence remain mandatory. No migration, destructive test,
+external-account mutation, Production deletion, or public legal publication is
+authorized.
+
+### Step 2H / AD1 repository design recorded on 2026-08-17
+
+The user approved AD1 repository-local work. AI completed the shared fail-closed
+completion contract, 15-threat model, review-only request/RLS SQL draft, and
+synthetic/static guardrails. The SQL draft is outside `supabase/migrations`, contains
+`ROLLBACK`, grants no client mutation access, and was not applied. AD0 also identified
+the legacy authenticated `delete_current_user_app_data()` path; AD2 must replace its
+Settings caller and revoke execution before a compliant deletion UI can launch.
+
+AD1 evidence does not authorize the AD2 server saga, deployment, external credentials,
+destructive testing, or any non-Production/Production data mutation.
+
+### Step 2I / AD2 local foundation recorded on 2026-08-17
+
+The user approved AD2 within a local/synthetic-only boundary. AI implemented the
+disabled-by-default request/status route contract, recent-reauth and purpose-separated
+HMAC checks, leased saga orchestration, canonical pending-write preflight mapping,
+safe status/support responses, Production-off config guard, and removal of the legacy
+Settings RPC caller. The route has no concrete repository and therefore cannot accept
+a real deletion request even if accidentally reached.
+
+AD3 remains separately gated for a reviewed numbered migration, concrete repository,
+named non-Production target, protected secret, deployment, legacy database RPC revoke,
+and destructive disposable lifecycle/R2/restore evidence.
 
 ## 5. Proposed Server-owned State Machine
 

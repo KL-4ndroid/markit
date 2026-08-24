@@ -6,6 +6,12 @@ Status: active; Web and Native launch remain not ready
 
 Machine task matrix: `docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json`
 
+Current Capacitor iOS／Android engineering roadmap:
+`docs/CAPACITOR_IOS_ANDROID_EXECUTION_PLAN_2026_08_16.md`
+
+Generated manual queue status:
+`docs/MANUAL_LAUNCH_OPERATIONS_CHECKLIST_2026_08_09.md`
+
 Canonical readiness sources remain:
 
 - `docs/WEB_LAUNCH_GATES_2026_08_01.json`;

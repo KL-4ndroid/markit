@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md",
-  "updatedAt": "2026-08-06",
+  "updatedAt": "2026-08-24",
   "overallStatus": "not_ready",
   "gates": [
     { "id": "NATIVE-DIRECTION", "status": "complete" },
     { "id": "ACCOUNT-ENTITLEMENT-CORE", "status": "complete" },
     { "id": "IAP-PLATFORM-PORT", "status": "complete" },
-    { "id": "CAPACITOR-GATE2", "status": "pending_external" },
+    { "id": "CAPACITOR-GATE2", "status": "complete" },
     { "id": "APPLE-DEVELOPER", "status": "pending_manual" },
     { "id": "GOOGLE-PLAY-DEVELOPER", "status": "pending_manual" },
     { "id": "STORE-CATALOG", "status": "pending_manual" },

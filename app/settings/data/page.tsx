@@ -14,7 +14,6 @@ import { useRoleContext } from '@/lib/role-context';
 import { clearLocalAppData } from '@/lib/settings/clear-local-app-data';
 import { getLocalPendingWriteReport, type LocalPendingWriteReport } from '@/lib/sync/local-pending-write-report';
 import { useAuth } from '@/lib/supabase/auth-context';
-import { supabase } from '@/lib/supabase/client';
 
 const DataCanonicalizationPanel = dynamic(
   () => import('@/components/settings/DataCanonicalizationPanel').then((module) => module.DataCanonicalizationPanel),
@@ -28,7 +27,7 @@ const DataCanonicalizationPanel = dynamic(
   },
 );
 
-type ConfirmationKind = 'clear-local' | 'clear-online' | null;
+type ConfirmationKind = 'clear-local' | null;
 
 export default function DataSettingsPage() {
   const { user } = useAuth();
@@ -57,25 +56,6 @@ export default function DataSettingsPage() {
     } catch (clearError) {
       console.error('清除本地資料庫失敗:', clearError);
       toast.error('清除失敗，請稍後再試');
-    }
-  };
-
-  const confirmClearOnline = async () => {
-    if (!user) return;
-    setConfirmation(null);
-    const toastId = toast.loading('正在清除所有線上資料...');
-
-    try {
-      const { error } = await supabase.rpc('delete_current_user_app_data');
-      if (error) throw error;
-
-      toast.loading('雲端資料已清除，正在清除本地快取...', { id: toastId });
-      await clearLocalAppData(user.id, true);
-      toast.success('所有資料已清除，即將返回首頁', { id: toastId });
-      window.setTimeout(() => window.location.assign('/'), 1200);
-    } catch (clearError) {
-      const message = clearError instanceof Error ? clearError.message : '請稍後再試';
-      toast.error(`清除失敗：${message}`, { id: toastId });
     }
   };
 
@@ -140,15 +120,16 @@ export default function DataSettingsPage() {
                 <div className="flex items-start gap-3">
                   <Cloud className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-semibold text-danger">永久刪除所有線上資料</h3>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">會影響此帳號的所有裝置，並同時清除這台裝置的本機資料。</p>
+                    <h3 className="text-sm font-semibold text-danger">刪除 Féria 帳號</h3>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      安全刪除流程仍在驗證中。舊的雲端資料清除功能不等同帳號刪除，因此已停止從此頁執行。
+                    </p>
                     <Button
                       className="mt-3 w-full sm:w-auto"
                       variant="danger"
-                      disabled={!user}
-                      onClick={() => setConfirmation('clear-online')}
+                      disabled
                     >
-                      永久刪除
+                      帳號刪除尚未啟用
                     </Button>
                   </div>
                 </div>
@@ -171,16 +152,6 @@ export default function DataSettingsPage() {
         confirmationText={localPendingReport?.isClean === false ? '清除本機' : undefined}
       />
 
-      <ConfirmDialog
-        open={confirmation === 'clear-online'}
-        onClose={() => setConfirmation(null)}
-        onConfirm={confirmClearOnline}
-        title="永久刪除所有線上資料？"
-        description="所有市集、商品、事件、統計與各裝置的本機資料都會被清除，而且無法復原。"
-        confirmLabel="永久刪除"
-        tone="danger"
-        confirmationText="DELETE"
-      />
     </SettingsPageShell>
   );
 }

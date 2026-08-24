@@ -536,7 +536,8 @@ runTest('settings and staff destructive clear paths use pending-write guards', (
   assert.match(settingsDataPageSource, /getLocalPendingWriteReport/);
   assert.match(clearLocalAppDataSource, /if \(!report\.isClean && !forceDiscardLocalChanges\) return false/);
   assert.match(settingsDataPageSource, /pendingSalesPhotoEvidenceCreationCount/);
-  assert.match(settingsDataPageSource, /confirmationText="DELETE"/);
+  assert.doesNotMatch(settingsDataPageSource, /delete_current_user_app_data/);
+  assert.match(settingsDataPageSource, /帳號刪除尚未啟用/);
   assert.doesNotMatch(`${settingsDataPageSource}\n${clearLocalAppDataSource}`, /window\.confirm\(|\bprompt\(/);
   assert.match(staffStatusMonitorSource, /guardedAuthenticatedCacheReset\(/);
   assert.match(staffStatusMonitorSource, /reason:\s*['"]staff_status_reset['"]/);

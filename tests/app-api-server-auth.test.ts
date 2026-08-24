@@ -73,6 +73,26 @@ runTest('derives actor identity only from verified token user', async () => {
   });
 });
 
+runTest('normalizes optional verified sign-in time for recent-reauth consumers', async () => {
+  const result = await authenticateAppApiRequest(request('Bearer verified-token'), {
+    verifier: {
+      async getUser() {
+        return {
+          data: { user: { id: 'verified-user-id', last_sign_in_at: '2026-08-17T07:58:00Z' } },
+          error: null,
+        };
+      },
+    },
+  });
+  assert.deepEqual(result, {
+    ok: true,
+    actor: {
+      actorId: 'verified-user-id',
+      lastSignInAt: '2026-08-17T07:58:00.000Z',
+    },
+  });
+});
+
 runTest('fails closed for absent invalid or unverifiable tokens', async () => {
   assert.deepEqual(await authenticateAppApiRequest(request(), {
     verifier: {

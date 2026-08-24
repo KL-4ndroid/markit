@@ -18,7 +18,7 @@ const matrix = JSON.parse(read('docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json')) a
 assert.equal(matrix.overallStatus, 'not_ready');
 
 const pendingManual = matrix.tasks.filter(task => task.status === 'pending_manual');
-assert.equal(pendingManual.length, 11);
+assert.equal(pendingManual.length, 8);
 for (const task of pendingManual) {
   assert.ok(task.evidence.includes(guidePath), `${task.id} must reference the manual guide`);
   assert.match(guide, new RegExp(`\\b${task.id}\\b`), `${task.id} must be covered`);

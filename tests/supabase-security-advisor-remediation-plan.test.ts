@@ -13,7 +13,7 @@ const permissionDistribution = read('docs/role-permission-distribution.md');
 const manifest = read('scripts/test-files.txt');
 
 for (const marker of [
-  'Status: planning only; no remediation migration is approved or applied',
+  'Status: SRA-000 live inventory captured; no remediation migration is approved or applied',
   'SRA-000',
   'SRA-001',
   'SRA-010',

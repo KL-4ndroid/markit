@@ -12,6 +12,8 @@
 --   4. Preserves authenticated read access and service_role RPC execution.
 -- ============================================================
 
+BEGIN;
+
 DO $$
 DECLARE
   v_claim REGPROCEDURE := pg_catalog.to_regprocedure(
@@ -175,3 +177,5 @@ ON public.sale_photo_evidence IS
 
 COMMENT ON TABLE public.sale_photo_evidence IS
   'Metadata-only sales photo evidence records. Reads remain RLS-scoped; mutations are restricted to the three service_role BFF RPC capabilities.';
+
+COMMIT;

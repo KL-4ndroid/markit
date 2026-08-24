@@ -37,7 +37,7 @@ assert.match(runbook, /does not add a[\s\S]*probe, route, adapter, cleanup worke
 assert.match(runbook, /remove all seven variables/i);
 assert.match(runbook, /physical absence/i);
 assert.match(runbook, /normal retry succeeds/i);
-assert.match(runbook, /Gate 2 remains open/i);
+assert.match(runbook, /Production evidence completed 2026-08-24/i);
 assert.match(template, /Status: `INCOMPLETE`/);
 assert.match(template, /Gate 2 decision: `KEEP_OPEN`/);
 assert.doesNotMatch(`${runbook}\n${template}`, /sb_secret_|AKIA[0-9A-Z]{16}/);
@@ -48,7 +48,7 @@ assert.match(progress, /IOS_PHASE2_GATE2_COMPENSATION_EVIDENCE_TEMPLATE\.md/);
 assert.equal(gates.overallStatus, 'not_ready');
 assert.equal(
   gates.gates.find(gate => gate.id === 'CAPACITOR-GATE2')?.status,
-  'pending_external',
+  'complete',
 );
 assert.ok(
   manifest.includes('tsx tests/ios-phase2-gate2-compensation-runbook.test.ts'),
