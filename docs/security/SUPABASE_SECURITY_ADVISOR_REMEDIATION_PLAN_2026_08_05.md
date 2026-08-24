@@ -1,11 +1,14 @@
 # Supabase Security Advisor Remediation Plan
 
 Date: 2026-08-05
-Status: SRA-000 live inventory captured; no remediation migration is approved or applied
+Status: SRA-000 live inventory captured; SRA-A minimal proposal complete; no remediation migration is approved or applied
 Scope: pre-existing non-billing findings only
 
 Sanitized live evidence:
 `docs/security/SUPABASE_SECURITY_ADVISOR_INVENTORY_EVIDENCE_2026_08_24.md`
+
+SRA-A minimal proposal:
+`docs/security/SUPABASE_SECURITY_ADVISOR_SRA_A_MINIMAL_REMEDIATION_PROPOSAL_2026_08_24.md`
 
 ## 1. Safety boundary
 
@@ -231,7 +234,8 @@ cross-owner or elevated access stops the work and requires human review.
 ## 8. Execution batches and release gates
 
 1. `SRA-000`: save masked read-only inventory and exact Advisor mapping.
-2. `SRA-A`: fix search paths and EXECUTE ACLs for no-client trigger functions.
+2. `SRA-A`: minimal proposal complete; the first implementation proposal is limited to
+   four live, no-client SECURITY DEFINER trigger functions and remains unapproved.
 3. `SRA-B`: remove always-true INSERT policies with event-projection regression.
 4. `SRA-C1`: add narrow staff read functions and dual-read equivalence tests.
 5. `SRA-C2`: switch application callers; verify sync/Dexie and every staff role.

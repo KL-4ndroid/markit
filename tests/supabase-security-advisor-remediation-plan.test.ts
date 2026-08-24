@@ -13,7 +13,7 @@ const permissionDistribution = read('docs/role-permission-distribution.md');
 const manifest = read('scripts/test-files.txt');
 
 for (const marker of [
-  'Status: SRA-000 live inventory captured; no remediation migration is approved or applied',
+  'Status: SRA-000 live inventory captured; SRA-A minimal proposal complete; no remediation migration is approved or applied',
   'SRA-000',
   'SRA-001',
   'SRA-010',
@@ -58,6 +58,10 @@ assert.ok(
 assert.ok(
   manifest.includes('tsx tests/supabase-security-advisor-remediation-plan.test.ts'),
   'complete test manifest must include the remediation guardrail',
+);
+assert.ok(
+  manifest.includes('tsx tests/supabase-security-advisor-sra-a-proposal.test.ts'),
+  'complete test manifest must include the SRA-A proposal guardrail',
 );
 
 const migrationNames = readdirSync(join(root, 'supabase', 'migrations'));
