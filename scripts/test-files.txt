@@ -357,3 +357,4 @@ tsx tests/recurring-operations-pause-resume.test.ts
 tsx tests/recurring-operations-history-immutability.test.ts
 tsx tests/recurring-operations-restore.test.ts
 tsx tests/date-time-picker-runtime-style.test.ts
+tsx tests/supabase-sra-a1-remote-migration-strategy.test.ts

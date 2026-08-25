@@ -238,7 +238,9 @@ cross-owner or elevated access stops the work and requires human review.
 
 1. `SRA-000`: save masked read-only inventory and exact Advisor mapping.
 2. `SRA-A`: first review/local implementation passed for four no-client SECURITY DEFINER
-   trigger functions; numbered migration and remote execution remain unapproved.
+   trigger functions. The remote-history-first, forward-only release strategy is now
+   prepared in `SUPABASE_SRA_A1_REMOTE_MIGRATION_HISTORY_STRATEGY_2026_08_26.md`;
+   exact target inventory, numbered migration, and remote execution remain unapproved.
 3. `SRA-B`: remove always-true INSERT policies with event-projection regression.
 4. `SRA-C1`: add narrow staff read functions and dual-read equivalence tests.
 5. `SRA-C2`: switch application callers; verify sync/Dexie and every staff role.

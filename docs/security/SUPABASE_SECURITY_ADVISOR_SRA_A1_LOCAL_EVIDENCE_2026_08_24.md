@@ -111,10 +111,12 @@ SRA-A1 review/local implementation and disposable evidence pass. This does not c
 `SEC-REMEDIATION`, create a deployable numbered migration, approve a non-Production or
 Production target, or close SRA-B/C/D findings.
 
-The next possible step requires a separate security-owner decision. Before any remote
-target is contacted, the project must approve the remote migration-history strategy and
-then authorize an exact non-Production target, migration/version/hash, operator,
-maintenance window, corrective-forward artifact, and evidence reviewer.
+The remote migration-history strategy is now prepared in
+`SUPABASE_SRA_A1_REMOTE_MIGRATION_HISTORY_STRATEGY_2026_08_26.md`. Before any remote
+target is contacted, a security owner must still authorize an exact non-Production
+target and the bounded read-only inventory. Migration/version/hash, operator,
+maintenance window, corrective-forward artifact, and evidence reviewer remain required
+before any later mutation authorization.
 
 After evidence capture, the disposable local Supabase stack was stopped with no backup.
 Only the sanitized repository evidence and local-only test artifacts remain.
