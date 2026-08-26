@@ -1,7 +1,7 @@
 # Supabase Security Advisor Remediation Plan
 
 Date: 2026-08-05
-Status: SRA-000 complete and SRA-A1 review/local evidence passed; no numbered remediation migration or remote execution is approved
+Status: SRA-000 complete; SRA-A1 Docker rehearsal and bounded Production metadata reads approved; no numbered remote migration or remote mutation is approved
 Scope: pre-existing non-billing findings only
 
 Sanitized live evidence:
@@ -239,8 +239,10 @@ cross-owner or elevated access stops the work and requires human review.
 1. `SRA-000`: save masked read-only inventory and exact Advisor mapping.
 2. `SRA-A`: first review/local implementation passed for four no-client SECURITY DEFINER
    trigger functions. The remote-history-first, forward-only release strategy is now
-   prepared in `SUPABASE_SRA_A1_REMOTE_MIGRATION_HISTORY_STRATEGY_2026_08_26.md`;
-   exact target inventory, numbered migration, and remote execution remain unapproved.
+   updated in `SUPABASE_SRA_A1_REMOTE_MIGRATION_HISTORY_STRATEGY_2026_08_26.md`.
+   Docker rehearsal and same-SRA-000-target Production metadata reads are approved;
+   numbered remote migration and all remote mutation remain unapproved. See
+   `SUPABASE_SRA_A1_PRODUCTION_READ_ONLY_DOCKER_EVIDENCE_2026_08_26.md`.
 3. `SRA-B`: remove always-true INSERT policies with event-projection regression.
 4. `SRA-C1`: add narrow staff read functions and dual-read equivalence tests.
 5. `SRA-C2`: switch application callers; verify sync/Dexie and every staff role.
@@ -250,4 +252,4 @@ cross-owner or elevated access stops the work and requires human review.
 
 Each batch requires its own migration proposal, rollback/corrective-forward
 section, focused tests, sandbox evidence, Security Advisor rerun, reviewer signoff
-and Production approval. No batch in this plan is currently approved to execute.
+and Production approval. No batch in this plan is currently approved for remote mutation.

@@ -111,12 +111,11 @@ SRA-A1 review/local implementation and disposable evidence pass. This does not c
 `SEC-REMEDIATION`, create a deployable numbered migration, approve a non-Production or
 Production target, or close SRA-B/C/D findings.
 
-The remote migration-history strategy is now prepared in
-`SUPABASE_SRA_A1_REMOTE_MIGRATION_HISTORY_STRATEGY_2026_08_26.md`. Before any remote
-target is contacted, a security owner must still authorize an exact non-Production
-target and the bounded read-only inventory. Migration/version/hash, operator,
-maintenance window, corrective-forward artifact, and evidence reviewer remain required
-before any later mutation authorization.
+Historical boundary superseded 2026-08-26: the security owner approved a fresh Docker
+rehearsal and bounded metadata-only Production reads on the SRA-000 target. The new
+evidence is in `SUPABASE_SRA_A1_PRODUCTION_READ_ONLY_DOCKER_EVIDENCE_2026_08_26.md`.
+All remote writes remain prohibited. No numbered migration is approved, and no missing
+remote ledger is created or repaired. The original local draft remains unchanged.
 
 After evidence capture, the disposable local Supabase stack was stopped with no backup.
 Only the sanitized repository evidence and local-only test artifacts remain.

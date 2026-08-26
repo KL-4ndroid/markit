@@ -14,12 +14,11 @@ assert.ok(existsSync(join(root, strategyPath)), 'SRA-A1 migration-history strate
 
 for (const marker of [
   'remote-history-first, forward-only, disposable release workspace',
-  'two files use version `012`',
-  'three files use version `20240220`',
   'neither `072` nor any other version is approved',
   '`migration repair` is not part of the normal SRA-A1 route',
   'Automatic rollback is prohibited',
-  'Exact non-Production label',
+  'security-owner approved Docker rehearsal plus exact Production metadata-only reads',
+  'all remote writes and deployment prohibited',
   'Migration SHA-256',
   '`SEC-REMEDIATION` remains `pending_approval`',
 ]) {
@@ -27,8 +26,11 @@ for (const marker of [
 }
 
 assert.match(strategy, /dry run proposes more than one migration/u);
-assert.match(strategy, /filename or SHA-256 differs/u);
-assert.match(strategy, /Production or its environment identity is uncertain/u);
+assert.match(strategy, /filename or\s+SHA-256 differs/u);
+assert.match(strategy, /Production mutation or an uncertain\s+environment identity/u);
+assert.match(strategy, /schema_migrations` is absent/u);
+assert.match(strategy, /Do not create the ledger/u);
+assert.match(strategy, /separate cloud non-Production project is not required/u);
 assert.match(strategy, /Do not use\s+`--include-all`/u);
 
 const remediationTask = taskMatrix.tasks.find(task => task.id === 'SEC-REMEDIATION');
@@ -42,4 +44,4 @@ assert.equal(
   'strategy preparation must not create a numbered SRA-A1 migration',
 );
 
-console.log('PASS SRA-A1 remote migration strategy stays targetless, forward-only, and fail closed');
+console.log('PASS SRA-A1 strategy permits only matched-target metadata reads and new Docker rehearsal');

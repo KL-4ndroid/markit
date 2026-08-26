@@ -1,97 +1,103 @@
 # Supabase SRA-A1 Remote Migration-History Strategy
 
 Date: 2026-08-26
-Status: strategy prepared; remote inventory and execution not authorized
+
+Status: security-owner approved Docker rehearsal plus exact Production metadata-only reads; all remote writes and deployment prohibited
+
 Related task: `SEC-REMEDIATION` (`pending_approval`)
 
-## Decision
+## Decision and supersession
 
-Use a **remote-history-first, forward-only, disposable release workspace** for SRA-A1.
-Do not rename, delete, squash, or mark any existing repository or remote migration as
-applied/reverted merely to make the current repository chain pass.
+The security owner approved replacing the cloud-staging requirement with a new
+disposable Docker Supabase environment plus a bounded read-only check of the exact
+SRA-000 Production target. A separate cloud non-Production project is not required.
+This supersedes the earlier targetless/cloud-staging-only version of this document.
 
-The repository contains legacy version collisions:
+Keep the remote-history-first, forward-only, disposable release workspace principle:
+actual target metadata is authoritative, but this does not grant mutation authority.
+Platform impact: operations SQL and tests only; no shared business logic, Web/device
+API, Capacitor dependency, or application runtime is changed.
 
-- two files use version `012`;
-- three files use version `20240220`.
+## Exact authorization
 
-Because the exact remote migration ledger has not been read for an authorized
-non-Production target, neither `072` nor any other version is approved for SRA-A1.
+- Match the SHA-256 of the Dashboard project reference to the SRA-000 fingerprint
+  `9b9284e718b0...` before any database query.
+- Read only migration history metadata, the four SRA-A1 function definitions/owners/
+  configuration/EXECUTE ACLs, and their trigger bindings. PostgreSQL version is
+  compatibility metadata. Do not read application or Auth user rows.
+- All queries use `BEGIN; SET TRANSACTION READ ONLY;`, bounded timeouts, and
+  terminal `ROLLBACK;`.
+- Do not export migration statement bodies, database dumps, credentials, or customer
+  data. Raw function/ACL evidence stays in private local storage outside Git.
+- New disposable Docker bootstrap and synthetic tests are allowed. Do not reset,
+  delete, or reuse unrelated local databases.
+- No remote `db push` (including dry-run), `migration fetch`, `migration repair`,
+  provider changes, grants, function replacement, or deployment is authorized.
 
-## Approved preparation boundary
+## Current findings and publication stop
 
-This document and its static guardrail may be created locally. This approval does not:
+The repository has two files using version `012` and three files using version
+`20240220`. The matched Production preflight reports that
+`supabase_migrations.schema_migrations` is absent (not an empty known ledger).
+Therefore neither `072` nor any other version is approved for remote deployment.
+Do not create the ledger, stamp old migrations applied, infer applied versions from
+filenames, or run the repository migration chain against Production.
 
-- identify or contact a Supabase project;
-- authorize `supabase migration list --linked`, `migration fetch`, `migration repair`,
-  `db push`, SQL Editor execution, or a direct database connection;
-- create a numbered SRA-A1 migration under `supabase/migrations`;
-- authorize non-Production or Production mutation.
+Three target function definitions match the earlier local evidence byte-for-byte.
+The market function has different raw hashes but the same migration-056 body after
+CRLF/LF normalization. All four live ACL baselines include explicit client grants,
+unlike the earlier local ACLs. Trigger names, enabled state and bindings match.
 
-## Required release method
+Keep the original local draft immutable as historical evidence. A separate
+observed-baseline local review draft may pin the actual hashes and ACLs for Docker
+rehearsal; it must not replace function bodies, add a numbered migration, or relax
+preflight matching.
 
-After a security owner separately authorizes one exact non-Production target:
+## Docker rehearsal sequence
 
-1. Record the project reference, environment label, operator, maintenance window,
-   evidence reviewer, and expected database major version.
-2. Read the target migration ledger without mutation. Save only sanitized version,
-   name, and status evidence; do not save credentials or connection strings.
-3. Build a disposable release workspace from the target's canonical applied history.
-   Do not use the repository's colliding legacy filenames as proof of remote state.
-4. Generate one new UTC timestamp version later than every version in that target
-   ledger. Copy the reviewed SRA-A1 SQL into that single forward migration without
-   changing its four-function scope.
-5. Record the exact migration filename and SHA-256 before any dry run. The approved
-   hash becomes immutable; any content change cancels authorization.
-6. Run `db push --dry-run` against the exact non-Production target. Do not use
-   `--include-all`. The plan must contain only the approved SRA-A1 migration.
-7. Stop for a separate execution authorization containing the target, filename, hash,
-   operator, window, reviewer, and corrective-forward artifact.
+1. Create a uniquely named local project with dedicated ports and no linked project.
+2. Replay the documented phased local bootstrap through 071. This is supporting
+   fixture schema, not proof that Production has all those migrations.
+3. Install only the four reviewed function definitions/ACL baselines captured by the
+   approved reads, on localhost. Verify exact hashes and trigger metadata.
+4. Prove the old draft rejects the observed baseline before any hardening persists.
+5. Apply the observed-baseline review draft on localhost only. Run synthetic Auth,
+   market, active staff membership, product create/update/delete tests and role ACL
+   checks; rollback synthetic rows.
+6. Prove repeat application rejects drift. Re-read all four local definitions/ACLs;
+   retain body identity, enabled trigger count, and denial evidence.
+7. Stop only the newly created stack with no backup and retain sanitized evidence.
 
-`migration repair` is not part of the normal SRA-A1 route. It may only be proposed if
-read-only evidence proves a specific ledger error, and then requires its own exact
-version/status approval. It must never be used as an automatic response to the local
-duplicate versions.
+This is four-function parity on a synthetic schema, NOT a complete Production clone,
+whole-schema equivalence proof, cloud provider regression, or release approval.
+Any unexplained semantic difference is a stop condition; never normalize arbitrary
+function-body changes to make a preflight pass.
 
-## Fail-closed stop conditions
+## Later release decision (not approved)
 
-Stop without mutation when any of the following occurs:
+Because the ledger is absent, the previously proposed automatic CLI publication path
+cannot be used. A future security/release-owner review must explicitly choose either:
 
-- the target is Production or its environment identity is uncertain;
-- the target ledger cannot be captured read-only;
-- the database major version differs from the recorded expectation;
-- a remote version collision, missing statement body, or unexplained local/remote
-  mismatch is found;
-- the dry run proposes more than one migration;
-- the proposed filename or SHA-256 differs from the authorization record;
-- the four function definitions, owners, trigger bindings, or baseline body hashes
-  differ from the accepted SRA-A1 local evidence;
-- the operator cannot produce the corrective-forward artifact before execution.
+- one exact, hashed, transaction-bound SQL change using the existing manual change
+  process and an external release record, without backfilling migration history; or
+- a separately scoped migration-history adoption plan with its own evidence.
 
-## Corrective-forward artifact
+Do not use `--include-all`. `migration repair` is not part of the normal SRA-A1 route.
+If a future dry run proposes more than one migration, stop. Stop if the filename or
+SHA-256 differs from the reviewed artifact. Production mutation or an uncertain
+environment identity remains an immediate stop in this authorization.
 
-The release package must contain a separately hashed SQL artifact that restores the
-four functions' pre-change `proconfig` and EXECUTE ACL values captured from the same
-non-Production target. It must not replace function bodies, alter triggers, or touch
-application data. Automatic rollback is prohibited; the security owner decides whether
-to apply the corrective-forward artifact after reviewing evidence.
+The future authorization must record the exact target fingerprint, operator,
+maintenance window/timezone, security/release reviewer, Migration SHA-256, baseline
+hashes, execution method, smoke plan, and a separately reviewed corrective-forward
+artifact. Missing information is not implied approval.
 
-## Human authorization record
+Automatic rollback is prohibited. A corrective-forward design must restore the exact
+same-target pre-change configuration/ACL if separately approved, never application
+data or function bodies. No such remote restore is authorized in this slice.
 
-The next approval is incomplete until every field below has a concrete value:
+## Checklist rule
 
-| Field | Required value |
-| --- | --- |
-| Environment | Exact non-Production label |
-| Supabase project ref | Exact project reference |
-| Operator | Named responsible person or role |
-| Maintenance window | Start/end time with timezone |
-| Evidence reviewer | Named person or role distinct from automated execution |
-| Database major version | Read-only verified value |
-| Migration filename | UTC timestamp plus SRA-A1 description |
-| Migration SHA-256 | Exact lowercase hash |
-| Corrective-forward filename/hash | Exact artifact identity |
-| Dry-run result | Exactly one pending SRA-A1 migration |
-
-Until that record is complete, `SEC-REMEDIATION` remains `pending_approval`, and no
-checklist completion is earned by this strategy-only preparation.
+`SEC-REMEDIATION` remains `pending_approval`. Record this slice's evidence separately;
+only actually verified local/read-only subtasks may be checked. SRA-B/C/D, missing
+remote history, Production application and final security signoff remain open.

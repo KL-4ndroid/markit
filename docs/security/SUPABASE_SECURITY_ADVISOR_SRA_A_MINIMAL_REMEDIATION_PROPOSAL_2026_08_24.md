@@ -3,7 +3,7 @@
 Date: 2026-08-24
 
 Status: proposal accepted; review/local implementation and disposable evidence complete;
-numbered migration, non-Production execution, and Production execution are not approved
+numbered remote migration and Production mutation are not approved
 
 Related task: `SEC-REMEDIATION` (`pending_approval`)
 
@@ -158,8 +158,11 @@ The following are separate decisions:
    scope.
 2. **Review/local implementation — complete 2026-08-24:** exact local-only SQL draft,
    static tests, and disposable evidence passed. No remote target was contacted.
-3. **Non-Production authorization:** approve one exact target, migration hash, operator,
-   maintenance window, evidence reviewer, and corrective-forward artifact.
+3. **Docker replacement — approved 2026-08-26:** the security owner authorized a new
+   disposable Docker rehearsal plus metadata-only Production reads on the exact
+   SRA-000 target, not a remote staging deployment. See
+   `SUPABASE_SRA_A1_REMOTE_MIGRATION_HISTORY_STRATEGY_2026_08_26.md` and
+   `SUPABASE_SRA_A1_PRODUCTION_READ_ONLY_DOCKER_EVIDENCE_2026_08_26.md`.
 4. **Production authorization:** only after non-Production evidence, a fresh Production
    read-only preflight, remote migration-history approval, release-bound smoke plan, and
    security/release-owner go/no-go.
@@ -171,6 +174,6 @@ approved SRA batches, including separately scoped SRA-B/C/D work as applicable, 
 accepted execution evidence. Completing this proposal does not automatically check the
 parent remediation task.
 
-## 9. Proposed next approval wording
+## 9. Historical implementation approval wording
 
 `核准 SRA-A1 implementation：僅建立四個 no-client trigger functions 的固定 search_path／EXECUTE revoke migration、靜態測試與 disposable local evidence；不接觸 remote 或 Production。`

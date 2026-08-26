@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "scope": "new-disposable-local-only",
+  "databaseVersion": "170006",
+  "exactFunctionBaselineCount": 4,
+  "identicalTriggerCount": 4,
+  "marketBodyDiff": "CRLF/LF only",
+  "oldDraftRejectedWithoutChanges": true,
+  "repeatRejectedWithoutChanges": true,
+  "syntheticRowsAfterRollback": {
+    "authUsers": 0,
+    "markets": 0,
+    "products": 0
+  },
+  "fixture": {
+    "ok": true,
+    "targetFunctionCount": 4,
+    "profileTriggerCount": 2,
+    "marketProjectionCount": 1,
+    "marketMembershipCount": 2,
+    "productProjectionCount": 1,
+    "transactionOutcome": "rolled_back"
+  },
+  "beforeSha256": "cd607b65a1060d1954bdd9707e295d839dfd63404dc8507f321f13186ec6ec0b",
+  "afterSha256": "3117b636857eecb670735f18f4bf79f8fa68e0be6766b3195eab75bd6b8ee2d9",
+  "observedDraftSha256": "5dddee760b0f835343b8c5997eb53cc7a9c6f7910d0ce370304602d87a58193d",
+  "remoteWrites": 0
+}

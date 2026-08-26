@@ -318,6 +318,7 @@ tsx tests/unauthenticated-main-landmark.test.ts
 tsx tests/supabase-security-advisor-remediation-plan.test.ts
 tsx tests/supabase-security-advisor-sra-a-proposal.test.ts
 tsx tests/supabase-security-advisor-sra-a1-implementation.test.ts
+tsx tests/supabase-sra-a1-production-readonly-docker.test.ts
 tsx tests/launch-execution-plan.test.ts
 tsx tests/launch-execution-plan-cli.test.ts
 tsx tests/manual-launch-operations-guide.test.ts
