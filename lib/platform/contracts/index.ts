@@ -8,6 +8,16 @@ export type { ShareInput, SharePort, ShareResult } from '@/lib/platform/contract
 export type { ExternalLinkPort } from '@/lib/platform/contracts/external-link';
 export type { DeepLinkPort } from '@/lib/platform/contracts/deep-link';
 export type {
+  GmailAccessTokenProvider,
+  GmailHistoryMessageAdded,
+  GmailHistoryPage,
+  GmailHistoryRecord,
+  GmailMailboxProfile,
+  GmailMessageListPage,
+  GmailMessageRef,
+  GmailTransportPort,
+} from '@/lib/platform/contracts/gmail';
+export type {
   InAppPurchaseAvailability,
   InAppPurchaseEnvironment,
   InAppPurchaseErrorCode,
