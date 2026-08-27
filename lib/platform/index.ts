@@ -16,6 +16,14 @@ export type {
   ShareResult,
   ExternalLinkPort,
   DeepLinkPort,
+  GmailAccessTokenProvider,
+  GmailHistoryMessageAdded,
+  GmailHistoryPage,
+  GmailHistoryRecord,
+  GmailMailboxProfile,
+  GmailMessageListPage,
+  GmailMessageRef,
+  GmailTransportPort,
   InAppPurchaseAvailability,
   InAppPurchaseEnvironment,
   InAppPurchaseErrorCode,
@@ -34,6 +42,7 @@ export { getFilePort, installFilePort } from '@/lib/platform/file-capability';
 export { getNetworkPort, installNetworkPort } from '@/lib/platform/network-capability';
 export { getLifecyclePort, installLifecyclePort } from '@/lib/platform/lifecycle-capability';
 export { getSecureStorage, installSecureStorage } from '@/lib/platform/secure-storage-capability';
+export { getGmailTransport, installGmailTransport } from '@/lib/platform/gmail-capability';
 export {
   getClipboardPort,
   getSharePort,
