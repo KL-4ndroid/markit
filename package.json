@@ -43,12 +43,14 @@
     "lint": "eslint .",
     "lint:hex": "node scripts/lint-hex.js",
     "test": "node scripts/run-tests.mjs",
+    "test:market-mail": "tsx tests/market-mail-local-integration.test.ts",
     "test:staff-types": "tsc --noEmit --project tsconfig.staff-typed-client.json",
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1081.0",
     "@headlessui/react": "^2.2.9",
+    "@market-mail/core": "git+ssh://git@github.com/KL-4ndroid/market-mail-api.git#1292fe65fef5e5ca69a48f97b9f2c99b8d8ea6d0",
     "@react-pdf/renderer": "^4.5.1",
     "@supabase/supabase-js": "^2.91.1",
     "clsx": "^2.1.1",
