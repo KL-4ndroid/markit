@@ -39,6 +39,7 @@
     "check:native-store-catalog": "tsx scripts/check-native-store-catalog-config.ts",
     "check:native-store-metadata": "tsx scripts/check-native-store-listing-metadata.ts",
     "check:native-store-product-metadata": "tsx scripts/check-native-store-product-metadata.ts",
+    "check:market-mail": "node scripts/check-market-mail-integration.mjs",
     "start": "next start",
     "lint": "eslint .",
     "lint:hex": "node scripts/lint-hex.js",
