@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = new URL('..', import.meta.url);
-const read = (path) => readFileSync(join(root.pathname, path), 'utf8');
+const root = fileURLToPath(new URL('..', import.meta.url));
+const read = (path) => readFileSync(join(root, path), 'utf8');
 const pkg = JSON.parse(read('package.json'));
 const spec = pkg.dependencies?.['@market-mail/core'];
 
@@ -33,7 +34,7 @@ if (!syncSource.includes('await port.persistDryRun(plan);') || !syncSource.inclu
 }
 
 const webAdapter = read('lib/platform/web/gmail-adapter.web.ts');
-if (!webAdapter.includes('historyTypes: \'messageAdded\'')) {
+if (!webAdapter.includes("historyTypes: 'messageAdded'")) {
   throw new Error('Web Gmail adapter must request messageAdded history only.');
 }
 if (!webAdapter.includes('?format=full')) {
