@@ -17,16 +17,21 @@ if (!exactDevelopmentPin.test(spec) && !immutableReleasePin.test(spec)) {
   throw new Error('@market-mail/core must be pinned to an exact commit or immutable market-mail-core-vX.Y.Z tag.');
 }
 
+const stripComments = (source) => source
+  .replace(/\/\*[\s\S]*?\*\//gu, '')
+  .replace(/(^|[^:])\/\/.*$/gmu, '$1');
+const browserGlobalUsage = /\b(?:window|document|navigator)\b/u;
+
 const coreSource = read('lib/market-mail/local-core.ts');
 if (!coreSource.includes("MARKIT_MARKET_MAIL_CONTRACT_VERSION = '1.0'")) {
   throw new Error('Markit must explicitly gate Market Mail engine contract 1.0.');
 }
-if (/\bwindow\b|\bdocument\b|\bnavigator\b/u.test(coreSource)) {
+if (browserGlobalUsage.test(stripComments(coreSource))) {
   throw new Error('Shared Market Mail core boundary must not depend on browser globals.');
 }
 
 const syncSource = read('lib/market-mail/gmail-sync.ts');
-if (/\bwindow\b|\bdocument\b|\bnavigator\b/u.test(syncSource)) {
+if (browserGlobalUsage.test(stripComments(syncSource))) {
   throw new Error('Shared Gmail sync orchestration must remain platform-neutral.');
 }
 if (!syncSource.includes('await port.persistDryRun(plan);') || !syncSource.includes('await port.commitHistoryCursor')) {
