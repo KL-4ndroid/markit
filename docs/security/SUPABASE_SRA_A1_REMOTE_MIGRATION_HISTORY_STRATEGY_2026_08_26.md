@@ -73,14 +73,18 @@ whole-schema equivalence proof, cloud provider regression, or release approval.
 Any unexplained semantic difference is a stop condition; never normalize arbitrary
 function-body changes to make a preflight pass.
 
-## Later release decision (not approved)
+## Later release decision
 
 Because the ledger is absent, the previously proposed automatic CLI publication path
-cannot be used. A future security/release-owner review must explicitly choose either:
+cannot be used. On 2026-08-31 the security owner selected Method A preparation:
 
-- one exact, hashed, transaction-bound SQL change using the existing manual change
-  process and an external release record, without backfilling migration history; or
-- a separately scoped migration-history adoption plan with its own evidence.
+- prepare one exact, hashed, transaction-bound SQL change using the existing manual
+  change process and an external release record, without backfilling migration history.
+
+The preparation package is documented in
+`SUPABASE_SRA_A1_METHOD_A_RELEASE_PREPARATION_2026_08_31.md`. Production execution and
+corrective-forward remain separate, unapproved decisions. A migration-history adoption
+plan is not selected and remains outside this scope.
 
 Do not use `--include-all`. `migration repair` is not part of the normal SRA-A1 route.
 If a future dry run proposes more than one migration, stop. Stop if the filename or

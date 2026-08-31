@@ -94,7 +94,7 @@ Verified outcomes (machine-readable: `SRA_A1_DOCKER_REHEARSAL_2026_08_26.json`):
 - [x] Repeated application rejected without persistent changes.
 - [x] Synthetic transaction rolled back; zero Auth users, markets and products remained.
 - [x] New local stack stopped with `--no-backup`; no other local stack was stopped.
-- [ ] Remote release method for absent migration history approved.
+- [x] Method A fixed-hash release preparation approved for artifact creation only.
 - [ ] Corrective-forward artifact and final release package reviewed.
 - [ ] Production change applied and same-target postcheck accepted.
 
@@ -114,3 +114,8 @@ change record, or a separately scoped migration-history adoption plan. The absen
 the ledger must never trigger automatic bootstrap, `db push`, `--include-all`, or
 marking historical versions applied. Any eventual Production execution requires its
 own exact target/hash/window/operator/reviewer and corrective-forward approval.
+
+Update 2026-08-31: Method A preparation was selected. Fixed-hash artifacts and the
+inactive human guide are recorded in
+`SUPABASE_SRA_A1_METHOD_A_RELEASE_PREPARATION_2026_08_31.md`. This does not authorize
+Production execution or corrective-forward use.
