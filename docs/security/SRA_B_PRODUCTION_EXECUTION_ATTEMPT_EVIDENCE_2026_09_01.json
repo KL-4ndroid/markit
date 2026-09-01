@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "releaseId": "SRA-B-20260901-PREP-01",
+  "recordedAt": "2026-09-01T15:27:34+08:00",
+  "targetFingerprintMatched": true,
+  "artifactHashesMatched": true,
+  "authorization": {
+    "operator": "user",
+    "releaseReviewer": "user",
+    "maintenanceWindow": "immediate, Asia/Taipei",
+    "finalConfirmationWaived": true,
+    "maximumForwardAttempts": 1
+  },
+  "preflight": {
+    "ok": true,
+    "assertionGuard": 1,
+    "serverMajor": 17,
+    "transactionReadOnly": "on",
+    "migrationLedgerPresent": false,
+    "insertPolicyCount": 4,
+    "exactBaselineMatched": true
+  },
+  "forward": {
+    "attemptCount": 1,
+    "outcome": "sql_editor_syntax_error_before_transaction",
+    "postgresErrorCode": "42601",
+    "errorLocation": "line_83_begin",
+    "transactionEntered": false,
+    "committed": false,
+    "productionMutationCount": 0,
+    "retried": false
+  },
+  "unchangedBaselineVerification": {
+    "ok": true,
+    "assertionGuard": 1,
+    "insertPolicyCount": 4,
+    "exactBaselineMatched": true
+  },
+  "advisorAfterAttempt": {
+    "rerunCompleted": true,
+    "errors": 3,
+    "warnings": 59,
+    "info": 12,
+    "sraBWarnings": 3
+  },
+  "postcheckAccepted": false,
+  "sraBComplete": false,
+  "reauthorizationRequired": true,
+  "rawProjectReferenceRetained": false,
+  "businessRowsRead": false,
+  "migrationHistoryChanged": false
+}

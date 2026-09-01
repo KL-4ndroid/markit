@@ -2,8 +2,9 @@
 
 Date: 2026-09-01
 
-Status: fixed-hash package and disposable closed loop passed; Production execution is
-not authorized
+Status: fixed-hash package and disposable closed loop passed; the authorized Production
+forward was attempted once, stopped on a SQL Editor syntax error before transaction
+execution, and produced zero Production mutations; reauthorization is required
 
 ## Package
 
@@ -24,16 +25,26 @@ that restores an unsafe `WITH CHECK (true)` policy.
 
 | Field | Current value |
 | --- | --- |
-| Operator | **unset — required before execution** |
-| Maintenance window | **unset — required before execution** |
-| Release reviewer | **unset — required before execution** |
+| Operator | user |
+| Maintenance window | immediate, Asia/Taipei |
+| Release reviewer | user |
 | Exact Production target | private fingerprint must match manifest |
-| Forward execution count | maximum one |
-| Final confirmation | required unless explicitly waived |
+| Forward execution count | one attempt consumed; transaction not executed |
+| Final confirmation | explicitly waived for the consumed attempt |
 
 Suggested approval wording:
 
 > 我以 security_owner／release_owner 核准 SRA-B Production execution：Operator、維護時段與 reviewer 已填妥；允許 AI 對相同 fingerprint target 執行固定 SHA-256 preflight、forward 一次及 read-only postcheck。不得重試、不得新增替代 policy、不得修改 migration history。
+
+That authorization was consumed on 2026-09-01. The SQL Editor retained the prior
+preflight before the fixed forward content and PostgreSQL rejected the combined buffer
+at the second `BEGIN` (`42601`, line 83). The parser rejected the batch before entering
+the forward transaction. A separate fresh read-only query then reconfirmed the complete
+four-policy baseline with `ok=true` and guard `1`; the rerun Advisor remained at three
+errors, 59 warnings and 12 info findings, including all three SRA-B warnings.
+
+Sanitized evidence:
+`docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_ATTEMPT_2026_09_01.md`.
 
 ## Execution steps
 
@@ -59,6 +70,8 @@ Suggested approval wording:
 
 - Hash, target, version, ledger or policy drift: stop before forward execution.
 - Forward error: do not retry and do not create a policy during the window.
+- The 2026-09-01 attempt reached this stop condition. Do not treat the original
+  authorization as reusable; any later attempt requires a new explicit authorization.
 - Postcheck failure: stop and inspect metadata read-only.
 - Legitimate direct markets caller found: prepare a new owner-bound policy proposal;
   never restore `WITH CHECK (true)`.
@@ -74,8 +87,11 @@ Suggested approval wording:
 - [x] Direct forged inserts denied and event projections preserved locally.
 - [x] Repeat execution rejected and container removed.
 - [x] Unsafe corrective-forward intentionally omitted.
-- [ ] Operator, reviewer and bounded maintenance window recorded.
-- [ ] Production target fingerprint and hashes revalidated.
-- [ ] Fixed forward executed exactly once.
+- [x] Operator, reviewer and bounded maintenance window recorded.
+- [x] Production target fingerprint and hashes revalidated.
+- [x] One forward attempt consumed and stopped on syntax error before transaction execution.
+- [ ] Fixed forward transaction committed exactly once.
+- [x] Unchanged four-policy baseline reconfirmed read-only after the failed attempt.
+- [x] Security Advisor rerun retained all three SRA-B warnings; no false completion claimed.
 - [ ] Same-target postcheck and Security Advisor delta accepted.
 - [ ] SRA-B reviewer signoff completed.

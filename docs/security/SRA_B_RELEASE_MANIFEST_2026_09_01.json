@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "releaseId": "SRA-B-20260901-PREP-01",
   "preparedAt": "2026-09-01",
-  "status": "prepared_not_authorized_for_execution",
+  "status": "execution_attempt_stopped_no_mutation",
   "targetFingerprintSha256": "9b9284e718b0815ac6c6ed7385938480da0efff3260e0eba4527867b0ad3998c",
   "expectedDatabaseMajorVersion": 17,
   "expectedMigrationLedgerPresent": false,
@@ -26,12 +26,27 @@
   "localEvidence": "docs/security/SUPABASE_SRA_B_DISPOSABLE_LOCAL_EVIDENCE_2026_09_01.md",
   "unsafeCorrectiveForwardIntentionallyAbsent": true,
   "execution": {
-    "authorized": false,
-    "operator": null,
-    "maintenanceWindow": null,
-    "releaseReviewer": null,
-    "executionEvidence": null,
-    "postcheckAccepted": false
+    "authorized": true,
+    "operator": "user",
+    "maintenanceWindow": "immediate, Asia/Taipei",
+    "releaseReviewer": "user",
+    "finalConfirmationWaived": true,
+    "attemptCount": 1,
+    "attemptOutcome": "sql_editor_syntax_error_before_transaction",
+    "errorCode": "42601",
+    "errorLocation": "line_83_begin",
+    "forwardCommitted": false,
+    "baselineReverifiedUnchanged": true,
+    "executionEvidence": "docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_ATTEMPT_2026_09_01.md",
+    "postcheckAccepted": false,
+    "reauthorizationRequired": true
   },
-  "remoteWritesDuringPreparation": 0
+  "remoteWritesDuringPreparation": 0,
+  "productionMutationsDuringExecution": 0,
+  "advisorAfterAttempt": {
+    "errors": 3,
+    "warnings": 59,
+    "info": 12,
+    "sraBWarnings": 3
+  }
 }

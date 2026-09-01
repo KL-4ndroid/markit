@@ -13,16 +13,36 @@ const manifest = JSON.parse(read(manifestPath)) as {
   status: string;
   artifacts: Array<{ purpose: string; path: string; sha256: string }>;
   unsafeCorrectiveForwardIntentionallyAbsent: boolean;
-  execution: { authorized: boolean; postcheckAccepted: boolean };
+  execution: {
+    authorized: boolean;
+    attemptCount: number;
+    attemptOutcome: string;
+    forwardCommitted: boolean;
+    baselineReverifiedUnchanged: boolean;
+    postcheckAccepted: boolean;
+    reauthorizationRequired: boolean;
+    executionEvidence: string;
+  };
   remoteWritesDuringPreparation: number;
+  productionMutationsDuringExecution: number;
+  advisorAfterAttempt: { warnings: number; sraBWarnings: number };
 };
 
 assert.equal(manifest.releaseId, 'SRA-B-20260901-PREP-01');
-assert.equal(manifest.status, 'prepared_not_authorized_for_execution');
-assert.equal(manifest.execution.authorized, false);
+assert.equal(manifest.status, 'execution_attempt_stopped_no_mutation');
+assert.equal(manifest.execution.authorized, true);
+assert.equal(manifest.execution.attemptCount, 1);
+assert.equal(manifest.execution.attemptOutcome, 'sql_editor_syntax_error_before_transaction');
+assert.equal(manifest.execution.forwardCommitted, false);
+assert.equal(manifest.execution.baselineReverifiedUnchanged, true);
 assert.equal(manifest.execution.postcheckAccepted, false);
+assert.equal(manifest.execution.reauthorizationRequired, true);
 assert.equal(manifest.unsafeCorrectiveForwardIntentionallyAbsent, true);
 assert.equal(manifest.remoteWritesDuringPreparation, 0);
+assert.equal(manifest.productionMutationsDuringExecution, 0);
+assert.equal(manifest.advisorAfterAttempt.warnings, 59);
+assert.equal(manifest.advisorAfterAttempt.sraBWarnings, 3);
+assert.ok(read(manifest.execution.executionEvidence).includes('zero Production mutations'));
 assert.equal(manifest.artifacts.length, 3);
 for (const artifact of manifest.artifacts) {
   assert.equal(sha256(read(artifact.path)), artifact.sha256, `SRA-B hash drift: ${artifact.path}`);
@@ -48,15 +68,16 @@ for (const artifact of manifest.artifacts.slice(1)) {
 
 const guide = read(guidePath);
 for (const marker of [
-  'Production execution is',
-  'not authorized',
+  'one attempt consumed',
+  'zero Production mutations',
   'press Run once',
   'Do not retry after any error',
+  'requires a new explicit authorization',
   'never restore `WITH CHECK (true)`',
-  '- [ ] Fixed forward executed exactly once.',
+  '- [ ] Fixed forward transaction committed exactly once.',
 ]) {
   assert.ok(guide.includes(marker), `missing SRA-B release boundary: ${marker}`);
 }
 assert.ok(read('scripts/test-files.txt').includes('tsx tests/supabase-sra-b-release-preparation.test.ts'));
 
-console.log('PASS SRA-B release package stays fixed-hash, fail-closed, and execution-disabled');
+console.log('PASS SRA-B failed Production attempt stays fixed-hash, zero-mutation, and fail-closed');

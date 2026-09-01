@@ -1,9 +1,10 @@
 # Supabase Security Advisor Remediation Plan
 
 Date: 2026-08-05
-Status: SRA-A1 Production execution accepted; SRA-B fixed release package prepared but
-not execution-authorized; SRA-C/D inventory and plans complete; no SRA-B/C/D remote
-mutation is approved
+Status: SRA-A1 Production execution accepted; SRA-B fixed release package was authorized
+and attempted once but stopped before transaction execution with zero mutations and now
+requires reauthorization; SRA-C/D inventory and plans complete; no SRA-B/C/D remote
+mutation has committed
 Scope: pre-existing non-billing findings only
 
 Sanitized live evidence:
@@ -17,6 +18,9 @@ SRA-A1 disposable local evidence:
 
 Current SRA-B/C/D inventory:
 `docs/security/SUPABASE_SRA_BCD_PRODUCTION_READ_ONLY_INVENTORY_2026_09_01.md`
+
+Current SRA-B Production attempt evidence:
+`docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_ATTEMPT_2026_09_01.md`
 
 ## 1. Safety boundary
 
