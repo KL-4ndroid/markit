@@ -86,6 +86,12 @@ The preparation package is documented in
 corrective-forward remain separate, unapproved decisions. A migration-history adoption
 plan is not selected and remains outside this scope.
 
+Update 2026-09-01: the fixed Method A forward transaction received separate execution
+authorization, ran once on the fingerprint-matched Production target, and passed the
+same-target fixed read-only postcheck. Corrective-forward remained unexecuted. Evidence:
+`SUPABASE_SRA_A1_METHOD_A_PRODUCTION_EXECUTION_2026_09_01.md`. SRA-B/C/D and the parent
+security remediation review remain outside this completed SRA-A1 execution slice.
+
 Do not use `--include-all`. `migration repair` is not part of the normal SRA-A1 route.
 If a future dry run proposes more than one migration, stop. Stop if the filename or
 SHA-256 differs from the reviewed artifact. Production mutation or an uncertain

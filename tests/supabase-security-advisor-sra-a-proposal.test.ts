@@ -44,7 +44,11 @@ assert.match(proposal, /does not assume that `072` is available remotely/u);
 
 const remediationTask = taskMatrix.tasks.find(task => task.id === 'SEC-REMEDIATION');
 assert.equal(remediationTask?.status, 'pending_approval');
-assert.ok(remediationTask?.evidence.includes(proposalPath));
+assert.ok(
+  remediationTask?.evidence.includes(
+    'docs/security/SUPABASE_SRA_A1_METHOD_A_PRODUCTION_EXECUTION_2026_09_01.md',
+  ),
+);
 assert.ok(
   remediationTask?.evidence.includes(
     'docs/security/SUPABASE_SRA_A1_PRODUCTION_READ_ONLY_DOCKER_EVIDENCE_2026_08_26.md',

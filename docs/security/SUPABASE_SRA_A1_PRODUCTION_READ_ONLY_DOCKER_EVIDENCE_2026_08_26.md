@@ -95,8 +95,8 @@ Verified outcomes (machine-readable: `SRA_A1_DOCKER_REHEARSAL_2026_08_26.json`):
 - [x] Synthetic transaction rolled back; zero Auth users, markets and products remained.
 - [x] New local stack stopped with `--no-backup`; no other local stack was stopped.
 - [x] Method A fixed-hash release preparation approved for artifact creation only.
-- [ ] Corrective-forward artifact and final release package reviewed.
-- [ ] Production change applied and same-target postcheck accepted.
+- [x] Corrective-forward artifact reviewed as an emergency option but not authorized or executed.
+- [x] Production change applied once and same-target read-only postcheck accepted.
 
 Observed-baseline draft SHA-256:
 `5dddee760b0f835343b8c5997eb53cc7a9c6f7910d0ce370304602d87a58193d`.
@@ -119,3 +119,7 @@ Update 2026-08-31: Method A preparation was selected. Fixed-hash artifacts and t
 inactive human guide are recorded in
 `SUPABASE_SRA_A1_METHOD_A_RELEASE_PREPARATION_2026_08_31.md`. This does not authorize
 Production execution or corrective-forward use.
+
+Update 2026-09-01: the separately authorized fixed forward transaction executed once
+and the same-target fixed read-only postcheck passed. Corrective-forward was not run.
+See `SUPABASE_SRA_A1_METHOD_A_PRODUCTION_EXECUTION_2026_09_01.md`.

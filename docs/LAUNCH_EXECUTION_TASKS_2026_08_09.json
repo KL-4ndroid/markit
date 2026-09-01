@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "LAUNCH_EXECUTION_MASTER_PLAN_2026_08_09.md",
-  "updatedAt": "2026-08-31",
+  "updatedAt": "2026-09-01",
   "overallStatus": "not_ready",
   "releaseOrder": ["web_core", "ios_native_paid", "android_native_paid", "web_paid_deferred"],
   "tasks": [
@@ -39,7 +39,7 @@
       "status": "pending_approval",
       "dependsOn": ["SEC-SRA000-EXECUTION"],
       "gateRefs": [],
-      "evidence": ["docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md", "docs/security/SUPABASE_SECURITY_ADVISOR_SRA_A_MINIMAL_REMEDIATION_PROPOSAL_2026_08_24.md", "docs/security/SUPABASE_SRA_A1_REMOTE_MIGRATION_HISTORY_STRATEGY_2026_08_26.md", "docs/security/SUPABASE_SRA_A1_PRODUCTION_READ_ONLY_DOCKER_EVIDENCE_2026_08_26.md", "docs/security/SUPABASE_SRA_A1_METHOD_A_RELEASE_PREPARATION_2026_08_31.md", "docs/security/SRA_A1_METHOD_A_RELEASE_MANIFEST_2026_08_31.json", "docs/security/release/SRA_A1_METHOD_A_TRANSACTION.sql", "supabase/verification/sra_a1_method_a_postcheck_read_only.sql"]
+      "evidence": ["docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md", "docs/security/SUPABASE_SRA_A1_REMOTE_MIGRATION_HISTORY_STRATEGY_2026_08_26.md", "docs/security/SUPABASE_SRA_A1_PRODUCTION_READ_ONLY_DOCKER_EVIDENCE_2026_08_26.md", "docs/security/SUPABASE_SRA_A1_METHOD_A_RELEASE_PREPARATION_2026_08_31.md", "docs/security/SRA_A1_METHOD_A_RELEASE_MANIFEST_2026_08_31.json", "docs/security/release/SRA_A1_METHOD_A_TRANSACTION.sql", "supabase/verification/sra_a1_method_a_postcheck_read_only.sql", "docs/security/SUPABASE_SRA_A1_METHOD_A_PRODUCTION_EXECUTION_2026_09_01.md"]
     },
     {
       "id": "NATIVE-GATE2-EVIDENCE",

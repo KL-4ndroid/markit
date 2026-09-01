@@ -2,8 +2,8 @@
 
 Date: 2026-08-31
 
-Status: fixed-hash package prepared and locally/static verified; Production execution,
-remote writes, and corrective-forward execution are NOT authorized
+Status: fixed-hash package prepared and locally/static verified; forward executed once
+and read-only postcheck accepted 2026-09-01; corrective-forward is NOT authorized
 
 Related task: `SEC-REMEDIATION` (`pending_approval`)
 
@@ -79,13 +79,13 @@ Required record:
 | --- | --- |
 | Release ID | `SRA-A1-METHOD-A-20260831-PREP-01` |
 | Target fingerprint | fixed in the private/manifest comparison; raw project ref must not enter Git |
-| Operator | **unset — required before execution** |
-| Maintenance window | **unset — required before execution** |
-| Release reviewer | **unset — required before execution** |
+| Operator | `user_self` |
+| Maintenance window | `2026-09-01T10:13:18+08:00/2026-09-01T11:43:18+08:00` (`Asia/Taipei`) |
+| Release reviewer | `user_self` |
 | Forward SHA-256 | `480d08b201e26db7204a661963ccdc826c1b6154252e2ef912255eb31d868e52` |
 | Corrective-forward authorized | **no** |
 
-Suggested future approval wording:
+Accepted authorization wording:
 
 > 我以 security_owner／release_owner 核准 SRA-A1 Method A Production execution：目標指紋、release ID、operator、maintenance window 與 reviewer 已填妥；僅允許執行固定 SHA-256 forward transaction 一次及 read-only postcheck。corrective-forward 仍禁止，除非另行核准。
 
@@ -96,8 +96,8 @@ Suggested future approval wording:
 2. Recompute SHA-256 locally and compare all 64 characters with the manifest.
 3. If any hash differs, stop. Do not repair the file during the window; prepare a new
    reviewed release ID instead.
-4. Confirm the manifest still says `execution.authorized=false` until the separate
-   authorization record has been accepted and retained outside this source file.
+4. Confirm the manifest says `execution.authorized=true` and points to the accepted,
+   sanitized execution evidence. The underlying authorization record remains outside Git.
 
 ### Step 2 — identify the exact Production target without exposing its reference
 
@@ -170,7 +170,10 @@ replacement, automatic retry, or automatic corrective-forward.
 - [x] Artifact hashes pinned in a machine-readable manifest.
 - [x] Fixed forward/postcheck/corrective-forward closed loop passed on a new disposable local stack.
 - [x] Disposable stack stopped with no backup, remaining container, or volume.
-- [ ] Production execution authorization record completed.
-- [ ] Forward transaction executed once on the exact target.
-- [ ] Same-target read-only postcheck accepted.
+- [x] Production execution authorization record completed.
+- [x] Forward transaction executed once on the exact target.
+- [x] Same-target read-only postcheck accepted.
 - [ ] `SEC-REMEDIATION` final review completed; SRA-B/C/D remain separate.
+
+Production execution evidence:
+`SUPABASE_SRA_A1_METHOD_A_PRODUCTION_EXECUTION_2026_09_01.md`.
