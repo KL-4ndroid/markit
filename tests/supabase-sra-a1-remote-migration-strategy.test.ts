@@ -35,7 +35,18 @@ assert.match(strategy, /Do not use\s+`--include-all`/u);
 
 const remediationTask = taskMatrix.tasks.find(task => task.id === 'SEC-REMEDIATION');
 assert.equal(remediationTask?.status, 'pending_approval');
-assert.ok(remediationTask?.evidence.includes(strategyPath));
+assert.ok(
+  remediationTask?.evidence.includes(
+    'docs/security/SUPABASE_SECURITY_ADVISOR_REMEDIATION_PLAN_2026_08_05.md',
+  ),
+  'the task matrix must retain the consolidated remediation plan after A1 completion',
+);
+assert.ok(
+  remediationTask?.evidence.includes(
+    'docs/security/SUPABASE_SRA_BCD_PRODUCTION_READ_ONLY_INVENTORY_2026_09_01.md',
+  ),
+  'the task matrix must link the current B/C/D inventory while remaining pending approval',
+);
 
 const migrations = readdirSync(join(root, 'supabase', 'migrations'));
 assert.equal(

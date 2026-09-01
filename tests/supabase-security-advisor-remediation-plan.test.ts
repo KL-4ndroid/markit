@@ -13,7 +13,7 @@ const permissionDistribution = read('docs/role-permission-distribution.md');
 const manifest = read('scripts/test-files.txt');
 
 for (const marker of [
-  'no numbered remote migration or remote mutation is approved',
+  'no SRA-B/C/D remote',
   'SRA-000',
   'SRA-001',
   'SRA-010',

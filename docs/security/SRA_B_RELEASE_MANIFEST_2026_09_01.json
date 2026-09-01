@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "releaseId": "SRA-B-20260901-PREP-01",
+  "preparedAt": "2026-09-01",
+  "status": "prepared_not_authorized_for_execution",
+  "targetFingerprintSha256": "9b9284e718b0815ac6c6ed7385938480da0efff3260e0eba4527867b0ad3998c",
+  "expectedDatabaseMajorVersion": 17,
+  "expectedMigrationLedgerPresent": false,
+  "artifacts": [
+    {
+      "purpose": "fixed_forward_transaction",
+      "path": "docs/security/drafts/SRA_B_LOCAL_REVIEW_TRANSACTION.sql",
+      "sha256": "f079967206e6a01d87057b8bb52ab12bf2c3a6704d5369ae5dcf2cef01f6a4f7"
+    },
+    {
+      "purpose": "production_read_only_preflight",
+      "path": "supabase/verification/sra_b_production_read_only_preflight.sql",
+      "sha256": "a6abb5f1d3c2a633b994a13544735fa584011c61d09f9e1e3cefca1b60fe9879"
+    },
+    {
+      "purpose": "same_target_read_only_postcheck",
+      "path": "supabase/verification/sra_b_postcheck_read_only.sql",
+      "sha256": "51bc58746d805fc05f50be91f98584f00c0aa7f50e2fdfada0207e436bc0cbed"
+    }
+  ],
+  "localEvidence": "docs/security/SUPABASE_SRA_B_DISPOSABLE_LOCAL_EVIDENCE_2026_09_01.md",
+  "unsafeCorrectiveForwardIntentionallyAbsent": true,
+  "execution": {
+    "authorized": false,
+    "operator": null,
+    "maintenanceWindow": null,
+    "releaseReviewer": null,
+    "executionEvidence": null,
+    "postcheckAccepted": false
+  },
+  "remoteWritesDuringPreparation": 0
+}

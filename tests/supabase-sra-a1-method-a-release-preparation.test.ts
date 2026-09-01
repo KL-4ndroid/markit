@@ -259,11 +259,10 @@ const taskMatrix = JSON.parse(read('docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json'
 };
 const task = taskMatrix.tasks.find(candidate => candidate.id === 'SEC-REMEDIATION');
 assert.equal(task?.status, 'pending_approval');
-assert.ok(task?.evidence.includes(guidePath));
-assert.ok(task?.evidence.includes(manifestPath));
-assert.ok(task?.evidence.includes(forwardPath));
-assert.ok(task?.evidence.includes(postcheckPath));
 assert.ok(task?.evidence.includes(executionEvidencePath));
+assert.ok(task?.evidence.includes(
+  'docs/security/SUPABASE_SRA_BCD_PRODUCTION_READ_ONLY_INVENTORY_2026_09_01.md',
+));
 
 const migrations = readdirSync(join(root, 'supabase', 'migrations'));
 assert.equal(migrations.some(name => /sra[_-]?a1/iu.test(name)), false);

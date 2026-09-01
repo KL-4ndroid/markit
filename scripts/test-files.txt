@@ -320,6 +320,10 @@ tsx tests/supabase-security-advisor-sra-a-proposal.test.ts
 tsx tests/supabase-security-advisor-sra-a1-implementation.test.ts
 tsx tests/supabase-sra-a1-production-readonly-docker.test.ts
 tsx tests/supabase-sra-a1-method-a-release-preparation.test.ts
+tsx tests/supabase-sra-bcd-readonly-inventory.test.ts
+tsx tests/supabase-sra-b-minimal-remediation.test.ts
+tsx tests/supabase-sra-b-release-preparation.test.ts
+tsx tests/supabase-sra-cd-plans.test.ts
 tsx tests/launch-execution-plan.test.ts
 tsx tests/launch-execution-plan-cli.test.ts
 tsx tests/manual-launch-operations-guide.test.ts

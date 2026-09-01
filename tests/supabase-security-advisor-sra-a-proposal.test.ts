@@ -51,7 +51,7 @@ assert.ok(
 );
 assert.ok(
   remediationTask?.evidence.includes(
-    'docs/security/SUPABASE_SRA_A1_PRODUCTION_READ_ONLY_DOCKER_EVIDENCE_2026_08_26.md',
+    'docs/security/SUPABASE_SRA_BCD_PRODUCTION_READ_ONLY_INVENTORY_2026_09_01.md',
   ),
 );
 
