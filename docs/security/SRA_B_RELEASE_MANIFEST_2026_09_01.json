@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "releaseId": "SRA-B-20260901-PREP-01",
   "preparedAt": "2026-09-01",
-  "status": "execution_attempt_stopped_no_mutation",
+  "status": "production_execution_accepted",
   "targetFingerprintSha256": "9b9284e718b0815ac6c6ed7385938480da0efff3260e0eba4527867b0ad3998c",
   "expectedDatabaseMajorVersion": 17,
   "expectedMigrationLedgerPresent": false,
@@ -31,22 +31,47 @@
     "maintenanceWindow": "immediate, Asia/Taipei",
     "releaseReviewer": "user",
     "finalConfirmationWaived": true,
-    "attemptCount": 1,
-    "attemptOutcome": "sql_editor_syntax_error_before_transaction",
-    "errorCode": "42601",
-    "errorLocation": "line_83_begin",
-    "forwardCommitted": false,
+    "attemptCount": 2,
+    "attemptOutcome": "attempt_2_committed_and_postcheck_accepted",
+    "attempts": [
+      {
+        "number": 1,
+        "outcome": "sql_editor_syntax_error_before_transaction",
+        "errorCode": "42601",
+        "errorLocation": "line_83_begin",
+        "forwardCommitted": false,
+        "productionMutationCount": 0,
+        "retriedWithinAuthorization": false,
+        "evidence": "docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_ATTEMPT_2026_09_01.md"
+      },
+      {
+        "number": 2,
+        "outcome": "success_no_rows_returned",
+        "isolatedFullPageBufferVerified": true,
+        "forwardCommitted": true,
+        "fixedForwardExecutionCount": 1,
+        "policyDdlChangeCount": 3,
+        "businessRowMutationCount": 0,
+        "evidence": "docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_SUCCESS_2026_09_02.md"
+      }
+    ],
+    "forwardCommitted": true,
+    "fixedForwardCommittedCount": 1,
     "baselineReverifiedUnchanged": true,
-    "executionEvidence": "docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_ATTEMPT_2026_09_01.md",
-    "postcheckAccepted": false,
-    "reauthorizationRequired": true
+    "priorAttemptEvidence": "docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_ATTEMPT_2026_09_01.md",
+    "executionEvidence": "docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_SUCCESS_2026_09_02.md",
+    "postcheckAccepted": true,
+    "reviewerSignoffAccepted": true,
+    "reauthorizationRequired": false
   },
   "remoteWritesDuringPreparation": 0,
-  "productionMutationsDuringExecution": 0,
-  "advisorAfterAttempt": {
+  "productionPolicyDdlChangesDuringExecution": 3,
+  "productionBusinessRowMutationsDuringExecution": 0,
+  "migrationHistoryChanged": false,
+  "advisorAfterExecution": {
     "errors": 3,
-    "warnings": 59,
+    "warnings": 56,
     "info": 12,
-    "sraBWarnings": 3
+    "sraBWarnings": 0
   }
 }

@@ -2,9 +2,9 @@
 
 Date: 2026-09-01
 
-Status: fixed-hash package and disposable closed loop passed; the authorized Production
-forward was attempted once, stopped on a SQL Editor syntax error before transaction
-execution, and produced zero Production mutations; reauthorization is required
+Status: Production execution accepted; attempt 1 stopped before transaction execution
+with zero mutations, then separately authorized attempt 2 committed the fixed forward
+exactly once and passed the same-target read-only postcheck and Advisor acceptance gate
 
 ## Package
 
@@ -29,22 +29,33 @@ that restores an unsafe `WITH CHECK (true)` policy.
 | Maintenance window | immediate, Asia/Taipei |
 | Release reviewer | user |
 | Exact Production target | private fingerprint must match manifest |
-| Forward execution count | one attempt consumed; transaction not executed |
-| Final confirmation | explicitly waived for the consumed attempt |
+| Forward execution count | two attempts recorded; exactly one fixed forward committed |
+| Final confirmation | explicitly waived for each separately authorized attempt |
 
 Suggested approval wording:
 
 > 我以 security_owner／release_owner 核准 SRA-B Production execution：Operator、維護時段與 reviewer 已填妥；允許 AI 對相同 fingerprint target 執行固定 SHA-256 preflight、forward 一次及 read-only postcheck。不得重試、不得新增替代 policy、不得修改 migration history。
 
-That authorization was consumed on 2026-09-01. The SQL Editor retained the prior
+The first authorization was consumed on 2026-09-01. The SQL Editor retained the prior
 preflight before the fixed forward content and PostgreSQL rejected the combined buffer
 at the second `BEGIN` (`42601`, line 83). The parser rejected the batch before entering
 the forward transaction. A separate fresh read-only query then reconfirmed the complete
 four-policy baseline with `ok=true` and guard `1`; the rerun Advisor remained at three
 errors, 59 warnings and 12 info findings, including all three SRA-B warnings.
 
-Sanitized evidence:
+Attempt 1 sanitized evidence:
 `docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_ATTEMPT_2026_09_01.md`.
+
+The user then separately reauthorized attempt 2 against the same fingerprint and fixed
+hashes. A new full-page blank query held only the forward; the copied-back buffer matched
+the fixed SHA-256 before the Run action was used once. Supabase returned success. A
+separate fixed read-only postcheck returned `ok=true`, guard `1`, zero market INSERT
+policies, one exact owner product INSERT policy and zero always-true INSERT policies.
+The Advisor rerun changed warnings from 59 to 56 while errors remained 3 and info
+remained 12. The `RLS Policy Always True` warning type disappeared.
+
+Accepted Production evidence:
+`docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_SUCCESS_2026_09_02.md`.
 
 ## Execution steps
 
@@ -70,8 +81,10 @@ Sanitized evidence:
 
 - Hash, target, version, ledger or policy drift: stop before forward execution.
 - Forward error: do not retry and do not create a policy during the window.
-- The 2026-09-01 attempt reached this stop condition. Do not treat the original
-  authorization as reusable; any later attempt requires a new explicit authorization.
+- The 2026-09-01 attempt reached this stop condition and was not retried under its
+  authorization. Attempt 2 proceeded only after a new explicit authorization.
+- SRA-B is accepted after attempt 2. No further SRA-B retry or policy mutation is
+  authorized.
 - Postcheck failure: stop and inspect metadata read-only.
 - Legitimate direct markets caller found: prepare a new owner-bound policy proposal;
   never restore `WITH CHECK (true)`.
@@ -90,8 +103,10 @@ Sanitized evidence:
 - [x] Operator, reviewer and bounded maintenance window recorded.
 - [x] Production target fingerprint and hashes revalidated.
 - [x] One forward attempt consumed and stopped on syntax error before transaction execution.
-- [ ] Fixed forward transaction committed exactly once.
+- [x] Attempt 2 separately reauthorized against the same target and fixed hashes.
+- [x] Isolated full-page forward buffer verified before execution.
+- [x] Fixed forward transaction committed exactly once.
 - [x] Unchanged four-policy baseline reconfirmed read-only after the failed attempt.
 - [x] Security Advisor rerun retained all three SRA-B warnings; no false completion claimed.
-- [ ] Same-target postcheck and Security Advisor delta accepted.
-- [ ] SRA-B reviewer signoff completed.
+- [x] Same-target postcheck and Security Advisor delta accepted.
+- [x] SRA-B reviewer signoff completed.

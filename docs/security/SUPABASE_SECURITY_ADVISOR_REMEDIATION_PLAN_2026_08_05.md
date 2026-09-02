@@ -1,10 +1,9 @@
 # Supabase Security Advisor Remediation Plan
 
 Date: 2026-08-05
-Status: SRA-A1 Production execution accepted; SRA-B fixed release package was authorized
-and attempted once but stopped before transaction execution with zero mutations and now
-requires reauthorization; SRA-C/D inventory and plans complete; no SRA-B/C/D remote
-mutation has committed
+Status: SRA-A1 and SRA-B Production executions accepted; SRA-B attempt 2 committed the
+fixed three-policy removal exactly once and passed its read-only postcheck and Advisor
+gate; SRA-C/D inventory and plans are complete but their remote mutations remain gated
 Scope: pre-existing non-billing findings only
 
 Sanitized live evidence:
@@ -21,6 +20,9 @@ Current SRA-B/C/D inventory:
 
 Current SRA-B Production attempt evidence:
 `docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_ATTEMPT_2026_09_01.md`
+
+Accepted SRA-B Production execution evidence:
+`docs/security/SUPABASE_SRA_B_PRODUCTION_EXECUTION_SUCCESS_2026_09_02.md`
 
 ## 1. Safety boundary
 
@@ -249,10 +251,11 @@ cross-owner or elevated access stops the work and requires human review.
 2. `SRA-A`: the fixed forward transaction executed once on the exact Production target
    and its same-target read-only postcheck passed. See
    `SUPABASE_SRA_A1_METHOD_A_PRODUCTION_EXECUTION_2026_09_01.md`.
-3. `SRA-B`: exact live policies inventoried; minimal three-policy removal, fixed
-   preflight/forward/postcheck, static tests and disposable PostgreSQL 17 closed loop
-   passed. Production execution remains separately gated by
-   `SUPABASE_SRA_B_RELEASE_PREPARATION_2026_09_01.md`.
+3. `SRA-B`: accepted. Exact live policies were inventoried; the minimal fixed forward
+   removed exactly three always-true INSERT policies in Production, and the same-target
+   read-only postcheck plus Advisor rerun passed. Attempt 1 remains recorded as a
+   zero-mutation parser failure; separately authorized attempt 2 is the single committed
+   forward. See `SUPABASE_SRA_B_RELEASE_PREPARATION_2026_09_01.md`.
 4. `SRA-C1`: caller audit and cutover plan complete; additive narrow staff read-function
    implementation awaits explicit local-only approval.
 5. `SRA-C2`: switch application callers; verify sync/Dexie and every staff role.
@@ -261,6 +264,7 @@ cross-owner or elevated access stops the work and requires human review.
    plan requires a designated non-Production Auth environment or separately approved
    Production-only exception before configuration mutation.
 
-Each batch requires its own migration proposal, rollback/corrective-forward
+Each remaining batch requires its own migration proposal, rollback/corrective-forward
 section, focused tests, sandbox evidence, Security Advisor rerun, reviewer signoff
-and Production approval. SRA-B/C/D are not currently approved for remote mutation.
+and Production approval. SRA-C/D are not currently approved for remote mutation; the
+completed SRA-B authorization does not extend to them.

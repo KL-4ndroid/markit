@@ -17,32 +17,68 @@ const manifest = JSON.parse(read(manifestPath)) as {
     authorized: boolean;
     attemptCount: number;
     attemptOutcome: string;
+    attempts: Array<{
+      number: number;
+      outcome: string;
+      forwardCommitted: boolean;
+      productionMutationCount?: number;
+      fixedForwardExecutionCount?: number;
+      policyDdlChangeCount?: number;
+      businessRowMutationCount?: number;
+      evidence: string;
+    }>;
     forwardCommitted: boolean;
+    fixedForwardCommittedCount: number;
     baselineReverifiedUnchanged: boolean;
     postcheckAccepted: boolean;
+    reviewerSignoffAccepted: boolean;
     reauthorizationRequired: boolean;
+    priorAttemptEvidence: string;
     executionEvidence: string;
   };
   remoteWritesDuringPreparation: number;
-  productionMutationsDuringExecution: number;
-  advisorAfterAttempt: { warnings: number; sraBWarnings: number };
+  productionPolicyDdlChangesDuringExecution: number;
+  productionBusinessRowMutationsDuringExecution: number;
+  migrationHistoryChanged: boolean;
+  advisorAfterExecution: { errors: number; warnings: number; info: number; sraBWarnings: number };
 };
 
 assert.equal(manifest.releaseId, 'SRA-B-20260901-PREP-01');
-assert.equal(manifest.status, 'execution_attempt_stopped_no_mutation');
+assert.equal(manifest.status, 'production_execution_accepted');
 assert.equal(manifest.execution.authorized, true);
-assert.equal(manifest.execution.attemptCount, 1);
-assert.equal(manifest.execution.attemptOutcome, 'sql_editor_syntax_error_before_transaction');
-assert.equal(manifest.execution.forwardCommitted, false);
+assert.equal(manifest.execution.attemptCount, 2);
+assert.equal(manifest.execution.attemptOutcome, 'attempt_2_committed_and_postcheck_accepted');
+assert.equal(manifest.execution.forwardCommitted, true);
+assert.equal(manifest.execution.fixedForwardCommittedCount, 1);
 assert.equal(manifest.execution.baselineReverifiedUnchanged, true);
-assert.equal(manifest.execution.postcheckAccepted, false);
-assert.equal(manifest.execution.reauthorizationRequired, true);
+assert.equal(manifest.execution.postcheckAccepted, true);
+assert.equal(manifest.execution.reviewerSignoffAccepted, true);
+assert.equal(manifest.execution.reauthorizationRequired, false);
 assert.equal(manifest.unsafeCorrectiveForwardIntentionallyAbsent, true);
 assert.equal(manifest.remoteWritesDuringPreparation, 0);
-assert.equal(manifest.productionMutationsDuringExecution, 0);
-assert.equal(manifest.advisorAfterAttempt.warnings, 59);
-assert.equal(manifest.advisorAfterAttempt.sraBWarnings, 3);
-assert.ok(read(manifest.execution.executionEvidence).includes('zero Production mutations'));
+assert.equal(manifest.productionPolicyDdlChangesDuringExecution, 3);
+assert.equal(manifest.productionBusinessRowMutationsDuringExecution, 0);
+assert.equal(manifest.migrationHistoryChanged, false);
+assert.deepEqual(manifest.advisorAfterExecution, { errors: 3, warnings: 56, info: 12, sraBWarnings: 0 });
+assert.deepEqual(
+  manifest.execution.attempts.map(attempt => ({
+    number: attempt.number,
+    outcome: attempt.outcome,
+    committed: attempt.forwardCommitted,
+  })),
+  [
+    { number: 1, outcome: 'sql_editor_syntax_error_before_transaction', committed: false },
+    { number: 2, outcome: 'success_no_rows_returned', committed: true },
+  ],
+);
+assert.equal(manifest.execution.attempts[0]!.productionMutationCount, 0);
+assert.equal(manifest.execution.attempts[1]!.fixedForwardExecutionCount, 1);
+assert.equal(manifest.execution.attempts[1]!.policyDdlChangeCount, 3);
+assert.equal(manifest.execution.attempts[1]!.businessRowMutationCount, 0);
+assert.ok(read(manifest.execution.priorAttemptEvidence).includes('zero Production mutations'));
+const successEvidence = read(manifest.execution.executionEvidence);
+assert.ok(successEvidence.includes('committed exactly once'));
+assert.ok(successEvidence.includes('Warnings | 59 | 56'));
 assert.equal(manifest.artifacts.length, 3);
 for (const artifact of manifest.artifacts) {
   assert.equal(sha256(read(artifact.path)), artifact.sha256, `SRA-B hash drift: ${artifact.path}`);
@@ -68,16 +104,18 @@ for (const artifact of manifest.artifacts.slice(1)) {
 
 const guide = read(guidePath);
 for (const marker of [
-  'one attempt consumed',
-  'zero Production mutations',
+  'two attempts recorded',
+  'exactly one fixed forward committed',
   'press Run once',
   'Do not retry after any error',
-  'requires a new explicit authorization',
+  'new explicit authorization',
   'never restore `WITH CHECK (true)`',
-  '- [ ] Fixed forward transaction committed exactly once.',
+  '- [x] Fixed forward transaction committed exactly once.',
+  '- [x] Same-target postcheck and Security Advisor delta accepted.',
+  '- [x] SRA-B reviewer signoff completed.',
 ]) {
   assert.ok(guide.includes(marker), `missing SRA-B release boundary: ${marker}`);
 }
 assert.ok(read('scripts/test-files.txt').includes('tsx tests/supabase-sra-b-release-preparation.test.ts'));
 
-console.log('PASS SRA-B failed Production attempt stays fixed-hash, zero-mutation, and fail-closed');
+console.log('PASS SRA-B Production acceptance preserves attempt history and fixed-hash boundaries');
