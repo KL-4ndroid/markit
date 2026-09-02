@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "releaseId": "SRA-B-20260901-PREP-01",
+  "recordedAt": "2026-09-02T08:31:26+08:00",
+  "reviewedCommit": "8338c49260f86369b8ef331246efe05b1d2d2add",
+  "targetFingerprintMatched": true,
+  "rawProjectReferenceRetained": false,
+  "artifactHashes": {
+    "fixedForward": "f079967206e6a01d87057b8bb52ab12bf2c3a6704d5369ae5dcf2cef01f6a4f7",
+    "readOnlyPreflight": "a6abb5f1d3c2a633b994a13544735fa584011c61d09f9e1e3cefca1b60fe9879",
+    "readOnlyPostcheck": "51bc58746d805fc05f50be91f98584f00c0aa7f50e2fdfada0207e436bc0cbed"
+  },
+  "authorization": {
+    "operator": "user",
+    "releaseReviewer": "user",
+    "maintenanceWindow": "immediate, Asia/Taipei",
+    "finalConfirmationWaived": true,
+    "maximumAttempt2ForwardExecutions": 1,
+    "furtherRetryAuthorized": false
+  },
+  "attempt2Forward": {
+    "freshFullPageBlankQuery": true,
+    "isolatedBufferExactMatch": true,
+    "normalizedLineEndingsForHashOnly": true,
+    "beginCount": 1,
+    "commitCount": 1,
+    "preflightMarkerCount": 0,
+    "runCount": 1,
+    "outcome": "success_no_rows_returned",
+    "committed": true,
+    "policyDdlChangeCount": 3,
+    "businessRowMutationCount": 0,
+    "replacementPolicyCreated": false
+  },
+  "postcheck": {
+    "fixedHashMatched": true,
+    "transactionReadOnly": "on",
+    "migrationLedgerPresent": false,
+    "ok": true,
+    "assertionGuard": 1,
+    "marketInsertPolicyCount": 0,
+    "productInsertPolicyCount": 1,
+    "alwaysTrueInsertPolicyCount": 0,
+    "ownerProductPolicyExact": true,
+    "businessRowsRead": false
+  },
+  "advisor": {
+    "rerunCompleted": true,
+    "before": { "errors": 3, "warnings": 59, "info": 12, "sraBWarnings": 3 },
+    "after": { "errors": 3, "warnings": 56, "info": 12, "sraBWarnings": 0 },
+    "rlsPolicyAlwaysTrueFilterPresent": false
+  },
+  "migrationHistoryChanged": false,
+  "reviewerSignoffAccepted": true,
+  "sraBComplete": true
+}

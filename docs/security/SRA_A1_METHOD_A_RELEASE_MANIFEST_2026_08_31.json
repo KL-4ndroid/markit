@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "releaseId": "SRA-A1-METHOD-A-20260831-PREP-01",
+  "preparedAt": "2026-08-31",
+  "status": "production_executed_postcheck_accepted",
+  "targetFingerprintSha256": "9b9284e718b0815ac6c6ed7385938480da0efff3260e0eba4527867b0ad3998c",
+  "expectedDatabaseMajorVersion": 17,
+  "expectedMigrationLedgerPresent": false,
+  "scope": {
+    "functionCount": 4,
+    "setSearchPathCount": 4,
+    "revokeClientExecuteCount": 4,
+    "functionBodyChanges": 0,
+    "triggerChanges": 0,
+    "businessDataReads": 0,
+    "businessDataWrites": 0,
+    "migrationHistoryWrites": 0
+  },
+  "artifacts": [
+    {
+      "purpose": "forward_transaction",
+      "path": "docs/security/release/SRA_A1_METHOD_A_TRANSACTION.sql",
+      "sha256": "480d08b201e26db7204a661963ccdc826c1b6154252e2ef912255eb31d868e52"
+    },
+    {
+      "purpose": "corrective_forward",
+      "path": "docs/security/release/SRA_A1_METHOD_A_CORRECTIVE_FORWARD.sql",
+      "sha256": "ddfccf5fe2c3fd1fa5eaa83ba919554132d911769230ec32faaa10dd880dc80d"
+    },
+    {
+      "purpose": "read_only_postcheck",
+      "path": "supabase/verification/sra_a1_method_a_postcheck_read_only.sql",
+      "sha256": "3645ffd919b2b8ee15449af76b9aca906218bc7aae4136e83bfc4635c767caa0"
+    }
+  ],
+  "execution": {
+    "authorized": true,
+    "operator": "user_self",
+    "maintenanceWindow": "2026-09-01T10:13:18+08:00/2026-09-01T11:43:18+08:00",
+    "releaseReviewer": "user_self",
+    "executionEvidence": "docs/security/SUPABASE_SRA_A1_METHOD_A_PRODUCTION_EXECUTION_2026_09_01.md",
+    "postcheckAccepted": true,
+    "correctiveForwardAuthorized": false
+  },
+  "remoteWritesDuringPreparation": 0
+}
