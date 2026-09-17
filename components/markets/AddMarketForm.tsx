@@ -13,12 +13,14 @@ import {
   type MarketEquipmentFreeField,
   type MarketTimelineField,
 } from '@/components/markets/MarketFormFields';
+import { MarketTextImportPanel } from '@/components/markets/MarketTextImportPanel';
 import { AppDialog } from '@/components/ui/AppDialog';
 import { Button } from '@/components/ui/Button';
 import { FormSectionDisclosure } from '@/components/ui/FormSectionDisclosure';
 import { FullScreenForm } from '@/components/ui/FullScreenForm';
 import { createMarket } from '@/lib/db/hooks';
 import { clearFormData, loadFormData, saveFormData } from '@/lib/form-autosave';
+import type { MarketTextImportPatch } from '@/lib/market-text-import/merge';
 import {
   calculateMarketDurationLabel,
   calculateMarketFixedCost,
@@ -77,6 +79,7 @@ interface AddMarketDraft {
   tableFree: boolean;
   chairFree: boolean;
   umbrellaFree: boolean;
+  marketTextImportInput?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -115,7 +118,9 @@ function hasMeaningfulMarketDraft(draft: AddMarketDraft): boolean {
     || draft.chairFree !== DEFAULT_CHAIR_FREE
     || draft.umbrellaFree !== DEFAULT_UMBRELLA_FREE;
 
-  return hasText || hasDates || hasCosts || hasTimeChanges || hasBooleanChanges;
+  const hasImportText = Boolean(draft.marketTextImportInput?.trim());
+
+  return hasText || hasDates || hasCosts || hasTimeChanges || hasBooleanChanges || hasImportText;
 }
 
 function addMinutes(value: string, minutesToAdd: number): string {
@@ -136,6 +141,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [showDraftCloseConfirm, setShowDraftCloseConfirm] = useState(false);
+  const [marketTextImportInput, setMarketTextImportInput] = useState('');
 
   const draftId = useMemo(() => (user?.id ? `add-market:${user.id}` : null), [user?.id]);
   const currentDraft = useMemo<AddMarketDraft>(() => ({
@@ -144,7 +150,14 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
     tableFree,
     chairFree,
     umbrellaFree,
-  }), [chairFree, formData, noEarlyEntry, tableFree, umbrellaFree]);
+    marketTextImportInput,
+  }), [chairFree, formData, marketTextImportInput, noEarlyEntry, tableFree, umbrellaFree]);
+  const currentImportValues = useMemo(() => ({
+    ...formData,
+    tableFree,
+    chairFree,
+    umbrellaFree,
+  }), [chairFree, formData, tableFree, umbrellaFree]);
   const hasDirtyDraft = draftReady && hasMeaningfulMarketDraft(currentDraft);
 
   useEffect(() => {
@@ -161,6 +174,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
       setTableFree(savedDraft.data.tableFree);
       setChairFree(savedDraft.data.chairFree);
       setUmbrellaFree(savedDraft.data.umbrellaFree);
+      setMarketTextImportInput(savedDraft.data.marketTextImportInput ?? '');
     }
     setErrors({});
     setSubmitError(null);
@@ -212,6 +226,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
     setTableFree(DEFAULT_TABLE_FREE);
     setChairFree(DEFAULT_CHAIR_FREE);
     setUmbrellaFree(DEFAULT_UMBRELLA_FREE);
+    setMarketTextImportInput('');
     setErrors({});
     setSubmitError(null);
   };
@@ -275,6 +290,29 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
     if (field === 'chairFree') setChairFree(value);
     if (field === 'umbrellaFree') setUmbrellaFree(value);
     if (value) handleChange(rentalField[field], 0);
+  };
+
+  const handleImportApply = (patch: MarketTextImportPatch) => {
+    setFormData(previous => {
+      const updated = { ...previous, ...patch.formData };
+      if (patch.formData.dates) Object.assign(updated, deriveMarketDateBounds(patch.formData.dates));
+      if (patch.equipmentFree.tableFree) updated.tableRental = 0;
+      if (patch.equipmentFree.chairFree) updated.chairRental = 0;
+      if (patch.equipmentFree.umbrellaFree) updated.umbrellaRental = 0;
+      return updated;
+    });
+    if (patch.noEarlyEntry !== undefined) setNoEarlyEntry(patch.noEarlyEntry);
+    if (patch.equipmentFree.tableFree !== undefined) setTableFree(patch.equipmentFree.tableFree);
+    if (patch.equipmentFree.chairFree !== undefined) setChairFree(patch.equipmentFree.chairFree);
+    if (patch.equipmentFree.umbrellaFree !== undefined) setUmbrellaFree(patch.equipmentFree.umbrellaFree);
+    setErrors(previous => {
+      const next = { ...previous };
+      if (patch.formData.name) delete next.name;
+      if (patch.formData.location) delete next.location;
+      if (patch.formData.dates) delete next.dates;
+      return next;
+    });
+    setSubmitError(null);
   };
 
   const focusFirstError = (nextErrors: MarketCoreFormErrors) => {
@@ -369,6 +407,16 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
         )}
       >
         <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
+          <div className="mb-6">
+            <MarketTextImportPanel
+              inputText={marketTextImportInput}
+              currentValues={currentImportValues}
+              disabled={isSubmitting}
+              onInputTextChange={setMarketTextImportInput}
+              onApply={handleImportApply}
+            />
+          </div>
+
           <div className="japanese-surface-card p-5 sm:p-6">
             <MarketBasicFields
               idPrefix={FIELD_PREFIX}
