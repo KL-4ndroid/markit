@@ -14,6 +14,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  market-mail-boundary:
+    name: Market Mail local boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify Market Mail package and cross-platform boundary
+        run: node scripts/check-market-mail-integration.mjs
+
   hex-budget:
     name: Hex token budget
     runs-on: ubuntu-latest
