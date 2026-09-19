@@ -21,6 +21,7 @@ import { FullScreenForm } from '@/components/ui/FullScreenForm';
 import { createMarket } from '@/lib/db/hooks';
 import { clearFormData, loadFormData, saveFormData } from '@/lib/form-autosave';
 import type { MarketTextImportPatch } from '@/lib/market-text-import/merge';
+import { isMarketTextImportEnabled } from '@/lib/market-text-import/release-gate';
 import {
   calculateMarketDurationLabel,
   calculateMarketFixedCost,
@@ -45,6 +46,7 @@ const DEFAULT_CHAIR_FREE = false;
 const DEFAULT_UMBRELLA_FREE = false;
 const FORM_ID = 'add-market-form';
 const FIELD_PREFIX = 'add-market';
+const MARKET_TEXT_IMPORT_ENABLED = isMarketTextImportEnabled();
 
 function createDefaultMarketFormData(): MarketCreatedPayload {
   return {
@@ -174,7 +176,9 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
       setTableFree(savedDraft.data.tableFree);
       setChairFree(savedDraft.data.chairFree);
       setUmbrellaFree(savedDraft.data.umbrellaFree);
-      setMarketTextImportInput(savedDraft.data.marketTextImportInput ?? '');
+      setMarketTextImportInput(
+        MARKET_TEXT_IMPORT_ENABLED ? savedDraft.data.marketTextImportInput ?? '' : '',
+      );
     }
     setErrors({});
     setSubmitError(null);
@@ -407,15 +411,17 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
         )}
       >
         <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
-          <div className="mb-6">
-            <MarketTextImportPanel
-              inputText={marketTextImportInput}
-              currentValues={currentImportValues}
-              disabled={isSubmitting}
-              onInputTextChange={setMarketTextImportInput}
-              onApply={handleImportApply}
-            />
-          </div>
+          {MARKET_TEXT_IMPORT_ENABLED ? (
+            <div className="mb-6">
+              <MarketTextImportPanel
+                inputText={marketTextImportInput}
+                currentValues={currentImportValues}
+                disabled={isSubmitting}
+                onInputTextChange={setMarketTextImportInput}
+                onApply={handleImportApply}
+              />
+            </div>
+          ) : null}
 
           <div className="japanese-surface-card p-5 sm:p-6">
             <MarketBasicFields

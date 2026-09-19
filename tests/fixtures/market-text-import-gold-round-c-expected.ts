@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import * as yaml from 'js-yaml';
 
 import type {
   MarketTextImportDraftReadiness,
@@ -28,11 +29,6 @@ export interface RoundCExpectedEvidence {
   source: 'input_text' | 'reference_date';
   text: string;
 }
-
-const yaml = require('js-yaml') as {
-  JSON_SCHEMA: unknown;
-  load: (source: string, options: { schema: unknown }) => unknown;
-};
 
 const isRecord = (value: unknown): value is ExpectedNode => (
   typeof value === 'object' && value !== null && !Array.isArray(value)

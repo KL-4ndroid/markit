@@ -2,7 +2,7 @@
 
 - 建立日期：2026-09-16
 - 狀態：Gate 2 已完成並凍結（2026-09-16）
-- 產品實作狀態：Gate 7 預覽 UI 與安全 merge 已完成；Gate 8 holdout 尚未執行
+- 產品實作狀態：Gate 9 發布準備已完成；production 入口維持雙重開關 fail-closed
 - 上一關：Round A＋B＋C 共 83 個 Gold research fixtures
 - 執行計畫：`docs/MARKET_TEXT_IMPORT_EXECUTION_PLAN_2026_09_16.md`
 - 研究紀錄：`docs/MARKET_TEXT_IMPORT_DISCOVERY_RECORD_2026_09_15.md`
@@ -109,4 +109,4 @@
 - [x] 已以保守、可逆的預設確認第 6 節五項選擇。
 - [x] 已凍結 Gate 2；後續若有新證據，必須留下變更理由並同步修改解析契約與測試。
 
-Gate 2 的凍結決策維持不變；Gate 3～7 已依序完成。下一步為 Gate 8 保留盲測與失敗類型迭代。
+Gate 2 的凍結決策維持不變；Gate 3～9 已依序完成。Gate 9 已通過完整回歸、production build 與三種 viewport 驗證，隱私、可攜性、漸進開放與回退守門均已關閉。

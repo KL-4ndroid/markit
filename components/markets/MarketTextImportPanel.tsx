@@ -179,20 +179,21 @@ function CandidateReviewCard({
             </label>
           ))}
         </fieldset>
+      ) : canApplyDirectly ? (
+        <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-3 rounded-xl py-2">
+          <input
+            type="checkbox"
+            aria-label={`套用${FIELD_LABELS[candidate.field] ?? '候選值'}`}
+            checked={selectedValue === DIRECT_SELECTION}
+            onChange={event => onToggleDirect(candidate.id, event.target.checked)}
+            disabled={disabled}
+            className="mt-0.5 h-5 w-5 shrink-0 rounded border-primary/30 text-primary focus:ring-primary/40"
+          />
+          <span className="text-sm leading-6 text-foreground">{formatValue(candidate.value)}</span>
+        </label>
       ) : (
-        <div className="mt-3 flex items-start gap-3">
-          {canApplyDirectly ? (
-            <input
-              type="checkbox"
-              aria-label={`套用${FIELD_LABELS[candidate.field] ?? '候選值'}`}
-              checked={selectedValue === DIRECT_SELECTION}
-              onChange={event => onToggleDirect(candidate.id, event.target.checked)}
-              disabled={disabled}
-              className="mt-1 h-4 w-4 rounded border-primary/30 text-primary focus:ring-primary/40"
-            />
-          ) : (
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-secondary" aria-hidden="true" />
-          )}
+        <div className="mt-3 flex min-h-11 items-start gap-3 py-2">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-secondary" aria-hidden="true" />
           <p className="text-sm leading-6 text-foreground">{formatValue(candidate.value)}</p>
         </div>
       )}
@@ -205,7 +206,7 @@ function CandidateReviewCard({
 
       {evidence.length > 0 ? (
         <details className="mt-3 text-xs text-muted-foreground">
-          <summary className="min-h-8 cursor-pointer py-1 font-medium text-primary">查看判定原文</summary>
+          <summary className="min-h-11 cursor-pointer py-3 font-medium text-primary">查看判定原文</summary>
           <div className="mt-1 space-y-1 border-l-2 border-primary/15 pl-3">
             {evidence.map(item => <p key={item.id} className="whitespace-pre-wrap leading-5">{item.text}</p>)}
           </div>
@@ -272,8 +273,8 @@ export function MarketTextImportPanel({
       setMessage(response.draft.disposition === 'reject'
         ? '這段文字看起來不是可新增的市集，沒有產生可套用欄位。'
         : null);
-    } catch (error) {
-      console.error('分析市集文字失敗：', error);
+    } catch {
+      console.error('分析市集文字失敗。');
       setMessage('分析沒有完成，原文與表單內容都已保留，請再試一次。');
     } finally {
       setIsAnalyzing(false);
@@ -354,7 +355,7 @@ export function MarketTextImportPanel({
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-center gap-2 text-xs leading-5 text-muted-foreground">
           <ShieldCheck className="h-4 w-4 shrink-0 text-success" aria-hidden="true" />
-          原文只保存在此裝置的未完成草稿，不會傳給 LLM。
+          原文只在此裝置分析，未完成草稿最多保留 30 分鐘；不會傳給 LLM、寫入市集或分析紀錄。
         </p>
         <div className="flex gap-2">
           {inputText ? (
@@ -448,7 +449,7 @@ export function MarketTextImportPanel({
 
           {warnings.length > 0 ? (
             <details className="rounded-2xl border border-primary/10 bg-atelier-paper p-4">
-              <summary className="min-h-8 cursor-pointer text-sm font-medium text-foreground">
+              <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-foreground">
                 查看 {warnings.length} 項分析提醒
               </summary>
               <ul className="mt-2 space-y-2 text-xs leading-5 text-muted-foreground">

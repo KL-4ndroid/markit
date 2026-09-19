@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import * as yaml from 'js-yaml';
 
 type CandidateStatus =
   | 'exact'
@@ -91,11 +92,6 @@ const ROUND_A_FINAL_DECISIONS: Readonly<Record<string, RoundAFinalDecision>> = {
 };
 
 const YAML_BLOCK = /^### (MTI-REP-\d{4}-P\d{2})\r?\n\r?\n```yaml\r?\n([\s\S]*?)\r?\n```/gm;
-
-const yaml = require('js-yaml') as {
-  JSON_SCHEMA: unknown;
-  load: (source: string, options: { schema: unknown }) => unknown;
-};
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   typeof value === 'object' && value !== null && !Array.isArray(value)

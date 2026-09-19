@@ -1,9 +1,9 @@
 # 市集文字匯入功能執行計畫
 
 - 建立日期：2026-09-16
-- 狀態：執行中
+- 狀態：Gate 1～9 已完成
 - 最終目標：在不接入 LLM 的前提下，讓使用者貼上市集資訊，系統以可解釋規則產生欄位候選，經使用者確認後套用至「新增市集」表單，最後仍由使用者自行送出
-- 產品實作狀態：Gate 8 保留盲測已完成並通過凍結門檻；待 Gate 9 發布準備
+- 產品實作狀態：Gate 9 發布準備已完成；production 入口維持雙重開關 fail-closed，尚未由本工作開啟
 - 主研究紀錄：`docs/MARKET_TEXT_IMPORT_DISCOVERY_RECORD_2026_09_15.md`
 - 標註規範：`docs/MARKET_TEXT_IMPORT_ANNOTATION_GUIDE_V1_2026_09_15.md`
 - MVP 支援範圍：`docs/MARKET_TEXT_IMPORT_MVP_SCOPE_V1_2026_09_16.md`
@@ -161,7 +161,7 @@
 
 ### Gate 9 — 發布準備
 
-狀態：**待 Gate 8**
+狀態：**已完成（2026-09-19）**
 
 工作：
 
@@ -191,6 +191,7 @@
 | Parser 實作 | Gate 5～6 完成；Gate 8 依 holdout 失敗類型完成保守迭代，83 個 Gold 零回歸 |
 | UI 實作 | Gate 7 完成：貼上、預覽、逐欄選取、安全合併與使用者自行送出 |
 | 保留盲測 | 30／30 完成；precision 100%、supported recall 95.04%、hard-zero 指標全數為 0 |
+| 發布準備 | Gate 9 完成：完整測試、lint、build、三種 viewport、隱私、可攜性與雙重開關均通過 |
 
 ## 4. 本次開始執行的工作
 
@@ -220,5 +221,8 @@
 - [x] Gate 8 只在 Gate 7 候選凍結後開封 30 封 holdout，建立去識別化 inputs、人工 expected outputs 與可執行 evaluator。
 - [x] Gate 8 第一次基準完成；依失敗類型修正包車拒絕、舉辦地點、多段日期、日期承載於活動時間、已選攤位費與攤型設備隔離。
 - [x] Gate 8 完成：30／30 disposition 與 event count、precision 100%、recall 95.04%、evidence／option 100%，reject leak／unsafe apply 為 0。
+- [x] 建立 Gate 9 production 雙重放行、preview／staging 漸進開放與安全回退機制。
+- [x] 建立 Gate 9 原文／payload／telemetry 隱私、30 分鐘草稿及共享核心可攜性 guardrail。
+- [x] 完成 Gate 9 完整回歸、lint、production build 與瀏覽器三種 viewport 驗證。
 
-Gate 1～8 已完成。Gate 8 的 30 封隔離來源已完成一次正式基準、失敗分類、通用規則迭代與門檻驗證；完整結果見 `docs/MARKET_TEXT_IMPORT_GATE_8_HOLDOUT_REPORT_2026_09_17.md`。剩餘 7 個漏填均保持空白或要求選擇，不會錯填。下一步是 Gate 9 發布準備。
+Gate 1～9 已完成。Gate 9 已通過完整回歸、lint、production build、390×844／1024×768／1440×900 瀏覽器驗證，並完成發布控制、隱私邊界、共享核心可攜性、可及性與回退設計。完整證據見 `docs/MARKET_TEXT_IMPORT_GATE_9_RELEASE_READINESS_2026_09_17.md`。Production 功能仍需部署環境雙重明確放行，本次不自動開啟。
