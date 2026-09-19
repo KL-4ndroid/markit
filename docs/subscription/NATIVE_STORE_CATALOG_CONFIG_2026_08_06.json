@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "sourceDocument": "subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md",
+  "updatedAt": "2026-08-06",
+  "environment": "sandbox",
+  "activationStatus": "disabled",
+  "mappings": [
+    { "store": "apple_app_store", "priceVersionId": "pro_monthly_twd_launch_v1", "productId": null, "basePlanId": null, "offerId": null, "status": "unconfigured" },
+    { "store": "apple_app_store", "priceVersionId": "pro_annual_twd_launch_v1", "productId": null, "basePlanId": null, "offerId": null, "status": "unconfigured" },
+    { "store": "apple_app_store", "priceVersionId": "pro_founder_annual_twd_launch_v1", "productId": null, "basePlanId": null, "offerId": null, "status": "unconfigured" },
+    { "store": "apple_app_store", "priceVersionId": "team_monthly_twd_launch_v1", "productId": null, "basePlanId": null, "offerId": null, "status": "unconfigured" },
+    { "store": "apple_app_store", "priceVersionId": "team_annual_twd_launch_v1", "productId": null, "basePlanId": null, "offerId": null, "status": "unconfigured" },
+    { "store": "google_play", "priceVersionId": "pro_monthly_twd_launch_v1", "productId": null, "basePlanId": null, "offerId": null, "status": "unconfigured" },
+    { "store": "google_play", "priceVersionId": "pro_annual_twd_launch_v1", "productId": null, "basePlanId": null, "offerId": null, "status": "unconfigured" },
+    { "store": "google_play", "priceVersionId": "pro_founder_annual_twd_launch_v1", "productId": null, "basePlanId": null, "offerId": null, "status": "unconfigured" },
+    { "store": "google_play", "priceVersionId": "team_monthly_twd_launch_v1", "productId": null, "basePlanId": null, "offerId": null, "status": "unconfigured" },
+    { "store": "google_play", "priceVersionId": "team_annual_twd_launch_v1", "productId": null, "basePlanId": null, "offerId": null, "status": "unconfigured" }
+  ]
+}

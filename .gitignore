@@ -5,6 +5,9 @@ node_modules/
 
 # 測試
 coverage/
+/.codex-artifacts/
+/tmp/pdfs/
+/tmp/feria-*.log
 
 # Next.js
 .next/

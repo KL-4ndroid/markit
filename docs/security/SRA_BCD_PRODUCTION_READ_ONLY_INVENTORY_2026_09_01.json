@@ -1,0 +1,79 @@
+{
+  "ok": true,
+  "observedAt": "2026-09-01",
+  "environment": "Production",
+  "targetFingerprintMatched": true,
+  "querySha256": "95c88b38a7c51cd1d7ed22a45cac14fd86ecd05624eca6289d052ce66018af09",
+  "transactionReadOnly": "on",
+  "serverVersionNum": "170006",
+  "migrationLedgerPresent": false,
+  "advisor": {
+    "errors": 3,
+    "warnings": 59,
+    "info": 12,
+    "warningDeltaAfterSraA1": -12
+  },
+  "sraB": {
+    "insertPolicyCount": 4,
+    "unsafePolicies": [
+      {
+        "table": "markets",
+        "policy": "authenticated_can_insert_markets",
+        "role": "authenticated",
+        "checkExpression": "true"
+      },
+      {
+        "table": "markets",
+        "policy": "允許 authenticated 插入市集",
+        "role": "authenticated",
+        "checkExpression": "true"
+      },
+      {
+        "table": "products",
+        "policy": "允許 authenticated 插入商品",
+        "role": "authenticated",
+        "checkExpression": "true"
+      }
+    ],
+    "retainedPolicy": {
+      "table": "products",
+      "policy": "Users can insert own products",
+      "role": "PUBLIC",
+      "checkExpression": "owner_id = auth.uid()"
+    }
+  },
+  "sraC": {
+    "views": [
+      {
+        "name": "staff_accessible_events",
+        "owner": "postgres",
+        "securityInvoker": false,
+        "definitionMd5": "553ca9554c447219397376c528114609",
+        "columnCount": 11
+      },
+      {
+        "name": "staff_accessible_markets",
+        "owner": "postgres",
+        "securityInvoker": false,
+        "definitionMd5": "d84671917538c9e85c26bd55c6ac86cd",
+        "columnCount": 47
+      },
+      {
+        "name": "staff_accessible_products",
+        "owner": "postgres",
+        "securityInvoker": false,
+        "definitionMd5": "e8b9f67d2feac32a7f963b1b5c05ce64",
+        "columnCount": 20
+      }
+    ],
+    "currentSelectGrantees": ["anon", "authenticated", "postgres", "service_role"]
+  },
+  "sraD": {
+    "advisorFinding": "Leaked Password Protection Disabled",
+    "enabled": false
+  },
+  "businessRowsRead": 0,
+  "remoteWrites": 0,
+  "rawProjectReferenceRetained": false,
+  "rawViewDefinitionsRetained": false
+}

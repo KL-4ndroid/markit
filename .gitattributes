@@ -1,0 +1,59 @@
+# .gitattributes
+#
+# Force Unix line endings (LF) for all source files on Windows.
+# Without this, core.autocrlf=true + CRLF-default editors silently
+# rewrite line endings on checkout, breaking git diff and causing
+# phantom modifications (file shows modified with no content change).
+#
+# This file overrides core.autocrlf for specific paths.
+
+# ─────────────────────────────────────
+# Default: explicit LF for all text files
+# ─────────────────────────────────────
+*              text=auto eol=lf
+
+# ─────────────────────────────────────
+# Source code (must stay LF for tooling)
+# ─────────────────────────────────────
+*.ts           text eol=lf
+*.tsx          text eol=lf
+*.js           text eol=lf
+*.jsx          text eol=lf
+*.mjs          text eol=lf
+*.cjs          text eol=lf
+*.json         text eol=lf
+*.css          text eol=lf
+*.scss         text eol=lf
+*.md           text eol=lf
+*.mdx          text eol=lf
+*.yml          text eol=lf
+*.yaml         text eol=lf
+*.sh           text eol=lf
+*.sql          text eol=lf
+.eslintrc*     text eol=lf
+.prettierrc*   text eol=lf
+.gitattributes  text eol=lf
+.gitignore     text eol=lf
+
+# ─────────────────────────────────────
+# CRLF-required files (Windows-specific)
+# ─────────────────────────────────────
+*.bat          text eol=crlf
+*.cmd          text eol=crlf
+*.ps1          text eol=crlf
+
+# ─────────────────────────────────────
+# Binary files (never touched)
+# ─────────────────────────────────────
+*.png          binary
+*.jpg          binary
+*.jpeg         binary
+*.gif          binary
+*.webp         binary
+*.svg          binary
+*.ico          binary
+*.pdf          binary
+*.woff         binary
+*.woff2        binary
+*.ttf          binary
+*.eot          binary

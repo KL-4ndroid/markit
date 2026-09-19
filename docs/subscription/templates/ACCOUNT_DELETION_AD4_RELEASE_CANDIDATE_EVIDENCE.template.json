@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "status": "not_executed",
+  "release": {
+    "commitSha": null,
+    "iosBuildId": null,
+    "androidBuildId": null
+  },
+  "publicUrls": {
+    "accountDeletion": null,
+    "privacy": null,
+    "support": null
+  },
+  "testMatrix": [
+    { "id": "owner_unpaid", "status": "pending", "evidenceRef": null },
+    { "id": "owner_paid_active_store", "status": "pending", "evidenceRef": null },
+    { "id": "staff_self_deletion", "status": "pending", "evidenceRef": null },
+    { "id": "pending_write_resolution", "status": "pending", "evidenceRef": null },
+    { "id": "billing_detachment", "status": "pending", "evidenceRef": null },
+    { "id": "real_r2_purge_absence", "status": "pending", "evidenceRef": null },
+    { "id": "entitlement_only_restore", "status": "pending", "evidenceRef": null },
+    { "id": "retry_manual_review", "status": "pending", "evidenceRef": null },
+    { "id": "offline_reinstall_web_path", "status": "pending", "evidenceRef": null },
+    { "id": "ios_release_candidate", "status": "pending", "evidenceRef": null },
+    { "id": "android_release_candidate", "status": "pending", "evidenceRef": null }
+  ],
+  "approvals": {
+    "releaseOwner": null,
+    "securityOwner": null,
+    "legalPrivacyOwner": null,
+    "supportOwner": null
+  },
+  "evidenceHygiene": {
+    "containsSecrets": false,
+    "containsRawReceiptsOrPurchaseTokens": false,
+    "containsFullUserIdentifiers": false
+  }
+}

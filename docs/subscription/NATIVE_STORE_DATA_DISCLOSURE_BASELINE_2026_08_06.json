@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "sourceDocument": "subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md",
+  "updatedAt": "2026-08-06",
+  "status": "draft_requires_manual_and_provider_review",
+  "releaseScope": "ios_android_native_subscription",
+  "storeComplianceGateStatus": "pending_manual",
+  "globalAnswers": {
+    "tracking": "no_by_design",
+    "advertising": "none",
+    "dataSale": "no_by_design",
+    "encryptedInTransit": "expected_https_requires_release_confirmation",
+    "privacyPolicy": "implemented_local_publication_pending",
+    "privacyChoices": "support_workflow_implemented_local_public_contact_pending",
+    "accountDeletion": "missing_compliant_in_app_flow",
+    "retention": "pending_legal_approval",
+    "processorTerms": "pending_manual_review"
+  },
+  "records": [
+    {
+      "id": "account_email",
+      "runtimeState": "implemented",
+      "launchDisposition": "declare",
+      "sourceSurface": "Supabase authentication and staff invitation",
+      "appleDataType": "Contact Info / Email Address",
+      "googleDataType": "Personal info / Email address",
+      "collectedOffDevice": true,
+      "linkedToAccount": true,
+      "tracking": false,
+      "requirednessDraft": "required",
+      "purposes": ["app_functionality", "account_management", "security"],
+      "processors": ["Supabase"],
+      "codeEvidence": [
+        "lib/supabase/staff.ts",
+        "lib/supabase/migration.ts",
+        "app/privacy/page.tsx"
+      ],
+      "manualChecks": [
+        "Confirm Supabase Auth email and authentication-log retention",
+        "Confirm whether any released SDK receives email"
+      ]
+    },
+    {
+      "id": "account_and_workspace_identifier",
+      "runtimeState": "implemented",
+      "launchDisposition": "declare",
+      "sourceSurface": "authenticated owner, staff, role, and workspace records",
+      "appleDataType": "Identifiers / User ID",
+      "googleDataType": "Personal info / User IDs",
+      "collectedOffDevice": true,
+      "linkedToAccount": true,
+      "tracking": false,
+      "requirednessDraft": "required",
+      "purposes": ["app_functionality", "account_management", "security"],
+      "processors": ["Supabase", "Vercel"],
+      "codeEvidence": [
+        "types/staff.ts",
+        "lib/auth/role-mode.ts",
+        "lib/supabase/settings.ts"
+      ],
+      "manualChecks": [
+        "Confirm request-log treatment of authenticated account identifiers",
+        "Confirm provider access and retention controls"
+      ]
+    },
+    {
+      "id": "brand_and_market_operational_content",
+      "runtimeState": "implemented",
+      "launchDisposition": "declare",
+      "sourceSurface": "brand settings, markets, products, interactions, notes, and reports",
+      "appleDataType": "User Content / Other User Content",
+      "googleDataType": "App activity / Other user-generated content",
+      "collectedOffDevice": true,
+      "linkedToAccount": true,
+      "tracking": false,
+      "requirednessDraft": "required",
+      "purposes": ["app_functionality", "personalization"],
+      "processors": ["Supabase"],
+      "codeEvidence": [
+        "types/db.ts",
+        "lib/supabase/settings.ts",
+        "app/privacy/page.tsx"
+      ],
+      "manualChecks": [
+        "Confirm released sync tables and fields against this grouped declaration",
+        "Confirm retention and deletion behavior for event history and projections"
+      ]
+    },
+    {
+      "id": "business_financial_records",
+      "runtimeState": "implemented",
+      "launchDisposition": "declare_conservatively",
+      "sourceSurface": "user-entered costs, prices, sales, revenue, and payment-method category",
+      "appleDataType": "Financial Info / Other Financial Info",
+      "googleDataType": "Financial info / Other financial info",
+      "collectedOffDevice": true,
+      "linkedToAccount": true,
+      "tracking": false,
+      "requirednessDraft": "required",
+      "purposes": ["app_functionality", "analytics"],
+      "processors": ["Supabase"],
+      "codeEvidence": [
+        "types/db.ts",
+        "app/privacy/page.tsx"
+      ],
+      "manualChecks": [
+        "Confirm store-console interpretation of merchant-entered business records",
+        "Confirm the privacy policy does not imply accounting advice"
+      ]
+    },
+    {
+      "id": "product_and_sales_photos",
+      "runtimeState": "feature_gated",
+      "launchDisposition": "declare_if_enabled_in_release",
+      "sourceSurface": "optional product covers and sales photo evidence",
+      "appleDataType": "User Content / Photos or Videos",
+      "googleDataType": "Photos and videos / Photos",
+      "collectedOffDevice": true,
+      "linkedToAccount": true,
+      "tracking": false,
+      "requirednessDraft": "optional",
+      "purposes": ["app_functionality"],
+      "processors": ["Vercel", "Supabase", "Cloudflare R2"],
+      "codeEvidence": [
+        "lib/products/product-cover-photo-server.ts",
+        "app/api/sales-photo-evidence/upload/route.ts",
+        "app/privacy/page.tsx"
+      ],
+      "manualChecks": [
+        "Confirm whether either media feature is enabled in the submitted binary and environment",
+        "Confirm R2 region, retention, deletion, and processor terms"
+      ]
+    },
+    {
+      "id": "bounded_sync_diagnostics",
+      "runtimeState": "implemented_local_external_sink_pending",
+      "launchDisposition": "declare_conservatively",
+      "sourceSurface": "authenticated bounded sync incident reports and server operational events",
+      "appleDataType": "Diagnostics / Other Diagnostic Data",
+      "googleDataType": "App info and performance / Other app performance data",
+      "collectedOffDevice": true,
+      "linkedToAccount": "provider_review_required",
+      "tracking": false,
+      "requirednessDraft": "required",
+      "purposes": ["app_functionality", "analytics", "security"],
+      "processors": ["Vercel"],
+      "codeEvidence": [
+        "lib/observability/sync-incident-contract.ts",
+        "app/api/operational-events/sync/route.ts",
+        "lib/observability/server-operational-event.ts"
+      ],
+      "manualChecks": [
+        "Confirm whether deployment request logs retain account, IP, or device-linkable metadata",
+        "Confirm sink access, retention, and deletion controls"
+      ]
+    },
+    {
+      "id": "support_correspondence",
+      "runtimeState": "external_mail_workflow",
+      "launchDisposition": "manual_optional_disclosure_review",
+      "sourceSurface": "user-initiated support email outside the application backend",
+      "appleDataType": "User Content / Customer Support",
+      "googleDataType": "Messages / Other in-app messages",
+      "collectedOffDevice": true,
+      "linkedToAccount": true,
+      "tracking": false,
+      "requirednessDraft": "optional",
+      "purposes": ["app_functionality", "account_management", "security"],
+      "processors": ["approved_support_mail_provider_pending"],
+      "codeEvidence": [
+        "app/support/page.tsx",
+        "app/privacy/page.tsx"
+      ],
+      "manualChecks": [
+        "Decide whether the final support flow meets each store's optional-disclosure exception",
+        "Confirm the public support address, processor, retention, and access owners"
+      ]
+    },
+    {
+      "id": "native_subscription_purchase_history",
+      "runtimeState": "contract_only",
+      "launchDisposition": "declare_before_paid_native_release",
+      "sourceSurface": "verified Apple or Google subscription transaction and lifecycle state",
+      "appleDataType": "Purchases / Purchase History",
+      "googleDataType": "Financial info / Purchase history",
+      "collectedOffDevice": true,
+      "linkedToAccount": true,
+      "tracking": false,
+      "requirednessDraft": "required_for_paid_features",
+      "purposes": ["app_functionality", "account_management", "security"],
+      "processors": ["Apple_or_Google", "Vercel", "Supabase"],
+      "codeEvidence": [
+        "lib/platform/contracts/in-app-purchase.ts",
+        "lib/subscription/native-store-verification-contract.ts",
+        "lib/subscription/native-account-entitlement.ts"
+      ],
+      "manualChecks": [
+        "Replace contract-only evidence with reviewed native adapter and server runtime evidence",
+        "Confirm store token, transaction, subscription, refund, and retention handling"
+      ]
+    },
+    {
+      "id": "native_store_account_binding",
+      "runtimeState": "contract_only",
+      "launchDisposition": "declare_with_user_identifier",
+      "sourceSurface": "opaque Apple account token or Google obfuscated account identifier",
+      "appleDataType": "Identifiers / User ID",
+      "googleDataType": "Personal info / User IDs",
+      "collectedOffDevice": true,
+      "linkedToAccount": true,
+      "tracking": false,
+      "requirednessDraft": "required_for_paid_features",
+      "purposes": ["app_functionality", "account_management", "security"],
+      "processors": ["Apple_or_Google", "Vercel", "Supabase"],
+      "codeEvidence": [
+        "lib/platform/contracts/in-app-purchase.ts",
+        "lib/subscription/native-store-verification-contract.ts"
+      ],
+      "manualChecks": [
+        "Confirm the production binding is one-way and never sends the raw owner UUID",
+        "Confirm no binding value is written to client or general application logs"
+      ]
+    }
+  ],
+  "negativeClaims": [
+    {
+      "id": "no_advertising_or_cross_app_tracking",
+      "state": "confirmed_in_current_direct_dependencies",
+      "mustRecheckAfterNativePackages": true
+    },
+    {
+      "id": "no_address_book_contacts",
+      "state": "no_runtime_found",
+      "mustRecheckAfterNativePackages": true
+    },
+    {
+      "id": "no_device_geolocation",
+      "state": "no_runtime_found_market_location_is_user_entered_content",
+      "mustRecheckAfterNativePackages": true
+    },
+    {
+      "id": "no_audio_health_or_biometric_collection",
+      "state": "no_runtime_found",
+      "mustRecheckAfterNativePackages": true
+    },
+    {
+      "id": "no_payment_card_or_bank_details",
+      "state": "storefront_handles_payment_instruments",
+      "mustRecheckAfterNativePackages": true
+    },
+    {
+      "id": "no_app_generated_device_identifier",
+      "state": "optional_legacy_type_field_only_no_runtime_generation_found",
+      "mustRecheckAfterNativePackages": true
+    }
+  ],
+  "blockingReviews": [
+    "Implement and approve a compliant in-app account-deletion initiation flow and associated server-side deletion procedure",
+    "Publish a stable privacy-policy URL and a public account-deletion web resource",
+    "Approve the retention and legal-exception table",
+    "Review Supabase, Vercel, Cloudflare R2, Apple, Google, and support-provider data terms and actual log retention",
+    "Re-audit the final native dependency lockfile, manifests, permissions, privacy manifests, and submitted binary",
+    "Replace contract-only purchase rows with implementation and sandbox evidence",
+    "Enter and independently compare the final App Store Connect and Play Console answers"
+  ]
+}

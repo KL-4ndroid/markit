@@ -1,0 +1,23 @@
+{
+  "now": "2026-08-01T12:00:00.000Z",
+  "observationStartedAt": "2026-07-30T12:00:00.000Z",
+  "events": [
+    {
+      "schemaVersion": 1,
+      "timestamp": "2026-08-01T10:00:00.000Z",
+      "event": "media.sales_photo.expiration.run",
+      "outcome": "success",
+      "metrics": {
+        "attemptedCount": 1,
+        "failedCount": 0
+      }
+    }
+  ],
+  "healthProbes": [
+    {
+      "timestamp": "2026-08-01T11:59:00.000Z",
+      "healthy": true,
+      "releaseMatches": true
+    }
+  ]
+}

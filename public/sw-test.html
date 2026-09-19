@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Worker 測試</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #FAFAF8;
+    }
+    .status {
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .success { border-left: 4px solid #7B9FA6; }
+    .error { border-left: 4px solid #e74c3c; }
+    .info { border-left: 4px solid #3498db; }
+    button {
+      background: #7B9FA6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #6A8E95;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    h1 {
+      color: #3A3A3A;
+    }
+    h2 {
+      color: #7B9FA6;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔧 Service Worker 測試頁面</h1>
+  
+  <div id="support-status" class="status"></div>
+  <div id="registration-status" class="status"></div>
+  <div id="cache-status" class="status"></div>
+  
+  <h2>操作</h2>
+  <button onclick="checkRegistration()">檢查註冊狀態</button>
+  <button onclick="checkCaches()">檢查快取</button>
+  <button onclick="testOffline()">測試離線功能</button>
+  <button onclick="forceUpdate()">強制更新</button>
+  <button onclick="unregister()">取消註冊</button>
+  
+  <h2>日誌</h2>
+  <pre id="logs"></pre>
+
+  <script>
+    const logs = [];
+
+    function isLocalRepairPage() {
+      return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+    }
+    
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      logs.push(`[${timestamp}] ${message}`);
+      document.getElementById('logs').textContent = logs.join('\n');
+      console.log(message);
+    }
+
+    // 檢查瀏覽器支援
+    function checkSupport() {
+      const supportDiv = document.getElementById('support-status');
+      
+      if ('serviceWorker' in navigator) {
+        supportDiv.className = 'status success';
+        supportDiv.innerHTML = '<strong>✅ 瀏覽器支援 Service Worker</strong>';
+        log('瀏覽器支援 Service Worker');
+        return true;
+      } else {
+        supportDiv.className = 'status error';
+        supportDiv.innerHTML = '<strong>❌ 瀏覽器不支援 Service Worker</strong>';
+        log('瀏覽器不支援 Service Worker', 'error');
+        return false;
+      }
+    }
+
+    // 檢查註冊狀態
+    async function checkRegistration() {
+      if (!checkSupport()) return;
+      
+      const statusDiv = document.getElementById('registration-status');
+      
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        
+        if (registration) {
+          statusDiv.className = 'status success';
+          statusDiv.innerHTML = `
+            <strong>✅ Service Worker 已註冊</strong><br>
+            <small>Scope: ${registration.scope}</small><br>
+            <small>狀態: ${registration.active ? '已激活' : '未激活'}</small>
+          `;
+          log(`Service Worker 已註冊: ${registration.scope}`);
+          
+          if (registration.waiting) {
+            log('有新版本等待激活');
+          }
+          
+          if (registration.installing) {
+            log('正在安裝新版本');
+          }
+        } else {
+          statusDiv.className = 'status info';
+          statusDiv.innerHTML = '<strong>ℹ️ Service Worker 尚未註冊</strong>';
+          log('Service Worker 尚未註冊');
+        }
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.innerHTML = `<strong>❌ 檢查失敗</strong><br><small>${error.message}</small>`;
+        log(`檢查註冊狀態失敗: ${error.message}`, 'error');
+      }
+    }
+
+    // 檢查快取
+    async function checkCaches() {
+      const cacheDiv = document.getElementById('cache-status');
+      
+      try {
+        const cacheNames = await caches.keys();
+        
+        if (cacheNames.length > 0) {
+          let totalSize = 0;
+          let cacheInfo = '';
+          
+          for (const cacheName of cacheNames) {
+            const cache = await caches.open(cacheName);
+            const keys = await cache.keys();
+            cacheInfo += `<br>• ${cacheName}: ${keys.length} 個項目`;
+            log(`快取 ${cacheName}: ${keys.length} 個項目`);
+          }
+          
+          cacheDiv.className = 'status success';
+          cacheDiv.innerHTML = `
+            <strong>✅ 找到 ${cacheNames.length} 個快取</strong>
+            ${cacheInfo}
+          `;
+        } else {
+          cacheDiv.className = 'status info';
+          cacheDiv.innerHTML = '<strong>ℹ️ 沒有快取</strong>';
+          log('沒有快取');
+        }
+      } catch (error) {
+        cacheDiv.className = 'status error';
+        cacheDiv.innerHTML = `<strong>❌ 檢查快取失敗</strong><br><small>${error.message}</small>`;
+        log(`檢查快取失敗: ${error.message}`, 'error');
+      }
+    }
+
+    // 測試離線功能
+    async function testOffline() {
+      log('開始測試離線功能...');
+      log('請打開開發者工具 > Network > 勾選 Offline');
+      log('然後重新整理頁面，看看是否能正常載入');
+    }
+
+    // 強制更新
+    async function forceUpdate() {
+      if (!isLocalRepairPage()) {
+        log('This repair tool is only available on localhost.', 'error');
+        return;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        
+        if (registration) {
+          log('正在檢查更新...');
+          await registration.update();
+          log('更新檢查完成');
+          
+          setTimeout(() => {
+            checkRegistration();
+          }, 1000);
+        } else {
+          log('Service Worker 尚未註冊', 'error');
+        }
+      } catch (error) {
+        log(`強制更新失敗: ${error.message}`, 'error');
+      }
+    }
+
+    // 取消註冊
+    async function unregister() {
+      if (!isLocalRepairPage()) {
+        log('This repair tool is only available on localhost.', 'error');
+        return;
+      }
+
+      if (!confirm('確定要取消註冊 Service Worker 嗎？這會清除所有快取。')) {
+        return;
+      }
+      
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        
+        if (registration) {
+          await registration.unregister();
+          log('Service Worker 已取消註冊');
+          
+          // 清除所有快取
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          log(`已清除 ${cacheNames.length} 個快取`);
+          
+          alert('已取消註冊並清除快取，請重新整理頁面');
+        } else {
+          log('Service Worker 尚未註冊');
+        }
+      } catch (error) {
+        log(`取消註冊失敗: ${error.message}`, 'error');
+      }
+    }
+
+    // 頁面載入時自動檢查
+    window.addEventListener('load', () => {
+      log('頁面已載入');
+      checkSupport();
+      checkRegistration();
+      checkCaches();
+    });
+
+    // 監聽 Service Worker 更新
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        log('Service Worker 控制權已變更');
+      });
+    }
+  </script>
+</body>
+</html>

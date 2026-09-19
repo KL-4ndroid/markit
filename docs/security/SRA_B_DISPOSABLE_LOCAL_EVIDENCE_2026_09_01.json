@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "date": "2026-09-01",
+  "scope": "new-disposable-local-postgresql-17-only",
+  "containerName": "sra-b-20260901",
+  "image": "public.ecr.aws/supabase/postgres:17.6.1.165",
+  "productionConnections": 0,
+  "remoteWrites": 0,
+  "artifacts": {
+    "transaction": {
+      "path": "docs/security/drafts/SRA_B_LOCAL_REVIEW_TRANSACTION.sql",
+      "sha256": "f079967206e6a01d87057b8bb52ab12bf2c3a6704d5369ae5dcf2cef01f6a4f7"
+    },
+    "fixture": {
+      "path": "supabase/tests/sra_b_local_fixture.sql",
+      "sha256": "2c975fc1e8a7587966caa551f1f8390f5ad25072c3e25cf5c5606f9a424d34d9"
+    },
+    "postcheck": {
+      "path": "supabase/tests/sra_b_local_postcheck.sql",
+      "sha256": "bbcf7b4dfe9f615d38e2d9462de41b89e51cf719cc9e85718cd09a0b59bafabf"
+    },
+    "productionReadOnlyPreflight": {
+      "path": "supabase/verification/sra_b_production_read_only_preflight.sql",
+      "sha256": "a6abb5f1d3c2a633b994a13544735fa584011c61d09f9e1e3cefca1b60fe9879"
+    },
+    "productionReadOnlyPostcheck": {
+      "path": "supabase/verification/sra_b_postcheck_read_only.sql",
+      "sha256": "51bc58746d805fc05f50be91f98584f00c0aa7f50e2fdfada0207e436bc0cbed"
+    }
+  },
+  "results": {
+    "exactFourPolicyPreflight": true,
+    "fixedReadOnlyPreflightPassed": true,
+    "threeUnsafePoliciesDropped": true,
+    "retainedOwnerProductPolicyExact": true,
+    "directMarketInsertDenied": true,
+    "foreignProductInsertDenied": true,
+    "ownerProductInsertAllowed": true,
+    "marketEventProjectionPassed": true,
+    "productEventProjectionPassed": true,
+    "repeatApplicationRejected": true,
+    "fixedReadOnlyPostcheckPassed": true,
+    "postRepeatMarketInsertPolicyCount": 0,
+    "postRepeatProductInsertPolicyCount": 1
+  },
+  "cleanup": {
+    "containerRemoved": true,
+    "backupCreated": false
+  }
+}

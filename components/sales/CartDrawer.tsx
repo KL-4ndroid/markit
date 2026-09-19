@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, Minus, ShoppingCart, CreditCard, Smartphone, Banknote } from 'lucide-react';
 import { useProducts } from '@/lib/db/hooks';
-import { recordDeal } from '@/lib/db/hooks';
+import {
+  recordDealWithOptionalSalesPhotoEvidence,
+  type SalesPhotoEvidenceRuntimeResultHandler,
+  type SalesPhotoEvidenceTransactionContext,
+} from '@/lib/sales/photo-evidence-runtime-enqueue';
 import { toast } from 'sonner';
 import type { Product } from '@/types/db';
 
@@ -12,6 +17,8 @@ interface CartDrawerProps {
   onClose: () => void;
   marketId: string;
   onSuccess?: () => void;
+  salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
+  onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
 }
 
 interface CartItem {
@@ -25,7 +32,14 @@ type PaymentMethod = 'cash' | 'card' | 'mobile' | 'other';
  * 購物車抽屜組件
  * 用於快速結帳
  */
-export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerProps) {
+export function CartDrawer({
+  isOpen,
+  onClose,
+  marketId,
+  onSuccess,
+  salesPhotoEvidenceContext,
+  onSalesPhotoEvidenceResult,
+}: CartDrawerProps) {
   const products = useProducts({ isActive: true });
   const [cart, setCart] = useState<Map<string, CartItem>>(new Map());
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
@@ -115,12 +129,23 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
       }));
 
       // 記錄成交
-      await recordDeal({
+      const submittedAt = new Date().toISOString();
+      const result = await recordDealWithOptionalSalesPhotoEvidence({
         marketId,
         items,
         totalAmount,
         paymentMethod,
+      }, undefined, {
+        evidenceContext: salesPhotoEvidenceContext
+          ? {
+              ...salesPhotoEvidenceContext,
+              marketId,
+              saleCompletedAt: submittedAt,
+              now: submittedAt,
+            }
+          : undefined,
       });
+      await onSalesPhotoEvidenceResult?.(result);
 
       // 成功提示
       toast.success(`🎉 辛苦了！成交一筆 NT$${totalAmount.toLocaleString()}`, {
@@ -142,37 +167,37 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
 
   // 支付方式選項
   const paymentMethods: { value: PaymentMethod; label: string; icon: any; color: string }[] = [
-    { value: 'cash', label: '現金', icon: Banknote, color: 'bg-[#E8F3E8]' },
-    { value: 'mobile', label: '行動支付', icon: Smartphone, color: 'bg-[#E8F0F8]' },
-    { value: 'card', label: '信用卡', icon: CreditCard, color: 'bg-[#F5E6E8]' },
+    { value: 'cash', label: '現金', icon: Banknote, color: 'bg-soft-green' },
+    { value: 'mobile', label: '行動支付', icon: Smartphone, color: 'bg-cat-clothing' },
+    { value: 'card', label: '信用卡', icon: CreditCard, color: 'bg-soft-pink' },
   ];
 
   // 分類樣式
   const getCategoryStyle = (category: string) => {
     const styles: Record<string, { bg: string; emoji: string }> = {
-      handmade: { bg: 'bg-[#F5E6E8]', emoji: '🧵' },
-      food: { bg: 'bg-[#FFF8E7]', emoji: '🍰' },
-      accessory: { bg: 'bg-[#E8F3E8]', emoji: '💎' },
-      clothing: { bg: 'bg-[#E8F0F8]', emoji: '👕' },
-      art: { bg: 'bg-[#F8E8F0]', emoji: '🎨' },
+      handmade: { bg: 'bg-soft-pink', emoji: '🧵' },
+      food: { bg: 'bg-soft-yellow', emoji: '🍰' },
+      accessory: { bg: 'bg-soft-green', emoji: '💎' },
+      clothing: { bg: 'bg-cat-clothing', emoji: '👕' },
+      art: { bg: 'bg-cat-art', emoji: '🎨' },
       stationery: { bg: 'bg-[#FFF0E8]', emoji: '📚' },
-      other: { bg: 'bg-[#F0F0F0]', emoji: '📦' },
+      other: { bg: 'bg-cat-other', emoji: '📦' },
     };
     return styles[category] || styles.other;
   };
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <>
-      {/* 背景遮罩 */}
-      <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
+      {/* 背景遮罩 - 確保覆蓋全螢幕 */}
+      <div className="fixed inset-0 bg-black/50 z-[999] transition-opacity" onClick={onClose} />
 
-      {/* 抽屜 */}
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-        <div className="bg-[#FAFAF8] w-full h-[90vh] sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up">
+      {/* 抽屜容器 - 強制鎖定螢幕正中央 */}
+      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center sm:justify-center pointer-events-none">
+        <div className="bg-background w-full h-[90vh] sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-[2rem] overflow-hidden flex flex-col animate-slide-up pointer-events-auto">
           {/* Header */}
-          <div className="bg-gradient-to-br from-[#E8F3E8] to-[#7B9FA6] px-6 py-6 flex items-center justify-between">
+          <div className="bg-gradient-to-br from-soft-green to-primary px-6 py-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <ShoppingCart className="w-6 h-6 text-white" />
               <h2 className="text-xl font-medium text-white">購物車</h2>
@@ -191,7 +216,7 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
           <div className="flex-1 overflow-y-auto">
             {/* 商品列表 */}
             <div className="px-6 py-4">
-              <h3 className="text-sm font-medium text-[#6B6B6B] mb-3">選擇商品</h3>
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">選擇商品</h3>
               <div className="grid grid-cols-2 gap-3">
                 {products?.map((product) => {
                   const categoryStyle = getCategoryStyle(product.category);
@@ -204,22 +229,22 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
                       onClick={() => addToCart(product)}
                       className={`relative p-3 rounded-2xl border-2 transition-all text-left ${
                         quantity > 0
-                          ? 'border-[#7B9FA6] shadow-md'
-                          : 'border-transparent hover:border-[#7B9FA6]/30'
+                          ? 'border-primary shadow-md'
+                          : 'border-transparent hover:border-primary/30'
                       } ${categoryStyle.bg}`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <span className="text-2xl">{categoryStyle.emoji}</span>
                         {quantity > 0 && (
-                          <span className="bg-[#7B9FA6] text-white text-xs font-medium px-2 py-1 rounded-full">
+                          <span className="bg-primary text-white text-xs font-medium px-2 py-1 rounded-full">
                             {quantity}
                           </span>
                         )}
                       </div>
-                      <div className="text-sm font-medium text-[#3A3A3A] mb-1 line-clamp-1">
+                      <div className="text-sm font-medium text-foreground mb-1 line-clamp-1">
                         {product.name}
                       </div>
-                      <div className="text-lg font-medium text-[#7B9FA6] tabular-nums">
+                      <div className="text-lg font-medium text-primary tabular-nums">
                         ${product.price}
                       </div>
                     </button>
@@ -230,12 +255,12 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
 
             {/* 購物車明細 */}
             {cart.size > 0 && (
-              <div className="px-6 py-4 border-t border-[#7B9FA6]/10">
+              <div className="px-6 py-4 border-t border-primary/10">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-[#6B6B6B]">購物車明細</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground">購物車明細</h3>
                   <button
                     onClick={clearCart}
-                    className="text-xs text-[#d4183d] hover:underline"
+                    className="text-xs text-danger hover:underline"
                   >
                     清空
                   </button>
@@ -247,30 +272,30 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
                       className="bg-white rounded-2xl p-3 flex items-center justify-between"
                     >
                       <div className="flex-1">
-                        <div className="text-sm font-medium text-[#3A3A3A]">
+                        <div className="text-sm font-medium text-foreground">
                           {item.product.name}
                         </div>
-                        <div className="text-xs text-[#6B6B6B]">
+                        <div className="text-xs text-muted-foreground">
                           ${item.product.price} × {item.quantity}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => removeFromCart(item.product.id!)}
-                          className="p-1 rounded-lg bg-[#F5E6E8] hover:bg-[#E5D6D8] transition-colors"
+                          className="p-1 rounded-lg bg-soft-pink hover:bg-soft-pink/80 transition-colors"
                         >
-                          <Minus className="w-4 h-4 text-[#3A3A3A]" />
+                          <Minus className="w-4 h-4 text-foreground" />
                         </button>
-                        <span className="text-sm font-medium text-[#3A3A3A] w-8 text-center tabular-nums">
+                        <span className="text-sm font-medium text-foreground w-8 text-center tabular-nums">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => addToCart(item.product)}
-                          className="p-1 rounded-lg bg-[#E8F3E8] hover:bg-[#D8E3D8] transition-colors"
+                          className="p-1 rounded-lg bg-soft-green hover:bg-soft-green/80 transition-colors"
                         >
-                          <Plus className="w-4 h-4 text-[#3A3A3A]" />
+                          <Plus className="w-4 h-4 text-foreground" />
                         </button>
-                        <div className="text-sm font-medium text-[#7B9FA6] ml-2 w-16 text-right tabular-nums">
+                        <div className="text-sm font-medium text-primary ml-2 w-16 text-right tabular-nums">
                           ${(item.product.price * item.quantity).toLocaleString()}
                         </div>
                       </div>
@@ -282,8 +307,8 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
 
             {/* 支付方式 */}
             {cart.size > 0 && (
-              <div className="px-6 py-4 border-t border-[#7B9FA6]/10">
-                <h3 className="text-sm font-medium text-[#6B6B6B] mb-3">支付方式</h3>
+              <div className="px-6 py-4 border-t border-primary/10">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">支付方式</h3>
                 <div className="grid grid-cols-3 gap-2">
                   {paymentMethods.map((method) => {
                     const Icon = method.icon;
@@ -293,12 +318,12 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
                         onClick={() => setPaymentMethod(method.value)}
                         className={`p-3 rounded-2xl border-2 transition-all ${
                           paymentMethod === method.value
-                            ? 'border-[#7B9FA6] shadow-md'
+                            ? 'border-primary shadow-md'
                             : 'border-transparent'
                         } ${method.color}`}
                       >
-                        <Icon className="w-6 h-6 text-[#3A3A3A] mx-auto mb-1" />
-                        <div className="text-xs font-medium text-[#3A3A3A] text-center">
+                        <Icon className="w-6 h-6 text-foreground mx-auto mb-1" />
+                        <div className="text-xs font-medium text-foreground text-center">
                           {method.label}
                         </div>
                       </button>
@@ -310,23 +335,24 @@ export function CartDrawer({ isOpen, onClose, marketId, onSuccess }: CartDrawerP
           </div>
 
           {/* 底部結帳區 */}
-          <div className="px-6 py-4 border-t border-[#7B9FA6]/10 bg-white">
+          <div className="px-6 py-4 border-t border-primary/10 bg-white">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-[#6B6B6B]">總計</span>
-              <span className="text-2xl font-medium text-[#7B9FA6] tabular-nums">
+              <span className="text-sm text-muted-foreground">總計</span>
+              <span className="text-2xl font-medium text-primary tabular-nums">
                 ${totalAmount.toLocaleString()}
               </span>
             </div>
             <button
               onClick={handleCheckout}
               disabled={cart.size === 0 || isProcessing}
-              className="w-full bg-gradient-to-r from-[#E8F3E8] to-[#7B9FA6] text-white px-6 py-4 rounded-2xl hover:shadow-lg transition-all font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-soft-green to-primary text-white px-6 py-4 rounded-2xl hover:shadow-lg transition-all font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isProcessing ? '處理中...' : `完成結帳 ${totalItems > 0 ? `(${totalItems} 件)` : ''}`}
             </button>
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body // 將元件掛載到 body，確保不受父層影響
   );
 }
