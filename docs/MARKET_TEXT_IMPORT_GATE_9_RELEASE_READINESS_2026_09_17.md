@@ -84,3 +84,40 @@ Gate 9 的發布候選必須同時通過：
 - [x] 使用者可見的推定、隱私與自行確認說明完成。
 
 Gate 9 完成門檻全數達成。Production 仍維持 fail-closed，只有部署環境同時明確設定兩個 release 變數後才會顯示入口；這份結論是發布準備完成，不代表已替 production 開啟功能。
+
+## 8. Phase 2 Preview／Staging 實際部署
+
+- 執行日期：2026-09-19～2026-09-20
+- Vercel project：`masons-projects-1db534c5/markit-app`
+- Preview URL：`https://markit-g28qeik1j-masons-projects-1db534c5.vercel.app`
+- 部署版本：`d103fb9`
+- 部署狀態：Ready；Next.js 16.2.6 build、TypeScript 與 25 個 static page generation 全數完成。
+- `/api/health`：HTTP 200、`status: healthy`，release commit 正確回報 `d103fb9`。
+- `/` 與 `/markets`：HTTP 200；Preview 回應含 `X-Robots-Tag: noindex`，Deployment Protection 維持開啟。
+- Preview release variables：`NEXT_PUBLIC_APP_ENV=preview`、`NEXT_PUBLIC_MARKET_TEXT_IMPORT_ENABLED=1`、`NEXT_PUBLIC_MARKET_TEXT_IMPORT_ALLOW_PRODUCTION=0`。
+- Production 未設定兩個 market-text-import 放行變數，入口持續 fail-closed。
+
+Owner smoke 使用既有測試帳號完成下列流程：
+
+1. 登入 Preview 並進入市集頁。
+2. 開啟「新增營業 → 單次營業 → 新增市集」。
+3. 貼上招募資訊範例並執行「分析資訊」。
+4. 正確產生名稱、2026-12-12／13、嘉義公園、14:00～19:00 候選。
+5. 使用者明確操作「套用已選欄位」後，候選才寫入表單。
+6. 未操作「建立市集」；最後捨棄 smoke draft，市集數維持 0。
+
+瀏覽器沒有 page error；console 只有既有 auth 與 PWA lifecycle 訊息。部署期間亦未觀察到 runtime error。Phase 2 Preview／Staging 驗證完成，但這不授權 Production 開關或 promotion。
+
+## 9. Production 正式發布
+
+- 執行日期：2026-09-20
+- 發布版本：`d103fb9`
+- Production deployment：`https://markit-el26menn8-masons-projects-1db534c5.vercel.app`
+- 正式網址：`https://markit-app-masons-projects-1db534c5.vercel.app`、`https://markit-app-mocha.vercel.app`
+- 部署狀態：Ready；Next.js 16.2.6 build、TypeScript 與 static page generation 通過。
+- `/api/health`：兩個正式網址皆回傳 HTTP 200、`status: healthy`，release commit 為 `d103fb9`。
+- Production release variables：`NEXT_PUBLIC_MARKET_TEXT_IMPORT_ENABLED=1`、`NEXT_PUBLIC_MARKET_TEXT_IMPORT_ALLOW_PRODUCTION=1`。
+
+正式環境 smoke 使用既有測試帳號完成登入、「新增營業 → 單次營業 → 新增市集」、貼上文字、分析與套用。名稱、2026-12-12／13、嘉義公園與 14:00～19:00 均正確寫入表單；未按下「建立市集」，測試草稿已捨棄，市集數維持 0。瀏覽器 page error 為 0，健康檢查期間未觀察到 runtime error。
+
+回退方式：將 Production 的 `NEXT_PUBLIC_MARKET_TEXT_IMPORT_ALLOW_PRODUCTION` 更新為 `0` 後重新部署，可立即隱藏文字匯入入口；若需整體版本回退，前一個 Production deployment 為 `https://markit-qtjccrp1l-masons-projects-1db534c5.vercel.app`。回退不刪除既有市集資料。
