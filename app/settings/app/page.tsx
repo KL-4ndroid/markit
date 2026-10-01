@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ChevronRight, FileText, Info, LifeBuoy, ShieldCheck, Smartphone } from 'lucide-react';
+import { Beaker, ChevronRight, FileText, Info, LifeBuoy, ShieldCheck, Smartphone } from 'lucide-react';
 
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { useRoleContext } from '@/lib/role-context';
@@ -14,7 +14,7 @@ const PWAInstallButton = dynamic(
 );
 
 export default function AppSettingsPage() {
-  const { isStaff } = useRoleContext();
+  const { isOwner, isStaff } = useRoleContext();
 
   const versionContent = (
     <>
@@ -39,6 +39,22 @@ export default function AppSettingsPage() {
     >
       <div className="space-y-6">
         <PWAInstallButton />
+
+        {isOwner ? (
+          <section className="overflow-hidden rounded-card border border-primary/10 bg-white" aria-labelledby="market-text-import-lab-link-title">
+            <Link
+              href="/tools/market-text-import-lab"
+              className="flex min-h-14 items-center gap-3 px-4 transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+            >
+              <Beaker className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span id="market-text-import-lab-link-title" className="block text-sm font-medium text-foreground">市集文字解析實驗室</span>
+                <span className="mt-1 block text-xs text-muted-foreground">測試文字解析與人工判讀，不會建立市集</span>
+              </span>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            </Link>
+          </section>
+        ) : null}
 
         <section className="rounded-card border border-primary/10 bg-white" aria-labelledby="version-title">
           <div className="flex w-full items-center gap-3 px-4 py-4 text-left">
