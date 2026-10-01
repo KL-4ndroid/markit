@@ -4,13 +4,20 @@ import { join } from 'node:path';
 
 const root = join(__dirname, '..');
 const addForm = readFileSync(join(root, 'components/markets/AddMarketForm.tsx'), 'utf8');
+const marketFields = readFileSync(join(root, 'components/markets/MarketFormFields.tsx'), 'utf8');
 const panel = readFileSync(join(root, 'components/markets/MarketTextImportPanel.tsx'), 'utf8');
 const merge = readFileSync(join(root, 'lib/market-text-import/merge.ts'), 'utf8');
 
 assert.match(addForm, /<MarketTextImportPanel/);
+assert.match(addForm, /showMarketTextImportDialog/);
+assert.match(addForm, /title="從市集資訊帶入"/);
+assert.match(addForm, /onImportFromMarketText=\{MARKET_TEXT_IMPORT_ENABLED/);
 assert.match(addForm, /marketTextImportInput/);
 assert.match(addForm, /hasImportText/);
 assert.match(addForm, /onApply=\{handleImportApply\}/);
+assert.match(marketFields, /從市集資訊帶入/);
+assert.match(marketFields, /優先填寫/);
+assert.match(marketFields, /onImportFromMarketText/);
 assert.doesNotMatch(
   addForm.slice(addForm.indexOf('const handleImportApply'), addForm.indexOf('const focusFirstError')),
   /createMarket|handleSubmit|onSuccess/,

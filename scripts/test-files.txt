@@ -374,6 +374,7 @@ tsx tests/market-text-import-parser-contract.test.ts
 tsx tests/market-text-import-parser-gold-core.test.ts
 tsx tests/market-text-import-parser-time-gold.test.ts
 tsx tests/market-text-import-parser-money-equipment-gold.test.ts
+tsx tests/market-text-import-inline-event-info.test.ts
 tsx tests/market-text-import-merge.test.ts
 tsx tests/market-text-import-ui.test.ts
 tsx tests/market-text-import-lab.test.ts

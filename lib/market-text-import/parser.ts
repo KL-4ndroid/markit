@@ -265,6 +265,23 @@ const findEventSegments = (lines: SourceLine[]): SourceLine[][] => {
 };
 
 const extractName = (lines: SourceLine[]): { value: string; evidence: SourceLine[] } | null => {
+  const inlineEventInfoIndex = lines.findIndex((line) => (
+    /(?:活動|市集)日期\s*[：:｜|].*?(?:活動|市集)時間\s*[：:｜|].*?(?:活動|市集)地點\s*[：:｜|]/.test(normalizeForMatch(line.text))
+  ));
+  if (inlineEventInfoIndex > 0) {
+    const nearbyTitle = [...lines.slice(Math.max(0, inlineEventInfoIndex - 8), inlineEventInfoIndex)]
+      .reverse()
+      .find((line) => {
+        const value = cleanHeading(line.text);
+        return value.length >= 3
+          && value.length <= 50
+          && !looksLikeLabel(value)
+          && !/[,，。！!?]/.test(value)
+          && /(市集|嘉年華|生活節|設計節|餐酒節|派對|音樂節)/i.test(value);
+      });
+    if (nearbyTitle) return { value: cleanHeading(nearbyTitle.text), evidence: [nearbyTitle] };
+  }
+
   for (const line of lines) {
     const quoted = line.text.match(/[「《]([^」》]{2,80})[」》]/);
     if (quoted && /(錄取|報名|企劃|參與|籌備)/.test(line.text) && !/過去/.test(line.text)) {
@@ -345,21 +362,29 @@ const extractLocation = (
   lines: SourceLine[],
   name: string | null,
 ): { value: string | null; status: 'exact' | 'choice_required'; evidence: SourceLine[]; options: string[] } | null => {
+  const toLocationResult = (value: string, evidence: SourceLine) => {
+    let cleaned = value.replace(/[。；;]$/, '').trim();
+    if (/^(?:台北市|新北市|桃園市|台中市|台南市|高雄市|基隆市|新竹市|嘉義市).+（室內舉辦）$/.test(cleaned)) {
+      cleaned = cleaned.replace(/（室內舉辦）$/, '');
+    }
+    if (/^錄取日期與費用$/.test(cleaned) || /駁二藝術特區.*大勇.*大義/.test(cleaned)) return null;
+    const matchingValue = normalizeForMatch(cleaned);
+    const isChoice = /(依品牌|依攤型|文創.*(?:美食|餐車)|四輪以上餐車.*使用|(?:北|南|大勇|大義).*(?:廣場|廊道).*(?:北|南|大勇|大義))/.test(matchingValue);
+    const options = isChoice
+      ? cleaned.split(/[；;、]|(?:及)/).map((item) => item.replace(/^(?:文創攤位|美食攤位|四輪以上餐車)(?:使用|在)?/, '').trim()).filter((item) => item.length >= 2)
+      : [];
+    return { value: isChoice ? null : cleaned, status: isChoice ? 'choice_required' as const : 'exact' as const, evidence: [evidence], options };
+  };
+
+  for (const line of lines) {
+    const inline = line.text.match(/(?:活動|市集)地點\s*[：:｜|]\s*(.+?)(?=\s+(?:(?:活動|市集)?(?:招募|募集|攤位|報名|費用)|錄取|注意)\s*[：:｜|]|\s*$)/);
+    if (inline && (inline.index ?? 0) > 0) return toLocationResult(inline[1], line);
+  }
+
   for (const line of lines) {
     const match = line.text.trim().match(/^(?:(?:\d+[.、]\s*)|[▪▩★]\s*)?(?:(?:活動|市集|舉辦)?地點|場地)\s*[：:｜|]\s*(.+)$/);
     if (!match) continue;
-    let value = match[1].replace(/[。；;]$/, '').trim();
-    if (/^(?:台北市|新北市|桃園市|台中市|台南市|高雄市|基隆市|新竹市|嘉義市).+（室內舉辦）$/.test(value)) {
-      value = value.replace(/（室內舉辦）$/, '');
-    }
-    if (/^錄取日期與費用$/.test(value)) return null;
-    if (/駁二藝術特區.*大勇.*大義/.test(value)) return null;
-    const matchingValue = normalizeForMatch(value);
-    const isChoice = /(依品牌|依攤型|文創.*(?:美食|餐車)|四輪以上餐車.*使用|(?:北|南|大勇|大義).*(?:廣場|廊道).*(?:北|南|大勇|大義))/.test(matchingValue);
-    const options = isChoice
-      ? value.split(/[；;、]|(?:及)/).map((item) => item.replace(/^(?:文創攤位|美食攤位|四輪以上餐車)(?:使用|在)?/, '').trim()).filter((item) => item.length >= 2)
-      : [];
-    return { value: isChoice ? null : value, status: isChoice ? 'choice_required' : 'exact', evidence: [line], options };
+    return toLocationResult(match[1], line);
   }
 
   const heading = lines.find((line) => {

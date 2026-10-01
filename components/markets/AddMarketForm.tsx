@@ -143,6 +143,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [showDraftCloseConfirm, setShowDraftCloseConfirm] = useState(false);
+  const [showMarketTextImportDialog, setShowMarketTextImportDialog] = useState(false);
   const [marketTextImportInput, setMarketTextImportInput] = useState('');
 
   const draftId = useMemo(() => (user?.id ? `add-market:${user.id}` : null), [user?.id]);
@@ -231,6 +232,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
     setChairFree(DEFAULT_CHAIR_FREE);
     setUmbrellaFree(DEFAULT_UMBRELLA_FREE);
     setMarketTextImportInput('');
+    setShowMarketTextImportDialog(false);
     setErrors({});
     setSubmitError(null);
   };
@@ -317,6 +319,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
       return next;
     });
     setSubmitError(null);
+    setShowMarketTextImportDialog(false);
   };
 
   const focusFirstError = (nextErrors: MarketCoreFormErrors) => {
@@ -411,18 +414,6 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
         )}
       >
         <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
-          {MARKET_TEXT_IMPORT_ENABLED ? (
-            <div className="mb-6">
-              <MarketTextImportPanel
-                inputText={marketTextImportInput}
-                currentValues={currentImportValues}
-                disabled={isSubmitting}
-                onInputTextChange={setMarketTextImportInput}
-                onApply={handleImportApply}
-              />
-            </div>
-          ) : null}
-
           <div className="japanese-surface-card p-5 sm:p-6">
             <MarketBasicFields
               idPrefix={FIELD_PREFIX}
@@ -431,6 +422,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
               dates={formData.dates || []}
               errors={errors}
               disabled={isSubmitting}
+              onImportFromMarketText={MARKET_TEXT_IMPORT_ENABLED ? () => setShowMarketTextImportDialog(true) : undefined}
               onNameChange={value => handleChange('name', value)}
               onLocationChange={value => handleChange('location', value)}
               onDatesChange={value => handleChange('dates', value)}
@@ -529,6 +521,23 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
           )}
         </form>
       </FullScreenForm>
+
+      <AppDialog
+        open={showMarketTextImportDialog}
+        onClose={() => setShowMarketTextImportDialog(false)}
+        title="從市集資訊帶入"
+        description="貼上報名資訊、招募資訊或錄取通知。分析後請自行選擇要帶入的欄位。"
+        size="xl"
+        dismissible={!isSubmitting}
+      >
+        <MarketTextImportPanel
+          inputText={marketTextImportInput}
+          currentValues={currentImportValues}
+          disabled={isSubmitting}
+          onInputTextChange={setMarketTextImportInput}
+          onApply={handleImportApply}
+        />
+      </AppDialog>
 
       <AppDialog
         open={showDraftCloseConfirm}

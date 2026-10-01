@@ -2,6 +2,7 @@
 
 import {
   Armchair,
+  ClipboardPaste,
   ClipboardCheck,
   DoorOpen,
   Moon,
@@ -27,6 +28,7 @@ interface MarketBasicFieldsProps {
   errors: MarketCoreFormErrors;
   mode?: 'owner' | 'manager';
   disabled?: boolean;
+  onImportFromMarketText?: () => void;
   onNameChange: (value: string) => void;
   onLocationChange: (value: string) => void;
   onDatesChange: (value: string[]) => void;
@@ -40,6 +42,7 @@ export function MarketBasicFields({
   errors,
   mode = 'owner',
   disabled = false,
+  onImportFromMarketText,
   onNameChange,
   onLocationChange,
   onDatesChange,
@@ -53,11 +56,24 @@ export function MarketBasicFields({
           <Store className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 id={`${idPrefix}-basic-heading`} className="text-base font-semibold text-foreground">
               基本資料
             </h3>
-            <span className="rounded-full bg-soft-yellow px-2.5 py-1 text-[11px] font-medium text-secondary">優先填寫</span>
+            <div className="ml-auto flex items-center gap-2">
+              <span className="rounded-full bg-soft-yellow px-2.5 py-1 text-[11px] font-medium text-secondary">優先填寫</span>
+              {!isManagerMode && onImportFromMarketText ? (
+                <button
+                  type="button"
+                  onClick={onImportFromMarketText}
+                  disabled={disabled}
+                  className="inline-flex min-h-8 items-center gap-1 rounded-lg px-1.5 text-xs font-medium text-primary transition-colors hover:bg-soft-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ClipboardPaste className="h-3.5 w-3.5" aria-hidden="true" />
+                  從市集資訊帶入
+                </button>
+              ) : null}
+            </div>
           </div>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             {isManagerMode ? '確認這次市集的營業日期。' : '名稱、地點與日期是市集的核心資料。'}
