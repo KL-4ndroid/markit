@@ -1,0 +1,79 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { buildMarketInteractionSummary } from '../lib/markets/market-interaction-summary';
+
+const summary = buildMarketInteractionSummary([
+  'interest',
+  'engage',
+  'interest',
+  null,
+  'convert',
+  undefined,
+]);
+
+assert.equal(summary.totalCount, 4);
+assert.deepEqual(summary.countByType, {
+  interest: 2,
+  engage: 1,
+  convert: 1,
+});
+assert.equal(
+  Object.values(summary.countByType).reduce((total, count) => total + count, 0),
+  summary.totalCount
+);
+
+const projectRoot = join(__dirname, '..');
+const ownerPageSource = readFileSync(join(projectRoot, 'components/markets/MarketDetailScreen.tsx'), 'utf8');
+const workspaceNavigationSource = readFileSync(join(projectRoot, 'components/markets/MarketWorkspaceNavigation.tsx'), 'utf8');
+const detailTabsSource = readFileSync(join(projectRoot, 'components/markets/MarketWorkspaceDetailTabs.tsx'), 'utf8');
+const interactionButtonsSource = readFileSync(join(projectRoot, 'components/sales/InteractionButtons.tsx'), 'utf8');
+const albumSource = readFileSync(join(projectRoot, 'components/markets/SalesPhotoEvidenceOwnerAlbumShell.tsx'), 'utf8');
+const checklistSource = readFileSync(join(projectRoot, 'components/markets/ChecklistPanel.tsx'), 'utf8');
+const marketCardSource = readFileSync(join(projectRoot, 'components/markets/MarketCard.tsx'), 'utf8');
+const staffPageSource = readFileSync(join(projectRoot, 'components/markets/StaffMarketDetailView.tsx'), 'utf8');
+const sessionControlSource = readFileSync(join(projectRoot, 'components/markets/MarketOperatingSessionControl.tsx'), 'utf8');
+const pendingPhotoSource = readFileSync(join(projectRoot, 'components/markets/SalesPhotoEvidencePendingTaskCard.tsx'), 'utf8');
+const photoStorySource = readFileSync(join(projectRoot, 'components/markets/MarketOverviewPhotoStory.tsx'), 'utf8');
+
+assert.match(ownerPageSource, /interactionSummary\.totalCount/);
+assert.doesNotMatch(ownerPageSource, /stats\?\.totalInteractions \?\? interactionEvents\.length/);
+assert.match(ownerPageSource, /原定結束後保留 60 分鐘延長記錄，之後自動收起/);
+assert.match(ownerPageSource, /aria-expanded={!isTimelineCollapsed}/);
+assert.match(ownerPageSource, /aria-controls="owner-market-timeline-panel"/);
+assert.doesNotMatch(ownerPageSource, /<main className="mx-auto max-w-5xl/);
+assert.match(ownerPageSource, /showCloseAction={resolvedOwnerWorkspaceView === 'manage'}/);
+assert.doesNotMatch(staffPageSource, /onCloseToday=/);
+assert.match(sessionControlSource, />\s*提前結束今日營業\s*</);
+assert.match(sessionControlSource, /未操作時會在延長時段結束後自動收攤/);
+
+for (const source of [workspaceNavigationSource, detailTabsSource]) {
+  assert.match(source, /event\.key === 'ArrowRight'/);
+  assert.match(source, /event\.key === 'ArrowLeft'/);
+  assert.match(source, /event\.key === 'Home'/);
+  assert.match(source, /aria-controls={panelId}/);
+  assert.match(source, /tabIndex={isActive \? 0 : -1}/);
+}
+assert.match(detailTabsSource, /grid grid-cols-4/);
+
+assert.match(interactionButtonsSource, /InteractionRoleIcon/);
+assert.doesNotMatch(interactionButtonsSource, /button\.emoji/);
+assert.match(albumSource, /useState<AlbumFilter>\('current'\)/);
+assert.match(albumSource, /此篩選沒有照片紀錄/);
+assert.match(albumSource, /viewModel\.items\.length > 0 &&/);
+assert.match(albumSource, /正在載入成交照片/);
+assert.match(albumSource, /function ExpiredPhotoHistory/);
+assert.match(albumSource, /expiredHistoryGroupLabel/);
+assert.match(albumSource, /group-open:rotate-180/);
+assert.doesNotMatch(albumSource, /成交 {item\.saleId/);
+assert.match(checklistSource, />現場待辦</);
+for (const source of [ownerPageSource, staffPageSource, marketCardSource]) {
+  assert.match(source, /formatDisplayDateRange/);
+  assert.doesNotMatch(source, /formatDate\(market\.startDate\).*[-~].*formatDate\(market\.endDate\)/s);
+}
+for (const source of [pendingPhotoSource, photoStorySource, albumSource]) {
+  assert.match(source, /formatDisplayDateTime/);
+  assert.doesNotMatch(source, /new Intl\.DateTimeFormat/);
+}
+
+console.log('market operating UIUX tests passed');

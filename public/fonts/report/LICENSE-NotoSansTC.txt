@@ -1,0 +1,19 @@
+Noto Sans TC font asset notice
+
+Bundled file:
+NotoSansTC-VariableFont_wght.ttf
+
+Font family:
+Noto Sans TC
+
+Source:
+Official Noto / Google Fonts distribution
+https://fonts.google.com/noto/specimen/Noto+Sans+TC
+
+License:
+SIL Open Font License 1.1
+https://openfontlicense.org/
+
+Project usage note:
+This font is bundled only for Féria settlement report PDF rendering.
+Do not sell the font file by itself.

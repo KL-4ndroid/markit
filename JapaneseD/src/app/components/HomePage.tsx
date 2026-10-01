@@ -49,9 +49,9 @@ export function HomePage({ onNavigateToDetail }: HomePageProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-white opacity-90">早安！</h1>
@@ -67,46 +67,46 @@ export function HomePage({ onNavigateToDetail }: HomePageProps) {
         {/* Today's Market Card */}
         <div
           onClick={() => onNavigateToDetail(todayMarket.id)}
-          className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-[#7B9FA6]/10 cursor-pointer hover:shadow-xl transition-shadow mb-8"
+          className="bg-white rounded-[1.5rem] p-6 shadow-lg shadow-primary/10 cursor-pointer hover:shadow-xl transition-shadow mb-8"
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[#3A3A3A]">{todayMarket.name}</h2>
-            <span className="bg-[#E8F3E8] text-[#3A3A3A] px-3 py-1 rounded-full text-sm">
+            <h2 className="text-foreground">{todayMarket.name}</h2>
+            <span className="bg-[#E8F3E8] text-foreground px-3 py-1 rounded-full text-sm">
               {todayMarket.status} 🎪
             </span>
           </div>
 
           <div className="space-y-3 mb-5">
             <div className="flex items-center gap-2 text-[#6B6B6B]">
-              <Calendar className="w-4 h-4 text-[#7B9FA6]" />
+              <Calendar className="w-4 h-4 text-primary" />
               <span className="text-sm">{todayMarket.date} · {todayMarket.time}</span>
             </div>
             <div className="flex items-center gap-2 text-[#6B6B6B]">
-              <MapPin className="w-4 h-4 text-[#D4A574]" />
+              <MapPin className="w-4 h-4 text-secondary" />
               <span className="text-sm">{todayMarket.location}</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#7B9FA6]/10">
+          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-primary/10">
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">收入</div>
-              <div className="text-[#3A3A3A] tabular-nums">
+              <div className="text-foreground tabular-nums">
                 ${todayMarket.revenue.toLocaleString()}
               </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">利潤</div>
-              <div className="text-[#7B9FA6] tabular-nums">
+              <div className="text-primary tabular-nums">
                 ${todayMarket.profit.toLocaleString()}
               </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">訪客</div>
-              <div className="text-[#3A3A3A] tabular-nums">{todayMarket.visitors}人</div>
+              <div className="text-foreground tabular-nums">{todayMarket.visitors}人</div>
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-center text-[#7B9FA6] text-sm gap-1">
+          <div className="mt-4 flex items-center justify-center text-primary text-sm gap-1">
             查看詳情 <ArrowRight className="w-4 h-4" />
           </div>
         </div>
@@ -114,8 +114,8 @@ export function HomePage({ onNavigateToDetail }: HomePageProps) {
         {/* Upcoming Markets Section */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-[#D4A574]" />
-            <h3 className="text-[#3A3A3A]">即將到來</h3>
+            <TrendingUp className="w-5 h-5 text-secondary" />
+            <h3 className="text-foreground">即將到來</h3>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -123,25 +123,25 @@ export function HomePage({ onNavigateToDetail }: HomePageProps) {
               <div
                 key={market.id}
                 onClick={() => onNavigateToDetail(market.id)}
-                className="bg-white rounded-[1.25rem] p-4 shadow-md shadow-[#7B9FA6]/5 cursor-pointer hover:shadow-lg transition-shadow"
+                className="bg-white rounded-[1.25rem] p-4 shadow-md shadow-primary/5 cursor-pointer hover:shadow-lg transition-shadow"
               >
                 <div className="mb-3">
-                  <h4 className="text-[#3A3A3A] mb-2 line-clamp-2 min-h-[3rem]">
+                  <h4 className="text-foreground mb-2 line-clamp-2 min-h-[3rem]">
                     {market.name}
                   </h4>
                   <div className="flex items-start gap-1.5 text-xs text-[#6B6B6B] mb-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-[#7B9FA6] mt-0.5 flex-shrink-0" />
+                    <Calendar className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
                     <span className="line-clamp-1">{market.date}</span>
                   </div>
                   <div className="flex items-start gap-1.5 text-xs text-[#6B6B6B]">
-                    <MapPin className="w-3.5 h-3.5 text-[#D4A574] mt-0.5 flex-shrink-0" />
+                    <MapPin className="w-3.5 h-3.5 text-secondary mt-0.5 flex-shrink-0" />
                     <span className="line-clamp-1">{market.location}</span>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-[#7B9FA6]/10">
+                <div className="pt-3 border-t border-primary/10">
                   <div className="text-xs text-[#6B6B6B] mb-0.5">預估收入</div>
-                  <div className="text-[#3A3A3A] tabular-nums">
+                  <div className="text-foreground tabular-nums">
                     ${market.expectedRevenue.toLocaleString()}
                   </div>
                 </div>

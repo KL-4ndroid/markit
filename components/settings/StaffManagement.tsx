@@ -1,0 +1,934 @@
+/**
+ * 員工管理組件
+ * 
+ * 功能：
+ * 1. 顯示當前所有員工列表
+ * 2. 邀請新員工（輸入 email，選擇權限）
+ * 3. 產生邀請連結（透過連結邀請新用戶）
+ * 4. 移除員工
+ * 5. 員工可以訪問老闆的所有進行中的市集
+ */
+
+'use client';
+
+import { useCallback, useState, useEffect, Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { Users, Mail, Shield, Trash2, Plus, X, Eye, Edit3, AlertCircle, Link2, Copy, QrCode, Clock, Check, RotateCcw } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { useAuth } from '@/lib/supabase/auth-context';
+import { supabase } from '@/lib/supabase/client';
+import { toast } from 'sonner';
+import {
+  createInvitation,
+  getMyInvitations,
+  deleteInvitation,
+  generateInvitationUrl,
+  formatRemainingTime,
+  type StaffInvitation,
+} from '@/lib/supabase/staff-invitations';
+import {
+  getMyStaffMembers,
+  type StaffMember,
+  inviteStaff,
+  removeStaff,
+  restoreStaffRelationship,
+  updateStaffRole,
+} from '@/lib/supabase/staff';
+import type { StaffRole } from '@/types/staff';
+import { RoleBadge } from '@/components/staff/RoleBadge';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { getClipboardPort } from '@/lib/platform/interaction-capabilities';
+
+// P3b-alt：員工角色輔助文案
+// 對應 staff_relationships.role 欄位
+// 純文案，不影響任何 runtime 權限行為
+const ROLE_HELPER_COPY: Record<StaffRole | 'undefined', string | null> = {
+  viewer: '僅用於查看必要資訊',
+  operator: '適合現場協助記錄',
+  manager: '適合協助管理基本資料',
+  undefined: '使用預設員工權限',
+};
+
+// P4c-2：角色修改 Dialog 文案
+// 對應 staff_relationships.role
+// 純文案，不影響任何 runtime 權限行為
+const ROLE_LABEL: Record<StaffRole, string> = {
+  viewer: '查看者',
+  operator: '出攤助手',
+  manager: '管理員',
+};
+
+const ROLE_DIALOG_COPY: Record<StaffRole, string> = {
+  viewer: '僅可查看必要資訊，適合一般協助查看。',
+  operator: '適合現場協助記錄與查看較完整的市集資訊。',
+  manager: '適合協助管理基本資料；敏感財務資料仍不開放。',
+};
+
+type StaffManagementProps = {
+  teamFeatureAllowed: boolean;
+  managerWorkflowAllowed: boolean;
+  simulationActive: boolean;
+};
+
+export function StaffManagement({
+  teamFeatureAllowed,
+  managerWorkflowAllowed,
+  simulationActive,
+}: StaffManagementProps) {
+  const { user } = useAuth();
+  const canCreateTeamData = teamFeatureAllowed && !simulationActive;
+  const canChangeStaffRole = managerWorkflowAllowed && !simulationActive;
+  const canRunCleanup = !simulationActive;
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isInviting, setIsInviting] = useState(false);
+  
+  // 邀請連結相關狀態
+  const [invitations, setInvitations] = useState<StaffInvitation[]>([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(false);
+  const [creatingInvitation, setCreatingInvitation] = useState(false);
+  const [showQRCode, setShowQRCode] = useState<string | null>(null);
+  const [showInvitationsSection, setShowInvitationsSection] = useState(false);
+
+  // P4c-2：角色修改 Dialog 狀態
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [selectedRole, setSelectedRole] = useState<StaffRole>('viewer');
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [confirmation, setConfirmation] = useState<
+    | { type: 'delete-invitation'; invitationId: string }
+    | { type: 'remove-staff'; staffId: string; email: string }
+    | { type: 'restore-staff'; relationshipId: string; email: string }
+    | null
+  >(null);
+
+  // 載入員工列表和邀請連結
+  const loadStaffList = useCallback(async () => {
+    try {
+      setIsLoading(true);
+
+      const staffData = await getMyStaffMembers();
+      setStaffList(staffData);
+    } catch (error: any) {
+      console.error('載入員工列表失敗:', error);
+      toast.error('載入失敗：' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // 邀請員工
+  const handleInvite = async () => {
+    if (!user) return;
+    if (!canCreateTeamData) {
+      toast.error(simulationActive ? '訂閱模擬不會執行雲端寫入' : '邀請員工需要有效的 Team 方案');
+      return;
+    }
+    if (!inviteEmail.trim()) {
+      toast.error('請輸入員工的 email');
+      return;
+    }
+
+    // ✅ 本地檢查：避免多一次 DB round-trip
+    if (staffList.some(s => s.email.toLowerCase() === inviteEmail.trim().toLowerCase())) {
+      toast.error('此用戶已經是您的員工');
+      return;
+    }
+
+    setIsInviting(true);
+    try {
+      // ✅ 使用 service 函式處理邀請邏輯
+      await inviteStaff({ staff_email: inviteEmail.trim() });
+
+      toast.success(`✅ 已發送邀請給 ${inviteEmail}，等待對方接受`);
+
+      // 重新載入列表
+      await loadStaffList();
+
+      // 關閉對話框
+      setShowInviteDialog(false);
+      setInviteEmail('');
+
+    } catch (error: any) {
+      console.error('邀請員工失敗:', error);
+      if (error.message?.includes('已經')) {
+        toast.error('此用戶已經是您的員工');
+      } else {
+        toast.error('邀請失敗：' + error.message);
+      }
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  // 載入邀請連結列表
+  const loadInvitations = useCallback(async () => {
+    try {
+      setLoadingInvitations(true);
+      const data = await getMyInvitations();
+      setInvitations(data);
+    } catch (error: any) {
+      console.error('載入邀請列表失敗:', error);
+    } finally {
+      setLoadingInvitations(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadStaffList();
+      loadInvitations();
+    }
+  }, [user, loadStaffList, loadInvitations]);
+
+  // 產生邀請連結
+  const handleCreateInvitation = async () => {
+    if (!canCreateTeamData) {
+      toast.error(simulationActive ? '訂閱模擬不會建立雲端邀請' : '建立邀請連結需要有效的 Team 方案');
+      return;
+    }
+    setCreatingInvitation(true);
+    try {
+      await createInvitation();
+      toast.success('邀請連結已建立！', {
+        description: '有效期限為 3 天',
+      });
+      loadInvitations();
+    } catch (error: any) {
+      console.error('建立邀請失敗:', error);
+      toast.error('建立失敗', {
+        description: error.message,
+      });
+    } finally {
+      setCreatingInvitation(false);
+    }
+  };
+
+  // 刪除邀請連結
+  const confirmDeleteInvitation = async () => {
+    if (confirmation?.type !== 'delete-invitation') return;
+    if (!canRunCleanup) {
+      toast.error('訂閱模擬不會刪除雲端邀請');
+      return;
+    }
+    try {
+      await deleteInvitation(confirmation.invitationId);
+      setConfirmation(null);
+      toast.success('已刪除邀請連結');
+      await loadInvitations();
+    } catch (error: any) {
+      console.error('刪除邀請失敗:', error);
+      toast.error('刪除失敗', {
+        description: error.message,
+      });
+    }
+  };
+
+  // 複製邀請連結
+  const handleCopyLink = async (token: string) => {
+    const url = generateInvitationUrl(token);
+    await getClipboardPort().writeText(url);
+    toast.success('已複製連結！', {
+      description: '可以分享給員工了',
+    });
+  };
+
+  // 檢查邀請是否過期
+  const isExpired = (expiresAt: string): boolean => {
+    return new Date(expiresAt) < new Date();
+  };
+
+  // 移除員工
+  const confirmRemoveStaff = async () => {
+    if (confirmation?.type !== 'remove-staff') return;
+    if (!canRunCleanup) {
+      toast.error('訂閱模擬不會移除雲端員工關係');
+      return;
+    }
+    try {
+      await removeStaff(confirmation.staffId);
+      setConfirmation(null);
+      toast.success(`已移除員工 ${confirmation.email}`);
+
+      // 重新載入列表
+      await loadStaffList();
+
+    } catch (error: any) {
+      console.error('移除員工失敗:', error);
+      toast.error('移除失敗：' + error.message);
+    }
+  };
+
+  const confirmRestoreStaff = async () => {
+    if (confirmation?.type !== 'restore-staff') return;
+    if (!canCreateTeamData) {
+      toast.error(simulationActive ? '訂閱模擬不會恢復雲端權限' : '恢復員工需要有效的 Team 方案');
+      return;
+    }
+
+    try {
+      await restoreStaffRelationship(confirmation.relationshipId);
+      setConfirmation(null);
+      toast.success(`已恢復員工 ${confirmation.email}`);
+      await loadStaffList();
+    } catch (error: any) {
+      console.error('恢復員工失敗:', error);
+      toast.error('恢復失敗：' + error.message);
+    }
+  };
+
+  // P4c-2：開啟角色修改 Dialog
+  const openRoleDialog = (staff: StaffMember) => {
+    if (!canChangeStaffRole) {
+      toast.error(simulationActive ? '訂閱模擬不會變更雲端角色' : '修改員工角色需要有效的 Team 方案');
+      return;
+    }
+    setEditingStaff(staff);
+    setSelectedRole(staff.role ?? 'viewer');
+    setShowRoleDialog(true);
+  };
+
+  // P4c-2：關閉角色修改 Dialog
+  // 若正在送出，鎖住避免 race condition
+  const closeRoleDialog = () => {
+    if (isUpdatingRole) return;
+    setShowRoleDialog(false);
+    setEditingStaff(null);
+    setSelectedRole('viewer');
+  };
+
+  // P4c-2：送出角色修改
+  const handleUpdateRole = async () => {
+    if (!editingStaff) return;
+    if (!canChangeStaffRole) {
+      toast.error(simulationActive ? '訂閱模擬不會變更雲端角色' : '修改員工角色需要有效的 Team 方案');
+      return;
+    }
+
+    if (!editingStaff.relationship_id) {
+      toast.error('缺少員工關係識別碼，請重新整理後再試');
+      return;
+    }
+
+    // no-op 防呆：role 沒變就不送 RPC
+    if (selectedRole === editingStaff.role) {
+      return;
+    }
+
+    setIsUpdatingRole(true);
+    try {
+      await updateStaffRole(editingStaff.relationship_id, selectedRole);
+
+      toast.success('已更新員工角色', {
+        description: `${editingStaff.email} 已設定為 ${ROLE_LABEL[selectedRole]}`,
+      });
+
+      // 重新載入列表（讓 RoleBadge 立即反映新 role）
+      await loadStaffList();
+
+      // 成功才關 dialog
+      closeRoleDialog();
+    } catch (error: any) {
+      console.error('更新員工角色失敗:', error);
+      // updateStaffRole wrapper 內已透過 mapStaffRoleUpdateError 轉中文
+      // 不重複 map，直接用 error.message
+      toast.error('修改角色失敗', {
+        description: error?.message ?? '修改角色失敗，請稍後再試',
+      });
+      // 故意不關 dialog、不 reset selectedRole，讓使用者重試
+    } finally {
+      setIsUpdatingRole(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Users className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-medium text-foreground">員工管理</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+        邀請員工協助管理市集，員工可以訪問您所有進行中的市集
+        </p>
+        <div className="bg-soft-yellow rounded-xl p-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            請先登入 Supabase 帳號才能使用此功能
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-[1.5rem] shadow-lg shadow-primary/10 overflow-hidden">
+      <div className="p-6">
+
+        {/* 說明區塊 */}
+        <div className="bg-gradient-to-br from-cat-clothing to-soft-green rounded-xl p-4 mb-4">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-foreground mb-2">
+                💡 員工權限說明
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• <strong>可以做的事</strong>：查看市集和商品、記錄互動、記錄成交</li>
+                <li>• <strong>不能做的事</strong>：編輯市集、編輯商品、新增商品、新增市集</li>
+                <li>• <strong>敏感數據保護</strong>：員工無法查看成本、利潤、總收入</li>
+                <li>• 員工可以訪問<strong>尚未結束與正在營業的市集</strong></li>
+                <li>• 員工<strong>無法訪問</strong>已完成或已取消的市集</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* 員工列表 */}
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            載入中...
+          </div>
+        ) : staffList.length === 0 ? (
+          <div className="bg-background rounded-xl p-6 text-center mb-4">
+            <div className="text-4xl mb-3">👥</div>
+            <p className="text-sm text-foreground mb-2">
+              尚未邀請任何員工
+            </p>
+            <p className="text-xs text-muted-foreground">
+              點擊下方按鈕邀請您的第一位員工
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3 mb-4">
+            {staffList.map(staff => (
+              <div
+                key={staff.id}
+                className="flex flex-col gap-4 rounded-xl bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex min-w-0 items-start gap-2">
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    <span className="min-w-0 break-all text-sm font-medium text-foreground">
+                      {staff.email}
+                    </span>
+                  </div>
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    {staff.status === 'pending' && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-soft-yellow text-secondary font-medium">
+                        待接受
+                      </span>
+                    )}
+                    {staff.status === 'suspended_by_plan' && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-soft-pink text-danger font-medium">
+                        方案暫停
+                      </span>
+                    )}
+                    <RoleBadge role={staff.role} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <Shield className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Eye className="h-3 w-3" aria-hidden="true" />
+                      可查看與記錄
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      • {staff.status === 'pending' ? '邀請於' : '加入於'} {new Date(staff.joined_at).toLocaleDateString('zh-TW')}
+                    </span>
+                  </div>
+                  {staff.status === 'suspended_by_plan' && (
+                    <p className="mt-1 text-xs text-danger">
+                      關係與歷史已保留，目前無法存取品牌工作區。
+                    </p>
+                  )}
+                  {ROLE_HELPER_COPY[staff.role ?? 'undefined'] && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {ROLE_HELPER_COPY[staff.role ?? 'undefined']}
+                    </p>
+                  )}
+                </div>
+                <div className="flex w-full items-center justify-end gap-2 border-t border-primary/10 pt-3 sm:ml-4 sm:w-auto sm:border-0 sm:pt-0">
+                  {staff.status === 'suspended_by_plan' && (
+                    <button
+                      onClick={() => staff.relationship_id && setConfirmation({
+                        type: 'restore-staff',
+                        relationshipId: staff.relationship_id,
+                        email: staff.email,
+                      })}
+                      disabled={!canCreateTeamData || !staff.relationship_id}
+                      title={simulationActive
+                        ? '訂閱模擬不會恢復雲端權限'
+                        : !teamFeatureAllowed
+                        ? '升級 Team 後可恢復'
+                        : '恢復員工存取權'}
+                      aria-label="恢復員工存取權"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl bg-soft-green text-primary transition-colors hover:bg-soft-green/80 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => openRoleDialog(staff)}
+                    disabled={staff.status !== 'active' || !staff.relationship_id || !canChangeStaffRole}
+                    title={
+                      staff.status !== 'active'
+                        ? '員工接受邀請後才能修改角色'
+                        : !staff.relationship_id
+                        ? '資料異常，請重新整理'
+                        : simulationActive
+                        ? '訂閱模擬不會變更雲端角色'
+                        : !managerWorkflowAllowed
+                        ? '修改角色需要 Team 方案'
+                        : '修改員工角色'
+                    }
+                    aria-label={`修改 ${staff.email} 的角色`}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-soft-green text-primary transition-colors hover:bg-soft-green/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setConfirmation({
+                      type: 'remove-staff',
+                      staffId: staff.id,
+                      email: staff.email,
+                    })}
+                    disabled={!canRunCleanup}
+                    title={simulationActive
+                      ? '訂閱模擬不會修改雲端資料'
+                      : staff.status === 'pending' ? '取消邀請' : '移除員工'}
+                    aria-label={`${staff.status === 'pending' ? '取消邀請' : '移除員工'} ${staff.email}`}
+                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-soft-pink text-danger transition-colors hover:bg-soft-pink/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 邀請按鈕組 */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowInviteDialog(true)}
+            disabled={!canCreateTeamData}
+            title={simulationActive ? '訂閱模擬不會建立雲端邀請' : !teamFeatureAllowed ? '需要 Team 方案' : 'Email 邀請'}
+            className="px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Mail className="w-4 h-4" />
+            Email 邀請
+          </button>
+          <button
+            onClick={() => setShowInvitationsSection(!showInvitationsSection)}
+            className="px-4 py-3 rounded-2xl bg-soft-green text-foreground hover:bg-soft-green/80 transition-colors font-medium flex items-center justify-center gap-2"
+          >
+            <Link2 className="w-4 h-4" />
+            邀請連結
+          </button>
+        </div>
+
+        {/* 邀請連結區塊 */}
+        {showInvitationsSection && (
+          <div className="mt-4 pt-4 border-t border-muted">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-primary" />
+                邀請連結管理
+              </h3>
+              <button
+                onClick={handleCreateInvitation}
+                disabled={creatingInvitation || !canCreateTeamData}
+                title={simulationActive ? '訂閱模擬不會建立雲端邀請' : !teamFeatureAllowed ? '需要 Team 方案' : '產生新連結'}
+                className="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+              >
+                {creatingInvitation ? '建立中...' : '產生新連結'}
+              </button>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-3">
+              產生邀請連結後，新用戶可透過連結註冊並自動加入您的團隊。每個連結有效期為 3 天，可重複使用。
+            </p>
+
+            {loadingInvitations ? (
+              <div className="text-center py-4 text-xs text-muted-foreground">
+                載入中...
+              </div>
+            ) : invitations.length === 0 ? (
+              <div className="bg-background rounded-xl p-4 text-center">
+                <Link2 className="w-8 h-8 text-primary mx-auto mb-2 opacity-50" />
+                <p className="text-xs text-muted-foreground">
+                  尚未建立邀請連結
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {invitations.map((invitation) => {
+                  const url = generateInvitationUrl(invitation.token);
+                  const expired = isExpired(invitation.expires_at);
+                  const unavailableByPlan = !teamFeatureAllowed || simulationActive;
+
+                  return (
+                    <div
+                      key={invitation.id}
+                      className={`bg-background rounded-xl p-3 ${
+                        expired ? 'opacity-50' : ''
+                      }`}
+                    >
+                      {/* 連結資訊 */}
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            {unavailableByPlan ? (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-soft-pink text-danger">
+                                方案暫停
+                              </span>
+                            ) : expired ? (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-soft-pink text-danger">
+                                已過期
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-soft-green text-foreground">
+                                有效
+                              </span>
+                            )}
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              {unavailableByPlan
+                                ? '目前無法使用'
+                                : expired ? '已過期' : `剩餘 ${formatRemainingTime(invitation.expires_at)}`}
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-lg p-2 border border-muted">
+                            <p className="text-xs text-muted-foreground font-mono break-all">
+                              {url}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 操作按鈕 */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleCopyLink(invitation.token)}
+                          disabled={expired || unavailableByPlan}
+                          title={unavailableByPlan ? '需要有效的 Team 方案' : '複製邀請連結'}
+                          className="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/85 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+                        >
+                          <Copy className="w-3 h-3" />
+                          複製
+                        </button>
+                        <button
+                          onClick={() => setShowQRCode(showQRCode === invitation.token ? null : invitation.token)}
+                          disabled={expired || unavailableByPlan}
+                          title={unavailableByPlan ? '需要有效的 Team 方案' : '顯示 QR Code'}
+                          className="flex items-center justify-center gap-1 px-3 py-1.5 bg-soft-green text-foreground rounded-lg hover:bg-soft-green/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium"
+                        >
+                          <QrCode className="w-3 h-3" />
+                          QR
+                        </button>
+                        <button
+                          onClick={() => setConfirmation({
+                            type: 'delete-invitation',
+                            invitationId: invitation.id,
+                          })}
+                          disabled={!canRunCleanup}
+                          title={simulationActive ? '訂閱模擬不會刪除雲端邀請' : '刪除邀請連結'}
+                          className="flex items-center justify-center px-3 py-1.5 bg-soft-pink text-danger rounded-lg hover:bg-soft-pink/80 transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      {/* QR Code 顯示 */}
+                      {showQRCode === invitation.token && !expired && !unavailableByPlan && (
+                        <div className="mt-3 pt-3 border-t border-muted">
+                          <div className="bg-white rounded-lg p-3 flex flex-col items-center">
+                            <p className="text-xs font-medium text-foreground mb-2">
+                              掃描 QR Code 加入團隊
+                            </p>
+                            <QRCodeSVG
+                              value={url}
+                              size={160}
+                              level="H"
+                              includeMargin={true}
+                            />
+                            <p className="text-xs text-muted-foreground mt-2 text-center">
+                              員工可使用手機掃描此 QR Code 快速註冊
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 邀請對話框 */}
+      <Transition appear show={showInviteDialog} as={Fragment}>
+        <Dialog as="div" className="relative z-[10000]" onClose={() => setShowInviteDialog(false)}>
+          {/* 背景遮罩 */}
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+          </Transition.Child>
+
+          {/* 對話框容器 */}
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-6 shadow-2xl transition-all">
+                  <div className="flex items-center justify-between mb-4">
+                    <Dialog.Title className="text-lg font-medium text-foreground">
+                      邀請員工
+                    </Dialog.Title>
+                    <button
+                      onClick={() => setShowInviteDialog(false)}
+                      className="p-2 rounded-xl hover:bg-background transition-colors"
+                    >
+                      <X className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Email 輸入 */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        員工 Email
+                      </label>
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="example@email.com"
+                        className="w-full px-4 py-3 rounded-2xl border border-primary/20 focus:border-primary focus:outline-none transition-colors"
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        請輸入已註冊用戶的 email
+                      </p>
+                    </div>
+
+                    {/* 權限說明（固定） */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        員工權限
+                      </label>
+                      <div className="p-4 rounded-xl border border-primary/20 bg-cat-clothing">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Eye className="w-5 h-5 text-primary" />
+                          <span className="text-sm font-medium text-foreground">固定權限</span>
+                        </div>
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          <li>✅ 可以查看市集和商品</li>
+                          <li>✅ 可以記錄互動、成交</li>
+                          <li>❌ 不能編輯商品</li>
+                          <li>❌ 不能編輯市集</li>
+                          <li>❌ 不能新增商品、市集</li>
+                          <li>❌ 不能查看成本、利潤</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* 按鈕 */}
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        onClick={() => setShowInviteDialog(false)}
+                        className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium"
+                      >
+                        取消
+                      </button>
+                      <button
+                        onClick={handleInvite}
+                        disabled={isInviting || !inviteEmail.trim() || !canCreateTeamData}
+                        className="flex-1 px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isInviting ? '邀請中...' : '確認邀請'}
+                      </button>
+                    </div>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* P4c-2：修改員工角色 Dialog */}
+      <Transition appear show={showRoleDialog} as={Fragment}>
+        <Dialog as="div" className="relative z-[10000]" onClose={closeRoleDialog}>
+          {/* 背景遮罩 */}
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+          </Transition.Child>
+
+          {/* 對話框容器 */}
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-6 shadow-2xl transition-all">
+                  <div className="flex items-center justify-between mb-1">
+                    <Dialog.Title className="text-lg font-medium text-foreground">
+                      修改員工角色
+                    </Dialog.Title>
+                    <button
+                      onClick={closeRoleDialog}
+                      disabled={isUpdatingRole}
+                      className="p-2 rounded-xl hover:bg-background transition-colors disabled:opacity-50"
+                    >
+                      <X className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                  </div>
+
+                  {editingStaff && (
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {editingStaff.email}
+                    </p>
+                  )}
+
+                  <div className="space-y-4">
+                    {/* 影響說明 */}
+                    <div className="bg-cat-clothing rounded-xl p-3">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-muted-foreground">
+                          角色會影響員工可查看的資料範圍，儲存後會在員工下次重新整理或登入時生效。
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 角色選項（button group） */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        選擇角色
+                      </label>
+                      <div className="space-y-2">
+                        {(['viewer', 'operator', 'manager'] as const).map(role => {
+                          const isSelected = selectedRole === role;
+                          return (
+                            <button
+                              key={role}
+                              type="button"
+                              onClick={() => setSelectedRole(role)}
+                              disabled={isUpdatingRole}
+                              className={
+                                'w-full p-3 rounded-xl border-2 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ' +
+                                (isSelected
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-muted hover:border-primary/30')
+                              }
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-sm font-medium text-foreground">
+                                  {ROLE_LABEL[role]}
+                                </span>
+                                {isSelected && <Check className="w-4 h-4 text-primary" />}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {ROLE_DIALOG_COPY[role]}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 按鈕 */}
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        onClick={closeRoleDialog}
+                        disabled={isUpdatingRole}
+                        className="flex-1 px-4 py-3 rounded-2xl bg-soft-pink text-foreground hover:bg-soft-pink/80 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        取消
+                      </button>
+                      <button
+                        onClick={handleUpdateRole}
+                        disabled={
+                          isUpdatingRole ||
+                          !canChangeStaffRole ||
+                          !editingStaff?.relationship_id ||
+                          selectedRole === editingStaff?.role
+                        }
+                        className="flex-1 px-4 py-3 rounded-2xl bg-primary text-white hover:bg-primary/85 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isUpdatingRole ? '儲存中...' : '儲存角色'}
+                      </button>
+                    </div>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      <ConfirmDialog
+        open={confirmation?.type === 'delete-invitation'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={confirmDeleteInvitation}
+        title="刪除這組邀請連結？"
+        description="刪除後，尚未使用這組連結的人將無法再加入團隊；已加入的員工不受影響。"
+        confirmLabel="刪除連結"
+        tone="danger"
+      />
+
+      <ConfirmDialog
+        open={confirmation?.type === 'remove-staff'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={confirmRemoveStaff}
+        title="移除這位員工？"
+        description={confirmation?.type === 'remove-staff'
+          ? `移除「${confirmation.email}」後，對方將無法再存取你的市集。`
+          : ''}
+        confirmLabel="移除員工"
+        tone="danger"
+      />
+
+      <ConfirmDialog
+        open={confirmation?.type === 'restore-staff'}
+        onClose={() => setConfirmation(null)}
+        onConfirm={confirmRestoreStaff}
+        title="恢復這位員工的存取權？"
+        description={confirmation?.type === 'restore-staff'
+          ? `恢復「${confirmation.email}」後，對方會再次取得目前進行中市集的團隊權限。`
+          : ''}
+        confirmLabel="恢復員工"
+      />
+    </div>
+  );
+}

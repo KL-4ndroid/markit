@@ -1,0 +1,71 @@
+name: Web launch quality gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-launch-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hex-budget:
+    name: Hex token budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Budget is allowed to be tightened but not loosened without an
+      # explicit PR to docs/audit/known-violations.md (see .cursorrules).
+      - name: Run hex budget check
+        env:
+          # Default: 0. Any new hex violation fails the build. To add a hex:
+          # 1. Add the new hex to HEX_ALLOWLIST in eslint.config.mjs (justified)
+          # 2. Update docs/audit/known-violations.md
+          MAX_HEX_BUDGET: '0'
+        run: node scripts/lint-hex.js
+
+  web-quality:
+    name: Lint, tests, and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies from lockfile
+        run: npm ci --no-audit --no-fund
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run complete test manifest
+        run: npm test
+
+      - name: Build production Web application without deployment secrets
+        run: npm run build
+
+      - name: Verify tests and build did not modify tracked files
+        run: |
+          git diff --check
+          git diff --exit-code

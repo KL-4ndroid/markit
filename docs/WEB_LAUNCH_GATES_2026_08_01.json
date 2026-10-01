@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "sourceDocument": "WEB_LAUNCH_READINESS_2026_07_30.md",
+  "updatedAt": "2026-08-06",
+  "overallStatus": "not_ready",
+  "gates": [
+    { "id": "CI-WEB", "status": "complete" },
+    { "id": "LOCAL-QUALITY", "status": "complete" },
+    { "id": "DB-063-065", "status": "complete" },
+    { "id": "DB-066", "status": "complete" },
+    { "id": "TEAM-LIVE", "status": "complete" },
+    { "id": "PROD-CONFIG", "status": "evidence_missing" },
+    { "id": "PROD-SURFACE", "status": "complete" },
+    { "id": "DEPLOY-IDENTITY", "status": "complete" },
+    { "id": "SECURITY-HEADERS", "status": "pending_external" },
+    { "id": "PWA-WEB", "status": "pending_external" },
+    { "id": "MEDIA-PROD", "status": "evidence_missing" },
+    { "id": "STAGING-E2E", "status": "evidence_missing" },
+    { "id": "BILLING-MERCHANT", "status": "pending_external" },
+    { "id": "F3B-F3E", "status": "pending_approval" },
+    { "id": "S9", "status": "pending_approval" },
+    { "id": "PROMOTION-RUNTIME", "status": "pending_approval" },
+    { "id": "OBSERVABILITY", "status": "implemented_local" },
+    { "id": "LEGAL-SUPPORT", "status": "evidence_missing" },
+    { "id": "RELEASE-CANARY", "status": "pending_external" }
+  ]
+}

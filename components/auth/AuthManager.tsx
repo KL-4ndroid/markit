@@ -1,21 +1,24 @@
-/**
- * Auth Manager - 認證管理組件
- * 
- * 整合登入和資料遷移流程
- * 處理登入後的遷移詢問邏輯
- */
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/supabase/auth-context';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { detectAnonymousData } from '@/lib/supabase/migration';
 import { LoginModal } from './LoginModal';
 import { MigrationModal } from './MigrationModal';
 
+type LoginMode = 'login' | 'signup';
+type LoginSuccessMeta = {
+  invitationAccepted?: boolean;
+  invitationLogin?: boolean;
+};
+
 export function AuthManager() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const migrationDetectionRequestRef = useRef(0);
+  const migrationDetectionTimeoutRef = useRef<number | null>(null);
+  const migrationDetectionIdleRef = useRef<number | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginMode, setLoginMode] = useState<LoginMode>('login');
   const [showMigrationModal, setShowMigrationModal] = useState(false);
   const [migrationData, setMigrationData] = useState({
     userId: '',
@@ -24,45 +27,101 @@ export function AuthManager() {
     eventCount: 0,
   });
 
-  // 處理登入成功
-  const handleLoginSuccess = async (userId: string, email: string) => {
-    // 關閉登入對話框
-    setShowLoginModal(false);
+  useEffect(() => {
+    const handleOpenLogin = (event?: CustomEvent<{ mode?: LoginMode }>) => {
+      const invitationToken = sessionStorage.getItem('invitation_token');
+      const requestedMode = event?.detail?.mode;
 
-    // 檢測匿名資料
-    const { hasAnonymousData, marketCount, eventCount } = await detectAnonymousData(userId);
+      if (requestedMode) {
+        setLoginMode(requestedMode);
+      } else if (invitationToken) {
+        setLoginMode('signup');
+      } else {
+        setLoginMode('login');
+      }
 
-    if (hasAnonymousData) {
-      // 有匿名資料，彈出遷移詢問
-      setMigrationData({
-        userId,
-        userEmail: email,
-        marketCount,
-        eventCount,
-      });
-      setShowMigrationModal(true);
-    } else {
-      // 沒有匿名資料，直接完成登入
-      console.log('✅ 登入完成，無需遷移');
+      setShowLoginModal(true);
+    };
+
+    window.addEventListener('auth:open-login', handleOpenLogin as EventListener);
+
+    return () => {
+      window.removeEventListener('auth:open-login', handleOpenLogin as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (migrationDetectionTimeoutRef.current != null) {
+        window.clearTimeout(migrationDetectionTimeoutRef.current);
+      }
+      if (migrationDetectionIdleRef.current != null && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(migrationDetectionIdleRef.current);
+      }
+    };
+  }, []);
+
+  const scheduleAnonymousDataDetection = (userId: string, email: string) => {
+    const requestId = ++migrationDetectionRequestRef.current;
+
+    const runDetection = async () => {
+      const { hasAnonymousData, marketCount, eventCount } = await detectAnonymousData(userId);
+      if (requestId !== migrationDetectionRequestRef.current) return;
+
+      if (hasAnonymousData) {
+        setMigrationData({
+          userId,
+          userEmail: email,
+          marketCount,
+          eventCount,
+        });
+        setShowMigrationModal(true);
+      }
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      migrationDetectionIdleRef.current = window.requestIdleCallback(() => {
+        void runDetection();
+      }, { timeout: 2000 });
+      return;
     }
+
+    migrationDetectionTimeoutRef.current = window.setTimeout(() => {
+      void runDetection();
+    }, 250);
   };
 
-  // 處理遷移完成
+  const handleLoginSuccess = async (userId: string, email: string, meta?: LoginSuccessMeta) => {
+    setShowLoginModal(false);
+    window.dispatchEvent(new CustomEvent('auth:login-success'));
+
+    if (meta?.invitationAccepted) {
+      migrationDetectionRequestRef.current += 1;
+      router.replace('/');
+      return;
+    }
+
+    if (meta?.invitationLogin) {
+      migrationDetectionRequestRef.current += 1;
+      return;
+    }
+
+    scheduleAnonymousDataDetection(userId, email);
+  };
+
   const handleMigrationComplete = () => {
-    console.log('✅ 遷移完成');
-    // 可以在這裡觸發重新載入或其他操作
+    setShowMigrationModal(false);
   };
 
   return (
     <>
-      {/* 登入對話框 */}
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onLoginSuccess={handleLoginSuccess}
+        defaultMode={loginMode}
       />
 
-      {/* 遷移對話框 */}
       <MigrationModal
         isOpen={showMigrationModal}
         onClose={() => setShowMigrationModal(false)}
@@ -72,28 +131,10 @@ export function AuthManager() {
         eventCount={migrationData.eventCount}
         onMigrationComplete={handleMigrationComplete}
       />
-
-      {/* 登入按鈕（可以在 Navbar 中使用） */}
-      {!user && (
-        <button
-          onClick={() => setShowLoginModal(true)}
-          className="hidden" // 預設隱藏，由 Navbar 控制顯示
-          id="auth-manager-login-trigger"
-        >
-          登入
-        </button>
-      )}
     </>
   );
 }
 
-/**
- * 觸發登入對話框的輔助函數
- * 可以在任何地方調用
- */
-export function triggerLogin() {
-  const button = document.getElementById('auth-manager-login-trigger');
-  if (button) {
-    button.click();
-  }
+export function triggerLogin(mode: LoginMode = 'login') {
+  window.dispatchEvent(new CustomEvent('auth:open-login', { detail: { mode } }));
 }

@@ -1,12 +1,21 @@
 'use client';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Hand, MessageCircle, DollarSign, Lightbulb } from 'lucide-react';
 
 interface ConversionFunnelProps {
   touchCount: number;
   inquiryCount: number;
   dealCount: number;
 }
+
+type FunnelIconKey = 'greeting' | 'conversation' | 'purchase';
+
+const funnelIconMap: Record<FunnelIconKey, typeof Hand> = {
+  greeting: Hand,
+  conversation: MessageCircle,
+  purchase: DollarSign,
+};
 
 /**
  * 轉換漏斗圖組件
@@ -20,28 +29,28 @@ export function ConversionFunnel({ touchCount, inquiryCount, dealCount }: Conver
   const inquiryRate = totalInteractions > 0 ? (inquiryCount / totalInteractions) * 100 : 0;
   const conversionRate = totalInteractions > 0 ? (dealCount / totalInteractions) * 100 : 0;
 
-  // 準備圖表數據
+  // 準備圖表數據（Recharts 用 CSS 變數以支援未來改色）
   const chartData = [
     {
       name: '互動',
       value: touchCount,
-      color: '#E8F0F8',
-      textColor: '#7B9FA6',
-      emoji: '👋',
+      color: 'rgb(var(--brand-soft-green))',       // 柔綠底
+      textColor: 'rgb(var(--brand-primary))',       // 霧松綠
+      iconKey: 'greeting' as const,
     },
     {
       name: '詢問',
       value: inquiryCount,
-      color: '#FFF8E7',
-      textColor: '#D4A574',
-      emoji: '💬',
+      color: 'rgb(var(--brand-soft-yellow))',      // 柔黃底
+      textColor: 'rgb(var(--brand-secondary))',     // 暖杏橘
+      iconKey: 'conversation' as const,
     },
     {
       name: '成交',
       value: dealCount,
-      color: '#E8F3E8',
-      textColor: '#7B9FA6',
-      emoji: '💰',
+      color: 'rgb(var(--brand-soft-green))',
+      textColor: 'rgb(var(--brand-primary))',
+      iconKey: 'purchase' as const,
     },
   ];
 
@@ -49,12 +58,14 @@ export function ConversionFunnel({ touchCount, inquiryCount, dealCount }: Conver
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      const Icon = funnelIconMap[data.iconKey as FunnelIconKey];
       return (
-        <div className="bg-white rounded-xl p-3 shadow-lg border border-[#7B9FA6]/20">
-          <p className="text-sm font-medium text-[#3A3A3A] mb-1">
-            {data.emoji} {data.name}
+        <div className="bg-white rounded-xl p-3 shadow-lg border border-primary/20">
+          <p className="text-sm font-medium text-foreground mb-1 flex items-center gap-1.5">
+            {Icon && <Icon className="w-4 h-4 text-primary" strokeWidth={1.75} />}
+            <span>{data.name}</span>
           </p>
-          <p className="text-xs text-[#6B6B6B]">
+          <p className="text-xs text-muted-foreground">
             數量：{data.value} 次
           </p>
         </div>
@@ -64,8 +75,8 @@ export function ConversionFunnel({ touchCount, inquiryCount, dealCount }: Conver
   };
 
   return (
-    <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-[#7B9FA6]/5">
-      <h3 className="text-base font-medium text-[#3A3A3A] mb-4">轉換漏斗</h3>
+    <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-primary/5">
+      <h3 className="text-base font-medium text-foreground mb-4">轉換漏斗</h3>
       
       {/* 圖表 */}
       <div className="w-full h-[250px] mb-4">
@@ -74,18 +85,18 @@ export function ConversionFunnel({ touchCount, inquiryCount, dealCount }: Conver
             data={chartData}
             margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#7B9FA6" opacity={0.1} />
-            
+            <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--brand-primary))" opacity={0.1} />
+
             <XAxis
               dataKey="name"
-              tick={{ fill: '#6B6B6B', fontSize: 12 }}
-              axisLine={{ stroke: '#7B9FA6', opacity: 0.2 }}
+              tick={{ fill: 'rgb(var(--brand-muted-foreground))', fontSize: 12 }}
+              axisLine={{ stroke: 'rgb(var(--brand-primary))', opacity: 0.2 }}
               tickLine={false}
             />
-            
+
             <YAxis
-              tick={{ fill: '#6B6B6B', fontSize: 12 }}
-              axisLine={{ stroke: '#7B9FA6', opacity: 0.2 }}
+              tick={{ fill: 'rgb(var(--brand-muted-foreground))', fontSize: 12 }}
+              axisLine={{ stroke: 'rgb(var(--brand-primary))', opacity: 0.2 }}
               tickLine={false}
             />
             
@@ -105,24 +116,24 @@ export function ConversionFunnel({ touchCount, inquiryCount, dealCount }: Conver
       </div>
 
       {/* 轉換率統計 */}
-      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#7B9FA6]/10">
+      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-primary/10">
         <div className="text-center">
-          <div className="text-xs text-[#6B6B6B] mb-1">互動總數</div>
-          <div className="text-lg font-medium text-[#3A3A3A] tabular-nums">
+          <div className="text-xs text-muted-foreground mb-1">互動總數</div>
+          <div className="text-lg font-medium text-foreground tabular-nums">
             {totalInteractions}
           </div>
         </div>
         
         <div className="text-center">
-          <div className="text-xs text-[#6B6B6B] mb-1">詢問率</div>
-          <div className="text-lg font-medium text-[#D4A574] tabular-nums">
+          <div className="text-xs text-muted-foreground mb-1">詢問率</div>
+          <div className="text-lg font-medium text-secondary tabular-nums">
             {inquiryRate.toFixed(1)}%
           </div>
         </div>
         
         <div className="text-center">
-          <div className="text-xs text-[#6B6B6B] mb-1">轉換率</div>
-          <div className="text-lg font-medium text-[#7B9FA6] tabular-nums">
+          <div className="text-xs text-muted-foreground mb-1">轉換率</div>
+          <div className="text-lg font-medium text-primary tabular-nums">
             {conversionRate.toFixed(1)}%
           </div>
         </div>
@@ -130,16 +141,19 @@ export function ConversionFunnel({ touchCount, inquiryCount, dealCount }: Conver
 
       {/* 洞察提示 */}
       {conversionRate > 0 && (
-        <div className="mt-4 p-3 bg-[#FFF8E7] rounded-xl">
-          <p className="text-xs text-[#6B6B6B]">
-            💡 <span className="font-medium">洞察：</span>
-            {conversionRate >= 20 ? (
-              '轉換率表現優秀！繼續保持良好的客戶互動。'
-            ) : conversionRate >= 10 ? (
-              '轉換率良好，可以嘗試提升詢問客戶的成交率。'
-            ) : (
-              '轉換率有提升空間，建議加強產品展示和客戶溝通。'
-            )}
+        <div className="mt-4 p-3 bg-soft-yellow rounded-xl">
+          <p className="text-xs text-muted-foreground flex items-start gap-2">
+            <Lightbulb className="w-4 h-4 mt-0.5 shrink-0 text-secondary" strokeWidth={1.75} />
+            <span>
+              <span className="font-medium">洞察：</span>
+              {conversionRate >= 20 ? (
+                '轉換率表現優秀！繼續保持良好的客戶互動。'
+              ) : conversionRate >= 10 ? (
+                '轉換率良好，可以嘗試提升詢問客戶的成交率。'
+              ) : (
+                '轉換率有提升空間，建議加強產品展示和客戶溝通。'
+              )}
+            </span>
           </p>
         </div>
       )}

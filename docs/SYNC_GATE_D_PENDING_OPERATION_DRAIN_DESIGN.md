@@ -1,0 +1,453 @@
+# Féria Sync Gate D Pending Operation Drain Design
+
+Created: 2026-06-21
+Status: D3c-2 design complete through D3c-2n-3 local/staging manual retry/drain verification; no batch worker or production default enablement approved
+
+## 0. Purpose
+
+This document designs how a queued `pending_operations` row should become a final cloud event.
+
+This document is the design record for the D3c drain path.
+
+D3c-2b implementation status:
+- `supabase/migrations/050_drain_checklist_toggle_pending_operation.sql` adds the single-operation drain RPC draft.
+- `tests/supabase-pending-operations-drain-rpc.test.ts` locks the SQL/static safety boundaries.
+
+D3c-2c implementation status:
+- `lib/markets/field-ops-write-router.ts` can call the drain RPC only after a successful checklist-toggle enqueue.
+- `pendingOperationDrainAfterEnqueue` is a dedicated drain flag and remains default-off.
+- Local event behavior remains primary and unchanged.
+
+D3c-2d implementation status:
+- `setSyncGateDControlledTestFlags()` can enable the two checklist-toggle flags for controlled verification only.
+- The override rejects broad Gate D flags and unknown flags.
+- Production defaults remain disabled.
+
+D3c-2e implementation status:
+- One guarded manual smoke verification completed on 2026-06-22 Asia/Taipei.
+- Operation id `512d40e6-1192-45dd-ad03-3e437f3d562d` reached `synced`.
+- The final cloud event was `checklist_item_updated` for checklist item `0747e758-2f39-4aa2-bf31-60eba3d24771`.
+- A follow-up preflight confirmed the checklist item remains active and the synced audit row remains queryable.
+
+Owner-only diagnostics status:
+- Design-only safety contract added in `docs/SYNC_GATE_D_OWNER_DIAGNOSTICS_DESIGN.md`.
+- D3c-2f read-only owner diagnostics RPC draft added in `051_list_owner_pending_operation_diagnostics.sql`.
+- D3c-2g read-only owner diagnostics UI shell added in `/recovery`.
+- D3c-2h stale `processing` recovery design added in `docs/SYNC_GATE_D_STALE_PROCESSING_RECOVERY_DESIGN.md`.
+- D3c-2i single-row stale `processing` recovery RPC draft added in `052_recover_stale_processing_pending_operation.sql`.
+- D3c-2j read-only stale `processing` indicator added to owner diagnostics UI.
+- D3c-2k owner-confirmed one-row stale `processing` recovery UI action added to owner diagnostics UI.
+- D3c-2l manual stale `processing` recovery smoke plan and guarded script added.
+- D3c-2m local/staging-only synthetic stale `processing` recovery test plan added.
+- D3c-2n retry/drain action design added.
+- D3c-2m staging execution passed on 2026-06-26 Asia/Taipei with operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06`; no final event was created.
+- D3c-2n-1 service wrapper draft added as `retryDrainOwnerChecklistTogglePendingOperation()`.
+- D3c-2n-2 owner-only single-row UI button added to owner diagnostics for owner-created `failed_retryable` checklist-toggle rows.
+- D3c-2n-3 local/staging manual verification passed on 2026-06-29 Asia/Taipei with operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06`; one `checklist_item_updated` final event was created and no duplicate final event was found.
+- No D3c-2n-4 production verification, batch action, RLS, worker, cleanup, automatic runtime repair caller, or staff-row drain is approved by that design.
+
+Still not approved:
+- No batch drain/worker is approved by this document.
+- No feature flag default change is approved by this document.
+- No RLS policy change is approved by this document.
+- No cache replacement, revenue, inventory, market, or product behavior is approved by this document.
+
+## 1. Recommendation
+
+Recommended first implementation:
+- Add a narrow single-operation SECURITY DEFINER drain RPC before any service-role batch worker.
+
+Proposed RPC shape:
+- `public.drain_checklist_toggle_pending_operation(p_operation_id TEXT)`
+
+Why this is the safest first step:
+- It keeps processing limited to one explicit pending operation.
+- It avoids introducing a service-role background processor yet.
+- It avoids direct client insert into final `events`.
+- It can re-check live permission inside the database.
+- It can be tested with one checklist toggle operation before broader worker behavior exists.
+
+Not recommended first:
+- Do not create a database trigger that turns every pending row into an event immediately.
+- Do not create a broad service-role batch worker as the first drain implementation.
+- Do not allow direct client writes to `pending_operations` or final `events` for this pilot.
+- Do not enable `pendingOperationWriteRouting` by default before the drain path is proven.
+
+## 2. Scope
+
+Approved pilot scope for the future drain implementation:
+- Operation type: `checklist_item_toggle`
+- Entity type: `checklist_item`
+- Final event type: `checklist_item_updated`
+- Required payload:
+  - `market_id`
+  - `itemId`
+  - `completed`
+
+Explicitly out of scope:
+- Field notes.
+- Checklist create/update/delete text operations.
+- Revenue, cost, profit, inventory, product, market, staff management, and cache replacement behavior.
+
+## 3. Source Of Truth
+
+The existing event model remains the source of truth.
+
+Meaning:
+- `pending_operations` is delivery/retry state, not business state.
+- The final durable business record is still an `events` row.
+- A pending row that never drains must not be treated as a completed cloud business event.
+- Local UI remains event-sourced from local events.
+
+## 4. State Machine
+
+Allowed drain status transitions:
+- `pending` -> `processing` -> `synced`
+- `failed_retryable` -> `processing` -> `synced`
+- `pending` or `failed_retryable` -> `processing` -> `blocked_permission`
+- `pending` or `failed_retryable` -> `processing` -> `failed_retryable`
+- `pending` or `failed_retryable` -> `processing` -> `failed_permanent`
+
+Rows that must not be processed:
+- `synced`
+- `blocked_permission`
+- `failed_permanent`
+- `processing` rows owned by another active drain attempt
+
+Recommended retry policy:
+- Retry only `failed_retryable`.
+- Never auto-retry `blocked_permission`.
+- Never auto-retry `failed_permanent`.
+- Add a max retry count before any batch worker exists.
+
+## 5. Claim And Lock
+
+The drain RPC should atomically claim one row before doing work.
+
+Recommended behavior:
+- Select the pending row by `operation_id`.
+- Lock it with `FOR UPDATE`.
+- Only claim rows with status `pending` or `failed_retryable`.
+- Set status to `processing` before final event creation.
+- Increment `retry_count` only when marking `failed_retryable`.
+- Store `last_error_code` and `last_error_message` for every failure state.
+
+Reason:
+- Two sessions must not create the same final event from the same pending row.
+- A stuck `processing` row should need an explicit future recovery policy, not silent reprocessing.
+
+## 6. Live Permission Recheck
+
+The drain RPC must re-check permission live before creating the final event.
+
+Required rule:
+- `role_snapshot` is evidence only, not authority.
+
+Owner permission:
+- Allow if `public.markets.owner_id = pending_operations.actor_id`.
+
+Staff permission:
+- Allow only when an active `public.staff_relationships` row exists for the same market owner:
+  - `sr.staff_id = pending_operations.actor_id`
+  - `sr.status = 'active'`
+  - `sr.role IN ('operator', 'manager')`
+
+Blocked permission:
+- If actor is no longer owner, active operator, or active manager, mark the row `blocked_permission`.
+- Do not create the final event.
+- Do not auto-retry.
+
+Viewer:
+- Viewer must always fail closed for checklist toggle drain.
+
+## 7. Payload Validation
+
+The drain RPC must validate the pending row before creating an event.
+
+Required checks:
+- `operation_type = 'checklist_item_toggle'`
+- `entity_type = 'checklist_item'`
+- `payload` is an object
+- `payload.market_id` equals `pending_operations.market_id::TEXT`
+- `payload.itemId` is a non-empty string
+- `payload.completed` is boolean
+- `entity_id` equals `payload.itemId`
+
+Permanent failure:
+- Invalid operation type, entity type, malformed payload, or mismatched entity should become `failed_permanent`.
+- Do not create the final event.
+
+## 8. Idempotency
+
+The final event must be idempotent.
+
+Recommended event id:
+- Use `pending_operations.operation_id::UUID` as the final `events.id` for the checklist toggle pilot.
+
+Reason:
+- The adapter already creates `operation_id` with `generateUUID()`.
+- Retrying the same pending operation naturally targets the same final event id.
+- If the event already exists, the drain can mark the pending row `synced` instead of creating a duplicate.
+
+Required duplicate behavior:
+- If an event with the derived id already exists and matches the expected checklist toggle event, mark the pending row `synced`.
+- If an event with the derived id exists but does not match the pending operation, mark `failed_permanent`.
+- Do not create another event with a different id for the same pending operation.
+- Preserve the existing `(actor_id, idempotency_key)` unique constraint as the enqueue-side duplicate guard.
+
+Recommended event metadata:
+- `pendingOperationId`
+- `idempotencyKey`
+- `drainedAt`
+- `source: 'pending_operations'`
+
+## 9. Final Event Shape
+
+For `checklist_item_toggle`, create:
+- `events.id = pending_operations.operation_id::UUID`
+- `events.type = 'checklist_item_updated'`
+- `events.payload = pending_operations.payload`
+- `events.actor_id = pending_operations.actor_id`
+- `events.market_id = pending_operations.market_id`
+- `events.timestamp = pending_operations.created_at`
+- `events.metadata` includes the pending operation metadata listed above
+
+Timestamp recommendation:
+- Use `pending_operations.created_at` for the event timestamp so replay order reflects enqueue time.
+
+## 10. Error Classification
+
+Use `blocked_permission` for:
+- Actor is no longer owner.
+- Staff relationship is revoked, pending, missing, or not active.
+- Staff role is downgraded to viewer or unknown.
+
+Use `failed_permanent` for:
+- Unsupported operation type.
+- Unsupported entity type.
+- Invalid or mismatched payload.
+- Invalid `operation_id` UUID format.
+- Existing event id collision with different event content.
+
+Use `failed_retryable` for:
+- Transient database errors.
+- Lock contention that cannot claim the row.
+- Temporary insert failure that is not permission or payload related.
+
+## 11. Observability
+
+Minimum diagnostic fields:
+- `status`
+- `retry_count`
+- `last_error_code`
+- `last_error_message`
+- `updated_at`
+
+No new user-facing UI is approved yet.
+
+Future diagnostics can be owner-only, but that must be a separate approval.
+
+## 12. Rollback
+
+Rollback behavior:
+- Turning `pendingOperationWriteRouting` off stops new enqueue attempts from the adapter.
+- Existing pending rows can remain ignored while drain is disabled.
+- Do not drop `pending_operations` while rows exist unless they are exported, drained, or explicitly abandoned.
+- Do not delete failed rows automatically in the first pilot.
+
+## 13. Future Slices
+
+Recommended next slices:
+
+### D3c-2b: Single Operation Drain RPC Draft
+
+Allowed only after approval:
+- Add one SECURITY DEFINER RPC for `checklist_item_toggle`.
+- Add SQL/static tests for claim, permission re-check, idempotency, and statuses.
+- Do not connect runtime to call it in the same commit.
+
+Status:
+- Completed as `supabase/migrations/050_drain_checklist_toggle_pending_operation.sql`.
+- Runtime remains disconnected.
+
+### D3c-2c: Runtime Drain Call Behind Flag
+
+Allowed only after D3c-2b passes:
+- Call the drain RPC after enqueue only when a dedicated test/staging flag is enabled.
+- Keep local event behavior unchanged.
+- Keep `pendingOperationWriteRouting` default-off unless explicitly approved.
+
+Status:
+- Completed in `lib/markets/field-ops-write-router.ts`.
+- Requires both the existing enqueue route and `pendingOperationDrainAfterEnqueue`.
+- Both flags remain default-off.
+
+### D3c-2d: Controlled Test Or Staging Enablement
+
+Allowed only after D3c-2c passes:
+- Enable the two flags only in a controlled test/staging harness.
+- Verify enqueue + drain against the already-applied 049/050 functions.
+- Do not enable production defaults.
+
+Status:
+- Completed in `lib/sync/sync-gate-d-flags.ts`.
+- The controlled override only allows `pendingOperationWriteRouting` and `pendingOperationDrainAfterEnqueue`.
+- The controlled override requires the approved D3c-2d reason string.
+- The controlled override rejects production builds.
+
+### D3c-2e: Manual Cloud Smoke Verification
+
+Allowed only after D3c-2d passes:
+- Use one disposable or non-production checklist item.
+- Enable both controlled flags only for the manual verification session.
+- Confirm the app writes the local event first.
+- Confirm enqueue creates one `pending_operations` row.
+- Confirm drain creates one matching `checklist_item_updated` cloud event and marks the pending row `synced`.
+- Do not enable production defaults.
+
+Status:
+- Manual smoke plan added as `docs/SYNC_GATE_D_D3C_2E_MANUAL_SMOKE_TEST.md`.
+- Guarded script added as `scripts/gate-d-checklist-toggle-smoke.mjs`.
+- One manual execution completed against disposable production checklist data.
+- Future executions still require manual selection of disposable or non-production checklist data.
+
+### D3c-3: Batch Worker
+
+Allowed only after the single-operation drain is proven:
+- Consider a service-role batch worker.
+- Add owner-only diagnostics and recovery rules first.
+- Add stuck `processing` recovery policy before background retries.
+
+### D3c-2f: Owner-Only Read Diagnostics RPC Draft
+
+Recommended before any batch worker:
+- Add a read-only owner diagnostics RPC draft.
+- Return an explicit, redacted column list.
+- Do not connect UI/runtime in the same commit.
+- Do not add retry, drain, delete, cleanup, or recovery actions.
+
+Status:
+- Completed as `supabase/migrations/051_list_owner_pending_operation_diagnostics.sql`.
+- Static SQL guardrails added as `tests/supabase-pending-operations-diagnostics-rpc.test.ts`.
+- The RPC requires `auth.uid()`, rejects owner impersonation, scopes rows through `markets.owner_id`, returns explicit columns, omits `payload` and `role_snapshot`, and does not mutate data.
+
+### D3c-2g: Read-Only Owner Diagnostics UI Shell
+
+Recommended before any recovery action:
+- Add the diagnostics panel to owner-only `/recovery`.
+- Call only the approved read diagnostics RPC through a small service.
+- Show status, operation ids, final-event presence, and error fields.
+- Do not add retry, drain, delete, cleanup, recovery, or worker controls.
+
+Status:
+- Completed as `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
+- Read service added as `lib/sync/owner-pending-operation-diagnostics.ts`.
+- Static UI guardrails added as `tests/sync-gate-d-owner-diagnostics-ui.test.ts`.
+
+### D3c-2h: Stale Processing Recovery Design
+
+Recommended before any stale-row mutation:
+- Define what counts as stale `processing`.
+- Require final-event inspection before changing pending state.
+- Separate recovery reset from drain/retry execution.
+- Keep recovery one-row, owner-confirmed, and non-automatic.
+
+Status:
+- Completed as `docs/SYNC_GATE_D_STALE_PROCESSING_RECOVERY_DESIGN.md`.
+- Guardrails added as `tests/sync-gate-d-stale-processing-recovery-design.test.ts`.
+- No RPC, UI action, worker, retry, drain, cleanup, or mutation implementation was added.
+
+### D3c-2i: Single-Row Stale Processing Recovery RPC Draft
+
+Recommended before any UI recovery action:
+- Add an owner-only SECURITY DEFINER RPC.
+- Lock exactly one stale `processing` row with `FOR UPDATE`.
+- Inspect the final event before changing pending state.
+- Mark matching final event as `synced`.
+- Mark final event mismatch as `failed_permanent`.
+- Mark no final event as `failed_retryable` without draining.
+
+Status:
+- Completed as `supabase/migrations/052_recover_stale_processing_pending_operation.sql`.
+- Static SQL guardrails added as `tests/supabase-pending-operations-stale-recovery-rpc.test.ts`.
+- No UI action, runtime caller, worker, retry execution, drain, cleanup, RLS, or feature-flag change was added.
+
+### D3c-2j: Read-Only Stale Processing UI Indicator
+
+Recommended before any recovery button:
+- Derive stale `processing` from the existing diagnostics row data.
+- Use the same 15-minute threshold as the recovery design.
+- Display the stale state without calling the recovery RPC.
+- Keep diagnostics read-only.
+
+Status:
+- Completed in `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
+- Guardrails updated in `tests/sync-gate-d-owner-diagnostics-ui.test.ts`.
+- No UI action, recovery RPC call, runtime repair caller, worker, retry, drain, cleanup, RLS, or feature-flag change was added.
+
+### D3c-2k: Owner-Confirmed One-Row Recovery UI Action
+
+Recommended before any retry/drain action:
+- Add a single-row owner-confirmed action in owner-only diagnostics.
+- Show the action only for stale `processing` rows.
+- Call only `recover_stale_processing_pending_operation`.
+- Refresh diagnostics after the RPC returns.
+- Keep retry and drain separate.
+
+Status:
+- Completed in `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
+- Service wrapper added in `lib/sync/owner-pending-operation-diagnostics.ts`.
+- Guardrails updated in `tests/sync-gate-d-owner-diagnostics-ui.test.ts`.
+- No batch action, worker, retry execution, drain, cleanup, RLS, or feature-flag change was added.
+
+### D3c-2l: Manual Stale Processing Recovery Smoke Verification
+
+Recommended before any retry/drain action:
+- Verify the D3c-2k owner-confirmed recovery path with one disposable or non-production stale `processing` row.
+- Use a guarded script that requires explicit target classification and confirmation text.
+- Read the selected row before and after the RPC.
+- Call only `recover_stale_processing_pending_operation`.
+- Do not create a target row, create events, call drain, call enqueue, or direct-write tables.
+
+Status:
+- Manual smoke plan added as `docs/SYNC_GATE_D_D3C_2L_STALE_RECOVERY_SMOKE_TEST.md`.
+- Guarded script added as `scripts/gate-d-stale-processing-recovery-smoke.mjs`.
+- Guardrails added as `tests/sync-gate-d-stale-recovery-smoke-script.test.ts`.
+- The script is intentionally not wired to `package.json` scripts.
+- No D3c-2l cloud recovery execution has been performed by this slice.
+- If no disposable or non-production stale `processing` row exists, stop and decide separately whether to create synthetic test data.
+
+### D3c-2m: Synthetic Stale Processing Recovery Test Plan
+
+Recommended before creating any synthetic stale row:
+- Keep synthetic data out of production.
+- Use only local or staging Supabase with migrations 048 through 052 applied.
+- Test the missing-final-event path first.
+- Create one synthetic `processing` pending row at least 15 minutes old.
+- Recover it through the existing guarded D3c-2l script.
+- Expect `failed_retryable` with `last_error_code = 'stale_processing_reset'`.
+
+Status:
+- Plan added as `docs/SYNC_GATE_D_D3C_2M_SYNTHETIC_STALE_RECOVERY_TEST_PLAN.md`.
+- Guardrails added as `tests/sync-gate-d-synthetic-stale-recovery-test-plan.test.ts`.
+- D3c-2m staging execution passed on 2026-06-26 Asia/Taipei.
+- Evidence operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06` recovered to `failed_retryable`, `retry_count = 1`, `last_error_code = 'stale_processing_reset'`, expected `last_error_message`, and final event count `0`.
+- No production synthetic data creation, event fixture, retry, drain, worker, cleanup, runtime code, migration, RLS, or feature-flag change was added.
+
+### D3c-2n: Retry/Drain Action Design
+
+Recommended before any retry/drain implementation:
+- Document the owner-only single-row retry/drain boundary.
+- Require D3c-2m local/staging verification before implementation.
+- Recognize that the existing drain RPC requires caller equals `pending_operations.actor_id`.
+- Limit the first future action to owner-created `failed_retryable` checklist-toggle rows.
+- Defer owner-on-behalf-of-staff drain semantics.
+
+Status:
+- Design added as `docs/SYNC_GATE_D_D3C_2N_RETRY_DRAIN_ACTION_DESIGN.md`.
+- Guardrails added as `tests/sync-gate-d-retry-drain-action-design.test.ts`.
+- D3c-2n-1 service wrapper draft added as `retryDrainOwnerChecklistTogglePendingOperation()` in `lib/sync/owner-pending-operation-diagnostics.ts`.
+- D3c-2n-2 owner-only single-row UI button added in `components/common/OwnerPendingOperationDiagnosticsPanel.tsx`.
+- D3c-2n-3 local/staging manual verification passed with operation `c466de02-d79a-4ae8-adc0-44b3fa0efd06`.
+- The next D3c-2n implementation slice is D3c-2n-4 production disposable verification and remains high risk because it may invoke a final-event-writing drain RPC action against production data.
+- No D3c-2n-4 verification, migration, RLS, worker, feature-flag change, batch action, automatic retry, or staff-row drain was added.

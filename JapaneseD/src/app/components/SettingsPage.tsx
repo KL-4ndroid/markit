@@ -26,9 +26,9 @@ export function SettingsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
           <h1 className="text-white mb-4">設定</h1>
           
@@ -49,8 +49,8 @@ export function SettingsPage() {
         {/* Settings Sections */}
         <div className="space-y-6 mb-6">
           {settingsSections.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="bg-white rounded-[1.5rem] p-5 shadow-md shadow-[#7B9FA6]/5">
-              <h3 className="text-[#3A3A3A] mb-3 px-2">{section.title}</h3>
+            <div key={sectionIndex} className="bg-white rounded-[1.5rem] p-5 shadow-md shadow-primary/5">
+              <h3 className="text-foreground mb-3 px-2">{section.title}</h3>
               <div className="space-y-1">
                 {section.items.map((item, itemIndex) => {
                   const Icon = item.icon;
@@ -65,7 +65,7 @@ export function SettingsPage() {
                       >
                         <Icon className="w-5 h-5" style={{ color: item.label === "登出" ? item.color : "#3A3A3A" }} />
                       </div>
-                      <span className="flex-1 text-left text-[#3A3A3A]">{item.label}</span>
+                      <span className="flex-1 text-left text-foreground">{item.label}</span>
                       <ChevronRight className="w-5 h-5 text-[#6B6B6B] group-hover:translate-x-1 transition-transform" />
                     </button>
                   );

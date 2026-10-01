@@ -1,51 +1,80 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
-/**
- * 合併 Tailwind CSS 類名
- * 使用 clsx 處理條件類名，使用 tailwind-merge 處理衝突
- */
+import {
+  formatCurrency as formatSharedCurrency,
+  formatDisplayDate,
+  formatDisplayDateRanges,
+} from '@/lib/presentation/formatters';
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/**
- * 格式化日期為本地化字串
- */
 export function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('zh-TW', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+  return formatDisplayDate(date);
 }
 
-/**
- * 格式化時間為本地化字串
- */
 export function formatTime(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleTimeString('zh-TW', {
+  const parsedDate = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(parsedDate.getTime())) return typeof date === 'string' ? date : '';
+  return parsedDate.toLocaleTimeString('zh-TW', {
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   });
 }
 
-/**
- * 格式化金額
- */
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('zh-TW', {
-    style: 'currency',
-    currency: 'TWD',
-    minimumFractionDigits: 0,
-  }).format(amount);
+  return formatSharedCurrency(amount);
 }
 
-/**
- * 格式化數字（千分位）
- */
 export function formatNumber(num: number): string {
   return new Intl.NumberFormat('zh-TW').format(num);
+}
+
+export function generateDateRange(startDate: string, endDate: string): string[] {
+  const dates: string[] = [];
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return dates;
+
+  const current = new Date(start);
+  while (current <= end) {
+    dates.push([
+      current.getFullYear(),
+      String(current.getMonth() + 1).padStart(2, '0'),
+      String(current.getDate()).padStart(2, '0'),
+    ].join('-'));
+    current.setDate(current.getDate() + 1);
+  }
+
+  return dates;
+}
+
+export function formatDateRanges(dates: string[]): string {
+  return formatDisplayDateRanges(dates);
+}
+
+export function filterCurrentWeekDates(dates: string[]): string[] {
+  if (dates.length === 0) return [];
+
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  const toDateKey = (date: Date) => [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+
+  const weekStartKey = toDateKey(weekStart);
+  const weekEndKey = toDateKey(weekEnd);
+  return dates.filter(date => date >= weekStartKey && date <= weekEndKey).sort();
 }

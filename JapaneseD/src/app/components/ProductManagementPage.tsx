@@ -24,9 +24,9 @@ export function ProductManagementPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#7B9FA6] to-[#D4A574] pt-12 pb-8 px-6 rounded-b-[2rem]">
+      <div className="bg-gradient-to-br from-primary to-secondary pt-12 pb-8 px-6 rounded-b-[2rem]">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-white">商品管理</h1>
@@ -43,7 +43,7 @@ export function ProductManagementPage() {
               placeholder="搜尋商品..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white rounded-2xl pl-11 pr-4 py-3 text-[#3A3A3A] placeholder:text-[#6B6B6B]/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="w-full bg-white rounded-2xl pl-11 pr-4 py-3 text-foreground placeholder:text-[#6B6B6B]/50 focus:outline-none focus:ring-2 focus:ring-white/50"
             />
           </div>
         </div>
@@ -51,21 +51,21 @@ export function ProductManagementPage() {
 
       <div className="max-w-lg mx-auto px-6 -mt-4">
         {/* Stats Summary */}
-        <div className="bg-white rounded-[1.5rem] p-5 shadow-lg shadow-[#7B9FA6]/10 mb-6">
+        <div className="bg-white rounded-[1.5rem] p-5 shadow-lg shadow-primary/10 mb-6">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">總商品</div>
-              <div className="text-[#3A3A3A] text-xl tabular-nums">{products.length}</div>
+              <div className="text-foreground text-xl tabular-nums">{products.length}</div>
             </div>
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">總庫存</div>
-              <div className="text-[#7B9FA6] text-xl tabular-nums">
+              <div className="text-primary text-xl tabular-nums">
                 {products.reduce((sum, p) => sum + p.stock, 0)}
               </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-[#6B6B6B] mb-1">總價值</div>
-              <div className="text-[#D4A574] text-xl tabular-nums">
+              <div className="text-secondary text-xl tabular-nums">
                 ${products.reduce((sum, p) => sum + p.price * p.stock, 0).toLocaleString()}
               </div>
             </div>
@@ -77,7 +77,7 @@ export function ProductManagementPage() {
           {filteredProducts.map((product) => (
             <div
               key={product.id}
-              className="bg-white rounded-[1.25rem] p-4 shadow-md shadow-[#7B9FA6]/5 hover:shadow-lg transition-shadow cursor-pointer group"
+              className="bg-white rounded-[1.25rem] p-4 shadow-md shadow-primary/5 hover:shadow-lg transition-shadow cursor-pointer group"
             >
               {/* Product Emoji Icon */}
               <div className="bg-gradient-to-br from-[#F5E6E8] to-[#FFF8E7] rounded-2xl h-24 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
@@ -87,22 +87,22 @@ export function ProductManagementPage() {
               {/* Product Info */}
               <div className="space-y-2">
                 <div>
-                  <h4 className="text-[#3A3A3A] line-clamp-1 mb-1">{product.name}</h4>
-                  <span className="inline-block bg-[#E8F3E8] text-[#3A3A3A] px-2 py-0.5 rounded-full text-xs">
+                  <h4 className="text-foreground line-clamp-1 mb-1">{product.name}</h4>
+                  <span className="inline-block bg-[#E8F3E8] text-foreground px-2 py-0.5 rounded-full text-xs">
                     {product.category}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-[#7B9FA6]/10">
+                <div className="flex items-center justify-between pt-2 border-t border-primary/10">
                   <div>
                     <div className="text-xs text-[#6B6B6B]">價格</div>
-                    <div className="text-[#3A3A3A] tabular-nums">${product.price}</div>
+                    <div className="text-foreground tabular-nums">${product.price}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-[#6B6B6B]">庫存</div>
                     <div
                       className={`tabular-nums ${
-                        product.stock < 10 ? "text-[#D4A574]" : "text-[#7B9FA6]"
+                        product.stock < 10 ? "text-secondary" : "text-primary"
                       }`}
                     >
                       {product.stock}

@@ -1,0 +1,15 @@
+feat: database optimization and bug fixes
+
+Critical fixes:
+- Fix staff_relationships insert missing owner_id (inviteStaff)
+- Fix isOwner() function logic error
+- Add deal_deleted stock restoration
+
+Enhancements:
+- Support custom interaction buttons via extraInteractions
+- Improve useUpcomingMarkets date filtering logic
+- Update types/staff.ts to match Supabase view fields
+- Add timezone utility functions
+
+New migration:
+- supabase/migrations/034_performance_indexes.sql: Database indexes for performance
