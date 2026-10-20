@@ -5,6 +5,14 @@ Date: 2026-08-06
 Status: planning only; implementation, migration, provider runtime, and all writes remain
 unapproved
 
+2026-10-20 update: the user authorized continued Windows implementation. A bounded
+source foundation (shared decisions + private server orchestration with an injected
+transaction port) is reviewed and tested separately in
+`NATIVE_RECONCILIATION_FOUNDATION_REVIEW_2026_10_20.md` and
+`NATIVE_RECONCILIATION_FOUNDATION_EVIDENCE_2026_10_20.md`. The concrete database
+writer/migration described here remains planning only. No production or provider
+runtime was enabled and this does not close the F3C/native writer gate.
+
 Depends on:
 
 - migration 063 `subscription_accounts` read model;

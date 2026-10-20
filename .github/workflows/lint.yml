@@ -48,6 +48,9 @@ jobs:
       - name: Check actual Capacitor config loader and Windows generation guard
         run: npx.cmd tsx tests/ios-bootstrap-config.test.ts
 
+      - name: Check private native reconciliation source with synthetic state
+        run: node --conditions=react-server --import tsx tests/native-reconciliation-foundation.test.ts
+
       - name: Check native auth preparation and installed SDK compatibility
         run: |
           npm.cmd run check:auth-sdk-patch

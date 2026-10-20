@@ -100,9 +100,10 @@
       "title": "Implement approved idempotent entitlement reconciliation writer",
       "owner": "agent",
       "status": "pending_approval",
-      "dependsOn": [],
+      "dependsOn": ["NATIVE-RECONCILIATION-FOUNDATION"],
       "gateRefs": ["native:ENTITLEMENT-WRITER"],
-      "evidence": ["docs/subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md","docs/subscription/BILLING_TEST_MATRIX.md"]
+      "evidence": ["docs/subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md","docs/subscription/BILLING_TEST_MATRIX.md",
+        "docs/subscription/NATIVE_RECONCILIATION_FOUNDATION_EVIDENCE_2026_10_20.md"]
     },
     {
       "id": "NATIVE-ADAPTERS",
@@ -522,6 +523,17 @@
         "tests/auth-storage-initialization.test.ts",
         "tests/capacitor-auth-plugin-packaging.test.ts"
       ]
+    },
+    {
+      "id": "NATIVE-RECONCILIATION-FOUNDATION",
+      "title": "Prepare reviewed shared reconciliation and private server orchestration sources",
+      "owner": "agent",
+      "status": "complete",
+      "dependsOn": [],
+      "gateRefs": [],
+      "evidence": ["docs/subscription/NATIVE_RECONCILIATION_FOUNDATION_REVIEW_2026_10_20.md",
+        "docs/subscription/NATIVE_RECONCILIATION_FOUNDATION_EVIDENCE_2026_10_20.md",
+        "tests/native-reconciliation-foundation.test.ts"]
     },
     {
       "id": "IOS-RUNTIME-PORTS",

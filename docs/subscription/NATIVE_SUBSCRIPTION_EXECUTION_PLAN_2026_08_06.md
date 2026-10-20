@@ -131,6 +131,13 @@ Status: contract complete locally on 2026-08-06; store adapters, routes, notific
 
 ### N4: Entitlement Reconciliation Writer
 
+On 2026-10-20 the Windows source foundation was implemented under the user's
+continued implementation authorization. Shared decisions and server-only
+verify/current-query/atomic-repository orchestration pass synthetic memory tests.
+This does not install a provider adapter or a concrete database writer. See
+`NATIVE_RECONCILIATION_FOUNDATION_EVIDENCE_2026_10_20.md`. The remaining gate below
+still applies to real database/provider runtime and remote activation.
+
 Requires separate approval. Implement server-only idempotent reconciliation from
 verified store state into the F3 ledger and account projection. This includes
 cross-owner denial, duplicate/out-of-order handling, stale-state rejection,

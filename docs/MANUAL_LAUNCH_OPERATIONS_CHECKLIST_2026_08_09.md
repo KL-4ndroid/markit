@@ -18,7 +18,7 @@
 
 | 任務 | 執行者 | 狀態 | 前置任務 |
 | --- | --- | --- | --- |
-| `ENTITLEMENT-WRITER-RUNTIME` | agent | `pending_approval` | 依對應實作切片審查 |
+| `ENTITLEMENT-WRITER-RUNTIME` | agent | `pending_approval` | `NATIVE-RECONCILIATION-FOUNDATION` |
 | `IOS-BOOTSTRAP-REVIEW` | agent | `complete` | `NATIVE-GATE2-EVIDENCE` |
 | `IOS-BOOTSTRAP-PREP` | agent | `complete` | `IOS-BOOTSTRAP-REVIEW` |
 | `IOS-DEVICE-ADAPTERS` | agent | `complete` | `IOS-BOOTSTRAP-PREP`、`IOS-RUNTIME-PORTS`、`IOS-AUTH-STORAGE-SOURCE`、`IOS-CAMERA-SOURCE`、`IOS-FILES-SOURCE`、`IOS-INTERACTIONS-SOURCE`、`IOS-PLATFORM-BOOTSTRAP-SOURCE` |

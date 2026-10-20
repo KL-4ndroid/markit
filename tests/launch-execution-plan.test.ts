@@ -27,9 +27,9 @@ const report = evaluateLaunchExecutionPlan(document);
 assert.equal(document.overallStatus, 'not_ready');
 assert.deepEqual(document.releaseOrder, LAUNCH_EXECUTION_RELEASE_ORDER);
 assert.equal(report.launchReady, false);
-assert.equal(report.totalTaskCount, 57);
+assert.equal(report.totalTaskCount, 58);
 assert.deepEqual(report.counts, {
-  complete: 14,
+  complete: 15,
   ready_agent: 0,
   pending_manual: 10,
   pending_approval: 6,
@@ -37,6 +37,8 @@ assert.deepEqual(report.counts, {
   deferred: 3,
 });
 assert.deepEqual(report.agentReadyIds, []);
+assert.equal(document.tasks.find(task => task.id === 'NATIVE-RECONCILIATION-FOUNDATION')?.status, 'complete');
+assert.equal(document.tasks.find(task => task.id === 'ENTITLEMENT-WRITER-RUNTIME')?.status, 'pending_approval');
 assert.equal(document.tasks.find(task => task.id === 'IOS-DEVICE-ADAPTERS')?.status, 'complete');
 assert.equal(document.tasks.find(task => task.id === 'IOS-PROJECT-GENERATION')?.status, 'pending_manual');
 assert.equal(document.tasks.find(task => task.id === 'IOS-DEVICE-VERIFICATION')?.status, 'blocked_dependency');

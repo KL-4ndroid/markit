@@ -47,6 +47,12 @@ on Windows. Mac generation and unsigned build tooling are ready for handoff;
 see `docs/IOS_MAC_HANDOFF_2026_10_20.md`. Swift compilation, signed builds, physical
 device workflows and TestFlight remain incomplete and retain their separate tasks.
 
+The following Windows source slice completes shared native reconciliation decisions
+and private server orchestration against an injected transaction boundary. See
+`docs/subscription/NATIVE_RECONCILIATION_FOUNDATION_EVIDENCE_2026_10_20.md`.
+Real provider verification, the concrete database writer and billing activation
+remain incomplete; synthetic transaction tests do not close those gates.
+
 ## 2. Work Ownership
 
 | Owner | Meaning |
