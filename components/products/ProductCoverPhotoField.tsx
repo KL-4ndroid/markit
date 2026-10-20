@@ -9,6 +9,8 @@ import {
   getProductCoverPhotoCapability,
 } from '@/lib/products/product-cover-photo-client';
 import { getProductImageAdapter } from '@/lib/platform/product-image-capability';
+import { resolvePhotoCamera } from '@/lib/platform/camera-capability';
+import { CameraSelectionError } from '@/lib/platform/contracts/camera';
 import type {
   PreparedProductCoverPhoto,
   ProductCoverPhotoCapability,
@@ -34,7 +36,7 @@ export function ProductCoverPhotoField({
   disabled = false,
   onDeleted,
 }: ProductCoverPhotoFieldProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const selectionVersion = useRef(0);
   const retriedProductRef = useRef<string | null>(null);
   const [capabilityStatus, setCapabilityStatus] = useState<'loading' | 'resolved'>('loading');
   const [capabilityRevision, setCapabilityRevision] = useState(0);
@@ -47,6 +49,12 @@ export function ProductCoverPhotoField({
   const [imageRevision, setImageRevision] = useState(0);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    selectionVersion.current += 1;
+    setProcessing(false);
+    return () => { selectionVersion.current += 1; };
+  }, [productId, capability.canManage]);
 
   useEffect(() => {
     let active = true;
@@ -77,16 +85,28 @@ export function ProductCoverPhotoField({
     setCloudPhotoExists(available);
   }, []);
 
-  const choose = async (file?: File) => {
-    if (!file) return;
+  const choose = async (source: 'camera' | 'library') => {
+    if (!capability.canManage || disabled || processing) return;
+    const request = ++selectionVersion.current;
     setProcessing(true);
     setError('');
     try {
-      onChange(await (await getProductImageAdapter()).prepare(file));
-    } catch {
-      setError('無法處理這張照片，請使用 25MB 以下的 JPEG、PNG 或 WebP。');
+      const file = await (await resolvePhotoCamera()).selectImage(source);
+      if (!file || request !== selectionVersion.current) return;
+      const prepared = await (await getProductImageAdapter()).prepare(file);
+      if (request !== selectionVersion.current) { URL.revokeObjectURL(prepared.previewUrl); return; }
+      onChange(prepared);
+    } catch (error) {
+      if (request !== selectionVersion.current) return;
+      setError(error instanceof CameraSelectionError && error.reason === 'permission_denied'
+        ? '請允許使用相機或照片後再試，或到裝置設定調整權限。'
+        : error instanceof CameraSelectionError && error.reason === 'camera_not_found'
+          ? '這部裝置沒有可用的相機，請改從相簿選取。'
+          : error instanceof CameraSelectionError && error.reason === 'adapter_unavailable'
+            ? '目前無法開啟相機或相簿，請稍後再試。'
+            : '無法處理這張照片，請使用 25MB 以下的 JPEG、PNG 或 WebP。');
     } finally {
-      setProcessing(false);
+      if (request === selectionVersion.current) setProcessing(false);
     }
   };
 
@@ -164,25 +184,19 @@ export function ProductCoverPhotoField({
         </div>
       ) : canChoose ? (
         <div className="flex flex-wrap gap-2">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={event => {
-              void choose(event.target.files?.[0]);
-              event.target.value = '';
-            }}
-          />
           <Button
             type="button"
             variant="secondary"
             className="min-w-40 flex-1"
             disabled={disabled || processing}
-            onClick={() => inputRef.current?.click()}
+            onClick={() => void choose('library')}
             leadingIcon={<ImagePlus className="h-4 w-4" aria-hidden="true" />}
           >
             {processing ? '處理中' : value || cloudPhotoExists ? '更換照片' : '加入照片'}
+          </Button>
+          <Button type="button" variant="secondary" disabled={disabled || processing}
+            onClick={() => void choose('camera')} leadingIcon={<Camera className="h-4 w-4" aria-hidden="true" />}>
+            拍照
           </Button>
           {value && (
             <Button type="button" variant="ghost" disabled={disabled || processing} onClick={() => onChange(null)} leadingIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}>

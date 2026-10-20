@@ -45,9 +45,30 @@ assert.doesNotMatch(workflow, /SUBSCRIPTION_SIMULATION_ENABLED|SUPABASE_SECRET_K
 assert.doesNotMatch(workflow, /secrets\./, 'quality gates must not require deployment secrets');
 assert.equal(
   workflow.match(/node-version: '24'/g)?.length,
-  2,
-  'every Web CI job must run on Node 24 LTS',
+  workflow.match(/uses: actions\/setup-node@/g)?.length,
+  'every Node CI setup must select Node 24 LTS',
 );
+const windowsMobileJob = workflow.split(/^  windows-mobile:/m)[1]?.split(/^  [a-z]/m)[0];
+assert.ok(windowsMobileJob, 'Windows mobile checks must remain in CI');
+for (const contract of [
+  'runs-on: windows-latest',
+  'shell: pwsh',
+  'https://mobile-api.invalid',
+  'npm.cmd run check:launch-execution-plan',
+  'npm.cmd run check:manual-launch-checklist',
+  'npx.cmd tsc --noEmit --project tsconfig.mobile.json',
+  'npx.cmd tsx tests/ios-bootstrap-config.test.ts',
+  'npm.cmd run check:auth-sdk-patch',
+  'npx.cmd tsx tests/capacitor-auth-storage.test.ts',
+  'npx.cmd tsx tests/auth-storage-initialization.test.ts',
+  'npx.cmd tsx tests/capacitor-auth-plugin-packaging.test.ts',
+  'npx.cmd tsx tests/capacitor-camera.test.ts',
+  'npx.cmd tsx tests/camera-flow-integration.test.ts',
+  'npx.cmd tsx tests/ios-media-configuration.test.ts',
+  'npm.cmd run build:mobile:api',
+  'npm.cmd run verify:mobile',
+  'npm.cmd run smoke:mobile',
+]) assert.ok(windowsMobileJob.includes(contract), `missing Windows CI contract: ${contract}`);
 assert.doesNotMatch(workflow, /node-version: '20'/);
 assert.equal(packageJson.engines?.node, '24.x');
 assert.equal(nvmVersion, '24');

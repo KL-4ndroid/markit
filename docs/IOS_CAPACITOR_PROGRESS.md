@@ -6,7 +6,43 @@
 
 ## Current Phase
 
-Phase 2 / Backend API boundary complete; native packaging review is next
+Phase 2 complete / Windows iOS configuration and scaffold-script sources complete;
+native network/lifecycle, iOS auth-storage and camera/photo sources complete;
+other adapters and macOS generation pending
+
+On 2026-10-19 the user accepted Windows-first delivery and autonomous routine
+implementation. The canonical task graph separates `IOS-BOOTSTRAP-REVIEW` and
+`IOS-BOOTSTRAP-PREP` from Apple/Google catalog setup. Signed builds, device evidence,
+paid runtime, and TestFlight remain incomplete. See
+`docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md`.
+
+The reviewed 8.5.3 core/iOS/CLI packages, bundled config, and guarded preparation
+script are installed. The real Capacitor config loader and Windows refusal tests
+pass. `IOS-BOOTSTRAP-PREP` means source preparation only; no `ios/` project,
+signed build or native compilation evidence exists yet.
+
+On 2026-10-20, `IOS-RUNTIME-PORTS` completed the reviewed NetworkPort and
+LifecyclePort source slice using official App/Network plugins. Windows tests cover
+startup races, background draft saving, timeouts and listener cleanup. This is not
+device evidence or application activation: Web remains the default platform.
+The remaining device adapters and full native platform bootstrap keep
+`IOS-DEVICE-ADAPTERS` incomplete. See
+`docs/IOS_RUNTIME_PORTS_EVIDENCE_2026_10_20.md`.
+
+The subsequent `IOS-AUTH-STORAGE-SOURCE` slice adds private iOS Keychain sources
+and makes both Supabase clients wait for native auth storage before accessing a
+session. Native failures do not fall back to Web or erase credentials. A reviewed
+compatibility patch handles the SDK's initial-subscription read-error path.
+Windows behavior and packaging evidence are recorded in
+`docs/IOS_AUTH_STORAGE_EVIDENCE_2026_10_20.md`; actual Swift/Keychain execution,
+device lock/reboot/reinstall and signed builds remain unverified.
+
+`IOS-CAMERA-SOURCE` adds single-photo native capture/library selection, scoped
+temporary-image cleanup, shared capture handoff and product-cover integration.
+Project preparation now configures camera/photo purpose strings and the timestamp
+privacy resource automatically. See `docs/IOS_CAMERA_EVIDENCE_2026_10_20.md`.
+Actual permissions, HEIC/orientation, memory and native resource bundling remain
+device/build checks; file export/share, links and full AppPlatform bootstrap remain.
 
 ## Status
 
@@ -43,8 +79,9 @@ GATE 2 COMPLETE - On 2026-08-24 both bounded Production storage-failure probes p
 - On 2026-07-20 the user explicitly authorized creating one disposable account without an invitation or relationship for the unrelated-user denial test. No existing account relationship was changed.
 - On 2026-07-20 the user approved narrow same-request R2 compensation: delete only object keys confirmed uploaded by the current attempt when thumbnail upload or metadata finalize fails, keep the local payload and failed metadata diagnostics, and expose an explicit cleanup-incomplete result without adding a broad batch or retention cleanup executor.
 - On 2026-07-20 the user approved the recommended login/sign-out UI stabilization. Role snapshots must be bound to the current authenticated user before protected content mounts; manual sign-out must not be treated as session expiry; successful sign-out uses Next client navigation and deliberately opens the login dialog; and initial sync remains blocking but must be visible on its first mounted frame rather than covering an already-painted dashboard.
-- Phase 3 Capacitor/native bootstrap remains blocked by implementation review and the
-  canonical `STORE-CATALOG-CONFIG` dependency; Gate 2 is complete.
+- Phase 3 iOS source preparation passed `IOS-BOOTSTRAP-REVIEW`; Gate 2 is complete.
+  Native device, signed-build, and store-integration tasks retain separate evidence
+  requirements. The aggregate native gates still include Android.
 
 ## Changed Files
 

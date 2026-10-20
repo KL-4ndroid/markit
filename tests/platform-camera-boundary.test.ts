@@ -62,7 +62,7 @@ const hookSource = readProjectFile('hooks/useSalesPhotoEvidenceFlow.ts');
 const webCameraSource = readProjectFile('lib/platform/web/camera.ts');
 const platformContractSource = readProjectFile('lib/platform/contracts/camera.ts');
 
-assert.match(hookSource, /getAppPlatform\(\)\.camera/);
+assert.match(hookSource, /await resolvePhotoCamera\(\)/);
 assert.match(hookSource, /getCapabilitySnapshot[\s\S]*camera\.getCapabilitySnapshot/);
 assert.match(hookSource, /selectFile[\s\S]*camera\.selectImage/);
 assert.doesNotMatch(hookSource, /document\.createElement|getUserMedia|@capacitor\//);

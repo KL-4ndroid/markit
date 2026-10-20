@@ -118,9 +118,7 @@ export const MANUAL_LAUNCH_CHECKLIST_TASKS: readonly ChecklistTaskDefinition[] =
       item('commercial.team', '核准 Team 月繳／年繳公開價、含稅呈現與首發地區'),
       item('commercial.launch-promo', '核准首發優惠碼的折扣、適用資格、不中斷續訂價格與失效規則'),
       item('commercial.launch-promo-operations', '核准首發優惠碼的活動起訖、總兌換上限與公開代碼'),
-      item('commercial.launch-promo-continuity', '在 Apple／Google sandbox 證明首發價格 cohort、連續續訂、失效與不合格阻擋'),
       item('commercial.trial', '核准試用方案、週期、天數與使用次數規則'),
-      item('commercial.trial-sandbox', '在 Apple／Google sandbox 證明 14 天試用、FERIA50 疊加、取消不扣款與重複試用阻擋'),
       item('commercial.apple-grace', '核准 Apple grace period 與 entitlement／通知規則'),
       item('commercial.apple-grace-support', '由 support_owner 核准 Apple 付款異常文案、管理入口、升級與值班責任'),
       item('commercial.google-grace', '核准 Google grace／account hold 與降級規則'),
@@ -136,6 +134,17 @@ export const MANUAL_LAUNCH_CHECKLIST_TASKS: readonly ChecklistTaskDefinition[] =
       item('commercial.founder-continuity', '定義 retry、grace、hold、refund、chargeback 與重訂的連續性'),
       item('commercial.founder-transition', '定義升降級與跨平台 restore 的 Founder 規則'),
       item('commercial.founder-mechanism', '選定可由 Apple／Google 支援的 Founder 實作機制或延後方案'),
+    ],
+  },
+  {
+    taskId: 'SANDBOX-LIFECYCLE',
+    title: '雙平台商業規則的 Sandbox 證據',
+    guideSection: '4',
+    executionMode: 'shared',
+    aiAssistance: 'AI 準備及核對案例；Human 完成商店測試操作。政策核准先行，各平台證據分開記錄，完整 gate 仍需兩平台。',
+    items: [
+      item('commercial.launch-promo-continuity', '在 Apple／Google sandbox 證明首發價格 cohort、連續續訂、失效與不合格阻擋'),
+      item('commercial.trial-sandbox', '在 Apple／Google sandbox 證明 14 天試用、FERIA50 疊加、取消不扣款與重複試用阻擋'),
       item('commercial.founder-sandbox', '在 Apple 與 Google sandbox 證明 Founder 機制不會被未符合資格者取得'),
     ],
   },
@@ -418,6 +427,20 @@ export function renderManualLaunchChecklist(
     `- 整體 launch 狀態：\`${plan.overallStatus}\``,
     '',
   ];
+
+  lines.push('## Windows 先行 iOS 執行佇列');
+  lines.push('');
+  lines.push('先完成 Windows 程式與驗證；Apple 帳號及 macOS 在簽署／真實整合前辦理。下列狀態直接取自 canonical tasks，不代表已通過 iOS 編譯或實機驗收。');
+  lines.push('');
+  lines.push('| 任務 | 執行者 | 狀態 | 前置任務 |');
+  lines.push('| --- | --- | --- | --- |');
+  for (const task of plan.tasks.filter(candidate => candidate.id.startsWith('IOS-')
+    || ['APPLE-CATALOG-CONFIG', 'APPLE-VERIFICATION-RUNTIME', 'ENTITLEMENT-WRITER-RUNTIME'].includes(candidate.id))) {
+    lines.push(`| \`${task.id}\` | ${task.owner} | \`${task.status}\` | ${task.dependsOn.map(id => `\`${id}\``).join('、') || '依對應實作切片審查'} |`);
+  }
+  lines.push('');
+  lines.push('以下完整人工清單保留雙平台與正式發布要求；Google 待辦不阻擋上述 iOS 路徑。整體 Native Gate 仍需雙平台證據。');
+  lines.push('');
 
   MANUAL_LAUNCH_CHECKLIST_TASKS.forEach((definition, index) => {
     const task = tasks.get(definition.taskId);

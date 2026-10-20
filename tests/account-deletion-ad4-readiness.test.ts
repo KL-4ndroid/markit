@@ -5,8 +5,21 @@ import { createRequire } from 'node:module';
 import {
   ACCOUNT_DELETION_AD4_BLOCKER_IDS,
   evaluateAccountDeletionAd4Readiness,
+  hasCompleteNativeStoreRuntime,
   type AccountDeletionAd4Facts,
 } from '../lib/subscription/account-deletion-ad4-readiness';
+
+const storeGates = ['NATIVE-ADAPTERS', 'STORE-VERIFICATION', 'ENTITLEMENT-WRITER']
+  .map(id => ({ id, status: 'complete' }));
+assert.equal(hasCompleteNativeStoreRuntime(storeGates), true);
+for (const incomplete of storeGates) {
+  assert.equal(hasCompleteNativeStoreRuntime(storeGates.filter(gate => gate.id !== incomplete.id)), false);
+  assert.equal(hasCompleteNativeStoreRuntime(storeGates.map(gate => (
+    gate.id === incomplete.id ? { ...gate, status: 'blocked_dependency' } : gate
+  ))), false);
+}
+assert.equal(hasCompleteNativeStoreRuntime([...storeGates, storeGates[0]]), false);
+assert.equal(hasCompleteNativeStoreRuntime([{ id: 'IOS-RUNTIME-PORTS', status: 'complete' }]), false);
 
 const allReady = Object.freeze({
   capacitorGate2Complete: true,

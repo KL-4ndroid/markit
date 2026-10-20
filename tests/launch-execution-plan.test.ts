@@ -27,21 +27,21 @@ const report = evaluateLaunchExecutionPlan(document);
 assert.equal(document.overallStatus, 'not_ready');
 assert.deepEqual(document.releaseOrder, LAUNCH_EXECUTION_RELEASE_ORDER);
 assert.equal(report.launchReady, false);
-assert.equal(report.totalTaskCount, 31);
+assert.equal(report.totalTaskCount, 54);
 assert.deepEqual(report.counts, {
-  complete: 5,
-  ready_agent: 0,
-  pending_manual: 8,
-  pending_approval: 5,
-  blocked_dependency: 10,
+  complete: 10,
+  ready_agent: 1,
+  pending_manual: 10,
+  pending_approval: 6,
+  blocked_dependency: 24,
   deferred: 3,
 });
-assert.deepEqual(report.agentReadyIds, []);
+assert.deepEqual(report.agentReadyIds, ['IOS-DEVICE-ADAPTERS']);
 assert.ok(!report.humanActionIds.includes('NATIVE-GATE2-EVIDENCE'));
 assert.ok(!report.humanActionIds.includes('SEC-SRA000-EXECUTION'));
 assert.ok(report.humanActionIds.includes('APPLE-ACCOUNT-READINESS'));
 assert.ok(!report.humanActionIds.includes('ACCOUNT-DELETION-POLICY'));
-assert.ok(report.approvalIds.includes('STORE-VERIFICATION-RUNTIME'));
+assert.ok(report.approvalIds.includes('APPLE-VERIFICATION-RUNTIME'));
 assert.ok(report.approvalIds.includes('SEC-REMEDIATION'));
 assert.ok(report.deferredIds.includes('WEB-ECPAY'));
 
@@ -59,6 +59,41 @@ function task(plan: Record<string, unknown>, id: string): Record<string, unknown
   if (!found) throw new Error(`missing test task: ${id}`);
   return found;
 }
+
+// Local preparation must remain independent of protected accounts, while release
+// cannot bypass physical-device, verified-purchase, deletion, or security evidence.
+for (const [id, dependency] of [
+  ['IOS-BOOTSTRAP-PREP', 'GOOGLE-ACCOUNT-READINESS'],
+  ['IOS-BOOTSTRAP-PREP', 'APPLE-ACCOUNT-READINESS'],
+  ['ENTITLEMENT-WRITER-RUNTIME', 'STORE-VERIFICATION-RUNTIME'],
+] as const) {
+  const recoupled = mutablePlan();
+  (task(recoupled, id).dependsOn as string[]).push(dependency);
+  assert.throws(() => parseLaunchExecutionPlan(recoupled, web, native), /ios_dependency_invalid/);
+}
+for (const [id, dependency] of [
+  ['STORE-CATALOG-CONFIG', 'GOOGLE-CATALOG-CONFIG'],
+  ['STORE-VERIFICATION-RUNTIME', 'GOOGLE-VERIFICATION-RUNTIME'],
+  ['NATIVE-ADAPTERS', 'ANDROID-ADAPTERS'],
+  ['IOS-BOOTSTRAP-REVIEW', 'NATIVE-GATE2-EVIDENCE'],
+  ['IOS-SIGNED-BUILD', 'IOS-SIGNING-READINESS'],
+  ['IOS-SIGNED-BUILD', 'IOS-PROJECT-GENERATION'],
+  ['IOS-STORE-COMPLIANCE', 'ACCOUNT-DELETION-RUNTIME'],
+  ['IOS-SANDBOX-LIFECYCLE', 'APPLE-VERIFICATION-RUNTIME'],
+  ['IOS-PAID-RELEASE', 'SEC-REMEDIATION'],
+] as const) {
+  const bypass = mutablePlan();
+  task(bypass, id).dependsOn = (task(bypass, id).dependsOn as string[])
+    .filter(candidate => candidate !== dependency);
+  assert.throws(() => parseLaunchExecutionPlan(bypass, web, native), /ios_dependency_invalid/);
+}
+const incompleteIos = mutablePlan();
+incompleteIos.tasks = (incompleteIos.tasks as Array<Record<string, unknown>>)
+  .filter(candidate => candidate.id !== 'IOS-PAID-RELEASE');
+assert.throws(() => parseLaunchExecutionPlan(incompleteIos, web, native), /ios_dependency_invalid/);
+assert.equal(native.overallStatus, 'not_ready');
+assert.deepEqual(document.tasks.find(candidate => candidate.id === 'STORE-CATALOG-CONFIG')?.dependsOn,
+  ['APPLE-CATALOG-CONFIG', 'GOOGLE-CATALOG-CONFIG']);
 
 const wrongOverall = mutablePlan();
 wrongOverall.overallStatus = 'ready';

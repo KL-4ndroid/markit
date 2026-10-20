@@ -4,7 +4,8 @@ import { useCallback, useEffect, useReducer, useState } from 'react';
 import { toast } from 'sonner';
 
 import { captureAndStoreSalesPhotoEvidenceWithFileInput } from '@/lib/sales/photo-evidence-browser-adapter';
-import { getAppPlatform } from '@/lib/platform';
+import { resolvePhotoCamera } from '@/lib/platform/camera-capability';
+import { CameraSelectionError } from '@/lib/platform/contracts/camera';
 import { uploadPendingSalesPhotoEvidenceManually } from '@/lib/sales/photo-evidence-manual-upload-client';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import {
@@ -34,7 +35,11 @@ interface UseSalesPhotoEvidenceFlowOptions {
 function captureFailureMessage(reason: string): string {
   switch (reason) {
     case 'adapter_unavailable':
-      return '目前瀏覽器無法開啟相機或相簿，請改用其他瀏覽器再試。';
+      return '目前無法開啟相機或相簿，請稍後再試。';
+    case 'permission_denied':
+      return '請允許使用相機或照片後再試，或到裝置設定調整權限。';
+    case 'camera_not_found':
+      return '這部裝置沒有可用的相機，請改從相簿選取。';
     case 'source_decode_failed':
       return '照片讀取失敗，請重新拍照或選擇其他照片。';
     case 'compression_failed':
@@ -212,7 +217,7 @@ export function useSalesPhotoEvidenceFlow({
     dispatch({ type: 'START_CAPTURE' });
 
     try {
-      const camera = getAppPlatform().camera;
+      const camera = await resolvePhotoCamera();
       const result = await captureAndStoreSalesPhotoEvidenceWithFileInput({
         queueItem: item,
         source,
@@ -239,8 +244,8 @@ export function useSalesPhotoEvidenceFlow({
       dispatch({ type: 'CAPTURE_FAILED', message: captureFailureMessage(result.failure.reason) });
       return null;
     } catch (error) {
-      console.error('capture sales photo failed:', error);
-      dispatch({ type: 'CAPTURE_FAILED', message: '照片處理失敗，請稍後再試。' });
+      dispatch({ type: 'CAPTURE_FAILED', message: error instanceof CameraSelectionError
+        ? captureFailureMessage(error.reason) : '照片處理失敗，請稍後再試。' });
       return null;
     }
   }, [canHandleItem, loadPendingItems, pendingItems, state]);

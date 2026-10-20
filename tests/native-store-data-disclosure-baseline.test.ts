@@ -20,6 +20,16 @@ const baseline = JSON.parse(baselineSource) as {
   }>;
   negativeClaims: Array<{ id: string; mustRecheckAfterNativePackages: boolean }>;
   blockingReviews: string[];
+  nativeSdkInventory: {
+    reviewStatus: string;
+    reviewEvidence: string;
+    packages: Record<string, string>;
+    localPluginVersions: Record<string, string>;
+    transitivePackages: Record<string, string>;
+    devicePluginsInstalled: boolean;
+    storeSdkInstalled: boolean;
+    nativeProjectGenerated: boolean;
+  };
 };
 const gatesSource = read('docs/subscription/NATIVE_SUBSCRIPTION_LAUNCH_GATES_2026_08_06.json');
 const gates = JSON.parse(gatesSource) as {
@@ -32,7 +42,9 @@ const privacyPage = read('app/privacy/page.tsx');
 const supportPage = read('app/support/page.tsx');
 const purchaseContract = read('lib/platform/contracts/in-app-purchase.ts');
 const verificationContract = read('lib/subscription/native-store-verification-contract.ts');
-const packageJson = JSON.parse(read('package.json')) as { dependencies: Record<string, string> };
+const packageJson = JSON.parse(read('package.json')) as {
+  dependencies: Record<string, string>; devDependencies: Record<string, string>;
+};
 const manifest = read('scripts/test-files.txt');
 
 assert.equal(baseline.status, 'draft_requires_manual_and_provider_review');
@@ -74,9 +86,22 @@ assert.equal(
 );
 assert.ok(baseline.negativeClaims.every(claim => claim.mustRecheckAfterNativePackages));
 
+assert.equal(baseline.nativeSdkInventory.reviewStatus, 'source_only_final_binary_review_pending');
+assert.doesNotThrow(() => read(baseline.nativeSdkInventory.reviewEvidence));
+for (const [dependency, version] of Object.entries(baseline.nativeSdkInventory.packages)) {
+  assert.equal(packageJson.dependencies[dependency] ?? packageJson.devDependencies[dependency], version);
+}
+assert.deepEqual(Object.keys(baseline.nativeSdkInventory.packages).sort(),
+  ['@capacitor/app', '@capacitor/camera', '@capacitor/cli', '@capacitor/core', '@capacitor/filesystem', '@capacitor/ios', '@capacitor/network', '@feria/capacitor-auth-storage']);
+for (const [dependency, version] of Object.entries(baseline.nativeSdkInventory.transitivePackages)) {
+  assert.equal(JSON.parse(read(`node_modules/${dependency}/package.json`)).version, version);
+}
+const localAuthPlugin = JSON.parse(read('plugins/feria-auth-storage/package.json'));
+assert.equal(baseline.nativeSdkInventory.localPluginVersions[localAuthPlugin.name], localAuthPlugin.version);
+assert.equal(baseline.nativeSdkInventory.devicePluginsInstalled, true);
+assert.equal(baseline.nativeSdkInventory.storeSdkInstalled, false);
+assert.equal(baseline.nativeSdkInventory.nativeProjectGenerated, false);
 for (const forbiddenDependency of [
-  '@capacitor/core',
-  '@capacitor/ios',
   '@capacitor/android',
   'cordova-plugin-purchase',
   '@revenuecat/purchases-capacitor',

@@ -18,6 +18,8 @@ function readProjectFile(path: string): string {
 
 const formAutosaveSource = readProjectFile('lib/form-autosave.ts');
 const addMarketFormSource = readProjectFile('components/markets/AddMarketForm.tsx');
+assert.match(addMarketFormSource, /scheduleFormDraftSave\([\s\S]*getLifecyclePort\(\)/);
+assert.match(formAutosaveSource, /scheduleFormDraftSave\([\s\S]*getLifecyclePort\(\), debounceMs/);
 
 console.log('\n=== Form draft autosave guardrails ===');
 

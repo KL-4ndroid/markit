@@ -2,7 +2,50 @@
 
 Date: 2026-08-16
 
-Status: current engineering roadmap; Gate 2 complete, native packaging still requires slice review and catalog dependency
+Status: current engineering roadmap; Gate 2 complete; reviewed Windows iOS source bootstrap, network/lifecycle, auth-storage and camera/photo sources complete; remaining adapters and native generation pending
+
+## Windows-first execution update — 2026-10-19
+
+The user accepted `docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md` and
+authorized routine autonomous repository work. Current equipment is Windows only;
+Apple enrollment and rented macOS are scheduled near real integration.
+
+The canonical task graph now separates iOS preparation from store integration:
+
+- `IOS-BOOTSTRAP-REVIEW` → `IOS-BOOTSTRAP-PREP` → `IOS-DEVICE-ADAPTERS` prepares
+  reviewed sources and tests without Apple/Google account or catalog dependencies.
+- `IOS-SIGNED-BUILD` → `IOS-DEVICE-VERIFICATION` → `IOS-INTERNAL-TESTFLIGHT`
+  requires real macOS, signing, Apple setup, and physical-device evidence.
+- `APPLE-CATALOG-CONFIG`, `APPLE-VERIFICATION-RUNTIME`, `IOS-STORE-ADAPTERS`,
+  the common writer, deletion, and compliance feed `IOS-SANDBOX-LIFECYCLE`,
+  `IOS-WEB-ACCESS`, `IOS-EXTERNAL-TESTFLIGHT`, and `IOS-PAID-RELEASE`.
+- Google catalog/runtime and Android adapters retain separate tasks. Aggregate
+  native gates still require both platforms; preparation cannot close them.
+
+The source-only bootstrap slice has passed technical review in
+`docs/IOS_BOOTSTRAP_SOURCE_REVIEW_2026_10_19.md`: core/iOS/CLI are pinned to 8.5.3,
+config and guarded scaffold commands are present, and the actual CLI config loader
+is tested. `IOS-PROJECT-GENERATION` requires macOS and remains incomplete; no native
+project, compile, signing or TestFlight evidence is claimed.
+
+The follow-up `IOS-RUNTIME-PORTS` source subtask completed on 2026-10-20 with
+reviewed App 8.1.2 / Network 8.0.1 plugins, guarded native loading and behavioral
+tests. See `docs/IOS_RUNTIME_PORTS_REVIEW_2026_10_20.md` and
+`docs/IOS_RUNTIME_PORTS_EVIDENCE_2026_10_20.md`. It does not install a native
+AppPlatform at application startup or complete the broader `IOS-DEVICE-ADAPTERS`.
+The follow-up auth slice completed Keychain source and eager auth-storage ordering;
+see `docs/IOS_AUTH_STORAGE_EVIDENCE_2026_10_20.md`. Other native capabilities and
+full AppPlatform activation remain incomplete; no Swift/device result is implied.
+
+The camera/photo follow-up adds current single-image APIs, scoped temporary-image
+cleanup, shared sales/product acquisition and macOS permission/privacy source
+automation. See `docs/IOS_CAMERA_EVIDENCE_2026_10_20.md`. File export/share and links
+remain separate; this source completion does not close device or store gates.
+
+This update supersedes the older coupling of all Phase 3 preparation to
+`STORE-CATALOG-CONFIG` in the historical tables below. Package installation,
+native source generation, and native pipeline work still require their reviewed
+implementation slice. No native implementation was approved by a mere status change.
 
 ## 1. Which Document Controls What
 
@@ -30,7 +73,7 @@ This plan does not override a closed Gate or turn a local mock, test, draft, or 
 | Platform IAP port | Complete locally | Unavailable Web and fake test adapters exist; no native store SDK adapter |
 | Store verification | Contract complete only | Provider runtime, notifications, routes, and writes remain pending approval |
 | Apple／Google accounts and catalog | Pending manual | Agreements, tax/banking/payout, app records, testers, devices, prices, offers, and console mappings require protected-console work |
-| Phase 3 native bootstrap | Blocked | No Capacitor packages, `ios/`, `android/`, signing, or native adapter work until the implementation slice is reviewed and `STORE-CATALOG-CONFIG` dependencies are resolved |
+| Phase 3 native bootstrap | Source preparation complete | Reviewed packages/config/scaffold scripts are present; macOS generation, device adapters, signing and store integration remain pending |
 | Store compliance, sandbox, canary | Blocked by dependencies | Requires final binaries, policy approvals, server verification, entitlement writer, and real-device evidence |
 
 Overall status is `not_ready`. A passing local mobile build does not make the application App Store or Google Play ready.
@@ -77,11 +120,11 @@ flowchart LR
 | 8 | Store compliance and sandbox | Human + AI | Signed final-like binaries | Privacy/data forms, listings, screenshots, complete lifecycle and cross-platform restore |
 | 9 | TestFlight／Play canaries | Human + AI | All native gates complete | Bounded cohort, rollback, incident monitoring, dated go／no-go |
 
-Slices 0 through 4 are complete or available as their gates permit. Slice 5 remains
-blocked by implementation review and `STORE-CATALOG-CONFIG`; later slices remain blocked
-by their own dependencies even if an engineer can technically run the commands.
+Slices 0 through 4 are complete or available as their gates permit. Slice 5 source
+preparation now follows `IOS-BOOTSTRAP-REVIEW`; signed builds and later store work
+remain blocked by their platform-specific dependencies.
 
-## 5. Immediate Work Before Capacitor Installation
+## 5. Source Work And External Integration
 
 ### 5.1 AI can complete now
 
@@ -110,11 +153,16 @@ When Gate 2 and the implementation review are complete:
 1. Recheck the exact supported Capacitor release and its Node, Xcode, Android Studio, SDK, and OS requirements on the execution date.
 2. Review and lock only the minimum packages: Capacitor core/CLI, iOS, Android, and separately approved capability plugins.
 3. Define stable application identifiers, display names, deep-link schemes, API origin, build target, and Web service-worker suppression.
-4. Generate both `ios/` and `android/` from the same reviewed mobile artifact.
+4. Generate each platform from the shared mobile artifact when its prerequisites
+   are available. iOS generation follows `IOS-PROJECT-GENERATION` on macOS;
+   Android generation follows its separate task, without blocking iOS preparation.
 5. Keep generated native projects reviewable; do not hide signing, permission, URL scheme, privacy manifest, or Gradle changes in bulk regeneration.
 6. Prove a clean Web build, mobile artifact verification, iOS simulator/device build, and Android emulator/device build before adding store SDK adapters.
 
-The current Capacitor v8 documentation lists Node 22+, Xcode 26+, Android Studio 2025.2.1+, Android SDK API 24+, and iOS 15+ as baseline requirements. These are planning inputs, not a frozen dependency decision; verify the exact minor and platform support again before installation.
+The reviewed iOS source slice pins core/iOS/CLI to 8.5.3. Capacitor v8 documentation
+lists Node 22+, Xcode 26+ and iOS 15+; this project retains Node 24 for CI and future
+macOS setup. Recheck Xcode/SDK compatibility at native generation. Android tooling
+and packages remain a separate later platform slice.
 
 ## 7. Adapter And Native Runtime Acceptance
 

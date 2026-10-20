@@ -11,6 +11,7 @@ import {
   planSalesPhotoEvidenceCaptureCompression,
   type SalesPhotoEvidenceImageVariantPlan,
 } from '@/lib/sales/photo-evidence-capture-compression';
+import { CameraSelectionError } from '@/lib/platform/contracts/camera';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
 import {
   putPendingSalesPhotoEvidencePayload,
@@ -95,8 +96,11 @@ export function selectSalesPhotoEvidenceFileWithInput(source: SalesPhotoEvidence
 
     const cleanup = () => {
       input.removeEventListener('change', handleChange);
+      input.removeEventListener('cancel', handleCancel);
       input.remove();
     };
+
+    const handleCancel = () => { cleanup(); resolve(null); };
 
     const handleChange = () => {
       const file = input.files?.[0] ?? null;
@@ -105,6 +109,7 @@ export function selectSalesPhotoEvidenceFileWithInput(source: SalesPhotoEvidence
     };
 
     input.addEventListener('change', handleChange, { once: true });
+    input.addEventListener('cancel', handleCancel, { once: true });
     document.body.appendChild(input);
     input.click();
   });
@@ -289,7 +294,8 @@ export async function captureAndStoreSalesPhotoEvidenceWithFileInput(
       payload,
       readiness,
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof CameraSelectionError) return fail(error.reason, readiness);
     return fail(decoded ? 'compression_failed' : 'source_decode_failed', readiness);
   } finally {
     decoded?.close?.();

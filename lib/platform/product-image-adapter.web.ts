@@ -15,7 +15,7 @@ async function decode(file: File): Promise<{ source: CanvasImageSource; width: n
   const image = new Image();
   await new Promise<void>((resolve, reject) => {
     image.onload = () => resolve();
-    image.onerror = () => reject(new Error('image_decode_failed'));
+    image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image_decode_failed')); };
     image.src = url;
   });
   return { source: image, width: image.naturalWidth, height: image.naturalHeight, close: () => URL.revokeObjectURL(url) };
@@ -33,8 +33,11 @@ async function render(source: CanvasImageSource, sourceWidth: number, sourceHeig
     if (!context) throw new Error('image_processing_unavailable');
     context.drawImage(source, 0, 0, width, height);
     for (let quality = PRODUCT_COVER_PHOTO_POLICY.startQuality; quality >= PRODUCT_COVER_PHOTO_POLICY.minQuality; quality -= 0.07) {
-      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', quality));
-      if (blob && blob.size <= maxBytes) return { blob, width, height };
+      for (const mimeType of ['image/webp', 'image/jpeg']) {
+        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, mimeType, quality));
+        // WebKit may return PNG when the requested encoder is unavailable.
+        if (blob && blob.type === mimeType && blob.size <= maxBytes) return { blob, width, height };
+      }
     }
     scale *= 0.85;
   }

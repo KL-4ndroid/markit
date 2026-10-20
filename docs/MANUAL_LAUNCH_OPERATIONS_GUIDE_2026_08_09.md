@@ -4,6 +4,20 @@
 
 狀態：執行指南；完成狀態以 canonical evidence 與自動化 Checklist 為準
 
+2026-10-19 執行順序更新：使用者接受 Windows 先行方案並授權自主處理一般工程。
+先依 `docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md` 完成 Windows 工作；
+Apple 申請、macOS 租用及真機操作集中在實際整合前。產生的 Checklist 新增獨立
+iOS 佇列。以下完整清單保留整體發布要求，Google 待辦不阻擋 iOS 中途交付。
+Gate 2 與 SRA-000 的既有完成證據繼續有效；不可把歷史操作說明當成要求重做。
+
+Windows 原始設定與腳本完成後，`IOS-SIGNING-READINESS`（Apple 身分、正式 App ID、
+簽署環境）與 `IOS-PROJECT-GENERATION`（macOS／Xcode 生成原生專案）列為未來人工
+介入點。這不要求現在租機；先繼續 `IOS-DEVICE-ADAPTERS` 等 Windows 工作。
+屆時設定 `IOS_APP_ID`、公開 HTTPS `NEXT_PUBLIC_API_BASE_URL`，執行
+`npm.cmd run check:ios-bootstrap` 核對缺項；macOS 使用 `npm run prepare:ios-project`。
+正式 Bundle ID 須在 Apple 整合時確認；不要把 fixture identifier 當成正式身分。
+檢查不會簽署、上傳或寫入商店；Windows 生成操作會在任何寫入之前拒絕。
+
 對應任務矩陣：`docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json`
 
 自動化 Checklist：`docs/MANUAL_LAUNCH_OPERATIONS_CHECKLIST_2026_08_09.md`
@@ -278,6 +292,11 @@ npm.cmd run check:native-external-readiness
 ## 4. Pro／Team、試用、寬限期與 Founder 政策核准
 
 任務 ID：`COMMERCIAL-POLICY`
+
+2026-10-19 拆分：此任務只核准商業規則與對應決策。真實試用、優惠與 Founder
+sandbox 證據歸 `SANDBOX-LIFECYCLE`；Apple 的證據歸 `IOS-SANDBOX-LIFECYCLE`。
+不要求先完成購買測試才能建立測試商品，避免商品 → runtime → 測試 → 政策的循環。
+既有核准值與證據不變，尚未完成的雙平台測試仍保留在 Checklist。
 
 Canonical design：
 

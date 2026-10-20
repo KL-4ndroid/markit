@@ -258,6 +258,16 @@ tsx tests/c2-28b-render-guard-static-audit.test.ts
 tsx tests/invitation-auth-flow.test.ts
 tsx tests/auth-login-flow.test.ts
 tsx tests/form-draft-autosave.test.ts
+tsx tests/form-draft-scheduler.test.ts
+tsx tests/ios-bootstrap-config.test.ts
+tsx tests/capacitor-runtime-ports.test.ts
+tsx tests/capacitor-auth-storage.test.ts
+tsx tests/auth-storage-initialization.test.ts
+tsx tests/auth-storage-sdk-patch.test.ts
+tsx tests/capacitor-auth-plugin-packaging.test.ts
+tsx tests/capacitor-camera.test.ts
+tsx tests/camera-flow-integration.test.ts
+tsx tests/ios-media-configuration.test.ts
 tsx tests/c2-29b-verification-sql.test.ts
 tsx tests/supabase-note-checklist-migration.test.ts
 tsx tests/supabase-owner-brand-settings-migration.test.ts

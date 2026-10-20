@@ -14,6 +14,72 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  windows-mobile:
+    name: Windows mobile preparation
+    runs-on: windows-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      # Reserved offline fixture: validates bundling without production credentials.
+      NEXT_PUBLIC_API_BASE_URL: 'https://mobile-api.invalid'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies from lockfile
+        run: npm.cmd ci --no-audit --no-fund
+
+      - name: Check launch dependencies
+        run: npm.cmd run check:launch-execution-plan
+
+      - name: Check generated manual checklist
+        run: npm.cmd run check:manual-launch-checklist
+
+      - name: Check shared mobile types
+        run: npx.cmd tsc --noEmit --project tsconfig.mobile.json
+
+      - name: Check actual Capacitor config loader and Windows generation guard
+        run: npx.cmd tsx tests/ios-bootstrap-config.test.ts
+
+      - name: Check native auth preparation and installed SDK compatibility
+        run: |
+          npm.cmd run check:auth-sdk-patch
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx.cmd tsx tests/capacitor-auth-storage.test.ts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx.cmd tsx tests/auth-storage-initialization.test.ts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx.cmd tsx tests/capacitor-auth-plugin-packaging.test.ts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx.cmd tsx tests/capacitor-camera.test.ts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx.cmd tsx tests/camera-flow-integration.test.ts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx.cmd tsx tests/ios-media-configuration.test.ts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build bundled mobile assets
+        run: npm.cmd run build:mobile:api
+
+      - name: Verify asset and server boundaries
+        run: npm.cmd run verify:mobile
+
+      - name: Verify static routes
+        run: npm.cmd run smoke:mobile
+
+      - name: Verify tracked source files remain unchanged
+        run: |
+          git diff --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --exit-code
+
   hex-budget:
     name: Hex token budget
     runs-on: ubuntu-latest

@@ -1,7 +1,30 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md",
-  "updatedAt": "2026-08-06",
+  "updatedAt": "2026-10-20",
+  "nativeSdkInventory": {
+    "reviewStatus": "source_only_final_binary_review_pending",
+    "reviewEvidence": "docs/IOS_CAMERA_SOURCE_REVIEW_2026_10_20.md",
+    "packages": {
+      "@capacitor/app": "8.1.2",
+      "@capacitor/camera": "8.2.6",
+      "@capacitor/core": "8.5.3",
+      "@capacitor/ios": "8.5.3",
+      "@capacitor/cli": "8.5.3",
+      "@capacitor/network": "8.0.1",
+      "@capacitor/filesystem": "8.1.5",
+      "@feria/capacitor-auth-storage": "file:plugins/feria-auth-storage"
+    },
+    "localPluginVersions": { "@feria/capacitor-auth-storage": "0.1.0" },
+    "transitivePackages": { "@capacitor/synapse": "1.0.4" },
+    "nativePackageRequirements": {
+      "IONCameraLib": "2.0.x; resolved version and source audit pending macOS",
+      "IONFilesystemLib": "2.0.1; native build verification pending macOS"
+    },
+    "devicePluginsInstalled": true,
+    "storeSdkInstalled": false,
+    "nativeProjectGenerated": false
+  },
   "status": "draft_requires_manual_and_provider_review",
   "releaseScope": "ios_android_native_subscription",
   "storeComplianceGateStatus": "pending_manual",

@@ -20,6 +20,8 @@ import { FormSectionDisclosure } from '@/components/ui/FormSectionDisclosure';
 import { FullScreenForm } from '@/components/ui/FullScreenForm';
 import { createMarket } from '@/lib/db/hooks';
 import { clearFormData, loadFormData, saveFormData } from '@/lib/form-autosave';
+import { scheduleFormDraftSave } from '@/lib/form-draft-scheduler';
+import { getLifecyclePort } from '@/lib/platform/lifecycle-capability';
 import type { MarketTextImportPatch } from '@/lib/market-text-import/merge';
 import { isMarketTextImportEnabled } from '@/lib/market-text-import/release-gate';
 import {
@@ -209,10 +211,10 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
     if (!isOpen || !draftId || !draftReady) return;
     if (!hasMeaningfulMarketDraft(currentDraft)) return;
 
-    const timeout = window.setTimeout(() => {
-      saveFormData(draftId, currentDraft);
-    }, 750);
-    return () => window.clearTimeout(timeout);
+    return scheduleFormDraftSave(
+      () => saveFormData(draftId, currentDraft),
+      getLifecyclePort(),
+    );
   }, [currentDraft, draftId, draftReady, isOpen]);
 
   useEffect(() => {

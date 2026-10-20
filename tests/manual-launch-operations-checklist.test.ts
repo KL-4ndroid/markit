@@ -38,8 +38,11 @@ const rendered = renderManualLaunchChecklist(plan, external, itemStatus);
 const summary = summarizeManualLaunchChecklist(plan, external, itemStatus);
 
 assert.equal(rendered, read(MANUAL_LAUNCH_CHECKLIST_OUTPUT_PATH));
-assert.equal(summary.taskCount, 12);
+assert.equal(summary.taskCount, 13);
 assert.equal(summary.itemCount, 134);
+const policyItems = MANUAL_LAUNCH_CHECKLIST_TASKS.find(task => task.taskId === 'COMMERCIAL-POLICY')!.items;
+assert.ok(!policyItems.some(item => item.id.endsWith('sandbox') || item.id === 'commercial.launch-promo-continuity'));
+assert.equal(MANUAL_LAUNCH_CHECKLIST_TASKS.find(task => task.taskId === 'SANDBOX-LIFECYCLE')!.items.length, 3);
 assert.equal(
   summary.completedTaskCount,
   MANUAL_LAUNCH_CHECKLIST_TASKS.filter(definition => (
@@ -70,6 +73,10 @@ for (const check of external.checks) {
 assert.match(rendered, /請勿直接手動勾選/);
 assert.match(rendered, /不得只修改本 Checklist/);
 assert.match(rendered, /整體 launch 狀態：`not_ready`/);
+assert.match(rendered, /Windows 先行 iOS 執行佇列/);
+for (const task of plan.tasks.filter(candidate => candidate.id.startsWith('IOS-'))) {
+  assert.ok(rendered.includes(`| \`${task.id}\` | ${task.owner} | \`${task.status}\` |`));
+}
 assert.match(guide, /Session 0：AI 本機基準命令/);
 assert.match(guide, /canonical 狀態沒有改變，Checklist 保持未勾選是正確結果/);
 

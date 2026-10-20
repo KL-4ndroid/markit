@@ -1,18 +1,22 @@
-import { getSecureStorage } from '@/lib/platform/secure-storage-capability';
+import { resolveAuthStorage } from '@/lib/platform/capacitor/auth-storage-bootstrap';
+import type { SecureStoragePort } from '@/lib/platform/contracts/secure-storage';
 
 /**
- * Supabase-compatible async storage that resolves the active platform port for
- * every operation. Native bootstrap can therefore install protected storage
- * storage after module loading without recreating the auth client.
+ * Supabase-compatible storage waits for platform resolution before every access,
+ * including the auth client's eager initialization read.
  */
-export const supabaseAuthStorage = Object.freeze({
-  getItem(key: string): Promise<string | null> {
-    return getSecureStorage().getItem(key);
-  },
-  setItem(key: string, value: string): Promise<void> {
-    return getSecureStorage().setItem(key, value);
-  },
-  removeItem(key: string): Promise<void> {
-    return getSecureStorage().removeItem(key);
-  },
-});
+export function createSupabaseAuthStorage(resolveStorage: () => Promise<SecureStoragePort>) {
+  return Object.freeze({
+    async getItem(key: string): Promise<string | null> {
+      return (await resolveStorage()).getItem(key);
+    },
+    async setItem(key: string, value: string): Promise<void> {
+      return (await resolveStorage()).setItem(key, value);
+    },
+    async removeItem(key: string): Promise<void> {
+      return (await resolveStorage()).removeItem(key);
+    },
+  });
+}
+
+export const supabaseAuthStorage = createSupabaseAuthStorage(resolveAuthStorage);

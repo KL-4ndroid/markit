@@ -32,9 +32,15 @@ external evidence.
 4. **Web paid deferred:** ECPay, F3C-F3E, S9, and promotion runtime resume only after a
    separate commercial and implementation decision.
 
-The iOS and Android implementation work may run in parallel after their shared
-dependencies close. A store purchase never grants access until server verification and
-the server-owned entitlement projection succeed.
+As accepted by the user on 2026-10-19, Windows preparation proceeds first; Apple
+enrollment and rented macOS follow near real integration. See
+`docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md`.
+The `IOS-*` task chain separates source preparation, signed builds, device evidence,
+internal TestFlight, Apple paid runtime, and the iOS paid release. Google account and
+Android completion do not gate this chain. The aggregate native gates still require
+both platforms and remain `not_ready` until their original evidence is complete.
+A store purchase never grants access until server verification and the server-owned
+entitlement projection succeed.
 
 ## 2. Work Ownership
 
@@ -59,10 +65,10 @@ canonical runbooks below; it is not completion evidence and does not change any 
 
 ### Immediate And Independent
 
-1. Execute both controlled R2 compensation cases in
-   `IOS_PHASE2_GATE2_COMPENSATION_RUNBOOK.md`, restore the safe deployment, and retain
-   secret-free evidence. This is the only remaining Capacitor Gate 2 evidence gap.
-2. Complete Apple and Google account enrollment, agreements, identity, tax/payment,
+1. Retain the completed Gate 2 compensation and SRA-000 inventory evidence; neither
+   requires repeating merely to start Windows preparation.
+2. Complete Apple account enrollment near signed-build and catalog integration;
+   schedule Google separately for Android. Complete agreements, identity, tax/payment,
    app record, tester, and physical-device prerequisites. Update only bounded statuses
    in `NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json`.
 3. Approve Pro and Team price points, Apple group levels, Google product/base plans,
@@ -72,8 +78,8 @@ canonical runbooks below; it is not completion evidence and does not change any 
    subscription behavior, support SLA, and billing-ledger treatment.
 5. Approve public operator, support, privacy, terms, retention, cancellation, and
    refund content.
-6. Execute the read-only Supabase Advisor export and SRA-000 inventory using
-   `docs/security/SUPABASE_SECURITY_ADVISOR_INVENTORY_RUNBOOK_2026_08_09.md`.
+6. Review the remaining bounded security remediation slices using the completed
+   SRA-000 evidence. Live mutations still require their applicable review.
 7. Complete protected Production configuration, final PWA install/update checks, and
    production observability provider ownership.
 
@@ -99,16 +105,31 @@ The following currently unblocked repository work is completed by this batch:
 - canonical task matrix and consistency checker;
 - SRA-000 read-only inventory SQL and execution runbook.
 
-The next agent-owned implementation is deliberately dependency-bound:
+`IOS-BOOTSTRAP-REVIEW` and `IOS-BOOTSTRAP-PREP` are complete for the reviewed minimum
+package/config/scaffold-script source slice. No iOS project was generated.
+The reviewed `IOS-RUNTIME-PORTS` source subtask is complete for network and lifecycle
+adapters; see `docs/IOS_RUNTIME_PORTS_EVIDENCE_2026_10_20.md`. The broader
+`IOS-AUTH-STORAGE-SOURCE` is also complete for iOS Keychain sources and eager
+session-storage ordering; see `docs/IOS_AUTH_STORAGE_EVIDENCE_2026_10_20.md`.
+`IOS-DEVICE-ADAPTERS` remains incomplete: full native platform bootstrap,
+files/share, links and other capabilities require further bounded work.
+`IOS-CAMERA-SOURCE` completes the reviewed camera/photo acquisition and permission
+configuration source slice; see `docs/IOS_CAMERA_EVIDENCE_2026_10_20.md`.
+`IOS-PROJECT-GENERATION`, signed builds, and device evidence
+require real macOS/Xcode and applicable Apple readiness.
+The remaining agent-owned implementation is dependency-bound:
 
 1. Security remediation proposals require the SRA-000 live inventory and a separate
    migration review.
 2. Capacitor projects and native adapters require completed Gate 2 evidence and slice
    review.
-3. Store verification runtime requires approved catalog identities and protected
-   credentials/configuration channels.
-4. Entitlement writer requires approved verification runtime and a separately reviewed
-   server mutation slice.
+3. Apple and Google verification runtimes each require their own approved catalog
+   identities and protected credentials/configuration channels. The aggregate
+   `STORE-VERIFICATION-RUNTIME` records both platforms' completion.
+4. Entitlement writer source work requires a separately reviewed server mutation
+   slice and can use verified synthetic snapshots before either provider is live.
+   Real reconciliation still requires authoritative provider verification; each
+   platform sandbox task depends on its verifier and the common writer.
 5. Account deletion runtime requires the seven policy decisions in the existing
    proposal and explicit destructive-work approval.
 6. F3C-F3E, S9, ECPay, and promotion runtime remain deferred or pending separate
@@ -172,3 +193,7 @@ invalid and must be corrected before relying on this queue.
 Existing gate checkers retain their current semantics. In particular, exit `1` from
 `check:web-launch-readiness` or `check:native-launch-readiness` is the expected valid
 result while launch blockers remain.
+
+The Windows mobile CI job checks this graph and generated manual checklist, builds
+bundled assets with a reserved offline API origin, and verifies static boundaries.
+It performs no signing, Apple upload, native compilation, or production mutation.

@@ -1,0 +1,11 @@
+{
+  "name": "@feria/capacitor-auth-storage",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "description": "Private iOS Keychain bridge for Feria Supabase auth",
+  "main": "index.js",
+  "files": ["index.js", "Package.swift", "FeriaCapacitorAuthStorage.podspec", "ios/Sources"],
+  "peerDependencies": { "@capacitor/core": ">=8.5.3 <9" },
+  "capacitor": { "ios": { "src": "ios" } }
+}

@@ -41,6 +41,16 @@ export type AccountDeletionAd4ReadinessReport = Readonly<{
   productionRuntimeMustRemainDisabled: true;
 }>;
 
+/** A runtime-ports directory or Capacitor dependency is not a verified store adapter. */
+export function hasCompleteNativeStoreRuntime(
+  gates: readonly Readonly<{ id: string; status: string }>[],
+): boolean {
+  return ['NATIVE-ADAPTERS', 'STORE-VERIFICATION', 'ENTITLEMENT-WRITER'].every(id => {
+    const matches = gates.filter(gate => gate.id === id);
+    return matches.length === 1 && matches[0].status === 'complete';
+  });
+}
+
 const FACT_TO_BLOCKER = [
   ['capacitorGate2Complete', 'capacitor_gate2_open'],
   ['nativeProjectsPresent', 'native_projects_absent'],

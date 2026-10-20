@@ -138,8 +138,10 @@ export function getAllSavedForms(): FormAutoSaveData[] {
 /**
  * React Hook: 自動保存表單
  */
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { scheduleFormDraftSave } from '@/lib/form-draft-scheduler';
+import { getLifecyclePort } from '@/lib/platform/lifecycle-capability';
 
 export function useFormAutoSave(
   formId: string,
@@ -151,18 +153,11 @@ export function useFormAutoSave(
 ) {
   const { enabled = true, debounceMs = 1000 } = options;
   const pathname = usePathname();
-  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     if (!enabled) return;
 
-    // 清除之前的定時器
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // 防抖保存
-    timeoutRef.current = setTimeout(() => {
+    return scheduleFormDraftSave(() => {
       // 只保存非空表單
       const hasData = Object.values(formData).some(value => {
         if (typeof value === 'string') return value.trim() !== '';
@@ -174,13 +169,7 @@ export function useFormAutoSave(
       if (hasData) {
         saveFormData(formId, formData, pathname || undefined);
       }
-    }, debounceMs);
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
+    }, getLifecyclePort(), debounceMs);
   }, [formId, formData, enabled, debounceMs, pathname]);
 
   // 提供手動清除的方法

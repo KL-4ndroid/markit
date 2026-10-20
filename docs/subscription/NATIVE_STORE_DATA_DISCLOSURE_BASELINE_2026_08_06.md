@@ -60,6 +60,31 @@ evidence that a released purchase flow matches a store declaration.
 
 ## Negative Claims That Must Stay True
 
+2026-10-19 dependency update: source bootstrap now pins Capacitor core, iOS and
+dev-only CLI to 8.5.3 under `docs/IOS_BOOTSTRAP_SOURCE_REVIEW_2026_10_19.md`.
+No device plugin or store SDK was added and no native project has been generated.
+The JSON inventory records these packages explicitly. The prior source-level
+negative claims below are design constraints, not a completed audit of a native
+binary. Final dependency, permission, privacy-manifest and binary review remains
+pending; `STORE-COMPLIANCE` remains incomplete.
+
+2026-10-20 runtime-ports slice: official App 8.1.2 and Network 8.0.1 are now
+installed under `docs/IOS_RUNTIME_PORTS_REVIEW_2026_10_20.md`. The adapter uses
+app-state and connectivity APIs only, with no App getInfo/URL access, telemetry,
+server requests or credential storage. iOS plugin source was inspected for these
+methods; actual native/binary permission and privacy-manifest review remains
+pending. This supersedes the preceding source-bootstrap-only inventory statement.
+No store SDK is installed and no native project has been generated.
+
+2026-10-20 auth-storage source slice: private local plugin
+`@feria/capacitor-auth-storage` 0.1.0 uses iOS generic-password Keychain entries
+for Supabase auth strings only. The fixed service, device-only accessibility and
+disabled synchronization do not introduce a new off-device recipient. No browser
+credential migration, iCloud sharing, broad key deletion or Web fallback is used.
+Android storage is not implemented. Source/initialization review is recorded in
+`docs/IOS_AUTH_STORAGE_SOURCE_REVIEW_2026_10_20.md`; final native binary, dependency,
+device-lock, reinstall, privacy and store disclosures remain unverified.
+
 The current direct dependencies and runtime search found no advertising SDK,
 cross-app tracking, address-book access, device geolocation, audio, health, biometric,
 or app-generated device identifier collection. Market venue text is user-entered
@@ -97,6 +122,24 @@ The native launch therefore has a separate `ACCOUNT-DELETION` gate. It remains
 This document does not authorize an account-deletion migration, RPC, server mutation,
 support bypass, or destructive data operation. Those semantics require product, legal,
 security, and data-retention approval before implementation.
+
+## Camera And Temporary Image Source Update — 2026-10-20
+
+Camera 8.2.6 and Filesystem 8.1.5, with Synapse 1.0.4, are now installed under
+`docs/IOS_CAMERA_SOURCE_REVIEW_2026_10_20.md`. Native IONCameraLib 2.0.x and
+IONFilesystemLib 2.0.1 resolution/build evidence remains pending macOS.
+The reviewed flow captures/selects one photo, requests no video, location or EXIF
+metadata, and does not save to the gallery. Only this operation's validated tmp
+image is read and deleted; original library photos and pending evidence remain.
+Shared rendering strips metadata before pending storage/upload. No network request
+or cloud write is part of the native acquisition adapter.
+
+Source project preparation fills camera/photo purpose strings and merges the
+Filesystem timestamp reason C617.1 into a bundled privacy resource. The gallery-add
+description is present as required by the plugin guidance; this source slice does
+not invoke gallery saving or request that permission at startup. These artifacts
+do not confirm actual permission scope, native dependency behavior or final App
+Store privacy answers. Device, binary and policy reviews remain open.
 
 ## Submission Workflow
 

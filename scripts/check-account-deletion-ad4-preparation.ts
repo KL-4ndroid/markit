@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { parseNativeExternalAccountReadiness } from '../lib/deployment/native-external-account-readiness';
-import { evaluateAccountDeletionAd4Readiness } from '../lib/subscription/account-deletion-ad4-readiness';
+import { evaluateAccountDeletionAd4Readiness, hasCompleteNativeStoreRuntime } from '../lib/subscription/account-deletion-ad4-readiness';
 
 const root = process.cwd();
 const read = (path: string): string => readFileSync(resolve(root, path), 'utf8');
@@ -42,7 +42,8 @@ function main(): void {
   const report = evaluateAccountDeletionAd4Readiness({
     capacitorGate2Complete: gates.gates.find(gate => gate.id === 'CAPACITOR-GATE2')?.status === 'complete',
     nativeProjectsPresent: hasNonEmptyDirectory('ios') && hasNonEmptyDirectory('android'),
-    nativeStoreAdaptersPresent: Object.keys(dependencies).some(name => name.startsWith('@capacitor/'))
+    nativeStoreAdaptersPresent: hasCompleteNativeStoreRuntime(gates.gates)
+      && Object.keys(dependencies).some(name => name.startsWith('@capacitor/'))
       && hasNonEmptyDirectory('lib/platform/capacitor'),
     publicDeletionResourcePresent: hasFile('app/account-deletion/page.tsx'),
     authenticatedDeletionEntryPresent: settings.includes('/account-deletion'),

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { webProductImageAdapter } from '../lib/platform/product-image-adapter.web';
 
 import {
   PRODUCT_COVER_PHOTO_POLICY,
@@ -206,7 +207,56 @@ async function verifySubscriptionAlignment(): Promise<void> {
   }), { allowed: false, reason: 'subscription_inactive' });
 }
 
-verifySubscriptionAlignment()
+async function verifyImageEncodingCompatibility() {
+  const descriptors = ['document', 'createImageBitmap', 'Image'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
+  const formats: string[] = [];
+  let closed = 0;
+  let rejectEncoders = false;
+  Object.defineProperty(globalThis, 'createImageBitmap', { configurable: true, value: async () => ({
+    width: 1000, height: 750, close() { closed += 1; },
+  }) });
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement: () => ({
+    width: 0, height: 0, getContext: () => ({ drawImage() {} }),
+    toBlob(callback: (blob: Blob | null) => void, mime: string) {
+      formats.push(mime);
+      callback(new Blob(['fixture'], { type: rejectEncoders || mime === 'image/webp' ? 'image/png' : 'image/jpeg' }));
+    },
+  }) } });
+  try {
+    const file = new File(['fixture'], 'fixture.jpg', { type: 'image/jpeg' });
+    const prepared = await webProductImageAdapter.prepare(file);
+    assert.equal(prepared.display.type, 'image/jpeg');
+    assert.equal(prepared.thumbnail.type, 'image/jpeg');
+    assert.ok(formats.includes('image/webp') && formats.includes('image/jpeg'));
+    assert.equal(prepared.displayHash.length, 64);
+    URL.revokeObjectURL(prepared.previewUrl);
+    assert.equal(closed, 1);
+    rejectEncoders = true;
+    await assert.rejects(webProductImageAdapter.prepare(file), /image_cannot_be_compressed/);
+    assert.equal(closed, 2);
+
+    Object.defineProperty(globalThis, 'createImageBitmap', { configurable: true, value: undefined });
+    Object.defineProperty(globalThis, 'Image', { configurable: true, value: class {
+      onerror: (() => void) | null = null;
+      set src(_value: string) { queueMicrotask(() => this.onerror?.()); }
+    } });
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    const revoked: string[] = [];
+    URL.createObjectURL = () => 'blob:failed-image-fixture';
+    URL.revokeObjectURL = url => { revoked.push(url); };
+    try {
+      await assert.rejects(webProductImageAdapter.prepare(file), /image_decode_failed/);
+      assert.deepEqual(revoked, ['blob:failed-image-fixture']);
+    } finally { URL.createObjectURL = originalCreate; URL.revokeObjectURL = originalRevoke; }
+  } finally {
+    for (const [key, descriptor] of descriptors) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor); else Reflect.deleteProperty(globalThis, key);
+    }
+  }
+}
+
+verifySubscriptionAlignment().then(verifyImageEncodingCompatibility)
   .then(() => console.log('PASS product cover photo policy and subscription alignment contracts'))
   .catch(error => {
     console.error(error);

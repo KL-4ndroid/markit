@@ -21,6 +21,10 @@ function getFriendlyAuthError(error: unknown, mode: 'login' | 'signup'): string 
   const message = error instanceof Error ? error.message : String(error || '');
   const lowerMessage = message.toLowerCase();
 
+  if (lowerMessage.startsWith('native_auth_')) {
+    return '目前無法安全讀寫登入資料，請解鎖裝置並重新開啟 App 後再試。';
+  }
+
   if (message.includes('Invalid login credentials')) {
     return 'Email 或密碼不正確，請確認後再試一次。';
   }

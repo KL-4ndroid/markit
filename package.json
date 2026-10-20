@@ -6,9 +6,15 @@
     "node": "24.x"
   },
   "scripts": {
+    "postinstall": "node scripts/patch-supabase-auth-initial-session.mjs",
+    "check:auth-sdk-patch": "node scripts/patch-supabase-auth-initial-session.mjs --check",
     "dev": "next dev",
     "build": "next build",
     "build:mobile": "node scripts/build-mobile.mjs",
+    "check:ios-bootstrap": "node scripts/prepare-ios-project.mjs --check",
+    "prepare:ios-project": "node scripts/prepare-ios-project.mjs --generate",
+    "configure:ios-media": "node scripts/configure-ios-media.mjs --apply",
+    "check:ios-media": "node scripts/configure-ios-media.mjs --check",
     "build:mobile:api": "node scripts/build-mobile.mjs --require-api-base",
     "build:mobile:runtime-smoke": "node scripts/build-mobile.mjs --runtime-smoke",
     "verify:mobile": "node scripts/verify-mobile-static-output.mjs",
@@ -48,6 +54,13 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1081.0",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/camera": "8.2.6",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/network": "8.0.1",
+    "@feria/capacitor-auth-storage": "file:plugins/feria-auth-storage",
     "@headlessui/react": "^2.2.9",
     "@react-pdf/renderer": "^4.5.1",
     "@supabase/supabase-js": "^2.91.1",
@@ -70,6 +83,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.3",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20",
     "@types/react": "^18",

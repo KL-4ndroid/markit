@@ -79,6 +79,7 @@ export type LaunchExecutionPlanValidationCode =
   | 'dependency_invalid'
   | 'dependency_cycle'
   | 'dependency_status_invalid'
+  | 'ios_dependency_invalid'
   | 'gate_ref_invalid'
   | 'gate_coverage_missing'
   | 'complete_gate_reopened'
@@ -169,6 +170,72 @@ function assertAcyclic(tasks: ReadonlyMap<string, LaunchExecutionTask>): void {
     visited.add(id);
   };
   for (const id of tasks.keys()) visit(id);
+}
+
+// Platform milestones are execution tasks, not substitutes for aggregate native gates.
+// Preserve the Apple release path while allowing Windows preparation before store setup.
+const IOS_DEPENDENCIES: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  'STORE-CATALOG-CONFIG': ['APPLE-CATALOG-CONFIG', 'GOOGLE-CATALOG-CONFIG'],
+  'STORE-VERIFICATION-RUNTIME': ['APPLE-VERIFICATION-RUNTIME', 'GOOGLE-VERIFICATION-RUNTIME'],
+  'NATIVE-ADAPTERS': ['IOS-STORE-ADAPTERS', 'ANDROID-ADAPTERS'],
+  'IOS-BOOTSTRAP-REVIEW': ['NATIVE-GATE2-EVIDENCE'],
+  'IOS-BOOTSTRAP-PREP': ['IOS-BOOTSTRAP-REVIEW'],
+  'IOS-PROJECT-GENERATION': ['IOS-BOOTSTRAP-PREP'],
+  'IOS-DEVICE-ADAPTERS': ['IOS-BOOTSTRAP-PREP'],
+  'IOS-SIGNING-READINESS': ['IOS-BOOTSTRAP-PREP'],
+  'IOS-SIGNED-BUILD': ['IOS-PROJECT-GENERATION', 'IOS-DEVICE-ADAPTERS', 'IOS-SIGNING-READINESS'],
+  'IOS-DEVICE-VERIFICATION': ['IOS-SIGNED-BUILD'],
+  'IOS-INTERNAL-TESTFLIGHT': ['IOS-DEVICE-VERIFICATION'],
+  'APPLE-CATALOG-CONFIG': ['IOS-SIGNING-READINESS', 'COMMERCIAL-POLICY'],
+  'APPLE-VERIFICATION-RUNTIME': ['APPLE-CATALOG-CONFIG'],
+  'IOS-STORE-ADAPTERS': ['IOS-DEVICE-ADAPTERS', 'APPLE-CATALOG-CONFIG'],
+  'IOS-STORE-COMPLIANCE': ['IOS-STORE-ADAPTERS', 'ACCOUNT-DELETION-RUNTIME', 'LEGAL-SUPPORT-APPROVAL'],
+  'IOS-STORE-ASSETS': ['IOS-DEVICE-VERIFICATION'],
+  'IOS-SANDBOX-LIFECYCLE': [
+    'APPLE-VERIFICATION-RUNTIME', 'ENTITLEMENT-WRITER-RUNTIME',
+    'IOS-STORE-ADAPTERS', 'IOS-STORE-COMPLIANCE',
+  ],
+  'IOS-WEB-ACCESS': ['IOS-SANDBOX-LIFECYCLE'],
+  'IOS-EXTERNAL-TESTFLIGHT': [
+    'IOS-INTERNAL-TESTFLIGHT', 'IOS-WEB-ACCESS', 'IOS-STORE-ASSETS', 'IOS-STORE-COMPLIANCE',
+  ],
+  'IOS-PAID-RELEASE': [
+    'IOS-EXTERNAL-TESTFLIGHT', 'SEC-REMEDIATION', 'WEB-PRODUCTION-CONFIG',
+    'WEB-MEDIA-PRODUCTION', 'WEB-OBSERVABILITY', 'WEB-SECURITY-HEADERS-FINAL',
+  ],
+});
+
+function assertIosDependencies(tasks: ReadonlyMap<string, LaunchExecutionTask>): void {
+  // Legacy input documents remain readable. A platform-scoped graph must be complete.
+  if (![...tasks.keys()].some(id => id.startsWith('IOS-'))) return;
+  for (const [id, required] of Object.entries(IOS_DEPENDENCIES)) {
+    const task = tasks.get(id);
+    if (!task || required.some(dependency => !task.dependsOn.includes(dependency))) {
+      throw new LaunchExecutionPlanValidationError('ios_dependency_invalid');
+    }
+  }
+  const ancestors = new Set<string>();
+  const visit = (id: string): void => {
+    if (ancestors.has(id)) return;
+    ancestors.add(id);
+    for (const dependency of tasks.get(id)!.dependsOn) visit(dependency);
+  };
+  visit('IOS-PAID-RELEASE');
+  if ([...ancestors].some(id => id.startsWith('GOOGLE-') || id.startsWith('ANDROID-'))) {
+    throw new LaunchExecutionPlanValidationError('ios_dependency_invalid');
+  }
+  // Source preparation can precede Apple enrollment and catalog setup.
+  const prepAncestors = new Set<string>();
+  const visitPrep = (id: string): void => {
+    if (prepAncestors.has(id)) return;
+    prepAncestors.add(id);
+    for (const dependency of tasks.get(id)!.dependsOn) visitPrep(dependency);
+  };
+  visitPrep('IOS-BOOTSTRAP-PREP');
+  if ([...prepAncestors].some(id => id.startsWith('APPLE-') || id === 'COMMERCIAL-POLICY'
+    || id === 'STORE-CATALOG-CONFIG')) {
+    throw new LaunchExecutionPlanValidationError('ios_dependency_invalid');
+  }
 }
 
 function gateStatuses(
@@ -292,6 +359,7 @@ export function parseLaunchExecutionPlan(
     }
   }
   assertAcyclic(byId);
+  assertIosDependencies(byId);
 
   for (const task of byId.values()) {
     const dependencies = task.dependsOn.map(id => byId.get(id)!);

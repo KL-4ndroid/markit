@@ -1,6 +1,6 @@
 # Feria 人工上架工作 Checklist
 
-狀態來源更新日：2026-09-01
+狀態來源更新日：2026-10-20
 
 > 此檔案由 `npm.cmd run update:manual-launch-checklist` 產生，請勿直接手動勾選。
 > 操作步驟與停止條件以 `docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md` 為準。
@@ -8,9 +8,39 @@
 
 ## 自動化摘要
 
-- 人工 tasks：3/12 完成
+- 人工 tasks：3/13 完成
 - Checklist items：70/134 自動勾選
 - 整體 launch 狀態：`not_ready`
+
+## Windows 先行 iOS 執行佇列
+
+先完成 Windows 程式與驗證；Apple 帳號及 macOS 在簽署／真實整合前辦理。下列狀態直接取自 canonical tasks，不代表已通過 iOS 編譯或實機驗收。
+
+| 任務 | 執行者 | 狀態 | 前置任務 |
+| --- | --- | --- | --- |
+| `ENTITLEMENT-WRITER-RUNTIME` | agent | `pending_approval` | 依對應實作切片審查 |
+| `IOS-BOOTSTRAP-REVIEW` | agent | `complete` | `NATIVE-GATE2-EVIDENCE` |
+| `IOS-BOOTSTRAP-PREP` | agent | `complete` | `IOS-BOOTSTRAP-REVIEW` |
+| `IOS-DEVICE-ADAPTERS` | agent | `ready_agent` | `IOS-BOOTSTRAP-PREP`、`IOS-RUNTIME-PORTS`、`IOS-AUTH-STORAGE-SOURCE`、`IOS-CAMERA-SOURCE` |
+| `IOS-SIGNED-BUILD` | shared | `blocked_dependency` | `IOS-PROJECT-GENERATION`、`IOS-DEVICE-ADAPTERS`、`IOS-SIGNING-READINESS` |
+| `IOS-DEVICE-VERIFICATION` | shared | `blocked_dependency` | `IOS-SIGNED-BUILD` |
+| `IOS-INTERNAL-TESTFLIGHT` | shared | `blocked_dependency` | `IOS-DEVICE-VERIFICATION` |
+| `APPLE-CATALOG-CONFIG` | shared | `blocked_dependency` | `IOS-SIGNING-READINESS`、`COMMERCIAL-POLICY` |
+| `APPLE-VERIFICATION-RUNTIME` | agent | `pending_approval` | `APPLE-CATALOG-CONFIG` |
+| `IOS-STORE-ADAPTERS` | agent | `blocked_dependency` | `IOS-DEVICE-ADAPTERS`、`APPLE-CATALOG-CONFIG` |
+| `IOS-STORE-COMPLIANCE` | shared | `blocked_dependency` | `IOS-STORE-ADAPTERS`、`ACCOUNT-DELETION-RUNTIME`、`LEGAL-SUPPORT-APPROVAL` |
+| `IOS-STORE-ASSETS` | shared | `blocked_dependency` | `IOS-DEVICE-VERIFICATION` |
+| `IOS-SANDBOX-LIFECYCLE` | shared | `blocked_dependency` | `APPLE-VERIFICATION-RUNTIME`、`ENTITLEMENT-WRITER-RUNTIME`、`IOS-STORE-ADAPTERS`、`IOS-STORE-COMPLIANCE` |
+| `IOS-WEB-ACCESS` | shared | `blocked_dependency` | `IOS-SANDBOX-LIFECYCLE` |
+| `IOS-EXTERNAL-TESTFLIGHT` | shared | `blocked_dependency` | `IOS-INTERNAL-TESTFLIGHT`、`IOS-WEB-ACCESS`、`IOS-STORE-ASSETS`、`IOS-STORE-COMPLIANCE` |
+| `IOS-PAID-RELEASE` | shared | `blocked_dependency` | `IOS-EXTERNAL-TESTFLIGHT`、`SEC-REMEDIATION`、`WEB-PRODUCTION-CONFIG`、`WEB-MEDIA-PRODUCTION`、`WEB-OBSERVABILITY`、`WEB-SECURITY-HEADERS-FINAL` |
+| `IOS-SIGNING-READINESS` | shared | `pending_manual` | `IOS-BOOTSTRAP-PREP` |
+| `IOS-PROJECT-GENERATION` | shared | `pending_manual` | `IOS-BOOTSTRAP-PREP` |
+| `IOS-CAMERA-SOURCE` | agent | `complete` | `IOS-BOOTSTRAP-PREP`、`IOS-RUNTIME-PORTS`、`IOS-AUTH-STORAGE-SOURCE` |
+| `IOS-AUTH-STORAGE-SOURCE` | agent | `complete` | `IOS-BOOTSTRAP-PREP`、`IOS-RUNTIME-PORTS` |
+| `IOS-RUNTIME-PORTS` | agent | `complete` | `IOS-BOOTSTRAP-PREP` |
+
+以下完整人工清單保留雙平台與正式發布要求；Google 待辦不阻擋上述 iOS 路徑。整體 Native Gate 仍需雙平台證據。
 
 ## 1. Capacitor Gate 2：兩個 R2 受控失敗證據
 
@@ -88,9 +118,7 @@
   - [x] 核准 Team 月繳／年繳公開價、含稅呈現與首發地區（已核准；item-status:commercial.team）
   - [x] 核准首發優惠碼的折扣、適用資格、不中斷續訂價格與失效規則（已核准；item-status:commercial.launch-promo）
   - [x] 核准首發優惠碼的活動起訖、總兌換上限與公開代碼（已核准；item-status:commercial.launch-promo-operations）
-  - [ ] 在 Apple／Google sandbox 證明首發價格 cohort、連續續訂、失效與不合格阻擋（待人工完成；item-status:commercial.launch-promo-continuity）
   - [x] 核准試用方案、週期、天數與使用次數規則（已核准；item-status:commercial.trial）
-  - [ ] 在 Apple／Google sandbox 證明 14 天試用、FERIA50 疊加、取消不扣款與重複試用阻擋（待人工完成；item-status:commercial.trial-sandbox）
   - [x] 核准 Apple grace period 與 entitlement／通知規則（已核准；item-status:commercial.apple-grace）
   - [x] 由 support_owner 核准 Apple 付款異常文案、管理入口、升級與值班責任（已核准；item-status:commercial.apple-grace-support）
   - [x] 核准 Google grace／account hold 與降級規則（已核准；item-status:commercial.google-grace）
@@ -106,9 +134,19 @@
   - [x] 定義 retry、grace、hold、refund、chargeback 與重訂的連續性（不適用（已有證據）；item-status:commercial.founder-continuity）
   - [x] 定義升降級與跨平台 restore 的 Founder 規則（不適用（已有證據）；item-status:commercial.founder-transition）
   - [x] 選定可由 Apple／Google 支援的 Founder 實作機制或延後方案（已核准；item-status:commercial.founder-mechanism）
+
+## 5. 雙平台商業規則的 Sandbox 證據
+
+指南章節：4　任務：`SANDBOX-LIFECYCLE`
+
+執行模式：`Shared` — AI 準備及核對案例；Human 完成商店測試操作。政策核准先行，各平台證據分開記錄，完整 gate 仍需兩平台。
+
+- [ ] 任務完成（canonical 狀態：等待依賴／`blocked_dependency`）
+  - [ ] 在 Apple／Google sandbox 證明首發價格 cohort、連續續訂、失效與不合格阻擋（待人工完成；item-status:commercial.launch-promo-continuity）
+  - [ ] 在 Apple／Google sandbox 證明 14 天試用、FERIA50 疊加、取消不扣款與重複試用阻擋（待人工完成；item-status:commercial.trial-sandbox）
   - [x] 在 Apple 與 Google sandbox 證明 Founder 機制不會被未符合資格者取得（不適用（已有證據）；item-status:commercial.founder-sandbox）
 
-## 5. 帳號刪除、資料保留與有效訂閱政策
+## 6. 帳號刪除、資料保留與有效訂閱政策
 
 指南章節：5　任務：`ACCOUNT-DELETION-POLICY`
 
@@ -135,7 +173,7 @@
   - [x] 完成並核准涵蓋指南所列全部資料類別的 retention table（已核准；item-status:deletion.retention-table）
   - [x] 保存產品、法律／隱私、安全、客服與會計的 dated approval（已核准；item-status:deletion.dated-approval）
 
-## 6. 帳號刪除 AI 實作與發布證據
+## 7. 帳號刪除 AI 實作與發布證據
 
 指南章節：5　任務：`ACCOUNT-DELETION-RUNTIME`
 
@@ -151,7 +189,7 @@
   - [ ] AD4 完成實機 store lifecycle、公開政策、客服與 release-candidate 對齊（待人工完成；item-status:deletion-runtime.ad4）
   - [ ] AD5 取得 exact Production go/no-go、發布與 release-bound evidence（待人工完成；item-status:deletion-runtime.ad5）
 
-## 7. 正式法務、隱私、退款、取消、客服與 retention
+## 8. 正式法務、隱私、退款、取消、客服與 retention
 
 指南章節：6　任務：`LEGAL-SUPPORT-APPROVAL`
 
@@ -172,7 +210,7 @@
   - [ ] 保存 dated 跨職能簽核並綁定文件版本、公開 URL 與 release SHA（待人工完成；item-status:support.approvals）
   - [ ] 對正式發布 release 執行 published-mode legal support smoke（待人工完成；item-status:legal.published-smoke）
 
-## 8. SRA-000 Supabase 唯讀安全盤點
+## 9. SRA-000 Supabase 唯讀安全盤點
 
 指南章節：7　任務：`SEC-SRA000-EXECUTION`
 
@@ -189,7 +227,7 @@
   - [x] 只回報完整性、計數、hash、bounded finding ID、masked target 與 outcome（完成；parent task）
   - [x] 確認八個 canonical result sections 全部齊全且無 syntax／permission error（完成；parent task）
 
-## 9. Web Production 設定與 release identity
+## 10. Web Production 設定與 release identity
 
 指南章節：8.1　任務：`WEB-PRODUCTION-CONFIG`
 
@@ -202,7 +240,7 @@
   - [ ] 對受保護 Production env file 執行 production config checker（待人工完成；parent task）
   - [ ] 部署選定 SHA，確認 health release identity 並執行 remote release smoke（待人工完成；parent task）
 
-## 10. Web 最終 security headers 與 anti-frame 證據
+## 11. Web 最終 security headers 與 anti-frame 證據
 
 指南章節：8.1　任務：`WEB-SECURITY-HEADERS-FINAL`
 
@@ -213,7 +251,7 @@
   - [ ] 以 unrelated HTTPS origin 完成 anti-frame probe（待人工完成；parent task）
   - [ ] 保存只含公開資料、release SHA、時間與結果的證據（待人工完成；parent task）
 
-## 11. PWA 真實安裝與更新
+## 12. PWA 真實安裝與更新
 
 指南章節：8.2　任務：`WEB-PWA-INSTALL`
 
@@ -227,7 +265,7 @@
   - [ ] 部署第二個審查 revision，驗證 service worker 更新並記錄舊／新 SHA（待人工完成；parent task）
   - [ ] 保存 install prompt、public shell 與 update 的公開資料截圖（待人工完成；parent task）
 
-## 12. Observability provider、alerts 與 incident drill
+## 13. Observability provider、alerts 與 incident drill
 
 指南章節：8.3　任務：`WEB-OBSERVABILITY`
 
