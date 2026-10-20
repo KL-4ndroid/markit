@@ -2,8 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import { AlertCircle, ArrowLeft, CalendarDays, Plus, Store } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { toast } from 'sonner';
 
@@ -92,6 +92,11 @@ function writeReturnState(state: MarketListReturnState): void {
 }
 
 export default function MarketsPage() {
+  return <Suspense fallback={<MarketsLoading />}><MarketsPageContent /></Suspense>;
+}
+
+function MarketsPageContent() {
+  const shortcutAction = useSearchParams().get('action');
   const router = useRouter();
   const { userRole, roleRefreshState } = useRoleContext();
   const { user } = useAuth();
@@ -269,20 +274,23 @@ export default function MarketsPage() {
   };
 
   useEffect(() => {
+    if (shortcutAction !== 'add') { shortcutHandledRef.current = false; return; }
     if (shortcutHandledRef.current || !isRoleReady || dbStatus === null) return;
 
     let active = true;
-    void getDeepLinkPort().getInitialUrl().then(url => {
+    const handle = (url: string | null) => {
       if (!active || shortcutHandledRef.current || !isEntityCreateDeepLink(url, '/markets')) return;
       shortcutHandledRef.current = true;
       router.replace('/markets');
       if (isStaffMode || !canLoadScopedData || dbStatus.ok === false) return;
       setIsFormOpen(true);
       hideNavigation();
-    }).catch(() => undefined);
+    };
+    const links = getDeepLinkPort();
+    void links.getCurrentUrl().then(url => handle(url)).catch(() => undefined);
 
     return () => { active = false; };
-  }, [canLoadScopedData, dbStatus, isRoleReady, isStaffMode, router]);
+  }, [canLoadScopedData, dbStatus, isRoleReady, isStaffMode, router, shortcutAction]);
 
   if (openingMarketSnapshot) return <MarketDetailLoadingShell snapshot={openingMarketSnapshot} />;
 

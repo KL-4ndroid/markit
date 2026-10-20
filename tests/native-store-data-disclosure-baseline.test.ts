@@ -92,7 +92,7 @@ for (const [dependency, version] of Object.entries(baseline.nativeSdkInventory.p
   assert.equal(packageJson.dependencies[dependency] ?? packageJson.devDependencies[dependency], version);
 }
 assert.deepEqual(Object.keys(baseline.nativeSdkInventory.packages).sort(),
-  ['@capacitor/app', '@capacitor/camera', '@capacitor/cli', '@capacitor/core', '@capacitor/filesystem', '@capacitor/ios', '@capacitor/network', '@capacitor/share', '@feria/capacitor-auth-storage', '@feria/capacitor-file-preview']);
+  ['@capacitor/app', '@capacitor/app-launcher', '@capacitor/camera', '@capacitor/cli', '@capacitor/clipboard', '@capacitor/core', '@capacitor/filesystem', '@capacitor/ios', '@capacitor/network', '@capacitor/share', '@feria/capacitor-auth-storage', '@feria/capacitor-file-preview']);
 for (const [dependency, version] of Object.entries(baseline.nativeSdkInventory.transitivePackages)) {
   assert.equal(JSON.parse(read(`node_modules/${dependency}/package.json`)).version, version);
 }

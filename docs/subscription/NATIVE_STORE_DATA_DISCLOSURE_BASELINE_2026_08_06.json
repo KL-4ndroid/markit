@@ -4,10 +4,12 @@
   "updatedAt": "2026-10-20",
   "nativeSdkInventory": {
     "reviewStatus": "source_only_final_binary_review_pending",
-    "reviewEvidence": "docs/IOS_FILES_SOURCE_REVIEW_2026_10_20.md",
+    "reviewEvidence": "docs/IOS_PLATFORM_BOOTSTRAP_SOURCE_REVIEW_2026_10_20.md",
     "packages": {
       "@capacitor/app": "8.1.2",
+      "@capacitor/app-launcher": "8.0.1",
       "@capacitor/camera": "8.2.6",
+      "@capacitor/clipboard": "8.0.1",
       "@capacitor/core": "8.5.3",
       "@capacitor/ios": "8.5.3",
       "@capacitor/cli": "8.5.3",

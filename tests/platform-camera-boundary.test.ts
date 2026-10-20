@@ -48,6 +48,7 @@ const fakePlatform: AppPlatform = {
   deepLinks: {
     createAppUrl: path => `feria://app${path}`,
     getInitialUrl: async () => null,
+    getCurrentUrl: async () => null,
     subscribe: () => () => undefined,
   },
 };

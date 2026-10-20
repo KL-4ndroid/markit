@@ -8,7 +8,8 @@
 
 Phase 2 complete / Windows iOS configuration and scaffold-script sources complete;
 native network/lifecycle, iOS auth-storage and camera/photo sources complete;
-file export/share/PDF preview sources complete; other adapters and macOS generation pending
+file export/share/PDF preview, interactions and native startup sources complete;
+overall workflow acceptance and macOS generation pending
 
 On 2026-10-19 the user accepted Windows-first delivery and autonomous routine
 implementation. The canonical task graph separates `IOS-BOOTSTRAP-REVIEW` and
@@ -50,6 +51,14 @@ CSV/JSON saves and PDF preview share the existing FilePort contracts. Cancellati
 does not report success; only per-operation cache files are cleaned, after native
 UI completion. See `docs/IOS_FILES_EVIDENCE_2026_10_20.md`. Actual Swift/UI execution,
 clipboard/links and full AppPlatform activation remain open.
+
+`IOS-INTERACTIONS-SOURCE` and `IOS-PLATFORM-BOOTSTRAP-SOURCE` subsequently complete
+reviewed Clipboard/AppLauncher, strict app links, public invitation URLs and mobile
+startup source wiring. The mobile gate installs iOS ports before providers mount;
+Web builds preserve their existing initial render. Current-page link reads are
+separate from launch intent. Purchases stay unavailable. See
+`docs/IOS_PLATFORM_BOOTSTRAP_EVIDENCE_2026_10_20.md`. Overall workflow acceptance,
+real native execution, signing and TestFlight remain open.
 
 ## Status
 

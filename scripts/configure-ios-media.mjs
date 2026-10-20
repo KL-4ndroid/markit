@@ -27,6 +27,24 @@ export function planIosMediaConfiguration(input) {
       if (info[key] !== undefined && typeof info[key] !== 'string') throw new Error();
       if (!info[key]?.trim()) info[key] = description;
     }
+    if (input.linkScheme !== undefined) {
+      const scheme = input.linkScheme;
+      if (typeof scheme !== 'string' || scheme.length > 255
+        || !/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*){2,}$/.test(scheme)) throw new Error();
+      const entries = info.CFBundleURLTypes ?? [];
+      if (!Array.isArray(entries)) throw new Error();
+      for (const entry of entries) {
+        dictionary(entry);
+        if (!Array.isArray(entry.CFBundleURLSchemes) || !entry.CFBundleURLSchemes.every(value => typeof value === 'string')) throw new Error();
+      }
+      if (!entries.some(entry => entry.CFBundleURLSchemes.includes(scheme))) {
+        const owned = entries.filter(entry => entry.CFBundleURLName === 'feria.app-links');
+        if (owned.length > 1) throw new Error();
+        if (owned.length === 1) owned[0].CFBundleURLSchemes.push(scheme);
+        else entries.push({ CFBundleTypeRole: 'Editor', CFBundleURLName: 'feria.app-links', CFBundleURLSchemes: [scheme] });
+      }
+      info.CFBundleURLTypes = entries;
+    }
     const privacy = input.privacy === null ? {} : dictionary(plist.parse(input.privacy));
     const entries = privacy.NSPrivacyAccessedAPITypes ?? [];
     if (!Array.isArray(entries)) throw new Error();
@@ -84,7 +102,9 @@ function main() {
   if (!existsSync(paths.info) || !existsSync(paths.project)) throw new Error('ios_project_missing');
   const before = { info: readFileSync(paths.info, 'utf8'), project: readFileSync(paths.project, 'utf8'),
     privacy: existsSync(paths.privacy) ? readFileSync(paths.privacy, 'utf8') : null };
-  const planned = planIosMediaConfiguration(before);
+  const linkScheme = process.env.IOS_APP_ID?.trim().toLowerCase();
+  if (!linkScheme) throw new Error('ios_link_scheme_missing');
+  const planned = planIosMediaConfiguration({ ...before, linkScheme });
   if (!apply && Object.keys(paths).some(key => before[key] !== planned[key])) throw new Error('ios_media_configuration_pending');
   if (apply) for (const key of Object.keys(paths)) {
     if (before[key] !== planned[key]) writeFileSync(paths[key], planned[key], 'utf8');

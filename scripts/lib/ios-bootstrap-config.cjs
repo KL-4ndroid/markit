@@ -16,6 +16,15 @@ function createIosBootstrapConfig(env) {
     throw new Error('ios_api_base_invalid');
   }
   if (env.CAPACITOR_SERVER_URL?.trim()) throw new Error('ios_remote_server_forbidden');
+  if (env.NEXT_PUBLIC_APP_WEB_ORIGIN !== undefined) {
+    try {
+      const value = env.NEXT_PUBLIC_APP_WEB_ORIGIN;
+      const web = new URL(value);
+      if (value !== value.trim() || web.protocol !== 'https:' || web.username || web.password
+        || web.pathname !== '/' || web.search || web.hash || !web.hostname.includes('.')
+        || /^(localhost|127\.|\[)/i.test(web.hostname)) throw new Error();
+    } catch { throw new Error('ios_web_origin_invalid'); }
+  }
   return {
     appId,
     appName: 'Féria',

@@ -5,6 +5,9 @@ import { createIosBootstrapConfig } from '../scripts/lib/ios-bootstrap-config.cj
 
 const fixture = { IOS_APP_ID: 'dev.fixture.feria', NEXT_PUBLIC_API_BASE_URL: 'https://mobile-api.invalid' };
 const config = createIosBootstrapConfig(fixture);
+for (const value of ['', 'http://web.invalid', 'https://a:b@web.invalid', 'https://web.invalid/path', 'https://web.invalid?x=1']) {
+  assert.throws(() => createIosBootstrapConfig({ ...fixture, NEXT_PUBLIC_APP_WEB_ORIGIN: value }), /ios_web_origin_invalid/);
+}
 assert.equal(config.webDir, 'out');
 assert.equal(config.loggingBehavior, 'none', 'native bridge logging must not expose auth payloads');
 assert.equal(config.server?.url, undefined);

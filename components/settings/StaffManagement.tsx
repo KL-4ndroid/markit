@@ -228,11 +228,11 @@ export function StaffManagement({
 
   // 複製邀請連結
   const handleCopyLink = async (token: string) => {
-    const url = generateInvitationUrl(token);
-    await getClipboardPort().writeText(url);
-    toast.success('已複製連結！', {
-      description: '可以分享給員工了',
-    });
+    try {
+      const url = generateInvitationUrl(token);
+      await getClipboardPort().writeText(url);
+      toast.success('已複製連結！', { description: '可以分享給員工了' });
+    } catch { toast.error('目前無法複製連結，請稍後再試。'); }
   };
 
   // 檢查邀請是否過期

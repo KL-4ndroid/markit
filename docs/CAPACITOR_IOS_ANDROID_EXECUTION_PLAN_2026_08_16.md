@@ -2,7 +2,7 @@
 
 Date: 2026-08-16
 
-Status: current engineering roadmap; Gate 2 complete; reviewed Windows iOS bootstrap, network/lifecycle, auth-storage, camera/photo and file export/preview sources complete; remaining adapters and native generation pending
+Status: current engineering roadmap; Gate 2 complete; reviewed Windows iOS device-port and application-startup sources complete; overall workflow acceptance and native generation pending
 
 ## Windows-first execution update — 2026-10-19
 
@@ -46,6 +46,12 @@ The file follow-up adds Share 8.0.3 and a private PDF QuickLook bridge with an
 explicit dismissal boundary, safe per-operation cache lifetime and lazy resolution.
 See `docs/IOS_FILES_EVIDENCE_2026_10_20.md`. File export/share/preview sources are
 complete; links, clipboard, full bootstrap and all native build/UI evidence remain.
+
+The interaction/startup follow-up pins Clipboard/AppLauncher 8.0.1, separates
+launch/current URLs, and installs all non-purchase iOS ports before application
+providers mount in mobile builds. See
+`docs/IOS_PLATFORM_BOOTSTRAP_EVIDENCE_2026_10_20.md`. Windows workflow acceptance
+and native build/UI/device evidence remain; paid runtime is still disabled.
 
 This update supersedes the older coupling of all Phase 3 preparation to
 `STORE-CATALOG-CONFIG` in the historical tables below. Package installation,

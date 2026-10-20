@@ -6,7 +6,7 @@ import { createIosBootstrapConfig, IOS_CAPACITOR_VERSION } from './lib/ios-boots
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const allowedErrors = new Set([
-  'ios_app_id_missing', 'ios_app_id_invalid', 'ios_api_base_invalid', 'ios_remote_server_forbidden',
+  'ios_app_id_missing', 'ios_app_id_invalid', 'ios_api_base_invalid', 'ios_remote_server_forbidden', 'ios_web_origin_invalid',
 ]);
 
 function dependencyReady(name) {
@@ -44,8 +44,8 @@ if (process.platform === 'darwin') {
   }
 }
 if (!blockers.some(code => allowedErrors.has(code))) {
-  const apiHost = new URL(process.env.NEXT_PUBLIC_API_BASE_URL).hostname;
-  if (/\.(invalid|test|example|local)$/.test(apiHost) || /^(?:.*\.)?example\.(com|net|org)$/.test(apiHost)
+  const hosts = [process.env.NEXT_PUBLIC_API_BASE_URL, process.env.NEXT_PUBLIC_APP_WEB_ORIGIN].filter(Boolean).map(value => new URL(value).hostname);
+  if (hosts.some(host => /\.(invalid|test|example|local)$/.test(host) || /^(?:.*\.)?example\.(com|net|org)$/.test(host))
     || /^dev\.fixture\./i.test(process.env.IOS_APP_ID ?? '')) blockers.push('fixture_configuration_forbidden');
 }
 const nativeProjectPresent = existsSync(join(root, 'ios'));

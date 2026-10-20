@@ -26,7 +26,7 @@ try {
   };
   assert.equal(output.ok, true);
   assert.equal(output.report.launchReady, false);
-  assert.equal(output.report.totalTaskCount, 55);
+  assert.equal(output.report.totalTaskCount, 57);
   assert.deepEqual(output.report.agentReadyIds, ['IOS-DEVICE-ADAPTERS']);
 
   const missingEvidencePlan = JSON.parse(readFileSync(canonicalPath, 'utf8')) as {

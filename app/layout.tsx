@@ -4,6 +4,8 @@ import { AppChrome } from "@/components/AppChrome";
 import { AuthProvider } from "@/lib/supabase/auth-context";
 import { RoleProvider } from "@/lib/role-context";
 import { SyncProvider } from "@/lib/sync-context";
+import { NativePlatformGate } from '@/components/platform/NativePlatformGate';
+import { NativeLinkNavigation } from '@/components/platform/NativeLinkNavigation';
 
 export const metadata: Metadata = {
   title: "Féria - 出攤筆記",
@@ -50,13 +52,16 @@ export default function RootLayout({
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body>
-        <AuthProvider>
-          <RoleProvider>
-            <SyncProvider>
-              <AppChrome>{children}</AppChrome>
-            </SyncProvider>
-          </RoleProvider>
-        </AuthProvider>
+        <NativePlatformGate>
+          <NativeLinkNavigation />
+          <AuthProvider>
+            <RoleProvider>
+              <SyncProvider>
+                <AppChrome>{children}</AppChrome>
+              </SyncProvider>
+            </RoleProvider>
+          </AuthProvider>
+        </NativePlatformGate>
       </body>
     </html>
   );

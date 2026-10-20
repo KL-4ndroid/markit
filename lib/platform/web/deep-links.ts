@@ -13,6 +13,7 @@ export const webDeepLinks: DeepLinkPort = Object.freeze({
   async getInitialUrl() {
     return currentUrl();
   },
+  async getCurrentUrl() { return currentUrl(); },
   subscribe(listener: (url: string) => void) {
     if (typeof window === 'undefined') return () => undefined;
     const handleUrlChange = () => {

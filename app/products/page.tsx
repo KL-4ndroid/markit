@@ -16,8 +16,8 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
@@ -103,6 +103,11 @@ function writeReturnState(state: ProductListReturnState): void {
 }
 
 export default function ProductsPage() {
+  return <Suspense fallback={<ProductsLoading />}><ProductsPageContent /></Suspense>;
+}
+
+function ProductsPageContent() {
+  const shortcutAction = useSearchParams().get('action');
   const router = useRouter();
   const { userRole, roleRefreshState } = useRoleContext();
   const { user } = useAuth();
@@ -267,20 +272,23 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
+    if (shortcutAction !== 'add') { shortcutHandledRef.current = false; return; }
     if (shortcutHandledRef.current || !isRoleReady || dbStatus === null) return;
 
     let active = true;
-    void getDeepLinkPort().getInitialUrl().then(url => {
+    const handle = (url: string | null) => {
       if (!active || shortcutHandledRef.current || !isEntityCreateDeepLink(url, '/products')) return;
       shortcutHandledRef.current = true;
       router.replace('/products');
       if (isStaffMode || !canLoadScopedData || dbStatus.ok === false) return;
       setIsFormOpen(true);
       hideNavigation();
-    }).catch(() => undefined);
+    };
+    const links = getDeepLinkPort();
+    void links.getCurrentUrl().then(url => handle(url)).catch(() => undefined);
 
     return () => { active = false; };
-  }, [canLoadScopedData, dbStatus, isRoleReady, isStaffMode, router]);
+  }, [canLoadScopedData, dbStatus, isRoleReady, isStaffMode, router, shortcutAction]);
 
   if (!canLoadScopedData || dbStatus === null) return <ProductsLoading />;
 

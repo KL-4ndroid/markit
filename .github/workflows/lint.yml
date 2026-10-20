@@ -68,6 +68,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npx.cmd tsx tests/capacitor-file-preview-packaging.test.ts
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx.cmd tsx tests/capacitor-interactions.test.ts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx.cmd tsx tests/native-platform-startup.test.ts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npx.cmd tsx tests/ios-links-configuration.test.ts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build bundled mobile assets
         run: npm.cmd run build:mobile:api

@@ -117,6 +117,10 @@ links, clipboard and other capabilities require further bounded work.
 configuration source slice; see `docs/IOS_CAMERA_EVIDENCE_2026_10_20.md`.
 `IOS-FILES-SOURCE` completes file export/share and PDF preview source preparation;
 see `docs/IOS_FILES_EVIDENCE_2026_10_20.md`. Real UI/cache behavior remains unverified.
+`IOS-INTERACTIONS-SOURCE` and `IOS-PLATFORM-BOOTSTRAP-SOURCE` complete native
+interaction and mobile provider-startup source wiring. See
+`docs/IOS_PLATFORM_BOOTSTRAP_EVIDENCE_2026_10_20.md`. IOS-DEVICE-ADAPTERS retains
+overall integration acceptance; no real device or store evidence is implied.
 `IOS-PROJECT-GENERATION`, signed builds, and device evidence
 require real macOS/Xcode and applicable Apple readiness.
 The remaining agent-owned implementation is dependency-bound:

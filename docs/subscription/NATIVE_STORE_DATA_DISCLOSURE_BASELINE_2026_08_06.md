@@ -152,6 +152,18 @@ until the OS clears them; secure erasure/restart cleanup is not claimed.
 QuickLook is an Apple system framework, not an additional third-party SDK.
 Actual binary, dependency, retention and final privacy answers require review.
 
+## Interaction/bootstrap source update — 2026-10-20
+
+Clipboard 8.0.1 and AppLauncher 8.0.1 are installed under
+`docs/IOS_PLATFORM_BOOTSTRAP_SOURCE_REVIEW_2026_10_20.md`. The application only
+writes user-requested text, never reads or automatically clears the clipboard.
+Clipboard contents may be available outside the app according to OS/user settings;
+device-only clipboard retention is not claimed. The system opener is restricted
+to HTTPS and support mailto; no installed-app discovery or arbitrary scheme opening
+is enabled. App URL tokens are not logged by the new adapter and continue through
+existing invitation verification. Native purchases remain disabled. Actual binary
+behavior, permission, destination and final store disclosures still require review.
+
 ## Submission Workflow
 
 1. Freeze the release-candidate dependency lockfile, iOS privacy manifests, Android

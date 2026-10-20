@@ -63,6 +63,7 @@ const nextConfig = {
     NEXT_PUBLIC_APP_BUILD_TIME: process.env.NEXT_PUBLIC_APP_BUILD_TIME || new Date().toISOString(),
     NEXT_PUBLIC_APP_COMMIT_SHA: appCommitSha,
     NEXT_PUBLIC_APP_BUILD_TARGET: isMobileBuild ? 'mobile' : 'web',
+    NEXT_PUBLIC_NATIVE_LINK_SCHEME: isMobileBuild ? (process.env.IOS_APP_ID || '').trim().toLowerCase() : '',
     NEXT_PUBLIC_APP_RUNTIME_SMOKE: isMobileRuntimeSmokeBuild ? '1' : '0',
   },
   ...(isMobileBuild

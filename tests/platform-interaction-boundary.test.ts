@@ -25,6 +25,7 @@ async function main(): Promise<void> {
     deepLinks: {
       createAppUrl: path => `feria://app${path}`,
       getInitialUrl: async () => 'feria://app/join?token=initial',
+      getCurrentUrl: async () => 'feria://app/markets',
       subscribe(listener) { deepLinkListener = listener; return () => { deepLinkListener = null; }; },
     },
   });
