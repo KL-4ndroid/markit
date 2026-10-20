@@ -26,3 +26,13 @@ Before implementation, identify platform-dependent capabilities. Keep domain
 rules, validation, data models, sync behavior, and API contracts shared. Put
 browser/device access behind `lib/platform` ports with a Web adapter now and a
 future Capacitor adapter later.
+
+## Subscription Change Navigation
+
+- Before changing subscription plans, prices, paid feature limits, purchase/restore
+  behavior, or subscription disclosures, read `docs/SUBSCRIPTION_FILE_INDEX.mk`.
+- Use that index to find the relevant specifications, code, database files, tests,
+  and release records. Verify current code and canonical task/gate state; historical
+  reports and static imports do not prove that billing is active.
+- Update the index in the same change when subscription-related files are added,
+  moved, removed, or their responsibilities/activation state change.
