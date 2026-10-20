@@ -307,7 +307,7 @@
       "title": "Implement iOS device adapter sources and contract tests",
       "owner": "agent",
       "status": "ready_agent",
-      "dependsOn": ["IOS-BOOTSTRAP-PREP", "IOS-RUNTIME-PORTS", "IOS-AUTH-STORAGE-SOURCE", "IOS-CAMERA-SOURCE"],
+      "dependsOn": ["IOS-BOOTSTRAP-PREP", "IOS-RUNTIME-PORTS", "IOS-AUTH-STORAGE-SOURCE", "IOS-CAMERA-SOURCE", "IOS-FILES-SOURCE"],
       "gateRefs": [],
       "evidence": ["docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md"]
     },
@@ -466,6 +466,16 @@
       "dependsOn": ["IOS-BOOTSTRAP-PREP"],
       "gateRefs": [],
       "evidence": ["docs/IOS_BOOTSTRAP_SOURCE_REVIEW_2026_10_19.md","scripts/prepare-ios-project.mjs", "docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
+      "id": "IOS-FILES-SOURCE",
+      "title": "Implement reviewed iOS file export, share and PDF preview sources",
+      "owner": "agent",
+      "status": "complete",
+      "dependsOn": ["IOS-BOOTSTRAP-PREP", "IOS-CAMERA-SOURCE"],
+      "gateRefs": [],
+      "evidence": ["docs/IOS_FILES_SOURCE_REVIEW_2026_10_20.md", "docs/IOS_FILES_EVIDENCE_2026_10_20.md",
+        "tests/capacitor-files.test.ts", "tests/capacitor-file-preview-packaging.test.ts"]
     },
     {
       "id": "IOS-CAMERA-SOURCE",

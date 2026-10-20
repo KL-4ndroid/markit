@@ -122,7 +122,7 @@ runTest('panel is mounted only on the existing owner-gated recovery page', () =>
 
 runTest('panel presents recovery status in localized user-facing language', () => {
   assert.match(panelSource, /匯入安全狀態/);
-  assert.match(panelSource, /下載備份/);
+  assert.match(panelSource, /匯出備份/);
   assert.match(panelSource, /此區塊只讀取備份狀態/);
   assert.doesNotMatch(panelSource, /Import Safety Status|Download backup|Unknown size|Read error:/);
 });

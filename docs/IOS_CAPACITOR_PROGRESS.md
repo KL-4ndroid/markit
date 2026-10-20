@@ -8,7 +8,7 @@
 
 Phase 2 complete / Windows iOS configuration and scaffold-script sources complete;
 native network/lifecycle, iOS auth-storage and camera/photo sources complete;
-other adapters and macOS generation pending
+file export/share/PDF preview sources complete; other adapters and macOS generation pending
 
 On 2026-10-19 the user accepted Windows-first delivery and autonomous routine
 implementation. The canonical task graph separates `IOS-BOOTSTRAP-REVIEW` and
@@ -43,6 +43,13 @@ Project preparation now configures camera/photo purpose strings and the timestam
 privacy resource automatically. See `docs/IOS_CAMERA_EVIDENCE_2026_10_20.md`.
 Actual permissions, HEIC/orientation, memory and native resource bundling remain
 device/build checks; file export/share, links and full AppPlatform bootstrap remain.
+
+The follow-up `IOS-FILES-SOURCE` completes reviewed source preparation for file
+export via Share and PDF preview via a private QuickLook dismissal bridge. Current
+CSV/JSON saves and PDF preview share the existing FilePort contracts. Cancellation
+does not report success; only per-operation cache files are cleaned, after native
+UI completion. See `docs/IOS_FILES_EVIDENCE_2026_10_20.md`. Actual Swift/UI execution,
+clipboard/links and full AppPlatform activation remain open.
 
 ## Status
 

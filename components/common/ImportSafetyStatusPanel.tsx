@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Download, FileWarning, RefreshCw, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { getAppPlatform } from '@/lib/platform';
+import { savePlatformFile } from '@/lib/platform/file-operations';
+import { FileOperationError } from '@/lib/platform/contracts/files';
 import { formatDisplayDateTime } from '@/lib/presentation/formatters';
 import {
   getImportSafetyStatus,
@@ -41,6 +42,7 @@ function storageModeLabel(status: ImportSafetyStatus): string {
 
 export function ImportSafetyStatusPanel() {
   const [status, setStatus] = useState<ImportSafetyStatus | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const refresh = () => {
     setStatus(getImportSafetyStatus());
@@ -51,6 +53,7 @@ export function ImportSafetyStatusPanel() {
   }, []);
 
   const handleDownload = async () => {
+    if (isExporting) return;
     const content = readLocalImportEmergencyBackup();
     if (!content) {
       toast.error('目前沒有可下載的本機緊急備份');
@@ -59,11 +62,19 @@ export function ImportSafetyStatusPanel() {
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    await getAppPlatform().files.saveFile({
-      filename: `feria-emergency-backup-${timestamp}.json`,
-      data: new Blob([content], { type: 'application/json' }),
-    });
-    toast.success('緊急備份已下載');
+    setIsExporting(true);
+    try {
+      await savePlatformFile({
+        filename: `feria-emergency-backup-${timestamp}.json`,
+        data: new Blob([content], { type: 'application/json' }),
+      });
+      toast.success('緊急備份已匯出');
+    } catch (error) {
+      if (error instanceof FileOperationError && error.code === 'cancelled') return;
+      toast.error(error instanceof FileOperationError ? error.message : '緊急備份匯出失敗，原始資料仍保留。');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const hasBackup = !!status?.available;
@@ -100,11 +111,11 @@ export function ImportSafetyStatusPanel() {
           <button
             type="button"
             onClick={handleDownload}
-            disabled={!canDownload}
+            disabled={!canDownload || isExporting}
             className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-white disabled:opacity-50"
           >
             <Download size={16} />
-            下載備份
+            {isExporting ? '正在匯出' : '匯出備份'}
           </button>
         </div>
       </div>

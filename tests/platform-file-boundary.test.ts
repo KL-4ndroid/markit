@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getAppPlatform, installAppPlatform } from '../lib/platform/platform';
 import { getFilePort } from '../lib/platform/file-capability';
+import { savePlatformFile, previewPlatformFile } from '../lib/platform/file-operations';
 import type { AppPlatform, PlatformFile } from '../lib/platform/contracts';
 
 const projectRoot = join(__dirname, '..');
@@ -32,8 +33,8 @@ const fakePlatform: AppPlatform = {
 async function main(): Promise<void> {
   const restore = installAppPlatform(fakePlatform);
   try {
-    await getAppPlatform().files.saveFile({ filename: 'report.csv', data: new Blob(['a,b']) });
-    await getAppPlatform().files.previewFile({ filename: 'report.pdf', data: new Blob(['pdf']) });
+    await savePlatformFile({ filename: 'report.csv', data: new Blob(['a,b']) });
+    await previewPlatformFile({ filename: 'report.pdf', data: new Blob(['pdf']) });
     await getFilePort().saveFile({ filename: 'database-backup.json', data: new Blob(['{}']) });
   } finally {
     restore();
@@ -53,7 +54,7 @@ async function main(): Promise<void> {
     'components/reports/settlement/SettlementReportPdfPreviewButton.tsx',
   ]) {
     const source = readProjectFile(path);
-    assert.match(source, /getAppPlatform\(\)\.files/);
+    assert.match(source, /savePlatformFile|previewPlatformFile/);
     assert.doesNotMatch(source, /document\.createElement|URL\.createObjectURL|window\.open/);
   }
   console.log('PASS migrated shared and UI files no longer own browser file APIs');
@@ -66,8 +67,8 @@ async function main(): Promise<void> {
 
   for (const path of ['lib/db/index.ts', 'lib/db/data-canonicalization.ts']) {
     const source = readProjectFile(path);
-    assert.match(source, /@\/lib\/platform\/file-capability/);
-    assert.match(source, /getFilePort\(\)\.saveFile/);
+    assert.match(source, /@\/lib\/platform\/file-operations/);
+    assert.match(source, /savePlatformFile\(/);
     assert.doesNotMatch(source, /document\.createElement|URL\.createObjectURL|\.download\s*=/);
     assert.doesNotMatch(source, /@\/lib\/platform['"]|@\/lib\/platform\/platform/);
   }

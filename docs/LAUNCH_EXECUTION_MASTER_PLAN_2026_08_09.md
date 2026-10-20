@@ -112,9 +112,11 @@ adapters; see `docs/IOS_RUNTIME_PORTS_EVIDENCE_2026_10_20.md`. The broader
 `IOS-AUTH-STORAGE-SOURCE` is also complete for iOS Keychain sources and eager
 session-storage ordering; see `docs/IOS_AUTH_STORAGE_EVIDENCE_2026_10_20.md`.
 `IOS-DEVICE-ADAPTERS` remains incomplete: full native platform bootstrap,
-files/share, links and other capabilities require further bounded work.
+links, clipboard and other capabilities require further bounded work.
 `IOS-CAMERA-SOURCE` completes the reviewed camera/photo acquisition and permission
 configuration source slice; see `docs/IOS_CAMERA_EVIDENCE_2026_10_20.md`.
+`IOS-FILES-SOURCE` completes file export/share and PDF preview source preparation;
+see `docs/IOS_FILES_EVIDENCE_2026_10_20.md`. Real UI/cache behavior remains unverified.
 `IOS-PROJECT-GENERATION`, signed builds, and device evidence
 require real macOS/Xcode and applicable Apple readiness.
 The remaining agent-owned implementation is dependency-bound:

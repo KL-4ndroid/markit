@@ -5,7 +5,8 @@ import { ExternalLink, Loader2 } from 'lucide-react';
 import type { DocumentProps } from '@react-pdf/renderer';
 
 import type { SettlementReportPdfViewModel } from '@/lib/reporting/settlement-report-pdf-view-model';
-import { getAppPlatform } from '@/lib/platform';
+import { previewPlatformFile } from '@/lib/platform/file-operations';
+import { FileOperationError } from '@/lib/platform/contracts/files';
 
 export type SettlementReportPdfPreviewButtonProps = {
   viewModel: SettlementReportPdfViewModel | null;
@@ -41,17 +42,18 @@ export function SettlementReportPdfPreviewButton({
         fontSource: viewModel.font.assetPath,
       }) as React.ReactElement<DocumentProps>;
       const blob = await pdf(documentElement).toBlob();
-      const preview = await getAppPlatform().files.previewFile({
+      const preview = await previewPlatformFile({
         filename: buildPdfFileName(viewModel),
         data: blob,
       });
 
       if (!preview.opened) {
-        setErrorMessage('目前無法開啟 PDF 預覽，請確認瀏覽器允許開啟新分頁後再試一次。');
+        setErrorMessage(preview.reason === 'blocked'
+          ? '目前無法開啟 PDF 預覽，請確認瀏覽器允許開啟新分頁後再試一次。'
+          : '目前裝置無法開啟 PDF 預覽，請稍後再試。');
       }
     } catch (error) {
-      console.error('建立結算報告 PDF 失敗:', error);
-      setErrorMessage('PDF 建立失敗，請稍後再試。');
+      setErrorMessage(error instanceof FileOperationError ? error.message : 'PDF 建立失敗，請稍後再試。');
     } finally {
       setIsOpening(false);
     }

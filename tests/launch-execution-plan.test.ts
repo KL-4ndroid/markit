@@ -27,9 +27,9 @@ const report = evaluateLaunchExecutionPlan(document);
 assert.equal(document.overallStatus, 'not_ready');
 assert.deepEqual(document.releaseOrder, LAUNCH_EXECUTION_RELEASE_ORDER);
 assert.equal(report.launchReady, false);
-assert.equal(report.totalTaskCount, 54);
+assert.equal(report.totalTaskCount, 55);
 assert.deepEqual(report.counts, {
-  complete: 10,
+  complete: 11,
   ready_agent: 1,
   pending_manual: 10,
   pending_approval: 6,

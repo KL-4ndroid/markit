@@ -2,7 +2,7 @@
 
 Date: 2026-08-16
 
-Status: current engineering roadmap; Gate 2 complete; reviewed Windows iOS source bootstrap, network/lifecycle, auth-storage and camera/photo sources complete; remaining adapters and native generation pending
+Status: current engineering roadmap; Gate 2 complete; reviewed Windows iOS bootstrap, network/lifecycle, auth-storage, camera/photo and file export/preview sources complete; remaining adapters and native generation pending
 
 ## Windows-first execution update — 2026-10-19
 
@@ -41,6 +41,11 @@ The camera/photo follow-up adds current single-image APIs, scoped temporary-imag
 cleanup, shared sales/product acquisition and macOS permission/privacy source
 automation. See `docs/IOS_CAMERA_EVIDENCE_2026_10_20.md`. File export/share and links
 remain separate; this source completion does not close device or store gates.
+
+The file follow-up adds Share 8.0.3 and a private PDF QuickLook bridge with an
+explicit dismissal boundary, safe per-operation cache lifetime and lazy resolution.
+See `docs/IOS_FILES_EVIDENCE_2026_10_20.md`. File export/share/preview sources are
+complete; links, clipboard, full bootstrap and all native build/UI evidence remain.
 
 This update supersedes the older coupling of all Phase 3 preparation to
 `STORE-CATALOG-CONFIG` in the historical tables below. Package installation,

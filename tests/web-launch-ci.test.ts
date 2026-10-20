@@ -65,6 +65,8 @@ for (const contract of [
   'npx.cmd tsx tests/capacitor-camera.test.ts',
   'npx.cmd tsx tests/camera-flow-integration.test.ts',
   'npx.cmd tsx tests/ios-media-configuration.test.ts',
+  'npx.cmd tsx tests/capacitor-files.test.ts',
+  'npx.cmd tsx tests/capacitor-file-preview-packaging.test.ts',
   'npm.cmd run build:mobile:api',
   'npm.cmd run verify:mobile',
   'npm.cmd run smoke:mobile',

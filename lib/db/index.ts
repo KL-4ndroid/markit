@@ -32,7 +32,7 @@ import {
   ImportOutcomeError,
   runPhaseAwareImport,
 } from './import-runner';
-import { getFilePort } from '@/lib/platform/file-capability';
+import { savePlatformFile } from '@/lib/platform/file-operations';
 
 export type DatabaseInitResult =
   | { ok: true; integrity: IntegrityResult }
@@ -482,7 +482,7 @@ const EMERGENCY_BACKUP_METADATA_KEY = 'market_pulse_emergency_backup_metadata';
 
 async function triggerEmergencyBackupDownload(backupJson: string): Promise<void> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  await getFilePort().saveFile({
+  await savePlatformFile({
     filename: `feria-emergency-backup-${timestamp}.json`,
     data: new Blob([backupJson], { type: 'application/json' }),
   });

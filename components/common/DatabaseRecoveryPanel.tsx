@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Download, RefreshCw, ShieldCheck, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
-import { getAppPlatform } from '@/lib/platform';
+import { savePlatformFile } from '@/lib/platform/file-operations';
 import {
   createRecoveryBackup,
   getDatabaseRecoveryStatus,
@@ -16,7 +16,7 @@ import { useRoleContext } from '@/lib/role-context';
 import { resolveInfoLevel } from '@/lib/permissions/PermissionGate';
 
 async function saveJson(filename: string, content: string): Promise<void> {
-  await getAppPlatform().files.saveFile({
+  await savePlatformFile({
     filename,
     data: new Blob([content], { type: 'application/json' }),
   });
@@ -66,7 +66,7 @@ export function DatabaseRecoveryPanel() {
     try {
       const backup = await createRecoveryBackup();
       await saveJson(backup.filename, backup.content);
-      toast.success('已建立並下載本機備份');
+      toast.success('已建立並匯出本機備份');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '建立備份失敗');
     } finally {
@@ -83,7 +83,7 @@ export function DatabaseRecoveryPanel() {
       setStatus(nextStatus);
 
       if (result.integrity.ok) {
-        toast.success(`已修復 ${result.repairedDailyStats} 筆每日統計，並已下載修復前備份`);
+        toast.success(`已修復 ${result.repairedDailyStats} 筆每日統計，並已匯出修復前備份`);
       } else {
         toast.warning(`已修復 ${result.repairedDailyStats} 筆每日統計，但仍有其他項目需要檢查`);
       }
@@ -107,7 +107,7 @@ export function DatabaseRecoveryPanel() {
         toast.info('沒有需要修復的商品缺口');
       } else if (result.integrity.ok) {
         toast.success(
-          `已修復 ${result.repairedProducts} 個商品（雲端 ${result.fromCloud.length} 個、佔位 ${result.asPlaceholder.length} 個），並已下載修復前備份`
+          `已修復 ${result.repairedProducts} 個商品（雲端 ${result.fromCloud.length} 個、佔位 ${result.asPlaceholder.length} 個），並已匯出修復前備份`
         );
       } else {
         toast.warning(
@@ -147,7 +147,7 @@ export function DatabaseRecoveryPanel() {
             <p className="mt-1 text-sm text-muted-foreground">
               {isHealthy
                 ? '本機資料完整性檢查已通過。'
-                : '檢查本機 IndexedDB 是否有格式錯誤或統計快取異常。修復前會自動下載備份。'}
+                : '檢查本機 IndexedDB 是否有格式錯誤或統計快取異常。修復前會建立備份。'}
             </p>
           </div>
         </div>

@@ -92,12 +92,14 @@ for (const [dependency, version] of Object.entries(baseline.nativeSdkInventory.p
   assert.equal(packageJson.dependencies[dependency] ?? packageJson.devDependencies[dependency], version);
 }
 assert.deepEqual(Object.keys(baseline.nativeSdkInventory.packages).sort(),
-  ['@capacitor/app', '@capacitor/camera', '@capacitor/cli', '@capacitor/core', '@capacitor/filesystem', '@capacitor/ios', '@capacitor/network', '@feria/capacitor-auth-storage']);
+  ['@capacitor/app', '@capacitor/camera', '@capacitor/cli', '@capacitor/core', '@capacitor/filesystem', '@capacitor/ios', '@capacitor/network', '@capacitor/share', '@feria/capacitor-auth-storage', '@feria/capacitor-file-preview']);
 for (const [dependency, version] of Object.entries(baseline.nativeSdkInventory.transitivePackages)) {
   assert.equal(JSON.parse(read(`node_modules/${dependency}/package.json`)).version, version);
 }
 const localAuthPlugin = JSON.parse(read('plugins/feria-auth-storage/package.json'));
 assert.equal(baseline.nativeSdkInventory.localPluginVersions[localAuthPlugin.name], localAuthPlugin.version);
+const localPreviewPlugin = JSON.parse(read('plugins/feria-file-preview/package.json'));
+assert.equal(baseline.nativeSdkInventory.localPluginVersions[localPreviewPlugin.name], localPreviewPlugin.version);
 assert.equal(baseline.nativeSdkInventory.devicePluginsInstalled, true);
 assert.equal(baseline.nativeSdkInventory.storeSdkInstalled, false);
 assert.equal(baseline.nativeSdkInventory.nativeProjectGenerated, false);

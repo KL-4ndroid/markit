@@ -141,6 +141,17 @@ not invoke gallery saving or request that permission at startup. These artifacts
 do not confirm actual permission scope, native dependency behavior or final App
 Store privacy answers. Device, binary and policy reviews remain open.
 
+## File export/preview source update — 2026-10-20
+
+Share 8.0.3 and private `@feria/capacitor-file-preview` 0.1.0 are installed under
+`docs/IOS_FILES_SOURCE_REVIEW_2026_10_20.md`. PDF/CSV/JSON files stay on-device until
+the user explicitly selects a system sharing destination. That destination may
+transfer data outside the device. Only operation-owned cache files are removed
+after the UI finishes. Interrupted or timed-out operations may retain cache files
+until the OS clears them; secure erasure/restart cleanup is not claimed.
+QuickLook is an Apple system framework, not an additional third-party SDK.
+Actual binary, dependency, retention and final privacy answers require review.
+
 ## Submission Workflow
 
 1. Freeze the release-candidate dependency lockfile, iOS privacy manifests, Android

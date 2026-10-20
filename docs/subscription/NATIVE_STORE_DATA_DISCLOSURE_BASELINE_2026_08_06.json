@@ -4,7 +4,7 @@
   "updatedAt": "2026-10-20",
   "nativeSdkInventory": {
     "reviewStatus": "source_only_final_binary_review_pending",
-    "reviewEvidence": "docs/IOS_CAMERA_SOURCE_REVIEW_2026_10_20.md",
+    "reviewEvidence": "docs/IOS_FILES_SOURCE_REVIEW_2026_10_20.md",
     "packages": {
       "@capacitor/app": "8.1.2",
       "@capacitor/camera": "8.2.6",
@@ -13,9 +13,11 @@
       "@capacitor/cli": "8.5.3",
       "@capacitor/network": "8.0.1",
       "@capacitor/filesystem": "8.1.5",
-      "@feria/capacitor-auth-storage": "file:plugins/feria-auth-storage"
+      "@capacitor/share": "8.0.3",
+      "@feria/capacitor-auth-storage": "file:plugins/feria-auth-storage",
+      "@feria/capacitor-file-preview": "file:plugins/feria-file-preview"
     },
-    "localPluginVersions": { "@feria/capacitor-auth-storage": "0.1.0" },
+    "localPluginVersions": { "@feria/capacitor-auth-storage": "0.1.0", "@feria/capacitor-file-preview": "0.1.0" },
     "transitivePackages": { "@capacitor/synapse": "1.0.4" },
     "nativePackageRequirements": {
       "IONCameraLib": "2.0.x; resolved version and source audit pending macOS",
