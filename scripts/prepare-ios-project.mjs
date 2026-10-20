@@ -69,6 +69,7 @@ for (const command of [
   [join(root, 'scripts/verify-mobile-static-output.mjs')],
   [join(root, 'node_modules/@capacitor/cli/bin/capacitor'), 'add', 'ios', '--packagemanager', 'SPM'],
   [join(root, 'scripts/configure-ios-media.mjs'), '--apply'],
+  [join(root, 'scripts/configure-ios-navigation.mjs'), '--apply'],
 ]) {
   const result = spawnSync(process.execPath, command, { cwd: root, stdio: 'inherit', windowsHide: true });
   if (result.error || result.status !== 0) process.exit(result.status || 1);

@@ -29,14 +29,17 @@ assert.deepEqual(document.releaseOrder, LAUNCH_EXECUTION_RELEASE_ORDER);
 assert.equal(report.launchReady, false);
 assert.equal(report.totalTaskCount, 57);
 assert.deepEqual(report.counts, {
-  complete: 13,
-  ready_agent: 1,
+  complete: 14,
+  ready_agent: 0,
   pending_manual: 10,
   pending_approval: 6,
   blocked_dependency: 24,
   deferred: 3,
 });
-assert.deepEqual(report.agentReadyIds, ['IOS-DEVICE-ADAPTERS']);
+assert.deepEqual(report.agentReadyIds, []);
+assert.equal(document.tasks.find(task => task.id === 'IOS-DEVICE-ADAPTERS')?.status, 'complete');
+assert.equal(document.tasks.find(task => task.id === 'IOS-PROJECT-GENERATION')?.status, 'pending_manual');
+assert.equal(document.tasks.find(task => task.id === 'IOS-DEVICE-VERIFICATION')?.status, 'blocked_dependency');
 assert.ok(!report.humanActionIds.includes('NATIVE-GATE2-EVIDENCE'));
 assert.ok(!report.humanActionIds.includes('SEC-SRA000-EXECUTION'));
 assert.ok(report.humanActionIds.includes('APPLE-ACCOUNT-READINESS'));

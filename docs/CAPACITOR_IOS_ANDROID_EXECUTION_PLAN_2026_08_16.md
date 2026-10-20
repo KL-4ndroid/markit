@@ -157,7 +157,7 @@ remain blocked by their platform-specific dependencies.
 
 The human performs the protected or physical action and returns only a sanitized status packet. AI then validates the packet, updates the canonical JSON/evidence pointer, regenerates the Checklist, and runs drift checks. No credential, tax/bank document, tester identity, complete project reference, object key, token, or raw customer data enters Git.
 
-## 6. Phase 3 Bootstrap Design — Not Yet Authorized
+## 6. Phase 3 Bootstrap — Reviewed iOS Sources, Native Execution Pending
 
 When Gate 2 and the implementation review are complete:
 
@@ -186,6 +186,12 @@ For each capability:
 5. Add deterministic unit/contract coverage and real-device evidence where browser simulation is insufficient.
 
 Required native evidence includes camera and gallery permission denial/recovery, large image handling, file share/cancel, offline/reconnect, background/resume, safe area, keyboard, deep links, auth restore, account switching with pending writes, owner/manager/staff permissions, and accessibility.
+
+Windows source integration acceptance on 2026-10-20 closes only the source/contract
+task `IOS-DEVICE-ADAPTERS`. It includes injected adapter composition and static
+browser navigation; actual Swift/router execution remains unverified. The Mac
+handoff and guarded unsigned Simulator build are in
+`docs/IOS_MAC_HANDOFF_2026_10_20.md`. Native evidence above remains required.
 
 ## 8. Subscription And Store Release Acceptance
 

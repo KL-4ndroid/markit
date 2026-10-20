@@ -269,6 +269,10 @@ tsx tests/capacitor-camera.test.ts
 tsx tests/capacitor-files.test.ts
 tsx tests/capacitor-interactions.test.ts
 tsx tests/native-platform-startup.test.ts
+tsx tests/mobile-segment-aliases.test.ts
+tsx tests/ios-navigation-configuration.test.ts
+tsx tests/ios-unsigned-build.test.ts
+tsx tests/ios-platform-workflow-integration.test.ts
 tsx tests/ios-links-configuration.test.ts
 tsx tests/capacitor-file-preview-packaging.test.ts
 tsx tests/camera-flow-integration.test.ts

@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { configureMobileSegmentAliases } from './lib/mobile-segment-aliases.mjs';
 
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const nextBin = join(projectRoot, 'node_modules', 'next', 'dist', 'bin', 'next');
@@ -41,4 +42,10 @@ if (result.error) {
   process.exit(1);
 }
 
-process.exit(result.status ?? 1);
+if (result.status !== 0) process.exit(result.status ?? 1);
+try {
+  const count = configureMobileSegmentAliases(join(projectRoot, 'out'));
+  console.log(`PASS static segment aliases (${count})`);
+} catch {
+  console.error('FAIL mobile_segment_alias_configuration'); process.exit(1);
+}

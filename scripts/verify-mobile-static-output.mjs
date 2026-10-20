@@ -1,12 +1,17 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, extname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { configureMobileSegmentAliases } from './lib/mobile-segment-aliases.mjs';
 
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outputRoot = join(projectRoot, 'out');
 
+try { configureMobileSegmentAliases(outputRoot, { check: true }); }
+catch { console.error('FAIL mobile_segment_alias_verification'); process.exit(1); }
+
 const requiredFiles = [
   'index.html',
+  '404.html',
   'join/index.html',
   'markets/index.html',
   'markets/detail/index.html',

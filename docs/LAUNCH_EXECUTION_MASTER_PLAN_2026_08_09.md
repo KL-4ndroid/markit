@@ -42,6 +42,11 @@ both platforms and remain `not_ready` until their original evidence is complete.
 A store purchase never grants access until server verification and the server-owned
 entitlement projection succeed.
 
+On 2026-10-20 the iOS device-adapter **source/contract** integration was accepted
+on Windows. Mac generation and unsigned build tooling are ready for handoff;
+see `docs/IOS_MAC_HANDOFF_2026_10_20.md`. Swift compilation, signed builds, physical
+device workflows and TestFlight remain incomplete and retain their separate tasks.
+
 ## 2. Work Ownership
 
 | Owner | Meaning |

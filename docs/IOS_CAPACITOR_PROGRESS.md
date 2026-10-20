@@ -9,7 +9,8 @@
 Phase 2 complete / Windows iOS configuration and scaffold-script sources complete;
 native network/lifecycle, iOS auth-storage and camera/photo sources complete;
 file export/share/PDF preview, interactions and native startup sources complete;
-overall workflow acceptance and macOS generation pending
+Windows source workflow integration accepted; macOS generation/build and native
+device workflow acceptance pending
 
 On 2026-10-19 the user accepted Windows-first delivery and autonomous routine
 implementation. The canonical task graph separates `IOS-BOOTSTRAP-REVIEW` and
@@ -59,6 +60,19 @@ Web builds preserve their existing initial render. Current-page link reads are
 separate from launch intent. Purchases stay unavailable. See
 `docs/IOS_PLATFORM_BOOTSTRAP_EVIDENCE_2026_10_20.md`. Overall workflow acceptance,
 real native execution, signing and TestFlight remain open.
+
+The subsequent Windows integration slice accepts the **source/contract** task
+`IOS-DEVICE-ADAPTERS`: real adapter factories are assembled behind the shared
+registries and checked with injected bridges. Bundled client navigation, reload,
+return navigation and the unauthenticated login-dialog opening were exercised in
+a browser. Two packaging gaps were repaired: flat segment-prefetch aliases and
+an app-owned iOS router for route-specific static documents. The Swift router is
+prepared from actual CLI templates but remains uncompiled. Guarded Mac generation
+and unsigned Simulator build entries are documented in
+`docs/IOS_MAC_HANDOFF_2026_10_20.md`; evidence is in
+`docs/IOS_WORKFLOW_INTEGRATION_EVIDENCE_2026_10_20.md`. No native generation,
+authenticated device workflow, signing or TestFlight task was completed by this
+source acceptance.
 
 ## Status
 
@@ -184,8 +198,9 @@ GATE 2 COMPLETE - On 2026-08-24 both bounded Production storage-failure probes p
 - The user reports migrations 057, 058, and 059 as applied, but their remote migration history and post-cutover privilege state have not been independently verified from this workspace. Real Supabase/R2 owner, active-staff, revoked-staff, revoke-during-upload, unrelated-user, canonical-retry, owner-read, and refresh-idempotency paths now pass.
 - Local `.env.local` points to Supabase project `tzhbirwchhqabkxhqjdl`, while the deployed production client uses `fgejncfsvvsayiequubm`. The first probe therefore created `codex.p2.unrelated.20260720-104547.3bff4551@example.com` (`8fbac317-1454-4f5d-abf0-88f14207e359`) only in the non-production project and received production BFF HTTP 401; it did not touch production market, evidence, or R2 data. This workspace has no Supabase secret/admin key, so that accidental non-production account and the successful production disposable account must be removed later from their respective Supabase Auth dashboards.
 - The application `刪除記錄` confirmation explicitly states that deleting a market only hides it from the list while retaining its data. No deployed photo-delete API or R2 object lifecycle cleanup exists, so the disposable fixture is retained for the remaining role tests rather than performing a misleading partial cleanup.
-- Capacitor packages and native projects are not installed. Gate 2 has passed; installation
-  remains intentionally blocked until the Phase 3 slice and catalog dependency are approved.
+- The reviewed iOS Capacitor/plugin packages and source adapters are installed.
+  Native `ios/` generation still needs the Mac prerequisites and final identity;
+  store runtime remains separately blocked by catalog/review requirements.
 - The active-staff smoke emitted `[useSync] Skipping event outside local scoped dataset` and `[useSync] Skipping semantic duplicate deal_closed event during staff sync` warnings. They did not block the transaction or photo upload and are recorded as baseline synchronization warnings rather than upload-route failures.
 - Revoke cleanup can remain on a skeleton when multiple App tabs hold the same IndexedDB during the delete-and-redirect sequence. Closing the extra test tabs allowed cleanup to complete and produced the correct revoked view. This multi-tab cleanup behavior is a Web UX/reliability gap and must not be mistaken for a successful denial screen.
 - A revoke/rejoin cycle can leave a local sale event sync marker stale and can separate the retained task's local sale ID from the canonical Cloud ID. Commit `1d81266` repairs both the same-ID sync marker path and the unique exact canonical-ID recovery path; the retained production fixture now passes. The broader semantic duplicate policy still matches by market/date/revenue and remains a separate synchronization-quality risk outside this completed photo retry.
@@ -197,17 +212,19 @@ GATE 2 COMPLETE - On 2026-08-24 both bounded Production storage-failure probes p
 
 ## Next Authorized Slice
 
-The platform-neutral native subscription contracts, account-bound entitlement
-rules, fake IAP adapters, deterministic tests, purchase disclosure contract, and
-store metadata/config preflight tooling now exist. Their existence does not open
-the native runtime gate.
+The Windows-first iOS bootstrap and device-adapter source/contract integration
+are complete under the reviewed slices. Continue the guarded Mac handoff when
+macOS and the final configuration are available; use
+`docs/IOS_MAC_HANDOFF_2026_10_20.md` for generation and unsigned build commands.
+Until then, source checks and mobile presentation/acceptance preparation can
+continue. Actual native execution is still unverified.
 
-Gate 2 compensation evidence is complete. The next engineering boundary is a
-separately reviewed, bounded Capacitor bootstrap slice. The canonical
-`NATIVE-ADAPTERS` task remains dependency-blocked by `STORE-CATALOG-CONFIG`, so
-packages, `ios/`／`android/`, native store SDKs, and adapters must not be created merely
-because Gate 2 passed. Repository-only bootstrap design, dependency review, and
-cross-platform port inventory may proceed without claiming native runtime readiness.
+Platform-neutral subscription contracts, account-bound entitlement rules, fake
+IAP adapters, disclosure contracts and store preflight tooling exist. These do
+not enable store runtime: `IOS-STORE-ADAPTERS` still requires Apple catalog
+configuration, and signing, protected console actions, device evidence and paid
+release gates retain their own requirements. Android and aggregate native
+subscription tasks retain their separate dependencies.
 
 Use the existing runtime through these canonical manual artifacts; do not create a
 second fault route, cleanup worker, probe script, or verifier:

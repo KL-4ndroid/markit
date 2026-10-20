@@ -13,6 +13,7 @@ const contentTypes = {
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
   '.ttf': 'font/ttf',
+  '.txt': 'text/plain; charset=utf-8',
 };
 
 function resolveRequestPath(requestUrl) {
@@ -61,6 +62,8 @@ try {
     '/markets/detail/?id=smoke-market',
     '/products/',
     '/products/detail/?id=smoke-product',
+    '/privacy/__next.privacy.__PAGE__.txt',
+    '/products/detail/__next.products.detail.__PAGE__.txt',
     '/manifest.json',
     '/icons/icon-192x192.png',
     '/fonts/report/NotoSansTC-VariableFont_wght.ttf',
