@@ -7,7 +7,7 @@ type NavigationListener = (isVisible: boolean) => void;
 
 class NavigationStore {
   private listeners: Set<NavigationListener> = new Set();
-  private isVisible: boolean = true;
+  private hiddenReasons: Set<string> = new Set();
 
   subscribe(listener: NavigationListener) {
     this.listeners.add(listener);
@@ -15,17 +15,34 @@ class NavigationStore {
   }
 
   setVisible(visible: boolean) {
-    this.isVisible = visible;
-    this.listeners.forEach(listener => listener(visible));
+    if (visible) this.show('legacy');
+    else this.hide('legacy');
+  }
+
+  hide(reason: string) {
+    const wasVisible = this.getVisible();
+    this.hiddenReasons.add(reason);
+    if (wasVisible !== this.getVisible()) this.emit();
+  }
+
+  show(reason: string) {
+    const wasVisible = this.getVisible();
+    this.hiddenReasons.delete(reason);
+    if (wasVisible !== this.getVisible()) this.emit();
   }
 
   getVisible() {
-    return this.isVisible;
+    return this.hiddenReasons.size === 0;
+  }
+
+  private emit() {
+    const isVisible = this.getVisible();
+    this.listeners.forEach(listener => listener(isVisible));
   }
 }
 
 export const navigationStore = new NavigationStore();
 
 // 便捷函數
-export const hideNavigation = () => navigationStore.setVisible(false);
-export const showNavigation = () => navigationStore.setVisible(true);
+export const hideNavigation = (reason = 'legacy') => navigationStore.hide(reason);
+export const showNavigation = (reason = 'legacy') => navigationStore.show(reason);

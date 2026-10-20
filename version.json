@@ -1,12 +1,12 @@
 {
-  "name": "market-pulse",
+  "name": "feria",
   "version": "1.0.1",
-  "description": "市集誌 - 市集攤販數位管理系統",
-  "author": "Market Pulse Team",
+  "description": "Féria - 出攤筆記",
+  "author": "Féria Team",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/market-pulse"
+    "url": "https://github.com/yourusername/feria"
   },
   "scripts": {
     "dev": "next dev",

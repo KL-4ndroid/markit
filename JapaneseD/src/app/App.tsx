@@ -27,7 +27,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8]">
+    <div className="min-h-screen bg-background">
       {/* Page Content */}
       {currentPage === "home" && <HomePage onNavigateToDetail={handleNavigateToDetail} />}
       {currentPage === "detail" && selectedMarketId && (

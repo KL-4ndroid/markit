@@ -1,0 +1,477 @@
+'use client';
+
+import { useState } from 'react';
+import { Activity, AlertTriangle, Clock, Eye, Lock, RefreshCw, ShieldCheck } from 'lucide-react';
+import { toast } from 'sonner';
+import { useRoleContext } from '@/lib/role-context';
+import { useAuth } from '@/lib/supabase/auth-context';
+import {
+  listOwnerPendingOperationDiagnostics,
+  recoverStaleProcessingPendingOperation,
+  retryDrainOwnerChecklistTogglePendingOperation,
+  type OwnerPendingOperationDiagnosticsRow,
+  type PendingOperationDiagnosticsStateGroup,
+} from '@/lib/sync/owner-pending-operation-diagnostics';
+
+type PanelState = 'idle' | 'loading' | 'loaded';
+
+const STALE_PROCESSING_THRESHOLD_MS = 15 * 60 * 1000;
+
+const STATE_LABELS: Record<PendingOperationDiagnosticsStateGroup, string> = {
+  healthy: '正常',
+  needs_attention: '需留意',
+  in_progress: '處理中',
+  unknown: '未知',
+};
+
+const STATE_STYLES: Record<PendingOperationDiagnosticsStateGroup, string> = {
+  healthy: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  needs_attention: 'border-amber-200 bg-amber-50 text-amber-700',
+  in_progress: 'border-sky-200 bg-sky-50 text-sky-700',
+  unknown: 'border-neutral-stripe bg-cream-soft text-muted-foreground',
+};
+
+export function OwnerPendingOperationDiagnosticsPanel() {
+  const { user } = useAuth();
+  const { isStaff, isLoading: isRoleLoading } = useRoleContext();
+  const [state, setState] = useState<PanelState>('idle');
+  const [rows, setRows] = useState<OwnerPendingOperationDiagnosticsRow[]>([]);
+  const [recoveringOperationId, setRecoveringOperationId] = useState<string | null>(null);
+  const [retryingOperationId, setRetryingOperationId] = useState<string | null>(null);
+
+  const isBlocked = !user || isRoleLoading || isStaff;
+
+  const handleLoad = async () => {
+    if (!user) {
+      toast.error('請先登入');
+      return;
+    }
+    if (isRoleLoading) {
+      toast.error('角色權限確認中，請稍候');
+      return;
+    }
+    if (isStaff) {
+      toast.error('員工帳號不能查看 pending operation diagnostics');
+      return;
+    }
+
+    setState('loading');
+
+    try {
+      const nextRows = await listOwnerPendingOperationDiagnostics(user.id);
+      setRows(nextRows);
+      setState('loaded');
+      toast.success(
+        nextRows.length === 0
+          ? '沒有 pending operation diagnostics 資料'
+          : `已載入 ${nextRows.length} 筆 pending operation diagnostics`
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '讀取 diagnostics 失敗');
+      setState('idle');
+    }
+  };
+
+  const handleRecover = async (row: OwnerPendingOperationDiagnosticsRow) => {
+    if (!user || isRoleLoading || isStaff || !isStaleProcessing(row)) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      [
+        'Recover one stale processing pending operation?',
+        '',
+        `Operation: ${row.operationId}`,
+        'This will not create a final event.',
+        'The RPC may mark the row as synced, failed_permanent, or failed_retryable after final-event inspection.',
+      ].join('\n')
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRecoveringOperationId(row.operationId);
+
+    try {
+      const result = await recoverStaleProcessingPendingOperation(row.operationId);
+      toast.success(`Recovery result: ${result || 'updated'}`);
+      const nextRows = await listOwnerPendingOperationDiagnostics(user.id);
+      setRows(nextRows);
+      setState('loaded');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to recover operation');
+    } finally {
+      setRecoveringOperationId(null);
+    }
+  };
+
+  const handleRetryDrain = async (row: OwnerPendingOperationDiagnosticsRow) => {
+    if (!user || isRoleLoading || isStaff || !isRetryDrainCandidate(row, user.id)) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      [
+        'Retry drain one failed pending operation?',
+        '',
+        `Operation: ${row.operationId}`,
+        'This may create one final checklist_item_updated cloud event.',
+        'The action is limited to this single owner-created checklist toggle row.',
+      ].join('\n')
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRetryingOperationId(row.operationId);
+
+    try {
+      const result = await retryDrainOwnerChecklistTogglePendingOperation({
+        operationId: row.operationId,
+        currentUserId: user.id,
+        diagnosticsRow: row,
+      });
+      toast.success(`Retry drain result: ${result || 'updated'}`);
+      const nextRows = await listOwnerPendingOperationDiagnostics(user.id);
+      setRows(nextRows);
+      setState('loaded');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to retry drain operation');
+    } finally {
+      setRetryingOperationId(null);
+    }
+  };
+
+  if (!user) {
+    return (
+      <BlockedPanel
+        icon={<Lock size={20} />}
+        message="請先登入老闆帳號，才能查看 pending operation diagnostics。"
+      />
+    );
+  }
+
+  if (isRoleLoading) {
+    return (
+      <BlockedPanel
+        icon={<RefreshCw size={20} className="animate-spin" />}
+        message="正在確認角色權限，請稍候。"
+      />
+    );
+  }
+
+  if (isStaff) {
+    return (
+      <BlockedPanel
+        icon={<Lock size={20} />}
+        message="員工帳號不能查看 pending operation diagnostics。請改用老闆帳號操作。"
+        danger
+      />
+    );
+  }
+
+  const isLoading = state === 'loading';
+  const summary = summarizeRows(rows);
+
+  return (
+    <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700">
+              <Activity size={20} />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-foreground">
+                Pending operation diagnostics
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Owner-only read-only diagnostics for queued sync operations.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLoad}
+            disabled={isBlocked || isLoading}
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-neutral-stripe-dark px-3 text-sm font-medium text-foreground hover:bg-cream-soft disabled:opacity-50"
+          >
+            {isLoading ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />}
+            {isLoading ? '讀取中...' : '讀取 diagnostics'}
+          </button>
+        </div>
+
+        {state === 'loaded' && (
+          <div className="space-y-3">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <SummaryBadge label="正常" value={summary.healthy} tone="healthy" />
+              <SummaryBadge label="需留意" value={summary.needsAttention} tone="needs_attention" />
+              <SummaryBadge label="處理中" value={summary.inProgress} tone="in_progress" />
+            </div>
+
+            {rows.length === 0 ? (
+              <div className="border border-warm-mist bg-background px-3 py-3 text-sm text-muted-foreground">
+                目前沒有可顯示的 pending operation diagnostics。
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-warm-mist">
+                <table className="min-w-full border-collapse text-left text-sm">
+                  <thead className="bg-background text-xs uppercase text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">狀態</th>
+                      <th className="px-3 py-2 font-medium">Operation</th>
+                      <th className="px-3 py-2 font-medium">Market</th>
+                      <th className="px-3 py-2 font-medium">Final event</th>
+                      <th className="px-3 py-2 font-medium">更新</th>
+                      <th className="px-3 py-2 font-medium">錯誤</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-warm-mist">
+                    {rows.map(row => (
+                      <DiagnosticsRow
+                        key={row.operationId}
+                        row={row}
+                        currentUserId={user.id}
+                        isRecovering={recoveringOperationId === row.operationId}
+                        isRetrying={retryingOperationId === row.operationId}
+                        onRecover={handleRecover}
+                        onRetryDrain={handleRetryDrain}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function DiagnosticsRow({
+  row,
+  currentUserId,
+  isRecovering,
+  isRetrying,
+  onRecover,
+  onRetryDrain,
+}: {
+  row: OwnerPendingOperationDiagnosticsRow;
+  currentUserId: string;
+  isRecovering: boolean;
+  isRetrying: boolean;
+  onRecover: (row: OwnerPendingOperationDiagnosticsRow) => void;
+  onRetryDrain: (row: OwnerPendingOperationDiagnosticsRow) => void;
+}) {
+  const canRecover = isStaleProcessing(row);
+  const canRetryDrain = isRetryDrainCandidate(row, currentUserId);
+
+  return (
+    <tr className="align-top">
+      <td className="px-3 py-3">
+        <span
+          className={`inline-flex min-w-[4rem] justify-center rounded-full border px-2 py-1 text-xs font-medium ${STATE_STYLES[row.stateGroup]}`}
+        >
+          {STATE_LABELS[row.stateGroup]}
+        </span>
+        {isStaleProcessing(row) && (
+          <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+            <Clock size={13} />
+            stale {getStaleProcessingMinutes(row)}m
+          </p>
+        )}
+        {canRecover && (
+          <button
+            type="button"
+            onClick={() => onRecover(row)}
+            disabled={isRecovering}
+            className="mt-2 inline-flex h-8 items-center gap-1 rounded-md border border-amber-300 px-2 text-xs font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+          >
+            {isRecovering && <RefreshCw size={12} className="animate-spin" />}
+            Recover
+          </button>
+        )}
+        {canRetryDrain && (
+          <button
+            type="button"
+            onClick={() => onRetryDrain(row)}
+            disabled={isRetrying}
+            className="mt-2 inline-flex h-8 items-center gap-1 rounded-md border border-sky-300 px-2 text-xs font-medium text-sky-800 hover:bg-sky-50 disabled:opacity-50"
+          >
+            {isRetrying && <RefreshCw size={12} className="animate-spin" />}
+            Retry drain
+          </button>
+        )}
+      </td>
+      <td className="px-3 py-3">
+        <p className="font-medium text-foreground">{row.operationType}</p>
+        <p className="mt-1 break-all text-xs text-muted-foreground">{row.operationId}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {row.entityType}: {shortId(row.entityId)}
+        </p>
+      </td>
+      <td className="px-3 py-3 text-muted-foreground">
+        <p className="break-all">{shortId(row.marketId)}</p>
+        <p className="mt-1 text-xs">actor {shortId(row.actorId)}</p>
+      </td>
+      <td className="px-3 py-3">
+        {row.finalEventMismatch ? (
+          <span className="inline-flex items-center gap-1 text-amber-700">
+            <AlertTriangle size={14} />
+            mismatch
+          </span>
+        ) : row.hasFinalEvent ? (
+          <span className="inline-flex items-center gap-1 text-emerald-700">
+            <ShieldCheck size={14} />
+            {row.finalEventType || 'event'}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">none</span>
+        )}
+      </td>
+      <td className="px-3 py-3 text-muted-foreground">
+        <p>{formatDateTime(row.updatedAt)}</p>
+        <p className="mt-1 text-xs">{row.ageBucket || 'unknown'}</p>
+      </td>
+      <td className="px-3 py-3 text-muted-foreground">
+        {row.lastErrorCode || row.lastErrorMessage ? (
+          <>
+            {row.lastErrorCode && <p className="font-medium text-amber-700">{row.lastErrorCode}</p>}
+            {row.lastErrorMessage && (
+              <p className="mt-1 max-w-[16rem] break-words text-xs">{row.lastErrorMessage}</p>
+            )}
+          </>
+        ) : (
+          <span>none</span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function BlockedPanel({
+  icon,
+  message,
+  danger = false,
+}: {
+  icon: React.ReactNode;
+  message: string;
+  danger?: boolean;
+}) {
+  return (
+    <section className="w-full border border-neutral-stripe bg-white px-4 py-4 shadow-sm opacity-70">
+      <div className="flex items-start gap-3">
+        <div
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+            danger ? 'bg-feria-dangerSoft text-[#B85C5C]' : 'bg-warm-mist text-muted-foreground'
+          }`}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-foreground">
+            Pending operation diagnostics
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">{message}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SummaryBadge({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: PendingOperationDiagnosticsStateGroup;
+}) {
+  return (
+    <div className={`border px-3 py-2 ${STATE_STYLES[tone]}`}>
+      <p className="text-xs font-medium">{label}</p>
+      <p className="mt-1 text-lg font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function summarizeRows(rows: OwnerPendingOperationDiagnosticsRow[]) {
+  return rows.reduce(
+    (summary, row) => {
+      if (row.stateGroup === 'healthy') summary.healthy++;
+      if (row.stateGroup === 'needs_attention') summary.needsAttention++;
+      if (row.stateGroup === 'in_progress') summary.inProgress++;
+      return summary;
+    },
+    { healthy: 0, needsAttention: 0, inProgress: 0 }
+  );
+}
+
+function isStaleProcessing(row: OwnerPendingOperationDiagnosticsRow): boolean {
+  if (row.status !== 'processing') {
+    return false;
+  }
+
+  const updatedAtMs = new Date(row.updatedAt).getTime();
+  if (!Number.isFinite(updatedAtMs)) {
+    return false;
+  }
+
+  return Date.now() - updatedAtMs >= STALE_PROCESSING_THRESHOLD_MS;
+}
+
+function isRetryDrainCandidate(
+  row: OwnerPendingOperationDiagnosticsRow,
+  currentUserId: string
+): boolean {
+  if (row.status !== 'failed_retryable') {
+    return false;
+  }
+
+  if (row.operationType !== 'checklist_item_toggle') {
+    return false;
+  }
+
+  if (row.entityType !== 'checklist_item') {
+    return false;
+  }
+
+  if (row.actorId !== currentUserId) {
+    return false;
+  }
+
+  return true;
+}
+
+function getStaleProcessingMinutes(row: OwnerPendingOperationDiagnosticsRow): number {
+  const updatedAtMs = new Date(row.updatedAt).getTime();
+  if (!Number.isFinite(updatedAtMs)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.floor((Date.now() - updatedAtMs) / 60000));
+}
+
+function shortId(value: string): string {
+  if (!value) return '-';
+  return value.length > 12 ? `${value.slice(0, 8)}...` : value;
+}
+
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return date.toLocaleString('zh-TW', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}

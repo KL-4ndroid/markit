@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "scope": "new-disposable-local-only",
+  "projectId": "sra-a1-method-a-20260831",
+  "databasePort": 55422,
+  "databaseMajorVersion": 17,
+  "productionConnections": 0,
+  "remoteWrites": 0,
+  "productionLedgerAbsenceReproducedLocally": true,
+  "forwardTransaction": {
+    "sha256": "480d08b201e26db7204a661963ccdc826c1b6154252e2ef912255eb31d868e52",
+    "passed": true
+  },
+  "readOnlyPostcheck": {
+    "sha256": "3645ffd919b2b8ee15449af76b9aca906218bc7aae4136e83bfc4635c767caa0",
+    "ok": true,
+    "assertionGuard": 1,
+    "transactionReadOnly": "on",
+    "migrationLedgerPresent": false,
+    "functionCount": 4
+  },
+  "correctiveForward": {
+    "sha256": "ddfccf5fe2c3fd1fa5eaa83ba919554132d911769230ec32faaa10dd880dc80d",
+    "passed": true,
+    "originalBaselineRestored": true,
+    "repeatRejectedWithoutPersistentChange": true
+  },
+  "cleanup": {
+    "backup": false,
+    "containersAfterStop": 0,
+    "volumesAfterStop": 0
+  }
+}

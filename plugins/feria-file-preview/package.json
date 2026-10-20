@@ -1,0 +1,11 @@
+{
+  "name": "@feria/capacitor-file-preview",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "description": "Private iOS PDF QuickLook bridge with dismissal completion",
+  "main": "index.js",
+  "files": ["index.js", "Package.swift", "FeriaCapacitorFilePreview.podspec", "ios/Sources"],
+  "peerDependencies": { "@capacitor/core": ">=8.5.3 <9" },
+  "capacitor": { "ios": { "src": "ios" } }
+}

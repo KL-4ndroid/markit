@@ -1,0 +1,14 @@
+
+事件
+DebugToolsLoader.tsx:20   - window.debug.teamMembers()        // 查詢團隊成員
+DebugToolsLoader.tsx:21   - window.debug.diagnose()           // 完整診斷
+DebugToolsLoader.tsx:22   - window.debug.testRLS()            // 測試 RLS 政策
+DebugToolsLoader.tsx:14 🛠️ 調試工具已載入，使用 window.debug 訪問
+DebugToolsLoader.tsx:15 📖 可用指令:
+DebugToolsLoader.tsx:16   - window.debug.cloudProducts()      // 查詢雲端商品
+DebugToolsLoader.tsx:17   - window.debug.localProducts()      // 查詢本地商品
+DebugToolsLoader.tsx:18   - window.debug.compareProducts()    // 比對本地與雲端
+DebugToolsLoader.tsx:19   - window.debug.pendingProductEvents() // 查詢待同步事件
+DebugToolsLoader.tsx:20   - window.debug.teamMembers()        // 查詢團隊成員
+DebugToolsLoader.tsx:21   - window.debug.diagnose()           // 完整診斷
+DebugToolsLoader.tsx:22   - window.debug.testRLS()            // 測試 RLS 政策

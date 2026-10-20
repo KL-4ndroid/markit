@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "sourceDocument": "subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.md",
+  "updatedAt": "2026-08-06",
+  "locale": "zh-TW",
+  "status": "candidate_requires_manual_review",
+  "submissionStatus": "disabled",
+  "publicOrigin": null,
+  "accountDeletionUrl": null,
+  "reviewContactStatus": "pending_manual",
+  "reviewAccountStatus": "pending_manual",
+  "googleContactEmailStatus": "pending_manual",
+  "legalReviewStatus": "pending_manual",
+  "finalBinaryReviewStatus": "pending_manual",
+  "apple": {
+    "appName": "Féria - 出攤筆記",
+    "subtitle": "市集品牌的營運工作台",
+    "promotionalText": "從市集排程、商品與成本，到現場銷售記錄與出攤復盤，讓每次出攤都累積成品牌下一步的依據。",
+    "description": "Féria 是為市集品牌與獨立創作者設計的出攤營運工具。\n\n把市集排程、商品資料、成本與現場銷售記錄放在同一個工作流程裡。出攤前整理品項與庫存，現場快速記錄成交與互動，活動後保留每一場市集的營運資料。\n\n主要功能：\n- 規劃市集日期、地點與營運狀態\n- 管理商品、售價、成本與庫存\n- 記錄現場銷售與顧客互動\n- 整理每場市集的營收與支出\n- 讓長期記錄成為下一次出攤的參考\n\nFéria 專注在小品牌真正會重複使用的工作流程。功能供應、帳號同步與進階能力仍以實際版本和畫面內說明為準。",
+    "keywords": "市集管理,擺攤記錄,品牌經營,銷售記錄,商品管理,成本管理,出攤復盤",
+    "primaryCategory": "Business",
+    "secondaryCategory": "Productivity",
+    "supportUrl": null,
+    "marketingUrl": null,
+    "privacyPolicyUrl": null,
+    "privacyChoicesUrl": null,
+    "reviewNotesDraft": "Authentication is required. Use the non-expiring review credentials supplied securely in App Store Connect. The review workspace must contain disposable sample data and no customer information. Confirm the final subscription, restore, role, and account-deletion behavior against the submitted binary before submission."
+  },
+  "google": {
+    "appName": "Féria - 出攤筆記",
+    "shortDescription": "市集品牌的營運工作台，整合出攤、商品、銷售記錄與復盤",
+    "fullDescription": "Féria 是為市集品牌與獨立創作者設計的出攤營運工具。\n\n把市集排程、商品資料、成本與現場銷售記錄放在同一個工作流程裡。出攤前整理品項與庫存，現場快速記錄成交與互動，活動後保留每一場市集的營運資料。\n\n主要功能：\n- 規劃市集日期、地點與營運狀態\n- 管理商品、售價、成本與庫存\n- 記錄現場銷售與顧客互動\n- 整理每場市集的營收與支出\n- 讓長期記錄成為下一次出攤的參考\n\nFéria 專注在小品牌真正會重複使用的工作流程。功能供應、帳號同步與進階能力仍以實際版本和畫面內說明為準。",
+    "category": "Business",
+    "supportWebsiteUrl": null,
+    "privacyPolicyUrl": null,
+    "appAccessInstructionsDraft": "Authentication is required. Supply a non-expiring reviewer account securely in Play Console. The review workspace must use disposable sample data. Before submission, verify all subscription, restore, role, and account-deletion paths in the submitted binary and describe any non-obvious navigation here.",
+    "adsDeclarationDraft": "no_ads_current_runtime_requires_final_binary_review",
+    "targetAudienceDraft": "adult_business_users_requires_console_review"
+  }
+}

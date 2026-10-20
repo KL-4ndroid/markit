@@ -37,12 +37,12 @@ export function RevenueChart({ data }: RevenueChartProps) {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white rounded-xl p-3 shadow-lg border border-[#7B9FA6]/20">
-          <p className="text-xs text-[#6B6B6B] mb-1">{payload[0].payload.displayDate}</p>
-          <p className="text-sm font-medium text-[#7B9FA6]">
+        <div className="bg-white rounded-xl p-3 shadow-lg border border-primary/20">
+          <p className="text-xs text-muted-foreground mb-1">{payload[0].payload.displayDate}</p>
+          <p className="text-sm font-medium text-primary">
             營收：{formatCurrency(payload[0].value)}
           </p>
-          <p className="text-sm font-medium text-[#D4A574]">
+          <p className="text-sm font-medium text-secondary">
             利潤：{formatCurrency(payload[1].value)}
           </p>
         </div>
@@ -52,8 +52,8 @@ export function RevenueChart({ data }: RevenueChartProps) {
   };
 
   return (
-    <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-[#7B9FA6]/5">
-      <h3 className="text-base font-medium text-[#3A3A3A] mb-4">營收趨勢</h3>
+    <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-primary/5">
+      <h3 className="text-base font-medium text-foreground mb-4">營收趨勢</h3>
       
       <div className="w-full h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -64,28 +64,28 @@ export function RevenueChart({ data }: RevenueChartProps) {
             <defs>
               {/* 營收漸層 */}
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#7B9FA6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#7B9FA6" stopOpacity={0}/>
+                <stop offset="5%" stopColor="rgb(var(--brand-primary))" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="rgb(var(--brand-primary))" stopOpacity={0}/>
               </linearGradient>
               {/* 利潤漸層 */}
               <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#D4A574" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#D4A574" stopOpacity={0}/>
+                <stop offset="5%" stopColor="rgb(var(--brand-secondary))" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="rgb(var(--brand-secondary))" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            
-            <CartesianGrid strokeDasharray="3 3" stroke="#7B9FA6" opacity={0.1} />
-            
+
+            <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--brand-primary))" opacity={0.1} />
+
             <XAxis
               dataKey="displayDate"
-              tick={{ fill: '#6B6B6B', fontSize: 12 }}
-              axisLine={{ stroke: '#7B9FA6', opacity: 0.2 }}
+              tick={{ fill: 'rgb(var(--brand-muted-foreground))', fontSize: 12 }}
+              axisLine={{ stroke: 'rgb(var(--brand-primary))', opacity: 0.2 }}
               tickLine={false}
             />
-            
+
             <YAxis
-              tick={{ fill: '#6B6B6B', fontSize: 12 }}
-              axisLine={{ stroke: '#7B9FA6', opacity: 0.2 }}
+              tick={{ fill: 'rgb(var(--brand-muted-foreground))', fontSize: 12 }}
+              axisLine={{ stroke: 'rgb(var(--brand-primary))', opacity: 0.2 }}
               tickLine={false}
               tickFormatter={(value) => `$${value}`}
             />
@@ -96,7 +96,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
             <Area
               type="monotone"
               dataKey="revenue"
-              stroke="#7B9FA6"
+              stroke="rgb(var(--brand-primary))"
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorRevenue)"
@@ -106,7 +106,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
             <Area
               type="monotone"
               dataKey="profit"
-              stroke="#D4A574"
+              stroke="rgb(var(--brand-secondary))"
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorProfit)"
@@ -118,12 +118,12 @@ export function RevenueChart({ data }: RevenueChartProps) {
       {/* 圖例 */}
       <div className="flex items-center justify-center gap-6 mt-4">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#7B9FA6]"></div>
-          <span className="text-xs text-[#6B6B6B]">營收</span>
+          <div className="w-3 h-3 rounded-full bg-primary"></div>
+          <span className="text-xs text-muted-foreground">營收</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#D4A574]"></div>
-          <span className="text-xs text-[#6B6B6B]">利潤</span>
+          <div className="w-3 h-3 rounded-full bg-secondary"></div>
+          <span className="text-xs text-muted-foreground">利潤</span>
         </div>
       </div>
     </div>

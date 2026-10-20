@@ -15,7 +15,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#7B9FA6]/20 px-4 py-3 safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-primary/20 px-4 py-3 safe-bottom">
       <div className="max-w-lg mx-auto flex justify-around items-center">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -30,7 +30,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
               <div
                 className={`p-2.5 rounded-2xl transition-all ${
                   isActive
-                    ? "bg-[#7B9FA6] text-white scale-110"
+                    ? "bg-primary text-white scale-110"
                     : "bg-transparent text-[#6B6B6B] hover:bg-[#F5E6E8]"
                 }`}
               >
@@ -38,7 +38,7 @@ export function Navigation({ currentPage, onNavigate }: NavigationProps) {
               </div>
               <span
                 className={`text-xs transition-colors ${
-                  isActive ? "text-[#7B9FA6]" : "text-[#6B6B6B]"
+                  isActive ? "text-primary" : "text-[#6B6B6B]"
                 }`}
               >
                 {item.label}

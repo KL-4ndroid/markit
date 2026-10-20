@@ -1,6 +1,7 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { BarChart3 } from 'lucide-react';
 import type { Product, DailyStats, ProductCategory } from '@/types/db';
 import { formatCurrency } from '@/lib/utils';
 
@@ -71,11 +72,11 @@ export function CategoryPieChart({ products, stats }: CategoryPieChartProps) {
   // 如果沒有數據
   if (chartData.length === 0) {
     return (
-      <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-[#7B9FA6]/5">
-        <h3 className="text-base font-medium text-[#3A3A3A] mb-4">分類銷售佔比</h3>
+      <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-primary/5">
+        <h3 className="text-base font-medium text-foreground mb-4">分類銷售佔比</h3>
         <div className="flex flex-col items-center justify-center py-8">
-          <div className="text-4xl mb-2">📊</div>
-          <p className="text-sm text-[#6B6B6B]">尚無銷售數據</p>
+          <BarChart3 className="w-10 h-10 text-muted-foreground/60 mb-2" strokeWidth={1.5} />
+          <p className="text-sm text-muted-foreground">尚無銷售數據</p>
         </div>
       </div>
     );
@@ -86,12 +87,12 @@ export function CategoryPieChart({ products, stats }: CategoryPieChartProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white rounded-xl p-3 shadow-lg border border-[#7B9FA6]/20">
-          <p className="text-sm font-medium text-[#3A3A3A] mb-1">{data.name}</p>
-          <p className="text-xs text-[#6B6B6B]">
+        <div className="bg-white rounded-xl p-3 shadow-lg border border-primary/20">
+          <p className="text-sm font-medium text-foreground mb-1">{data.name}</p>
+          <p className="text-xs text-muted-foreground">
             銷售額：{formatCurrency(data.value)}
           </p>
-          <p className="text-xs text-[#6B6B6B]">
+          <p className="text-xs text-muted-foreground">
             銷售量：{data.count} 件
           </p>
         </div>
@@ -111,7 +112,7 @@ export function CategoryPieChart({ products, stats }: CategoryPieChartProps) {
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: entry.color }}
             ></div>
-            <span className="text-xs text-[#6B6B6B]">{entry.value}</span>
+            <span className="text-xs text-muted-foreground">{entry.value}</span>
           </div>
         ))}
       </div>
@@ -119,8 +120,8 @@ export function CategoryPieChart({ products, stats }: CategoryPieChartProps) {
   };
 
   return (
-    <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-[#7B9FA6]/5">
-      <h3 className="text-base font-medium text-[#3A3A3A] mb-4">分類銷售佔比</h3>
+    <div className="bg-white rounded-[1.5rem] p-6 shadow-md shadow-primary/5">
+      <h3 className="text-base font-medium text-foreground mb-4">分類銷售佔比</h3>
       
       <div className="w-full h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
