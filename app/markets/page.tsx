@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { MarketDetailLoadingShell } from '@/components/markets/MarketDetailLoadingShell';
 import { MarketListCard } from '@/components/markets/MarketListCard';
+import { MarketSearchField } from '@/components/markets/MarketSearchField';
+import { matchesMarketSearch } from '@/lib/markets/market-planning-view-model';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { StateView } from '@/components/ui/StateView';
@@ -30,6 +32,7 @@ import {
   type MarketDetailTransitionSnapshot,
 } from '@/lib/navigation/market-detail-transition';
 import { getDeepLinkPort } from '@/lib/platform/interaction-capabilities';
+import { getSessionStatePort } from '@/lib/platform/session-state-capability';
 import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import MarketsLoading from './loading';
@@ -53,6 +56,7 @@ interface MarketListReturnState {
   view: MarketListStage;
   preparationFilter: MarketPreparationFilter;
   scrollY: number;
+  searchQuery: string;
 }
 
 const PRIMARY_VIEWS: readonly PrimaryMarketView[] = ['active', 'preparing', 'ended'];
@@ -69,7 +73,7 @@ function isMarketPreparationFilter(value: unknown): value is MarketPreparationFi
 
 function readReturnState(): MarketListReturnState | null {
   try {
-    const raw = sessionStorage.getItem(MARKET_LIST_RETURN_STATE_KEY);
+    const raw = getSessionStatePort().read(MARKET_LIST_RETURN_STATE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<MarketListReturnState>;
     if (!isMarketListStage(parsed.view)) return null;
@@ -77,6 +81,7 @@ function readReturnState(): MarketListReturnState | null {
       view: parsed.view,
       preparationFilter: isMarketPreparationFilter(parsed.preparationFilter) ? parsed.preparationFilter : 'all',
       scrollY: Number.isFinite(parsed.scrollY) ? Math.max(0, Number(parsed.scrollY)) : 0,
+      searchQuery: typeof parsed.searchQuery === 'string' ? parsed.searchQuery : '',
     };
   } catch {
     return null;
@@ -85,7 +90,7 @@ function readReturnState(): MarketListReturnState | null {
 
 function writeReturnState(state: MarketListReturnState): void {
   try {
-    sessionStorage.setItem(MARKET_LIST_RETURN_STATE_KEY, JSON.stringify(state));
+    getSessionStatePort().write(MARKET_LIST_RETURN_STATE_KEY, JSON.stringify(state));
   } catch {
     // Session storage is an enhancement; navigation remains usable without it.
   }
@@ -96,7 +101,10 @@ export default function MarketsPage() {
 }
 
 function MarketsPageContent() {
-  const shortcutAction = useSearchParams().get('action');
+  const searchParams = useSearchParams();
+  const shortcutAction = searchParams.get('action');
+  const requestedView = searchParams.get('view');
+  const requestedProgress = searchParams.get('progress');
   const router = useRouter();
   const { userRole, roleRefreshState } = useRoleContext();
   const { user } = useAuth();
@@ -106,8 +114,18 @@ function MarketsPageContent() {
   const scopedOwnerId = currentOwnerId ?? ROLE_NOT_READY_OWNER_ID;
   const canLoadScopedData = isRoleReady && Boolean(currentOwnerId);
 
-  const [selectedView, setSelectedView] = useState<MarketListStage | null>(null);
-  const [preparationFilter, setPreparationFilter] = useState<MarketPreparationFilter>('all');
+  const [initialReturnState] = useState(readReturnState);
+  const [selectedView, setSelectedView] = useState<MarketListStage | null>(() => (
+    isMarketListStage(requestedView) ? requestedView : initialReturnState?.view ?? null
+  ));
+  const [preparationFilter, setPreparationFilter] = useState<MarketPreparationFilter>(() => (
+    isMarketListStage(requestedView)
+      ? isMarketPreparationFilter(requestedProgress) ? requestedProgress : 'all'
+      : initialReturnState?.preparationFilter ?? 'all'
+  ));
+  const [searchQuery, setSearchQuery] = useState(() => (
+    isMarketListStage(requestedView) ? '' : initialReturnState?.searchQuery ?? ''
+  ));
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAddChoiceOpen, setIsAddChoiceOpen] = useState(false);
   const [isFixedFormOpen, setIsFixedFormOpen] = useState(false);
@@ -117,6 +135,11 @@ function MarketsPageContent() {
   const [now, setNow] = useState(() => new Date());
   const activeViewRef = useRef<MarketListStage>('active');
   const preparationFilterRef = useRef<MarketPreparationFilter>('all');
+  const searchQueryRef = useRef('');
+  const canPersistReturnStateRef = useRef(false);
+  const openingFromListRef = useRef(false);
+  const pendingScrollRestoreRef = useRef<number | null>(initialReturnState?.scrollY ?? null);
+  canPersistReturnStateRef.current = canLoadScopedData && dbStatus?.ok === true;
   const shortcutHandledRef = useRef(false);
 
   useEffect(() => {
@@ -144,16 +167,29 @@ function MarketsPageContent() {
   }, []);
 
   useEffect(() => {
+    if (isMarketListStage(requestedView)) {
+      const progress = isMarketPreparationFilter(requestedProgress) ? requestedProgress : 'all';
+      setSelectedView(requestedView);
+      setPreparationFilter(progress);
+      setSearchQuery('');
+      pendingScrollRestoreRef.current = 0;
+      writeReturnState({ view: requestedView, preparationFilter: progress, searchQuery: '', scrollY: 0 });
+      router.replace('/markets', { scroll: false });
+      return;
+    }
     const state = readReturnState();
     if (!state) return;
     setSelectedView(state.view);
     setPreparationFilter(state.preparationFilter);
-    const timerId = window.setTimeout(() => window.scrollTo({ top: state.scrollY }), 80);
-    return () => window.clearTimeout(timerId);
-  }, []);
+    setSearchQuery(state.searchQuery);
+    pendingScrollRestoreRef.current = state.scrollY;
+  }, [requestedProgress, requestedView, router]);
 
   useEffect(() => () => {
-    writeReturnState({ view: activeViewRef.current, preparationFilter: preparationFilterRef.current, scrollY: window.scrollY });
+    // Strict Mode replays cleanup before the restored state or scoped data is ready.
+    // Never replace a saved search with the loading screen's default view.
+    if (!canPersistReturnStateRef.current || openingFromListRef.current) return;
+    writeReturnState({ view: activeViewRef.current, preparationFilter: preparationFilterRef.current, searchQuery: searchQueryRef.current, scrollY: window.scrollY });
   }, []);
 
   const allMarkets = useMarkets({
@@ -162,6 +198,12 @@ function MarketsPageContent() {
     ownerId: scopedOwnerId,
   });
   const groups = useMemo(() => buildMarketListGroups(allMarkets, now), [allMarkets, now]);
+  const searchedGroups = useMemo(() => ({
+    active: groups.active.filter(item => matchesMarketSearch(item.market, searchQuery)),
+    preparing: groups.preparing.filter(item => matchesMarketSearch(item.market, searchQuery)),
+    ended: groups.ended.filter(item => matchesMarketSearch(item.market, searchQuery)),
+    cancelled: groups.cancelled.filter(item => matchesMarketSearch(item.market, searchQuery)),
+  }), [groups, searchQuery]);
   const defaultView: PrimaryMarketView = groups.active.length > 0
     ? 'active'
     : groups.preparing.length > 0
@@ -170,13 +212,24 @@ function MarketsPageContent() {
   const activeView = selectedView ?? defaultView;
   activeViewRef.current = activeView;
   preparationFilterRef.current = preparationFilter;
+  searchQueryRef.current = searchQuery;
   const filteredMarkets = activeView === 'preparing' && preparationFilter !== 'all'
-    ? groups.preparing.filter(item => item.preparationAttention === preparationFilter)
-    : groups[activeView];
+    ? searchedGroups.preparing.filter(item => item.preparationAttention === preparationFilter)
+    : searchedGroups[activeView];
+  useEffect(() => {
+    if (!canLoadScopedData || dbStatus?.ok !== true || pendingScrollRestoreRef.current === null) return;
+    if (pendingScrollRestoreRef.current > 0 && allMarkets.length === 0) return;
+    const scrollY = pendingScrollRestoreRef.current;
+    const timerId = window.setTimeout(() => {
+      window.scrollTo({ top: scrollY });
+      pendingScrollRestoreRef.current = null;
+    }, 80);
+    return () => window.clearTimeout(timerId);
+  }, [activeView, allMarkets.length, canLoadScopedData, dbStatus?.ok, preparationFilter, searchQuery]);
   const preparationFilters: readonly { id: MarketPreparationFilter; label: string; count: number }[] = [
-    { id: 'all', label: '全部', count: groups.preparing.length },
-    { id: 'awaiting_decision', label: '等待錄取', count: groups.preparing.filter(item => item.preparationAttention === 'awaiting_decision').length },
-    { id: 'payment_due', label: '待繳費', count: groups.preparing.filter(item => item.preparationAttention === 'payment_due').length },
+    { id: 'all', label: '全部', count: searchedGroups.preparing.length },
+    { id: 'awaiting_decision', label: '等待錄取', count: searchedGroups.preparing.filter(item => item.preparationAttention === 'awaiting_decision').length },
+    { id: 'payment_due', label: '待繳費', count: searchedGroups.preparing.filter(item => item.preparationAttention === 'payment_due').length },
   ];
 
   useEffect(() => {
@@ -186,24 +239,27 @@ function MarketsPageContent() {
   }, [filteredMarkets, router]);
 
   const tabs: readonly TabItem<PrimaryMarketView>[] = [
-    { id: 'active', label: '進行中', count: groups.active.length },
-    { id: 'preparing', label: '待準備', count: groups.preparing.length },
-    { id: 'ended', label: '已結束', count: groups.ended.length },
+    { id: 'active', label: '進行中', count: searchedGroups.active.length },
+    { id: 'preparing', label: '待準備', count: searchedGroups.preparing.length },
+    { id: 'ended', label: '已結束', count: searchedGroups.ended.length },
   ];
 
-  const selectView = (view: MarketListStage, nextPreparationFilter = preparationFilter) => {
+  const selectView = (view: MarketListStage, nextPreparationFilter = preparationFilter, nextSearchQuery = searchQuery) => {
     setSelectedView(view);
-    writeReturnState({ view, preparationFilter: nextPreparationFilter, scrollY: 0 });
+    writeReturnState({ view, preparationFilter: nextPreparationFilter, searchQuery: nextSearchQuery, scrollY: 0 });
   };
 
   const selectPreparationFilter = (filter: MarketPreparationFilter) => {
     setPreparationFilter(filter);
-    writeReturnState({ view: 'preparing', preparationFilter: filter, scrollY: 0 });
+    writeReturnState({ view: 'preparing', preparationFilter: filter, searchQuery, scrollY: 0 });
   };
 
   const openMarket = (item: MarketListViewItem) => {
     const marketId = item.market.id;
     if (!marketId) return;
+    // Capture before the loading shell shortens the page or navigation resets scroll.
+    writeReturnState({ view: activeView, preparationFilter, searchQuery, scrollY: window.scrollY });
+    openingFromListRef.current = true;
     const snapshot = beginMarketDetailTransition({
       marketId,
       actorId: user?.id ?? '',
@@ -215,13 +271,13 @@ function MarketsPageContent() {
       setOpeningMarketId(marketId);
       setOpeningMarketSnapshot(snapshot);
     });
-    writeReturnState({ view: activeView, preparationFilter, scrollY: window.scrollY });
     router.push(buildMarketDetailHref(marketId));
   };
 
   useEffect(() => {
     if (!openingMarketSnapshot) return;
     const timeoutId = window.setTimeout(() => {
+      openingFromListRef.current = false;
       setOpeningMarketId(null);
       setOpeningMarketSnapshot(null);
       toast.error('市集開啟時間較久，請再試一次');
@@ -231,8 +287,9 @@ function MarketsPageContent() {
 
   const handleAddSuccess = () => {
     toast.success('市集建立成功', { description: '已加入待準備清單。' });
+    setSearchQuery('');
     setPreparationFilter('all');
-    selectView('preparing', 'all');
+    selectView('preparing', 'all', '');
     showNavigation();
   };
 
@@ -355,6 +412,13 @@ function MarketsPageContent() {
           />
         )}
 
+        <MarketSearchField value={searchQuery} onChange={setSearchQuery} />
+        {searchQuery.trim() && (
+          <p className="mt-2 text-xs leading-5 text-muted-foreground" role="status">
+            此分類找到 {filteredMarkets.length} 場；上方分類數字為搜尋結果數量。
+          </p>
+        )}
+
         {activeView === 'preparing' && (
           <section className="mt-4" aria-labelledby="preparation-filter-label">
             <p id="preparation-filter-label" className="text-xs font-semibold text-muted-foreground">報名進度</p>
@@ -404,7 +468,7 @@ function MarketsPageContent() {
           <StateView
             className="mt-5"
             icon={<CalendarDays className="h-5 w-5" aria-hidden="true" />}
-            title={activeView === 'active'
+            title={searchQuery.trim() ? '此分類沒有符合的市集' : activeView === 'active'
               ? '目前沒有進行中的市集'
               : activeView === 'preparing'
                 ? preparationFilter === 'awaiting_decision'
@@ -415,12 +479,12 @@ function MarketsPageContent() {
                 : activeView === 'ended'
                   ? '尚無已結束的市集'
                   : '沒有已取消的市集'}
-            description={activeView === 'preparing' && preparationFilter !== 'all'
+            description={searchQuery.trim() ? '可更換名稱或地點關鍵字，或查看其他分類的搜尋結果。' : activeView === 'preparing' && preparationFilter !== 'all'
               ? '切換其他報名進度查看市集。'
               : activeView === 'preparing' && !isStaffMode
                 ? '新增下一場市集後，會從這裡開始準備。'
                 : '切換其他分類查看市集。'}
-            action={activeView === 'preparing' && preparationFilter === 'all' && !isStaffMode
+            action={searchQuery.trim() ? <Button variant="secondary" onClick={() => setSearchQuery('')}>清除搜尋</Button> : activeView === 'preparing' && preparationFilter === 'all' && !isStaffMode
               ? <Button onClick={handleOpenAddChoice} leadingIcon={<Plus className="h-4 w-4" />}>新增營業</Button>
               : undefined}
           />
@@ -432,7 +496,7 @@ function MarketsPageContent() {
             onClick={() => selectView('cancelled')}
             className="mt-6 min-h-11 rounded-control px-2 text-sm text-muted-foreground hover:bg-white hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"
           >
-            查看已取消市集 ({groups.cancelled.length})
+            查看已取消市集 ({searchedGroups.cancelled.length})
           </button>
         )}
       </div>

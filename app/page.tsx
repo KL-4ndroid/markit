@@ -14,9 +14,9 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
 import { TodayMarketCard, todayMarketPhaseClasses } from '@/components/home/TodayMarketCard';
+import { MarketPlanningOverview } from '@/components/home/MarketPlanningOverview';
+import { SameDayMarketArrangements } from '@/components/home/SameDayMarketArrangements';
 import { StaffBadge } from '@/components/staff/StaffBadge';
-import { Button } from '@/components/ui/Button';
-import { StateView } from '@/components/ui/StateView';
 import { SyncStatus } from '@/hooks/useSync';
 import { useRoleContext } from '@/lib/role-context';
 import { db } from '@/lib/db';
@@ -34,6 +34,7 @@ import { useAuth } from '@/lib/supabase/auth-context';
 import { buildMarketDetailHref } from '@/lib/navigation/market-detail-route';
 import { canStartScheduledMarket } from '@/lib/recurring-operations';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
+import { buildMarketPlanningViewModel, getMarketRegistrationLabel } from '@/lib/markets/market-planning-view-model';
 
 const DASHBOARD_ROLE_NOT_READY_OWNER_ID = '__role_not_ready__';
 
@@ -48,17 +49,15 @@ function formatDateLabel(date: Date): string {
 function getGreeting(date: Date): string {
   const hour = date.getHours();
   if (hour < 11) return '早安，慢慢準備好今天';
-  if (hour < 17) return '午安，現場辛苦了';
+  if (hour < 17) return '午安，照自己的步調來';
   return '晚安，今天也辛苦了';
 }
 
-function formatDateKey(dateKey: string): string {
+function formatDateKey(dateKey: string, options: Intl.DateTimeFormatOptions = {
+  month: 'numeric', day: 'numeric', weekday: 'short',
+}): string {
   const [year, month, day] = dateKey.split('-').map(Number);
-  return new Intl.DateTimeFormat('zh-TW', {
-    month: 'numeric',
-    day: 'numeric',
-    weekday: 'short',
-  }).format(new Date(year, month - 1, day));
+  return new Intl.DateTimeFormat('zh-TW', options).format(new Date(year, month - 1, day));
 }
 
 interface TaskRowProps {
@@ -161,6 +160,12 @@ export default function HomePage() {
   }, [isStaff, user?.id]);
 
   const todayView = useMemo(() => buildTodayViewModel(allMarkets, now), [allMarkets, now]);
+  const canViewOwnerPlanning = roleRefreshState.stage === 'ready' && isOwner;
+  const planning = useMemo(
+    () => buildMarketPlanningViewModel(canViewOwnerPlanning ? allMarkets : [], now),
+    [allMarkets, canViewOwnerPlanning, now],
+  );
+  const todayArrangement = planning.sameDayArrangements.find(arrangement => arrangement.date === todayView.dateKey);
   const canStartMarketByRole = roleRefreshState.stage === 'ready'
     && roleRefreshState.isAuthorizationFresh
     && hasCapability(deriveRoleCapabilities({
@@ -221,7 +226,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-atelier-canvas/80 text-atelier-ink">
-      <header className="japanese-warm-header overflow-hidden rounded-b-[2rem] px-5 pb-6 pt-[calc(1.25rem+env(safe-area-inset-top))] text-white shadow-atelier-lift">
+      <header className="japanese-warm-header overflow-hidden rounded-b-[1.5rem] px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-white shadow-atelier sm:px-6">
         <div className="mx-auto max-w-3xl">
           <div className="min-w-0">
             {isStaff ? (
@@ -231,23 +236,21 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="mt-5 min-w-0">
-            <h1 className="text-[1.65rem] font-semibold leading-tight text-white">{greeting}</h1>
-            <p className="mt-2 text-sm text-white/80">{formatDateLabel(now)}</p>
-            {isStaff && <div className="mt-3"><StaffBadge tone="default" /></div>}
+          <div className="mt-2 min-w-0">
+            <h1 className="text-lg font-medium leading-snug text-white">{greeting}</h1>
+            <p className="mt-1 text-xs text-white/90">{formatDateLabel(now)}</p>
+            {isStaff && <div className="mt-2"><StaffBadge tone="default" /></div>}
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-3xl px-4 pb-8 pt-7 sm:px-6">
+      <div className="mx-auto max-w-3xl px-4 pb-8 pt-5 sm:px-6">
         <section aria-labelledby="today-focus-title">
-          <div className="mb-4">
-            <div>
+          <div className="mb-3">
             <p className="text-xs font-semibold text-atelier-clay">現在</p>
             <h2 id="today-focus-title" className="mt-1 text-lg font-semibold text-atelier-ink">
               {isStaff ? '你的今日工作' : '今天的營運重點'}
             </h2>
-            </div>
           </div>
 
           {todayView.primaryMarket ? (
@@ -263,22 +266,38 @@ export default function HomePage() {
               isStarting={startingMarketId === todayView.primaryMarket.market.id}
             />
           ) : (
-            <StateView
-              icon={<CalendarDays className="h-5 w-5" aria-hidden="true" />}
-              title="今天沒有排定市集"
-              description={todayView.upcomingMarkets[0]
-                ? `下一場是 ${formatDateKey(todayView.upcomingMarkets[0].nextDate)}的「${todayView.upcomingMarkets[0].market.name}」。`
-                : isStaff
-                  ? '目前沒有可執行的市集工作。'
-                  : '可先建立下一場市集，或整理商品與備貨。'}
-              action={(
-                <Button variant="secondary" onClick={() => router.push('/markets')}>
-                  {isStaff ? '查看可用市集' : '查看市集安排'}
-                </Button>
-              )}
-            />
+            <button
+              type="button"
+              onClick={() => router.push('/markets')}
+              className="flex min-h-20 w-full items-center gap-3 rounded-card bg-atelier-blue-soft/50 px-4 py-3 text-left transition-colors hover:bg-atelier-blue-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <CalendarDays className="h-5 w-5 shrink-0 text-atelier-blue" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium text-foreground">今天沒有排定市集</span>
+                <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">
+                  {todayView.upcomingMarkets[0]
+                    ? `下一場：${formatDateKey(todayView.upcomingMarkets[0].nextDate)} ${todayView.upcomingMarkets[0].market.name}`
+                    : isStaff ? '目前沒有可執行的市集工作。' : '可先安排下一場市集。'}
+                </span>
+                <span className="mt-1 block text-xs font-medium text-primary">{isStaff ? '查看可用市集' : '查看市集安排'}</span>
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            </button>
+          )}
+          {canViewOwnerPlanning && todayArrangement && (
+            <p className="mt-3 flex items-start gap-2 rounded-control bg-atelier-blue-soft/50 px-3 py-3 text-sm text-foreground">
+              <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-atelier-blue" aria-hidden="true" />
+              今天有 {todayArrangement.markets.length} 場市集，請確認時間與人手安排。
+            </p>
           )}
         </section>
+
+        {canViewOwnerPlanning && (
+          <MarketPlanningOverview
+            planning={planning}
+            onOpenProgress={filter => router.push(`/markets?view=preparing&progress=${filter}`)}
+          />
+        )}
 
         {(pendingPhotoItems.length > 0 || showSyncTask) && (
           <section className="mt-8" aria-labelledby="today-tasks-title">
@@ -334,7 +353,7 @@ export default function HomePage() {
           </section>
         )}
 
-        <section className="-mx-4 mt-9 bg-upcoming-section px-4 py-6 sm:-mx-6 sm:px-6" aria-labelledby="upcoming-title">
+        <section className="-mx-4 mt-7 bg-upcoming-section px-4 py-5 sm:-mx-6 sm:px-6" aria-labelledby="upcoming-title">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold text-atelier-blue">接下來</p>
@@ -357,16 +376,22 @@ export default function HomePage() {
                   key={item.market.id ?? `${item.market.name}-${item.nextDate}`}
                   type="button"
                   onClick={() => openMarket(item.market.id)}
-                  className="flex min-h-16 w-full items-center gap-3 rounded-card bg-atelier-paper/90 px-3 py-3 text-left shadow-sm transition-colors hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
+                  className="flex min-h-20 w-full items-start gap-3 rounded-card bg-atelier-paper/90 px-3 py-3 text-left shadow-sm transition-colors hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <span className="flex h-11 min-w-14 shrink-0 items-center justify-center rounded-control bg-upcoming-date-badge px-2 text-xs font-semibold text-atelier-blue">
-                    {formatDateKey(item.nextDate)}
+                  <span className="flex min-h-12 w-14 shrink-0 flex-col items-center justify-center rounded-control bg-upcoming-date-badge px-1 py-1.5 text-atelier-blue">
+                    <span className="text-base font-semibold tabular-nums">{Number(item.nextDate.slice(5, 7))}/{Number(item.nextDate.slice(8, 10))}</span>
+                    <span className="mt-0.5 text-xs">{formatDateKey(item.nextDate, { weekday: 'short' })}</span>
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-foreground">{item.market.name}</span>
-                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">{item.market.location || '尚未設定地點'}</span>
+                    <span className="block break-words text-base font-medium leading-6 text-foreground">{item.market.name}</span>
+                    {canViewOwnerPlanning && (
+                      <span className={`mt-1 inline-flex rounded-control px-2 py-0.5 text-xs font-medium ${item.market.status === 'accepted' ? 'bg-status-warn-bg text-status-warn-text' : 'bg-primary/10 text-primary'}`}>
+                        {getMarketRegistrationLabel(item.market)}
+                      </span>
+                    )}
+                    <span className="mt-1 block truncate text-xs text-muted-foreground">{item.market.location || '尚未設定地點'}</span>
                   </span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <ChevronRight className="mt-4 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 </button>
               ))}
             </div>
@@ -374,6 +399,13 @@ export default function HomePage() {
             <p className="mt-3 py-4 text-sm text-muted-foreground">目前沒有即將到來的市集。</p>
           )}
         </section>
+
+        {canViewOwnerPlanning && (
+          <SameDayMarketArrangements
+            arrangements={planning.sameDayArrangements}
+            onOpenMarket={market => market.id && router.push(buildMarketDetailHref(market.id, { task: 'registration' }))}
+          />
+        )}
       </div>
     </div>
   );

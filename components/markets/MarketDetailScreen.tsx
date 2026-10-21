@@ -126,6 +126,7 @@ type SalesPhotoEvidenceMarket = Market & {
 export function MarketDetailScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const requestedTask = searchParams.get('task');
   const marketId = normalizeMarketRouteId(searchParams.get('id') ?? undefined) ?? ''; // UUID 字符串，不需要 parseInt
   const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
   const { isStaff, canViewSensitiveData, isLoading: isRoleLoading } = useRoleContext(); // ✅ 員工權限檢查
@@ -684,8 +685,10 @@ export function MarketDetailScreen() {
 
   useEffect(() => {
     if (!isOperatingPhaseReady || ownerWorkspaceView !== null) return;
-    setOwnerWorkspaceView(getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase));
-  }, [isOperatingPhaseReady, marketWorkspacePhase, ownerWorkspaceView]);
+    setOwnerWorkspaceView(requestedTask === 'registration'
+      ? 'manage'
+      : getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase));
+  }, [isOperatingPhaseReady, marketWorkspacePhase, ownerWorkspaceView, requestedTask]);
 
   const resolvedOwnerWorkspaceView = ownerWorkspaceView
     ?? getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase);
@@ -1253,7 +1256,7 @@ export function MarketDetailScreen() {
               <button
                 onClick={() => router.back()}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-atelier-paper text-atelier-muted shadow-sm transition-colors hover:bg-atelier-blue-soft hover:text-atelier-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                aria-label="返回市集列表"
+                aria-label="返回上一頁"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>

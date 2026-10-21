@@ -401,3 +401,5 @@ tsx tests/market-text-import-lab.test.ts
 tsx tests/market-text-import-holdout-gate8.test.ts
 tsx tests/market-text-import-gate9-release.test.ts
 tsx tests/supabase-sra-a1-remote-migration-strategy.test.ts
+tsx tests/market-planning-view-model.test.ts
+tsx tests/session-state-port.test.ts
