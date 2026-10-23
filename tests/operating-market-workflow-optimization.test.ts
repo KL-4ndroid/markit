@@ -69,8 +69,9 @@ assert.match(hooks, /recordInteraction\([\s\S]*\): Promise<string>[\s\S]*return 
 assert.match(operatingSection(owner), /compactEmpty\s+allowDelete/);
 
 assert.match(transaction, /pendingPhotoCount > 0 \? \(/);
-assert.match(transaction, /aria-label="成交照片已齊"/);
-assert.match(transaction, />\s*照片已齊\s*</);
+assert.match(transaction, /aria-label="查看本機待補照片"/);
+assert.match(transaction, />\s*本機待補\s*</);
+assert.doesNotMatch(transaction, /成交照片已齊|照片已齊/);
 
 assert.match(dailyLog, /compactEmpty\?: boolean/);
 assert.match(dailyLog, /完成第一筆收款或互動後會顯示在這裡/);

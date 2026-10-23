@@ -28,7 +28,8 @@ assert.doesNotMatch(home, /confirmDiscardLocalChangesForSignOut|\bsignOut\s*\(/)
 assert.match(detail, /useSearchParams\(\)/);
 assert.match(detail, /initialView:\s*searchParams\.get\('task'\) === 'pending-photos'/);
 assert.match(staffDetail, /initialView:\s*initialPhotoEvidenceView/);
-assert.match(photoFlow, /initialView !== 'pending_list'/);
+assert.match(photoFlow, /dispatch\(\{ type: initialView === 'pending_list' \? 'OPEN_PENDING_LIST' : 'CLOSE' \}\)/);
+assert.match(photoFlow, /\[actorId, marketId, initialView\]/);
 assert.match(photoFlow, /dispatch\(\{ type: 'OPEN_PENDING_LIST' \}\)/);
 
 console.log('PASS role-aware today home and direct task entry');

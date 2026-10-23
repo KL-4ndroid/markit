@@ -2,8 +2,12 @@ import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { configureMobileSegmentAliases } from './lib/mobile-segment-aliases.mjs';
+import nextEnv from '@next/env';
+import { resolveTestToolsBuild } from './lib/test-tools-build-policy.mjs';
+import { excludeTestToolsFromExport } from './lib/test-tools-export.mjs';
 
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+nextEnv.loadEnvConfig(projectRoot, false);
 const nextBin = join(projectRoot, 'node_modules', 'next', 'dist', 'bin', 'next');
 const includeRuntimeSmoke = process.argv.includes('--runtime-smoke');
 const requireApiBase = process.argv.includes('--require-api-base');
@@ -44,6 +48,9 @@ if (result.error) {
 
 if (result.status !== 0) process.exit(result.status ?? 1);
 try {
+  if (!resolveTestToolsBuild({ nodeEnv: 'production', releaseChannel: process.env.FERIA_RELEASE_CHANNEL })) {
+    excludeTestToolsFromExport(join(projectRoot, 'out'));
+  }
   const count = configureMobileSegmentAliases(join(projectRoot, 'out'));
   console.log(`PASS static segment aliases (${count})`);
 } catch {

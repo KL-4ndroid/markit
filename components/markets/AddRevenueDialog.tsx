@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { X, Calendar, AlertCircle } from 'lucide-react';
 import { useProducts } from '@/lib/db/hooks';
 import {
@@ -131,7 +131,7 @@ export function AddRevenueDialog({
         manualDealCount: dealCountNum,
         items: [], // 簡化模式不需要商品
         totalAmount: revenueNum,
-        paymentMethod: 'cash', // 簡化模式預設現金
+        paymentMethod, // 預設現金，亦可使用表單選擇的付款方式
         notes: simpleNotes || `補登收入 - ${formatDate(selectedDate)}`,
       }, selectedDate, { evidenceContext: createSalesPhotoEvidenceRuntimeContext() });
     } catch (error) {
@@ -246,26 +246,24 @@ export function AddRevenueDialog({
 
   if (!isOpen) return null;
 
-  // 使用 createPortal 確保彈窗不受父層影響
-  return createPortal(
-    <>
+  return (
+    <Dialog open={isOpen} onClose={() => { if (!isSubmitting) onClose(); }} className="relative z-[1000]">
       {/* 背景遮罩 - 確保覆蓋全螢幕 */}
       <div 
-        className="fixed inset-0 bg-black/50 z-[999] transition-opacity"
-        onClick={isSubmitting ? undefined : onClose}
+        className="fixed inset-0 bg-black/50 transition-opacity"
+        aria-hidden="true"
       />
       
       {/* 對話框容器 - 強制鎖定螢幕正中央 */}
-      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center pointer-events-none">
-        <div 
-          className="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto"
-          onClick={(e) => e.stopPropagation()}
+      <div className="fixed inset-0 flex items-end sm:items-center justify-center">
+        <DialogPanel
+          className="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         >
           {/* Header */}
           <div className="bg-gradient-to-br from-primary to-secondary p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-medium text-white">補登收入</h2>
+                <DialogTitle className="text-xl font-medium text-white">補登收入</DialogTitle>
                 <p className="text-white/80 text-sm mt-1 flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
                   {formatDate(selectedDate)}
@@ -274,7 +272,7 @@ export function AddRevenueDialog({
               <button
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="text-white/80 hover:text-white transition-colors"
+                className="flex h-11 w-11 shrink-0 items-center justify-center text-white/80 hover:text-white transition-colors"
                 aria-label="關閉補登收入視窗"
               >
                 <X className="w-6 h-6" />
@@ -313,11 +311,12 @@ export function AddRevenueDialog({
               <div className="space-y-4">
                 {/* 收入金額 */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label htmlFor="backfill-revenue" className="block text-sm font-medium text-foreground mb-2">
                     收入金額 <span className="text-danger">*</span>
                   </label>
                   <div className="relative">
                     <input
+                      id="backfill-revenue"
                       type="number"
                       value={revenue}
                       onChange={(e) => setRevenue(e.target.value)}
@@ -330,13 +329,20 @@ export function AddRevenueDialog({
                   </div>
                 </div>
 
+                <PaymentMethodSelector
+                  value={paymentMethod}
+                  onChange={setPaymentMethod}
+                  disabled={isSubmitting}
+                />
+
                 {/* 成本金額 */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label htmlFor="backfill-cost" className="block text-sm font-medium text-foreground mb-2">
                     成本金額（可選）
                   </label>
                   <div className="relative">
                     <input
+                      id="backfill-cost"
                       type="number"
                       value={cost}
                       onChange={(e) => setCost(e.target.value)}
@@ -349,23 +355,25 @@ export function AddRevenueDialog({
                   </div>
                   {revenue && (
                     <div className="mt-2 text-sm text-muted-foreground">
-                      → 利潤：
+                      → 銷售利潤：
                       <span className={`font-medium ml-1 ${
                         calculatedProfit >= 0 ? 'text-primary' : 'text-danger'
                       }`}>
                         {formatCurrency(calculatedProfit)}
                       </span>
+                      <p className="mt-1 text-xs">尚未扣除整場攤位費與設備租金。</p>
                     </div>
                   )}
                 </div>
 
                 {/* 成交次數 */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label htmlFor="backfill-deal-count" className="block text-sm font-medium text-foreground mb-2">
                     成交次數 <span className="text-danger">*</span>
                   </label>
                   <div className="relative">
                     <input
+                      id="backfill-deal-count"
                       type="number"
                       value={dealCount}
                       onChange={(e) => setDealCount(e.target.value)}
@@ -380,10 +388,11 @@ export function AddRevenueDialog({
 
                 {/* 備註 */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label htmlFor="backfill-notes" className="block text-sm font-medium text-foreground mb-2">
                     備註（可選）
                   </label>
                   <textarea
+                    id="backfill-notes"
                     value={simpleNotes}
                     onChange={(e) => setSimpleNotes(e.target.value)}
                     placeholder="輸入備註..."
@@ -441,33 +450,41 @@ export function AddRevenueDialog({
                               {item.product.name}
                             </div>
                             <button
+                              type="button"
+                              aria-label={`移除${item.product.name}`}
                               onClick={() => updateQuantity(item.product.id!, 0)}
-                              className="text-danger text-sm hover:underline"
+                              className="min-h-11 px-2 text-danger text-sm hover:underline"
                             >
                               移除
                             </button>
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid gap-3 sm:grid-cols-2">
                             {/* 數量 */}
                             <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">數量</label>
+                              <label htmlFor={`backfill-quantity-${item.product.id}`} className="text-xs text-muted-foreground mb-1 block">數量</label>
                               <div className="flex items-center gap-2">
                                 <button
+                                  type="button"
+                                  aria-label={`減少${item.product.name}數量`}
                                   onClick={() => updateQuantity(item.product.id!, item.quantity - 1)}
-                                  className="w-8 h-8 rounded-lg bg-neutral-alt hover:bg-soft-green flex items-center justify-center"
+                                  className="w-11 h-11 shrink-0 rounded-lg bg-neutral-alt hover:bg-soft-green flex items-center justify-center"
                                 >
                                   -
                                 </button>
                                 <input
+                                  id={`backfill-quantity-${item.product.id}`}
+                                  aria-label={`${item.product.name}數量`}
                                   type="number"
                                   value={item.quantity}
                                   onChange={(e) => updateQuantity(item.product.id!, parseInt(e.target.value) || 0)}
-                                  className="w-16 text-center border-2 border-soft-green rounded-lg px-2 py-1"
+                                  className="min-h-11 min-w-0 w-16 text-center border-2 border-soft-green rounded-lg px-2 py-1"
                                 />
                                 <button
+                                  type="button"
+                                  aria-label={`增加${item.product.name}數量`}
                                   onClick={() => updateQuantity(item.product.id!, item.quantity + 1)}
-                                  className="w-8 h-8 rounded-lg bg-neutral-alt hover:bg-soft-green flex items-center justify-center"
+                                  className="w-11 h-11 shrink-0 rounded-lg bg-neutral-alt hover:bg-soft-green flex items-center justify-center"
                                 >
                                   +
                                 </button>
@@ -476,12 +493,14 @@ export function AddRevenueDialog({
                             
                             {/* 單價 */}
                             <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">單價</label>
+                              <label htmlFor={`backfill-price-${item.product.id}`} className="text-xs text-muted-foreground mb-1 block">單價</label>
                               <input
+                                id={`backfill-price-${item.product.id}`}
+                                aria-label={`${item.product.name}單價`}
                                 type="number"
                                 value={item.price}
                                 onChange={(e) => updatePrice(item.product.id!, parseFloat(e.target.value) || 0)}
-                                className="w-full border-2 border-soft-green rounded-lg px-3 py-1"
+                                className="min-h-11 w-full border-2 border-soft-green rounded-lg px-3 py-1"
                               />
                             </div>
                           </div>
@@ -513,8 +532,9 @@ export function AddRevenueDialog({
                 {/* 備註 */}
                 {cart.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-medium text-foreground mb-3">備註（可選）</h3>
+                    <label htmlFor="backfill-full-notes" className="block text-sm font-medium text-foreground mb-3">備註（可選）</label>
                     <textarea
+                      id="backfill-full-notes"
                       value={fullNotes}
                       onChange={(e) => setFullNotes(e.target.value)}
                       placeholder="輸入備註..."
@@ -574,9 +594,8 @@ export function AddRevenueDialog({
                 </>
               )}
             </div>
-        </div>
+        </DialogPanel>
       </div>
-    </>,
-    document.body // 將元件掛載到 body，確保不受父層影響
+    </Dialog>
   );
 }

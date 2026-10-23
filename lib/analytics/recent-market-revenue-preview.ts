@@ -45,7 +45,7 @@ function buildSummary(
   direction: RecentMarketRevenueDirection,
   points: RecentMarketRevenuePoint[],
 ): string {
-  if (direction === 'not_enough_data') return '至少完成兩場營收紀錄後，才會顯示場次變化。';
+  if (direction === 'not_enough_data') return '尚無足夠收入紀錄可比較。至少完成兩場營收紀錄後，才會顯示場次變化；正式分析仍依有效樣本與可信度判定。';
 
   const firstRevenue = Math.round(points[0].revenue).toLocaleString('zh-TW');
   const latestRevenue = Math.round(points[points.length - 1].revenue).toLocaleString('zh-TW');
@@ -60,6 +60,11 @@ export function buildRecentMarketRevenuePreview(
 ): RecentMarketRevenuePreview {
   const points = markets
     .filter(market => market.status !== 'cancelled' && market.isDeleted !== true && Boolean(market.id))
+    // New markets start with a zero summary. A transaction count is evidence
+    // that zero is recorded revenue rather than the absence of any record.
+    .filter(market => typeof market.totalRevenue === 'number'
+      && Number.isFinite(market.totalRevenue)
+      && (market.totalRevenue > 0 || (market.totalRevenue === 0 && (market.totalDeals ?? 0) > 0)))
     .map(market => ({
       marketId: market.id as string,
       marketName: market.name,

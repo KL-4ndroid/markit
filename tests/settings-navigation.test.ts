@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import { getSettingsDestinationGroups } from '../lib/settings/settings-navigation';
 
-const ownerGroups = getSettingsDestinationGroups(false);
+const ownerGroups = getSettingsDestinationGroups(false, true);
 assert.deepEqual(
   ownerGroups.flatMap((group) => group.items.map((item) => item.id)),
   ['account', 'team', 'sales', 'data', 'app'],
@@ -27,4 +27,6 @@ for (const group of ownerGroups) {
   }
 }
 
+assert.deepEqual(getSettingsDestinationGroups(false, false).flatMap(group => group.items.map(item => item.id)), ['account', 'team', 'sales', 'app']);
+assert.equal(getSettingsDestinationGroups(true, true).some(group => group.items.some(item => item.id === 'data')), false);
 console.log('PASS role-aware settings destinations');

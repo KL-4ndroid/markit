@@ -47,6 +47,18 @@ function deal(
 }
 
 async function main(): Promise<void> {
+  const empty = buildRecentMarketRevenuePreview([market({ id: 'empty-1' }), market({ id: 'empty-2' })]);
+  assert.equal(empty.direction, 'not_enough_data');
+  assert.deepEqual(empty.points, []);
+  assert.doesNotMatch(empty.summary, /持平|增加|降至/);
+  const single = buildRecentMarketRevenuePreview([market({ id: 'one', totalRevenue: 100 }), market({ id: 'empty' })]);
+  assert.equal(single.direction, 'not_enough_data');
+  const confirmedZero = buildRecentMarketRevenuePreview([
+    market({ id: 'zero-1', totalDeals: 1 }), market({ id: 'zero-2', totalDeals: 2 }),
+    market({ id: 'invalid', totalRevenue: Number.NaN }),
+  ]);
+  assert.equal(confirmedZero.direction, 'flat');
+  assert.deepEqual(confirmedZero.points.map(point => point.revenue), [0, 0]);
   const preview = buildRecentMarketRevenuePreview([
     market({ id: 'm4', name: 'Fourth', startDate: '2026-07-22', totalRevenue: 4000 }),
     market({ id: 'm1', name: 'First', startDate: '2026-07-01', totalRevenue: 1000 }),

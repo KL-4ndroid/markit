@@ -15,12 +15,13 @@ export async function pushEvents(
   userId: string,
   onProgress?: (current: number, total: number, currentItem?: string) => void
 ): Promise<number> {
-  await ensureUserProfile(userId);
-
   const pendingEvents = await db.events
     .where('sync_status')
     .anyOf(['pending', 'local_only'])
     .toArray();
+
+  if (pendingEvents.length === 0) return 0;
+  await ensureUserProfile(userId);
 
   const validEvents: typeof pendingEvents = [];
   const invalidEvents: typeof pendingEvents = [];

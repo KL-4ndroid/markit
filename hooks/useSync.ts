@@ -18,6 +18,8 @@ import {
   handlePermissionSyncError,
 } from '@/lib/sync/sync-error-policy';
 import { pushEvents } from '@/lib/sync/sync-push-service';
+import { completeSyncState } from '@/lib/sync/sync-completion';
+import { subscribeLocalPendingCount } from '@/lib/sync/local-pending-count-observer';
 import { reportSyncIncident } from '@/lib/observability/sync-incident-client';
 import { getNetworkPort } from '@/lib/platform/network-capability';
 import { getLifecyclePort } from '@/lib/platform/lifecycle-capability';
@@ -25,6 +27,7 @@ import {
   acquireSyncLock,
   getActiveSyncIdentity,
   getGlobalSyncState,
+  getSyncLockGeneration,
   hasExecutedInitialSyncFlag,
   hasSetupSyncIntervals,
   markInitialSyncExecuted,
@@ -85,6 +88,8 @@ export function useSync(options: UseSyncOptions = {}) {
   const throttledSyncFnRef = useRef<() => void>();
   /** ✅ 只允許 force_initial_sync 消耗一次的本地標記（不受 module-level 重置影響） */
   const forceSyncExecutedRef = useRef(false);
+  const currentIdentityRef = useRef(syncIdentity);
+  currentIdentityRef.current = syncIdentity;
 
   // ✅ 訂閱全局狀態更新
   useEffect(() => {
@@ -103,6 +108,20 @@ export function useSync(options: UseSyncOptions = {}) {
     setActiveSyncIdentity(syncIdentity);
     forceSyncExecutedRef.current = false;
     resetSyncRuntimeState();
+  }, [syncIdentity]);
+
+  // Local writes must update the indicator even when offline or sync is paused.
+  // This subscription only reads IndexedDB; it never schedules uploads/retries.
+  useEffect(() => {
+    if (!syncIdentity) return;
+    return subscribeLocalPendingCount(db.events, pendingCount => {
+      if (getActiveSyncIdentity() !== syncIdentity) return;
+      if (getGlobalSyncState().pendingCount === pendingCount) return;
+      updateGlobalState(prev => ({ ...prev, pendingCount }));
+    }, () => {
+      // Keep the last known count on a read failure rather than claiming zero.
+      console.warn('無法更新待同步筆數，保留上次確認結果');
+    });
   }, [syncIdentity]);
 
   // ✅ force_initial_sync 專用 effect
@@ -151,19 +170,23 @@ export function useSync(options: UseSyncOptions = {}) {
       console.log('⏸️ 同步已在進行中，跳過此次請求');
       return;
     }
+    const lockGeneration = getSyncLockGeneration();
 
     // 檢查網路狀態
     if (!getNetworkPort().getCurrentStatus().connected) {
-      releaseSyncLock();
-      setState(prev => ({ ...prev, status: SyncStatus.OFFLINE }));
+      releaseSyncLock(lockGeneration);
+      updateGlobalState(prev => ({ ...prev, status: SyncStatus.OFFLINE }));
       return;
     }
 
     // ✅ 在同步開始前記錄 pendingCount（用於決定是否顯示大彈窗）
-    const initialPendingCount = await db.events
-      .where('sync_status')
-      .anyOf(['pending', 'local_only'])
-      .count();
+    let initialPendingCount = getGlobalSyncState().pendingCount;
+    const assertActive = () => {
+      if (currentIdentityRef.current !== syncIdentity || getActiveSyncIdentity() !== syncIdentity
+        || getLifecyclePort().getCurrentState() !== 'active') {
+        throw new Error('SYNC_CONTEXT_CHANGED');
+      }
+    };
 
     // ✅ 設置本地同步標記
     isSyncingRef.current = true;
@@ -172,43 +195,49 @@ export function useSync(options: UseSyncOptions = {}) {
       status: SyncStatus.SYNCING, 
       error: null,
       pendingCount: initialPendingCount, // ✅ 立即更新 pendingCount
+      downloadProgress: { current: 0, total: 0, currentItem: '正在確認同步資料' },
     }));
 
     try {
+      assertActive();
+      initialPendingCount = await db.events.where('sync_status').anyOf(['pending', 'local_only']).count();
+      assertActive();
+      updateGlobalState(prev => ({ ...prev, pendingCount: initialPendingCount }));
       // 1. Push local pending events.
       await pushEvents(user.id, (current, total, currentItem) => {
+        if (currentIdentityRef.current !== syncIdentity) return;
         updateGlobalState(prev => ({
           ...prev,
           uploadProgress: { current, total, currentItem },
         }));
       });
+      assertActive();
 
       // 2. Pull cloud events directly. Snapshot sync is disabled until it can be redesigned around
       // complete event history rather than projection-only tables.
       await pullAllEvents(user.id, (current, total, currentItem, phase) => {
+        if (currentIdentityRef.current !== syncIdentity) return;
         updateGlobalState(prev => ({
           ...prev,
           downloadProgress: { current, total, currentItem, phase },
         }));
-      }, effectiveInfoLevel);
+      }, effectiveInfoLevel, assertActive);
 
       // 3. 更新狀態
       const pendingCount = await db.events
         .where('sync_status')
-        .equals('pending')
+        .anyOf(['pending', 'local_only'])
         .count();
       
-      updateGlobalState(prev => ({
-        ...prev,
-        status: SyncStatus.SUCCESS,
-        lastSyncAt: Date.now(),
-        pendingCount,
-        error: null,
-        uploadProgress: undefined,
-        downloadProgress: undefined,
-      }));
+      assertActive();
+      updateGlobalState(prev => completeSyncState(prev, pendingCount, Date.now()));
 
     } catch (error: unknown) {
+      if (currentIdentityRef.current !== syncIdentity || getActiveSyncIdentity() !== syncIdentity) return;
+      if (error instanceof Error && error.message === 'SYNC_CONTEXT_CHANGED') {
+        updateGlobalState(prev => ({ ...prev, status: SyncStatus.IDLE, downloadProgress: undefined }));
+        return;
+      }
       const failureKind = classifySyncFailure(error);
 
       if (failureKind === 'network') {
@@ -256,10 +285,13 @@ export function useSync(options: UseSyncOptions = {}) {
       }));
     } finally {
       // ✅ 釋放全局同步鎖
-      releaseSyncLock();
+      releaseSyncLock(lockGeneration);
       isSyncingRef.current = false;
+      if (currentIdentityRef.current && currentIdentityRef.current !== syncIdentity) {
+        void syncFnRef.current?.();
+      }
     }
-  }, [enabled, isConfigured, user, accessToken, effectiveInfoLevel]);
+  }, [enabled, isConfigured, user, accessToken, effectiveInfoLevel, syncIdentity]);
 
   // 將 sync 存儲到 ref 中
   syncFnRef.current = sync;
@@ -330,7 +362,7 @@ export function useSync(options: UseSyncOptions = {}) {
     // ✅ 初始同步（只執行一次）
     if (!hasExecutedInitialSyncFlag()) {
       markInitialSyncExecuted();
-      throttledSyncFnRef.current?.();
+      void syncFnRef.current?.();
     }
 
     // 策略 1: 定期檢查待同步事件（每 5 分鐘）
@@ -367,7 +399,8 @@ export function useSync(options: UseSyncOptions = {}) {
 async function pullAllEvents(
   userId: string,
   onProgress: (current: number, total: number, currentItem?: string, phase?: 'incremental') => void,
-  infoLevel: InfoLevel
+  infoLevel: InfoLevel,
+  assertActive: () => void,
 ): Promise<void> {
   // ✅ 檢查是否啟用員工模式（infoLevel < 3 表示員工）
   if (infoLevel < 3) {
@@ -385,7 +418,7 @@ async function pullAllEvents(
   }
   
   // ✅ 原邏輯（降級方案）
-  await pullOwnerEvents(userId, onProgress, infoLevel);
+  await pullOwnerEvents(userId, onProgress, infoLevel, assertActive);
 }
 
 // ==================== 員工模式：視圖拉取函數 ====================

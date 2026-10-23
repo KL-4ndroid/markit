@@ -40,6 +40,7 @@ import {
 } from '@/lib/products/product-list-view-model';
 import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { productListStateKey, readProductListState, writeProductListState, type ProductListReturnState } from '@/lib/products/product-list-return-state';
 import type { Product, ProductCategory } from '@/types/db';
 import ProductsLoading from './loading';
 
@@ -54,13 +55,6 @@ interface ProductCategoryPresentation {
   icon: LucideIcon;
 }
 
-interface ProductListReturnState {
-  category: ProductListCategory;
-  query: string;
-  showInactive: boolean;
-  scrollY: number;
-}
-
 const CATEGORY_OPTIONS: readonly ProductCategoryPresentation[] = [
   { id: 'handmade', label: '手作', icon: Hand },
   { id: 'food', label: '食品', icon: Cookie },
@@ -70,37 +64,7 @@ const CATEGORY_OPTIONS: readonly ProductCategoryPresentation[] = [
   { id: 'stationery', label: '文具', icon: BookOpen },
   { id: 'other', label: '其他', icon: MoreHorizontal },
 ];
-const PRODUCT_LIST_RETURN_STATE_KEY = 'product-list:return-state:v1';
 const ROLE_NOT_READY_OWNER_ID = '__role_not_ready__';
-
-function isProductListCategory(value: unknown): value is ProductListCategory {
-  return value === 'all' || CATEGORY_OPTIONS.some(option => option.id === value);
-}
-
-function readReturnState(): ProductListReturnState | null {
-  try {
-    const raw = sessionStorage.getItem(PRODUCT_LIST_RETURN_STATE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<ProductListReturnState>;
-    if (!isProductListCategory(parsed.category)) return null;
-    return {
-      category: parsed.category,
-      query: typeof parsed.query === 'string' ? parsed.query : '',
-      showInactive: parsed.showInactive === true,
-      scrollY: Number.isFinite(parsed.scrollY) ? Math.max(0, Number(parsed.scrollY)) : 0,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function writeReturnState(state: ProductListReturnState): void {
-  try {
-    sessionStorage.setItem(PRODUCT_LIST_RETURN_STATE_KEY, JSON.stringify(state));
-  } catch {
-    // Session storage is optional; the list still works when it is unavailable.
-  }
-}
 
 export default function ProductsPage() {
   return <Suspense fallback={<ProductsLoading />}><ProductsPageContent /></Suspense>;
@@ -128,6 +92,12 @@ function ProductsPageContent() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [openingProductId, setOpeningProductId] = useState<string | null>(null);
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
+  const stateKey = user?.id && effectiveOwnerId ? productListStateKey(user.id, effectiveOwnerId, isStaffMode) : null;
+  const [restoredKey, setRestoredKey] = useState<string | null>(null);
+  const canPersistRef = useRef(false);
+  const openingFromListRef = useRef(false);
+  const pendingScrollRef = useRef<number | null>(null);
+  canPersistRef.current = Boolean(stateKey && restoredKey === stateKey && canLoadScopedData && dbStatus?.ok === true);
   const returnStateRef = useRef<ProductListReturnState>({
     category: 'all',
     query: '',
@@ -157,18 +127,21 @@ function ProductsPageContent() {
   }, [effectiveOwnerId, isRoleReady, isStaffMode]);
 
   useEffect(() => {
-    const state = readReturnState();
-    if (!state) return;
-    setActiveCategory(state.category);
-    setSearchQuery(state.query);
-    setShowInactive(!isStaffMode && state.showInactive);
-    const timerId = window.setTimeout(() => window.scrollTo({ top: state.scrollY }), 80);
-    return () => window.clearTimeout(timerId);
-  }, [isStaffMode]);
+    if (!stateKey) { setRestoredKey(null); return; }
+    const state = readProductListState(stateKey);
+    setActiveCategory(state?.category ?? 'all');
+    setSearchQuery(state?.query ?? '');
+    setShowInactive(!isStaffMode && state?.showInactive === true);
+    pendingScrollRef.current = state?.scrollY ?? 0;
+    openingFromListRef.current = false;
+    setOpeningProductId(null);
+    setRestoredKey(stateKey);
+  }, [isStaffMode, stateKey]);
 
   useEffect(() => () => {
-    writeReturnState({ ...returnStateRef.current, scrollY: window.scrollY });
-  }, []);
+    if (!stateKey || !canPersistRef.current || openingFromListRef.current) return;
+    writeProductListState(stateKey, { ...returnStateRef.current, scrollY: window.scrollY });
+  }, [stateKey]);
 
   const allProducts = useProducts({
     isActive: isStaffMode ? true : undefined,
@@ -202,14 +175,14 @@ function ProductsPageContent() {
   );
   const categoryCounts = useMemo(() => {
     const counts = new Map<ProductCategory, number>();
-    for (const product of categorySource) {
+    for (const product of filterProductList(categorySource, { category: 'all', query: deferredSearchQuery, includeInactive: !isStaffMode && showInactive })) {
       counts.set(product.category, (counts.get(product.category) ?? 0) + 1);
     }
     return counts;
-  }, [categorySource]);
+  }, [categorySource, deferredSearchQuery, isStaffMode, showInactive]);
   const tabs = useMemo<readonly TabItem<ProductListCategory>[]>(() => {
     const categoryTabs = CATEGORY_OPTIONS
-      .filter(option => (categoryCounts.get(option.id) ?? 0) > 0)
+      .filter(option => categorySource.some(product => product.category === option.id) || activeCategory === option.id)
       .map(option => {
         const CategoryIcon = option.icon;
         return {
@@ -220,8 +193,8 @@ function ProductsPageContent() {
         };
       });
 
-    return [{ id: 'all', label: '全部', count: categorySource.length }, ...categoryTabs];
-  }, [categoryCounts, categorySource.length]);
+    return [{ id: 'all', label: '全部', count: [...categoryCounts.values()].reduce((sum, count) => sum + count, 0) }, ...categoryTabs];
+  }, [activeCategory, categoryCounts, categorySource]);
 
   useEffect(() => {
     if (!tabs.some(tab => tab.id === activeCategory)) setActiveCategory('all');
@@ -232,6 +205,18 @@ function ProductsPageContent() {
     query: deferredSearchQuery,
     includeInactive: !isStaffMode && showInactive,
   }), [activeCategory, allProducts, deferredSearchQuery, isStaffMode, showInactive]);
+
+  useEffect(() => {
+    if (!canPersistRef.current || pendingScrollRef.current === null) return;
+    if (pendingScrollRef.current > 0 && allProducts.length === 0) return;
+    if (searchQuery !== deferredSearchQuery) return;
+    const position = pendingScrollRef.current;
+    const timer = window.setTimeout(() => {
+      window.scrollTo({ top: position });
+      pendingScrollRef.current = null;
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [allProducts.length, dbStatus?.ok, deferredSearchQuery, restoredKey, searchQuery]);
 
   useEffect(() => {
     for (const product of filteredProducts.slice(0, 8)) {
@@ -249,7 +234,8 @@ function ProductsPageContent() {
   const openProduct = (product: Product) => {
     if (!product.id) return;
     setOpeningProductId(product.id);
-    writeReturnState({ ...returnStateRef.current, scrollY: window.scrollY });
+    if (stateKey && canPersistRef.current) writeProductListState(stateKey, { ...returnStateRef.current, scrollY: window.scrollY });
+    openingFromListRef.current = true;
     router.push(buildProductDetailHref(product.id));
   };
 
@@ -302,7 +288,7 @@ function ProductsPageContent() {
           className="w-full"
           action={(
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
-              <Button onClick={() => router.push('/recovery')}>前往資料修復</Button>
+              <Button onClick={() => router.push('/support')}>取得協助</Button>
               <Button variant="secondary" onClick={() => window.location.reload()}>重新整理</Button>
             </div>
           )}
@@ -375,6 +361,7 @@ function ProductsPageContent() {
               顯示停用商品
             </label>
           )}
+          <p className="mt-2 text-xs text-muted-foreground" role="status">目前找到 {filteredProducts.length} 項商品</p>
         </div>
 
         {filteredProducts.length > 0 ? (

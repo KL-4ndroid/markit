@@ -209,14 +209,14 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
             </p>
             {dbStatus.recoverable && (
               <p className="text-muted-foreground text-sm">
-                建議前往「資料修復」頁面嘗試還原資料庫。
+                請保留這台裝置的資料，重新開啟頁面；若問題持續，可前往支援頁取得協助。
               </p>
             )}
             <button
-              onClick={() => router.push('/recovery')}
+              onClick={() => router.push('/support')}
               className="w-full bg-secondary text-white px-6 py-3 rounded-2xl hover:bg-secondary/85 transition-colors font-medium"
             >
-              前往資料修復
+              取得協助
             </button>
             <button
               onClick={() => router.push('/products')}

@@ -23,7 +23,20 @@ export interface UserSettings {
 /**
  * 獲取用戶設定
  */
-export async function getUserSettings(userId: string): Promise<UserSettings | null> {
+const settingsReads = new Map<string, Promise<UserSettings | null>>();
+
+// Coalesce only in-flight reads. Do not retain settings or authorization indefinitely.
+export function getUserSettings(userId: string): Promise<UserSettings | null> {
+  const existing = settingsReads.get(userId);
+  if (existing) return existing;
+  const request = readUserSettings(userId).finally(() => {
+    if (settingsReads.get(userId) === request) settingsReads.delete(userId);
+  });
+  settingsReads.set(userId, request);
+  return request;
+}
+
+async function readUserSettings(userId: string): Promise<UserSettings | null> {
   try {
     const { data, error } = await supabase
       .from('user_settings')
@@ -53,6 +66,7 @@ export async function saveUserSettings(
   userId: string,
   settings: Partial<Omit<UserSettings, 'user_id' | 'created_at' | 'updated_at'>>
 ): Promise<void> {
+  settingsReads.delete(userId);
   try {
     const { error } = await supabase
       .from('user_settings')
@@ -65,6 +79,8 @@ export async function saveUserSettings(
       });
 
     if (error) throw error;
+
+    settingsReads.delete(userId);
 
     console.log('✅ 用戶設定已保存到雲端');
   } catch (error) {

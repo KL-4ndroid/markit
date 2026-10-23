@@ -438,7 +438,7 @@ export function projectionMayUseIncompleteLocalEvents(before: ProjectionSnapshot
   return projectionIsInflated(before, after) && !projectionLooksLikeRepeatedMultiple(before, after);
 }
 
-async function buildMarketStatsRebuildPlan(marketId: string): Promise<MarketStatsRebuildPlan | undefined> {
+async function buildMarketStatsRebuildPlan(marketId: string, allowEmptyHistory = false): Promise<MarketStatsRebuildPlan | undefined> {
   const market = await db.markets.get(marketId);
   if (!market) return undefined;
 
@@ -448,7 +448,7 @@ async function buildMarketStatsRebuildPlan(marketId: string): Promise<MarketStat
   ]);
 
   const { dealEvents, interactionEvents } = activeEvents;
-  if (dealEvents.length === 0 && interactionEvents.length === 0) {
+  if (!allowEmptyHistory && dealEvents.length === 0 && interactionEvents.length === 0) {
     return undefined;
   }
 
@@ -482,11 +482,11 @@ async function buildMarketStatsRebuildPlan(marketId: string): Promise<MarketStat
 
 export async function rebuildMarketStatsFromEvents(
   marketId: string,
-  options: { dryRun: boolean }
+  options: { dryRun: boolean; allowEmptyHistory?: boolean }
 ): Promise<LocalProjectionRepairItem | undefined> {
   if (!nonBlankString(marketId)) return undefined;
 
-  const plan = await buildMarketStatsRebuildPlan(marketId);
+  const plan = await buildMarketStatsRebuildPlan(marketId, options.allowEmptyHistory);
   if (!plan) return undefined;
 
   if (!options.dryRun) {

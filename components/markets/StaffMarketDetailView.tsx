@@ -36,7 +36,7 @@
 
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -78,7 +78,7 @@ import { useSalesPhotoEvidenceFlow } from '@/hooks/useSalesPhotoEvidenceFlow';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { updateMarket, useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { getActiveDealEventsForMarket } from '@/lib/events/active-event-service';
-import { getDealEventDate } from '@/lib/markets/event-view-utils';
+import { countDealRecordsByDate, getDealEventDate } from '@/lib/markets/event-view-utils';
 import {
   getDefaultStaffMarketWorkspaceView,
   type StaffMarketWorkspaceView,
@@ -182,20 +182,24 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
   const [showDailyDealsModal, setShowDailyDealsModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
+  const dealRecordCountByDate = useMemo(() => countDealRecordsByDate(dealEvents), [dealEvents]);
 
+  const photoEvidenceActorId = user?.id;
   const isLocalSalesPhotoEvidenceCaptureAllowed = useCallback(
     (item: LocalPendingSalesPhotoEvidenceCreation) => {
       return Boolean(
-        user?.id &&
+        photoEvidenceActorId &&
         item.marketId === marketId &&
-        (!item.capturedByStaffId || item.capturedByStaffId === user?.id)
+        item.ownerId === addRevenueSalesPhotoEvidenceContext.ownerId &&
+        (isOwner ? item.ownerId === photoEvidenceActorId : item.capturedByStaffId === photoEvidenceActorId)
       );
     },
-    [marketId, user?.id]
+    [addRevenueSalesPhotoEvidenceContext.ownerId, isOwner, marketId, photoEvidenceActorId]
   );
 
   const salesPhotoEvidenceFlow = useSalesPhotoEvidenceFlow({
     marketId,
+    actorId: user?.id,
     canHandleItem: isLocalSalesPhotoEvidenceCaptureAllowed,
     initialView: initialPhotoEvidenceView,
   });
@@ -596,6 +600,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
         <div className="mx-auto max-w-3xl">
         <DailyRevenueStats
           market={market}
+          dealRecordCountByDate={dealRecordCountByDate}
           hideProfit={true}
           onAddRevenue={handleOpenAddRevenue}
           onDateClick={handleDateClick}
@@ -696,6 +701,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
         pendingItems={salesPhotoEvidenceFlow.pendingItems}
         isLoadingPendingItems={salesPhotoEvidenceFlow.isLoadingPendingItems}
         pendingItemsError={salesPhotoEvidenceFlow.pendingItemsError}
+        pendingScopeMessage={salesPhotoEvidenceFlow.pendingScopeMessage}
         payloadRefreshByQueueId={salesPhotoEvidenceFlow.payloadRefreshByQueueId}
         canHandleItem={isLocalSalesPhotoEvidenceCaptureAllowed}
         onCapture={(item, source) => void salesPhotoEvidenceFlow.capture(item, source)}

@@ -1,5 +1,17 @@
 # Role / Permission Distribution Notes
 
+## 2026-10-22 | Cloud sales projection alignment (073)
+
+Migration 073 patches only the existing market/product deal branches. It preserves event insert authorization, RLS, actor attribution and existing trigger-function security settings. Private projection helpers are not executable by PUBLIC, anon or authenticated. Deletion compensation resolves an original event within the same market; product updates are restricted to that market owner's products. Duplicate and out-of-order tombstones are no-ops after their first effective compensation. Owner/staff read and write capabilities are unchanged. SQL rollback tests do not substitute for staff/cross-account RLS testing. Historical correction is separate; only the precisely named BW-10 test market was corrected.
+
+Same-day legacy backfills may carry a future end-of-day timestamp. App startup demotes only the matching same-market/same-day deletion-order diagnostic to a warning; it does not rewrite records or relax strict backup/import/replay validation. New backfill timestamps are capped at the actual recording time. This compatibility rule infers the original device's offset and remains valid after a timezone change. Role freshness and all existing write authorization remain unchanged.
+
+## 2026-10-22 | Offline pending-count presentation
+
+`hooks/useSync.ts` observes pending/local-only event counts through `lib/sync/local-pending-count-observer.ts` even when cloud sync cannot run. The observer only reads the existing local event store; it performs no uploads, retries, actor binding, projection replacement or permission changes. It unsubscribes on identity change/unmount and ignores callbacks for an inactive sync identity. Owner/staff data scopes and all existing write capabilities remain unchanged.
+
+The offline banner distinguishes authenticated sessions with paused cloud sync from the existing unauthenticated offline read-only branch. This changes guidance only, not authorization or offline write eligibility.
+
 ## 2026-08-14 | Recurring operations owner-only contract
 
 Venue and weekly schedule management is owner-only. Manager, operator, viewer, and unresolved-role sessions receive no Venue/Schedule management read or write authority and no new role capability. Staff may read only the non-sensitive recurrence compatibility fields on an already materialized Market through `staff_accessible_markets`; existing Market operation capabilities continue to decide what each Staff role may do.
@@ -140,3 +152,26 @@ permission service
 ### Rationale
 
 Demo Mode 的目的為對外展示 Féria 互動體驗，不應要求登入，也不應接觸封閉測試中的正式資料。此 public route exemption 是 route-level display boundary，不是角色權限模型變更。
+
+## 冷登入恢復與匿名遷移邊界補充
+
+- owner 重播校正只適用同 owner、完整雲端／本機事件 ID 集合相符、全部 synced，且存在舊刪除排序風險的場次；不將 staff 的部分 view 當完整歷史，不放寬 RLS 或角色 freshness。
+- 身分或前景狀態改變時停止後續 owner 重播批次；舊身分不能發布新身分的同步進度或釋放新同步鎖。
+- `detectAnonymousData` 與匿名遷移只處理 owner／actor 空白或 local、且尚未 synced 的紀錄。其他帳號快取、團隊成員事件、已同步 legacy local 紀錄皆不屬可遷移集合，不能因其 ID 不同於登入者就改綁。
+- 照片本機清單為空僅表示本機沒有待補工作，不證明其他裝置上傳完成或歷史成交免拍；保留既有 owner album 與員工能力界線。
+- 詳見 `docs/COLD_LOGIN_RESTORE_REVIEW_2026_10_22.md` 文末實作與驗收。本輪沒有修改 Demo、角色能力或雲端授權規則。
+
+### 成交照片提醒恢復補充（2026-10-23）
+
+- owner 提醒恢復只在登入者等於 owner、同 owner 的未刪市集，以及現行照片 runtime gate 啟用時啟動。metadata 使用登入者 client 與既有 RLS，完整讀取該 owner／market 未刪狀態，不含私有影像 key 或簽名連結。
+- 本機照片要求快照只作提醒依據，不是拍攝／上傳授權憑證；手動上傳仍由原有 BFF 及 server RPC 重新檢查真實 owner／staff、來源成交與身分。
+- 員工不使用 owner 恢復 reader／album fallback；本機工作只顯示同 owner 且拍攝員工為本人者。owner 可處理自己場次的工作；員工新裝置狀態核對需另外實作，沒有擴大相簿／讀圖能力。
+- 舊事件要求未知不補猜，讀取失敗不判定全數完成，換帳號／場次或請求失效不發布舊結果／寫入殘留工作；已儲存照片及重試狀態保留。
+
+### 訂閱制度優先與 Team 確認（2026-10-23）
+
+- 使用者確認先前 Pro 為口誤：正式員工協作與 manager 仍屬 Team，依老闆工作空間權益與個別角色權限取交集，不要求員工另行購買 Team。
+- 這是既有分級的確認，沒有移動方案功能、變更席次或授予帳號權益。員工新裝置照片擴充先暫緩，優先對齊訂閱與 server 限制。
+- 共用有效期判斷已補強：有填但格式錯誤的到期日不再當成明確無期限授權；非有限評估時間拒絕授權；不因錯誤期限取得 fresh／離線 lease。保留既有有效管理員授權、角色與降級資料保留行為。
+- 目前權益 API 及 migration 064 仍以既有 admin 授權測試路徑為主；billing 來源未接通，不能把 admin、UI 模擬或照片處理成功當作真實付款證據。
+- 程式缺口、候選額度與後續順序見 `docs/subscription/SUBSCRIPTION_RULES_ALIGNMENT_2026_10_23.md`；沒有修改 DB／RLS、啟用收費或改變現有角色。

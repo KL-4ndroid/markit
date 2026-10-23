@@ -23,6 +23,7 @@ import {
   calculateMarketFixedCost,
   deriveMarketDateBounds,
   getFirstMarketCoreError,
+  hasMarketFormChanges,
   validateMarketCoreForm,
   type MarketCoreFormErrors,
 } from '@/lib/markets/market-form';
@@ -102,6 +103,11 @@ export function EditMarketForm({
   const [formData, setFormData] = useState<EditMarketFormValues>(() => createEditMarketFormValues(market));
   const [errors, setErrors] = useState<MarketCoreFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const hasChanges = hasMarketFormChanges({
+    ...createEditMarketFormValues(market),
+    tableFree: Boolean(market.tableFree), chairFree: Boolean(market.chairFree),
+    umbrellaFree: Boolean(market.umbrellaFree), noEarlyEntry: !market.earlyEntryEnabled,
+  }, { ...formData, tableFree, chairFree, umbrellaFree, noEarlyEntry });
 
   useEffect(() => {
     setFormData(createEditMarketFormValues(market));
@@ -156,6 +162,7 @@ export function EditMarketForm({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!hasChanges || isSubmitting) return;
     const nextErrors = validateMarketCoreForm(formData, { requireIdentity: !isManagerMode });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -171,10 +178,10 @@ export function EditMarketForm({
         startDate: formData.startDate,
         endDate: formData.endDate,
         earlyEntryEnabled: !noEarlyEntry,
-        earlyEntryTime: !noEarlyEntry && formData.earlyEntryTime ? formData.earlyEntryTime : undefined,
-        checkInTime: formData.checkInTime || undefined,
-        operatingStartTime: formData.operatingStartTime || undefined,
-        operatingEndTime: formData.operatingEndTime || undefined,
+        earlyEntryTime: formData.earlyEntryTime,
+        checkInTime: formData.checkInTime,
+        operatingStartTime: formData.operatingStartTime,
+        operatingEndTime: formData.operatingEndTime,
         notes: formData.notes.trim(),
       };
       const ownerUpdates = {
@@ -202,7 +209,7 @@ export function EditMarketForm({
       };
 
       await updateMarket(market.id!, isManagerMode ? managerUpdates : ownerUpdates);
-      toast.success('市集資訊已更新');
+      toast.success('變更已保存在這台裝置', { description: '雲端送達狀態請查看同步提示。' });
       onClose();
       onSuccess?.();
     } catch (error) {
@@ -244,13 +251,14 @@ export function EditMarketForm({
           <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             取消
           </Button>
-          <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
+          <Button type="submit" form={FORM_ID} isLoading={isSubmitting} disabled={!hasChanges}>
             儲存變更
           </Button>
         </>
       )}
     >
       <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
+        {!hasChanges && <p className="mb-3 text-sm text-muted-foreground">目前沒有變更；修改欄位後即可儲存。</p>}
         <div className="japanese-surface-card p-5 sm:p-6">
           <MarketBasicFields
             idPrefix={FIELD_PREFIX}

@@ -1,186 +1,127 @@
 import { db } from '@/lib/db';
 import { supabase } from '@/lib/supabase/client';
-import { normalizeEventPayloadForLocal } from '@/lib/data-mappers';
 import { batchHydrateMarkets } from '@/lib/sync/owner-market-hydration-service';
 import { getOwnerAccessibleMarketIds } from '@/lib/sync/owner-market-access-service';
 import { collectProjectionMarketId } from '@/lib/sync/projection-reconciliation';
-import { hasSemanticDuplicateDealClosedEvent } from '@/lib/sync/semantic-event-dedupe';
-import { markEventSynced } from '@/lib/sync/event-sync-service';
 import { getLastSyncTimestamp, updateLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
 import { reconcileSyncedProjectionMarkets } from '@/lib/sync/sync-projection-reconciliation-runner';
 import { createCanonicalSyncedEvent } from '@/lib/sync/synced-event-factory';
+import { replayOwnerEvents } from '@/lib/sync/owner-event-replay';
+import { rebuildMarketStatsFromEvents } from '@/lib/sync/local-projection-repair';
+import { getEventMarketId, getTombstoneTargetEventId } from '@/lib/events/event-read-model';
 import type { InfoLevel } from '@/lib/data-sanitization';
 import type { Event } from '@/types/db';
+
+const REPLAY_REVISION = 'dependency-order-v1';
 
 export async function pullOwnerEvents(
   userId: string,
   onProgress: (current: number, total: number, currentItem?: string, phase?: 'incremental') => void,
-  infoLevel: InfoLevel
+  infoLevel: InfoLevel,
+  assertActive: () => void = () => undefined,
 ): Promise<void> {
-  const lastSyncAt = await getLastSyncTimestamp();
+  const settings = await db.settings.toCollection().first();
+  // Verify complete cloud history once before correcting caches built by the old order.
+  let needsHistoryVerification = settings?.ownerReplayRevision !== `${userId}:${REPLAY_REVISION}`;
+  let lastSyncAt = needsHistoryVerification ? null : await getLastSyncTimestamp();
+  onProgress(0, 0, '正在讀取市集與歷史紀錄', 'incremental');
   const marketIds = await getOwnerAccessibleMarketIds(userId);
-
-  let query = supabase
-    .from('events')
-    .select('*')
-    .order('timestamp', { ascending: true });
-
-  if (lastSyncAt) {
-    query = query.gt('created_at', new Date(lastSyncAt).toISOString());
+  const localMarkets = await db.markets.bulkGet(marketIds);
+  if (localMarkets.some(market => !market)) {
+    needsHistoryVerification = true;
+    lastSyncAt = null;
   }
-
-  let teamMemberIds: string[] = [userId];
-
+  let teamMemberIds = [userId];
   if (marketIds.length > 0) {
-    const { data: teamMembers } = await supabase
-      .from('market_members')
-      .select('user_id')
-      .in('market_id', marketIds);
-
-    if (teamMembers && teamMembers.length > 0) {
-      teamMemberIds = Array.from(new Set([userId, ...teamMembers.map(m => m.user_id)]));
-    }
+    const { data, error } = await supabase.from('market_members').select('user_id').in('market_id', marketIds);
+    if (error) throw error;
+    teamMemberIds = Array.from(new Set([userId, ...(data ?? []).map(m => m.user_id)]));
   }
 
-  if (marketIds.length > 0) {
-    query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.in.(${teamMemberIds.join(',')}),market_id.is.null)`);
-  } else {
-    query = query.eq('actor_id', userId).is('market_id', null);
+  // Avoid silently truncating accounts above the API row limit.
+  const newEvents: Record<string, any>[] = [];
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    assertActive();
+    let query = supabase.from('events').select('*').order('created_at').order('id').range(offset, offset + pageSize - 1);
+    // Include the boundary: the cursor has millisecond precision, PostgreSQL can
+    // have microseconds. Event IDs make the overlap safe.
+    if (lastSyncAt) query = query.gte('created_at', new Date(lastSyncAt).toISOString());
+    query = marketIds.length > 0
+      ? query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.in.(${teamMemberIds.join(',')}),market_id.is.null)`)
+      : query.eq('actor_id', userId).is('market_id', null);
+    const { data, error } = await query;
+    if (error) throw error;
+    newEvents.push(...(data ?? []));
+    if (!data || data.length < pageSize) break;
   }
-
-  const { data: newEvents, error: eventsError } = await query;
-
-  if (eventsError) throw eventsError;
-
-  if (!newEvents || newEvents.length === 0) {
-    return;
-  }
-
-  const total = newEvents.length;
-  const hydrationMarketIds = new Set<string>(marketIds);
+  assertActive();
   const touchedMarketIds = new Set<string>();
+  const hydrationIds = new Set(marketIds);
   for (const event of newEvents) {
-    const eventMarketId = event.market_id ?? event.payload?.market_id ?? event.payload?.marketId;
-    if (typeof eventMarketId === 'string' && eventMarketId.trim().length > 0) {
-      hydrationMarketIds.add(eventMarketId);
-    }
+    const id = getEventMarketId(event);
+    if (id) hydrationIds.add(id);
     collectProjectionMarketId(touchedMarketIds, event);
   }
-
-  const { hydrated: hydratedMarketIds, missing: missingMarketIds } = await batchHydrateMarkets(hydrationMarketIds, infoLevel);
-  void hydratedMarketIds;
-
-  const existingIds = new Set<string>();
-  const eventIds = newEvents.map(e => e.id);
-  const existingEvents = await db.events.where('id').anyOf(eventIds).toArray();
-  for (const existingEvent of existingEvents) {
-    if (!existingEvent.id) continue;
-    existingIds.add(existingEvent.id);
-    if (existingEvent.sync_status !== 'synced') {
-      await markEventSynced(existingEvent.id);
-    }
+  onProgress(0, 0, '正在補齊市集資料', 'incremental');
+  const hydration = await batchHydrateMarkets(hydrationIds, infoLevel, assertActive);
+  if (hydration.failed.size) throw new Error('Market hydration failed');
+  assertActive();
+  const canonical = newEvents.filter(e => !hydration.missing.has(getEventMarketId(e) ?? '')).map(createCanonicalSyncedEvent);
+  onProgress(0, canonical.length, '正在整理歷史紀錄', 'incremental');
+  await replayOwnerEvents(canonical, {
+    assertActive,
+    onProgress: (current, total) => onProgress(current, total, '正在整理歷史紀錄', 'incremental'),
+  });
+  await db.transaction('rw', db.events, async () => {
+    assertActive();
+    for (const event of canonical) await db.events.update(event.id!, { sync_status: 'synced' });
+  });
+  if (needsHistoryVerification) {
+    const verified = await verifyAndRepairOwnerHistory(userId, canonical, assertActive);
+    if (verified && settings?.id) await db.settings.update(settings.id, { ownerReplayRevision: `${userId}:${REPLAY_REVISION}` });
   }
-
-  const eventsToProcess: any[] = [];
-  let skippedByMissingMarket = 0;
-  let semanticDuplicateCount = 0;
-  for (const event of newEvents) {
-    if (existingIds.has(event.id)) continue;
-
-    if (await hasSemanticDuplicateDealClosedEvent(db, event)) {
-      semanticDuplicateCount++;
-      continue;
-    }
-
-    const eventMarketId = event.market_id ?? event.payload?.market_id ?? event.payload?.marketId;
-    if (eventMarketId && missingMarketIds.has(eventMarketId)) {
-      skippedByMissingMarket++;
-      console.warn(`[hydration] Skipping event ${event.type} (${event.id?.slice(0, 8)}) because market ${eventMarketId} not found in Cloud`);
-      continue;
-    }
-
-    eventsToProcess.push(event);
-  }
-
-  if (skippedByMissingMarket > 0) {
-    console.warn(`[hydration] Skipped ${skippedByMissingMarket} events because their market is missing from Cloud`);
-  }
-
-  if (eventsToProcess.length === 0) {
-    console.log(`All ${total} events were skipped as duplicates or unavailable`);
-    if (semanticDuplicateCount > 0) {
-      console.warn('[useSync] Skipped semantic duplicate deal_closed events', {
-        semanticDuplicateCount,
-      });
-    }
-    await reconcileSyncedProjectionMarkets(touchedMarketIds, 'owner-full');
-    const validCreatedAt = newEvents
-      .map(e => new Date(e.created_at).getTime())
-      .filter(ts => Number.isFinite(ts));
-    if (validCreatedAt.length > 0) {
-      await updateLastSyncTimestamp(Math.max(...validCreatedAt));
-    } else {
-      console.warn('[useSync] pullAllEvents: no event has valid created_at, refusing to advance cursor');
-    }
-    return;
-  }
-
-  if (eventsToProcess.length < total) {
-    console.log(`Processing ${eventsToProcess.length} of ${total} events after skipping ${existingIds.size} existing events`);
-  }
-
-  let processedCount = 0;
-  for (let i = 0; i < eventsToProcess.length; i++) {
-    const event = eventsToProcess[i];
-
-    if (onProgress) {
-      onProgress(i + 1, eventsToProcess.length, `${event.type} (${event.id?.substring(0, 8)}...)`, 'incremental');
-    }
-
-    try {
-      const localEvent = createCanonicalSyncedEvent(event);
-      await db.events.add(localEvent);
-
-      const { eventHandlers } = await import('@/lib/db/events');
-      const handler = eventHandlers[event.type as keyof typeof eventHandlers];
-
-      if (handler) {
-        const processedPayload = normalizeEventPayloadForLocal(localEvent.payload);
-
-        await handler({
-          id: localEvent.id,
-          type: localEvent.type,
-          payload: processedPayload,
-          timestamp: localEvent.timestamp,
-          actor_id: localEvent.actor_id,
-          market_id: localEvent.market_id,
-        } as Event, db);
-      }
-
-      processedCount++;
-    } catch (error: any) {
-      if (error.name === 'ConstraintError') {
-        continue;
-      }
-
-      console.error(`Failed to replay event: ${event.type} (${event.id?.substring(0, 8)}...)`, error);
-      continue;
-    }
-  }
-
-  console.log(`Owner event pull complete: processed ${processedCount}/${eventsToProcess.length} events`);
-
   await reconcileSyncedProjectionMarkets(touchedMarketIds, 'owner-full');
+  assertActive();
+  const validCreatedAt = newEvents.map(e => Date.parse(e.created_at)).filter(Number.isFinite);
+  if (validCreatedAt.length) await updateLastSyncTimestamp(Math.max(...validCreatedAt));
+}
 
-  if (eventsToProcess.length > 0) {
-    const validCreatedAt = newEvents
-      .map(e => new Date(e.created_at).getTime())
-      .filter(ts => Number.isFinite(ts));
-
-    if (validCreatedAt.length > 0) {
-      await updateLastSyncTimestamp(Math.max(...validCreatedAt));
-    } else {
-      console.warn('[useSync] pullAllEvents: no event has valid created_at, refusing to advance cursor');
-    }
+/** Exact cloud/local event sets with no pending writes are required for repair. */
+export async function verifyAndRepairOwnerHistory(
+  userId: string,
+  cloudEvents: readonly Event[],
+  assertActive: () => void = () => undefined,
+): Promise<boolean> {
+  let verified = true;
+  const byId = new Map(cloudEvents.map(e => [e.id, e]));
+  const affectedMarkets = new Set(cloudEvents.filter(e => {
+    if (e.type !== 'deal_deleted' && e.type !== 'interaction_deleted') return false;
+    const source = byId.get(getTombstoneTargetEventId(e));
+    return source && source.timestamp >= e.timestamp && getEventMarketId(source) === getEventMarketId(e);
+  }).map(getEventMarketId));
+  const cloudByMarket = new Map<string, Set<string>>();
+  for (const event of cloudEvents) {
+    const marketId = getEventMarketId(event);
+    if (!marketId || !event.id) continue;
+    const ids = cloudByMarket.get(marketId) ?? new Set<string>();
+    ids.add(event.id);
+    cloudByMarket.set(marketId, ids);
   }
+  for (const [marketId, ids] of cloudByMarket) {
+    if (!affectedMarkets.has(marketId)) continue;
+    assertActive();
+    await db.transaction('rw', [db.events, db.markets, db.dailyStats], async () => {
+      const market = await db.markets.get(marketId);
+      if (market?.owner_id !== userId) return;
+      const local = await db.events.filter(e => getEventMarketId(e) === marketId).toArray();
+      if (local.length !== ids.size || local.some(e => !ids.has(e.id!) || e.sync_status !== 'synced')) {
+        verified = false;
+        return;
+      }
+      assertActive();
+      await rebuildMarketStatsFromEvents(marketId, { dryRun: false, allowEmptyHistory: true });
+    });
+  }
+  return verified;
 }

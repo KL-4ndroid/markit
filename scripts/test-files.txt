@@ -141,6 +141,7 @@ tsx tests/operational-alert-cli.test.ts
 tsx tests/supabase-sales-photo-evidence-owner-delete-migration.test.ts
 tsx tests/sales-photo-evidence-api-cors-integration.test.ts
 tsx tests/sales-photo-evidence-post-sale.test.ts
+tsx tests/sales-photo-evidence-reminder-recovery.test.ts
 tsx tests/sales-photo-evidence-deferred.test.ts
 tsx tests/sales-photo-evidence-pending-creation.test.ts
 tsx tests/sales-photo-evidence-pending-creation-drain.test.ts
@@ -403,3 +404,11 @@ tsx tests/market-text-import-gate9-release.test.ts
 tsx tests/supabase-sra-a1-remote-migration-strategy.test.ts
 tsx tests/market-planning-view-model.test.ts
 tsx tests/session-state-port.test.ts
+tsx tests/market-time-sync.test.ts
+tsx tests/basic-workflow-corrections.test.ts
+tsx tests/test-tools-release-boundary.test.ts
+tsx tests/local-pending-count-observer.test.ts
+tsx tests/owner-event-replay.test.ts
+tsx tests/cold-login-pull.test.ts
+tsx tests/cold-login-migration.test.ts
+tsx tests/cloud-deal-projection.test.ts

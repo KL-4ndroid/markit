@@ -143,7 +143,19 @@ export function normalizeEventPayloadForCloud<T>(type: string, payload: T): T {
 }
 
 export function marketUpdatesToSnake(updates: AnyRecord): AnyRecord {
-  return mapKeys(updates, MARKET_CAMEL_TO_SNAKE);
+  return normalizeCloudMarketTimes(mapKeys(updates, MARKET_CAMEL_TO_SNAKE));
+}
+
+// A blank optional time explicitly clears it; undefined means leave it unchanged.
+// PostgreSQL time columns accept null, never the form's empty string.
+function normalizeCloudMarketTimes(values: AnyRecord): AnyRecord {
+  const normalized = { ...values };
+  for (const field of ['start_time', 'end_time', 'early_entry_time', 'check_in_time', 'operating_start_time', 'operating_end_time']) {
+    for (const key of [field, MARKET_SNAKE_TO_CAMEL[field]]) {
+      if (typeof normalized[key] === 'string' && normalized[key].trim() === '') normalized[key] = null;
+    }
+  }
+  return normalized;
 }
 
 export function marketUpdatesToCamel(updates: AnyRecord): AnyRecord {
@@ -165,7 +177,7 @@ export function marketCreatedPayloadToCloud(
   const startDate = (payload.startDate ?? payload.start_date) as string | undefined;
   const endDate = (payload.endDate ?? payload.end_date) as string | undefined;
 
-  return definedEntries({
+  return normalizeCloudMarketTimes(definedEntries({
     ...payload,
     market_id: marketId ?? pickMarketId(payload),
     start_date: startDate,
@@ -196,7 +208,7 @@ export function marketCreatedPayloadToCloud(
     schedule_revision: payload.scheduleRevision ?? payload.schedule_revision,
     schedule_occurrence_state: payload.scheduleOccurrenceState ?? payload.schedule_occurrence_state,
     is_schedule_override: payload.isScheduleOverride ?? payload.is_schedule_override,
-  });
+  }));
 }
 
 export function marketRowToLocal(row: AnyRecord): Market {

@@ -207,9 +207,9 @@ export function SalesPhotoEvidencePendingListDialog({
             </div>
           ) : items.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border bg-background px-4 py-8 text-center">
-              <p className="text-sm font-medium text-foreground">目前沒有待補照片</p>
+              <p className="text-sm font-medium text-foreground">這台裝置沒有待補照片</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                需要照片的成交會在完成後顯示在這裡。
+                此處僅列出本機工作；其他裝置未上傳的照片請回原裝置處理。
               </p>
             </div>
           ) : (

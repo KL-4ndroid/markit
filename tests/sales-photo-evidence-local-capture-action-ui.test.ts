@@ -80,7 +80,9 @@ runTest('owner and staff share one scoped photo flow controller', () => {
   assert.match(flowHookSource, /captureAndStoreSalesPhotoEvidenceWithFileInput/);
   assert.match(flowHookSource, /uploadPendingSalesPhotoEvidenceManually/);
   assert.match(flowHookSource, /reduceSaleCompletionFlow/);
-  assert.match(staffViewSource, /item\.capturedByStaffId === user\?\.id/);
+  assert.match(staffViewSource, /const photoEvidenceActorId = user\?\.id/);
+  assert.match(staffViewSource, /item\.ownerId === addRevenueSalesPhotoEvidenceContext\.ownerId/);
+  assert.match(staffViewSource, /isOwner \? item\.ownerId === photoEvidenceActorId : item\.capturedByStaffId === photoEvidenceActorId/);
   assert.match(ownerPageSource, /item\.ownerId === ownerSalesPhotoEvidenceActorId/);
   assert.match(ownerPageSource, /item\.marketId === marketId/);
 });

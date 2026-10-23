@@ -16,18 +16,17 @@ import { useSyncContext } from '@/lib/sync-context';
 import { useRoleContext } from '@/lib/role-context';
 import { resolveRoleMode } from '@/lib/auth/role-mode';
 import { type CoordinatedOverlayProps } from '@/components/global-overlays/overlay-types';
+import { getSessionStatePort } from '@/lib/platform/session-state-capability';
 
 // 使用 sessionStorage 記錄是否已完成初始同步（會話級別，關閉瀏覽器後重置）
 const INITIAL_SYNC_KEY = 'hasCompletedInitialSync';
 
 function getHasCompletedInitialSync(key: string): boolean {
-  if (typeof window === 'undefined') return false;
-  return sessionStorage.getItem(key) === 'true';
+  return getSessionStatePort().read(key) === 'true';
 }
 
 function setHasCompletedInitialSync(key: string, value: boolean): void {
-  if (typeof window === 'undefined') return;
-  sessionStorage.setItem(key, value.toString());
+  getSessionStatePort().write(key, value.toString());
 }
 
 export function InitialSyncDialog({
@@ -37,7 +36,7 @@ export function InitialSyncDialog({
   const { user, isConfigured } = useAuth();
   const { userRole, roleRefreshState } = useRoleContext();
   const syncContext = useSyncContext(); // ✅ 使用全局同步狀態
-  const { status, downloadProgress } = syncContext;
+  const { status, downloadProgress, sync } = syncContext;
   const isRoleReady = roleRefreshState.stage === 'ready';
   const roleMode = resolveRoleMode(userRole);
   const initialSyncKey = user ? `${INITIAL_SYNC_KEY}:${user.id}:${roleMode}` : INITIAL_SYNC_KEY;
@@ -54,6 +53,7 @@ export function InitialSyncDialog({
   const [isOpen, setIsOpen] = useState(shouldOpenInitially);
   const [, setHasCompletedInitialSyncState] = useState(false);
   const hasSeenSuccessRef = useRef(false); // ✅ 使用 ref 避免觸發重新渲染
+  const [isTakingLonger, setIsTakingLonger] = useState(false);
 
   useEffect(() => {
     onVisibilityChange?.(isOpen);
@@ -94,23 +94,11 @@ export function InitialSyncDialog({
       return () => clearTimeout(timeoutId);
     }
 
-    if (status === SyncStatus.ERROR && isOpen && !hasSeenSuccessRef.current) {
-      hasSeenSuccessRef.current = true;
-      const timeoutId = setTimeout(() => {
-        setIsOpen(false);
-        setHasCompletedInitialSyncState(true);
-        setHasCompletedInitialSync(initialSyncKey, true);
-      }, 2000);
-      
-      return () => clearTimeout(timeoutId);
-    }
-
-    // ✅ 添加超時保護：如果 30 秒後還在 SYNCING，強制關閉
+    // Slow or failed recovery is never persisted as successful completion.
     if (status === SyncStatus.SYNCING && isOpen && !hasSeenSuccessRef.current) {
+      setIsTakingLonger(false);
       const timeoutId = setTimeout(() => {
-        setIsOpen(false);
-        setHasCompletedInitialSyncState(true);
-        setHasCompletedInitialSync(initialSyncKey, true);
+        setIsTakingLonger(true);
       }, 30000);
 
       return () => clearTimeout(timeoutId);
@@ -120,13 +108,7 @@ export function InitialSyncDialog({
   // 獲取當前階段描述
   const getPhaseDescription = () => {
     if (status === SyncStatus.SYNCING && downloadProgress) {
-      if (downloadProgress.phase === 'snapshot') {
-        return '正在載入雲端快照...';
-      }
-      if (downloadProgress.phase === 'incremental') {
-        return '正在同步最新數據...';
-      }
-      return '正在下載數據...';
+      return downloadProgress.currentItem ?? '正在整理歷史紀錄…';
     }
 
     if (status === SyncStatus.SUCCESS) {
@@ -134,8 +116,9 @@ export function InitialSyncDialog({
     }
 
     if (status === SyncStatus.ERROR) {
-      return '同步失敗，將使用本地數據';
+      return '資料尚未載入完成，請重試或先查看本機資料。';
     }
+    if (status === SyncStatus.OFFLINE) return '目前無法連線，請連線後重新載入。';
 
     return '正在準備數據...';
   };
@@ -231,35 +214,11 @@ export function InitialSyncDialog({
                     </div>
                   )}
 
-                  {/* 階段指示器（僅在下載階段顯示） */}
-                  {status === SyncStatus.SYNCING && downloadProgress?.phase && (
-                    <div className="w-full flex items-center gap-2 mb-4">
-                      <div className={`flex-1 h-1 rounded-full ${
-                        downloadProgress.phase === 'snapshot' || downloadProgress.phase === 'incremental'
-                          ? 'bg-primary' 
-                          : 'bg-gray-200'
-                      }`} />
-                      <span className="text-xs text-muted-foreground font-medium">
-                        {downloadProgress.phase === 'snapshot' ? '1/2' : '2/2'}
-                      </span>
-                      <div className={`flex-1 h-1 rounded-full ${
-                        downloadProgress.phase === 'incremental'
-                          ? 'bg-primary' 
-                          : 'bg-gray-200'
-                      }`} />
-                    </div>
-                  )}
-
                   {/* 提示文字 */}
                   {status === SyncStatus.SYNCING && (
                     <div className="bg-cat-clothing rounded-xl p-4 w-full">
                       <p className="text-xs text-muted-foreground text-center">
-                        {downloadProgress?.phase === 'snapshot' 
-                          ? '正在快速載入數據快照...' 
-                          : downloadProgress?.phase === 'incremental'
-                          ? '正在同步最新變更...'
-                          : '首次登入可能需要較長時間'
-                        }
+                        {isTakingLonger ? '資料較多或連線較慢，目前仍在處理；請保持此頁開啟。' : '首次登入需要整理歷史紀錄，完成後會自動開啟。'}
                       </p>
                     </div>
                   )}
@@ -277,8 +236,14 @@ export function InitialSyncDialog({
                   {status === SyncStatus.ERROR && (
                     <div className="bg-soft-pink rounded-xl p-4 w-full">
                       <p className="text-sm text-danger text-center">
-                        無法連接到雲端，將使用本地數據
+                        資料尚未載入完整，本機已儲存的資料仍會保留。
                       </p>
+                    </div>
+                  )}
+                  {(status === SyncStatus.ERROR || status === SyncStatus.OFFLINE || isTakingLonger) && (
+                    <div className="mt-4 flex w-full flex-col gap-2">
+                      {status !== SyncStatus.SYNCING && <button type="button" onClick={() => { hasSeenSuccessRef.current = false; sync(); }} className="min-h-11 rounded-xl bg-primary px-4 text-white">重新載入</button>}
+                      <button type="button" onClick={() => setIsOpen(false)} className="min-h-11 rounded-xl border border-border px-4 text-foreground">先查看本機資料</button>
                     </div>
                   )}
                 </div>

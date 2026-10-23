@@ -273,7 +273,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
           <div className="bg-soft-green rounded-xl p-3">
             <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
-              淨利潤
+              銷售利潤
               {market.startDate !== market.endDate && (
                 <span className="text-[10px] text-foreground/60">(總計)</span>
               )}

@@ -28,6 +28,7 @@ interface SalesPhotoEvidenceFlowDialogProps {
   pendingItems: SalesPhotoEvidencePendingTaskItem[];
   isLoadingPendingItems?: boolean;
   pendingItemsError?: string | null;
+  pendingScopeMessage?: string;
   payloadRefreshByQueueId?: Record<string, string | null>;
   canHandleItem: (item: LocalPendingSalesPhotoEvidenceCreation) => boolean;
   onCapture: (
@@ -65,6 +66,7 @@ export function SalesPhotoEvidenceFlowDialog({
   pendingItems,
   isLoadingPendingItems = false,
   pendingItemsError = null,
+  pendingScopeMessage = '此處列出這台裝置的待補工作。其他裝置尚未上傳的照片不會自動出現在此處，請回原裝置完成。',
   payloadRefreshByQueueId = {},
   canHandleItem,
   onCapture,
@@ -138,6 +140,18 @@ export function SalesPhotoEvidenceFlowDialog({
 
           {state.view === 'pending_list' && (
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+              <p className="mb-3 text-xs leading-5 text-muted-foreground">{pendingScopeMessage}</p>
+              {!pendingItemsError && (
+                <button
+                  type="button"
+                  onClick={onRefresh}
+                  disabled={isLoadingPendingItems}
+                  className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-white px-3 text-sm text-foreground disabled:opacity-50"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  重新整理待補照片
+                </button>
+              )}
               {pendingItemsError ? (
                 <div className="py-10 text-center">
                   <p className="text-sm text-red-700">{pendingItemsError}</p>
@@ -158,8 +172,8 @@ export function SalesPhotoEvidenceFlowDialog({
               ) : pendingItems.length === 0 ? (
                 <div className="py-12 text-center">
                   <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
-                  <p className="mt-3 text-sm font-medium text-foreground">目前沒有待補照片</p>
-                  <p className="mt-1 text-xs text-muted-foreground">所有成交照片都已處理完成</p>
+                  <p className="mt-3 text-sm font-medium text-foreground">這台裝置沒有待補照片</p>
+                  <p className="mt-1 text-xs text-muted-foreground">這不代表其他裝置的照片已上傳完成。</p>
                 </div>
               ) : (
                 <div className="space-y-3">

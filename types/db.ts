@@ -3,6 +3,7 @@ import type {
   ScheduleOccurrenceState,
   Venue,
 } from '@/lib/recurring-operations/types';
+import type { SalesPhotoEvidenceRequirementSnapshot } from '@/lib/sales/photo-evidence-requirement-snapshot';
 
 export type { OperationSchedule, ScheduleOccurrenceState, Venue } from '@/lib/recurring-operations/types';
 
@@ -379,6 +380,7 @@ export interface DealDeletedPayload {
  */
 export interface DealClosedPayload {
   market_id: string;            // 所屬市集 UUID
+  photoEvidenceRequirement?: SalesPhotoEvidenceRequirementSnapshot; // Missing on historical/older-client sales: unknown, never inferred from current market settings.
   dealDate?: string;           // 成交日期（YYYY-MM-DD），用於多天市集區分每日收入
   isBackfill?: boolean;        // 補登標記（補登時不扣庫存）
   isManualEntry?: boolean;     // 手動輸入標記（簡化模式）
@@ -462,6 +464,7 @@ export interface Settings {
   autoBackup: boolean;         // 自動備份
   lastBackupAt?: number;       // 最後備份時間
   lastSyncAt?: number;         // 最後同步時間（用於多人協作）
+  ownerReplayRevision?: string; // Local cache verification only.
   
   // 時間戳
   updatedAt: number;           // 最後更新時間

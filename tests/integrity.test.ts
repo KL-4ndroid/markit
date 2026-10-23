@@ -475,6 +475,35 @@ runTest('rejects tombstones that replay before their target event', () => {
   assert.ok(result.errors.includes('events[0] deal_deleted tombstones an event that has not replayed yet: deal-1'));
 });
 
+runTest('legacy same-day backfill deletion permits app access but keeps import/replay strict', () => {
+  const day = '2026-10-22';
+  const original = event({ id: 'backfill-1', type: 'deal_closed', market_id: 'market-1',
+    timestamp: new Date(2026, 9, 22, 23, 59, 59, 999).getTime(),
+    payload: { market_id: 'market-1', dealDate: day, totalAmount: 7, isManualEntry: true, isBackfill: true, manualCost: 2, manualDealCount: 2, items: [] } });
+  const deletion = event({ id: 'backfill-delete', type: 'deal_deleted', market_id: 'market-1',
+    timestamp: new Date(2026, 9, 22, 22, 45).getTime(),
+    payload: { eventId: original.id, market_id: 'market-1', dealDate: day, totalAmount: 7, totalCost: 2, dealCount: 2 } });
+  const data = backup({ events: [original, deletion] });
+  const before = JSON.stringify(data);
+  const app = checkAppIntegrity(data);
+  assert.equal(app.ok, true);
+  assert.ok(app.warnings.some(warning => warning.startsWith('[legacy_backfill_order]')));
+  assert.equal(checkBackupIntegrity(data).ok, false, 'import cannot silently use an unsafe replay order');
+  assert.equal(validateBackupReplayReadiness(data).ok, false);
+  assert.equal(JSON.stringify(data), before, 'compatibility must never rewrite old evidence');
+  for (const source of [
+    { ...original, payload: { ...original.payload, isBackfill: false } },
+    { ...original, timestamp: new Date(2026, 9, 22, 23, 58).getTime() },
+  ]) assert.equal(checkAppIntegrity(backup({ events: [source, deletion] })).ok, false);
+  assert.equal(checkAppIntegrity(backup({ events: [original, { ...deletion, payload: { ...deletion.payload, dealDate: '2026-10-21' } }] })).ok, false);
+  assert.equal(checkAppIntegrity(backup({ events: [original, deletion, { ...deletion, id: 'duplicate' }] })).ok, false);
+  for (const offset of ['+08:00', '-03:30', '+05:45', '+14:00', '-12:00']) {
+    const source = { ...original, timestamp: Date.parse(`2026-10-22T23:59:59.999${offset}`) };
+    const removal = { ...deletion, timestamp: source.timestamp - 3_600_000 };
+    assert.equal(checkAppIntegrity(backup({ events: [source, removal] })).ok, true, `legacy device timezone ${offset}`);
+  }
+});
+
 runTest('rejects duplicate tombstones for the same event', () => {
   const result = validateBackupReplayReadiness(backup({
     events: [

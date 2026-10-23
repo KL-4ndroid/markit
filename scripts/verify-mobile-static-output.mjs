@@ -29,6 +29,8 @@ const forbiddenPaths = [
   'mobile-runtime-smoke',
   'markets/[id]',
   'products/[id]',
+  'recovery',
+  'settings/data',
 ];
 
 const forbiddenBundlePatterns = [

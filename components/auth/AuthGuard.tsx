@@ -135,7 +135,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return (
       <>
         {/* 離線橫幅 */}
-        <OfflineBanner />
+        <OfflineBanner readOnly={false} />
         <RoleStatusBanner />
         {children}
         {/* ✅ C3.6：員工狀態監控（只在已登入時掛載）

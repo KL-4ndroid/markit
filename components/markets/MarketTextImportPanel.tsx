@@ -13,6 +13,7 @@ import type {
   ParsedMarketEvent,
 } from '@/lib/market-text-import/types';
 import { cn } from '@/lib/utils';
+import { buildImportReviewSummary } from '@/lib/market-text-import/review-summary';
 
 interface MarketTextImportPanelProps {
   inputText: string;
@@ -239,6 +240,7 @@ export function MarketTextImportPanel({
     [draft],
   );
   const resultIsStale = Boolean(draft && analyzedText !== inputText);
+  const reviewSummary = selectedEvent ? buildImportReviewSummary(selectedEvent, currentValues) : null;
 
   const selectEvent = (event: ParsedMarketEvent) => {
     setSelectedEventId(event.id);
@@ -413,12 +415,19 @@ export function MarketTextImportPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="text-sm font-semibold text-foreground">確認要帶入的欄位</p>
+              {reviewSummary && <p className="mt-1 text-sm text-foreground">已辨識 {reviewSummary.recognizedCount} 項／仍需確認 {reviewSummary.reviewCount} 項</p>}
               <p className="mt-1 text-xs leading-5 text-muted-foreground">已勾選 {selectedCount} 項；灰色提醒只供參考，不會填入。</p>
             </div>
             {sensitiveSpanCount > 0 ? (
               <span className="rounded-full bg-soft-yellow px-2.5 py-1 text-[11px] font-medium text-secondary">偵測到可能的私人內容</span>
             ) : null}
           </div>
+
+          {reviewSummary && reviewSummary.missingCore.length > 0 && (
+            <p className="rounded-xl bg-soft-yellow/55 p-3 text-sm leading-6 text-secondary">
+              必填欄位仍需確認：{reviewSummary.missingCore.map(field => FIELD_LABELS[field]).join('、')}。目前沒有可直接帶入的值，請核對原文或手動填寫。
+            </p>
+          )}
 
           {resultIsStale ? (
             <p className="rounded-xl border border-status-warning-border bg-status-warning-bg p-3 text-sm text-status-warning-text" role="status">

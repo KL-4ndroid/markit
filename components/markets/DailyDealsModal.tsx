@@ -59,8 +59,10 @@ export function DailyDealsModal({
               </p>
             </div>
             <button
+              type="button"
+              aria-label="關閉成交記錄"
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-neutral-alt hover:bg-border-hairline transition-colors flex items-center justify-center"
+              className="w-11 h-11 shrink-0 rounded-full bg-neutral-alt hover:bg-border-hairline transition-colors flex items-center justify-center"
             >
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
@@ -78,7 +80,7 @@ export function DailyDealsModal({
               </div>
             ) : (
               <div className="space-y-2">
-                {deals
+                {[...deals]
                   .sort((a, b) => b.timestamp - a.timestamp) // 最新成交優先
                   .map((deal) => (
                     <DealItem

@@ -265,6 +265,12 @@ const findEventSegments = (lines: SourceLine[]): SourceLine[][] => {
 };
 
 const extractName = (lines: SourceLine[]): { value: string; evidence: SourceLine[] } | null => {
+  const labeledNames = lines.flatMap(line => {
+    const value = line.text.trim().match(/^(?:市集|活動)名稱\s*[：:]\s*(.{2,80})$/)?.[1]?.trim();
+    return value ? [{ value, evidence: [line] }] : [];
+  });
+  if (labeledNames.length === 1) return labeledNames[0];
+  if (labeledNames.length > 1) return null;
   const inlineEventInfoIndex = lines.findIndex((line) => (
     /(?:活動|市集)日期\s*[：:｜|].*?(?:活動|市集)時間\s*[：:｜|].*?(?:活動|市集)地點\s*[：:｜|]/.test(normalizeForMatch(line.text))
   ));
@@ -733,7 +739,7 @@ const parseTimes = (context: ParserContext, lines: SourceLine[], event: ParsedMa
   const timeExpression = /(\d{1,2}):(\d{2})\s*(?:-|~|至)\s*(\d{1,2}):(\d{2})/;
   const normalizeTime = (hour: string, minute: string): string => `${hour.padStart(2, '0')}:${minute}`;
 
-  const labeledOperatingLines = entries.filter(({ normalized }) => /^(?:[▪▩★]\s*)?(?:活動|市集)?時間\s*[:｜|]/.test(normalized));
+  const labeledOperatingLines = entries.filter(({ normalized }) => /^(?:[▪▩★]\s*)?(?:活動|市集|營業)?時間\s*[:｜|]/.test(normalized));
   const inlineOperatingLines = entries.filter(({ normalized }) => (
     labeledOperatingLines.length === 0
     && /\d{1,4}[/.月]\d{1,2}/.test(normalized)

@@ -11,6 +11,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './index';
 import { generateUUID } from './uuid';
 import { recordEvent } from './events';
+import { readSalesPhotoEvidenceRequirementSnapshot } from '@/lib/sales/photo-evidence-requirement-snapshot';
 import type {
   Market,
   Product,
@@ -40,14 +41,14 @@ export function resolveDealModeFlags(
  * @param options - 查詢選項
  * @returns 市集列表（自動過濾已刪除的市集和無權限的市集）
  */
-export function useMarkets(options?: {
+export function useMarketsQuery(options?: {
   status?: MarketStatus;
   orderBy?: 'startDate' | 'createdAt';
   order?: 'asc' | 'desc';
   includeDeleted?: boolean;  // ✅ 是否包含已刪除的市集（預設 false）
   ownerId?: string;  // ✅ 新增：根據擁有者 ID 過濾（用於權限控制）
 }) {
-  return useLiveQuery(async () => {
+  const result = useLiveQuery(async () => {
     try {
       let query = db.markets.toCollection();
       
@@ -72,16 +73,23 @@ export function useMarkets(options?: {
       const orderBy = options?.orderBy || 'startDate';
       const order = options?.order || 'desc';
       
-      return filteredMarkets.sort((a, b) => {
+      const sorted = filteredMarkets.sort((a, b) => {
         const aValue = orderBy === 'startDate' ? new Date(a.startDate).getTime() : a.createdAt;
         const bValue = orderBy === 'startDate' ? new Date(b.startDate).getTime() : b.createdAt;
         return order === 'asc' ? aValue - bValue : bValue - aValue;
       });
+      return { markets: sorted, error: null };
     } catch (error) {
       console.error('❌ useMarkets 查詢失敗:', error);
-      return []; // 返回空數組而不是 undefined
+      return { markets: [] as Market[], error: '市集資料暫時無法讀取' };
     }
-  }, [options?.status, options?.orderBy, options?.order, options?.includeDeleted, options?.ownerId]) || []; // 確保永遠不返回 undefined
+  }, [options?.status, options?.orderBy, options?.order, options?.includeDeleted, options?.ownerId]);
+  return { markets: result?.markets ?? [], isLoading: result === undefined, error: result?.error ?? null };
+}
+
+/** Compatibility list API; screens needing empty-state semantics use useMarketsQuery. */
+export function useMarkets(options?: Parameters<typeof useMarketsQuery>[0]) {
+  return useMarketsQuery(options).markets;
 }
 
 /**
@@ -423,6 +431,7 @@ export async function recordDeal(
     totalAmount: data.totalAmount,
     paymentMethod: data.paymentMethod,
     notes: data.notes,
+    photoEvidenceRequirement: readSalesPhotoEvidenceRequirementSnapshot(data.photoEvidenceRequirement) ?? undefined,
   };
   
   // 庫存檢查通過，記錄成交事件

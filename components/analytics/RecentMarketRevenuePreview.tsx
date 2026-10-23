@@ -34,7 +34,7 @@ export function RecentMarketRevenuePreview({ preview }: RecentMarketRevenuePrevi
     <section className="rounded-card border border-primary/10 bg-white" aria-labelledby="recent-market-preview-title">
       <div className="flex items-start justify-between gap-3 border-b border-primary/10 px-4 py-4">
         <div>
-          <p className="text-xs font-medium text-primary">最近 3 場</p>
+          <p className="text-xs font-medium text-primary">最近 3 場有收入紀錄的市集</p>
           <h2 id="recent-market-preview-title" className="mt-1 text-base font-semibold text-foreground">營收比較</h2>
         </div>
         <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-soft-green px-3 py-1 text-xs font-medium text-foreground">
@@ -48,6 +48,9 @@ export function RecentMarketRevenuePreview({ preview }: RecentMarketRevenuePrevi
         {directionLabels[preview.direction]}
       </div>
       <p className="px-4 pb-4 pt-2 text-sm leading-6 text-muted-foreground">{preview.summary}</p>
+      {preview.direction === 'not_enough_data' && (
+        <a href="/markets" className="mx-4 mb-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline underline-offset-4">查看市集與補登收入</a>
+      )}
 
       {preview.points.length > 0 && (
         <div className="divide-y divide-primary/10 border-t border-primary/10">

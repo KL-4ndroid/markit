@@ -138,10 +138,10 @@ export function TransactionWorkspace({
             </span>
           </button>
         ) : (
-          <div className="flex min-h-11 shrink-0 items-center gap-2 rounded-control bg-atelier-paper/75 px-3 text-sm font-medium text-status-good-text" role="status" aria-label="成交照片已齊">
-            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-            照片已齊
-          </div>
+          <button type="button" onClick={onOpenPendingPhotos} className="flex min-h-11 shrink-0 items-center gap-2 rounded-control bg-atelier-paper/75 px-3 text-sm font-medium text-foreground" aria-label="查看本機待補照片">
+            <ImagePlus className="h-4 w-4" aria-hidden="true" />
+            本機待補
+          </button>
         )}
       </div>}
 

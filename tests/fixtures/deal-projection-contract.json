@@ -1,0 +1,14 @@
+[
+  {"name":"manual multiple deals","payload":{"manualRevenue":150,"manualCost":30,"manualDealCount":2,"totalAmount":999,"isManualEntry":true,"items":[]},"expected":[150,30,2]},
+  {"name":"different snapshot costs and repeated lines","payload":{"totalAmount":650,"items":[{"quantity":2,"price":100,"cost_at_time_of_sale":10},{"quantity":3,"price":100,"costAtTimeOfSale":10},{"quantity":3,"price":50,"cost_at_time_of_sale":20}]},"expected":[650,110,1]},
+  {"name":"snake aliases","payload":{"manual_revenue":90,"manual_cost":12,"manual_deal_count":3},"expected":[90,12,3]},
+  {"name":"zero beats fallback","payload":{"manualRevenue":0,"manualCost":0,"manualDealCount":0,"totalAmount":900,"totalCost":800,"dealCount":9},"expected":[0,0,0]},
+  {"name":"quick receipt no items","payload":{"totalAmount":80},"expected":[80,0,1]},
+  {"name":"legacy total aliases","payload":{"total_amount":70,"total_cost":20,"deal_count":4,"items":null},"expected":[70,20,4]},
+  {"name":"item fallback and missing cost","payload":{"items":[{"quantity":2,"price_at_time_of_sale":30,"price":99,"cost_at_time_of_sale":0,"cost":80},{"quantity":1,"priceAtTimeOfSale":40,"cost":5},{"quantity":2,"price":10}]},"expected":[120,5,1]},
+  {"name":"invalid non-null alias uses item fallback","payload":{"manualRevenue":"99","totalAmount":800,"manualCost":"20","totalCost":50,"manualDealCount":"4","dealCount":8,"items":[{"quantity":2,"price":10,"cost":3}]},"expected":[20,6,1]},
+  {"name":"null alias falls through","payload":{"manualRevenue":null,"manualCost":null,"manualDealCount":null,"totalAmount":20,"totalCost":4,"dealCount":2},"expected":[20,4,2]},
+  {"name":"invalid quantity and snapshots","payload":{"items":[{"quantity":"2","price":100,"cost":20},{"quantity":2,"price_at_time_of_sale":"bad","price":90,"cost_at_time_of_sale":"bad","cost":30}]},"expected":[0,0,1]},
+  {"name":"negative margin","payload":{"totalAmount":10,"totalCost":30},"expected":[10,30,1]},
+  {"name":"full backfill snapshot cost","payload":{"isBackfill":true,"totalAmount":400,"items":[{"quantity":4,"price":100,"cost_at_time_of_sale":10}]},"expected":[400,40,1]}
+]

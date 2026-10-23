@@ -2,14 +2,14 @@
 
 > 依使用者要求採 `.mk` 副檔名，內容使用 Markdown 格式；這是文件，不是 Makefile 或建置腳本。
 
-建立／最後核對：2026-10-20。初次程式盤點基準：`62422e7`。
+建立：2026-10-20。最後增量核對：2026-10-23（調價政策確認：月繳提前 60 天通知、年繳續訂調整及限期保價）。初次程式盤點基準：`62422e7`。
 
 用途：未來修改訂閱方案時，先找到規格、程式、資料庫、畫面、測試與發布紀錄，再依實際變更同步維護。這份索引提供導航，不代表服務啟用或發布驗收。
 
 ## 1. 修改前先確認
 
 1. 先讀 [AGENTS.md](../AGENTS.md) 與 [跨平台規範](CROSS_PLATFORM_VIBE_CODING_GUARDRAILS.md)，保留共用邏輯與平台邊界。
-2. 產品目標以 [訂閱總規格](SUBSCRIPTION_TIER_PLAN_2026_07_24.md)、[方案功能矩陣](subscription/SUBSCRIPTION_FEATURE_DEFINITION_MATRIX_2026_07_24.md) 為入口；切片進度看 [實作計畫](SUBSCRIPTION_TIER_IMPLEMENTATION_PLAN_2026_07_24.md)。
+2. 最新已確認方向先看 [新方案價格／優惠活動後台需求](subscription/SUBSCRIPTION_PRICING_PROMOTION_ADMIN_REQUIREMENTS_2026_10_23.md)；新兩級方案與舊 Free／Pro／Team 的 runtime 對照尚未實作。舊 [訂閱總規格](SUBSCRIPTION_TIER_PLAN_2026_07_24.md)、[方案功能矩陣](subscription/SUBSCRIPTION_FEATURE_DEFINITION_MATRIX_2026_07_24.md) 及 [實作計畫](SUBSCRIPTION_TIER_IMPLEMENTATION_PLAN_2026_07_24.md) 保留作為現有接線／歷史入口。
 3. 實際功能接線看 [程式狀態對照](../lib/subscription/subscription-capability-implementation.ts)、[功能 gate 登記表](subscription/SUBSCRIPTION_FEATURE_GATE_REGISTRY.md) 與目前呼叫端；舊 registry／audit 必須再次核對原始碼。
 4. 發布狀態看 [canonical 任務](LAUNCH_EXECUTION_TASKS_2026_08_09.json) 與 [原生發布 gates](subscription/NATIVE_SUBSCRIPTION_LAUNCH_GATES_2026_08_06.json)。程式檔存在、靜態引用或本機測試通過，不等於正式服務啟用。
 5. 使用者已明確指定的新方案決策優先於舊草案，不因舊文件寫 planning only 就重問已授權的例行來源碼工作。涉及商業選擇、真實付費、受保護設定或不可逆資料操作時，依實際範圍處理必要人工決策。
@@ -28,6 +28,9 @@
 | 分析頁的 Free 預覽／付費限制 | [功能 gate 登記表](subscription/SUBSCRIPTION_FEATURE_GATE_REGISTRY.md) | [分析 view model](../lib/analytics/subscription-view.ts)、[分析頁](../app/analytics/page.tsx)、[分析 hook](../hooks/useAnalyticsCache.ts)、[日期篩選](../components/analytics/DateRangeFilter.tsx) | [分析權限](../tests/analytics-subscription-access.test.ts)、[進階分析](../tests/advanced-analytics-subscription-access.test.ts) |
 | 報表、PDF 與角色限制 | [PDF 規格](SETTLEMENT_REPORT_PDF_VISUAL_SPEC_2026_07_01.md)、[功能 gate 登記表](subscription/SUBSCRIPTION_FEATURE_GATE_REGISTRY.md) | [報表 view model](../lib/reporting/settlement-subscription-view.ts)、[報表頁](../app/reports/settlement/page.tsx) | [報表權限](../tests/settlement-report-subscription-access.test.ts)、[PDF 預覽](../tests/settlement-report-pdf-preview-button.test.ts) |
 | Team 員工、manager、席次與邀請 | [Team 限制](subscription/TEAM_SUBSCRIPTION_ENFORCEMENT.md)、[權限分配](role-permission-distribution.md) | [團隊頁](../app/settings/team/page.tsx)、[團隊元件](../components/settings/StaffManagement.tsx)、[staff 存取](../lib/supabase/staff.ts)、[migration 064](../supabase/migrations/064_enforce_team_subscription.sql)、[migration 065](../supabase/migrations/065_fix_team_invitation_verification_return_type.sql) | [Team 限制](../tests/team-subscription-enforcement.test.ts)、[狀態轉換 smoke](../tests/team-subscription-transition-live-smoke.test.ts) |
+| 新方案、首購優惠與可設定營運後台 | [最新需求](subscription/SUBSCRIPTION_PRICING_PROMOTION_ADMIN_REQUIREMENTS_2026_10_23.md) | 249／2490 牌價、限期優惠、活動版本、未來調價及跨店管理；模型、管理 API 與後台尚未實作 | 需求／來源與官方規則核對；不代表收費啟用 |
+| 新客牌價／優惠到期價格／舊客調價批次／訂戶通知歷程 | [已確認政策第 4 節與待辦第 7.1 節](subscription/SUBSCRIPTION_PRICING_PROMOTION_ADMIN_REQUIREMENTS_2026_10_23.md#4-漲價與既有訂戶) | ADMIN-PRICE-01～06：三類價格管理分開、逐戶價格／通知、月繳至少提前 60 天通知、年繳續訂調整及限期保價；均未實作 | 驗收優惠條件不誤改、60 天邊界與商店條件、已付年度保留、限期保價及逐戶狀態 |
+| 2026-10-23 訂閱制度對齊與未完成工作 | [整備清單](subscription/SUBSCRIPTION_RULES_ALIGNMENT_2026_10_23.md) | 舊 Free／Pro／Team runtime 快照，員工屬 Team；admin／billing 差異、席次候選、付費 gate 缺口與有效期防禦；新產品方向看上列需求 | [共用權益回歸](../tests/subscription-feature-gates.test.ts)；不是收費啟用證據 |
 | 商品／成交照片、容量與方案交互作用 | [商品照片計畫](PRODUCT_COVER_PHOTO_EXECUTION_PLAN_2026_07_24.md)、[功能 gate 登記表](subscription/SUBSCRIPTION_FEATURE_GATE_REGISTRY.md) | [實際接線狀態](../lib/subscription/subscription-capability-implementation.ts)、[商品照片模型](../lib/products/product-cover-photo-model.ts)、[server](../lib/products/product-cover-photo-server.ts)、[上傳 API](../app/api/product-cover-photo/upload/route.ts)、[migration 062](../supabase/migrations/062_add_product_cover_photos.sql) | [實際接線檢查](../tests/subscription-capability-implementation.test.ts)、[功能映射](../tests/subscription-feature-gate-mapping.test.ts) |
 | 原生購買、恢復與管理訂閱 | [原生執行計畫](subscription/NATIVE_SUBSCRIPTION_EXECUTION_PLAN_2026_08_06.md)、[購買前揭露](subscription/NATIVE_PURCHASE_DISCLOSURE_CONTRACT_2026_08_06.md) | [IAP port](../lib/platform/contracts/in-app-purchase.ts)、[目前不可用實作](../lib/platform/unavailable-native-purchases.ts)、[購買流程](../lib/subscription/native-purchase-workflow.ts)、[揭露判斷](../lib/subscription/native-purchase-disclosure.ts)、[操作元件](../components/subscription/NativeSubscriptionActions.tsx) | [購買流程](../tests/native-purchase-workflow.test.ts)、[揭露](../tests/native-purchase-disclosure.test.ts)、[平台邊界](../tests/platform-in-app-purchase-boundary.test.ts) |
 | Apple／Google 商品映射與商店名稱 | [商品映射 JSON](subscription/NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json)、[商品 metadata](subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json)、[拓樸](subscription/NATIVE_STORE_CATALOG_TOPOLOGY_2026_08_06.md) | [catalog](../lib/subscription/native-store-catalog.ts)、[config parser](../lib/subscription/native-store-catalog-config.ts)、[metadata model](../lib/subscription/native-store-product-metadata.ts)、[檢查腳本](../scripts/check-native-store-catalog-config.ts) | [映射](../tests/native-store-catalog-config.test.ts)、[商品 metadata](../tests/native-store-product-metadata.test.ts) |
@@ -62,6 +65,8 @@
 
 第 6 節初次收錄 303 個來源檔，不含本索引及 `.codex-artifacts` 本機產物。包含目前工作目錄的可讀文字檔，不是遠端部署盤點。來源：306 個字詞命中，核對排除 7 個一般事件訂閱，再加入 4 個依檔名／直接引用找到的接線檔。
 
+2026-10-23 增量新增訂閱制度整備報告與新方案價格／活動後台需求共 2 份，目前清單共 305 個來源檔。這次沒有重新盤點全部歷史檔案或宣稱雲端啟用狀態已更新。
+
 排除 node_modules、.next、out 等產物、Git 忽略檔、密鑰環境檔、套件鎖定檔與二進位圖片。圖片與截圖沿素材 manifest 查找；本索引不是所有二進位素材的清單。
 
 直接 import 關聯包含型別及動態引用，最多列前 5 個引用者；這不是執行或啟用證明。框架路由、HTTP、SQL RPC、動態讀檔與文件字串不一定出現在 import 欄。
@@ -78,9 +83,9 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 
 ## 6. 完整來源清單
 
-| 分類 | 初次來源檔數 |
+| 分類 | 目前來源檔數 |
 | --- | ---: |
-| 核心訂閱文件與設定 | 49 |
+| 核心訂閱文件與設定 | 51 |
 | 相鄰文件：帳號刪除與訂閱關係 | 10 |
 | 其他政策、發布、功能與歷史文件 | 53 |
 | 訂閱核心程式 | 33 |
@@ -90,12 +95,14 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 | 檢查、驗證與操作腳本 | 17 |
 | 自動測試與測試資料 | 70 |
 | 專案設定、資料與其他資源 | 5 |
-| 合計（不含本索引） | 303 |
+| 合計（不含本索引） | 305 |
 
 ### 核心訂閱文件與設定
 
 | 檔案 | 用途／狀態 | 直接 import 引用者（導航用） |
 | --- | --- | --- |
+| [docs/subscription/SUBSCRIPTION_PRICING_PROMOTION_ADMIN_REQUIREMENTS_2026_10_23.md](subscription/SUBSCRIPTION_PRICING_PROMOTION_ADMIN_REQUIREMENTS_2026_10_23.md) | 新兩級方案、249／2490 牌價與首發優惠；已確認調價政策、月繳 60 天通知、年繳續訂調整、限期保價、三類價格管理、訂戶明細及 ADMIN-PRICE-01～06 待辦；尚未實作。 | 最新需求入口，不能當成 runtime 或商店啟用證據。 |
+| [docs/subscription/SUBSCRIPTION_RULES_ALIGNMENT_2026_10_23.md](subscription/SUBSCRIPTION_RULES_ALIGNMENT_2026_10_23.md) | 舊 Free／Pro／Team 與員工屬 Team 的確認及 runtime 快照；付費 gate、付款接線缺口與共用時間補強；頁首導向同日新方案決策。 | 文件導航，不是 runtime 啟用或 gate 完成證據。 |
 | [docs/subscription/BILLING_DATA_SECURITY_DESIGN.md](subscription/BILLING_DATA_SECURITY_DESIGN.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [docs/subscription/BILLING_LIFECYCLE_STATE_MACHINE.md](subscription/BILLING_LIFECYCLE_STATE_MACHINE.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [docs/subscription/BILLING_PROVIDER_ADAPTER_CONTRACT.md](subscription/BILLING_PROVIDER_ADAPTER_CONTRACT.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
@@ -109,7 +116,7 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 | [docs/subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json](subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.json) | 機器可讀草稿／狀態／檢查設定。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [docs/subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.md](subscription/NATIVE_EXTERNAL_ACCOUNT_READINESS_2026_08_06.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [docs/subscription/NATIVE_LAUNCH_GATE_CHECK.md](subscription/NATIVE_LAUNCH_GATE_CHECK.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
-| [docs/subscription/NATIVE_LAUNCH_PROMOTION_CODE_DESIGN_2026_08_17.md](subscription/NATIVE_LAUNCH_PROMOTION_CODE_DESIGN_2026_08_17.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
+| [docs/subscription/NATIVE_LAUNCH_PROMOTION_CODE_DESIGN_2026_08_17.md](subscription/NATIVE_LAUNCH_PROMOTION_CODE_DESIGN_2026_08_17.md) | 舊 Pro／Team、FERIA50 與續訂鎖價歷史設計；頁首導向新的限期首購與活動後台需求。 | 不能將歷史 Gate 2 描述或舊優惠政策當成最新啟用／新方案狀態。 |
 | [docs/subscription/NATIVE_PURCHASE_DISCLOSURE_CONTRACT_2026_08_06.md](subscription/NATIVE_PURCHASE_DISCLOSURE_CONTRACT_2026_08_06.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [docs/subscription/NATIVE_RECONCILIATION_FOUNDATION_EVIDENCE_2026_10_20.md](subscription/NATIVE_RECONCILIATION_FOUNDATION_EVIDENCE_2026_10_20.md) | 日期／環境限定的報告，可能保留歷史。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [docs/subscription/NATIVE_RECONCILIATION_FOUNDATION_REVIEW_2026_10_20.md](subscription/NATIVE_RECONCILIATION_FOUNDATION_REVIEW_2026_10_20.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
@@ -246,7 +253,7 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 | [lib/subscription/native-store-product-metadata.ts](../lib/subscription/native-store-product-metadata.ts) | 訂閱／帳號刪除共用程式。 | [scripts/check-native-store-product-metadata.ts](../scripts/check-native-store-product-metadata.ts)<br>[tests/native-store-product-metadata.test.ts](../tests/native-store-product-metadata.test.ts) |
 | [lib/subscription/native-store-verification-contract.ts](../lib/subscription/native-store-verification-contract.ts) | 商店驗證介面／型別；沒有真實 verifier。 | [lib/subscription/native-reconciliation-decision.ts](../lib/subscription/native-reconciliation-decision.ts)<br>[lib/subscription/native-reconciliation.server.ts](../lib/subscription/native-reconciliation.server.ts)<br>[tests/fixtures/native-store-verification.ts](../tests/fixtures/native-store-verification.ts)<br>[tests/native-reconciliation-foundation.test.ts](../tests/native-reconciliation-foundation.test.ts)<br>[tests/native-store-verification-contract.test.ts](../tests/native-store-verification-contract.test.ts) |
 | [lib/subscription/subscription-access.ts](../lib/subscription/subscription-access.ts) | 角色、方案、操作、資料與 runtime gate 的判斷。 | [components/subscription/FeatureLimitDialog.tsx](../components/subscription/FeatureLimitDialog.tsx)<br>[components/subscription/UpgradePrompt.tsx](../components/subscription/UpgradePrompt.tsx)<br>[lib/analytics/subscription-view.ts](../lib/analytics/subscription-view.ts)<br>[lib/products/product-cover-photo-server.ts](../lib/products/product-cover-photo-server.ts)<br>[lib/reporting/settlement-subscription-view.ts](../lib/reporting/settlement-subscription-view.ts)<br>另 5 個，請搜尋模組名稱。 |
-| [lib/subscription/subscription-capabilities.ts](../lib/subscription/subscription-capabilities.ts) | 帳號權益、功能、額度與有效期限的共用模型。 | [lib/subscription/account-capability-client.ts](../lib/subscription/account-capability-client.ts)<br>[lib/subscription/account-capability-contract.ts](../lib/subscription/account-capability-contract.ts)<br>[lib/subscription/account-capability-server.ts](../lib/subscription/account-capability-server.ts)<br>[lib/subscription/native-account-entitlement.ts](../lib/subscription/native-account-entitlement.ts)<br>[lib/subscription/subscription-access.ts](../lib/subscription/subscription-access.ts)<br>另 10 個，請搜尋模組名稱。 |
+| [lib/subscription/subscription-capabilities.ts](../lib/subscription/subscription-capabilities.ts) | 帳號權益、功能、額度與有效期限的共用模型；拒絕有填但無效的到期日與非有限評估時間，保留明確 null 的既有授權語意。 | [lib/subscription/account-capability-client.ts](../lib/subscription/account-capability-client.ts)<br>[lib/subscription/account-capability-contract.ts](../lib/subscription/account-capability-contract.ts)<br>[lib/subscription/account-capability-server.ts](../lib/subscription/account-capability-server.ts)<br>[lib/subscription/native-account-entitlement.ts](../lib/subscription/native-account-entitlement.ts)<br>[lib/subscription/subscription-access.ts](../lib/subscription/subscription-access.ts)<br>另 10 個，請搜尋模組名稱。 |
 | [lib/subscription/subscription-capability-implementation.ts](../lib/subscription/subscription-capability-implementation.ts) | 實際功能接線／執行狀態。 | [tests/subscription-capability-implementation.test.ts](../tests/subscription-capability-implementation.test.ts) |
 | [lib/subscription/subscription-center-view.ts](../lib/subscription/subscription-center-view.ts) | 訂閱／帳號刪除共用程式。 | [components/subscription/SubscriptionAccountSummary.tsx](../components/subscription/SubscriptionAccountSummary.tsx)<br>[tests/subscription-center-view.test.ts](../tests/subscription-center-view.test.ts) |
 | [lib/subscription/subscription-plans.ts](../lib/subscription/subscription-plans.ts) | 方案代碼、功能定義、候選額度。 | [app/api/dev/subscription-simulation/route.ts](../app/api/dev/subscription-simulation/route.ts)<br>[components/subscription/FeatureLimitDialog.tsx](../components/subscription/FeatureLimitDialog.tsx)<br>[components/subscription/SubscriptionSimulationPanel.tsx](../components/subscription/SubscriptionSimulationPanel.tsx)<br>[components/subscription/UpgradePrompt.tsx](../components/subscription/UpgradePrompt.tsx)<br>[lib/subscription/account-capability-client.ts](../lib/subscription/account-capability-client.ts)<br>另 11 個，請搜尋模組名稱。 |
@@ -417,7 +424,7 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 | [tests/subscription-center-ui.test.ts](../tests/subscription-center-ui.test.ts) | 測試、合成資料或結構守門。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [tests/subscription-center-view.test.ts](../tests/subscription-center-view.test.ts) | 測試、合成資料或結構守門。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [tests/subscription-feature-gate-mapping.test.ts](../tests/subscription-feature-gate-mapping.test.ts) | 測試、合成資料或結構守門。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
-| [tests/subscription-feature-gates.test.ts](../tests/subscription-feature-gates.test.ts) | 測試、合成資料或結構守門。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
+| [tests/subscription-feature-gates.test.ts](../tests/subscription-feature-gates.test.ts) | 方案、角色、時效、降級保留與授權回歸；含 Pro／Team 無效期限、非有限時間、離線拒絕及明確無期限授權。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [tests/subscription-plan-model.test.ts](../tests/subscription-plan-model.test.ts) | 測試、合成資料或結構守門。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [tests/subscription-price-catalog-foundation.test.ts](../tests/subscription-price-catalog-foundation.test.ts) | 測試、合成資料或結構守門。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [tests/subscription-price-foundation-authenticated-smoke.test.ts](../tests/subscription-price-foundation-authenticated-smoke.test.ts) | 測試、合成資料或結構守門。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
@@ -462,3 +469,7 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 | 日期 | 變更 | 核對方式 |
 | --- | --- | --- |
 | 2026-10-20 | 建立變更導航、303 個來源檔索引、執行狀態與維護規則 | 檔案掃描、直接 import、關鍵程式與連結核對；沒有啟用產品服務 |
+| 2026-10-23 | 新增制度整備報告，總數 304；確認員工仍屬 Team，補強共用層無效到期日／評估時間拒絕授權 | 本機來源與 canonical 任務核對、先失敗後修正的權益回歸；未變更方案、價格、SQL 或付款啟用 |
+| 2026-10-23 | 新增已確認價格／首購優惠與可設定營運後台需求，總數 305；舊制度與 FERIA50 文件標示歷史入口 | 核對本機價格模型、migration 066、canonical gates、Apple／Google 官方規則及文件連結；只更新需求與導航，未啟用收費 |
+| 2026-10-23 | 依使用者要求增補新客牌價、優惠到期價格、舊客調價批次、逐戶價格及通知歷程與 5 項待辦；來源檔總數仍為 305 | 文件內容、連結與差異核對；未實作後台、核定通知天數或執行調價 |
+| 2026-10-23 | 使用者確認未來調價政策：首發優惠按揭露還原、既有月繳至少提前 60 天通知、年繳於符合條件續訂調整、早期用戶限期保價；待辦增至 6 項，來源檔總數仍為 305 | 核對本輪決策、移除 60 天尚未核定的現行描述、文件連結與差異；未實作或執行調價，一年保價仍為活動範例 |

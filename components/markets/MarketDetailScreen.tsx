@@ -82,8 +82,9 @@ import { normalizeMarketRouteId, shouldShowMarketDetailLoading } from '@/lib/mar
 import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
-import { getDealEventDate, getDealEventRevenue, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
+import { countDealRecordsByDate, getDealEventDate, getDealEventRevenue, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
 import { buildMarketInteractionSummary } from '@/lib/markets/market-interaction-summary';
+import { calculateMarketDurationLabel } from '@/lib/markets/market-form';
 import {
   completeMarketDetailTransition,
   readMarketDetailTransition,
@@ -303,6 +304,7 @@ export function MarketDetailScreen() {
   // 互動行為數據狀態
   const [interactionEvents, setInteractionEvents] = useState<Event<InteractionRecordedPayload>[]>([]);
   const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
+  const dealRecordCountByDate = useMemo(() => countDealRecordsByDate(dealEvents), [dealEvents]);
   const [buttonLabels, setButtonLabels] = useState<Record<string, { label: string; role: InteractionButton['role'] }>>({});
   const selectedDealPhotoEvidence = useMemo(
     () => findSalesPhotoEvidenceOwnerImageForSale(ownerSalesPhotoEvidenceRows, selectedDeal?.id),
@@ -1024,6 +1026,8 @@ export function MarketDetailScreen() {
 
   const salesPhotoEvidenceFlow = useSalesPhotoEvidenceFlow({
     marketId,
+    actorId: user?.id,
+    recoveryOwnerId: !isStaff && !isRoleLoading && market?.owner_id === user?.id ? user?.id : null,
     canHandleItem: isLocalSalesPhotoEvidenceCaptureAllowed,
     onUploadCompleted: loadOwnerSalesPhotoEvidenceAlbumRows,
     initialView: searchParams.get('task') === 'pending-photos' ? 'pending_list' : undefined,
@@ -1168,14 +1172,14 @@ export function MarketDetailScreen() {
             </p>
             {dbStatus.recoverable && (
               <p className="text-muted-foreground text-sm">
-                建議前往「資料修復」頁面嘗試還原資料庫。
+                請保留這台裝置的資料，重新開啟頁面；若問題持續，可前往支援頁取得協助。
               </p>
             )}
             <button
-              onClick={() => router.push('/recovery')}
+              onClick={() => router.push('/support')}
               className="w-full bg-secondary text-white px-6 py-3 rounded-2xl hover:bg-secondary/85 transition-colors font-medium"
             >
-              前往資料修復
+              取得協助
             </button>
             <button
               onClick={() => router.push('/markets')}
@@ -1347,7 +1351,7 @@ export function MarketDetailScreen() {
               ? [
                   { label: '總收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
                   {
-                    label: '淨利潤',
+                    label: '估計淨利',
                     value: formatCurrency(
                       (market.totalProfit || 0) -
                       (market.boothCost || 0) -
@@ -1365,11 +1369,11 @@ export function MarketDetailScreen() {
                     label: '待補照片',
                     value: salesPhotoEvidenceFlow.pendingCount > 0
                       ? `${salesPhotoEvidenceFlow.pendingCount} 筆`
-                      : '照片已齊',
-                    onClick: salesPhotoEvidenceFlow.pendingCount > 0
-                      ? handleOpenPendingSalesPhotoEvidence
-                      : undefined,
-                    actionLabel: `處理 ${salesPhotoEvidenceFlow.pendingCount} 筆待補照片`,
+                      : salesPhotoEvidenceFlow.isLoadingPendingItems ? '確認中…'
+                      : salesPhotoEvidenceFlow.pendingItemsError ? '尚未確認'
+                      : '本機無待補',
+                    onClick: handleOpenPendingSalesPhotoEvidence,
+                    actionLabel: '查看本機待補照片與資料範圍',
                   },
                 ]}
         />
@@ -1420,7 +1424,10 @@ export function MarketDetailScreen() {
         ].includes(operatingSession?.phase ?? '') && (
           <div className="mb-4 flex items-start gap-3 rounded-card bg-atelier-apricot-soft/70 px-4 py-3 text-sm text-atelier-muted shadow-sm">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-            <span>{operatingSession?.message ?? '目前不在營業時段，交易功能會在營業期間顯示。'}</span>
+            <div className="min-w-0">
+              <p>{operatingSession?.message ?? '目前不在營業時段，交易功能會在營業期間顯示。'}</p>
+              <button type="button" onClick={() => setOwnerWorkspaceView('manage')} className="mt-2 min-h-11 font-medium text-primary underline underline-offset-4">查看市集管理</button>
+            </div>
           </div>
         )}
         {/* 營業中時的操作區 - 根據自動判斷顯示 */}
@@ -1772,6 +1779,7 @@ export function MarketDetailScreen() {
           />
           <DailyRevenueStats
             market={market}
+            dealRecordCountByDate={dealRecordCountByDate}
             onAddRevenue={handleOpenAddRevenue}
             onDateClick={handleDateClick}
             showTotals={false}
@@ -2136,29 +2144,13 @@ export function MarketDetailScreen() {
                 <div className="bg-soft-green rounded-xl p-3 text-center">
                   <p className="text-xs text-muted-foreground mb-1">營業時長</p>
                   <p className="text-lg font-bold text-primary">
-                    {(() => {
-                      const start = market.operatingStartTime.split(':');
-                      const end = market.operatingEndTime.split(':');
-                      const startMinutes = parseInt(start[0]) * 60 + parseInt(start[1]);
-                      const endMinutes = parseInt(end[0]) * 60 + parseInt(end[1]);
-                      const duration = endMinutes - startMinutes;
-                      return `${Math.floor(duration / 60)}h`;
-                    })()}
+                    {calculateMarketDurationLabel(market.operatingStartTime, market.operatingEndTime)}
                   </p>
                 </div>
                 <div className="bg-soft-pink rounded-xl p-3 text-center">
                   <p className="text-xs text-muted-foreground mb-1">總時長</p>
                   <p className="text-lg font-bold text-secondary">
-                    {(() => {
-                      const checkIn = market.checkInTime?.split(':') || market.operatingStartTime.split(':');
-                      const end = market.operatingEndTime.split(':');
-                      const startMinutes = parseInt(checkIn[0]) * 60 + parseInt(checkIn[1]);
-                      const endMinutes = parseInt(end[0]) * 60 + parseInt(end[1]);
-                      const duration = endMinutes - startMinutes;
-                      const hours = Math.floor(duration / 60);
-                      const minutes = duration % 60;
-                      return minutes > 0 ? `${hours}h${minutes}m` : `${hours}h`;
-                    })()}
+                    {calculateMarketDurationLabel(market.checkInTime, market.operatingEndTime)}
                   </p>
                 </div>
               </div>
@@ -2474,6 +2466,7 @@ export function MarketDetailScreen() {
         pendingItems={salesPhotoEvidenceFlow.pendingItems}
         isLoadingPendingItems={salesPhotoEvidenceFlow.isLoadingPendingItems}
         pendingItemsError={salesPhotoEvidenceFlow.pendingItemsError}
+        pendingScopeMessage={salesPhotoEvidenceFlow.pendingScopeMessage}
         payloadRefreshByQueueId={salesPhotoEvidenceFlow.payloadRefreshByQueueId}
         canHandleItem={isLocalSalesPhotoEvidenceCaptureAllowed}
         onCapture={(item, source) => void salesPhotoEvidenceFlow.capture(item, source)}

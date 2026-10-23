@@ -15,7 +15,8 @@ export interface MarketHydrationResult {
  */
 export async function batchHydrateMarkets(
   marketIds: Set<string>,
-  infoLevel: InfoLevel
+  infoLevel: InfoLevel,
+  assertActive: () => void = () => undefined,
 ): Promise<MarketHydrationResult> {
   const hydrated = new Set<string>();
   const missing = new Set<string>();
@@ -27,8 +28,9 @@ export async function batchHydrateMarkets(
   }
 
   const notYetLocal: string[] = [];
-  for (const marketId of toFetch) {
-    const exists = await db.markets.get(marketId);
+  const localMarkets = await db.markets.bulkGet(toFetch);
+  for (const [index, marketId] of toFetch.entries()) {
+    const exists = localMarkets[index];
     if (!exists) {
       notYetLocal.push(marketId);
     } else {
@@ -53,6 +55,7 @@ export async function batchHydrateMarkets(
 
   const foundIds = new Set<string>();
   if (markets) {
+    const localRows = [];
     for (const market of markets) {
       foundIds.add(market.id);
       const localMarket = marketRowToLocal(market);
@@ -62,9 +65,11 @@ export async function batchHydrateMarkets(
       const reset = resetMarketProjectionFields(
         sanitized as unknown as typeof localMarket
       );
-      await db.markets.put(reset as unknown as typeof localMarket);
+      localRows.push(reset as unknown as typeof localMarket);
       hydrated.add(market.id);
     }
+    assertActive();
+    await db.markets.bulkPut(localRows);
   }
 
   for (const id of notYetLocal) {

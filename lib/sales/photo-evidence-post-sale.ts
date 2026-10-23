@@ -1,4 +1,5 @@
 import type { DealClosedPayload } from '@/types/db';
+import { readSalesPhotoEvidenceRequirementSnapshot } from '@/lib/sales/photo-evidence-requirement-snapshot';
 import {
   createSalesPhotoEvidenceRequirementDecision,
   type SalesPhotoEvidenceExistingRow,
@@ -58,9 +59,26 @@ export type RecordDealWithPhotoEvidenceResult = {
 export async function recordDealWithPhotoEvidenceRequirement(
   input: RecordDealWithPhotoEvidenceInput
 ): Promise<RecordDealWithPhotoEvidenceResult> {
-  const dealEventId = await input.recordDeal(input.deal, input.dealDate);
+  const completedAt = new Date(input.saleCompletedAt);
+  const snapshot = readSalesPhotoEvidenceRequirementSnapshot({
+    version: 1,
+    required: input.marketRequiresEvidence,
+    ownerId: input.ownerId,
+    marketId: input.marketId,
+    capturedByStaffId: input.capturedByStaffId ?? null,
+    saleCompletedAt: Number.isFinite(completedAt.getTime()) ? completedAt.toISOString() : '',
+  });
+  const dealMarketId = 'marketId' in input.deal ? input.deal.marketId : input.deal.market_id;
+  // Commit the requirement with the sale, before the separate local queue write.
+  // An invalid photo context must still not discard a successfully recorded sale.
+  const validSnapshot = snapshot?.marketId === dealMarketId ? snapshot : null;
+  const dealEventId = await input.recordDeal({
+    ...input.deal,
+    photoEvidenceRequirement: validSnapshot ?? undefined,
+  }, input.dealDate);
 
   try {
+    if (!validSnapshot) throw new Error('Invalid sale photo requirement context');
     const decision = createSalesPhotoEvidenceRequirementDecision({
       ownerId: input.ownerId,
       marketId: input.marketId,

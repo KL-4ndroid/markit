@@ -83,6 +83,12 @@ export function TimePicker({
       id={id}
       type="text"
       readOnly
+      onKeyDown={event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          if (!disabled) pickerRef.current?.open();
+        }
+      }}
       value={value}
       placeholder={placeholder}
       required={required}

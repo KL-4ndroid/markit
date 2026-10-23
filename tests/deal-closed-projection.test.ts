@@ -5,12 +5,20 @@ import {
   getDealClosedManualProjection,
   getDealClosedMode,
   getDealClosedTransactionDate,
+  getDealClosedRecordTimestamp,
   getDealClosedHandlerItemProjection,
   type ProductSnapshotForDealProjection,
 } from '../lib/db/deal-closed-projection';
 import type { DealClosedPayload, Event } from '../types/db';
 
 const TS = new Date(2026, 5, 11, 10, 30, 0).getTime();
+
+assert.equal(getDealClosedRecordTimestamp({ isBackfill: true, dealDate: '2026-06-11' }, TS), TS, 'same-day backfill cannot use a future time');
+assert.equal(getDealClosedRecordTimestamp({ isBackfill: true, dealDate: '2026-06-10' }, TS), new Date(2026, 5, 10, 23, 59, 59, 999).getTime(), 'past-day grouping stays compatible');
+assert.equal(getDealClosedRecordTimestamp({ isBackfill: false, dealDate: '2026-06-10' }, TS), TS);
+assert.equal(getDealClosedRecordTimestamp({ isBackfill: true, dealDate: '2026-06-12' }, TS), TS);
+assert.equal(getDealClosedRecordTimestamp({ isBackfill: true, dealDate: '2026-02-30' }, TS), TS, 'invalid date must not create a NaN/rolled date timestamp');
+assert.equal(getDealClosedRecordTimestamp({ isBackfill: true, dealDate: 'bad-date' }, TS), TS);
 
 function deal(payload: Record<string, unknown>, timestamp = TS): Event<DealClosedPayload> {
   return {

@@ -43,7 +43,7 @@ assert.match(debugLayout, /index: false/);
 assert.match(debugLayout, /follow: false/);
 
 const productionProxy = read('proxy.ts');
-assert.match(productionProxy, /matcher: \['\/debug\/:path\*'\]/);
+assert.match(productionProxy, /matcher: \['\/debug\/:path\*', '\/recovery\/:path\*', '\/settings\/data\/:path\*'\]/);
 assert.match(productionProxy, /isInternalTestSurfaceAvailable\(\)/);
 assert.match(productionProxy, /status: 404/);
 assert.match(productionProxy, /'Cache-Control': 'no-store'/);

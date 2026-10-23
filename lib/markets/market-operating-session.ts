@@ -198,7 +198,12 @@ export function resolveMarketOperatingSession(
   }
 
   if (!READY_STATUSES.has(market.status) || sessions.length === 0) {
-    return buildResult('unavailable', 'not-started', null);
+    const statusMessage = market.status === 'cancelled'
+      ? '這場市集已取消，現場記錄不開放。既有紀錄仍可從回顧查看。'
+      : !READY_STATUSES.has(market.status)
+        ? '目前報名進度尚未到「已繳費」。請先由老闆或管理員核對並更新報名進度，再依營業時段開放現場記錄。'
+        : '尚未設定完整的市集日期與營業起訖時間。請由老闆或管理員在市集管理中補齊。';
+    return buildResult('unavailable', 'not-started', null, { message: statusMessage });
   }
 
   const officialSession = sessions.find(
@@ -237,7 +242,9 @@ export function resolveMarketOperatingSession(
     }
 
     const nextSession = sessions.find(session => nowAt < session.flexibleStartAt) ?? null;
-    return buildResult('upcoming', 'not-started', nextSession);
+    return buildResult('upcoming', 'not-started', nextSession, nextSession ? {
+      message: `下一場於 ${new Date(nextSession.officialStartAt).toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })} 開始營業；${new Date(nextSession.flexibleStartAt).toLocaleString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })} 起可由老闆或管理員手動提前開始。可先確認場次安排。`,
+    } : {});
   }
 
   const manuallyClosed =

@@ -74,10 +74,10 @@ runTest('useSync keeps push before pull in the main sync cycle', () => {
 
 runTest('useSync callback tracks infoLevel used by pull routing', () => {
   assert.match(hookSource, /const effectiveInfoLevel = roleInfoLevel \?\? 3/);
-  assert.match(hookSource, /await pullAllEvents\(user\.id,[\s\S]*effectiveInfoLevel\)/);
+  assert.match(hookSource, /await pullAllEvents\(user\.id,[\s\S]*effectiveInfoLevel, assertActive\)/);
   assert.match(
     hookSource,
-    /\}, \[enabled,\s*isConfigured,\s*user,\s*accessToken,\s*effectiveInfoLevel\]\);/
+    /\}, \[enabled,\s*isConfigured,\s*user,\s*accessToken,\s*effectiveInfoLevel,\s*syncIdentity\]\);/
   );
 });
 
@@ -94,8 +94,8 @@ runTest('sync runtime state service owns global state and lock contracts', () =>
   assert.match(hookSource, /useState<SyncState>\(getGlobalSyncState\(\)\)/);
   assert.match(hookSource, /return subscribeGlobalSyncState\(listener\)/);
   assert.match(hookSource, /if\s*\(!acquireSyncLock\(\)\)/);
-  assert.match(hookSource, /releaseSyncLock\(\)[\s\S]*status:\s*SyncStatus\.OFFLINE/);
-  assert.match(hookSource, /finally\s*\{[\s\S]*releaseSyncLock\(\)/);
+  assert.match(hookSource, /releaseSyncLock\(lockGeneration\)[\s\S]*status:\s*SyncStatus\.OFFLINE/);
+  assert.match(hookSource, /finally\s*\{[\s\S]*releaseSyncLock\(lockGeneration\)/);
   assert.match(hookSource, /if\s*\(hasSetupSyncIntervals\(\)\)/);
   assert.match(hookSource, /markSyncIntervalsSetup\(\)/);
   assert.match(hookSource, /if\s*\(!hasExecutedInitialSyncFlag\(\)\)/);
@@ -210,20 +210,21 @@ runTest('pullAllEvents sends staff sessions to view pull and refuses owner fallb
   assert.match(body, /if\s*\(infoLevel\s*<\s*3\)\s*\{/);
   assert.match(body, /await pullEventsFromViews\(userId,\s*onProgress,\s*infoLevel\)/);
   assert.match(body, /throw error/);
-  assert.match(body, /await pullOwnerEvents\(userId,\s*onProgress,\s*infoLevel\)/);
-  assertBefore(body, 'if (infoLevel < 3)', 'await pullOwnerEvents(userId, onProgress, infoLevel)');
+  assert.match(body, /await pullOwnerEvents\(userId,\s*onProgress,\s*infoLevel,\s*assertActive\)/);
+  assertBefore(body, 'if (infoLevel < 3)', 'await pullOwnerEvents(userId, onProgress, infoLevel, assertActive)');
 });
 
 runTest('owner pull uses created_at cursor and owner projection reconciliation', () => {
   const body = findFunctionBody(syncSources, 'pullOwnerEvents');
 
   assert.match(hookSource, /import \{ pullOwnerEvents \} from ['"]@\/lib\/sync\/owner-pull-service['"]/);
-  assert.match(body, /const lastSyncAt\s*=\s*await getLastSyncTimestamp\(\)/);
-  assert.match(body, /\.gt\(['"]created_at['"],\s*new Date\(lastSyncAt\)\.toISOString\(\)\)/);
-  assert.match(body, /\.map\(e\s*=>\s*new Date\(e\.created_at\)\.getTime\(\)\)/);
-  assert.match(body, /const hydrationMarketIds\s*=\s*new Set<string>\(marketIds\)/);
-  assert.match(body, /hydrationMarketIds\.add\(eventMarketId\)/);
-  assert.match(body, /await batchHydrateMarkets\(hydrationMarketIds,\s*infoLevel\)/);
+  assert.match(body, /await getLastSyncTimestamp\(\)/);
+  assert.match(body, /\.gte\(['"]created_at['"],\s*new Date\(lastSyncAt\)\.toISOString\(\)\)/);
+  assert.match(body, /\.map\(e\s*=>\s*Date\.parse\(e\.created_at\)\)/);
+  assert.match(body, /const hydrationIds\s*=\s*new Set\(marketIds\)/);
+  assert.match(body, /hydrationIds\.add\(id\)/);
+  assert.match(body, /await batchHydrateMarkets\(hydrationIds,\s*infoLevel,\s*assertActive\)/);
+  assertBefore(body, 'await replayOwnerEvents(', 'await updateLastSyncTimestamp(');
   assert.match(body, /await updateLastSyncTimestamp\(Math\.max\(\.\.\.validCreatedAt\)\)/);
   assert.match(body, /await reconcileSyncedProjectionMarkets\(touchedMarketIds,\s*['"]owner-full['"]\)/);
 });
@@ -253,7 +254,7 @@ runTest('owner market hydration preserves local-first fetch and sanitized cache 
   const body = findFunctionBody(syncSources, 'batchHydrateMarkets');
   const gateBody = findFunctionBody(syncSources, 'marketGateForLevel');
 
-  assert.match(body, /const exists\s*=\s*await db\.markets\.get\(marketId\)/);
+  assert.match(body, /await db\.markets\.bulkGet\(toFetch\)/);
   assert.match(body, /notYetLocal\.push\(marketId\)/);
   assert.match(body, /hydrated\.add\(marketId\)/);
   assert.match(body, /\.from\(['"]markets['"]\)[\s\S]*\.select\(['"]\*['"]\)[\s\S]*\.in\(['"]id['"],\s*notYetLocal\)/);
@@ -261,7 +262,7 @@ runTest('owner market hydration preserves local-first fetch and sanitized cache 
   assert.match(body, /marketRowToLocal\(market\)/);
   assert.match(body, /marketGateForLevel\(infoLevel\)\.sanitizeMarketProjection/);
   assert.match(body, /resetMarketProjectionFields\(/);
-  assert.match(body, /await db\.markets\.put\(reset as unknown as typeof localMarket\)/);
+  assert.match(body, /await db\.markets\.bulkPut\(localRows\)/);
   assert.match(body, /if\s*\(!foundIds\.has\(id\)\)\s*missing\.add\(id\)/);
   assert.match(gateBody, /createPermissionGate\(\{\s*infoLevel,\s*entity:\s*['"]market['"]\s*\}\)/);
 });

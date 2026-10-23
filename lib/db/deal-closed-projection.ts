@@ -53,6 +53,17 @@ export function getDealClosedTransactionDate(event: Event<DealClosedPayload>): s
   return getDealEventDate(event);
 }
 
+/** Keep historical grouping, but never date today's backfill into the future. */
+export function getDealClosedRecordTimestamp(payload: Pick<DealClosedPayload, 'isBackfill' | 'dealDate'>, recordedAt: number): number {
+  if (payload.isBackfill !== true || !payload.dealDate) return recordedAt;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(payload.dealDate);
+  if (!match) return recordedAt;
+  const [, year, month, day] = match.map(Number);
+  const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+  if (end.getFullYear() !== year || end.getMonth() !== month - 1 || end.getDate() !== day) return recordedAt;
+  return Math.min(recordedAt, end.getTime());
+}
+
 export function getDealClosedManualProjection(event: Event<DealClosedPayload>): ManualDealProjection {
   const revenue = getDealEventRevenue(event);
   const cost = getDealEventCost(event);

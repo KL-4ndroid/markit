@@ -20,7 +20,7 @@ import { StaffBadge } from '@/components/staff/StaffBadge';
 import { SyncStatus } from '@/hooks/useSync';
 import { useRoleContext } from '@/lib/role-context';
 import { db } from '@/lib/db';
-import { startMarket, useMarkets } from '@/lib/db/hooks';
+import { startMarket, useMarketsQuery } from '@/lib/db/hooks';
 import {
   buildTodayViewModel,
 } from '@/lib/home/today-view-model';
@@ -110,14 +110,14 @@ export default function HomePage() {
   const router = useRouter();
   const { user } = useAuth();
   const { userRole, isStaff, isOwner, roleRefreshState } = useRoleContext();
-  const { status, pendingCount, sync } = useSyncContext();
+  const { status, pendingCount, sync, lastSyncAt } = useSyncContext();
   const [now, setNow] = useState(() => new Date());
   const [ownerBrandName, setOwnerBrandName] = useState('Féria - 出攤筆記');
   const [startingMarketId, setStartingMarketId] = useState<string | null>(null);
 
   const currentOwnerId = isStaff ? userRole.ownerId : user?.id;
   const scopedOwnerId = currentOwnerId ?? DASHBOARD_ROLE_NOT_READY_OWNER_ID;
-  const allMarkets = useMarkets({
+  const { markets: allMarkets, isLoading: marketsLoading, error: marketsError } = useMarketsQuery({
     orderBy: 'startDate',
     order: 'asc',
     ownerId: scopedOwnerId,
@@ -223,6 +223,19 @@ export default function HomePage() {
     ? `${userRole.ownerEmail.split('@')[0]} 團隊`
     : '團隊工作區';
   const greeting = getGreeting(now);
+
+  // An unresolved query or a first cloud restore cannot prove an empty account.
+  if (marketsLoading || marketsError || (allMarkets.length === 0 && user && !lastSyncAt)) {
+    const needsRetry = Boolean(marketsError) || status === SyncStatus.ERROR || status === SyncStatus.OFFLINE;
+    return (
+      <div className="min-h-screen bg-atelier-canvas px-4 py-12 text-center">
+        <p role="status" className="text-sm text-muted-foreground">
+          {needsRetry ? (marketsError ?? '資料尚未載入完成，請連線後重試。') : '正在載入市集資料…'}
+        </p>
+        {needsRetry && <button type="button" onClick={() => sync()} className="mt-4 min-h-11 rounded-control bg-primary px-5 text-white">重新載入</button>}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-atelier-canvas/80 text-atelier-ink">

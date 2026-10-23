@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronRight } from 'lucide-react';
-import { getDealEventDate, getDealEventRevenue, getDealPaymentMethod, isBackfillDealEvent } from '@/lib/markets/event-view-utils';
+import { getDealEventDate, getDealEventRevenue, getDealPaymentMethod, isBackfillDealEvent, getDealItems, getDealItemProductName } from '@/lib/markets/event-view-utils';
 import type { Event, DealClosedPayload } from '@/types/db';
 
 interface DealItemProps {
@@ -16,6 +16,10 @@ interface DealItemProps {
 export function DealItem({ deal, onClick }: DealItemProps) {
   const amount = getDealEventRevenue(deal);
   const paymentMethod = getDealPaymentMethod(deal);
+  const items = getDealItems(deal);
+  const summary = items.length > 0
+    ? `${getDealItemProductName(items[0]) || '未命名商品'}${items.length > 1 ? ` 等 ${items.length} 項` : ''}`
+    : '總額紀錄（無商品明細）';
 
   // 格式化時間顯示
   const time = (() => {
@@ -55,31 +59,35 @@ export function DealItem({ deal, onClick }: DealItemProps) {
   };
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="flex items-center justify-between p-3 bg-background rounded-xl cursor-pointer hover:bg-[#F0F8F6] transition-colors active:scale-[0.98] transform"
+      className="w-full min-h-11 rounded-xl bg-background p-3 text-left transition-colors hover:bg-[#F0F8F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
+      <span className="flex flex-wrap items-center justify-between gap-2">
       {/* 左側：時間 */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <span className="flex items-center gap-2 text-sm text-muted-foreground">
         <span>🕐</span>
         <span className="font-mono font-medium">{time}</span>
-      </div>
+      </span>
 
       {/* 中間：金額 */}
-      <div className="flex items-center gap-1">
+      <span className="flex items-center gap-1">
         <span className="text-lg font-bold text-primary tabular-nums">
           NT$ {amount.toLocaleString()}
         </span>
-      </div>
+      </span>
 
       {/* 右側：支付方式 + 箭頭 */}
-      <div className="flex items-center gap-2">
+      <span className="flex items-center gap-2">
         <span className="text-sm">{paymentIcons[paymentMethod]}</span>
-        <span className="text-xs text-muted-foreground hidden sm:inline">
+        <span className="text-xs text-muted-foreground">
           {paymentLabels[paymentMethod]}
         </span>
         <ChevronRight className="w-4 h-4 text-muted-foreground" />
-      </div>
-    </div>
+      </span>
+      </span>
+      <span className="mt-2 block break-words text-xs text-muted-foreground">{summary}</span>
+    </button>
   );
 }

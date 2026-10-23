@@ -9,6 +9,20 @@ export type MarketCoreFormErrors = Partial<Record<MarketCoreFormErrorKey, string
 
 const MARKET_CORE_ERROR_ORDER: MarketCoreFormErrorKey[] = ['name', 'location', 'dates'];
 
+/** Compare editable values, not formatting differences from cloud time/date serialization. */
+export function hasMarketFormChanges(initial: Record<string, unknown>, current: Record<string, unknown>): boolean {
+  const snapshot = (values: Record<string, unknown>) => JSON.stringify(Object.keys(values).sort().map(key => {
+    let value = values[key];
+    if (key === 'dates' && Array.isArray(value)) value = [...new Set(value)].sort();
+    if (typeof value === 'string') {
+      const text = value.trim();
+      value = key.endsWith('Time') && /^\d{2}:\d{2}:00$/.test(text) ? text.slice(0, 5) : text;
+    }
+    return [key, value];
+  }));
+  return snapshot(initial) !== snapshot(current);
+}
+
 export function validateMarketCoreForm(
   values: MarketCoreFormValues,
   options: { requireIdentity?: boolean } = {},
@@ -48,9 +62,12 @@ export function deriveMarketDateBounds(dates: string[]): {
   };
 }
 
-export function calculateMarketDurationLabel(start: string, end: string): string {
+export function calculateMarketDurationLabel(start?: string | null, end?: string | null): string {
+  const clockPattern = /^(\d{1,2}):(\d{2})(?::\d{2})?$/;
+  if (!start || !end || !clockPattern.test(start) || !clockPattern.test(end)) return '尚未設定';
   const [startHour, startMinute] = start.split(':').map(Number);
   const [endHour, endMinute] = end.split(':').map(Number);
+  if (startHour > 23 || endHour > 23 || startMinute > 59 || endMinute > 59) return '尚未設定';
   const startTotal = startHour * 60 + startMinute;
   let endTotal = endHour * 60 + endMinute;
   if (endTotal < startTotal) endTotal += 24 * 60;

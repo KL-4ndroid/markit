@@ -8,7 +8,15 @@
 import { db } from '@/lib/db';
 import { supabase } from './client';
 import { normalizeEventPayloadForLocal } from '@/lib/data-mappers';
-import type { EventType } from '@/types/db';
+import type { Event, EventType, Market } from '@/types/db';
+
+export function isUnboundLocalMarket(market: Market): boolean {
+  return (!market.owner_id || market.owner_id === 'local') && market.sync_status !== 'synced';
+}
+
+export function isUnboundLocalEvent(event: Event): boolean {
+  return (!event.actor_id || event.actor_id === 'local') && event.sync_status !== 'synced';
+}
 
 /**
  * 檢測本地是否有匿名資料
@@ -24,14 +32,14 @@ export async function detectAnonymousData(currentUserId: string): Promise<{
   try {
     // 檢查本地市集
     const marketCount = await db.markets
-      .filter(m => !m.owner_id || m.owner_id === 'local' || m.owner_id !== currentUserId)
+      .filter(isUnboundLocalMarket)
       .count();
 
     // 找出匿名資料（owner_id 為 'local' 或不屬於當前用戶）
 
     // 檢查本地事件
     const eventCount = await db.events
-      .filter(e => !e.actor_id || e.actor_id === 'local' || e.actor_id !== currentUserId)
+      .filter(isUnboundLocalEvent)
       .count();
 
     return {
@@ -98,7 +106,7 @@ async function migrateLocalDataToUser(currentUserId: string): Promise<void> {
   try {
     await db.transaction('rw', [db.markets, db.events], async () => {
       // 1. 更新所有 markets
-      const markets = await db.markets.toArray();
+      const markets = await db.markets.filter(isUnboundLocalMarket).toArray();
       for (const market of markets) {
         await db.markets.update(market.id!, {
           owner_id: currentUserId,
@@ -108,7 +116,7 @@ async function migrateLocalDataToUser(currentUserId: string): Promise<void> {
       }
 
       // 2. 更新所有 events
-      const events = await db.events.toArray();
+      const events = await db.events.filter(isUnboundLocalEvent).toArray();
       for (const event of events) {
         await db.events.update(event.id!, {
           actor_id: currentUserId,

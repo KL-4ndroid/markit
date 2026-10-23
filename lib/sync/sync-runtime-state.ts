@@ -20,6 +20,7 @@ export interface SyncState {
 let hasExecutedInitialSync = false;
 let hasSetupIntervals = false;
 let isSyncLocked = false;
+let syncLockGeneration = 0;
 let activeSyncIdentity: string | null = null;
 
 let globalSyncState: SyncState = {
@@ -53,6 +54,7 @@ export function resetSyncRuntimeState(): void {
   hasExecutedInitialSync = false;
   hasSetupIntervals = false;
   isSyncLocked = false;
+  syncLockGeneration++;
   updateGlobalState(() => ({
     status: SyncStatus.IDLE,
     lastSyncAt: null,
@@ -79,11 +81,17 @@ export function setActiveSyncIdentity(syncIdentity: string | null): void {
 
 export function acquireSyncLock(): boolean {
   if (isSyncLocked) return false;
+  syncLockGeneration++;
   isSyncLocked = true;
   return true;
 }
 
-export function releaseSyncLock(): void {
+export function getSyncLockGeneration(): number {
+  return syncLockGeneration;
+}
+
+export function releaseSyncLock(generation = syncLockGeneration): void {
+  if (generation !== syncLockGeneration) return;
   isSyncLocked = false;
 }
 

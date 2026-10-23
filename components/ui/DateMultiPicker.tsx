@@ -143,6 +143,13 @@ export function DateMultiPicker({
       disabled={disabled}
       aria-describedby={ariaDescribedBy}
       aria-invalid={ariaInvalid}
+      aria-haspopup="dialog"
+      onKeyDown={event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          if (!disabled) pickerRef.current?.open();
+        }
+      }}
       className={className}
     />
   );

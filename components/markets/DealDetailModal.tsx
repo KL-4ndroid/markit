@@ -109,8 +109,10 @@ export function DealDetailModal({
               成交詳情
             </DialogTitle>
             <button
+              type="button"
+              aria-label="關閉成交詳情"
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-background transition-colors"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-background transition-colors"
             >
               <X className="w-5 h-5 text-muted-foreground" />
             </button>

@@ -49,7 +49,7 @@ const marketPage = read('app/markets/page.tsx');
 const productPage = read('app/products/page.tsx');
 for (const page of [marketPage, productPage]) {
   assert.match(page, /links\.getCurrentUrl\(\)/);
-  assert.match(page, /useSearchParams\(\)\.get\('action'\)/);
+  assert.match(page, /(?:useSearchParams\(\)|searchParams)\.get\('action'\)/);
   assert.match(page, /shortcutAction !== 'add'/);
   assert.match(page, /<Suspense fallback=/);
   assert.match(page, /isStaffMode \|\| !canLoadScopedData \|\| dbStatus\.ok === false/);

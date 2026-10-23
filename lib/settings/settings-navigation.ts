@@ -1,3 +1,5 @@
+import { TEST_TOOLS_ENABLED } from '@/lib/app/build-profile';
+
 export type SettingsDestinationId = 'account' | 'team' | 'sales' | 'data' | 'app';
 
 export interface SettingsDestination {
@@ -43,8 +45,8 @@ const SALES_DESTINATION: SettingsDestination = {
 
 const DATA_DESTINATION: SettingsDestination = {
   id: 'data',
-  label: '資料與救援',
-  description: '檢查資料健康、修復與清除資料',
+  label: '測試資料工具',
+  description: '僅供測試：資料健康、修復與清除',
   href: '/settings/data',
 };
 
@@ -55,7 +57,7 @@ const APP_DESTINATION: SettingsDestination = {
   href: '/settings/app',
 };
 
-export function getSettingsDestinationGroups(isStaff: boolean): SettingsDestinationGroup[] {
+export function getSettingsDestinationGroups(isStaff: boolean, includeTestTools = TEST_TOOLS_ENABLED): SettingsDestinationGroup[] {
   return [
     {
       id: 'workspace',
@@ -67,7 +69,7 @@ export function getSettingsDestinationGroups(isStaff: boolean): SettingsDestinat
     {
       id: 'system',
       label: '系統',
-      items: isStaff ? [APP_DESTINATION] : [DATA_DESTINATION, APP_DESTINATION],
+      items: !isStaff && includeTestTools ? [DATA_DESTINATION, APP_DESTINATION] : [APP_DESTINATION],
     },
   ];
 }

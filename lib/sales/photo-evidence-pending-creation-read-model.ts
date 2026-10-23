@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import type { EventLike } from '@/lib/events/event-read-model';
+import { getEventMarketId, getTombstoneTargetEventId, type EventLike } from '@/lib/events/event-read-model';
 import {
   buildSalesTransactionSummaryFromEvent,
   type SalesTransactionSummary,
@@ -79,8 +79,14 @@ export async function listLocalSalesPhotoEvidencePendingTasksForMarket(
   if (items.length === 0) return [];
 
   const events = await db.events.bulkGet(items.map(item => item.saleEventId));
+  const deletions = await db.events.where('market_id').equals(marketId).filter(event => event.type === 'deal_deleted').toArray();
+  const deletedIds = new Set(deletions.map(getTombstoneTargetEventId));
+  const sourceById = new Map(events.filter(event => event != null).map(event => [event.id, event]));
   return buildSalesPhotoEvidencePendingTaskItems(
-    items,
+    items.filter(item => {
+      const source = sourceById.get(item.saleEventId);
+      return source?.type === 'deal_closed' && getEventMarketId(source) === marketId && !deletedIds.has(item.saleEventId);
+    }),
     events.filter((event): event is NonNullable<typeof event> => event != null)
   );
 }

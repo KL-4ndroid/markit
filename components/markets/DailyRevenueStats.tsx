@@ -24,6 +24,7 @@ interface DailyRevenueStatsProps {
   showTotals?: boolean;
   showInteractions?: boolean;
   reviewMode?: boolean;
+  dealRecordCountByDate?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -41,6 +42,7 @@ export function DailyRevenueStats({
   showTotals = true,
   showInteractions = false,
   reviewMode = false,
+  dealRecordCountByDate,
 }: DailyRevenueStatsProps) {
   const stats = useDateRangeStats(market.startDate, market.endDate);
   const [dateView, setDateView] = useState<'auto' | 'recorded' | 'all' | 'empty'>('auto');
@@ -279,14 +281,17 @@ export function DailyRevenueStats({
           ) : visibleDailyData.map((day, dayIndex) => {
           const isToday = day.date === today;
           const isFuture = day.date > today;
+          const recordCount = dealRecordCountByDate?.[day.date] ?? 0;
+          const viewLabel = dealRecordCountByDate
+            ? `查看 ${recordCount} 筆${recordCount === day.deals ? '成交' : '紀錄'}`
+            : '查看成交紀錄';
 
           return (
             <div
               key={day.date}
               ref={day.date === focusedWindowStartDate ? focusedDayRef : null}
-              onClick={() => !isFuture && onDateClick(day.date)}
               className={`relative px-4 py-4 transition-colors sm:px-5 ${
-                isFuture ? 'cursor-not-allowed opacity-55' : 'cursor-pointer hover:bg-atelier-canvas/70'
+                isFuture ? 'opacity-55' : ''
               } ${isToday ? 'bg-atelier-sage-soft/65' : 'bg-atelier-paper'}`}
             >
               {dayIndex < visibleDailyData.length - 1 && (
@@ -318,7 +323,7 @@ export function DailyRevenueStats({
                     <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-atelier-muted">
                       {hideProfit ? null : (
                         <span>
-                          利潤 <strong className={`font-semibold tabular-nums ${day.profit >= 0 ? 'text-foreground' : 'text-danger'}`}>
+                          銷售利潤 <strong className={`font-semibold tabular-nums ${day.profit >= 0 ? 'text-foreground' : 'text-danger'}`}>
                             {formatCurrency(day.profit)}
                           </strong>
                         </span>
@@ -328,22 +333,33 @@ export function DailyRevenueStats({
                       </span>
                     </div>
 
-                    {!isFuture && canAddRevenue && (
+                  </div>
+                </div>
+
+                {!isFuture && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onDateClick(day.date)}
+                      aria-label={`${formatDate(day.date)} ${viewLabel}`}
+                      className="min-h-11 rounded-control border border-primary/20 px-3 text-sm font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      {viewLabel}
+                    </button>
+                    {canAddRevenue && (
                       <button
                         type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onAddRevenue(day.date);
-                        }}
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-atelier-apricot-soft text-atelier-clay shadow-sm transition-colors hover:bg-atelier-clay hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        onClick={() => onAddRevenue(day.date)}
+                        className="flex min-h-11 items-center justify-center gap-1.5 rounded-control bg-atelier-apricot-soft px-3 text-sm font-medium text-atelier-clay transition-colors hover:bg-atelier-clay hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         title="補登收入"
                         aria-label={`${formatDate(day.date)}補登收入`}
                       >
                         <Plus className="h-4 w-4" />
+                        補登收入
                       </button>
                     )}
                   </div>
-                </div>
+                )}
 
                 {showInteractions && interactionButtons.length > 0 && !isFuture && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 rounded-control bg-atelier-blue-soft/70 px-3 py-2 text-xs text-atelier-muted">
@@ -378,7 +394,7 @@ export function DailyRevenueStats({
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-atelier-muted">
             {hideProfit ? null : (
               <span>
-                總利潤 <strong className={`font-semibold tabular-nums ${dailyTotals.totalProfit >= 0 ? 'text-foreground' : 'text-danger'}`}>
+                銷售利潤合計 <strong className={`font-semibold tabular-nums ${dailyTotals.totalProfit >= 0 ? 'text-foreground' : 'text-danger'}`}>
                   {formatCurrency(dailyTotals.totalProfit)}
                 </strong>
               </span>

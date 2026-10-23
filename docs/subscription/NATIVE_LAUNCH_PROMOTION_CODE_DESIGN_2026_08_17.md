@@ -1,5 +1,7 @@
 # Native Launch Promotion Code Design
 
+> 2026-10-23 導航：本文保留舊 Pro／Team、FERIA50 與不中斷續訂鎖價的歷史設計。新兩級方案、249／2490 牌價、限期首購優惠及可設定後台需求改看 [最新價格／活動需求](SUBSCRIPTION_PRICING_PROMOTION_ADMIN_REQUIREMENTS_2026_10_23.md)。舊條件不得自動套用新方案，也不得據此撤銷經證實已成立的交易承諾。下文 Gate 2 阻擋描述為歷史狀態，最新發布狀態依 canonical gates；本文件不是啟用證據。
+
 Date: 2026-08-17
 
 Status: Step 1B policy and campaign operations approved on 2026-08-17; uninterrupted-price mechanism requires two-store sandbox proof; runtime implementation remains blocked by Phase 2 Gate 2 and a separately reviewed implementation slice

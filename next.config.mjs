@@ -2,11 +2,16 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { resolveTestToolsBuild } from './scripts/lib/test-tools-build-policy.mjs';
 
 const rootDirectory = dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 const isMobileBuild = process.env.APP_BUILD_TARGET === 'mobile';
 const isMobileRuntimeSmokeBuild = isMobileBuild && process.env.APP_RUNTIME_SMOKE === '1';
+const testToolsEnabled = resolveTestToolsBuild({
+  nodeEnv: process.env.NODE_ENV,
+  releaseChannel: process.env.FERIA_RELEASE_CHANNEL,
+});
 
 function getGitCommitSha() {
   if (process.env.NEXT_PUBLIC_APP_COMMIT_SHA) {
@@ -65,6 +70,7 @@ const nextConfig = {
     NEXT_PUBLIC_APP_BUILD_TARGET: isMobileBuild ? 'mobile' : 'web',
     NEXT_PUBLIC_NATIVE_LINK_SCHEME: isMobileBuild ? (process.env.IOS_APP_ID || '').trim().toLowerCase() : '',
     NEXT_PUBLIC_APP_RUNTIME_SMOKE: isMobileRuntimeSmokeBuild ? '1' : '0',
+    NEXT_PUBLIC_TEST_TOOLS_ENABLED: testToolsEnabled ? '1' : '0',
   },
   ...(isMobileBuild
     ? {

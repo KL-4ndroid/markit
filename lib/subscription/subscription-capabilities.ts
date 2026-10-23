@@ -155,7 +155,9 @@ export function resolveCapabilityFreshness(input: {
 
   const evaluatedAt = parseTrustedTimestamp(input.capabilities.capabilityEvaluatedAt);
   const refreshAfter = parseTrustedTimestamp(input.capabilities.capabilityRefreshAfter);
+  const entitlementEndsAt = parseTrustedTimestamp(input.capabilities.entitlementEndsAt);
   if (evaluatedAt === null || refreshAfter === null) return 'unavailable';
+  if (input.capabilities.entitlementEndsAt !== null && entitlementEndsAt === null) return 'unavailable';
   if (evaluatedAt > input.nowMs || refreshAfter < evaluatedAt) return 'unavailable';
   if (input.nowMs <= refreshAfter) return 'fresh';
   if (input.network === 'online') return 'stale';
@@ -165,7 +167,6 @@ export function resolveCapabilityFreshness(input: {
     return 'offline_lease_expired';
   }
 
-  const entitlementEndsAt = parseTrustedTimestamp(input.capabilities.entitlementEndsAt);
   if (entitlementEndsAt !== null && input.nowMs > entitlementEndsAt) {
     return 'offline_lease_expired';
   }
@@ -177,11 +178,13 @@ export function hasEffectiveEntitlement(
   capabilities: AccountCapabilities,
   nowMs: number,
 ): boolean {
+  if (!Number.isFinite(nowMs)) return false;
   if (capabilities.entitlementStatus !== 'active' && capabilities.entitlementStatus !== 'grace') {
     return false;
   }
 
   const entitlementEndsAt = parseTrustedTimestamp(capabilities.entitlementEndsAt);
+  if (capabilities.entitlementEndsAt !== null && entitlementEndsAt === null) return false;
   return entitlementEndsAt === null || nowMs <= entitlementEndsAt;
 }
 

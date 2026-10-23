@@ -19,6 +19,7 @@ import {
   getDealClosedManualProjection,
   getDealClosedMode,
   getDealClosedTransactionDate,
+  getDealClosedRecordTimestamp,
 } from './deal-closed-projection';
 import { isBackfillDealEvent } from '@/lib/events/event-read-model';
 import { timestampToLocalDateString } from '@/lib/time-utils';
@@ -423,7 +424,7 @@ export async function recordEvent(
       }
     }
 
-    // ✅ 計算時間戳：只有補登交易使用指定日期的 23:59，正常交易使用當前時間
+    // 補登保留交易日期；當天補登不得晚於真正記錄時間。
     if (authenticatedUserId) {
       assertFreshStaffCapability({
         userId: authenticatedUserId,
@@ -439,22 +440,7 @@ export async function recordEvent(
     if (type === 'deal_closed' && payload && typeof payload === 'object') {
       const dealPayload = payload as unknown as DealClosedPayload;
       
-      // ✅ 關鍵修正：只有明確標記為補登（isBackfill = true）時才使用 23:59
-      // 正常交易（快速新增收入、商品銷售）使用當前時間
-      if (dealPayload.isBackfill === true && dealPayload.dealDate) {
-        // 解析日期字串 (YYYY-MM-DD)
-        const [year, month, day] = dealPayload.dealDate.split('-').map(Number);
-        
-        // 建立該日期的 23:59:59 時間戳
-        const backfillDate = new Date(year, month - 1, day, 23, 59, 59, 999);
-        timestamp = backfillDate.getTime();
-        
-        console.log(`⏰ 補登時間設置為：${dealPayload.dealDate} 23:59:59`);
-      }
-      // ✅ 正常交易：使用當前時間（已在上面設置）
-      else {
-        console.log(`⏰ 正常交易時間：${new Date(timestamp).toLocaleString('zh-TW')}`);
-      }
+      timestamp = getDealClosedRecordTimestamp(dealPayload, timestamp);
     }
 
     const preparedEvent = prepareEventForInsert(type, payload);

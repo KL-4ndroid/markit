@@ -80,6 +80,8 @@ try {
     '/api/sales-photo-evidence/image',
     '/api/sales-photo-evidence/delete',
     '/api/health',
+    '/recovery/',
+    '/settings/data/',
   ]) {
     const missingApi = await fetch(`${baseUrl}${apiPath}`);
     if (missingApi.status !== 404) {

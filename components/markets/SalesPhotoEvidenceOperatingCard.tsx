@@ -103,7 +103,7 @@ export function SalesPhotoEvidenceOperatingCard({
                 待補照片 {pendingCount}
               </span>
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                {pendingCount > 0 ? '查看並完成尚未上傳的照片' : '目前沒有待補照片'}
+                {pendingCount > 0 ? '查看並完成本機尚未上傳的照片' : '查看這台裝置的待補工作'}
               </span>
             </span>
           </span>

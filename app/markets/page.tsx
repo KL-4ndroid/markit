@@ -363,7 +363,7 @@ function MarketsPageContent() {
           className="w-full"
           action={(
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
-              <Button onClick={() => router.push('/recovery')}>前往資料修復</Button>
+              <Button onClick={() => router.push('/support')}>取得協助</Button>
               <Button variant="secondary" onClick={() => window.location.reload()}>重新整理</Button>
             </div>
           )}

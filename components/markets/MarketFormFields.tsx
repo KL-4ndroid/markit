@@ -185,14 +185,21 @@ function TimelineRow({ id, label, value, icon: Icon, disabled, onChange }: Timel
         <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
         {label}
       </label>
-      <TimePicker
-        id={id}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className={inputClassName}
-        placeholder="選擇時間"
-      />
+      <div className="flex min-w-0 items-center gap-2">
+        <TimePicker
+          id={id}
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          className={`${inputClassName} min-w-0 flex-1`}
+          placeholder="選擇時間"
+        />
+        {value && (
+          <Button type="button" variant="ghost" size="compact" disabled={disabled} aria-label={`清除${label}時間`} onClick={() => onChange('')}>
+            清除
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

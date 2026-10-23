@@ -584,6 +584,26 @@ export function applyAppIntegrityDemotion(result: IntegrityResult): IntegrityRes
   };
 }
 
+function isLegacySameDayBackfillDeletion(original: Event | undefined, deletion: Event | undefined): boolean {
+  if (original?.type !== 'deal_closed' || deletion?.type !== 'deal_deleted'
+    || !isRecord(original.payload) || !isRecord(deletion.payload)) return false;
+  const source = original.payload;
+  const deleted = deletion.payload;
+  if (!(source.isBackfill === true || source.is_backfill === true)
+    || typeof source.dealDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(source.dealDate)
+    || source.dealDate !== deleted.dealDate
+    || !pickPayloadMarketId(source) || pickPayloadMarketId(source) !== pickPayloadMarketId(deleted)
+    || (original.market_id ?? pickPayloadMarketId(source)) !== (deletion.market_id ?? pickPayloadMarketId(deleted))) return false;
+  // Infer the original device's offset, so changing time zones cannot lock out
+  // a valid legacy record. UTC offsets in use are multiples of 15 minutes.
+  const utcEnd = Date.parse(`${source.dealDate}T23:59:59.999Z`);
+  if (!Number.isFinite(utcEnd) || new Date(utcEnd).toISOString().slice(0, 10) !== source.dealDate) return false;
+  const offsetMinutes = (utcEnd - original.timestamp) / 60_000;
+  return Number.isInteger(offsetMinutes) && offsetMinutes % 15 === 0
+    && offsetMinutes >= -12 * 60 && offsetMinutes <= 14 * 60
+    && deletion.timestamp >= original.timestamp - 86_399_999 && deletion.timestamp <= original.timestamp;
+}
+
 /**
  * App 日常初始化專用的 integrity check。
  * 包含 product reference demotion，讓 Owner 不因歷史刪除商品而阻斷。
@@ -594,7 +614,23 @@ export function checkAppIntegrity(
   options: IntegrityCheckOptions = {}
 ): IntegrityResult {
   const result = checkBackupIntegrity(data, options);
-  return applyAppIntegrityDemotion(result);
+  // Legacy same-day backfills used 23:59:59.999, even when recorded/deleted
+  // earlier that day. Existing snapshots remain usable; strict import/replay
+  // validation still rejects this ordering until replay can resolve it safely.
+  const byId = new Map(data.events.map(event => [event.id, event]));
+  const errors: string[] = [];
+  const warnings = [...result.warnings];
+  for (const error of result.errors) {
+    const match = /^events\[(\d+)\] deal_deleted tombstones an event that has not replayed yet: (.+)$/.exec(error);
+    const deletion = match ? data.events[Number(match[1])] : undefined;
+    const original = match ? byId.get(match[2]) : undefined;
+    if (isLegacySameDayBackfillDeletion(original, deletion)) {
+      warnings.push(`[legacy_backfill_order] ${error}`);
+    } else {
+      errors.push(error);
+    }
+  }
+  return applyAppIntegrityDemotion({ ok: errors.length === 0, errors, warnings });
 }
 
 function isStaffScopedReferenceError(error: string): boolean {

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import {
   ACCOUNT_CAPABILITY_PLAN_FEATURE,
+  hasEffectiveEntitlement,
   resolveCapabilityFreshness,
   resolveModelAccountCapabilities,
 } from '../lib/subscription/subscription-capabilities';
@@ -51,6 +52,24 @@ function access(overrides: Partial<Parameters<typeof evaluateCapabilityAccess>[0
 }
 
 assert.deepEqual(access(), { allowed: true, reason: 'allowed', accessMode: 'entitled' });
+
+// A malformed end must never be treated like an explicitly open-ended grant.
+for (const plan of ['pro', 'team'] as const) {
+  for (const invalidEnd of ['', 'invalid-date']) {
+    const invalid = capabilities(plan, { entitlementEndsAt: invalidEnd });
+    assert.equal(hasEffectiveEntitlement(invalid, NOW), false, `${plan}: invalid end must not grant paid access`);
+    assert.equal(access({ capabilities: invalid }).allowed, false);
+    assert.equal(resolveCapabilityFreshness({ capabilities: invalid, nowMs: NOW, network: 'online' }), 'unavailable');
+    assert.equal(resolveCapabilityFreshness({
+      capabilities: invalid, nowMs: NOW, network: 'offline', offlineLeaseEndsAt: '2026-07-29T13:00:00.000Z',
+    }), 'unavailable');
+  }
+  const openEnded = capabilities(plan, { entitlementEndsAt: null });
+  assert.equal(hasEffectiveEntitlement(openEnded, NOW), true, 'explicit admin open-ended grant is unchanged');
+  for (const invalidNow of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+    assert.equal(hasEffectiveEntitlement(openEnded, invalidNow), false, 'invalid evaluation time must not grant access');
+  }
+}
 assert.equal(access({ authenticated: false }).reason, 'authentication_required');
 assert.equal(access({ ownerWorkspaceAvailable: false }).reason, 'owner_workspace_unavailable');
 assert.equal(access({ requestedOwnerId: 'other-owner' }).reason, 'owner_workspace_unavailable');

@@ -116,4 +116,14 @@ assert.equal(marketRowToLocal({
   operation_session_date: '2026-08-12',
 }).operationSessionDate, '2026-08-12');
 
+const unready = resolveMarketOperatingSession(market({ status: 'accepted' }), new Date(2026, 7, 12, 13));
+assert.equal(unready.canRecordLiveActivity, false);
+assert.match(unready.message, /報名進度.*已繳費/);
+assert.match(resolveMarketOperatingSession(market({ status: 'cancelled' })).message, /已取消/);
+assert.match(resolveMarketOperatingSession(market({ operatingStartTime: undefined })).message, /日期與營業起訖時間/);
+const upcoming = resolveMarketOperatingSession(market({ operatingStartTime: '13:00', operatingEndTime: '19:00' }), new Date(2026, 7, 11, 10));
+assert.equal(upcoming.phase, 'upcoming');
+assert.match(upcoming.message, /2026\/08\/12.*13:00/);
+assert.match(upcoming.message, /12:00.*手動提前開始/);
+assert.equal(upcoming.canStartEarly, false);
 console.log('market operating session tests passed');
