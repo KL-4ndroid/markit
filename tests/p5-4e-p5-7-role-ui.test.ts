@@ -36,7 +36,7 @@ const monitorSource = readFileSync(
   'utf-8'
 );
 const debugPageSource = readFileSync(
-  join(__dirname, '..', 'app/debug/staff-role-test/page.tsx'),
+  join(__dirname, '..', 'app/debug/staff-role-test/page.web.tsx'),
   'utf-8'
 );
 const settingsSource = readFileSync(
@@ -51,14 +51,12 @@ const recoverySource = readFileSync(
 console.log('\n=== P5-4e / P5-7 role UI ===');
 
 runTest('StaffPermissionCard is role-aware and capability-driven', () => {
-  assert.match(cardSource, /deriveRoleCapabilities/);
-  assert.match(cardSource, /canRecordInteraction/);
-  assert.match(cardSource, /canEditMarketBasic/);
-  assert.match(cardSource, /canEditProductBasic/);
-  assert.match(cardSource, /canManageChecklist/);
-  assert.match(cardSource, /canCreateFieldNote/);
-  assert.match(cardSource, /canManageFieldNotes/);
-  assert.match(cardSource, /canToggleChecklistItem/);
+  const presentationSource = readFileSync(join(__dirname, '..', 'lib/permissions/staff-access-presentation.ts'), 'utf-8');
+  assert.match(cardSource, /staffRoleWorkDetails\(staffRole, capabilities\)/);
+  assert.match(cardSource, /staffAccessPresentation/);
+  assert.match(presentationSource, /deriveRoleCapabilities/);
+  for (const capability of ['canRecordInteraction', 'canEditMarketBasic', 'canEditProductBasic', 'canManageChecklist', 'canCreateFieldNote', 'canToggleChecklistItem']) assert.ok(presentationSource.includes(capability));
+  assert.match(cardSource, /authorizationFresh/);
   assert.doesNotMatch(cardSource, /permissions\?:\s*\{/);
 });
 
@@ -76,7 +74,7 @@ runTest('RoleStatusBanner listens for role status events', () => {
 
 runTest('AuthGuard renders RoleStatusBanner for authenticated app', () => {
   assert.match(authGuardSource, /import \{ RoleStatusBanner \}/);
-  assert.match(authGuardSource, /<OfflineBanner \/>\s*<RoleStatusBanner \/>/);
+  assert.match(authGuardSource, /<OfflineBanner readOnly=\{false\} \/>\s*<RoleStatusBanner \/>/);
 });
 
 runTest('useStaffStatusMonitor dispatches status events on downgrade and cleanup', () => {
@@ -108,7 +106,7 @@ runTest('recovery route keeps repair tools owner-only', () => {
   assert.match(recoverySource, /deriveRoleCapabilities/);
   assert.match(recoverySource, /hasCapability\(roleCapabilities,\s*['"]canUseRepairTools['"]\)/);
   assert.match(recoverySource, /if \(!canUseRepairTools\)/);
-  assert.match(recoverySource, /修復工具僅限 owner 使用/);
+  assert.match(recoverySource, /只有工作區擁有者可以使用修復工具/);
   assert.match(recoverySource, /<DatabaseRecoveryPanel \/>/);
   assert.match(recoverySource, /<OwnerRevenueGapRepairPanel \/>/);
   assert.match(recoverySource, /<LocalProjectionRepairPanel \/>/);

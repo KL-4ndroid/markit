@@ -4,6 +4,8 @@ Date: 2026-08-06
 Status: S3 mapping, S6A-S6E analytics/report/PDF/Team tier gates, LV1 local simulation, and the read-only native pre-runtime subscription center are complete locally; S7 and F3C remain planning only; Team migrations 064/065 and isolated authenticated transition smoke pass, while release-deployment and native store evidence remain pending
 Authority: derived from current repository inspection; it records runtime truth and does not activate a product-plan decision
 
+2026-10-25 region analytics addendum: `app/analytics/page.tsx` mounts `RegionAnalyticsPanel` only for the owner with the existing `advancedAnalytics` / `analytics.advanced` capability. `lib/analytics/subscription-view.ts` rejects the region tab in every range when that capability is denied, including recent-three and single-market selectors. No new plan, price, limit, billing writer or server analytics-compute route is added. Free authenticated UI blocking and pure-model/gate tests pass; paid authenticated UI and deployment remain unverified. Owner-only county metadata cleanup at `/markets/regions` is independent of paid analysis. Migration 080 was confirmed applied and its owner writer passed local save/replay/conflict/independent-origin verification; example flags remain off and production deployment remains separate. See [implementation and verification record](../MARKET_REGION_ANALYTICS_BACKFILL_2026_10_24.md).
+
 ## Status Vocabulary
 
 - `active_unmetered`: available today without subscription enforcement;

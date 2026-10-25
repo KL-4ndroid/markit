@@ -8,6 +8,8 @@ import { FormField } from '@/components/ui/FormField';
 import { FormSectionDisclosure } from '@/components/ui/FormSectionDisclosure';
 import { FullScreenForm } from '@/components/ui/FullScreenForm';
 import { TimePicker } from '@/components/ui/TimePicker';
+import { MarketRegionField } from '@/components/markets/MarketRegionField';
+import type { MarketRegionCode } from '@/lib/markets/market-region';
 import {
   createOperationSchedule,
   createVenue,
@@ -45,6 +47,7 @@ export function FixedScheduleForm({ open, onClose, onSuccess }: FixedScheduleFor
   const today = useMemo(() => toDateKeyInTimeZone(new Date(), timezone), [timezone]);
   const [venueName, setVenueName] = useState('');
   const [address, setAddress] = useState('');
+  const [regionCode, setRegionCode] = useState<MarketRegionCode | null>(null);
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [startTime, setStartTime] = useState('10:00');
   const [endTime, setEndTime] = useState('18:00');
@@ -60,6 +63,7 @@ export function FixedScheduleForm({ open, onClose, onSuccess }: FixedScheduleFor
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const reset = () => {
+    setRegionCode(null);
     setVenueName(''); setAddress(''); setWeekdays([]); setStartTime('10:00'); setEndTime('18:00');
     setStartDate(today); setEndDate(''); setErrors({}); setSubmitError(null);
     setDefaults({
@@ -96,6 +100,7 @@ export function FixedScheduleForm({ open, onClose, onSuccess }: FixedScheduleFor
       const venueId = await createVenue({
         name: venueName.trim(),
         address: address.trim() || undefined,
+        ...(regionCode ? { regionCode } : {}),
         status: 'active',
       });
       await createOperationSchedule({
@@ -162,9 +167,12 @@ export function FixedScheduleForm({ open, onClose, onSuccess }: FixedScheduleFor
             <FormField id="fixed-venue-name" label="營業據點名稱" required error={errors.venueName}>
               {props => <input {...props} className={inputClass} value={venueName} onChange={event => setVenueName(event.target.value)} placeholder="例如：華山週末攤位" disabled={isSubmitting} />}
             </FormField>
-            <FormField id="fixed-address" label="地址" hint="選填，可只填方便辨識的位置。">
-              {props => <input {...props} className={inputClass} value={address} onChange={event => setAddress(event.target.value)} placeholder="例如：台北市中正區" disabled={isSubmitting} />}
-            </FormField>
+            <MarketRegionField id="fixed-regionCode" value={regionCode} onChange={setRegionCode} disabled={isSubmitting} />
+            <div className="sm:col-span-2">
+              <FormField id="fixed-address" label="地址" hint="選填，可只填方便辨識的位置。">
+                {props => <input {...props} className={inputClass} value={address} onChange={event => setAddress(event.target.value)} placeholder="例如：台北市中正區" disabled={isSubmitting} />}
+              </FormField>
+            </div>
           </div>
 
           <FormField id="fixed-weekdays" label="每週星期" required error={errors.weekdays}>

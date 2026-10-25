@@ -2,9 +2,19 @@
 
 > 依使用者要求採 `.mk` 副檔名，內容使用 Markdown 格式；這是文件，不是 Makefile 或建置腳本。
 
-建立：2026-10-20。最後增量核對：2026-10-23（調價政策確認：月繳提前 60 天通知、年繳續訂調整及限期保價）。初次程式盤點基準：`62422e7`。
+建立：2026-10-20。最後增量核對：2026-10-25（081 已確認、本機心得轉待辦與固定安排縣市已啟用並完成 owner 雲端驗收；縣市分析仍沿用進階分析 gate，未改價格／方案）。調價政策仍以 2026-10-23 確認的月繳提前 60 天通知、年繳續訂調整及限期保價為準。初次程式盤點基準：`62422e7`。
 
 用途：未來修改訂閱方案時，先找到規格、程式、資料庫、畫面、測試與發布紀錄，再依實際變更同步維護。這份索引提供導航，不代表服務啟用或發布驗收。
+
+2026-10-25 UX07 文案增量：[角色／存取呈現 helper](../lib/permissions/staff-access-presentation.ts)、[六項 UIUX 測試](../tests/uiux-six-improvements.test.tsx)、[實作紀錄](UIUX_SIX_IMPROVEMENTS_IMPLEMENTATION_2026_10_25.md)。成員管理與員工權限卡區分角色規則、關係狀態與既有 Team 資格結果；helper 僅呈現，不能作為授權來源。沒有改方案、價格、席次或 gate；新檔為初次 305 檔盤點後的增量導航，不重算歷史數量。
+
+2026-10-25 手機入口整理：[完整出攤流程驗收](MOBILE_MARKET_FLOW_REVIEW_2026_10_25.md) 將單場 owner 回顧的現金、心得改為選定才掛載；普通現場收款提前，成功收攤回成果回顧。沒有新增付費能力或修改價格、既有 Team／財務／照片權限；原模型、writer 與啟用旗標沿用。
+
+2026-10-25 體驗補充：[心得與選用待辦需求](MARKET_JOURNAL_OPTIONAL_TASK_UX_2026_10_25.md) 將 02B 收進「更多操作」，改為選用「另建出攤待辦」。這是現有 owner 功能的入口與文案調整，沒有改變訂閱 gate／價格、Team 分享權限或 081 保存契約；不將整理心得待辦列為付費或上手的必要條件。
+
+2026-10-25 owner 後續功能：[日期／心得轉待辦／固定安排分類紀錄](MARKET_FOLLOWUP_DETAILS_2026_10_24.md)、[共用規則](../lib/markets/owner-followup.ts)、[client](../lib/supabase/owner-followup.ts)、[081 SQL](../supabase/migrations/081_add_owner_followup_workflows.sql)、[測試](../tests/owner-followup.test.ts)。均沿既有 owner 角色，不新增付費能力、價格或 staff 私人心得讀權；只有明確確認的待辦文字沿原 Team 員工角色規則分享。081 已確認套用且 schema 核對，本機兩項 writer 已啟用並通過真實保存／重送／過期預覽／獨立來源還原；範例旗標仍預設關閉，正式部署及實機另驗。
+
+2026-10-24 縣市分析增量：[切片紀錄](MARKET_REGION_ANALYTICS_BACKFILL_2026_10_24.md)、[顯示元件](../components/analytics/RegionAnalyticsPanel.tsx)、[共用分析模型](../lib/analytics/region-analytics.ts)、[分析／gate 測試](../tests/region-analytics.test.ts)。沿用既有 `analytics.advanced`，未新增付費能力。相鄰的 [縣市整理頁](../app/markets/regions/page.tsx)、[補填驗證](../lib/markets/market-region-backfill.ts)、[補填 client](../lib/supabase/market-region-backfill.ts)、[080 SQL](../supabase/migrations/080_add_owner_region_backfill.sql)、[隔離 SQL 測試](../tests/fixtures/market-region-backfill-sql.mjs) 為 owner metadata 管理，不以 Pro／Team 解鎖，也不授予財務分析權限；080 已確認套用，本機補填已啟用並通過 owner 保存／重送／衝突／獨立來源還原；範例旗標仍預設關閉。價格／功能修改時應分別檢查兩種權限。
 
 ## 1. 修改前先確認
 
@@ -238,7 +248,7 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 | [lib/subscription/account-deletion-ad4-readiness.ts](../lib/subscription/account-deletion-ad4-readiness.ts) | 訂閱／帳號刪除共用程式。 | [scripts/check-account-deletion-ad4-preparation.ts](../scripts/check-account-deletion-ad4-preparation.ts)<br>[tests/account-deletion-ad4-readiness.test.ts](../tests/account-deletion-ad4-readiness.test.ts) |
 | [lib/subscription/account-deletion-api-contract.ts](../lib/subscription/account-deletion-api-contract.ts) | 訂閱／帳號刪除共用程式。 | [app/api/account-deletion/route.ts](../app/api/account-deletion/route.ts)<br>[tests/account-deletion-ad2-foundation.test.ts](../tests/account-deletion-ad2-foundation.test.ts) |
 | [lib/subscription/account-deletion-contract.ts](../lib/subscription/account-deletion-contract.ts) | 訂閱／帳號刪除共用程式。 | [lib/subscription/account-deletion-api-contract.ts](../lib/subscription/account-deletion-api-contract.ts)<br>[lib/subscription/account-deletion-preflight.ts](../lib/subscription/account-deletion-preflight.ts)<br>[lib/subscription/account-deletion-saga.server.ts](../lib/subscription/account-deletion-saga.server.ts)<br>[lib/subscription/account-deletion-storage.server.ts](../lib/subscription/account-deletion-storage.server.ts)<br>[tests/account-deletion-ad1-contract.test.ts](../tests/account-deletion-ad1-contract.test.ts)<br>另 1 個，請搜尋模組名稱。 |
-| [lib/subscription/account-deletion-preflight.ts](../lib/subscription/account-deletion-preflight.ts) | 訂閱／帳號刪除共用程式。 | [tests/account-deletion-ad2-foundation.test.ts](../tests/account-deletion-ad2-foundation.test.ts) |
+| [lib/subscription/account-deletion-preflight.ts](../lib/subscription/account-deletion-preflight.ts) | 帳號刪除前檢查；私人心得與現金草稿需先回原功能儲存或明確捨棄，舊匯出不視為已保全。現金 078 已完成、本機啟用及 owner 草稿保護驗收通過；未改訂閱分級／購買／發布 gate。 | [tests/account-deletion-ad2-foundation.test.ts](../tests/account-deletion-ad2-foundation.test.ts)<br>[tests/market-journal-persistence.test.ts](../tests/market-journal-persistence.test.ts)<br>[tests/market-cash.test.ts](../tests/market-cash.test.ts)<br>[現金切片紀錄](MARKET_OPTIONAL_CASH_RECORDS_2026_10_23.md) |
 | [lib/subscription/account-deletion-reauth.server.ts](../lib/subscription/account-deletion-reauth.server.ts) | 訂閱／帳號刪除共用程式。 | [app/api/account-deletion/route.ts](../app/api/account-deletion/route.ts)<br>[tests/account-deletion-ad2-foundation.test.ts](../tests/account-deletion-ad2-foundation.test.ts) |
 | [lib/subscription/account-deletion-saga.server.ts](../lib/subscription/account-deletion-saga.server.ts) | 訂閱／帳號刪除共用程式。 | [lib/subscription/account-deletion-storage.server.ts](../lib/subscription/account-deletion-storage.server.ts)<br>[tests/account-deletion-ad2-foundation.test.ts](../tests/account-deletion-ad2-foundation.test.ts) |
 | [lib/subscription/account-deletion-storage.server.ts](../lib/subscription/account-deletion-storage.server.ts) | 訂閱／帳號刪除共用程式。 | [app/api/account-deletion/route.ts](../app/api/account-deletion/route.ts)<br>[tests/account-deletion-ad3a-migration-repository.test.ts](../tests/account-deletion-ad3a-migration-repository.test.ts) |
@@ -314,7 +324,7 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 | [hooks/useAnalyticsCache.ts](../hooks/useAnalyticsCache.ts) | 查詢、同步或畫面狀態接線。 | [app/analytics/page.tsx](../app/analytics/page.tsx) |
 | [hooks/useStaffStatusMonitor.ts](../hooks/useStaffStatusMonitor.ts) | 查詢、同步或畫面狀態接線。 | [components/auth/StaffStatusMonitor.tsx](../components/auth/StaffStatusMonitor.tsx)<br>[tests/p5-4a-downgrade-detection.test.ts](../tests/p5-4a-downgrade-detection.test.ts) |
 | [hooks/useSync.ts](../hooks/useSync.ts) | 查詢、同步或畫面狀態接線。 | [app/analytics/page.tsx](../app/analytics/page.tsx)<br>[app/page.tsx](../app/page.tsx)<br>[components/common/SyncStatusIndicator.tsx](../components/common/SyncStatusIndicator.tsx)<br>[components/settings/AccountSyncPanel.tsx](../components/settings/AccountSyncPanel.tsx)<br>[components/staff/StaffInvitationDialog.tsx](../components/staff/StaffInvitationDialog.tsx)<br>另 8 個，請搜尋模組名稱。 |
-| [lib/analytics/subscription-view.ts](../lib/analytics/subscription-view.ts) | 訂閱的鄰近功能、設定或接線。 | [app/analytics/page.tsx](../app/analytics/page.tsx)<br>[components/analytics/DateRangeFilter.tsx](../components/analytics/DateRangeFilter.tsx)<br>[tests/advanced-analytics-subscription-access.test.ts](../tests/advanced-analytics-subscription-access.test.ts) |
+| [lib/analytics/subscription-view.ts](../lib/analytics/subscription-view.ts) | 分析呈現／查詢 gate；縣市頁籤始終要求既有進階分析權益，最近三場不能繞過。 | [app/analytics/page.tsx](../app/analytics/page.tsx)<br>[components/analytics/DateRangeFilter.tsx](../components/analytics/DateRangeFilter.tsx)<br>[components/analytics/RegionAnalyticsPanel.tsx](../components/analytics/RegionAnalyticsPanel.tsx)<br>[tests/advanced-analytics-subscription-access.test.ts](../tests/advanced-analytics-subscription-access.test.ts)<br>[tests/region-analytics.test.ts](../tests/region-analytics.test.ts) |
 | [lib/deployment/launch-execution-plan.ts](../lib/deployment/launch-execution-plan.ts) | 發布、設定、素材或準備度檢查。 | [lib/deployment/manual-launch-checklist.ts](../lib/deployment/manual-launch-checklist.ts)<br>[scripts/check-launch-execution-plan.ts](../scripts/check-launch-execution-plan.ts)<br>[scripts/update-manual-launch-checklist.ts](../scripts/update-manual-launch-checklist.ts)<br>[tests/launch-execution-plan.test.ts](../tests/launch-execution-plan.test.ts)<br>[tests/manual-launch-operations-checklist.test.ts](../tests/manual-launch-operations-checklist.test.ts) |
 | [lib/deployment/manual-launch-checklist.ts](../lib/deployment/manual-launch-checklist.ts) | 發布、設定、素材或準備度檢查。 | [scripts/update-manual-launch-checklist.ts](../scripts/update-manual-launch-checklist.ts)<br>[tests/manual-launch-operations-checklist.test.ts](../tests/manual-launch-operations-checklist.test.ts) |
 | [lib/deployment/native-external-account-readiness.ts](../lib/deployment/native-external-account-readiness.ts) | 發布、設定、素材或準備度檢查。 | [lib/deployment/manual-launch-checklist.ts](../lib/deployment/manual-launch-checklist.ts)<br>[scripts/check-account-deletion-ad4-preparation.ts](../scripts/check-account-deletion-ad4-preparation.ts)<br>[scripts/check-native-external-account-readiness.ts](../scripts/check-native-external-account-readiness.ts)<br>[scripts/update-manual-launch-checklist.ts](../scripts/update-manual-launch-checklist.ts)<br>[tests/manual-launch-operations-checklist.test.ts](../tests/manual-launch-operations-checklist.test.ts)<br>另 1 個，請搜尋模組名稱。 |
@@ -465,6 +475,12 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 上述檔案在本次只命中登入／網路事件訂閱；若未來加入付費方案依賴，應移回第 6 節。
 
 ## 8. 維護紀錄
+
+### 2026-10-23 增量：準備模板的既有 Team 交集
+
+- [migration 077](../supabase/migrations/077_add_preparation_templates.sql)：新模板 helper／writer 沿 `has_authoritative_team_entitlement` 限制同品牌 active manager；owner 不增加付費限制。已確認雲端套用、本機啟用及真實 owner 驗收，沒有改方案、價格、席次或購買接線；正式部署仍待做。
+- [模板 UI](../components/markets/PreparationTemplatePanel.tsx)：沿現有待辦管理能力與 fresh role 顯示，不是商店訂閱驗證。
+- [模板切片紀錄](MARKET_PREPARATION_TEMPLATES_2026_10_23.md)、[隔離 SQL 檢查](../scripts/verify-preparation-template-sql.mjs)：記錄 Team 撤回即拒絕讀／寫／套用與目前啟用狀態。以上為初次清單後的增量導航，不重算歷史 305 檔盤點。
 
 | 日期 | 變更 | 核對方式 |
 | --- | --- | --- |

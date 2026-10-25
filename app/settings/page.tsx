@@ -5,6 +5,7 @@ import {
   Cloud,
   Database,
   MoreHorizontal,
+  MapPin,
   Palette,
   Smartphone,
   Users,
@@ -31,6 +32,7 @@ const DESTINATION_ICONS: Record<SettingsDestinationId, LucideIcon> = {
   team: Users,
   sales: Camera,
   data: Database,
+  regions: MapPin,
   app: Smartphone,
 };
 

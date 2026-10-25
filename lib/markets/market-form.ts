@@ -1,18 +1,27 @@
+import { isOptionalMarketRegion } from './market-region';
+import { normalizePaymentDeadline } from './market-payment-deadline';
+
 export interface MarketCoreFormValues {
   name?: string;
   location?: string;
+  regionCode?: string | null;
+  paymentDeadline?: unknown;
   dates?: string[];
 }
 
-export type MarketCoreFormErrorKey = 'name' | 'location' | 'dates';
+export type MarketCoreFormErrorKey = 'name' | 'regionCode' | 'location' | 'dates' | 'paymentDeadline';
 export type MarketCoreFormErrors = Partial<Record<MarketCoreFormErrorKey, string>>;
 
-const MARKET_CORE_ERROR_ORDER: MarketCoreFormErrorKey[] = ['name', 'location', 'dates'];
+const MARKET_CORE_ERROR_ORDER: MarketCoreFormErrorKey[] = ['name', 'regionCode', 'location', 'dates', 'paymentDeadline'];
 
 /** Compare editable values, not formatting differences from cloud time/date serialization. */
 export function hasMarketFormChanges(initial: Record<string, unknown>, current: Record<string, unknown>): boolean {
   const snapshot = (values: Record<string, unknown>) => JSON.stringify(Object.keys(values).sort().map(key => {
     let value = values[key];
+    if (key === 'paymentDeadline') {
+      try { value = normalizePaymentDeadline(value) ?? null; }
+      catch { /* Keep invalid drafts visible as changes; submission shows the error. */ }
+    }
     if (key === 'dates' && Array.isArray(value)) value = [...new Set(value)].sort();
     if (typeof value === 'string') {
       const text = value.trim();
@@ -38,6 +47,14 @@ export function validateMarketCoreForm(
   }
   if (!values.dates || values.dates.length === 0) {
     errors.dates = '請至少選擇一個市集日期';
+  }
+
+  if (requireIdentity && !isOptionalMarketRegion(values.regionCode)) {
+    errors.regionCode = '請選擇有效的縣市，或選擇未分類';
+  }
+  if (requireIdentity) {
+    try { normalizePaymentDeadline(values.paymentDeadline); }
+    catch { errors.paymentDeadline = '請確認有效的繳費期限（台灣時間）'; }
   }
 
   return errors;

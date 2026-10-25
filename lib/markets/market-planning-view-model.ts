@@ -1,5 +1,6 @@
 import type { Market } from '@/types/db';
 import { buildMarketListGroups, type MarketListViewItem } from './market-list-view-model';
+import { comparePaymentDeadlines } from './market-payment-deadline';
 
 export interface SameDayArrangement {
   date: string;
@@ -89,7 +90,7 @@ export function buildMarketPlanningViewModel(
     }
   }
   return {
-    paymentDue: manual.filter(item => item.market.status === 'accepted'),
+    paymentDue: manual.filter(item => item.market.status === 'accepted').sort((a, b) => comparePaymentDeadlines(a.market, b.market) || a.displayDate.localeCompare(b.displayDate) || a.market.name.localeCompare(b.market.name)),
     awaitingDecision: manual.filter(item => item.market.status === 'registered'),
     sameDayArrangements: [...shared.entries()]
       .sort(([a], [b]) => a.localeCompare(b))

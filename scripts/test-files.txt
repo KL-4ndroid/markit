@@ -405,6 +405,15 @@ tsx tests/supabase-sra-a1-remote-migration-strategy.test.ts
 tsx tests/market-planning-view-model.test.ts
 tsx tests/session-state-port.test.ts
 tsx tests/market-time-sync.test.ts
+tsx tests/market-region.test.ts
+tsx tests/market-region-persistence.test.ts
+tsx tests/market-region-ui.test.tsx
+tsx tests/market-region-migration.test.ts
+tsx tests/market-payment-deadline.test.ts
+tsx tests/market-payment-deadline-persistence.test.ts
+tsx tests/market-journal-persistence.test.ts
+tsx tests/market-journal-routing.test.ts
+tsx tests/market-payment-deadline-ui.test.tsx
 tsx tests/basic-workflow-corrections.test.ts
 tsx tests/test-tools-release-boundary.test.ts
 tsx tests/local-pending-count-observer.test.ts
@@ -412,3 +421,9 @@ tsx tests/owner-event-replay.test.ts
 tsx tests/cold-login-pull.test.ts
 tsx tests/cold-login-migration.test.ts
 tsx tests/cloud-deal-projection.test.ts
+tsx tests/preparation-template.test.ts
+tsx tests/market-cash.test.ts
+tsx tests/market-cash-comparison.test.ts
+tsx tests/region-analytics.test.ts
+tsx tests/owner-followup.test.ts
+tests/uiux-six-improvements.test.tsx

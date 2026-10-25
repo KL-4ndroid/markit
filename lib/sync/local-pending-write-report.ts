@@ -8,6 +8,8 @@ export type LocalPendingWriteBlockingReason =
   | 'local_sync_queue_unfinished'
   | 'local_pending_sales_photo_evidence'
   | 'local_pending_product_cover_photo'
+  | 'local_pending_market_journal'
+  | 'local_pending_market_cash'
   | 'actor_mismatch'
   | 'offline'
   | 'sync_locked'
@@ -32,6 +34,8 @@ export interface LocalPendingWriteReport {
   pendingProductCoverPhotoUploadCount: number;
   pendingProductCoverPhotoUploadIds: string[];
   pendingProductCoverPhotoPayloadCount: number;
+  pendingMarketJournalDraftCount?: number;
+  pendingMarketCashDraftCount?: number;
   blockingReasonCodes: LocalPendingWriteBlockingReason[];
   isClean: boolean;
 }
@@ -87,6 +91,10 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
     const pendingSalesPhotoEvidencePayloads = await db.salesPhotoEvidencePendingPayloads.toArray();
     const pendingProductCoverPhotoUploads = await db.productCoverPhotoPendingUploads.toArray();
     const pendingProductCoverPhotoPayloadCount = await db.productCoverPhotoPendingPayloads.count();
+    const pendingMarketJournalDraftCount = await db.marketJournalDrafts.count();
+    if (pendingMarketJournalDraftCount > 0) blockingReasonCodes.add('local_pending_market_journal');
+    const pendingMarketCashDraftCount = await db.marketCashDrafts.count();
+    if (pendingMarketCashDraftCount > 0) blockingReasonCodes.add('local_pending_market_cash');
 
     const pendingEventIds: string[] = [];
     const actorMismatchEventIds: string[] = [];
@@ -146,6 +154,8 @@ export async function getLocalPendingWriteReport(userId?: string): Promise<Local
       pendingProductCoverPhotoUploadCount: pendingProductCoverPhotoUploads.length,
       pendingProductCoverPhotoUploadIds: pendingProductCoverPhotoUploads.map(item => item.productId),
       pendingProductCoverPhotoPayloadCount,
+      pendingMarketJournalDraftCount,
+      pendingMarketCashDraftCount,
       blockingReasonCodes: codes,
       isClean: codes.length === 0,
     };

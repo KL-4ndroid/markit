@@ -126,6 +126,8 @@ runTest('local pending write report is read-only and classifies blocking reasons
   const originalSalesPhotoEvidencePendingPayloads = (db as any).salesPhotoEvidencePendingPayloads;
   const originalProductCoverPhotoPendingUploads = (db as any).productCoverPhotoPendingUploads;
   const originalProductCoverPhotoPendingPayloads = (db as any).productCoverPhotoPendingPayloads;
+  const originalJournalDraftCount = db.marketJournalDrafts.count.bind(db.marketJournalDrafts);
+  const originalCashDraftCount = db.marketCashDrafts.count.bind(db.marketCashDrafts);
   const restoreNavigator = mockNavigatorOnline(false);
 
   try {
@@ -173,6 +175,8 @@ runTest('local pending write report is read-only and classifies blocking reasons
       },
     };
 
+    db.marketJournalDrafts.count = async () => 0;
+    db.marketCashDrafts.count = async () => 0;
     const report = await getLocalPendingWriteReport('user-1');
 
     assert.equal(report.isClean, false);
@@ -206,6 +210,8 @@ runTest('local pending write report is read-only and classifies blocking reasons
     (db as any).salesPhotoEvidencePendingPayloads = originalSalesPhotoEvidencePendingPayloads;
     (db as any).productCoverPhotoPendingUploads = originalProductCoverPhotoPendingUploads;
     (db as any).productCoverPhotoPendingPayloads = originalProductCoverPhotoPendingPayloads;
+    db.marketJournalDrafts.count = originalJournalDraftCount;
+    db.marketCashDrafts.count = originalCashDraftCount;
     restoreNavigator();
   }
 });
@@ -219,6 +225,8 @@ runTest('local pending write report observes active sync lock', async () => {
   const originalSalesPhotoEvidencePendingPayloads = (db as any).salesPhotoEvidencePendingPayloads;
   const originalProductCoverPhotoPendingUploads = (db as any).productCoverPhotoPendingUploads;
   const originalProductCoverPhotoPendingPayloads = (db as any).productCoverPhotoPendingPayloads;
+  const originalJournalDraftCount = db.marketJournalDrafts.count.bind(db.marketJournalDrafts);
+  const originalCashDraftCount = db.marketCashDrafts.count.bind(db.marketCashDrafts);
   const restoreNavigator = mockNavigatorOnline(true);
 
   try {
@@ -234,6 +242,8 @@ runTest('local pending write report observes active sync lock', async () => {
     };
 
     assert.equal(acquireSyncLock(), true);
+    db.marketJournalDrafts.count = async () => 0;
+    db.marketCashDrafts.count = async () => 0;
     const report = await getLocalPendingWriteReport('user-1');
 
     assert.equal(report.syncLocked, true);
@@ -247,6 +257,8 @@ runTest('local pending write report observes active sync lock', async () => {
     (db as any).salesPhotoEvidencePendingPayloads = originalSalesPhotoEvidencePendingPayloads;
     (db as any).productCoverPhotoPendingUploads = originalProductCoverPhotoPendingUploads;
     (db as any).productCoverPhotoPendingPayloads = originalProductCoverPhotoPendingPayloads;
+    db.marketJournalDrafts.count = originalJournalDraftCount;
+    db.marketCashDrafts.count = originalCashDraftCount;
     restoreNavigator();
   }
 });
@@ -460,6 +472,10 @@ runTest('force discard removes every pending-write table so sign-out cannot re-b
     ['salesPhotoEvidencePendingPayloads', db.salesPhotoEvidencePendingPayloads],
     ['productCoverPhotoPendingUploads', db.productCoverPhotoPendingUploads],
     ['productCoverPhotoPendingPayloads', db.productCoverPhotoPendingPayloads],
+    ['marketJournals', db.marketJournals],
+    ['marketJournalDrafts', db.marketJournalDrafts],
+    ['marketCashRecords', db.marketCashRecords],
+    ['marketCashDrafts', db.marketCashDrafts],
   ] as const;
   const originalClearMethods = tables.map(([, table]) => table.clear.bind(table));
 

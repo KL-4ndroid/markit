@@ -6,6 +6,7 @@ import {
   type MarketOperatingSession,
 } from '@/lib/markets/market-operating-session';
 import { isScheduleOccurrenceVisible } from '@/lib/recurring-operations/occurrence-visibility';
+import { getMarketPaymentReminder, type MarketPaymentReminder } from './market-payment-deadline';
 
 export type MarketListStage = 'active' | 'preparing' | 'ended' | 'cancelled';
 export type MarketPreparationFilter = 'all' | 'awaiting_decision' | 'payment_due';
@@ -35,6 +36,7 @@ export interface MarketCompletionSummary {
 }
 
 export interface MarketListViewItem {
+  paymentReminder?: MarketPaymentReminder | null;
   market: Market;
   stage: MarketListStage;
   preparationAttention: MarketPreparationAttention;
@@ -238,6 +240,7 @@ export function buildMarketListGroups(
     const stage = resolveStage(market, now);
     groups[stage].push({
       market,
+      paymentReminder: stage === 'preparing' ? getMarketPaymentReminder(market, now) : null,
       stage,
       preparationAttention: resolvePreparationAttention(market, stage),
       preparationSummary: buildPreparationSummary(market, stage),

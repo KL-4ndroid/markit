@@ -3,6 +3,7 @@
 import { ChevronRight, Clock, Wallet } from 'lucide-react';
 import type { MarketPlanningViewModel } from '@/lib/markets/market-planning-view-model';
 import type { MarketPreparationFilter } from '@/lib/markets/market-list-view-model';
+import { paymentReminderSummary } from '@/lib/markets/market-payment-deadline';
 
 interface MarketPlanningOverviewProps {
   planning: MarketPlanningViewModel;
@@ -10,6 +11,7 @@ interface MarketPlanningOverviewProps {
 }
 
 export function MarketPlanningOverview({ planning, onOpenProgress }: MarketPlanningOverviewProps) {
+  const deadlineSummary = paymentReminderSummary(planning.paymentDue.map(item => item.paymentReminder));
   const progress = [
     { id: 'payment_due' as const, label: '待繳費', items: planning.paymentDue, icon: Wallet, tone: 'bg-status-warn-bg text-status-warn-text' },
     { id: 'awaiting_decision' as const, label: '待錄取', items: planning.awaitingDecision, icon: Clock, tone: 'bg-atelier-paper text-foreground' },
@@ -28,6 +30,7 @@ export function MarketPlanningOverview({ planning, onOpenProgress }: MarketPlann
               type="button"
               disabled={group.items.length === 0}
               aria-label={`${group.label} ${group.items.length} 場${group.items.length > 0 ? '，查看市集清單' : '，目前無待辦'}`}
+              aria-describedby={group.id === 'payment_due' && deadlineSummary ? 'payment-deadline-summary' : undefined}
               onClick={() => onOpenProgress(group.id)}
               className={`flex min-h-28 min-w-0 flex-col justify-between gap-3 rounded-card border border-primary/10 p-4 text-left shadow-atelier transition-shadow enabled:hover:shadow-atelier-lift disabled:bg-atelier-paper disabled:text-muted-foreground disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${group.items.length > 0 ? group.tone : ''}`}
             >
@@ -37,6 +40,9 @@ export function MarketPlanningOverview({ planning, onOpenProgress }: MarketPlann
                 <span className="shrink-0 text-sm">場</span>
                 {group.items.length > 0 && <ChevronRight className="ml-auto h-4 w-4 shrink-0" aria-hidden="true" />}
               </span>
+              {group.id === 'payment_due' && deadlineSummary ? (
+                <span id="payment-deadline-summary" className="text-xs leading-5">{deadlineSummary}</span>
+              ) : null}
             </button>
           ))}
         </div>

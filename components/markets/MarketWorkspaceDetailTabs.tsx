@@ -41,7 +41,7 @@ export function MarketWorkspaceDetailTabs<T extends string>({
   };
 
   return (
-    <div className="mb-5 grid grid-cols-4 gap-1 rounded-control bg-atelier-paper/70 p-1" role="tablist" aria-label={ariaLabel}>
+    <div className={`mb-5 grid ${items.length > 4 ? 'grid-cols-3 lg:grid-cols-6' : 'grid-cols-4'} gap-1 rounded-control bg-atelier-paper/70 p-1`} role="tablist" aria-label={ariaLabel}>
         {items.map((item, index) => {
           const Icon = item.icon;
           const isActive = item.id === value;

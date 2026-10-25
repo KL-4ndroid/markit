@@ -1,7 +1,7 @@
 import type { CapabilityAccessDecision } from '@/lib/subscription/subscription-access';
 
 export type AnalyticsRange = 'all' | 'recent3' | 'recent10' | 'single';
-export type AnalyticsTab = 'summary' | 'trends' | 'products' | 'advanced';
+export type AnalyticsTab = 'summary' | 'trends' | 'products' | 'regions' | 'advanced';
 export type AnalyticsSubscriptionMode = 'blocked' | 'free_preview' | 'basic' | 'full';
 
 type BlockedCapabilityAccessDecision = Extract<CapabilityAccessDecision, { allowed: false }>;
@@ -104,6 +104,7 @@ function full(): AnalyticsSubscriptionView {
 export function resolveAnalyticsSubscriptionView(
   input: ResolveAnalyticsSubscriptionViewInput,
 ): AnalyticsSubscriptionView {
+  if(input.tab==='regions')return input.advancedAccess.allowed?full():blocked(input.advancedAccess);
   if (input.range === 'single') {
     if (!input.basicAccess.allowed) return blocked(input.basicAccess);
     if (input.tab === 'advanced' && !input.advancedAccess.allowed) {

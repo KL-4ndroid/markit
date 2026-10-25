@@ -36,13 +36,19 @@ async function activityByMarketId(markets: readonly Market[]): Promise<Record<st
     const events = await db.events.where('market_id').equals(market.id).toArray();
     const hasEventActivity = events.some(event => ACTIVITY_EVENT_TYPES.has(event.type));
     const hasDailyStats = (await db.dailyStats.where('marketId').equals(market.id).count()) > 0;
-    if (hasEventActivity || hasDailyStats) {
+    const hasPrivateJournals = (await db.marketJournals.where('marketId').equals(market.id).count()) > 0
+      || (await db.marketJournalDrafts.where('marketId').equals(market.id).count()) > 0;
+    const hasCashRecords = (await db.marketCashRecords.where('marketId').equals(market.id).count()) > 0
+      || (await db.marketCashDrafts.where('marketId').equals(market.id).count()) > 0;
+    if (hasEventActivity || hasDailyStats || hasPrivateJournals || hasCashRecords) {
       result[market.id] = {
         hasStarted: events.some(event => event.type === 'market_started'),
         hasEnded: events.some(event => event.type === 'market_ended'),
         hasDeals: events.some(event => event.type === 'deal_closed'),
         hasInteractions: events.some(event => event.type === 'interaction_recorded'),
         hasDailyStats,
+        hasPrivateJournals,
+        hasCashRecords,
         hasFieldNotes: events.some(event => event.type.startsWith('field_note_')),
         hasChecklistActivity: events.some(event => event.type.startsWith('checklist_item_')),
       };
@@ -55,12 +61,21 @@ function occurrenceDate(market: Market): string {
   return market.dates?.[0] ?? market.startDate;
 }
 
+function omitUnchangedRegion(market: Market, updates: MarketUpdatedPayload['updates']): MarketUpdatedPayload['updates'] {
+  if (updates.regionCode === undefined || updates.regionCode !== (market.regionCode ?? null)) return updates;
+  // Old clients and a paused rollout may still change schedules. Do not emit a
+  // region write when the snapshot already has the same classification.
+  const { regionCode: _regionCode, ...changed } = updates;
+  return changed;
+}
+
 async function applyGeneratedMarketUpdate(
   market: Market,
   updates: MarketUpdatedPayload['updates'],
   schedule: OperationSchedule,
   deterministic: boolean,
 ): Promise<void> {
+  updates = omitUnchangedRegion(market, updates);
   const localOccurrenceDate = occurrenceDate(market);
   const eventId = deterministic
     ? deriveScheduleReconcileEventId({
@@ -207,7 +222,7 @@ export async function restoreSkippedScheduledOccurrence(
     updates = { ...currentScheduleSnapshot, status: 'registered' };
   }
 
-  await recordEvent('market_updated', { market_id: marketId, updates });
+  await recordEvent('market_updated', { market_id: marketId, updates: omitUnchangedRegion(market, updates) });
 }
 
 export async function reviseOperationScheduleFromDate(

@@ -6,6 +6,8 @@ import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { FixedScheduleForm } from '@/components/recurring-operations/FixedScheduleForm';
+import { VenueRegionEditDialog } from '@/components/recurring-operations/VenueRegionEditDialog';
+import { marketRegionLabel } from '@/lib/markets/market-region';
 import { AppDialog } from '@/components/ui/AppDialog';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -38,6 +40,7 @@ export default function FixedSchedulesPage() {
   const canManage = roleRefreshState.stage === 'ready' && isOwner && Boolean(user?.id);
   const data = useOwnerRecurringOperations(canManage ? user?.id ?? null : null);
   const [formOpen, setFormOpen] = useState(false);
+  const [regionVenueId,setRegionVenueId]=useState<string|null>(null);
   const [archiveTarget, setArchiveTarget] = useState<OperationSchedule | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -144,8 +147,10 @@ export default function FixedSchedulesPage() {
                     <p>{scheduleRuleLabel(schedule)}</p>
                     <p className="text-muted-foreground">{schedule.startTime}–{schedule.endTime}{schedule.endsNextDay ? '（隔日）' : ''}</p>
                     <p className="text-xs text-muted-foreground">自 {schedule.recurrence.startDate} 起{schedule.recurrence.endDate ? `，至 ${schedule.recurrence.endDate}` : ''}</p>
+                    <p className="text-xs text-muted-foreground">縣市：{marketRegionLabel(venue?.regionCode)}</p>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
+                    <Button variant="secondary" size="compact" disabled={!venue || busyId===schedule.id} onClick={()=>setRegionVenueId(schedule.venueId)} leadingIcon={<MapPin className="h-4 w-4"/>}>編輯未來縣市</Button>
                     {isPaused ? (
                       <Button variant="secondary" size="compact" isLoading={busyId === schedule.id} onClick={() => void act(schedule, 'resume')} leadingIcon={<Play className="h-4 w-4" />}>恢復</Button>
                     ) : (
@@ -163,6 +168,7 @@ export default function FixedSchedulesPage() {
       </div>
 
       <FixedScheduleForm open={formOpen} onClose={() => setFormOpen(false)} onSuccess={() => toast.success('固定安排已建立')} />
+      {regionVenueId && <VenueRegionEditDialog key={`${user!.id}:${regionVenueId}`} ownerId={user!.id} venueId={regionVenueId} onClose={()=>setRegionVenueId(null)}/>}
       <AppDialog
         open={archiveTarget !== null}
         onClose={() => setArchiveTarget(null)}

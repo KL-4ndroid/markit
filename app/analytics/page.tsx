@@ -27,6 +27,7 @@ import { DateRangeFilter } from '@/components/analytics/DateRangeFilter';
 import { MarketRecapCard } from '@/components/analytics/MarketRecapCard';
 import { MarketTrendCard } from '@/components/analytics/MarketTrendCard';
 import { RecentMarketRevenuePreview } from '@/components/analytics/RecentMarketRevenuePreview';
+import { RegionAnalyticsPanel } from '@/components/analytics/RegionAnalyticsPanel';
 import { UpgradePrompt } from '@/components/subscription/UpgradePrompt';
 import { IconButton } from '@/components/ui/IconButton';
 import { StateView } from '@/components/ui/StateView';
@@ -114,6 +115,7 @@ const ANALYTICS_TABS: readonly TabItem<AnalyticsTab>[] = [
   { id: 'summary', label: '摘要' },
   { id: 'trends', label: '趨勢' },
   { id: 'products', label: '商品' },
+  { id: 'regions', label: '縣市' },
   { id: 'advanced', label: '進階' },
 ];
 
@@ -485,13 +487,13 @@ export default function AnalyticsPage() {
 
       <div className="mx-auto max-w-7xl px-4 pb-10 pt-6 sm:px-6">
         <section className="space-y-3 lg:sticky lg:top-3 lg:z-20 lg:rounded-card lg:border lg:border-primary/10 lg:bg-background/95 lg:p-3 lg:shadow-sm lg:backdrop-blur" aria-label="分析範圍與內容">
-          <DateRangeFilter
+          {activeTab !== 'regions' && <DateRangeFilter
             value={dateRange}
             onChange={setDateRange}
             markets={selectableMarkets}
             selectedMarketId={selectedMarketId}
             onMarketChange={setSelectedMarketId}
-          />
+          />}
 
           <Tabs
             items={ANALYTICS_TABS}
@@ -513,7 +515,7 @@ export default function AnalyticsPage() {
           </section>
         )}
 
-        {markets.length === 0 ? (
+        {(activeTab === 'regions' ? allMarkets.length === 0 : markets.length === 0) ? (
           <StateView
             className="mt-5"
             icon={<BarChart3 className="h-5 w-5" aria-hidden="true" />}
@@ -540,12 +542,16 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <div className="mt-5 space-y-5">
-            <AnalyticsKpiRow
+            {activeTab !== 'regions' && <AnalyticsKpiRow
               marketCount={validMarketCount}
               totalRevenue={summaryKpis.totalRevenue}
               totalDeals={summaryKpis.totalDeals}
               confidenceLabel={confidencePresentation.label}
-            />
+            />}
+            {activeTab === 'regions' && currentOwnerId && advancedAnalyticsAccess.allowed && (
+              <RegionAnalyticsPanel key={currentOwnerId} ownerId={currentOwnerId} markets={allMarkets} today={todayString}
+                productNames={new Map(products.flatMap(p=>p.id?[[p.id,p.name] as [string,string]]:[]))} refreshRevision={refreshRevision}/>
+            )}
             {activeTab === 'summary' && (
               analyticsView.mode === 'free_preview' && recentMarketPreview ? (
                 <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)] lg:items-start">

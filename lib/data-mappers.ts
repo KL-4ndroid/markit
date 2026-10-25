@@ -8,10 +8,14 @@ import type {
   Venue,
 } from '@/types/db';
 import type { MarketWithAccess, ProductWithAccess } from '@/types/staff';
+import { readMarketRegion } from '@/lib/markets/market-region';
+import { readPaymentDeadline, paymentDeadlineFieldsToLocal } from '@/lib/markets/market-payment-deadline';
 
 type AnyRecord = Record<string, unknown>;
 
 const MARKET_CAMEL_TO_SNAKE: Record<string, string> = {
+  regionCode: 'region_code',
+  paymentDeadline: 'payment_deadline',
   startDate: 'start_date',
   endDate: 'end_date',
   startTime: 'start_time',
@@ -98,11 +102,16 @@ export function normalizeEventPayloadForLocal<T>(payload: T): T {
     } as T;
   }
 
+  const regionCode = readMarketRegion(record);
+  const paymentDeadline = readPaymentDeadline(record);
+  const localRecord = regionCode !== undefined || paymentDeadline !== undefined
+    ? { ...record, ...(regionCode !== undefined ? { regionCode } : {}), ...(paymentDeadline !== undefined ? { paymentDeadline } : {}) }
+    : record;
   const marketId = pickMarketId(record);
-  if ('marketId' in record || !marketId) return payload;
+  if ('marketId' in record || !marketId) return localRecord as T;
 
   return {
-    ...record,
+    ...localRecord,
     marketId,
   } as T;
 }
@@ -143,7 +152,8 @@ export function normalizeEventPayloadForCloud<T>(type: string, payload: T): T {
 }
 
 export function marketUpdatesToSnake(updates: AnyRecord): AnyRecord {
-  return normalizeCloudMarketTimes(mapKeys(updates, MARKET_CAMEL_TO_SNAKE));
+  readMarketRegion(updates);
+  return normalizeCloudMarketTimes(mapKeys(paymentDeadlineFieldsToLocal(updates), MARKET_CAMEL_TO_SNAKE));
 }
 
 // A blank optional time explicitly clears it; undefined means leave it unchanged.
@@ -159,7 +169,8 @@ function normalizeCloudMarketTimes(values: AnyRecord): AnyRecord {
 }
 
 export function marketUpdatesToCamel(updates: AnyRecord): AnyRecord {
-  return mapKeys(updates, MARKET_SNAKE_TO_CAMEL);
+  readMarketRegion(updates);
+  return mapKeys(paymentDeadlineFieldsToLocal(updates), MARKET_SNAKE_TO_CAMEL);
 }
 
 export function productUpdatesToSnake(updates: AnyRecord): AnyRecord {
@@ -179,6 +190,9 @@ export function marketCreatedPayloadToCloud(
 
   return normalizeCloudMarketTimes(definedEntries({
     ...payload,
+    paymentDeadline: readPaymentDeadline(payload),
+    region_code: readMarketRegion(payload),
+    payment_deadline: readPaymentDeadline(payload),
     market_id: marketId ?? pickMarketId(payload),
     start_date: startDate,
     end_date: endDate,
@@ -217,6 +231,10 @@ export function marketRowToLocal(row: AnyRecord): Market {
     id: row.id as string | undefined,
     name: row.name,
     location: row.location ?? '',
+    regionCode: readMarketRegion(row),
+    region_code: undefined,
+    paymentDeadline: readPaymentDeadline(row),
+    payment_deadline: undefined,
     dates: row.dates ?? (row.date ? [row.date] : undefined),
     startDate: row.startDate ?? row.start_date ?? row.date,
     endDate: row.endDate ?? row.end_date ?? row.date,
@@ -284,6 +302,8 @@ export function venueRowToLocal(row: AnyRecord): Venue {
     owner_id: row.owner_id,
     name: row.name,
     address: row.address,
+    regionCode: readMarketRegion(row),
+    region_code: undefined,
     locationNote: row.locationNote ?? row.location_note,
     status: row.status,
     isDeleted: row.isDeleted ?? row.is_deleted,

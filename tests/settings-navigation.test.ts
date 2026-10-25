@@ -5,7 +5,7 @@ import { getSettingsDestinationGroups } from '../lib/settings/settings-navigatio
 const ownerGroups = getSettingsDestinationGroups(false, true);
 assert.deepEqual(
   ownerGroups.flatMap((group) => group.items.map((item) => item.id)),
-  ['account', 'team', 'sales', 'data', 'app'],
+  ['account', 'team', 'sales', 'regions', 'data', 'app'],
 );
 assert.equal(ownerGroups[0].label, '營運設定');
 
@@ -22,11 +22,11 @@ assert.equal(
 
 for (const group of ownerGroups) {
   for (const item of group.items) {
-    assert.match(item.href, /^\/settings\//);
+    assert.match(item.href, /^\/(settings|markets)\//);
     assert.ok(item.description.length > 0);
   }
 }
 
-assert.deepEqual(getSettingsDestinationGroups(false, false).flatMap(group => group.items.map(item => item.id)), ['account', 'team', 'sales', 'app']);
+assert.deepEqual(getSettingsDestinationGroups(false, false).flatMap(group => group.items.map(item => item.id)), ['account', 'team', 'sales', 'regions', 'app']);
 assert.equal(getSettingsDestinationGroups(true, true).some(group => group.items.some(item => item.id === 'data')), false);
 console.log('PASS role-aware settings destinations');

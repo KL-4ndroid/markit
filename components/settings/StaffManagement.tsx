@@ -13,7 +13,7 @@
 
 import { useCallback, useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { Users, Mail, Shield, Trash2, Plus, X, Eye, Edit3, AlertCircle, Link2, Copy, QrCode, Clock, Check, RotateCcw } from 'lucide-react';
+import { Users, Mail, Trash2, Plus, X, Eye, Edit3, AlertCircle, Link2, Copy, QrCode, Clock, Check, RotateCcw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
@@ -38,16 +38,12 @@ import type { StaffRole } from '@/types/staff';
 import { RoleBadge } from '@/components/staff/RoleBadge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { getClipboardPort } from '@/lib/platform/interaction-capabilities';
+import { staffAccessPresentation, staffRoleWorkDetails } from '@/lib/permissions/staff-access-presentation';
+import type { CapabilityAccessBlockReason } from '@/lib/subscription/subscription-access';
 
 // P3b-alt：員工角色輔助文案
 // 對應 staff_relationships.role 欄位
 // 純文案，不影響任何 runtime 權限行為
-const ROLE_HELPER_COPY: Record<StaffRole | 'undefined', string | null> = {
-  viewer: '僅用於查看必要資訊',
-  operator: '適合現場協助記錄',
-  manager: '適合協助管理基本資料',
-  undefined: '使用預設員工權限',
-};
 
 // P4c-2：角色修改 Dialog 文案
 // 對應 staff_relationships.role
@@ -68,12 +64,14 @@ type StaffManagementProps = {
   teamFeatureAllowed: boolean;
   managerWorkflowAllowed: boolean;
   simulationActive: boolean;
+  teamAccessReason?: CapabilityAccessBlockReason;
 };
 
 export function StaffManagement({
   teamFeatureAllowed,
   managerWorkflowAllowed,
   simulationActive,
+  teamAccessReason,
 }: StaffManagementProps) {
   const { user } = useAuth();
   const canCreateTeamData = teamFeatureAllowed && !simulationActive;
@@ -372,15 +370,9 @@ export function StaffManagement({
             <AlertCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-foreground mb-2">
-                💡 員工權限說明
+                依角色分工，依存取狀態啟用
               </p>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• <strong>可以做的事</strong>：查看市集和商品、記錄互動、記錄成交</li>
-                <li>• <strong>不能做的事</strong>：編輯市集、編輯商品、新增商品、新增市集</li>
-                <li>• <strong>敏感數據保護</strong>：員工無法查看成本、利潤、總收入</li>
-                <li>• 員工可以訪問<strong>尚未結束與正在營業的市集</strong></li>
-                <li>• 員工<strong>無法訪問</strong>已完成或已取消的市集</li>
-              </ul>
+              <p className="text-sm leading-6 text-muted-foreground">查看者僅供閱讀；出攤助手可做現場紀錄；管理員可協助基本管理。每位成員的目前狀態與工作範圍列在下方。</p>
             </div>
           </div>
         </div>
@@ -427,26 +419,8 @@ export function StaffManagement({
                     )}
                     <RoleBadge role={staff.role} />
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <Shield className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Eye className="h-3 w-3" aria-hidden="true" />
-                      可查看與記錄
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      • {staff.status === 'pending' ? '邀請於' : '加入於'} {new Date(staff.joined_at).toLocaleDateString('zh-TW')}
-                    </span>
-                  </div>
-                  {staff.status === 'suspended_by_plan' && (
-                    <p className="mt-1 text-xs text-danger">
-                      關係與歷史已保留，目前無法存取品牌工作區。
-                    </p>
-                  )}
-                  {ROLE_HELPER_COPY[staff.role ?? 'undefined'] && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {ROLE_HELPER_COPY[staff.role ?? 'undefined']}
-                    </p>
-                  )}
+                  <StaffAccessSummary staff={staff} teamAllowed={teamFeatureAllowed} simulationActive={simulationActive} blockReason={teamAccessReason} />
+                  <p className="mt-2 text-sm text-muted-foreground">{staff.status === 'pending' ? '邀請於' : '加入於'} {new Date(staff.joined_at).toLocaleDateString('zh-TW')}</p>
                 </div>
                 <div className="flex w-full items-center justify-end gap-2 border-t border-primary/10 pt-3 sm:ml-4 sm:w-auto sm:border-0 sm:pt-0">
                   {staff.status === 'suspended_by_plan' && (
@@ -472,8 +446,10 @@ export function StaffManagement({
                     onClick={() => openRoleDialog(staff)}
                     disabled={staff.status !== 'active' || !staff.relationship_id || !canChangeStaffRole}
                     title={
-                      staff.status !== 'active'
+                      staff.status === 'pending'
                         ? '員工接受邀請後才能修改角色'
+                        : staff.status !== 'active'
+                        ? '先恢復成員存取，再修改角色'
                         : !staff.relationship_id
                         ? '資料異常，請重新整理'
                         : simulationActive
@@ -931,4 +907,19 @@ export function StaffManagement({
       />
     </div>
   );
+}
+
+function StaffAccessSummary({ staff, teamAllowed, simulationActive, blockReason }: {
+  staff: StaffMember; teamAllowed: boolean; simulationActive: boolean; blockReason?: CapabilityAccessBlockReason;
+}) {
+  const access = staffAccessPresentation({ role: staff.role, status: staff.status, canView: staff.permissions.can_view, teamAllowed, simulationActive, blockReason });
+  return <div>
+    <p className="text-sm font-medium">{access.title}</p>
+    <p className="mt-1 text-sm leading-6 text-muted-foreground">{access.summary}</p>
+    <details className="mt-2 border-t border-border">
+      <summary className="min-h-11 cursor-pointer rounded-xl py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">查看角色工作範圍</summary>
+      <p className="mb-2 text-sm text-muted-foreground">角色規則；存取啟用且場次開放時適用。</p>
+      <ul className="list-disc space-y-2 pl-5 text-sm leading-6">{staffRoleWorkDetails(staff.role).map(text => <li key={text}>{text}</li>)}</ul>
+    </details>
+  </div>;
 }

@@ -23,6 +23,9 @@ import {
 } from './deal-closed-projection';
 import { isBackfillDealEvent } from '@/lib/events/event-read-model';
 import { timestampToLocalDateString } from '@/lib/time-utils';
+import { readMarketRegion, marketRegionFieldsToLocal } from '@/lib/markets/market-region';
+import { assertMarketRegionWriteReady } from '@/lib/markets/market-region-rollout';
+import { assertPaymentDeadlineWriteReady, readPaymentDeadline, paymentDeadlineFieldsToLocal } from '@/lib/markets/market-payment-deadline';
 import type {
   Event,
   EventType,
@@ -434,6 +437,15 @@ export async function recordEvent(
     }
 
     validateEventPayload(type, payload);
+    assertMarketRegionWriteReady(type, payload as Record<string, unknown>);
+    assertPaymentDeadlineWriteReady(type, payload as Record<string, unknown>);
+    if (type === 'market_updated') {
+      const updatePayload = payload as { market_id: string; updates: Record<string, unknown> };
+      if (readPaymentDeadline(updatePayload.updates)) {
+        const target = await db.markets.get(updatePayload.market_id);
+        if (target?.sessionOrigin === 'schedule') throw new Error('固定營業不設定報名繳費期限');
+      }
+    }
 
     let timestamp = Date.now();
     
@@ -441,6 +453,23 @@ export async function recordEvent(
       const dealPayload = payload as unknown as DealClosedPayload;
       
       timestamp = getDealClosedRecordTimestamp(dealPayload, timestamp);
+    }
+
+    // A server-created checklist snapshot may be slightly ahead of this device's
+    // clock. Preserve causal ordering so an immediate edit/toggle/delete is not
+    // replayed before the item it changes. Historical events stay untouched.
+    if (type === 'checklist_item_updated' || type === 'checklist_item_deleted') {
+      const checklistPayload = payload as Record<string, unknown>;
+      const marketId = pickMarketId(checklistPayload);
+      const itemId = checklistPayload.itemId;
+      if (marketId && typeof itemId === 'string') {
+        const prior = await db.events.where('market_id').equals(marketId)
+          .filter(event => event.type.startsWith('checklist_item_')
+            && event.payload?.itemId === itemId).toArray();
+        for (const event of prior) {
+          if (Number.isFinite(event.timestamp)) timestamp = Math.max(timestamp, event.timestamp + 1);
+        }
+      }
     }
 
     const preparedEvent = prepareEventForInsert(type, payload);
@@ -508,6 +537,7 @@ registerEventHandler('venue_created', async (event: Event<VenueCreatedPayload>, 
   const { venueId, ...payload } = event.payload;
   await db.venues.add({
     ...payload,
+    regionCode: readMarketRegion(payload as Record<string, unknown>),
     id: venueId,
     owner_id: event.actor_id || 'local',
     sync_status: 'local_only',
@@ -518,7 +548,7 @@ registerEventHandler('venue_created', async (event: Event<VenueCreatedPayload>, 
 
 registerEventHandler('venue_updated', async (event: Event<VenueUpdatedPayload>, db) => {
   const updated = await db.venues.update(event.payload.venueId, {
-    ...event.payload.updates,
+    ...marketRegionFieldsToLocal(event.payload.updates),
     updatedAt: event.timestamp,
   });
   if (updated !== 1) throw new Error(`Venue not found: ${event.payload.venueId}`);
@@ -610,6 +640,8 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
     id: market_id,
     name: payload.name,
     location: payload.location,
+    regionCode: readMarketRegion(payload as unknown as Record<string, unknown>),
+    paymentDeadline: readPaymentDeadline(payload as unknown as Record<string, unknown>),
     dates,                       // ✅ 新增：日期陣列
     startDate,                   // ✅ 自動計算：最早日期
     endDate,                     // ✅ 自動計算：最晚日期
@@ -683,7 +715,7 @@ registerEventHandler('market_updated', async (event: Event<{ market_id: string; 
   
   // 更新市集資料
   await db.markets.update(market_id, {
-    ...updates,
+    ...paymentDeadlineFieldsToLocal(marketRegionFieldsToLocal(updates)),
     updatedAt: event.timestamp,
   });
   

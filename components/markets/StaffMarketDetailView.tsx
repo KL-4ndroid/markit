@@ -58,6 +58,7 @@ import {
   Edit
 } from 'lucide-react';
 import { formatCurrency, formatDateRanges } from '@/lib/utils';
+import { marketRegionLabel } from '@/lib/markets/market-region';
 import { formatClockTime, formatClockTimeRange, formatDisplayDateRange } from '@/lib/presentation/formatters';
 import { InteractionButtons } from '@/components/sales/InteractionButtons';
 import { TransactionWorkspace } from '@/components/sales/TransactionWorkspace';
@@ -292,6 +293,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
                   {/* 地點 */}
                   <div className="flex min-w-0 items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="shrink-0 rounded-md bg-white/10 px-1.5 text-xs">{marketRegionLabel(market.regionCode)}</span>
                     <span className="truncate">{market.location}</span>
                   </div>
                 </div>

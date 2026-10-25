@@ -37,6 +37,8 @@ export interface MarketWithAccess {
   id: string;
   name: string;
   location?: string;
+  region_code?: import('@/lib/markets/market-region').MarketRegionCode | null;
+  payment_deadline?: import('@/lib/markets/market-payment-deadline').MarketPaymentDeadline | null;
   dates?: string[];           // ✅ 視圖可能返回
   start_date?: string;
   end_date?: string;

@@ -6,6 +6,11 @@
  */
 
 import { db } from './index';
+import { invalidateJournalCacheScope } from '@/lib/markets/market-journal-cache-scope';
+import { invalidatePreparationTemplateScope } from '@/lib/markets/preparation-template-scope';
+import { invalidateCashScope } from '@/lib/markets/market-cash-scope';
+import { invalidateRegionBackfillScope } from '@/lib/markets/market-region-backfill';
+import { invalidateOwnerFollowupScope } from '@/lib/markets/owner-followup';
 import { clearLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
 import type { Event, Market, Product } from '@/types/db';
 
@@ -60,6 +65,7 @@ function getEventProjectionMarketId(event: Event): string | undefined {
 export async function clearStaffLocalProjections(
   options: ClearStaffLocalProjectionsOptions
 ): Promise<ClearStaffLocalProjectionsResult> {
+  invalidatePreparationTemplateScope();
   const { staffUserId, ownerId } = options;
   const deleted: ClearStaffLocalProjectionsResult = {
     markets: 0,
@@ -278,6 +284,11 @@ export async function resetAuthenticatedCache(
   scope: AuthCacheResetScope,
   userId?: string
 ): Promise<void> {
+  invalidateJournalCacheScope();
+  invalidateOwnerFollowupScope();
+  invalidateCashScope();
+  invalidateRegionBackfillScope();
+  invalidatePreparationTemplateScope();
   console.log(`🔒 resetAuthenticatedCache(scope=${scope}, userId=${userId?.slice(0, 8) ?? 'none'})`);
 
   // Always clear authenticated tables, including every table counted by
@@ -293,6 +304,10 @@ export async function resetAuthenticatedCache(
     db.salesPhotoEvidencePendingPayloads,
     db.productCoverPhotoPendingUploads,
     db.productCoverPhotoPendingPayloads,
+    db.marketJournals,
+    db.marketJournalDrafts,
+    db.marketCashRecords,
+    db.marketCashDrafts,
   ], async () => {
     await db.events.clear();
     await db.markets.clear();
@@ -303,6 +318,10 @@ export async function resetAuthenticatedCache(
     await db.salesPhotoEvidencePendingPayloads.clear();
     await db.productCoverPhotoPendingUploads.clear();
     await db.productCoverPhotoPendingPayloads.clear();
+    await db.marketJournals.clear();
+    await db.marketJournalDrafts.clear();
+    await db.marketCashRecords.clear();
+    await db.marketCashDrafts.clear();
   });
 
   // Clear sync-related state

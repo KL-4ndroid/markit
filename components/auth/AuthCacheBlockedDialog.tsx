@@ -71,6 +71,8 @@ export function AuthCacheBlockedDialog() {
               <p>{detail?.unfinishedSyncQueueCount ?? 0} unfinished sync queue item(s)</p>
               <p>{detail?.pendingSalesPhotoEvidenceCreationCount ?? 0} pending sales photo evidence item(s)</p>
               <p>{detail?.pendingSalesPhotoEvidencePayloadCount ?? 0} pending local photo payload(s)</p>
+              {(detail?.pendingMarketJournalDraftCount ?? 0) > 0 && <p>{detail?.pendingMarketJournalDraftCount} 篇私人心得草稿。請回到出攤心得儲存；一般同步不會送出草稿。</p>}
+              {(detail?.pendingMarketCashDraftCount ?? 0) > 0 && <p>{detail?.pendingMarketCashDraftCount} 份現金草稿。請回市集的開／收攤現金儲存，或到帳號同步設定處理；一般同步不會送出草稿。</p>}
             </div>
             <p>
               Sign in with the original account to let the app sync these changes, or discard them only if you are sure they should not be kept.

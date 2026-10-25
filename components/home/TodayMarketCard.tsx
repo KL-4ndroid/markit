@@ -1,4 +1,4 @@
-import { ArrowRight, Clock3, MapPin, Store } from 'lucide-react';
+import { ArrowRight, Clock3, MapPin } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
 import {
@@ -60,15 +60,12 @@ export function TodayMarketCard({ item, isStaff, onOpen, onStart, isStarting = f
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-atelier-muted">{companionLine}</p>
           </div>
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control bg-atelier-paper/80 text-primary shadow-atelier">
-            <Store className="h-5 w-5" aria-hidden="true" />
-          </span>
         </div>
 
         <div className="mt-5 grid gap-2.5 text-sm text-atelier-muted sm:grid-cols-2">
           <p className="flex min-w-0 items-center gap-2">
             <MapPin className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">{item.market.location || '尚未設定地點'}</span>
+            <span className="min-w-0 break-words">{item.market.location || '尚未設定地點'}</span>
           </p>
           {timeLabel && (
             <p className="flex items-center gap-2">

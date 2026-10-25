@@ -16,6 +16,8 @@ import { DateMultiPicker } from '@/components/ui/DateMultiPicker';
 import { FormField } from '@/components/ui/FormField';
 import { TimePicker } from '@/components/ui/TimePicker';
 import type { MarketCoreFormErrors } from '@/lib/markets/market-form';
+import type { MarketRegionCode } from '@/lib/markets/market-region';
+import { MarketRegionField } from './MarketRegionField';
 
 const inputClassName =
   'min-h-12 w-full rounded-2xl border border-primary/15 bg-atelier-paper px-4 text-foreground shadow-sm outline-none transition-all placeholder:text-muted-foreground/65 hover:border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-muted/40 disabled:text-muted-foreground';
@@ -24,6 +26,8 @@ interface MarketBasicFieldsProps {
   idPrefix: string;
   name: string;
   location: string;
+  regionCode?: MarketRegionCode | null;
+  onRegionChange?: (value: MarketRegionCode | null) => void;
   dates: string[];
   errors: MarketCoreFormErrors;
   mode?: 'owner' | 'manager';
@@ -38,6 +42,8 @@ export function MarketBasicFields({
   idPrefix,
   name,
   location,
+  regionCode,
+  onRegionChange,
   dates,
   errors,
   mode = 'owner',
@@ -103,25 +109,30 @@ export function MarketBasicFields({
             )}
           </FormField>
 
-          <FormField
-            id={`${idPrefix}-location`}
-            label="地點"
-            required
-            error={errors.location}
-          >
-            {(fieldProps) => (
-              <input
-                {...fieldProps}
-                type="text"
-                value={location}
-                onChange={event => onLocationChange(event.target.value)}
-                placeholder="例如：台北市中正區"
-                autoComplete="street-address"
-                disabled={disabled}
-                className={inputClassName}
-              />
-            )}
-          </FormField>
+          {onRegionChange ? <MarketRegionField id={`${idPrefix}-regionCode`} value={regionCode}
+            onChange={onRegionChange} disabled={disabled} error={errors.regionCode} /> : null}
+
+          <div className={onRegionChange ? 'sm:col-span-2' : undefined}>
+            <FormField
+              id={`${idPrefix}-location`}
+              label="地點"
+              required
+              error={errors.location}
+            >
+              {(fieldProps) => (
+                <input
+                  {...fieldProps}
+                  type="text"
+                  value={location}
+                  onChange={event => onLocationChange(event.target.value)}
+                  placeholder={onRegionChange ? '例如：台南南紡、松山捷運旁或完整地址' : '例如：台北市中正區'}
+                  autoComplete="street-address"
+                  disabled={disabled}
+                  className={inputClassName}
+                />
+              )}
+            </FormField>
+          </div>
         </div>
       )}
 

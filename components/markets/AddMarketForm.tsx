@@ -33,6 +33,8 @@ import {
   type MarketCoreFormErrors,
 } from '@/lib/markets/market-form';
 import { loadDefaultSalesPhotoEvidenceRequired } from '@/lib/sales/photo-evidence-settings';
+import { MarketPaymentDeadlineFields } from './MarketPaymentDeadlineFields';
+import type { MarketPaymentDeadline } from '@/lib/markets/market-payment-deadline';
 import { useAuth } from '@/lib/supabase/auth-context';
 import type { MarketCreatedPayload } from '@/types/db';
 
@@ -101,7 +103,7 @@ function isAddMarketDraft(value: unknown): value is AddMarketDraft {
 function hasMeaningfulMarketDraft(draft: AddMarketDraft): boolean {
   const defaults = createDefaultMarketFormData();
   const data = draft.formData;
-  const hasText = [data.name, data.location, data.notes]
+  const hasText = [data.name, data.location, data.notes, data.regionCode]
     .some(value => String(value || '').trim() !== '');
   const hasDates = Array.isArray(data.dates) && data.dates.length > 0;
   const hasCosts = [
@@ -124,7 +126,7 @@ function hasMeaningfulMarketDraft(draft: AddMarketDraft): boolean {
 
   const hasImportText = Boolean(draft.marketTextImportInput?.trim());
 
-  return hasText || hasDates || hasCosts || hasTimeChanges || hasBooleanChanges || hasImportText;
+  return hasText || hasDates || hasCosts || hasTimeChanges || hasBooleanChanges || hasImportText || Boolean(data.paymentDeadline);
 }
 
 function addMinutes(value: string, minutesToAdd: number): string {
@@ -265,7 +267,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
 
   const handleChange = (
     field: keyof MarketCreatedPayload,
-    value: string | number | boolean | string[],
+    value: string | number | boolean | string[] | MarketPaymentDeadline | null,
   ) => {
     setFormData(previous => {
       const updated = { ...previous, [field]: value };
@@ -278,7 +280,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
       }
       return updated;
     });
-    if (field === 'name' || field === 'location' || field === 'dates') {
+    if (field === 'name' || field === 'location' || field === 'dates' || field === 'regionCode' || field === 'paymentDeadline') {
       setErrors(previous => {
         const next = { ...previous };
         delete next[field];
@@ -421,6 +423,8 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
               idPrefix={FIELD_PREFIX}
               name={formData.name}
               location={formData.location}
+              regionCode={formData.regionCode}
+              onRegionChange={value => handleChange('regionCode', value)}
               dates={formData.dates || []}
               errors={errors}
               disabled={isSubmitting}
@@ -429,6 +433,8 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
               onLocationChange={value => handleChange('location', value)}
               onDatesChange={value => handleChange('dates', value)}
             />
+            <MarketPaymentDeadlineFields id={`${FIELD_PREFIX}-paymentDeadline`} value={formData.paymentDeadline}
+              onChange={value => handleChange('paymentDeadline', value)} disabled={isSubmitting} error={errors.paymentDeadline} />
           </div>
 
           <div className="mt-6">

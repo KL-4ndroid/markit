@@ -1,137 +1,38 @@
 'use client';
 
-import { Check, Info, Shield, X } from 'lucide-react';
-import {
-  deriveRoleCapabilities,
-  type RoleCapabilities,
-} from '@/lib/permissions/role-capabilities';
+import { Shield } from 'lucide-react';
+import { staffAccessPresentation, staffRoleWorkDetails } from '@/lib/permissions/staff-access-presentation';
+import type { RoleCapabilities } from '@/lib/permissions/role-capabilities';
 import type { StaffRole } from '@/types/staff';
-
-interface PermissionRow {
-  label: string;
-  allowed: boolean;
-  note?: string;
-}
 
 interface StaffPermissionCardProps {
   staffRole?: StaffRole | null;
   isOwner?: boolean;
   ownerEmail?: string;
   capabilities?: RoleCapabilities;
+  authorizationFresh?: boolean;
 }
 
-const ROLE_LABELS: Record<StaffRole | 'owner' | 'unknown', string> = {
-  owner: '老闆',
-  viewer: 'Viewer 檢視',
-  operator: 'Operator 現場紀錄',
-  manager: 'Manager 管理',
-  unknown: '權限確認中',
-};
+const ROLE_LABELS = { viewer: '查看者', operator: '出攤助手', manager: '管理員' };
 
-export function StaffPermissionCard({
-  staffRole,
-  isOwner = false,
-  ownerEmail,
-  capabilities,
-}: StaffPermissionCardProps) {
-  const resolvedCapabilities =
-    capabilities ?? deriveRoleCapabilities({ isOwner, staffRole });
-  const roleKey = isOwner ? 'owner' : staffRole ?? 'unknown';
-
-  const permissionList: PermissionRow[] = [
-    { label: '查看市集與商品資料', allowed: isOwner || staffRole !== undefined && staffRole !== null },
-    { label: '記錄現場互動', allowed: resolvedCapabilities.canRecordInteraction },
-    { label: '記錄成交 / 收入', allowed: resolvedCapabilities.canRecordDeal },
-    {
-      label: '編輯既有市集基本資料',
-      allowed: resolvedCapabilities.canEditMarketBasic,
-      note: '不含市集名稱、地點、成本、狀態與刪除',
-    },
-    {
-      label: '編輯既有商品基本資料',
-      allowed: resolvedCapabilities.canEditProductBasic,
-      note: '不含商品名稱、分類、成本與刪除',
-    },
-    {
-      label: '建立 field note',
-      allowed: resolvedCapabilities.canCreateFieldNote,
-      note: 'manager 可用',
-    },
-    {
-      label: '管理 field notes',
-      allowed: resolvedCapabilities.canManageFieldNotes,
-      note: 'owner / manager',
-    },
-    {
-      label: '管理 checklist',
-      allowed: resolvedCapabilities.canManageChecklist,
-      note: 'manager 可用',
-    },
-    {
-      label: '切換 checklist',
-      allowed: resolvedCapabilities.canToggleChecklistItem,
-      note: 'owner / manager / operator',
-    },
-    {
-      label: '修改自己建立的紀錄',
-      allowed: resolvedCapabilities.canEditOwnSameDayRecord,
-      note: '下一階段開放',
-    },
-    {
-      label: '刪除自己建立的紀錄',
-      allowed: resolvedCapabilities.canDeleteOwnSameDayRecord,
-      note: '下一階段開放',
-    },
-    { label: '新增市集', allowed: false },
-    { label: '新增商品', allowed: false },
-    { label: '查看成本、利潤與修復工具', allowed: resolvedCapabilities.canViewOwnerFinance },
-    { label: '管理員工與角色', allowed: resolvedCapabilities.canManageStaff },
-  ];
-
-  return (
-    <section className="rounded-xl border border-primary/15 bg-white p-4 shadow-sm shadow-primary/5">
-      <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
-          <Shield className="h-4 w-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-foreground">目前權限</p>
-            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-              {ROLE_LABELS[roleKey]}
-            </span>
-          </div>
-
-          {ownerEmail && (
-            <p className="mt-1 truncate text-xs text-muted-foreground">
-              所屬老闆：{ownerEmail}
-            </p>
-          )}
-
-          <ul className="mt-3 space-y-2">
-            {permissionList.map((permission) => (
-              <li key={permission.label} className="flex items-start gap-2 text-xs">
-                {permission.allowed ? (
-                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                ) : (
-                  <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                )}
-                <span className={permission.allowed ? 'text-foreground' : 'text-muted-foreground'}>
-                  {permission.label}
-                  {permission.note && (
-                    <span className="ml-1 text-muted-foreground">({permission.note})</span>
-                  )}
-                </span>
-              </li>
-            ))}
+export function StaffPermissionCard({ staffRole, isOwner = false, ownerEmail, capabilities, authorizationFresh = false }: StaffPermissionCardProps) {
+  const access = staffAccessPresentation({ role: staffRole, status: 'active', canView: Boolean(staffRole), teamAllowed: authorizationFresh });
+  return <section className="rounded-3xl border border-primary/15 bg-white p-4 sm:p-5" aria-label="目前角色與工作範圍">
+    <div className="flex items-start gap-3">
+      <Shield className="mt-1 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <h2 className="text-lg font-semibold">{isOwner ? '老闆' : staffRole ? ROLE_LABELS[staffRole] : '角色確認中'}</h2>
+        {ownerEmail && <p className="mt-1 break-all text-sm text-muted-foreground">所屬老闆：{ownerEmail}</p>}
+        <p className="mt-3 font-medium">{isOwner ? '管理品牌工作區' : access.title}</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{isOwner ? '管理市集、商品、營運紀錄與團隊。' : access.summary}</p>
+        <details className="mt-3 border-t border-border">
+          <summary className="min-h-11 cursor-pointer rounded-xl py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">查看角色工作範圍</summary>
+          <p className="mb-2 text-sm leading-6 text-muted-foreground">以下為角色規則；實際操作仍需團隊資格有效、成員存取已啟用，且場次開放。</p>
+          <ul className="list-disc space-y-2 pl-5 text-sm leading-6">
+            {(isOwner ? ['管理品牌資料與營運紀錄', '查看成本、利潤與報表', '依方案管理團隊'] : staffRoleWorkDetails(staffRole, capabilities)).map(text => <li key={text}>{text}</li>)}
           </ul>
-
-          <div className="mt-3 flex items-start gap-2 rounded-lg bg-background px-3 py-2 text-xs text-muted-foreground">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <p>權限卡只顯示目前角色規則；實際寫入仍會經過 fresh role 檢查。</p>
-          </div>
-        </div>
+        </details>
       </div>
-    </section>
-  );
+    </div>
+  </section>;
 }

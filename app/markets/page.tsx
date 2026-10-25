@@ -10,8 +10,11 @@ import { toast } from 'sonner';
 import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { MarketDetailLoadingShell } from '@/components/markets/MarketDetailLoadingShell';
 import { MarketListCard } from '@/components/markets/MarketListCard';
+import Link from 'next/link';
+import { marketJournalsEnabled } from '@/lib/markets/market-journal';
 import { MarketSearchField } from '@/components/markets/MarketSearchField';
 import { matchesMarketSearch } from '@/lib/markets/market-planning-view-model';
+import { comparePaymentDeadlines } from '@/lib/markets/market-payment-deadline';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { StateView } from '@/components/ui/StateView';
@@ -216,6 +219,9 @@ function MarketsPageContent() {
   const filteredMarkets = activeView === 'preparing' && preparationFilter !== 'all'
     ? searchedGroups.preparing.filter(item => item.preparationAttention === preparationFilter)
     : searchedGroups[activeView];
+  if (activeView === 'preparing' && preparationFilter === 'payment_due') {
+    filteredMarkets.sort((a, b) => comparePaymentDeadlines(a.market, b.market) || a.displayDate.localeCompare(b.displayDate) || a.market.name.localeCompare(b.market.name));
+  }
   useEffect(() => {
     if (!canLoadScopedData || dbStatus?.ok !== true || pendingScrollRestoreRef.current === null) return;
     if (pendingScrollRestoreRef.current > 0 && allMarkets.length === 0) return;
@@ -391,6 +397,7 @@ function MarketsPageContent() {
       />
 
       <div className="mx-auto max-w-5xl px-4 pb-8 pt-6 sm:px-6">
+        {!isStaffMode && marketJournalsEnabled() && <Link href="/markets/journals" className="mb-4 inline-flex min-h-11 items-center rounded-xl border border-primary/20 bg-white px-4 text-sm font-medium text-primary">出攤心得・集中回顧</Link>}
         {activeView === 'cancelled' ? (
           <div className="mb-5 flex items-center gap-3">
             <IconButton

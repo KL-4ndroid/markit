@@ -33,7 +33,13 @@ export function resolveAccountDeletionPreflight(input: {
       + input.report.pendingProductCoverPhotoPayloadCount,
   });
 
-  if (input.report.blockingReasonCodes.includes('read_failed')) {
+  // Private journal drafts are not included in legacy financial/data exports.
+  // They must be saved or explicitly discarded in the journal screen first.
+  if ((input.report.pendingMarketJournalDraftCount ?? 0) > 0
+    || (input.report.pendingMarketCashDraftCount ?? 0) > 0
+    || input.report.blockingReasonCodes.includes('local_pending_market_cash')
+    || input.report.blockingReasonCodes.includes('local_pending_market_journal')
+    || input.report.blockingReasonCodes.includes('read_failed')) {
     return Object.freeze({
       outcome: 'blocked',
       resolution: null,

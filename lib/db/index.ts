@@ -33,6 +33,13 @@ import {
   runPhaseAwareImport,
 } from './import-runner';
 import { savePlatformFile } from '@/lib/platform/file-operations';
+import type { MarketJournal, MarketJournalDraft } from '@/lib/markets/market-journal';
+import { invalidateJournalCacheScope } from '@/lib/markets/market-journal-cache-scope';
+import { invalidatePreparationTemplateScope } from '@/lib/markets/preparation-template-scope';
+import type { MarketCashRecord, MarketCashDraft } from '@/lib/markets/market-cash';
+import { invalidateCashScope } from '@/lib/markets/market-cash-scope';
+import { invalidateRegionBackfillScope } from '@/lib/markets/market-region-backfill';
+import { invalidateOwnerFollowupScope } from '@/lib/markets/owner-followup';
 
 export type DatabaseInitResult =
   | { ok: true; integrity: IntegrityResult }
@@ -70,6 +77,10 @@ export class MarketPulseDB extends Dexie {
   productCoverPhotoPendingPayloads!: Table<LocalPendingProductCoverPhotoPayload, string>;
   venues!: Table<Venue, string>;
   operationSchedules!: Table<OperationSchedule, string>;
+  marketJournals!: Table<MarketJournal, string>;
+  marketJournalDrafts!: Table<MarketJournalDraft, string>;
+  marketCashRecords!: Table<MarketCashRecord, string>;
+  marketCashDrafts!: Table<MarketCashDraft, string>;
 
   constructor() {
     super('MarketPulseDB');
@@ -289,6 +300,14 @@ export class MarketPulseDB extends Dexie {
       venues: 'id, owner_id, status, sync_status',
       operationSchedules: 'id, owner_id, venueId, status, sync_status, [owner_id+venueId]',
     });
+    this.version(9).stores({
+      marketJournals: 'id, ownerId, marketId, [ownerId+marketId]',
+      marketJournalDrafts: 'id, ownerId, marketId, [ownerId+marketId]',
+    });
+    this.version(10).stores({
+      marketCashRecords: 'id, ownerId, marketId, [ownerId+marketId]',
+      marketCashDrafts: 'id, ownerId, marketId, [ownerId+marketId]',
+    });
   }
 }
 
@@ -369,14 +388,23 @@ export async function initializeDatabase(): Promise<void> {
  * ⚠️ 警告：此操作不可逆！
  */
 export async function clearAllData(): Promise<void> {
+  invalidateOwnerFollowupScope();
+  invalidateJournalCacheScope();
+  invalidatePreparationTemplateScope();
+  invalidateCashScope();
+  invalidateRegionBackfillScope();
   try {
-    await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.venues, db.operationSchedules], async () => {
+    await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.venues, db.operationSchedules, db.marketJournals, db.marketJournalDrafts, db.marketCashRecords, db.marketCashDrafts], async () => {
       await db.events.clear();
       await db.markets.clear();
       await db.products.clear();
       await db.dailyStats.clear();
       await db.venues.clear();
       await db.operationSchedules.clear();
+      await db.marketJournals.clear();
+      await db.marketJournalDrafts.clear();
+      await db.marketCashRecords.clear();
+      await db.marketCashDrafts.clear();
     });
     
     console.log('🗑️ 所有資料已清空（設定保留）');

@@ -24,8 +24,11 @@ const fieldOps = marketDetail.indexOf('<MarketFieldOpsSection', liveFieldOps);
 const manageReference = marketDetail.indexOf('<MarketReferenceNotePanel note={market.notes} />', fieldOps);
 assert.ok(liveFieldOps > 0 && fieldOps > liveFieldOps);
 assert.ok(manageReference > fieldOps);
-assert.match(marketDetail, /aria-label="將報名狀態設為已報名"/);
-assert.match(marketDetail, /aria-label="將報名狀態設為如期舉行"/);
+assert.match(marketDetail, /<MarketRegistrationPanel/);
+assert.match(marketDetail, /else handleStatusChangeRequest\(status\)/);
+const registrationPanel = read('components/markets/MarketRegistrationPanel.tsx');
+assert.match(registrationPanel, /更正／其他狀態/);
+assert.match(registrationPanel, /aria-pressed=\{value === status\}/);
 
 assert.match(dailyRevenue, /有紀錄 \$\{recordedDays\.length\}/);
 assert.match(dailyRevenue, /全部 \$\{dailyData\.length\}/);

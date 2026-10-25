@@ -129,6 +129,12 @@ export function MarketListCard({ item, isStaff, contextLabel, isOpening = false,
 
           {preparation ? (
             <div className="mt-4 space-y-2.5 border-t border-primary/10 pt-3 text-sm">
+              {!isStaff && item.paymentReminder ? (
+                <p className={`rounded-control px-3 py-2 text-xs leading-5 ${item.paymentReminder.kind === 'overdue' ? 'bg-status-danger-bg text-status-danger-text' : 'bg-muted text-foreground'}`}>
+                  <span className="font-semibold">{item.paymentReminder.label}</span>
+                  {item.paymentReminder.deadlineLabel ? <span className="mt-1 block">{item.paymentReminder.deadlineLabel}</span> : null}
+                </p>
+              ) : null}
               {preparation.timeStatus === 'preset' ? (
                 <div className="flex items-start gap-2 rounded-control bg-status-warn-bg px-3 py-2 text-status-warn-text">
                   <Clock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />

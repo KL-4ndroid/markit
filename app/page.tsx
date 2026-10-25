@@ -23,6 +23,7 @@ import { db } from '@/lib/db';
 import { startMarket, useMarketsQuery } from '@/lib/db/hooks';
 import {
   buildTodayViewModel,
+  summarizeTodayMarkets,
 } from '@/lib/home/today-view-model';
 import {
   OWNER_BRAND_NAME_UPDATED_EVENT,
@@ -160,6 +161,9 @@ export default function HomePage() {
   }, [isStaff, user?.id]);
 
   const todayView = useMemo(() => buildTodayViewModel(allMarkets, now), [allMarkets, now]);
+  const todaySummary = summarizeTodayMarkets(todayView.todayMarkets);
+  const otherOpenMarkets = todayView.todayMarkets.slice(1).filter(item => item.phase !== 'ended');
+  const otherClosedMarkets = todayView.todayMarkets.slice(1).filter(item => item.phase === 'ended');
   const canViewOwnerPlanning = roleRefreshState.stage === 'ready' && isOwner;
   const planning = useMemo(
     () => buildMarketPlanningViewModel(canViewOwnerPlanning ? allMarkets : [], now),
@@ -264,6 +268,9 @@ export default function HomePage() {
             <h2 id="today-focus-title" className="mt-1 text-lg font-semibold text-atelier-ink">
               {isStaff ? '你的今日工作' : '今天的營運重點'}
             </h2>
+            {todaySummary.total > 0 && <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              今日 {todaySummary.total} 場：營業中 {todaySummary.operating}・待確認／準備 {todaySummary.preparing}・已收攤 {todaySummary.ended}
+            </p>}
           </div>
 
           {todayView.primaryMarket ? (
@@ -300,7 +307,7 @@ export default function HomePage() {
           {canViewOwnerPlanning && todayArrangement && (
             <p className="mt-3 flex items-start gap-2 rounded-control bg-atelier-blue-soft/50 px-3 py-3 text-sm text-foreground">
               <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-atelier-blue" aria-hidden="true" />
-              今天有 {todayArrangement.markets.length} 場市集，請確認時間與人手安排。
+              今天有同日多場安排，請確認時間與人手；不一定有時段重疊。
             </p>
           )}
         </section>
@@ -348,7 +355,7 @@ export default function HomePage() {
           <section className="mt-8" aria-labelledby="other-today-title">
             <h2 id="other-today-title" className="text-base font-semibold text-atelier-ink">今日其他場次</h2>
             <div className="mt-3 space-y-2">
-              {todayView.todayMarkets.slice(1).map(item => (
+              {otherOpenMarkets.map(item => (
                 <button
                   key={item.market.id ?? item.market.name}
                   type="button"
@@ -358,10 +365,21 @@ export default function HomePage() {
                   <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${todayMarketPhaseClasses(item.phase)}`}>
                     {item.phaseLabel}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{item.market.name}</span>
+                  <span className="min-w-0 flex-1 break-words text-sm font-medium text-foreground">{item.market.name}</span>
                   <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 </button>
               ))}
+              {otherClosedMarkets.length > 0 && <details className="rounded-card border border-border bg-atelier-paper px-3">
+                <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                  {todayView.primaryMarket?.phase === 'ended' ? '其他已收攤' : '今日已收攤'} {otherClosedMarkets.length} 場
+                </summary>
+                <div className="divide-y divide-border">
+                  {otherClosedMarkets.map(item => <button key={item.market.id ?? item.market.name} type="button" onClick={() => openMarket(item.market.id)} className="flex min-h-12 w-full items-center justify-between gap-3 py-3 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                    <span className="min-w-0 break-words">{item.market.name}</span>
+                    <span className="shrink-0 text-muted-foreground">查看回顧</span>
+                  </button>)}
+                </div>
+              </details>}
             </div>
           </section>
         )}

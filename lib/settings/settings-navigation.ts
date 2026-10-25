@@ -1,6 +1,6 @@
 import { TEST_TOOLS_ENABLED } from '@/lib/app/build-profile';
 
-export type SettingsDestinationId = 'account' | 'team' | 'sales' | 'data' | 'app';
+export type SettingsDestinationId = 'account' | 'team' | 'sales' | 'regions' | 'data' | 'app';
 
 export interface SettingsDestination {
   id: SettingsDestinationId;
@@ -56,6 +56,7 @@ const APP_DESTINATION: SettingsDestination = {
   description: '安裝到主畫面、版本與關於 Féria',
   href: '/settings/app',
 };
+const REGIONS_DESTINATION: SettingsDestination={id:'regions',label:'市集縣市整理',description:'檢查未分類場次並預覽多筆補填',href:'/markets/regions'};
 
 export function getSettingsDestinationGroups(isStaff: boolean, includeTestTools = TEST_TOOLS_ENABLED): SettingsDestinationGroup[] {
   return [
@@ -64,7 +65,7 @@ export function getSettingsDestinationGroups(isStaff: boolean, includeTestTools 
       label: isStaff ? '你的工作空間' : '營運設定',
       items: isStaff
         ? [ACCOUNT_DESTINATION, STAFF_TEAM_DESTINATION]
-        : [ACCOUNT_DESTINATION, OWNER_TEAM_DESTINATION, SALES_DESTINATION],
+        : [ACCOUNT_DESTINATION, OWNER_TEAM_DESTINATION, SALES_DESTINATION, REGIONS_DESTINATION],
     },
     {
       id: 'system',

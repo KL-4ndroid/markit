@@ -1,3 +1,5 @@
+import type { MarketRegionCode } from '@/lib/markets/market-region';
+
 export type VenueStatus = 'active' | 'archived';
 export type OperationScheduleStatus = 'active' | 'paused' | 'archived';
 export type ScheduleOccurrenceState = 'scheduled' | 'skipped' | 'suppressed' | 'rule_removed';
@@ -7,6 +9,7 @@ export interface Venue {
   owner_id: string;
   name: string;
   address?: string;
+  regionCode?: MarketRegionCode | null;
   locationNote?: string;
   status: VenueStatus;
   isDeleted?: boolean;
@@ -88,6 +91,8 @@ export interface ScheduleMarketActivity {
   hasDailyStats?: boolean;
   hasFieldNotes?: boolean;
   hasChecklistActivity?: boolean;
+  hasPrivateJournals?: boolean;
+  hasCashRecords?: boolean;
 }
 
 export type ReconciliationAction =

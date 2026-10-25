@@ -33,7 +33,7 @@ const PHASE_PRIORITY: Record<TodayMarketPhase, number> = {
 const PHASE_LABEL: Record<TodayMarketPhase, string> = {
   operating: '營業中',
   preparing: '今日待開場',
-  ended: '今日已收班',
+  ended: '今日已收攤',
 };
 
 export function toLocalDateKey(date: Date): string {
@@ -81,12 +81,20 @@ export function buildTodayViewModel(
       return {
         market,
         phase,
-        phaseLabel: PHASE_LABEL[phase],
+        phaseLabel: phase === 'ended' && market.status === 'completed' ? '整場已結束'
+          : phase === 'preparing' && market.sessionOrigin === 'schedule' ? '固定場次待開始'
+          : phase === 'preparing' && market.status === 'registered' ? '等待錄取'
+          : phase === 'preparing' && market.status === 'accepted' ? '待繳費'
+          : phase === 'preparing' && market.status === 'postponed' ? '已延期'
+          : phase === 'preparing' && session.phase === 'unavailable' ? '營業時間待確認'
+          : PHASE_LABEL[phase],
       };
     })
     .sort((a, b) => (
       PHASE_PRIORITY[a.phase] - PHASE_PRIORITY[b.phase]
-      || marketStartSortValue(a.market).localeCompare(marketStartSortValue(b.market))
+      || (a.phase === 'ended'
+        ? (b.market.operatingEndTime ?? b.market.endTime ?? marketStartSortValue(b.market)).localeCompare(a.market.operatingEndTime ?? a.market.endTime ?? marketStartSortValue(a.market))
+        : marketStartSortValue(a.market).localeCompare(marketStartSortValue(b.market)))
     ));
 
   const todayMarketIds = new Set(todayMarkets.map(item => item.market.id).filter(Boolean));
@@ -111,6 +119,16 @@ export function buildTodayViewModel(
     primaryMarket,
     todayMarkets,
     upcomingMarkets,
+  };
+}
+
+/** Every count uses the exact same collection as today's cards. */
+export function summarizeTodayMarkets(items: readonly TodayMarketViewItem[]) {
+  return {
+    total: items.length,
+    operating: items.filter(item => item.phase === 'operating').length,
+    preparing: items.filter(item => item.phase === 'preparing').length,
+    ended: items.filter(item => item.phase === 'ended').length,
   };
 }
 

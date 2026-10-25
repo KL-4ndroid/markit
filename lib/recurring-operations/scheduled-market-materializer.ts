@@ -43,6 +43,7 @@ export function buildScheduledMarketPayload(
   return {
     marketId: deriveScheduledMarketId(identity),
     name: venue.name,
+    regionCode: venue.regionCode ?? null,
     location: venue.address ?? venue.locationNote ?? venue.name,
     dates: [occurrenceDate],
     startDate: occurrenceDate,

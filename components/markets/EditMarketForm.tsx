@@ -28,6 +28,9 @@ import {
   type MarketCoreFormErrors,
 } from '@/lib/markets/market-form';
 import type { Market } from '@/types/db';
+import type { MarketRegionCode } from '@/lib/markets/market-region';
+import { MarketPaymentDeadlineFields } from './MarketPaymentDeadlineFields';
+import { normalizePaymentDeadline, type MarketPaymentDeadline } from '@/lib/markets/market-payment-deadline';
 
 interface EditMarketFormProps {
   isOpen: boolean;
@@ -41,6 +44,8 @@ interface EditMarketFormProps {
 interface EditMarketFormValues {
   name: string;
   location: string;
+  regionCode: MarketRegionCode | null;
+  paymentDeadline: MarketPaymentDeadline | null;
   dates: string[];
   startDate: string;
   endDate: string;
@@ -69,6 +74,8 @@ function createEditMarketFormValues(market: Market): EditMarketFormValues {
   return {
     name: market.name,
     location: market.location,
+    regionCode: market.regionCode ?? null,
+    paymentDeadline: normalizePaymentDeadline(market.paymentDeadline) ?? null,
     dates: getMarketDates(market),
     startDate: market.startDate,
     endDate: market.endDate,
@@ -121,7 +128,7 @@ export function EditMarketForm({
 
   const handleChange = (
     field: keyof EditMarketFormValues,
-    value: string | number | string[],
+    value: string | number | string[] | MarketPaymentDeadline | null,
   ) => {
     setFormData(previous => {
       const updated = { ...previous, [field]: value } as EditMarketFormValues;
@@ -130,7 +137,7 @@ export function EditMarketForm({
       }
       return updated;
     });
-    if (field === 'name' || field === 'location' || field === 'dates') {
+    if (field === 'name' || field === 'location' || field === 'dates' || field === 'regionCode' || field === 'paymentDeadline') {
       setErrors(previous => {
         const next = { ...previous };
         delete next[field];
@@ -187,6 +194,9 @@ export function EditMarketForm({
       const ownerUpdates = {
         name: formData.name.trim(),
         location: formData.location.trim(),
+        ...(formData.regionCode !== (market.regionCode ?? null) ? { regionCode: formData.regionCode } : {}),
+        ...(JSON.stringify(normalizePaymentDeadline(formData.paymentDeadline) ?? null) !== JSON.stringify(normalizePaymentDeadline(market.paymentDeadline) ?? null)
+          ? { paymentDeadline: formData.paymentDeadline } : {}),
         dates: formData.dates,
         startDate: formData.startDate,
         endDate: formData.endDate,
@@ -264,6 +274,8 @@ export function EditMarketForm({
             idPrefix={FIELD_PREFIX}
             name={formData.name}
             location={formData.location}
+            regionCode={formData.regionCode}
+            onRegionChange={value => handleChange('regionCode', value)}
             dates={formData.dates}
             errors={errors}
             mode={mode}
@@ -272,6 +284,10 @@ export function EditMarketForm({
             onLocationChange={value => handleChange('location', value)}
             onDatesChange={value => handleChange('dates', value)}
           />
+          {!isManagerMode && market.sessionOrigin !== 'schedule' ? (
+            <MarketPaymentDeadlineFields id={`${FIELD_PREFIX}-paymentDeadline`} value={formData.paymentDeadline}
+              onChange={value => handleChange('paymentDeadline', value)} disabled={isSubmitting} error={errors.paymentDeadline} />
+          ) : null}
         </div>
 
         <div className="mt-6">

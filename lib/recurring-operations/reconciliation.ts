@@ -28,6 +28,8 @@ export function hasScheduleMarketUserActivity(activity?: ScheduleMarketActivity)
     || activity.hasDailyStats
     || activity.hasFieldNotes
     || activity.hasChecklistActivity
+    || activity.hasPrivateJournals
+    || activity.hasCashRecords
   );
 }
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Check, CheckSquare, Plus, Save, Trash2, X } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { toast } from 'sonner';
+import { PreparationTemplatePanel } from '@/components/markets/PreparationTemplatePanel';
 import {
   createChecklistItem,
   deleteChecklistItem,
@@ -149,6 +150,8 @@ export function ChecklistPanel({ marketId, canManage, canToggle, onRemainingChan
           </button>
         </div>
       )}
+
+      {canManage && <PreparationTemplatePanel marketId={marketId} items={visibleItems} disabled={isSaving || isLoading} />}
 
       <div className="space-y-2">
         {isLoading ? (

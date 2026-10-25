@@ -1,5 +1,7 @@
 'use client';
 
+import { MarketRegistrationPanel } from '@/components/markets/MarketRegistrationPanel';
+
 import { useEffect, useState, useMemo, useCallback, useTransition, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
@@ -18,7 +20,6 @@ import {
   Pause,
   CheckCircle,
   Edit,
-  Check,
   DoorOpen,
   ClipboardCheck,
   Camera,
@@ -31,6 +32,8 @@ import {
   Circle,
   Package,
   ChevronDown,
+  Wallet,
+  BookOpen,
 } from 'lucide-react';
 import { useMarket, updateMarket, updateMarketStatus, startMarket, endMarket, useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
@@ -60,11 +63,17 @@ import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { MarketDetailLoadingShell } from '@/components/markets/MarketDetailLoadingShell';
 import { MarketReferenceNotePanel } from '@/components/markets/MarketReferenceNotePanel';
+import { MarketPaymentDeadlineNotice } from '@/components/markets/MarketPaymentDeadlineNotice';
+import { MarketJournalWorkspace } from '@/components/markets/MarketJournalWorkspace';
+import { MarketCashPanel } from '@/components/markets/MarketCashPanel';
+import { marketCashEnabled } from '@/lib/markets/market-cash';
+import { marketJournalsEnabled } from '@/lib/markets/market-journal';
 import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceDetailTabs';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import { MarketOperatingSessionControl } from '@/components/markets/MarketOperatingSessionControl';
 import { FutureScheduleEditDialog } from '@/components/recurring-operations/FutureScheduleEditDialog';
+import { marketRegionLabel } from '@/lib/markets/market-region';
 import { AppDialog } from '@/components/ui/AppDialog';
 import { MarketOverviewPhotoStory } from '@/components/markets/MarketOverviewPhotoStory';
 import { OperatingInteractionPanel } from '@/components/markets/OperatingInteractionPanel';
@@ -118,7 +127,7 @@ const EditMarketForm = dynamic(() =>
   import('@/components/markets/EditMarketForm').then(module => module.EditMarketForm)
 );
 
-type OwnerOverviewDetail = 'performance' | 'interactions' | 'photos' | 'costs';
+type OwnerOverviewDetail = 'performance' | 'cash' | 'journal' | 'interactions' | 'photos' | 'costs';
 
 type SalesPhotoEvidenceMarket = Market & {
   salesPhotoEvidenceRequired?: boolean;
@@ -735,8 +744,10 @@ export function MarketDetailScreen() {
         operationPhase: 'closing',
         operationSessionDate: operatingSession.sessionDate,
       });
+      setOwnerOverviewDetail('performance');
+      setOwnerWorkspaceView('overview');
       toast.success('今日現場操作已關閉', {
-        description: '遺漏收入仍可從紀錄頁補登。',
+        description: '可在回顧查看成果；現金與心得都可稍後補記。',
       });
     } catch (error) {
       console.error('提前結束今日營業失敗：', error);
@@ -1255,8 +1266,8 @@ export function MarketDetailScreen() {
       {/* Header */}
       <header className="japanese-gradient-header rounded-b-[2rem] px-4 pb-6 pt-[calc(1rem+env(safe-area-inset-top))] text-white">
         <div className="mx-auto max-w-5xl">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 flex-1 items-start gap-3">
+          <div className="relative sm:flex sm:items-start sm:justify-between sm:gap-3">
+            <div className="flex min-w-0 flex-1 flex-col items-start gap-3 sm:flex-row">
               <button
                 onClick={() => router.back()}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-atelier-paper text-atelier-muted shadow-sm transition-colors hover:bg-atelier-blue-soft hover:text-atelier-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -1265,9 +1276,8 @@ export function MarketDetailScreen() {
                 <ArrowLeft className="h-5 w-5" />
               </button>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-white/85">一起顧好這場市集</p>
-                <h1 className="mt-1 break-words text-2xl font-semibold leading-tight text-white">{market.name}</h1>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/80">
+                <h1 className="break-words text-xl font-semibold leading-snug text-white sm:text-2xl">{market.name}</h1>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/90">
                   {/* 日期 - 完整顯示，支援換行 */}
                   <div className="flex items-start gap-1.5">
                     <Calendar className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
@@ -1279,9 +1289,10 @@ export function MarketDetailScreen() {
                     </span>
                   </div>
                   {/* 地點 */}
-                  <div className="flex min-w-0 items-center gap-1.5">
+                  <div className="flex min-w-0 flex-wrap items-start gap-1.5">
                     <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="truncate">{market.location}</span>
+                    <span className="shrink-0 rounded-md bg-white/10 px-1.5 text-xs">{marketRegionLabel(market.regionCode)}</span>
+                    <span className="min-w-0 break-words">{market.location}</span>
                   </div>
                 </div>
                 <p className={`mt-2 text-xs leading-5 text-white/80 ${isOperating ? 'hidden sm:block' : ''}`}>{marketHeaderDescription}</p>
@@ -1289,7 +1300,7 @@ export function MarketDetailScreen() {
             </div>
             
             {/* 右側操作區 */}
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="absolute right-0 top-0 flex shrink-0 items-center gap-1 sm:static">
               {/* ✅ 同步狀態指示器 */}
               <SyncStatusIndicator tone="default" />
               
@@ -1332,7 +1343,7 @@ export function MarketDetailScreen() {
           phase={marketWorkspacePhase}
           phaseLabel={operatingSession?.label}
           operatingTime={formatClockTimeRange(market.operatingStartTime, market.operatingEndTime) || null}
-          compactOnMobile={marketWorkspacePhase === 'operating' && resolvedOwnerWorkspaceView === 'live'}
+          compactOnMobile={resolvedOwnerWorkspaceView !== 'live' || marketWorkspacePhase === 'operating'}
           items={resolvedOwnerWorkspaceView === 'manage'
             ? [
                 { label: market.sessionOrigin === 'schedule' ? '營業安排' : '報名進度', value: market.sessionOrigin === 'schedule' ? '已排定' : getStatusText(market.status) },
@@ -1378,6 +1389,16 @@ export function MarketDetailScreen() {
                 ]}
         />
 
+        {/* Registration is a current record, not proof of completed prior steps. */}
+        {resolvedOwnerWorkspaceView === 'manage' && !isOperating && market.sessionOrigin !== 'schedule' && (
+          <MarketRegistrationPanel status={market.status} busy={isUpdating} onChange={status => {
+            if (status === 'cancelled') setShowCancelConfirm(true);
+            else handleStatusChangeRequest(status);
+          }} />
+        )}
+
+        {resolvedOwnerWorkspaceView === 'manage' && <MarketPaymentDeadlineNotice market={market} />}
+
         {operatingSession && (
           resolvedOwnerWorkspaceView === 'manage' ||
           (
@@ -1395,6 +1416,7 @@ export function MarketDetailScreen() {
           />
         )}
 
+        {resolvedOwnerWorkspaceView === 'live' && !isOperating && <MarketCashPanel marketId={marketId} sessionDate={operatingSession?.sessionDate} />}
         {resolvedOwnerWorkspaceView === 'overview' && (
           <MarketWorkspaceDetailTabs
             value={ownerOverviewDetail}
@@ -1403,6 +1425,8 @@ export function MarketDetailScreen() {
             panelId="owner-overview-detail-panel"
             items={[
               { id: 'performance', label: '每日表現', icon: Calendar },
+              ...(marketCashEnabled() ? [{ id: 'cash' as const, label: '現金紀錄', icon: Wallet }] : []),
+              ...(marketJournalsEnabled() ? [{ id: 'journal' as const, label: '出攤心得', icon: BookOpen }] : []),
               { id: 'interactions', label: '顧客互動', icon: TrendingUp },
               { id: 'photos', label: '成交照片', icon: Camera },
               { id: 'costs', label: '成本設備', icon: DollarSign },
@@ -1417,6 +1441,13 @@ export function MarketDetailScreen() {
             ? `owner-overview-detail-panel-tab-${ownerOverviewDetail}`
             : undefined}
         >
+
+        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'cash' && (
+          <MarketCashPanel marketId={marketId} sessionDate={operatingSession?.sessionDate} defaultOpen />
+        )}
+        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'journal' && (
+          <MarketJournalWorkspace marketId={marketId} />
+        )}
 
         {resolvedOwnerWorkspaceView === 'live' && !isOperating && ![
           'early-window',
@@ -1433,14 +1464,6 @@ export function MarketDetailScreen() {
         {/* 營業中時的操作區 - 根據自動判斷顯示 */}
         {resolvedOwnerWorkspaceView === 'live' && isOperating && (
           <>
-            <OperatingInteractionPanel
-              marketId={marketId}
-              canOpenSettings
-              onInteractionRecorded={() => {
-                window.dispatchEvent(new Event('interaction-recorded'));
-              }}
-            />
-
             <OperatingMarketWorkbench
               marketId={marketId}
               canRecordDeal
@@ -1449,6 +1472,14 @@ export function MarketDetailScreen() {
               onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
               salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
               onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+            />
+
+            <OperatingInteractionPanel
+              marketId={marketId}
+              canOpenSettings
+              onInteractionRecorded={() => {
+                window.dispatchEvent(new Event('interaction-recorded'));
+              }}
             />
 
             <div className="lg:hidden">
@@ -1507,6 +1538,7 @@ export function MarketDetailScreen() {
               />
             </div>
           </div>
+            <MarketCashPanel marketId={marketId} sessionDate={operatingSession?.sessionDate} />
           </>
         )}
 
@@ -1528,181 +1560,6 @@ export function MarketDetailScreen() {
 
         {/* ✅ 當日流水帳 - 營業中或已結束時顯示（僅員工模式） */}
         {/* 老闆模式不顯示流水帳 */}
-
-        {/* 4. 報名狀態 Stepper - 營業中時完全隱藏 */}
-        {resolvedOwnerWorkspaceView === 'manage' && !isOperating && market.sessionOrigin !== 'schedule' && (
-          <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-foreground">報名狀態</h2>
-          </div>
-          <div className="space-y-4">
-            <div className="relative">
-              <div className="flex items-center justify-between">
-                {/* 已報名 */}
-                <div className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
-                    <button
-                      type="button"
-                      aria-label="將報名狀態設為已報名"
-                      onClick={() => {
-                        if (market.status !== 'registered') {
-                          handleStatusChangeRequest('registered');
-                        }
-                      }}
-                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition-all duration-300 ${
-                        market.status === 'registered'
-                          ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
-                          : ['accepted', 'paid', 'ongoing', 'completed'].includes(market.status)
-                          ? 'bg-primary text-white hover:scale-105 cursor-pointer'
-                          : 'bg-gray-200 text-gray-400 hover:scale-105 cursor-pointer'
-                      }`}
-                    >
-                      {['registered', 'accepted', 'paid', 'ongoing', 'completed'].includes(market.status) && (
-                        <Check className="w-5 h-5" />
-                      )}
-                    </button>
-                    <span className={`mt-2 text-xs font-medium text-center whitespace-nowrap ${
-                      market.status === 'registered' ? 'text-primary font-bold' : 'text-foreground'
-                    }`}>
-                      已報名
-                    </span>
-                  </div>
-                  <div className={`h-1 flex-1 mx-2 transition-all duration-300 rounded-full ${
-                    ['accepted', 'paid', 'ongoing', 'completed'].includes(market.status) ? 'bg-primary' : 'bg-gray-200'
-                  }`}></div>
-                </div>
-
-                {/* 已錄取 */}
-                <div className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
-                    <button
-                      type="button"
-                      aria-label="將報名狀態設為已錄取"
-                      onClick={() => {
-                        if (market.status !== 'accepted') {
-                          handleStatusChangeRequest('accepted');
-                        }
-                      }}
-                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition-all duration-300 ${
-                        market.status === 'accepted'
-                          ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
-                          : ['paid', 'ongoing', 'completed'].includes(market.status)
-                          ? 'bg-primary text-white hover:scale-105 cursor-pointer'
-                          : 'bg-gray-200 text-gray-400 hover:scale-105 cursor-pointer'
-                      }`}
-                    >
-                      {['accepted', 'paid', 'ongoing', 'completed'].includes(market.status) && (
-                        <Check className="w-5 h-5" />
-                      )}
-                    </button>
-                    <span className={`mt-2 text-xs font-medium text-center whitespace-nowrap ${
-                      market.status === 'accepted' ? 'text-primary font-bold' : market.status === 'registered' ? 'text-gray-400' : 'text-foreground'
-                    }`}>
-                      已錄取
-                    </span>
-                  </div>
-                  <div className={`h-1 flex-1 mx-2 transition-all duration-300 rounded-full ${
-                    ['paid', 'ongoing', 'completed'].includes(market.status) ? 'bg-primary' : 'bg-gray-200'
-                  }`}></div>
-                </div>
-
-                {/* 已繳費 */}
-                <div className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
-                    <button
-                      type="button"
-                      aria-label="將報名狀態設為已繳費"
-                      onClick={() => {
-                        if (market.status !== 'paid') {
-                          handleStatusChangeRequest('paid');
-                        }
-                      }}
-                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition-all duration-300 ${
-                        market.status === 'paid'
-                          ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
-                          : ['ongoing', 'completed'].includes(market.status)
-                          ? 'bg-primary text-white hover:scale-105 cursor-pointer'
-                          : 'bg-gray-200 text-gray-400 hover:scale-105 cursor-pointer'
-                      }`}
-                    >
-                      {['paid', 'ongoing', 'completed'].includes(market.status) && (
-                        <Check className="w-5 h-5" />
-                      )}
-                    </button>
-                    <span className={`mt-2 text-xs font-medium text-center whitespace-nowrap ${
-                      market.status === 'paid' ? 'text-primary font-bold' : ['registered', 'accepted'].includes(market.status) ? 'text-gray-400' : 'text-foreground'
-                    }`}>
-                      已繳費
-                    </span>
-                  </div>
-                  <div className={`h-1 flex-1 mx-2 transition-all duration-300 rounded-full ${
-                    ['ongoing', 'completed'].includes(market.status) ? 'bg-primary' : 'bg-gray-200'
-                  }`}></div>
-                </div>
-
-                {/* 如期舉行 */}
-                <div className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
-                    <button
-                      type="button"
-                      aria-label="將報名狀態設為如期舉行"
-                      onClick={() => {
-                        if (market.status !== 'ongoing') {
-                          handleStatusChangeRequest('ongoing');
-                        }
-                      }}
-                      className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition-all duration-300 ${
-                        market.status === 'ongoing'
-                          ? 'ring-4 ring-offset-2 ring-primary/30 scale-110 bg-secondary text-white cursor-default'
-                          : market.status === 'completed'
-                          ? 'bg-primary text-white hover:scale-105 cursor-pointer'
-                          : 'bg-gray-200 text-gray-400 hover:scale-105 cursor-pointer'
-                      }`}
-                    >
-                      {['ongoing', 'completed'].includes(market.status) && (
-                        <Check className="w-5 h-5" />
-                      )}
-                    </button>
-                    <span className={`mt-2 text-xs font-medium text-center whitespace-nowrap ${
-                      market.status === 'ongoing' ? 'text-primary font-bold' : ['registered', 'accepted', 'paid'].includes(market.status) ? 'text-gray-400' : 'text-foreground'
-                    }`}>
-                      如期舉行
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 延期/取消按鈕 */}
-            <div className="flex items-center justify-center gap-4 pt-2">
-              <div className="text-xs text-muted-foreground">或</div>
-              <button
-                onClick={() => handleStatusChangeRequest('postponed')}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                  market.status === 'postponed'
-                    ? 'bg-soft-pink text-foreground ring-2 ring-secondary'
-                    : 'bg-neutral-alt text-muted-foreground hover:bg-border-hairline cursor-pointer'
-                }`}
-              >
-                已延期
-              </button>
-              <button
-                onClick={() => {
-                  setShowCancelConfirm(true);
-                }}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                  market.status === 'cancelled'
-                    ? 'bg-soft-pink text-danger ring-2 ring-danger'
-                    : 'bg-neutral-alt text-muted-foreground hover:bg-border-hairline cursor-pointer'
-                }`}
-              >
-                已取消
-              </button>
-            </div>
-
-          </div>
-          </section>
-        )}
 
         {/* 7. 每日收入統計（多天市集才顯示） */}
         {resolvedOwnerWorkspaceView === 'manage' && !isOperating && (
@@ -2036,7 +1893,7 @@ export function MarketDetailScreen() {
                           <DoorOpen className="w-5 h-5" />
                           <div>
                             <div className="font-semibold">提前進場</div>
-                            <div className="text-sm opacity-70">{market.earlyEntryTime}</div>
+                            <div className="text-sm opacity-70">{formatClockTime(market.earlyEntryTime)}</div>
                           </div>
                         </div>
                         <div className="text-xs font-medium flex items-center gap-1 opacity-60">
@@ -2065,7 +1922,7 @@ export function MarketDetailScreen() {
                           <ClipboardCheck className="w-5 h-5" />
                           <div>
                             <div className="font-semibold">報到</div>
-                            <div className="text-sm opacity-70">{market.checkInTime}</div>
+                            <div className="text-sm opacity-70">{formatClockTime(market.checkInTime)}</div>
                           </div>
                         </div>
                         <div className="text-xs font-medium flex items-center gap-1 opacity-60">

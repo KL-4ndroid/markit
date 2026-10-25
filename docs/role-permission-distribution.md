@@ -1,5 +1,21 @@
 # Role / Permission Distribution Notes
 
+## 2026-10-25 | Role and access presentation (UX07)
+
+`lib/permissions/staff-access-presentation.ts` describes role work and current membership/access availability only. StaffManagement passes its existing capability decision reason, distinguishes pending/suspended/revoked/simulation/unconfirmed access, and removes the claim that every staff role can record. StaffPermissionCard receives role authorization freshness from the existing context and separates a short availability summary from expandable role rules. Viewer is explicitly read-only; Operator/Manager wording follows existing capabilities and operating restrictions. No entitlement, role capability, staff read/write, freshness, RLS, restore or invitation policy changed. See `docs/UIUX_SIX_IMPROVEMENTS_IMPLEMENTATION_2026_10_25.md` and `tests/uiux-six-improvements.test.tsx` for evidence boundaries.
+
+## 2026-10-23 | Optional registration payment deadlines (075)
+
+Market payment deadlines are operational date/time metadata and an in-app display preference, managed by Owner. Existing manager/operator/viewer write capabilities and the manager update allowlist stay unchanged. The deadline JSON accepts only date, optional time, timeZone and reminderEnabled; payment amounts, bank references and private notes are not part of this payload. Existing Staff may read this metadata on already accessible Markets, with no new reminder-management UI or financial visibility.
+
+Migration 075 appends the field using the deployed view's existing SQL definition, preserving filters, financial nulls and grants. Owner guards apply to event and direct-table deadline changes; schedule-origin Markets cannot acquire a deadline. All new trigger functions explicitly revoke direct role grants as well as PUBLIC execution; the pure validator is available only to authenticated/service_role. No new event types, store adapters, background notifications or sync retry routes are added. See `docs/MARKET_PAYMENT_DEADLINE_2026_10_23.md` for activation and evidence boundaries.
+
+## 2026-10-23 | Owner-managed region metadata (074)
+
+Market/Venue region classification is optional, non-financial metadata. Owner forms may create/change/clear it; manager/operator/viewer receive no new write capability. The existing manager Market update allowlist is unchanged. Migration 074 guards region changes on both direct table writes and event projection, validates actor/owner identity, and preserves 070's owner-only Venue/Schedule management. New projection/guard functions explicitly revoke EXECUTE from PUBLIC, anon, authenticated and service_role, accounting for Supabase's direct default grants; only the pure catalog validator is executable by authenticated/service_role.
+
+The staff Market view appends region_code to the existing accessible Market scope. All previous columns, relationship filters and financial null redaction remain identical; the migration aborts on unexpected view drift. No private notes, cash records, subscription tiers or additional finance data are exposed. Existing offline events, cloud mapping/hydration and owner replay retain the optional field without new retry/write routes. Turning off new classification writes keeps compatible reads and unrelated schedule updates available. See `docs/MARKET_REGION_FOUNDATION_2026_10_23.md` for evidence and remaining UI/cross-device verification.
+
 ## 2026-10-22 | Cloud sales projection alignment (073)
 
 Migration 073 patches only the existing market/product deal branches. It preserves event insert authorization, RLS, actor attribution and existing trigger-function security settings. Private projection helpers are not executable by PUBLIC, anon or authenticated. Deletion compensation resolves an original event within the same market; product updates are restricted to that market owner's products. Duplicate and out-of-order tombstones are no-ops after their first effective compensation. Owner/staff read and write capabilities are unchanged. SQL rollback tests do not substitute for staff/cross-account RLS testing. Historical correction is separate; only the precisely named BW-10 test market was corrected.
@@ -175,3 +191,45 @@ Demo Mode 的目的為對外展示 Féria 互動體驗，不應要求登入，�
 - 共用有效期判斷已補強：有填但格式錯誤的到期日不再當成明確無期限授權；非有限評估時間拒絕授權；不因錯誤期限取得 fresh／離線 lease。保留既有有效管理員授權、角色與降級資料保留行為。
 - 目前權益 API 及 migration 064 仍以既有 admin 授權測試路徑為主；billing 來源未接通，不能把 admin、UI 模擬或照片處理成功當作真實付款證據。
 - 程式缺口、候選額度與後續順序見 `docs/subscription/SUBSCRIPTION_RULES_ALIGNMENT_2026_10_23.md`；沒有修改 DB／RLS、啟用收費或改變現有角色。
+
+### 私人出攤心得（2026-10-23，076 已確認套用）
+
+- `market_journals` 為獨立 owner-private 表，登入者必須等於 journal owner、author 與原 market owner；原市集已刪除則 SELECT／writer 拒絕。manager／一般員工不能讀雇主心得，未新增 staff view 欄位或共用事件文字。UI 另要求角色完成確認且非員工模式。
+- 一般 client 僅有 owner RLS SELECT 與專用 `save_market_journal` RPC EXECUTE；撤除直接 INSERT／UPDATE／DELETE、匿名讀取及 trigger 函式直接 EXECUTE。RPC 重新檢查 owner／market、日期、長度、revision 與 mutation ID，不信任 UI gate。
+- 草稿以 owner／market 隔離，不進共用同步佇列；原帳號未送出的私人草稿阻擋登出／身份快取清除，只有顯式捨棄可清除。認證快取清除使舊非同步工作失效，避免清除後又寫回私人文字。
+- 雲端表的 SELECT 與 RPC 不依訂閱或員工財務能力開放，不改 Team、席次、成交、照片或原生發布 gates。已同步內容可透過獨立 owner reader 還原；legacy 財務匯出不等於已備份私人心得。
+- 使用者確認完整套用 076（含角色／結構自檢），REST 欄位檢查通過後已啟用本機，真實 owner 寫入／還原與版本衝突流程通過；35 組隔離 SQL 含 11 組心得檢查。沒有宣稱員工實際登入 UI、正式部署或原生實機權限已驗收。詳細狀態見 `docs/MARKET_PRIVATE_JOURNALS_2026_10_23.md`。
+
+### 品牌出攤準備模板（2026-10-23，077 已確認套用）
+
+- 老闆與同品牌 active Team manager 可讀／管理／套用模板；operator／viewer 不讀模板表。已套用的普通待辦保持原本讀取／勾選權限，沒有擴張財務、私人成果或員工席次。
+- SQL helper／writer 每次重新確認角色與 `has_authoritative_team_entitlement`；非 UI 隱藏而已。只授權模板 SELECT 與 RPC，不授予 table mutation；套用回條不開 client SELECT，RPC 僅回傳同 actor／相同 request 的結果。
+- 模板採雲端保存；套用沿現有 checklist creation events，來源版本在 metadata。沒有新增 pending-operation enqueue／drain、事件類型或離線模板 writer；本機該場有未同步待辦時暫停套用。
+- cache reset、換帳號及員工投影清除使晚到套用結果失效。隔離 SQL 權限檢查、077 雲端欄位與真實 owner 手機／獨立來源還原及衝突驗收通過；本機已啟用。真實 manager UI、正式部署與原生實機仍待驗收。詳見 `docs/MARKET_PREPARATION_TEMPLATES_2026_10_23.md`。
+
+### 可選開／收攤現金（2026-10-23，078 已完成、本機已啟用）
+
+- `market_cash_records` 是 owner-only 財務紀錄，原市集 owner 必須等於登入者；刪除市集後不可讀／寫。manager／operator／viewer 即使能讀市集，也不能取得盤點金額。沒有新增 staff view／共用事件財務欄位或改訂閱條件。
+- client 僅有 owner RLS SELECT 及專用 writer EXECUTE。直接 table mutations、匿名、內部面額 helper／排程 trigger 的 client EXECUTE 撤權；writer 每次檢查 owner、日期、資料／版本與 mutation ID。
+- 持久草稿屬原 owner／market／日別，不走一般事件同步；未送出阻擋無聲清除與帳號刪除，設定頁可回原場次或明確捨棄。cache reset 前使非同步工作失效；不以舊匯出當作已保存私人盤點。
+- 雲端紀錄與本機草稿均列排程快照使用者活動；不改成交／庫存／營收／淨利。16 組隔離 SQL 已驗證權限及保護，使用者確認雲端套用，真實 owner UI／雲端還原／衝突／草稿登出保護通過；staff 實際 UI、真正第二裝置與正式部署另驗。詳見 `docs/MARKET_OPTIONAL_CASH_RECORDS_2026_10_23.md`。
+
+### 現金銷售比較與差額（2026-10-24，079 已完成、本機已啟用）
+
+- 03B 沿用 owner-only 現金表／草稿／日別邊界；`read_market_cash_sales` 雖包含員工替品牌記錄的成交，仍只供該場原 owner，SECURITY DEFINER 內重驗 owner 與非刪除狀態。manager／operator／viewer 不取得現金比較或原始財務來源。
+- `save_market_cash_record_v2` 可保存選填進出與比較基準；舊 writer 遇新版欄位拒絕覆寫，避免舊 client 靜默抹除。不新增直接 table mutation、匿名／service_role EXECUTE 或員工財務權限；沒有訂閱分級變更。
+- 24 組隔離 SQL 已通過（含原 03A）；手機草稿／來源失敗提示與 079 真實 owner 雲端來源、進出／基準保存、獨立來源還原、來源改動及衝突整合均已驗收，本機比較旗標已啟用；正式部署、真正第二裝置與 staff 實際 UI 另驗；詳見 `docs/MARKET_CASH_COMPARISON_2026_10_23.md`。
+
+### 縣市分析與舊場補填（2026-10-24，080 已完成、本機已啟用）
+
+- 縣市金額／商品分析為 owner-only，沿用既有 `advancedAnalytics`，Free 最近三場不能繞過。Team 不擴大員工財務權限；被 gate 阻擋時不掛載縣市成交查詢。分析來源為該 owner 的本機成交，完整性提示與訂閱 gate 分開。
+- 分類整理屬 owner metadata 管理，不要求付費能力。雲端清單只讀同 owner 的未分類非刪除場次；`backfill_market_regions` 每次重新確認 owner、非員工及原市集狀態，鎖定並驗證全部預覽版本後才寫標準事件。任一衝突整批拒絕，不改地點／營收／庫存／日期；固定安排只覆寫原單場。
+- 080 只授 authenticated 專用 RPC EXECUTE，不增加 table mutations、匿名或 service_role 執行。client 檢查未同步事件、前後帳號、作用域 epoch 與本機版本；清除／換帳號後晚到結果失效。沒有新增離線 writer 或自動重試。
+- 21 組隔離 SQL、Free owner 分析阻擋、真實雲端未分類清單與補填預覽通過；使用者已確認 080，普通 owner 完成手機確認、雲端保存、冪等重送、過期預覽拒絕與獨立來源還原，本機已啟用。付費 owner／staff 真實 UI、正式部署與原生另驗。詳見 `docs/MARKET_REGION_ANALYTICS_BACKFILL_2026_10_24.md`。
+
+### 心得轉待辦與固定安排縣市（2026-10-25，081 已完成、本機已啟用）
+
+- 日期篩選仍為 owner-private 心得，不新增共享閱讀。只有 owner 可挑選／改寫並預覽轉成普通待辦，原心得 ID／全文不進 staff 可讀事件 metadata；僅確認的文字沿目標場次既有 Team 員工角色權限使用。
+- 固定安排的雲端預覽／整批確認僅 owner；共用場地與可調整的未來快照原子更新，過去、單場覆寫、取消及已有成交／互動／待辦／心得／現金紀錄保留。server 重新比較完整預覽，包括新增私人紀錄，任一變化整批拒絕。
+- 081 新增 RLS private receipt 表，client 無 table 讀寫；三個 RPC 僅 authenticated EXECUTE，匿名／PUBLIC／service_role 撤權，在 SECURITY DEFINER 內重驗 owner。回條限制同 owner、kind 與完全相同請求；同批重送不重置後來的待辦或分類。
+- client 沿既有網路／認證／有界請求，檢查本機待同步／草稿與 scope，快取清除後的晚到結果不回填。沒有新訂閱、staff writer、離線佇列或自動重試。30 組隔離 SQL 與共用／cache 回歸通過；081 已確認執行且核對 schema，真實 owner 保存、去重／重送、來源／預覽衝突、保護已有待辦場次及獨立來源還原通過。正式部署、staff 真實登入與原生另驗，詳見 [後續細節](MARKET_FOLLOWUP_DETAILS_2026_10_24.md)。

@@ -33,7 +33,7 @@ const StaffManagement = dynamic(
 
 export default function TeamSettingsPage() {
   const { user, session } = useAuth();
-  const { userRole, isStaff, isLoading } = useRoleContext();
+  const { userRole, isStaff, isLoading, roleRefreshState } = useRoleContext();
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
   const ownerId = !isLoading && !isStaff ? user?.id : undefined;
   const capabilityQuery = useAccountCapabilities({
@@ -124,6 +124,7 @@ export default function TeamSettingsPage() {
           <StaffPermissionCard
             staffRole={userRole.staffRole}
             ownerEmail={userRole.ownerEmail}
+            authorizationFresh={roleRefreshState.stage === 'ready' && roleRefreshState.isAuthorizationFresh}
           />
 
           <section className="border-t border-danger/20 pt-5" aria-labelledby="leave-team-title">
@@ -160,6 +161,7 @@ export default function TeamSettingsPage() {
             teamFeatureAllowed={staffCollaborationAccess.allowed}
             managerWorkflowAllowed={managerWorkflowAccess.allowed}
             simulationActive={simulationActive}
+            teamAccessReason={staffCollaborationAccess.allowed ? undefined : staffCollaborationAccess.reason}
           />
         </div>
       )}

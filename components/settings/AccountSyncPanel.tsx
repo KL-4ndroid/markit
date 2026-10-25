@@ -25,6 +25,7 @@ import { useSyncContext } from '@/lib/sync-context';
 import { getSyncPresentation } from '@/lib/sync/sync-presentation';
 import { SUBSCRIPTION_PRESENTATION } from '@/lib/subscription/subscription-presentation';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { CashDraftList } from '@/components/settings/CashDraftList';
 import type { LocalPendingWriteReport } from '@/lib/sync/local-pending-write-report';
 
 const SYNC_STATUS_ICONS = {
@@ -173,6 +174,7 @@ export function AccountSyncPanel() {
         </Button>
       </section>
 
+      <CashDraftList />
       <section className="border-t border-primary/10 pt-5">
         <h2 className="text-base font-semibold text-foreground">結束這次使用</h2>
         <p className="mt-1 text-sm text-muted-foreground">登出前會先檢查尚未送達雲端的資料。</p>
@@ -193,7 +195,7 @@ export function AccountSyncPanel() {
         onConfirm={() => void confirmForceSignOut()}
         title="仍有資料尚未同步"
         description={blockedReport
-          ? `目前有 ${blockedReport.pendingEventCount} 筆事件、${blockedReport.unfinishedSyncQueueCount} 筆同步工作，以及 ${blockedReport.pendingSalesPhotoEvidenceCreationCount + blockedReport.pendingSalesPhotoEvidencePayloadCount} 筆照片資料尚未送達雲端。強制登出會捨棄這些本機內容。`
+          ? `目前有 ${blockedReport.pendingEventCount} 筆事件、${blockedReport.unfinishedSyncQueueCount} 筆同步工作、${blockedReport.pendingSalesPhotoEvidenceCreationCount + blockedReport.pendingSalesPhotoEvidencePayloadCount} 筆照片資料、${blockedReport.pendingMarketJournalDraftCount ?? 0} 篇心得草稿，以及 ${blockedReport.pendingMarketCashDraftCount ?? 0} 份現金草稿尚未送達雲端。心得與現金草稿請回原功能儲存；強制登出會捨棄這些本機內容。`
           : ''}
         confirmLabel="捨棄並登出"
         tone="danger"

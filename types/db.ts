@@ -4,6 +4,8 @@ import type {
   Venue,
 } from '@/lib/recurring-operations/types';
 import type { SalesPhotoEvidenceRequirementSnapshot } from '@/lib/sales/photo-evidence-requirement-snapshot';
+import type { MarketRegionCode } from '@/lib/markets/market-region';
+import type { MarketPaymentDeadline } from '@/lib/markets/market-payment-deadline';
 
 export type { OperationSchedule, ScheduleOccurrenceState, Venue } from '@/lib/recurring-operations/types';
 
@@ -106,6 +108,8 @@ export interface Market {
   id?: string;                 // UUID（由前端生成）
   name: string;                // 市集名稱
   location: string;            // 地點
+  regionCode?: MarketRegionCode | null;
+  paymentDeadline?: MarketPaymentDeadline | null;
   dates?: string[];            // ✅ 新增：日期陣列（支持多選日期，可選以保持向後兼容）
   startDate: string;           // 開始日期（ISO 8601 格式）- 保留作為最早日期
   endDate: string;             // 結束日期（ISO 8601 格式）- 保留作為最晚日期
@@ -184,6 +188,8 @@ export interface Market {
 export interface MarketCreatedPayload {
   name: string;
   location: string;
+  regionCode?: MarketRegionCode | null;
+  paymentDeadline?: MarketPaymentDeadline | null;
   dates?: string[];            // ✅ 新增：日期陣列（多選日期）
   startDate: string;           // 保留：最早日期（向後兼容）
   endDate: string;             // 保留：最晚日期（向後兼容）
