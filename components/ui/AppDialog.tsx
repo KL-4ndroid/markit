@@ -17,6 +17,7 @@ export interface AppDialogProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   layer?: 'dialog' | 'critical';
   dismissible?: boolean;
+  presentation?: 'center' | 'sheet';
   className?: string;
 }
 
@@ -37,6 +38,7 @@ export function AppDialog({
   size = 'md',
   layer = 'dialog',
   dismissible = true,
+  presentation = 'center',
   className,
 }: AppDialogProps) {
   const descriptionId = useId();
@@ -48,17 +50,18 @@ export function AppDialog({
       className={layer === 'critical' ? 'relative z-critical' : 'relative z-dialog'}
     >
       <div className="fixed inset-0 bg-deep/35 backdrop-blur-sm" aria-hidden="true" />
-      <div className="fixed inset-0 overflow-y-auto p-4">
-        <div className="flex min-h-full items-center justify-center">
+      <div className={cn('fixed inset-0 overflow-y-auto', presentation === 'sheet' ? 'p-0 sm:p-4' : 'p-4')}>
+        <div className={cn('flex min-h-full justify-center', presentation === 'sheet' ? 'items-end sm:items-center' : 'items-center')}>
           <DialogPanel
             aria-describedby={description ? descriptionId : undefined}
             className={cn(
               'japanese-surface-card flex max-h-[90dvh] w-full flex-col overflow-hidden',
               SIZE_CLASSES[size],
+              presentation === 'sheet' && 'max-h-[85dvh] pb-[env(safe-area-inset-bottom)] max-sm:rounded-b-none',
               className,
             )}
           >
-            <header className="flex items-start justify-between gap-4 border-b border-primary/10 bg-soft-yellow/45 px-5 py-4">
+            <header className="flex shrink-0 items-start justify-between gap-4 border-b border-primary/10 bg-soft-yellow/45 px-5 py-4">
               <div className="min-w-0">
                 <DialogTitle className="text-lg font-medium text-foreground">
                   {title}
@@ -78,9 +81,9 @@ export function AppDialog({
                 />
               )}
             </header>
-            <div className="overflow-y-auto px-5 py-5">{children}</div>
+            <div className="min-h-0 overflow-y-auto overscroll-contain px-5 py-5">{children}</div>
             {footer && (
-              <footer className="flex flex-col-reverse gap-3 border-t border-primary/10 px-5 py-4 sm:flex-row sm:justify-end">
+              <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-primary/10 px-5 py-4 sm:flex-row sm:justify-end">
                 {footer}
               </footer>
             )}

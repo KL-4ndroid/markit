@@ -107,12 +107,9 @@ export function FieldNotesPanel({
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-medium text-foreground">現場交接筆記</h2>
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-              動態紀錄
+              團隊交接
             </span>
           </div>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            依時間記錄現場變動與班次交接，不會修改主辦／場地備註。
-          </p>
         </div>
       </div>
 

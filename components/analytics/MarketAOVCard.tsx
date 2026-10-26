@@ -30,7 +30,7 @@ export function MarketAOVCard({
   // 點擊卡片跳轉到市集詳情
   const handleClick = () => {
     if (!market.id) return;
-    router.push(buildMarketDetailHref(market.id));
+    router.push(buildMarketDetailHref(market.id, { returnTo: 'analytics' }));
   };
 
   // 排名顏色

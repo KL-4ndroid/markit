@@ -34,12 +34,11 @@
 
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { MarketReturnLink } from '@/components/markets/MarketReturnLink';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  ArrowLeft,
   Calendar,
   MapPin,
   Clock,
@@ -96,10 +95,10 @@ const EditMarketForm = dynamic(() =>
 interface StaffMarketDetailViewProps {
   market: Market;
   initialPhotoEvidenceView?: 'pending_list';
+  returnTo?: string | null;
 }
 
-export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: StaffMarketDetailViewProps) {
-  const router = useRouter();
+export function StaffMarketDetailView({ market, initialPhotoEvidenceView, returnTo }: StaffMarketDetailViewProps) {
   const marketId = market.id!;
   const { user } = useAuth();
   const { userRole, isOwner, isLoading: isRoleLoading } = useRoleContext();
@@ -267,15 +266,9 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
     <div className="min-h-screen bg-atelier-canvas pb-20 text-atelier-ink">
       <header className="japanese-gradient-header japanese-gradient-header-staff rounded-b-[2rem] px-4 pb-6 pt-[calc(1rem+env(safe-area-inset-top))] text-white">
         <div className="mx-auto max-w-5xl">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 flex-1 items-start gap-3">
-              <button
-                onClick={() => router.back()}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-atelier-paper text-atelier-muted shadow-sm transition-colors hover:bg-atelier-blue-soft hover:text-atelier-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                aria-label="返回市集列表"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
+          <div className="relative sm:flex sm:items-start sm:justify-between sm:gap-3">
+            <div className="flex min-w-0 flex-1 flex-col items-start gap-3 sm:flex-row">
+              <MarketReturnLink returnTo={returnTo} />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-white/85">今天一起把現場顧好</p>
                 <h1 className="mt-1 break-words text-2xl font-semibold leading-tight text-white">{market.name}</h1>
@@ -301,7 +294,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView }: Staf
               </div>
             </div>
             
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="absolute right-0 top-0 flex shrink-0 items-center gap-1 sm:static">
               {/* ✅ 同步狀態指示器 */}
               <SyncStatusIndicator tone="default" />
               {canEditMarketBasic && (

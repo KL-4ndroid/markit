@@ -67,7 +67,6 @@ export function MarketBasicFields({
               基本資料
             </h3>
             <div className="ml-auto flex items-center gap-2">
-              <span className="rounded-full bg-soft-yellow px-2.5 py-1 text-[11px] font-medium text-secondary">優先填寫</span>
               {!isManagerMode && onImportFromMarketText ? (
                 <button
                   type="button"
@@ -81,9 +80,6 @@ export function MarketBasicFields({
               ) : null}
             </div>
           </div>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            {isManagerMode ? '確認這次市集的營業日期。' : '名稱、地點與日期是市集的核心資料。'}
-          </p>
         </div>
       </div>
 
@@ -101,7 +97,6 @@ export function MarketBasicFields({
                 type="text"
                 value={name}
                 onChange={event => onNameChange(event.target.value)}
-                placeholder="例如：華山文創市集"
                 autoComplete="organization"
                 disabled={disabled}
                 className={inputClassName}
@@ -116,6 +111,7 @@ export function MarketBasicFields({
             <FormField
               id={`${idPrefix}-location`}
               label="地點"
+              hint="地標或地址皆可。"
               required
               error={errors.location}
             >
@@ -125,7 +121,6 @@ export function MarketBasicFields({
                   type="text"
                   value={location}
                   onChange={event => onLocationChange(event.target.value)}
-                  placeholder={onRegionChange ? '例如：台南南紡、松山捷運旁或完整地址' : '例如：台北市中正區'}
                   autoComplete="street-address"
                   disabled={disabled}
                   className={inputClassName}
@@ -138,9 +133,8 @@ export function MarketBasicFields({
 
       <FormField
         id={`${idPrefix}-dates`}
-        label="市集日期"
+        label="市集日期（可複選）"
         required
-        hint="可一次選擇多個不連續日期。"
         error={errors.dates}
       >
         {(fieldProps) => (
@@ -148,7 +142,7 @@ export function MarketBasicFields({
             {...fieldProps}
             value={dates}
             onChange={onDatesChange}
-            placeholder="選擇一個或多個日期"
+            placeholder="選擇日期"
             required
             disabled={disabled}
             className={inputClassName}
@@ -353,7 +347,7 @@ export function MarketCostFields({
           )}
         </FormField>
       </div>
-      <FormField id={`${idPrefix}-commission-rate`} label="營業額抽成" hint="輸入 10 代表抽成 10%。">
+      <FormField id={`${idPrefix}-commission-rate`} label="營業額抽成（%）">
         {(fieldProps) => (
           <input
             {...fieldProps}

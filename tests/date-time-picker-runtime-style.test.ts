@@ -8,13 +8,12 @@ const pickerSource = readFileSync(join(projectRoot, 'lib', 'date-time-picker', '
 const runtimeCss = readFileSync(join(projectRoot, 'public', 'lib', 'date-time-picker', 'DateTimePicker.css'), 'utf8');
 const redesignReferenceCss = readFileSync(join(projectRoot, 'lib', 'date-time-picker', 'DateTimePicker.css'), 'utf8');
 
-for (const adapterPath of [
-  ['components', 'ui', 'DatePicker.tsx'],
-  ['components', 'ui', 'DateMultiPicker.tsx'],
-  ['components', 'ui', 'TimePicker.tsx'],
-]) {
-  const adapterSource = readFileSync(join(projectRoot, ...adapterPath), 'utf8');
-  assert.match(adapterSource, /link\.href = ['"]\/lib\/date-time-picker\/DateTimePicker\.css['"]/);
+const adapterSource = readFileSync(join(projectRoot, 'lib/platform/web/date-time-picker.ts'), 'utf8');
+assert.match(adapterSource, /link\.href = ['"]\/lib\/date-time-picker\/DateTimePicker\.css['"]/);
+for (const name of ['DatePicker', 'DateMultiPicker', 'TimePicker']) {
+  const wrapper = readFileSync(join(projectRoot, `components/ui/${name}.tsx`), 'utf8');
+  assert.match(wrapper, /useDateTimePicker/);
+  assert.doesNotMatch(wrapper, /document\.|import\('@\/lib\/date-time-picker/);
 }
 
 for (const runtimeClass of [

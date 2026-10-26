@@ -19,7 +19,7 @@ assert.match(home, /buildTodayViewModel\(allMarkets, now\)/);
 assert.match(home, /isStaff \? '你的今日工作' : '今天的營運重點'/);
 assert.match(home, /待補照片 \$\{pendingPhotoItems\.length\} 筆/);
 assert.match(home, /import \{ buildMarketDetailHref \} from '@\/lib\/navigation\/market-detail-route'/);
-assert.match(home, /router\.push\(buildMarketDetailHref\(marketId, \{ task \}\)\)/);
+assert.match(home, /router\.push\(buildMarketDetailHref\(marketId, \{ task, returnTo: 'today' \}\)\)/);
 assert.match(home, /DASHBOARD_ROLE_NOT_READY_OWNER_ID/);
 assert.match(home, /ownerId:\s*scopedOwnerId/);
 assert.doesNotMatch(home, /useMonthlyStats|本月概覽|currentPlan|showUserMenu|<MarketCard/);

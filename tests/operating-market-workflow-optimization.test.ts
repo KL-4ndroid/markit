@@ -26,15 +26,10 @@ for (const source of [owner, staff]) {
   const section = operatingSection(source);
   assert.match(section, /<OperatingMarketWorkbench/);
   assert.match(section, /hidden items-start gap-4 lg:grid/);
-  assert.match(source, /compactOnMobile=\{[^}]*'operating'[^}]*'live'/);
   assert.match(section, /compactEmpty/);
   assert.ok(
     section.indexOf('<OperatingInteractionPanel') < section.indexOf('<DailyTransactionLog'),
     'mobile interaction controls must sit before the recent record log'
-  );
-  assert.ok(
-    section.indexOf('<OperatingInteractionPanel') < section.indexOf('<OperatingMarketWorkbench'),
-    'mobile transaction actions must sit below the interaction controls'
   );
   assert.ok(
     section.indexOf('<OperatingMarketWorkbench') < section.indexOf('<DailyTransactionLog'),
@@ -42,8 +37,19 @@ for (const source of [owner, staff]) {
   );
 }
 
+assert.match(owner, /<MarketWorkspaceSummary[\s\S]*compactOnMobile/);
+assert.match(staff, /compactOnMobile=\{workspacePhase === 'operating' && workspaceView === 'live'\}/);
+assert.ok(
+  operatingSection(owner).indexOf('<OperatingMarketWorkbench') < operatingSection(owner).indexOf('<OperatingInteractionPanel'),
+  'owner quick collection must precede supplemental interaction recording'
+);
+assert.ok(
+  operatingSection(staff).indexOf('<OperatingInteractionPanel') < operatingSection(staff).indexOf('<OperatingMarketWorkbench'),
+  'staff interaction controls retain their permission-dependent position'
+);
+
 assert.doesNotMatch(owner, /OwnerLiveMobileView|ownerLiveMobileView|ownerPendingChecklistCount/);
-assert.match(owner, /<MarketFieldOpsSection[\s\S]*collapsibleOnMobile=\{isOperating\}/);
+assert.match(owner, /<MarketFieldOpsSection[\s\S]*collapsibleOnMobile[\s\S]*defaultMobileExpanded=\{liveStage === 'preparing'\}/);
 assert.match(staff, /<DailyTransactionLog[\s\S]*<MarketFieldOpsSection[\s\S]*collapsibleOnMobile/);
 assert.match(owner, /isOperating \? 'hidden sm:block' : ''/);
 

@@ -43,6 +43,12 @@ const offline = getSyncPresentation({
 });
 assert.equal(offline.kind, 'offline');
 assert.equal(offline.canSync, false);
+assert.equal(getSyncPresentation({ ...base, status: SyncStatus.OFFLINE }).canSync, true, 'network request failure must not require a physical offline/online toggle to retry');
+assert.match(offline.detail, /2 筆紀錄尚未送達雲端/);
+assert.equal(getSyncPresentation({ ...base, status: SyncStatus.SYNCING, isOnline: false }).kind, 'offline');
+assert.equal(getSyncPresentation({ ...base, status: SyncStatus.SUCCESS, pendingCount: 2, lastSyncAt: base.now }).kind, 'pending');
+assert.match(synced.accessibleLabel, /上次完成紀錄同步/);
+assert.doesNotMatch(synced.detail, /所有資料|照片已/);
 
 const error = getSyncPresentation({
   ...base,
@@ -51,5 +57,7 @@ const error = getSyncPresentation({
 });
 assert.equal(error.kind, 'error');
 assert.match(error.accessibleLabel, /network/);
+assert.doesNotMatch(error.detail, /保存在這台裝置/, 'zero pending does not prove a local draft was saved');
+assert.match(error.detail, /無法確認最新雲端資料/);
 
 console.log('PASS sync presentation truth states');

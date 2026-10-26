@@ -6,6 +6,12 @@
 
 用途：未來修改訂閱方案時，先找到規格、程式、資料庫、畫面、測試與發布紀錄，再依實際變更同步維護。這份索引提供導航，不代表服務啟用或發布驗收。
 
+2026-10-25 提示用語導航：[App 提示與介面文字總索引](APP_UI_COPY_INDEX.md)、[訂閱／方案文案分冊](ui-copy/10-subscription.md)、[帳號／團隊／權限文案分冊](ui-copy/09-account-team.md)。逐筆記錄來源位置、用途與接線／候選狀態，供未來查找價格、資格及購買說明；本次只是來源盤點，沒有修改方案、價格、gate 或服務啟用狀態。完整產生器與動態來源限制見總索引。
+
+2026-10-25 提示分層提案：[全功能提示規劃](APP_CONTEXTUAL_HELP_PLAN_2026_10_25.md) 第 3.10 節列出方案摘要、資格限制、購買／續訂說明的呈現邊界；決定付款必需的條件須直接可見。此為尚未實作的 UI 設計提案，沒有變更價格／續訂政策／資格、商店 gate 或現有揭露。
+
+2026-10-25 首批提示實作：[實作與驗證](CONTEXTUAL_HELP_IMPLEMENTATION_2026_10_25.md)、[共用 ContextHelp](../components/ui/ContextHelp.tsx)、[成員管理](../components/settings/StaffManagement.tsx)、[員工角色卡](../components/staff/StaffPermissionCard.tsx)。角色的目前存取狀態／摘要仍直接可見，詳細角色規則改為具名 ⓘ；只有呈現方式改變，沒有變動角色、價格、Team 資格、購買／續訂揭露或啟用 gate。既有分析架構測試僅補齊已存在的縣市分頁預期；訂閱執行邏輯不變。
+
 2026-10-25 UX07 文案增量：[角色／存取呈現 helper](../lib/permissions/staff-access-presentation.ts)、[六項 UIUX 測試](../tests/uiux-six-improvements.test.tsx)、[實作紀錄](UIUX_SIX_IMPROVEMENTS_IMPLEMENTATION_2026_10_25.md)。成員管理與員工權限卡區分角色規則、關係狀態與既有 Team 資格結果；helper 僅呈現，不能作為授權來源。沒有改方案、價格、席次或 gate；新檔為初次 305 檔盤點後的增量導航，不重算歷史數量。
 
 2026-10-25 手機入口整理：[完整出攤流程驗收](MOBILE_MARKET_FLOW_REVIEW_2026_10_25.md) 將單場 owner 回顧的現金、心得改為選定才掛載；普通現場收款提前，成功收攤回成果回顧。沒有新增付費能力或修改價格、既有 Team／財務／照片權限；原模型、writer 與啟用旗標沿用。

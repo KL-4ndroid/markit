@@ -1,0 +1,7 @@
+{
+  "scenario": "Destroying an inactive date picker removes another active time picker",
+  "beforeNodes": 2,
+  "afterUnrelatedDestroy": 0,
+  "afterAttemptReopen": 0,
+  "activeTimeStillMarkedOpen": true
+}

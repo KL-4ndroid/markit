@@ -18,6 +18,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { ContextHelp } from '@/components/ui/ContextHelp';
 import {
   createInvitation,
   getMyInvitations,
@@ -916,10 +917,9 @@ function StaffAccessSummary({ staff, teamAllowed, simulationActive, blockReason 
   return <div>
     <p className="text-sm font-medium">{access.title}</p>
     <p className="mt-1 text-sm leading-6 text-muted-foreground">{access.summary}</p>
-    <details className="mt-2 border-t border-border">
-      <summary className="min-h-11 cursor-pointer rounded-xl py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">查看角色工作範圍</summary>
+    <ContextHelp label="角色工作範圍" className="mt-2">
       <p className="mb-2 text-sm text-muted-foreground">角色規則；存取啟用且場次開放時適用。</p>
       <ul className="list-disc space-y-2 pl-5 text-sm leading-6">{staffRoleWorkDetails(staff.role).map(text => <li key={text}>{text}</li>)}</ul>
-    </details>
+    </ContextHelp>
   </div>;
 }

@@ -9,6 +9,7 @@ interface MarketOperatingSessionControlProps {
   canManage: boolean;
   isUpdating?: boolean;
   showCloseAction?: boolean;
+  embedded?: boolean;
   onStartEarly: () => Promise<void> | void;
   onCloseToday?: () => Promise<void> | void;
 }
@@ -26,6 +27,7 @@ export function MarketOperatingSessionControl({
   canManage,
   isUpdating = false,
   showCloseAction = false,
+  embedded = false,
   onStartEarly,
   onCloseToday,
 }: MarketOperatingSessionControlProps) {
@@ -46,22 +48,22 @@ export function MarketOperatingSessionControl({
 
   return (
     <section
-      className={`mb-4 flex flex-col gap-3 rounded-card border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
+      className={embedded ? 'flex flex-wrap items-center gap-3' : `mb-4 flex flex-col gap-3 rounded-card border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
         isWarning
           ? 'border-secondary/25 bg-atelier-apricot-soft/55'
           : session.phase === 'closed'
             ? 'border-border bg-muted/45'
             : 'border-primary/15 bg-atelier-sage-soft/55'
       }`}
-      aria-label="今日營業狀態"
+      aria-label={embedded ? '今日營業操作' : '今日營業狀態'}
     >
-      <div className="flex min-w-0 items-start gap-3">
+      {!embedded && <div className="flex min-w-0 items-start gap-3">
         <StatusIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
         <div className="min-w-0">
           <p className="text-sm font-semibold text-atelier-ink">{session.label}</p>
           <p className="mt-0.5 text-xs leading-5 text-atelier-muted">{session.message}</p>
         </div>
-      </div>
+      </div>}
 
       {session.canStartEarly && canManage && (
         <button
@@ -92,11 +94,11 @@ export function MarketOperatingSessionControl({
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border bg-white px-4 text-sm font-semibold text-atelier-ink transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Moon className="h-4 w-4" aria-hidden="true" />
-              提前結束今日營業
+              {embedded ? '收攤' : '提前結束今日營業'}
             </button>
           ) : (
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <span className="w-full text-xs text-atelier-muted sm:w-auto">提前結束後將立即關閉今日現場操作。</span>
+              <span className="w-full text-xs text-atelier-muted sm:w-auto">{embedded ? '收攤後將立即關閉今日現場操作。' : '提前結束後將立即關閉今日現場操作。'}</span>
               <button
                 type="button"
                 onClick={() => setConfirmingClose(false)}
@@ -111,11 +113,11 @@ export function MarketOperatingSessionControl({
                 disabled={isUpdating}
                 className="min-h-11 rounded-md bg-destructive px-3 text-sm font-semibold text-destructive-foreground disabled:opacity-50"
               >
-                確認提前結束
+                {embedded ? '確認收攤' : '確認提前結束'}
               </button>
             </div>
           )}
-          {!confirmingClose && (
+          {!confirmingClose && !embedded && (
             <p className="text-[11px] text-atelier-muted">未操作時會在延長時段結束後自動收攤。</p>
           )}
         </div>

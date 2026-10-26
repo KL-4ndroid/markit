@@ -38,13 +38,15 @@ assert.match(legacyWebPageSource, /import \{ redirect \} from ['"]next\/navigati
 assert.match(legacyWebPageSource, /redirect\(buildMarketDetailHref\(id, \{ task \}\)\)/);
 assert.match(legacyWebPageSource, /Array\.isArray\(query\.task\)/);
 assert.ok(
-  nextConfigSource.includes("source: '/markets/:id((?!detail$|schedules$)[^/]+)'"),
+  nextConfigSource.includes("source: '/markets/:id((?!detail$|schedules$|journals$|regions$)[^/]+)'"),
   'Web legacy market redirects must preserve the fixed-schedule management route.',
 );
 
-const legacyMarketRedirectPattern = /^\/markets\/((?!detail$|schedules$)[^/]+)$/;
+const legacyMarketRedirectPattern = /^\/markets\/((?!detail$|schedules$|journals$|regions$)[^/]+)$/;
 assert.match('/markets/market-1', legacyMarketRedirectPattern);
 assert.doesNotMatch('/markets/detail', legacyMarketRedirectPattern);
 assert.doesNotMatch('/markets/schedules', legacyMarketRedirectPattern);
+assert.doesNotMatch('/markets/journals', legacyMarketRedirectPattern);
+assert.doesNotMatch('/markets/regions', legacyMarketRedirectPattern);
 
 console.log('PASS market detail static route');

@@ -404,7 +404,6 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
         onClose={handleRequestClose}
         eyebrow="市集管理"
         title="新增市集"
-        description="先完成基本資料；其他設定可依主辦資訊逐項補充。"
         dismissible={!isSubmitting}
         footer={(
           <>
@@ -440,7 +439,6 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
           <div className="mt-6">
             <div className="mb-3 px-1">
               <p className="text-sm font-semibold text-foreground">細節設定</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">需要時再展開，建立後也能回來補充。</p>
             </div>
 
             <div className="space-y-3">

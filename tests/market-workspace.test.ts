@@ -76,7 +76,7 @@ for (const source of [ownerPageSource, staffPageSource]) {
   assert.match(source, /<SalesPhotoEvidenceFlowDialog/);
 }
 
-assert.match(ownerPageSource, /resolvedOwnerWorkspaceView === 'live' && isOperating/);
+assert.match(ownerPageSource, /activity=\{isOperating/);
 assert.match(ownerPageSource, /ownerOverviewDetail === 'photos'/);
 assert.match(ownerPageSource, /ownerOverviewDetail === 'interactions'/);
 assert.match(ownerPageSource, /ownerOverviewDetail === 'costs'/);
@@ -90,9 +90,9 @@ assert.match(ownerPageSource, /label: '回顧'/);
 assert.match(ownerPageSource, /market\.sessionOrigin === 'schedule' \? '營業安排' : '報名進度'/);
 assert.match(ownerPageSource, /market\.sessionOrigin === 'schedule' \? '已排定'/);
 assert.match(ownerPageSource, /canManageOwnerFieldOps = marketWorkspacePhase !== 'ended'/);
-assert.match(ownerPageSource, /<MarketOperatingSessionControl/);
-assert.match(ownerPageSource, /showCloseAction=\{resolvedOwnerWorkspaceView === 'manage'\}/);
-assert.match(operatingSessionControlSource, /aria-label="今日營業狀態"/);
-assert.match(operatingSessionControlSource, />\s*提前結束今日營業\s*</);
+assert.match(ownerPageSource, /<MarketLiveSummaryActions/);
+assert.match(ownerPageSource, /<MarketWorkspaceSummary[\s\S]*<MarketLiveSummaryActions[\s\S]*onCloseToday=\{handleCloseTodayOperation\}/);
+assert.match(operatingSessionControlSource, /aria-label=\{embedded \? '今日營業操作' : '今日營業狀態'\}/);
+assert.match(operatingSessionControlSource, /embedded \? '收攤' : '提前結束今日營業'/);
 
 console.log('market workspace tests passed');

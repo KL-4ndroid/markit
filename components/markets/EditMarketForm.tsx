@@ -254,7 +254,7 @@ export function EditMarketForm({
       onClose={onClose}
       eyebrow="市集管理"
       title="編輯市集"
-      description={isManagerMode ? '調整營業日期、時間與現場備註。' : '基本資料優先，其餘設定可按需要展開。'}
+      description={isManagerMode ? '可調整營業日期、時間與現場備註。' : undefined}
       dismissible={!isSubmitting}
       footer={(
         <>
@@ -293,7 +293,6 @@ export function EditMarketForm({
         <div className="mt-6">
           <div className="mb-3 px-1">
             <p className="text-sm font-semibold text-foreground">細節設定</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">依主辦資訊調整，未變動的設定會維持原樣。</p>
           </div>
 
           <div className="space-y-3">

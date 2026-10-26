@@ -69,9 +69,6 @@ export function ProductFormFields({
           <h3 id={`${idPrefix}-required-heading`} className="text-sm font-medium text-foreground">
             基本資料
           </h3>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            先完成銷售時一定會用到的資料。
-          </p>
         </div>
 
         {!isManagerMode && (
@@ -87,7 +84,6 @@ export function ProductFormFields({
                 type="text"
                 value={values.name}
                 onChange={event => onChange('name', event.target.value)}
-                placeholder="例如：手工陶杯"
                 autoComplete="off"
                 disabled={disabled}
                 className={inputClassName}
@@ -139,7 +135,7 @@ export function ProductFormFields({
         <div className={cn('grid gap-4', isManagerMode ? 'grid-cols-1' : 'sm:grid-cols-2')}>
           <FormField
             id={`${idPrefix}-price`}
-            label="售價"
+            label="售價（元）"
             required
             error={errors.price}
           >
@@ -161,7 +157,7 @@ export function ProductFormFields({
           {!isManagerMode && (
             <FormField
               id={`${idPrefix}-cost`}
-              label="成本"
+              label="成本（元）"
               hint="只有老闆可查看與修改"
               error={errors.cost}
             >
@@ -188,9 +184,6 @@ export function ProductFormFields({
           <h3 id={`${idPrefix}-optional-heading`} className="text-sm font-medium text-foreground">
             庫存與說明
           </h3>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            依商品需要調整，不影響快速建立。
-          </p>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)] lg:items-start">
@@ -205,7 +198,6 @@ export function ProductFormFields({
               />
               <span className="min-w-0">
                 <span className="block text-sm font-medium text-foreground">不限庫存</span>
-                <span className="block text-xs text-muted-foreground">適合服務或接單訂製商品</span>
               </span>
             </label>
 
@@ -232,7 +224,7 @@ export function ProductFormFields({
             )}
           </div>
 
-          <FormField id={`${idPrefix}-description`} label="商品描述">
+          <FormField id={`${idPrefix}-description`} label="商品描述（選填）">
             {(fieldProps) => (
               <div className="relative">
                 <FileText
@@ -243,7 +235,6 @@ export function ProductFormFields({
                   {...fieldProps}
                   value={values.description}
                   onChange={event => onChange('description', event.target.value)}
-                  placeholder="尺寸、材質或其他銷售時需要知道的資訊"
                   rows={4}
                   disabled={disabled}
                   className={`${inputClassName} resize-none py-2.5 pl-9`}

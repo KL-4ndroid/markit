@@ -123,7 +123,7 @@ export function QuadrantGrid({
           <div
             key={market.id}
             onClick={() => {
-              if (market.id) router.push(buildMarketDetailHref(market.id));
+              if (market.id) router.push(buildMarketDetailHref(market.id, { returnTo: 'analytics' }));
             }}
             className="text-xs text-foreground bg-white/50 hover:bg-white rounded-lg px-2 py-1.5 cursor-pointer transition-colors"
           >

@@ -122,7 +122,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   // 1️⃣ 初始化中或加載中：顯示骨架屏
   if (!isInitialized || loading || isCheckingOfflineData) {
-    return <GlobalLoadingSkeleton />;
+    return <GlobalLoadingSkeleton message={loading || !isInitialized ? '正在確認登入狀態…' : '正在確認這台裝置的資料…'} />;
   }
 
   // 2️⃣ 檢查是否為白名單路由

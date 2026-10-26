@@ -111,7 +111,7 @@ function TemplateWorkspace({actorId,ownerId,marketId,items,disabled}: {actorId:s
       <h3 className="text-sm font-medium">準備模板</h3>
       {!editor && <button type="button" className={buttonClass} disabled={busy} onClick={() => setOpen(false)}>收起</button>}
     </div>
-    <p className="text-xs leading-relaxed text-muted-foreground">品牌共用模板；連線後可管理與套用。新增的待辦屬於這場市集，之後修改模板不影響這裡。</p>
+    <p className="text-xs leading-relaxed text-muted-foreground">品牌共用，需連線；修改模板不會改動已套用的待辦。</p>
     {error && <p role="alert" className="break-words text-sm text-danger">{error}</p>}
     {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
     {editor ? <div className="space-y-3">

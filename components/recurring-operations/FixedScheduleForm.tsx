@@ -142,7 +142,6 @@ export function FixedScheduleForm({ open, onClose, onSuccess }: FixedScheduleFor
       onClose={onClose}
       eyebrow="固定營業"
       title="設定每週固定安排"
-      description="先填地點、星期與時間；費用與設備預設可稍後展開。"
       dismissible={!isSubmitting}
       footer={(
         <>
@@ -159,18 +158,17 @@ export function FixedScheduleForm({ open, onClose, onSuccess }: FixedScheduleFor
             </span>
             <div>
               <h3 id="fixed-required-heading" className="font-semibold text-foreground">固定營業資訊</h3>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">這些資訊用來排出每週的營業場次。</p>
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FormField id="fixed-venue-name" label="營業據點名稱" required error={errors.venueName}>
-              {props => <input {...props} className={inputClass} value={venueName} onChange={event => setVenueName(event.target.value)} placeholder="例如：華山週末攤位" disabled={isSubmitting} />}
+              {props => <input {...props} className={inputClass} value={venueName} onChange={event => setVenueName(event.target.value)} disabled={isSubmitting} />}
             </FormField>
             <MarketRegionField id="fixed-regionCode" value={regionCode} onChange={setRegionCode} disabled={isSubmitting} />
             <div className="sm:col-span-2">
-              <FormField id="fixed-address" label="地址" hint="選填，可只填方便辨識的位置。">
-                {props => <input {...props} className={inputClass} value={address} onChange={event => setAddress(event.target.value)} placeholder="例如：台北市中正區" disabled={isSubmitting} />}
+              <FormField id="fixed-address" label="地點（選填）" hint="地標或地址皆可。">
+                {props => <input {...props} className={inputClass} value={address} onChange={event => setAddress(event.target.value)} disabled={isSubmitting} />}
               </FormField>
             </div>
           </div>

@@ -192,7 +192,7 @@ export default function HomePage() {
 
   const openMarket = (marketId?: string, task?: 'pending-photos') => {
     if (!marketId) return;
-    router.push(buildMarketDetailHref(marketId, { task }));
+    router.push(buildMarketDetailHref(marketId, { task, returnTo: 'today' }));
   };
 
   const startScheduledMarket = async (marketId: string) => {
@@ -341,7 +341,7 @@ export default function HomePage() {
                     ? <WifiOff className="h-5 w-5" aria-hidden="true" />
                     : <RefreshCw className="h-5 w-5" aria-hidden="true" />}
                   title={status === SyncStatus.OFFLINE ? '目前離線' : status === SyncStatus.ERROR ? '同步需要重試' : `${pendingCount} 筆資料待同步`}
-                  description={status === SyncStatus.OFFLINE ? '操作會先安全保存在這台裝置' : '本機資料仍在，可重新嘗試同步'}
+                  description={pendingCount > 0 ? `${pendingCount} 筆紀錄只保存在這台裝置，尚未送達雲端` : '尚無法確認最新雲端資料；已保存的本機紀錄仍保留'}
                   actionLabel={status === SyncStatus.OFFLINE ? undefined : '重試'}
                   tone="blue"
                   onClick={status === SyncStatus.OFFLINE ? undefined : () => void sync()}
@@ -434,7 +434,7 @@ export default function HomePage() {
         {canViewOwnerPlanning && (
           <SameDayMarketArrangements
             arrangements={planning.sameDayArrangements}
-            onOpenMarket={market => market.id && router.push(buildMarketDetailHref(market.id, { task: 'registration' }))}
+            onOpenMarket={market => market.id && router.push(buildMarketDetailHref(market.id, { task: 'registration', returnTo: 'today' }))}
           />
         )}
       </div>

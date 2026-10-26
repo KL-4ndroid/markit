@@ -15,7 +15,8 @@ const subscriptionViewSource = readFileSync(
 );
 const manifestSource = readFileSync(join(root, 'scripts/test-files.txt'), 'utf8');
 
-assert.match(subscriptionViewSource, /type AnalyticsTab = 'summary' \| 'trends' \| 'products' \| 'advanced'/);
+assert.match(subscriptionViewSource, /type AnalyticsTab = 'summary' \| 'trends' \| 'products' \| 'regions' \| 'advanced'/);
+assert.match(pageSource, /label: '縣市'/);
 assert.match(pageSource, /label: '摘要'/);
 assert.match(pageSource, /label: '趨勢'/);
 assert.match(pageSource, /label: '商品'/);

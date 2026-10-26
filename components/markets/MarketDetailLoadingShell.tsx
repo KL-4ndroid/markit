@@ -1,24 +1,24 @@
-import { ArrowLeft, CalendarDays, MapPin, Store } from 'lucide-react';
+import { CalendarDays, MapPin, Store } from 'lucide-react';
+import { MarketReturnLink } from '@/components/markets/MarketReturnLink';
 
 import type { MarketDetailTransitionSnapshot } from '@/lib/navigation/market-detail-transition';
 
 interface MarketDetailLoadingShellProps {
   snapshot?: MarketDetailTransitionSnapshot | null;
+  returnTo?: string | null;
 }
 
 function LoadingBar({ className }: { className: string }) {
   return <div className={`rounded bg-muted skeleton-shimmer ${className}`} aria-hidden="true" />;
 }
 
-export function MarketDetailLoadingShell({ snapshot }: MarketDetailLoadingShellProps) {
+export function MarketDetailLoadingShell({ snapshot, returnTo }: MarketDetailLoadingShellProps) {
   return (
     <div className="min-h-screen bg-background pb-24" role="status" aria-label="正在開啟市集" aria-busy="true">
       <div className="japanese-gradient-header rounded-b-[2rem] px-4 pb-7 pt-6 sm:px-6 sm:pt-10">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-white/90 text-primary shadow-sm" aria-hidden="true">
-              <ArrowLeft className="h-5 w-5" />
-            </div>
+            <MarketReturnLink returnTo={returnTo} />
             <div className="min-w-0 flex-1 pt-0.5">
               {snapshot ? (
                 <>

@@ -1,6 +1,8 @@
 'use client';
 
 import { MarketRegistrationPanel } from '@/components/markets/MarketRegistrationPanel';
+import { MarketReturnLink } from '@/components/markets/MarketReturnLink';
+import { MarketTodayTimeline } from '@/components/markets/MarketTodayTimeline';
 
 import { useEffect, useState, useMemo, useCallback, useTransition, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -12,7 +14,6 @@ import {
   MapPin,
   DollarSign,
   TrendingUp,
-  Clock,
   AlertCircle,
   Trash2,
   Ban,
@@ -20,18 +21,14 @@ import {
   Pause,
   CheckCircle,
   Edit,
-  DoorOpen,
   ClipboardCheck,
   Camera,
   Store,
-  Moon,
   BarChart3,
   Table,
   Armchair,
   Umbrella,
-  Circle,
   Package,
-  ChevronDown,
   Wallet,
   BookOpen,
 } from 'lucide-react';
@@ -43,7 +40,7 @@ import {
   getActiveInteractionEventsForMarket,
 } from '@/lib/events/active-event-service';
 import { formatCurrency, formatDateRanges } from '@/lib/utils';
-import { formatClockTime, formatClockTimeRange, formatDisplayDateRange } from '@/lib/presentation/formatters';
+import { formatClockTimeRange, formatDisplayDateRange } from '@/lib/presentation/formatters';
 import { toast } from 'sonner';
 import { hideNavigation, showNavigation } from '@/lib/navigation-store';
 import { InteractionButtons } from '@/components/sales/InteractionButtons';
@@ -62,7 +59,6 @@ import { InteractionDetailModal } from '@/components/markets/InteractionDetailMo
 import { DailyTransactionLog } from '@/components/markets/DailyTransactionLog';
 import { MarketFieldOpsSection } from '@/components/markets/MarketFieldOpsSection';
 import { MarketDetailLoadingShell } from '@/components/markets/MarketDetailLoadingShell';
-import { MarketReferenceNotePanel } from '@/components/markets/MarketReferenceNotePanel';
 import { MarketPaymentDeadlineNotice } from '@/components/markets/MarketPaymentDeadlineNotice';
 import { MarketJournalWorkspace } from '@/components/markets/MarketJournalWorkspace';
 import { MarketCashPanel } from '@/components/markets/MarketCashPanel';
@@ -71,7 +67,9 @@ import { marketJournalsEnabled } from '@/lib/markets/market-journal';
 import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceDetailTabs';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
-import { MarketOperatingSessionControl } from '@/components/markets/MarketOperatingSessionControl';
+import { MarketLiveLayout } from '@/components/markets/MarketLiveLayout';
+import { MarketLiveSummaryActions } from '@/components/markets/MarketLiveSummaryActions';
+import { getMarketLiveStage, getMarketLiveBackfillDate } from '@/lib/markets/market-live-presentation';
 import { FutureScheduleEditDialog } from '@/components/recurring-operations/FutureScheduleEditDialog';
 import { marketRegionLabel } from '@/lib/markets/market-region';
 import { AppDialog } from '@/components/ui/AppDialog';
@@ -93,7 +91,6 @@ import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/marke
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
 import { countDealRecordsByDate, getDealEventDate, getDealEventRevenue, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
 import { buildMarketInteractionSummary } from '@/lib/markets/market-interaction-summary';
-import { calculateMarketDurationLabel } from '@/lib/markets/market-form';
 import {
   completeMarketDetailTransition,
   readMarketDetailTransition,
@@ -137,6 +134,7 @@ export function MarketDetailScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedTask = searchParams.get('task');
+  const requestedReturnTo = searchParams.get('returnTo');
   const marketId = normalizeMarketRouteId(searchParams.get('id') ?? undefined) ?? ''; // UUID 字符串，不需要 parseInt
   const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
   const { isStaff, canViewSensitiveData, isLoading: isRoleLoading } = useRoleContext(); // ✅ 員工權限檢查
@@ -302,7 +300,6 @@ export function MarketDetailScreen() {
     role: InteractionButton['role'];
   } | null>(null);
   const [countdown, setCountdown] = useState<string>('--');
-  const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(false);  // 今日時間軸折疊（預設展開）
   const [showStatusChangeConfirm, setShowStatusChangeConfirm] = useState(false);  // 狀態變更確認
   const [pendingStatus, setPendingStatus] = useState<MarketStatus | null>(null);  // 待變更的狀態
   
@@ -673,7 +670,7 @@ export function MarketDetailScreen() {
   }, [market, marketId, dbStatus]);
 
   const [ownerWorkspaceView, setOwnerWorkspaceView] = useState<OwnerMarketWorkspaceView | null>(null);
-  const [ownerOverviewDetail, setOwnerOverviewDetail] = useState<OwnerOverviewDetail>('performance');
+  const [ownerOverviewDetail, setOwnerOverviewDetail] = useState<OwnerOverviewDetail>(requestedTask === 'journal' && marketJournalsEnabled() ? 'journal' : 'performance');
   const [isUpdatingOperationSession, setIsUpdatingOperationSession] = useState(false);
   const operatingSession = useMarketOperatingSession(market);
   const operatingPhase = operatingSession?.workspacePhase ?? 'not-started';
@@ -688,15 +685,13 @@ export function MarketDetailScreen() {
       : market.endDate > currentDateKey
   ));
   const canManageOwnerFieldOps = marketWorkspacePhase !== 'ended';
-  const marketHeaderDescription = marketWorkspacePhase === 'ended'
-    ? '回顧這場市集的成果、照片與成本。'
-    : operatingSession?.phase === 'closed' && hasFutureMarketDate
+  const marketHeaderDescription = operatingSession?.phase === 'closed' && hasFutureMarketDate
       ? '今天已收攤，下一個場次仍可繼續準備。'
-      : '現場、照片與回顧，都替你整理在這裡。';
+      : null;
 
   useEffect(() => {
     if (!isOperatingPhaseReady || ownerWorkspaceView !== null) return;
-    setOwnerWorkspaceView(requestedTask === 'registration'
+    setOwnerWorkspaceView(requestedTask === 'journal' ? 'overview' : requestedTask === 'registration'
       ? 'manage'
       : getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase));
   }, [isOperatingPhaseReady, marketWorkspacePhase, ownerWorkspaceView, requestedTask]);
@@ -1148,7 +1143,7 @@ export function MarketDetailScreen() {
 
   // ✅ 防止 hydration 錯誤，同時維持目的地框架而不是空白畫面
   if (!isMounted || isDetailLoading) {
-    return <MarketDetailLoadingShell snapshot={transitionSnapshot} />;
+    return <MarketDetailLoadingShell snapshot={transitionSnapshot} returnTo={requestedReturnTo} />;
   }
 
   // DB 不健康
@@ -1254,11 +1249,27 @@ export function MarketDetailScreen() {
   if (isStaff) {
     return (
       <StaffMarketDetailView
+        returnTo={requestedReturnTo}
         market={market}
         initialPhotoEvidenceView={searchParams.get('task') === 'pending-photos' ? 'pending_list' : undefined}
       />
     );
   }
+
+  const liveStage = getMarketLiveStage(operatingSession?.phase, marketWorkspacePhase);
+  const liveBackfillDate = getMarketLiveBackfillDate(market, operatingSession?.sessionDate, currentDateKey);
+  const pendingPhotoSummary = {
+    label: '待補照片',
+    value: salesPhotoEvidenceFlow.pendingCount > 0
+      ? `${salesPhotoEvidenceFlow.pendingCount} 筆`
+      : salesPhotoEvidenceFlow.isLoadingPendingItems ? '確認中…'
+      : salesPhotoEvidenceFlow.pendingItemsError ? '尚未確認'
+      : '本機無待補',
+    onClick: handleOpenPendingSalesPhotoEvidence,
+    actionLabel: '查看本機待補照片與資料範圍',
+  };
+  const showPreparingPhotoSummary = salesPhotoEvidenceFlow.pendingCount > 0
+    || salesPhotoEvidenceFlow.isLoadingPendingItems || Boolean(salesPhotoEvidenceFlow.pendingItemsError);
 
   // ✅ 老闆模式：使用完整功能視圖
   return (
@@ -1268,13 +1279,7 @@ export function MarketDetailScreen() {
         <div className="mx-auto max-w-5xl">
           <div className="relative sm:flex sm:items-start sm:justify-between sm:gap-3">
             <div className="flex min-w-0 flex-1 flex-col items-start gap-3 sm:flex-row">
-              <button
-                onClick={() => router.back()}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-atelier-paper text-atelier-muted shadow-sm transition-colors hover:bg-atelier-blue-soft hover:text-atelier-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                aria-label="返回上一頁"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
+              <MarketReturnLink returnTo={requestedReturnTo} />
               <div className="min-w-0 flex-1">
                 <h1 className="break-words text-xl font-semibold leading-snug text-white sm:text-2xl">{market.name}</h1>
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/90">
@@ -1295,7 +1300,7 @@ export function MarketDetailScreen() {
                     <span className="min-w-0 break-words">{market.location}</span>
                   </div>
                 </div>
-                <p className={`mt-2 text-xs leading-5 text-white/80 ${isOperating ? 'hidden sm:block' : ''}`}>{marketHeaderDescription}</p>
+                {marketHeaderDescription && <p className={`mt-2 text-xs leading-5 text-white/80 ${isOperating ? 'hidden sm:block' : ''}`}>{marketHeaderDescription}</p>}
               </div>
             </div>
             
@@ -1343,7 +1348,9 @@ export function MarketDetailScreen() {
           phase={marketWorkspacePhase}
           phaseLabel={operatingSession?.label}
           operatingTime={formatClockTimeRange(market.operatingStartTime, market.operatingEndTime) || null}
-          compactOnMobile={resolvedOwnerWorkspaceView !== 'live' || marketWorkspacePhase === 'operating'}
+          compactOnMobile
+          description={resolvedOwnerWorkspaceView === 'live' && operatingSession?.phase !== 'operating'
+            ? operatingSession?.message : undefined}
           items={resolvedOwnerWorkspaceView === 'manage'
             ? [
                 { label: market.sessionOrigin === 'schedule' ? '營業安排' : '報名進度', value: market.sessionOrigin === 'schedule' ? '已排定' : getStatusText(market.status) },
@@ -1373,21 +1380,32 @@ export function MarketDetailScreen() {
                   },
                   { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
                 ]
-              : [
-                  { label: '收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
-                  { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
-                  {
-                    label: '待補照片',
-                    value: salesPhotoEvidenceFlow.pendingCount > 0
-                      ? `${salesPhotoEvidenceFlow.pendingCount} 筆`
-                      : salesPhotoEvidenceFlow.isLoadingPendingItems ? '確認中…'
-                      : salesPhotoEvidenceFlow.pendingItemsError ? '尚未確認'
-                      : '本機無待補',
-                    onClick: handleOpenPendingSalesPhotoEvidence,
-                    actionLabel: '查看本機待補照片與資料範圍',
-                  },
-                ]}
-        />
+              : liveStage === 'preparing'
+                ? showPreparingPhotoSummary ? [pendingPhotoSummary] : []
+                : [
+                    { label: '收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
+                    { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
+                    pendingPhotoSummary,
+                  ]}
+        >
+          {resolvedOwnerWorkspaceView === 'live' && operatingSession && (
+            <MarketLiveSummaryActions
+              stage={liveStage}
+              session={operatingSession}
+              canManage={!isRoleLoading}
+              isUpdating={isUpdatingOperationSession}
+              onStartEarly={handleStartEarlyOperation}
+              onCloseToday={handleCloseTodayOperation}
+              onManage={() => setOwnerWorkspaceView('manage')}
+              onReview={() => {
+                setOwnerOverviewDetail('performance');
+                setOwnerWorkspaceView('overview');
+              }}
+              onBackfill={liveBackfillDate
+                ? () => handleOpenAddRevenue(liveBackfillDate) : undefined}
+            />
+          )}
+        </MarketWorkspaceSummary>
 
         {/* Registration is a current record, not proof of completed prior steps. */}
         {resolvedOwnerWorkspaceView === 'manage' && !isOperating && market.sessionOrigin !== 'schedule' && (
@@ -1399,24 +1417,6 @@ export function MarketDetailScreen() {
 
         {resolvedOwnerWorkspaceView === 'manage' && <MarketPaymentDeadlineNotice market={market} />}
 
-        {operatingSession && (
-          resolvedOwnerWorkspaceView === 'manage' ||
-          (
-            resolvedOwnerWorkspaceView === 'live' &&
-            ['early-window', 'closed'].includes(operatingSession.phase)
-          )
-        ) && (
-          <MarketOperatingSessionControl
-            session={operatingSession}
-            canManage={!isRoleLoading}
-            isUpdating={isUpdatingOperationSession}
-            showCloseAction={resolvedOwnerWorkspaceView === 'manage'}
-            onStartEarly={handleStartEarlyOperation}
-            onCloseToday={handleCloseTodayOperation}
-          />
-        )}
-
-        {resolvedOwnerWorkspaceView === 'live' && !isOperating && <MarketCashPanel marketId={marketId} sessionDate={operatingSession?.sessionDate} />}
         {resolvedOwnerWorkspaceView === 'overview' && (
           <MarketWorkspaceDetailTabs
             value={ownerOverviewDetail}
@@ -1446,116 +1446,117 @@ export function MarketDetailScreen() {
           <MarketCashPanel marketId={marketId} sessionDate={operatingSession?.sessionDate} defaultOpen />
         )}
         {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'journal' && (
-          <MarketJournalWorkspace marketId={marketId} />
+          <MarketJournalWorkspace marketId={marketId} returnTo={requestedReturnTo} />
         )}
 
-        {resolvedOwnerWorkspaceView === 'live' && !isOperating && ![
-          'early-window',
-          'closed',
-        ].includes(operatingSession?.phase ?? '') && (
-          <div className="mb-4 flex items-start gap-3 rounded-card bg-atelier-apricot-soft/70 px-4 py-3 text-sm text-atelier-muted shadow-sm">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-            <div className="min-w-0">
-              <p>{operatingSession?.message ?? '目前不在營業時段，交易功能會在營業期間顯示。'}</p>
-              <button type="button" onClick={() => setOwnerWorkspaceView('manage')} className="mt-2 min-h-11 font-medium text-primary underline underline-offset-4">查看市集管理</button>
-            </div>
-          </div>
-        )}
         {/* 營業中時的操作區 - 根據自動判斷顯示 */}
-        {resolvedOwnerWorkspaceView === 'live' && isOperating && (
-          <>
-            <OperatingMarketWorkbench
-              marketId={marketId}
-              canRecordDeal
-              salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
-              pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
-              onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
-              salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
-              onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
-            />
-
-            <OperatingInteractionPanel
-              marketId={marketId}
-              canOpenSettings
-              onInteractionRecorded={() => {
-                window.dispatchEvent(new Event('interaction-recorded'));
-              }}
-            />
-
-            <div className="lg:hidden">
-              <DailyTransactionLog
-                marketId={marketId}
-                limit={5}
-                showSummary={false}
-                compactEmpty
-                allowDelete
-                title="最近紀錄"
-                onViewAll={() => {
-                  setOwnerOverviewDetail('performance');
-                  setOwnerWorkspaceView('overview');
-                }}
-              />
-            </div>
-
-          <div className="hidden items-start gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
-              <TransactionWorkspace
-                marketId={marketId}
-                salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
-                pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
-                onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
-                salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
-                onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
-              />
-            </div>
-
-            <section className="rounded-card bg-atelier-blue-soft/65 p-4 shadow-atelier lg:col-start-2 lg:row-start-1">
-              <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-atelier-ink">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                記錄互動
-              </h2>
-              <InteractionButtons 
-                marketId={marketId}
-                onInteractionRecorded={() => {
-                  // 重新載入互動數據
-                  window.dispatchEvent(new Event('interaction-recorded'));
-                }}
-              />
-            </section>
-
-            <div className="lg:col-start-2 lg:row-start-2">
-              <DailyTransactionLog
-                marketId={marketId}
-                limit={5}
-                showSummary={false}
-                compactEmpty
-                allowDelete
-                title="最近紀錄"
-                onViewAll={() => {
-                  setOwnerOverviewDetail('performance');
-                  setOwnerWorkspaceView('overview');
-                }}
-              />
-            </div>
-          </div>
-            <MarketCashPanel marketId={marketId} sessionDate={operatingSession?.sessionDate} />
-          </>
-        )}
-
         {resolvedOwnerWorkspaceView === 'live' && (
-          <div className="mx-auto mt-3 max-w-3xl">
-            <MarketFieldOpsSection
-              marketId={marketId}
-              referenceNote={market.notes}
-              canManageFieldNotes={canManageOwnerFieldOps}
-              canManageChecklist={canManageOwnerFieldOps}
-              canToggleChecklistItem={canManageOwnerFieldOps}
-              collapsibleOnMobile={isOperating}
-              readOnlyReason={marketWorkspacePhase === 'ended'
-                ? '市集已完成，現場交接筆記與待辦清單已封存為唯讀紀錄。'
-                : undefined}
-            />
-          </div>
+          <MarketLiveLayout
+            stage={liveStage}
+            activity={isOperating && (
+              <>
+                <OperatingMarketWorkbench
+                  marketId={marketId}
+                  canRecordDeal
+                  salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
+                  pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
+                  onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
+                  salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+                  onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+                />
+
+                <OperatingInteractionPanel
+                  marketId={marketId}
+                  canOpenSettings
+                  onInteractionRecorded={() => {
+                    window.dispatchEvent(new Event('interaction-recorded'));
+                  }}
+                />
+
+                <div className="lg:hidden">
+                  <DailyTransactionLog
+                    marketId={marketId}
+                    limit={5}
+                    showSummary={false}
+                    compactEmpty
+                    allowDelete
+                    title="最近紀錄"
+                    onViewAll={() => {
+                      setOwnerOverviewDetail('performance');
+                      setOwnerWorkspaceView('overview');
+                    }}
+                  />
+                </div>
+
+              <div className="hidden items-start gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem]">
+                <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
+                  <TransactionWorkspace
+                    marketId={marketId}
+                    salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
+                    pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
+                    onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
+                    salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
+                    onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+                  />
+                </div>
+
+                <section className="rounded-card bg-atelier-blue-soft/65 p-4 shadow-atelier lg:col-start-2 lg:row-start-1">
+                  <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-atelier-ink">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    記錄互動
+                  </h2>
+                  <InteractionButtons
+                    marketId={marketId}
+                    onInteractionRecorded={() => {
+                      // 重新載入互動數據
+                      window.dispatchEvent(new Event('interaction-recorded'));
+                    }}
+                  />
+                </section>
+
+                <div className="lg:col-start-2 lg:row-start-2">
+                  <DailyTransactionLog
+                    marketId={marketId}
+                    limit={5}
+                    showSummary={false}
+                    compactEmpty
+                    allowDelete
+                    title="最近紀錄"
+                    onViewAll={() => {
+                      setOwnerOverviewDetail('performance');
+                      setOwnerWorkspaceView('overview');
+                    }}
+                  />
+                </div>
+              </div>
+              </>
+            )}
+            timeline={
+              <MarketTodayTimeline
+                market={market}
+                countdown={countdown}
+                defaultExpanded={liveStage === 'preparing'}
+                onEdit={!isRoleLoading ? handleOpenEditForm : undefined}
+              />
+            }
+            cash={<MarketCashPanel marketId={marketId} sessionDate={operatingSession?.sessionDate} />}
+            fieldwork={
+              <div className="mx-auto mt-3 max-w-3xl">
+                <MarketFieldOpsSection
+                  marketId={marketId}
+                  referenceNote={market.notes}
+                  canManageFieldNotes={canManageOwnerFieldOps}
+                  canManageChecklist={canManageOwnerFieldOps}
+                  canToggleChecklistItem={canManageOwnerFieldOps}
+                  collapsibleOnMobile
+                  defaultMobileExpanded={liveStage === 'preparing'}
+                  readOnlyReason={marketWorkspacePhase === 'ended'
+                    ? '市集已完成，現場交接筆記與待辦清單已封存為唯讀紀錄。'
+                    : undefined}
+                />
+              </div>
+            }
+          />
         )}
 
         {/* ✅ 當日流水帳 - 營業中或已結束時顯示（僅員工模式） */}
@@ -1643,28 +1644,6 @@ export function MarketDetailScreen() {
             reviewMode={marketWorkspacePhase === 'ended'}
           />
         </>
-        )}
-
-        {resolvedOwnerWorkspaceView === 'manage' && (
-        <div className="mx-auto max-w-3xl">
-        <section className="mb-4 rounded-card border border-atelier-line bg-atelier-blue-soft/55 p-4">
-          <div className="flex items-start gap-3">
-            <Clock className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-            <div>
-              <h2 className="text-base font-semibold text-atelier-ink">今日現場模式</h2>
-              <p className="mt-1 text-sm leading-relaxed text-foreground">
-                {market.operatingStartTime && market.operatingEndTime
-                  ? '系統會在正式營業時間自動開啟現場工具；原定結束後保留 60 分鐘延長記錄，之後自動收起。'
-                  : '請在編輯市集中補上營業時間，系統才能自動開啟與收起現場工具。'}
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                這不會提前結束整場多日市集；整場狀態仍依市集日期與管理設定保留。
-              </p>
-            </div>
-          </div>
-        </section>
-        <MarketReferenceNotePanel note={market.notes} />
-        </div>
         )}
 
         {/* 6. 即時統計 */}
@@ -1834,191 +1813,6 @@ export function MarketDetailScreen() {
         </section>
         )}
 
-        {/* 5. 今日時間軸（折疊） */}
-        {resolvedOwnerWorkspaceView === 'manage' && (
-        <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
-          <button
-            type="button"
-            onClick={() => setIsTimelineCollapsed(!isTimelineCollapsed)}
-            className="w-full flex items-center justify-between"
-            aria-expanded={!isTimelineCollapsed}
-            aria-controls="owner-market-timeline-panel"
-          >
-            <h2 className="text-lg font-medium flex items-center gap-2 text-foreground">
-              <Clock className="w-5 h-5 text-primary" />
-              今日時間軸
-            </h2>
-            <ChevronDown
-              className={`h-5 w-5 text-muted-foreground transition-transform ${isTimelineCollapsed ? '' : 'rotate-180'}`}
-              aria-hidden="true"
-            />
-          </button>
-
-          {/* 倒數提示 - 始終顯示，不受折疊影響 */}
-          {countdown !== '--' && countdown !== '已開始' && (
-            <div className="bg-soft-green border border-primary/20 rounded-xl p-3 text-center mt-4">
-              <p className="text-sm text-foreground">
-                <span className="font-bold text-lg text-primary">{countdown}</span>
-              </p>
-            </div>
-          )}
-
-          {!isTimelineCollapsed && (
-          <div id="owner-market-timeline-panel" className="space-y-4 mt-4">
-            {/* 檢查是否有任何時間設定 */}
-            {!market.checkInTime && !market.operatingStartTime && !market.operatingEndTime && !(market.earlyEntryEnabled && market.earlyEntryTime) ? (
-              <div className="bg-soft-yellow border border-secondary/30 rounded-xl p-4 text-center">
-                <Clock className="w-8 h-8 text-secondary mx-auto mb-2 opacity-50" />
-                <p className="text-sm text-foreground font-medium mb-1">
-                  尚未設定時間資訊
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  請點擊右上角「編輯」按鈕，設定報到時間、營業開始時間和營業結束時間
-                </p>
-              </div>
-            ) : (
-              <>
-            {/* 時間線 */}
-            <div className="space-y-3">
-              {/* 提前進場 */}
-              {market.earlyEntryEnabled && market.earlyEntryTime && (
-                <>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0">
-                        <Circle className="w-6 h-6 text-gray-300" />
-                      </div>
-                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-pink/30 text-muted-foreground border-soft-pink">
-                        <div className="flex items-center gap-3">
-                          <DoorOpen className="w-5 h-5" />
-                          <div>
-                            <div className="font-semibold">提前進場</div>
-                            <div className="text-sm opacity-70">{formatClockTime(market.earlyEntryTime)}</div>
-                          </div>
-                        </div>
-                        <div className="text-xs font-medium flex items-center gap-1 opacity-60">
-                          <Clock className="w-3 h-3" />
-                          30m
-                        </div>
-                      </div>
-                    </div>
-                    <div className="ml-3 my-1">
-                      <div className="w-0.5 h-4 bg-gray-200"></div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* 報到 */}
-              {market.checkInTime && (
-                <>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0">
-                        <Circle className="w-6 h-6 text-gray-300" />
-                      </div>
-                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-green/30 text-muted-foreground border-soft-green">
-                        <div className="flex items-center gap-3">
-                          <ClipboardCheck className="w-5 h-5" />
-                          <div>
-                            <div className="font-semibold">報到</div>
-                            <div className="text-sm opacity-70">{formatClockTime(market.checkInTime)}</div>
-                          </div>
-                        </div>
-                        <div className="text-xs font-medium flex items-center gap-1 opacity-60">
-                          <Clock className="w-3 h-3" />
-                          30m
-                        </div>
-                      </div>
-                    </div>
-                    <div className="ml-3 my-1">
-                      <div className="w-0.5 h-4 bg-gray-200"></div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* 營業中 */}
-              {market.operatingStartTime && market.operatingEndTime && (
-                <>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0">
-                        <Circle className="w-6 h-6 text-gray-300" />
-                      </div>
-                      <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-green/30 text-muted-foreground border-soft-green">
-                        <div className="flex items-center gap-3">
-                          <Store className="w-5 h-5" />
-                          <div>
-                            <div className="font-semibold">營業中</div>
-                            <div className="text-sm opacity-70">{formatClockTime(market.operatingStartTime)}</div>
-                          </div>
-                        </div>
-                        <div className="text-xs font-medium flex items-center gap-1 opacity-60">
-                          <Clock className="w-3 h-3" />
-                          {(() => {
-                            const start = market.operatingStartTime.split(':');
-                            const end = market.operatingEndTime.split(':');
-                            const startMinutes = parseInt(start[0]) * 60 + parseInt(start[1]);
-                            const endMinutes = parseInt(end[0]) * 60 + parseInt(end[1]);
-                            const duration = endMinutes - startMinutes;
-                            return `${Math.floor(duration / 60)}h`;
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="ml-3 my-1">
-                      <div className="w-0.5 h-4 bg-gray-200"></div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* 營業結束 */}
-              {market.operatingEndTime && (
-                <div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0">
-                      <Circle className="w-6 h-6 text-gray-300" />
-                    </div>
-                    <div className="flex-1 flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all bg-soft-yellow/30 text-muted-foreground border-soft-yellow">
-                      <div className="flex items-center gap-3">
-                        <Moon className="w-5 h-5" />
-                        <div>
-                          <div className="font-semibold">營業結束</div>
-                          <div className="text-sm opacity-70">{formatClockTime(market.operatingEndTime)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 統計摘要 */}
-            {market.operatingStartTime && market.operatingEndTime && (
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="bg-soft-green rounded-xl p-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">營業時長</p>
-                  <p className="text-lg font-bold text-primary">
-                    {calculateMarketDurationLabel(market.operatingStartTime, market.operatingEndTime)}
-                  </p>
-                </div>
-                <div className="bg-soft-pink rounded-xl p-3 text-center">
-                  <p className="text-xs text-muted-foreground mb-1">總時長</p>
-                  <p className="text-lg font-bold text-secondary">
-                    {calculateMarketDurationLabel(market.checkInTime, market.operatingEndTime)}
-                  </p>
-                </div>
-              </div>
-            )}
-            </>
-            )}
-          </div>
-          )}
-        </section>
-        )}
-        
         {/* 顧客行為分析區塊 */}
         {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'interactions' && interactionEvents.length > 0 && (
           <>

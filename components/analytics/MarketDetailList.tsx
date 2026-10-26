@@ -106,7 +106,7 @@ export function MarketDetailList({ markets }: MarketDetailListProps) {
             >
               <button
                 onClick={() => {
-                  if (market.id) router.push(buildMarketDetailHref(market.id));
+                  if (market.id) router.push(buildMarketDetailHref(market.id, { returnTo: 'analytics' }));
                 }}
                 className="block w-full p-4 hover:bg-background transition-colors text-left"
               >

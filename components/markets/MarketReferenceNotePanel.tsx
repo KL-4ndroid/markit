@@ -17,12 +17,9 @@ export function MarketReferenceNotePanel({ note }: MarketReferenceNotePanelProps
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-medium text-foreground">主辦／場地備註</h2>
             <span className="rounded-full bg-soft-yellow px-2 py-0.5 text-[11px] font-semibold text-secondary">
-              固定資訊
+              整場共用
             </span>
           </div>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            整場市集共用的主辦規定、進場方式、停車資訊與場地限制。
-          </p>
         </div>
       </div>
 

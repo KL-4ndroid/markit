@@ -20,8 +20,8 @@ for (const source of [addForm, editForm]) {
 
 assert.match(fields, /mode\?: 'owner' \| 'manager'/);
 assert.match(fields, /!isManagerMode &&[\s\S]*?商品名稱/);
-assert.match(fields, /!isManagerMode &&[\s\S]*?label="成本"/);
-assert.match(fields, /label="售價"/);
+assert.match(fields, /!isManagerMode &&[\s\S]*?label="成本（元）"/);
+assert.match(fields, /label="售價（元）"/);
 assert.match(fields, /aria-label="商品分類"/);
 assert.match(fields, /min-h-11/);
 

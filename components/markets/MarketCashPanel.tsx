@@ -9,6 +9,7 @@ import { cashCloud } from '@/lib/supabase/market-cash';
 import { MarketCashRepository } from '@/lib/markets/market-cash-repository';
 import { marketBusinessDates } from '@/lib/markets/market-business-dates';
 import { CashSalesComparison } from './CashSalesComparison';
+import { ContextHelp } from '@/components/ui/ContextHelp';
 import { CASH_DENOMINATIONS,cashErrorMessage,cashHasConflict,cashIncrease,cashPointCents,cashRecordId,emptyCashData,formatCashCents,isCashOwner,marketCashEnabled,
   type CashPoint,type MarketCashDraft } from '@/lib/markets/market-cash';
 
@@ -18,10 +19,18 @@ export function MarketCashPanel({marketId,sessionDate,defaultOpen=false}:{market
   const [open,setOpen]=useState(defaultOpen);
   if(!marketCashEnabled() || !user || userRole.isStaff || !roleRefreshState.shouldMountProtectedChildren)return null;
   return <section className="my-4 rounded-3xl border border-primary/10 bg-white p-4 shadow-sm sm:p-6">
-    <button type="button" className="flex min-h-11 w-full items-center justify-between gap-3 text-left" aria-expanded={open} onClick={()=>setOpen(!open)}>
-      <span><span className="block text-base font-semibold">開／收攤現金（選填）</span><span className="mt-1 block text-xs text-muted-foreground">預設不記錄，不影響正常開攤與收攤。</span></span>
+    <div className="flex flex-wrap items-center justify-between gap-x-3">
+    <button type="button" className="flex min-h-11 min-w-0 flex-1 items-center justify-between gap-3 text-left" aria-expanded={open} onClick={()=>setOpen(!open)}>
+      <span className="text-base font-semibold">開／收攤現金（選填）</span>
       <span className="shrink-0 text-sm text-primary">{open?'收起':'展開'}</span>
     </button>
+    <ContextHelp label="盤點說明" iconOnly>
+      <p>可略過不記錄；不影響正常開攤與收攤。可以直接填總額，或依面額計算。</p>
+      <p>「未記錄」與實際記錄 0 元不同。切換記錄方式時，尚未儲存的輸入會留在本機草稿，可切回查看。</p>
+      <p>每場、每天獨立記錄；跨午夜請選原本的營業日期。同一現金盒跨多場時，請自行區分範圍。</p>
+      <p>現金盤點與比較不會改動營收、庫存或淨利。本機草稿需按「儲存到雲端」才會送出。</p>
+    </ContextHelp>
+    </div>
     {open && <CashWorkspace key={`${user.id}:${marketId}`} ownerId={user.id} marketId={marketId} sessionDate={sessionDate} disabled={!roleRefreshState.isAuthorizationFresh} />}
   </section>;
 }
@@ -79,7 +88,6 @@ function CashWorkspace({ownerId,marketId,sessionDate,disabled}:{ownerId:string;m
     setBusy(true);setError('');try{await writes.current;await repository.discard(target.id,target.mutationId);if(alive.current){setEditor(null);setStatus('本機草稿已捨棄，已同步紀錄保留。');}}catch(e){if(alive.current)setError(cashErrorMessage(e));}finally{if(alive.current)setBusy(false);}
   }
   return <div className="mt-4 space-y-3" aria-busy={busy || loading}>
-    <p className="text-xs leading-relaxed text-muted-foreground">收攤請在提領或存款前盤點；可以只填總額，也能略過不記錄。</p>
     <label className="block text-sm">營業日期<select value={day} disabled={busy || disabled} onChange={e=>{setDate(e.target.value);setEditor(null);setError('');setStatus('');}} className="mt-1 min-h-11 w-full rounded-xl border border-primary/20 bg-white px-3 text-base sm:text-sm">
       {dates.map(d=><option key={d} value={d}>{d}{!marketBusinessDates(data.market!).includes(d)?'（日期待確認）':''}</option>)}
     </select></label>
@@ -105,8 +113,8 @@ function CashWorkspace({ownerId,marketId,sessionDate,disabled}:{ownerId:string;m
     {editor && <div className="space-y-4 rounded-xl border border-primary/15 p-3">
       <CashPointEditor label="開攤現金" point={editor.data.opening} disabled={busy || disabled} onMode={mode=>changeMode('opening',mode)} onChange={point=>changePoint('opening',point)} />
       {previous && priorClosing!==null && <button type="button" className={action} disabled={busy || disabled} onClick={()=>changePoint('opening',{mode:'total',amount:((priorClosing ?? 0)/100).toFixed(2)})}>帶入 {previous.businessDate} 收攤 {formatCashCents(priorClosing)}</button>}
-      <CashPointEditor label="收攤現金" point={editor.data.closing} disabled={busy || disabled} onMode={mode=>changeMode('closing',mode)} onChange={point=>changePoint('closing',point)} />
-      <p className="text-xs text-muted-foreground">切換方式的未儲存輸入會留在本機草稿，可切回查看；選不記錄並儲存會清除該時點原金額。</p>
+      <CashPointEditor label="收攤現金" closing point={editor.data.closing} disabled={busy || disabled} onMode={mode=>changeMode('closing',mode)} onChange={point=>changePoint('closing',point)} />
+      <p className="text-xs text-muted-foreground">選「不記錄」並儲存，會清除該時點原金額。</p>
       <CashIncrease data={editor.data} />
       <details className="rounded-xl border border-primary/10" open={editor.data.otherCash?.mode==='net' || undefined}>
         <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 text-sm text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">比較現金銷售與其他進出（選用）</summary>
@@ -120,19 +128,16 @@ function CashWorkspace({ownerId,marketId,sessionDate,disabled}:{ownerId:string;m
         <button type="button" className={action} disabled={busy} onClick={()=>setEditor(null)}>先收起，保留草稿</button>
         <button type="button" className={action} disabled={busy} onClick={()=>void discard()}>捨棄本機草稿</button></div>
     </div>}
-    <details className="rounded-xl border border-primary/10 text-xs text-muted-foreground">
-      <summary className="min-h-11 cursor-pointer rounded-xl px-3 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30">盤點範圍說明</summary>
-      <p className="px-3 pb-3 leading-5">每場、每天獨立記錄；跨午夜請選原本的營業日期。同一現金盒跨多場時，請自行區分範圍。現金盤點與比較不會改動營收、庫存或淨利。</p>
-    </details>
   </div>;
 }
 function CashIncrease({data}:{data:{opening:CashPoint;closing:CashPoint}}){
   let increase:number|null=null;try{increase=cashIncrease({...data,note:''});}catch{/* An incomplete input is not zero. */}
-  return <p className="rounded-xl bg-background p-3 text-sm">{increase===null?'開攤與收攤兩邊都有紀錄後，才顯示現金增減。':`現金${increase>=0?'增加':'減少'} ${formatCashCents(Math.abs(increase))}。`}<span className="mt-1 block text-xs text-muted-foreground">僅比較兩次盤點；不是營收、淨利，也不表示已對帳完成。</span></p>;
+  return <p className="rounded-xl bg-background p-3 text-sm">{increase===null?'記錄開攤與收攤現金後，可查看盤點增減。':`盤點現金${increase>=0?'增加':'減少'} ${formatCashCents(Math.abs(increase))}。`}<span className="mt-1 block text-xs text-muted-foreground">盤點增減不是營收或淨利，也不表示已對帳完成。</span></p>;
 }
-function CashPointEditor({label,point,disabled,onMode,onChange}:{label:string;point:CashPoint;disabled:boolean;onMode:(mode:CashPoint['mode'])=>void;onChange:(point:CashPoint)=>void}){
+function CashPointEditor({label,point,disabled,closing=false,onMode,onChange}:{label:string;point:CashPoint;disabled:boolean;closing?:boolean;onMode:(mode:CashPoint['mode'])=>void;onChange:(point:CashPoint)=>void}){
   const id=useId();
   return <fieldset disabled={disabled} className="space-y-2"><legend className="mb-2 text-sm font-semibold">{label}</legend>
+    {closing && point.mode!=='none' && <p className="text-xs leading-5 text-muted-foreground">請在提領或存款前盤點。</p>}
     <label htmlFor={id} className="text-xs text-muted-foreground">{label}記錄方式</label>
     <select id={id} value={point.mode} onChange={e=>onMode(e.target.value as CashPoint['mode'])} className="min-h-11 w-full rounded-xl border border-primary/20 bg-white px-3 text-base sm:text-sm"><option value="none">不記錄（預設）</option><option value="total">直接填總額</option><option value="denominations">依面額計算</option></select>
     {point.mode==='total' && <label className="block text-sm">{label}總額（元）<input inputMode="decimal" value={point.amount} onChange={e=>onChange({...point,amount:e.target.value})} className="mt-1 min-h-11 w-full rounded-xl border border-primary/20 px-3 text-base sm:text-sm" placeholder="例如 2000，0 代表實際記錄零元" /></label>}

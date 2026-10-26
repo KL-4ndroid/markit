@@ -7,6 +7,7 @@ import { readCashSales } from '@/lib/supabase/market-cash';
 import { getNetworkPort } from '@/lib/platform/network-capability';
 import { getLifecyclePort } from '@/lib/platform/lifecycle-capability';
 import { cashScopeEpoch } from '@/lib/markets/market-cash-scope';
+import { ContextHelp } from '@/components/ui/ContextHelp';
 import { formatCashCents,type CashData } from '@/lib/markets/market-cash';
 import { buildCashComparison,cashComparisonEnabled,cashComparisonKey,cashComparisonSourceReady,type CashSalesSnapshot } from '@/lib/markets/market-cash-comparison';
 
@@ -45,7 +46,15 @@ function ComparisonWorkspace({ownerId,marketId,day,data,disabled,onChange}:Props
   const net=data.otherCash?.mode==='net'?data.otherCash:null;
   const differenceLabel=model?.difference===null || !model?'記錄開攤與收攤現金後，才可比較差額。':`現金差額${complete?'':'（暫估）'}：${model.difference===0?'NT$0（目前記錄相符）':`${model.difference>0?'多出':'短少'} ${formatCashCents(Math.abs(model.difference))}`}`;
   return <section aria-label="現金銷售比較" className="space-y-3 rounded-xl border border-primary/15 p-3 text-sm">
-    <h3 className="font-semibold">現金銷售與差額</h3>
+    <div className="flex flex-wrap items-center justify-between gap-x-3">
+      <h3 className="font-semibold">現金銷售與差額</h3>
+      <ContextHelp label="差額怎麼算">
+        <p>現金差額＝實盤收攤現金 −（開攤現金＋已記錄現金銷售＋其他現金進出）。非現金收款不納入現金銷售。</p>
+        <p>其他現金進出只記一個淨額。例如補入找零 1,000 元、拿出 500 元，淨額為補入 500 元。沒有記錄時，比較會假設沒有其他進出。</p>
+        <p>雲端讀取只代表該時點已送達的紀錄，不保證其他裝置沒有未送出成交。共用現金盒跨場時，請自行拆分。</p>
+        <p>比較不調整營收、庫存或利潤。差額為零只表示目前記錄相符，不代表所有帳務已核對。</p>
+      </ContextHelp>
+    </div>
     {onChange && <>
       <label className="block">其他現金進出（選填）<select className="mt-1 min-h-11 w-full rounded-xl border bg-white px-3 text-base sm:text-sm" disabled={disabled} value={net?'net':'none'} onChange={e=>onChange({...data,otherCash:e.target.value==='net'?{mode:'net',amount:'',note:''}:{mode:'none'}})}><option value="none">不記錄，假設沒有其他進出</option><option value="net">記錄一個淨額</option></select></label>
       {net && <div className="space-y-2">
@@ -68,7 +77,7 @@ function ComparisonWorkspace({ownerId,marketId,day,data,disabled,onChange}:Props
         <div><dt>其他現金進出</dt><dd className="mt-1 break-words">{formatCashCents(model.other)}</dd></div>
         <div><dt>預期收攤現金{complete?'':'（暫估）'}</dt><dd className="mt-1 break-words font-semibold">{model.expected===null?'需先記開攤現金':formatCashCents(model.expected)}</dd></div>
       </dl>
-      <p className="rounded-xl bg-background p-3">{differenceLabel}<span className="mt-1 block text-xs text-muted-foreground">實盤收攤 −（開攤＋現金銷售＋其他進出）。不調整營收、庫存或利潤。</span></p>
+      <p className="rounded-xl bg-background p-3">{differenceLabel}<span className="mt-1 block text-xs text-muted-foreground">依目前已讀取紀錄比較；不代表所有帳務已核對。</span></p>
       {model.unknownPaymentCount>0 && <p role="status">有 {model.unknownPaymentCount} 筆付款方式為其他／缺漏，尚無法確認現金比例；未納入現金銷售。</p>}
       {model.invalidAmountCount>0 && <p role="status">有 {model.invalidAmountCount} 筆金額格式待確認，未納入比較。</p>}
       {model.unassignedDateCount>0 && <p role="status">這場另有 {model.unassignedDateCount} 筆缺少明確營業日期，未自行按裝置時間分配。</p>}
@@ -78,6 +87,5 @@ function ComparisonWorkspace({ownerId,marketId,day,data,disabled,onChange}:Props
     </>}
     {snapshot && <p className="text-xs text-muted-foreground">雲端成交讀取時間：{new Date(snapshot.capturedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})}</p>}
     {data.salesBasis && <p className="text-xs text-muted-foreground">比較基準時間：{new Date(data.salesBasis.capturedAt).toLocaleString('zh-TW',{timeZone:'Asia/Taipei'})}。{onChange?'此基準需隨盤點一起儲存到雲端。':''}</p>}
-    <p className="text-xs leading-relaxed text-muted-foreground">雲端讀取只代表該時點已送達的紀錄，不保證其他裝置沒有未送出成交。請確認付款分類與現金盒範圍；跨場共用時需自行拆分。差額為零也不代表所有帳務已核對。</p>
   </section>;
 }

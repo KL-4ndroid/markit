@@ -1,6 +1,7 @@
 'use client';
 
 import { Shield } from 'lucide-react';
+import { ContextHelp } from '@/components/ui/ContextHelp';
 import { staffAccessPresentation, staffRoleWorkDetails } from '@/lib/permissions/staff-access-presentation';
 import type { RoleCapabilities } from '@/lib/permissions/role-capabilities';
 import type { StaffRole } from '@/types/staff';
@@ -25,13 +26,12 @@ export function StaffPermissionCard({ staffRole, isOwner = false, ownerEmail, ca
         {ownerEmail && <p className="mt-1 break-all text-sm text-muted-foreground">所屬老闆：{ownerEmail}</p>}
         <p className="mt-3 font-medium">{isOwner ? '管理品牌工作區' : access.title}</p>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">{isOwner ? '管理市集、商品、營運紀錄與團隊。' : access.summary}</p>
-        <details className="mt-3 border-t border-border">
-          <summary className="min-h-11 cursor-pointer rounded-xl py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">查看角色工作範圍</summary>
+        <ContextHelp label="角色工作範圍" className="mt-2">
           <p className="mb-2 text-sm leading-6 text-muted-foreground">以下為角色規則；實際操作仍需團隊資格有效、成員存取已啟用，且場次開放。</p>
           <ul className="list-disc space-y-2 pl-5 text-sm leading-6">
             {(isOwner ? ['管理品牌資料與營運紀錄', '查看成本、利潤與報表', '依方案管理團隊'] : staffRoleWorkDetails(staffRole, capabilities)).map(text => <li key={text}>{text}</li>)}
           </ul>
-        </details>
+        </ContextHelp>
       </div>
     </div>
   </section>;

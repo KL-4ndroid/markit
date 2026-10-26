@@ -17,6 +17,8 @@ interface MarketWorkspaceSummaryProps {
   phase: MarketWorkspacePhase;
   phaseLabel?: string;
   operatingTime?: string | null;
+  description?: string;
+  children?: ReactNode;
   items: readonly MarketWorkspaceSummaryItem[];
   compactOnMobile?: boolean;
 }
@@ -53,6 +55,8 @@ export function MarketWorkspaceSummary({
   phase,
   phaseLabel,
   operatingTime,
+  description,
+  children,
   items,
   compactOnMobile = false,
 }: MarketWorkspaceSummaryProps) {
@@ -75,7 +79,8 @@ export function MarketWorkspaceSummary({
         )}
       </div>
 
-      <dl className={`${compactOnMobile ? 'mt-3 grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-end gap-3 sm:mt-5 sm:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] sm:gap-5' : 'mt-5 gap-5 sm:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] sm:items-end'} grid`}>
+      {description && <p className="mt-1 text-xs leading-5 text-atelier-muted">{description}</p>}
+      {items.length > 0 && <dl className={`${compactOnMobile ? 'mt-3 grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-end gap-3 sm:mt-5 sm:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] sm:gap-5' : 'mt-5 gap-5 sm:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] sm:items-end'} grid`}>
         {primaryItem && (
           <div className="min-w-0">
             <dt className="text-xs font-medium text-atelier-muted">{primaryItem.label}</dt>
@@ -107,7 +112,8 @@ export function MarketWorkspaceSummary({
             ))}
           </div>
         )}
-      </dl>
+      </dl>}
+      {children && <div className="mt-3 border-t border-primary/10 pt-3">{children}</div>}
     </section>
   );
 }

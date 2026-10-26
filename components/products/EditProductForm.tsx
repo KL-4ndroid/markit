@@ -182,7 +182,6 @@ export function EditProductForm({
         open={isOpen}
         onClose={handleClose}
         title="編輯商品"
-        description={isManagerMode ? '可調整銷售、庫存與現場需要的資訊。' : '更新商品資料與販售狀態。'}
         size="lg"
         dismissible={!isSubmitting}
         footer={(

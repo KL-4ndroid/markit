@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { supabase } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2, Lock, Mail, X } from 'lucide-react';
@@ -23,6 +23,10 @@ function getFriendlyAuthError(error: unknown, mode: 'login' | 'signup'): string 
 
   if (lowerMessage.startsWith('native_auth_')) {
     return '目前無法安全讀寫登入資料，請解鎖裝置並重新開啟 App 後再試。';
+  }
+
+  if (lowerMessage.includes('failed to fetch') || lowerMessage.includes('network') || lowerMessage.includes('timeout')) {
+    return '暫時無法連上登入服務，請確認網路後重試。';
   }
 
   if (message.includes('Invalid login credentials')) {
@@ -60,6 +64,7 @@ export function LoginModal({
   const [isSlowAuth, setIsSlowAuth] = useState(false);
 
   const isSignup = mode === 'signup';
+  const formId = useId();
 
   useEffect(() => {
     setMode(defaultMode);
@@ -89,14 +94,12 @@ export function LoginModal({
     if (!normalizedEmail || !password) {
       const message = '請輸入 Email 和密碼。';
       setAuthError(message);
-      toast.error(message);
       return;
     }
 
     if (isSignup && password.length < 6) {
       const message = '密碼至少需要 6 位字元。';
       setAuthError(message);
-      toast.error(message);
       return;
     }
 
@@ -183,7 +186,6 @@ export function LoginModal({
       console.error('Auth error:', error);
       const message = getFriendlyAuthError(error, mode);
       setAuthError(message);
-      toast.error(message);
     } finally {
       window.clearTimeout(slowAuthTimer);
       setIsSlowAuth(false);
@@ -195,22 +197,20 @@ export function LoginModal({
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-deep/35 backdrop-blur-sm" aria-hidden="true" />
 
-      <div className="fixed inset-0 flex items-center justify-center p-6">
-        <DialogPanel className="japanese-surface-card w-full max-w-md p-8">
+      <div className="fixed inset-0 overflow-y-auto p-4 sm:p-6">
+        <div className="flex min-h-full items-center justify-center">
+        <DialogPanel className="japanese-surface-card max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain p-5 sm:p-8">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <DialogTitle className="text-2xl font-medium text-foreground mb-2">
                 {isSignup ? '建立 Féria 帳號' : '登入 Féria'}
               </DialogTitle>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {isSignup
-                  ? '建立帳號後即可同步資料。若你是透過邀請連結加入團隊，註冊後會自動加入。'
-                  : '登入後可同步雲端資料，並在不同裝置使用。'}
-              </p>
+              {isSignup && <p className="text-sm text-muted-foreground leading-relaxed">建立帳號後即可同步資料。若你是透過邀請連結加入團隊，註冊後會自動加入。</p>}
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 hover:bg-soft-pink rounded-full transition-colors"
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center hover:bg-soft-pink rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="關閉"
               disabled={isLoading}
             >
@@ -218,21 +218,25 @@ export function LoginModal({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isLoading} aria-describedby={authError ? `${formId}-error` : undefined}>
             <div>
-              <label className="block text-sm text-muted-foreground mb-2">
+              <label htmlFor={`${formId}-email`} className="block text-sm text-muted-foreground mb-2">
                 Email
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                 <input
+                  id={`${formId}-email`}
                   type="email"
+                  name="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   value={email}
                   onChange={(event) => {
                     setEmail(event.target.value);
                     if (authError) setAuthError('');
                   }}
-                  placeholder="your@email.com"
                   autoComplete="email"
                   className="w-full pl-12 pr-4 py-3 rounded-2xl border border-primary/20 focus:border-primary focus:outline-none transition-colors"
                   disabled={isLoading}
@@ -242,23 +246,25 @@ export function LoginModal({
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm text-muted-foreground">
+                <label htmlFor={`${formId}-password`} className="block text-sm text-muted-foreground">
                   密碼
                 </label>
                 {isSignup && (
-                  <span className="text-xs text-[#8A8A8A]">至少 6 位字元</span>
+                  <span id={`${formId}-password-hint`} className="text-xs text-muted-foreground">至少 6 位字元</span>
                 )}
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                 <input
+                  id={`${formId}-password`}
+                  aria-describedby={isSignup ? `${formId}-password-hint` : undefined}
                   type={showPassword ? 'text' : 'password'}
+                  name="password"
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value);
                     if (authError) setAuthError('');
                   }}
-                  placeholder="輸入密碼"
                   autoComplete={isSignup ? 'new-password' : 'current-password'}
                   className="w-full pl-12 pr-12 py-3 rounded-2xl border border-primary/20 focus:border-primary focus:outline-none transition-colors"
                   disabled={isLoading}
@@ -266,7 +272,7 @@ export function LoginModal({
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+                  className="absolute right-1 top-1/2 inline-flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   aria-label={showPassword ? '隱藏密碼' : '顯示密碼'}
                   disabled={isLoading}
                 >
@@ -276,18 +282,18 @@ export function LoginModal({
             </div>
 
             {!isSignup && (
-              <div className="flex items-center gap-2">
+              <div className="flex min-h-11 items-center gap-2">
                 <input
                   type="checkbox"
-                  id="rememberMe"
+                  id={`${formId}-remember`}
                   checked={rememberMe}
                   onChange={(event) => setRememberMe(event.target.checked)}
                   className="w-4 h-4 rounded border-primary/20 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
                   disabled={isLoading}
                 />
                 <label
-                  htmlFor="rememberMe"
-                  className="text-sm text-muted-foreground cursor-pointer select-none"
+                  htmlFor={`${formId}-remember`}
+                  className="inline-flex min-h-11 items-center text-sm text-muted-foreground cursor-pointer select-none"
                 >
                   記住 Email
                 </label>
@@ -297,6 +303,7 @@ export function LoginModal({
             {authError && (
               <div
                 role="alert"
+                id={`${formId}-error`}
                 className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700"
               >
                 {authError}
@@ -304,8 +311,8 @@ export function LoginModal({
             )}
 
             {isSlowAuth && !authError && (
-              <div className="rounded-2xl border border-secondary/30 bg-soft-yellow px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-                正在等待伺服器回應。若持續太久，請確認網路連線後再試一次。
+              <div role="status" className="rounded-2xl border border-secondary/30 bg-soft-yellow px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+                正在等待登入服務回應，尚未開始載入市集資料。請稍候，避免重複送出。
               </div>
             )}
 
@@ -327,6 +334,7 @@ export function LoginModal({
 
           <div className="mt-6 text-center">
             <button
+              type="button"
               onClick={() => {
                 setAuthError('');
                 setMode(isSignup ? 'login' : 'signup');
@@ -342,10 +350,11 @@ export function LoginModal({
             <p className="text-xs text-muted-foreground leading-relaxed">
               {isSignup
                 ? '註冊後，資料會綁定到此 Email 帳號。請使用你之後會固定登入的信箱。'
-                : '登入後，系統會自動同步你的雲端資料。若此裝置已有本機資料，系統會先詢問你如何處理。'}
+                : '登入成功後會讀取雲端紀錄；若有需要處理的本機資料，會另外提示。'}
             </p>
           </div>
         </DialogPanel>
+        </div>
       </div>
     </Dialog>
   );

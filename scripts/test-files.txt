@@ -427,3 +427,11 @@ tsx tests/market-cash-comparison.test.ts
 tsx tests/region-analytics.test.ts
 tsx tests/owner-followup.test.ts
 tests/uiux-six-improvements.test.tsx
+tests/market-navigation-return.test.tsx
+tests/ui-copy-inventory.test.mjs
+tests/contextual-help-ui.test.tsx
+tests/login-sync-ux.test.tsx
+tests/date-time-picker-lifecycle.test.ts
+tests/date-time-picker-platform.test.ts
+tests/market-tab-placement.test.tsx
+tests/market-live-priority.test.tsx

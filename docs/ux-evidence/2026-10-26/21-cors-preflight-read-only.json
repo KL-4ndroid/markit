@@ -1,0 +1,14 @@
+{
+  "verificationDate": "2026-10-26",
+  "target": "http://127.0.0.1:3000/api/sales-photo-evidence/upload",
+  "method": "OPTIONS",
+  "requestBody": null,
+  "credentialsUsed": false,
+  "accessControlRequestMethod": "POST",
+  "accessControlRequestHeaders": "authorization,content-type",
+  "results": [
+    {"origin": "http://127.0.0.1:3000", "status": 403, "code": "cors_origin_denied", "allowOrigin": null},
+    {"origin": "http://localhost:3000", "status": 204, "code": null, "allowOrigin": "http://localhost:3000"}
+  ],
+  "scope": "Local development only. No upload retried, credentials disclosed, CORS settings changed, or production behavior verified."
+}

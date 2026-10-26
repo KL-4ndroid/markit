@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import {
   CheckCircle2,
+  AlertCircle,
   Cloud,
   CloudOff,
   Crown,
@@ -11,7 +12,6 @@ import {
   LogOut,
   RefreshCw,
   User,
-  WifiOff,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -32,7 +32,7 @@ const SYNC_STATUS_ICONS = {
   waiting: Cloud,
   syncing: Loader2,
   offline: CloudOff,
-  error: WifiOff,
+  error: AlertCircle,
   pending: Cloud,
   synced: CheckCircle2,
 } as const;
@@ -137,22 +137,22 @@ export function AccountSyncPanel() {
       <section className="rounded-card border border-primary/10 bg-white p-5" aria-labelledby="sync-status-title">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 id="sync-status-title" className="text-base font-semibold text-foreground">雲端同步</h2>
-            <p className="mt-1 text-sm text-muted-foreground">本機操作會先保存，再於連線時送往雲端。</p>
+            <h2 id="sync-status-title" className="text-base font-semibold text-foreground">紀錄同步</h2>
+            <p role="status" className="mt-1 text-sm leading-6 text-muted-foreground">{syncPresentation.detail}</p>
           </div>
           <span className={`inline-flex min-h-8 items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${syncPresentation.tone}`}>
-            <StatusIcon className={`h-4 w-4 ${status === SyncStatus.SYNCING ? 'animate-spin' : ''}`} aria-hidden="true" />
+            <StatusIcon className={`h-4 w-4 ${syncPresentation.kind === 'syncing' ? 'animate-spin' : ''}`} aria-hidden="true" />
             {syncPresentation.label}
           </span>
         </div>
 
         <dl className="mt-5 divide-y divide-primary/10 border-y border-primary/10 text-sm">
           <div className="flex items-center justify-between gap-4 py-3">
-            <dt className="text-muted-foreground">最後同步</dt>
+            <dt className="text-muted-foreground">上次完成同步</dt>
             <dd className="font-medium text-foreground">{syncPresentation.lastSyncLabel}</dd>
           </div>
           <div className="flex items-center justify-between gap-4 py-3">
-            <dt className="text-muted-foreground">待同步項目</dt>
+            <dt className="text-muted-foreground">待同步紀錄</dt>
             <dd className="font-medium text-foreground">{pendingCount} 筆</dd>
           </div>
           <div className="flex items-center justify-between gap-4 py-3">
@@ -161,17 +161,18 @@ export function AccountSyncPanel() {
           </div>
         </dl>
 
-        {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
         <Button
           className="mt-4 w-full sm:w-auto"
           variant="secondary"
-          isLoading={status === SyncStatus.SYNCING}
-          disabled={!isOnline}
+          isLoading={syncPresentation.kind === 'syncing'}
+          disabled={!syncPresentation.canSync}
           leadingIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
           onClick={() => void sync()}
         >
-          立即同步
+          {syncPresentation.actionLabel}
         </Button>
+        <p className="mt-3 text-xs leading-5 text-muted-foreground">心得與現金草稿需回原功能儲存；照片是否送達請查看照片狀態，不包含在上述待同步筆數。</p>
       </section>
 
       <CashDraftList />

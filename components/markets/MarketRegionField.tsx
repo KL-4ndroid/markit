@@ -16,7 +16,7 @@ export function MarketRegionField({ id, value, onChange, disabled, error }: Mark
   const ready = isMarketRegionWriteEnabled();
   return (
     <FormField id={id} label="縣市（選填）" error={error}
-      hint={ready ? '可稍後補填；地點仍可自由輸入地址或地標。' : '縣市分類準備中，稍後可回來補填。'}>
+      hint={ready ? undefined : '縣市分類準備中，稍後可回來補填。'}>
       {props => (
         <select {...props} value={value ?? ''} disabled={disabled || !ready}
           onChange={event => {

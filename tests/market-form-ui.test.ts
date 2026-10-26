@@ -26,16 +26,17 @@ assert.match(addForm, /title="成本與抽成"/);
 assert.match(addForm, /title="設備"/);
 assert.match(editForm, /!isManagerMode &&[\s\S]*?title="成本與抽成"/);
 assert.match(sharedFields, /label="市集名稱"/);
-assert.match(sharedFields, /label="市集日期"/);
+assert.match(sharedFields, /label="市集日期（可複選）"/);
 assert.match(sharedFields, /mode\?: 'owner' \| 'manager'/);
 
 assert.match(fullScreenForm, /h-\[100dvh\]/);
 assert.match(fullScreenForm, /sm:max-w-3xl/);
 assert.match(fullScreenForm, /env\(safe-area-inset-bottom\)/);
 
-assert.match(timePicker, /const onChangeRef = useRef\(onChange\)/);
-assert.match(timePicker, /onChangeRef\.current\(newValue\)/);
-assert.match(timePicker, /\}, \[\]\);/);
+assert.match(timePicker, /useDateTimePicker/);
+const pickerHook = readFileSync(join(root, 'hooks/useDateTimePicker.ts'), 'utf8');
+assert.match(pickerHook, /optionsRef\.current\.onChange\(value\)/);
+assert.match(pickerHook, /if \(!mounted\) \{ handle\.destroy\(\)/);
 
 assert.match(ownerDetail, /const EditMarketForm = dynamic\(/);
 assert.match(ownerDetail, /market && showEditForm &&/);

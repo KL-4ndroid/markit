@@ -248,9 +248,9 @@ runTest('EditProductForm manager mode strips product name/category/cost/delete',
   assert.doesNotMatch(managerUpdatesBlock, /name:/);
   assert.doesNotMatch(managerUpdatesBlock, /category:/);
   assert.doesNotMatch(managerUpdatesBlock, /cost:/);
-  assert.match(productFormFieldsSource, /label="售價"/);
+  assert.match(productFormFieldsSource, /label="售價（元）"/);
   assert.match(productFormFieldsSource, /!isManagerMode\s*&&\s*\([\s\S]*?label="商品名稱"/);
-  assert.match(productFormFieldsSource, /!isManagerMode\s*&&\s*\([\s\S]*?label="成本"/);
+  assert.match(productFormFieldsSource, /!isManagerMode\s*&&\s*\([\s\S]*?label="成本（元）"/);
   assert.match(editProductFormSource, /\{!isManagerMode\s*&&\s*\([\s\S]*?setShowDeleteConfirm/);
 });
 

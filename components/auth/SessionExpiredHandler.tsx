@@ -143,10 +143,10 @@ export function SessionExpiredHandler() {
             {savedFormsCount > 0 && (
               <div className="bg-soft-green rounded-2xl p-4 text-sm">
                 <p className="text-foreground font-medium mb-1">
-                  ✅ 您的表單資料已自動保存
+                  這台裝置有 {savedFormsCount} 份暫存表單
                 </p>
                 <p className="text-muted-foreground">
-                  重新登入後將自動恢復 {savedFormsCount} 個表單的內容
+                  暫存尚未送到雲端。請在此裝置重新登入後，回原表單確認內容並儲存。
                 </p>
               </div>
             )}
@@ -161,10 +161,6 @@ export function SessionExpiredHandler() {
             重新登入
           </button>
 
-          {/* 提示 */}
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            為了您的資料安全，我們會定期要求重新驗證身分
-          </p>
         </DialogPanel>
       </div>
     </Dialog>

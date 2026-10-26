@@ -16,7 +16,7 @@ assert.match(addForm, /marketTextImportInput/);
 assert.match(addForm, /hasImportText/);
 assert.match(addForm, /onApply=\{handleImportApply\}/);
 assert.match(marketFields, /從市集資訊帶入/);
-assert.match(marketFields, /優先填寫/);
+assert.match(marketFields, /type="button"[\s\S]*onClick=\{onImportFromMarketText\}/);
 assert.match(marketFields, /onImportFromMarketText/);
 assert.doesNotMatch(
   addForm.slice(addForm.indexOf('const handleImportApply'), addForm.indexOf('const focusFirstError')),

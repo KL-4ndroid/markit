@@ -24,7 +24,7 @@ export function CashDraftList(){
     {error && <p role="alert" className="text-sm text-danger">{error}</p>}
     {drafts.map(({draft,market})=><div key={draft.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-background p-3 text-sm">
       <span>{isCashOwner(market,user.id)?market.name:'原市集目前無法讀取'} · {draft.businessDate}</span>
-      {isCashOwner(market,user.id) && <Link href={buildMarketDetailHref(draft.marketId)} className="inline-flex min-h-11 items-center text-primary underline">回原市集處理</Link>}
+      {isCashOwner(market,user.id) && <Link href={buildMarketDetailHref(draft.marketId, { returnTo: 'account' })} className="inline-flex min-h-11 items-center text-primary underline">回原市集處理</Link>}
       <button type="button" disabled={!roleRefreshState.isAuthorizationFresh} className="min-h-11 rounded-xl border border-primary/20 px-3 text-primary disabled:opacity-50" onClick={async()=>{
         try{await repository.discard(draft.id,draft.mutationId);setError('');}catch(e){setError(cashErrorMessage(e));}
       }}>捨棄此份本機現金草稿</button>

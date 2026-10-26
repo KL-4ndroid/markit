@@ -116,7 +116,6 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
         open={isOpen}
         onClose={handleClose}
         title="新增商品"
-        description="先填基本資料即可建立，庫存與說明可依需要補充。"
         size="lg"
         dismissible={!isSubmitting}
         footer={(

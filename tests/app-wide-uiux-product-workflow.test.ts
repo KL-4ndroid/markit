@@ -40,7 +40,7 @@ assert.match(editForm, /!isManagerMode\s*&&\s*\(/);
 assert.match(editForm, /onDeleted\?\.\(\)/);
 
 assert.match(dialog, /max-h-\[90dvh\]/);
-assert.match(dialog, /overflow-y-auto px-5 py-5/);
+assert.match(dialog, /min-h-0 overflow-y-auto overscroll-contain px-5 py-5/);
 assert.match(dialog, /<footer className=/);
 
 console.log('PASS UX-R2 product workflow and first-viewport contracts');

@@ -5,6 +5,7 @@ import { MapPin } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { StateView } from "@/components/ui/StateView";
+import { ContextHelp } from "@/components/ui/ContextHelp";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { useRoleContext } from "@/lib/role-context";
 import { generateUUID } from "@/lib/db";
@@ -33,7 +34,7 @@ export default function MarketRegionsPage() {
         eyebrow="資料整理"
         icon={MapPin}
       />
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-5 pb-24">
+      <div className="mx-auto max-w-3xl space-y-4 px-4 py-5 pb-24">
         <Link
           href="/markets"
           className="inline-flex min-h-11 items-center text-sm text-primary"
@@ -54,7 +55,7 @@ export default function MarketRegionsPage() {
             disabled={!roleRefreshState.isAuthorizationFresh}
           />
         )}
-      </main>
+      </div>
     </div>
   );
 }
@@ -155,14 +156,14 @@ function BackfillWorkspace({
   return (
     <>
       <div className="rounded-card border border-primary/10 bg-white p-4 text-sm leading-6">
-        <h2 className="font-semibold">先整理未分類場次</h2>
-        <p>
-          一批最多 20
-          場，先指定縣市再預覽。只補填你確認的場次，不從地點文字猜測，也不修改場地預設或其他營業日。
-        </p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          已有縣市的更正請回原市集編輯。多筆補填需連線；關閉頁面前尚未確認的選擇不會送出。
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-x-3">
+          <h2 className="font-semibold">未分類場次</h2>
+          <ContextHelp label="補填範圍">
+            <p>只補填你選取並確認的場次，不從地點文字猜測縣市，也不修改場地預設或其他營業日。</p>
+            <p>已有縣市的更正請回原市集編輯。關閉頁面前尚未確認的選擇不會送出。</p>
+          </ContextHelp>
+        </div>
+        <p>每批最多 20 場，指定縣市後先預覽；需連線確認。</p>
       </div>
       {status && (
         <p role="status" className="rounded-xl bg-soft-green p-3 text-sm">

@@ -1,0 +1,113 @@
+{
+  "capturedAt": "2026-10-25T18:54:49.766Z",
+  "marketId": "c59c759a-4a9a-4b12-8448-1fdb2c070a73",
+  "readOnly": true,
+  "market": {
+    "status": 200,
+    "rows": [
+      {
+        "id": "c59c759a-4a9a-4b12-8448-1fdb2c070a73",
+        "status": "paid",
+        "operation_phase": "closing",
+        "operation_session_date": "2026-10-26",
+        "total_revenue": 550,
+        "total_profit": 530,
+        "total_deals": 3,
+        "booth_cost": 100
+      }
+    ]
+  },
+  "events": {
+    "status": 200,
+    "counts": {
+      "market_created": 1,
+      "market_updated": 2,
+      "market_status_changed": 2,
+      "deal_closed": 3
+    },
+    "sales": [
+      {
+        "id": "7805e9cf-65aa-4824-9868-dd7f61aff1c6",
+        "totalAmount": 300,
+        "paymentMethod": "cash",
+        "items": []
+      },
+      {
+        "id": "978d9387-2d92-474d-b84a-055cb3c7f266",
+        "totalAmount": 200,
+        "paymentMethod": "mobile",
+        "items": []
+      },
+      {
+        "id": "e2023168-ecf0-4cf2-ae68-fa535c32a416",
+        "totalAmount": 50,
+        "paymentMethod": "cash",
+        "items": [
+          {
+            "price": 50,
+            "quantity": 1,
+            "productId": "ed7aab5e-75ed-4515-9c6a-097db88b7f02",
+            "product_name": "[驗收1026-M] 流程測試商品",
+            "cost_at_time_of_sale": 20,
+            "price_at_time_of_sale": 50
+          }
+        ]
+      }
+    ]
+  },
+  "cash": {
+    "status": 200,
+    "rows": [
+      {
+        "business_date": "2026-10-26",
+        "data": {
+          "note": "[驗收1026-M] 已校正盤點：開攤1000，收攤1350，現金銷售350，非現金200排除，非真實營運資料。",
+          "closing": {
+            "mode": "denominations",
+            "counts": {
+              "10": "0",
+              "50": "1",
+              "100": "3",
+              "1000": "1"
+            }
+          },
+          "opening": {
+            "mode": "total",
+            "amount": "1000.00"
+          }
+        },
+        "revision": 3
+      }
+    ]
+  },
+  "journals": {
+    "status": 200,
+    "rows": [
+      {
+        "id": "4e068233-6065-411c-9e7e-789e17c3088a",
+        "business_date": null,
+        "body": "【驗收1026-M｜合成測試心得】\n人潮測試：下午15–17點較集中，建議提前備好零錢。\n交通測試：周邊停車不便，下次提早30分鐘抵達並先確認卸貨位置。\n本篇僅供流程驗收，並非真實市集評價。",
+        "revision": 1,
+        "deleted_at": null
+      }
+    ]
+  },
+  "products": {
+    "status": 200,
+    "rows": [
+      {
+        "id": "ed7aab5e-75ed-4515-9c6a-097db88b7f02",
+        "name": "[驗收1026-M] 流程測試商品",
+        "price": 50,
+        "cost": 20,
+        "stock": 9,
+        "totalSold": 1,
+        "unlimitedStock": false
+      }
+    ]
+  },
+  "photos": {
+    "status": 200,
+    "rows": []
+  }
+}

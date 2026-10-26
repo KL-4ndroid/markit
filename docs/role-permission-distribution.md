@@ -1,5 +1,9 @@
 # Role / Permission Distribution Notes
 
+## 2026-10-25 | Explicit return navigation
+
+Owner, Staff and loading Market detail shells share an internal-destination return link. Route parameters choose navigation only; they do not authorize data access. Private journal entry points still require the existing owner scope and rollout checks, including the journal task destination. No role, freshness, Team entitlement, staff scope, field-note/checklist sharing or writer changed. See `docs/UIUX_ENTRY_RETURN_AUDIT_2026_10_25.md`; live Staff login and native hardware-back behavior remain outside this browser audit.
+
 ## 2026-10-25 | Role and access presentation (UX07)
 
 `lib/permissions/staff-access-presentation.ts` describes role work and current membership/access availability only. StaffManagement passes its existing capability decision reason, distinguishes pending/suspended/revoked/simulation/unconfirmed access, and removes the claim that every staff role can record. StaffPermissionCard receives role authorization freshness from the existing context and separates a short availability summary from expandable role rules. Viewer is explicitly read-only; Operator/Manager wording follows existing capabilities and operating restrictions. No entitlement, role capability, staff read/write, freshness, RLS, restore or invitation policy changed. See `docs/UIUX_SIX_IMPROVEMENTS_IMPLEMENTATION_2026_10_25.md` and `tests/uiux-six-improvements.test.tsx` for evidence boundaries.

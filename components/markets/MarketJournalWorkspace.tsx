@@ -21,16 +21,17 @@ import {
   type MarketJournalDraft,
 } from "@/lib/markets/market-journal";
 import { marketRegionLabel } from "@/lib/markets/market-region";
-import { buildMarketDetailHref } from "@/lib/navigation/market-detail-route";
+import { buildMarketDetailHref, buildMarketJournalsHref } from "@/lib/navigation/market-detail-route";
 import { JournalChecklistDialog } from "@/components/markets/JournalChecklistDialog";
 import { journalTasksEnabled } from "@/lib/markets/owner-followup";
 import { JournalReadingBody } from "@/components/markets/JournalReadingBody";
 import { Lock, SlidersHorizontal } from "lucide-react";
+import { ContextHelp } from "@/components/ui/ContextHelp";
 
 const actionClass =
   "min-h-11 rounded-xl border border-primary/20 px-4 py-2 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50";
 
-export function MarketJournalWorkspace({ marketId }: { marketId?: string }) {
+export function MarketJournalWorkspace({ marketId, returnTo }: { marketId?: string; returnTo?: string | null }) {
   const { user } = useAuth();
   const { userRole, roleRefreshState } = useRoleContext();
   if (!marketJournalsEnabled()) return null;
@@ -41,6 +42,7 @@ export function MarketJournalWorkspace({ marketId }: { marketId?: string }) {
       key={`${user.id}:${marketId ?? "all"}`}
       ownerId={user.id}
       marketId={marketId}
+      returnTo={returnTo}
     />
   );
 }
@@ -48,9 +50,11 @@ export function MarketJournalWorkspace({ marketId }: { marketId?: string }) {
 function OwnerJournalWorkspace({
   ownerId,
   marketId,
+  returnTo,
 }: {
   ownerId: string;
   marketId?: string;
+  returnTo?: string | null;
 }) {
   const repository = useMemo(
     () => new MarketJournalRepository(ownerId, journalCloud),
@@ -219,9 +223,7 @@ function OwnerJournalWorkspace({
           <h2 id="market-journal-heading" className="text-lg font-semibold">
             出攤心得
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            只供你自己回顧，可記人潮、停車與下次想調整的事。
-          </p>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground"><Lock className="h-4 w-4" aria-hidden="true" />僅自己可見</p>
         </div>
           <button
             className={actionClass}
@@ -237,7 +239,7 @@ function OwnerJournalWorkspace({
       </div>
       {marketId && (
         <Link
-          href="/markets/journals"
+          href={buildMarketJournalsHref(marketId, returnTo)}
           className="inline-flex min-h-11 items-center text-sm text-primary underline underline-offset-4"
         >
           查看全部出攤心得
@@ -260,8 +262,8 @@ function OwnerJournalWorkspace({
               搜尋心得
               <input type="search" className="mt-1 min-h-12 w-full rounded-2xl border border-primary/20 bg-white px-3 text-base" value={query} onChange={e => setQuery(e.target.value)} placeholder="市集、地點或心得關鍵字" />
             </label>
-            <button type="button" aria-expanded={filtersOpen || Boolean(dateError)} aria-controls="journal-collection-filters" onClick={() => setFiltersOpen(value => !value)} className={`${actionClass} inline-flex min-h-12 shrink-0 items-center gap-2 bg-white`}>
-              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />篩選
+            <button type="button" disabled={Boolean(dateError)} aria-expanded={filtersOpen || Boolean(dateError)} aria-controls="journal-collection-filters" onClick={() => setFiltersOpen(value => !value)} className={`${actionClass} inline-flex min-h-12 shrink-0 items-center gap-2 bg-white`}>
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />{dateError ? '請修正日期' : filtersOpen ? '收起篩選' : '篩選'}
             </button>
           </div>
           <div id="journal-collection-filters" hidden={!filtersOpen && !dateError} className="rounded-2xl border border-border bg-white p-4">
@@ -305,9 +307,9 @@ function OwnerJournalWorkspace({
               aria-invalid={Boolean(dateError)}
             />
           </label>
-          <p className="text-xs leading-5 text-muted-foreground sm:col-span-2">
-            依心得所屬營業日篩選，整場總結以市集結束日計算；包含起日與迄日，不依修改時間篩選。
-          </p>
+          <div className="sm:col-span-2"><ContextHelp label="日期篩選方式">
+            <p>依心得所屬營業日篩選，包含起日與迄日。整場總結以市集結束日計算，不依心得修改時間篩選。</p>
+          </ContextHelp></div>
             </div>
       <label className="flex min-h-11 items-center gap-2 text-sm">
         <input
@@ -403,6 +405,14 @@ function OwnerJournalWorkspace({
                 ))}
             </select>
           </label>
+          <div className="flex flex-wrap items-center justify-between gap-x-3">
+            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground"><Lock className="h-4 w-4" aria-hidden="true" />私人心得</span>
+            <ContextHelp label="填寫靈感">
+              <p>可以記錄人潮集中的時段、停車與卸貨、天氣、主辦安排，以及下次想調整的事。</p>
+              <p>例如：下午四點後人潮最多；停車要提早到，下次帶推車。</p>
+              <p>心得只有你能閱讀；若另建出攤待辦，只有你明確選擇的待辦文字會依既有團隊權限分享。</p>
+            </ContextHelp>
+          </div>
           <label className="block text-sm">
             這場出攤的心得
             <textarea
@@ -419,7 +429,6 @@ function OwnerJournalWorkspace({
                   updatedAt: Date.now(),
                 })
               }
-              placeholder="例如：下午四點後人潮最多；停車要提早到，下次帶推車。"
             />
           </label>
           <p className="text-xs text-muted-foreground">
@@ -545,7 +554,7 @@ function OwnerJournalWorkspace({
                 </button>
                 {!marketId && (
                   <Link
-                    href={buildMarketDetailHref(entryMarketId)}
+                    href={buildMarketDetailHref(entryMarketId, { task: 'journal', returnTo: 'journals' })}
                     className={`${actionClass} inline-flex items-center`}
                   >
                     回到原市集

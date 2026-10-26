@@ -20,7 +20,6 @@ export function AddOperationDialog({ open, onClose, onSingle, onWeekly, onManage
       open={open}
       onClose={onClose}
       title="新增營業"
-      description="選擇這次營業的安排方式。"
       size="md"
       footer={(
         <Button variant="ghost" onClick={onManage} leadingIcon={<Settings2 className="h-4 w-4" />}>

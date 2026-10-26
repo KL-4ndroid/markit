@@ -124,7 +124,7 @@ export function JournalChecklistDialog({
             </p>
             <Link
               className={`${button} inline-flex items-center`}
-              href={buildMarketDetailHref(request!.marketId)}
+              href={buildMarketDetailHref(request!.marketId, { returnTo: 'journals' })}
             >
               查看目標市集
             </Link>

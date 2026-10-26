@@ -38,13 +38,14 @@ const photoStorySource = readFileSync(join(projectRoot, 'components/markets/Mark
 
 assert.match(ownerPageSource, /interactionSummary\.totalCount/);
 assert.doesNotMatch(ownerPageSource, /stats\?\.totalInteractions \?\? interactionEvents\.length/);
-assert.match(ownerPageSource, /原定結束後保留 60 分鐘延長記錄，之後自動收起/);
-assert.match(ownerPageSource, /aria-expanded={!isTimelineCollapsed}/);
-assert.match(ownerPageSource, /aria-controls="owner-market-timeline-panel"/);
+const timelineSource = readFileSync(join(projectRoot, 'components/markets/MarketTodayTimeline.tsx'), 'utf8');
+assert.match(timelineSource, /原定結束後保留 60 分鐘延長記錄，之後自動收起/);
+assert.match(timelineSource, /aria-expanded=\{expanded\}/);
+assert.match(timelineSource, /aria-controls="owner-market-timeline-panel"/);
 assert.doesNotMatch(ownerPageSource, /<main className="mx-auto max-w-5xl/);
-assert.match(ownerPageSource, /showCloseAction={resolvedOwnerWorkspaceView === 'manage'}/);
+assert.match(ownerPageSource, /<MarketWorkspaceSummary[\s\S]*<MarketLiveSummaryActions[\s\S]*onCloseToday=\{handleCloseTodayOperation\}/);
 assert.doesNotMatch(staffPageSource, /onCloseToday=/);
-assert.match(sessionControlSource, />\s*提前結束今日營業\s*</);
+assert.match(sessionControlSource, /embedded \? '收攤' : '提前結束今日營業'/);
 assert.match(sessionControlSource, /未操作時會在延長時段結束後自動收攤/);
 
 for (const source of [workspaceNavigationSource, detailTabsSource]) {

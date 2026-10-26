@@ -1,0 +1,55 @@
+{
+  "capturedAt": "2026-10-25T18:42:07.519Z",
+  "marketId": "c59c759a-4a9a-4b12-8448-1fdb2c070a73",
+  "readOnly": true,
+  "market": {
+    "status": 200,
+    "rows": [
+      {
+        "id": "c59c759a-4a9a-4b12-8448-1fdb2c070a73",
+        "status": "paid",
+        "operating_start_time": "00:00:00",
+        "operating_end_time": "23:59:00"
+      }
+    ]
+  },
+  "events": {
+    "status": 200,
+    "counts": {
+      "market_created": 1,
+      "market_updated": 1,
+      "market_status_changed": 2,
+      "deal_closed": 1
+    },
+    "sales": [
+      {
+        "id": "7805e9cf-65aa-4824-9868-dd7f61aff1c6",
+        "totalAmount": 300,
+        "paymentMethod": "cash"
+      }
+    ]
+  },
+  "cash": {
+    "status": 200,
+    "rows": [
+      {
+        "business_date": "2026-10-26",
+        "data": {
+          "note": "[驗收1026-M] 開攤零用金 1000 元，非真實營運資料。",
+          "closing": {
+            "mode": "none"
+          },
+          "opening": {
+            "mode": "total",
+            "amount": "1000.00"
+          }
+        },
+        "revision": 1
+      }
+    ]
+  },
+  "photos": {
+    "status": 200,
+    "rows": []
+  }
+}

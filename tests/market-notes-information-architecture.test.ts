@@ -35,7 +35,7 @@ assert.match(demo, /title="主辦／場地備註與成交照片"/);
 assert.match(marketCard, /DialogTitle[\s\S]*主辦／場地備註/);
 
 assert.match(referencePanel, /interface MarketReferenceNotePanelProps[\s\S]*note\?: string \| null/);
-assert.match(referencePanel, /固定資訊/);
+assert.match(referencePanel, /整場共用/);
 assert.match(referencePanel, /尚未填寫主辦／場地備註/);
 assert.doesNotMatch(referencePanel, /useLiveQuery|useAuth|useUserRole|supabase|createFieldNote/);
 assert.match(fieldOpsSection, /<MarketReferenceNotePanel note=\{referenceNote\}/);
@@ -43,8 +43,7 @@ assert.match(ownerDetail, /referenceNote=\{market\.notes\}/);
 assert.match(staffDetail, /referenceNote=\{market\.notes\}/);
 
 assert.match(fieldNotesPanel, /現場交接筆記/);
-assert.match(fieldNotesPanel, /動態紀錄/);
-assert.match(fieldNotesPanel, /不會修改主辦／場地備註/);
+assert.match(fieldNotesPanel, /團隊交接/);
 assert.match(fieldNotesPanel, /新增交接筆記/);
 assert.match(fieldNotesPanel, /尚無現場交接筆記/);
 assert.match(fieldNotesPanel, /note\.updatedAt === note\.createdAt \? '新增' : '更新'/);

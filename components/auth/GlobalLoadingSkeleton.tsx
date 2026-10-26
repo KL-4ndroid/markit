@@ -14,6 +14,7 @@ interface GlobalLoadingSkeletonProps {
 export function GlobalLoadingSkeleton({ message }: GlobalLoadingSkeletonProps) {
   return (
     <div className="min-h-screen bg-background pb-24">
+      {message && <p role="status" className="px-5 py-3 text-center text-sm text-muted-foreground">{message}</p>}
       {/* 頂部區域骨架 */}
       <div className="japanese-gradient-header px-6 pt-12 pb-8">
         {/* 標題骨架 */}
@@ -51,9 +52,6 @@ export function GlobalLoadingSkeleton({ message }: GlobalLoadingSkeletonProps) {
       {/* 市集列表骨架 */}
       <div className="px-6 space-y-4">
         <div className="h-6 w-32 bg-gray-200 rounded-lg animate-pulse mb-4" />
-        {message && (
-          <p className="text-sm text-muted-foreground">{message}</p>
-        )}
         
         <MarketCardSkeleton />
         <MarketCardSkeleton />

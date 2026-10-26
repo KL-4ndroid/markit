@@ -4,6 +4,8 @@ import { usePathname } from 'next/navigation';
 
 import { MarketDetailLoadingShell } from '@/components/markets/MarketDetailLoadingShell';
 import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
+import { useRoleContext } from '@/lib/role-context';
+import { RoleAccessNotice } from './RoleAccessNotice';
 
 /**
  * RoleLoadingFallback
@@ -14,9 +16,16 @@ import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
  */
 export function RoleLoadingFallback() {
   const pathname = usePathname();
+  const { roleRefreshState, refreshRole } = useRoleContext();
+  if (roleRefreshState.needsRetry) {
+    return <RoleAccessNotice onRetry={refreshRole} />;
+  }
   if (pathname?.startsWith('/markets/detail')) {
     return <MarketDetailLoadingShell />;
   }
 
-  return <DetailPageSkeleton />;
+  return <div>
+    <p role="status" className="bg-background px-5 py-3 text-center text-sm text-muted-foreground">已登入，正在確認使用權限…</p>
+    <DetailPageSkeleton />
+  </div>;
 }
