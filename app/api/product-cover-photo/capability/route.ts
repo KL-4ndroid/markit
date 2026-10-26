@@ -1,3 +1,5 @@
+import { runAppApiWithCors, createAppApiCorsPreflightResponse } from '@/lib/api/server/cors';
+import { checkServerSubscriptionWrite } from '@/lib/subscription/write-access.server';
 import { NextResponse } from 'next/server';
 import { authenticateAppApiRequest } from '@/lib/api/server/auth';
 import {
@@ -12,12 +14,12 @@ import { createAccountCapabilityRepository } from '@/lib/subscription/account-ca
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const auth = await authenticateAppApiRequest(request);
   if (!auth.ok) {
     return NextResponse.json(
-      { canManage: false, canDelete: false, reason: 'authentication_required' },
-      { status: 401, headers: { 'Cache-Control': 'no-store' } },
+      { canManage: false, canDelete: false, reason: auth.code === 'authentication_unavailable' ? 'unavailable' : 'authentication_required' },
+      { status: auth.code === 'authentication_unavailable' ? 503 : 401, headers: { 'Cache-Control': 'no-store' } },
     );
   }
   const client = createProductCoverPhotoServiceClient();
@@ -30,6 +32,13 @@ export async function GET(request: Request) {
       { canManage: false, canDelete: false, reason: 'permission_denied' },
       { headers: { 'Cache-Control': 'no-store' } },
     );
+  }
+  const writeAccess = await checkServerSubscriptionWrite({ actorId: auth.actor.actorId, ownerId: access.ownerId, feature: 'product_photo' });
+  if (!writeAccess.allowed) {
+    const reason = writeAccess.reason === 'plan_required' ? 'free_plan'
+      : writeAccess.reason === 'entitlement_unavailable' ? 'entitlement_unavailable' : 'permission_denied';
+    return NextResponse.json({ canManage: false, canDelete: isProductCoverPhotoDeleteEnabled(), reason },
+      { headers: { 'Cache-Control': 'no-store' } });
   }
   const entitlementRequired = isProductCoverPhotoEntitlementRequired();
   const planAccess = await resolveProductCoverPhotoPlanAccess({
@@ -52,3 +61,8 @@ export async function GET(request: Request) {
     reason,
   }, { headers: { 'Cache-Control': 'no-store' } });
 }
+
+
+const allowedMethods = ['GET', 'OPTIONS'] as const;
+export const GET = (request: Request) => runAppApiWithCors(request, () => handleGET(request), { allowedMethods });
+export const OPTIONS = (request: Request) => createAppApiCorsPreflightResponse(request, { allowedMethods });

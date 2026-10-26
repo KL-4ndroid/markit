@@ -9,6 +9,7 @@ import { isAccountPlanCode, type AccountPlanCode } from './subscription-plans';
 
 export type SubscriptionSimulationClientState = {
   available: true;
+  cloudBacked?: boolean;
   enabled: boolean;
   planCode: AccountPlanCode | null;
   expiresAt: string | null;
@@ -43,6 +44,7 @@ function parseState(value: unknown): SubscriptionSimulationClientState | null {
 
   return {
     available: true,
+    ...(value.cloudBacked === true ? { cloudBacked: true } : {}),
     enabled: value.enabled,
     planCode: value.planCode,
     expiresAt: value.expiresAt,

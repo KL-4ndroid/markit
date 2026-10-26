@@ -1,5 +1,7 @@
 'use client';
 
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
+
 import { Clock, DollarSign, FileText, Package } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -136,6 +138,7 @@ function addMinutes(value: string, minutesToAdd: number): string {
 }
 
 export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps) {
+  const { canRecord } = useSubscriptionExperience();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [noEarlyEntry, setNoEarlyEntry] = useState(DEFAULT_NO_EARLY_ENTRY);
@@ -444,8 +447,8 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
             <div className="space-y-3">
 
             <FormSectionDisclosure
-              title="成本與抽成"
-              description="攤位費、保證金與營業額抽成"
+              title={canRecord ? '成本與抽成' : '繳費金額'}
+              description={canRecord ? '攤位費、保證金與營業額抽成' : '攤位費與保證金'}
               icon={DollarSign}
               tone="yellow"
             >
@@ -460,7 +463,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
               />
             </FormSectionDisclosure>
 
-            <FormSectionDisclosure
+            {canRecord && <FormSectionDisclosure
               title="設備"
               description="桌椅與傘具租金或免費提供狀態"
               icon={Package}
@@ -478,7 +481,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                 onRentalChange={(field, value) => handleChange(field, value)}
                 onFreeChange={handleEquipmentFreeChange}
               />
-            </FormSectionDisclosure>
+            </FormSectionDisclosure>}
 
             <FormSectionDisclosure
               title="時間軸"

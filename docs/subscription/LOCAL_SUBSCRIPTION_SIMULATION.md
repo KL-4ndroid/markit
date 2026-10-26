@@ -1,5 +1,7 @@
 # Local Subscription Identity Simulation
 
+> 2026-10-26 現況：本機已使用指定帳號的雲端測試模式，畫面與保存權益共用限時覆寫；最後測試完成後已還原原有方案。請先看本文末節及 [啟用紀錄](SUBSCRIPTION_WRITE_GUARD_PILOT_2026_10_26.md)。下方 2026-07-30 的記憶體模擬說明為舊模式，仍保留作為未開啟雲端模式時的參考，不代表正式收費啟用。
+
 Date: 2026-07-30
 Status: implemented and authenticated UI-smoke verified for local validation only
 Scope: Free, Pro, and Team account-capability simulation
@@ -91,3 +93,13 @@ Authenticated browser smoke passed on 2026-07-30:
   mutation, referral grant, or founder-price assignment.
 - Remove or disable the local environment flag before collecting deployment
   evidence.
+# 2026-10-26 三方案測試入口增量
+
+設定頁新增免費／輕量／高階切換及還原原方案；原生代碼仍為 free／pro／team，功能依[新三方案規格](SUBSCRIPTION_FEATURE_TIERS_2026_10_26.md)。面板改直接選方案，移除使用者切換流程內的資料庫 smoke 按鈕；原獨立檢查工具仍保留。模擬的登入、loopback、非部署、server flag 及四小時期限不變，不修改雲端 entitlement／角色／付款；詳見[本輪紀錄](THREE_TIER_EXPERIENCE_IMPLEMENTATION_2026_10_26.md)。以下既有英文紀錄是較早基線。
+
+
+## 2026-10-26 雲端測試增量（本機已啟用）
+
+新增可選的雲端模式，使指定帳號的畫面與寫入權益一致，詳見 [雲端寫入試行手冊](SUBSCRIPTION_WRITE_GUARD_PILOT_2026_10_26.md)。必須先完成 082、測試帳號啟用及唯讀驗證，再設定 `SUBSCRIPTION_SIMULATION_CLOUD_ENABLED=1`、`SUBSCRIPTION_WRITE_ENFORCEMENT_ENABLED=1`。模式開啟後不採記憶體模擬回退，四小時期限跨伺服器重啟保留，還原／到期顯露原始帳號方案，不改正式訂閱帳本。原本 loopback、非 Vercel、驗證登入與伺服器開關仍全部適用。
+
+2026-10-26 啟用結果：使用者完成雲端設定後，已確認指定帳號就緒並啟用本機新開關；三方案 capability API 與 18 項雲端權限檢查通過，最後已還原原有方案。私人 helper／設定表的 authenticated 存取被拒絕，未登錄控制帳號未啟用。實際營運資料保存與四小時實際等待未測。詳見上述手冊的真實雲端核對紀錄。

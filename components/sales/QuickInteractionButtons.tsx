@@ -9,7 +9,7 @@ import {
   type SalesPhotoEvidenceRuntimeResultHandler,
   type SalesPhotoEvidenceTransactionContext,
 } from '@/lib/sales/photo-evidence-runtime-enqueue';
-import type { SalesPaymentMethod } from '@/lib/sales/payment-methods';
+import { formatSalesPaymentMethod, type SalesPaymentMethod } from '@/lib/sales/payment-methods';
 import { PaymentMethodSelector } from './PaymentMethodSelector';
 
 interface QuickInteractionButtonsProps {
@@ -84,13 +84,14 @@ export function QuickInteractionButtons({
 
     } catch (error) {
       console.error('記錄成交失敗：', error);
-      toast.error('記錄失敗，資料已保留在本機等待同步');
+      toast.error('尚未完成記錄，請確認後重試；本次輸入已保留。');
       setIsProcessing(false);
       onProcessingChange?.(false);
       return;
     }
 
     setDisplayAmount('0');
+    if (!onPaymentMethodChange) setLocalPaymentMethod('cash');
     window.dispatchEvent(new CustomEvent('deal-closed', {
       detail: { marketId, amount, paymentMethod: selectedPaymentMethod },
     }));
@@ -187,7 +188,7 @@ export function QuickInteractionButtons({
         className={`${presentation === 'sheet' ? 'sticky bottom-0 z-10 mt-5 shadow-[0_-10px_24px_rgb(255_255_255_/_0.92)]' : 'mt-4'} inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100`}
       >
         {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" aria-hidden="true" />}
-        {isProcessing ? '正在記錄交易' : `完成收款 NT$${amount.toLocaleString()}`}
+        {isProcessing ? '正在記錄交易' : `完成收款 NT$${amount.toLocaleString()} · ${formatSalesPaymentMethod(selectedPaymentMethod)}`}
       </button>
     </div>
   );

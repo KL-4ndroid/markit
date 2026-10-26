@@ -3,7 +3,7 @@
 > 自動產生；請勿手動修改。重新產生：`node scripts/generate-ui-copy-inventory.mjs`。
 > [總索引](../APP_UI_COPY_INDEX.md) · [完整 JSON](inventory.json) · [逐檔覆蓋](coverage.md)
 
-共 190 筆來源位置；同字不同出處分開記錄。這是來源盤點，候選與未啟用分支不算已上線功能。
+共 192 筆來源位置；同字不同出處分開記錄。這是來源盤點，候選與未啟用分支不算已上線功能。
 
 ## app/settings/app/page.tsx
 
@@ -28,25 +28,26 @@
 
 | ID／來源 | 用語／動態範本 | 類型與用途 | 所在符號／觸發條件 |
 | --- | --- | --- | --- |
-| UI-c6b852802ce7<br>[app/settings/page.tsx:44:46](../../app/settings/page.tsx#L44) | 個人化 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | settingsIndexItems · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-5daca30df2fc<br>[app/settings/page.tsx:49:9](../../app/settings/page.tsx#L49) | Manager 管理員 | **來源候選** · 候選，非已證實提示<br>roleLabel 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | roleLabel<br>isStaff → userRole.staffRole === 'manager' |
-| UI-3a518cf5df43<br>[app/settings/page.tsx:51:11](../../app/settings/page.tsx#L51) | Operator 現場紀錄 | **來源候選** · 候選，非已證實提示<br>roleLabel 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | roleLabel<br>isStaff → 否則 userRole.staffRole === 'manager' → userRole.staffRole === 'operator' |
-| UI-8e693e11ddb2<br>[app/settings/page.tsx:52:11](../../app/settings/page.tsx#L52) | Viewer 檢視 | **來源候選** · 候選，非已證實提示<br>roleLabel 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | roleLabel<br>isStaff → 否則 userRole.staffRole === 'manager' → 否則 userRole.staffRole === 'operator' |
-| UI-c9bd32a046ad<br>[app/settings/page.tsx:53:7](../../app/settings/page.tsx#L53) | 老闆 | **來源候選** · 候選，非已證實提示<br>roleLabel 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | roleLabel<br>否則 isStaff |
-| UI-9405678e43d7<br>[app/settings/page.tsx:57:13](../../app/settings/page.tsx#L57) | 更多 | **畫面文字** · 直接呈現定義<br>SettingsPageShell：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-555a9955b974<br>[app/settings/page.tsx:58:19](../../app/settings/page.tsx#L58) | 帳號、團隊、營業偏好與系統工具都集中在這裡。 | **畫面文字** · 直接呈現定義<br>SettingsPageShell：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · description<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-e0ea7191751a<br>[app/settings/page.tsx:67:93](../../app/settings/page.tsx#L67) | 尚未登入 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-5da7b2c34bd6<br>[app/settings/page.tsx:68:65](../../app/settings/page.tsx#L68) | 目前身分：${roleLabel} | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-d6ee14e86118<br>[app/settings/page.tsx:71:26](../../app/settings/page.tsx#L71) | 團隊模式 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage<br>isStaff |
-| UI-957597bedc80<br>[app/settings/page.tsx:71:35](../../app/settings/page.tsx#L71) | 營運者 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage<br>否則 isStaff |
-| UI-2695e5dd5acf<br>[app/settings/page.tsx:75:70](../../app/settings/page.tsx#L75) | 設定分類 | **輔助辨識** · 直接呈現定義<br>提供 nav 的讀屏名稱、圖片替代文字或滑入說明 | SettingsPage · aria-label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-280db8b8b1b4<br>[app/settings/page.tsx:82:18](../../app/settings/page.tsx#L82) | ${item.label} | **動態文字入口** · 執行時綁定入口<br>a 接收執行時文字；內容需追查所列綁定與生產端 | SettingsPage<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-ed00ef29a9a1<br>[app/settings/page.tsx:92:66](../../app/settings/page.tsx#L92) | 個人化 | **畫面文字** · 直接呈現定義<br>SettingsSection：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-573b754812cf<br>[app/settings/page.tsx:94:23](../../app/settings/page.tsx#L94) | 主題實驗室 | **畫面文字** · 直接呈現定義<br>SettingsActionRow：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-24994f084f92<br>[app/settings/page.tsx:95:29](../../app/settings/page.tsx#L95) | 自由調整全 App 配色，並儲存在這台裝置 | **畫面文字** · 直接呈現定義<br>SettingsActionRow：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · description<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-4fe09334c725<br>[app/settings/page.tsx:102:82](../../app/settings/page.tsx#L102) | ${group.label} | **動態文字入口** · 執行時綁定入口<br>SettingsSection 接收執行時文字；內容需追查所列綁定與生產端 | SettingsPage · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-487fa4ddcca5<br>[app/settings/page.tsx:107:28](../../app/settings/page.tsx#L107) | ${item.label} | **動態文字入口** · 執行時綁定入口<br>SettingsMenuRow 接收執行時文字；內容需追查所列綁定與生產端 | SettingsPage · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-6cea2b3bd61d<br>[app/settings/page.tsx:108:34](../../app/settings/page.tsx#L108) | ${item.description} | **動態文字入口** · 執行時綁定入口<br>SettingsMenuRow 接收執行時文字；內容需追查所列綁定與生產端 | SettingsPage · description<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-6c629ba2879f<br>[app/settings/page.tsx:49:46](../../app/settings/page.tsx#L49) | 個人化 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | settingsIndexItems · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-fd54e9727fea<br>[app/settings/page.tsx:54:9](../../app/settings/page.tsx#L54) | Manager 管理員 | **來源候選** · 候選，非已證實提示<br>roleLabel 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | roleLabel<br>isStaff → userRole.staffRole === 'manager' |
+| UI-3aebb4bed2e8<br>[app/settings/page.tsx:56:11](../../app/settings/page.tsx#L56) | Operator 現場紀錄 | **來源候選** · 候選，非已證實提示<br>roleLabel 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | roleLabel<br>isStaff → 否則 userRole.staffRole === 'manager' → userRole.staffRole === 'operator' |
+| UI-92c1aca7e338<br>[app/settings/page.tsx:57:11](../../app/settings/page.tsx#L57) | Viewer 檢視 | **來源候選** · 候選，非已證實提示<br>roleLabel 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | roleLabel<br>isStaff → 否則 userRole.staffRole === 'manager' → 否則 userRole.staffRole === 'operator' |
+| UI-ead008193b06<br>[app/settings/page.tsx:58:7](../../app/settings/page.tsx#L58) | 老闆 | **來源候選** · 候選，非已證實提示<br>roleLabel 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | roleLabel<br>否則 isStaff |
+| UI-248a6f551a4c<br>[app/settings/page.tsx:62:13](../../app/settings/page.tsx#L62) | 更多 | **畫面文字** · 直接呈現定義<br>SettingsPageShell：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-0af8366152ea<br>[app/settings/page.tsx:63:19](../../app/settings/page.tsx#L63) | 帳號、團隊、營業偏好與系統工具都集中在這裡。 | **畫面文字** · 直接呈現定義<br>SettingsPageShell：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · description<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-c51d78d85b76<br>[app/settings/page.tsx:72:93](../../app/settings/page.tsx#L72) | 尚未登入 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-7fad64330782<br>[app/settings/page.tsx:73:65](../../app/settings/page.tsx#L73) | 目前身分：${roleLabel} | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-659f435acd8a<br>[app/settings/page.tsx:76:26](../../app/settings/page.tsx#L76) | 團隊模式 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage<br>isStaff |
+| UI-49ec541619f5<br>[app/settings/page.tsx:76:35](../../app/settings/page.tsx#L76) | 營運者 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage<br>否則 isStaff |
+| UI-aff7cf32e8f4<br>[app/settings/page.tsx:80:70](../../app/settings/page.tsx#L80) | 設定分類 | **輔助辨識** · 直接呈現定義<br>提供 nav 的讀屏名稱、圖片替代文字或滑入說明 | SettingsPage · aria-label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-24b2cfbef970<br>[app/settings/page.tsx:87:18](../../app/settings/page.tsx#L87) | ${item.label} | **動態文字入口** · 執行時綁定入口<br>a 接收執行時文字；內容需追查所列綁定與生產端 | SettingsPage<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-d1ecf981150a<br>[app/settings/page.tsx:98:63](../../app/settings/page.tsx#L98) | 訂閱方案 | **畫面文字** · 直接呈現定義<br>SettingsSection：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-adc547894b2d<br>[app/settings/page.tsx:99:59](../../app/settings/page.tsx#L99) | 目前方案與功能 | **畫面文字** · 直接呈現定義<br>SettingsMenuRow：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-f52995420f8d<br>[app/settings/page.tsx:99:81](../../app/settings/page.tsx#L99) | 免費、輕量與高階版的功能範圍 | **畫面文字** · 直接呈現定義<br>SettingsMenuRow：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · description<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-2ea793a8e241<br>[app/settings/page.tsx:101:66](../../app/settings/page.tsx#L101) | 個人化 | **畫面文字** · 直接呈現定義<br>SettingsSection：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-68cdde6a447a<br>[app/settings/page.tsx:103:23](../../app/settings/page.tsx#L103) | 主題實驗室 | **畫面文字** · 直接呈現定義<br>SettingsActionRow：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-0ae039187e9b<br>[app/settings/page.tsx:104:29](../../app/settings/page.tsx#L104) | 自由調整全 App 配色，並儲存在這台裝置 | **畫面文字** · 直接呈現定義<br>SettingsActionRow：呈現操作說明、資料標籤、狀態或注意事項 | SettingsPage · description<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-96b9c75bbd64<br>[app/settings/page.tsx:111:82](../../app/settings/page.tsx#L111) | ${group.label} | **動態文字入口** · 執行時綁定入口<br>SettingsSection 接收執行時文字；內容需追查所列綁定與生產端 | SettingsPage · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
 
 ## components/settings/DataCanonicalizationPanel.tsx
 
@@ -93,23 +94,23 @@
 
 | ID／來源 | 用語／動態範本 | 類型與用途 | 所在符號／觸發條件 |
 | --- | --- | --- | --- |
-| UI-9f4b9cd984e9<br>[components/settings/InteractionSettingsPanel.tsx:22:23](../../components/settings/InteractionSettingsPanel.tsx#L22) | 有興趣 | **來源候選** · 候選，非已證實提示<br>STAGE_LABELS 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | STAGE_LABELS<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-673326319df4<br>[components/settings/InteractionSettingsPanel.tsx:22:30](../../components/settings/InteractionSettingsPanel.tsx#L22) | 有互動 | **來源候選** · 候選，非已證實提示<br>STAGE_LABELS 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | STAGE_LABELS<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-e0490e06c236<br>[components/settings/InteractionSettingsPanel.tsx:22:37](../../components/settings/InteractionSettingsPanel.tsx#L22) | 轉換 | **來源候選** · 候選，非已證實提示<br>STAGE_LABELS 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | STAGE_LABELS<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-b5af64827a6e<br>[components/settings/InteractionSettingsPanel.tsx:45:19](../../components/settings/InteractionSettingsPanel.tsx#L45) | 已重置互動記錄設定 | **確認／通知** · 直接呈現定義<br>toast.success：提示操作結果、進度或要求使用者確認 | confirmReset<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-1f78fd35fddc<br>[components/settings/InteractionSettingsPanel.tsx:55:99](../../components/settings/InteractionSettingsPanel.tsx#L55) | 互動記錄 | **畫面文字** · 直接呈現定義<br>h2：辨識畫面、區塊或對話框主題 | InteractionSettingsPanel<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-5f80a4c90c9e<br>[components/settings/InteractionSettingsPanel.tsx:57:13](../../components/settings/InteractionSettingsPanel.tsx#L57) | 設定現場快速記錄的三個階段，用來比較不同市集的顧客反應。 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-a691dfca5613<br>[components/settings/InteractionSettingsPanel.tsx:64:61](../../components/settings/InteractionSettingsPanel.tsx#L64) | 目前互動階段 | **輔助辨識** · 直接呈現定義<br>提供 ol 的讀屏名稱、圖片替代文字或滑入說明 | InteractionSettingsPanel · aria-label<br>isSetupComplete |
-| UI-a48e5171ade4<br>[components/settings/InteractionSettingsPanel.tsx:68:94](../../components/settings/InteractionSettingsPanel.tsx#L68) | ${button.label} | **動態文字入口** · 執行時綁定入口<br>span 接收執行時文字；內容需追查所列綁定與生產端 | InteractionSettingsPanel<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-b9a17ca68cba<br>[components/settings/InteractionSettingsPanel.tsx:69:77](../../components/settings/InteractionSettingsPanel.tsx#L69) | ${STAGE_LABELS[index]} | **動態文字入口** · 執行時綁定入口<br>span 接收執行時文字；內容需追查所列綁定與生產端 | InteractionSettingsPanel<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-4dcc64ed558e<br>[components/settings/InteractionSettingsPanel.tsx:79:15](../../components/settings/InteractionSettingsPanel.tsx#L79) | 重新設定 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | InteractionSettingsPanel<br>isSetupComplete |
-| UI-00567e0a8ab6<br>[components/settings/InteractionSettingsPanel.tsx:87:15](../../components/settings/InteractionSettingsPanel.tsx#L87) | 重置 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | InteractionSettingsPanel<br>isSetupComplete |
-| UI-4e0246597190<br>[components/settings/InteractionSettingsPanel.tsx:93:62](../../components/settings/InteractionSettingsPanel.tsx#L93) | 尚未設定快速互動按鈕 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel<br>否則 isSetupComplete |
-| UI-abeb08f06d9c<br>[components/settings/InteractionSettingsPanel.tsx:94:61](../../components/settings/InteractionSettingsPanel.tsx#L94) | 完成設定後，營業畫面會顯示三個快速記錄動作。 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel<br>否則 isSetupComplete |
-| UI-ec8287ec7c2b<br>[components/settings/InteractionSettingsPanel.tsx:96:13](../../components/settings/InteractionSettingsPanel.tsx#L96) | 開始設定 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | InteractionSettingsPanel<br>否則 isSetupComplete |
-| UI-02025a2884da<br>[components/settings/InteractionSettingsPanel.tsx:113:15](../../components/settings/InteractionSettingsPanel.tsx#L113) | 重置互動記錄設定？ | **畫面文字** · 直接呈現定義<br>ConfirmDialog：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-4bd8f6b4d176<br>[components/settings/InteractionSettingsPanel.tsx:114:21](../../components/settings/InteractionSettingsPanel.tsx#L114) | 目前的三個互動按鈕會恢復為未設定狀態，之後可以重新建立。 | **畫面文字** · 直接呈現定義<br>ConfirmDialog：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel · description<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-8d705af58d0e<br>[components/settings/InteractionSettingsPanel.tsx:115:22](../../components/settings/InteractionSettingsPanel.tsx#L115) | 重置設定 | **畫面文字** · 直接呈現定義<br>ConfirmDialog：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel · confirmLabel<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-becac665b609<br>[components/settings/InteractionSettingsPanel.tsx:22:23](../../components/settings/InteractionSettingsPanel.tsx#L22) | 有興趣 | **來源候選** · 候選，非已證實提示<br>STAGE_LABELS 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | STAGE_LABELS<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-80790311b72a<br>[components/settings/InteractionSettingsPanel.tsx:22:30](../../components/settings/InteractionSettingsPanel.tsx#L22) | 有互動 | **來源候選** · 候選，非已證實提示<br>STAGE_LABELS 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | STAGE_LABELS<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-c0b524d35bc4<br>[components/settings/InteractionSettingsPanel.tsx:22:37](../../components/settings/InteractionSettingsPanel.tsx#L22) | 轉換 | **來源候選** · 候選，非已證實提示<br>STAGE_LABELS 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | STAGE_LABELS<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-72d2532e9ee8<br>[components/settings/InteractionSettingsPanel.tsx:45:19](../../components/settings/InteractionSettingsPanel.tsx#L45) | 已重置互動記錄設定 | **確認／通知** · 直接呈現定義<br>toast.success：提示操作結果、進度或要求使用者確認 | confirmReset<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-c9eef2cf7ea8<br>[components/settings/InteractionSettingsPanel.tsx:55:99](../../components/settings/InteractionSettingsPanel.tsx#L55) | 互動記錄 | **畫面文字** · 直接呈現定義<br>h2：辨識畫面、區塊或對話框主題 | InteractionSettingsPanel<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-a25648ac88d6<br>[components/settings/InteractionSettingsPanel.tsx:57:13](../../components/settings/InteractionSettingsPanel.tsx#L57) | 設定現場快速記錄顧客反應的三個按鈕。 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-f72eb2884a27<br>[components/settings/InteractionSettingsPanel.tsx:64:61](../../components/settings/InteractionSettingsPanel.tsx#L64) | 目前互動階段 | **輔助辨識** · 直接呈現定義<br>提供 ol 的讀屏名稱、圖片替代文字或滑入說明 | InteractionSettingsPanel · aria-label<br>isSetupComplete |
+| UI-085932ff0d2a<br>[components/settings/InteractionSettingsPanel.tsx:68:94](../../components/settings/InteractionSettingsPanel.tsx#L68) | ${button.label} | **動態文字入口** · 執行時綁定入口<br>span 接收執行時文字；內容需追查所列綁定與生產端 | InteractionSettingsPanel<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-3d4395f2a5ac<br>[components/settings/InteractionSettingsPanel.tsx:69:77](../../components/settings/InteractionSettingsPanel.tsx#L69) | ${STAGE_LABELS[index]} | **動態文字入口** · 執行時綁定入口<br>span 接收執行時文字；內容需追查所列綁定與生產端 | InteractionSettingsPanel<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-745408458edd<br>[components/settings/InteractionSettingsPanel.tsx:79:15](../../components/settings/InteractionSettingsPanel.tsx#L79) | 重新設定 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | InteractionSettingsPanel<br>isSetupComplete |
+| UI-f447632aac2b<br>[components/settings/InteractionSettingsPanel.tsx:87:15](../../components/settings/InteractionSettingsPanel.tsx#L87) | 重置 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | InteractionSettingsPanel<br>isSetupComplete |
+| UI-da3f3ad8c10e<br>[components/settings/InteractionSettingsPanel.tsx:93:62](../../components/settings/InteractionSettingsPanel.tsx#L93) | 尚未設定快速互動按鈕 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel<br>否則 isSetupComplete |
+| UI-52118cc347b4<br>[components/settings/InteractionSettingsPanel.tsx:94:61](../../components/settings/InteractionSettingsPanel.tsx#L94) | 完成設定後，營業畫面會顯示三個快速記錄動作。 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel<br>否則 isSetupComplete |
+| UI-16587c7b714c<br>[components/settings/InteractionSettingsPanel.tsx:96:13](../../components/settings/InteractionSettingsPanel.tsx#L96) | 開始設定 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | InteractionSettingsPanel<br>否則 isSetupComplete |
+| UI-4afa7201e9be<br>[components/settings/InteractionSettingsPanel.tsx:113:15](../../components/settings/InteractionSettingsPanel.tsx#L113) | 重置互動記錄設定？ | **畫面文字** · 直接呈現定義<br>ConfirmDialog：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-6f9e1995def4<br>[components/settings/InteractionSettingsPanel.tsx:114:21](../../components/settings/InteractionSettingsPanel.tsx#L114) | 目前的三個互動按鈕會恢復為未設定狀態，之後可以重新建立。 | **畫面文字** · 直接呈現定義<br>ConfirmDialog：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel · description<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-4bf4c88bb009<br>[components/settings/InteractionSettingsPanel.tsx:115:22](../../components/settings/InteractionSettingsPanel.tsx#L115) | 重置設定 | **畫面文字** · 直接呈現定義<br>ConfirmDialog：呈現操作說明、資料標籤、狀態或注意事項 | InteractionSettingsPanel · confirmLabel<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
 
 ## components/settings/InteractionSetupWizard.tsx
 
@@ -163,18 +164,19 @@
 
 | ID／來源 | 用語／動態範本 | 類型與用途 | 所在符號／觸發條件 |
 | --- | --- | --- | --- |
-| UI-d2ac70e4b752<br>[components/settings/OwnerBrandSettingsCard.tsx:58:19](../../components/settings/OwnerBrandSettingsCard.tsx#L58) | 品牌名稱不可空白 | **確認／通知** · 直接呈現定義<br>toast.error：提示操作結果、進度或要求使用者確認 | handleSave<br>!user?.id &#124;&#124; !normalizedBrandName |
-| UI-d459bd9893ea<br>[components/settings/OwnerBrandSettingsCard.tsx:67:21](../../components/settings/OwnerBrandSettingsCard.tsx#L67) | 品牌名稱已更新 | **確認／通知** · 直接呈現定義<br>toast.success：提示操作結果、進度或要求使用者確認 | handleSave<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-fc22698f3d99<br>[components/settings/OwnerBrandSettingsCard.tsx:70:37](../../components/settings/OwnerBrandSettingsCard.tsx#L70) | 儲存品牌名稱失敗，請稍後再試 | **確認／通知** · 直接呈現定義<br>toast.error：提示操作結果、進度或要求使用者確認 | handleSave<br>catch：操作拋出例外 |
-| UI-256b9534e205<br>[components/settings/OwnerBrandSettingsCard.tsx:83:63](../../components/settings/OwnerBrandSettingsCard.tsx#L83) | 品牌名稱 | **畫面文字** · 直接呈現定義<br>h2：辨識畫面、區塊或對話框主題 | OwnerBrandSettingsCard<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-ca62a45c5a96<br>[components/settings/OwnerBrandSettingsCard.tsx:85:13](../../components/settings/OwnerBrandSettingsCard.tsx#L85) | 這個名稱會顯示在首頁與老闆結算報告中。 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | OwnerBrandSettingsCard<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-973743dbc6be<br>[components/settings/OwnerBrandSettingsCard.tsx:91:9](../../components/settings/OwnerBrandSettingsCard.tsx#L91) | 品牌主顯示名稱 | **畫面文字** · 直接呈現定義<br>label：說明欄位或欄位群組 | OwnerBrandSettingsCard<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-28ec72fab727<br>[components/settings/OwnerBrandSettingsCard.tsx:99:22](../../components/settings/OwnerBrandSettingsCard.tsx#L99) | ${OWNER_BRAND_NAME_FALLBACK} | **動態文字入口** · 執行時綁定入口<br>input 接收執行時文字；內容需追查所列綁定與生產端 | OwnerBrandSettingsCard · placeholder<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-2650a3632e53<br>[components/settings/OwnerBrandSettingsCard.tsx:102:28](../../components/settings/OwnerBrandSettingsCard.tsx#L102) | 正在載入雲端設定... | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | OwnerBrandSettingsCard<br>isLoading |
-| UI-c79ea6776b42<br>[components/settings/OwnerBrandSettingsCard.tsx:102:44](../../components/settings/OwnerBrandSettingsCard.tsx#L102) | 未設定時會顯示「我的品牌」 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | OwnerBrandSettingsCard<br>否則 isLoading |
-| UI-934c077e872b<br>[components/settings/OwnerBrandSettingsCard.tsx:103:33](../../components/settings/OwnerBrandSettingsCard.tsx#L103) | ${brandName.length}/${OWNER_BRAND_NAME_MAX_LENGTH} | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | OwnerBrandSettingsCard<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-4e87bffa0983<br>[components/settings/OwnerBrandSettingsCard.tsx:113:21](../../components/settings/OwnerBrandSettingsCard.tsx#L113) | 儲存中... | **畫面文字** · 直接呈現定義<br>button：辨識可點擊操作、導覽或展開入口 | OwnerBrandSettingsCard<br>isSaving |
-| UI-95b2c6f5ee5c<br>[components/settings/OwnerBrandSettingsCard.tsx:113:32](../../components/settings/OwnerBrandSettingsCard.tsx#L113) | 儲存品牌名稱 | **畫面文字** · 直接呈現定義<br>button：辨識可點擊操作、導覽或展開入口 | OwnerBrandSettingsCard<br>否則 isSaving |
+| UI-e6bf01ef15b1<br>[components/settings/OwnerBrandSettingsCard.tsx:58:19](../../components/settings/OwnerBrandSettingsCard.tsx#L58) | 品牌名稱不可空白 | **確認／通知** · 直接呈現定義<br>toast.error：提示操作結果、進度或要求使用者確認 | handleSave<br>!user?.id &#124;&#124; !normalizedBrandName |
+| UI-69e889f08eb7<br>[components/settings/OwnerBrandSettingsCard.tsx:67:21](../../components/settings/OwnerBrandSettingsCard.tsx#L67) | 品牌名稱已更新 | **確認／通知** · 直接呈現定義<br>toast.success：提示操作結果、進度或要求使用者確認 | handleSave<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-c432ce322658<br>[components/settings/OwnerBrandSettingsCard.tsx:70:37](../../components/settings/OwnerBrandSettingsCard.tsx#L70) | 儲存品牌名稱失敗，請稍後再試 | **確認／通知** · 直接呈現定義<br>toast.error：提示操作結果、進度或要求使用者確認 | handleSave<br>catch：操作拋出例外 |
+| UI-1ea572e7a30d<br>[components/settings/OwnerBrandSettingsCard.tsx:83:63](../../components/settings/OwnerBrandSettingsCard.tsx#L83) | 品牌名稱 | **畫面文字** · 直接呈現定義<br>h2：辨識畫面、區塊或對話框主題 | OwnerBrandSettingsCard<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-dd26df6f3061<br>[components/settings/OwnerBrandSettingsCard.tsx:85:32](../../components/settings/OwnerBrandSettingsCard.tsx#L85) | 這個名稱會顯示在首頁與老闆結算報告中。 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | OwnerBrandSettingsCard<br>showReportUsage |
+| UI-1b2f42be3544<br>[components/settings/OwnerBrandSettingsCard.tsx:85:56](../../components/settings/OwnerBrandSettingsCard.tsx#L85) | 這個名稱會顯示在首頁。 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | OwnerBrandSettingsCard<br>否則 showReportUsage |
+| UI-828e3014abd1<br>[components/settings/OwnerBrandSettingsCard.tsx:91:9](../../components/settings/OwnerBrandSettingsCard.tsx#L91) | 品牌主顯示名稱 | **畫面文字** · 直接呈現定義<br>label：說明欄位或欄位群組 | OwnerBrandSettingsCard<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-98b57c6a5deb<br>[components/settings/OwnerBrandSettingsCard.tsx:99:22](../../components/settings/OwnerBrandSettingsCard.tsx#L99) | ${OWNER_BRAND_NAME_FALLBACK} | **動態文字入口** · 執行時綁定入口<br>input 接收執行時文字；內容需追查所列綁定與生產端 | OwnerBrandSettingsCard · placeholder<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-1c7e390fa9de<br>[components/settings/OwnerBrandSettingsCard.tsx:102:28](../../components/settings/OwnerBrandSettingsCard.tsx#L102) | 正在載入雲端設定... | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | OwnerBrandSettingsCard<br>isLoading |
+| UI-ec607d2bb532<br>[components/settings/OwnerBrandSettingsCard.tsx:102:44](../../components/settings/OwnerBrandSettingsCard.tsx#L102) | 未設定時會顯示「我的品牌」 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | OwnerBrandSettingsCard<br>否則 isLoading |
+| UI-61e15803e40b<br>[components/settings/OwnerBrandSettingsCard.tsx:103:33](../../components/settings/OwnerBrandSettingsCard.tsx#L103) | ${brandName.length}/${OWNER_BRAND_NAME_MAX_LENGTH} | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | OwnerBrandSettingsCard<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-e8cd8187cafa<br>[components/settings/OwnerBrandSettingsCard.tsx:113:21](../../components/settings/OwnerBrandSettingsCard.tsx#L113) | 儲存中... | **畫面文字** · 直接呈現定義<br>button：辨識可點擊操作、導覽或展開入口 | OwnerBrandSettingsCard<br>isSaving |
+| UI-74971d4aae89<br>[components/settings/OwnerBrandSettingsCard.tsx:113:32](../../components/settings/OwnerBrandSettingsCard.tsx#L113) | 儲存品牌名稱 | **畫面文字** · 直接呈現定義<br>button：辨識可點擊操作、導覽或展開入口 | OwnerBrandSettingsCard<br>否則 isSaving |
 
 ## components/settings/SettingsMenu.tsx
 

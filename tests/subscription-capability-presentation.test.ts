@@ -47,7 +47,7 @@ assert.equal(ownerWithoutBilling.canDisplayBillingControls, false);
 assert.equal(ownerWithoutBilling.canDisplayTransactionalState, false);
 
 const planRequired = getSubscriptionBlockedPresentation('plan_required', 'pro');
-assert.equal(planRequired.title, '需要 Pro 方案');
+assert.equal(planRequired.title, '需要 輕量版 方案');
 assert.equal(planRequired.showPlanPreviewLink, true);
 assert.equal(planRequired.actionLabel, '查看方案預覽');
 
@@ -62,7 +62,7 @@ assert.equal(SUBSCRIPTION_PRESENTATION.availability, 'preview');
 assert.equal(SUBSCRIPTION_PRESENTATION.actionLabel, '尚未開放');
 assert.equal(PLAN_PREVIEWS.length, 3);
 assert.deepEqual(PLAN_PREVIEWS.map(plan => plan.id), ['free', 'pro', 'team']);
-assert.deepEqual(PLAN_PREVIEWS.map(plan => plan.name), ['Free', 'Pro', 'Team']);
+assert.deepEqual(PLAN_PREVIEWS.map(plan => plan.name), ['免費版', '輕量版', '高階版']);
 assert.match(SUBSCRIPTION_PRESENTATION.notice, /帳號角色/);
 assert.ok(PLAN_PREVIEWS.every(plan => plan.availability === 'preview' && !plan.actionEnabled));
 assert.equal(
@@ -74,7 +74,7 @@ assert.equal(
   'included',
 );
 assert.equal(
-  PLAN_PREVIEWS.find(plan => plan.id === 'pro')?.features.find(feature => feature.code === 'report.pdf')?.status,
+  PLAN_PREVIEWS.find(plan => plan.id === 'team')?.features.find(feature => feature.code === 'report.pdf')?.status,
   'included',
 );
 

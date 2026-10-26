@@ -55,17 +55,17 @@ const freeView = resolveSettlementReportSubscriptionView({
   reportAccess: access('free', 'settlementReportPreview'),
   pdfAccess: access('free', 'settlementPdf'),
 });
-assert.equal(freeView.mode, 'free_preview');
-assert.equal(freeView.previewUpgradeDecision?.reason, 'plan_required');
-assert.equal(freeView.canReadMarkets, true);
-assert.equal(freeView.canReadDailyStats, true);
+assert.equal(freeView.mode, 'blocked');
+assert.equal(freeView.blockDecision?.reason, 'plan_required');
+assert.equal(freeView.canReadMarkets, false);
+assert.equal(freeView.canReadDailyStats, false);
 assert.equal(freeView.canReadProducts, false);
-assert.equal(freeView.canBuildFreePreview, true);
+assert.equal(freeView.canBuildFreePreview, false);
 assert.equal(freeView.canBuildFullReport, false);
 assert.equal(freeView.canBuildPdfViewModel, false);
 assert.equal(freeView.pdfDecision.allowed ? null : freeView.pdfDecision.reason, 'plan_required');
 
-for (const planCode of ['pro', 'team'] as const) {
+for (const planCode of ['team'] as const) {
   const paidView = resolveSettlementReportSubscriptionView({
     reportAccess: access(planCode, 'settlementReportPreview'),
     pdfAccess: access(planCode, 'settlementPdf'),
@@ -80,8 +80,8 @@ for (const planCode of ['pro', 'team'] as const) {
 assert.equal(SETTLEMENT_PDF_RUNTIME_ENABLED, true);
 
 const rollbackView = resolveSettlementReportSubscriptionView({
-  reportAccess: access('pro', 'settlementReportPreview'),
-  pdfAccess: access('pro', 'settlementPdf'),
+  reportAccess: access('team', 'settlementReportPreview'),
+  pdfAccess: access('team', 'settlementPdf'),
   pdfRuntimeEnabled: false,
 });
 assert.equal(rollbackView.canBuildFullReport, true);
@@ -173,3 +173,5 @@ assert.doesNotMatch(policySource, /window\.|document\.|navigator\.|localStorage|
 assert.match(manifestSource, /tsx tests\/settlement-report-subscription-access\.test\.ts/);
 
 console.log('PASS S6C settlement report subscription access');
+
+assert.equal(resolveSettlementReportSubscriptionView({reportAccess:access('pro','settlementReportPreview'),pdfAccess:access('pro','settlementPdf')}).mode,'blocked');

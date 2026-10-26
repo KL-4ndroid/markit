@@ -151,7 +151,7 @@ export function parseAccountCapabilityApiSuccess(value: unknown): AccountCapabil
   if (capabilities.planSource !== expectedPlanSource) return null;
   if (expectedPlanSource === 'free' && capabilities.planCode !== 'free') return null;
   if (expectedPlanSource === 'promotion' && capabilities.planCode !== 'pro') return null;
-  if (expectedPlanSource !== 'free' && capabilities.planCode === 'free') return null;
+  if (expectedPlanSource !== 'free' && capabilities.planCode === 'free' && value.status !== 'simulation_enabled') return null;
 
   return {
     ok: true,

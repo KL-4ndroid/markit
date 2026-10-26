@@ -8,6 +8,7 @@ export interface MarketWorkspaceNavigationItem<T extends string> {
   label: string;
   icon: LucideIcon;
   badge?: number;
+  badgeLabel?: string;
 }
 
 interface MarketWorkspaceNavigationProps<T extends string> {
@@ -77,9 +78,9 @@ export function MarketWorkspaceNavigation<T extends string>({
                   className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] leading-none ${
                     isActive ? 'bg-atelier-paper text-primary' : 'bg-atelier-rose text-white'
                   }`}
-                  aria-label={`${item.badge} 項待處理`}
+                  aria-label={`${item.badgeLabel ?? '待處理'} ${item.badge} 筆`}
                 >
-                  {item.badge > 99 ? '99+' : item.badge}
+                  {item.badgeLabel === '待補照片' ? '待補 ' : ''}{item.badge > 99 ? '99+' : item.badge}
                 </span>
               )}
             </button>

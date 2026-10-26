@@ -147,14 +147,22 @@ export function ProductCoverPhotoField({
           ? '暫時無法確認商品照片權限'
           : '暫時無法確認商品照片功能';
 
+  // A new product cannot have a saved or queued photo. For existing products the
+  // image API does not distinguish an empty record from an unavailable service;
+  // retain a compact entry instead of treating a failed read as absence.
+  const rolloutDisabled = capabilityStatus === 'resolved' && capability.reason === 'runtime_disabled';
+  if (rolloutDisabled && !productId && !value) return null;
+
   return (
-    <section className="space-y-3 border-b border-primary/10 pb-5" aria-labelledby={`${productId ?? 'new'}-cover-title`}>
+    <section className="mt-6 space-y-3 border-t border-primary/10 pt-5" aria-labelledby={`${productId ?? 'new'}-cover-title`}>
       <div>
         <h3 id={`${productId ?? 'new'}-cover-title`} className="text-sm font-medium text-foreground">商品封面照片</h3>
-        <p className="mt-1 text-xs text-muted-foreground">每項商品支援一張封面，系統會自動壓縮成適合顯示的尺寸。</p>
+        {!rolloutDisabled && <p className="mt-1 text-xs text-muted-foreground">每項商品支援一張封面，系統會自動壓縮成適合顯示的尺寸。</p>}
       </div>
 
-      {(canChoose || value || productId) && (
+      {rolloutDisabled && productId && !value ? (
+        <p className="text-xs leading-5 text-muted-foreground">照片服務目前暫停；既有照片與待上傳紀錄不會因此刪除。</p>
+      ) : (canChoose || value || productId) && (
       <div className="aspect-[4/3] overflow-hidden rounded-control border border-primary/15 bg-background">
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -177,7 +185,7 @@ export function ProductCoverPhotoField({
       </div>
       )}
 
-      {capabilityStatus === 'loading' ? (
+      {rolloutDisabled ? null : capabilityStatus === 'loading' ? (
         <div className="flex min-h-12 items-center gap-3 rounded-control border border-primary/10 bg-muted/40 p-3" role="status">
           <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" aria-hidden="true" />
           <p className="text-sm font-medium text-foreground">正在確認商品照片功能</p>

@@ -17,6 +17,7 @@ type SubscriptionSimulationRecord = {
 
 export type SubscriptionSimulationState = {
   enabled: boolean;
+  cloudBacked?: boolean;
   planCode: AccountPlanCode | null;
   expiresAt: string | null;
 };
@@ -103,6 +104,8 @@ export function resolveSubscriptionSimulationForRequest(input: {
   ownerId: string;
   nowMs: number;
 }): ServerAccountCapabilityResolution | null {
+  if (process.env.SUBSCRIPTION_SIMULATION_CLOUD_ENABLED === '1'
+    || process.env.SUBSCRIPTION_WRITE_ENFORCEMENT_ENABLED === '1') return null;
   if (!isSubscriptionSimulationRequestAllowed(input.request)) return null;
   const state = readSubscriptionSimulation(input.actorId, input.nowMs);
   if (!state.enabled || !state.planCode || input.actorId !== input.ownerId) return null;

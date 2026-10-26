@@ -39,7 +39,7 @@ export type CreateAccountCapabilityRepositoryOptions = {
   ) => CapabilityRpcClient;
 };
 
-function getServerConfig(env: AppApiServerEnv): { url: string; secretKey: string } | null {
+export function getServerConfig(env: AppApiServerEnv): { url: string; secretKey: string } | null {
   const publicConfig = getAppApiSupabasePublicConfig(env);
   const secretKey = env.SUPABASE_SECRET_KEY;
   if (!publicConfig || !secretKey || secretKey !== secretKey.trim()) return null;

@@ -54,7 +54,7 @@ export function InteractionSettingsPanel() {
         <div>
           <h2 id="interaction-settings-title" className="text-base font-semibold text-foreground">互動記錄</h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            設定現場快速記錄的三個階段，用來比較不同市集的顧客反應。
+            設定現場快速記錄顧客反應的三個按鈕。
           </p>
         </div>
       </div>

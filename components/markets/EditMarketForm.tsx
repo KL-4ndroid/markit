@@ -1,5 +1,7 @@
 'use client';
 
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
+
 import { Clock, DollarSign, FileText, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -101,6 +103,7 @@ export function EditMarketForm({
   mode = 'owner',
   markScheduleOverride = false,
 }: EditMarketFormProps) {
+  const { canRecord } = useSubscriptionExperience();
   const isManagerMode = mode === 'manager';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tableFree, setTableFree] = useState(Boolean(market.tableFree));
@@ -300,8 +303,8 @@ export function EditMarketForm({
           {!isManagerMode && (
             <>
               <FormSectionDisclosure
-                title="成本與抽成"
-                description="攤位費、保證金與營業額抽成"
+                title={canRecord ? '成本與抽成' : '繳費金額'}
+                description={canRecord ? '攤位費、保證金與營業額抽成' : '攤位費與保證金'}
                 icon={DollarSign}
                 tone="yellow"
               >
@@ -316,7 +319,7 @@ export function EditMarketForm({
                 />
               </FormSectionDisclosure>
 
-              <FormSectionDisclosure
+              {canRecord && <FormSectionDisclosure
                 title="設備"
                 description="桌椅與傘具租金或免費提供狀態"
                 icon={Package}
@@ -334,7 +337,7 @@ export function EditMarketForm({
                   onRentalChange={(field, value) => handleChange(field, value)}
                   onFreeChange={handleEquipmentFreeChange}
                 />
-              </FormSectionDisclosure>
+              </FormSectionDisclosure>}
             </>
           )}
 

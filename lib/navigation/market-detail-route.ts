@@ -7,6 +7,7 @@ const RETURN_DESTINATIONS = {
   today: { href: '/', label: '返回今日' },
   markets: { href: '/markets', label: '返回市集' },
   journals: { href: '/markets/journals', label: '返回心得' },
+  records: { href: '/analytics', label: '返回營業紀錄' },
   analytics: { href: '/analytics', label: '返回分析' },
   account: { href: '/settings/account', label: '返回帳號' },
 } as const;

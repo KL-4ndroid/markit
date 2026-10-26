@@ -54,11 +54,11 @@ for (const tab of ['summary', 'trends', 'products'] as const) {
     basicAccess: freeBasic,
     advancedAccess: freeAdvanced,
   });
-  assert.equal(preview.mode, 'free_preview');
-  assert.equal(preview.blockDecision, null);
-  assert.equal(preview.previewUpgradeDecision?.reason, 'plan_required');
-  assert.equal(preview.canBuildRecentMarketPreview, true);
-  assert.equal(preview.canReadBasicProductRanking, true);
+  assert.equal(preview.mode, 'blocked');
+  assert.deepEqual(preview.blockDecision, freeAdvanced);
+  assert.equal(preview.blockDecision?.reason, 'plan_required');
+  assert.equal(preview.canBuildRecentMarketPreview, false);
+  assert.equal(preview.canReadBasicProductRanking, false);
   assert.equal(preview.canReadSummaryEvents, false);
   assert.equal(preview.canComputeMarketMetrics, false);
   assert.equal(preview.canComputeActionableInsights, false);
@@ -95,7 +95,7 @@ const freeSingle = resolveAnalyticsSubscriptionView({
 assert.equal(freeSingle.mode, 'blocked');
 assert.equal(freeSingle.blockDecision?.reason, 'plan_required');
 
-for (const planCode of ['pro', 'team'] as const) {
+for (const planCode of ['team'] as const) {
   const paid = resolveAnalyticsSubscriptionView({
     range: 'all',
     tab: 'advanced',
@@ -138,3 +138,5 @@ assert.doesNotMatch(policySource, /window\.|document\.|navigator\.|localStorage|
 assert.match(manifestSource, /tsx tests\/advanced-analytics-subscription-access\.test\.ts/);
 
 console.log('PASS S6B advanced analytics subscription access');
+
+assert.equal(resolveAnalyticsSubscriptionView({range:'all',tab:'advanced',basicAccess:access('pro','basicAnalytics'),advancedAccess:access('pro','advancedAnalytics')}).mode,'blocked');

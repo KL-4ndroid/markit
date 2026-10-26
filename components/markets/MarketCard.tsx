@@ -1,5 +1,6 @@
 'use client';
 
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 import { useRouter } from 'next/navigation';
 import { Calendar, MapPin, DollarSign, Table, Armchair, Umbrella, Target, Users, TrendingUp, Clock, Play, Shield, Lock, AlertCircle } from 'lucide-react';
 import type { Market, MarketStatus } from '@/types/db';
@@ -39,6 +40,7 @@ interface MarketCardProps {
  */
 export function MarketCard({ market, variant = 'default', stats }: MarketCardProps) {
   const router = useRouter();
+  const { canRecord } = useSubscriptionExperience();
   const [showNotesModal, setShowNotesModal] = useState(false);
   
   // ✅ 員工權限檢查
@@ -255,7 +257,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
 
       {/* 收入與淨利潤 - 只在首頁今日市集和市集頁面顯示，即將到來不顯示 */}
       {/* ✅ 員工模式下完全隱藏敏感數據區塊 */}
-      {variant !== 'upcoming' && !isStaff && (
+      {canRecord && variant !== 'upcoming' && !isStaff && (
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div className="bg-primary/10 rounded-xl p-3">
             <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
@@ -287,7 +289,7 @@ export function MarketCard({ market, variant = 'default', stats }: MarketCardPro
 
       {/* 成交與費用統計 - 只在首頁今日市集和市集頁面顯示，即將到來不顯示 */}
       {/* ✅ 員工模式下只顯示成交次數，隱藏攤位成本 */}
-      {variant !== 'upcoming' && (
+      {(canRecord || isStaff) && variant !== 'upcoming' && (
         <div className={`grid ${isStaff ? 'grid-cols-1' : 'grid-cols-2'} gap-3 mb-3`}>
           <div className="bg-soft-yellow rounded-xl p-3">
             <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">

@@ -55,7 +55,9 @@ for (const source of [workspaceNavigationSource, detailTabsSource]) {
   assert.match(source, /aria-controls={panelId}/);
   assert.match(source, /tabIndex={isActive \? 0 : -1}/);
 }
-assert.match(detailTabsSource, /grid-cols-3 lg:grid-cols-6/);
+assert.match(detailTabsSource, /grid-cols-6/);
+assert.match(detailTabsSource, /col-span-3 lg:col-span-1/);
+assert.match(detailTabsSource, /items.length === 5 && index > 2/);
 assert.match(detailTabsSource, /grid-cols-4/);
 
 assert.match(interactionButtonsSource, /InteractionRoleIcon/);

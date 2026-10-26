@@ -503,7 +503,7 @@ function OwnerJournalWorkspace({
         <p className="rounded-xl bg-background p-4 text-sm text-muted-foreground">
           {query || region || fromDate || toDate
             ? "沒有符合條件的心得。"
-            : "目前沒有心得。可到已結束市集，留下第一篇出攤心得；也能稍後再寫。"}
+            : marketId ? "這場市集還沒有心得；想記下什麼時，再按「寫心得」。" : "目前沒有心得。可到已結束市集，留下第一篇出攤心得；也能稍後再寫。"}
         </p>
       )}
       <div className="space-y-3">

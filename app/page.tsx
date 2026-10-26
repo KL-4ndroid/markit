@@ -1,6 +1,7 @@
 'use client';
 
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
+import { useHomePhotoReminders } from '@/hooks/useHomePhotoReminders';
 import {
   ArrowRight,
   CalendarDays,
@@ -19,7 +20,6 @@ import { SameDayMarketArrangements } from '@/components/home/SameDayMarketArrang
 import { StaffBadge } from '@/components/staff/StaffBadge';
 import { SyncStatus } from '@/hooks/useSync';
 import { useRoleContext } from '@/lib/role-context';
-import { db } from '@/lib/db';
 import { startMarket, useMarketsQuery } from '@/lib/db/hooks';
 import {
   buildTodayViewModel,
@@ -109,9 +109,10 @@ function TaskRow({ icon, title, description, actionLabel, onClick, tone = 'sage'
 
 export default function HomePage() {
   const router = useRouter();
+  const { canAnalyze } = useSubscriptionExperience();
   const { user } = useAuth();
   const { userRole, isStaff, isOwner, roleRefreshState } = useRoleContext();
-  const { status, pendingCount, sync, lastSyncAt } = useSyncContext();
+  const { status, pendingCount, sync, lastSyncAt, isOnline } = useSyncContext();
   const [now, setNow] = useState(() => new Date());
   const [ownerBrandName, setOwnerBrandName] = useState('Féria - 出攤筆記');
   const [startingMarketId, setStartingMarketId] = useState<string | null>(null);
@@ -180,15 +181,16 @@ export default function HomePage() {
     () => todayView.todayMarkets.flatMap(item => item.market.id ? [item.market.id] : []),
     [todayView.todayMarkets],
   );
-  const todayMarketIdsKey = todayMarketIds.join('|');
-  const pendingPhotoItems = useLiveQuery(async () => {
-    if (!todayMarketIdsKey) return [];
-    const rows = await db.salesPhotoEvidencePendingCreations
-      .where('marketId')
-      .anyOf(todayMarketIds)
-      .toArray();
-    return rows.filter(item => item.status !== 'created');
-  }, [todayMarketIdsKey], []);
+  const photoReminders = useHomePhotoReminders({
+    actorId: user?.id, ownerId: currentOwnerId, marketIds: todayMarketIds,
+    canRead: canAnalyze && roleRefreshState.stage === 'ready' && roleRefreshState.shouldMountProtectedChildren,
+    canRecover: canAnalyze && isOwner && roleRefreshState.isAuthorizationFresh,
+    syncReady: isOnline && lastSyncAt !== null && status !== SyncStatus.SYNCING && status !== SyncStatus.OFFLINE && status !== SyncStatus.ERROR,
+    isOnline,
+    syncFailed: status === SyncStatus.ERROR,
+    lastSyncAt,
+  });
+  const pendingPhotoItems = photoReminders.items;
 
   const openMarket = (marketId?: string, task?: 'pending-photos') => {
     if (!marketId) return;
@@ -319,17 +321,24 @@ export default function HomePage() {
           />
         )}
 
-        {(pendingPhotoItems.length > 0 || showSyncTask) && (
+        {(pendingPhotoItems.length > 0 || photoReminders.loading || photoReminders.warning || showSyncTask) && (
           <section className="mt-8" aria-labelledby="today-tasks-title">
             <div className="flex items-center gap-3">
               <h2 id="today-tasks-title" className="text-base font-semibold text-atelier-ink">待處理</h2>
             </div>
             <div className="mt-3 space-y-2">
+              {pendingPhotoItems.length === 0 && (photoReminders.loading || photoReminders.warning) && (
+                <TaskRow icon={<Camera className="h-5 w-5" aria-hidden="true" />}
+                  title={photoReminders.loading ? '正在確認待補照片' : '照片待補狀態尚未確認'}
+                  description={photoReminders.warning ?? '正在核對今日成交與雲端照片紀錄'}
+                  actionLabel={photoReminders.canRefresh && !photoReminders.loading ? '重試' : undefined}
+                  onClick={photoReminders.canRefresh && !photoReminders.loading ? photoReminders.refresh : undefined} tone="rose" />
+              )}
               {pendingPhotoItems.length > 0 && (
                 <TaskRow
                   icon={<Camera className="h-5 w-5" aria-hidden="true" />}
                   title={`待補照片 ${pendingPhotoItems.length} 筆`}
-                  description="完成今日尚未上傳的成交照片"
+                  description={photoReminders.warning ?? "查看今日待補提醒；未上傳原圖仍在來源裝置"}
                   actionLabel="處理"
                   tone="rose"
                   onClick={() => openMarket(pendingPhotoMarketId, 'pending-photos')}

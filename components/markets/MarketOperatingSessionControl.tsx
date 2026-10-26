@@ -10,6 +10,7 @@ interface MarketOperatingSessionControlProps {
   isUpdating?: boolean;
   showCloseAction?: boolean;
   embedded?: boolean;
+  description?: string;
   onStartEarly: () => Promise<void> | void;
   onCloseToday?: () => Promise<void> | void;
 }
@@ -28,6 +29,7 @@ export function MarketOperatingSessionControl({
   isUpdating = false,
   showCloseAction = false,
   embedded = false,
+  description,
   onStartEarly,
   onCloseToday,
 }: MarketOperatingSessionControlProps) {
@@ -61,7 +63,7 @@ export function MarketOperatingSessionControl({
         <StatusIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
         <div className="min-w-0">
           <p className="text-sm font-semibold text-atelier-ink">{session.label}</p>
-          <p className="mt-0.5 text-xs leading-5 text-atelier-muted">{session.message}</p>
+          <p className="mt-0.5 text-xs leading-5 text-atelier-muted">{description ?? session.message}</p>
         </div>
       </div>}
 

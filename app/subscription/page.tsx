@@ -37,7 +37,7 @@ export default function SubscriptionPage() {
         <section className="flex items-start gap-3 border-y border-atelier-line bg-atelier-paper px-4 py-4 sm:rounded-card sm:border">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <div>
-            <h2 className="text-sm font-semibold text-foreground">目前狀態</h2>
+            <h2 className="text-sm font-semibold text-foreground">可用範圍</h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               {SUBSCRIPTION_PRESENTATION.notice}
             </p>

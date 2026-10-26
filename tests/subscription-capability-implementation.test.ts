@@ -29,14 +29,14 @@ assert.deepEqual(
 
 assert.deepEqual(getSubscriptionCapabilityImplementation('salesPhotoEvidence'), {
   feature: 'salesPhotoEvidence',
-  enforcement: 'role_and_rollout_only',
-  releaseState: 'entitlement_enforcement_missing',
+  enforcement: 'pilot_authoritative_server',
+  releaseState: 'pilot_verified_global_pending',
   protectedWrites: true,
-  nextGate: 'Add authoritative Team capability enforcement before paid launch.',
+  nextGate: 'Pilot Team write guards exist; approve global enforcement and retained-read policy before paid launch.',
 });
 assert.equal(
   getSubscriptionCapabilityImplementation('productCoverPhoto').releaseState,
-  'open_pre_subscription',
+  'pilot_verified_global_pending',
 );
 assert.equal(
   getSubscriptionCapabilityImplementation('staffCollaboration').enforcement,
@@ -48,6 +48,8 @@ const salesUploadRoute = readFileSync(
   join(__dirname, '..', 'app/api/sales-photo-evidence/upload/route.ts'),
   'utf8',
 );
-assert.doesNotMatch(salesUploadRoute, /resolveServerAccountCapabilities|evaluateCapabilityAccess/);
+assert.match(salesUploadRoute, /checkServerSubscriptionWrite/);
+assert.ok(listSubscriptionCapabilityLaunchBlockers().some(entry => entry.feature === 'salesPhotoEvidence'));
+assert.ok(listSubscriptionCapabilityLaunchBlockers().some(entry => entry.feature === 'productCoverPhoto'));
 
 console.log('PASS subscription capability implementation status stays explicit and fail closed');

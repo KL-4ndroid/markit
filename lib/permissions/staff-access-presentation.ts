@@ -27,11 +27,11 @@ export function staffAccessPresentation(input: {
   blockReason?: CapabilityAccessBlockReason;
 }) {
   if (input.status === 'pending') return { title: '等待接受邀請', summary: '接受邀請並確認團隊資格後，才會開放工作區。' };
-  if (input.status === 'suspended_by_plan') return { title: '存取已暫停', summary: '關係與歷史已保留，需恢復有效 Team 資格並恢復成員存取。' };
+  if (input.status === 'suspended_by_plan') return { title: '存取已暫停', summary: input.teamAllowed ? '目前方案符合；此成員仍暫停，需由老闆確認後恢復存取。' : '關係與歷史已保留，需有效的高階版資格，再由老闆恢復成員存取。' };
   if (input.status === 'revoked') return { title: '已移除存取權', summary: '目前不能進入這個品牌的工作區。' };
   if (input.simulationActive) return { title: '目前為模擬顯示', summary: '角色僅供預覽，沒有開放實際團隊操作。' };
   if (!input.teamAllowed) {
-    if (input.blockReason === 'plan_required' || input.blockReason === 'entitlement_inactive') return { title: '團隊存取未開放', summary: '需要有效的 Team 資格；啟用後仍需確認成員存取狀態。' };
+    if (input.blockReason === 'plan_required' || input.blockReason === 'entitlement_inactive') return { title: '團隊存取未開放', summary: '需要有效的高階版資格；啟用後仍需確認成員存取狀態。' };
     return { title: '存取資格尚未確認', summary: '請連線重新整理，確認完成前不能保證此成員可操作。' };
   }
   if (!input.canView || !['viewer', 'operator', 'manager'].includes(input.role ?? '')) return { title: '權限需要確認', summary: '目前無法確認可查看的工作範圍，請重新整理。' };

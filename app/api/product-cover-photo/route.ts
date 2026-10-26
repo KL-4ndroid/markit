@@ -1,3 +1,4 @@
+import { runAppApiWithCors, createAppApiCorsPreflightResponse } from '@/lib/api/server/cors';
 import { NextResponse } from 'next/server';
 import { authenticateAppApiRequest } from '@/lib/api/server/auth';
 import { deleteProductCoverPhotoObject } from '@/lib/products/product-cover-photo-r2.server';
@@ -6,10 +7,10 @@ import { createProductCoverPhotoServiceClient, isProductCoverPhotoDeleteEnabled,
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   if (!isProductCoverPhotoDeleteEnabled()) return NextResponse.json({ ok: false, code: 'disabled' }, { status: 501 });
   const auth = await authenticateAppApiRequest(request);
-  if (!auth.ok) return NextResponse.json({ ok: false, code: 'authentication_required' }, { status: 401 });
+  if (!auth.ok) return NextResponse.json({ ok: false, code: auth.code }, { status: auth.code === 'authentication_unavailable' ? 503 : 401 });
   const productId = new URL(request.url).searchParams.get('productId');
   const client = createProductCoverPhotoServiceClient();
   if (!productId || !client) return NextResponse.json({ ok: false, code: 'invalid_request' }, { status: 400 });
@@ -21,3 +22,8 @@ export async function DELETE(request: Request) {
   await Promise.all([deleteProductCoverPhotoObject(photo?.display_object_key), deleteProductCoverPhotoObject(photo?.thumbnail_object_key)]);
   return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
 }
+
+
+const allowedMethods = ['DELETE', 'OPTIONS'] as const;
+export const DELETE = (request: Request) => runAppApiWithCors(request, () => handleDELETE(request), { allowedMethods });
+export const OPTIONS = (request: Request) => createAppApiCorsPreflightResponse(request, { allowedMethods });

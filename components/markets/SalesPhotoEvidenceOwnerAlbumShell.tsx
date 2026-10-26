@@ -273,7 +273,7 @@ export function SalesPhotoEvidenceOwnerAlbumShell({
     { id: 'uploaded', label: '已上傳', value: summary.countByDisplayStatus.uploaded_private },
     {
       id: 'pending',
-      label: '待處理',
+      label: '雲端處理中',
       value: summary.countByDisplayStatus.pending + summary.countByDisplayStatus.captured_local,
     },
     { id: 'failed', label: '上傳異常', value: summary.countByDisplayStatus.upload_failed },

@@ -1,5 +1,19 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-10-27 三方案手機 UI 分批實作：[修正與複驗紀錄](subscription/THREE_TIER_MOBILE_UI_FIXES_2026_10_27.md)、[原巡檢逐項進度（第 8 節）](subscription/THREE_TIER_MOBILE_UI_REVIEW_2026_10_26.md)。新增[共用呈現規則](../lib/subscription/ui-presentation.ts)、[呈現回歸測試](../tests/subscription-mobile-ui.test.tsx)；免費報名／費用／期限整合、空殼／收攤卡、跨方案頁名與返回、5／6 分頁、方案卡／PDF 文案、載入狀態及照片數量語意已接線。商品照片既有資料的空／失敗契約仍待處理；費用不搬值，沒有改價格／權益／資料保留或正式購買。
+
+2026-10-26 三方案手機實際巡檢：[UI 問題與修正方案](subscription/THREE_TIER_MOBILE_UI_REVIEW_2026_10_26.md)。使用者授權本輪內建瀏覽器操作，實際切換免費／輕量／高階並回免費，主要尺寸 390×844；16 類路由與 30 張截圖。確認免費收攤樣式、繳費卡、未開放空殼，以及跨方案標題／返回／方案卡／報告文字等 19 項問題，提出分三批的具體方案。這次僅操作、閱讀來源及產生報告，沒有修改程式／價格／權益、儲存營運資料、送邀請、實際上傳或全帳號啟用；不能冒充完整保存驗收。
+
+2026-10-26 完整性盤點與補漏：[26 個頁面來源／15 個 API 來源矩陣與待辦](subscription/SUBSCRIPTION_COMPLETENESS_AUDIT_2026_10_26.md)。新增 [共用直接網址規則](../lib/subscription/surface-access.ts)、[權益期限排程](../lib/subscription/capability-refresh.ts)、[完整性測試](../tests/subscription-completeness.test.ts)；更新 [商品照片 owner／role／Team 判斷](../lib/products/product-cover-photo-server.ts)、五條商品照片 API 的 capability／CORS／認證故障回覆、client API base、capability hook／provider、surface gate、單場隱藏照片讀取及 [實際接線登記](../lib/subscription/subscription-capability-implementation.ts)。商品／成交照片記為 pilot_verified_global_pending，保留正式上線 blocker。本輪不需要新 SQL，未改價格、額度、降級保留或正式付款；整批人工驗收仍暫緩。
+
+2026-10-26 雲端寫入試行：[範圍與啟用手冊](subscription/SUBSCRIPTION_WRITE_GUARD_PILOT_2026_10_26.md)。新增 [082 遷移](../supabase/migrations/082_add_subscription_write_guards.sql)、[指定測試帳號啟用](../supabase/repairs/082_enable_test_account_write_guards.sql)、[唯讀驗證](../supabase/verification/082_subscription_write_guard_readiness.sql)、[隔離 SQL 測試](../scripts/verify-subscription-write-guards-sql.mjs)、[共用寫入決策契約](../lib/subscription/write-access.ts)、[伺服器 RPC 與限時切換](../lib/subscription/write-access.server.ts) 及 [服務測試](../tests/subscription-write-access.test.ts)。既有 capability storage 匯出安全設定解析器；設定切換 route／client／panel 支援雲端模式，商品／成交照片上傳增加前後權益檢查與同次補償測試。新環境開關預設關閉；082 已由使用者回報執行，真實 RPC 確認指定帳號就緒，本機雲端模式已啟用，三方案共 18 項 authenticated preflight 與 capability API 一致。測試後已關閉覆寫並還原原有方案，只指定測試帳號試行，非全帳號啟用，不含付款、容量或動態價格後台。
+
+2026-10-26 三方案呈現實作：[接線與邊界紀錄](subscription/THREE_TIER_EXPERIENCE_IMPLEMENTATION_2026_10_26.md)。沿既有 `free`／`pro`／`team` 契約映射免費／輕量／高階；新增 [呈現規則與失效通知](../lib/subscription/experience.ts)、[基本月摘要模型](../lib/subscription/basic-business-summary.ts)、[共用 provider](../components/subscription/SubscriptionExperienceProvider.tsx)、[路由呈現 gate](../components/subscription/SubscriptionSurfaceGate.tsx)、[方案提示](../components/subscription/SubscriptionFeatureNotice.tsx)、[輕量紀錄](../components/subscription/BasicBusinessSummary.tsx)、[免費單場](../components/markets/FreeMarketWorkspace.tsx) 及兩份同名 domain 測試。設定沿 [既有模擬工具](../components/subscription/SubscriptionSimulationPanel.tsx) 提供只限本機切換；新分級同步到導覽、單場、清單、表單、分析／結算讀取與方案文案。修正 client 拒絕 Free 模擬的解析問題，普通 admin-Free 仍拒絕。沒有改 SQL／RLS、雲端權益／角色或正式購買／取消。完整付費寫入 enforcement、動態價格後台與線上測試切換仍未完成；整批人工驗收保持暫緩。
+
+2026-10-26 最新三方案決策：[功能與價格基線](subscription/SUBSCRIPTION_FEATURE_TIERS_2026_10_26.md) 為功能規劃入口。免費提供市集安排／報名／繳費與個人準備／心得；輕量提供完整單人銷售記錄與基本成果（59／月、588／年）；高階提供深入分析／比較、完整 PDF、成交照片與協作（249／月、2490／年，owner＋3 位成員）。使用者再次確認後台必須可設定訂閱價格：兩個付費方案的月／年價格各自按版本、平台與生效時間管理，保留優惠、舊客調價及通知歷程，詳見規格第 4 節及[後台需求](subscription/SUBSCRIPTION_PRICING_PROMOTION_ADMIN_REQUIREMENTS_2026_10_23.md)。圖片等額度、席次擴充及舊 plan 對照仍待定。本次只更新文件，未改 runtime／雲端／商店／帳號，價格後台尚未實作，測試驗收暫緩。
+
+2026-10-26 呈現增量核對：[手機操作優化](MOBILE_OPERATION_OPTIMIZATION_2026_10_26.md)。[呈現 helper](../lib/subscription/subscription-presentation.ts) 將預覽提示改為使用者用語；[方案卡](../components/subscription/PricingCard.tsx) 移除說明固定高度；[升級提示](../components/subscription/UpgradePrompt.tsx) 改善按鈕觸控尺寸；[方案頁](../app/subscription/page.tsx) 標頭改「可用範圍」；[結算頁](../app/reports/settlement/page.tsx) 以具名說明收納 PDF 長文。僅呈現與可及性調整，Free／Pro／Team、價格、席次、角色、購買／恢復、續訂揭露與啟用 gate 均未變；新兩級商業規格仍未取代 runtime。文案清單及相關呈現／結算權限測試同步核對，本機未部署。
+
 > 依使用者要求採 `.mk` 副檔名，內容使用 Markdown 格式；這是文件，不是 Makefile 或建置腳本。
 
 建立：2026-10-20。最後增量核對：2026-10-25（081 已確認、本機心得轉待辦與固定安排縣市已啟用並完成 owner 雲端驗收；縣市分析仍沿用進階分析 gate，未改價格／方案）。調價政策仍以 2026-10-23 確認的月繳提前 60 天通知、年繳續訂調整及限期保價為準。初次程式盤點基準：`62422e7`。
@@ -25,7 +39,7 @@
 ## 1. 修改前先確認
 
 1. 先讀 [AGENTS.md](../AGENTS.md) 與 [跨平台規範](CROSS_PLATFORM_VIBE_CODING_GUARDRAILS.md)，保留共用邏輯與平台邊界。
-2. 最新已確認方向先看 [新方案價格／優惠活動後台需求](subscription/SUBSCRIPTION_PRICING_PROMOTION_ADMIN_REQUIREMENTS_2026_10_23.md)；新兩級方案與舊 Free／Pro／Team 的 runtime 對照尚未實作。舊 [訂閱總規格](SUBSCRIPTION_TIER_PLAN_2026_07_24.md)、[方案功能矩陣](subscription/SUBSCRIPTION_FEATURE_DEFINITION_MATRIX_2026_07_24.md) 及 [實作計畫](SUBSCRIPTION_TIER_IMPLEMENTATION_PLAN_2026_07_24.md) 保留作為現有接線／歷史入口。
+2. 最新功能與輕量版價格先看 [2026-10-26 分級決策](subscription/SUBSCRIPTION_FEATURE_TIERS_2026_10_26.md)；優惠、後台及調價看 [價格／活動後台需求](subscription/SUBSCRIPTION_PRICING_PROMOTION_ADMIN_REQUIREMENTS_2026_10_23.md)。新方案已沿既有 free／pro／team 對照接線，雲端限制仍僅指定帳號試行；以頁首最新紀錄為準。舊 [訂閱總規格](SUBSCRIPTION_TIER_PLAN_2026_07_24.md)、[方案功能矩陣](subscription/SUBSCRIPTION_FEATURE_DEFINITION_MATRIX_2026_07_24.md) 及 [實作計畫](SUBSCRIPTION_TIER_IMPLEMENTATION_PLAN_2026_07_24.md) 保留作為現有接線／歷史入口。
 3. 實際功能接線看 [程式狀態對照](../lib/subscription/subscription-capability-implementation.ts)、[功能 gate 登記表](subscription/SUBSCRIPTION_FEATURE_GATE_REGISTRY.md) 與目前呼叫端；舊 registry／audit 必須再次核對原始碼。
 4. 發布狀態看 [canonical 任務](LAUNCH_EXECUTION_TASKS_2026_08_09.json) 與 [原生發布 gates](subscription/NATIVE_SUBSCRIPTION_LAUNCH_GATES_2026_08_06.json)。程式檔存在、靜態引用或本機測試通過，不等於正式服務啟用。
 5. 使用者已明確指定的新方案決策優先於舊草案，不因舊文件寫 planning only 就重問已授權的例行來源碼工作。涉及商業選擇、真實付費、受保護設定或不可逆資料操作時，依實際範圍處理必要人工決策。

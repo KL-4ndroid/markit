@@ -1,0 +1,20 @@
+[
+  {
+    "page": "free-payment",
+    "width": 360,
+    "client": 360,
+    "scroll": 360
+  },
+  {
+    "page": "free-payment",
+    "width": 390,
+    "client": 390,
+    "scroll": 390
+  },
+  {
+    "page": "free-payment",
+    "width": 430,
+    "client": 430,
+    "scroll": 430
+  }
+]

@@ -24,11 +24,11 @@ assert.equal(getSubscriptionPlanFeatureStatus('free', 'analytics.basic'), 'not_a
 
 assert.equal(getSubscriptionPlanFeatureStatus('pro', 'photo.product_cover'), 'included');
 assert.equal(getSubscriptionPlanFeatureStatus('pro', 'analytics.basic'), 'included');
-assert.equal(getSubscriptionPlanFeatureStatus('pro', 'analytics.advanced'), 'included');
+assert.equal(getSubscriptionPlanFeatureStatus('pro', 'analytics.advanced'), 'not_available');
 assert.equal(getSubscriptionPlanFeatureStatus('pro', 'photo.sales_evidence'), 'not_available');
 assert.equal(getSubscriptionPlanFeatureStatus('pro', 'team.staff_collaboration'), 'not_available');
-assert.equal(getSubscriptionPlanFeatureStatus('pro', 'report.pdf'), 'included');
-assert.equal(getSubscriptionPlanFeatureStatus('pro', 'report.excel'), 'coming_soon');
+assert.equal(getSubscriptionPlanFeatureStatus('pro', 'report.pdf'), 'not_available');
+assert.equal(getSubscriptionPlanFeatureStatus('pro', 'report.excel'), 'not_available');
 
 assert.equal(getSubscriptionPlanFeatureStatus('team', 'photo.product_cover'), 'included');
 assert.equal(getSubscriptionPlanFeatureStatus('team', 'photo.sales_evidence'), 'included');
@@ -37,8 +37,8 @@ assert.equal(getSubscriptionPlanFeatureStatus('team', 'team.manager_workflow'), 
 assert.equal(getSubscriptionPlanFeatureStatus('team', 'report.pdf'), 'included');
 
 assert.deepEqual(SUBSCRIPTION_PLAN_DEFINITIONS.free.limits.activeProducts, {
-  value: 15,
-  status: 'experiment_unenforced',
+  value: null,
+  status: 'unapproved',
 });
 assert.deepEqual(SUBSCRIPTION_PLAN_DEFINITIONS.team.limits.staffSeats, {
   value: 3,

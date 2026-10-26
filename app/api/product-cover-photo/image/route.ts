@@ -1,3 +1,4 @@
+import { runAppApiWithCors, createAppApiCorsPreflightResponse } from '@/lib/api/server/cors';
 import { NextResponse } from 'next/server';
 import { authenticateAppApiRequest } from '@/lib/api/server/auth';
 import { PRODUCT_COVER_PHOTO_POLICY } from '@/lib/products/product-cover-photo-model';
@@ -7,10 +8,10 @@ import { createProductCoverPhotoServiceClient, isProductCoverPhotoReadEnabled, r
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   if (!isProductCoverPhotoReadEnabled()) return NextResponse.json({ ok: false, code: 'disabled' }, { status: 404 });
   const auth = await authenticateAppApiRequest(request);
-  if (!auth.ok) return NextResponse.json({ ok: false, code: 'authentication_required' }, { status: 401 });
+  if (!auth.ok) return NextResponse.json({ ok: false, code: auth.code }, { status: auth.code === 'authentication_unavailable' ? 503 : 401 });
   const url = new URL(request.url);
   const productId = url.searchParams.get('productId');
   const variant = url.searchParams.get('variant') === 'display' ? 'display' : 'thumbnail';
@@ -29,3 +30,8 @@ export async function GET(request: Request) {
   new Uint8Array(responseBody).set(object.body);
   return new NextResponse(responseBody, { status: 200, headers: { 'Content-Type': object.contentType, 'Cache-Control': 'private, max-age=3600', ...(etag ? { ETag: `"${etag}"` } : {}) } });
 }
+
+
+const allowedMethods = ['GET', 'OPTIONS'] as const;
+export const GET = (request: Request) => runAppApiWithCors(request, () => handleGET(request), { allowedMethods });
+export const OPTIONS = (request: Request) => createAppApiCorsPreflightResponse(request, { allowedMethods });

@@ -21,6 +21,7 @@ for (const testFile of testFiles) {
     'tests/app-api-server-mutation-client.test.ts',
     'tests/subscription-price-foundation-authenticated-smoke.test.ts',
     'tests/subscription-simulation.test.ts',
+    'tests/subscription-write-access.test.ts',
     'tests/native-reconciliation-foundation.test.ts',
   ].includes(testFile)
     ? {

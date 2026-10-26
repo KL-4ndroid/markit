@@ -1,6 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { buildProductManagementHref, resolveProductMarketReturn } from '@/lib/navigation/market-product-return';
 import {
   AlertCircle,
   BookOpen,
@@ -71,7 +73,11 @@ export default function ProductsPage() {
 }
 
 function ProductsPageContent() {
-  const shortcutAction = useSearchParams().get('action');
+  const productParams = useSearchParams();
+  const shortcutAction = productParams.get('action');
+  const productOrigin = useMemo(() => ({ fromMarket: productParams.get('fromMarket'), marketReturnTo: productParams.get('marketReturnTo') }), [productParams]);
+  const marketReturn = resolveProductMarketReturn(productOrigin);
+  const productManagementHref = buildProductManagementHref(productOrigin);
   const router = useRouter();
   const { userRole, roleRefreshState } = useRoleContext();
   const { user } = useAuth();
@@ -220,9 +226,9 @@ function ProductsPageContent() {
 
   useEffect(() => {
     for (const product of filteredProducts.slice(0, 8)) {
-      if (product.id) router.prefetch(buildProductDetailHref(product.id));
+      if (product.id) router.prefetch(buildProductDetailHref(product.id, productOrigin));
     }
-  }, [filteredProducts, router]);
+  }, [filteredProducts, productOrigin, router]);
 
   returnStateRef.current = {
     category: activeCategory,
@@ -236,7 +242,7 @@ function ProductsPageContent() {
     setOpeningProductId(product.id);
     if (stateKey && canPersistRef.current) writeProductListState(stateKey, { ...returnStateRef.current, scrollY: window.scrollY });
     openingFromListRef.current = true;
-    router.push(buildProductDetailHref(product.id));
+    router.push(buildProductDetailHref(product.id, productOrigin));
   };
 
   const handleOpenForm = () => {
@@ -265,7 +271,7 @@ function ProductsPageContent() {
     const handle = (url: string | null) => {
       if (!active || shortcutHandledRef.current || !isEntityCreateDeepLink(url, '/products')) return;
       shortcutHandledRef.current = true;
-      router.replace('/products');
+      router.replace(productManagementHref);
       if (isStaffMode || !canLoadScopedData || dbStatus.ok === false) return;
       setIsFormOpen(true);
       hideNavigation();
@@ -274,7 +280,7 @@ function ProductsPageContent() {
     void links.getCurrentUrl().then(url => handle(url)).catch(() => undefined);
 
     return () => { active = false; };
-  }, [canLoadScopedData, dbStatus, isRoleReady, isStaffMode, router, shortcutAction]);
+  }, [canLoadScopedData, dbStatus, isRoleReady, isStaffMode, productManagementHref, router, shortcutAction]);
 
   if (!canLoadScopedData || dbStatus === null) return <ProductsLoading />;
 
@@ -299,6 +305,7 @@ function ProductsPageContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      {marketReturn && <Link href={marketReturn.href} className="mx-4 mt-4 inline-flex min-h-11 items-center rounded-xl border border-primary/20 bg-white px-4 text-sm font-medium text-primary">← {marketReturn.label}</Link>}
       <WorkspacePageHeader
         title="商品"
         eyebrow={isStaffMode ? '銷售商品' : '商品管理'}

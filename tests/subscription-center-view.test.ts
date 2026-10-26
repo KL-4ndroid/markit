@@ -43,7 +43,7 @@ const adminView = buildSubscriptionCenterView({
     freshness: 'fresh',
   },
 });
-assert.equal(adminView.planLabel, 'Pro');
+assert.equal(adminView.planLabel, '輕量版');
 assert.equal(adminView.sourceLabel, '管理員已啟用');
 assert.equal(adminView.canDisplayBillingControls, false);
 

@@ -19,6 +19,7 @@ import type {
 
 interface OperatingMarketWorkbenchProps {
   marketId: string;
+  marketReturnTo?: string | null;
   canRecordDeal: boolean;
   salesPhotoEvidenceRequired: boolean;
   pendingPhotoCount: number;
@@ -26,6 +27,7 @@ interface OperatingMarketWorkbenchProps {
   salesPhotoEvidenceContext?: SalesPhotoEvidenceTransactionContext;
   onSalesPhotoEvidenceResult?: SalesPhotoEvidenceRuntimeResultHandler;
   hideProfit?: boolean;
+  initialMode?: TransactionMode;
 }
 
 const MODE_TITLES: Record<TransactionMode, string> = {
@@ -35,6 +37,7 @@ const MODE_TITLES: Record<TransactionMode, string> = {
 
 export function OperatingMarketWorkbench({
   marketId,
+  marketReturnTo,
   canRecordDeal,
   salesPhotoEvidenceRequired,
   pendingPhotoCount,
@@ -42,8 +45,9 @@ export function OperatingMarketWorkbench({
   salesPhotoEvidenceContext,
   onSalesPhotoEvidenceResult,
   hideProfit = false,
+  initialMode,
 }: OperatingMarketWorkbenchProps) {
-  const [activeTransactionMode, setActiveTransactionMode] = useState<TransactionMode | null>(null);
+  const [activeTransactionMode, setActiveTransactionMode] = useState<TransactionMode | null>(initialMode ?? null);
   const [isTransactionProcessing, setIsTransactionProcessing] = useState(false);
 
   useEffect(() => {
@@ -120,6 +124,7 @@ export function OperatingMarketWorkbench({
               {activeTransactionMode && (
                 <TransactionWorkspace
                   marketId={marketId}
+                  marketReturnTo={marketReturnTo}
                   mode={activeTransactionMode}
                   presentation="sheet"
                   salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}

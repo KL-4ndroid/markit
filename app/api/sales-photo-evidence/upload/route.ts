@@ -1,3 +1,5 @@
+import { checkServerSubscriptionWrite } from '@/lib/subscription/write-access.server';
+import { subscriptionWriteErrorStatus, type SubscriptionWriteDecision } from '@/lib/subscription/write-access';
 import { NextResponse } from 'next/server';
 
 import { normalizeAppApiErrorBody } from '@/lib/api/contract';
@@ -48,6 +50,7 @@ type SalesPhotoEvidenceUploadRouteActor = {
 };
 
 export type SalesPhotoEvidenceUploadRouteDeps = {
+  authorizeSubscriptionWrite?(actorId: string, ownerId: string): Promise<SubscriptionWriteDecision>;
   isMetadataClaimEnabled(): boolean;
   isR2UploadEnabled?(): boolean;
   resolveActor(request: Request): Promise<SalesPhotoEvidenceUploadRouteActor | 'unavailable' | null>;
@@ -337,11 +340,6 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     actor: SalesPhotoEvidenceUploadRouteActor,
     startedAt: number
   ): Promise<NextResponse> {
-    const r2UploadAdapter = deps.r2UploadAdapter ?? await deps.createR2UploadAdapter?.();
-    if (!r2UploadAdapter) {
-      return disabledR2UploadResponse();
-    }
-
     const parsed = await parseAndValidateSalesPhotoEvidenceUploadFormData(await request.formData());
     if (!parsed.ok) {
       return jsonResponse({
@@ -353,6 +351,10 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     }
 
     const body = parsed.request;
+    const writeAccess = await deps.authorizeSubscriptionWrite?.(actor.actorId, body.ownerId);
+    if (writeAccess && !writeAccess.allowed) return jsonResponse({ ok: false, code: writeAccess.reason, shouldKeepLocalPayload: true }, subscriptionWriteErrorStatus(writeAccess));
+    const r2UploadAdapter = deps.r2UploadAdapter ?? await deps.createR2UploadAdapter?.();
+    if (!r2UploadAdapter) return disabledR2UploadResponse();
     const faultDecision = deps.resolveFaultInjection?.({
       request,
       actorId: actor.actorId,
@@ -511,7 +513,10 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       expiresAt: getSalesPhotoEvidenceExpiresAt(uploadedAt),
     };
 
+    let finalWriteAccess: SubscriptionWriteDecision | undefined;
     try {
+      finalWriteAccess = await deps.authorizeSubscriptionWrite?.(actor.actorId, row.ownerId);
+      if (finalWriteAccess && !finalWriteAccess.allowed) throw new Error('entitlement_changed');
       if (
         faultDecision.action === 'inject'
         && faultDecision.mode === 'metadata_finalize_failed'
@@ -543,11 +548,11 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       });
       return jsonResponse({
         ok: false,
-        code: 'metadata_finalize_failed',
+        code: finalWriteAccess && !finalWriteAccess.allowed ? finalWriteAccess.reason : 'metadata_finalize_failed',
         message: 'Sales photo evidence metadata finalize failed.',
         shouldKeepLocalPayload: true,
         cleanupIncomplete: cleanup.cleanupIncomplete,
-      }, 500);
+      }, finalWriteAccess && !finalWriteAccess.allowed ? subscriptionWriteErrorStatus(finalWriteAccess) : 500);
     }
 
     recordServerOperationalEvent({
@@ -657,6 +662,7 @@ async function createDefaultR2UploadAdapter(): Promise<SalesPhotoEvidenceR2Uploa
 }
 
 const routeHandlers = createSalesPhotoEvidenceUploadRouteHandlers({
+  authorizeSubscriptionWrite: (actorId, ownerId) => checkServerSubscriptionWrite({ actorId, ownerId, feature: 'sales_photo' }),
   isMetadataClaimEnabled: isMetadataClaimRouteEnabled,
   isR2UploadEnabled: isR2UploadRouteEnabled,
   resolveActor: resolveActorFromBearerToken,

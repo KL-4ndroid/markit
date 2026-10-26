@@ -40,7 +40,7 @@ export function UpgradePrompt({
             <button
               type="button"
               onClick={() => router.push('/subscription')}
-              className="mt-2 text-sm font-medium text-primary underline underline-offset-4"
+              className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-primary underline underline-offset-4"
             >
               {presentation.actionLabel}
             </button>
@@ -50,7 +50,7 @@ export function UpgradePrompt({
               type="button"
               onClick={onRetry}
               disabled={isRetrying}
-              className="mt-2 inline-flex min-h-10 items-center gap-2 text-sm font-medium text-primary disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} aria-hidden="true" />
               重新檢查權限
@@ -61,7 +61,7 @@ export function UpgradePrompt({
           <button
             type="button"
             onClick={() => setIsVisible(false)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-atelier-canvas"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-muted-foreground hover:bg-atelier-canvas"
             aria-label="關閉"
           >
             <X className="h-4 w-4" aria-hidden="true" />

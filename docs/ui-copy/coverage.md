@@ -6,22 +6,22 @@
 | --- | ---: | --- |
 | [app/about/page.tsx](../../app/about/page.tsx) | 26 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/analytics/loading.tsx](../../app/analytics/loading.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [app/analytics/page.tsx](../../app/analytics/page.tsx) | 72 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [app/analytics/page.tsx](../../app/analytics/page.tsx) | 71 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/api/account-capabilities/route.ts](../../app/api/account-capabilities/route.ts) | 5 | API 回應／伺服器來源（須確認客戶端是否顯示） |
 | [app/api/account-deletion/route.ts](../../app/api/account-deletion/route.ts) | 13 | API 回應／伺服器來源（須確認客戶端是否顯示） |
 | [app/api/cron/sales-photo-evidence-expiration/route.ts](../../app/api/cron/sales-photo-evidence-expiration/route.ts) | 5 | API 回應／伺服器來源（須確認客戶端是否顯示） |
 | [app/api/dev/subscription-price-foundation-smoke/route.ts](../../app/api/dev/subscription-price-foundation-smoke/route.ts) | 5 | 測試／工具表面（另受建置或頁面 gate 限制） |
-| [app/api/dev/subscription-simulation/route.ts](../../app/api/dev/subscription-simulation/route.ts) | 8 | 測試／工具表面（另受建置或頁面 gate 限制） |
+| [app/api/dev/subscription-simulation/route.ts](../../app/api/dev/subscription-simulation/route.ts) | 10 | 測試／工具表面（另受建置或頁面 gate 限制） |
 | [app/api/health/route.ts](../../app/api/health/route.ts) | 0 | API 回應／伺服器來源（須確認客戶端是否顯示） |
 | [app/api/operational-events/sync/route.ts](../../app/api/operational-events/sync/route.ts) | 6 | API 回應／伺服器來源（須確認客戶端是否顯示） |
-| [app/api/product-cover-photo/capability/route.ts](../../app/api/product-cover-photo/capability/route.ts) | 4 | API 回應／伺服器來源（須確認客戶端是否顯示） |
+| [app/api/product-cover-photo/capability/route.ts](../../app/api/product-cover-photo/capability/route.ts) | 6 | API 回應／伺服器來源（須確認客戶端是否顯示） |
 | [app/api/product-cover-photo/image/route.ts](../../app/api/product-cover-photo/image/route.ts) | 0 | API 回應／伺服器來源（須確認客戶端是否顯示） |
 | [app/api/product-cover-photo/metadata/route.ts](../../app/api/product-cover-photo/metadata/route.ts) | 0 | API 回應／伺服器來源（須確認客戶端是否顯示） |
 | [app/api/product-cover-photo/route.ts](../../app/api/product-cover-photo/route.ts) | 0 | API 回應／伺服器來源（須確認客戶端是否顯示） |
-| [app/api/product-cover-photo/upload/route.ts](../../app/api/product-cover-photo/upload/route.ts) | 5 | API 回應／伺服器來源（須確認客戶端是否顯示） |
+| [app/api/product-cover-photo/upload/route.ts](../../app/api/product-cover-photo/upload/route.ts) | 6 | API 回應／伺服器來源（須確認客戶端是否顯示） |
 | [app/api/sales-photo-evidence/delete/route.ts](../../app/api/sales-photo-evidence/delete/route.ts) | 11 | API 回應／伺服器來源（須確認客戶端是否顯示） |
 | [app/api/sales-photo-evidence/image/route.ts](../../app/api/sales-photo-evidence/image/route.ts) | 13 | API 回應／伺服器來源（須確認客戶端是否顯示） |
-| [app/api/sales-photo-evidence/upload/route.ts](../../app/api/sales-photo-evidence/upload/route.ts) | 15 | API 回應／伺服器來源（須確認客戶端是否顯示） |
+| [app/api/sales-photo-evidence/upload/route.ts](../../app/api/sales-photo-evidence/upload/route.ts) | 16 | API 回應／伺服器來源（須確認客戶端是否顯示） |
 | [app/debug/flicker-test/page.web.tsx](../../app/debug/flicker-test/page.web.tsx) | 65 | 測試／工具表面（另受建置或頁面 gate 限制） |
 | [app/debug/layout.tsx](../../app/debug/layout.tsx) | 0 | 測試／工具表面（另受建置或頁面 gate 限制） |
 | [app/debug/sales-photo-evidence/page.web.tsx](../../app/debug/sales-photo-evidence/page.web.tsx) | 0 | 測試／工具表面（另受建置或頁面 gate 限制） |
@@ -38,23 +38,23 @@
 | [app/markets/regions/page.tsx](../../app/markets/regions/page.tsx) | 45 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/markets/schedules/page.tsx](../../app/markets/schedules/page.tsx) | 51 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/mobile-runtime-smoke/page.smoke.tsx](../../app/mobile-runtime-smoke/page.smoke.tsx) | 10 | 測試／工具表面（另受建置或頁面 gate 限制） |
-| [app/page.tsx](../../app/page.tsx) | 54 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [app/page.tsx](../../app/page.tsx) | 58 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/privacy/page.tsx](../../app/privacy/page.tsx) | 33 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/products/[id]/page.web.tsx](../../app/products/[id]/page.web.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/products/detail/page.tsx](../../app/products/detail/page.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/products/loading.tsx](../../app/products/loading.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [app/products/page.tsx](../../app/products/page.tsx) | 35 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [app/products/page.tsx](../../app/products/page.tsx) | 36 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/recovery/layout.tsx](../../app/recovery/layout.tsx) | 0 | 測試／工具表面（另受建置或頁面 gate 限制） |
 | [app/recovery/page.tsx](../../app/recovery/page.tsx) | 15 | 測試／工具表面（另受建置或頁面 gate 限制） |
 | [app/register-sw.tsx](../../app/register-sw.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [app/reports/settlement/page.tsx](../../app/reports/settlement/page.tsx) | 119 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [app/reports/settlement/page.tsx](../../app/reports/settlement/page.tsx) | 122 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/sales/loading.tsx](../../app/sales/loading.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/settings/account/page.tsx](../../app/settings/account/page.tsx) | 2 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/settings/app/page.tsx](../../app/settings/app/page.tsx) | 10 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/settings/data/layout.tsx](../../app/settings/data/layout.tsx) | 0 | 測試／工具表面（另受建置或頁面 gate 限制） |
 | [app/settings/data/page.tsx](../../app/settings/data/page.tsx) | 26 | 測試／工具表面（另受建置或頁面 gate 限制） |
 | [app/settings/loading.tsx](../../app/settings/loading.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [app/settings/page.tsx](../../app/settings/page.tsx) | 19 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [app/settings/page.tsx](../../app/settings/page.tsx) | 20 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/settings/sales/page.tsx](../../app/settings/sales/page.tsx) | 6 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/settings/team/page.tsx](../../app/settings/team/page.tsx) | 23 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/staff/page.tsx](../../app/staff/page.tsx) | 2 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -65,7 +65,7 @@
 | [app/terms/page.tsx](../../app/terms/page.tsx) | 29 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [app/tools/market-text-import-lab/page.tsx](../../app/tools/market-text-import-lab/page.tsx) | 4 | 測試／工具表面（另受建置或頁面 gate 限制） |
 | [components/AppChrome.tsx](../../components/AppChrome.tsx) | 3 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/BottomNavigation.tsx](../../components/BottomNavigation.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/BottomNavigation.tsx](../../components/BottomNavigation.tsx) | 1 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/GlobalLoadingState.tsx](../../components/GlobalLoadingState.tsx) | 4 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [components/PWAInstallButton.tsx](../../components/PWAInstallButton.tsx) | 17 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/PWAInstallPrompt.tsx](../../components/PWAInstallPrompt.tsx) | 19 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -144,11 +144,11 @@
 | [components/global-overlays/overlay-types.ts](../../components/global-overlays/overlay-types.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/home/MarketPlanningOverview.tsx](../../components/home/MarketPlanningOverview.tsx) | 10 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/home/SameDayMarketArrangements.tsx](../../components/home/SameDayMarketArrangements.tsx) | 7 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/home/TodayMarketCard.tsx](../../components/home/TodayMarketCard.tsx) | 9 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/home/TodayMarketCard.tsx](../../components/home/TodayMarketCard.tsx) | 10 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/interactions/InteractionRoleIcon.tsx](../../components/interactions/InteractionRoleIcon.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/layout/AppPageShell.tsx](../../components/layout/AppPageShell.tsx) | 1 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [components/layout/WorkspacePageHeader.tsx](../../components/layout/WorkspacePageHeader.tsx) | 1 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/AddMarketForm.tsx](../../components/markets/AddMarketForm.tsx) | 26 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/AddMarketForm.tsx](../../components/markets/AddMarketForm.tsx) | 28 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/AddRevenueDialog.tsx](../../components/markets/AddRevenueDialog.tsx) | 59 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/CashSalesComparison.tsx](../../components/markets/CashSalesComparison.tsx) | 52 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/ChecklistPanel.tsx](../../components/markets/ChecklistPanel.tsx) | 19 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -157,41 +157,42 @@
 | [components/markets/DailyTransactionLog.tsx](../../components/markets/DailyTransactionLog.tsx) | 33 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/DealDetailModal.tsx](../../components/markets/DealDetailModal.tsx) | 31 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/DealItem.tsx](../../components/markets/DealItem.tsx) | 12 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/EditMarketForm.tsx](../../components/markets/EditMarketForm.tsx) | 21 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/EditMarketForm.tsx](../../components/markets/EditMarketForm.tsx) | 23 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/FieldNotesPanel.tsx](../../components/markets/FieldNotesPanel.tsx) | 22 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/FreeMarketWorkspace.tsx](../../components/markets/FreeMarketWorkspace.tsx) | 14 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/InteractionDetailModal.tsx](../../components/markets/InteractionDetailModal.tsx) | 8 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/JournalChecklistDialog.tsx](../../components/markets/JournalChecklistDialog.tsx) | 33 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/JournalReadingBody.tsx](../../components/markets/JournalReadingBody.tsx) | 2 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketCard.tsx](../../components/markets/MarketCard.tsx) | 31 | 未追到正式頁面引用（待核對動態接線／保留碼） |
-| [components/markets/MarketCashPanel.tsx](../../components/markets/MarketCashPanel.tsx) | 78 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/MarketDetailLoadingShell.tsx](../../components/markets/MarketDetailLoadingShell.tsx) | 11 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/MarketDetailScreen.tsx](../../components/markets/MarketDetailScreen.tsx) | 180 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/MarketFieldOpsSection.tsx](../../components/markets/MarketFieldOpsSection.tsx) | 3 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketCashPanel.tsx](../../components/markets/MarketCashPanel.tsx) | 79 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketDetailLoadingShell.tsx](../../components/markets/MarketDetailLoadingShell.tsx) | 5 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketDetailScreen.tsx](../../components/markets/MarketDetailScreen.tsx) | 188 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketFieldOpsSection.tsx](../../components/markets/MarketFieldOpsSection.tsx) | 5 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketFormFields.tsx](../../components/markets/MarketFormFields.tsx) | 32 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/MarketJournalWorkspace.tsx](../../components/markets/MarketJournalWorkspace.tsx) | 89 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/MarketListCard.tsx](../../components/markets/MarketListCard.tsx) | 29 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketJournalWorkspace.tsx](../../components/markets/MarketJournalWorkspace.tsx) | 90 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketListCard.tsx](../../components/markets/MarketListCard.tsx) | 30 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketLiveLayout.tsx](../../components/markets/MarketLiveLayout.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketLiveSummaryActions.tsx](../../components/markets/MarketLiveSummaryActions.tsx) | 3 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/MarketOperatingSessionControl.tsx](../../components/markets/MarketOperatingSessionControl.tsx) | 14 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/MarketOverviewPhotoStory.tsx](../../components/markets/MarketOverviewPhotoStory.tsx) | 9 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketOperatingSessionControl.tsx](../../components/markets/MarketOperatingSessionControl.tsx) | 13 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketOverviewPhotoStory.tsx](../../components/markets/MarketOverviewPhotoStory.tsx) | 9 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [components/markets/MarketPaymentDeadlineFields.tsx](../../components/markets/MarketPaymentDeadlineFields.tsx) | 11 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketPaymentDeadlineNotice.tsx](../../components/markets/MarketPaymentDeadlineNotice.tsx) | 3 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketReferenceNotePanel.tsx](../../components/markets/MarketReferenceNotePanel.tsx) | 3 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketRegionField.tsx](../../components/markets/MarketRegionField.tsx) | 4 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/MarketRegistrationPanel.tsx](../../components/markets/MarketRegistrationPanel.tsx) | 14 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketRegistrationPanel.tsx](../../components/markets/MarketRegistrationPanel.tsx) | 16 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketReturnLink.tsx](../../components/markets/MarketReturnLink.tsx) | 2 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketSearchField.tsx](../../components/markets/MarketSearchField.tsx) | 3 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketTextImportLab.tsx](../../components/markets/MarketTextImportLab.tsx) | 77 | 僅由測試／工具頁靜態引用 |
 | [components/markets/MarketTextImportPanel.tsx](../../components/markets/MarketTextImportPanel.tsx) | 90 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/MarketTodayTimeline.tsx](../../components/markets/MarketTodayTimeline.tsx) | 18 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketTodayTimeline.tsx](../../components/markets/MarketTodayTimeline.tsx) | 19 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketWorkspaceDetailTabs.tsx](../../components/markets/MarketWorkspaceDetailTabs.tsx) | 2 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/markets/MarketWorkspaceNavigation.tsx](../../components/markets/MarketWorkspaceNavigation.tsx) | 5 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/MarketWorkspaceNavigation.tsx](../../components/markets/MarketWorkspaceNavigation.tsx) | 8 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/MarketWorkspaceSummary.tsx](../../components/markets/MarketWorkspaceSummary.tsx) | 6 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/OperatingInteractionPanel.tsx](../../components/markets/OperatingInteractionPanel.tsx) | 4 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/OperatingMarketWorkbench.tsx](../../components/markets/OperatingMarketWorkbench.tsx) | 9 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/PreparationTemplatePanel.tsx](../../components/markets/PreparationTemplatePanel.tsx) | 37 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/SalesPhotoEvidenceCapturePreviewDialog.tsx](../../components/markets/SalesPhotoEvidenceCapturePreviewDialog.tsx) | 10 | 未追到正式頁面引用（待核對動態接線／保留碼） |
-| [components/markets/SalesPhotoEvidenceFlowDialog.tsx](../../components/markets/SalesPhotoEvidenceFlowDialog.tsx) | 48 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/markets/SalesPhotoEvidenceFlowDialog.tsx](../../components/markets/SalesPhotoEvidenceFlowDialog.tsx) | 51 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/markets/SalesPhotoEvidenceLocalCaptureAction.tsx](../../components/markets/SalesPhotoEvidenceLocalCaptureAction.tsx) | 6 | 僅由測試／工具頁靜態引用 |
 | [components/markets/SalesPhotoEvidenceLocalThumbnail.tsx](../../components/markets/SalesPhotoEvidenceLocalThumbnail.tsx) | 5 | 僅由測試／工具頁靜態引用 |
 | [components/markets/SalesPhotoEvidenceManualUploadAction.tsx](../../components/markets/SalesPhotoEvidenceManualUploadAction.tsx) | 5 | 僅由測試／工具頁靜態引用 |
@@ -212,10 +213,10 @@
 | [components/products/AddProductForm.tsx](../../components/products/AddProductForm.tsx) | 9 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/products/EditProductForm.tsx](../../components/products/EditProductForm.tsx) | 21 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/products/ProductCard.tsx](../../components/products/ProductCard.tsx) | 16 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/products/ProductCoverPhotoField.tsx](../../components/products/ProductCoverPhotoField.tsx) | 26 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/products/ProductCoverPhotoField.tsx](../../components/products/ProductCoverPhotoField.tsx) | 27 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/products/ProductCoverPhotoImage.tsx](../../components/products/ProductCoverPhotoImage.tsx) | 1 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/products/ProductDetailQueryScreen.tsx](../../components/products/ProductDetailQueryScreen.tsx) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/products/ProductDetailScreen.tsx](../../components/products/ProductDetailScreen.tsx) | 44 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/products/ProductDetailScreen.tsx](../../components/products/ProductDetailScreen.tsx) | 45 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/products/ProductFormFields.tsx](../../components/products/ProductFormFields.tsx) | 19 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/public/PublicDocumentShell.tsx](../../components/public/PublicDocumentShell.tsx) | 14 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/recurring-operations/AddOperationDialog.tsx](../../components/recurring-operations/AddOperationDialog.tsx) | 6 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -231,14 +232,14 @@
 | [components/sales/PaymentMethodSelector.tsx](../../components/sales/PaymentMethodSelector.tsx) | 3 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/sales/QuickDealModal.tsx](../../components/sales/QuickDealModal.tsx) | 18 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [components/sales/QuickInteractionButtons.tsx](../../components/sales/QuickInteractionButtons.tsx) | 14 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/sales/QuickTransactionGrid.tsx](../../components/sales/QuickTransactionGrid.tsx) | 24 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/sales/QuickTransactionGrid.tsx](../../components/sales/QuickTransactionGrid.tsx) | 25 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/sales/TransactionWorkspace.tsx](../../components/sales/TransactionWorkspace.tsx) | 15 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/settings/AccountSyncPanel.tsx](../../components/settings/AccountSyncPanel.tsx) | 34 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/settings/CashDraftList.tsx](../../components/settings/CashDraftList.tsx) | 9 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/settings/DataCanonicalizationPanel.tsx](../../components/settings/DataCanonicalizationPanel.tsx) | 32 | 僅由測試／工具頁靜態引用 |
 | [components/settings/InteractionSettingsPanel.tsx](../../components/settings/InteractionSettingsPanel.tsx) | 17 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/settings/InteractionSetupWizard.tsx](../../components/settings/InteractionSetupWizard.tsx) | 39 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/settings/OwnerBrandSettingsCard.tsx](../../components/settings/OwnerBrandSettingsCard.tsx) | 12 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/settings/OwnerBrandSettingsCard.tsx](../../components/settings/OwnerBrandSettingsCard.tsx) | 13 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/settings/SalesPhotoEvidenceSettingsCard.tsx](../../components/settings/SalesPhotoEvidenceSettingsCard.tsx) | 9 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/settings/SettingsMenu.tsx](../../components/settings/SettingsMenu.tsx) | 7 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/settings/SettingsPageShell.tsx](../../components/settings/SettingsPageShell.tsx) | 8 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -250,12 +251,16 @@
 | [components/staff/StaffInvitationDialog.tsx](../../components/staff/StaffInvitationDialog.tsx) | 44 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/staff/StaffModeNotice.tsx](../../components/staff/StaffModeNotice.tsx) | 4 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/staff/StaffPermissionCard.tsx](../../components/staff/StaffPermissionCard.tsx) | 15 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/subscription/BasicBusinessSummary.tsx](../../components/subscription/BasicBusinessSummary.tsx) | 17 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/subscription/FeatureLimitDialog.tsx](../../components/subscription/FeatureLimitDialog.tsx) | 6 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [components/subscription/NativeSubscriptionActions.tsx](../../components/subscription/NativeSubscriptionActions.tsx) | 12 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/subscription/PricingCard.tsx](../../components/subscription/PricingCard.tsx) | 6 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/subscription/PricingCard.tsx](../../components/subscription/PricingCard.tsx) | 7 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/subscription/SubscriptionAccountSummary.tsx](../../components/subscription/SubscriptionAccountSummary.tsx) | 14 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/subscription/SubscriptionBackButton.tsx](../../components/subscription/SubscriptionBackButton.tsx) | 1 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [components/subscription/SubscriptionSimulationPanel.tsx](../../components/subscription/SubscriptionSimulationPanel.tsx) | 27 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/subscription/SubscriptionExperienceProvider.tsx](../../components/subscription/SubscriptionExperienceProvider.tsx) | 1 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/subscription/SubscriptionFeatureNotice.tsx](../../components/subscription/SubscriptionFeatureNotice.tsx) | 10 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/subscription/SubscriptionSimulationPanel.tsx](../../components/subscription/SubscriptionSimulationPanel.tsx) | 14 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [components/subscription/SubscriptionSurfaceGate.tsx](../../components/subscription/SubscriptionSurfaceGate.tsx) | 1 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/subscription/UpgradePrompt.tsx](../../components/subscription/UpgradePrompt.tsx) | 5 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/sync/InitialSyncContent.tsx](../../components/sync/InitialSyncContent.tsx) | 5 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [components/sync/InitialSyncDialog.tsx](../../components/sync/InitialSyncDialog.tsx) | 4 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -280,6 +285,7 @@
 | [hooks/useAccountCapabilities.ts](../../hooks/useAccountCapabilities.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [hooks/useAnalyticsCache.ts](../../hooks/useAnalyticsCache.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [hooks/useDateTimePicker.ts](../../hooks/useDateTimePicker.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [hooks/useHomePhotoReminders.ts](../../hooks/useHomePhotoReminders.ts) | 5 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [hooks/useMarketOperatingSession.ts](../../hooks/useMarketOperatingSession.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [hooks/usePageTransition.ts](../../hooks/usePageTransition.ts) | 0 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [hooks/useSalesPhotoEvidenceFlow.ts](../../hooks/useSalesPhotoEvidenceFlow.ts) | 24 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -360,7 +366,7 @@
 | [lib/export-utils.ts](../../lib/export-utils.ts) | 27 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [lib/form-autosave.ts](../../lib/form-autosave.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/form-draft-scheduler.ts](../../lib/form-draft-scheduler.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [lib/home/today-view-model.ts](../../lib/home/today-view-model.ts) | 27 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [lib/home/today-view-model.ts](../../lib/home/today-view-model.ts) | 28 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/interaction-buttons-store.ts](../../lib/interaction-buttons-store.ts) | 35 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/layout/page-shell.ts](../../lib/layout/page-shell.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/legal/public-legal-support-config.ts](../../lib/legal/public-legal-support-config.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -412,8 +418,9 @@
 | [lib/navigation-store.ts](../../lib/navigation-store.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/navigation/app-navigation.ts](../../lib/navigation/app-navigation.ts) | 5 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/navigation/entity-create-deep-link.ts](../../lib/navigation/entity-create-deep-link.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [lib/navigation/market-detail-route.ts](../../lib/navigation/market-detail-route.ts) | 7 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [lib/navigation/market-detail-route.ts](../../lib/navigation/market-detail-route.ts) | 8 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/navigation/market-detail-transition.ts](../../lib/navigation/market-detail-transition.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [lib/navigation/market-product-return.ts](../../lib/navigation/market-product-return.ts) | 1 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/navigation/product-detail-route.ts](../../lib/navigation/product-detail-route.ts) | 1 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/navigation/public-route.ts](../../lib/navigation/public-route.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/observability/operational-alert-policy.ts](../../lib/observability/operational-alert-policy.ts) | 3 | 未追到正式頁面引用（待核對動態接線／保留碼） |
@@ -427,7 +434,7 @@
 | [lib/permissions/role-freshness.ts](../../lib/permissions/role-freshness.ts) | 9 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/permissions/role-refresh-state.ts](../../lib/permissions/role-refresh-state.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/permissions/role-status-events.ts](../../lib/permissions/role-status-events.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [lib/permissions/staff-access-presentation.ts](../../lib/permissions/staff-access-presentation.ts) | 30 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [lib/permissions/staff-access-presentation.ts](../../lib/permissions/staff-access-presentation.ts) | 31 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/platform/app-bootstrap.ts](../../lib/platform/app-bootstrap.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/platform/app-link-policy.ts](../../lib/platform/app-link-policy.ts) | 2 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/platform/app-link-routing.ts](../../lib/platform/app-link-routing.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -500,7 +507,7 @@
 | [lib/products/product-cover-photo-model.ts](../../lib/products/product-cover-photo-model.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/products/product-cover-photo-pending.ts](../../lib/products/product-cover-photo-pending.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/products/product-cover-photo-r2.server.ts](../../lib/products/product-cover-photo-r2.server.ts) | 0 | 未追到正式頁面引用（待核對動態接線／保留碼） |
-| [lib/products/product-cover-photo-server.ts](../../lib/products/product-cover-photo-server.ts) | 7 | 未追到正式頁面引用（待核對動態接線／保留碼） |
+| [lib/products/product-cover-photo-server.ts](../../lib/products/product-cover-photo-server.ts) | 8 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [lib/products/product-form.ts](../../lib/products/product-form.ts) | 4 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/products/product-list-return-state.ts](../../lib/products/product-list-return-state.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/products/product-list-view-model.ts](../../lib/products/product-list-view-model.ts) | 5 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -526,6 +533,7 @@
 | [lib/reporting/settlement-report.ts](../../lib/reporting/settlement-report.ts) | 97 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/reporting/settlement-subscription-view.ts](../../lib/reporting/settlement-subscription-view.ts) | 1 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/role-context.tsx](../../lib/role-context.tsx) | 2 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [lib/sales/home-photo-reminders.ts](../../lib/sales/home-photo-reminders.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/sales/live-metrics.ts](../../lib/sales/live-metrics.ts) | 0 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [lib/sales/payment-methods.ts](../../lib/sales/payment-methods.ts) | 4 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/sales/photo-evidence-browser-adapter-contract.ts](../../lib/sales/photo-evidence-browser-adapter-contract.ts) | 11 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -577,7 +585,10 @@
 | [lib/subscription/account-deletion-reauth.server.ts](../../lib/subscription/account-deletion-reauth.server.ts) | 0 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [lib/subscription/account-deletion-saga.server.ts](../../lib/subscription/account-deletion-saga.server.ts) | 0 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [lib/subscription/account-deletion-storage.server.ts](../../lib/subscription/account-deletion-storage.server.ts) | 9 | 未追到正式頁面引用（待核對動態接線／保留碼） |
+| [lib/subscription/basic-business-summary.ts](../../lib/subscription/basic-business-summary.ts) | 1 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/subscription/billing-provider-contract.ts](../../lib/subscription/billing-provider-contract.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [lib/subscription/capability-refresh.ts](../../lib/subscription/capability-refresh.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [lib/subscription/experience.ts](../../lib/subscription/experience.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/subscription/native-account-entitlement.ts](../../lib/subscription/native-account-entitlement.ts) | 5 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [lib/subscription/native-purchase-disclosure.ts](../../lib/subscription/native-purchase-disclosure.ts) | 4 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/subscription/native-purchase-workflow.ts](../../lib/subscription/native-purchase-workflow.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
@@ -591,13 +602,17 @@
 | [lib/subscription/subscription-capabilities.ts](../../lib/subscription/subscription-capabilities.ts) | 2 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/subscription/subscription-capability-implementation.ts](../../lib/subscription/subscription-capability-implementation.ts) | 10 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [lib/subscription/subscription-center-view.ts](../../lib/subscription/subscription-center-view.ts) | 33 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
-| [lib/subscription/subscription-plans.ts](../../lib/subscription/subscription-plans.ts) | 9 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [lib/subscription/subscription-plans.ts](../../lib/subscription/subscription-plans.ts) | 12 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/subscription/subscription-presentation.ts](../../lib/subscription/subscription-presentation.ts) | 62 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/subscription/subscription-price-foundation-smoke-client.ts](../../lib/subscription/subscription-price-foundation-smoke-client.ts) | 0 | 測試／工具表面（另受建置或頁面 gate 限制） |
 | [lib/subscription/subscription-price-foundation-smoke.server.ts](../../lib/subscription/subscription-price-foundation-smoke.server.ts) | 2 | 測試／工具表面（另受建置或頁面 gate 限制） |
 | [lib/subscription/subscription-pricing.ts](../../lib/subscription/subscription-pricing.ts) | 28 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/subscription/subscription-simulation-client.ts](../../lib/subscription/subscription-simulation-client.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/subscription/subscription-simulation.server.ts](../../lib/subscription/subscription-simulation.server.ts) | 0 | 未追到正式頁面引用（待核對動態接線／保留碼） |
+| [lib/subscription/surface-access.ts](../../lib/subscription/surface-access.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [lib/subscription/ui-presentation.ts](../../lib/subscription/ui-presentation.ts) | 9 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
+| [lib/subscription/write-access.server.ts](../../lib/subscription/write-access.server.ts) | 5 | 未追到正式頁面引用（待核對動態接線／保留碼） |
+| [lib/subscription/write-access.ts](../../lib/subscription/write-access.ts) | 0 | 未追到正式頁面引用（待核對動態接線／保留碼） |
 | [lib/supabase/auth-context.tsx](../../lib/supabase/auth-context.tsx) | 10 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/supabase/auth-storage-bridge.ts](../../lib/supabase/auth-storage-bridge.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |
 | [lib/supabase/client.ts](../../lib/supabase/client.ts) | 0 | 正式頁面靜態引用鏈（不等於條件分支已啟用） |

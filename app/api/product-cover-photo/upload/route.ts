@@ -1,3 +1,6 @@
+import { runAppApiWithCors, createAppApiCorsPreflightResponse } from '@/lib/api/server/cors';
+import { checkServerSubscriptionWrite } from '@/lib/subscription/write-access.server';
+import { subscriptionWriteErrorStatus } from '@/lib/subscription/write-access';
 import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { authenticateAppApiRequest } from '@/lib/api/server/auth';
@@ -34,10 +37,10 @@ function planAccessError(access: Extract<ProductCoverPhotoPlanAccess, { allowed:
   return { code: 'entitlement_unavailable', status: 503 };
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!isProductCoverPhotoUploadEnabled()) return error('product_cover_photo_upload_disabled', 501);
   const auth = await authenticateAppApiRequest(request);
-  if (!auth.ok) return error('authentication_required', 401);
+  if (!auth.ok) return error(auth.code, auth.code === 'authentication_unavailable' ? 503 : 401);
   const client = createProductCoverPhotoServiceClient();
   if (!client) return error('service_unavailable', 503);
   let form: FormData;
@@ -55,6 +58,8 @@ export async function POST(request: Request) {
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || Math.max(width, height) > PRODUCT_COVER_PHOTO_POLICY.displayMaxEdgePx || !Number.isInteger(version) || version < 1) return error('invalid_dimensions', 400, false);
   const access = await resolveProductCoverPhotoAccess(client, auth.actor.actorId, productId);
   if (!access || !access.canEdit) return error('permission_denied', 403);
+  const writeAccess = await checkServerSubscriptionWrite({ actorId: auth.actor.actorId, ownerId: access.ownerId, feature: 'product_photo' });
+  if (!writeAccess.allowed) return error(writeAccess.reason, subscriptionWriteErrorStatus(writeAccess));
   const entitlementRequired = isProductCoverPhotoEntitlementRequired();
   const capabilityRepository = entitlementRequired ? createAccountCapabilityRepository() : null;
   const planAccess = await resolveProductCoverPhotoPlanAccess({
@@ -99,6 +104,12 @@ export async function POST(request: Request) {
       failureMarkCode = 'permission_changed';
       throw new Error('permission_changed');
     }
+    const currentWriteAccess = await checkServerSubscriptionWrite({ actorId: auth.actor.actorId, ownerId: currentAccess.ownerId, feature: 'product_photo' });
+    if (!currentWriteAccess.allowed) {
+      finalError = { code: currentWriteAccess.reason, status: subscriptionWriteErrorStatus(currentWriteAccess) };
+      failureMarkCode = 'entitlement_changed';
+      throw new Error('entitlement_changed');
+    }
     const currentPlanAccess = await resolveProductCoverPhotoPlanAccess({
       actorId: auth.actor.actorId,
       ownerId: currentAccess.ownerId,
@@ -128,3 +139,8 @@ export async function POST(request: Request) {
     return error(finalError.code, finalError.status);
   }
 }
+
+
+const allowedMethods = ['POST', 'OPTIONS'] as const;
+export const POST = (request: Request) => runAppApiWithCors(request, () => handlePOST(request), { allowedMethods });
+export const OPTIONS = (request: Request) => createAppApiCorsPreflightResponse(request, { allowedMethods });

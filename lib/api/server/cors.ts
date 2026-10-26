@@ -299,3 +299,10 @@ export function applyAppApiCors(
     headers,
   });
 }
+
+
+/** Apply the same origin policy to every outcome, before any route work starts. */
+export async function runAppApiWithCors(request: Request, handler: () => Promise<Response>, options: AppApiCorsOptions = {}): Promise<Response> {
+  const rejection = createAppApiCorsRejectionResponse(request, options);
+  return rejection ?? applyAppApiCors(request, await handler(), options);
+}

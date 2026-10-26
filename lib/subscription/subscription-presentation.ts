@@ -52,14 +52,14 @@ export type AccountCapabilitySourcePresentation = {
 };
 
 const PLAN_FEATURE_LABELS: Record<SubscriptionPlanFeatureCode, string> = {
-  'core.market_operations': '市集、成本與營運資料管理',
+  'core.market_operations': '市集安排、報名、錄取、繳費與私人心得',
   'core.sales_recording': '快速成交與收攤後總額記錄',
   'core.product_catalog': '文字商品目錄與庫存資料',
   'core.cloud_sync': '文字與事件資料同步',
-  'analytics.basic': '單場基本分析與復盤',
+  'analytics.basic': '單場成果、基本月摘要與選填現金對帳',
   'analytics.advanced': '跨市集比較與商品決策建議',
   'report.settlement_preview': '週／月結算報告預覽',
-  'report.pdf': '設計版 PDF 報告',
+  'report.pdf': 'PDF 結算報告',
   'report.excel': 'Excel 報表',
   'photo.product_cover': '商品封面照片',
   'photo.sales_evidence': '成交照片證據',
@@ -70,17 +70,17 @@ const PLAN_FEATURE_LABELS: Record<SubscriptionPlanFeatureCode, string> = {
 const PLAN_PREVIEW_FEATURES: Record<AccountPlanCode, readonly SubscriptionPlanFeatureCode[]> = {
   free: [
     'core.market_operations',
-    'core.sales_recording',
-    'core.product_catalog',
+    'core.cloud_sync',
   ],
   pro: [
+    'core.sales_recording',
+    'core.product_catalog',
     'analytics.basic',
     'photo.product_cover',
-    'analytics.advanced',
-    'report.settlement_preview',
-    'report.pdf',
   ],
   team: [
+    'analytics.advanced',
+    'report.pdf',
     'team.staff_collaboration',
     'team.manager_workflow',
     'photo.sales_evidence',
@@ -89,9 +89,9 @@ const PLAN_PREVIEW_FEATURES: Record<AccountPlanCode, readonly SubscriptionPlanFe
 };
 
 const PLAN_PRICE_LABELS: Record<AccountPlanCode, string> = {
-  free: '免費核心方向',
-  pro: '價格規劃中',
-  team: '價格規劃中',
+  free: '免費',
+  pro: '規劃售價 NT$59／月，或 NT$588／年',
+  team: '規劃售價 NT$249／月，或 NT$2,490／年',
 };
 
 function buildPlanPreview(planCode: AccountPlanCode): PlanPreview {
@@ -136,14 +136,14 @@ export function getAccountCapabilitySourcePresentation(
   switch (status) {
     case 'default_free':
       return {
-        label: 'Free（預設）',
+        label: '免費版（預設）',
         description: '伺服器未找到方案指派，付費能力維持關閉。',
         activePaidClaim: false,
       };
     case 'explicit_free':
       return {
-        label: 'Free',
-        description: '伺服器已確認此帳號使用 Free 方案。',
+        label: '免費版',
+        description: '伺服器已確認此帳號使用免費方案。',
         activePaidClaim: false,
       };
     case 'admin_enabled':
@@ -185,7 +185,7 @@ export function getAccountCapabilitySourcePresentation(
     case 'promotion_not_connected':
       return {
         label: '推廣獎勵尚未連接',
-        description: '系統不會在推廣資格與獎勵流程尚未完成時授予 Pro。',
+        description: '系統不會在推廣資格與獎勵流程尚未完成時授予輕量版資格。',
         activePaidClaim: false,
       };
     case 'promotion_enabled':
@@ -197,7 +197,7 @@ export function getAccountCapabilitySourcePresentation(
     case 'promotion_inactive':
       return {
         label: '推廣獎勵已結束',
-        description: '保留獎勵紀錄，但目前不開放新的 Pro 能力操作。',
+        description: '保留獎勵紀錄，但目前不開放新的輕量版功能操作。',
         activePaidClaim: false,
       };
     case 'unavailable':
@@ -279,9 +279,9 @@ export const SUBSCRIPTION_PRESENTATION = {
   capabilitySource: 'unavailable' as const,
   billingRuntime: 'unavailable' as const,
   accountLabel: '方案功能預覽',
-  title: 'Free、Pro 與 Team',
-  description: '以下是方案功能方向。訂閱、付款、續訂與方案切換尚未開放。',
-  notice: '目前實際可使用的功能仍依帳號角色、資料完整度與各功能 runtime gate 決定，不以此預覽授權。',
+  title: '免費版、輕量版與高階版',
+  description: '依目前方案提供不同功能；正式購買、付款與取消尚未開放。本機測試可在設定切換身分。',
+  notice: '可用功能仍依帳號角色、資料完整度與目前開放範圍決定；此預覽不會開通權限。',
   actionLabel: '尚未開放',
 };
 

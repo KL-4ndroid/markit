@@ -13,11 +13,12 @@ interface MarketTodayTimelineProps {
   market: TimelineMarket;
   countdown?: string;
   defaultExpanded?: boolean;
+  title?: string;
   onEdit?: () => void;
 }
 
 /** Planned times only; operating eligibility remains in the shared session model. */
-export function MarketTodayTimeline({ market, countdown = '--', defaultExpanded = true, onEdit }: MarketTodayTimelineProps) {
+export function MarketTodayTimeline({ market, countdown = '--', defaultExpanded = true, title = '今日時間軸', onEdit }: MarketTodayTimelineProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const rows = [
     ...(market.earlyEntryEnabled && market.earlyEntryTime ? [{ label: '提前進場', time: market.earlyEntryTime, icon: DoorOpen }] : []),
@@ -28,7 +29,7 @@ export function MarketTodayTimeline({ market, countdown = '--', defaultExpanded 
   const operatingTime = formatClockTimeRange(market.operatingStartTime, market.operatingEndTime);
 
   return (
-    <section className="mx-auto mb-4 max-w-3xl rounded-card bg-atelier-paper p-4 shadow-atelier" aria-label="今日時間軸">
+    <section className="mx-auto mb-4 max-w-3xl rounded-card bg-atelier-paper p-4 shadow-atelier" aria-label={title}>
       <div className="flex items-start gap-2">
         <h2 className="min-w-0 flex-1 text-base font-semibold text-atelier-ink">
           <button
@@ -39,7 +40,7 @@ export function MarketTodayTimeline({ market, countdown = '--', defaultExpanded 
             aria-controls="owner-market-timeline-panel"
           >
             <Clock3 className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-            <span className="min-w-0 flex-1">今日時間軸</span>
+            <span className="min-w-0 flex-1">{title}</span>
             <ChevronDown className={`h-4 w-4 shrink-0 text-atelier-muted transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden="true" />
           </button>
         </h2>

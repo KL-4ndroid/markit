@@ -20,6 +20,7 @@ type TransactionPresentation = 'card' | 'sheet';
 
 interface TransactionWorkspaceProps {
   marketId: string;
+  marketReturnTo?: string | null;
   salesPhotoEvidenceRequired: boolean;
   pendingPhotoCount?: number;
   onOpenPendingPhotos: () => void;
@@ -29,13 +30,13 @@ interface TransactionWorkspaceProps {
   onProcessingChange?: (isProcessing: boolean) => void;
   hideProfit?: boolean;
   mode?: TransactionMode;
+  initialMode?: TransactionMode;
   presentation?: TransactionPresentation;
 }
 
-const PAYMENT_STORAGE_KEY = 'markit:last-sales-payment-method';
-
 export function TransactionWorkspace({
   marketId,
+  marketReturnTo,
   salesPhotoEvidenceRequired,
   pendingPhotoCount = 0,
   onOpenPendingPhotos,
@@ -45,23 +46,15 @@ export function TransactionWorkspace({
   onProcessingChange,
   hideProfit = false,
   mode: controlledMode,
+  initialMode = 'quick',
   presentation = 'card',
 }: TransactionWorkspaceProps) {
-  const [mode, setMode] = useState<TransactionMode>('quick');
+  const [mode, setMode] = useState<TransactionMode>(initialMode);
   const [paymentMethod, setPaymentMethod] = useState<SalesPaymentMethod>('cash');
   const [recentSale, setRecentSale] = useState<{ amount: number; paymentMethod: SalesPaymentMethod } | null>(null);
   const noticeTimeoutRef = useRef<number | null>(null);
   const selectedMode = controlledMode ?? mode;
   const isSheet = presentation === 'sheet';
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(PAYMENT_STORAGE_KEY);
-      if (isSalesPaymentMethod(saved)) setPaymentMethod(saved);
-    } catch {
-      // Storage availability should never block checkout.
-    }
-  }, []);
 
   useEffect(() => {
     const handleDealClosed = (event: Event) => {
@@ -93,13 +86,10 @@ export function TransactionWorkspace({
     };
   }, [marketId]);
 
-  const changePaymentMethod = (next: SalesPaymentMethod) => {
-    setPaymentMethod(next);
-    try {
-      window.localStorage.setItem(PAYMENT_STORAGE_KEY, next);
-    } catch {
-      // Keep the in-memory selection when storage is unavailable.
-    }
+  const changePaymentMethod = (next: SalesPaymentMethod) => setPaymentMethod(next);
+  const completeTransaction = () => {
+    setPaymentMethod('cash');
+    onTransactionCompleted?.();
   };
 
   const changeModeFromKeyboard = (
@@ -201,7 +191,7 @@ export function TransactionWorkspace({
             onPaymentMethodChange={changePaymentMethod}
             salesPhotoEvidenceContext={salesPhotoEvidenceContext}
             onSalesPhotoEvidenceResult={onSalesPhotoEvidenceResult}
-            onTransactionCompleted={onTransactionCompleted}
+            onTransactionCompleted={completeTransaction}
             onProcessingChange={onProcessingChange}
             presentation={presentation}
           />
@@ -214,12 +204,13 @@ export function TransactionWorkspace({
         >
           <QuickTransactionGrid
             marketId={marketId}
+            marketReturnTo={marketReturnTo}
             embedded
             paymentMethod={paymentMethod}
             onPaymentMethodChange={changePaymentMethod}
             salesPhotoEvidenceContext={salesPhotoEvidenceContext}
             onSalesPhotoEvidenceResult={onSalesPhotoEvidenceResult}
-            onTransactionCompleted={onTransactionCompleted}
+            onTransactionCompleted={completeTransaction}
             onProcessingChange={onProcessingChange}
             presentation={presentation}
           />

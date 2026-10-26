@@ -62,6 +62,8 @@ export function NativeSubscriptionActions({
         ? 'Web 付款將於後續開放'
         : '此裝置尚未連接商店服務';
 
+  if (!availability?.available) return null;
+
   return (
     <section className="mt-4 border-t border-atelier-line pt-4" aria-label="訂閱操作">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

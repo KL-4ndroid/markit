@@ -1,5 +1,6 @@
 'use client';
 
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 import { useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 
@@ -28,10 +29,12 @@ function ProtectedBottomNavigation() {
   );
   const { isStaff, roleRefreshState } = useRoleContext();
 
+  const { canRecord, tier } = useSubscriptionExperience();
   const navItems = getAppNavigationItems({
     isStaff,
     roleReady: roleRefreshState.isAuthorizationFresh,
-  });
+  }).filter(item => isStaff || canRecord || (item.id !== 'products' && item.id !== 'analytics'))
+    .map(item => item.id === 'analytics' && tier === 'light' ? { ...item, label: '紀錄' } : item);
   const activeItemId = getActiveAppNavigationItemId(pathname, navItems);
 
   return (

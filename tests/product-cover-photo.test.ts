@@ -61,7 +61,7 @@ assert.match(server, /SUPABASE_SECRET_KEY/);
 assert.match(server, /resolveServerAccountCapabilities/);
 assert.match(server, /feature: 'productCoverPhoto'/);
 assert.match(server, /staff_relationships/);
-assert.match(server, /relationship\?\.role === 'manager'/);
+assert.match(server, /relationship\.role === 'manager'/);
 assert.doesNotMatch(server, /\.from\('account_entitlements'\)/);
 assert.doesNotMatch(server, /products'\).*deleted_at/);
 

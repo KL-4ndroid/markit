@@ -137,14 +137,12 @@ export function AddProductForm({ isOpen, onClose, onSuccess }: AddProductFormPro
             onChange={handleChange}
             disabled={isSubmitting}
           />
-          <div className="mt-6 border-t border-primary/10 pt-5">
-            <ProductCoverPhotoField
+          <ProductCoverPhotoField
               productName={formData.name}
               value={coverPhoto}
               onChange={setCoverPhoto}
               disabled={isSubmitting}
-            />
-          </div>
+          />
           {submitError && (
             <p className="mt-5 rounded-control border border-status-danger-border bg-status-danger-bg p-3 text-sm text-status-danger-text" role="alert">
               {submitError}

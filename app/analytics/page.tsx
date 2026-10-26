@@ -587,15 +587,13 @@ export default function AnalyticsPage() {
                       )}
                   </div>
                   <div className="min-w-0 space-y-5">
-                    <AnalyticsConfidencePanel presentation={confidencePresentation} />
+                    <details className="rounded-card border border-border bg-atelier-paper p-4">
+                      <summary className="min-h-11 cursor-pointer text-sm font-semibold">資料可靠度與計算說明</summary>
+                      <AnalyticsConfidencePanel presentation={confidencePresentation} />
+                    </details>
                     {confidencePresentation.canShowFormalConclusions ? (
                       <AnalyticsSummaryHighlights viewModel={metricsResult.data} />
-                    ) : (
-                      <StateView
-                        title="比較結果仍在累積"
-                        description={confidencePresentation.missingDataAction}
-                      />
-                    )}
+                    ) : null}
                   </div>
                 </div>
               )
@@ -673,7 +671,7 @@ export default function AnalyticsPage() {
                   {validMarketCount < 15 ? (
                     <AdvancedAnalysisGate
                       title="商品關聯需要更多場次"
-                      description="目前先顯示可靠的單品排行，累積更多市集後再比較商品搭配。"
+                      description="商品關聯需要更多場次，才能比較一起售出的商品搭配。"
                       requirement={`目前 ${validMarketCount} 場，累積 15 場後開放商品關聯。`}
                     />
                   ) : affinityResult === undefined ? (

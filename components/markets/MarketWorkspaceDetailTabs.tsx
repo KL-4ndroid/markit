@@ -40,8 +40,14 @@ export function MarketWorkspaceDetailTabs<T extends string>({
     buttonRefs.current[nextIndex]?.focus();
   };
 
+  const gridClass = items.length === 5 ? 'grid-cols-6 lg:grid-cols-5'
+    : items.length === 6 ? 'grid-cols-6'
+    : items.length === 4 ? 'grid-cols-4'
+    : items.length === 3 ? 'grid-cols-3'
+    : items.length === 2 ? 'grid-cols-2' : 'grid-cols-1';
+
   return (
-    <div className={`mb-5 grid ${items.length > 4 ? 'grid-cols-3 lg:grid-cols-6' : 'grid-cols-4'} gap-1 rounded-control bg-atelier-paper/70 p-1`} role="tablist" aria-label={ariaLabel}>
+    <div className={`mb-5 grid ${gridClass} gap-1 rounded-control bg-atelier-paper/70 p-1`} role="tablist" aria-label={ariaLabel}>
         {items.map((item, index) => {
           const Icon = item.icon;
           const isActive = item.id === value;
@@ -58,7 +64,7 @@ export function MarketWorkspaceDetailTabs<T extends string>({
               ref={(element) => { buttonRefs.current[index] = element; }}
               onClick={() => onChange(item.id)}
               onKeyDown={(event) => handleKeyDown(event, index)}
-              className={`relative flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-control px-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:gap-1.5 sm:px-3 sm:text-sm ${
+              className={`${items.length > 4 ? (items.length === 5 && index > 2 ? 'col-span-3 lg:col-span-1' : 'col-span-2 lg:col-span-1') : ''} relative flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-control px-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:gap-1.5 sm:px-3 sm:text-sm ${
                 isActive
                   ? 'bg-atelier-apricot-soft text-atelier-clay'
                   : 'bg-atelier-paper/70 text-atelier-muted hover:bg-atelier-sage-soft hover:text-atelier-ink'

@@ -435,3 +435,16 @@ tests/date-time-picker-lifecycle.test.ts
 tests/date-time-picker-platform.test.ts
 tests/market-tab-placement.test.tsx
 tests/market-live-priority.test.tsx
+tests/home-photo-reminders.test.ts
+tests/market-product-return.test.ts
+tests/market-financial-display.test.ts
+
+tsx tests/subscription-experience.test.ts
+
+tsx tests/basic-business-summary.test.ts
+
+tsx tests/subscription-write-access.test.ts
+
+tsx tests/subscription-completeness.test.ts
+
+tests/subscription-mobile-ui.test.tsx

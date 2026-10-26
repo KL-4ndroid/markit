@@ -14,6 +14,8 @@ import {
 } from '@/lib/subscription/subscription-simulation.server';
 import { isAccountPlanCode, type AccountPlanCode } from '@/lib/subscription/subscription-plans';
 
+import { cloudSubscriptionTestSwitch, isCloudSubscriptionSimulationEnabled } from '@/lib/subscription/write-access.server';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 5;
@@ -25,9 +27,9 @@ type SimulationRouteActor = { actorId: string };
 
 export type SubscriptionSimulationRouteDeps = {
   resolveActor(request: Request): Promise<SimulationRouteActor | 'unavailable' | null>;
-  readState(actorId: string, nowMs: number): SubscriptionSimulationState;
-  setState(actorId: string, planCode: AccountPlanCode, nowMs: number): SubscriptionSimulationState;
-  clearState(actorId: string): SubscriptionSimulationState;
+  readState(actorId: string, nowMs: number): SubscriptionSimulationState | Promise<SubscriptionSimulationState>;
+  setState(actorId: string, planCode: AccountPlanCode, nowMs: number): SubscriptionSimulationState | Promise<SubscriptionSimulationState>;
+  clearState(actorId: string): SubscriptionSimulationState | Promise<SubscriptionSimulationState>;
   now(): number;
 };
 
@@ -65,7 +67,7 @@ export function createSubscriptionSimulationRouteHandlers(deps: SubscriptionSimu
     async GET(request: Request): Promise<Response> {
       const actor = await resolveValidActor(request, deps);
       if (actor instanceof Response) return actor;
-      return successResponse(deps.readState(actor.actorId, deps.now()));
+      return successResponse(await deps.readState(actor.actorId, deps.now()));
     },
     async POST(request: Request): Promise<Response> {
       const actor = await resolveValidActor(request, deps);
@@ -82,12 +84,12 @@ export function createSubscriptionSimulationRouteHandlers(deps: SubscriptionSimu
       }
 
       const input = body as Record<string, unknown>;
-      if (input.enabled === false) return successResponse(deps.clearState(actor.actorId));
+      if (input.enabled === false) return successResponse(await deps.clearState(actor.actorId));
       if (input.enabled !== true || !isAccountPlanCode(input.planCode)) {
         return errorResponse(400, 'invalid_request', 'Simulation plan is invalid.');
       }
 
-      return successResponse(deps.setState(actor.actorId, input.planCode, deps.now()));
+      return successResponse(await deps.setState(actor.actorId, input.planCode, deps.now()));
     },
   };
 }
@@ -100,9 +102,9 @@ async function resolveActor(request: Request): Promise<SimulationRouteActor | 'u
 
 const handlers = createSubscriptionSimulationRouteHandlers({
   resolveActor,
-  readState: readSubscriptionSimulation,
-  setState: setSubscriptionSimulation,
-  clearState: clearSubscriptionSimulation,
+  readState: (actorId, nowMs) => isCloudSubscriptionSimulationEnabled() ? cloudSubscriptionTestSwitch(actorId) : readSubscriptionSimulation(actorId, nowMs),
+  setState: (actorId, planCode, nowMs) => isCloudSubscriptionSimulationEnabled() ? cloudSubscriptionTestSwitch(actorId, { enabled: true, planCode }) : setSubscriptionSimulation(actorId, planCode, nowMs),
+  clearState: actorId => isCloudSubscriptionSimulationEnabled() ? cloudSubscriptionTestSwitch(actorId, { enabled: false }) : clearSubscriptionSimulation(actorId),
   now: Date.now,
 });
 
@@ -110,9 +112,14 @@ async function runWithCors(request: Request, method: 'GET' | 'POST'): Promise<Re
   if (!isSubscriptionSimulationRequestAllowed(request)) {
     return errorResponse(404, 'dev_tool_unavailable', 'Development tool is unavailable.');
   }
+  if (process.env.SUBSCRIPTION_WRITE_ENFORCEMENT_ENABLED === '1' && !isCloudSubscriptionSimulationEnabled()) {
+    return errorResponse(503, 'simulation_unavailable', 'Cloud subscription test setup is required.');
+  }
   const rejection = createAppApiCorsRejectionResponse(request, { allowedMethods: ALLOWED_METHODS });
   if (rejection) return rejection;
-  const response = await handlers[method](request);
+  let response: Response;
+  try { response = await handlers[method](request); }
+  catch { response = errorResponse(503, 'simulation_unavailable', 'Subscription test setup is unavailable.'); }
   return applyAppApiCors(request, response, { allowedMethods: ALLOWED_METHODS });
 }
 

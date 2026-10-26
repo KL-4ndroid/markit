@@ -51,48 +51,11 @@ export function MarketDetailLoadingShell({ snapshot, returnTo }: MarketDetailLoa
       </div>
 
       <div className="mx-auto -mt-3 max-w-3xl px-4 sm:px-6">
-        <div className="grid h-14 grid-cols-3 items-center rounded-control bg-atelier-paper p-1 shadow-atelier" aria-hidden="true">
-          {['現場', '回顧', '管理'].map((label, index) => (
-            <div key={label} className={`flex h-11 items-center justify-center gap-2 rounded-control text-sm font-medium ${index === 0 ? 'bg-primary text-white' : 'text-atelier-muted'}`}>
-              {label}
-            </div>
-          ))}
-        </div>
-
-        <section className="mt-4 rounded-card bg-atelier-sage-soft/70 p-4 shadow-atelier" aria-hidden="true">
-          <div className="flex items-center justify-between">
-            <LoadingBar className="h-4 w-20" />
-            <LoadingBar className="h-4 w-24" />
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-4">
-            {[0, 1, 2].map(item => (
-              <div key={item} className="space-y-2">
-                <LoadingBar className="h-3 w-12" />
-                <LoadingBar className="h-7 w-16" />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <div className="mt-4 grid grid-cols-2 rounded-control bg-atelier-paper p-1 shadow-atelier lg:hidden" aria-hidden="true">
-          <div className="flex h-11 items-center justify-center rounded-control bg-primary text-sm font-medium text-white">收款與互動</div>
-          <div className="flex h-11 items-center justify-center text-sm font-medium text-atelier-muted">現場工作</div>
-        </div>
-
-        <section className="mt-4 overflow-hidden rounded-card bg-atelier-paper shadow-atelier" aria-hidden="true">
-          <div className="bg-atelier-apricot-soft/70 p-4">
-            <LoadingBar className="h-3 w-16" />
-            <LoadingBar className="mt-2 h-6 w-40" />
-            <LoadingBar className="mt-2 h-3 w-48" />
-          </div>
-          <div className="p-4">
-            <div className="grid grid-cols-2 rounded-control bg-atelier-sage-soft/70 p-1">
-              <div className="h-11 rounded-control bg-white" />
-              <div className="h-11" />
-            </div>
-            <LoadingBar className="mt-5 h-3 w-20" />
-            <div className="mt-3 h-24 rounded-card bg-atelier-ink/85 skeleton-shimmer-dark" />
-          </div>
+        <section className="mt-4 space-y-4 rounded-card bg-atelier-paper p-4" aria-hidden="true">
+          <LoadingBar className="h-5 w-28" />
+          <LoadingBar className="h-12 w-full" />
+          <LoadingBar className="h-4 w-2/3" />
+          <LoadingBar className="h-20 w-full" />
         </section>
       </div>
     </div>

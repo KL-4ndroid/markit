@@ -1,5 +1,7 @@
 'use client';
 
+import { useSubscriptionExperience } from './SubscriptionExperienceProvider';
+import { isCurrentPlan } from '@/lib/subscription/ui-presentation';
 import { Check, Clock3, Crown, Sparkles, Users, type LucideIcon } from 'lucide-react';
 
 import {
@@ -28,6 +30,8 @@ interface PricingCardProps {
 
 export function PricingCard({ plan }: PricingCardProps) {
   const Icon = PLAN_ICON[plan.id];
+  const { tier, isStaff } = useSubscriptionExperience();
+  const current = !isStaff && isCurrentPlan(plan.id, tier);
 
   return (
     <article className="rounded-card border border-atelier-line bg-atelier-paper p-5 shadow-atelier">
@@ -37,7 +41,7 @@ export function PricingCard({ plan }: PricingCardProps) {
 
       <h2 className="mt-4 text-lg font-semibold text-foreground">{plan.name}</h2>
       <p className="mt-1 text-sm font-medium text-primary">{plan.priceLabel}</p>
-      <p className="mt-3 min-h-12 text-sm leading-6 text-muted-foreground">{plan.description}</p>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">{plan.description}</p>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">適合：{plan.audience}</p>
 
       <ul className="mt-5 space-y-3 border-t border-atelier-line pt-5">
@@ -58,13 +62,13 @@ export function PricingCard({ plan }: PricingCardProps) {
         ))}
       </ul>
 
-      <button
+      {current ? <p className="mt-6 rounded-control bg-atelier-sage-soft px-4 py-3 text-center text-sm font-semibold text-primary">目前使用</p> : plan.actionEnabled && <button
         type="button"
         disabled={!plan.actionEnabled}
         className="mt-6 min-h-11 w-full rounded-control border border-atelier-line bg-atelier-canvas px-4 text-sm font-medium text-muted-foreground"
       >
         {plan.actionLabel || SUBSCRIPTION_PRESENTATION.actionLabel}
-      </button>
+      </button>}
     </article>
   );
 }

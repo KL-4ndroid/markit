@@ -1,6 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { SubscriptionExperienceProvider } from '@/components/subscription/SubscriptionExperienceProvider';
+import { SubscriptionSurfaceGate } from '@/components/subscription/SubscriptionSurfaceGate';
 import { usePathname } from 'next/navigation';
 import { Toaster } from 'sonner';
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -81,17 +83,19 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       <PWASplashScreen />
       <AuthGuard>
         <RoleGuard>
+          <SubscriptionExperienceProvider>
           <RecurringOperationsMaterializationGate />
           <div className="japanese-app min-h-screen bg-background">
             <div className="lg:grid lg:min-h-dvh lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)]">
               <BottomNavigation />
               <main className="min-w-0 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0">
-                {children}
+                <SubscriptionSurfaceGate>{children}</SubscriptionSurfaceGate>
               </main>
             </div>
             <GlobalOverlayHost />
             <AppToaster />
           </div>
+          </SubscriptionExperienceProvider>
         </RoleGuard>
       </AuthGuard>
       <AuthManager />

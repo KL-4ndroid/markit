@@ -55,24 +55,7 @@ export function resolveSettlementReportSubscriptionView({
 }: ResolveSettlementReportSubscriptionViewInput): SettlementReportSubscriptionView {
   const effectivePdfDecision = pdfRuntimeEnabled ? pdfAccess : PDF_RUNTIME_DISABLED_DECISION;
 
-  if (!reportAccess.allowed) {
-    if (reportAccess.reason !== 'plan_required') {
-      return blocked(reportAccess, effectivePdfDecision);
-    }
-
-    return {
-      mode: 'free_preview',
-      blockDecision: null,
-      previewUpgradeDecision: reportAccess,
-      pdfDecision: effectivePdfDecision,
-      canReadMarkets: true,
-      canReadDailyStats: true,
-      canReadProducts: false,
-      canBuildFreePreview: true,
-      canBuildFullReport: false,
-      canBuildPdfViewModel: false,
-    };
-  }
+  if (!reportAccess.allowed) return blocked(reportAccess, effectivePdfDecision);
 
   return {
     mode: 'full',

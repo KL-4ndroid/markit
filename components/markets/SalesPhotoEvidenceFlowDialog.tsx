@@ -111,7 +111,7 @@ export function SalesPhotoEvidenceFlowDialog({
                 <button
                   type="button"
                   onClick={onBack}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
                   aria-label="返回待補照片"
                 >
                   <ArrowLeft className="h-5 w-5" />
@@ -122,16 +122,13 @@ export function SalesPhotoEvidenceFlowDialog({
                   {titleForState(state)}
                   {state.view === 'pending_list' && pendingItems.length > 0 ? ` (${pendingItems.length})` : ''}
                 </DialogTitle>
-                {state.view === 'pending_list' && (
-                  <p className="mt-1 text-sm text-white/80">依序完成尚未上傳的成交照片</p>
-                )}
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
               disabled={isLocked}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 disabled:opacity-50"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 disabled:opacity-50"
               aria-label="關閉成交照片視窗"
             >
               <X className="h-5 w-5" />
@@ -140,7 +137,15 @@ export function SalesPhotoEvidenceFlowDialog({
 
           {state.view === 'pending_list' && (
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-              <p className="mb-3 text-xs leading-5 text-muted-foreground">{pendingScopeMessage}</p>
+              <p className="mb-2 text-xs leading-5 text-muted-foreground">{pendingScopeMessage}</p>
+              <details className="mb-3 rounded-xl border border-border">
+                <summary className="min-h-11 cursor-pointer px-3 py-3 text-sm text-primary">待補照片說明</summary>
+                <div className="space-y-2 px-3 pb-3 text-xs leading-5 text-muted-foreground">
+                  <p>成交與照片分開保存；照片尚未上傳不代表成交失敗，請勿重記同一筆收入。</p>
+                  <p>待補提醒可依成交當時的照片要求及雲端狀態還原。尚未上傳的原圖只在來源裝置，其他裝置可重新拍攝／選圖；沒有本機原圖不代表從未拍照。</p>
+                  <p>只有照片上傳完成後，其他授權裝置才能讀取雲端圖片。</p>
+                </div>
+              </details>
               {!pendingItemsError && (
                 <button
                   type="button"

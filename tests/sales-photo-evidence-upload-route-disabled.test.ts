@@ -1400,6 +1400,54 @@ runTest('execution plan and test manifest record metadata claim route wiring', (
   assert.match(testManifestSource, /tsx tests\/sales-photo-evidence-upload-route-disabled\.test\.ts/);
 });
 
+runTest('subscription denial stops before metadata claim or R2 creation and preserves local payload', async () => {
+  let touched = false;
+  for (const reason of ['plan_required', 'entitlement_unavailable'] as const) {
+    const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+      isMetadataClaimEnabled: () => true, isR2UploadEnabled: () => true,
+      resolveActor: async () => ({ actorId: IDS.ownerId }),
+      authorizeSubscriptionWrite: async (actorId, ownerId) => {
+        assert.equal(actorId, IDS.ownerId); assert.equal(ownerId, IDS.ownerId);
+        return { enabled: true, allowed: false, reason };
+      },
+      createRepository() { touched = true; return createFakeClient({}); },
+      createMutationRepository() { touched = true; return createFakeMutationRepository(); },
+      async createR2UploadAdapter() { touched = true; return null; },
+    });
+    const response = await handlers.POST(createUploadFormDataRequest());
+    assert.equal(response.status, reason === 'plan_required' ? 403 : 503);
+    assert.equal((await response.json()).shouldKeepLocalPayload, true);
+    assert.equal(touched, false);
+  }
+});
+
+runTest('downgrade during R2 upload compensates uploaded objects without finalizing or dropping local payload', async () => {
+  const calls: string[] = []; let checks = 0;
+  const mutations = createFakeMutationRepository(calls);
+  const fakeClient = createFakeClient({
+    events: { data: { id: IDS.saleId, type: 'deal_closed', market_id: IDS.marketId, timestamp: '2026-07-07T01:02:03.000Z', markets: { owner_id: IDS.ownerId } }, error: null },
+    sale_photo_evidence: { data: null, error: null },
+    'sale_photo_evidence:insert': { data: evidenceRow(), error: null },
+  });
+  const handlers = createSalesPhotoEvidenceUploadRouteHandlers({
+    isMetadataClaimEnabled: () => true, isR2UploadEnabled: () => true,
+    resolveActor: async () => ({ actorId: IDS.ownerId }),
+    authorizeSubscriptionWrite: async () => ++checks === 1 ? { enabled: true, allowed: true, reason: 'allowed' } : { enabled: true, allowed: false, reason: 'plan_required' },
+    createRepository: () => fakeClient, createMutationRepository: () => mutations,
+    r2UploadAdapter: {
+      async uploadObject(input) { calls.push('upload'); return { ok: true, key: input.key }; },
+      async deleteObject(input) { calls.push('cleanup'); return { ok: true, key: input.key }; },
+    },
+  });
+  const response = await handlers.POST(createUploadFormDataRequest());
+  const body = await response.json();
+  assert.equal(response.status, 403); assert.equal(body.code, 'plan_required');
+  assert.equal(body.shouldKeepLocalPayload, true);
+  assert.equal(mutations.finalizedInputs.length, 0);
+  assert.equal(calls.filter(call => call === 'cleanup').length, 2);
+  assert.equal(mutations.failedInputs.length, 1);
+});
+
 async function main(): Promise<void> {
   let failed = 0;
 

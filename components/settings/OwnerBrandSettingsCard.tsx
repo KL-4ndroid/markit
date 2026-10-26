@@ -13,7 +13,7 @@ import {
   saveOwnerBrandName,
 } from '@/lib/owner-brand';
 
-export function OwnerBrandSettingsCard() {
+export function OwnerBrandSettingsCard({ showReportUsage = true }: { showReportUsage?: boolean }) {
   const { user } = useAuth();
   const [brandName, setBrandName] = useState(OWNER_BRAND_NAME_FALLBACK);
   const [initialBrandName, setInitialBrandName] = useState(OWNER_BRAND_NAME_FALLBACK);
@@ -82,7 +82,7 @@ export function OwnerBrandSettingsCard() {
         <div className="min-w-0">
           <h2 className="text-lg font-medium text-foreground">品牌名稱</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            這個名稱會顯示在首頁與老闆結算報告中。
+            {showReportUsage ? '這個名稱會顯示在首頁與老闆結算報告中。' : '這個名稱會顯示在首頁。'}
           </p>
         </div>
       </div>

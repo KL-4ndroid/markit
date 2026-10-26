@@ -1,5 +1,7 @@
 'use client';
 
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
+
 import {
   Armchair,
   ClipboardPaste,
@@ -313,6 +315,7 @@ export function MarketCostFields({
   disabled = false,
   onChange,
 }: MarketCostFieldsProps) {
+  const { canRecord } = useSubscriptionExperience();
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -347,7 +350,7 @@ export function MarketCostFields({
           )}
         </FormField>
       </div>
-      <FormField id={`${idPrefix}-commission-rate`} label="營業額抽成（%）">
+      {canRecord && <FormField id={`${idPrefix}-commission-rate`} label="營業額抽成（%）">
         {(fieldProps) => (
           <input
             {...fieldProps}
@@ -362,13 +365,13 @@ export function MarketCostFields({
             className={inputClassName}
           />
         )}
-      </FormField>
-      <p className="rounded-2xl border border-secondary/15 bg-soft-yellow/45 p-3 text-sm text-muted-foreground">
+      </FormField>}
+      {canRecord && <p className="rounded-2xl border border-secondary/15 bg-soft-yellow/45 p-3 text-sm text-muted-foreground">
         攤位與設備固定成本合計
         <strong className="ml-2 font-medium tabular-nums text-foreground">
           NT$ {fixedCostTotal.toLocaleString()}
         </strong>
-      </p>
+      </p>}
     </div>
   );
 }
@@ -404,6 +407,8 @@ export function MarketEquipmentFields({
   onRentalChange,
   onFreeChange,
 }: MarketEquipmentFieldsProps) {
+  const { canRecord } = useSubscriptionExperience();
+  if (!canRecord) return null;
   return (
     <div className="space-y-4">
       {EQUIPMENT_OPTIONS.map(option => {

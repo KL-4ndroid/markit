@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ContextHelp } from '@/components/ui/ContextHelp';
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
@@ -434,7 +435,7 @@ export default function SettlementReportPreviewPage() {
                 <FileText size={22} />
               </div>
               <div className="min-w-0">
-                <h1 className="text-2xl font-semibold text-foreground">結算報告檢查</h1>
+                <h1 className="text-2xl font-semibold text-foreground">結算報告</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {preview
                     ? `${preview.header.brandName} · ${preview.header.periodLabel} · ${preview.header.showFormalScores ? `信心度 ${confidenceLabel(preview.header.confidence)}` : '低可信度初稿'}`
@@ -498,7 +499,7 @@ export default function SettlementReportPreviewPage() {
                     {freePreview.period.kind === 'monthly' ? '本月紀錄概況' : '本週紀錄概況'}
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    保留最實用的營收、成交與紀錄完整度；決策評分、成本利潤分析與商品建議屬於 Pro。
+                    基本摘要包含營收、成交與紀錄完整度；進階分析需高階版。
                   </p>
                 </div>
                 <span className={`inline-flex w-fit border px-3 py-1 text-xs font-medium ${
@@ -558,10 +559,12 @@ export default function SettlementReportPreviewPage() {
           <>
             <section className="japanese-surface-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-base font-semibold text-foreground">設計版 PDF 報告</h2>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Pro／Team 可將目前的週／月結算內容整理為五頁 A4 報告，檔案只在目前裝置產生。
-                </p>
+                <h2 className="text-base font-semibold text-foreground">PDF 結算報告</h2>
+                <p className="mt-1 text-sm text-muted-foreground">高階版 · 週／月報告</p>
+                <ContextHelp label="PDF報告說明">
+                  <p>高階版 可將目前的週／月結算內容整理為五頁 A4 報告，檔案只在目前裝置產生。</p>
+                  <p>報告沿用目前期間與資料品質狀態；資料不足的初稿不代表正式結論。預覽或匯出不會修改營運紀錄。</p>
+                </ContextHelp>
               </div>
               {settlementView.canBuildPdfViewModel && pdfViewModel ? (
                 <SettlementReportPdfPreviewButton

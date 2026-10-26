@@ -16,6 +16,7 @@ interface MarketFieldOpsSectionProps {
   readOnlyReason?: string;
   collapsibleOnMobile?: boolean;
   defaultMobileExpanded?: boolean;
+  collaborationEnabled?: boolean;
 }
 
 export function MarketFieldOpsSection({
@@ -28,6 +29,7 @@ export function MarketFieldOpsSection({
   readOnlyReason,
   collapsibleOnMobile = false,
   defaultMobileExpanded = false,
+  collaborationEnabled = true,
 }: MarketFieldOpsSectionProps) {
   const [isMobileExpanded, setIsMobileExpanded] = useState(defaultMobileExpanded);
   const [remainingCount, setRemainingCount] = useState(0);
@@ -51,8 +53,8 @@ export function MarketFieldOpsSection({
             <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-atelier-ink">現場工作</span>
-            <span className="mt-0.5 block truncate text-[11px] text-atelier-muted">主辦備註、交接筆記與待辦</span>
+            <span className="block text-sm font-semibold text-atelier-ink">{collaborationEnabled ? '現場工作' : '出攤準備'}</span>
+            <span className="mt-0.5 block truncate text-[11px] text-atelier-muted">{collaborationEnabled ? '主辦備註、交接筆記與待辦' : '主辦備註與個人待辦'}</span>
           </span>
           {remainingCount > 0 && (
             <span className="inline-flex min-w-6 shrink-0 items-center justify-center rounded-full bg-atelier-clay px-1.5 py-0.5 text-[11px] font-semibold text-white">
@@ -77,10 +79,10 @@ export function MarketFieldOpsSection({
           </div>
         )}
         <MarketReferenceNotePanel note={referenceNote} />
-        <FieldNotesPanel
+        {collaborationEnabled && <FieldNotesPanel
           marketId={marketId}
           canManage={canManageFieldNotes}
-        />
+        />}
         <ChecklistPanel
           marketId={marketId}
           canManage={canManageChecklist}

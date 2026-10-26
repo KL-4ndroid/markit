@@ -95,10 +95,11 @@ const EditMarketForm = dynamic(() =>
 interface StaffMarketDetailViewProps {
   market: Market;
   initialPhotoEvidenceView?: 'pending_list';
+  initialTransactionMode?: 'products';
   returnTo?: string | null;
 }
 
-export function StaffMarketDetailView({ market, initialPhotoEvidenceView, returnTo }: StaffMarketDetailViewProps) {
+export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initialTransactionMode, returnTo }: StaffMarketDetailViewProps) {
   const marketId = market.id!;
   const { user } = useAuth();
   const { userRole, isOwner, isLoading: isRoleLoading } = useRoleContext();
@@ -384,6 +385,8 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, return
 
             <OperatingMarketWorkbench
               marketId={marketId}
+              marketReturnTo={returnTo}
+              initialMode={initialTransactionMode}
               canRecordDeal={canRecordDeal}
               salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
               pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
@@ -421,6 +424,8 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, return
               <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
               <TransactionWorkspace
                 marketId={marketId}
+                marketReturnTo={returnTo}
+                initialMode={initialTransactionMode}
                 salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
                 pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
                 onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}

@@ -88,7 +88,7 @@ export function useSalesPhotoEvidenceFlow({
   const [isLoadingPendingItems, setIsLoadingPendingItems] = useState(true);
   const [pendingItemsError, setPendingItemsError] = useState<string | null>(null);
   const [payloadRefreshByQueueId, setPayloadRefreshByQueueId] = useState<Record<string, string>>({});
-  const localScopeMessage = '此處列出這台裝置的待補工作。其他裝置尚未上傳的照片不會自動出現在此處，請回原裝置完成。';
+  const localScopeMessage = '此處列出這台裝置的待補工作；尚未上傳的原圖僅在來源裝置。';
   const [pendingScopeMessage, setPendingScopeMessage] = useState(localScopeMessage);
   const scopeKey = `${actorId ?? ''}:${recoveryOwnerId ?? ''}:${marketId}`;
   const currentScope = useRef(scopeKey);
@@ -115,8 +115,8 @@ export function useSalesPhotoEvidenceFlow({
         try {
           const plan = await recoverOwnerSalesPhotoEvidenceReminders({ ownerId: recoveryOwnerId, marketId, isCurrent });
           hiddenSaleIds = plan.hiddenSaleIds;
-          message = `已核對雲端照片紀錄並還原有依據的待補工作。${plan.unknownSaleCount > 0
-            ? `另有 ${plan.unknownSaleCount} 筆舊成交未記錄當時的照片要求，無法確認是否待補。` : ''}其他裝置尚未上傳的原圖無法還原；可回原裝置上傳，或在此重新選取。`;
+          message = `待補提醒已核對雲端。${plan.unknownSaleCount > 0
+            ? `另有 ${plan.unknownSaleCount} 筆舊成交未記錄當時的照片要求，無法確認是否待補。` : ''}未上傳原圖仍在來源裝置；此處可重新選圖。`;
         } catch (error) {
           // A network failure may show cached work; an identity rejection must not.
           if (error instanceof SalesPhotoEvidenceReminderAccessError) throw error;

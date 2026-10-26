@@ -1,5 +1,7 @@
 # Subscription Feature-Gate Registry
 
+2026-10-26 current addendum: the Free/Light/High definitions supersede historical plan descriptions below. See the [current completeness audit](SUBSCRIPTION_COMPLETENESS_AUDIT_2026_10_26.md) and [082 pilot record](SUBSCRIPTION_WRITE_GUARD_PILOT_2026_10_26.md). Photo writes have pilot-authoritative enforcement; global activation and downgrade policy remain pending. Product-photo capability/workspace/CORS, slash routes and expiry refresh have been aligned locally. This does not activate billing.
+
 Date: 2026-08-06
 Status: S3 mapping, S6A-S6E analytics/report/PDF/Team tier gates, LV1 local simulation, and the read-only native pre-runtime subscription center are complete locally; S7 and F3C remain planning only; Team migrations 064/065 and isolated authenticated transition smoke pass, while release-deployment and native store evidence remain pending
 Authority: derived from current repository inspection; it records runtime truth and does not activate a product-plan decision

@@ -1,5 +1,8 @@
 'use client';
 
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
+import { SubscriptionFeatureNotice } from '@/components/subscription/SubscriptionFeatureNotice';
+import { FreeMarketWorkspace } from './FreeMarketWorkspace';
 import { MarketRegistrationPanel } from '@/components/markets/MarketRegistrationPanel';
 import { MarketReturnLink } from '@/components/markets/MarketReturnLink';
 import { MarketTodayTimeline } from '@/components/markets/MarketTodayTimeline';
@@ -66,6 +69,8 @@ import { marketCashEnabled } from '@/lib/markets/market-cash';
 import { marketJournalsEnabled } from '@/lib/markets/market-journal';
 import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceDetailTabs';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
+import { calculateEstimatedMarketNetProfit, calculateTrackedMarketFixedCost } from '@/lib/analytics/market-financial-summary';
+import { ContextHelp } from '@/components/ui/ContextHelp';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import { MarketLiveLayout } from '@/components/markets/MarketLiveLayout';
 import { MarketLiveSummaryActions } from '@/components/markets/MarketLiveSummaryActions';
@@ -73,7 +78,6 @@ import { getMarketLiveStage, getMarketLiveBackfillDate } from '@/lib/markets/mar
 import { FutureScheduleEditDialog } from '@/components/recurring-operations/FutureScheduleEditDialog';
 import { marketRegionLabel } from '@/lib/markets/market-region';
 import { AppDialog } from '@/components/ui/AppDialog';
-import { MarketOverviewPhotoStory } from '@/components/markets/MarketOverviewPhotoStory';
 import { OperatingInteractionPanel } from '@/components/markets/OperatingInteractionPanel';
 import { OperatingMarketWorkbench } from '@/components/markets/OperatingMarketWorkbench';
 import { SalesPhotoEvidenceFlowDialog } from '@/components/markets/SalesPhotoEvidenceFlowDialog';
@@ -132,6 +136,7 @@ type SalesPhotoEvidenceMarket = Market & {
 
 export function MarketDetailScreen() {
   const router = useRouter();
+  const { canRecord, canAnalyze, tier } = useSubscriptionExperience();
   const searchParams = useSearchParams();
   const requestedTask = searchParams.get('task');
   const requestedReturnTo = searchParams.get('returnTo');
@@ -268,7 +273,7 @@ export function MarketDetailScreen() {
   const effectiveLocalMarket = localMarket ?? directLocalMarket;
   const market = selectMarketDetailRecord(supabaseMarket, effectiveLocalMarket);
   const salesPhotoEvidenceRequired = Boolean(
-    (market as SalesPhotoEvidenceMarket | undefined)?.salesPhotoEvidenceRequired
+    canAnalyze && (market as SalesPhotoEvidenceMarket | undefined)?.salesPhotoEvidenceRequired
   );
   const addRevenueSalesPhotoEvidenceContext = {
     ownerId: (market as Market | undefined)?.owner_id ?? user?.id ?? null,
@@ -691,11 +696,12 @@ export function MarketDetailScreen() {
 
   useEffect(() => {
     if (!isOperatingPhaseReady || ownerWorkspaceView !== null) return;
-    setOwnerWorkspaceView(requestedTask === 'journal' ? 'overview' : requestedTask === 'registration'
+    setOwnerWorkspaceView(requestedTask === 'products' ? 'live' : requestedTask === 'journal' ? 'overview' : requestedTask === 'registration'
       ? 'manage'
       : getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase));
   }, [isOperatingPhaseReady, marketWorkspacePhase, ownerWorkspaceView, requestedTask]);
 
+  const visibleOverviewDetail = !canAnalyze && ownerOverviewDetail === 'photos' ? 'performance' : ownerOverviewDetail;
   const resolvedOwnerWorkspaceView = ownerWorkspaceView
     ?? getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase);
 
@@ -946,8 +952,8 @@ export function MarketDetailScreen() {
     }
   };
 
-  const ownerSalesPhotoEvidenceAlbumOwnerId = user?.id ?? (market as Market | undefined)?.owner_id ?? null;
-  const ownerSalesPhotoEvidenceDeleteUserId = user?.id ?? null;
+  const ownerSalesPhotoEvidenceAlbumOwnerId = canAnalyze ? user?.id ?? null : null;
+  const ownerSalesPhotoEvidenceDeleteUserId = canAnalyze ? user?.id ?? null : null;
 
   const loadOwnerSalesPhotoEvidenceAlbumRows = useCallback(async () => {
     if (isStaff || isRoleLoading || !marketId || !ownerSalesPhotoEvidenceAlbumOwnerId) {
@@ -1022,21 +1028,21 @@ export function MarketDetailScreen() {
   const isLocalSalesPhotoEvidenceCaptureAllowed = useCallback(
     (item: LocalPendingSalesPhotoEvidenceCreation) => {
       return Boolean(
-        ownerSalesPhotoEvidenceActorId &&
+        canAnalyze && ownerSalesPhotoEvidenceActorId &&
         item.ownerId === ownerSalesPhotoEvidenceActorId &&
         item.marketId === marketId
       );
     },
-    [marketId, ownerSalesPhotoEvidenceActorId]
+    [canAnalyze, marketId, ownerSalesPhotoEvidenceActorId]
   );
 
   const salesPhotoEvidenceFlow = useSalesPhotoEvidenceFlow({
     marketId,
     actorId: user?.id,
-    recoveryOwnerId: !isStaff && !isRoleLoading && market?.owner_id === user?.id ? user?.id : null,
+    recoveryOwnerId: canAnalyze && !isStaff && !isRoleLoading && market?.owner_id === user?.id ? user?.id : null,
     canHandleItem: isLocalSalesPhotoEvidenceCaptureAllowed,
     onUploadCompleted: loadOwnerSalesPhotoEvidenceAlbumRows,
-    initialView: searchParams.get('task') === 'pending-photos' ? 'pending_list' : undefined,
+    initialView: canAnalyze && searchParams.get('task') === 'pending-photos' ? 'pending_list' : undefined,
   });
   const handleSalesPhotoEvidenceResult = salesPhotoEvidenceFlow.handleSalesPhotoEvidenceResult;
   const handleOpenPendingSalesPhotoEvidence = salesPhotoEvidenceFlow.openPendingList;
@@ -1252,6 +1258,7 @@ export function MarketDetailScreen() {
         returnTo={requestedReturnTo}
         market={market}
         initialPhotoEvidenceView={searchParams.get('task') === 'pending-photos' ? 'pending_list' : undefined}
+        initialTransactionMode={requestedTask === 'products' ? 'products' : undefined}
       />
     );
   }
@@ -1268,8 +1275,8 @@ export function MarketDetailScreen() {
     onClick: handleOpenPendingSalesPhotoEvidence,
     actionLabel: '查看本機待補照片與資料範圍',
   };
-  const showPreparingPhotoSummary = salesPhotoEvidenceFlow.pendingCount > 0
-    || salesPhotoEvidenceFlow.isLoadingPendingItems || Boolean(salesPhotoEvidenceFlow.pendingItemsError);
+  const showPreparingPhotoSummary = canAnalyze && (salesPhotoEvidenceFlow.pendingCount > 0
+    || salesPhotoEvidenceFlow.isLoadingPendingItems || Boolean(salesPhotoEvidenceFlow.pendingItemsError));
 
   // ✅ 老闆模式：使用完整功能視圖
   return (
@@ -1326,13 +1333,14 @@ export function MarketDetailScreen() {
 
       {/* Content */}
       <div className="mx-auto max-w-5xl px-4 pb-6">
+        {canRecord ? <>
         <MarketWorkspaceNavigation
           value={resolvedOwnerWorkspaceView}
           onChange={setOwnerWorkspaceView}
           ariaLabel="老闆市集工作台"
           panelId="owner-market-workspace-panel"
           items={[
-            { id: 'live', label: '現場', icon: Store, badge: salesPhotoEvidenceFlow.pendingCount },
+            { id: 'live', label: '現場', icon: Store, badgeLabel: '待補照片', badge: canAnalyze ? salesPhotoEvidenceFlow.pendingCount : 0 },
             { id: 'overview', label: '回顧', icon: BarChart3 },
             { id: 'manage', label: '管理', icon: ClipboardCheck },
           ]}
@@ -1356,27 +1364,16 @@ export function MarketDetailScreen() {
                 { label: market.sessionOrigin === 'schedule' ? '營業安排' : '報名進度', value: market.sessionOrigin === 'schedule' ? '已排定' : getStatusText(market.status) },
                 {
                   label: '固定成本',
-                  value: formatCurrency(
-                    (market.boothCost || 0) +
-                    (market.tableFree ? 0 : (market.tableRental || 0)) +
-                    (market.chairFree ? 0 : (market.chairRental || 0)) +
-                    (market.umbrellaFree ? 0 : (market.umbrellaRental || 0))
-                  ),
+                  value: formatCurrency(calculateTrackedMarketFixedCost(market)),
                 },
-                { label: '成交照片', value: salesPhotoEvidenceRequired ? '需要' : '不需要' },
+                ...(canAnalyze ? [{ label: '成交照片', value: salesPhotoEvidenceRequired ? '需要' : '不需要' }] : []),
               ]
             : resolvedOwnerWorkspaceView === 'overview'
               ? [
                   { label: '總收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
                   {
                     label: '估計淨利',
-                    value: formatCurrency(
-                      (market.totalProfit || 0) -
-                      (market.boothCost || 0) -
-                      (market.tableFree ? 0 : (market.tableRental || 0)) -
-                      (market.chairFree ? 0 : (market.chairRental || 0)) -
-                      (market.umbrellaFree ? 0 : (market.umbrellaRental || 0))
-                    ),
+                    value: formatCurrency(calculateEstimatedMarketNetProfit(market)),
                   },
                   { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
                 ]
@@ -1385,7 +1382,7 @@ export function MarketDetailScreen() {
                 : [
                     { label: '收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
                     { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
-                    pendingPhotoSummary,
+                    ...(canAnalyze ? [pendingPhotoSummary] : []),
                   ]}
         >
           {resolvedOwnerWorkspaceView === 'live' && operatingSession && (
@@ -1405,11 +1402,15 @@ export function MarketDetailScreen() {
                 ? () => handleOpenAddRevenue(liveBackfillDate) : undefined}
             />
           )}
+          {resolvedOwnerWorkspaceView === 'overview' && <ContextHelp label="淨利怎麼算">
+            <p>估計淨利＝已記錄銷售利潤－固定成本－營收抽成。固定成本包含報名費、攤位費與自付設備租金（含桌布）；免費提供的設備不扣款。</p>
+            <p>未記錄銷售利潤時，暫以營收估算。未填成本不代表沒有支出；交通、人工等未記錄費用不會自動計入。可退保證金不列成本，現金盤點也不會改變淨利。</p>
+          </ContextHelp>}
         </MarketWorkspaceSummary>
 
         {/* Registration is a current record, not proof of completed prior steps. */}
         {resolvedOwnerWorkspaceView === 'manage' && !isOperating && market.sessionOrigin !== 'schedule' && (
-          <MarketRegistrationPanel status={market.status} busy={isUpdating} onChange={status => {
+          <MarketRegistrationPanel status={market.status} ended={marketWorkspacePhase === 'ended'} busy={isUpdating} onChange={status => {
             if (status === 'cancelled') setShowCancelConfirm(true);
             else handleStatusChangeRequest(status);
           }} />
@@ -1419,7 +1420,7 @@ export function MarketDetailScreen() {
 
         {resolvedOwnerWorkspaceView === 'overview' && (
           <MarketWorkspaceDetailTabs
-            value={ownerOverviewDetail}
+            value={visibleOverviewDetail}
             onChange={setOwnerOverviewDetail}
             ariaLabel="回顧詳細資料"
             panelId="owner-overview-detail-panel"
@@ -1428,7 +1429,7 @@ export function MarketDetailScreen() {
               ...(marketCashEnabled() ? [{ id: 'cash' as const, label: '現金紀錄', icon: Wallet }] : []),
               ...(marketJournalsEnabled() ? [{ id: 'journal' as const, label: '出攤心得', icon: BookOpen }] : []),
               { id: 'interactions', label: '顧客互動', icon: TrendingUp },
-              { id: 'photos', label: '成交照片', icon: Camera },
+              ...(canAnalyze ? [{ id: 'photos' as const, label: '成交照片', icon: Camera }] : []),
               { id: 'costs', label: '成本設備', icon: DollarSign },
             ]}
           />
@@ -1438,14 +1439,14 @@ export function MarketDetailScreen() {
           id={resolvedOwnerWorkspaceView === 'overview' ? 'owner-overview-detail-panel' : undefined}
           role={resolvedOwnerWorkspaceView === 'overview' ? 'tabpanel' : undefined}
           aria-labelledby={resolvedOwnerWorkspaceView === 'overview'
-            ? `owner-overview-detail-panel-tab-${ownerOverviewDetail}`
+            ? `owner-overview-detail-panel-tab-${visibleOverviewDetail}`
             : undefined}
         >
 
-        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'cash' && (
-          <MarketCashPanel marketId={marketId} sessionDate={operatingSession?.sessionDate} defaultOpen />
+        {resolvedOwnerWorkspaceView === 'overview' && visibleOverviewDetail === 'cash' && (
+          <MarketCashPanel marketId={marketId} sessionDate={operatingSession?.sessionDate} presentation="review" />
         )}
-        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'journal' && (
+        {resolvedOwnerWorkspaceView === 'overview' && visibleOverviewDetail === 'journal' && (
           <MarketJournalWorkspace marketId={marketId} returnTo={requestedReturnTo} />
         )}
 
@@ -1457,9 +1458,11 @@ export function MarketDetailScreen() {
               <>
                 <OperatingMarketWorkbench
                   marketId={marketId}
+                  marketReturnTo={requestedReturnTo}
+                  initialMode={requestedTask === 'products' ? 'products' : undefined}
                   canRecordDeal
                   salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
-                  pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
+                  pendingPhotoCount={canAnalyze ? salesPhotoEvidenceFlow.pendingCount : 0}
                   onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
                   salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
                   onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
@@ -1492,8 +1495,10 @@ export function MarketDetailScreen() {
                 <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
                   <TransactionWorkspace
                     marketId={marketId}
+                    marketReturnTo={requestedReturnTo}
+                    initialMode={requestedTask === 'products' ? 'products' : undefined}
                     salesPhotoEvidenceRequired={salesPhotoEvidenceRequired}
-                    pendingPhotoCount={salesPhotoEvidenceFlow.pendingCount}
+                    pendingPhotoCount={canAnalyze ? salesPhotoEvidenceFlow.pendingCount : 0}
                     onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
                     salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
                     onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
@@ -1544,6 +1549,7 @@ export function MarketDetailScreen() {
               <div className="mx-auto mt-3 max-w-3xl">
                 <MarketFieldOpsSection
                   marketId={marketId}
+                  collaborationEnabled={canAnalyze}
                   referenceNote={market.notes}
                   canManageFieldNotes={canManageOwnerFieldOps}
                   canManageChecklist={canManageOwnerFieldOps}
@@ -1563,7 +1569,7 @@ export function MarketDetailScreen() {
         {/* 老闆模式不顯示流水帳 */}
 
         {/* 7. 每日收入統計（多天市集才顯示） */}
-        {resolvedOwnerWorkspaceView === 'manage' && !isOperating && (
+        {canAnalyze && resolvedOwnerWorkspaceView === 'manage' && !isOperating && (
         <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
           <div className="mb-4 flex items-start gap-3">
             <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -1607,7 +1613,9 @@ export function MarketDetailScreen() {
         </section>
         )}
 
-        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'photos' && (
+        {resolvedOwnerWorkspaceView === 'overview' && visibleOverviewDetail === 'photos' && canAnalyze && (
+        <>
+        {salesPhotoEvidenceFlow.pendingCount > 0 && <button type="button" onClick={handleOpenPendingSalesPhotoEvidence} className="mb-3 min-h-11 rounded-xl border border-border bg-atelier-paper px-4 text-sm text-primary">待補照片 {salesPhotoEvidenceFlow.pendingCount} 筆</button>}
         <SalesPhotoEvidenceOwnerAlbumRouteSection
           actorRole={isStaff ? 'staff' : 'owner'}
           ownerId={ownerSalesPhotoEvidenceAlbumOwnerId}
@@ -1623,18 +1631,11 @@ export function MarketDetailScreen() {
           marketRequiresEvidence={salesPhotoEvidenceRequired}
           className="mb-6"
         />
+        </>
         )}
 
-        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'performance' && (
+        {resolvedOwnerWorkspaceView === 'overview' && visibleOverviewDetail === 'performance' && (
         <>
-          <MarketOverviewPhotoStory
-            actorRole={isStaff ? 'staff' : 'owner'}
-            ownerId={ownerSalesPhotoEvidenceAlbumOwnerId}
-            marketId={marketId}
-            rows={ownerSalesPhotoEvidenceRows}
-            dealEvents={dealEvents}
-            onViewAll={() => setOwnerOverviewDetail('photos')}
-          />
           <DailyRevenueStats
             market={market}
             dealRecordCountByDate={dealRecordCountByDate}
@@ -1643,11 +1644,12 @@ export function MarketDetailScreen() {
             showTotals={false}
             reviewMode={marketWorkspacePhase === 'ended'}
           />
+          {canAnalyze && <button type="button" onClick={() => setOwnerOverviewDetail('photos')} className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-atelier-paper px-4 text-sm text-primary"><Camera className="h-4 w-4" aria-hidden="true" />查看成交照片</button>}
         </>
         )}
 
         {/* 6. 即時統計 */}
-        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'interactions' && (
+        {canRecord && resolvedOwnerWorkspaceView === 'overview' && visibleOverviewDetail === 'interactions' && (
         <section className="mb-4 rounded-lg border border-border bg-white p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="flex items-center gap-2 text-base font-medium text-foreground">
@@ -1701,7 +1703,7 @@ export function MarketDetailScreen() {
         {/* 8. 成本明細 - ✅ 員工模式下隱藏 */}
         {(
           resolvedOwnerWorkspaceView === 'manage' ||
-          (resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'costs')
+          (resolvedOwnerWorkspaceView === 'overview' && visibleOverviewDetail === 'costs')
         ) && (
           <section className="mx-auto mb-4 max-w-3xl rounded-lg border border-border bg-white p-4">
             <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-foreground">
@@ -1717,6 +1719,8 @@ export function MarketDetailScreen() {
               </span>
             </div>
             
+            {(market.registrationFee ?? 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">報名費</span><span className="font-medium">{formatCurrency(market.registrationFee ?? 0)}</span></div>}
+            {!market.tableclothFree && (market.tableclothRental ?? 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">桌布租金</span><span className="font-medium">{formatCurrency(market.tableclothRental ?? 0)}</span></div>}
             {/* 設備租賃 - 始終顯示 */}
             <div className="space-y-1 pl-4 py-2 bg-background rounded-xl">
               <div className="text-xs font-medium text-muted-foreground mb-1">設備租賃：</div>
@@ -1801,12 +1805,7 @@ export function MarketDetailScreen() {
             <div className="border-t border-primary/10 pt-2 flex justify-between font-medium">
               <span className="text-foreground">固定成本總計</span>
               <span className="text-secondary">
-                {formatCurrency(
-                  (market.boothCost || 0) +
-                  (market.tableFree ? 0 : (market.tableRental || 0)) +
-                  (market.chairFree ? 0 : (market.chairRental || 0)) +
-                  (market.umbrellaFree ? 0 : (market.umbrellaRental || 0))
-                )}
+                {formatCurrency(calculateTrackedMarketFixedCost(market))}
               </span>
             </div>
           </div>
@@ -1814,7 +1813,7 @@ export function MarketDetailScreen() {
         )}
 
         {/* 顧客行為分析區塊 */}
-        {resolvedOwnerWorkspaceView === 'overview' && ownerOverviewDetail === 'interactions' && interactionEvents.length > 0 && (
+        {canAnalyze && resolvedOwnerWorkspaceView === 'overview' && visibleOverviewDetail === 'interactions' && interactionEvents.length > 0 && (
           <>
             <div className="mb-4">
               <h2 className="text-xl font-medium text-foreground flex items-center gap-2">
@@ -1828,20 +1827,20 @@ export function MarketDetailScreen() {
 
             {/* 智能洞察提示 */}
             <div className="mb-6">
-              <BehaviorInsightCard insights={behaviorInsights} />
+              {canAnalyze && <BehaviorInsightCard insights={behaviorInsights} />}
             </div>
 
             {/* 互動偏好佔比圖 */}
             {interactionPreferenceData.length > 0 && (
               <div className="mb-6">
-                <InteractionPreferenceChart data={interactionPreferenceData} />
+                {canAnalyze && <InteractionPreferenceChart data={interactionPreferenceData} />}
               </div>
             )}
 
             {/* 互動時序熱力圖 */}
             {timeHeatmapData.length > 0 && (
               <div className="mb-6">
-                <InteractionTimeHeatmap data={timeHeatmapData} />
+                {canAnalyze && <InteractionTimeHeatmap data={timeHeatmapData} />}
               </div>
             )}
           </>
@@ -1887,6 +1886,10 @@ export function MarketDetailScreen() {
         )}
         </div>
         </div>
+        </> : <>
+          {tier === 'unavailable' && <SubscriptionFeatureNotice />}
+          <FreeMarketWorkspace initialView={requestedTask === 'journal' ? 'journal' : 'arrangement'} canManageFieldOps={canManageOwnerFieldOps} market={market} returnTo={requestedReturnTo} busy={isUpdating || isUpdatingOperationSession || isSkippingOccurrence || isRestoringOccurrence} onSkip={handleSkipScheduledOccurrence} onRestore={handleRestoreScheduledOccurrence} onStatus={status => { if (status === 'cancelled') setShowCancelConfirm(true); else handleStatusChangeRequest(status); }} onEdit={handleOpenEditForm} onDelete={() => setShowDeleteConfirm(true)} session={operatingSession} onStart={handleStartEarlyOperation} onClose={handleCloseTodayOperation} />
+        </>}
       </div>
 
       {/* 狀態變更確認對話框 */}
@@ -2093,7 +2096,7 @@ export function MarketDetailScreen() {
 
       {/* 成交詳情彈窗 */}
       <DealDetailModal
-        isOpen={showDealDetailModal}
+        isOpen={canRecord && showDealDetailModal}
         deal={selectedDeal}
         onClose={handleCloseDealDetail}
         onEdit={handleEditDeal}
@@ -2104,7 +2107,7 @@ export function MarketDetailScreen() {
 
       {/* 補登收入對話框 */}
       <AddRevenueDialog
-        isOpen={showAddRevenueDialog}
+        isOpen={canRecord && showAddRevenueDialog}
         onClose={handleCloseAddRevenue}
         marketId={marketId}
         selectedDate={selectedDate}
@@ -2112,7 +2115,7 @@ export function MarketDetailScreen() {
         onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
       />
 
-      <SalesPhotoEvidenceFlowDialog
+      {canAnalyze && <SalesPhotoEvidenceFlowDialog
         state={salesPhotoEvidenceFlow.state}
         pendingItems={salesPhotoEvidenceFlow.pendingItems}
         isLoadingPendingItems={salesPhotoEvidenceFlow.isLoadingPendingItems}
@@ -2126,11 +2129,11 @@ export function MarketDetailScreen() {
         onRefresh={() => void salesPhotoEvidenceFlow.loadPendingItems()}
         onBack={salesPhotoEvidenceFlow.back}
         onClose={salesPhotoEvidenceFlow.close}
-      />
+      />}
 
       {/* 日期成交記錄彈窗 */}
       <DailyDealsModal
-        isOpen={showDailyDealsModal}
+        isOpen={canRecord && showDailyDealsModal}
         onClose={handleCloseDailyDeals}
         date={selectedDate}
         deals={getDealsByDate(selectedDate)}
@@ -2140,7 +2143,7 @@ export function MarketDetailScreen() {
       {/* 互動詳情彈窗 */}
       {selectedInteractionType && (
         <InteractionDetailModal
-          isOpen={showInteractionDetailModal}
+          isOpen={canRecord && showInteractionDetailModal}
           onClose={handleCloseInteractionDetail}
           interactionType={selectedInteractionType.type}
           label={selectedInteractionType.label}

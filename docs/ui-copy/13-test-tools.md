@@ -3,7 +3,7 @@
 > 自動產生；請勿手動修改。重新產生：`node scripts/generate-ui-copy-inventory.mjs`。
 > [總索引](../APP_UI_COPY_INDEX.md) · [完整 JSON](inventory.json) · [逐檔覆蓋](coverage.md)
 
-共 505 筆來源位置；同字不同出處分開記錄。這是來源盤點，候選與未啟用分支不算已上線功能。
+共 507 筆來源位置；同字不同出處分開記錄。這是來源盤點，候選與未啟用分支不算已上線功能。
 
 ## app/api/dev/subscription-price-foundation-smoke/route.ts
 
@@ -23,14 +23,16 @@
 
 | ID／來源 | 用語／動態範本 | 類型與用途 | 所在符號／觸發條件 |
 | --- | --- | --- | --- |
-| UI-3174886af450<br>[app/api/dev/subscription-simulation/route.ts:52:61](../../app/api/dev/subscription-simulation/route.ts#L52) | Simulation authentication is unavailable. | **來源候選** · 候選，非已證實提示<br>resolveValidActor 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | resolveValidActor<br>actor === 'unavailable' |
-| UI-7aacadf23a0f<br>[app/api/dev/subscription-simulation/route.ts:55:58](../../app/api/dev/subscription-simulation/route.ts#L55) | Simulation requires authentication. | **來源候選** · 候選，非已證實提示<br>resolveValidActor 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | resolveValidActor<br>!actor |
-| UI-b67641e133c0<br>[app/api/dev/subscription-simulation/route.ts:58:57](../../app/api/dev/subscription-simulation/route.ts#L58) | Subscription simulation is unavailable. | **來源候選** · 候選，非已證實提示<br>resolveValidActor 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | resolveValidActor<br>!UUID_PATTERN.test(actor.actorId) |
-| UI-374b20435795<br>[app/api/dev/subscription-simulation/route.ts:78:54](../../app/api/dev/subscription-simulation/route.ts#L78) | Simulation request is invalid. | **來源候選** · 候選，非已證實提示<br>POST 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | POST<br>catch：操作拋出例外 |
-| UI-05c06fdd1cf3<br>[app/api/dev/subscription-simulation/route.ts:81:54](../../app/api/dev/subscription-simulation/route.ts#L81) | Simulation request is invalid. | **來源候選** · 候選，非已證實提示<br>POST 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | POST<br>!body &#124;&#124; typeof body !== 'object' &#124;&#124; Array.isArray(body) |
-| UI-2932d0575d90<br>[app/api/dev/subscription-simulation/route.ts:87:54](../../app/api/dev/subscription-simulation/route.ts#L87) | Simulation plan is invalid. | **來源候選** · 候選，非已證實提示<br>POST 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | POST<br>input.enabled !== true &#124;&#124; !isAccountPlanCode(input.planCode) |
-| UI-a4b2f99474ad<br>[app/api/dev/subscription-simulation/route.ts:111:55](../../app/api/dev/subscription-simulation/route.ts#L111) | Development tool is unavailable. | **來源候選** · 候選，非已證實提示<br>runWithCors 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | runWithCors<br>!isSubscriptionSimulationRequestAllowed(request) |
-| UI-7291299117b2<br>[app/api/dev/subscription-simulation/route.ts:124:50](../../app/api/dev/subscription-simulation/route.ts#L124) | Development tool is unavailable. | **來源候選** · 候選，非已證實提示<br>OPTIONS 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | OPTIONS<br>否則 isSubscriptionSimulationRequestAllowed(request) |
+| UI-a3b78a651599<br>[app/api/dev/subscription-simulation/route.ts:54:61](../../app/api/dev/subscription-simulation/route.ts#L54) | Simulation authentication is unavailable. | **來源候選** · 候選，非已證實提示<br>resolveValidActor 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | resolveValidActor<br>actor === 'unavailable' |
+| UI-85ee573ee86b<br>[app/api/dev/subscription-simulation/route.ts:57:58](../../app/api/dev/subscription-simulation/route.ts#L57) | Simulation requires authentication. | **來源候選** · 候選，非已證實提示<br>resolveValidActor 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | resolveValidActor<br>!actor |
+| UI-b03312fa3395<br>[app/api/dev/subscription-simulation/route.ts:60:57](../../app/api/dev/subscription-simulation/route.ts#L60) | Subscription simulation is unavailable. | **來源候選** · 候選，非已證實提示<br>resolveValidActor 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | resolveValidActor<br>!UUID_PATTERN.test(actor.actorId) |
+| UI-b7a6f3367d25<br>[app/api/dev/subscription-simulation/route.ts:80:54](../../app/api/dev/subscription-simulation/route.ts#L80) | Simulation request is invalid. | **來源候選** · 候選，非已證實提示<br>POST 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | POST<br>catch：操作拋出例外 |
+| UI-3e36a36e4f5b<br>[app/api/dev/subscription-simulation/route.ts:83:54](../../app/api/dev/subscription-simulation/route.ts#L83) | Simulation request is invalid. | **來源候選** · 候選，非已證實提示<br>POST 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | POST<br>!body &#124;&#124; typeof body !== 'object' &#124;&#124; Array.isArray(body) |
+| UI-aa7324ebaa2f<br>[app/api/dev/subscription-simulation/route.ts:89:54](../../app/api/dev/subscription-simulation/route.ts#L89) | Simulation plan is invalid. | **來源候選** · 候選，非已證實提示<br>POST 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | POST<br>input.enabled !== true &#124;&#124; !isAccountPlanCode(input.planCode) |
+| UI-1aeb9b11c0e8<br>[app/api/dev/subscription-simulation/route.ts:113:55](../../app/api/dev/subscription-simulation/route.ts#L113) | Development tool is unavailable. | **來源候選** · 候選，非已證實提示<br>runWithCors 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | runWithCors<br>!isSubscriptionSimulationRequestAllowed(request) |
+| UI-c13f48f77698<br>[app/api/dev/subscription-simulation/route.ts:116:57](../../app/api/dev/subscription-simulation/route.ts#L116) | Cloud subscription test setup is required. | **來源候選** · 候選，非已證實提示<br>runWithCors 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | runWithCors<br>process.env.SUBSCRIPTION_WRITE_ENFORCEMENT_ENABLED === '1' &amp;&amp; !isCloudSubscriptionSimulationEnabled() |
+| UI-678e08603f0d<br>[app/api/dev/subscription-simulation/route.ts:122:67](../../app/api/dev/subscription-simulation/route.ts#L122) | Subscription test setup is unavailable. | **來源候選** · 候選，非已證實提示<br>runWithCors 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | runWithCors<br>catch：操作拋出例外 |
+| UI-546e765ca4d4<br>[app/api/dev/subscription-simulation/route.ts:131:50](../../app/api/dev/subscription-simulation/route.ts#L131) | Development tool is unavailable. | **來源候選** · 候選，非已證實提示<br>OPTIONS 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | OPTIONS<br>否則 isSubscriptionSimulationRequestAllowed(request) |
 
 ## app/debug/flicker-test/page.web.tsx
 

@@ -52,12 +52,12 @@ export type SubscriptionPlanDefinition = {
 
 const FREE_FEATURES: Readonly<Record<SubscriptionPlanFeatureCode, SubscriptionPlanFeatureStatus>> = {
   'core.market_operations': 'included',
-  'core.sales_recording': 'included',
-  'core.product_catalog': 'included',
+  'core.sales_recording': 'not_available',
+  'core.product_catalog': 'not_available',
   'core.cloud_sync': 'included',
   'analytics.basic': 'not_available',
-  'analytics.advanced': 'limited',
-  'report.settlement_preview': 'limited',
+  'analytics.advanced': 'not_available',
+  'report.settlement_preview': 'not_available',
   'report.pdf': 'not_available',
   'report.excel': 'not_available',
   'photo.product_cover': 'not_available',
@@ -68,16 +68,18 @@ const FREE_FEATURES: Readonly<Record<SubscriptionPlanFeatureCode, SubscriptionPl
 
 const PRO_FEATURES: Readonly<Record<SubscriptionPlanFeatureCode, SubscriptionPlanFeatureStatus>> = {
   ...FREE_FEATURES,
+  'core.sales_recording': 'included',
+  'core.product_catalog': 'included',
   'analytics.basic': 'included',
-  'analytics.advanced': 'included',
-  'report.settlement_preview': 'included',
-  'report.pdf': 'included',
-  'report.excel': 'coming_soon',
   'photo.product_cover': 'included',
 };
 
 const TEAM_FEATURES: Readonly<Record<SubscriptionPlanFeatureCode, SubscriptionPlanFeatureStatus>> = {
   ...PRO_FEATURES,
+  'analytics.advanced': 'included',
+  'report.settlement_preview': 'included',
+  'report.pdf': 'included',
+  'report.excel': 'coming_soon',
   'photo.sales_evidence': 'included',
   'team.staff_collaboration': 'included',
   'team.manager_workflow': 'included',
@@ -86,14 +88,14 @@ const TEAM_FEATURES: Readonly<Record<SubscriptionPlanFeatureCode, SubscriptionPl
 export const SUBSCRIPTION_PLAN_DEFINITIONS: Readonly<Record<AccountPlanCode, SubscriptionPlanDefinition>> = {
   free: {
     code: 'free',
-    displayName: 'Free',
+    displayName: '免費版',
     audience: '剛開始建立市集營運紀錄的小品牌',
     promise: '完成每一場市集最重要的營運記錄。',
-    description: '保留市集、商品、成交、成本與互動記錄，不把日常營運流程鎖在付費牆後。',
+    description: '管理市集安排、報名、錄取、繳費、準備與私人心得。',
     availability: 'preview',
     features: FREE_FEATURES,
     limits: {
-      activeProducts: { value: 15, status: 'experiment_unenforced' },
+      activeProducts: { value: null, status: 'unapproved' },
       staffSeats: { value: 0, status: 'not_applicable' },
       productPhotoStorageBytes: { value: 0, status: 'not_applicable' },
       salesEvidenceStorageBytes: { value: 0, status: 'not_applicable' },
@@ -101,10 +103,10 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS: Readonly<Record<AccountPlanCode, Sub
   },
   pro: {
     code: 'pro',
-    displayName: 'Pro',
-    audience: '想看懂市集與商品決策的品牌主',
-    promise: '知道哪些市集與商品值得投入更多力氣。',
-    description: '加入單場復盤、進階比較、商品建議、結算報告預覽與商品封面照片能力，正式協作仍不在 Pro。',
+    displayName: '輕量版',
+    audience: '獨自記錄生意與核對成果的品牌主',
+    promise: '完整記錄一場生意，知道賣了多少與現金是否相符。',
+    description: '包含免費版，提供銷售、互動、商品庫存、單場成果、基本月摘要與選填現金對帳。',
     availability: 'preview',
     features: PRO_FEATURES,
     limits: {
@@ -116,10 +118,10 @@ export const SUBSCRIPTION_PLAN_DEFINITIONS: Readonly<Record<AccountPlanCode, Sub
   },
   team: {
     code: 'team',
-    displayName: 'Team',
+    displayName: '高階版',
     audience: '有員工、manager 或重複分工需求的品牌',
     promise: '一起營運，同時保護品牌主敏感資料。',
-    description: '包含 Pro，並加入正式員工協作、manager 流程與成交照片證據能力。',
+    description: '包含輕量版，加入深入分析、跨場比較、完整報告、成交照片與團隊協作。',
     availability: 'preview',
     features: TEAM_FEATURES,
     limits: {

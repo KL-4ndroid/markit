@@ -1,6 +1,7 @@
 import type { AccountCapabilityFeature } from './subscription-capabilities';
 
 export type SubscriptionCapabilityEnforcementClass =
+  | 'pilot_authoritative_server'
   | 'authoritative_server'
   | 'authoritative_read_client_execution'
   | 'configurable_server'
@@ -10,6 +11,7 @@ export type SubscriptionCapabilityEnforcementClass =
 export type SubscriptionCapabilityReleaseState =
   | 'sandbox_verified_release_smoke_pending'
   | 'local_complete_deployment_smoke_pending'
+  | 'pilot_verified_global_pending'
   | 'open_pre_subscription'
   | 'entitlement_enforcement_missing'
   | 'not_implemented';
@@ -26,17 +28,17 @@ export const SUBSCRIPTION_CAPABILITY_IMPLEMENTATION: readonly SubscriptionCapabi
   Object.freeze([
     {
       feature: 'productCoverPhoto',
-      enforcement: 'configurable_server',
-      releaseState: 'open_pre_subscription',
+      enforcement: 'pilot_authoritative_server',
+      releaseState: 'pilot_verified_global_pending',
       protectedWrites: true,
-      nextGate: 'Keep open mode until required-mode deployment evidence is approved.',
+      nextGate: 'Pilot write guard/capability and workspace reads aligned; approve global enforcement and downgrade policy before launch.',
     },
     {
       feature: 'salesPhotoEvidence',
-      enforcement: 'role_and_rollout_only',
-      releaseState: 'entitlement_enforcement_missing',
+      enforcement: 'pilot_authoritative_server',
+      releaseState: 'pilot_verified_global_pending',
       protectedWrites: true,
-      nextGate: 'Add authoritative Team capability enforcement before paid launch.',
+      nextGate: 'Pilot Team write guards exist; approve global enforcement and retained-read policy before paid launch.',
     },
     {
       feature: 'basicAnalytics',

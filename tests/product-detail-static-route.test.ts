@@ -37,7 +37,7 @@ assert.match(queryScreenSource, /useSearchParams\(\)/);
 assert.match(queryScreenSource, /searchParams\.get\(['"]id['"]\)/);
 assert.match(legacyWebPageSource, /import \{ redirect \} from ['"]next\/navigation['"]/);
 assert.match(legacyWebPageSource, /redirect\(buildProductDetailHref\(id\)\)/);
-assert.match(productListSource, /router\.push\(buildProductDetailHref\(product\.id\)\)/);
+assert.match(productListSource, /router\.push\(buildProductDetailHref\(product\.id, productOrigin\)\)/);
 assert.match(productCardSource, /router\.push\(buildProductDetailHref\(product\.id\)\)/);
 assert.doesNotMatch(productListSource, /`\/products\/\$\{product\.id\}`/);
 assert.doesNotMatch(productCardSource, /`\/products\/\$\{product\.id\}`/);

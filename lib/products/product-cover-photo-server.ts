@@ -98,19 +98,45 @@ export async function resolveProductCoverPhotoPlanAccess(input: {
   return { allowed: false, reason: 'entitlement_unavailable' };
 }
 
+/** Owner reads/deletion retain existing behavior until the downgrade policy is decided.
+ * Foreign-workspace access always requires an active relationship AND a High owner. */
+export async function resolveProductCoverPhotoOwnerAccess(client: SupabaseClient, actorId: string, ownerId: string) {
+  if (ownerId === actorId) return { ownerId, canEdit: true };
+  const { data: relationship, error } = await client.from('staff_relationships').select('role,status')
+    .eq('owner_id', ownerId).eq('staff_id', actorId).eq('status', 'active').maybeSingle();
+  if (error || !relationship || relationship.status !== 'active'
+    || !['manager', 'operator', 'viewer'].includes(relationship.role)) return null;
+  const resolution = await resolveServerAccountCapabilities({
+    actorId, ownerId, nowMs: Date.now(),
+    repository: {
+      async readForActor() {
+        const { data, error: rpcError } = await client.rpc('read_subscription_account_for_actor', {
+          p_actor_id: actorId, p_owner_id: ownerId,
+        });
+        if (rpcError) throw new Error('product_photo_owner_capability_unavailable');
+        const row = Array.isArray(data) && data.length === 1 ? data[0] : null;
+        if (!row || row.access_allowed !== true || row.owner_id !== ownerId) return { access: 'forbidden' };
+        return { access: 'allowed', account: row.account_exists === true ? {
+          ownerId: row.owner_id, planCode: row.plan_code, planSource: row.plan_source,
+          billingStatus: row.billing_status, entitlementStatus: row.entitlement_status,
+          entitlementEndsAt: row.entitlement_ends_at, updatedAt: row.updated_at,
+        } : null };
+      },
+    },
+  });
+  if (resolution.outcome !== 'available') return null;
+  const decision = evaluateCapabilityAccess({
+    authenticated: true, ownerWorkspaceAvailable: true, workspaceOwnerId: ownerId, requestedOwnerId: ownerId,
+    actorRole: relationship.role, rolePermission: true, capabilities: resolution.response.capabilities,
+    feature: 'staffCollaboration', operation: 'read_existing', runtimeEnabled: true, dataReady: true,
+    nowMs: Date.now(), network: 'online',
+  });
+  return decision.allowed ? { ownerId, canEdit: relationship.role === 'manager' } : null;
+}
+
 export async function resolveProductCoverPhotoAccess(client: SupabaseClient, actorId: string, productId?: string | null) {
-  let ownerId = actorId;
-  let canEdit = true;
-  if (productId) {
-    const { data: product } = await client.from('products').select('id,owner_id,is_active').eq('id', productId).maybeSingle();
-    if (!product || product.is_active !== true) return null;
-    ownerId = String(product.owner_id);
-    canEdit = ownerId === actorId;
-    if (!canEdit) {
-      const { data: relationship } = await client.from('staff_relationships').select('role,status')
-        .eq('owner_id', ownerId).eq('staff_id', actorId).eq('status', 'active').maybeSingle();
-      canEdit = relationship?.role === 'manager';
-    }
-  }
-  return { ownerId, canEdit };
+  if (!productId) return { ownerId: actorId, canEdit: true };
+  const { data: product, error } = await client.from('products').select('id,owner_id,is_active').eq('id', productId).maybeSingle();
+  if (error || !product || product.is_active !== true) return null;
+  return resolveProductCoverPhotoOwnerAccess(client, actorId, String(product.owner_id));
 }

@@ -17,7 +17,7 @@ export function MarketReferenceNotePanel({ note }: MarketReferenceNotePanelProps
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-medium text-foreground">主辦／場地備註</h2>
             <span className="rounded-full bg-soft-yellow px-2 py-0.5 text-[11px] font-semibold text-secondary">
-              整場共用
+              整場適用
             </span>
           </div>
         </div>

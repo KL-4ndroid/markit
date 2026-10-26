@@ -1,3 +1,4 @@
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 import { CalendarDays, Clock, MapPin, StickyNote } from 'lucide-react';
 import { useState } from 'react';
 
@@ -36,6 +37,7 @@ interface MarketListCardProps {
 }
 
 export function MarketListCard({ item, isStaff, contextLabel, isOpening = false, onOpen }: MarketListCardProps) {
+  const { canRecord } = useSubscriptionExperience();
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const preparation = item.preparationSummary;
   const completion = item.completionSummary;
@@ -51,12 +53,12 @@ export function MarketListCard({ item, isStaff, contextLabel, isOpening = false,
     : [];
   const financeParts = preparation
     ? [
-        preparation.estimatedExpense > 0 ? `預估支出 ${formatCurrency(preparation.estimatedExpense)}` : '',
+        canRecord ? (preparation.estimatedExpense > 0 ? `預估支出 ${formatCurrency(preparation.estimatedExpense)}` : '') : (item.market.boothCost > 0 ? `攤位費 ${formatCurrency(item.market.boothCost)}` : ''),
         preparation.deposit > 0 ? `保證金 ${formatCurrency(preparation.deposit)}` : '',
       ].filter(Boolean)
     : [];
   const hasVisibleCompletion = Boolean(
-    completion && (completion.totalDeals !== null || (!isStaff && completion.totalRevenue !== null)),
+    (canRecord || isStaff) && completion && (completion.totalDeals !== null || (!isStaff && completion.totalRevenue !== null)),
   );
 
   return (
@@ -160,7 +162,7 @@ export function MarketListCard({ item, isStaff, contextLabel, isOpening = false,
               ) : null}
 
               <div className="flex flex-wrap items-center gap-2">
-                {preparation.equipment.map(equipment => (
+                {(canRecord ? preparation.equipment : []).map(equipment => (
                   <span
                     key={equipment.id}
                     className="rounded-full border border-primary/10 bg-atelier-blue-soft/55 px-2.5 py-1 text-xs font-medium text-foreground"

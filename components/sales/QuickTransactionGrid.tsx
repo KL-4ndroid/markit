@@ -9,11 +9,12 @@ import {
   Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { buildProductManagementHref } from '@/lib/navigation/market-product-return';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useProducts } from '@/lib/db/hooks';
-import type { SalesPaymentMethod } from '@/lib/sales/payment-methods';
+import { formatSalesPaymentMethod, type SalesPaymentMethod } from '@/lib/sales/payment-methods';
 import {
   recordDealWithOptionalSalesPhotoEvidence,
   type SalesPhotoEvidenceRuntimeResultHandler,
@@ -24,6 +25,7 @@ import { PaymentMethodSelector } from './PaymentMethodSelector';
 
 interface QuickTransactionGridProps {
   marketId: string;
+  marketReturnTo?: string | null;
   isExpanded?: boolean;
   onToggle?: () => void;
   embedded?: boolean;
@@ -50,6 +52,7 @@ const PRODUCT_SURFACES = [
 
 export function QuickTransactionGrid({
   marketId,
+  marketReturnTo,
   isExpanded = true,
   onToggle,
   embedded = false,
@@ -135,13 +138,14 @@ export function QuickTransactionGrid({
       });
     } catch (error) {
       console.error('記錄商品交易失敗：', error);
-      toast.error('記錄失敗，資料已保留在本機等待同步');
+      toast.error('尚未完成記錄，請確認後重試；本次輸入已保留。');
       setIsProcessing(false);
       onProcessingChange?.(false);
       return;
     }
 
     setCart(new Map());
+    if (!onPaymentMethodChange) setLocalPaymentMethod('cash');
     window.dispatchEvent(new CustomEvent('deal-closed', {
       detail: { marketId, amount: totalAmount, paymentMethod: selectedPaymentMethod },
     }));
@@ -166,11 +170,12 @@ export function QuickTransactionGrid({
           <p className="text-sm font-medium text-atelier-ink">選擇商品</p>
           <p className="mt-0.5 text-xs text-atelier-muted">再次點選可增加數量</p>
         </div>
-        <Link href="/products" className="inline-flex min-h-11 items-center rounded-control px-2 text-sm font-medium text-primary hover:bg-atelier-canvas">
+        <Link href={buildProductManagementHref({ fromMarket: marketId, marketReturnTo })} aria-disabled={isProcessing} onClick={event => { if (isProcessing) event.preventDefault(); }} className="inline-flex min-h-11 items-center rounded-control px-2 text-sm font-medium text-primary hover:bg-atelier-canvas">
           管理商品
         </Link>
       </div>
 
+      {cart.size > 0 && <p className="mb-3 text-xs text-muted-foreground">離開管理商品後，本次商品需重新選取。</p>}
       {products && products.length > 0 ? (
         <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {products.map((product, productIndex) => {
@@ -205,7 +210,7 @@ export function QuickTransactionGrid({
         <div className="mb-5 rounded-card border border-dashed border-atelier-line px-4 py-8 text-center">
           <Package className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">尚未建立可銷售商品</p>
-          <Link href="/products" className="mt-2 inline-block text-sm font-medium text-primary hover:underline">
+          <Link href={buildProductManagementHref({ fromMarket: marketId, marketReturnTo })} aria-disabled={isProcessing} onClick={event => { if (isProcessing) event.preventDefault(); }} className="mt-2 inline-block text-sm font-medium text-primary hover:underline">
             前往新增商品
           </Link>
         </div>
@@ -283,7 +288,7 @@ export function QuickTransactionGrid({
         className={`${presentation === 'sheet' ? 'sticky bottom-0 z-10 mt-5 shadow-[0_-10px_24px_rgb(255_255_255_/_0.92)]' : 'mt-4'} inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100`}
       >
         {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
-        {isProcessing ? '正在記錄交易' : `完成交易 NT$${totalAmount.toLocaleString()}`}
+        {isProcessing ? '正在記錄交易' : `完成交易 NT$${totalAmount.toLocaleString()} · ${formatSalesPaymentMethod(selectedPaymentMethod)}`}
       </button>
     </div>
   );

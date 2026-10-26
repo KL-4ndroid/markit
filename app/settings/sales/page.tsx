@@ -1,6 +1,8 @@
 'use client';
 
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 import dynamic from 'next/dynamic';
+import { salesSettingsPresentation } from '@/lib/subscription/ui-presentation';
 import { Camera, ShieldAlert } from 'lucide-react';
 
 import { InteractionSettingsPanel } from '@/components/settings/InteractionSettingsPanel';
@@ -19,12 +21,14 @@ const SalesPhotoEvidenceSettingsCard = dynamic(
 );
 
 export default function SalesSettingsPage() {
+  const { tier, canRecord, canAnalyze } = useSubscriptionExperience();
   const { isStaff, isOwner, isLoading } = useRoleContext();
 
+  const presentation = salesSettingsPresentation(tier);
   return (
     <SettingsPageShell
-      title="銷售與照片"
-      description="管理品牌顯示、成交照片預設值與現場互動記錄方式。"
+      title={presentation.title}
+      description={presentation.description}
       icon={Camera}
       isStaff={isStaff}
       backHref="/settings"
@@ -39,9 +43,9 @@ export default function SalesSettingsPage() {
         />
       ) : (
         <div className="space-y-5">
-          <OwnerBrandSettingsCard />
-          <SalesPhotoEvidenceSettingsCard />
-          <InteractionSettingsPanel />
+          <OwnerBrandSettingsCard showReportUsage={canAnalyze} />
+          {canAnalyze && <SalesPhotoEvidenceSettingsCard />}
+          {canRecord && <InteractionSettingsPanel />}
         </div>
       )}
     </SettingsPageShell>

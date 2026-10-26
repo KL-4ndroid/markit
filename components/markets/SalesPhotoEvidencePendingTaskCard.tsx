@@ -67,7 +67,7 @@ export function SalesPhotoEvidencePendingTaskCard({
   const actionable = canHandle && canActOnStatus(item.status);
   const stateLabel = payload
     ? item.status === 'failed_retryable' ? '照片已保留，可重新上傳' : '照片尚未上傳'
-    : actionable ? '尚未拍照' : '暫時不能處理';
+    : actionable ? '這台裝置尚無照片' : '暫時不能處理';
 
   return (
     <article className="overflow-hidden rounded-lg border border-border bg-white">
@@ -115,7 +115,7 @@ export function SalesPhotoEvidencePendingTaskCard({
       ) : (
         <div className="flex aspect-[16/8] flex-col items-center justify-center border-y border-dashed border-border bg-background text-center">
           <ImageIcon className="h-6 w-6 text-muted-foreground" />
-          <p className="mt-2 text-xs text-muted-foreground">這筆交易還沒有照片</p>
+          <p className="mt-2 text-xs text-muted-foreground">可在此拍照／選圖，或回原裝置上傳</p>
         </div>
       )}
 

@@ -47,24 +47,6 @@ function blocked(decision: BlockedCapabilityAccessDecision): AnalyticsSubscripti
   };
 }
 
-function freePreview(decision: BlockedCapabilityAccessDecision): AnalyticsSubscriptionView {
-  return {
-    mode: 'free_preview',
-    blockDecision: null,
-    previewUpgradeDecision: decision,
-    canBuildRecentMarketPreview: true,
-    canReadSummaryEvents: false,
-    canComputeMarketMetrics: false,
-    canComputeMarketRecap: false,
-    canComputeActionableInsights: false,
-    canComputeFullMarketTrend: false,
-    canReadDailyRevenue: false,
-    canReadBasicProductRanking: true,
-    canReadFullProductRanking: false,
-    canReadProductAffinity: false,
-  };
-}
-
 function basic(): AnalyticsSubscriptionView {
   return {
     mode: 'basic',
@@ -73,11 +55,11 @@ function basic(): AnalyticsSubscriptionView {
     canBuildRecentMarketPreview: false,
     canReadSummaryEvents: true,
     canComputeMarketMetrics: true,
-    canComputeMarketRecap: true,
+    canComputeMarketRecap: false,
     canComputeActionableInsights: false,
     canComputeFullMarketTrend: false,
     canReadDailyRevenue: false,
-    canReadBasicProductRanking: true,
+    canReadBasicProductRanking: false,
     canReadFullProductRanking: false,
     canReadProductAffinity: false,
   };
@@ -111,13 +93,6 @@ export function resolveAnalyticsSubscriptionView(
       return blocked(input.advancedAccess);
     }
     return input.advancedAccess.allowed ? full() : basic();
-  }
-
-  if (input.range === 'recent3' && !input.advancedAccess.allowed) {
-    if (input.advancedAccess.reason !== 'plan_required' || input.tab === 'advanced') {
-      return blocked(input.advancedAccess);
-    }
-    return freePreview(input.advancedAccess);
   }
 
   if (!input.advancedAccess.allowed) return blocked(input.advancedAccess);

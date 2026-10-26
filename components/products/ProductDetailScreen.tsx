@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { buildProductManagementHref, resolveProductMarketReturn } from '@/lib/navigation/market-product-return';
 import {
   ArrowLeft,
   BookOpen,
@@ -40,6 +42,10 @@ interface ProductDetailScreenProps {
 
 export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   const router = useRouter();
+  const params = useSearchParams();
+  const origin = { fromMarket: params.get('fromMarket'), marketReturnTo: params.get('marketReturnTo') };
+  const productListHref = buildProductManagementHref(origin);
+  const marketReturn = resolveProductMarketReturn(origin);
   const liveProduct = useProduct(productId);
   const [directLocalProduct, setDirectLocalProduct] = useState<Product | undefined>(undefined);
   const [localProductLookupComplete, setLocalProductLookupComplete] = useState(false);
@@ -168,7 +174,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
     toast.success('商品已刪除');
     setShowEditForm(false);
     showNavigation();
-    router.replace('/products');
+    router.replace(productListHref);
   };
 
   // 載入中（初始化中）
@@ -183,7 +189,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
         <div className="japanese-gradient-header rounded-b-[2rem] px-6 pb-8 pt-12">
           <div className="max-w-lg mx-auto">
             <button
-              onClick={() => router.push('/products')}
+              onClick={() => router.push(productListHref)}
               aria-label="返回商品列表"
               className="mb-4 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
@@ -219,7 +225,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
               取得協助
             </button>
             <button
-              onClick={() => router.push('/products')}
+              onClick={() => router.push(productListHref)}
               className="w-full bg-soft-pink text-foreground px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors font-medium"
             >
               返回商品列表
@@ -237,7 +243,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
         <div className="japanese-gradient-header rounded-b-[2rem] px-6 pb-8 pt-12">
           <div className="max-w-lg mx-auto">
             <button
-              onClick={() => router.push('/products')}
+              onClick={() => router.push(productListHref)}
               aria-label="返回商品列表"
               className="mb-4 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
@@ -260,7 +266,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
               此商品可能已被刪除或不存在
             </p>
             <button
-              onClick={() => router.push('/products')}
+              onClick={() => router.push(productListHref)}
               className="bg-primary text-white px-6 py-3 rounded-2xl hover:bg-primary/85 transition-colors"
             >
               返回商品列表
@@ -283,8 +289,9 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
       {/* Header */}
       <div className="japanese-gradient-header rounded-b-[2rem] px-6 pb-8 pt-12">
         <div className="max-w-lg mx-auto">
+          {marketReturn && <Link href={marketReturn.href} className="inline-flex min-h-11 items-center rounded-control bg-white/15 px-3 text-sm text-white">{marketReturn.label}</Link>}
           <button
-            onClick={() => router.push('/products')}
+            onClick={() => router.push(productListHref)}
             aria-label="返回商品列表"
             className="mb-3 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >

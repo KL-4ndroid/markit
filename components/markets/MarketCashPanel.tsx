@@ -14,16 +14,17 @@ import { CASH_DENOMINATIONS,cashErrorMessage,cashHasConflict,cashIncrease,cashPo
   type CashPoint,type MarketCashDraft } from '@/lib/markets/market-cash';
 
 const action='min-h-11 rounded-xl border border-primary/20 px-3 py-2 text-sm text-primary disabled:opacity-50';
-export function MarketCashPanel({marketId,sessionDate,defaultOpen=false}:{marketId:string;sessionDate?:string|null;defaultOpen?:boolean}) {
+export function MarketCashPanel({marketId,sessionDate,defaultOpen=false,presentation='live'}:{marketId:string;sessionDate?:string|null;defaultOpen?:boolean;presentation?:'live'|'review'}) {
   const {user}=useAuth();const {userRole,roleRefreshState}=useRoleContext();
   const [open,setOpen]=useState(defaultOpen);
+  const isReview=presentation==='review';
   if(!marketCashEnabled() || !user || userRole.isStaff || !roleRefreshState.shouldMountProtectedChildren)return null;
   return <section className="my-4 rounded-3xl border border-primary/10 bg-white p-4 shadow-sm sm:p-6">
     <div className="flex flex-wrap items-center justify-between gap-x-3">
-    <button type="button" className="flex min-h-11 min-w-0 flex-1 items-center justify-between gap-3 text-left" aria-expanded={open} onClick={()=>setOpen(!open)}>
+    {isReview ? <h2 className="min-h-11 flex flex-1 items-center text-base font-semibold">現金紀錄（選填）</h2> : <button type="button" className="flex min-h-11 min-w-0 flex-1 items-center justify-between gap-3 text-left" aria-expanded={open} onClick={()=>setOpen(!open)}>
       <span className="text-base font-semibold">開／收攤現金（選填）</span>
       <span className="shrink-0 text-sm text-primary">{open?'收起':'展開'}</span>
-    </button>
+    </button>}
     <ContextHelp label="盤點說明" iconOnly>
       <p>可略過不記錄；不影響正常開攤與收攤。可以直接填總額，或依面額計算。</p>
       <p>「未記錄」與實際記錄 0 元不同。切換記錄方式時，尚未儲存的輸入會留在本機草稿，可切回查看。</p>
@@ -31,7 +32,7 @@ export function MarketCashPanel({marketId,sessionDate,defaultOpen=false}:{market
       <p>現金盤點與比較不會改動營收、庫存或淨利。本機草稿需按「儲存到雲端」才會送出。</p>
     </ContextHelp>
     </div>
-    {open && <CashWorkspace key={`${user.id}:${marketId}`} ownerId={user.id} marketId={marketId} sessionDate={sessionDate} disabled={!roleRefreshState.isAuthorizationFresh} />}
+    {(isReview || open) && <CashWorkspace key={`${user.id}:${marketId}`} ownerId={user.id} marketId={marketId} sessionDate={sessionDate} disabled={!roleRefreshState.isAuthorizationFresh} />}
   </section>;
 }
 function pointLabel(point:CashPoint){try{const cents=cashPointCents(point);return cents===null?'未記錄':formatCashCents(cents);}catch{return '草稿尚未填完整';}}

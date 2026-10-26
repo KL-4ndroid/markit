@@ -132,7 +132,8 @@ export function summarizeTodayMarkets(items: readonly TodayMarketViewItem[]) {
   };
 }
 
-export function getTodayMarketActionLabel(phase: TodayMarketPhase, isStaff: boolean): string {
+export function getTodayMarketActionLabel(phase: TodayMarketPhase, isStaff: boolean, canRecord = true): string {
+  if (!isStaff && !canRecord) return '查看今日市集';
   if (phase === 'operating') return isStaff ? '開始交易' : '進入現場';
   if (phase === 'ended') return isStaff ? '查看今日紀錄' : '查看今日回顧';
   return isStaff ? '查看今日工作' : '查看開場準備';

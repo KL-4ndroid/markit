@@ -1,3 +1,6 @@
+'use client';
+
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 import { ArrowRight, Clock3, MapPin } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
@@ -30,6 +33,7 @@ interface TodayMarketCardProps {
 }
 
 export function TodayMarketCard({ item, isStaff, onOpen, onStart, isStarting = false }: TodayMarketCardProps) {
+  const { canRecord } = useSubscriptionExperience();
   const timeLabel = marketTimeLabel(item.market);
   const surfaceClass = item.phase === 'operating'
     ? 'bg-atelier-sage-soft'
@@ -39,7 +43,7 @@ export function TodayMarketCard({ item, isStaff, onOpen, onStart, isStarting = f
   const companionLine = item.phase === 'operating'
     ? '現場辛苦了，今天的每筆記錄都會留在這裡。'
     : item.phase === 'ended'
-      ? '今天辛苦了，回顧與待處理都整理好了。'
+      ? (!isStaff && !canRecord ? '今天辛苦了，可以記下這場出攤心得。' : '今天辛苦了，回顧與待處理都整理好了。')
       : '準備好了，就從這裡進入今天的市集。';
 
   return (
@@ -81,7 +85,7 @@ export function TodayMarketCard({ item, isStaff, onOpen, onStart, isStarting = f
           className="mt-5 min-h-12 w-full bg-primary shadow-atelier hover:bg-primary/90 sm:w-auto"
           leadingIcon={<ArrowRight className="h-4 w-4" aria-hidden="true" />}
         >
-          {onStart ? '開始今天營業' : getTodayMarketActionLabel(item.phase, isStaff)}
+          {onStart ? '開始今天營業' : getTodayMarketActionLabel(item.phase, isStaff, canRecord)}
         </Button>
       </div>
     </article>

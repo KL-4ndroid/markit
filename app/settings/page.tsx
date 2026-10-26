@@ -1,5 +1,9 @@
 'use client';
 
+import { salesSettingsPresentation } from '@/lib/subscription/ui-presentation';
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
+import { SubscriptionSimulationPanel } from '@/components/subscription/SubscriptionSimulationPanel';
+
 import {
   Camera,
   Cloud,
@@ -38,6 +42,7 @@ const DESTINATION_ICONS: Record<SettingsDestinationId, LucideIcon> = {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { tier, canAnalyze } = useSubscriptionExperience();
   const { userRole, isStaff } = useRoleContext();
   const groups = getSettingsDestinationGroups(isStaff);
   const settingsIndexItems = [
@@ -89,6 +94,10 @@ export default function SettingsPage() {
           {isStaff && <StaffModeNotice compact className="mb-6" />}
 
           <div className="space-y-6">
+            {!isStaff && <SubscriptionSimulationPanel />}
+            <SettingsSection id="settings-subscription" title="訂閱方案">
+              <SettingsMenuRow href="/subscription" label="目前方案與功能" description="免費、輕量與高階版的功能範圍" icon={Users} />
+            </SettingsSection>
             <SettingsSection id="settings-personalization" title="個人化">
               <SettingsActionRow
                 label="主題實驗室"
@@ -100,12 +109,12 @@ export default function SettingsPage() {
 
             {groups.map((group) => (
               <SettingsSection key={group.id} id={`settings-${group.id}`} title={group.label}>
-                {group.items.map((item) => (
+                {group.items.filter(item => isStaff || item.id !== 'team' || canAnalyze).map((item) => (
                   <SettingsMenuRow
                     key={item.id}
                     href={item.href}
-                    label={item.label}
-                    description={item.description}
+                    label={item.id === 'sales' ? salesSettingsPresentation(tier).title : item.label}
+                    description={item.id === 'sales' ? salesSettingsPresentation(tier).description : item.description}
                     icon={DESTINATION_ICONS[item.id]}
                   />
                 ))}
