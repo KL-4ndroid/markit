@@ -1,5 +1,22 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-10-27 UI-11本機完成：[實作與驗收](UI11_PRODUCT_PHOTO_STATES_2026_10_27.md)、[共用唯讀狀態契約](../lib/products/product-cover-photo-read.ts)、[HTTP／合併／保留與表單回歸](../tests/product-cover-photo-read.test.tsx)。[image API](../app/api/product-cover-photo/image/route.ts)區分明確空白／停用／讀取錯誤；[metadata API](../app/api/product-cover-photo/metadata/route.ts)成功需ready，失敗或雲端待上傳不能當空集合；[capability](../app/api/product-cover-photo/capability/route.ts)授權後提供照片存在狀態。[client](../lib/products/product-cover-photo-client.ts)、[照片元件](../components/products/ProductCoverPhotoImage.tsx)、[編輯欄位](../components/products/ProductCoverPhotoField.tsx)及[商品清單](../app/products/page.tsx)接到重試、空殼隱藏與資料保留。未改價格／權益／上傳writer／雲端SQL／正式旗標；尚未提交部署，線上UI-11仍需發布後複驗。此段取代下方「讀取狀態契約尚待實作」的歷史狀態。
+
+2026-10-27 已獲授權直接操作Chrome Supabase：讀到實際函式後新增[085照片權益對齊](../supabase/migrations/085_align_product_photo_entitlements.sql)、[唯讀驗證](../supabase/verification/085_product_photo_entitlement_readiness.sql)、[隔離SQL回歸](../scripts/verify-product-photo-entitlements-sql.mjs)、[實際舊函式fixture](../tests/fixtures/product-photo-deployed-legacy-2026-10-27.sql)。pilot沿082 canonical product_photo決策，非pilot沿舊旗標；Free、角色、到期與容量仍受保護。085／084及各自唯讀驗證均已雲端成功。照片保留payload重試上傳並重載成功，實際成交庫存3→2；詳細[驗收紀錄](ONLINE_ACCEPTANCE_2026_10_27.md)。084新增[部署投影fixture](../tests/fixtures/product-stock-deployed-2026-10-27.sql)，既有隔離script以--deployed核對相同欄位修正；實際扣庫存另由線上流程驗證。這段取代下方「尚待函式定義／084執行」的歷史狀態；未開正式付款／全體權益限制，UI-11讀取狀態契約仍待實作。
+
+
+2026-10-27 083已由使用者確認通過，OpenAPI亦核對照片版本bigint與相容參數。線上輕量版重傳仍403／paid_entitlement_required，新分級read與product_photo寫入preflight卻允許，舊照片權益列不存在；尚待定位拒絕段落。新增[部署函式唯讀診斷](../supabase/verification/083_product_photo_deployed_functions.sql)以取得實際base內文後修正；未放寬免費／staff權限、未寫舊權益、未搬移或刪照片。詳見[線上紀錄](ONLINE_ACCEPTANCE_2026_10_27.md)。此段取代下方083「雲端待確認」的歷史狀態；084仍待使用者執行。
+
+2026-10-27 083第二次雲端回報：`Unexpected legacy RPC shape`是先前修正檔依賴函式內文格式的檢查失敗，不能視為已套用。最新版改由PostgreSQL系統目錄重建版本參數宣告、原樣保留部署內文／語言／設定／owner；舊版缺少boolean時建立僅限service_role的相容入口，保留原bigint入口讓舊呼叫仍可用，true／null拒絕。新版[遷移檔](../supabase/migrations/083_widen_product_photo_versions.sql)與[唯讀驗證](../supabase/verification/083_product_photo_version_readiness.sql)須重新整份讀取執行；12項隔離測試通過，雲端仍待確認。這段取代下方前一版083的格式相容描述，未更換R2或放寬用戶端權限。
+
+2026-10-27 照片基礎設施成本：[Supabase Storage／Cloudflare R2比較與決策](storage/PHOTO_STORAGE_COST_BENEFIT_2026_10_27.md)、[唯讀用量摘要](storage/PHOTO_STORAGE_USAGE_SNAPSHOT_2026_10_27.json)。核對官方價目、已付Pro／新增Pro增額情境及現有Vercel代理路徑後，保留R2；沒有證據支持立即遷移。尚未取得正式帳單與production桶對照，本機空桶不代表正式照片不存在。不更動方案價格、照片額度／保留、權限或讀寫路徑。
+
+2026-10-27 UI-04決策增量：使用者確認報名費與攤位費為同一筆。新增[共用單一費用規則](../lib/markets/market-booth-fee.ts)、[舊值差異提示](../components/markets/MarketFeeConflictNotice.tsx)、[回歸測試](../tests/market-booth-fee.test.tsx)，接到免費費用卡、單場、表單、固定安排、分析與結算。只計一次、缺值回退舊別名、不同舊值保留並由owner確認；保證金獨立，不批次改歷史。沒有改方案權限／價格；本機實作尚未發佈。[線上驗收紀錄](ONLINE_ACCEPTANCE_2026_10_27.md)追蹤083／084、合成資料及待驗項目。
+
+2026-10-27 線上驗收補漏：合成商品從不限庫存改有限庫存，事件已保存false但雲端投影仍true，造成扣庫存條件不生效。新增 [084 投影修正](../supabase/migrations/084_project_product_stock_mode.sql)、[唯讀驗證](../supabase/verification/084_product_stock_mode_readiness.sql)、[隔離回歸](../scripts/verify-product-stock-mode-sql.mjs)，只補既有product_updated函式遺漏欄位，保留其他分支／ACL／角色規則，不批次重放或改舊商品。雲端待使用者執行；不是新增訂閱能力。
+
+2026-10-27 線上商品照片驗收：輕量版 capability 允許，但合成測試封面上傳回應 403／claim_failed。唯讀雲端 OpenAPI 確認 version／pending_version 及 claim／finalize 的版本參數仍為 integer，客戶端傳毫秒版本；隔離 PostgreSQL 已重現溢位。新增 [083 版本欄位修正](../supabase/migrations/083_widen_product_photo_versions.sql)、[唯讀結構／權限驗證](../supabase/verification/083_product_photo_version_readiness.sql)、[隔離回歸](../scripts/verify-product-photo-version-sql.mjs)。初版套用因雲端舊RPC缺少boolean參數而中止；新版支援含／不含該參數的部署簽章，舊版相容參數僅接受false（true／null拒絕），6項隔離回歸通過。修正擴大版本數值範圍並沿用部署函式內容；不更動方案、席次、RLS、儲存額度或既有照片。雲端待使用者執行，尚未宣稱照片上傳通過。
+
 2026-10-27 三方案手機 UI 分批實作：[修正與複驗紀錄](subscription/THREE_TIER_MOBILE_UI_FIXES_2026_10_27.md)、[原巡檢逐項進度（第 8 節）](subscription/THREE_TIER_MOBILE_UI_REVIEW_2026_10_26.md)。新增[共用呈現規則](../lib/subscription/ui-presentation.ts)、[呈現回歸測試](../tests/subscription-mobile-ui.test.tsx)；免費報名／費用／期限整合、空殼／收攤卡、跨方案頁名與返回、5／6 分頁、方案卡／PDF 文案、載入狀態及照片數量語意已接線。商品照片既有資料的空／失敗契約仍待處理；費用不搬值，沒有改價格／權益／資料保留或正式購買。
 
 2026-10-26 三方案手機實際巡檢：[UI 問題與修正方案](subscription/THREE_TIER_MOBILE_UI_REVIEW_2026_10_26.md)。使用者授權本輪內建瀏覽器操作，實際切換免費／輕量／高階並回免費，主要尺寸 390×844；16 類路由與 30 張截圖。確認免費收攤樣式、繳費卡、未開放空殼，以及跨方案標題／返回／方案卡／報告文字等 19 項問題，提出分三批的具體方案。這次僅操作、閱讀來源及產生報告，沒有修改程式／價格／權益、儲存營運資料、送邀請、實際上傳或全帳號啟用；不能冒充完整保存驗收。

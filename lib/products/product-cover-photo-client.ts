@@ -1,6 +1,7 @@
 'use client';
 
 import { buildAppApiUrl } from '@/lib/api/client';
+import { decodeProductPhotoImage, parseProductPhotoMetadata, type ProductPhotoImageResult, type ProductPhotoMetadataResult } from './product-cover-photo-read';
 import { supabase } from '@/lib/supabase/client';
 import type {
   PreparedProductCoverPhoto,
@@ -44,6 +45,7 @@ export async function getProductCoverPhotoCapability(productId?: string): Promis
       && isCapabilityReason(body.reason)
     ) {
       return {
+        ...(body.photoPresence === 'empty' || body.photoPresence === 'existing' || body.photoPresence === 'unavailable' ? {photoPresence: body.photoPresence} : {}),
         canManage: body.canManage,
         canDelete: body.canDelete,
         reason: body.reason,
@@ -72,17 +74,17 @@ export async function deleteProductCoverPhoto(productId: string): Promise<void> 
   if (!response.ok) throw new Error('delete_failed');
 }
 
-export async function fetchProductCoverPhoto(productId: string, variant: 'display' | 'thumbnail'): Promise<string | null> {
+export async function fetchProductCoverPhoto(productId: string, variant: 'display' | 'thumbnail'): Promise<ProductPhotoImageResult> {
   try {
     const accessToken = await token();
-    const response = await fetch(buildAppApiUrl(`/api/product-cover-photo/image?productId=${encodeURIComponent(productId)}&variant=${variant}`), { headers: { Authorization: `Bearer ${accessToken}` } });
-    if (!response.ok) return null;
-    return URL.createObjectURL(await response.blob());
-  } catch { return null; }
+    const response = await fetch(buildAppApiUrl(`/api/product-cover-photo/image?productId=${encodeURIComponent(productId)}&variant=${variant}`), { headers: { Authorization: `Bearer ${accessToken}` }, cache: 'no-store' });
+    const result=await decodeProductPhotoImage(response);
+    return result.state==='existing' ? {state:'existing',url:URL.createObjectURL(result.blob)} : result;
+  } catch { return {state: 'unavailable'}; }
 }
 
-export async function fetchProductCoverPhotoMetadata(productIds: string[]): Promise<Record<string, number>> {
-  if (productIds.length === 0) return {};
+export async function fetchProductCoverPhotoMetadata(productIds: string[]): Promise<ProductPhotoMetadataResult> {
+  if (productIds.length === 0) return {state:'ready',photos:{}};
   try {
     const accessToken = await token();
     const response = await fetch(buildAppApiUrl('/api/product-cover-photo/metadata'), {
@@ -91,10 +93,8 @@ export async function fetchProductCoverPhotoMetadata(productIds: string[]): Prom
       body: JSON.stringify({ productIds: productIds.slice(0, 100) }),
       cache: 'no-store',
     });
-    if (!response.ok) return {};
-    const body = await response.json() as { photos?: Record<string, number> };
-    return body.photos ?? {};
+    return parseProductPhotoMetadata(response.status,await response.json().catch(()=>null));
   } catch {
-    return {};
+    return {state:'unavailable'};
   }
 }

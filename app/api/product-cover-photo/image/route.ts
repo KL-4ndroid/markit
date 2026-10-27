@@ -17,14 +17,17 @@ async function handleGET(request: Request) {
   const variant = url.searchParams.get('variant') === 'display' ? 'display' : 'thumbnail';
   if (!productId) return NextResponse.json({ ok: false, code: 'invalid_product' }, { status: 400 });
   const client = createProductCoverPhotoServiceClient();
-  if (!client || !await resolveProductCoverPhotoAccess(client, auth.actor.actorId, productId)) return NextResponse.json({ ok: false, code: 'not_found' }, { status: 404 });
-  const { data } = await client.from('product_cover_photos').select('display_object_key,thumbnail_object_key,display_content_hash,thumbnail_content_hash,version')
-    .eq('product_id', productId).eq('status', 'uploaded').is('deleted_at', null).maybeSingle();
-  if (!data) return NextResponse.json({ ok: false, code: 'not_found' }, { status: 404 });
+  if (!client) return NextResponse.json({ok:false,code:'unavailable'}, {status:503});
+  if (!await resolveProductCoverPhotoAccess(client, auth.actor.actorId, productId)) return NextResponse.json({ ok: false, code: 'not_found' }, { status: 404 });
+  const { data, error: metadataError } = await client.from('product_cover_photos').select('status,display_object_key,thumbnail_object_key,display_content_hash,thumbnail_content_hash,version')
+    .eq('product_id', productId).is('deleted_at', null).maybeSingle();
+  if (metadataError) return NextResponse.json({ok:false,code:'unavailable'}, {status:503});
+  if (!data) return NextResponse.json({ ok: false, code: 'photo_empty' }, { status: 404,headers:{'Cache-Control':'no-store'} });
+  if (data.status !== 'uploaded') return NextResponse.json({ok:false,code:'photo_pending'}, {status:503});
   const key = variant === 'display' ? data?.display_object_key : data?.thumbnail_object_key;
-  if (!key) return NextResponse.json({ ok: false, code: 'not_found' }, { status: 404 });
-  const object = await getProductCoverPhotoObject(key, variant === 'display' ? PRODUCT_COVER_PHOTO_POLICY.displayMaxBytes : PRODUCT_COVER_PHOTO_POLICY.thumbnailMaxBytes);
-  if (!object) return NextResponse.json({ ok: false, code: 'not_found' }, { status: 404 });
+  if (!key) return NextResponse.json({ok:false,code:'unavailable'}, {status:503});
+  const object = await getProductCoverPhotoObject(key, variant === 'display' ? PRODUCT_COVER_PHOTO_POLICY.displayMaxBytes : PRODUCT_COVER_PHOTO_POLICY.thumbnailMaxBytes).catch(()=>null);
+  if (!object) return NextResponse.json({ok:false,code:'unavailable'}, {status:503});
   const etag = variant === 'display' ? data.display_content_hash : data.thumbnail_content_hash;
   const responseBody = new ArrayBuffer(object.body.byteLength);
   new Uint8Array(responseBody).set(object.body);

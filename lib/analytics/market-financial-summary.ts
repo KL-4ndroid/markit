@@ -1,3 +1,4 @@
+import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import type { Market } from '@/types/db';
 
 function amount(value: number | null | undefined): number {
@@ -10,8 +11,7 @@ export function calculateTrackedMarketFixedCost(market: Market): number {
   const umbrellaRental = market.umbrellaFree ? 0 : amount(market.umbrellaRental);
   const tableclothRental = market.tableclothFree ? 0 : amount(market.tableclothRental);
 
-  return amount(market.registrationFee)
-    + amount(market.boothCost)
+  return getMarketBoothFee(market)
     + tableRental
     + chairRental
     + umbrellaRental

@@ -2,6 +2,8 @@
 
 import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 import { SubscriptionFeatureNotice } from '@/components/subscription/SubscriptionFeatureNotice';
+import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
+import { MarketFeeConflictNotice } from './MarketFeeConflictNotice';
 import { FreeMarketWorkspace } from './FreeMarketWorkspace';
 import { MarketRegistrationPanel } from '@/components/markets/MarketRegistrationPanel';
 import { MarketReturnLink } from '@/components/markets/MarketReturnLink';
@@ -1403,7 +1405,7 @@ export function MarketDetailScreen() {
             />
           )}
           {resolvedOwnerWorkspaceView === 'overview' && <ContextHelp label="淨利怎麼算">
-            <p>估計淨利＝已記錄銷售利潤－固定成本－營收抽成。固定成本包含報名費、攤位費與自付設備租金（含桌布）；免費提供的設備不扣款。</p>
+            <p>估計淨利＝已記錄銷售利潤－固定成本－營收抽成。固定成本包含攤位費（即報名費）與自付設備租金（含桌布）；免費提供的設備不扣款。</p>
             <p>未記錄銷售利潤時，暫以營收估算。未填成本不代表沒有支出；交通、人工等未記錄費用不會自動計入。可退保證金不列成本，現金盤點也不會改變淨利。</p>
           </ContextHelp>}
         </MarketWorkspaceSummary>
@@ -1715,11 +1717,11 @@ export function MarketDetailScreen() {
             <div className="flex justify-between">
               <span className="text-muted-foreground">攤位費</span>
               <span className="font-medium text-foreground">
-                {formatCurrency(market.boothCost || 0)}
+                {formatCurrency(getMarketBoothFee(market))}
               </span>
             </div>
             
-            {(market.registrationFee ?? 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">報名費</span><span className="font-medium">{formatCurrency(market.registrationFee ?? 0)}</span></div>}
+            <MarketFeeConflictNotice market={market} />
             {!market.tableclothFree && (market.tableclothRental ?? 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">桌布租金</span><span className="font-medium">{formatCurrency(market.tableclothRental ?? 0)}</span></div>}
             {/* 設備租賃 - 始終顯示 */}
             <div className="space-y-1 pl-4 py-2 bg-background rounded-xl">

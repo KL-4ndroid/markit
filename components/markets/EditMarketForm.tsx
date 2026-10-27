@@ -2,6 +2,8 @@
 
 import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 
+import { getMarketBoothFee, resolveMarketBoothFee, confirmedMarketBoothFee } from '@/lib/markets/market-booth-fee';
+import { MarketFeeConflictNotice } from './MarketFeeConflictNotice';
 import { Clock, DollarSign, FileText, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -85,7 +87,7 @@ function createEditMarketFormValues(market: Market): EditMarketFormValues {
     checkInTime: market.checkInTime || '',
     operatingStartTime: market.operatingStartTime || '',
     operatingEndTime: market.operatingEndTime || '',
-    boothCost: Number(market.boothCost || 0),
+    boothCost: getMarketBoothFee(market),
     deposit: Number(market.deposit || 0),
     tableRental: Number(market.tableRental || 0),
     chairRental: Number(market.chairRental || 0),
@@ -106,6 +108,8 @@ export function EditMarketForm({
   const { canRecord } = useSubscriptionExperience();
   const isManagerMode = mode === 'manager';
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feeConfirmed, setFeeConfirmed] = useState(false);
+  const feeConflict = resolveMarketBoothFee(market).conflict;
   const [tableFree, setTableFree] = useState(Boolean(market.tableFree));
   const [chairFree, setChairFree] = useState(Boolean(market.chairFree));
   const [umbrellaFree, setUmbrellaFree] = useState(Boolean(market.umbrellaFree));
@@ -113,7 +117,7 @@ export function EditMarketForm({
   const [formData, setFormData] = useState<EditMarketFormValues>(() => createEditMarketFormValues(market));
   const [errors, setErrors] = useState<MarketCoreFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const hasChanges = hasMarketFormChanges({
+  const hasChanges = (!isManagerMode && feeConflict && feeConfirmed) || hasMarketFormChanges({
     ...createEditMarketFormValues(market),
     tableFree: Boolean(market.tableFree), chairFree: Boolean(market.chairFree),
     umbrellaFree: Boolean(market.umbrellaFree), noEarlyEntry: !market.earlyEntryEnabled,
@@ -121,6 +125,7 @@ export function EditMarketForm({
 
   useEffect(() => {
     setFormData(createEditMarketFormValues(market));
+    setFeeConfirmed(false);
     setTableFree(Boolean(market.tableFree));
     setChairFree(Boolean(market.chairFree));
     setUmbrellaFree(Boolean(market.umbrellaFree));
@@ -173,6 +178,10 @@ export function EditMarketForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!hasChanges || isSubmitting) return;
+    if (!isManagerMode && feeConflict && !feeConfirmed) {
+      setSubmitError('舊報名費與攤位費金額不同，請先確認正確的攤位費金額。');
+      return;
+    }
     const nextErrors = validateMarketCoreForm(formData, { requireIdentity: !isManagerMode });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -208,7 +217,7 @@ export function EditMarketForm({
         checkInTime: formData.checkInTime,
         operatingStartTime: formData.operatingStartTime,
         operatingEndTime: formData.operatingEndTime,
-        boothCost: formData.boothCost,
+        ...confirmedMarketBoothFee(formData.boothCost),
         deposit: formData.deposit,
         tableRental: tableFree ? 0 : formData.tableRental,
         chairRental: chairFree ? 0 : formData.chairRental,
@@ -271,6 +280,10 @@ export function EditMarketForm({
       )}
     >
       <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
+        {!isManagerMode && feeConflict && <div className="mb-4">
+          <MarketFeeConflictNotice market={market} />
+          <label className="flex min-h-11 items-start gap-3 text-sm leading-6"><input type="checkbox" checked={feeConfirmed} onChange={event => setFeeConfirmed(event.target.checked)} className="mt-1 h-5 w-5" />已確認攤位費金額，儲存時合併舊欄位</label>
+        </div>}
         {!hasChanges && <p className="mb-3 text-sm text-muted-foreground">目前沒有變更；修改欄位後即可儲存。</p>}
         <div className="japanese-surface-card p-5 sm:p-6">
           <MarketBasicFields

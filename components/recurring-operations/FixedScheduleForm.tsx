@@ -35,7 +35,7 @@ const WEEKDAYS = [
 
 const inputClass = 'min-h-12 w-full rounded-2xl border border-primary/15 bg-atelier-paper px-4 text-foreground shadow-sm outline-none transition hover:border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:bg-muted/40';
 const numberFields = [
-  ['registrationFee', '報名費'], ['boothCost', '攤位費'], ['deposit', '保證金'],
+  ['boothCost', '攤位費'], ['deposit', '保證金'],
   ['tableRental', '桌子租金'], ['chairRental', '椅子租金'], ['umbrellaRental', '傘具租金'],
   ['tableclothRental', '桌巾租金'], ['commissionRate', '營業額抽成（%）'],
 ] as const;

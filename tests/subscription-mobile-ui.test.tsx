@@ -19,7 +19,7 @@ assert.deepEqual(marketFeeDisplayRows({ boothCost: 1500, registrationFee: 0, dep
   {label:'攤位費',value:1500}, {label:'保證金',value:100},
 ]);
 const legacy = {registrationFee:300,boothCost:1500,deposit:100};
-assert.deepEqual(marketFeeDisplayRows(legacy).map(row=>row.value),[300,1500,100]);
+assert.deepEqual(marketFeeDisplayRows(legacy).map(row=>row.value),[1500,100]);
 assert.deepEqual(legacy,{registrationFee:300,boothCost:1500,deposit:100});
 assert.equal(marketRegistrationPresentation('accepted').label,'待繳費');
 assert.equal(salesSettingsPresentation('free').title,'品牌設定');

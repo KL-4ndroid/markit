@@ -1,5 +1,7 @@
 'use client';
 
+import { getMarketBoothFee, resolveMarketBoothFee, confirmedMarketBoothFee } from '@/lib/markets/market-booth-fee';
+import { MarketFeeConflictNotice } from '@/components/markets/MarketFeeConflictNotice';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -36,19 +38,24 @@ export function FutureScheduleEditDialog({ open, scheduleId, effectiveDate, onCl
   const [endTime, setEndTime] = useState('18:00');
   const [defaults, setDefaults] = useState<OperationScheduleDefaults>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [feeConfirmed, setFeeConfirmed] = useState(false);
 
   useEffect(() => {
     if (!schedule || !open) return;
     setWeekdays([...schedule.recurrence.weekdays]);
     setStartTime(schedule.startTime);
     setEndTime(schedule.endTime);
-    setDefaults({ ...schedule.defaults });
+    setDefaults({ ...schedule.defaults, boothCost: getMarketBoothFee(schedule.defaults) });
+    setFeeConfirmed(false);
   }, [open, schedule]);
 
   const save = async () => {
     if (!schedule || weekdays.length === 0 || !user?.id || !isOwner || roleRefreshState.stage !== 'ready') {
       toast.error('請至少選擇一個星期，並確認目前權限。');
       return;
+    }
+    if (resolveMarketBoothFee(schedule.defaults).conflict && !feeConfirmed) {
+      toast.error('請先確認未來安排的攤位費金額。'); return;
     }
     setIsSaving(true);
     try {
@@ -57,7 +64,7 @@ export function FutureScheduleEditDialog({ open, scheduleId, effectiveDate, onCl
         startTime,
         endTime,
         endsNextDay: endTime <= startTime,
-        defaults,
+        defaults: { ...defaults, ...confirmedMarketBoothFee(Number(defaults.boothCost ?? 0)) },
       }, { ownerId: user.id, isOwner: true });
       toast.success('已更新這次之後的固定安排');
       onClose();
@@ -81,6 +88,10 @@ export function FutureScheduleEditDialog({ open, scheduleId, effectiveDate, onCl
     >
       {!schedule ? <p className="text-sm text-muted-foreground">正在載入固定安排…</p> : (
         <div className="space-y-5">
+          {resolveMarketBoothFee(schedule.defaults).conflict && <div>
+            <MarketFeeConflictNotice market={schedule.defaults} />
+            <label className="flex min-h-11 items-start gap-3 text-sm leading-6"><input type="checkbox" checked={feeConfirmed} onChange={event => setFeeConfirmed(event.target.checked)} className="mt-1 h-5 w-5" />已確認未來安排的攤位費金額</label>
+          </div>}
           <div>
             <p className="mb-2 text-sm font-medium text-foreground">每週星期</p>
             <div className="grid grid-cols-7 gap-1.5" role="group" aria-label="未來每週營業日">
@@ -96,7 +107,7 @@ export function FutureScheduleEditDialog({ open, scheduleId, effectiveDate, onCl
           </div>
           <FormSectionDisclosure title="更多預設" description="從這次之後使用的費用與備註" icon={SlidersHorizontal} tone="yellow">
             <div className="grid gap-3 sm:grid-cols-2">
-              {([['registrationFee', '報名費'], ['boothCost', '攤位費'], ['deposit', '保證金'], ['tableRental', '桌子租金'], ['chairRental', '椅子租金'], ['umbrellaRental', '傘具租金'], ['tableclothRental', '桌巾租金'], ['commissionRate', '營業額抽成（%）']] as const).map(([field, label]) => (
+              {([['boothCost', '攤位費'], ['deposit', '保證金'], ['tableRental', '桌子租金'], ['chairRental', '椅子租金'], ['umbrellaRental', '傘具租金'], ['tableclothRental', '桌巾租金'], ['commissionRate', '營業額抽成（%）']] as const).map(([field, label]) => (
                 <label key={field} className="text-sm font-medium text-foreground">{label}<input type="number" min="0" value={defaults[field] ?? 0} onChange={event => setDefaults(current => ({ ...current, [field]: Number(event.target.value) }))} className="mt-2 min-h-11 w-full rounded-xl border border-primary/15 bg-white px-3" /></label>
               ))}
             </div>

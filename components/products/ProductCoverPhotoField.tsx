@@ -3,6 +3,9 @@
 import { Camera, ImagePlus, Loader2, Lock, RefreshCw, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/lib/db';
+import { canHideDisabledProductPhoto, type ProductPhotoReadState } from '@/lib/products/product-cover-photo-read';
 import { Button } from '@/components/ui/Button';
 import {
   deleteProductCoverPhoto,
@@ -46,6 +49,15 @@ export function ProductCoverPhotoField({
     reason: 'unavailable',
   });
   const [cloudPhotoExists, setCloudPhotoExists] = useState(false);
+  const [readState,setReadState]=useState<ProductPhotoReadState>('loading');
+  const [retryingUpload,setRetryingUpload]=useState(false);
+  const pending=useLiveQuery(async()=>{
+    if(!productId) return {productId,checked:true,hasPending:false,hasPayload:false,hasRecord:false,status:null as string|null};
+    try {
+      const [record,payload]=await Promise.all([db.productCoverPhotoPendingUploads.get(productId),db.productCoverPhotoPendingPayloads.get(productId)]);
+      return {productId,checked:true,hasPending:Boolean(record||payload),hasPayload:Boolean(payload),hasRecord:Boolean(record),status:record?.status??null};
+    } catch {return {productId,checked:false,hasPending:false,hasPayload:false,hasRecord:false,status:null};}
+  },[productId]);
   const [imageRevision, setImageRevision] = useState(0);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -53,8 +65,11 @@ export function ProductCoverPhotoField({
   useEffect(() => {
     selectionVersion.current += 1;
     setProcessing(false);
+    setRetryingUpload(false);
     return () => { selectionVersion.current += 1; };
   }, [productId, capability.canManage]);
+
+  useEffect(()=>{setCloudPhotoExists(false);setReadState('loading');setRetryingUpload(false);setError('');},[productId]);
 
   useEffect(() => {
     let active = true;
@@ -72,9 +87,11 @@ export function ProductCoverPhotoField({
   useEffect(() => {
     if (!productId || !capability.canManage || retriedProductRef.current === productId) return;
     retriedProductRef.current = productId;
+    let active=true;
     void retryPendingProductCoverPhoto(productId).then(outcome => {
-      if (outcome === 'uploaded') setImageRevision(previous => previous + 1);
-    });
+      if (active && outcome === 'uploaded') setImageRevision(previous => previous + 1);
+    }).catch(()=>{if(active) setError('待上傳照片仍保留，請稍後重試。');});
+    return ()=>{active=false;};
   }, [capability.canManage, productId]);
 
   useEffect(() => () => {
@@ -84,6 +101,19 @@ export function ProductCoverPhotoField({
   const handleAvailabilityChange = useCallback((available: boolean) => {
     setCloudPhotoExists(available);
   }, []);
+
+  const handleReadStateChange=useCallback((state: ProductPhotoReadState)=>setReadState(state),[]);
+  const retryUpload=async()=>{
+    if(!productId||!capability.canManage||retryingUpload) return;
+    const request=selectionVersion.current;
+    setRetryingUpload(true);setError('');
+    try {const outcome=await retryPendingProductCoverPhoto(productId);
+      if(request!==selectionVersion.current) return;
+      if(outcome==='uploaded') setImageRevision(previous=>previous+1);
+      else setError(outcome===null ? '待上傳紀錄尚不完整，請重新選取照片。' : '照片尚未上傳，原檔仍保留在這台裝置。');
+    } catch {if(request===selectionVersion.current) setError('照片尚未上傳，原檔仍保留在這台裝置。');}
+    finally {if(request===selectionVersion.current) setRetryingUpload(false);}
+  };
 
   const choose = async (source: 'camera' | 'library') => {
     if (!capability.canManage || disabled || processing) return;
@@ -127,7 +157,7 @@ export function ProductCoverPhotoField({
   };
 
   const canChoose = capability.canManage;
-  const canDeleteCloud = Boolean(productId && cloudPhotoExists && capability.canDelete);
+  const canDeleteCloud = Boolean(productId && cloudPhotoExists && readState==='existing' && capability.canDelete);
   const planBlock = capability.reason === 'free_plan' || capability.reason === 'subscription_inactive'
     ? getSubscriptionBlockedPresentation(
         capability.reason === 'free_plan' ? 'plan_required' : 'entitlement_inactive',
@@ -147,23 +177,23 @@ export function ProductCoverPhotoField({
           ? '暫時無法確認商品照片權限'
           : '暫時無法確認商品照片功能';
 
-  // A new product cannot have a saved or queued photo. For existing products the
-  // image API does not distinguish an empty record from an unavailable service;
-  // retain a compact entry instead of treating a failed read as absence.
   const rolloutDisabled = capabilityStatus === 'resolved' && capability.reason === 'runtime_disabled';
-  if (rolloutDisabled && !productId && !value) return null;
+  const pendingChecked=Boolean(pending && pending.productId===productId && pending.checked);
+  const hasPending=Boolean(pending && pending.productId===productId && pending.hasPending);
+  if(canHideDisabledProductPhoto({disabled:rolloutDisabled,productId,hasSelection:Boolean(value),
+    presence:capability.photoPresence,pendingChecked:Boolean(pendingChecked),hasPending:Boolean(hasPending)})) return null;
 
   return (
     <section className="mt-6 space-y-3 border-t border-primary/10 pt-5" aria-labelledby={`${productId ?? 'new'}-cover-title`}>
       <div>
         <h3 id={`${productId ?? 'new'}-cover-title`} className="text-sm font-medium text-foreground">商品封面照片</h3>
-        {!rolloutDisabled && <p className="mt-1 text-xs text-muted-foreground">每項商品支援一張封面，系統會自動壓縮成適合顯示的尺寸。</p>}
+        {value && <p className="mt-1 text-xs text-muted-foreground">儲存商品後上傳照片。</p>}
       </div>
 
       {rolloutDisabled && productId && !value ? (
         <p className="text-xs leading-5 text-muted-foreground">照片服務目前暫停；既有照片與待上傳紀錄不會因此刪除。</p>
-      ) : (canChoose || value || productId) && (
-      <div className="aspect-[4/3] overflow-hidden rounded-control border border-primary/15 bg-background">
+      ) : (value || productId) && (
+      <div className={value || cloudPhotoExists || readState==='existing' ? 'aspect-[4/3] overflow-hidden rounded-control border border-primary/15 bg-background' : readState==='empty' ? 'hidden' : 'flex min-h-12 items-center justify-center rounded-control bg-muted/30 px-3'}>
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={value.previewUrl} alt="待上傳的商品封面" className="h-full w-full object-cover" />
@@ -171,17 +201,15 @@ export function ProductCoverPhotoField({
           <div className="flex h-full items-center justify-center">
             <ProductCoverPhotoImage
               key={`${productId}-${imageRevision}`}
+              showStatusText
+              onReadStateChange={handleReadStateChange}
               productId={productId}
               productName={productName || '商品'}
               variant="display"
               onAvailabilityChange={handleAvailabilityChange}
             />
           </div>
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <Camera className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
-          </div>
-        )}
+        ) : null}
       </div>
       )}
 
@@ -196,23 +224,23 @@ export function ProductCoverPhotoField({
             type="button"
             variant="secondary"
             className="min-w-40 flex-1"
-            disabled={disabled || processing}
+            disabled={disabled || processing || retryingUpload}
             onClick={() => void choose('library')}
             leadingIcon={<ImagePlus className="h-4 w-4" aria-hidden="true" />}
           >
-            {processing ? '處理中' : value || cloudPhotoExists ? '更換照片' : '加入照片'}
+            {processing ? '處理中' : value || cloudPhotoExists || capability.photoPresence==='existing' ? '更換照片' : '加入照片'}
           </Button>
-          <Button type="button" variant="secondary" disabled={disabled || processing}
+          <Button type="button" variant="secondary" disabled={disabled || processing || retryingUpload}
             onClick={() => void choose('camera')} leadingIcon={<Camera className="h-4 w-4" aria-hidden="true" />}>
             拍照
           </Button>
           {value && (
-            <Button type="button" variant="ghost" disabled={disabled || processing} onClick={() => onChange(null)} leadingIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}>
+            <Button type="button" variant="ghost" disabled={disabled || processing || retryingUpload} onClick={() => onChange(null)} leadingIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}>
               取消選取
             </Button>
           )}
           {!value && canDeleteCloud && (
-            <Button type="button" variant="ghost" disabled={disabled || processing} onClick={() => void removeCloud()} leadingIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}>
+            <Button type="button" variant="ghost" disabled={disabled || processing || retryingUpload} onClick={() => void removeCloud()} leadingIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}>
               刪除照片
             </Button>
           )}
@@ -236,7 +264,7 @@ export function ProductCoverPhotoField({
                 type="button"
                 variant="ghost"
                 className="mt-1 min-h-11 px-0 text-xs text-primary"
-                disabled={disabled || processing}
+                disabled={disabled || processing || retryingUpload}
                 onClick={() => setCapabilityRevision(previous => previous + 1)}
                 leadingIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
               >
@@ -245,12 +273,18 @@ export function ProductCoverPhotoField({
             )}
           </div>
           {canDeleteCloud && (
-            <Button type="button" variant="ghost" disabled={disabled || processing} onClick={() => void removeCloud()} leadingIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}>
+            <Button type="button" variant="ghost" disabled={disabled || processing || retryingUpload} onClick={() => void removeCloud()} leadingIcon={<Trash2 className="h-4 w-4" aria-hidden="true" />}>
               刪除
             </Button>
           )}
         </div>
       )}
+
+      {hasPending && <div className="flex flex-wrap items-center justify-between gap-2 rounded-control bg-muted/40 px-3 py-2" role="status">
+        <p className="text-xs leading-5 text-muted-foreground">{!pending?.hasPayload || !pending.hasRecord ? '待上傳紀錄不完整，請重新選取照片。' : pending.status==='uploading' ? '照片正在上傳' : '這台裝置有待上傳照片，原檔仍保留。'}</p>
+        {capability.canManage && <Button type="button" variant="ghost" className="min-h-11 text-xs" disabled={disabled||processing||retryingUpload||!pending?.hasPayload||!pending.hasRecord||pending.status==='uploading'} onClick={()=>void retryUpload()}>重試上傳</Button>}
+      </div>}
+      {rolloutDisabled && <Button type="button" variant="ghost" className="min-h-11 text-xs" disabled={disabled||processing} onClick={()=>setCapabilityRevision(previous=>previous+1)}>重新確認</Button>}
 
       {error && <p className="text-sm text-status-danger-text" role="alert">{error}</p>}
     </section>

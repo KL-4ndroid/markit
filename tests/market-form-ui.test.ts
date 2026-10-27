@@ -22,9 +22,9 @@ for (const source of [addForm, editForm]) {
   assert.doesNotMatch(source, /\b(?:window\.)?alert\s*\(|\bwindow\.confirm\s*\(/);
 }
 
-assert.match(addForm, /title="成本與抽成"/);
+assert.match(addForm, /title=\{canRecord \? '成本與抽成' : '繳費金額'\}/);
 assert.match(addForm, /title="設備"/);
-assert.match(editForm, /!isManagerMode &&[\s\S]*?title="成本與抽成"/);
+assert.match(editForm, /!isManagerMode &&[\s\S]*?title=\{canRecord \? '成本與抽成' : '繳費金額'\}/);
 assert.match(sharedFields, /label="市集名稱"/);
 assert.match(sharedFields, /label="市集日期（可複選）"/);
 assert.match(sharedFields, /mode\?: 'owner' \| 'manager'/);

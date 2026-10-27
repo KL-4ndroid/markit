@@ -3,7 +3,7 @@
 > 自動產生；請勿手動修改。重新產生：`node scripts/generate-ui-copy-inventory.mjs`。
 > [總索引](../APP_UI_COPY_INDEX.md) · [完整 JSON](inventory.json) · [逐檔覆蓋](coverage.md)
 
-共 329 筆來源位置；同字不同出處分開記錄。這是來源盤點，候選與未啟用分支不算已上線功能。
+共 328 筆來源位置；同字不同出處分開記錄。這是來源盤點，候選與未啟用分支不算已上線功能。
 
 ## app/api/account-capabilities/route.ts
 
@@ -23,12 +23,12 @@ API 回應／伺服器來源（須確認客戶端是否顯示）
 
 | ID／來源 | 用語／動態範本 | 類型與用途 | 所在符號／觸發條件 |
 | --- | --- | --- | --- |
-| UI-35b7f12ac2ea<br>[app/api/product-cover-photo/capability/route.ts:21:67](../../app/api/product-cover-photo/capability/route.ts#L21) | authentication_unavailable | **內部狀態／錯誤碼** · 內部代碼，非人類提示<br>reason：機器可讀的狀態或錯誤識別碼；供追查轉譯來源，不當成使用者提示 | handleGET · reason<br>!auth.ok → auth.code === 'authentication_unavailable' |
-| UI-826daf643c16<br>[app/api/product-cover-photo/capability/route.ts:21:98](../../app/api/product-cover-photo/capability/route.ts#L21) | unavailable | **共用文案值** · 文案生產端，須查使用端<br>reason：供畫面或訊息組裝使用的標籤／說明值 | handleGET · reason<br>!auth.ok → auth.code === 'authentication_unavailable' |
-| UI-cf865df91465<br>[app/api/product-cover-photo/capability/route.ts:21:114](../../app/api/product-cover-photo/capability/route.ts#L21) | authentication_required | **內部狀態／錯誤碼** · 內部代碼，非人類提示<br>reason：機器可讀的狀態或錯誤識別碼；供追查轉譯來源，不當成使用者提示 | handleGET · reason<br>!auth.ok → 否則 auth.code === 'authentication_unavailable' |
-| UI-de903b2d9f84<br>[app/api/product-cover-photo/capability/route.ts:26:87](../../app/api/product-cover-photo/capability/route.ts#L26) | unavailable | **共用文案值** · 文案生產端，須查使用端<br>reason：供畫面或訊息組裝使用的標籤／說明值 | handleGET · reason<br>!client |
-| UI-9ae270377643<br>[app/api/product-cover-photo/capability/route.ts:29:87](../../app/api/product-cover-photo/capability/route.ts#L29) | permission_denied | **內部狀態／錯誤碼** · 內部代碼，非人類提示<br>reason：機器可讀的狀態或錯誤識別碼；供追查轉譯來源，不當成使用者提示 | handleGET · reason<br>!access |
-| UI-af8211c7da35<br>[app/api/product-cover-photo/capability/route.ts:32:53](../../app/api/product-cover-photo/capability/route.ts#L32) | permission_denied | **內部狀態／錯誤碼** · 內部代碼，非人類提示<br>reason：機器可讀的狀態或錯誤識別碼；供追查轉譯來源，不當成使用者提示 | handleGET · reason<br>!access.canEdit |
+| UI-ec67d3a4bb3e<br>[app/api/product-cover-photo/capability/route.ts:21:67](../../app/api/product-cover-photo/capability/route.ts#L21) | authentication_unavailable | **內部狀態／錯誤碼** · 內部代碼，非人類提示<br>reason：機器可讀的狀態或錯誤識別碼；供追查轉譯來源，不當成使用者提示 | handleGET · reason<br>!auth.ok → auth.code === 'authentication_unavailable' |
+| UI-c79f2c8c9f50<br>[app/api/product-cover-photo/capability/route.ts:21:98](../../app/api/product-cover-photo/capability/route.ts#L21) | unavailable | **共用文案值** · 文案生產端，須查使用端<br>reason：供畫面或訊息組裝使用的標籤／說明值 | handleGET · reason<br>!auth.ok → auth.code === 'authentication_unavailable' |
+| UI-73d9eac12465<br>[app/api/product-cover-photo/capability/route.ts:21:114](../../app/api/product-cover-photo/capability/route.ts#L21) | authentication_required | **內部狀態／錯誤碼** · 內部代碼，非人類提示<br>reason：機器可讀的狀態或錯誤識別碼；供追查轉譯來源，不當成使用者提示 | handleGET · reason<br>!auth.ok → 否則 auth.code === 'authentication_unavailable' |
+| UI-34a59a4c76f1<br>[app/api/product-cover-photo/capability/route.ts:26:87](../../app/api/product-cover-photo/capability/route.ts#L26) | unavailable | **共用文案值** · 文案生產端，須查使用端<br>reason：供畫面或訊息組裝使用的標籤／說明值 | handleGET · reason<br>!client |
+| UI-7a35dc472669<br>[app/api/product-cover-photo/capability/route.ts:29:87](../../app/api/product-cover-photo/capability/route.ts#L29) | permission_denied | **內部狀態／錯誤碼** · 內部代碼，非人類提示<br>reason：機器可讀的狀態或錯誤識別碼；供追查轉譯來源，不當成使用者提示 | handleGET · reason<br>!access |
+| UI-257e87654f75<br>[app/api/product-cover-photo/capability/route.ts:32:53](../../app/api/product-cover-photo/capability/route.ts#L32) | permission_denied | **內部狀態／錯誤碼** · 內部代碼，非人類提示<br>reason：機器可讀的狀態或錯誤識別碼；供追查轉譯來源，不當成使用者提示 | handleGET · reason<br>!access.canEdit |
 
 ## app/subscription/page.tsx
 
@@ -557,15 +557,14 @@ API 回應／伺服器來源（須確認客戶端是否顯示）
 
 | ID／來源 | 用語／動態範本 | 類型與用途 | 所在符號／觸發條件 |
 | --- | --- | --- | --- |
-| UI-fb46d9da4f7e<br>[lib/subscription/ui-presentation.ts:5:44](../../lib/subscription/ui-presentation.ts#L5) | 銷售與照片 | **共用文案值** · 文案生產端，須查使用端<br>title：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · title<br>tier === 'advanced' |
-| UI-4fe18e7a8795<br>[lib/subscription/ui-presentation.ts:5:66](../../lib/subscription/ui-presentation.ts#L5) | 管理品牌顯示、成交照片與現場互動記錄方式。 | **共用文案值** · 文案生產端，須查使用端<br>description：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · description<br>tier === 'advanced' |
-| UI-07a183513657<br>[lib/subscription/ui-presentation.ts:6:41](../../lib/subscription/ui-presentation.ts#L6) | 品牌與互動設定 | **共用文案值** · 文案生產端，須查使用端<br>title：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · title<br>tier === 'light' |
-| UI-d0eeb47f5431<br>[lib/subscription/ui-presentation.ts:6:65](../../lib/subscription/ui-presentation.ts#L6) | 管理品牌名稱與現場互動按鈕。 | **共用文案值** · 文案生產端，須查使用端<br>description：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · description<br>tier === 'light' |
-| UI-ffbc16eef030<br>[lib/subscription/ui-presentation.ts:7:19](../../lib/subscription/ui-presentation.ts#L7) | 品牌設定 | **共用文案值** · 文案生產端，須查使用端<br>title：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-de8eb8bf4039<br>[lib/subscription/ui-presentation.ts:7:40](../../lib/subscription/ui-presentation.ts#L7) | 管理應用程式中的品牌名稱。 | **共用文案值** · 文案生產端，須查使用端<br>description：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · description<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-dd397f6153e3<br>[lib/subscription/ui-presentation.ts:17:57](../../lib/subscription/ui-presentation.ts#L17) | 報名費（另列） | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | marketFeeDisplayRows · label<br>(market.registrationFee ?? 0) !== 0 |
-| UI-b87eff810ed5<br>[lib/subscription/ui-presentation.ts:18:14](../../lib/subscription/ui-presentation.ts#L18) | 攤位費 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | marketFeeDisplayRows · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-7e87c2b4f059<br>[lib/subscription/ui-presentation.ts:19:14](../../lib/subscription/ui-presentation.ts#L19) | 保證金 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | marketFeeDisplayRows · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-8fa0283977b6<br>[lib/subscription/ui-presentation.ts:6:44](../../lib/subscription/ui-presentation.ts#L6) | 銷售與照片 | **共用文案值** · 文案生產端，須查使用端<br>title：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · title<br>tier === 'advanced' |
+| UI-bea16b582137<br>[lib/subscription/ui-presentation.ts:6:66](../../lib/subscription/ui-presentation.ts#L6) | 管理品牌顯示、成交照片與現場互動記錄方式。 | **共用文案值** · 文案生產端，須查使用端<br>description：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · description<br>tier === 'advanced' |
+| UI-a060a8e72790<br>[lib/subscription/ui-presentation.ts:7:41](../../lib/subscription/ui-presentation.ts#L7) | 品牌與互動設定 | **共用文案值** · 文案生產端，須查使用端<br>title：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · title<br>tier === 'light' |
+| UI-b84d89a3af42<br>[lib/subscription/ui-presentation.ts:7:65](../../lib/subscription/ui-presentation.ts#L7) | 管理品牌名稱與現場互動按鈕。 | **共用文案值** · 文案生產端，須查使用端<br>description：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · description<br>tier === 'light' |
+| UI-56b06dee73e1<br>[lib/subscription/ui-presentation.ts:8:19](../../lib/subscription/ui-presentation.ts#L8) | 品牌設定 | **共用文案值** · 文案生產端，須查使用端<br>title：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-2f1d1c2c94d2<br>[lib/subscription/ui-presentation.ts:8:40](../../lib/subscription/ui-presentation.ts#L8) | 管理應用程式中的品牌名稱。 | **共用文案值** · 文案生產端，須查使用端<br>description：供畫面或訊息組裝使用的標籤／說明值 | salesSettingsPresentation · description<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-780c245f1b94<br>[lib/subscription/ui-presentation.ts:18:14](../../lib/subscription/ui-presentation.ts#L18) | 攤位費 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | marketFeeDisplayRows · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-e409b280c4f6<br>[lib/subscription/ui-presentation.ts:19:14](../../lib/subscription/ui-presentation.ts#L19) | 保證金 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | marketFeeDisplayRows · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
 
 ## lib/subscription/write-access.server.ts
 

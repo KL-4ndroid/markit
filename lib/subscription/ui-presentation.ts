@@ -1,3 +1,4 @@
+import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import type { RoleRefreshStage } from '@/lib/permissions/role-refresh-state';
 import type { SubscriptionExperience } from './experience';
 
@@ -11,11 +12,10 @@ export function isCurrentPlan(planId: string, tier: SubscriptionExperience): boo
   return ({ free: 'free', light: 'pro', advanced: 'team', unavailable: '' } as const)[tier] === planId;
 }
 
-/** These are independent source fields; this never combines fees or infers payment. */
+/** One booth fee with a legacy fallback; deposit remains refundable and separate. */
 export function marketFeeDisplayRows(market: { registrationFee?: number; boothCost?: number; deposit?: number }) {
   return [
-    ...((market.registrationFee ?? 0) !== 0 ? [{ label: '報名費（另列）', value: market.registrationFee! }] : []),
-    { label: '攤位費', value: market.boothCost ?? 0 },
+    { label: '攤位費', value: getMarketBoothFee(market) },
     { label: '保證金', value: market.deposit ?? 0 },
   ];
 }

@@ -1,3 +1,5 @@
+import type { ProductPhotoPresence } from './product-cover-photo-read';
+
 export const PRODUCT_COVER_PHOTO_POLICY = Object.freeze({
   maxSourceBytes: 25_000_000,
   maxSourcePixels: 24_000_000,
@@ -21,6 +23,7 @@ export type ProductCoverPhotoCapabilityReason =
   | 'unavailable';
 
 export type ProductCoverPhotoCapability = {
+  photoPresence?: ProductPhotoPresence;
   canManage: boolean;
   canDelete: boolean;
   reason: ProductCoverPhotoCapabilityReason;

@@ -1,5 +1,7 @@
 'use client';
 
+import { MarketFeeReviewNotice } from '@/components/markets/MarketFeeConflictNotice';
+
 import Link from 'next/link';
 import { ContextHelp } from '@/components/ui/ContextHelp';
 import { useEffect, useMemo, useState } from 'react';
@@ -474,6 +476,7 @@ export default function SettlementReportPreviewPage() {
           </div>
         </header>
 
+        <MarketFeeReviewNotice markets={markets} />
         {isReportDataLoading && (
           <StateView
             title="正在整理結算資料"

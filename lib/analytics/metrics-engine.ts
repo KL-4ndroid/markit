@@ -1,3 +1,4 @@
+import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 /**
  * Metrics Engine - 市集指標計算引擎
  * 
@@ -284,8 +285,8 @@ export async function calculateMarketMetrics(
   
   // ==================== 5. 計算成本和淨利 ====================
   
-  const boothCost = market.boothCost || 0;
-  const registrationFee = market.registrationFee || 0;
+  const boothCost = getMarketBoothFee(market);
+
   const tableRental = market.tableFree ? 0 : (market.tableRental || 0);
   const chairRental = market.chairFree ? 0 : (market.chairRental || 0);
   const umbrellaRental = market.umbrellaFree ? 0 : (market.umbrellaRental || 0);
@@ -294,7 +295,7 @@ export async function calculateMarketMetrics(
   
   const totalFixedCost = boothCost + rentals;
   const totalVariableCost = commission;
-  const netProfit = totalProfit - boothCost - registrationFee - rentals - commission;
+  const netProfit = totalProfit - boothCost - rentals - commission;
   
   // ==================== 6. 計算營業時數 ====================
   

@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 
 import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { ProductCard } from '@/components/products/ProductCard';
+import { mergeProductPhotoMetadata } from '@/lib/products/product-cover-photo-read';
 import { fetchProductCoverPhotoMetadata } from '@/lib/products/product-cover-photo-client';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
@@ -153,7 +154,10 @@ function ProductsPageContent() {
     isActive: isStaffMode ? true : undefined,
     ownerId: scopedOwnerId,
   });
-  const [coverPhotoVersions, setCoverPhotoVersions] = useState<Record<string, number>>({});
+  const [photoMetadata,setPhotoMetadata]=useState<{scope:string|null;photos:Record<string,number>;state:'loading'|'ready'|'disabled'|'unavailable'}>({scope:null,photos:{},state:'loading'});
+  const [photoMetadataRevision,setPhotoMetadataRevision]=useState(0);
+  const photoScope=stateKey ? `${stateKey}:${userRole.staffRole ?? 'owner'}` : null;
+  const coverPhotoVersions=photoMetadata.scope===photoScope ? photoMetadata.photos : {};
   const productIdKey = useMemo(() => allProducts
     .map(product => product.id)
     .filter((id): id is string => Boolean(id))
@@ -162,19 +166,21 @@ function ProductsPageContent() {
 
   useEffect(() => {
     let active = true;
+    if(!canLoadScopedData || !photoScope) return;
     const productIds = productIdKey ? productIdKey.split(',') : [];
+    setPhotoMetadata(previous=>({scope:photoScope,photos:previous.scope===photoScope?previous.photos:{},state:'loading'}));
     if (productIds.length === 0) {
-      setCoverPhotoVersions({});
+      setPhotoMetadata({scope:photoScope,photos:{},state:'ready'});
       return;
     }
     const batches = Array.from({ length: Math.ceil(productIds.length / 100) }, (_, index) => (
       productIds.slice(index * 100, (index + 1) * 100)
     ));
     void Promise.all(batches.map(fetchProductCoverPhotoMetadata)).then(results => {
-      if (active) setCoverPhotoVersions(Object.assign({}, ...results));
+      if (active) setPhotoMetadata(previous=>({scope:photoScope,...mergeProductPhotoMetadata(previous.scope===photoScope?previous.photos:{},results)}));
     });
     return () => { active = false; };
-  }, [productIdKey]);
+  }, [productIdKey,photoScope,photoMetadataRevision,canLoadScopedData]);
   const categorySource = useMemo(
     () => allProducts.filter(product => showInactive || product.isActive),
     [allProducts, showInactive],
@@ -323,6 +329,12 @@ function ProductsPageContent() {
       />
 
       <div className="mx-auto max-w-5xl px-4 pb-8 sm:px-6">
+        {photoMetadata.scope===photoScope && (photoMetadata.state==='unavailable'||photoMetadata.state==='disabled') && (
+          <div role="status" className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-control bg-muted/40 px-3 py-2">
+            <p className="text-xs leading-5 text-muted-foreground">{photoMetadata.state==='disabled'?'照片服務目前暫停；商品資料仍可使用。':'商品照片暫時無法確認；已載入的照片紀錄仍保留。'}</p>
+            <Button variant="ghost" className="min-h-11 text-xs" onClick={()=>setPhotoMetadataRevision(previous=>previous+1)}>重試照片</Button>
+          </div>
+        )}
         <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pb-3 pt-4 backdrop-blur-sm sm:-mx-6 sm:px-6">
           <div className="relative">
             <label htmlFor="product-search" className="sr-only">搜尋商品</label>

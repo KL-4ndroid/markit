@@ -1,3 +1,4 @@
+import { materializedMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import { db } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import type { Market, MarketCreatedPayload } from '@/types/db';
@@ -52,8 +53,7 @@ export function buildScheduledMarketPayload(
     endTime: schedule.endTime,
     operatingStartTime: schedule.startTime,
     operatingEndTime: schedule.endTime,
-    registrationFee: defaults.registrationFee ?? 0,
-    boothCost: defaults.boothCost ?? 0,
+    ...materializedMarketBoothFee(defaults),
     deposit: defaults.deposit,
     tableRental: defaults.tableRental,
     chairRental: defaults.chairRental,

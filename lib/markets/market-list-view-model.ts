@@ -1,3 +1,4 @@
+import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import type { Market, MarketStatus } from '@/types/db';
 import { calculateEstimatedMarketNetProfit } from '@/lib/analytics/market-financial-summary';
 import { formatDisplayDateRange } from '@/lib/presentation/formatters';
@@ -113,8 +114,7 @@ function buildPreparationSummary(
       equipmentSummaryItem('chair', '椅', market.chairRental, market.chairFree),
       equipmentSummaryItem('umbrella', '傘', market.umbrellaRental, market.umbrellaFree),
     ],
-    estimatedExpense: finiteAmount(market.registrationFee)
-      + finiteAmount(market.boothCost)
+    estimatedExpense: getMarketBoothFee(market)
       + tableRental
       + chairRental
       + umbrellaRental,

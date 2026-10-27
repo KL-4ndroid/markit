@@ -448,3 +448,6 @@ tsx tests/subscription-write-access.test.ts
 tsx tests/subscription-completeness.test.ts
 
 tests/subscription-mobile-ui.test.tsx
+
+tests/market-booth-fee.test.tsx
+tests/product-cover-photo-read.test.tsx

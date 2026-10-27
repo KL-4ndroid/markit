@@ -1,3 +1,4 @@
+import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import type { Market } from '@/types/db';
 
 export type MarketTrendDirection = 'improving' | 'declining' | 'flat' | 'not_enough_data';
@@ -31,8 +32,7 @@ function getFixedCost(market: Market): number {
   const tableclothRental = market.tableclothFree ? 0 : toNumber(market.tableclothRental);
 
   return (
-    toNumber(market.registrationFee) +
-    toNumber(market.boothCost) +
+    getMarketBoothFee(market) +
     tableRental +
     chairRental +
     umbrellaRental +

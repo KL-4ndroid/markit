@@ -1,3 +1,4 @@
+import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import type { DailyStats, Event, Market, Product } from '@/types/db';
 import {
   analyzeDataCompleteness,
@@ -71,8 +72,7 @@ function getFixedCost(market: Market): number {
   const tableclothRental = market.tableclothFree ? 0 : (market.tableclothRental ?? 0);
 
   return (
-    (market.registrationFee ?? 0) +
-    (market.boothCost ?? 0) +
+    getMarketBoothFee(market) +
     tableRental +
     chairRental +
     umbrellaRental +

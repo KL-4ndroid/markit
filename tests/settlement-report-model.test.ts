@@ -132,9 +132,9 @@ runTest('builds owner weekly settlement report totals, rankings, and data qualit
   assert.equal(report.money.totalRevenue, 6000);
   assert.equal(report.money.productCost, 2400);
   assert.equal(report.money.grossProfit, 3600);
-  assert.equal(report.money.fixedMarketCost, 2200);
+  assert.equal(report.money.fixedMarketCost, 1800);
   assert.equal(report.money.commissionFee, 300);
-  assert.equal(report.money.netProfit, 1100);
+  assert.equal(report.money.netProfit, 1500);
   assert.equal(report.activity.totalDeals, 7);
   assert.equal(report.activity.totalInteractions, 16);
   assert.equal(report.activity.includedMarketCount, 2);

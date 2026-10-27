@@ -87,7 +87,7 @@ const preparationDetails = buildMarketListGroups([
 assert.ok(preparationDetails);
 assert.equal(preparationDetails.timeStatus, 'provided');
 assert.equal(preparationDetails.checkInTime, '09:00');
-assert.equal(preparationDetails.estimatedExpense, 1500);
+assert.equal(preparationDetails.estimatedExpense, 1400);
 assert.equal(preparationDetails.deposit, 500);
 assert.deepEqual(
   preparationDetails.equipment.map(item => [item.label, item.status, item.amount]),
@@ -145,7 +145,7 @@ const endedWithResults = completionDetails.find(item => item.market.id === 'ende
 const endedWithoutResults = completionDetails.find(item => item.market.id === 'ended-without-results');
 assert.deepEqual(endedWithResults?.completionSummary, {
   totalRevenue: 5000,
-  estimatedNetProfit: 1300,
+  estimatedNetProfit: 1400,
   totalDeals: 8,
 });
 assert.equal(endedWithoutResults?.completionSummary, null);

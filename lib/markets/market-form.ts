@@ -1,3 +1,4 @@
+import { getMarketBoothFee } from './market-booth-fee';
 import { isOptionalMarketRegion } from './market-region';
 import { normalizePaymentDeadline } from './market-payment-deadline';
 
@@ -96,6 +97,7 @@ export function calculateMarketDurationLabel(start?: string | null, end?: string
 
 export function calculateMarketFixedCost(values: {
   boothCost?: number;
+  registrationFee?: number;
   tableRental?: number;
   chairRental?: number;
   umbrellaRental?: number;
@@ -103,7 +105,7 @@ export function calculateMarketFixedCost(values: {
   chairFree: boolean;
   umbrellaFree: boolean;
 }): number {
-  return Number(values.boothCost || 0)
+  return getMarketBoothFee(values)
     + (values.tableFree ? 0 : Number(values.tableRental || 0))
     + (values.chairFree ? 0 : Number(values.chairRental || 0))
     + (values.umbrellaFree ? 0 : Number(values.umbrellaRental || 0));

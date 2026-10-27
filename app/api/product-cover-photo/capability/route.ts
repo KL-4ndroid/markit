@@ -33,11 +33,16 @@ async function handleGET(request: Request) {
       { headers: { 'Cache-Control': 'no-store' } },
     );
   }
+  // Presence is authorized metadata only, even while image delivery is paused.
+  // Failed reads remain unknown; a failed/uploading row still counts as existing.
+  const presenceResult = productId ? await client.from('product_cover_photos').select('id')
+    .eq('product_id',productId).is('deleted_at',null).maybeSingle() : {data:null,error:null};
+  const photoPresence = presenceResult.error ? 'unavailable' : presenceResult.data ? 'existing' : 'empty';
   const writeAccess = await checkServerSubscriptionWrite({ actorId: auth.actor.actorId, ownerId: access.ownerId, feature: 'product_photo' });
   if (!writeAccess.allowed) {
     const reason = writeAccess.reason === 'plan_required' ? 'free_plan'
       : writeAccess.reason === 'entitlement_unavailable' ? 'entitlement_unavailable' : 'permission_denied';
-    return NextResponse.json({ canManage: false, canDelete: isProductCoverPhotoDeleteEnabled(), reason },
+    return NextResponse.json({ canManage: false, canDelete: isProductCoverPhotoDeleteEnabled(), reason, photoPresence },
       { headers: { 'Cache-Control': 'no-store' } });
   }
   const entitlementRequired = isProductCoverPhotoEntitlementRequired();
@@ -57,6 +62,7 @@ async function handleGET(request: Request) {
       : 'runtime_disabled';
   return NextResponse.json({
     canManage,
+    photoPresence,
     canDelete: isProductCoverPhotoDeleteEnabled(),
     reason,
   }, { headers: { 'Cache-Control': 'no-store' } });

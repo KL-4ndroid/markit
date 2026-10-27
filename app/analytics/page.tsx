@@ -1,5 +1,7 @@
 'use client';
 
+import { MarketFeeReviewNotice } from '@/components/markets/MarketFeeConflictNotice';
+
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
@@ -542,6 +544,7 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <div className="mt-5 space-y-5">
+            <MarketFeeReviewNotice markets={markets} />
             {activeTab !== 'regions' && <AnalyticsKpiRow
               marketCount={validMarketCount}
               totalRevenue={summaryKpis.totalRevenue}

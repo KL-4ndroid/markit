@@ -10,6 +10,7 @@ import { MarketFieldOpsSection } from './MarketFieldOpsSection';
 import { MarketJournalWorkspace } from './MarketJournalWorkspace';
 import { MarketOperatingSessionControl } from './MarketOperatingSessionControl';
 import { marketFeeDisplayRows } from '@/lib/subscription/ui-presentation';
+import { MarketFeeConflictNotice } from './MarketFeeConflictNotice';
 import { formatCurrency } from '@/lib/utils';
 
 export function FreeMarketWorkspace({ market, returnTo, busy, onStatus, onEdit, onDelete, onSkip, onRestore, session, onStart, onClose, canManageFieldOps, initialView = 'arrangement' } : {
@@ -31,10 +32,11 @@ export function FreeMarketWorkspace({ market, returnTo, busy, onStatus, onEdit, 
           <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
             {marketFeeDisplayRows(market).map(row => <div key={row.label}><dt className="text-muted-foreground">{row.label}</dt><dd className="mt-1 font-semibold tabular-nums">{formatCurrency(row.value)}</dd></div>)}
           </dl>
+          <MarketFeeConflictNotice market={market} />
           <MarketPaymentDeadlineNotice market={market} compact />
         </MarketRegistrationPanel>
         {session && <MarketOperatingSessionControl session={session} canManage isUpdating={busy} showCloseAction
-          description={session.phase === 'closed' ? '今天已結束，可到出攤心得記下本場感想。' : undefined}
+          description={session.phase === 'closed' ? '今天已結束，可到出攤心得記下本場感想。' : session.phase === 'early-window' ? '可先開始今日出攤，並確認準備待辦。' : session.phase === 'extended' ? '已超過原定結束時間，確認準備事項後可結束今日出攤。' : '今日出攤已開始，可查看時間與準備事項。'}
           onStartEarly={onStart} onCloseToday={onClose} />}
         <MarketTodayTimeline title="本場時間" market={market} onEdit={onEdit} />
         <MarketFieldOpsSection marketId={market.id!} referenceNote={market.notes} collaborationEnabled={false} canManageFieldNotes={false} canManageChecklist={canManageFieldOps} canToggleChecklistItem={canManageFieldOps} readOnlyReason={!canManageFieldOps ? '此場次的準備待辦已封存為唯讀紀錄。' : undefined} />

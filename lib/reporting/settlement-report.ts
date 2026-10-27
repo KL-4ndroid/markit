@@ -1,3 +1,4 @@
+import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import { hasCapability, type RoleCapabilities } from '@/lib/permissions/role-capabilities';
 import {
   clampInsightNumber as clamp,
@@ -214,8 +215,7 @@ function getFixedMarketCost(market: Market): number {
   const tableclothRental = market.tableclothFree ? 0 : finiteNumber(market.tableclothRental);
 
   return (
-    finiteNumber(market.registrationFee) +
-    finiteNumber(market.boothCost) +
+    getMarketBoothFee(market) +
     tableRental +
     chairRental +
     umbrellaRental +
@@ -453,7 +453,7 @@ function buildLimitations(input: {
       code: 'zero_or_missing_market_cost',
       severity: 'info',
       affectedSections: ['profit', 'market_rejoin', 'data_quality'],
-      message: '部分有營收的市集沒有攤位費、報名費、租借費或抽成成本紀錄。',
+      message: '部分有營收的市集沒有攤位費、租借費或抽成成本紀錄。',
       recommendation: '若這些市集並非免費參加，請先補上市集成本，再參考淨利與成本壓力結論。',
     });
   }

@@ -152,7 +152,7 @@ export interface Market {
   operatingEndTime?: string;   // 營業結束時間（HH:mm）
   
   // 財務資訊
-  registrationFee: number;     // 報名費用
+  registrationFee: number;     // 舊攤位費別名；與 boothCost 同一筆，保留相容讀取
   boothCost: number;           // 攤位成本
   deposit?: number;            // 保證金
   tableRental?: number;        // 桌子租金

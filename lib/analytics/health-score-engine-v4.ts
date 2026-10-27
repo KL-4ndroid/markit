@@ -1,3 +1,4 @@
+import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 /**
  * Health Score Engine V4 - Production Grade
  * 
@@ -155,8 +156,8 @@ export function calculateMarketHealthScoresV4(
     const revenue = market.totalRevenue || 0;
     const profit = market.totalProfit || 0;
     
-    const boothCost = market.boothCost || 0;
-    const registrationFee = market.registrationFee || 0;
+    const boothCost = getMarketBoothFee(market);
+
     
     const rentals =
       (market.tableFree ? 0 : (market.tableRental || 0)) +
@@ -164,7 +165,7 @@ export function calculateMarketHealthScoresV4(
       (market.umbrellaFree ? 0 : (market.umbrellaRental || 0));
     
     const commission = (revenue * (market.commissionRate || 0)) / 100;
-    const netProfit = profit - boothCost - registrationFee - rentals - commission;
+    const netProfit = profit - boothCost - rentals - commission;
     
     // 計算營業時數
     let hours = 1; // 預設至少 1 小時（避免除以零）

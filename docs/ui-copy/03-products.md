@@ -3,7 +3,7 @@
 > 自動產生；請勿手動修改。重新產生：`node scripts/generate-ui-copy-inventory.mjs`。
 > [總索引](../APP_UI_COPY_INDEX.md) · [完整 JSON](inventory.json) · [逐檔覆蓋](coverage.md)
 
-共 204 筆來源位置；同字不同出處分開記錄。這是來源盤點，候選與未啟用分支不算已上線功能。
+共 207 筆來源位置；同字不同出處分開記錄。這是來源盤點，候選與未啟用分支不算已上線功能。
 
 ## app/products/page.tsx
 
@@ -11,42 +11,45 @@
 
 | ID／來源 | 用語／動態範本 | 類型與用途 | 所在符號／觸發條件 |
 | --- | --- | --- | --- |
-| UI-ceb42f2e94c6<br>[app/products/page.tsx:61:28](../../app/products/page.tsx#L61) | 手作 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-a349c6ab7c75<br>[app/products/page.tsx:62:24](../../app/products/page.tsx#L62) | 食品 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-70895731ac39<br>[app/products/page.tsx:63:29](../../app/products/page.tsx#L63) | 飾品 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-e0f19556d727<br>[app/products/page.tsx:64:28](../../app/products/page.tsx#L64) | 服飾 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-ac0e73451eb7<br>[app/products/page.tsx:65:23](../../app/products/page.tsx#L65) | 藝術 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-547cda7899e2<br>[app/products/page.tsx:66:30](../../app/products/page.tsx#L66) | 文具 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-edff5d79d8a8<br>[app/products/page.tsx:67:25](../../app/products/page.tsx#L67) | 其他 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-580d91503728<br>[app/products/page.tsx:202:33](../../app/products/page.tsx#L202) | 全部 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | tabs · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-1682e7a9dea7<br>[app/products/page.tsx:260:19](../../app/products/page.tsx#L260) | 商品建立成功 | **確認／通知** · 直接呈現定義<br>toast.success：提示操作結果、進度或要求使用者確認 | handleAddSuccess<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-891a8752afc8<br>[app/products/page.tsx:292:17](../../app/products/page.tsx#L292) | 本機資料庫無法正常存取 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · title<br>dbStatus.ok === false |
-| UI-5f74f93a61b0<br>[app/products/page.tsx:293:23](../../app/products/page.tsx#L293) | 可能是儲存空間不足、隱私模式或資料庫結構異常。你的雲端資料不會因此被刪除。 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · description<br>dbStatus.ok === false |
-| UI-8417f9dd1fa0<br>[app/products/page.tsx:297:63](../../app/products/page.tsx#L297) | 取得協助 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | ProductsPageContent · action<br>dbStatus.ok === false |
-| UI-0e911ab99e28<br>[app/products/page.tsx:298:84](../../app/products/page.tsx#L298) | 重新整理 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | ProductsPageContent · action<br>dbStatus.ok === false |
-| UI-6e9e3be9518b<br>[app/products/page.tsx:308:194](../../app/products/page.tsx#L308) | ← ${marketReturn.label} | **畫面文字** · 直接呈現定義<br>Link：辨識可點擊操作、導覽或展開入口 | ProductsPageContent<br>marketReturn |
-| UI-fdcb42892240<br>[app/products/page.tsx:310:15](../../app/products/page.tsx#L310) | 商品 | **畫面文字** · 直接呈現定義<br>WorkspacePageHeader：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-6ea9b93d4ec4<br>[app/products/page.tsx:311:32](../../app/products/page.tsx#L311) | 銷售商品 | **來源候選** · 候選，非已證實提示<br>ProductsPageContent 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | ProductsPageContent · eyebrow<br>isStaffMode |
-| UI-97a098fe2499<br>[app/products/page.tsx:311:41](../../app/products/page.tsx#L311) | 商品管理 | **來源候選** · 候選，非已證實提示<br>ProductsPageContent 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | ProductsPageContent · eyebrow<br>否則 isStaffMode |
-| UI-b845b009f7db<br>[app/products/page.tsx:317:21](../../app/products/page.tsx#L317) | 新增商品 | **畫面文字** · 直接呈現定義<br>IconButton：辨識可點擊操作、導覽或展開入口 | ProductsPageContent · label<br>!isStaffMode |
-| UI-9583e4c58a1b<br>[app/products/page.tsx:328:65](../../app/products/page.tsx#L328) | 搜尋商品 | **畫面文字** · 直接呈現定義<br>label：說明欄位或欄位群組 | ProductsPageContent<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-0aef63318a1f<br>[app/products/page.tsx:335:27](../../app/products/page.tsx#L335) | 搜尋商品名稱或描述 | **輸入提示** · 直接呈現定義<br>在 input 提供輸入格式、範例或選擇提示 | ProductsPageContent · placeholder<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-705f950da0fe<br>[app/products/page.tsx:342:28](../../app/products/page.tsx#L342) | 清除搜尋 | **輔助辨識** · 直接呈現定義<br>提供 button 的讀屏名稱、圖片替代文字或滑入說明 | ProductsPageContent · aria-label<br>searchQuery |
-| UI-8c142a4788c9<br>[app/products/page.tsx:355:25](../../app/products/page.tsx#L355) | 商品分類 | **畫面文字** · 直接呈現定義<br>Tabs：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · ariaLabel<br>tabs.length &gt; 1 |
-| UI-88340f780f45<br>[app/products/page.tsx:368:15](../../app/products/page.tsx#L368) | 顯示停用商品 | **畫面文字** · 直接呈現定義<br>label：說明欄位或欄位群組 | ProductsPageContent<br>!isStaffMode |
-| UI-fe221756fabd<br>[app/products/page.tsx:371:75](../../app/products/page.tsx#L371) | 目前找到 ${filteredProducts.length} 項商品 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
-| UI-23236be11b76<br>[app/products/page.tsx:377:21](../../app/products/page.tsx#L377) | 商品 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>filteredProducts.length &gt; 0 |
-| UI-21ce1bd69a1c<br>[app/products/page.tsx:378:21](../../app/products/page.tsx#L378) | 售價 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>filteredProducts.length &gt; 0 |
-| UI-3553b5f82e0f<br>[app/products/page.tsx:379:21](../../app/products/page.tsx#L379) | 庫存 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>filteredProducts.length &gt; 0 |
-| UI-ebed27dcb2e5<br>[app/products/page.tsx:380:21](../../app/products/page.tsx#L380) | 已售 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>filteredProducts.length &gt; 0 |
-| UI-4626c1b91893<br>[app/products/page.tsx:381:50](../../app/products/page.tsx#L381) | 操作 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>filteredProducts.length &gt; 0 |
-| UI-99bd2fe47836<br>[app/products/page.tsx:398:34](../../app/products/page.tsx#L398) | 找不到符合的商品 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · title<br>否則 filteredProducts.length &gt; 0 → searchQuery |
-| UI-190587b955d4<br>[app/products/page.tsx:398:47](../../app/products/page.tsx#L398) | 這個分類目前沒有商品 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · title<br>否則 filteredProducts.length &gt; 0 → 否則 searchQuery |
-| UI-752f1c53e2b9<br>[app/products/page.tsx:399:40](../../app/products/page.tsx#L399) | 可清除搜尋或改用其他關鍵字。 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · description<br>否則 filteredProducts.length &gt; 0 → searchQuery |
-| UI-c96a0358b47b<br>[app/products/page.tsx:399:73](../../app/products/page.tsx#L399) | 目前沒有可銷售的商品。 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · description<br>否則 filteredProducts.length &gt; 0 → 否則 searchQuery → isStaffMode |
-| UI-cff53b1ed1d1<br>[app/products/page.tsx:399:89](../../app/products/page.tsx#L399) | 新增商品後會顯示在這裡。 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · description<br>否則 filteredProducts.length &gt; 0 → 否則 searchQuery → 否則 isStaffMode |
-| UI-ca3f763ad7a6<br>[app/products/page.tsx:401:80](../../app/products/page.tsx#L401) | 清除搜尋 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | ProductsPageContent · action<br>否則 filteredProducts.length &gt; 0 → searchQuery |
-| UI-88ed25797861<br>[app/products/page.tsx:403:95](../../app/products/page.tsx#L403) | 新增商品 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | ProductsPageContent · action<br>否則 filteredProducts.length &gt; 0 → 否則 searchQuery → !isStaffMode |
+| UI-ba165db372d0<br>[app/products/page.tsx:62:28](../../app/products/page.tsx#L62) | 手作 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-203a3ea049e8<br>[app/products/page.tsx:63:24](../../app/products/page.tsx#L63) | 食品 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-71305615104b<br>[app/products/page.tsx:64:29](../../app/products/page.tsx#L64) | 飾品 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-a390ed779359<br>[app/products/page.tsx:65:28](../../app/products/page.tsx#L65) | 服飾 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-4c010d5d43dc<br>[app/products/page.tsx:66:23](../../app/products/page.tsx#L66) | 藝術 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-a6fa8134b4f7<br>[app/products/page.tsx:67:30](../../app/products/page.tsx#L67) | 文具 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-06fb5ba7b127<br>[app/products/page.tsx:68:25](../../app/products/page.tsx#L68) | 其他 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | CATEGORY_OPTIONS · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-4eab1e3042db<br>[app/products/page.tsx:208:33](../../app/products/page.tsx#L208) | 全部 | **共用文案值** · 文案生產端，須查使用端<br>label：供畫面或訊息組裝使用的標籤／說明值 | tabs · label<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-287545f42a0a<br>[app/products/page.tsx:266:19](../../app/products/page.tsx#L266) | 商品建立成功 | **確認／通知** · 直接呈現定義<br>toast.success：提示操作結果、進度或要求使用者確認 | handleAddSuccess<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-1d10e4efd357<br>[app/products/page.tsx:298:17](../../app/products/page.tsx#L298) | 本機資料庫無法正常存取 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · title<br>dbStatus.ok === false |
+| UI-3a2d13ad4c39<br>[app/products/page.tsx:299:23](../../app/products/page.tsx#L299) | 可能是儲存空間不足、隱私模式或資料庫結構異常。你的雲端資料不會因此被刪除。 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · description<br>dbStatus.ok === false |
+| UI-8b903f749cf8<br>[app/products/page.tsx:303:63](../../app/products/page.tsx#L303) | 取得協助 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | ProductsPageContent · action<br>dbStatus.ok === false |
+| UI-2b0e72a4c275<br>[app/products/page.tsx:304:84](../../app/products/page.tsx#L304) | 重新整理 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | ProductsPageContent · action<br>dbStatus.ok === false |
+| UI-a9182b4ce3f3<br>[app/products/page.tsx:314:194](../../app/products/page.tsx#L314) | ← ${marketReturn.label} | **畫面文字** · 直接呈現定義<br>Link：辨識可點擊操作、導覽或展開入口 | ProductsPageContent<br>marketReturn |
+| UI-21fe86f7a0ae<br>[app/products/page.tsx:316:15](../../app/products/page.tsx#L316) | 商品 | **畫面文字** · 直接呈現定義<br>WorkspacePageHeader：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · title<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-31ffb2111b69<br>[app/products/page.tsx:317:32](../../app/products/page.tsx#L317) | 銷售商品 | **來源候選** · 候選，非已證實提示<br>ProductsPageContent 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | ProductsPageContent · eyebrow<br>isStaffMode |
+| UI-551345dbfc69<br>[app/products/page.tsx:317:41](../../app/products/page.tsx#L317) | 商品管理 | **來源候選** · 候選，非已證實提示<br>ProductsPageContent 中的人類可讀文字；可能為內部比對／預設資料，不能直接視為畫面提示 | ProductsPageContent · eyebrow<br>否則 isStaffMode |
+| UI-f6c3d6ac9d0e<br>[app/products/page.tsx:323:21](../../app/products/page.tsx#L323) | 新增商品 | **畫面文字** · 直接呈現定義<br>IconButton：辨識可點擊操作、導覽或展開入口 | ProductsPageContent · label<br>!isStaffMode |
+| UI-c3f8a4d3f896<br>[app/products/page.tsx:334:102](../../app/products/page.tsx#L334) | 照片服務目前暫停；商品資料仍可使用。 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>photoMetadata.scope===photoScope &amp;&amp; (photoMetadata.state==='unavailable'&#124;&#124;photoMetadata.state==='disabled') → photoMetadata.state==='disabled' |
+| UI-2572d5970fe6<br>[app/products/page.tsx:334:123](../../app/products/page.tsx#L334) | 商品照片暫時無法確認；已載入的照片紀錄仍保留。 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>photoMetadata.scope===photoScope &amp;&amp; (photoMetadata.state==='unavailable'&#124;&#124;photoMetadata.state==='disabled') → 否則 photoMetadata.state==='disabled' |
+| UI-434e108eccc1<br>[app/products/page.tsx:335:127](../../app/products/page.tsx#L335) | 重試照片 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | ProductsPageContent<br>photoMetadata.scope===photoScope &amp;&amp; (photoMetadata.state==='unavailable'&#124;&#124;photoMetadata.state==='disabled') |
+| UI-35e79bfb033f<br>[app/products/page.tsx:340:65](../../app/products/page.tsx#L340) | 搜尋商品 | **畫面文字** · 直接呈現定義<br>label：說明欄位或欄位群組 | ProductsPageContent<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-7775259b569f<br>[app/products/page.tsx:347:27](../../app/products/page.tsx#L347) | 搜尋商品名稱或描述 | **輸入提示** · 直接呈現定義<br>在 input 提供輸入格式、範例或選擇提示 | ProductsPageContent · placeholder<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-2864671fca0f<br>[app/products/page.tsx:354:28](../../app/products/page.tsx#L354) | 清除搜尋 | **輔助辨識** · 直接呈現定義<br>提供 button 的讀屏名稱、圖片替代文字或滑入說明 | ProductsPageContent · aria-label<br>searchQuery |
+| UI-4906b2a5d059<br>[app/products/page.tsx:367:25](../../app/products/page.tsx#L367) | 商品分類 | **畫面文字** · 直接呈現定義<br>Tabs：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · ariaLabel<br>tabs.length &gt; 1 |
+| UI-c5aa46f2149a<br>[app/products/page.tsx:380:15](../../app/products/page.tsx#L380) | 顯示停用商品 | **畫面文字** · 直接呈現定義<br>label：說明欄位或欄位群組 | ProductsPageContent<br>!isStaffMode |
+| UI-6af6155e6fc9<br>[app/products/page.tsx:383:75](../../app/products/page.tsx#L383) | 目前找到 ${filteredProducts.length} 項商品 | **畫面文字** · 直接呈現定義<br>p：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>隨所屬畫面／函式狀態呈現；呼叫端條件另查來源 |
+| UI-26075634387a<br>[app/products/page.tsx:389:21](../../app/products/page.tsx#L389) | 商品 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>filteredProducts.length &gt; 0 |
+| UI-7eaa50dd0bcf<br>[app/products/page.tsx:390:21](../../app/products/page.tsx#L390) | 售價 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>filteredProducts.length &gt; 0 |
+| UI-1db363e34488<br>[app/products/page.tsx:391:21](../../app/products/page.tsx#L391) | 庫存 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>filteredProducts.length &gt; 0 |
+| UI-fa2eab05dcf6<br>[app/products/page.tsx:392:21](../../app/products/page.tsx#L392) | 已售 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>filteredProducts.length &gt; 0 |
+| UI-0b45346d4135<br>[app/products/page.tsx:393:50](../../app/products/page.tsx#L393) | 操作 | **畫面文字** · 直接呈現定義<br>span：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent<br>filteredProducts.length &gt; 0 |
+| UI-eef43c3369e1<br>[app/products/page.tsx:410:34](../../app/products/page.tsx#L410) | 找不到符合的商品 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · title<br>否則 filteredProducts.length &gt; 0 → searchQuery |
+| UI-5268adb94a47<br>[app/products/page.tsx:410:47](../../app/products/page.tsx#L410) | 這個分類目前沒有商品 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · title<br>否則 filteredProducts.length &gt; 0 → 否則 searchQuery |
+| UI-dab6d58c4f9c<br>[app/products/page.tsx:411:40](../../app/products/page.tsx#L411) | 可清除搜尋或改用其他關鍵字。 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · description<br>否則 filteredProducts.length &gt; 0 → searchQuery |
+| UI-1438edb252e0<br>[app/products/page.tsx:411:73](../../app/products/page.tsx#L411) | 目前沒有可銷售的商品。 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · description<br>否則 filteredProducts.length &gt; 0 → 否則 searchQuery → isStaffMode |
+| UI-7850275910a0<br>[app/products/page.tsx:411:89](../../app/products/page.tsx#L411) | 新增商品後會顯示在這裡。 | **畫面文字** · 直接呈現定義<br>StateView：呈現操作說明、資料標籤、狀態或注意事項 | ProductsPageContent · description<br>否則 filteredProducts.length &gt; 0 → 否則 searchQuery → 否則 isStaffMode |
+| UI-ea1e8de051c3<br>[app/products/page.tsx:413:80](../../app/products/page.tsx#L413) | 清除搜尋 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | ProductsPageContent · action<br>否則 filteredProducts.length &gt; 0 → searchQuery |
+| UI-2502f354c6eb<br>[app/products/page.tsx:415:95](../../app/products/page.tsx#L415) | 新增商品 | **畫面文字** · 直接呈現定義<br>Button：辨識可點擊操作、導覽或展開入口 | ProductsPageContent · action<br>否則 filteredProducts.length &gt; 0 → 否則 searchQuery → !isStaffMode |
 
 ## components/products/AddProductForm.tsx
 
