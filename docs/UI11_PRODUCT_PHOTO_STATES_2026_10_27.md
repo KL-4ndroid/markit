@@ -1,6 +1,6 @@
 # UI-11 商品照片狀態與重試
 
-日期：2026-10-27，Asia/Taipei。範圍是商品照片呈現與唯讀回覆；本機實作完成，尚未提交／推送／部署。不是新的照片儲存方案或訂閱制度調整。
+日期：2026-10-27，Asia/Taipei。範圍是商品照片呈現與唯讀回覆；提交4546192已推送並部署正式版。詳細發布後複驗與待辦見[線上驗收紀錄](ONLINE_ACCEPTANCE_2026_10_27.md)。不是新的照片儲存方案或訂閱制度調整。
 
 ## 使用者看到的差異
 
@@ -34,7 +34,7 @@
 4. 暫停本機照片讀取：清單顯示「照片服務目前暫停；商品資料仍可使用。」與重試按鈕，實際按下可重新檢查。
 5. `documentElement.clientWidth`與`scrollWidth`皆390，沒有橫向溢出。暫時環境設定已從原檔逐位元還原，測試覆寫已按「還原帳號原有方案」，清除viewport覆寫。
 
-本機R2讀取失敗只用來驗證失敗畫面，未嘗試修改儲存配置；上一輪正式線上上傳／整頁重載成功證據仍保留。這輪不能宣稱新讀取契約已在線上部署，或取代真正staff／iPhone／Android驗收。
+本機R2讀取失敗只用來驗證失敗畫面，未嘗試修改儲存配置；4546192部署後既有測試商品照片在線上正常顯示。線上錯誤／停用重試、真正staff／iPhone／Android驗收仍未完成。
 
 截圖：[既有照片服務暫停](ux-evidence/2026-10-27/ui11-photo-states/01-existing-paused.png)、[讀取失敗重試](ux-evidence/2026-10-27/ui11-photo-states/02-read-failure-retry.png)、[無照片空殼隱藏](ux-evidence/2026-10-27/ui11-photo-states/03-empty-paused-hidden.png)、[啟用時讀取失敗](ux-evidence/2026-10-27/ui11-photo-states/04-enabled-read-failure.png)、[清單服務暫停](ux-evidence/2026-10-27/ui11-photo-states/05-list-paused.png)、[還原帳號方案](ux-evidence/2026-10-27/ui11-photo-states/06-original-plan-restored.png)。
 
