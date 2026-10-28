@@ -1,6 +1,7 @@
 import { deriveRoleCapabilities, type RoleCapabilities } from './role-capabilities';
 import type { StaffRole } from '@/types/staff';
 import type { CapabilityAccessBlockReason } from '@/lib/subscription/subscription-access';
+import { staffRolePermissionsMatch } from './staff-role-consistency';
 
 export function staffRoleWorkDetails(role?: StaffRole | null, capabilities?: RoleCapabilities) {
   if (!capabilities && role !== 'viewer' && role !== 'operator' && role !== 'manager') return ['角色尚未確認，請重新整理後再確認工作範圍。'];
@@ -25,6 +26,7 @@ export function staffAccessPresentation(input: {
   teamAllowed: boolean;
   simulationActive?: boolean;
   blockReason?: CapabilityAccessBlockReason;
+  permissions?: unknown;
 }) {
   if (input.status === 'pending') return { title: '等待接受邀請', summary: '接受邀請並確認團隊資格後，才會開放工作區。' };
   if (input.status === 'suspended_by_plan') return { title: '存取已暫停', summary: input.teamAllowed ? '目前方案符合；此成員仍暫停，需由老闆確認後恢復存取。' : '關係與歷史已保留，需有效的高階版資格，再由老闆恢復成員存取。' };
@@ -35,6 +37,7 @@ export function staffAccessPresentation(input: {
     return { title: '存取資格尚未確認', summary: '請連線重新整理，確認完成前不能保證此成員可操作。' };
   }
   if (!input.canView || !['viewer', 'operator', 'manager'].includes(input.role ?? '')) return { title: '權限需要確認', summary: '目前無法確認可查看的工作範圍，請重新整理。' };
+  if (input.permissions !== undefined && !staffRolePermissionsMatch(input.role, input.permissions)) return { title: '角色與資料權限不一致', summary: '目前資料可見度可能受限，畫面上的 0 不一定代表沒有資料。請由老闆核對權限設定；系統不會自動調整權限。' };
   if (input.role === 'viewer') return { title: '僅供查看', summary: '可查看開放場次與商品資訊，不能記錄或修改資料。' };
   if (input.role === 'operator') return { title: '現場紀錄', summary: '營業開放時可記錄成交、互動，並勾選待辦。' };
   return { title: '現場紀錄與基本管理', summary: '可協助現場紀錄、交接筆記、待辦及既有資料的開放欄位。' };

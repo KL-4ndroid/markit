@@ -366,7 +366,9 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
             </div>
             <div className="rounded-control bg-background p-3">
               <dt className="text-xs text-muted-foreground">已售出</dt>
-              <dd className="mt-1 font-semibold tabular-nums text-foreground">{product.totalSold || 0}</dd>
+              <dd className="mt-1 font-semibold tabular-nums text-foreground">
+                {isOwner && !isRoleLoading ? product.totalSold || 0 : <span aria-label="已售數量尚未確認">—</span>}
+              </dd>
             </div>
           </dl>
 

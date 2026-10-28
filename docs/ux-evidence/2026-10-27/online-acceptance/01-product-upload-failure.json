@@ -1,0 +1,13 @@
+{
+  "deployment": "0e9bbc8",
+  "productId": "1fc5f0d5-78ec-4c1c-9525-55918fee1b01",
+  "upload": {
+    "status": 403,
+    "code": "claim_failed"
+  },
+  "image": {
+    "status": 404
+  },
+  "liveSchemaVersionType": "integer",
+  "clientVersionSource": "millisecond timestamp"
+}

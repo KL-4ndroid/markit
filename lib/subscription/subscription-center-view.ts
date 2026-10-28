@@ -16,6 +16,7 @@ export type SubscriptionCenterView = Readonly<{
   entitlementEndsAt: string | null;
   billingOrigin: BillingOrigin | null;
   billingOriginLabel: string | null;
+  lifecycleNotice: { title: string; description: string } | null;
   canRetry: boolean;
   canDisplayBillingControls: boolean;
 }>;
@@ -43,6 +44,7 @@ function emptyView(
     entitlementEndsAt: null,
     billingOrigin: null,
     billingOriginLabel: null,
+    lifecycleNotice: null,
     canRetry: false,
     canDisplayBillingControls: false,
     ...input,
@@ -111,6 +113,18 @@ export function buildSubscriptionCenterView(input: {
   const capabilities = input.capabilityResult.capabilities;
   const source = getAccountCapabilitySourcePresentation(input.capabilityResult.status);
   const origin = input.billingOrigin ?? null;
+  // Only describe a lifecycle state supplied by the authoritative capability
+  // response. Never infer a past subscription from an ordinary free account.
+  const lifecycleNotice = ['admin_inactive', 'billing_inactive', 'promotion_inactive'].includes(input.capabilityResult.status)
+    ? {
+        title: '付費功能目前未開放',
+        description: '已儲存的紀錄會保留；市集安排仍可使用，銷售與商品功能依目前方案開放。',
+      }
+    : capabilities.entitlementStatus === 'grace'
+      ? { title: '目前處於寬限期', description: '請以訂閱來源確認的權益狀態與有效期限為準。' }
+      : capabilities.billingStatus === 'cancel_at_period_end'
+        ? { title: '已排定停止續訂', description: '可用功能會依訂閱來源確認的權益狀態與期限更新。' }
+        : null;
   return {
     state: 'available',
     planCode: capabilities.planCode,
@@ -122,6 +136,7 @@ export function buildSubscriptionCenterView(input: {
     entitlementEndsAt: capabilities.entitlementEndsAt,
     billingOrigin: origin,
     billingOriginLabel: origin ? BILLING_ORIGIN_LABELS[origin] : null,
+    lifecycleNotice,
     canRetry: false,
     canDisplayBillingControls: capabilities.planSource === 'billing' && origin !== null,
   };

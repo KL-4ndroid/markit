@@ -1,0 +1,201 @@
+{
+  "triggers": [
+    {
+      "name": "guard_market_payment_deadline_change",
+      "table": "markets",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER guard_market_payment_deadline_change BEFORE INSERT OR UPDATE ON public.markets FOR EACH ROW EXECUTE FUNCTION guard_market_payment_deadline_change()",
+      "function": "CREATE OR REPLACE FUNCTION public.guard_market_payment_deadline_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nBEGIN\r\n  IF (TG_OP='INSERT' AND NEW.payment_deadline IS NOT NULL)\r\n    OR (TG_OP='UPDATE' AND NEW.payment_deadline IS DISTINCT FROM OLD.payment_deadline) THEN\r\n    IF auth.uid() IS NULL OR NEW.owner_id IS DISTINCT FROM auth.uid()\r\n      OR NOT public.can_manage_recurring_operations() THEN\r\n      RAISE EXCEPTION 'Payment deadline management is owner-only' USING ERRCODE='42501';\r\n    END IF;\r\n  END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "guard_market_region_change",
+      "table": "markets",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER guard_market_region_change BEFORE INSERT OR UPDATE ON public.markets FOR EACH ROW EXECUTE FUNCTION guard_market_region_change()",
+      "function": "CREATE OR REPLACE FUNCTION public.guard_market_region_change()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nBEGIN\r\n  IF (TG_OP = 'INSERT' AND NEW.region_code IS NOT NULL)\r\n    OR (TG_OP = 'UPDATE' AND NEW.region_code IS DISTINCT FROM OLD.region_code) THEN\r\n    IF auth.uid() IS NULL OR NEW.owner_id IS DISTINCT FROM auth.uid()\r\n      OR NOT public.can_manage_recurring_operations() THEN\r\n      RAISE EXCEPTION 'Region classification is owner-only' USING ERRCODE = '42501';\r\n    END IF;\r\n  END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "subscription_market_summary",
+      "table": "markets",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER subscription_market_summary BEFORE INSERT OR UPDATE ON public.markets FOR EACH ROW EXECUTE FUNCTION enforce_subscription_market_summary()",
+      "function": "CREATE OR REPLACE FUNCTION public.enforce_subscription_market_summary()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE v_key TEXT; v_new JSONB:=to_jsonb(NEW); v_old JSONB:=CASE WHEN TG_OP='INSERT' THEN '{}'::JSONB ELSE to_jsonb(OLD) END;\r\nBEGIN\r\n FOREACH v_key IN ARRAY ARRAY['total_revenue','total_profit','total_deals','total_interactions'] LOOP\r\n   IF COALESCE((v_new->>v_key)::NUMERIC,0) IS DISTINCT FROM COALESCE((v_old->>v_key)::NUMERIC,0) THEN\r\n     PERFORM public.subscription_require_tier(NEW.owner_id,1); EXIT; END IF;\r\n END LOOP;\r\n RETURN NEW;\r\nEND; $function$\n"
+    },
+    {
+      "name": "trigger_auto_add_staff_to_new_market",
+      "table": "markets",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER trigger_auto_add_staff_to_new_market AFTER INSERT ON public.markets FOR EACH ROW EXECUTE FUNCTION auto_add_staff_to_new_market()",
+      "function": "CREATE OR REPLACE FUNCTION public.auto_add_staff_to_new_market()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nBEGIN\r\n  -- 當新市集創建時，自動將該老闆的所有員工添加到 market_members\r\n  INSERT INTO market_members (market_id, user_id, role)\r\n  SELECT \r\n    NEW.id,           -- 新市集的 ID\r\n    sr.staff_id,      -- 員工的 ID\r\n    'staff'           -- 角色為 staff\r\n  FROM staff_relationships sr\r\n  WHERE sr.owner_id = NEW.owner_id\r\n    AND sr.status = 'active'\r\n  ON CONFLICT (market_id, user_id) DO NOTHING;\r\n  \r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "trigger_guard_cash_schedule_snapshot",
+      "table": "markets",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER trigger_guard_cash_schedule_snapshot BEFORE UPDATE ON public.markets FOR EACH ROW EXECUTE FUNCTION guard_cash_schedule_snapshot()",
+      "function": "CREATE OR REPLACE FUNCTION public.guard_cash_schedule_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nBEGIN\r\n  IF OLD.session_origin='schedule' AND (NEW.schedule_revision IS DISTINCT FROM OLD.schedule_revision\r\n    OR NEW.schedule_occurrence_state IS DISTINCT FROM OLD.schedule_occurrence_state)\r\n    AND EXISTS(SELECT 1 FROM public.market_cash_records c WHERE c.market_id=OLD.id) THEN\r\n    RAISE EXCEPTION 'CASH_SCHEDULE_PROTECTED' USING ERRCODE='23514'; END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "trigger_guard_journal_schedule_snapshot",
+      "table": "markets",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER trigger_guard_journal_schedule_snapshot BEFORE UPDATE ON public.markets FOR EACH ROW EXECUTE FUNCTION guard_journal_schedule_snapshot()",
+      "function": "CREATE OR REPLACE FUNCTION public.guard_journal_schedule_snapshot()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nBEGIN\r\n  IF OLD.session_origin = 'schedule'\r\n    AND (NEW.schedule_revision IS DISTINCT FROM OLD.schedule_revision\r\n      OR NEW.schedule_occurrence_state IS DISTINCT FROM OLD.schedule_occurrence_state)\r\n    AND EXISTS (SELECT 1 FROM public.market_journals j WHERE j.market_id=OLD.id) THEN\r\n    RAISE EXCEPTION 'JOURNAL_SCHEDULE_PROTECTED' USING ERRCODE = '23514';\r\n  END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "update_markets_updated_at",
+      "table": "markets",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER update_markets_updated_at BEFORE UPDATE ON public.markets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+      "function": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n  NEW.updated_at = NOW();\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "subscription_row_write",
+      "table": "products",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER subscription_row_write BEFORE INSERT OR DELETE OR UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION enforce_subscription_row_write('1')",
+      "function": "CREATE OR REPLACE FUNCTION public.enforce_subscription_row_write()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE v_row JSONB:=CASE WHEN TG_OP='DELETE' THEN to_jsonb(OLD) ELSE to_jsonb(NEW) END; v_owner UUID; v_entity_owner UUID; v_min INTEGER:=TG_ARGV[0]::INTEGER;\r\nBEGIN\r\n IF TG_OP='DELETE' AND auth.role()='service_role' THEN RETURN OLD; END IF;\r\n v_owner:=(v_row->>'owner_id')::UUID;\r\n IF v_row->>'market_id' IS NOT NULL THEN\r\n   SELECT m.owner_id INTO v_entity_owner FROM public.markets m WHERE m.id=(v_row->>'market_id')::UUID;\r\n ELSIF TG_TABLE_NAME='product_cover_photos' THEN\r\n   SELECT p.owner_id INTO v_entity_owner FROM public.products p WHERE p.id=(v_row->>'product_id')::UUID;\r\n ELSE v_entity_owner:=v_owner; END IF;\r\n IF v_owner IS NOT NULL AND v_entity_owner IS DISTINCT FROM v_owner THEN RAISE EXCEPTION 'SUBSCRIPTION_SCOPE' USING ERRCODE='42501'; END IF;\r\n v_owner:=v_entity_owner;\r\n IF TG_OP='UPDATE' AND v_row->>'owner_id' IS DISTINCT FROM to_jsonb(OLD)->>'owner_id' THEN\r\n   RAISE EXCEPTION 'SUBSCRIPTION_SCOPE' USING ERRCODE='42501'; END IF;\r\n -- Failure/deletion/expiry compensation does not create a usable paid photo.\r\n IF TG_TABLE_NAME IN ('product_cover_photos','sale_photo_evidence') AND TG_OP='UPDATE'\r\n   AND v_row->>'status' IN ('upload_failed','deleting','expired','waived_by_owner') THEN RETURN NEW; END IF;\r\n PERFORM public.subscription_require_tier(v_owner,v_min);\r\n IF TG_OP='DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;\r\nEND; $function$\n"
+    },
+    {
+      "name": "update_products_updated_at",
+      "table": "products",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON public.products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+      "function": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n  NEW.updated_at = NOW();\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "trigger_update_staff_relationships_timestamp",
+      "table": "staff_relationships",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER trigger_update_staff_relationships_timestamp BEFORE UPDATE ON public.staff_relationships FOR EACH ROW EXECUTE FUNCTION update_staff_relationships_timestamp()",
+      "function": "CREATE OR REPLACE FUNCTION public.update_staff_relationships_timestamp()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n  NEW.updated_at = NOW();\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "markets_operation_phase_check",
+      "table": "markets",
+      "definition": "CHECK (((operation_phase IS NULL) OR (operation_phase = ANY (ARRAY['early_entry'::text, 'check_in'::text, 'operating'::text, 'closing'::text]))))"
+    },
+    {
+      "name": "markets_owner_id_fkey",
+      "table": "markets",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "markets_payment_deadline_check",
+      "table": "markets",
+      "definition": "CHECK ((market_payment_deadline_is_valid(payment_deadline) AND ((session_origin IS DISTINCT FROM 'schedule'::text) OR (payment_deadline IS NULL) OR (payment_deadline = 'null'::jsonb))))"
+    },
+    {
+      "name": "markets_pkey",
+      "table": "markets",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "markets_region_code_check",
+      "table": "markets",
+      "definition": "CHECK (market_region_code_is_valid(region_code))"
+    },
+    {
+      "name": "markets_schedule_id_fkey",
+      "table": "markets",
+      "definition": "FOREIGN KEY (schedule_id) REFERENCES operation_schedules(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "markets_schedule_occurrence_state_check",
+      "table": "markets",
+      "definition": "CHECK (((schedule_occurrence_state IS NULL) OR (schedule_occurrence_state = ANY (ARRAY['scheduled'::text, 'skipped'::text, 'suppressed'::text, 'rule_removed'::text]))))"
+    },
+    {
+      "name": "markets_schedule_revision_check",
+      "table": "markets",
+      "definition": "CHECK (((schedule_revision IS NULL) OR (schedule_revision >= 1)))"
+    },
+    {
+      "name": "markets_session_origin_check",
+      "table": "markets",
+      "definition": "CHECK (((session_origin IS NULL) OR (session_origin = ANY (ARRAY['manual'::text, 'schedule'::text, 'legacy'::text]))))"
+    },
+    {
+      "name": "markets_status_check",
+      "table": "markets",
+      "definition": "CHECK ((status = ANY (ARRAY['registered'::text, 'accepted'::text, 'paid'::text, 'ongoing'::text, 'completed'::text, 'postponed'::text, 'cancelled'::text])))"
+    },
+    {
+      "name": "markets_venue_id_fkey",
+      "table": "markets",
+      "definition": "FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "products_category_check",
+      "table": "products",
+      "definition": "CHECK ((category = ANY (ARRAY['handmade'::text, 'food'::text, 'accessory'::text, 'clothing'::text, 'art'::text, 'stationery'::text, 'other'::text])))"
+    },
+    {
+      "name": "products_owner_id_fkey",
+      "table": "products",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "products_pkey",
+      "table": "products",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "market_members_market_id_fkey",
+      "table": "market_members",
+      "definition": "FOREIGN KEY (market_id) REFERENCES markets(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED"
+    },
+    {
+      "name": "market_members_pkey",
+      "table": "market_members",
+      "definition": "PRIMARY KEY (market_id, user_id)"
+    },
+    {
+      "name": "market_members_role_check",
+      "table": "market_members",
+      "definition": "CHECK ((role = ANY (ARRAY['owner'::text, 'staff'::text])))"
+    },
+    {
+      "name": "market_members_user_id_fkey",
+      "table": "market_members",
+      "definition": "FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "no_self_invite",
+      "table": "staff_relationships",
+      "definition": "CHECK ((owner_id <> staff_id))"
+    },
+    {
+      "name": "staff_relationships_owner_id_fkey",
+      "table": "staff_relationships",
+      "definition": "FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "staff_relationships_owner_id_staff_id_key",
+      "table": "staff_relationships",
+      "definition": "UNIQUE (owner_id, staff_id)"
+    },
+    {
+      "name": "staff_relationships_pkey",
+      "table": "staff_relationships",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "staff_relationships_role_check",
+      "table": "staff_relationships",
+      "definition": "CHECK ((role = ANY (ARRAY['viewer'::text, 'operator'::text, 'manager'::text])))"
+    },
+    {
+      "name": "staff_relationships_staff_id_fkey",
+      "table": "staff_relationships",
+      "definition": "FOREIGN KEY (staff_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "staff_relationships_status_check",
+      "table": "staff_relationships",
+      "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'active'::text, 'suspended_by_plan'::text, 'revoked'::text])))"
+    }
+  ]
+}

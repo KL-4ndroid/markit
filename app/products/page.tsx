@@ -397,6 +397,7 @@ function ProductsPageContent() {
                 key={product.id ?? `${product.name}-${product.createdAt}`}
                 product={product}
                 canEdit={canEditProductBasic}
+                showSoldCount={!isStaffMode}
                 coverPhotoVersion={product.id ? coverPhotoVersions[product.id] : null}
                 isOpening={openingProductId === product.id}
                 onOpen={openProduct}

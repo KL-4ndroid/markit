@@ -1,0 +1,13 @@
+{
+  "migration083": "user confirmed and OpenAPI bigint verified",
+  "plan": "pro",
+  "writePreflight": "allowed",
+  "upload": {
+    "status": 403,
+    "code": "paid_entitlement_required",
+    "shouldKeepLocalPayload": true
+  },
+  "imageStatus": 404,
+  "productId": "1fc5f0d5-78ec-4c1c-9525-55918fee1b01",
+  "result": "not passed; deployed function definitions requested"
+}

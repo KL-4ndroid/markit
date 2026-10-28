@@ -26,6 +26,7 @@ interface ProductCardProps {
   canEdit?: boolean;
   coverPhotoVersion?: number | null;
   isOpening?: boolean;
+  showSoldCount?: boolean;
 }
 
 const CATEGORY_PRESENTATION: Record<ProductCategory, {
@@ -49,7 +50,7 @@ const STOCK_TONE_CLASSES: Record<ProductStockTone, string> = {
   neutral: 'bg-muted text-muted-foreground',
 };
 
-export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersion, isOpening = false }: ProductCardProps) {
+export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersion, isOpening = false, showSoldCount = true }: ProductCardProps) {
   const router = useRouter();
   const category = CATEGORY_PRESENTATION[product.category] ?? {
     label: '其他',
@@ -104,7 +105,7 @@ export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersio
         </span>
       </div>
       <p className="hidden text-sm tabular-nums text-foreground xl:block">
-        {product.totalSold ?? 0} 件
+        {showSoldCount ? `${product.totalSold ?? 0} 件` : <span aria-label="已售數量尚未確認">—</span>}
       </p>
 
       <Button variant="secondary" className="mt-4 w-full whitespace-nowrap xl:mt-0 xl:w-auto" onClick={handleOpen} disabled={isOpening} aria-busy={isOpening}>

@@ -1,0 +1,47 @@
+{
+  "scope": "read-only authorized test fixtures",
+  "product": {
+    "id": "1fc5f0d5-78ec-4c1c-9525-55918fee1b01",
+    "name": "[驗收1027-P] 線上封面測試",
+    "stock": 3,
+    "total_sold": 1,
+    "price": 120,
+    "cost": 40
+  },
+  "market": {
+    "id": "622aa8bc-c4f2-4068-9592-1cf8c872af90",
+    "name": "[驗收1027-O] 線上出攤完整流程",
+    "status": "paid",
+    "booth_cost": 200,
+    "registration_fee": 0,
+    "deposit": 100,
+    "total_revenue": 260,
+    "total_profit": 220,
+    "total_deals": 3,
+    "total_interactions": 2,
+    "operation_phase": "closing",
+    "operation_session_date": "2026-10-27"
+  },
+  "cash": [
+    {
+      "business_date": "2026-10-27",
+      "data": {
+        "note": "[驗收1027-O] 合成零用金，非真實營運",
+        "closing": {
+          "mode": "total",
+          "amount": "1200.00"
+        },
+        "opening": {
+          "mode": "total",
+          "amount": "1000.00"
+        },
+        "salesBasis": {
+          "cashKey": "[100000,120000,\"none\",0,\"\",\"[驗收1027-O] 合成零用金，非真實營運\"]",
+          "salesKey": "592b59867b63036b22488d0a676f3359",
+          "capturedAt": "2026-10-27T01:55:00.640274+00:00"
+        }
+      },
+      "revision": 2
+    }
+  ]
+}

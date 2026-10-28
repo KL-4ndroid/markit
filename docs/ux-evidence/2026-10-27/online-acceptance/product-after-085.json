@@ -1,0 +1,18 @@
+{
+  "product": {
+    "stock": 3,
+    "unlimited_stock": false,
+    "total_sold": 1
+  },
+  "photo": {
+    "status": "uploaded",
+    "version": 1793080565714,
+    "pending_version": null,
+    "display_size_bytes": 3800,
+    "thumbnail_size_bytes": 2600,
+    "width": 640,
+    "height": 480,
+    "last_error_code": null
+  },
+  "error": null
+}

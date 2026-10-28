@@ -46,6 +46,23 @@ const adminView = buildSubscriptionCenterView({
 assert.equal(adminView.planLabel, '輕量版');
 assert.equal(adminView.sourceLabel, '管理員已啟用');
 assert.equal(adminView.canDisplayBillingControls, false);
+assert.equal(adminView.lifecycleNotice, null);
+
+const inactiveView = buildSubscriptionCenterView({
+  viewer: 'owner', isAuthenticated: true, isLoading: false,
+  capabilityResult: { ok: true, status: 'admin_inactive', freshness: 'fresh',
+    capabilities: { ...capabilities, entitlementStatus: 'inactive' } },
+});
+assert.equal(inactiveView.lifecycleNotice?.title, '付費功能目前未開放');
+assert.match(inactiveView.lifecycleNotice?.description ?? '', /紀錄會保留/);
+assert.match(inactiveView.lifecycleNotice?.description ?? '', /銷售與商品功能依目前方案/);
+const graceView = buildSubscriptionCenterView({
+  viewer: 'owner', isAuthenticated: true, isLoading: false,
+  capabilityResult: { ok: true, status: 'admin_enabled', freshness: 'fresh',
+    capabilities: { ...capabilities, entitlementStatus: 'grace' } },
+});
+assert.equal(graceView.lifecycleNotice?.title, '目前處於寬限期');
+assert.doesNotMatch(graceView.lifecycleNotice?.description ?? '', /7 天|七天/);
 
 const billingCapabilities = resolveModelAccountCapabilities({
   ownerId: 'owner-a',
@@ -72,6 +89,7 @@ const billingView = buildSubscriptionCenterView({
 assert.equal(billingView.billingOriginLabel, 'Apple App Store');
 assert.equal(billingView.billingLabel, '已排定取消');
 assert.equal(billingView.canDisplayBillingControls, true);
+assert.equal(billingView.lifecycleNotice?.title, '已排定停止續訂');
 
 const staffView = buildSubscriptionCenterView({
   viewer: 'staff',
@@ -80,5 +98,11 @@ const staffView = buildSubscriptionCenterView({
   capabilityResult: null,
 });
 assert.equal(staffView.state, 'staff_read_only');
+assert.equal(staffView.lifecycleNotice, null);
+
+const freeCapabilities = resolveModelAccountCapabilities({ ...capabilities, planCode: 'free', planSource: 'free' });
+const freeView = buildSubscriptionCenterView({ viewer: 'owner', isAuthenticated: true, isLoading: false,
+  capabilityResult: { ok: true, status: 'default_free', freshness: 'fresh', capabilities: freeCapabilities } });
+assert.equal(freeView.lifecycleNotice, null, 'a free account alone does not prove a prior downgrade');
 
 console.log('PASS read-only subscription center view never invents billing controls');

@@ -1,0 +1,20 @@
+{
+  "product": {
+    "stock": 2,
+    "unlimited_stock": false,
+    "total_sold": 2
+  },
+  "market": {
+    "total_revenue": 120,
+    "total_profit": 80,
+    "total_deals": 1
+  },
+  "expected": {
+    "stock": 2,
+    "total_sold": 2,
+    "revenue": 120,
+    "profit": 80,
+    "deals": 1
+  },
+  "passed": true
+}

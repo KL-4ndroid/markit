@@ -1,0 +1,778 @@
+{
+  "columns": [
+    {
+      "type": "uuid",
+      "table": "events",
+      "column": "id",
+      "default": "uuid_generate_v4()",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "events",
+      "column": "type",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "events",
+      "column": "payload",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "events",
+      "column": "actor_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "events",
+      "column": "market_id",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamptz",
+      "table": "events",
+      "column": "timestamp",
+      "default": "now()",
+      "nullable": "YES"
+    },
+    {
+      "type": "jsonb",
+      "table": "events",
+      "column": "metadata",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "sync_status",
+      "table": "events",
+      "column": "sync_status",
+      "default": "'synced'::sync_status",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamptz",
+      "table": "events",
+      "column": "created_at",
+      "default": "now()",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "market_members",
+      "column": "market_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "market_members",
+      "column": "user_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamptz",
+      "table": "market_members",
+      "column": "joined_at",
+      "default": "now()",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "market_members",
+      "column": "role",
+      "default": "'owner'::text",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "markets",
+      "column": "id",
+      "default": "uuid_generate_v4()",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "markets",
+      "column": "owner_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "markets",
+      "column": "name",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "markets",
+      "column": "location",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "date",
+      "table": "markets",
+      "column": "start_date",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "date",
+      "table": "markets",
+      "column": "end_date",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "markets",
+      "column": "status",
+      "default": "'registered'::text",
+      "nullable": "NO"
+    },
+    {
+      "type": "bool",
+      "table": "markets",
+      "column": "early_entry_enabled",
+      "default": "false",
+      "nullable": "YES"
+    },
+    {
+      "type": "time",
+      "table": "markets",
+      "column": "early_entry_time",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "time",
+      "table": "markets",
+      "column": "check_in_time",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "time",
+      "table": "markets",
+      "column": "operating_start_time",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "time",
+      "table": "markets",
+      "column": "operating_end_time",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "numeric",
+      "table": "markets",
+      "column": "registration_fee",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "type": "numeric",
+      "table": "markets",
+      "column": "booth_cost",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "type": "numeric",
+      "table": "markets",
+      "column": "deposit",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "numeric",
+      "table": "markets",
+      "column": "table_rental",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "numeric",
+      "table": "markets",
+      "column": "chair_rental",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "numeric",
+      "table": "markets",
+      "column": "umbrella_rental",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "numeric",
+      "table": "markets",
+      "column": "tablecloth_rental",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "numeric",
+      "table": "markets",
+      "column": "commission_rate",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "bool",
+      "table": "markets",
+      "column": "table_free",
+      "default": "false",
+      "nullable": "YES"
+    },
+    {
+      "type": "bool",
+      "table": "markets",
+      "column": "chair_free",
+      "default": "false",
+      "nullable": "YES"
+    },
+    {
+      "type": "bool",
+      "table": "markets",
+      "column": "umbrella_free",
+      "default": "false",
+      "nullable": "YES"
+    },
+    {
+      "type": "bool",
+      "table": "markets",
+      "column": "tablecloth_free",
+      "default": "false",
+      "nullable": "YES"
+    },
+    {
+      "type": "numeric",
+      "table": "markets",
+      "column": "total_revenue",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "type": "numeric",
+      "table": "markets",
+      "column": "total_profit",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "type": "int4",
+      "table": "markets",
+      "column": "total_interactions",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "type": "int4",
+      "table": "markets",
+      "column": "total_deals",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "markets",
+      "column": "notes",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamptz",
+      "table": "markets",
+      "column": "created_at",
+      "default": "now()",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamptz",
+      "table": "markets",
+      "column": "updated_at",
+      "default": "now()",
+      "nullable": "YES"
+    },
+    {
+      "type": "bool",
+      "table": "markets",
+      "column": "is_collaborative",
+      "default": "false",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "markets",
+      "column": "operation_phase",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "bool",
+      "table": "markets",
+      "column": "is_deleted",
+      "default": "false",
+      "nullable": "YES"
+    },
+    {
+      "type": "sync_status",
+      "table": "markets",
+      "column": "sync_status",
+      "default": "'synced'::sync_status",
+      "nullable": "YES"
+    },
+    {
+      "type": "bool",
+      "table": "markets",
+      "column": "sales_photo_evidence_required",
+      "default": "false",
+      "nullable": "NO"
+    },
+    {
+      "type": "date",
+      "table": "markets",
+      "column": "operation_session_date",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "markets",
+      "column": "venue_id",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "markets",
+      "column": "schedule_id",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "markets",
+      "column": "session_origin",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "markets",
+      "column": "schedule_occurrence_key",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "int4",
+      "table": "markets",
+      "column": "schedule_revision",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "markets",
+      "column": "schedule_occurrence_state",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "bool",
+      "table": "markets",
+      "column": "is_schedule_override",
+      "default": "false",
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "markets",
+      "column": "region_code",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "jsonb",
+      "table": "markets",
+      "column": "payment_deadline",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "products",
+      "column": "id",
+      "default": "uuid_generate_v4()",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "products",
+      "column": "market_id",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "products",
+      "column": "name",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "products",
+      "column": "category",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "numeric",
+      "table": "products",
+      "column": "price",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "numeric",
+      "table": "products",
+      "column": "cost",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "products",
+      "column": "icon_name",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "products",
+      "column": "color_code",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "int4",
+      "table": "products",
+      "column": "stock",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "bool",
+      "table": "products",
+      "column": "unlimited_stock",
+      "default": "false",
+      "nullable": "YES"
+    },
+    {
+      "type": "bool",
+      "table": "products",
+      "column": "is_active",
+      "default": "true",
+      "nullable": "YES"
+    },
+    {
+      "type": "int4",
+      "table": "products",
+      "column": "total_sold",
+      "default": "0",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "products",
+      "column": "description",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamptz",
+      "table": "products",
+      "column": "created_at",
+      "default": "now()",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamptz",
+      "table": "products",
+      "column": "updated_at",
+      "default": "now()",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "products",
+      "column": "owner_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "bool",
+      "table": "products",
+      "column": "is_shared",
+      "default": "false",
+      "nullable": "YES"
+    },
+    {
+      "type": "uuid",
+      "table": "staff_relationships",
+      "column": "id",
+      "default": "gen_random_uuid()",
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "staff_relationships",
+      "column": "owner_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "uuid",
+      "table": "staff_relationships",
+      "column": "staff_id",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "text",
+      "table": "staff_relationships",
+      "column": "staff_email",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "type": "timestamptz",
+      "table": "staff_relationships",
+      "column": "invited_at",
+      "default": "now()",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamptz",
+      "table": "staff_relationships",
+      "column": "accepted_at",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "staff_relationships",
+      "column": "status",
+      "default": "'pending'::text",
+      "nullable": "NO"
+    },
+    {
+      "type": "jsonb",
+      "table": "staff_relationships",
+      "column": "permissions",
+      "default": "'{\"can_edit\": false, \"can_view\": true, \"infoLevel\": 0}'::jsonb",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamptz",
+      "table": "staff_relationships",
+      "column": "created_at",
+      "default": "now()",
+      "nullable": "YES"
+    },
+    {
+      "type": "timestamptz",
+      "table": "staff_relationships",
+      "column": "updated_at",
+      "default": "now()",
+      "nullable": "YES"
+    },
+    {
+      "type": "text",
+      "table": "staff_relationships",
+      "column": "role",
+      "default": "'viewer'::text",
+      "nullable": "NO"
+    }
+  ],
+  "helpers": [
+    {
+      "signature": "can_manage_recurring_operations()",
+      "definition": "CREATE OR REPLACE FUNCTION public.can_manage_recurring_operations()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\n  SELECT auth.uid() IS NOT NULL\r\n    AND NOT EXISTS (\r\n      SELECT 1\r\n      FROM public.staff_relationships sr\r\n      WHERE sr.staff_id = auth.uid()\r\n        AND sr.status = 'active'\r\n    );\r\n$function$\n"
+    },
+    {
+      "signature": "check_subscription_write_for_actor(uuid,uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.check_subscription_write_for_actor(p_actor uuid, p_owner uuid, p_feature text)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE v_min INTEGER; v_role TEXT; v_level INTEGER;\r\nBEGIN\r\n IF p_feature IS NULL OR p_feature NOT IN ('sales','products','cash','product_photo','sales_photo','field_notes') OR p_actor IS NULL OR p_owner IS NULL THEN\r\n   RETURN jsonb_build_object('allowed',FALSE,'reason','invalid_scope','enabled',TRUE); END IF;\r\n v_min:=CASE WHEN p_feature IN ('sales_photo','field_notes') THEN 2 ELSE 1 END;\r\n IF p_actor<>p_owner THEN\r\n   SELECT role INTO v_role FROM public.staff_relationships WHERE owner_id=p_owner AND staff_id=p_actor AND status='active';\r\n   IF NOT public.has_authoritative_team_entitlement(p_owner) OR v_role NOT IN ('manager','operator') OR v_role IS NULL\r\n     OR p_feature='cash' OR (p_feature IN ('products','product_photo') AND v_role<>'manager') THEN\r\n     RETURN jsonb_build_object('allowed',FALSE,'reason','role_forbidden','enabled',TRUE); END IF;\r\n END IF;\r\n IF NOT public.subscription_write_guard_active(p_owner) THEN\r\n   RETURN jsonb_build_object('allowed',TRUE,'reason','pilot_not_enabled','enabled',FALSE); END IF;\r\n v_level:=CASE public.subscription_effective_plan(p_owner) WHEN 'team' THEN 2 WHEN 'pro' THEN 1 ELSE 0 END;\r\n RETURN jsonb_build_object('allowed',v_level>=v_min,'reason',CASE WHEN v_level>=v_min THEN 'allowed' ELSE 'plan_required' END,'enabled',TRUE);\r\nEND; $function$\n"
+    },
+    {
+      "signature": "current_user_market_ids()",
+      "definition": "CREATE OR REPLACE FUNCTION public.current_user_market_ids()\n RETURNS TABLE(market_id uuid)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\n  SELECT mm.market_id\r\n  FROM public.market_members AS mm\r\n  JOIN public.markets AS m ON m.id = mm.market_id\r\n  WHERE mm.user_id = auth.uid()\r\n    AND (\r\n      mm.role = 'owner'\r\n      OR (\r\n        mm.role = 'staff'\r\n        AND public.has_authoritative_team_entitlement(m.owner_id)\r\n        AND EXISTS (\r\n          SELECT 1\r\n          FROM public.staff_relationships AS sr\r\n          WHERE sr.owner_id = m.owner_id\r\n            AND sr.staff_id = auth.uid()\r\n            AND sr.status = 'active'\r\n        )\r\n      )\r\n    );\r\n$function$\n"
+    },
+    {
+      "signature": "has_authoritative_team_entitlement(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.has_authoritative_team_entitlement(p_owner_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\n SELECT public.subscription_effective_plan(p_owner_id)='team';\r\n$function$\n"
+    },
+    {
+      "signature": "subscription_require_tier(uuid,integer)",
+      "definition": "CREATE OR REPLACE FUNCTION public.subscription_require_tier(p_owner uuid, p_min integer)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE v_level INTEGER;\r\nBEGIN\r\n IF p_owner IS NULL THEN RAISE EXCEPTION 'SUBSCRIPTION_SCOPE' USING ERRCODE='42501'; END IF;\r\n IF NOT public.subscription_write_guard_active(p_owner) THEN RETURN; END IF;\r\n v_level:=CASE public.subscription_effective_plan(p_owner) WHEN 'team' THEN 2 WHEN 'pro' THEN 1 ELSE 0 END;\r\n IF v_level<p_min THEN RAISE EXCEPTION 'SUBSCRIPTION_PLAN_REQUIRED' USING ERRCODE='42501'; END IF;\r\nEND; $function$\n"
+    },
+    {
+      "signature": "subscription_write_guard_active(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.subscription_write_guard_active(p_owner uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\n SELECT COALESCE((SELECT enforce_all FROM public.subscription_write_guard_settings WHERE singleton),FALSE)\r\n   OR EXISTS(SELECT 1 FROM public.subscription_write_guard_owners WHERE owner_id=p_owner AND enabled);\r\n$function$\n"
+    },
+    {
+      "signature": "update_staff_permissions(uuid,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.update_staff_permissions(p_relationship_id uuid, p_permissions jsonb)\n RETURNS staff_relationships\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE\r\n  v_owner_id uuid := auth.uid();\r\n  v_record public.staff_relationships%ROWTYPE;\r\nBEGIN\r\n  IF v_owner_id IS NULL OR NOT public.has_authoritative_team_entitlement(v_owner_id) THEN\r\n    RAISE EXCEPTION 'An active Team subscription is required.' USING ERRCODE = '42501';\r\n  END IF;\r\n  IF pg_catalog.jsonb_typeof(p_permissions) IS DISTINCT FROM 'object' THEN\r\n    RAISE EXCEPTION 'Invalid staff permissions.' USING ERRCODE = '22023';\r\n  END IF;\r\n\r\n  UPDATE public.staff_relationships\r\n  SET permissions = p_permissions\r\n  WHERE id = p_relationship_id\r\n    AND owner_id = v_owner_id\r\n    AND status = 'active'\r\n  RETURNING * INTO v_record;\r\n\r\n  IF NOT FOUND THEN\r\n    RAISE EXCEPTION 'Active staff relationship not found.' USING ERRCODE = 'P0002';\r\n  END IF;\r\n  RETURN v_record;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "signature": "update_staff_role(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.update_staff_role(p_relationship_id uuid, p_role text)\n RETURNS staff_relationships\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE\r\n  v_owner_id uuid := auth.uid();\r\n  v_record public.staff_relationships%ROWTYPE;\r\nBEGIN\r\n  IF v_owner_id IS NULL THEN\r\n    RAISE EXCEPTION 'Authentication required.' USING ERRCODE = '42501';\r\n  END IF;\r\n  IF NOT public.has_authoritative_team_entitlement(v_owner_id) THEN\r\n    RAISE EXCEPTION 'An active Team subscription is required.' USING ERRCODE = '42501';\r\n  END IF;\r\n  IF p_role NOT IN ('viewer', 'operator', 'manager') THEN\r\n    RAISE EXCEPTION 'Invalid staff role.' USING ERRCODE = '22023';\r\n  END IF;\r\n\r\n  UPDATE public.staff_relationships\r\n  SET role = p_role,\r\n      permissions = pg_catalog.jsonb_build_object(\r\n        'can_view', true,\r\n        'can_edit', p_role IN ('operator', 'manager'),\r\n        'infoLevel', CASE p_role WHEN 'viewer' THEN 0 ELSE 2 END\r\n      )\r\n  WHERE id = p_relationship_id\r\n    AND owner_id = v_owner_id\r\n    AND status = 'active'\r\n  RETURNING * INTO v_record;\r\n\r\n  IF NOT FOUND THEN\r\n    RAISE EXCEPTION 'Active staff relationship not found.' USING ERRCODE = 'P0002';\r\n  END IF;\r\n  RETURN v_record;\r\nEND;\r\n$function$\n"
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "SELECT",
+      "qual": "((market_id IN ( SELECT current_user_owned_market_ids.id\n   FROM current_user_owned_market_ids() current_user_owned_market_ids(id))) OR ((market_id IS NULL) AND (actor_id = auth.uid()) AND (EXISTS ( SELECT 1\n   FROM markets m\n  WHERE (m.owner_id = auth.uid())))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "events",
+      "permissive": "PERMISSIVE",
+      "policyname": "events_select_owner_only",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "events",
+      "permissive": "RESTRICTIVE",
+      "policyname": "recurring_operations_events_owner_only",
+      "schemaname": "public",
+      "with_check": "((type <> ALL (ARRAY['venue_created'::text, 'venue_updated'::text, 'venue_archived'::text, 'operation_schedule_created'::text, 'operation_schedule_updated'::text, 'operation_schedule_paused'::text, 'operation_schedule_resumed'::text, 'operation_schedule_archived'::text])) OR can_manage_recurring_operations())"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "events",
+      "permissive": "PERMISSIVE",
+      "policyname": "users_can_insert_own_events",
+      "schemaname": "public",
+      "with_check": "((actor_id)::text = (auth.uid())::text)"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(((actor_id)::text = (auth.uid())::text) AND ((market_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM market_members\n  WHERE ((market_members.market_id = events.market_id) AND ((market_members.user_id)::text = (auth.uid())::text))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "events",
+      "permissive": "PERMISSIVE",
+      "policyname": "users_can_update_own_events",
+      "schemaname": "public",
+      "with_check": "(((actor_id)::text = (auth.uid())::text) AND ((market_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM market_members\n  WHERE ((market_members.market_id = events.market_id) AND ((market_members.user_id)::text = (auth.uid())::text))))))"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "events",
+      "permissive": "PERMISSIVE",
+      "policyname": "用戶可以插入事件_v3",
+      "schemaname": "public",
+      "with_check": "((actor_id = auth.uid()) AND ((market_id IS NULL) OR (type = 'market_created'::text) OR (EXISTS ( SELECT 1\n   FROM market_members\n  WHERE ((market_members.market_id = events.market_id) AND (market_members.user_id = auth.uid())))) OR (EXISTS ( SELECT 1\n   FROM (market_members mm\n     JOIN staff_relationships sr ON ((sr.owner_id = mm.user_id)))\n  WHERE ((mm.market_id = events.market_id) AND (sr.staff_id = auth.uid()) AND (sr.status = 'active'::text))))))"
+    }
+  ],
+  "triggers": [
+    {
+      "name": "subscription_event_write",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER subscription_event_write BEFORE INSERT OR DELETE OR UPDATE ON public.events FOR EACH ROW EXECUTE FUNCTION enforce_subscription_event_write()",
+      "function": "CREATE OR REPLACE FUNCTION public.enforce_subscription_event_write()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE v_event JSONB:=CASE WHEN TG_OP='DELETE' THEN to_jsonb(OLD) ELSE to_jsonb(NEW) END;\r\n v_type TEXT; v_owner UUID; v_market UUID; v_product UUID; v_min INTEGER:=0; v_key TEXT; v_cloud_key TEXT; v_current JSONB; v_updates JSONB;\r\nBEGIN\r\n -- Trusted service cleanup (e.g. account deletion) must remain possible.\r\n IF TG_OP='DELETE' AND auth.role()='service_role' THEN RETURN OLD; END IF;\r\n v_type:=v_event->>'type';\r\n -- Metadata-only acknowledgements stay possible after a downgrade.\r\n -- For enrolled owners semantic changes must be expressed as new events.\r\n IF TG_OP='UPDATE' AND NEW.type IS NOT DISTINCT FROM OLD.type AND NEW.payload IS NOT DISTINCT FROM OLD.payload\r\n   AND NEW.actor_id IS NOT DISTINCT FROM OLD.actor_id AND NEW.market_id IS NOT DISTINCT FROM OLD.market_id THEN RETURN NEW; END IF;\r\n IF TG_OP='UPDATE' THEN\r\n   v_market:=COALESCE(OLD.market_id,(OLD.payload->>'market_id')::UUID,(OLD.payload->>'marketId')::UUID);\r\n   IF v_market IS NOT NULL THEN SELECT m.owner_id INTO v_owner FROM public.markets m WHERE m.id=v_market;\r\n   ELSIF OLD.type IN ('product_updated','product_deleted') THEN\r\n     SELECT p.owner_id INTO v_owner FROM public.products p WHERE p.id=COALESCE((OLD.payload->>'productId')::UUID,(OLD.payload->>'product_id')::UUID);\r\n   ELSE v_owner:=OLD.actor_id; END IF;\r\n   IF public.subscription_write_guard_active(v_owner) THEN RAISE EXCEPTION 'EVENT_IMMUTABLE' USING ERRCODE='42501'; END IF;\r\n END IF;\r\n v_owner:=NULL;\r\n IF v_type IN ('deal_closed','deal_deleted','interaction_recorded','interaction_deleted','product_created','product_updated','product_deleted') THEN v_min:=1;\r\n ELSIF v_type IN ('field_note_created','field_note_updated','field_note_deleted') THEN v_min:=2;\r\n ELSIF v_type='market_updated' THEN v_min:=0;\r\n ELSE IF TG_OP='DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF; END IF;\r\n v_market:=COALESCE((v_event->>'market_id')::UUID,(v_event#>>'{payload,market_id}')::UUID,(v_event#>>'{payload,marketId}')::UUID);\r\n IF v_market IS NOT NULL THEN\r\n   SELECT m.owner_id,to_jsonb(m) INTO v_owner,v_current FROM public.markets m WHERE m.id=v_market;\r\n ELSIF v_type IN ('product_updated','product_deleted') THEN\r\n   v_product:=COALESCE((v_event#>>'{payload,productId}')::UUID,(v_event#>>'{payload,product_id}')::UUID);\r\n   SELECT p.owner_id INTO v_owner FROM public.products p WHERE p.id=v_product;\r\n ELSE v_owner:=(v_event->>'actor_id')::UUID; END IF;\r\n IF v_type='market_updated' THEN\r\n   v_updates:=v_event#>'{payload,updates}';\r\n   FOREACH v_key IN ARRAY ARRAY['total_revenue','total_profit','total_deals','total_interactions','totalRevenue','totalProfit','totalDeals','totalInteractions'] LOOP\r\n     v_cloud_key:=CASE v_key WHEN 'totalRevenue' THEN 'total_revenue' WHEN 'totalProfit' THEN 'total_profit' WHEN 'totalDeals' THEN 'total_deals' WHEN 'totalInteractions' THEN 'total_interactions' ELSE v_key END;\r\n     IF v_updates ? v_key AND COALESCE((v_updates->>v_key)::NUMERIC,0) IS DISTINCT FROM COALESCE((v_current->>v_cloud_key)::NUMERIC,0) THEN v_min:=1; END IF;\r\n   END LOOP;\r\n   IF v_min=0 THEN IF TG_OP='DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF; END IF;\r\n END IF;\r\n PERFORM public.subscription_require_tier(v_owner,v_min);\r\n IF TG_OP='DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;\r\nEND; $function$\n"
+    },
+    {
+      "name": "trigger_guard_recurring_operations_event",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER trigger_guard_recurring_operations_event BEFORE INSERT ON public.events FOR EACH ROW EXECUTE FUNCTION guard_recurring_operations_event()",
+      "function": "CREATE OR REPLACE FUNCTION public.guard_recurring_operations_event()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nBEGIN\r\n  IF NEW.type IN (\r\n    'venue_created', 'venue_updated', 'venue_archived',\r\n    'operation_schedule_created', 'operation_schedule_updated',\r\n    'operation_schedule_paused', 'operation_schedule_resumed', 'operation_schedule_archived'\r\n  ) AND (\r\n    auth.uid() IS NULL\r\n    OR NEW.actor_id IS DISTINCT FROM auth.uid()\r\n    OR NOT public.can_manage_recurring_operations()\r\n  ) THEN\r\n    RAISE EXCEPTION 'Recurring operations management is owner-only.'\r\n      USING ERRCODE = '42501';\r\n  END IF;\r\n\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "trigger_update_market_operation_session_read_model",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER trigger_update_market_operation_session_read_model AFTER INSERT ON public.events FOR EACH ROW EXECUTE FUNCTION update_market_operation_session_read_model()",
+      "function": "CREATE OR REPLACE FUNCTION public.update_market_operation_session_read_model()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nDECLARE\r\n  v_updates JSONB;\r\n  v_market_id UUID;\r\nBEGIN\r\n  IF NEW.type <> 'market_updated' THEN\r\n    RETURN NEW;\r\n  END IF;\r\n\r\n  v_updates := NEW.payload->'updates';\r\n  IF v_updates IS NULL OR jsonb_typeof(v_updates) <> 'object' THEN\r\n    RETURN NEW;\r\n  END IF;\r\n\r\n  IF NOT (\r\n    v_updates ? 'operation_phase' OR\r\n    v_updates ? 'operationPhase' OR\r\n    v_updates ? 'operation_session_date' OR\r\n    v_updates ? 'operationSessionDate'\r\n  ) THEN\r\n    RETURN NEW;\r\n  END IF;\r\n\r\n  v_market_id := COALESCE(\r\n    NULLIF(NEW.payload->>'market_id', '')::UUID,\r\n    NULLIF(NEW.payload->>'marketId', '')::UUID,\r\n    NEW.market_id\r\n  );\r\n\r\n  UPDATE public.markets\r\n  SET\r\n    operation_phase = CASE\r\n      WHEN v_updates ? 'operation_phase' THEN NULLIF(v_updates->>'operation_phase', '')\r\n      WHEN v_updates ? 'operationPhase' THEN NULLIF(v_updates->>'operationPhase', '')\r\n      ELSE operation_phase\r\n    END,\r\n    operation_session_date = CASE\r\n      WHEN v_updates ? 'operation_session_date'\r\n        THEN NULLIF(v_updates->>'operation_session_date', '')::DATE\r\n      WHEN v_updates ? 'operationSessionDate'\r\n        THEN NULLIF(v_updates->>'operationSessionDate', '')::DATE\r\n      ELSE operation_session_date\r\n    END,\r\n    updated_at = NEW.timestamp\r\n  WHERE id = v_market_id;\r\n\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "trigger_update_market_read_model",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER trigger_update_market_read_model AFTER INSERT ON public.events FOR EACH ROW EXECUTE FUNCTION update_market_read_model()",
+      "function": "CREATE OR REPLACE FUNCTION public.update_market_read_model()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  v_updates JSONB;\nBEGIN\n  CASE NEW.type\n    WHEN 'market_created' THEN\n      INSERT INTO markets (\n        id,\n        owner_id,\n        name,\n        location,\n        start_date,\n        end_date,\n        status,\n        early_entry_enabled,\n        early_entry_time,\n        check_in_time,\n        operating_start_time,\n        operating_end_time,\n        registration_fee,\n        booth_cost,\n        deposit,\n        table_rental,\n        chair_rental,\n        umbrella_rental,\n        tablecloth_rental,\n        commission_rate,\n        table_free,\n        chair_free,\n        umbrella_free,\n        tablecloth_free,\n        sales_photo_evidence_required,\n        notes,\n        created_at,\n        updated_at\n      )\n      VALUES (\n        NEW.market_id,\n        NEW.actor_id,\n        (NEW.payload->>'name')::TEXT,\n        (NEW.payload->>'location')::TEXT,\n        (NEW.payload->>'startDate')::DATE,\n        (NEW.payload->>'endDate')::DATE,\n        'registered',\n        (NEW.payload->>'earlyEntryEnabled')::BOOLEAN,\n        (NEW.payload->>'earlyEntryTime')::TIME,\n        (NEW.payload->>'checkInTime')::TIME,\n        (NEW.payload->>'operatingStartTime')::TIME,\n        (NEW.payload->>'operatingEndTime')::TIME,\n        (NEW.payload->>'registrationFee')::NUMERIC,\n        (NEW.payload->>'boothCost')::NUMERIC,\n        (NEW.payload->>'deposit')::NUMERIC,\n        (NEW.payload->>'tableRental')::NUMERIC,\n        (NEW.payload->>'chairRental')::NUMERIC,\n        (NEW.payload->>'umbrellaRental')::NUMERIC,\n        (NEW.payload->>'tableclothRental')::NUMERIC,\n        (NEW.payload->>'commissionRate')::NUMERIC,\n        (NEW.payload->>'tableFree')::BOOLEAN,\n        (NEW.payload->>'chairFree')::BOOLEAN,\n        (NEW.payload->>'umbrellaFree')::BOOLEAN,\n        (NEW.payload->>'tableclothFree')::BOOLEAN,\n        COALESCE(\n          (NEW.payload->>'sales_photo_evidence_required')::BOOLEAN,\n          (NEW.payload->>'salesPhotoEvidenceRequired')::BOOLEAN,\n          FALSE\n        ),\n        (NEW.payload->>'notes')::TEXT,\n        NEW.timestamp,\n        NEW.timestamp\n      )\n      ON CONFLICT (id) DO NOTHING;\n\n      INSERT INTO market_members (market_id, user_id, role)\n      VALUES (NEW.market_id, NEW.actor_id, 'owner')\n      ON CONFLICT (market_id, user_id) DO NOTHING;\n\n    WHEN 'market_updated' THEN\n      v_updates := NEW.payload->'updates';\n\n      UPDATE markets\n      SET\n        name = COALESCE((v_updates->>'name')::TEXT, name),\n        location = COALESCE((v_updates->>'location')::TEXT, location),\n        start_date = COALESCE((v_updates->>'start_date')::DATE, start_date),\n        end_date = COALESCE((v_updates->>'end_date')::DATE, end_date),\n        early_entry_enabled = COALESCE((v_updates->>'early_entry_enabled')::BOOLEAN, early_entry_enabled),\n        early_entry_time = CASE WHEN v_updates ? 'early_entry_time' THEN NULLIF(BTRIM(v_updates->>'early_entry_time'), '')::TIME ELSE early_entry_time END,\n        check_in_time = CASE WHEN v_updates ? 'check_in_time' THEN NULLIF(BTRIM(v_updates->>'check_in_time'), '')::TIME ELSE check_in_time END,\n        operating_start_time = CASE WHEN v_updates ? 'operating_start_time' THEN NULLIF(BTRIM(v_updates->>'operating_start_time'), '')::TIME ELSE operating_start_time END,\n        operating_end_time = CASE WHEN v_updates ? 'operating_end_time' THEN NULLIF(BTRIM(v_updates->>'operating_end_time'), '')::TIME ELSE operating_end_time END,\n        registration_fee = COALESCE((v_updates->>'registration_fee')::NUMERIC, registration_fee),\n        booth_cost = COALESCE((v_updates->>'booth_cost')::NUMERIC, booth_cost),\n        deposit = COALESCE((v_updates->>'deposit')::NUMERIC, deposit),\n        table_rental = COALESCE((v_updates->>'table_rental')::NUMERIC, table_rental),\n        chair_rental = COALESCE((v_updates->>'chair_rental')::NUMERIC, chair_rental),\n        umbrella_rental = COALESCE((v_updates->>'umbrella_rental')::NUMERIC, umbrella_rental),\n        tablecloth_rental = COALESCE((v_updates->>'tablecloth_rental')::NUMERIC, tablecloth_rental),\n        commission_rate = COALESCE((v_updates->>'commission_rate')::NUMERIC, commission_rate),\n        table_free = COALESCE((v_updates->>'table_free')::BOOLEAN, table_free),\n        chair_free = COALESCE((v_updates->>'chair_free')::BOOLEAN, chair_free),\n        umbrella_free = COALESCE((v_updates->>'umbrella_free')::BOOLEAN, umbrella_free),\n        tablecloth_free = COALESCE((v_updates->>'tablecloth_free')::BOOLEAN, tablecloth_free),\n        sales_photo_evidence_required = COALESCE(\n          (v_updates->>'sales_photo_evidence_required')::BOOLEAN,\n          (v_updates->>'salesPhotoEvidenceRequired')::BOOLEAN,\n          sales_photo_evidence_required\n        ),\n        notes = COALESCE((v_updates->>'notes')::TEXT, notes),\n        updated_at = NEW.timestamp\n      WHERE id = (NEW.payload->>'market_id')::UUID;\n\n    WHEN 'market_status_changed' THEN\n      UPDATE markets\n      SET\n        status = (NEW.payload->>'newStatus')::TEXT,\n        updated_at = NEW.timestamp\n      WHERE id = NEW.market_id;\n\n    WHEN 'market_started' THEN\n      UPDATE markets\n      SET\n        status = 'ongoing',\n        updated_at = NEW.timestamp\n      WHERE id = NEW.market_id;\n\n    WHEN 'market_ended' THEN\n      UPDATE markets\n      SET\n        status = 'completed',\n        updated_at = NEW.timestamp\n      WHERE id = NEW.market_id;\n\n    WHEN 'market_deleted' THEN\n      UPDATE markets\n      SET\n        is_deleted = TRUE,\n        updated_at = NEW.timestamp\n      WHERE id = (NEW.payload->>'marketId')::UUID;\n\n    WHEN 'deal_closed', 'deal_deleted' THEN\r\n      -- BW10_DEAL_MARKET_V1: products are projected by the product trigger only.\r\n      UPDATE public.markets m SET\r\n        total_revenue = GREATEST(0, COALESCE(m.total_revenue, 0) + d.direction * d.revenue),\r\n        total_profit = COALESCE(m.total_profit, 0) + d.direction * (d.revenue - d.cost),\r\n        total_deals = GREATEST(0, COALESCE(m.total_deals, 0) + d.direction * d.deal_count),\r\n        updated_at = NEW.timestamp\r\n      FROM public.deal_projection_delta(NEW.id, NEW.market_id, NEW.type, NEW.payload) d\r\n      WHERE m.id = NEW.market_id;\r\n\r\n    WHEN 'interaction_recorded' THEN\n      UPDATE markets\n      SET\n        total_interactions = total_interactions + 1,\n        updated_at = NEW.timestamp\n      WHERE id = NEW.market_id;\n\n    ELSE\n      NULL;\n  END CASE;\n\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    {
+      "name": "trigger_update_product_read_model",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER trigger_update_product_read_model AFTER INSERT ON public.events FOR EACH ROW EXECUTE FUNCTION update_product_read_model()",
+      "function": "CREATE OR REPLACE FUNCTION public.update_product_read_model()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  v_product_id UUID;\n  v_item JSONB;\nBEGIN\n  CASE NEW.type\n    \n    -- 商品建立事件\n    WHEN 'product_created' THEN\n      INSERT INTO products (\n        id,\n        owner_id,           -- ✅ 新增：商品所有者\n        market_id,          -- ✅ 可選：首次創建的市集\n        name,\n        category,\n        price,\n        cost,\n        icon_name,\n        color_code,\n        stock,\n        unlimited_stock,\n        is_active,\n        is_shared,          -- ✅ 新增：是否共享\n        description,\n        created_at,\n        updated_at\n      )\n      VALUES (\n        (NEW.payload->>'productId')::UUID,\n        NEW.actor_id,       -- ✅ 使用事件的 actor_id 作為所有者\n        NEW.market_id,      -- ✅ 可以是 NULL\n        (NEW.payload->>'name')::TEXT,\n        (NEW.payload->>'category')::TEXT,\n        (NEW.payload->>'price')::NUMERIC,\n        (NEW.payload->>'cost')::NUMERIC,\n        (NEW.payload->>'iconName')::TEXT,\n        (NEW.payload->>'colorCode')::TEXT,\n        (NEW.payload->>'stock')::INTEGER,\n        COALESCE((NEW.payload->>'unlimitedStock')::BOOLEAN, FALSE),\n        TRUE,\n        COALESCE((NEW.payload->>'isShared')::BOOLEAN, FALSE),\n        (NEW.payload->>'description')::TEXT,\n        NEW.timestamp,\n        NEW.timestamp\n      )\n      ON CONFLICT (id) DO NOTHING;\n    \n    -- 商品更新事件\n    WHEN 'product_updated' THEN\n      UPDATE products\n      SET\r\n        -- FERIA_PRODUCT_STOCK_MODE_V1: explicit false must survive projection.\r\n        unlimited_stock = COALESCE(\r\n          (NEW.payload->'updates'->>'unlimitedStock')::boolean,\r\n          (NEW.payload->'updates'->>'unlimited_stock')::boolean,\r\n          unlimited_stock), \n        name = COALESCE((NEW.payload->'updates'->>'name')::TEXT, name),\n        price = COALESCE((NEW.payload->'updates'->>'price')::NUMERIC, price),\n        cost = COALESCE((NEW.payload->'updates'->>'cost')::NUMERIC, cost),\n        stock = COALESCE((NEW.payload->'updates'->>'stock')::INTEGER, stock),\n        is_shared = COALESCE((NEW.payload->'updates'->>'isShared')::BOOLEAN, is_shared),\n        updated_at = NEW.timestamp\n      WHERE id = (NEW.payload->>'productId')::UUID;\n    \n    -- 商品刪除事件\n    WHEN 'product_deleted' THEN\n      UPDATE products\n      SET \n        is_active = FALSE,\n        updated_at = NEW.timestamp\n      WHERE id = (NEW.payload->>'productId')::UUID;\n    \n    -- 成交事件：更新商品銷售統計\n    WHEN 'deal_closed', 'deal_deleted' THEN\n      -- BW10_DEAL_PRODUCT_V1: group repeated product lines into one update.\n      UPDATE public.products p SET\n        total_sold = GREATEST(0, COALESCE(p.total_sold, 0) + sold.direction * sold.quantity),\n        stock = CASE WHEN NOT p.unlimited_stock AND p.stock IS NOT NULL\n          THEN GREATEST(0, p.stock + sold.stock_direction * sold.quantity) ELSE p.stock END,\n        updated_at = NEW.timestamp\n      FROM (\n        SELECT COALESCE(item->>'productId', item->>'product_id') AS product_id,\n          d.direction, d.stock_direction,\n          SUM(public.deal_projection_number(item->'quantity')) AS quantity\n        FROM public.deal_projection_delta(NEW.id, NEW.market_id, NEW.type, NEW.payload) d\n        CROSS JOIN LATERAL jsonb_array_elements(d.items) AS lines(item)\n        WHERE public.deal_projection_number(item->'quantity') > 0\n        GROUP BY COALESCE(item->>'productId', item->>'product_id'), d.direction, d.stock_direction\n      ) sold\n      WHERE p.id::TEXT = sold.product_id\n        AND p.owner_id = (SELECT m.owner_id FROM public.markets m WHERE m.id = NEW.market_id);\n    \n    ELSE\n      NULL;\n  END CASE;\n  \n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    {
+      "name": "trigger_update_recurring_operations_read_model",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER trigger_update_recurring_operations_read_model AFTER INSERT ON public.events FOR EACH ROW EXECUTE FUNCTION project_recurring_operations_event()",
+      "function": "CREATE OR REPLACE FUNCTION public.project_recurring_operations_event()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nDECLARE\r\n  v_updates JSONB;\r\n  v_venue_id UUID;\r\n  v_schedule_id UUID;\r\n  v_market_id UUID;\r\nBEGIN\r\n  CASE NEW.type\r\n    WHEN 'venue_created' THEN\r\n      v_venue_id := NULLIF(NEW.payload->>'venueId', '')::UUID;\r\n      INSERT INTO public.venues (\r\n        id, owner_id, name, address, location_note, status, is_deleted, created_at, updated_at\r\n      ) VALUES (\r\n        v_venue_id,\r\n        NEW.actor_id,\r\n        NEW.payload->>'name',\r\n        NULLIF(NEW.payload->>'address', ''),\r\n        NULLIF(NEW.payload->>'locationNote', ''),\r\n        COALESCE(NULLIF(NEW.payload->>'status', ''), 'active'),\r\n        COALESCE((NEW.payload->>'isDeleted')::BOOLEAN, FALSE),\r\n        NEW.timestamp,\r\n        NEW.timestamp\r\n      );\r\n\r\n    WHEN 'venue_updated' THEN\r\n      v_venue_id := NULLIF(NEW.payload->>'venueId', '')::UUID;\r\n      v_updates := NEW.payload->'updates';\r\n      UPDATE public.venues SET\r\n        name = CASE WHEN v_updates ? 'name' THEN v_updates->>'name' ELSE name END,\r\n        address = CASE WHEN v_updates ? 'address' THEN NULLIF(v_updates->>'address', '') ELSE address END,\r\n        location_note = CASE WHEN v_updates ? 'locationNote' THEN NULLIF(v_updates->>'locationNote', '') ELSE location_note END,\r\n        status = CASE WHEN v_updates ? 'status' THEN v_updates->>'status' ELSE status END,\r\n        is_deleted = CASE WHEN v_updates ? 'isDeleted' THEN (v_updates->>'isDeleted')::BOOLEAN ELSE is_deleted END,\r\n        updated_at = NEW.timestamp\r\n      WHERE id = v_venue_id AND owner_id = NEW.actor_id;\r\n      IF NOT FOUND THEN RAISE EXCEPTION 'venue update owner scope mismatch'; END IF;\r\n\r\n    WHEN 'venue_archived' THEN\r\n      v_venue_id := NULLIF(NEW.payload->>'venueId', '')::UUID;\r\n      UPDATE public.venues SET status = 'archived', updated_at = NEW.timestamp\r\n      WHERE id = v_venue_id AND owner_id = NEW.actor_id;\r\n      IF NOT FOUND THEN RAISE EXCEPTION 'venue archive owner scope mismatch'; END IF;\r\n\r\n    WHEN 'operation_schedule_created' THEN\r\n      v_schedule_id := NULLIF(NEW.payload->>'scheduleId', '')::UUID;\r\n      v_venue_id := NULLIF(NEW.payload->>'venueId', '')::UUID;\r\n      IF NOT EXISTS (\r\n        SELECT 1 FROM public.venues WHERE id = v_venue_id AND owner_id = NEW.actor_id\r\n      ) THEN\r\n        RAISE EXCEPTION 'schedule venue owner scope mismatch';\r\n      END IF;\r\n      INSERT INTO public.operation_schedules (\r\n        id, owner_id, venue_id, name, timezone, recurrence, start_time, end_time,\r\n        ends_next_day, defaults, status, revision, created_at, updated_at\r\n      ) VALUES (\r\n        v_schedule_id,\r\n        NEW.actor_id,\r\n        v_venue_id,\r\n        NULLIF(NEW.payload->>'name', ''),\r\n        NEW.payload->>'timezone',\r\n        NEW.payload->'recurrence',\r\n        (NEW.payload->>'startTime')::TIME,\r\n        (NEW.payload->>'endTime')::TIME,\r\n        COALESCE((NEW.payload->>'endsNextDay')::BOOLEAN, FALSE),\r\n        COALESCE(NEW.payload->'defaults', '{}'::JSONB),\r\n        COALESCE(NULLIF(NEW.payload->>'status', ''), 'active'),\r\n        COALESCE((NEW.payload->>'revision')::INTEGER, 1),\r\n        NEW.timestamp,\r\n        NEW.timestamp\r\n      );\r\n\r\n    WHEN 'operation_schedule_updated' THEN\r\n      v_schedule_id := NULLIF(NEW.payload->>'scheduleId', '')::UUID;\r\n      v_updates := NEW.payload->'updates';\r\n      UPDATE public.operation_schedules SET\r\n        venue_id = CASE WHEN v_updates ? 'venueId' THEN (v_updates->>'venueId')::UUID ELSE venue_id END,\r\n        name = CASE WHEN v_updates ? 'name' THEN NULLIF(v_updates->>'name', '') ELSE name END,\r\n        timezone = CASE WHEN v_updates ? 'timezone' THEN v_updates->>'timezone' ELSE timezone END,\r\n        recurrence = CASE WHEN v_updates ? 'recurrence' THEN v_updates->'recurrence' ELSE recurrence END,\r\n        start_time = CASE WHEN v_updates ? 'startTime' THEN (v_updates->>'startTime')::TIME ELSE start_time END,\r\n        end_time = CASE WHEN v_updates ? 'endTime' THEN (v_updates->>'endTime')::TIME ELSE end_time END,\r\n        ends_next_day = CASE WHEN v_updates ? 'endsNextDay' THEN (v_updates->>'endsNextDay')::BOOLEAN ELSE ends_next_day END,\r\n        defaults = CASE WHEN v_updates ? 'defaults' THEN v_updates->'defaults' ELSE defaults END,\r\n        status = CASE WHEN v_updates ? 'status' THEN v_updates->>'status' ELSE status END,\r\n        revision = CASE WHEN v_updates ? 'revision' THEN (v_updates->>'revision')::INTEGER ELSE revision END,\r\n        updated_at = NEW.timestamp\r\n      WHERE id = v_schedule_id AND owner_id = NEW.actor_id;\r\n      IF NOT FOUND THEN RAISE EXCEPTION 'schedule update owner scope mismatch'; END IF;\r\n\r\n    WHEN 'operation_schedule_paused' THEN\r\n      v_schedule_id := NULLIF(NEW.payload->>'scheduleId', '')::UUID;\r\n      UPDATE public.operation_schedules SET status = 'paused', updated_at = NEW.timestamp\r\n      WHERE id = v_schedule_id AND owner_id = NEW.actor_id;\r\n      IF NOT FOUND THEN RAISE EXCEPTION 'schedule pause owner scope mismatch'; END IF;\r\n\r\n    WHEN 'operation_schedule_resumed' THEN\r\n      v_schedule_id := NULLIF(NEW.payload->>'scheduleId', '')::UUID;\r\n      UPDATE public.operation_schedules SET status = 'active', updated_at = NEW.timestamp\r\n      WHERE id = v_schedule_id AND owner_id = NEW.actor_id;\r\n      IF NOT FOUND THEN RAISE EXCEPTION 'schedule resume owner scope mismatch'; END IF;\r\n\r\n    WHEN 'operation_schedule_archived' THEN\r\n      v_schedule_id := NULLIF(NEW.payload->>'scheduleId', '')::UUID;\r\n      UPDATE public.operation_schedules SET status = 'archived', updated_at = NEW.timestamp\r\n      WHERE id = v_schedule_id AND owner_id = NEW.actor_id;\r\n      IF NOT FOUND THEN RAISE EXCEPTION 'schedule archive owner scope mismatch'; END IF;\r\n\r\n    WHEN 'market_created' THEN\r\n      v_market_id := COALESCE(\r\n        NEW.market_id,\r\n        NULLIF(NEW.payload->>'market_id', '')::UUID,\r\n        NULLIF(NEW.payload->>'marketId', '')::UUID\r\n      );\r\n      UPDATE public.markets SET\r\n        venue_id = NULLIF(COALESCE(NEW.payload->>'venue_id', NEW.payload->>'venueId'), '')::UUID,\r\n        schedule_id = NULLIF(COALESCE(NEW.payload->>'schedule_id', NEW.payload->>'scheduleId'), '')::UUID,\r\n        session_origin = NULLIF(COALESCE(NEW.payload->>'session_origin', NEW.payload->>'sessionOrigin'), ''),\r\n        schedule_occurrence_key = NULLIF(COALESCE(NEW.payload->>'schedule_occurrence_key', NEW.payload->>'scheduleOccurrenceKey'), ''),\r\n        schedule_revision = NULLIF(COALESCE(NEW.payload->>'schedule_revision', NEW.payload->>'scheduleRevision'), '')::INTEGER,\r\n        schedule_occurrence_state = NULLIF(COALESCE(NEW.payload->>'schedule_occurrence_state', NEW.payload->>'scheduleOccurrenceState'), ''),\r\n        is_schedule_override = COALESCE(\r\n          (NEW.payload->>'is_schedule_override')::BOOLEAN,\r\n          (NEW.payload->>'isScheduleOverride')::BOOLEAN,\r\n          FALSE\r\n        )\r\n      WHERE id = v_market_id AND owner_id = NEW.actor_id;\r\n\r\n    WHEN 'market_updated' THEN\r\n      v_market_id := COALESCE(\r\n        NEW.market_id,\r\n        NULLIF(NEW.payload->>'market_id', '')::UUID,\r\n        NULLIF(NEW.payload->>'marketId', '')::UUID\r\n      );\r\n      v_updates := NEW.payload->'updates';\r\n      UPDATE public.markets SET\r\n        venue_id = CASE WHEN v_updates ? 'venue_id' OR v_updates ? 'venueId'\r\n          THEN NULLIF(COALESCE(v_updates->>'venue_id', v_updates->>'venueId'), '')::UUID ELSE venue_id END,\r\n        schedule_id = CASE WHEN v_updates ? 'schedule_id' OR v_updates ? 'scheduleId'\r\n          THEN NULLIF(COALESCE(v_updates->>'schedule_id', v_updates->>'scheduleId'), '')::UUID ELSE schedule_id END,\r\n        session_origin = CASE WHEN v_updates ? 'session_origin' OR v_updates ? 'sessionOrigin'\r\n          THEN NULLIF(COALESCE(v_updates->>'session_origin', v_updates->>'sessionOrigin'), '') ELSE session_origin END,\r\n        schedule_occurrence_key = CASE WHEN v_updates ? 'schedule_occurrence_key' OR v_updates ? 'scheduleOccurrenceKey'\r\n          THEN NULLIF(COALESCE(v_updates->>'schedule_occurrence_key', v_updates->>'scheduleOccurrenceKey'), '') ELSE schedule_occurrence_key END,\r\n        schedule_revision = CASE WHEN v_updates ? 'schedule_revision' OR v_updates ? 'scheduleRevision'\r\n          THEN NULLIF(COALESCE(v_updates->>'schedule_revision', v_updates->>'scheduleRevision'), '')::INTEGER ELSE schedule_revision END,\r\n        schedule_occurrence_state = CASE WHEN v_updates ? 'schedule_occurrence_state' OR v_updates ? 'scheduleOccurrenceState'\r\n          THEN NULLIF(COALESCE(v_updates->>'schedule_occurrence_state', v_updates->>'scheduleOccurrenceState'), '') ELSE schedule_occurrence_state END,\r\n        is_schedule_override = CASE WHEN v_updates ? 'is_schedule_override' OR v_updates ? 'isScheduleOverride'\r\n          THEN COALESCE((v_updates->>'is_schedule_override')::BOOLEAN, (v_updates->>'isScheduleOverride')::BOOLEAN)\r\n          ELSE is_schedule_override END,\r\n        updated_at = NEW.timestamp\r\n      WHERE id = v_market_id AND owner_id = NEW.actor_id;\r\n\r\n    ELSE\r\n      NULL;\r\n  END CASE;\r\n\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "zz_project_market_payment_deadline_event",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER zz_project_market_payment_deadline_event AFTER INSERT ON public.events FOR EACH ROW EXECUTE FUNCTION project_market_payment_deadline_event()",
+      "function": "CREATE OR REPLACE FUNCTION public.project_market_payment_deadline_event()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE fields JSONB; deadline JSONB; target_id UUID;\r\nBEGIN\r\n  IF NEW.type NOT IN ('market_created','market_updated') THEN RETURN NEW; END IF;\r\n  fields := CASE WHEN NEW.type='market_updated' THEN NEW.payload->'updates' ELSE NEW.payload END;\r\n  IF fields IS NULL OR jsonb_typeof(fields)<>'object' THEN RETURN NEW; END IF;\r\n  IF NOT (fields ? 'paymentDeadline' OR fields ? 'payment_deadline') THEN RETURN NEW; END IF;\r\n  IF fields ? 'paymentDeadline' AND fields ? 'payment_deadline'\r\n    AND fields->'paymentDeadline' IS DISTINCT FROM fields->'payment_deadline' THEN\r\n    RAISE EXCEPTION 'Conflicting payment deadline aliases' USING ERRCODE='22023';\r\n  END IF;\r\n  deadline := CASE WHEN fields ? 'paymentDeadline' THEN fields->'paymentDeadline' ELSE fields->'payment_deadline' END;\r\n  IF NOT public.market_payment_deadline_is_valid(deadline) THEN\r\n    RAISE EXCEPTION 'Invalid payment deadline' USING ERRCODE='22023';\r\n  END IF;\r\n  IF auth.uid() IS NULL OR NEW.actor_id IS DISTINCT FROM auth.uid()\r\n    OR NOT public.can_manage_recurring_operations() THEN\r\n    RAISE EXCEPTION 'Payment deadline events require an owner' USING ERRCODE='42501';\r\n  END IF;\r\n  target_id := COALESCE(NEW.market_id,(NEW.payload->>'market_id')::UUID,(NEW.payload->>'marketId')::UUID);\r\n  UPDATE public.markets SET payment_deadline = NULLIF(deadline,'null'::JSONB)\r\n    WHERE id=target_id AND owner_id=NEW.actor_id;\r\n  IF NOT FOUND THEN RAISE EXCEPTION 'Payment deadline target outside owner scope' USING ERRCODE='42501'; END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "name": "zz_project_market_region_event",
+      "enabled": "O",
+      "trigger": "CREATE TRIGGER zz_project_market_region_event AFTER INSERT ON public.events FOR EACH ROW EXECUTE FUNCTION project_market_region_event()",
+      "function": "CREATE OR REPLACE FUNCTION public.project_market_region_event()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE\r\n  fields JSONB;\r\n  region JSONB;\r\n  region_text TEXT;\r\n  target_id UUID;\r\nBEGIN\r\n  IF NEW.type NOT IN ('market_created', 'market_updated', 'venue_created', 'venue_updated') THEN\r\n    RETURN NEW;\r\n  END IF;\r\n  fields := CASE WHEN NEW.type IN ('market_updated', 'venue_updated')\r\n    THEN NEW.payload->'updates' ELSE NEW.payload END;\r\n  IF fields IS NULL OR jsonb_typeof(fields) <> 'object' THEN RETURN NEW; END IF;\r\n  -- Old clients omit the key: preserve existing snapshots, including null.\r\n  IF NOT (fields ? 'regionCode' OR fields ? 'region_code') THEN RETURN NEW; END IF;\r\n  IF fields ? 'regionCode' AND fields ? 'region_code'\r\n    AND fields->'regionCode' IS DISTINCT FROM fields->'region_code' THEN\r\n    RAISE EXCEPTION 'Conflicting region aliases' USING ERRCODE = '22023';\r\n  END IF;\r\n  region := CASE WHEN fields ? 'regionCode' THEN fields->'regionCode' ELSE fields->'region_code' END;\r\n  IF jsonb_typeof(region) NOT IN ('null', 'string') THEN\r\n    RAISE EXCEPTION 'Invalid region value' USING ERRCODE = '22023';\r\n  END IF;\r\n  region_text := CASE WHEN region = 'null'::JSONB THEN NULL ELSE region #>> '{}' END;\r\n  IF NOT public.market_region_code_is_valid(region_text) THEN\r\n    RAISE EXCEPTION 'Unknown region code' USING ERRCODE = '22023';\r\n  END IF;\r\n  IF auth.uid() IS NULL OR NEW.actor_id IS DISTINCT FROM auth.uid()\r\n    OR NOT public.can_manage_recurring_operations() THEN\r\n    RAISE EXCEPTION 'Region events require an authenticated owner' USING ERRCODE = '42501';\r\n  END IF;\r\n\r\n  IF NEW.type IN ('market_created', 'market_updated') THEN\r\n    target_id := COALESCE(NEW.market_id, (NEW.payload->>'market_id')::UUID, (NEW.payload->>'marketId')::UUID);\r\n    UPDATE public.markets SET region_code = region_text\r\n      WHERE id = target_id AND owner_id = NEW.actor_id;\r\n  ELSE\r\n    target_id := (NEW.payload->>'venueId')::UUID;\r\n    UPDATE public.venues SET region_code = region_text\r\n      WHERE id = target_id AND owner_id = NEW.actor_id;\r\n  END IF;\r\n  IF NOT FOUND THEN\r\n    RAISE EXCEPTION 'Region target not found in owner scope' USING ERRCODE = '42501';\r\n  END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "events_actor_id_fkey",
+      "definition": "FOREIGN KEY (actor_id) REFERENCES profiles(id)"
+    },
+    {
+      "name": "events_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "events_type_check",
+      "definition": "CHECK ((type = ANY (ARRAY['venue_created'::text, 'venue_updated'::text, 'venue_archived'::text, 'operation_schedule_created'::text, 'operation_schedule_updated'::text, 'operation_schedule_paused'::text, 'operation_schedule_resumed'::text, 'operation_schedule_archived'::text, 'market_created'::text, 'market_updated'::text, 'market_status_changed'::text, 'market_started'::text, 'market_ended'::text, 'market_deleted'::text, 'product_created'::text, 'product_updated'::text, 'product_deleted'::text, 'interaction_recorded'::text, 'interaction_deleted'::text, 'deal_closed'::text, 'deal_deleted'::text, 'field_note_created'::text, 'field_note_updated'::text, 'field_note_deleted'::text, 'checklist_item_created'::text, 'checklist_item_updated'::text, 'checklist_item_deleted'::text, 'settings_updated'::text])))"
+    }
+  ],
+  "events_table": {
+    "rls": true,
+    "force_rls": false
+  },
+  "authenticated_insert": true
+}

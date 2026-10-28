@@ -1,0 +1,14 @@
+{
+  "simulation": {
+    "enabled": false,
+    "planCode": null,
+    "expiresAt": null,
+    "cloudBacked": true
+  },
+  "photoWriteAllowed": false,
+  "market": {
+    "status": "paid",
+    "operation_phase": "closing"
+  },
+  "errors": []
+}

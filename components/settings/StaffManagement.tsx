@@ -913,7 +913,7 @@ export function StaffManagement({
 function StaffAccessSummary({ staff, teamAllowed, simulationActive, blockReason }: {
   staff: StaffMember; teamAllowed: boolean; simulationActive: boolean; blockReason?: CapabilityAccessBlockReason;
 }) {
-  const access = staffAccessPresentation({ role: staff.role, status: staff.status, canView: staff.permissions.can_view, teamAllowed, simulationActive, blockReason });
+  const access = staffAccessPresentation({ role: staff.role, status: staff.status, canView: staff.permissions.can_view, permissions: staff.permissions, teamAllowed, simulationActive, blockReason });
   return <div>
     <p className="text-sm font-medium">{access.title}</p>
     <p className="mt-1 text-sm leading-6 text-muted-foreground">{access.summary}</p>

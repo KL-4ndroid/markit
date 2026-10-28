@@ -1,0 +1,100 @@
+[
+  {
+    "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "config": [
+      "search_path=pg_catalog, public"
+    ],
+    "signature": "can_current_staff_read_relationship(uuid,text)",
+    "definition": "CREATE OR REPLACE FUNCTION public.can_current_staff_read_relationship(p_owner_id uuid, p_status text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\n  SELECT auth.uid() IS NOT NULL\r\n    AND EXISTS (\r\n      SELECT 1\r\n      FROM public.staff_relationships AS sr\r\n      WHERE sr.owner_id = p_owner_id\r\n        AND sr.staff_id = auth.uid()\r\n        AND sr.status = p_status\r\n    )\r\n    AND (\r\n      p_status <> 'active'\r\n      OR public.has_authoritative_team_entitlement(p_owner_id)\r\n    );\r\n$function$\n",
+    "security_definer": true
+  },
+  {
+    "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "config": [
+      "search_path=pg_catalog, public"
+    ],
+    "signature": "has_authoritative_team_entitlement(uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.has_authoritative_team_entitlement(p_owner_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\n SELECT public.subscription_effective_plan(p_owner_id)='team';\r\n$function$\n",
+    "security_definer": true
+  },
+  {
+    "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "config": [
+      "search_path=pg_catalog, public"
+    ],
+    "signature": "read_subscription_test_switch(uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.read_subscription_test_switch(p_actor uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE v_row public.subscription_write_guard_owners%ROWTYPE; v_active BOOLEAN;\r\nBEGIN\r\n SELECT * INTO v_row FROM public.subscription_write_guard_owners WHERE owner_id=p_actor AND enabled AND allow_test_switch;\r\n IF NOT FOUND THEN RAISE EXCEPTION 'TEST_SWITCH_NOT_ALLOWED' USING ERRCODE='42501'; END IF;\r\n v_active:=COALESCE(v_row.test_expires_at>now(),FALSE);\r\n RETURN jsonb_build_object('enabled',v_active,'planCode',CASE WHEN v_active THEN v_row.test_plan_code ELSE NULL END,\r\n   'expiresAt',CASE WHEN v_active THEN v_row.test_expires_at ELSE NULL END,'cloudBacked',TRUE);\r\nEND; $function$\n",
+    "security_definer": true
+  },
+  {
+    "acl": [
+      "postgres=X/postgres",
+      "authenticated=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "config": [
+      "search_path=pg_catalog, public"
+    ],
+    "signature": "restore_staff_relationship(uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.restore_staff_relationship(p_relationship_id uuid)\n RETURNS staff_relationships\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE\r\n  v_owner_id uuid := auth.uid();\r\n  v_staff_id uuid;\r\n  v_record public.staff_relationships%ROWTYPE;\r\nBEGIN\r\n  IF v_owner_id IS NULL THEN\r\n    RAISE EXCEPTION 'Authentication required.' USING ERRCODE = '42501';\r\n  END IF;\r\n  IF NOT public.has_authoritative_team_entitlement(v_owner_id) THEN\r\n    RAISE EXCEPTION 'An active Team subscription is required.' USING ERRCODE = '42501';\r\n  END IF;\r\n\r\n  SELECT staff_id\r\n  INTO v_staff_id\r\n  FROM public.staff_relationships\r\n  WHERE id = p_relationship_id\r\n    AND owner_id = v_owner_id\r\n    AND status = 'suspended_by_plan'\r\n  FOR UPDATE;\r\n\r\n  IF NOT FOUND THEN\r\n    RAISE EXCEPTION 'Suspended staff relationship not found.' USING ERRCODE = 'P0002';\r\n  END IF;\r\n\r\n  UPDATE public.staff_relationships\r\n  SET status = 'active'\r\n  WHERE id = p_relationship_id\r\n  RETURNING * INTO v_record;\r\n\r\n  INSERT INTO public.market_members (market_id, user_id, role, joined_at)\r\n  SELECT m.id, v_staff_id, 'staff', pg_catalog.now()\r\n  FROM public.markets AS m\r\n  WHERE m.owner_id = v_owner_id\r\n    AND m.status IN ('ongoing', 'registered', 'accepted', 'paid')\r\n  ON CONFLICT DO NOTHING;\r\n\r\n  RETURN v_record;\r\nEND;\r\n$function$\n",
+    "security_definer": true
+  },
+  {
+    "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "config": [
+      "search_path=pg_catalog, public"
+    ],
+    "signature": "set_subscription_test_switch(uuid,text,boolean)",
+    "definition": "CREATE OR REPLACE FUNCTION public.set_subscription_test_switch(p_actor uuid, p_plan text, p_enabled boolean)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE v_expires TIMESTAMPTZ;\r\nBEGIN\r\n IF p_actor IS NULL OR p_enabled IS NULL OR (p_enabled AND (p_plan IS NULL OR p_plan NOT IN ('free','pro','team'))) THEN\r\n   RAISE EXCEPTION 'TEST_SWITCH_INPUT' USING ERRCODE='22023'; END IF;\r\n PERFORM 1 FROM public.subscription_write_guard_owners WHERE owner_id=p_actor AND enabled AND allow_test_switch FOR UPDATE;\r\n IF NOT FOUND THEN RAISE EXCEPTION 'TEST_SWITCH_NOT_ALLOWED' USING ERRCODE='42501'; END IF;\r\n v_expires:=CASE WHEN p_enabled THEN clock_timestamp()+INTERVAL '4 hours' ELSE NULL END;\r\n UPDATE public.subscription_write_guard_owners SET test_plan_code=CASE WHEN p_enabled THEN p_plan ELSE NULL END,\r\n   test_expires_at=v_expires,updated_at=clock_timestamp() WHERE owner_id=p_actor;\r\n INSERT INTO public.subscription_test_switch_audit(owner_id,plan_code,expires_at)\r\n   VALUES(p_actor,CASE WHEN p_enabled THEN p_plan ELSE NULL END,v_expires);\r\n RETURN public.read_subscription_test_switch(p_actor);\r\nEND; $function$\n",
+    "security_definer": true
+  },
+  {
+    "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "config": [
+      "search_path=pg_catalog, public"
+    ],
+    "signature": "subscription_effective_plan(uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.subscription_effective_plan(p_owner uuid)\n RETURNS text\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE v_plan TEXT;\r\nBEGIN\r\n SELECT test_plan_code INTO v_plan FROM public.subscription_write_guard_owners\r\n WHERE owner_id=p_owner AND enabled AND allow_test_switch AND test_expires_at>now();\r\n IF v_plan IS NOT NULL THEN RETURN v_plan; END IF;\r\n -- Billing/promotion writers are intentionally not activated by this migration.\r\n SELECT plan_code INTO v_plan FROM public.subscription_accounts WHERE owner_id=p_owner\r\n   AND plan_source='admin' AND billing_status='none' AND entitlement_status IN ('active','grace')\r\n   AND (entitlement_ends_at IS NULL OR entitlement_ends_at>=now());\r\n RETURN COALESCE(v_plan,'free');\r\nEND; $function$\n",
+    "security_definer": true
+  },
+  {
+    "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "config": [
+      "search_path=pg_catalog, public"
+    ],
+    "signature": "suspend_owner_staff_for_plan(uuid)",
+    "definition": "CREATE OR REPLACE FUNCTION public.suspend_owner_staff_for_plan(p_owner_id uuid)\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE\r\n  v_suspended_count integer := 0;\r\nBEGIN\r\n  IF p_owner_id IS NULL THEN\r\n    RETURN 0;\r\n  END IF;\r\n\r\n  UPDATE public.staff_relationships\r\n  SET status = 'suspended_by_plan'\r\n  WHERE owner_id = p_owner_id\r\n    AND status = 'active';\r\n\r\n  GET DIAGNOSTICS v_suspended_count = ROW_COUNT;\r\n\r\n  DELETE FROM public.market_members AS mm\r\n  USING public.markets AS m\r\n  WHERE m.id = mm.market_id\r\n    AND m.owner_id = p_owner_id\r\n    AND mm.role = 'staff'\r\n    AND EXISTS (\r\n      SELECT 1\r\n      FROM public.staff_relationships AS sr\r\n      WHERE sr.owner_id = p_owner_id\r\n        AND sr.staff_id = mm.user_id\r\n        AND sr.status = 'suspended_by_plan'\r\n    );\r\n\r\n  RETURN v_suspended_count;\r\nEND;\r\n$function$\n",
+    "security_definer": true
+  },
+  {
+    "acl": [
+      "postgres=X/postgres",
+      "service_role=X/postgres"
+    ],
+    "config": [
+      "search_path=pg_catalog, public"
+    ],
+    "signature": "sync_team_plan_staff_suspension()",
+    "definition": "CREATE OR REPLACE FUNCTION public.sync_team_plan_staff_suspension()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\r\nDECLARE\r\n  v_owner_id uuid;\r\nBEGIN\r\n  v_owner_id := CASE WHEN TG_OP = 'DELETE' THEN OLD.owner_id ELSE NEW.owner_id END;\r\n\r\n  IF NOT public.has_authoritative_team_entitlement(v_owner_id) THEN\r\n    PERFORM public.suspend_owner_staff_for_plan(v_owner_id);\r\n  END IF;\r\n\r\n  RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;\r\nEND;\r\n$function$\n",
+    "security_definer": true
+  }
+]

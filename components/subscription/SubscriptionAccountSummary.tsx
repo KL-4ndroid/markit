@@ -91,6 +91,13 @@ export function SubscriptionAccountSummary() {
         </dl>
       )}
 
+      {view.lifecycleNotice && (
+        <div className="mt-4 rounded-control bg-atelier-sage-soft px-4 py-3" role="status">
+          <p className="text-sm font-semibold text-foreground">{view.lifecycleNotice.title}</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">{view.lifecycleNotice.description}</p>
+        </div>
+      )}
+
       {view.canRetry && (
         <Button
           className="mt-4"
