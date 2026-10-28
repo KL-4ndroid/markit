@@ -132,7 +132,7 @@ const BASE_FIELDS: Record<EntityType, string[]> = {
 /** Level 1 在 Level 2 基準上額外隱藏的欄位（收入相關） */
 const LEVEL_1_EXTRA: Record<EntityType, string[]> = {
   market: ['revenue', 'totalRevenue', 'total_revenue', 'averageDealValue', 'average_deal_value'],
-  product: ['price', 'sellingPrice', 'selling_price'],
+  product: ['price', 'sellingPrice', 'selling_price', 'totalSold', 'total_sold', 'staffSalesProjectionReady'],
   deal: ['revenue', 'totalRevenue', 'total_revenue', 'price', 'quantity', 'sellingPrice', 'selling_price'],
   event: ['revenue', 'price', 'quantity'],
   stats: ['revenue', 'totalRevenue', 'total_revenue', 'averageDealValue', 'average_deal_value'],

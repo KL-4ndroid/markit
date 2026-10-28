@@ -818,7 +818,8 @@ registerEventHandler('market_deleted', async (event: Event<{ marketId?: string; 
 /**
  * 處理「商品建立」事件（UUID 版本）
  */
-registerEventHandler('product_created', async (event: Event<ProductCreatedPayload>, db) => {
+registerEventHandler('product_created', async (event: Event<ProductCreatedPayload>, db, context) => {
+  if (context?.productSnapshot) return;
   const { payload } = event;
   
   // 生成商品 UUID（如果 payload 中已有則使用，否則生成新的）
@@ -851,7 +852,8 @@ registerEventHandler('product_created', async (event: Event<ProductCreatedPayloa
 /**
  * 處理「商品更新」事件
  */
-registerEventHandler('product_updated', async (event: Event<ProductUpdatedPayload>, db) => {
+registerEventHandler('product_updated', async (event: Event<ProductUpdatedPayload>, db, context) => {
+  if (context?.productSnapshot) return;
   const { productId, updates } = event.payload;
   
   const updated = await db.products.update(productId, {
@@ -869,7 +871,8 @@ registerEventHandler('product_updated', async (event: Event<ProductUpdatedPayloa
  * 處理「商品刪除」事件
  * 注意：我們不真正刪除商品，只是標記為不啟用
  */
-registerEventHandler('product_deleted', async (event: Event<{ productId: string }>, db) => {
+registerEventHandler('product_deleted', async (event: Event<{ productId: string }>, db, context) => {
+  if (context?.productSnapshot) return;
   const { productId } = event.payload;
   
   const updated = await db.products.update(productId, {
@@ -977,7 +980,7 @@ registerEventHandler('checklist_item_deleted', async () => {});
  * 4. 儲存交易時的價格快照（防止歷史數據錯誤）
  * 5. ✅ 支持簡化補登（手動輸入金額）和完整補登（選擇商品）
  */
-registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) => {
+registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db, context) => {
   const market_id = pickMarketId(event.payload)!;
   const dealMode = getDealClosedMode(event);
   const isBackfill = dealMode === 'backfill';
@@ -1030,7 +1033,7 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
         };
         
         // ✅ 正常交易不得超賣；補登不扣庫存
-        if (!isBackfill && !product.unlimitedStock) {
+        if (!context?.productSnapshot && !isBackfill && !product.unlimitedStock) {
           const currentStock = product.stock ?? 0;
           if (currentStock < item.quantity) {
             throw new Error(
@@ -1041,7 +1044,7 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db) 
           updates.stock = currentStock - item.quantity;
         }
         
-        await db.products.update(item.productId, updates);
+        if (!context?.productSnapshot) await db.products.update(item.productId, updates);
       }
     }
   }
@@ -1183,7 +1186,7 @@ registerEventHandler('interaction_deleted', async (event: Event<InteractionDelet
  * - 簡易補登刪除：無商品異動
  * - Legacy 非法 quantity：跳過商品異動
  */
-registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db) => {
+registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db, context) => {
   const { eventId, dealDate, totalAmount, totalCost = 0, dealCount, productsSold = [] } = event.payload;
   const market_id = pickMarketId(event.payload) ?? event.market_id;
 
@@ -1218,7 +1221,7 @@ registerEventHandler('deal_deleted', async (event: Event<DealDeletedPayload>, db
   // ==========================================================
   // Step 1: 恢復商品狀態（stock + totalSold）
   // ==========================================================
-  for (const soldItem of productsSold) {
+  for (const soldItem of context?.productSnapshot ? [] : productsSold) {
     const product = await db.products.get(soldItem.productId);
     if (!product) continue;
 

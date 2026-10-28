@@ -1,4 +1,5 @@
 import React from 'react';
+import { compactPdfText, wrapPdfText } from '@/lib/reporting/pdf-display-text';
 import {
   Document,
   Font,
@@ -29,6 +30,7 @@ export type SettlementReportPdfDocumentProps = {
 const PDF_FONT_FAMILY = 'Féria Noto Sans TC';
 const registeredFontSources = new Set<string>();
 const WARNING_DISPLAY_LIMIT = 5;
+const ACTION_DISPLAY_LIMIT = 2;
 
 export function registerSettlementReportPdfFont(fontSource: string): void {
   if (registeredFontSources.has(fontSource)) return;
@@ -369,6 +371,13 @@ const styles = StyleSheet.create({
     color: colors.brand,
     fontWeight: 700,
   },
+  scoreStatusLabel: {
+    fontSize: 12,
+    lineHeight: 1.5,
+    marginBottom: 6,
+    color: colors.brand,
+    fontWeight: 700,
+  },
   summaryBand: {
     marginBottom: 12,
     paddingTop: 10,
@@ -504,7 +513,7 @@ function renderCoverPage(page: SettlementReportPdfCoverPage): React.ReactNode {
   return (
     <>
       <View style={styles.coverHero}>
-        <Text style={styles.coverBrand}>{page.brandName}</Text>
+        <Text style={styles.coverBrand}>{wrapPdfText(page.brandName, 48, 24)}</Text>
         <Text style={styles.coverRecommendation}>{page.recommendationLabel}</Text>
         <Text style={styles.coverSummary}>{page.recommendationSummary}</Text>
         <View style={styles.coverStatusRow}>
@@ -530,7 +539,7 @@ function renderCoverPage(page: SettlementReportPdfCoverPage): React.ReactNode {
         <View style={styles.twoColumnSide}>
           <View style={styles.scorePanel}>
             <Text style={styles.sectionTitle}>評分與資料狀態</Text>
-            <Text style={styles.scoreValue}>{page.scoreLabel}</Text>
+              <Text style={/^\d/.test(page.scoreLabel) ? styles.scoreValue : styles.scoreStatusLabel}>{page.scoreLabel}</Text>
             <Text style={styles.bodyText}>{page.gradeLabel}</Text>
             <Text style={styles.bodyText}>{page.confidenceLabel}</Text>
             <Text style={styles.bodyTextSmall}>{page.readinessLabel}</Text>
@@ -599,7 +608,7 @@ function renderMarketPage(page: SettlementReportPdfMarketPage): React.ReactNode 
         <View style={styles.summaryBandSide}>
           <Text style={styles.summaryBandLabel}>排名第一</Text>
           <Text style={styles.summaryBandValue}>
-            {page.rows[0].marketName} · {page.rows[0].revenueLabel}
+            {wrapPdfText(page.rows[0].marketName, 32, 16)} · {page.rows[0].revenueLabel}
           </Text>
         </View>
       </View>
@@ -615,7 +624,7 @@ function renderMarketPage(page: SettlementReportPdfMarketPage): React.ReactNode 
         {page.rows.map((row, index) => (
           <View key={row.marketId} style={[styles.row, index === 0 ? styles.rowHighlight : {}]}>
             <Text style={[styles.cellText, styles.rankCell]}>{index + 1}</Text>
-            <Text style={[styles.cellText, styles.marketNameCell]}>{row.marketName}</Text>
+            <Text style={[styles.cellText, styles.marketNameCell]}>{wrapPdfText(row.marketName, 24, 12)}</Text>
             <Text style={[styles.cellText, styles.marketMoneyCell]}>{row.revenueLabel}</Text>
             <Text style={[styles.cellText, styles.marketMoneyCell]}>{row.netProfitLabel}</Text>
             <Text style={[styles.cellText, styles.marketScoreCell]}>{row.scoreLabel}</Text>
@@ -652,7 +661,7 @@ function renderProductPage(page: SettlementReportPdfProductPage): React.ReactNod
           <View style={styles.summaryBandSide}>
             <Text style={styles.summaryBandLabel}>銷售第一</Text>
             <Text style={styles.summaryBandValue}>
-              {page.rows[0].productName} · {page.rows[0].quantityLabel}
+              {wrapPdfText(page.rows[0].productName, 32, 16)} · {page.rows[0].quantityLabel}
             </Text>
           </View>
         </View>
@@ -667,7 +676,7 @@ function renderProductPage(page: SettlementReportPdfProductPage): React.ReactNod
           {page.rows.map((row, index) => (
             <View key={row.productId} style={[styles.row, index === 0 ? styles.rowHighlight : {}]}>
               <Text style={[styles.cellText, styles.rankCell]}>{index + 1}</Text>
-              <Text style={[styles.cellText, styles.productNameCell]}>{row.productName}</Text>
+              <Text style={[styles.cellText, styles.productNameCell]}>{wrapPdfText(row.productName, 36, 18)}</Text>
               <Text style={[styles.cellText, styles.productQuantityCell]}>{row.quantityLabel}</Text>
               <Text style={[styles.cellText, styles.productMoneyCell]}>{row.revenueLabel}</Text>
               <Text style={[styles.cellText, styles.productMoneyCell]}>{row.grossProfitLabel}</Text>
@@ -691,13 +700,13 @@ function renderActionGroup(group: SettlementReportPdfActionGroup, index: number)
         </View>
         <Text style={styles.actionTitle}>{group.title}</Text>
       </View>
-      {group.actions.slice(0, 4).map(action => (
+      {group.actions.slice(0, ACTION_DISPLAY_LIMIT).map(action => (
         <Text key={action} style={styles.actionItem}>
-          - {action}
+          - {wrapPdfText(action, 64, 32)}
         </Text>
       ))}
-      {group.actions.length > 4 ? (
-        <Text style={styles.bodyTextSmall}>另有 {group.actions.length - 4} 項建議，請回到 App 查看完整內容。</Text>
+      {group.actions.length > ACTION_DISPLAY_LIMIT ? (
+        <Text style={styles.bodyTextSmall}>另有 {group.actions.length - ACTION_DISPLAY_LIMIT} 項建議，請回到 App 查看完整內容。</Text>
       ) : null}
     </View>
   );
@@ -766,6 +775,12 @@ export function SettlementReportPdfDocument({
               </Text>
               <Text style={styles.pageTitle}>{page.title}</Text>
               <Text style={styles.pagePurpose}>{page.purpose}</Text>
+              {(page.key === 'cover_summary' && compactPdfText(page.brandName, 48) !== page.brandName
+                || page.key === 'market_performance' && page.rows.some(row => compactPdfText(row.marketName, 24) !== row.marketName)
+                || page.key === 'product_performance' && page.rows.some(row => compactPdfText(row.productName) !== row.productName)
+                || page.key === 'cost_profit_actions' && page.actionGroups.some(group => group.actions.some(action => compactPdfText(action, 64) !== action))) && (
+                <Text style={styles.bodyTextSmall}>長名稱及建議已縮短，完整內容請回 App 查看。</Text>
+              )}
             </View>
             <View style={styles.pageBadge}>
               <Text style={styles.pageBadgeText}>{page.pageNumber} / {viewModel.totalPages}</Text>
@@ -773,7 +788,7 @@ export function SettlementReportPdfDocument({
           </View>
           {renderPageBody(page)}
           <View style={styles.footer} fixed>
-            <Text style={styles.footerText}>{viewModel.meta.brandName}</Text>
+            <Text style={styles.footerText}>{compactPdfText(viewModel.meta.brandName, 48)}</Text>
             <Text style={styles.footerText}>Féria 結算報告</Text>
           </View>
         </Page>

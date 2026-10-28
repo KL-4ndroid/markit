@@ -1,5 +1,11 @@
 # Settlement Report Presentation Plan
 
+2026-10-28 acceptance increment: preview and Save PDF share the owner-only platform
+file boundary. The actual downloaded five-page A4 file was rendered and inspected;
+long labels/actions have explicit limits and omission notices. The low-confidence
+cover status uses smaller text to prevent overflow. See [current evidence and
+remaining matrix](STAFF_WEB_PDF_ACCEPTANCE_2026_10_28.md). Historical scope below is preserved.
+
 Date: 2026-07-01
 
 Status: preview repositioning, owner-only Pro/Team PDF enablement, and true-A4 visual validation are completed locally.

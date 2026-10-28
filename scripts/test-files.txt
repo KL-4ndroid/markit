@@ -453,3 +453,7 @@ tests/market-booth-fee.test.tsx
 tests/product-cover-photo-read.test.tsx
 tests/staff-role-consistency.test.ts
 tests/product-card-sold-visibility.test.tsx
+tests/pdf-file-actions.test.ts
+tests/staff-product-snapshot.test.ts
+tests/product-edit-patch.test.ts
+tests/cached-entity-access.test.ts

@@ -87,6 +87,8 @@ import { SalesPhotoEvidenceOwnerAlbumRouteSection } from '@/components/markets/S
 import { getQuickActionButtons } from '@/lib/quick-actions-store';
 import { getInteractionButtons, type InteractionButton } from '@/lib/interaction-buttons-store';
 import { useRoleContext } from '@/lib/role-context';
+import { canReadCachedEntity } from '@/lib/permissions/cached-entity-access';
+import { RetainedDataAccessNotice } from '@/components/common/RetainedDataAccessNotice';
 import { useSalesPhotoEvidenceFlow } from '@/hooks/useSalesPhotoEvidenceFlow';
 import { useMarketOperatingSession } from '@/hooks/useMarketOperatingSession';
 import { StaffMarketDetailView } from '@/components/markets/StaffMarketDetailView';
@@ -144,7 +146,7 @@ export function MarketDetailScreen() {
   const requestedReturnTo = searchParams.get('returnTo');
   const marketId = normalizeMarketRouteId(searchParams.get('id') ?? undefined) ?? ''; // UUID 字符串，不需要 parseInt
   const localMarket = useMarket(marketId); // 本地 Dexie 數據（老闆模式使用）
-  const { isStaff, canViewSensitiveData, isLoading: isRoleLoading } = useRoleContext(); // ✅ 員工權限檢查
+  const { isStaff, userRole, canViewSensitiveData, isLoading: isRoleLoading } = useRoleContext(); // ✅ 員工權限檢查
   const { user } = useAuth(); // ✅ 檢查是否已登入
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -273,7 +275,9 @@ export function MarketDetailScreen() {
 
   // ✅ 根據模式選擇數據源（優先順序：員工 Supabase > 本地 > 降級 Supabase）
   const effectiveLocalMarket = localMarket ?? directLocalMarket;
-  const market = selectMarketDetailRecord(supabaseMarket, effectiveLocalMarket);
+  const candidateMarket = selectMarketDetailRecord(supabaseMarket, effectiveLocalMarket);
+  const cacheAccessDenied = Boolean(candidateMarket && !canReadCachedEntity(candidateMarket, user?.id, userRole));
+  const market = cacheAccessDenied ? undefined : candidateMarket;
   const salesPhotoEvidenceRequired = Boolean(
     canAnalyze && (market as SalesPhotoEvidenceMarket | undefined)?.salesPhotoEvidenceRequired
   );
@@ -1138,7 +1142,7 @@ export function MarketDetailScreen() {
     isInitialized: dbStatus?.ok !== false,
     localLookupComplete,
     hasUser: !!user && !!marketId,
-    hasMarket: !!market,
+    hasMarket: !!candidateMarket,
     hasTriedSupabaseFallback,
     isLoadingSupabase,
   });
@@ -1148,6 +1152,10 @@ export function MarketDetailScreen() {
     completeMarketDetailTransition(marketId, user.id);
     setTransitionSnapshot(null);
   }, [isDetailLoading, isMounted, market, marketId, user?.id]);
+
+  if (isMounted && !isRoleLoading && cacheAccessDenied) {
+    return <RetainedDataAccessNotice href="/markets" returnLabel="返回市集" />;
+  }
 
   // ✅ 防止 hydration 錯誤，同時維持目的地框架而不是空白畫面
   if (!isMounted || isDetailLoading) {

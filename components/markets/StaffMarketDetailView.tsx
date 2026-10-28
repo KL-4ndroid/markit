@@ -102,7 +102,9 @@ interface StaffMarketDetailViewProps {
 export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initialTransactionMode, returnTo }: StaffMarketDetailViewProps) {
   const marketId = market.id!;
   const { user } = useAuth();
-  const { userRole, isOwner, isLoading: isRoleLoading } = useRoleContext();
+  const { userRole, isOwner, isLoading: isRoleLoading, roleRefreshState } = useRoleContext();
+  // Disclosure follows the resolved data level, not the role's write abilities.
+  const canReadSales = roleRefreshState.isAuthorizationFresh && roleRefreshState.syncInfoLevel >= 2;
   const roleCapabilities = deriveRoleCapabilities({
     isOwner,
     staffRole: userRole.staffRole,
@@ -210,6 +212,10 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
   // ✅ 載入成交事件（從 db.events 讀取，員工呼叫 OK）
   useEffect(() => {
     let cancelled = false;
+    if (!canReadSales) {
+      setDealEvents([]);
+      return;
+    }
     (async () => {
       try {
         const allDeals = await getActiveDealEventsForMarket(marketId);
@@ -235,7 +241,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
       }
     })();
     return () => { cancelled = true; };
-  }, [marketId, market.dates, market.startDate, market.endDate]);
+  }, [canReadSales, marketId, market.dates, market.startDate, market.endDate]);
 
   const getDealsByDate = (date: string) => {
     return dealEvents.filter(deal => getDealEventDate(deal) === date);
@@ -251,6 +257,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
     setSelectedDate('');
   };
   const handleDateClick = (date: string) => {
+    if (!canReadSales) return;
     setSelectedDate(date);
     setShowDailyDealsModal(true);
   };
@@ -330,7 +337,12 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
           phaseLabel={operatingSession.label}
           operatingTime={formatClockTimeRange(market.operatingStartTime, market.operatingEndTime) || null}
           compactOnMobile={workspacePhase === 'operating' && workspaceView === 'live'}
-          items={workspaceView === 'tasks'
+          items={!canReadSales
+            ? [
+                { label: '開始', value: formatClockTime(market.operatingStartTime) || '--' },
+                { label: '結束', value: formatClockTime(market.operatingEndTime) || '--' },
+              ]
+            : workspaceView === 'tasks'
             ? [
                 { label: '開始', value: formatClockTime(market.operatingStartTime) || '--' },
                 { label: '結束', value: formatClockTime(market.operatingEndTime) || '--' },
@@ -397,7 +409,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
             />
 
             <div className="lg:hidden">
-              <DailyTransactionLog
+              {canReadSales && <DailyTransactionLog
                 marketId={marketId}
                 allowDelete={canDeleteOwnRecord}
                 deleteActorId={deleteActorId}
@@ -407,7 +419,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
                 compactEmpty
                 title="最近紀錄"
                 onViewAll={() => setWorkspaceView('records')}
-              />
+              />}
 
               <MarketFieldOpsSection
                 marketId={marketId}
@@ -452,7 +464,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
               </section>
             )}
 
-            <div className="lg:col-start-2 lg:row-start-2">
+            {canReadSales && <div className="lg:col-start-2 lg:row-start-2">
               <DailyTransactionLog
                 marketId={marketId}
                 allowDelete={canDeleteOwnRecord}
@@ -464,13 +476,13 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
                 title="最近紀錄"
                 onViewAll={() => setWorkspaceView('records')}
               />
-            </div>
+            </div>}
           </div>
           </>
         )}
         
         {/* ✅ 當日流水帳 - 營業中或已結束時顯示 */}
-        {workspaceView === 'records' && (
+        {workspaceView === 'records' && canReadSales && (
           <div className="mx-auto max-w-3xl">
           <DailyTransactionLog
             marketId={marketId}
@@ -481,6 +493,12 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
             title="交易紀錄"
           />
           </div>
+        )}
+
+        {workspaceView === 'records' && !canReadSales && (
+          <p className="mx-auto mb-4 max-w-3xl rounded-card bg-atelier-paper p-4 text-sm text-muted-foreground" role="status">
+            {roleRefreshState.isAuthorizationFresh ? '目前權限不提供交易紀錄。' : '正在確認可查看的紀錄。'}
+          </p>
         )}
 
         {(workspaceView === 'records' || workspaceView === 'tasks') && (
@@ -596,7 +614,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
         )}
 
         {/* 每日收入明細 - 與老闆頁 DailyRevenueStats 同結構，物理隱藏利潤 */}
-        {workspaceView === 'records' && (
+        {workspaceView === 'records' && canReadSales && (
         <div className="mx-auto max-w-3xl">
         <DailyRevenueStats
           market={market}
@@ -714,7 +732,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
 
       {/* 每日成交記錄彈窗（透過 DailyRevenueStats 觸發） */}
       <DailyDealsModal
-        isOpen={showDailyDealsModal}
+        isOpen={showDailyDealsModal && canReadSales}
         onClose={handleCloseDailyDeals}
         date={selectedDate}
         deals={getDealsByDate(selectedDate)}

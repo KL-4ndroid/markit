@@ -77,9 +77,9 @@ for (const source of [ownerPageSource, staffPageSource]) {
 }
 
 assert.match(ownerPageSource, /activity=\{isOperating/);
-assert.match(ownerPageSource, /ownerOverviewDetail === 'photos'/);
-assert.match(ownerPageSource, /ownerOverviewDetail === 'interactions'/);
-assert.match(ownerPageSource, /ownerOverviewDetail === 'costs'/);
+assert.match(ownerPageSource, /visibleOverviewDetail === 'photos'/);
+assert.match(ownerPageSource, /visibleOverviewDetail === 'interactions'/);
+assert.match(ownerPageSource, /visibleOverviewDetail === 'costs'/);
 assert.match(staffPageSource, /workspaceView === 'live' && isOperating/);
 assert.match(staffPageSource, /workspaceView === 'records'/);
 assert.match(staffPageSource, /workspaceView === 'tasks'/);

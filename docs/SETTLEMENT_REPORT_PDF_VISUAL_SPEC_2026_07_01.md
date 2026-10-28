@@ -1,5 +1,10 @@
 # Settlement Report PDF Visual Specification
 
+2026-10-28 visual acceptance: long CJK/Latin labels and action groups are bounded while
+source data remains intact; omitted content points back to the App. Low-confidence
+score-status text is smaller than numeric scores. Real downloaded output and stress
+fixtures remain five true-A4 pages. See [evidence and limits](STAFF_WEB_PDF_ACCEPTANCE_2026_10_28.md).
+
 Date: 2026-07-01
 
 Status: visual specification implemented and revalidated as true five-page portrait A4 output on 2026-07-29.

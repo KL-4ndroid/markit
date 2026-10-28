@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { changedProductFormUpdates, createEmptyProductFormValues } from '../lib/products/product-form';
+const initial = { ...createEmptyProductFormValues(), stock: 2, price: 120, description: 'old', unlimitedStock: false };
+const current = { ...initial, description: 'new' };
+assert.deepEqual(changedProductFormUpdates(initial, current, { price: 120, stock: 2, unlimitedStock: false, description: 'new', isActive: true }), { description: 'new' });
+const cloud = { stock: 1, price: 121, description: 'old' };
+assert.deepEqual({ ...cloud, ...changedProductFormUpdates(initial, current, { price: 120, stock: 2, description: 'new' }) }, { stock: 1, price: 121, description: 'new' });
+assert.deepEqual(changedProductFormUpdates(initial, { ...initial, price: 0 }, { price: 0 }), { price: 0 });
+assert.deepEqual(changedProductFormUpdates(initial, { ...initial, unlimitedStock: true }, { stock: 0, unlimitedStock: true }), { stock: 0, unlimitedStock: true });
+assert.deepEqual(changedProductFormUpdates(initial, initial, { price: 120, stock: 2 }), {});
+assert.equal(initial.description, 'old');
+console.log('PASS product edit patch preserves concurrent stock/price and explicit zero/mode changes');

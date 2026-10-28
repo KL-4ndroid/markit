@@ -306,6 +306,7 @@ export interface Product {
   
   // 統計資訊
   totalSold?: number;          // 總銷售數量
+  staffSalesProjectionReady?: boolean; // Local-only: visible-market event count was rebuilt.
   
   // 備註
   description?: string;        // 商品描述
@@ -590,7 +591,8 @@ export type EventPayloadMap = {
 
 export type EventHandler<T = any> = (
   event: Event<T>,
-  db: any // Dexie 資料庫實例
+  db: any, // Dexie 資料庫實例
+  context?: { productSnapshot?: boolean } // Trusted importer context, never read from event payload.
 ) => Promise<void>;
 
 /**

@@ -1,5 +1,13 @@
 # Settlement Report PDF Technical Plan
 
+2026-10-28 approved acceptance increment: owner-only preview now has a separate Save PDF
+action through the existing platform file port. No data source, public report endpoint,
+staff entitlement, or provider was added. Per-screen generation is serialized, reused
+only for the identical model, and rechecks current authorization after rendering.
+Preview failure can fall back to save; permission/model changes discard stale results.
+See [current acceptance and limits](STAFF_WEB_PDF_ACCEPTANCE_2026_10_28.md).
+The original scope statements below remain historical and do not forbid this approved increment.
+
 Date: 2026-07-01
 
 Status: owner-only Pro/Team client PDF preview and true-A4 visual validation are implemented locally.

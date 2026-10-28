@@ -389,7 +389,7 @@ function ProductsPageContent() {
               <span>商品</span>
               <span>售價</span>
               <span>庫存</span>
-              <span>已售</span>
+              <span>{isStaffMode ? '可見場次已售' : '已售'}</span>
               <span className="w-28 text-center">操作</span>
             </div>
             {filteredProducts.map(product => (
@@ -397,7 +397,8 @@ function ProductsPageContent() {
                 key={product.id ?? `${product.name}-${product.createdAt}`}
                 product={product}
                 canEdit={canEditProductBasic}
-                showSoldCount={!isStaffMode}
+                showSoldCount={!isStaffMode || (roleRefreshState.isAuthorizationFresh && roleRefreshState.syncInfoLevel >= 2 && product.staffSalesProjectionReady === true)}
+                showOperationalData={roleRefreshState.isAuthorizationFresh && roleRefreshState.syncInfoLevel >= 2}
                 coverPhotoVersion={product.id ? coverPhotoVersions[product.id] : null}
                 isOpening={openingProductId === product.id}
                 onOpen={openProduct}

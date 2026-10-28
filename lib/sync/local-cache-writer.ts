@@ -77,6 +77,15 @@ export async function syncProductsToIndexedDB(
 
   let syncedCount = 0;
   let skippedCount = 0;
+  const pendingProducts = new Set<string>();
+  const pendingEvents = await db.events.filter(event => event.actor_id === currentUserId && event.sync_status !== 'synced').toArray();
+  for (const event of pendingEvents) {
+    const payload = event.payload ?? {};
+    const references = [payload.productId, payload.product_id,
+      ...(Array.isArray(payload.items) ? payload.items.map((item: any) => item.productId ?? item.product_id) : []),
+      ...(Array.isArray(payload.productsSold) ? payload.productsSold.map((item: any) => item.productId ?? item.product_id) : [])];
+    for (const id of references) if (typeof id === 'string') pendingProducts.add(id);
+  }
 
   for (const product of products) {
     try {
@@ -91,12 +100,20 @@ export async function syncProductsToIndexedDB(
 
       const sanitizedRow = sanitizeWithLevel(product, 'product', infoLevel);
       const mappedProduct = productAccessRowToLocal(sanitizedRow as Record<string, unknown>);
+      const existing = pendingProducts.has(product.id) ? await db.products.get(product.id) : undefined;
+      const retained = existing?.owner_id === mappedProduct.owner_id
+        ? sanitizeWithLevel(existing, 'product', infoLevel) : {};
+      const hydratedProduct = { ...mappedProduct, ...retained };
 
       const productData = {
-        ...mappedProduct,
-        unlimitedStock: mappedProduct.unlimitedStock ?? false,
-        isActive: mappedProduct.isActive ?? true,
+        ...hydratedProduct,
+        access_type: mappedProduct.access_type,
+        relationship_owner_id: mappedProduct.relationship_owner_id,
+        permissions: mappedProduct.permissions,
+        unlimitedStock: hydratedProduct.unlimitedStock ?? false,
+        isActive: hydratedProduct.isActive ?? true,
         totalSold: 0,
+        staffSalesProjectionReady: false,
       };
 
       await db.products.put({ ...productData, id: product.id } as Product);
@@ -146,7 +163,7 @@ export async function syncEventsToIndexedDB(events: any[], infoLevel: InfoLevel)
               timestamp: updated.timestamp,
               actor_id: updated.actor_id,
               market_id: updated.market_id,
-            } as Event, db);
+            } as Event, db, infoLevel < 3 ? { productSnapshot: true } : undefined);
             await sanitizeStaffProjectionsAfterReplay(updated, infoLevel);
           }
           processedCount++;
@@ -159,7 +176,9 @@ export async function syncEventsToIndexedDB(events: any[], infoLevel: InfoLevel)
         continue;
       }
 
-      if (await hasSemanticDuplicateDealClosedEvent(db, event)) {
+      // A staff view contains canonical event IDs. Equal amounts on the same
+      // date are legitimate separate sales; the ID check above handles retries.
+      if (infoLevel === 3 && await hasSemanticDuplicateDealClosedEvent(db, event)) {
         skippedCount++;
         console.warn('[useSync] Skipping semantic duplicate deal_closed event during staff sync', {
           eventId: event.id,
@@ -202,7 +221,7 @@ export async function syncEventsToIndexedDB(events: any[], infoLevel: InfoLevel)
           timestamp: localEvent.timestamp,
           actor_id: localEvent.actor_id,
           market_id: localEvent.market_id,
-        } as Event, db);
+        } as Event, db, infoLevel < 3 ? { productSnapshot: true } : undefined);
 
         await sanitizeStaffProjectionsAfterReplay(localEvent, infoLevel);
       }

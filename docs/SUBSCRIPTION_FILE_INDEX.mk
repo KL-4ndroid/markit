@@ -1,5 +1,13 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-10-28晚間續作（最新）：[員工／Web／PDF修補驗收](STAFF_WEB_PDF_ACCEPTANCE_2026_10_28.md)記錄本輪真實三角色正向／拒絕測試與還原。測試owner覆寫已關閉，指定員工operator／L2依原方案暫停；沒有改價格、正式付款或pilot範圍。本輪新前端依使用者要求收錄於本次提交；部署及發布後複驗仍待確認。
+
+- 既有manager基本欄位真正持久化：[089描述](../supabase/migrations/089_project_product_description.sql)、[089唯讀驗證](../supabase/verification/089_product_description_readiness.sql)、[090狀態](../supabase/migrations/090_project_product_active_state.sql)、[090唯讀驗證](../supabase/verification/090_product_active_state_readiness.sql)。均雲端生效，ACL／084／086維持，不回填。實際[修補前](../tests/fixtures/product-description-deployed-2026-10-28.json)、[089後](../tests/fixtures/product-description-patched-deployed-2026-10-28.json)、[090後](../tests/fixtures/product-description-active-patched-deployed-2026-10-28.json)快照由[隔離SQL](../scripts/verify-event-write-authorization-sql.mjs)核對。此為既定權限保存修補，不新增manager權益。
+- 員工可見銷量與快照：[staff pull](../lib/sync/staff-pull-service.ts)、[cache writer](../lib/sync/local-cache-writer.ts)、[可見場次銷量重建](../lib/sync/staff-product-sales.ts)、[事件處理](../lib/db/events.ts)、[本機投影型別](../types/db.ts)、[脫敏](../lib/permissions/PermissionGate.ts)、[快照回歸](../tests/staff-product-snapshot.test.ts)。stock沿雲端snapshot，歷史事件不重扣；pending本機事件保留。商品呈現見[列表](../app/products/page.tsx)、[卡片](../components/products/ProductCard.tsx)、[詳情](../components/products/ProductDetailScreen.tsx)及[viewer紀錄](../components/markets/StaffMarketDetailView.tsx)。未宣稱所有原始view／RPC讀取揭露已驗完。
+- 降級後外品牌快取入口：[歸屬判斷](../lib/permissions/cached-entity-access.ts)、[保留提示](../components/common/RetainedDataAccessNotice.tsx)、[場次詳情](../components/markets/MarketDetailScreen.tsx)、[商品詳情](../components/products/ProductDetailScreen.tsx)、[隔離回歸](../tests/cached-entity-access.test.ts)。無active staff後可回自己的工作區，但外品牌快取不得變成自己的老闆UI；不刪資料或照片。
+- manager表單刷新／部分更新：[EditProductForm](../components/products/EditProductForm.tsx)、[表單patch](../lib/products/product-form.ts)、[並行欄位回歸](../tests/product-edit-patch.test.ts)。實際拒絕探針：[指定測試員工script](../scripts/verify-staff-live-denials.mjs)，只用普通JWT及process密碼，不保存憑證。
+- 高階PDF輸出沿既有權限：[檔案操作controller](../lib/reporting/pdf-file-actions.ts)、[文字排版helper](../lib/reporting/pdf-display-text.ts)、[預覽／儲存](../components/reports/settlement/SettlementReportPdfPreviewButton.tsx)、[五頁模板](../components/reports/settlement/SettlementReportPdfDocument.tsx)、[檔案測試](../tests/pdf-file-actions.test.ts)、[長資料視覺回歸](../tests/settlement-report-pdf-browser-visual.test.ts)。未開staff報告、無新價格／付款／公開下載端點。照片未啟用提示見[manual upload client](../lib/sales/photo-evidence-manual-upload-client.ts)，只改文案、不改旗標或writer。
+
 2026-10-28 提交整理：使用者要求 commit／push，本次收錄下列 086–088、相關
 提示、測試及驗收紀錄；歷史段落的「未提交」由本段及 Git 歷程取代。資料庫
 修補已生效；前端自動部署結果與發布後複驗需另外確認。

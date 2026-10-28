@@ -8,6 +8,7 @@ import { deriveRoleCapabilities } from '../lib/permissions/role-capabilities';
 import { buildSettlementReportModel } from '../lib/reporting/settlement-report';
 import { buildSettlementReportPdfViewModel } from '../lib/reporting/settlement-report-pdf-view-model';
 import { SettlementReportPdfDocument } from '../components/reports/settlement/SettlementReportPdfDocument';
+import { compactPdfText, wrapPdfText } from '../lib/reporting/pdf-display-text';
 import type { DailyStats, Market, Product } from '../types/db';
 
 type TestFn = () => void | Promise<void>;
@@ -209,6 +210,30 @@ runTest('fixture keeps the initial settlement PDF scope owner-only and data-sour
   assert.equal(viewModel.pages[0].brandName, '日光手作飾品');
   assert.equal(viewModel.pages[2].rows.length, 3);
   assert.equal(viewModel.pages[3].rows.length, 2);
+});
+
+runTest('long CJK names and full ranking/action lists remain five true-A4 pages', async () => {
+  const viewModel = buildReadableFixtureViewModel();
+  const longName = '超長名稱測試台北台中台南高雄市集品牌手作品商品'.repeat(4);
+  viewModel.meta.brandName = longName;
+  viewModel.pages[0].brandName = longName;
+  viewModel.pages[0].scoreLabel = '正式評分暫不顯示';
+  viewModel.pages[0].gradeLabel = '低可信度初稿';
+  viewModel.pages[2].rows = Array.from({ length: 8 }, (_, i) => ({ ...viewModel.pages[2].rows[0], marketId: `stress-m-${i}`, marketName: `${longName}${i}` }));
+  viewModel.pages[3].rows = Array.from({ length: 8 }, (_, i) => ({ ...viewModel.pages[3].rows[0], productId: `stress-p-${i}`, productName: `${longName}${i}` }));
+  viewModel.pages[4].actionGroups = viewModel.pages[4].actionGroups.map(group => ({ ...group, actions: Array.from({ length: 4 }, (_, i) => `${longName}${i}建議參加並留意商品與場次安排。`) }));
+  const buffer = await renderToBuffer(React.createElement(SettlementReportPdfDocument, { viewModel, fontSource: fontPath }));
+  assert.equal(countPdfPages(buffer), 5);
+  const boxes = readMediaBoxes(buffer);
+  assert.equal(boxes.length, 5);
+  assert.ok(boxes.every(box => Math.abs(box.width - 595.28) < 0.02 && Math.abs(box.height - 841.89) < 0.02), 'no page may grow beyond A4');
+  assert.equal(viewModel.pages[2].rows[0].marketName, `${longName}0`, 'PDF presentation must not mutate source records');
+  assert.equal(compactPdfText('🍀'.repeat(40)), `${'🍀'.repeat(35)}…`, 'keep Unicode code points intact');
+  assert.equal(wrapPdfText('短名稱'), '短名稱');
+  assert.ok(wrapPdfText(longName).split('\n').every(line => Array.from(line).length <= 18));
+  if (process.env.WRITE_SETTLEMENT_PDF_ARTIFACT === '1') {
+    writeFileSync(join(projectRoot, '.codex-artifacts', 'settlement-report-long-names.pdf'), buffer);
+  }
 });
 
 runTest('plans record browser visual validation boundaries and template polish', () => {

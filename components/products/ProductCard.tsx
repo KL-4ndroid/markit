@@ -27,6 +27,7 @@ interface ProductCardProps {
   coverPhotoVersion?: number | null;
   isOpening?: boolean;
   showSoldCount?: boolean;
+  showOperationalData?: boolean;
 }
 
 const CATEGORY_PRESENTATION: Record<ProductCategory, {
@@ -50,7 +51,7 @@ const STOCK_TONE_CLASSES: Record<ProductStockTone, string> = {
   neutral: 'bg-muted text-muted-foreground',
 };
 
-export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersion, isOpening = false, showSoldCount = true }: ProductCardProps) {
+export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersion, isOpening = false, showSoldCount = true, showOperationalData = true }: ProductCardProps) {
   const router = useRouter();
   const category = CATEGORY_PRESENTATION[product.category] ?? {
     label: '其他',
@@ -87,21 +88,21 @@ export function ProductCard({ product, onOpen, canEdit = false, coverPhotoVersio
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <span className="text-xs text-muted-foreground">{category.label}</span>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium xl:hidden ${STOCK_TONE_CLASSES[stockState.tone]}`}>
+            {showOperationalData && <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium xl:hidden ${STOCK_TONE_CLASSES[stockState.tone]}`}>
               {stockState.label}
-            </span>
+            </span>}
           </div>
           <h2 className="mt-1 break-words text-base font-semibold text-foreground">{product.name}</h2>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-primary xl:hidden">{formatCurrency(product.price)}</p>
+          {showOperationalData && <p className="mt-1 text-lg font-semibold tabular-nums text-primary xl:hidden">{formatCurrency(product.price)}</p>}
         </div>
       </div>
 
       <p className="hidden text-sm font-semibold tabular-nums text-primary xl:block">
-        {formatCurrency(product.price)}
+        {showOperationalData ? formatCurrency(product.price) : '未提供'}
       </p>
       <div className="hidden xl:block">
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${STOCK_TONE_CLASSES[stockState.tone]}`}>
-          {stockState.label}
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${STOCK_TONE_CLASSES[showOperationalData ? stockState.tone : 'neutral']}`}>
+          {showOperationalData ? stockState.label : '未提供'}
         </span>
       </div>
       <p className="hidden text-sm tabular-nums text-foreground xl:block">

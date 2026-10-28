@@ -90,6 +90,56 @@ try {
     const migration=readFileSync('supabase/migrations/086_enforce_event_actor_authorization.sql','utf8');
     await root();await pg.exec(migration);await pg.exec(migration);
     if(patched)await pg.exec(patched.guards.find(g=>g.signature.startsWith('enforce_event')).definition);
+    await check('089 persists manager descriptions, supports clearing, preserves ACL/history and cost guards', async()=>{
+      await asUser(manager);await event(manager,'product_updated',{productId:product,updates:{description:'before patch'}},market);
+      assert.notEqual((await value('SELECT description FROM products WHERE id=$1',[product])).description,'before patch');
+      const before=await value('SELECT * FROM products WHERE id=$1',[product]);
+      const security=await value("SELECT proacl,prosecdef,proconfig FROM pg_proc WHERE oid='public.update_product_read_model()'::regprocedure");
+      const source=JSON.parse(readFileSync('tests/fixtures/product-description-deployed-2026-10-28.json','utf8').replace(/^\uFEFF/,''));
+      await pg.exec(source.definition);
+      const migration089=readFileSync('supabase/migrations/089_project_product_description.sql','utf8');
+      await pg.exec(migration089);await pg.exec(migration089);
+      if (patched) {
+        const actual089=JSON.parse(readFileSync('tests/fixtures/product-description-patched-deployed-2026-10-28.json','utf8').replace(/^\uFEFF/,''));
+        const normalize=s=>s.split('$function$')[1].replace(/--[^\n]*/g,'').replace(/\s/g,'');
+        const local=(await value("SELECT pg_get_functiondef('public.update_product_read_model()'::regprocedure) AS definition")).definition;
+        assert.equal(normalize(actual089.definition),normalize(local));
+        assert.deepEqual(actual089.acl,source.acl);assert.deepEqual(actual089.config,source.config);
+        await pg.exec(actual089.definition);
+      }
+      await pg.exec(readFileSync('supabase/verification/089_product_description_readiness.sql','utf8'));
+      assert.deepEqual(await value('SELECT * FROM products WHERE id=$1',[product]),before,'install must not backfill');
+      assert.deepEqual(await value("SELECT proacl,prosecdef,proconfig FROM pg_proc WHERE oid='public.update_product_read_model()'::regprocedure"),security);
+      await asUser(manager);await event(manager,'product_updated',{productId:product,updates:{description:'kept'}},market);
+      assert.equal((await value('SELECT description FROM products WHERE id=$1',[product])).description,'kept');
+      await asUser(manager);await event(manager,'product_updated',{productId:product,updates:{stock:4}},market);
+      assert.equal((await value('SELECT description FROM products WHERE id=$1',[product])).description,'kept');
+      await asUser(manager);await event(manager,'product_updated',{productId:product,updates:{description:''}},market);
+      assert.equal((await value('SELECT description FROM products WHERE id=$1',[product])).description,'');
+      await asUser(manager);await event(manager,'product_updated',{productId:product,updates:{description:null}},market);
+      assert.equal((await value('SELECT description FROM products WHERE id=$1',[product])).description,null);
+      const before090=await value('SELECT * FROM products WHERE id=$1',[product]);
+      const migration090=readFileSync('supabase/migrations/090_project_product_active_state.sql','utf8');
+      await pg.exec(migration090);await pg.exec(migration090);
+      if (patched) {
+        const actual090=load('tests/fixtures/product-description-active-patched-deployed-2026-10-28.json');
+        const normalize=s=>s.split('$function$')[1].replace(/--[^\n]*/g,'').replace(/\s/g,'');
+        const local=(await value("SELECT pg_get_functiondef('public.update_product_read_model()'::regprocedure) AS definition")).definition;
+        assert.equal(normalize(actual090.definition),normalize(local));
+        assert.deepEqual(actual090.acl,source.acl);assert.deepEqual(actual090.config,source.config);
+        await pg.exec(actual090.definition);
+      }
+      await pg.exec(readFileSync('supabase/verification/090_product_active_state_readiness.sql','utf8'));
+      assert.deepEqual(await value('SELECT * FROM products WHERE id=$1',[product]),before090);
+      await asUser(manager);await event(manager,'product_updated',{productId:product,updates:{isActive:false}},market);
+      assert.equal((await value('SELECT is_active FROM products WHERE id=$1',[product])).is_active,false);
+      await asUser(manager);await event(manager,'product_updated',{productId:product,updates:{description:'status unchanged'}},market);
+      assert.equal((await value('SELECT is_active FROM products WHERE id=$1',[product])).is_active,false);
+      await asUser(manager);await event(manager,'product_updated',{productId:product,updates:{is_active:true}},market);
+      assert.equal((await value('SELECT is_active FROM products WHERE id=$1',[product])).is_active,true);
+      await asUser(operator);await deny(()=>event(operator,'product_updated',{productId:product,updates:{description:'blocked'}},market));
+      await asUser(manager);await deny(()=>event(manager,'product_updated',{productId:product,updates:{cost:1}},market));
+    });
     await check('guard helper is not callable by anon or authenticated; trigger is enabled',async()=>{
       const r=await value("SELECT has_function_privilege('anon','public.enforce_event_actor_authorization()','EXECUTE') a,has_function_privilege('authenticated','public.enforce_event_actor_authorization()','EXECUTE') b");assert.deepEqual(r,{a:false,b:false});
       await pg.exec(readFileSync('supabase/verification/086_event_actor_authorization_readiness.sql','utf8'));

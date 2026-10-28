@@ -8,6 +8,7 @@ import {
   syncProductsToIndexedDB,
 } from '@/lib/sync/local-cache-writer';
 import type { InfoLevel } from '@/lib/data-sanitization';
+import { rebuildStaffProductSales } from '@/lib/sync/staff-product-sales';
 
 export async function pullEventsFromViews(
   userId: string,
@@ -77,6 +78,7 @@ export async function pullEventsFromViews(
     await syncMarketsToIndexedDB(marketsData || [], userId, infoLevel);
     await syncProductsToIndexedDB(productsData || [], userId, infoLevel);
     await syncEventsToIndexedDB(eventsData || [], infoLevel);
+    await rebuildStaffProductSales((productsData || []).map(product => product.id), (marketsData || []).map(market => market.id), infoLevel);
     await reconcileSyncedProjectionMarkets(touchedMarketIds, infoLevel < 3 ? 'staff-view' : 'owner-full');
 
     if (eventsData && eventsData.length > 0) {

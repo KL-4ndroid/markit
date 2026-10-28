@@ -14,6 +14,16 @@ export interface ProductFormValues {
 export type ProductFormErrorKey = 'name' | 'price' | 'cost' | 'stock';
 export type ProductFormErrors = Partial<Record<ProductFormErrorKey, string>>;
 
+/** Only send edited fields; background sync must not turn a description edit into a stock overwrite. */
+export function changedProductFormUpdates(initial: ProductFormValues, current: ProductFormValues, updates: Partial<Product>): Partial<Product> {
+  const changed = { ...updates };
+  for (const key of Object.keys(changed) as (keyof ProductFormValues)[]) {
+    if (key === 'stock' && initial.unlimitedStock !== current.unlimitedStock) continue;
+    if (Object.is(initial[key], current[key])) delete changed[key];
+  }
+  return changed;
+}
+
 const PRODUCT_ERROR_ORDER: ProductFormErrorKey[] = ['name', 'price', 'cost', 'stock'];
 
 export function createEmptyProductFormValues(): ProductFormValues {

@@ -54,7 +54,9 @@ runTest('browser preview shell is guarded by owner preview permission and nullab
   assert.match(buttonSource, /if \(!canPreview\) return null/);
 });
 
-runTest('browser preview shell does not add custom download UI or data access', () => {
+runTest('PDF actions use platform save and preview without browser APIs or data access', () => {
+  assert.match(buttonSource, /savePlatformFile/);
+  assert.match(buttonSource, /createPdfFileActions/);
   assert.doesNotMatch(buttonSource, /PDFDownloadLink|BlobProvider|PDFViewer|renderToFile|renderToBuffer/);
   assert.doesNotMatch(buttonSource, /download=|<a\s/i);
   assert.doesNotMatch(buttonSource, /@\/lib\/db|@\/lib\/supabase|dexie|useLiveQuery|fetch\(/);

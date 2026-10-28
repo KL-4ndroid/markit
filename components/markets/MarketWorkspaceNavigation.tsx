@@ -72,15 +72,15 @@ export function MarketWorkspaceNavigation<T extends string>({
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">{item.label}</span>
+              <span className="shrink-0 whitespace-nowrap">{item.label}</span>
               {typeof item.badge === 'number' && item.badge > 0 && (
                 <span
-                  className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] leading-none ${
+                  className={`inline-flex min-w-5 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[11px] leading-none ${
                     isActive ? 'bg-atelier-paper text-primary' : 'bg-atelier-rose text-white'
                   }`}
                   aria-label={`${item.badgeLabel ?? '待處理'} ${item.badge} 筆`}
                 >
-                  {item.badgeLabel === '待補照片' ? '待補 ' : ''}{item.badge > 99 ? '99+' : item.badge}
+                  {item.badgeLabel === '待補照片' && <span className="hidden sm:inline">待補 </span>}{item.badge > 99 ? '99+' : item.badge}
                 </span>
               )}
             </button>

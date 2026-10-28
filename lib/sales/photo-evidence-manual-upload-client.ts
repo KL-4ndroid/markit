@@ -136,7 +136,7 @@ function getUserFacingUploadFailureMessage(code: string): string {
       return '照片已傳送但成交紀錄更新失敗，本機照片已保留，請稍後再試。';
     case 'sales_photo_evidence_upload_disabled':
     case 'sales_photo_evidence_r2_upload_disabled':
-      return '正式環境的照片上傳功能尚未完整啟用，請檢查 Vercel 的照片上傳環境變數。';
+      return '照片服務目前未開放上傳，照片已保留在此裝置，可稍後再試。';
     case 'authentication_required':
       return '登入狀態已失效，請重新登入後再上傳照片。';
     case 'upload_route_unexpected_error':

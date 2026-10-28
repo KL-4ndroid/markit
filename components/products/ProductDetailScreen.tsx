@@ -29,6 +29,9 @@ import { DetailPageSkeleton } from '@/components/ui/DetailPageSkeleton';
 import { ProductCoverPhotoImage } from '@/components/products/ProductCoverPhotoImage';
 import { getProductDetail } from '@/lib/products/detail-service';
 import { useRoleContext } from '@/lib/role-context';
+import { useAuth } from '@/lib/supabase/auth-context';
+import { canReadCachedEntity } from '@/lib/permissions/cached-entity-access';
+import { RetainedDataAccessNotice } from '@/components/common/RetainedDataAccessNotice';
 import { deriveRoleCapabilities, hasCapability } from '@/lib/permissions/role-capabilities';
 import type { Product, ProductCategory } from '@/types/db';
 
@@ -49,7 +52,8 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   const liveProduct = useProduct(productId);
   const [directLocalProduct, setDirectLocalProduct] = useState<Product | undefined>(undefined);
   const [localProductLookupComplete, setLocalProductLookupComplete] = useState(false);
-  const product = liveProduct ?? directLocalProduct;
+  const candidateProduct = liveProduct ?? directLocalProduct;
+  const { user } = useAuth();
   const [dbStatus, setDbStatus] = useState<DatabaseInitResult | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [coverPhotoRevision, setCoverPhotoRevision] = useState(0);
@@ -58,8 +62,12 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
     isOwner,
     userRole,
     canViewSensitiveData,
+    roleRefreshState,
+    refreshRole,
     isLoading: isRoleLoading,
   } = useRoleContext();
+  const cacheAccessDenied = Boolean(candidateProduct && !canReadCachedEntity(candidateProduct, user?.id, userRole));
+  const product = cacheAccessDenied ? undefined : candidateProduct;
   const roleCapabilities = deriveRoleCapabilities({
     isOwner,
     staffRole: userRole.staffRole,
@@ -67,6 +75,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   const canEditProductBasic =
     !isRoleLoading && hasCapability(roleCapabilities, 'canEditProductBasic');
   const canShowSensitiveProductData = !isRoleLoading && canViewSensitiveData;
+  const canShowOperationalData = roleRefreshState.isAuthorizationFresh && roleRefreshState.syncInfoLevel >= 2;
   const canEditProductActions = isOwner || canEditProductBasic;
 
   // 初始化資料庫（使用安全初始化）
@@ -180,6 +189,10 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   // 載入中（初始化中）
   if (isRoleLoading || dbStatus === null || !localProductLookupComplete) {
     return <DetailPageSkeleton stats={2} sections={2} />;
+  }
+
+  if (cacheAccessDenied) {
+    return <RetainedDataAccessNotice href={productListHref} returnLabel="返回商品列表" />;
   }
 
   // DB 不健康
@@ -337,7 +350,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
               </div>
               <p className="mt-3 text-xs text-muted-foreground">售價</p>
               <p className="mt-0.5 break-words text-2xl font-semibold tabular-nums text-primary">
-                {formatCurrency(product.price)}
+                {canShowOperationalData ? formatCurrency(product.price) : '未提供'}
               </p>
             </div>
           </div>
@@ -362,12 +375,12 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
             )}
             <div className="rounded-control bg-background p-3">
               <dt className="text-xs text-muted-foreground">庫存</dt>
-              <dd className="mt-1 font-semibold tabular-nums text-foreground">{stockLabel}</dd>
+              <dd className="mt-1 font-semibold tabular-nums text-foreground">{canShowOperationalData ? stockLabel : '未提供'}</dd>
             </div>
             <div className="rounded-control bg-background p-3">
-              <dt className="text-xs text-muted-foreground">已售出</dt>
+              <dt className="text-xs text-muted-foreground">{isStaff ? '可見場次已售' : '已售出'}</dt>
               <dd className="mt-1 font-semibold tabular-nums text-foreground">
-                {isOwner && !isRoleLoading ? product.totalSold || 0 : <span aria-label="已售數量尚未確認">—</span>}
+                {(isOwner && !isRoleLoading) || (canShowOperationalData && product.staffSalesProjectionReady === true) ? product.totalSold || 0 : <span aria-label="已售數量尚未確認">—</span>}
               </dd>
             </div>
           </dl>
@@ -396,12 +409,14 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
       </div>
 
       {/* 編輯商品表單 */}
-      {product && showEditForm && (
+      {product && showEditForm && canEditProductActions && (
         <EditProductForm
           product={product}
           isOpen={showEditForm}
           onClose={handleCloseEditForm}
           mode={isStaff ? 'manager' : 'owner'}
+          onRefreshRole={isStaff ? refreshRole : undefined}
+          isRefreshingRole={roleRefreshState.isRefreshing}
           onSuccess={handleEditSuccess}
           onDeleted={handleProductDeleted}
         />

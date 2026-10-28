@@ -1,7 +1,7 @@
 'use client';
 
 import { Ban, CheckCircle2, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { ProductCoverPhotoField } from '@/components/products/ProductCoverPhotoField';
@@ -14,12 +14,14 @@ import type { PreparedProductCoverPhoto } from '@/lib/products/product-cover-pho
 import { uploadOrQueueProductCoverPhoto } from '@/lib/products/product-cover-photo-pending';
 import {
   createProductFormValues,
+  changedProductFormUpdates,
   getFirstProductFormError,
   validateProductForm,
   type ProductFormErrors,
   type ProductFormValues,
 } from '@/lib/products/product-form';
 import type { Product } from '@/types/db';
+import { RoleFreshnessError } from '@/lib/permissions/role-freshness';
 
 interface EditProductFormProps {
   product: Product;
@@ -28,6 +30,8 @@ interface EditProductFormProps {
   onSuccess?: () => void;
   onDeleted?: () => void;
   mode?: 'owner' | 'manager';
+  onRefreshRole?: () => void;
+  isRefreshingRole?: boolean;
 }
 
 const FORM_ID = 'edit-product-form';
@@ -40,6 +44,8 @@ export function EditProductForm({
   onSuccess,
   onDeleted,
   mode = 'owner',
+  onRefreshRole,
+  isRefreshingRole = false,
 }: EditProductFormProps) {
   const isManagerMode = mode === 'manager';
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,12 +55,23 @@ export function EditProductForm({
   const [formData, setFormData] = useState<ProductFormValues>(() => createProductFormValues(product));
   const [errors, setErrors] = useState<ProductFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [roleRefreshRequired, setRoleRefreshRequired] = useState(false);
   const [coverPhoto, setCoverPhoto] = useState<PreparedProductCoverPhoto | null>(null);
+  const initializedFor = useRef<string | null>(null);
+  const initialValues = useRef(createProductFormValues(product));
 
   useEffect(() => {
+    if (!isOpen) { initializedFor.current = null; return; }
+    const key = product.id ?? 'local-product';
+    // Sync/role refresh may replace the same record object while editing.
+    // Initialize once per open product, rather than discarding the draft.
+    if (initializedFor.current === key) return;
+    initializedFor.current = key;
+    initialValues.current = createProductFormValues(product);
     setFormData(createProductFormValues(product));
     setErrors({});
     setSubmitError(null);
+    setRoleRefreshRequired(false);
     setCoverPhoto(null);
   }, [product, isOpen]);
 
@@ -103,7 +120,9 @@ export function EditProductForm({
         isActive: formData.isActive,
       };
 
-      await updateProduct(product.id!, isManagerMode ? managerUpdates : ownerUpdates);
+      const selectedUpdates = isManagerMode ? managerUpdates : ownerUpdates;
+      const updates = changedProductFormUpdates(initialValues.current, formData, selectedUpdates);
+      if (Object.keys(updates).length > 0) await updateProduct(product.id!, updates);
       if (coverPhoto) {
         const outcome = await uploadOrQueueProductCoverPhoto(product.id!, coverPhoto);
         if (outcome === 'queued') {
@@ -116,7 +135,10 @@ export function EditProductForm({
       onSuccess?.();
     } catch (error) {
       console.error('更新商品失敗：', error);
-      setSubmitError('變更尚未儲存，請確認連線後再試一次。');
+      setRoleRefreshRequired(error instanceof RoleFreshnessError);
+      setSubmitError(error instanceof RoleFreshnessError
+        ? '員工權限需要重新確認，確認完成後請再儲存變更。'
+        : '變更尚未儲存，請確認連線後再試一次。');
     } finally {
       setIsSubmitting(false);
     }
@@ -243,9 +265,14 @@ export function EditProductForm({
           </section>
 
           {submitError && (
-            <p className="mt-5 rounded-control border border-status-danger-border bg-status-danger-bg p-3 text-sm text-status-danger-text" role="alert">
-              {submitError}
-            </p>
+            <div className="mt-5 rounded-control border border-status-danger-border bg-status-danger-bg p-3 text-sm text-status-danger-text">
+              <p role="alert">{submitError}</p>
+              {roleRefreshRequired && onRefreshRole && (
+                <Button type="button" variant="secondary" className="mt-2 min-h-11" onClick={onRefreshRole} disabled={isRefreshingRole || isSubmitting}>
+                  {isRefreshingRole ? '確認權限中…' : '重新確認權限'}
+                </Button>
+              )}
+            </div>
           )}
         </form>
       </AppDialog>
