@@ -153,8 +153,8 @@ export const DEFAULT_THEME_PALETTE = Object.freeze(paletteFromRgb(DEFAULT_THEME_
 export const BUILT_IN_THEME_PRESETS: readonly ThemePreset[] = [
   {
     id: 'japanese-warm',
-    name: 'JapaneseD 暖霧',
-    description: '目前專案的霧藍、暖木與米白基準。',
+    name: '暖霧日常',
+    description: '霧藍、暖木與米白，溫暖而清爽。',
     palette: DEFAULT_THEME_PALETTE,
   },
   {
@@ -186,7 +186,7 @@ export const BUILT_IN_THEME_PRESETS: readonly ThemePreset[] = [
   {
     id: 'warm-twilight',
     name: '暮光映畫',
-    description: '以 Instagram 暮光感為靈感的暖紫粉版本。',
+    description: '暖紫與柔粉交織，帶一點暮光的溫柔。',
     palette: paletteFromRgb({
       primary: [116, 92, 151], secondary: [211, 113, 139], background: [251, 248, 250],
       card: [255, 255, 255], foreground: [53, 47, 57], mutedForeground: [105, 95, 111],

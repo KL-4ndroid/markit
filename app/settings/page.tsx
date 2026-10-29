@@ -95,16 +95,16 @@ export default function SettingsPage() {
 
           <div className="space-y-6">
             {!isStaff && <SubscriptionSimulationPanel />}
-            <SettingsSection id="settings-subscription" title="訂閱方案">
-              <SettingsMenuRow href="/subscription" label="目前方案與功能" description="免費、輕量與高階版的功能範圍" icon={Users} />
-            </SettingsSection>
             <SettingsSection id="settings-personalization" title="個人化">
               <SettingsActionRow
-                label="主題實驗室"
-                description="自由調整全 App 配色，並儲存在這台裝置"
+                label="外觀與主題"
+                description="選擇喜歡的配色，打造自己的出攤介面"
                 icon={Palette}
                 onClick={() => window.dispatchEvent(new Event(THEME_LAB_OPEN_EVENT))}
               />
+            </SettingsSection>
+            <SettingsSection id="settings-subscription" title="訂閱方案">
+              <SettingsMenuRow href="/subscription" label="目前方案與功能" description="免費、輕量與高階版的功能範圍" icon={Users} />
             </SettingsSection>
 
             {groups.map((group) => (

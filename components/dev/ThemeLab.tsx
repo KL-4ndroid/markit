@@ -26,6 +26,7 @@ import {
   normalizeHex,
   parseThemeLabImport,
   THEME_TOKEN_DEFINITIONS,
+  THEME_TOKEN_KEYS,
   type ThemePalette,
   type ThemePreset,
   type ThemeTokenDefinition,
@@ -99,45 +100,32 @@ function ColorField({ definition, value, onChange }: ColorFieldProps) {
   );
 }
 
-function PresetCard({
-  preset,
-  custom = false,
-  onApply,
-  onDelete,
-}: {
+function PresetCard({ preset, custom = false, onApply, onDelete, selected = false }: {
   preset: ThemePreset;
   custom?: boolean;
   onApply: () => void;
   onDelete?: () => void;
+  selected?: boolean;
 }) {
-  return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-3">
-      <div className="flex items-start gap-3">
-        <div className="grid h-11 w-11 shrink-0 grid-cols-2 overflow-hidden rounded-xl border border-gray-200">
-          {(['primary', 'secondary', 'softPink', 'softGreen'] as const).map((key) => (
-            <span key={key} style={{ backgroundColor: preset.palette[key] }} />
-          ))}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-gray-900">{preset.name}</p>
-          {preset.description && <p className="mt-0.5 text-xs leading-5 text-gray-500">{preset.description}</p>}
-        </div>
-        {custom && onDelete && (
-          <button
-            type="button"
-            onClick={onDelete}
-            aria-label={`刪除配色 ${preset.name}`}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-700"
-          >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-          </button>
-        )}
+  return <div className={`flex flex-col gap-3 rounded-2xl border bg-white p-3 ${selected ? 'border-gray-700 ring-1 ring-inset ring-gray-700' : 'border-gray-200'}`}>
+    <div className="flex items-center justify-between gap-2">
+      <div className={`grid h-8 grid-cols-4 overflow-hidden rounded-lg border border-gray-200 ${custom ? 'w-24' : 'w-full'}`} aria-hidden="true">
+        {(['primary', 'secondary', 'background', 'card'] as const).map(key => <span key={key} style={{ backgroundColor: preset.palette[key] }} />)}
       </div>
-      <button type="button" onClick={onApply} className={`${buttonClass} mt-3 w-full`}>
-        套用這組配色
-      </button>
+      {custom && onDelete && <button type="button" onClick={onDelete} aria-label={`刪除配色 ${preset.name}`}
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-600 transition hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900">
+        <Trash2 className="h-4 w-4" aria-hidden="true" />
+      </button>}
     </div>
-  );
+    <div className="min-w-0 flex-1">
+      <p className="break-words text-sm font-semibold text-gray-900">{preset.name}</p>
+      {preset.description && <p className="mt-1 text-xs leading-5 text-gray-600">{preset.description}</p>}
+    </div>
+    <button type="button" onClick={onApply} aria-pressed={selected} aria-label={`套用「${preset.name}」配色`} className={`${buttonClass} w-full`}>
+      {selected && <Check className="h-4 w-4 shrink-0" aria-hidden="true" />}
+      {selected ? '使用中' : '套用配色'}
+    </button>
+  </div>;
 }
 
 function ContrastRow({ label, first, second, minimum = 4.5 }: { label: string; first: string; second: string; minimum?: number }) {
@@ -173,18 +161,30 @@ export function ThemeLab({
 }: ThemeLabProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [presetName, setPresetName] = useState('');
-  const [message, setMessage] = useState('');
+  const [feedback, setFeedback] = useState({ text: '', sequence: 0 });
+  const message = feedback.text;
+  const setMessage = (text: string) => setFeedback(current => ({ text, sequence: current.sequence + 1 }));
 
   useEffect(() => {
     if (!message) return;
-    const timeout = window.setTimeout(() => setMessage(''), 2600);
-    return () => window.clearTimeout(timeout);
-  }, [message]);
+    const timeout = setTimeout(() => setFeedback(current => current.sequence === feedback.sequence ? { ...current, text: '' } : current), 4000);
+    return () => clearTimeout(timeout);
+  }, [message, feedback.sequence]);
 
   const contrastChecks = getThemeContrastChecks(palette);
   const interactionChecks = getThemeInteractionChecks(palette);
   const interactionColors = getThemeInteractionColors(palette);
   const paletteIsAccessible = isThemePaletteAccessible(palette);
+  const isSelected = (preset: ThemePreset) => THEME_TOKEN_KEYS.every(key => preset.palette[key] === palette[key]);
+  const currentPreset = customPresets.find(isSelected) ?? BUILT_IN_THEME_PRESETS.find(isSelected);
+  const currentThemeLabel = currentPreset?.name ?? (hasOverrides ? '自訂配色' : '預設配色');
+
+  const applyPreset = (preset: ThemePreset) => {
+    onPaletteChange({ ...preset.palette });
+    setMessage(isThemePaletteAccessible(preset.palette)
+      ? `已套用「${preset.name}」`
+      : `正在預覽「${preset.name}」；對比不足，關閉後會還原。`);
+  };
 
   const updateToken = (key: keyof ThemePalette, value: string) => {
     onPaletteChange({ ...palette, [key]: value });
@@ -242,55 +242,56 @@ export function ThemeLab({
   };
 
   return (
-    <AppDialog
-      open={open}
-      onClose={onClose}
-      title="主題實驗室"
-      description={`個人配色，只存在這台裝置，不會同步到帳號。${hasOverrides ? '目前已套用本機配色。' : ''}`}
-      size="xl"
-      className="bg-gray-50 text-gray-900"
-    >
-        <div>
-          <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-            <div className="min-w-0 space-y-5">
-              <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-                <div
-                  className="relative min-h-40 p-5 text-white"
-                  style={{ background: `linear-gradient(135deg, ${interactionColors.headerPrimary}, ${interactionColors.headerSecondary})` }}
-                >
-                  <Sparkles className="absolute right-5 top-5 h-6 w-6" aria-hidden="true" />
-                  <p className="text-xs font-bold tracking-[0.18em]">LIVE PREVIEW</p>
-                  <h3 className="mt-3 text-2xl font-bold">今天也一起，把市集過得從容。</h3>
-                  <p className="mt-2 max-w-lg text-sm leading-6">頁首、卡片、文字與柔色會在整個 App 立即更新。</p>
-                </div>
-                <div className="grid gap-3 p-4 sm:grid-cols-2" style={{ backgroundColor: palette.background }}>
-                  <div className="rounded-2xl border p-4" style={{ backgroundColor: palette.card, borderColor: palette.softGreen }}>
-                    <p className="text-sm font-bold" style={{ color: palette.foreground }}>暖暖市集</p>
-                    <p className="mt-1 text-xs" style={{ color: palette.mutedForeground }}>本週六 · 11:00 開始</p>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-2xl p-4" style={{ backgroundColor: palette.softYellow }}>
-                    {(['softPink', 'softGreen', 'info', 'danger'] as const).map((key) => (
-                      <span key={key} className="h-9 flex-1 rounded-xl" style={{ backgroundColor: palette[key] }} />
-                    ))}
-                  </div>
-                </div>
-              </section>
-
-              <details className="group rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900">
-                  <span>進階調整</span>
-                  <span className="text-xs font-medium text-gray-500 group-open:hidden">展開</span>
-                  <span className="hidden text-xs font-medium text-gray-500 group-open:inline">收合</span>
-                </summary>
+    <AppDialog open={open} onClose={onClose} title="外觀與主題"
+      description="選擇後立即套用；個人配色僅儲存在這台裝置。" size="xl" className="bg-gray-50 text-gray-900"
+      footer={<div className="flex w-full items-center justify-between gap-3">
+        <p role="status" aria-live="polite" aria-atomic="true" className="min-w-0 break-words text-sm leading-6 text-gray-900">
+          <span key={feedback.sequence}>{message || `目前配色：${currentThemeLabel}`}</span>
+        </p>
+        <button type="button" onClick={onClose} className={`${buttonClass} shrink-0`}>完成</button>
+      </div>}>
+      <div className="space-y-5">
+        <section aria-label="主題預覽" className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+          <div className="relative px-4 py-5 text-white" style={{ background: `linear-gradient(135deg, ${interactionColors.headerPrimary}, ${interactionColors.headerSecondary})` }}>
+            <Sparkles className="absolute right-4 top-4 h-5 w-5" aria-hidden="true" />
+            <p className="text-xs font-medium">目前配色：{currentThemeLabel}</p>
+            <h3 className="mt-2 pr-6 text-xl font-semibold">今天也一起，把市集過得從容。</h3>
+          </div>
+          <div className="p-3" style={{ backgroundColor: palette.background }}>
+            <div className="rounded-xl px-3 py-2" style={{ backgroundColor: palette.card }}>
+              <p className="text-sm font-semibold" style={{ color: palette.foreground }}>暖暖市集</p>
+              <p className="mt-1 text-xs" style={{ color: palette.mutedForeground }}>本週六 · 11:00 開始</p>
+            </div>
+          </div>
+        </section>
+        <section aria-labelledby="preset-title">
+          <h3 id="preset-title" className="text-base font-semibold text-gray-950">精選主題</h3>
+          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-3">
+            {BUILT_IN_THEME_PRESETS.map(preset => <PresetCard key={preset.id} preset={preset} selected={isSelected(preset)} onApply={() => applyPreset(preset)} />)}
+          </div>
+        </section>
+        {customPresets.length > 0 && <section aria-labelledby="saved-preset-title">
+          <h3 id="saved-preset-title" className="text-base font-semibold text-gray-950">我的配色</h3>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {customPresets.map(preset => <PresetCard key={preset.id} preset={preset} custom selected={isSelected(preset)}
+              onApply={() => applyPreset(preset)} onDelete={() => { onDeletePreset(preset.id); setMessage(`已移除「${preset.name}」收藏，目前配色維持不變。`); }} />)}
+          </div>
+        </section>}
+        {!paletteIsAccessible && <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm leading-6 text-amber-900">目前為預覽配色，文字對比不足；請在進階調整修正，關閉後會還原至上次可用配色。</p>}
+        <details className="group rounded-2xl border border-gray-200 bg-white p-4">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900">
+            <span>進階調整</span><span className="text-xs text-gray-600 group-open:hidden">展開</span><span className="hidden text-xs text-gray-600 group-open:inline">收合</span>
+          </summary>
+          <div className="mt-3 space-y-5">
                 <section aria-labelledby="theme-color-title" className="mt-4 border-t border-gray-200 pt-4">
                   <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <h3 id="theme-color-title" className="text-sm font-bold text-gray-950">核心色彩</h3>
                       <p className="mt-1 text-xs text-gray-500">輸入六位 HEX 色碼，或使用左側選色器。</p>
                     </div>
-                    <button type="button" onClick={onRestoreDefaults} className={`${buttonClass} w-full sm:w-auto`}>
+                    <button type="button" onClick={() => { onRestoreDefaults(); setMessage('已恢復預設配色'); }} className={`${buttonClass} w-full sm:w-auto`}>
                       <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                      恢復專案預設
+                      恢復預設配色
                     </button>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -304,10 +305,7 @@ export function ThemeLab({
                     ))}
                   </div>
                 </section>
-              </details>
-            </div>
 
-            <aside className="min-w-0 space-y-5">
               <section className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-950">儲存目前組合</h3>
                 <p className="mt-1 text-xs leading-5 text-gray-500">保留多組方案，方便來回比較。</p>
@@ -339,6 +337,7 @@ export function ThemeLab({
                 </div>
               </section>
 
+
               <section aria-labelledby="contrast-title" className="rounded-3xl border border-gray-200 bg-gray-100 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <h3 id="contrast-title" className="text-sm font-bold text-gray-950">核心文字對比檢查</h3>
@@ -364,35 +363,10 @@ export function ThemeLab({
                 </details>
               </section>
 
-              <section aria-labelledby="preset-title">
-                <h3 id="preset-title" className="text-sm font-bold text-gray-950">內建靈感</h3>
-                <div className="mt-3 space-y-3">
-                  {BUILT_IN_THEME_PRESETS.map((preset) => (
-                    <PresetCard key={preset.id} preset={preset} onApply={() => onPaletteChange({ ...preset.palette })} />
-                  ))}
-                </div>
-              </section>
-
-              {customPresets.length > 0 && (
-                <section aria-labelledby="saved-preset-title">
-                  <h3 id="saved-preset-title" className="text-sm font-bold text-gray-950">我的配色</h3>
-                  <div className="mt-3 space-y-3">
-                    {customPresets.map((preset) => (
-                      <PresetCard
-                        key={preset.id}
-                        preset={preset}
-                        custom
-                        onApply={() => onPaletteChange({ ...preset.palette })}
-                        onDelete={() => onDeletePreset(preset.id)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              )}
 
               <section className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
                 <h3 className="text-sm font-bold text-gray-950">匯入與匯出</h3>
-                <p className="mt-1 text-xs leading-5 text-gray-500">JSON 可留存、分享或交給開發者轉成正式色票。</p>
+                <p className="mt-1 text-xs leading-5 text-gray-500">備份或分享個人配色設定。</p>
                 <input ref={fileInputRef} type="file" accept="application/json,.json" onChange={importJson} className="hidden" />
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <button type="button" onClick={() => fileInputRef.current?.click()} className={buttonClass}>
@@ -409,16 +383,9 @@ export function ThemeLab({
                   </button>
                 </div>
               </section>
-
-            </aside>
           </div>
-        </div>
-
-        {message && (
-          <div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-gray-950 px-4 py-2 text-sm font-medium text-white shadow-lg" role="status">
-            {message}
-          </div>
-        )}
-      </AppDialog>
+        </details>
+      </div>
+    </AppDialog>
   );
 }
