@@ -2,6 +2,7 @@ import type { BillingOrigin } from './billing-provider-contract';
 import type { AccountCapabilityClientResult } from './account-capability-client';
 import { getAccountCapabilitySourcePresentation } from './subscription-presentation';
 import { SUBSCRIPTION_PLAN_DEFINITIONS, type AccountPlanCode } from './subscription-plans';
+import { hasEffectiveEntitlement } from './subscription-capabilities';
 
 export type SubscriptionCenterViewer = 'owner' | 'staff' | 'unknown';
 
@@ -80,6 +81,7 @@ export function buildSubscriptionCenterView(input: {
   isLoading: boolean;
   capabilityResult: AccountCapabilityClientResult | null;
   billingOrigin?: BillingOrigin | null;
+  nowMs?: number;
 }): SubscriptionCenterView {
   if (input.viewer === 'staff') {
     return emptyView('staff_read_only', {
@@ -113,9 +115,12 @@ export function buildSubscriptionCenterView(input: {
   const capabilities = input.capabilityResult.capabilities;
   const source = getAccountCapabilitySourcePresentation(input.capabilityResult.status);
   const origin = input.billingOrigin ?? null;
+  const effectivePaid = capabilities.planCode !== 'free' && hasEffectiveEntitlement(capabilities, input.nowMs ?? Date.now());
+  const effectivePlan = effectivePaid ? capabilities.planCode : 'free';
   // Only describe a lifecycle state supplied by the authoritative capability
   // response. Never infer a past subscription from an ordinary free account.
-  const lifecycleNotice = ['admin_inactive', 'billing_inactive', 'promotion_inactive'].includes(input.capabilityResult.status)
+  const lifecycleNotice = (capabilities.planCode !== 'free' && !effectivePaid)
+    || ['admin_inactive', 'billing_inactive', 'promotion_inactive'].includes(input.capabilityResult.status)
     ? {
         title: '付費功能目前未開放',
         description: '已儲存的紀錄會保留；市集安排仍可使用，銷售與商品功能依目前方案開放。',
@@ -127,8 +132,8 @@ export function buildSubscriptionCenterView(input: {
         : null;
   return {
     state: 'available',
-    planCode: capabilities.planCode,
-    planLabel: SUBSCRIPTION_PLAN_DEFINITIONS[capabilities.planCode].displayName,
+    planCode: effectivePlan,
+    planLabel: SUBSCRIPTION_PLAN_DEFINITIONS[effectivePlan].displayName,
     sourceLabel: source.label,
     sourceDescription: source.description,
     entitlementLabel: entitlementLabel(capabilities.entitlementStatus),

@@ -116,10 +116,8 @@ runTest('sync count service preserves local and cloud count contracts', () => {
   assert.match(hookSource, /export \{ getLocalPendingCount,\s*getCloudEventCount \} from ['"]@\/lib\/sync\/sync-count-service['"]/);
   assert.match(localBody, /\.where\(['"]sync_status['"]\)[\s\S]*\.anyOf\(\[['"]pending['"],\s*['"]local_only['"]\]\)[\s\S]*\.count\(\)/);
   assert.match(localBody, /catch\s*\{[\s\S]*return 0/);
-  assert.match(cloudBody, /\.from\(['"]market_members['"]\)[\s\S]*\.select\(['"]market_id['"]\)[\s\S]*\.eq\(['"]user_id['"],\s*userId\)/);
-  assert.match(cloudBody, /\.from\(['"]events['"]\)[\s\S]*\.select\(['"]id['"],\s*\{\s*count:\s*['"]exact['"],\s*head:\s*true\s*\}\)/);
-  assert.ok(cloudBody.includes("query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.eq.${userId},market_id.is.null)`);"));
-  assert.match(cloudBody, /query\.eq\(['"]actor_id['"],\s*userId\)\.is\(['"]market_id['"],\s*null\)/);
+  assert.match(cloudBody, /\.from\(['"]owner_accessible_events['"]\)[\s\S]*\.select\(['"]id['"],\s*\{\s*count:\s*['"]exact['"],\s*head:\s*true\s*\}\)/);
+  assert.doesNotMatch(cloudBody, /market_members|actor_id/);
   assert.match(cloudBody, /const \{ count \}\s*=\s*await query/);
   assert.match(cloudBody, /return count \|\| 0/);
 });
@@ -244,7 +242,7 @@ runTest('owner market access helper includes member and owner-owned markets', ()
   const body = findFunctionBody(syncSources, 'getOwnerAccessibleMarketIds');
 
   assert.match(body, /supabase\.from\(['"]market_members['"]\)\.select\(['"]market_id['"]\)\.eq\(['"]user_id['"],\s*userId\)/);
-  assert.match(body, /supabase\.from\(['"]markets['"]\)\.select\(['"]id['"]\)\.eq\(['"]owner_id['"],\s*userId\)/);
+  assert.match(body, /supabase\.from\(['"]owner_accessible_markets['"]\)\.select\(['"]id['"]\)\.eq\(['"]owner_id['"],\s*userId\)/);
   assert.match(body, /if\s*\(memberError\)\s*throw memberError/);
   assert.match(body, /if\s*\(ownedError\)\s*throw ownedError/);
   assert.match(body, /Array\.from\(new Set\(\[\.\.\.memberIds,\s*\.\.\.ownedIds\]\)\)/);
@@ -257,7 +255,7 @@ runTest('owner market hydration preserves local-first fetch and sanitized cache 
   assert.match(body, /await db\.markets\.bulkGet\(toFetch\)/);
   assert.match(body, /notYetLocal\.push\(marketId\)/);
   assert.match(body, /hydrated\.add\(marketId\)/);
-  assert.match(body, /\.from\(['"]markets['"]\)[\s\S]*\.select\(['"]\*['"]\)[\s\S]*\.in\(['"]id['"],\s*notYetLocal\)/);
+  assert.match(body, /\.from\(['"]owner_accessible_markets['"]\)[\s\S]*\.select\(['"]\*['"]\)[\s\S]*\.in\(['"]id['"],\s*notYetLocal\)/);
   assert.match(body, /if\s*\(error\)\s*\{[\s\S]*for\s*\(const id of notYetLocal\)\s*failed\.add\(id\)[\s\S]*return \{ hydrated, missing, failed \}/);
   assert.match(body, /marketRowToLocal\(market\)/);
   assert.match(body, /marketGateForLevel\(infoLevel\)\.sanitizeMarketProjection/);

@@ -31,7 +31,7 @@ async function handleGET(request: Request) {
   const etag = variant === 'display' ? data.display_content_hash : data.thumbnail_content_hash;
   const responseBody = new ArrayBuffer(object.body.byteLength);
   new Uint8Array(responseBody).set(object.body);
-  return new NextResponse(responseBody, { status: 200, headers: { 'Content-Type': object.contentType, 'Cache-Control': 'private, max-age=3600', ...(etag ? { ETag: `"${etag}"` } : {}) } });
+  return new NextResponse(responseBody, { status: 200, headers: { 'Content-Type': object.contentType, 'Cache-Control': 'no-store', ...(etag ? { ETag: `"${etag}"` } : {}) } });
 }
 
 

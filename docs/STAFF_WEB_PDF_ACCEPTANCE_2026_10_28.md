@@ -81,6 +81,12 @@
 - 免費老闆待錄取小農場顯示攤位費600與獨立保證金，無未開放區塊；返回列表成功，
   未變更錄取或繳費。驗收尺寸已還原。
 
+## 2026-10-29 發布後關鍵複驗
+
+- Vercel production `dpl_H5vFdfZ8jnMNwZHUBHcdrpxiTK21` Ready，完整 SHA `dd0dcf900d4288f223097b745a2045a1b3f738de`，正式 alias 正確。以 CLI／部署 metadata 核對，並非僅依 push 推測。
+- 正式站實際下載月結 PDF，渲染並檢視全部五頁，中文字及版面正常；商品照片正常可讀。未嘗試繞過 blob 分頁限制。
+- 發現 manager 商品說明的 null-market 事件未回老闆；091 雲端已補 SELECT，新增 owner scope pull 另解決舊游標與離職成員歷史。降級保留與新版部署狀態詳見[本輪紀錄](SUBSCRIPTION_RETENTION_IMPLEMENTATION_2026_10_29.md)。
+
 ## 未完成，另列範圍
 
 | 範圍 | 尚缺部分 |

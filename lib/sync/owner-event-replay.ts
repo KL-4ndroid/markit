@@ -47,7 +47,7 @@ export function orderOwnerReplayEvents(incoming: readonly Event[], existing: rea
 /** Each bounded batch commits both event IDs and projections, or neither. */
 export async function replayOwnerEvents(
   incoming: readonly Event[],
-  options: { onProgress?: (current: number, total: number) => void; assertActive?: () => void } = {},
+  options: { onProgress?: (current: number, total: number) => void; assertActive?: () => void; refreshSyncedPayloads?: boolean } = {},
 ): Promise<void> {
   const existing = await db.events.toArray();
   const ordered = orderOwnerReplayEvents(incoming, existing);
@@ -61,7 +61,12 @@ export async function replayOwnerEvents(
     await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings, db.venues, db.operationSchedules], async () => {
       for (const event of batch) {
         options.assertActive?.();
-        if (existingIds.has(event.id)) continue;
+        if (existingIds.has(event.id)) {
+          // A Free read may have stored a masked foundation payload. Restore the
+          // complete cloud record without replaying projections twice or touching drafts.
+          if (options.refreshSyncedPayloads && (await db.events.get(event.id!))?.sync_status === 'synced') await db.events.put(event);
+          continue;
+        }
         // Hydration already supplies the market's current metadata. Do not reset it
         // or mistake its expected existing ID for an arbitrary ConstraintError.
         const hydratedCreation = event.type === 'market_created' && await db.markets.get(getEventMarketId(event) ?? '');

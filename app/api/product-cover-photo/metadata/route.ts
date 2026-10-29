@@ -28,14 +28,15 @@ async function handlePOST(request: Request) {
   const { data: products,error: productError } = await client.from('products').select('id,owner_id')
     .in('id', productIds).eq('is_active', true);
   if (productError) return NextResponse.json({photos:{},code:'unavailable'},{status:503});
-  const allowedOwnerIds = new Set<string>([auth.actor.actorId]);
+  const allowedOwnerIds = new Set<string>();
   const ownerIds = [...new Set((products ?? []).map(product => String(product.owner_id)))];
-  await Promise.all(ownerIds.filter(ownerId => ownerId !== auth.actor.actorId).map(async ownerId => {
+  await Promise.all(ownerIds.map(async ownerId => {
     if (await resolveProductCoverPhotoOwnerAccess(client, auth.actor.actorId, ownerId)) allowedOwnerIds.add(ownerId);
   }));
   const allowedProductIds = (products ?? [])
     .filter(product => allowedOwnerIds.has(String(product.owner_id)))
     .map(product => String(product.id));
+  if (allowedProductIds.length === 0 && (products ?? []).length > 0) return NextResponse.json({ photos:{},code:'access_denied' },{status:403,headers:{'Cache-Control':'no-store'}});
   if (allowedProductIds.length === 0) return NextResponse.json({ state:'ready', photos: {} }, { headers: { 'Cache-Control': 'no-store' } });
 
   const { data: photos,error: photoError } = await client.from('product_cover_photos').select('product_id,version,status')
@@ -44,7 +45,7 @@ async function handlePOST(request: Request) {
   // A cloud upload in progress is not authoritative evidence of an empty photo.
   if ((photos ?? []).some(photo => photo.status !== 'uploaded')) return NextResponse.json({photos:{},code:'photo_pending'},{status:503});
   const response = Object.fromEntries((photos ?? []).map(photo => [String(photo.product_id), Number(photo.version)]));
-  return NextResponse.json({ state:'ready', photos: response }, { headers: { 'Cache-Control': 'private, max-age=60' } });
+  return NextResponse.json({ state:'ready', photos: response }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 

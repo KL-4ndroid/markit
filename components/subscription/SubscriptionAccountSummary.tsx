@@ -98,6 +98,20 @@ export function SubscriptionAccountSummary() {
         </div>
       )}
 
+      {view.state === 'available' && isOwner && (
+        <details className="mt-4 border-t border-atelier-line pt-4 text-sm">
+          <summary className="cursor-pointer py-2 font-medium text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+            到期或降級後，資料會怎麼處理？
+          </summary>
+          <div className="space-y-2 pb-1 pt-3 leading-6 text-muted-foreground">
+            <p>免費版仍可管理市集安排、報名、錄取、繳費、準備與私人心得。</p>
+            <p>降為免費版後，銷售、收入、商品與照片會限制查閱；原有資料與待同步紀錄不因降級刪除。恢復對應方案後可繼續使用，照片原有保存期限仍適用。</p>
+            <p>離開高階版後，員工協作會停止，成員關係仍保留。重新使用高階版時，由品牌主逐一確認並恢復成員。</p>
+            <p>若已排定停止續訂，功能依已確認的權益期限開放；寬限期依訂閱來源回報處理。</p>
+          </div>
+        </details>
+      )}
+
       {view.canRetry && (
         <Button
           className="mt-4"

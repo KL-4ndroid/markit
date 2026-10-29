@@ -140,6 +140,17 @@ try {
       await asUser(operator);await deny(()=>event(operator,'product_updated',{productId:product,updates:{description:'blocked'}},market));
       await asUser(manager);await deny(()=>event(manager,'product_updated',{productId:product,updates:{cost:1}},market));
     });
+    await check('091 owner recovers manager product metadata without granting staff or outsiders reads',async()=>{
+      await asUser(manager);const metadata=await event(manager,'product_updated',{productId:product,updates:{description:'retained manager edit'}},null);
+      await asUser(owner);assert.deepEqual((await pg.query('SELECT id FROM events WHERE id=$1',[metadata])).rows,[]);
+      await root();const migration091=readFileSync('supabase/migrations/091_owner_product_event_visibility.sql','utf8');
+      await pg.exec(migration091);await pg.exec(migration091);
+      await pg.exec(readFileSync('supabase/verification/091_owner_product_event_visibility_readiness.sql','utf8'));
+      await asUser(owner);assert.equal((await pg.query('SELECT id FROM events WHERE id=$1',[metadata])).rows.length,1);
+      for(const actor of [other,viewer,operator,manager]) {
+        await asUser(actor);assert.deepEqual((await pg.query('SELECT id FROM events WHERE id=$1',[metadata])).rows,[]);
+      }
+    });
     await check('guard helper is not callable by anon or authenticated; trigger is enabled',async()=>{
       const r=await value("SELECT has_function_privilege('anon','public.enforce_event_actor_authorization()','EXECUTE') a,has_function_privilege('authenticated','public.enforce_event_actor_authorization()','EXECUTE') b");assert.deepEqual(r,{a:false,b:false});
       await pg.exec(readFileSync('supabase/verification/086_event_actor_authorization_readiness.sql','utf8'));
@@ -230,6 +241,10 @@ try {
       await pg.query('SELECT update_staff_permissions($1,$2)',[relation,JSON.stringify({can_view:true,can_edit:false,infoLevel:0})]);
       await asUser(other);await assert.rejects(()=>pg.query('SELECT update_staff_role($1,$2)',[relation,'manager']));
     });
+    if(process.argv.includes('--retention')) {
+      const {verifySubscriptionRetention}=await import('./subscription-retention-sql-cases.mjs');
+      await verifySubscriptionRetention(pg,{owner,other,operator,manager,viewer,product,market,asUser,root,check});
+    }
     console.log(`${passed} isolated event/staff authorization checks passed; production was never used for writes.`);
   }
 } catch(error) { console.error(JSON.stringify({message:error.message,code:error.code,where:error.where,query:error.query},null,2)); process.exitCode=1; }

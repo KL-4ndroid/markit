@@ -457,3 +457,5 @@ tests/pdf-file-actions.test.ts
 tests/staff-product-snapshot.test.ts
 tests/product-edit-patch.test.ts
 tests/cached-entity-access.test.ts
+tests/auth-cache-resume.test.ts
+tests/subscription-retained-data.test.ts

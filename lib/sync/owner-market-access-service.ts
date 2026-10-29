@@ -10,7 +10,7 @@ export async function getOwnerAccessibleMarketIds(userId: string): Promise<strin
   const [{ data: memberMarkets, error: memberError }, { data: ownedMarkets, error: ownedError }] =
     await Promise.all([
       supabase.from('market_members').select('market_id').eq('user_id', userId),
-      supabase.from('markets').select('id').eq('owner_id', userId),
+      supabase.from('owner_accessible_markets').select('id').eq('owner_id', userId),
     ]);
 
   if (memberError) throw memberError;

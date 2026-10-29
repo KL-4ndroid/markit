@@ -18,24 +18,11 @@ export async function getLocalPendingCount(): Promise<number> {
 /**
  * Count cloud events visible to the current owner/member scope.
  */
-export async function getCloudEventCount(userId: string): Promise<number> {
+export async function getCloudEventCount(_userId: string): Promise<number> {
   try {
-    const { data: memberMarkets } = await supabase
-      .from('market_members')
-      .select('market_id')
-      .eq('user_id', userId);
-
-    const marketIds = memberMarkets?.map(m => m.market_id) || [];
-
-    let query = supabase
-      .from('events')
+    const query = supabase
+      .from('owner_accessible_events')
       .select('id', { count: 'exact', head: true });
-
-    if (marketIds.length > 0) {
-      query = query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.eq.${userId},market_id.is.null)`);
-    } else {
-      query = query.eq('actor_id', userId).is('market_id', null);
-    }
 
     const { count } = await query;
     return count || 0;

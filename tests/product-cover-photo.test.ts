@@ -81,7 +81,7 @@ assert.match(capabilityRoute, /planAccess\.reason/);
 
 const imageRoute = read('app/api/product-cover-photo/image/route.ts');
 assert.match(imageRoute, /authenticateAppApiRequest/);
-assert.match(imageRoute, /Cache-Control': 'private/);
+assert.match(imageRoute, /Cache-Control': 'no-store/);
 
 const metadataRoute = read('app/api/product-cover-photo/metadata/route.ts');
 assert.match(metadataRoute, /productIds\.length === 0/);

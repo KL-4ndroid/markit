@@ -11,8 +11,9 @@ import { rebuildMarketStatsFromEvents } from '@/lib/sync/local-projection-repair
 import { getEventMarketId, getTombstoneTargetEventId } from '@/lib/events/event-read-model';
 import type { InfoLevel } from '@/lib/data-sanitization';
 import type { Event } from '@/types/db';
+import { parseSubscriptionReadScope } from '@/lib/subscription/read-access';
 
-const REPLAY_REVISION = 'dependency-order-v1';
+const REPLAY_REVISION = 'dependency-order-v2-product-owners';
 
 export async function pullOwnerEvents(
   userId: string,
@@ -21,8 +22,12 @@ export async function pullOwnerEvents(
   assertActive: () => void = () => undefined,
 ): Promise<void> {
   const settings = await db.settings.toCollection().first();
+  const { data: readScopeData, error: readScopeError } = await supabase.rpc('read_subscription_data_scope');
+  const readScope = parseSubscriptionReadScope(readScopeData,userId);
+  if (readScopeError || !readScope) throw new Error('Subscription data scope unavailable');
+  const replayRevision = `${userId}:${REPLAY_REVISION}:${readScope.scope}`;
   // Verify complete cloud history once before correcting caches built by the old order.
-  let needsHistoryVerification = settings?.ownerReplayRevision !== `${userId}:${REPLAY_REVISION}`;
+  let needsHistoryVerification = settings?.ownerReplayRevision !== replayRevision;
   let lastSyncAt = needsHistoryVerification ? null : await getLastSyncTimestamp();
   onProgress(0, 0, '正在讀取市集與歷史紀錄', 'incremental');
   const marketIds = await getOwnerAccessibleMarketIds(userId);
@@ -31,25 +36,21 @@ export async function pullOwnerEvents(
     needsHistoryVerification = true;
     lastSyncAt = null;
   }
-  let teamMemberIds = [userId];
-  if (marketIds.length > 0) {
-    const { data, error } = await supabase.from('market_members').select('user_id').in('market_id', marketIds);
-    if (error) throw error;
-    teamMemberIds = Array.from(new Set([userId, ...(data ?? []).map(m => m.user_id)]));
-  }
 
   // Avoid silently truncating accounts above the API row limit.
   const newEvents: Record<string, any>[] = [];
   const pageSize = 500;
   for (let offset = 0; ; offset += pageSize) {
     assertActive();
-    let query = supabase.from('events').select('*').order('created_at').order('id').range(offset, offset + pageSize - 1);
+    let query = supabase.from('owner_accessible_events').select('*').order('created_at').order('id').range(offset, offset + pageSize - 1);
     // Include the boundary: the cursor has millisecond precision, PostgreSQL can
     // have microseconds. Event IDs make the overlap safe.
     if (lastSyncAt) query = query.gte('created_at', new Date(lastSyncAt).toISOString());
     query = marketIds.length > 0
-      ? query.or(`market_id.in.(${marketIds.join(',')}),and(actor_id.in.(${teamMemberIds.join(',')}),market_id.is.null)`)
-      : query.eq('actor_id', userId).is('market_id', null);
+      // RLS resolves actual product ownership for manager-authored metadata.
+      // Former members must not disappear from the brand's retained history.
+      ? query.or(`market_id.in.(${marketIds.join(',')}),market_id.is.null`)
+      : query.is('market_id', null);
     const { data, error } = await query;
     if (error) throw error;
     newEvents.push(...(data ?? []));
@@ -71,15 +72,14 @@ export async function pullOwnerEvents(
   onProgress(0, canonical.length, '正在整理歷史紀錄', 'incremental');
   await replayOwnerEvents(canonical, {
     assertActive,
+    refreshSyncedPayloads: needsHistoryVerification && readScope.scope === 'paid',
     onProgress: (current, total) => onProgress(current, total, '正在整理歷史紀錄', 'incremental'),
   });
-  await db.transaction('rw', db.events, async () => {
-    assertActive();
-    for (const event of canonical) await db.events.update(event.id!, { sync_status: 'synced' });
-  });
+  // Newly replayed records are already canonical/synced. Do not acknowledge a
+  // pre-existing pending draft solely because the cloud has the same event ID.
   if (needsHistoryVerification) {
     const verified = await verifyAndRepairOwnerHistory(userId, canonical, assertActive);
-    if (verified && settings?.id) await db.settings.update(settings.id, { ownerReplayRevision: `${userId}:${REPLAY_REVISION}` });
+    if (verified && settings?.id) await db.settings.update(settings.id, { ownerReplayRevision: replayRevision });
   }
   await reconcileSyncedProjectionMarkets(touchedMarketIds, 'owner-full');
   assertActive();

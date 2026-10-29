@@ -40,6 +40,15 @@ async function main() {
     assert.deepEqual(await totals(), [350, 240, 3, 8]);
     await replayOwnerEvents(rows);
     assert.deepEqual(await totals(), [350, 240, 3, 8], 'repeated IDs do not replay');
+    const masked = event('retained-metadata','market_updated',11,{updates:{name:'kept'}});
+    await db.events.put(masked);
+    const complete = {...masked,payload:{...masked.payload,updates:{name:'kept',totalRevenue:350}}};
+    await replayOwnerEvents([complete],{refreshSyncedPayloads:true});
+    assert.deepEqual((await db.events.get(masked.id!))?.payload,complete.payload,'restored paid history refreshes a previously masked payload');
+    assert.deepEqual(await totals(),[350,240,3,8],'payload refresh does not replay stock or financial projections twice');
+    await db.events.update(masked.id!,{sync_status:'pending',payload:{draft:'preserved'}});
+    await replayOwnerEvents([complete],{refreshSyncedPayloads:true});
+    assert.deepEqual((await db.events.get(masked.id!))?.payload,{draft:'preserved'},'unsubmitted data is never replaced by retained cloud history');
     await replayOwnerEvents([{ ...deletion, id: 'second-delete' }]);
     assert.deepEqual(await totals(), [350, 240, 3, 8], 'repeated deletion target cannot subtract twice');
 

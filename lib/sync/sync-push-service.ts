@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { supabase } from '@/lib/supabase/client';
 import { normalizeEventForCloud, pickMarketId } from '@/lib/data-mappers';
+import { canSyncEventInScope, parseSubscriptionReadScope } from '@/lib/subscription/read-access';
 import {
   bindEventActor,
   markEventBlocked,
@@ -21,18 +22,21 @@ export async function pushEvents(
     .toArray();
 
   if (pendingEvents.length === 0) return 0;
-  await ensureUserProfile(userId);
+  const { data: scopeData, error: scopeError } = await supabase.rpc('read_subscription_data_scope');
+  const scope = parseSubscriptionReadScope(scopeData, userId);
+  if (scopeError || !scope) throw new Error('目前無法確認方案，待同步紀錄已保留。');
 
   const validEvents: typeof pendingEvents = [];
   const invalidEvents: typeof pendingEvents = [];
 
   for (const event of pendingEvents) {
     if (event.actor_id === userId) {
-      validEvents.push(event);
+      if (await mayAttemptEventSync(event, scope.scope, userId)) validEvents.push(event);
       continue;
     }
 
     if (event.actor_id === 'local') {
+      if (!await mayAttemptEventSync(event, scope.scope, userId)) continue;
       console.log(`📝 更新本地事件的 actor_id: ${event.type} (${event.id?.substring(0, 8)}...)`);
       await bindEventActor(event.id!, userId);
       event.actor_id = userId;
@@ -55,6 +59,7 @@ export async function pushEvents(
   if (validEvents.length === 0) {
     return 0;
   }
+  await ensureUserProfile(userId);
 
   const sortedEvents = validEvents.sort((a, b) => a.timestamp - b.timestamp);
   const total = sortedEvents.length;
@@ -201,6 +206,30 @@ export async function pushEvents(
 
   console.log(`✅ 上傳完成：成功 ${uploadedCount}，跳過 ${skippedCount}，失敗 ${failedCount}，總計 ${total}`);
   return uploadedCount;
+}
+
+/** Actor scope describes their own account, not the brand employing them.
+ * Foreign-workspace attempts still pass through the existing database role and
+ * subscription guards; local metadata never grants authorization. */
+async function mayAttemptEventSync(
+  event: import('@/types/db').Event,
+  scope: import('@/lib/subscription/read-access').SubscriptionReadScope['scope'],
+  userId: string,
+): Promise<boolean> {
+  if (canSyncEventInScope(event.type, scope)) return true;
+  const marketId = event.market_id ?? pickMarketId(event.payload);
+  if (marketId) {
+    const market = await db.markets.get(marketId);
+    if (market?.owner_id && market.owner_id !== userId) return true;
+  }
+  if (event.type === 'product_updated' || event.type === 'product_deleted') {
+    const productId = event.payload?.productId ?? event.payload?.product_id;
+    if (typeof productId === 'string') {
+      const product = await db.products.get(productId);
+      if (product?.owner_id && product.owner_id !== userId) return true;
+    }
+  }
+  return false;
 }
 
 async function ensureMarketMember(userId: string, marketId: string): Promise<boolean> {

@@ -51,7 +51,9 @@ assert.equal(operationScheduleRowToLocal({
 
 assert.match(pushSource, /maybeSingle\(\)/);
 assert.match(pushSource, /insertError\.code === '23505'/);
-assert.match(pullSource, /actor_id.*market_id\.is\.null/);
+assert.match(pullSource, /from\('owner_accessible_events'\)/);
+assert.match(pullSource, /market_id\.is\.null/);
+assert.doesNotMatch(pullSource, /teamMemberIds/);
 assert.match(pullSource, /await replayOwnerEvents\(/);
 assert.match(fs.readFileSync(path.join(root, 'lib/sync/owner-event-replay.ts'), 'utf8'), /eventHandlers\[event\.type/);
 

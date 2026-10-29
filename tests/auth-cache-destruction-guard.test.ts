@@ -564,10 +564,10 @@ runTest('settings and staff destructive clear paths use pending-write guards', (
 runTest('blocked state UX is mounted and listens for auth cache blocked events', () => {
   assert.match(authCacheBlockedEventsSource, /AUTH_CACHE_BLOCKED_EVENT/);
   assert.match(authCacheBlockedDialogSource, /AUTH_CACHE_BLOCKED_EVENT/);
-  assert.match(authCacheBlockedDialogSource, /Sign in to sync/);
-  assert.match(authCacheBlockedDialogSource, /Discard local changes/);
-  assert.match(authCacheBlockedDialogSource, /pending sales photo evidence item/);
-  assert.match(authCacheBlockedDialogSource, /pending local photo payload/);
+  assert.match(authCacheBlockedDialogSource, /使用原帳號登入/);
+  assert.match(authCacheBlockedDialogSource, /捨棄本機變更/);
+  assert.match(authCacheBlockedDialogSource, /待補成交照片/);
+  assert.match(authCacheBlockedDialogSource, /留在本機的原圖/);
   assert.match(authCacheBlockedDialogSource, /forceDiscardLocalChanges:\s*true/);
   assert.match(appChromeSource, /import \{ AuthCacheBlockedDialog \}/);
   assert.match(appChromeSource, /<AuthCacheBlockedDialog \/>/);

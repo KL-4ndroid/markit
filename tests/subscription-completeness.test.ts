@@ -25,6 +25,10 @@ function fakeClient(options: { role?: string; status?: string; plan?: string; no
     },
     async rpc(name: string, args: Record<string, unknown>) {
       rpcCalls++;
+      if (name === 'check_subscription_read_for_actor') {
+        assert.equal(args.p_owner,owner);
+        return {error:options.rpcError?{code:'unavailable'}:null,data:{enabled:true,allowed:options.plan!=='free',reason:options.plan==='free'?'plan_required':'allowed'}};
+      }
       assert.equal(name, 'read_subscription_account_for_actor');
       assert.deepEqual(args, { p_actor_id: actor, p_owner_id: owner });
       return { error: options.rpcError ? { code: 'unavailable' } : null, data: [options.account ?? row(options.plan)] };
@@ -34,7 +38,7 @@ function fakeClient(options: { role?: string; status?: string; plan?: string; no
 
 async function main() {
   for (const suffix of ['', '/']) {
-    for (const path of ['/products', '/products/detail', '/products/legacy-id']) {
+    for (const path of ['/products', '/products/detail', '/products/legacy-id', '/recovery']) {
       assert.equal(resolveSubscriptionSurface(path+suffix, 'free'), 'light_notice');
       assert.equal(resolveSubscriptionSurface(path+suffix, 'unavailable'), 'light_notice');
       assert.equal(resolveSubscriptionSurface(path+suffix, 'light'), 'content');
@@ -64,12 +68,13 @@ async function main() {
   assert.equal(nextCapabilityRefreshDelay(caps, NaN), null);
 
   const own = fakeClient({ noRelation: true, plan: 'free' });
-  assert.deepEqual(await resolveProductCoverPhotoOwnerAccess(own.client, owner, owner), { ownerId: owner, canEdit: true }, 'Existing owner photo read/delete policy preserved');
-  assert.equal(own.rpcCalls, 0);
+  assert.equal(await resolveProductCoverPhotoOwnerAccess(own.client, owner, owner), null, 'Free retains photos but cannot read or edit them');
+  assert.equal(own.rpcCalls, 1);
+  assert.deepEqual(await resolveProductCoverPhotoOwnerAccess(fakeClient({plan:'pro'}).client,owner,owner),{ownerId:owner,canEdit:true});
   for (const role of ['manager', 'operator', 'viewer']) {
     const fake = fakeClient({ role });
     assert.deepEqual(await resolveProductCoverPhotoAccess(fake.client, actor, 'product'), { ownerId: owner, canEdit: role==='manager' });
-    assert.equal(fake.rpcCalls, 1);
+    assert.equal(fake.rpcCalls, 2);
   }
   for (const options of [{ noRelation: true }, { status: 'revoked' }, { role: 'unknown' }, { plan: 'pro' }, { plan: 'free' }, { rpcError: true },
     { account: { ...row(), owner_id: actor } }, { account: { ...row(), entitlement_status: 'inactive' } },

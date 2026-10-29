@@ -9,7 +9,10 @@ import { acquireSyncLock, releaseSyncLock, getSyncLockGeneration, isSyncLockActi
 
 async function main() {
   const originalFrom = supabase.from;
+  const originalRpc = supabase.rpc;
   try {
+    let scope = 'legacy';
+    (supabase as any).rpc = async () => ({data:{ownerId:'owner',enforced:scope!=='legacy',scope},error:null});
     await db.settings.put({ id: 1, lastSyncAt: 123 } as any);
     await db.markets.put({ id: 'market', owner_id: 'owner', totalRevenue: 0, totalDeals: 0 } as any);
     const rows = Array.from({ length: 501 }, (_, i) => ({
@@ -26,7 +29,7 @@ async function main() {
         range: (a: number, b: number) => { request.range = [a, b]; return builder; },
         then: (resolve: any, reject: any) => {
           if (table === 'market_members') return Promise.resolve({ data: [{ market_id: 'market', user_id: 'owner' }], error: null }).then(resolve, reject);
-          if (table === 'markets') return Promise.resolve({ data: [{ id: 'market' }], error: null }).then(resolve, reject);
+          if (table === 'owner_accessible_markets') return Promise.resolve({ data: [{ id: 'market' }], error: null }).then(resolve, reject);
           const data = rows.slice(request.range![0], request.range![1] + 1).map(e => fail && e.id === 'event-499'
             ? { ...e, type: 'operation_schedule_updated', payload: { scheduleId: 'missing', updates: {} } } : e);
           return Promise.resolve({ data, error: null }).then(resolve, reject);
@@ -47,7 +50,18 @@ async function main() {
     assert.ok(stages.includes('正在補齊市集資料') && stages.includes('正在整理歷史紀錄'));
     requests.length = 0;
     await pullOwnerEvents('owner', () => {}, 3);
-    assert.deepEqual(requests.find(r => r.table === 'events')?.gte, ['created_at', new Date(2500).toISOString()]);
+    assert.deepEqual(requests.find(r => r.table === 'owner_accessible_events')?.gte, ['created_at', new Date(2500).toISOString()]);
+    scope = 'foundation'; requests.length = 0;
+    await pullOwnerEvents('owner', () => {}, 3);
+    assert.equal(requests.find(r => r.table === 'owner_accessible_events')?.gte,undefined,'downgrade changes the cursor scope');
+    await db.events.update('event-0',{sync_status:'pending',payload:{draft:'keep'}});
+    scope = 'paid'; requests.length = 0;
+    await pullOwnerEvents('owner', () => {}, 3);
+    assert.equal(requests.find(r => r.table === 'owner_accessible_events')?.gte,undefined,'upgrade checks full retained history rather than the restricted cursor');
+    assert.equal(await db.events.count(),501,'scope changes do not duplicate or delete event records');
+    assert.equal((await db.events.get('event-0'))?.sync_status,'pending','a cloud ID cannot acknowledge a different pending draft');
+    assert.deepEqual((await db.events.get('event-0'))?.payload,{draft:'keep'});
+    await db.events.update('event-0',{sync_status:'synced'});
     requests.length = 0;
     assert.equal(await pushEvents('owner'), 0);
     assert.equal(requests.length, 0, 'no upload means no profile network lookup');
@@ -83,6 +97,6 @@ async function main() {
     releaseSyncLock(newGeneration);
     assert.equal(isSyncLockActive(), false);
     console.log('PASS cold login pull: paginated recovery, failure/cursor boundary, resumable batches, readable stages, no-op push, settings coalescing and invalidation');
-  } finally { (supabase as any).from = originalFrom; await db.delete(); }
+  } finally { (supabase as any).from = originalFrom; (supabase as any).rpc = originalRpc; await db.delete(); }
 }
 void main();

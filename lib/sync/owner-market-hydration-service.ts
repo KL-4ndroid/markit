@@ -43,7 +43,7 @@ export async function batchHydrateMarkets(
   }
 
   const { data: markets, error } = await supabase
-    .from('markets')
+    .from('owner_accessible_markets')
     .select('*')
     .in('id', notYetLocal);
 

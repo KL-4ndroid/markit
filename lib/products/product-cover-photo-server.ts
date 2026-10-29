@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import { evaluateCapabilityAccess } from '../subscription/subscription-access';
+import { checkSubscriptionRead } from '../subscription/read-access';
 import {
   resolveServerAccountCapabilities,
   type AccountCapabilityRepository,
@@ -98,9 +99,10 @@ export async function resolveProductCoverPhotoPlanAccess(input: {
   return { allowed: false, reason: 'entitlement_unavailable' };
 }
 
-/** Owner reads/deletion retain existing behavior until the downgrade policy is decided.
- * Foreign-workspace access always requires an active relationship AND a High owner. */
+/** Retained photos remain stored; read access follows the current paid tier. */
 export async function resolveProductCoverPhotoOwnerAccess(client: SupabaseClient, actorId: string, ownerId: string) {
+  const read = await checkSubscriptionRead(client, actorId, ownerId, 'product_photo');
+  if (!read.allowed) return null;
   if (ownerId === actorId) return { ownerId, canEdit: true };
   const { data: relationship, error } = await client.from('staff_relationships').select('role,status')
     .eq('owner_id', ownerId).eq('staff_id', actorId).eq('status', 'active').maybeSingle();
@@ -135,7 +137,7 @@ export async function resolveProductCoverPhotoOwnerAccess(client: SupabaseClient
 }
 
 export async function resolveProductCoverPhotoAccess(client: SupabaseClient, actorId: string, productId?: string | null) {
-  if (!productId) return { ownerId: actorId, canEdit: true };
+  if (!productId) return resolveProductCoverPhotoOwnerAccess(client, actorId, actorId);
   const { data: product, error } = await client.from('products').select('id,owner_id,is_active').eq('id', productId).maybeSingle();
   if (error || !product || product.is_active !== true) return null;
   return resolveProductCoverPhotoOwnerAccess(client, actorId, String(product.owner_id));
