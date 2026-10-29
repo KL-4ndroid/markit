@@ -76,7 +76,8 @@ async function main() {
     assert.deepEqual(await resolveProductCoverPhotoAccess(fake.client, actor, 'product'), { ownerId: owner, canEdit: role==='manager' });
     assert.equal(fake.rpcCalls, 2);
   }
-  for (const options of [{ noRelation: true }, { status: 'revoked' }, { role: 'unknown' }, { plan: 'pro' }, { plan: 'free' }, { rpcError: true },
+  await assert.rejects(resolveProductCoverPhotoAccess(fakeClient({rpcError:true}).client,actor,'product'),/unavailable/,'Authority outages are read errors, never authoritative empty photos');
+  for (const options of [{ noRelation: true }, { status: 'revoked' }, { role: 'unknown' }, { plan: 'pro' }, { plan: 'free' },
     { account: { ...row(), owner_id: actor } }, { account: { ...row(), entitlement_status: 'inactive' } },
     { account: { ...row(), entitlement_ends_at: new Date(now-1_000).toISOString() } }, { inactiveProduct: true }]) {
     assert.equal(await resolveProductCoverPhotoAccess(fakeClient(options).client, actor, 'product'), null, JSON.stringify(options));

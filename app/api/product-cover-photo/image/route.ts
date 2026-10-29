@@ -18,7 +18,10 @@ async function handleGET(request: Request) {
   if (!productId) return NextResponse.json({ ok: false, code: 'invalid_product' }, { status: 400 });
   const client = createProductCoverPhotoServiceClient();
   if (!client) return NextResponse.json({ok:false,code:'unavailable'}, {status:503});
-  if (!await resolveProductCoverPhotoAccess(client, auth.actor.actorId, productId)) return NextResponse.json({ ok: false, code: 'not_found' }, { status: 404 });
+  let access;
+  try { access = await resolveProductCoverPhotoAccess(client, auth.actor.actorId, productId); }
+  catch { return NextResponse.json({ok:false,code:'unavailable'},{status:503,headers:{'Cache-Control':'no-store'}}); }
+  if (!access) return NextResponse.json({ ok: false, code: 'not_found' }, { status: 404 });
   const { data, error: metadataError } = await client.from('product_cover_photos').select('status,display_object_key,thumbnail_object_key,display_content_hash,thumbnail_content_hash,version')
     .eq('product_id', productId).is('deleted_at', null).maybeSingle();
   if (metadataError) return NextResponse.json({ok:false,code:'unavailable'}, {status:503});

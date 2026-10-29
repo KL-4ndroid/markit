@@ -3,6 +3,12 @@ import {readFileSync} from 'node:fs';
 export async function verifySubscriptionRetention(pg,{owner,other,operator,manager,viewer,product,market,asUser,root,check}) {
  const inventory=JSON.parse(readFileSync('tests/fixtures/subscription-retention-deployed-2026-10-29.json','utf8'));
  await root();
+ for(const c of inventory.columns.filter(c=>c.table==='market_cash_records'))await pg.exec(`ALTER TABLE market_cash_records ADD COLUMN IF NOT EXISTS "${c.column}" ${c.type}`);
+ const retainedCash={opening:{mode:'total',amount:'10'},closing:{mode:'none'},note:'retained cash'};
+ await pg.query('INSERT INTO market_cash_records(market_id,business_date,owner_id,data,revision,mutation_id) VALUES($1,current_date,$2,$3,1,$2)',[market,owner,JSON.stringify(retainedCash)]);
+ await pg.exec('ALTER TABLE market_cash_records ENABLE ROW LEVEL SECURITY');
+ for(const p of inventory.policies.filter(p=>p.tablename==='market_cash_records'))await pg.exec(`CREATE POLICY "${p.policyname}" ON market_cash_records AS ${p.permissive} FOR ${p.cmd} TO ${p.roles.join(',')} USING (${p.qual})`);
+ for(const f of JSON.parse(readFileSync('tests/fixtures/cash-save-retention-deployed-2026-10-29.json','utf8'))) await pg.exec(f.definition);
  for(const name of ['sanitize_staff_event_payload','read_market_cash_sales']) await pg.exec(inventory.functions.find(f=>f.name===name).definition);
  for(const view of inventory.views) await pg.exec(`CREATE OR REPLACE VIEW public.${view.name} AS ${view.definition}`);
  await pg.exec('GRANT SELECT ON staff_accessible_markets,staff_accessible_products,staff_accessible_events TO authenticated');
@@ -31,6 +37,21 @@ export async function verifySubscriptionRetention(pg,{owner,other,operator,manag
   assert.equal((await pg.query('SELECT * FROM staff_accessible_products')).rows.length,0);
   const row=(await pg.query('SELECT * FROM staff_accessible_markets WHERE id=$1',[market])).rows[0];assert.equal(row.total_revenue,null);
   for(const actor of [operator,manager,viewer]){await asUser(actor);for(const t of inventory.views.map(v=>v.name))assert.equal((await pg.query(`SELECT * FROM ${t}`)).rows.length,0,t);}
+ });
+ await check('093 blocks actual deployed cash no-op read bypass and preserves valid paid retries/ACL',async()=>{
+  await asUser(owner);
+  for(const name of ['save_market_cash_record','save_market_cash_record_v2']){
+   const row=(await pg.query(`SELECT (${name}($1,current_date,$2,1,$3)).data AS data`,[market,JSON.stringify(retainedCash),owner])).rows[0];
+   assert.deepEqual(row.data,retainedCash,'baseline no-op bypasses row-write triggers');
+  }
+  await root();const acl=(await pg.query("SELECT proacl FROM pg_proc WHERE oid='save_market_cash_record_v2(uuid,date,jsonb,integer,uuid)'::regprocedure")).rows;
+  const patch=readFileSync('supabase/migrations/093_guard_cash_save_retained_reads.sql','utf8');await pg.exec(patch);await pg.exec(patch);
+  assert.deepEqual((await pg.query("SELECT proacl FROM pg_proc WHERE oid='save_market_cash_record_v2(uuid,date,jsonb,integer,uuid)'::regprocedure")).rows,acl);
+  await asUser(owner);
+  for(const name of ['save_market_cash_record','save_market_cash_record_v2']) await assert.rejects(()=>pg.query(`SELECT ${name}($1,current_date,$2,1,$3)`,[market,JSON.stringify(retainedCash),owner]),e=>e.code==='42501');
+  await plan('pro');await asUser(owner);
+  for(const name of ['save_market_cash_record','save_market_cash_record_v2'])assert.deepEqual((await pg.query(`SELECT (${name}($1,current_date,$2,1,$3)).data AS data`,[market,JSON.stringify(retainedCash),owner])).rows[0].data,retainedCash);
+  await plan('free');
  });
  await check('092 global writes still allow Free arrangements and reject paid sales without deleting drafts',async()=>{
   await root();await pg.exec('BEGIN');

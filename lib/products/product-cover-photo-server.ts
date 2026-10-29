@@ -102,11 +102,13 @@ export async function resolveProductCoverPhotoPlanAccess(input: {
 /** Retained photos remain stored; read access follows the current paid tier. */
 export async function resolveProductCoverPhotoOwnerAccess(client: SupabaseClient, actorId: string, ownerId: string) {
   const read = await checkSubscriptionRead(client, actorId, ownerId, 'product_photo');
+  if (read.reason === 'entitlement_unavailable') throw new Error('product_photo_read_authority_unavailable');
   if (!read.allowed) return null;
   if (ownerId === actorId) return { ownerId, canEdit: true };
   const { data: relationship, error } = await client.from('staff_relationships').select('role,status')
     .eq('owner_id', ownerId).eq('staff_id', actorId).eq('status', 'active').maybeSingle();
-  if (error || !relationship || relationship.status !== 'active'
+  if (error) throw new Error('product_photo_relationship_read_unavailable');
+  if (!relationship || relationship.status !== 'active'
     || !['manager', 'operator', 'viewer'].includes(relationship.role)) return null;
   const resolution = await resolveServerAccountCapabilities({
     actorId, ownerId, nowMs: Date.now(),
@@ -126,6 +128,7 @@ export async function resolveProductCoverPhotoOwnerAccess(client: SupabaseClient
       },
     },
   });
+  if (resolution.outcome === 'unavailable') throw new Error('product_photo_owner_capability_unavailable');
   if (resolution.outcome !== 'available') return null;
   const decision = evaluateCapabilityAccess({
     authenticated: true, ownerWorkspaceAvailable: true, workspaceOwnerId: ownerId, requestedOwnerId: ownerId,
@@ -139,6 +142,7 @@ export async function resolveProductCoverPhotoOwnerAccess(client: SupabaseClient
 export async function resolveProductCoverPhotoAccess(client: SupabaseClient, actorId: string, productId?: string | null) {
   if (!productId) return resolveProductCoverPhotoOwnerAccess(client, actorId, actorId);
   const { data: product, error } = await client.from('products').select('id,owner_id,is_active').eq('id', productId).maybeSingle();
-  if (error || !product || product.is_active !== true) return null;
+  if (error) throw new Error('product_photo_product_read_unavailable');
+  if (!product || product.is_active !== true) return null;
   return resolveProductCoverPhotoOwnerAccess(client, actorId, String(product.owner_id));
 }

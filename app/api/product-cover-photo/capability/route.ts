@@ -25,7 +25,9 @@ async function handleGET(request: Request) {
   const client = createProductCoverPhotoServiceClient();
   if (!client) return NextResponse.json({ canManage: false, canDelete: false, reason: 'unavailable' }, { status: 503 });
   const productId = new URL(request.url).searchParams.get('productId');
-  const access = await resolveProductCoverPhotoAccess(client, auth.actor.actorId, productId);
+  let access;
+  try { access = await resolveProductCoverPhotoAccess(client, auth.actor.actorId, productId); }
+  catch { return NextResponse.json({canManage:false,canDelete:false,reason:'unavailable',photoPresence:'unavailable'},{status:503,headers:{'Cache-Control':'no-store'}}); }
   if (!access) return NextResponse.json({ canManage: false, canDelete: false, reason: 'permission_denied' }, { status: 404 });
   if (!access.canEdit) {
     return NextResponse.json(

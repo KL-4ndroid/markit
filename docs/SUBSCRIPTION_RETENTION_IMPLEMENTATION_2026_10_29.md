@@ -29,11 +29,19 @@
 
 ## 驗證與目前狀態
 
-- PostgreSQL 隔離 23 項通過：實際部署函式／view、重跑遷移、Free 安排寫入／付費拒絕、Light 恢復、Viewer／Operator、到期與寬限、業務資料不變。
+- PostgreSQL 隔離 24 項通過：實際部署函式／view、重跑遷移、Free 安排寫入／付費拒絕、Light 恢復、Viewer／Operator、到期與寬限、現金同筆重試、業務資料不變。
 - TS：原帳號登入、cache guard、照片狀態、付費 pending 保留／恢復、方案畫面、分級路由、owner 重播與跨 scope 游標、固定安排及 sync audit。
 - 既有 production `dd0dcf9` 已確認 Ready；實際下載月結 PDF、檢視五頁，中文字與版面正常；既有商品照片可見。管理員商品說明缺口由 091 及新 owner pull 補足。
-- 092 已安裝且唯讀 readiness 通過，`global_read_enforcement=false`。不存在 daily_stats 與舊 view 匿名 ACL 差異已修正重驗。
-- 新版發布及全體啟用：待本輪相容前端 production Ready 後執行，不得將 dormant 安裝視為已全面生效。
+- 092 安裝時先驗證 `global_read_enforcement=false`；不存在 daily_stats 與舊 view 匿名 ACL 差異已修正重驗。正式帳戶來源盤點為空，未遷移或映射任何舊付費承諾。
+- 程式提交 `5452e08975442f6f70bad10c11160ea3553cc430` 已在 production Ready：`dpl_5GeCFbJoiNSxSazvReA1hk2ngjEw`，正式 alias `markit-app-mocha.vercel.app` 核對一致；本機最終 build／TypeScript、targeted ESLint 通過。
+- 隨後依使用者全體授權啟用，雲端讀寫旗標皆 `true`。以一般測試 JWT，Free 無法讀取原始財務／商品／照片，新 view 仍提供同數市集及費用；Light 恢復商品與商品照片但無成交照片／協作；Team 成交照片 metadata 恢復且員工仍須明確恢復。
+- 真實員工依序 viewer／manager／operator 核對新 view：viewer 售價／庫存為 null，manager／operator 可讀現場欄位、成本仍為 null。此次為讀取與角色切換驗證，所有寫入、離線競態或實機矩陣不據此視為完成。
+- 完整產品資料、商品照片版本及成交照片 metadata 在恢復 Team 後與降級前相同；未建立成交或變更業務資料。老闆覆寫已關閉回原免費方案，指定員工還原 operator／L2、`suspended_by_plan`，其他成員未操作。
+- 正式站免費方案顯示與展開保留說明已目視檢查：[畫面證據](ux-evidence/2026-10-29/subscription-retention/production-free-retention.png)。一般免費帳號不虛構過往訂閱；銷售／商品導覽已隱藏。
+- 正式站 Free 的「檢查雲端更新」完成，仍顯示待準備 8 場／已結束 28 場；小農場顯示攤位費 600、保證金 0、時間軸、待辦及心得入口，返回清單正常，未修改報名或繳費。[手機場次證據](ux-evidence/2026-10-29/subscription-retention/production-free-market.png)。
+- 暫開 Light 目視舊商品售價 120／成本 40／庫存 2／已售 2、封面與管理員描述均恢復；沒有重複扣庫存。[商品恢復證據](ux-evidence/2026-10-29/subscription-retention/production-light-product-restored.png)，已再次還原原免費方案。
+- 追加照片服務錯誤分類：權益／商品／關係讀取不可用回 503，不將照片誤判為空；image／metadata／capability 沿 UI-11 保留與重試契約。此補強以本文件同次提交為來源，無新旗標或資料搬移。
+- 最後核對 24 個可呼叫 SECURITY DEFINER 簽章及實際 cash save 定義，發現舊同筆重試在寫入 trigger 前直接回傳 row。093 在兩個 save RPC 入口先查目前讀取權益，已雲端套用與唯讀驗證；實際部署函式的隔離重現、修補後拒絕及付費合法重試通過，ACL 與資料皆不改。
 
 ## 發布、還原與剩餘範圍
 

@@ -1,6 +1,6 @@
 # 三方案到期、降級與資料保留
 
-2026-10-29 續作：[當前實作／全體發布紀錄](../SUBSCRIPTION_RETENTION_IMPLEMENTATION_2026_10_29.md)取代下方「讀取 enforcement 尚未實作」的狀態。091 已補管理員商品歷史；092 已 dormant 安裝，使用者選擇全體帳號啟用，仍須先確認相容前端 Ready。下文保留決策來源與歷史邊界；正式商店付款仍未接線。
+2026-10-29 續作：[當前實作／全體發布紀錄](../SUBSCRIPTION_RETENTION_IMPLEMENTATION_2026_10_29.md)取代下方「讀取 enforcement 尚未實作」的狀態。091 已補管理員商品歷史；092 先 dormant 安裝，相容前端 `5452e08` production Ready 後，依使用者決定啟用所有帳號讀寫限制。Free／Light／Team、照片版本保留與三種員工角色讀取已在線上複驗；測試帳號已還原。下文保留歷史邊界；正式商店付款仍未接線。
 
 2026-10-28，Asia/Taipei。本文以 2026-10-26 免費／輕量／高階分級及
 2026-10-28 使用者明確決策為準。舊 execution-pack 的 Pro／Team 與舊價格政策

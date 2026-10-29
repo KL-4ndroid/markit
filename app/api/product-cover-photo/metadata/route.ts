@@ -30,9 +30,11 @@ async function handlePOST(request: Request) {
   if (productError) return NextResponse.json({photos:{},code:'unavailable'},{status:503});
   const allowedOwnerIds = new Set<string>();
   const ownerIds = [...new Set((products ?? []).map(product => String(product.owner_id)))];
-  await Promise.all(ownerIds.map(async ownerId => {
-    if (await resolveProductCoverPhotoOwnerAccess(client, auth.actor.actorId, ownerId)) allowedOwnerIds.add(ownerId);
-  }));
+  try {
+    await Promise.all(ownerIds.map(async ownerId => {
+      if (await resolveProductCoverPhotoOwnerAccess(client, auth.actor.actorId, ownerId)) allowedOwnerIds.add(ownerId);
+    }));
+  } catch { return NextResponse.json({photos:{},code:'unavailable'},{status:503,headers:{'Cache-Control':'no-store'}}); }
   const allowedProductIds = (products ?? [])
     .filter(product => allowedOwnerIds.has(String(product.owner_id)))
     .map(product => String(product.id));
