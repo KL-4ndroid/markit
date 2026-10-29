@@ -9,6 +9,7 @@ import { db } from './index';
 import { invalidateJournalCacheScope } from '@/lib/markets/market-journal-cache-scope';
 import { invalidatePreparationTemplateScope } from '@/lib/markets/preparation-template-scope';
 import { invalidateCashScope } from '@/lib/markets/market-cash-scope';
+import { invalidateFinancialReviewScope } from '@/lib/markets/financial-review-scope';
 import { invalidateRegionBackfillScope } from '@/lib/markets/market-region-backfill';
 import { invalidateOwnerFollowupScope } from '@/lib/markets/owner-followup';
 import { clearLastSyncTimestamp } from '@/lib/sync/sync-cursor-service';
@@ -287,6 +288,7 @@ export async function resetAuthenticatedCache(
   invalidateJournalCacheScope();
   invalidateOwnerFollowupScope();
   invalidateCashScope();
+  invalidateFinancialReviewScope();
   invalidateRegionBackfillScope();
   invalidatePreparationTemplateScope();
   console.log(`🔒 resetAuthenticatedCache(scope=${scope}, userId=${userId?.slice(0, 8) ?? 'none'})`);
@@ -308,6 +310,7 @@ export async function resetAuthenticatedCache(
     db.marketJournalDrafts,
     db.marketCashRecords,
     db.marketCashDrafts,
+    db.financialReviewCache,
   ], async () => {
     await db.events.clear();
     await db.markets.clear();
@@ -322,6 +325,7 @@ export async function resetAuthenticatedCache(
     await db.marketJournalDrafts.clear();
     await db.marketCashRecords.clear();
     await db.marketCashDrafts.clear();
+    await db.financialReviewCache.clear();
   });
 
   // Clear sync-related state

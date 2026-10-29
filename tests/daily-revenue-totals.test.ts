@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   computeDailyTotals,
+  hasDailyRevenueRecord,
   type DailyRevenueDay,
 } from '../lib/ui/daily-revenue-totals';
 
@@ -95,6 +96,13 @@ runTest('computeDailyTotals does not double-count when the same day appears twic
 });
 
 let passed = 0;
+runTest('confirmed zero income is recorded without adding revenue or a sale', () => {
+  const empty=day('2026-10-25',0,0,0);
+  assert.equal(hasDailyRevenueRecord(empty),false);
+  const confirmed={...empty,zeroIncomeConfirmed:true};
+  assert.equal(hasDailyRevenueRecord(confirmed),true);
+  assert.deepEqual(computeDailyTotals([confirmed]),{totalRevenue:0,totalProfit:0,totalDeals:0});
+});
 let failed = 0;
 
 async function main() {

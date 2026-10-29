@@ -58,8 +58,8 @@ const PLAN_FEATURE_LABELS: Record<SubscriptionPlanFeatureCode, string> = {
   'core.cloud_sync': '文字與事件資料同步',
   'analytics.basic': '單場成果、基本月摘要與選填現金對帳',
   'analytics.advanced': '跨市集比較與商品決策建議',
-  'report.settlement_preview': '週／月結算報告預覽',
-  'report.pdf': 'PDF 結算報告',
+  'report.settlement_preview': '完整週／月結算報告（網頁閱讀）',
+  'report.pdf': 'PDF 選用匯出',
   'report.excel': 'Excel 報表',
   'photo.product_cover': '商品封面照片',
   'photo.sales_evidence': '成交照片證據',
@@ -80,6 +80,7 @@ const PLAN_PREVIEW_FEATURES: Record<AccountPlanCode, readonly SubscriptionPlanFe
   ],
   team: [
     'analytics.advanced',
+    'report.settlement_preview',
     'report.pdf',
     'team.staff_collaboration',
     'team.manager_workflow',

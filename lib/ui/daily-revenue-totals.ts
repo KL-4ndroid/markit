@@ -19,6 +19,13 @@ export interface DailyRevenueDay {
   profit: number;
   deals: number;
   interactions: Record<string, number>;
+  zeroIncomeConfirmed?: boolean;
+}
+
+/** An explicit zero result is a record, even without a sale or interaction. */
+export function hasDailyRevenueRecord(day: DailyRevenueDay): boolean {
+  return day.zeroIncomeConfirmed === true || day.revenue !== 0 || day.profit !== 0 || day.deals !== 0
+    || Object.values(day.interactions).some(count => count > 0);
 }
 
 export interface DailyRevenueTotals {

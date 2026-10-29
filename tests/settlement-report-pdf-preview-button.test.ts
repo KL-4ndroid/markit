@@ -10,7 +10,7 @@ const buttonSource = readFileSync(
   join(projectRoot, 'components/reports/settlement/SettlementReportPdfPreviewButton.tsx'),
   'utf8'
 );
-const pageSource = readFileSync(join(projectRoot, 'app/reports/settlement/page.tsx'), 'utf8');
+const pageSource = readFileSync(join(projectRoot, 'components/reports/settlement/SettlementReportScreen.tsx'), 'utf8');
 const documentSource = readFileSync(
   join(projectRoot, 'components/reports/settlement/SettlementReportPdfDocument.tsx'),
   'utf8'

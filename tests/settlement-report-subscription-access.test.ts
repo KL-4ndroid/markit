@@ -155,7 +155,7 @@ assert.throws(() => buildSettlementFreePreview({
 }), /owner-only/);
 
 const root = join(__dirname, '..');
-const pageSource = readFileSync(join(root, 'app/reports/settlement/page.tsx'), 'utf8');
+const pageSource = readFileSync(join(root, 'components/reports/settlement/SettlementReportScreen.tsx'), 'utf8');
 const policySource = readFileSync(join(root, 'lib/reporting/settlement-subscription-view.ts'), 'utf8');
 const manifestSource = readFileSync(join(root, 'scripts/test-files.txt'), 'utf8');
 
@@ -163,7 +163,7 @@ assert.match(pageSource, /useAccountCapabilities/);
 assert.match(pageSource, /feature: 'settlementReportPreview'/);
 assert.match(pageSource, /feature: 'settlementPdf'/);
 assert.match(pageSource, /settlementView\.canReadProducts/);
-assert.match(pageSource, /settlementView\.canBuildFreePreview/);
+assert.doesNotMatch(pageSource, /buildSettlementFreePreview/);
 assert.match(pageSource, /settlementView\.canBuildFullReport/);
 assert.match(pageSource, /settlementView\.canBuildPdfViewModel/);
 assert.match(pageSource, /buildSettlementReportPdfViewModel/);

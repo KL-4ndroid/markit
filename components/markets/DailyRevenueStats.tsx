@@ -5,8 +5,8 @@ import { Calendar, TrendingUp, Plus } from 'lucide-react';
 import { useDateRangeStats } from '@/lib/db/hooks';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
-import { computeDailyTotals } from '@/lib/ui/daily-revenue-totals';
-import type { Market } from '@/types/db';
+import { computeDailyTotals, hasDailyRevenueRecord } from '@/lib/ui/daily-revenue-totals';
+import type { Market,DailyStats } from '@/types/db';
 
 interface DailyRevenueStatsProps {
   market: Market;
@@ -25,6 +25,8 @@ interface DailyRevenueStatsProps {
   showInteractions?: boolean;
   reviewMode?: boolean;
   dealRecordCountByDate?: Readonly<Record<string, number>>;
+  focusDate?: string;
+  reviewedStats?: readonly DailyStats[];
 }
 
 /**
@@ -43,8 +45,11 @@ export function DailyRevenueStats({
   showInteractions = false,
   reviewMode = false,
   dealRecordCountByDate,
+  focusDate,
+  reviewedStats,
 }: DailyRevenueStatsProps) {
-  const stats = useDateRangeStats(market.startDate, market.endDate);
+  const originalStats = useDateRangeStats(market.startDate, market.endDate);
+  const stats = !hideProfit && reviewedStats ? reviewedStats : originalStats;
   const [dateView, setDateView] = useState<'auto' | 'recorded' | 'all' | 'empty'>('auto');
   const [showEmptyReviewDates, setShowEmptyReviewDates] = useState(false);
   const dailyListRef = useRef<HTMLDivElement | null>(null);
@@ -82,6 +87,8 @@ export function DailyRevenueStats({
       profit: number;
       deals: number;
       interactions: Record<string, number>;
+      profitPending?: boolean;
+      zeroIncomeConfirmed?: boolean;
     }>();
 
     // 初始化所有日期為 0
@@ -106,6 +113,8 @@ export function DailyRevenueStats({
         if (existing) {
           dataMap.set(stat.date, {
             ...existing,
+            profitPending:stat.financialReviewPending,
+            zeroIncomeConfirmed:!hideProfit && stat.financialZeroIncomeConfirmed === true && !stat.financialReviewPending,
             revenue: stat.revenue || 0,
             profit: stat.profit || 0,
             deals: stat.dealCount || 0,
@@ -126,7 +135,7 @@ export function DailyRevenueStats({
       date,
       ...data,
     }));
-  }, [stats, dateRange, market.id, interactionButtons]);
+  }, [stats, dateRange, market.id, interactionButtons, hideProfit]);
 
   // ✅ C3.4 修復：總計必須來自每日卡片加總，**不**直接讀 market.total*
   // 否則可能出現「下方總計 ≠ 每日卡片加總」的 UI 內部矛盾
@@ -139,20 +148,13 @@ export function DailyRevenueStats({
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   }, []);
-  const recordedDays = useMemo(() => dailyData.filter(day => (
-    day.revenue !== 0 ||
-    day.profit !== 0 ||
-    day.deals !== 0 ||
-    Object.values(day.interactions).some(count => count > 0)
-  )), [dailyData]);
+  const recordedDays = useMemo(() => dailyData.filter(hasDailyRevenueRecord), [dailyData]);
   const emptyPastDays = useMemo(() => dailyData.filter(day => (
     day.date <= today &&
-    day.revenue === 0 &&
-    day.profit === 0 &&
-    day.deals === 0 &&
-    !Object.values(day.interactions).some(count => count > 0)
+    !hasDailyRevenueRecord(day)
   )), [dailyData, today]);
-  const effectiveDateView = dateView === 'auto'
+  const validFocusDate = focusDate && dateRange.includes(focusDate) ? focusDate : undefined;
+  const effectiveDateView = dateView === 'auto' && validFocusDate ? 'all' : dateView === 'auto'
     ? market.status === 'completed' && dailyData.length > 7 && recordedDays.length > 0
       ? 'recorded'
       : 'all'
@@ -162,7 +164,7 @@ export function DailyRevenueStats({
     : effectiveDateView === 'empty'
       ? emptyPastDays
       : dailyData;
-  const isEmptyReview = reviewMode && recordedDays.length === 0;
+  const isEmptyReview = reviewMode && recordedDays.length === 0 && !validFocusDate;
   const latestRecordableDate = useMemo(
     () => [...dailyData].reverse().find(day => day.date <= today)?.date ?? null,
     [dailyData, today]
@@ -174,6 +176,7 @@ export function DailyRevenueStats({
   }, [market.id]);
 
   const focusedWindowStartDate = useMemo(() => {
+    if (validFocusDate && visibleDailyData.some(day=>day.date === validFocusDate)) return validFocusDate;
     if (visibleDailyData.length <= 3) return visibleDailyData[0]?.date;
 
     const todayIndex = visibleDailyData.findIndex((day) => day.date === today);
@@ -187,7 +190,7 @@ export function DailyRevenueStats({
     }
 
     return visibleDailyData[Math.max(0, visibleDailyData.length - 3)]?.date;
-  }, [visibleDailyData, today]);
+  }, [visibleDailyData, today, validFocusDate]);
 
   useEffect(() => {
     const list = dailyListRef.current;
@@ -216,6 +219,7 @@ export function DailyRevenueStats({
         )}
       </div>
 
+      {validFocusDate && <a href={`#daily-revenue-${validFocusDate}`} className="mx-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline underline-offset-4">查看報告指定日期 {formatDate(validFocusDate)}</a>}
       {!isEmptyReview && !isSingleDay && dateRange.length > 5 && (
         <div className="border-b border-atelier-line bg-atelier-paper px-4 py-3 sm:px-5">
           <div className="grid grid-cols-3 rounded-control bg-atelier-canvas p-1" role="group" aria-label="每日表現顯示範圍">
@@ -289,11 +293,13 @@ export function DailyRevenueStats({
           return (
             <div
               key={day.date}
+              id={`daily-revenue-${day.date}`}
               ref={day.date === focusedWindowStartDate ? focusedDayRef : null}
-              className={`relative px-4 py-4 transition-colors sm:px-5 ${
+              className={`relative scroll-mt-4 px-4 py-4 transition-colors sm:px-5 ${
                 isFuture ? 'opacity-55' : ''
-              } ${isToday ? 'bg-atelier-sage-soft/65' : 'bg-atelier-paper'}`}
+              } ${isToday || day.date === validFocusDate ? 'bg-atelier-sage-soft/65' : 'bg-atelier-paper'}`}
             >
+              {day.date === validFocusDate && <p className="mb-2 pl-7 text-xs font-medium text-primary">報告指定日期</p>}
               {dayIndex < visibleDailyData.length - 1 && (
                 <span className="absolute bottom-0 left-[1.22rem] top-8 w-px bg-atelier-line sm:left-[1.47rem]" aria-hidden="true" />
               )}
@@ -309,6 +315,7 @@ export function DailyRevenueStats({
                   <span className="text-sm font-medium text-foreground">{formatDate(day.date)}</span>
                   {isToday && <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-white">今天</span>}
                   {isFuture && <span className="rounded-full bg-atelier-canvas px-2 py-0.5 text-xs text-atelier-muted">尚未開始</span>}
+                  {day.zeroIncomeConfirmed && <span className="text-xs text-atelier-blue">已確認零收入</span>}
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
@@ -324,7 +331,7 @@ export function DailyRevenueStats({
                       {hideProfit ? null : (
                         <span>
                           銷售利潤 <strong className={`font-semibold tabular-nums ${day.profit >= 0 ? 'text-foreground' : 'text-danger'}`}>
-                            {formatCurrency(day.profit)}
+                            {day.profitPending ? '待核對' : formatCurrency(day.profit)}
                           </strong>
                         </span>
                       )}
@@ -395,7 +402,7 @@ export function DailyRevenueStats({
             {hideProfit ? null : (
               <span>
                 銷售利潤合計 <strong className={`font-semibold tabular-nums ${dailyTotals.totalProfit >= 0 ? 'text-foreground' : 'text-danger'}`}>
-                  {formatCurrency(dailyTotals.totalProfit)}
+                  {dailyData.some(day=>day.profitPending) ? '待核對' : formatCurrency(dailyTotals.totalProfit)}
                 </strong>
               </span>
             )}

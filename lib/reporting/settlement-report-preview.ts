@@ -153,6 +153,19 @@ export function buildSettlementReportPreviewModel({
 }: BuildSettlementReportPreviewModelInput): SettlementReportPreviewModel {
   assertOwnerPreviewAllowed(capabilities);
 
+  if (report.reading) {
+    const reading = report.reading;
+    const limitations = reading.issues.map(issue=>({code:issue.key,severity:'info' as const,affectedSections:[],message:issue.title,recommendation:issue.detail,placement:'section' as const}));
+    return {
+      header:{brandName:report.brandName,kind:report.period.kind,periodLabel:report.period.label,confidence:report.dataQuality.confidence,
+        readiness:reading.pendingCount ? 'limited' : 'ready',readinessReason:report.decision.summary,presentationStatus:'review',showFormalScores:false},
+      executiveSummary:{totalRevenue:report.money.totalRevenue,netProfit:report.money.netProfit,totalDeals:report.activity.totalDeals,
+        averageOrderValue:report.activity.averageOrderValue,overallScore:0,grade:'',recommendation:'observe',summary:report.decision.summary},
+      reliability:{confidence:report.dataQuality.confidence,warningCount:0,infoCount:limitations.length,limitations},
+      sections:[],topWarnings:[],nextActions:reading.highlights.slice(1),
+    };
+  }
+
   const readiness = getReadiness(report);
   const limitations = buildPreviewLimitations(report);
 

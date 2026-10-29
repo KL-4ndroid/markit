@@ -16,7 +16,7 @@ const projectRoot = join(__dirname, '..');
 const homePageSource = readFileSync(join(projectRoot, 'app/page.tsx'), 'utf8');
 const settingsPageSource = readFileSync(join(projectRoot, 'app/settings/sales/page.tsx'), 'utf8');
 const brandCardSource = readFileSync(join(projectRoot, 'components/settings/OwnerBrandSettingsCard.tsx'), 'utf8');
-const reportPageSource = readFileSync(join(projectRoot, 'app/reports/settlement/page.tsx'), 'utf8');
+const reportPageSource = readFileSync(join(projectRoot, 'components/reports/settlement/SettlementReportScreen.tsx'), 'utf8');
 const reportModelSource = readFileSync(join(projectRoot, 'lib/reporting/settlement-report.ts'), 'utf8');
 const previewModelSource = readFileSync(join(projectRoot, 'lib/reporting/settlement-report-preview.ts'), 'utf8');
 const settingsServiceSource = readFileSync(join(projectRoot, 'lib/supabase/settings.ts'), 'utf8');
@@ -46,7 +46,7 @@ runTest('owner settings page exposes owner-only brand name editor', () => {
   assert.match(settingsServiceSource, /brand_name\?: string \| null/);
   assert.match(settingsPageSource, /OwnerBrandSettingsCard = dynamic/);
   assert.match(settingsPageSource, /!isOwner/);
-  assert.match(settingsPageSource, /<OwnerBrandSettingsCard \/>/);
+  assert.match(settingsPageSource, /<OwnerBrandSettingsCard showReportUsage=\{canAnalyze\} \/>/);
   assert.match(brandCardSource, /saveOwnerBrandName/);
   assert.match(brandCardSource, /loadOwnerBrandName/);
   assert.match(brandCardSource, /品牌名稱/);
@@ -70,15 +70,14 @@ runTest('settlement report model and preview carry owner brand name', () => {
   assert.match(previewModelSource, /header:[\s\S]*brandName: string/);
   assert.match(previewModelSource, /brandName: report\.brandName/);
   assert.match(reportPageSource, /brandName,\s*markets,/);
-  assert.match(reportPageSource, /preview\.header\.brandName/);
-  assert.match(reportPageSource, /buildSettlementFreePreview/);
-  assert.match(reportPageSource, /freePreview\.brandName/);
+  assert.match(reportPageSource, /preview: buildSettlementReportPreviewModel/);
+  assert.doesNotMatch(reportPageSource, /buildSettlementFreePreview/);
 });
 
 runTest('brand name wiring stays out of sync recovery and custom export side effects', () => {
   for (const source of [brandCardSource, reportPageSource]) {
     assert.doesNotMatch(source, /@\/lib\/sync|@\/lib\/db\/recovery|@\/lib\/db\/events/);
-    assert.doesNotMatch(source, /Excel|CSV|download|下載|匯出/);
+    assert.doesNotMatch(source, /Excel|CSV|\bdownload\b|createObjectURL|window\.open/);
     assert.doesNotMatch(source, /db\.(events|markets|products|dailyStats)\.(add|put|update|delete|clear|bulkAdd|bulkPut|bulkDelete)/);
   }
   assert.match(reportPageSource, /SETTLEMENT_PDF_RUNTIME_ENABLED/);

@@ -538,8 +538,8 @@ function renderCoverPage(page: SettlementReportPdfCoverPage): React.ReactNode {
         </View>
         <View style={styles.twoColumnSide}>
           <View style={styles.scorePanel}>
-            <Text style={styles.sectionTitle}>評分與資料狀態</Text>
-              <Text style={/^\d/.test(page.scoreLabel) ? styles.scoreValue : styles.scoreStatusLabel}>{page.scoreLabel}</Text>
+            <Text style={styles.sectionTitle}>{page.mode === 'facts' ? '紀錄摘要' : '評分與資料狀態'}</Text>
+              <Text style={page.mode !== 'facts' && /^\d/.test(page.scoreLabel) ? styles.scoreValue : styles.scoreStatusLabel}>{page.mode === 'facts' ? wrapPdfText(page.scoreLabel,48,14) : page.scoreLabel}</Text>
             <Text style={styles.bodyText}>{page.gradeLabel}</Text>
             <Text style={styles.bodyText}>{page.confidenceLabel}</Text>
             <Text style={styles.bodyTextSmall}>{page.readinessLabel}</Text>
@@ -559,7 +559,7 @@ function renderDataConfidencePage(page: SettlementReportPdfDataConfidencePage): 
   return (
     <>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>資料信心度</Text>
+        <Text style={styles.sectionTitle}>{page.mode === 'facts' ? '紀錄摘要' : '資料信心度'}</Text>
         <Text style={styles.bodyText}>
           {page.confidenceLabel}，包含 {page.warningCount} 項警示與 {page.infoCount} 項補充提醒。
         </Text>
@@ -569,9 +569,9 @@ function renderDataConfidencePage(page: SettlementReportPdfDataConfidencePage): 
         {warningList(page.limitations)}
       </View>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>評分組成</Text>
+        <Text style={styles.sectionTitle}>{page.mode === 'facts' ? '判讀原則' : '評分組成'}</Text>
         {page.scoreRows.length === 0 ? (
-          <Text style={styles.bodyText}>目前為低可信度初稿，正式評分與權重拆解暫不顯示。請先依資料限制補強紀錄。</Text>
+          <Text style={styles.bodyText}>{page.mode === 'facts' ? wrapPdfText('收入與利潤分別判讀；沒有商品或互動明細不影響收入回顧。未填收入、成本或異常紀錄會限制對應項目的比較，不提供固定總分或再參加評級。',180,48) : '目前為低可信度初稿，正式評分與權重拆解暫不顯示。請先依資料限制補強紀錄。'}</Text>
         ) : <View style={styles.scoreList}>
           {page.scoreRows.map(row => (
             <View key={row.key} style={styles.scoreRow}>
@@ -599,14 +599,14 @@ function renderMarketPage(page: SettlementReportPdfMarketPage): React.ReactNode 
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>市集表現排行</Text>
+      <Text style={styles.sectionTitle}>{page.mode === 'facts' ? '市集紀錄（依日期）' : '市集表現排行'}</Text>
       <View style={styles.summaryBand}>
         <View>
-          <Text style={styles.summaryBandLabel}>本期納入排行</Text>
+          <Text style={styles.summaryBandLabel}>{page.mode === 'facts' ? '本頁收錄' : '本期納入排行'}</Text>
           <Text style={styles.summaryBandValue}>{page.rows.length} 場市集</Text>
         </View>
         <View style={styles.summaryBandSide}>
-          <Text style={styles.summaryBandLabel}>排名第一</Text>
+          <Text style={styles.summaryBandLabel}>{page.mode === 'facts' ? '本頁最近場次' : '排名第一'}</Text>
           <Text style={styles.summaryBandValue}>
             {wrapPdfText(page.rows[0].marketName, 32, 16)} · {page.rows[0].revenueLabel}
           </Text>
@@ -614,15 +614,15 @@ function renderMarketPage(page: SettlementReportPdfMarketPage): React.ReactNode 
       </View>
       <View style={styles.table}>
         <View style={[styles.row, styles.rowHeader]}>
-          <Text style={[styles.headerText, styles.rankCell]}>排名</Text>
+          <Text style={[styles.headerText, styles.rankCell]}>{page.mode === 'facts' ? '序號' : '排名'}</Text>
           <Text style={[styles.headerText, styles.marketNameCell]}>市集</Text>
           <Text style={[styles.headerText, styles.marketMoneyCell]}>營收</Text>
           <Text style={[styles.headerText, styles.marketMoneyCell]}>淨利</Text>
-          <Text style={[styles.headerText, styles.marketScoreCell]}>分數</Text>
-          <Text style={[styles.headerText, styles.marketDecisionCell]}>建議</Text>
+          <Text style={[styles.headerText, styles.marketScoreCell]}>{page.mode === 'facts' ? '紀錄' : '分數'}</Text>
+          <Text style={[styles.headerText, styles.marketDecisionCell]}>{page.mode === 'facts' ? '紀錄日數' : '建議'}</Text>
         </View>
         {page.rows.map((row, index) => (
-          <View key={row.marketId} style={[styles.row, index === 0 ? styles.rowHighlight : {}]}>
+          <View key={row.marketId} style={[styles.row, page.mode !== 'facts' && index === 0 ? styles.rowHighlight : {}]}>
             <Text style={[styles.cellText, styles.rankCell]}>{index + 1}</Text>
             <Text style={[styles.cellText, styles.marketNameCell]}>{wrapPdfText(row.marketName, 24, 12)}</Text>
             <Text style={[styles.cellText, styles.marketMoneyCell]}>{row.revenueLabel}</Text>
@@ -633,7 +633,7 @@ function renderMarketPage(page: SettlementReportPdfMarketPage): React.ReactNode 
         ))}
       </View>
       {page.omittedRowCount > 0 ? (
-        <Text style={styles.bodyTextSmall}>另有 {page.omittedRowCount} 場市集未列入此頁，請回到 App 查看完整排行。</Text>
+        <Text style={styles.bodyTextSmall}>另有 {page.omittedRowCount} 場市集未列入此頁，請回到 App 查看完整紀錄。</Text>
       ) : null}
     </View>
   );
@@ -655,26 +655,26 @@ function renderProductPage(page: SettlementReportPdfProductPage): React.ReactNod
         <Text style={styles.sectionTitle}>商品表現</Text>
         <View style={styles.summaryBand}>
           <View>
-            <Text style={styles.summaryBandLabel}>本期納入排行</Text>
+            <Text style={styles.summaryBandLabel}>{page.mode === 'facts' ? '本頁收錄（依銷量）' : '本期納入排行'}</Text>
             <Text style={styles.summaryBandValue}>{page.rows.length} 項商品</Text>
           </View>
-          <View style={styles.summaryBandSide}>
+          {page.mode !== 'facts' && <View style={styles.summaryBandSide}>
             <Text style={styles.summaryBandLabel}>銷售第一</Text>
             <Text style={styles.summaryBandValue}>
               {wrapPdfText(page.rows[0].productName, 32, 16)} · {page.rows[0].quantityLabel}
             </Text>
-          </View>
+          </View>}
         </View>
         <View style={styles.table}>
           <View style={[styles.row, styles.rowHeader]}>
-            <Text style={[styles.headerText, styles.rankCell]}>排名</Text>
+            <Text style={[styles.headerText, styles.rankCell]}>{page.mode === 'facts' ? '序號' : '排名'}</Text>
             <Text style={[styles.headerText, styles.productNameCell]}>商品</Text>
             <Text style={[styles.headerText, styles.productQuantityCell]}>售出</Text>
             <Text style={[styles.headerText, styles.productMoneyCell]}>營收</Text>
-            <Text style={[styles.headerText, styles.productMoneyCell]}>毛利</Text>
+            <Text style={[styles.headerText, styles.productMoneyCell]}>{page.mode === 'facts' ? '估計商品毛利' : '毛利'}</Text>
           </View>
           {page.rows.map((row, index) => (
-            <View key={row.productId} style={[styles.row, index === 0 ? styles.rowHighlight : {}]}>
+            <View key={row.productId} style={[styles.row, page.mode !== 'facts' && index === 0 ? styles.rowHighlight : {}]}>
               <Text style={[styles.cellText, styles.rankCell]}>{index + 1}</Text>
               <Text style={[styles.cellText, styles.productNameCell]}>{wrapPdfText(row.productName, 36, 18)}</Text>
               <Text style={[styles.cellText, styles.productQuantityCell]}>{row.quantityLabel}</Text>
@@ -719,7 +719,7 @@ function renderCostProfitPage(page: SettlementReportPdfCostProfitPage): React.Re
         <Text style={styles.sectionTitle}>成本與利潤摘要</Text>
         {metricCards(page.metrics)}
         <Text style={styles.bodyText}>
-          成本資料覆蓋率 {page.costCoverageLabel}，利潤判讀狀態為 {page.profitReliabilityLabel}。
+          {page.mode === 'facts' ? '商品成本紀錄：' : '成本資料覆蓋率 '}{page.costCoverageLabel}，利潤判讀狀態為 {page.profitReliabilityLabel}。
         </Text>
       </View>
       <View style={styles.section}>

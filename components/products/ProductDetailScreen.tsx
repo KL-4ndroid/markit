@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { buildProductManagementHref, resolveProductMarketReturn } from '@/lib/navigation/market-product-return';
+import { resolveReportEntityReturn } from '@/lib/reporting/settlement-report-navigation';
 import {
   ArrowLeft,
   BookOpen,
@@ -46,8 +47,10 @@ interface ProductDetailScreenProps {
 export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   const router = useRouter();
   const params = useSearchParams();
+  const reportReturn = resolveReportEntityReturn(params);
   const origin = { fromMarket: params.get('fromMarket'), marketReturnTo: params.get('marketReturnTo') };
-  const productListHref = buildProductManagementHref(origin);
+  const productListHref = reportReturn?.href ?? buildProductManagementHref(origin);
+  const productBackLabel = reportReturn?.label ?? '返回商品列表';
   const marketReturn = resolveProductMarketReturn(origin);
   const liveProduct = useProduct(productId);
   const [directLocalProduct, setDirectLocalProduct] = useState<Product | undefined>(undefined);
@@ -192,7 +195,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
   }
 
   if (cacheAccessDenied) {
-    return <RetainedDataAccessNotice href={productListHref} returnLabel="返回商品列表" />;
+    return <RetainedDataAccessNotice href={productListHref} returnLabel={productBackLabel} />;
   }
 
   // DB 不健康
@@ -203,11 +206,11 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push(productListHref)}
-              aria-label="返回商品列表"
+              aria-label={productBackLabel}
               className="mb-4 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span>返回</span>
+              <span>{reportReturn ? productBackLabel : '返回'}</span>
             </button>
             <h1 className="text-2xl font-medium text-white opacity-90">
               資料庫異常
@@ -241,7 +244,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
               onClick={() => router.push(productListHref)}
               className="w-full bg-soft-pink text-foreground px-6 py-3 rounded-2xl hover:bg-soft-pink/80 transition-colors font-medium"
             >
-              返回商品列表
+              {productBackLabel}
             </button>
           </div>
         </div>
@@ -257,11 +260,11 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push(productListHref)}
-              aria-label="返回商品列表"
+              aria-label={productBackLabel}
               className="mb-4 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span>返回</span>
+              <span>{reportReturn ? productBackLabel : '返回'}</span>
             </button>
             <h1 className="text-2xl font-medium text-white opacity-90">
               找不到商品
@@ -282,7 +285,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
               onClick={() => router.push(productListHref)}
               className="bg-primary text-white px-6 py-3 rounded-2xl hover:bg-primary/85 transition-colors"
             >
-              返回商品列表
+              {productBackLabel}
             </button>
           </div>
         </div>
@@ -305,11 +308,11 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
           {marketReturn && <Link href={marketReturn.href} className="inline-flex min-h-11 items-center rounded-control bg-white/15 px-3 text-sm text-white">{marketReturn.label}</Link>}
           <button
             onClick={() => router.push(productListHref)}
-            aria-label="返回商品列表"
+            aria-label={productBackLabel}
             className="mb-3 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>返回</span>
+            <span>{reportReturn ? productBackLabel : '返回'}</span>
           </button>
           <div className="flex items-start justify-between gap-3">
             <h1 className="min-w-0 flex-1 break-words text-2xl font-medium text-white">

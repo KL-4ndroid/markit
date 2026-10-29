@@ -42,6 +42,7 @@ export type SettlementReportPdfWarning = {
 };
 
 export type SettlementReportPdfPageBase = {
+  mode?: 'facts';
   key: SettlementReportPdfPageKey;
   pageNumber: number;
   title: string;
@@ -260,6 +261,20 @@ function marketWarningCodes(
 }
 
 function buildCoverPage(report: SettlementReportModel): SettlementReportPdfCoverPage {
+  if (report.reading) return {
+    key:'cover_summary',pageNumber:1,mode:'facts',title:'本期紀錄摘要',purpose:'回顧已記錄成果與需要確認的紀錄。',
+    brandName:report.brandName,reportTypeLabel:reportTypeLabel(report.period.kind),periodLabel:`${report.period.label} · 截至 ${report.reading.asOfDate}`,
+    recommendationLabel:'本期成果回顧',recommendationSummary:report.decision.summary,
+    scoreLabel:`${report.reading.recordedCount} 場有收入紀錄`,gradeLabel:`${report.reading.pendingCount} 場待補紀錄`,
+    confidenceLabel:'收入與成本分別判讀',readinessLabel:report.reading.estimatedProfit === null ? '淨利待確認' : '依已記錄費用估算',
+    metrics:[{label:'已記錄收入',value:report.reading.revenueUsable ? formatMoney(report.money.totalRevenue) : '待核對'},
+      {label:'估計淨利',value:report.reading.estimatedProfit === null ? '待確認' : formatMoney(report.reading.estimatedProfit)},
+      {label:'成交筆數',value:report.reading.revenueUsable ? formatNumber(report.activity.totalDeals) : '待核對'},
+      report.reading.estimatedProfit === null && report.reading.confirmedProfit
+        ? {label:`已確認 ${report.reading.confirmedProfit.count} 場淨利小計`,value:formatMoney(report.reading.confirmedProfit.amount)}
+        : {label:'尚未開攤',value:`${report.reading.upcomingCount} 場`}],
+    topWarnings:report.reading.issues.filter(issue=>issue.kind === 'action').slice(0,3).map(issue=>({code:issue.key,severity:'info',message:issue.title,recommendation:issue.detail})),
+  };
   const warningLimitations = report.dataQuality.limitations
     .filter(limitation => limitation.severity === 'warning')
     .slice(0, 3)
@@ -292,6 +307,11 @@ function buildCoverPage(report: SettlementReportModel): SettlementReportPdfCover
 }
 
 function buildDataConfidencePage(report: SettlementReportModel): SettlementReportPdfDataConfidencePage {
+  if (report.reading) return {
+    key:'data_confidence_score',pageNumber:2,mode:'facts',title:'紀錄狀態與計算說明',purpose:'確認資料與費用口徑。',
+    confidenceLabel:`${report.reading.recordedCount} 場有收入紀錄`,warningCount:0,infoCount:report.reading.issues.length,
+    limitations:report.reading.issues.map(issue=>({code:issue.key,severity:'info',message:`${issue.title}（${issue.marketIds.length} 場）`,recommendation:issue.detail})),scoreRows:[],
+  };
   const limitations = [...report.dataQuality.limitations]
     .sort((a, b) => {
       if (a.severity === b.severity) return a.code.localeCompare(b.code);
@@ -321,6 +341,15 @@ function buildDataConfidencePage(report: SettlementReportModel): SettlementRepor
 }
 
 function buildMarketPage(report: SettlementReportModel): SettlementReportPdfMarketPage {
+  if (report.reading) return {
+    key:'market_performance',pageNumber:3,mode:'facts',title:'市集紀錄比較',purpose:'依日期回顧市集，不以固定分數判斷是否再次參加。',
+    rows:report.reading.rows.slice(0,MARKET_ROW_LIMIT).map(row=>({marketId:row.marketId,marketName:row.marketName,
+      revenueLabel:row.state === 'recorded' ? row.revenueUsable ? formatMoney(row.revenue) : '待核對' : row.state === 'upcoming' ? '尚未開攤' : '待補收入',
+      netProfitLabel:row.estimatedProfit === null ? '待確認' : formatMoney(row.estimatedProfit),
+      dealCountLabel:row.state === 'recorded' ? formatNumber(row.dealCount) : '—',averageOrderValueLabel:row.dailyRevenue === null ? '—' : formatMoney(row.dailyRevenue),
+      scoreLabel:row.state === 'recorded' ? '有紀錄' : '未齊全',gradeLabel:'',recommendationLabel:`${row.recordedDays} 個紀錄日`,warningCodes:[]})),
+    omittedRowCount:Math.max(0,report.reading.rows.length-MARKET_ROW_LIMIT),emptyMessage:report.reading.rows.length ? null : '此期間沒有安排市集。',
+  };
   const isLowConfidenceDraft = report.dataQuality.confidence === 'low';
   const rows = report.marketDecisions.slice(0, MARKET_ROW_LIMIT).map(decision => {
     const marketRow = report.marketRows.find(row => row.marketId === decision.marketId);
@@ -361,7 +390,7 @@ function buildProductPage(report: SettlementReportModel): SettlementReportPdfPro
     isProfitDirectional: product.estimatedGrossProfit === null || report.dataQuality.costBasisEstimatedProductIds.includes(product.productId),
   }));
 
-  const dataNeededMessage = rows.length === 0
+  const dataNeededMessage = report.reading ? `有商品明細收入 ${formatMoney(report.reading.productCoverage.itemizedRevenue)}／已記錄總收入 ${report.reading.revenueUsable ? formatMoney(report.reading.productCoverage.totalRevenue) : '待核對'}。${report.reading.productCoverage.status === 'invalid' ? '明細與總收入範圍需核對。' : '只代表已記錄商品。'}商品毛利依目前成本估算，非成交當時成本。` : rows.length === 0
     ? '此期間沒有可用的商品明細，商品排行與商品建議應標示為資料不足。'
     : report.decision.analysisAvailability.productAnalysis === 'limited'
       ? '商品明細不完整，商品結論僅供方向參考。'
@@ -369,9 +398,10 @@ function buildProductPage(report: SettlementReportModel): SettlementReportPdfPro
 
   return {
     key: 'product_performance',
+    mode: report.reading ? 'facts' : undefined,
     pageNumber: 4,
     title: '商品表現',
-    purpose: '只在商品明細足夠時呈現商品層級決策。',
+    purpose: report.reading ? '回顧有商品明細的已記錄銷量，金額範圍見下方說明。' : '只在商品明細足夠時呈現商品層級決策。',
     rows,
     omittedRowCount: Math.max(0, report.productRows.length - PRODUCT_ROW_LIMIT),
     dataNeededMessage,
@@ -379,6 +409,19 @@ function buildProductPage(report: SettlementReportModel): SettlementReportPdfPro
 }
 
 function buildCostProfitPage(report: SettlementReportModel): SettlementReportPdfCostProfitPage {
+  if (report.reading) return {
+    key:'cost_profit_actions',pageNumber:5,mode:'facts',title:'成本與紀錄回顧',purpose:'依活動日期分攤固定費用，保證金不列為費用。',
+    metrics:[{label:'每日紀錄中的商品成本',value:formatMoney(report.money.productCost)},
+      {label:'本期分攤固定費用',value:formatMoney(report.money.fixedMarketCost)},
+      {label:'營收抽成',value:formatMoney(report.money.commissionFee)},
+      {label:'待補收入場次另有分攤費用',value:formatMoney(report.reading.unrecordedFixedCost)},
+      {label:'估計淨利',value:report.reading.estimatedProfit === null ? '待確認' : formatMoney(report.reading.estimatedProfit)},
+      ...(report.reading.estimatedProfit === null && report.reading.confirmedProfit
+        ? [{label:`已確認 ${report.reading.confirmedProfit.count} 場淨利小計（非全期）`,value:formatMoney(report.reading.confirmedProfit.amount)}] : [])],
+    costCoverageLabel:`${report.reading.costRecordedCount} 場有紀錄`,profitReliabilityLabel:report.reading.estimatedProfit === null ? '待確認' : '依已填費用估算',
+    actionGroups:[{title:'本期值得注意',actions:report.reading.highlights.slice(1,4)},
+      {title:'費用口徑',actions:['固定費用按活動日期逐日均攤，優先使用選取日期；舊資料使用起訖日期，尾差歸較早日期。','取消／延期場次與費用未納入；未填費用不視為免費，尚無收入紀錄的場次費用另列，取消支出需另核對。']}].filter(group=>group.actions.length > 0),
+  };
   const profitAnalysis = report.decision.analysisAvailability.profitAnalysis;
 
   return {
@@ -428,7 +471,7 @@ export function buildSettlementReportPdfViewModel({
     meta: {
       brandName: report.brandName,
       reportTypeLabel: reportType,
-      periodLabel: report.period.label,
+      periodLabel: report.reading ? `${report.period.label} · 截至 ${report.reading.asOfDate}` : report.period.label,
       fileNameBase: normalizeFileNamePart(`${report.brandName}-${report.period.label}-${reportType}`),
     },
     pages: [

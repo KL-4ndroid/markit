@@ -66,6 +66,11 @@ tsx tests/settlement-report-model.test.ts
 tsx tests/settlement-report-preview-spec.test.ts
 tsx tests/settlement-report-preview-model.test.ts
 tsx tests/settlement-report-preview-ui.test.ts
+tsx tests/settlement-report-navigation.test.ts
+tsx tests/settlement-report-reader.test.tsx
+tsx tests/settlement-report-reading.test.ts
+tsx tests/financial-record-quality.test.ts
+tsx tests/financial-reviews.test.ts
 tsx tests/settlement-report-subscription-access.test.ts
 tsx tests/settlement-report-pdf-visual-spec.test.ts
 tsx tests/settlement-report-pdf-technical-plan.test.ts

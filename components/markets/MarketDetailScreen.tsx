@@ -38,7 +38,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { useMarket, updateMarket, updateMarketStatus, startMarket, endMarket, useMarketStatsFromProjection } from '@/lib/db/hooks';
-import { initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
+import { db, initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
 import {
   getActiveDealEventsForMarket,
@@ -72,6 +72,14 @@ import { marketJournalsEnabled } from '@/lib/markets/market-journal';
 import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceDetailTabs';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
 import { calculateEstimatedMarketNetProfit, calculateTrackedMarketFixedCost } from '@/lib/analytics/market-financial-summary';
+import { MarketFinancialRecordNotice } from './MarketFinancialRecordNotice';
+import { FinancialReviewPanel } from './FinancialReviewPanel';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { getLocalDateString } from '@/lib/time-utils';
+import { useFinancialReviews } from '@/hooks/useFinancialReviews';
+import { applyFinancialReviews,financialReviewsEnabled } from '@/lib/markets/financial-reviews';
+import { buildReadableSettlementReport } from '@/lib/reporting/settlement-report-reading';
+import { deriveRoleCapabilities as deriveFinancialOwnerCapabilities } from '@/lib/permissions/role-capabilities';
 import { ContextHelp } from '@/components/ui/ContextHelp';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import { MarketLiveLayout } from '@/components/markets/MarketLiveLayout';
@@ -278,6 +286,11 @@ export function MarketDetailScreen() {
   const candidateMarket = selectMarketDetailRecord(supabaseMarket, effectiveLocalMarket);
   const cacheAccessDenied = Boolean(candidateMarket && !canReadCachedEntity(candidateMarket, user?.id, userRole));
   const market = cacheAccessDenied ? undefined : candidateMarket;
+  const canReviewFinance=Boolean(financialReviewsEnabled() && !isStaff && !isRoleLoading && canRecord && user?.id && market?.owner_id===user.id && market.access_type!=='staff');
+  const rawFinancialStats=useLiveQuery(async()=>canReviewFinance && market?.id ? db.dailyStats.where('marketId').equals(market.id).toArray():[],[canReviewFinance,market?.id]);
+  const finance=useFinancialReviews(user?.id ?? '',market?.id?[market.id]:[],canReviewFinance);
+  const financialOverlay=useMemo(()=>finance.enabled && market ? applyFinancialReviews([market],rawFinancialStats ?? [],finance.snapshots,finance.blocked):null,[finance.enabled,market,rawFinancialStats,finance.snapshots,finance.blocked]);
+  const ownerFinancialReading=useMemo(()=>financialOverlay && market ? buildReadableSettlementReport({capabilities:deriveFinancialOwnerCapabilities({isOwner:true,staffRole:null}),markets:[market],dailyStats:financialOverlay.stats,financialConfirmations:financialOverlay.confirmations,generatedAtDate:getLocalDateString(),period:{kind:'monthly',startDate:market.startDate,endDate:market.endDate,label:'整場'}}).reading:null,[financialOverlay,market]);
   const salesPhotoEvidenceRequired = Boolean(
     canAnalyze && (market as SalesPhotoEvidenceMarket | undefined)?.salesPhotoEvidenceRequired
   );
@@ -681,7 +694,7 @@ export function MarketDetailScreen() {
   }, [market, marketId, dbStatus]);
 
   const [ownerWorkspaceView, setOwnerWorkspaceView] = useState<OwnerMarketWorkspaceView | null>(null);
-  const [ownerOverviewDetail, setOwnerOverviewDetail] = useState<OwnerOverviewDetail>(requestedTask === 'journal' && marketJournalsEnabled() ? 'journal' : 'performance');
+  const [ownerOverviewDetail, setOwnerOverviewDetail] = useState<OwnerOverviewDetail>(requestedTask === 'costs' ? 'costs' : requestedTask === 'journal' && marketJournalsEnabled() ? 'journal' : 'performance');
   const [isUpdatingOperationSession, setIsUpdatingOperationSession] = useState(false);
   const operatingSession = useMarketOperatingSession(market);
   const operatingPhase = operatingSession?.workspacePhase ?? 'not-started';
@@ -702,7 +715,7 @@ export function MarketDetailScreen() {
 
   useEffect(() => {
     if (!isOperatingPhaseReady || ownerWorkspaceView !== null) return;
-    setOwnerWorkspaceView(requestedTask === 'products' ? 'live' : requestedTask === 'journal' ? 'overview' : requestedTask === 'registration'
+    setOwnerWorkspaceView(requestedTask === 'products' ? 'live' : ['journal','performance','costs'].includes(requestedTask ?? '') ? 'overview' : requestedTask === 'registration'
       ? 'manage'
       : getDefaultOwnerMarketWorkspaceView(marketWorkspacePhase));
   }, [isOperatingPhaseReady, marketWorkspacePhase, ownerWorkspaceView, requestedTask]);
@@ -1383,7 +1396,7 @@ export function MarketDetailScreen() {
                   { label: '總收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
                   {
                     label: '估計淨利',
-                    value: formatCurrency(calculateEstimatedMarketNetProfit(market)),
+                    value: finance.enabled ? finance.loading || rawFinancialStats===undefined ? '讀取中' : ownerFinancialReading?.estimatedProfit == null ? '待確認' : formatCurrency(ownerFinancialReading.estimatedProfit) : formatCurrency(calculateEstimatedMarketNetProfit(market)),
                   },
                   { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
                 ]
@@ -1417,6 +1430,9 @@ export function MarketDetailScreen() {
             <p>未記錄銷售利潤時，暫以營收估算。未填成本不代表沒有支出；交通、人工等未記錄費用不會自動計入。可退保證金不列成本，現金盤點也不會改變淨利。</p>
           </ContextHelp>}
         </MarketWorkspaceSummary>
+        {resolvedOwnerWorkspaceView === 'overview' && canRecord && !isStaff && !isRoleLoading && user?.id && (finance.enabled
+          ? <FinancialReviewPanel market={market} rawStats={rawFinancialStats ?? []} finance={finance} initialDate={searchParams.get('reportDate') ?? undefined} />
+          : <MarketFinancialRecordNotice market={market} ownerId={user.id} />)}
 
         {/* Registration is a current record, not proof of completed prior steps. */}
         {resolvedOwnerWorkspaceView === 'manage' && !isOperating && market.sessionOrigin !== 'schedule' && (
@@ -1648,6 +1664,8 @@ export function MarketDetailScreen() {
         <>
           <DailyRevenueStats
             market={market}
+            reviewedStats={financialOverlay?.stats}
+            focusDate={searchParams.get('reportDate') ?? undefined}
             dealRecordCountByDate={dealRecordCountByDate}
             onAddRevenue={handleOpenAddRevenue}
             onDateClick={handleDateClick}

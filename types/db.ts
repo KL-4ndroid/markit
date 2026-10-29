@@ -418,6 +418,10 @@ export interface DealClosedPayload {
  * 用於快速查詢每日數據
  */
 export interface DailyStats {
+  /** Read-only financial-review overlay; never persisted into the event projection. */
+  financialReviewPending?: boolean;
+  /** Read overlay only: an authoritative zero-income review, never a synthetic sale. */
+  financialZeroIncomeConfirmed?: boolean;
   id?: number;                 // 自動遞增 ID（Dexie 生成）
   date: string;                // 日期（YYYY-MM-DD）
   marketId?: string;           // 關聯的市集 ID（改為 UUID）

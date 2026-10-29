@@ -6,13 +6,11 @@ type TestFn = () => void;
 
 const tests: Array<{ name: string; fn: TestFn }> = [];
 const projectRoot = join(__dirname, '..');
-const pageSource = readFileSync(join(projectRoot, 'app/reports/settlement/page.tsx'), 'utf8');
+const pageSource = readFileSync(join(projectRoot, 'components/reports/settlement/SettlementReportScreen.tsx'), 'utf8');
+const readerSource = readFileSync(join(projectRoot, 'components/reports/settlement/SettlementReportReader.tsx'), 'utf8');
+const routeSource = readFileSync(join(projectRoot, 'app/reports/settlement/page.tsx'), 'utf8');
 const analyticsPageSource = readFileSync(join(projectRoot, 'app/analytics/page.tsx'), 'utf8');
 const previewSpecSource = readFileSync(join(projectRoot, 'docs/SETTLEMENT_REPORT_PREVIEW_SPEC_2026_06_30.md'), 'utf8');
-const presentationPlanSource = readFileSync(join(projectRoot, 'docs/SETTLEMENT_REPORT_PRESENTATION_PLAN_2026_07_01.md'), 'utf8');
-const packageJson = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf8')) as {
-  scripts: Record<string, string>;
-};
 const testManifestSource = readFileSync(join(projectRoot, 'scripts/test-files.txt'), 'utf8');
 const pageImports = pageSource.match(/^import[\s\S]*?;$/gm)?.join('\n') ?? '';
 
@@ -24,34 +22,26 @@ console.log('\n=== Settlement report preview UI ===');
 
 runTest('owner-only preview route exists and uses approved model boundaries', () => {
   assert.match(previewSpecSource, /Slice C: Formal Owner-Only Preview UI[\s\S]*Status: completed/);
-  assert.match(pageSource, /buildSettlementReportModel/);
+  assert.match(pageSource, /buildReadableSettlementReport/);
   assert.match(pageSource, /buildSettlementReportPreviewModel/);
   assert.match(pageSource, /deriveRoleCapabilities/);
   assert.match(pageSource, /hasCapability\(capabilities, 'canImportExport'\)/);
   assert.match(pageSource, /hasCapability\(capabilities, 'canViewOwnerFinance'\)/);
 });
 
-runTest('formal preview UI exposes report-quality sections for owner decision making', () => {
-  assert.match(pageSource, /recommendationLabel\(preview\.executiveSummary\.recommendation\)/);
-  assert.match(pageSource, /preview\.topWarnings/);
-  assert.match(pageSource, /preview\.reliability\.limitations/);
-  assert.match(pageSource, /report\.decision\.scoreComponents/);
-  assert.match(pageSource, /report\.marketDecisions/);
-  assert.match(pageSource, /report\.productRows/);
-  assert.match(pageSource, /preview\.nextActions/);
-  assert.match(pageSource, /preview\.header\.showFormalScores/);
-  assert.match(pageSource, /低可信度初稿/);
-  assert.match(pageSource, /preview\.nextActions\.slice\(0, 3\)/);
-  assert.match(pageSource, /查看完整建議/);
+runTest('factual reader keeps per-metric reliability and actionable record issues', () => {
+  for (const pattern of [/reading\.estimatedProfit/, /reading\.issues/, /report\.productRows/,
+    /reading\.revenueUsable/, /reading\.highlights/, /依目前商品成本估算，非成交當時成本/]) {
+    assert.match(readerSource, pattern);
+  }
+  assert.doesNotMatch(readerSource,/report\.decision\.scoreComponents|report\.marketDecisions|preview\.header\.showFormalScores/);
 });
 
-runTest('preview UI is positioned as an in-app report check workspace', () => {
-  assert.match(previewSpecSource, /in-app report check workspace/);
-  assert.match(previewSpecSource, /not the final report design/);
-  assert.match(previewSpecSource, /Slice E: Preview Repositioning/);
-  assert.match(presentationPlanSource, /Preview\/check workspace in the app/);
-  assert.match(presentationPlanSource, /The current preview page should not be treated as the final report design/);
-  assert.doesNotMatch(pageSource, /min-h-\[380px\].*bg-\[#26392F\]/s);
+runTest('independent route now renders a complete reader inside Suspense', () => {
+  assert.match(routeSource, /Suspense/);
+  assert.match(routeSource, /SettlementReportScreen/);
+  assert.match(pageSource, /<SettlementReportReader/);
+  assert.match(readerSource, /完整結算報告/);
 });
 
 runTest('preview UI reads only local IndexedDB data and does not write or sync', () => {
@@ -67,16 +57,12 @@ runTest('preview UI reads only local IndexedDB data and does not write or sync',
   );
 });
 
-runTest('preview UI separates decision tasks without changing report formulas', () => {
-  assert.match(pageSource, /type ReportTab = 'summary' \| 'markets' \| 'products' \| 'quality'/);
-  assert.match(pageSource, /label: '摘要'/);
-  assert.match(pageSource, /label: '市集'/);
-  assert.match(pageSource, /label: '商品與成本'/);
-  assert.match(pageSource, /label: '資料品質'/);
-  assert.match(pageSource, /activeTab === 'summary'/);
-  assert.match(pageSource, /activeTab === 'markets'/);
-  assert.match(pageSource, /activeTab === 'products'/);
-  assert.match(pageSource, /activeTab === 'quality'/);
+runTest('reader separates five chapters and adapts cards to comparison tables', () => {
+  for (const id of ['overview','markets','products','costs','quality']) assert.ok(readerSource.includes(`id="${id}"`));
+  assert.match(readerSource, /md:hidden/);
+  assert.match(readerSource, /hidden md:block/);
+  assert.match(readerSource, /<table/);
+  assert.match(pageSource, /readReportPeriod/);
   assert.match(pageSource, /isReportDataLoading/);
 });
 
@@ -86,7 +72,9 @@ runTest('preview UI connects approved PDF generation only through the paid capab
   assert.match(pageSource, /settlementView\.canBuildPdfViewModel/);
   assert.match(pageSource, /buildSettlementReportPdfViewModel/);
   assert.match(pageSource, /SettlementReportPdfPreviewButton/);
-  assert.match(pageSource, /Pro／Team 可將目前的週／月結算內容整理為五頁 A4 報告/);
+  assert.match(readerSource, /匯出 PDF（選用）/);
+  assert.match(readerSource, /<details><summary/);
+  assert.match(readerSource, /exportActions/);
   assert.doesNotMatch(pageSource, /Excel|CSV|download/);
   assert.doesNotMatch(pageSource, /<a\s+[^>]*download|download=/i);
 });
@@ -103,7 +91,8 @@ runTest('preview UI intersects owner permission with authoritative report capabi
 });
 
 runTest('analytics page exposes owner-only entry without changing bottom navigation', () => {
-  assert.match(analyticsPageSource, /router\.push\('\/reports\/settlement'\)/);
+  assert.match(analyticsPageSource, /href="\/reports\/settlement"/);
+  assert.match(analyticsPageSource, /查看完整報告/);
   assert.match(analyticsPageSource, /!\s*isStaff\s*&&\s*!\s*isRoleLoading\s*&&\s*!\s*roleError/);
 });
 

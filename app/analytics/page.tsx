@@ -3,6 +3,7 @@
 import { MarketFeeReviewNotice } from '@/components/markets/MarketFeeConflictNotice';
 
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
@@ -467,13 +468,9 @@ export default function AnalyticsPage() {
         action={(
           <div className="flex items-center gap-1">
             {!isStaff && !isRoleLoading && !roleError && (
-              <IconButton
-                label="開啟結算報告"
-                tooltip="結算報告"
-                tone="inverse"
-                icon={<FileText className="h-5 w-5" aria-hidden="true" />}
-                onClick={() => router.push('/reports/settlement')}
-              />
+              <Link href="/reports/settlement" className="inline-flex min-h-11 items-center gap-2 rounded-control bg-white/15 px-3 text-sm font-medium text-white transition hover:bg-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+                <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />查看完整報告
+              </Link>
             )}
             <IconButton
               label="重新整理分析"

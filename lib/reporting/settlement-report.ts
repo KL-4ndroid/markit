@@ -19,6 +19,7 @@ import {
 } from '@/lib/analytics/insight-quality';
 import { buildInsightQualityModel, type InsightQualityModel } from '@/lib/analytics/insight-quality-model';
 import type { DailyStats, Market, Product } from '@/types/db';
+import type { SettlementReportReading } from './settlement-report-reading';
 
 export type SettlementReportKind = 'weekly' | 'monthly';
 export type SettlementReportConfidence = InsightConfidence;
@@ -169,6 +170,7 @@ export type SettlementReportContent = {
 };
 
 export type SettlementReportModel = {
+  reading?: SettlementReportReading;
   brandName: string;
   period: SettlementReportPeriod;
   money: SettlementReportMoneySummary;
