@@ -76,7 +76,7 @@ export default function RecoveryPage() {
               返回資料與救援
             </Link>
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-soft-green text-info">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-soft-green text-foreground">
                 <Database size={22} />
               </div>
               <div className="min-w-0">

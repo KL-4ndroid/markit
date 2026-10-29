@@ -9,10 +9,10 @@ export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 export type ButtonSize = 'default' | 'compact';
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-white shadow-atelier-key hover:bg-primary/88 hover:shadow-atelier-lift focus-visible:ring-primary/35',
-  secondary: 'border border-primary/15 bg-atelier-paper text-foreground shadow-atelier hover:bg-soft-pink focus-visible:ring-primary/25',
-  danger: 'bg-danger text-white hover:bg-danger/85 focus-visible:ring-danger/30',
-  ghost: 'bg-transparent text-foreground hover:bg-muted/60 focus-visible:ring-primary/20',
+  primary: 'bg-primary text-white shadow-atelier-key hover:bg-primary-hover hover:shadow-atelier-lift',
+  secondary: 'border border-primary/15 bg-atelier-paper text-foreground shadow-atelier hover:bg-muted/50',
+  danger: 'bg-danger-action text-white hover:bg-danger-hover',
+  ghost: 'bg-transparent text-foreground hover:bg-muted/60',
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
@@ -49,7 +49,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={isLoading || undefined}
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-control font-medium transition-[color,background-color,box-shadow,transform] active:translate-y-px',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-card',
         'disabled:cursor-not-allowed disabled:opacity-50',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],

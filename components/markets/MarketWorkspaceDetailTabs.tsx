@@ -66,8 +66,8 @@ export function MarketWorkspaceDetailTabs<T extends string>({
               onKeyDown={(event) => handleKeyDown(event, index)}
               className={`${items.length > 4 ? (items.length === 5 && index > 2 ? 'col-span-3 lg:col-span-1' : 'col-span-2 lg:col-span-1') : ''} relative flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-control px-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:gap-1.5 sm:px-3 sm:text-sm ${
                 isActive
-                  ? 'bg-atelier-apricot-soft text-atelier-clay'
-                  : 'bg-atelier-paper/70 text-atelier-muted hover:bg-atelier-sage-soft hover:text-atelier-ink'
+                  ? 'bg-primary/10 font-semibold text-foreground ring-1 ring-inset ring-primary'
+                  : 'bg-atelier-paper/70 text-atelier-muted hover:bg-muted/50 hover:text-atelier-ink'
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />

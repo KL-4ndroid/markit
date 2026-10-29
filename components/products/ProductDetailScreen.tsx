@@ -207,12 +207,12 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
             <button
               onClick={() => router.push(productListHref)}
               aria-label={productBackLabel}
-              className="mb-4 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              className="mb-4 flex min-h-11 items-center gap-2 rounded-control px-2 text-white transition-colors hover:bg-primary-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>{reportReturn ? productBackLabel : '返回'}</span>
             </button>
-            <h1 className="text-2xl font-medium text-white opacity-90">
+            <h1 className="text-2xl font-medium text-white">
               資料庫異常
             </h1>
           </div>
@@ -261,12 +261,12 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
             <button
               onClick={() => router.push(productListHref)}
               aria-label={productBackLabel}
-              className="mb-4 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              className="mb-4 flex min-h-11 items-center gap-2 rounded-control px-2 text-white transition-colors hover:bg-primary-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>{reportReturn ? productBackLabel : '返回'}</span>
             </button>
-            <h1 className="text-2xl font-medium text-white opacity-90">
+            <h1 className="text-2xl font-medium text-white">
               找不到商品
             </h1>
           </div>
@@ -305,11 +305,11 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
       {/* Header */}
       <div className="japanese-gradient-header rounded-b-[2rem] px-6 pb-8 pt-12">
         <div className="max-w-lg mx-auto">
-          {marketReturn && <Link href={marketReturn.href} className="inline-flex min-h-11 items-center rounded-control bg-white/15 px-3 text-sm text-white">{marketReturn.label}</Link>}
+          {marketReturn && <Link href={marketReturn.href} className="inline-flex min-h-11 items-center rounded-control bg-transparent px-3 text-sm text-white">{marketReturn.label}</Link>}
           <button
             onClick={() => router.push(productListHref)}
             aria-label={productBackLabel}
-            className="mb-3 flex min-h-11 items-center gap-2 rounded-control px-2 text-white/85 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            className="mb-3 flex min-h-11 items-center gap-2 rounded-control px-2 text-white transition-colors hover:bg-primary-hover hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>{reportReturn ? productBackLabel : '返回'}</span>
@@ -318,7 +318,7 @@ export function ProductDetailScreen({ productId }: ProductDetailScreenProps) {
             <h1 className="min-w-0 flex-1 break-words text-2xl font-medium text-white">
               {product.name}
             </h1>
-            <span className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-xs text-white backdrop-blur-sm">
+            <span className="shrink-0 rounded-full bg-transparent px-3 py-1 text-xs text-white backdrop-blur-sm">
               {categoryStyle.text}
             </span>
           </div>

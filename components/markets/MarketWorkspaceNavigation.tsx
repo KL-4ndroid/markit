@@ -68,7 +68,7 @@ export function MarketWorkspaceNavigation<T extends string>({
               className={`relative flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-control px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                 isActive
                   ? 'bg-primary text-white shadow-sm'
-                  : 'text-atelier-muted hover:bg-atelier-sage-soft hover:text-atelier-ink'
+                  : 'text-atelier-muted hover:bg-muted/50 hover:text-atelier-ink'
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -76,7 +76,7 @@ export function MarketWorkspaceNavigation<T extends string>({
               {typeof item.badge === 'number' && item.badge > 0 && (
                 <span
                   className={`inline-flex min-w-5 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-1.5 py-0.5 text-[11px] leading-none ${
-                    isActive ? 'bg-atelier-paper text-primary' : 'bg-atelier-rose text-white'
+                    isActive ? 'bg-atelier-paper text-primary' : 'bg-status-warn-bg text-status-warn-text'
                   }`}
                   aria-label={`${item.badgeLabel ?? '待處理'} ${item.badge} 筆`}
                 >

@@ -45,14 +45,13 @@ export function FullScreenForm({
             className={`flex h-[100dvh] w-full flex-col overflow-hidden bg-atelier-canvas shadow-atelier-lift sm:h-auto sm:max-h-[92dvh] sm:rounded-dialog sm:border sm:border-primary/10 ${desktopWidth === 'workspace' ? 'sm:max-w-4xl' : 'sm:max-w-3xl'}`}
           >
             <header className="japanese-gradient-header relative flex shrink-0 items-start justify-between gap-4 overflow-hidden rounded-b-[2rem] border-b border-white/15 px-5 pb-6 pt-[calc(1.25rem+env(safe-area-inset-top))] text-white sm:rounded-b-none sm:px-6 sm:pb-5 sm:pt-5">
-              <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/10" aria-hidden="true" />
               <div className="relative min-w-0">
                 {eyebrow && (
-                  <p className="mb-1 text-xs font-medium tracking-[0.12em] text-white/75">{eyebrow}</p>
+                  <p className="mb-1 text-xs font-medium tracking-[0.12em] text-white">{eyebrow}</p>
                 )}
                 <DialogTitle className="text-xl font-semibold text-white sm:text-2xl">{title}</DialogTitle>
                 {description && (
-                  <p id={descriptionId} className="mt-1 max-w-xl text-sm leading-6 text-white/80">
+                  <p id={descriptionId} className="mt-1 max-w-xl text-sm leading-6 text-white">
                     {description}
                   </p>
                 )}

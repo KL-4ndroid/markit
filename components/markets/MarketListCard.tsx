@@ -10,16 +10,17 @@ import {
   type MarketListViewItem,
 } from '@/lib/markets/market-list-view-model';
 import { formatClockTime, formatClockTimeRange, formatCurrency } from '@/lib/presentation/formatters';
+import { marketPaymentReminderClasses } from '@/lib/presentation/market-payment-reminder';
 
 function statusClasses(item: MarketListViewItem): string {
   if (item.stage === 'active') return 'bg-status-good-bg text-status-good-text ring-status-good-border';
   if (item.stage === 'cancelled') return 'bg-status-danger-bg text-status-danger-text ring-status-danger-border';
   if (item.stage !== 'preparing') return 'bg-muted text-muted-foreground ring-primary/10';
-  if (item.market.sessionOrigin === 'schedule') return 'bg-atelier-blue-soft text-atelier-blue ring-primary/15';
+  if (item.market.sessionOrigin === 'schedule') return 'bg-muted/55 text-foreground ring-atelier-line';
   if (item.market.status === 'accepted') return 'bg-status-warn-bg text-status-warn-text ring-status-warn-border';
   if (item.market.status === 'paid' || item.market.status === 'ongoing') return 'bg-status-good-bg text-status-good-text ring-status-good-border';
   if (item.market.status === 'postponed') return 'bg-status-danger-bg text-status-danger-text ring-status-danger-border';
-  return 'bg-atelier-blue-soft text-atelier-blue ring-primary/15';
+  return 'bg-muted/55 text-foreground ring-atelier-line';
 }
 
 function equipmentStatusLabel(equipment: MarketEquipmentSummaryItem): string {
@@ -82,7 +83,7 @@ export function MarketListCard({ item, isStaff, contextLabel, isOpening = false,
                     {item.statusLabel}
                   </span>
                   {contextLabel ? (
-                    <span className="inline-flex rounded-full bg-atelier-blue-soft px-2.5 py-1 text-xs font-medium text-atelier-blue">
+                    <span className="inline-flex rounded-full bg-muted/55 px-2.5 py-1 text-xs font-medium text-foreground">
                       {contextLabel}
                     </span>
                   ) : null}
@@ -107,7 +108,7 @@ export function MarketListCard({ item, isStaff, contextLabel, isOpening = false,
                     tooltip="查看主辦／場地備註"
                     icon={<StickyNote className="h-5 w-5" aria-hidden="true" />}
                     onClick={() => setIsNotesOpen(true)}
-                    className="-mr-2 -mt-2 bg-soft-yellow/70 text-secondary hover:bg-soft-yellow"
+                    className="-mr-2 -mt-2 bg-muted/45 text-muted-foreground hover:bg-muted/70"
                   />
                 ) : null}
               </div>
@@ -132,7 +133,7 @@ export function MarketListCard({ item, isStaff, contextLabel, isOpening = false,
           {preparation ? (
             <div className="mt-4 space-y-2.5 border-t border-primary/10 pt-3 text-sm">
               {!isStaff && item.paymentReminder ? (
-                <p className={`rounded-control px-3 py-2 text-xs leading-5 ${item.paymentReminder.kind === 'overdue' ? 'bg-status-danger-bg text-status-danger-text' : 'bg-muted text-foreground'}`}>
+                <p className={`rounded-control border px-3 py-2 text-xs leading-5 ${marketPaymentReminderClasses(item.paymentReminder.kind)}`}>
                   <span className="font-semibold">{item.paymentReminder.label}</span>
                   {item.paymentReminder.deadlineLabel ? <span className="mt-1 block">{item.paymentReminder.deadlineLabel}</span> : null}
                 </p>
@@ -165,7 +166,7 @@ export function MarketListCard({ item, isStaff, contextLabel, isOpening = false,
                 {(canRecord ? preparation.equipment : []).map(equipment => (
                   <span
                     key={equipment.id}
-                    className="rounded-full border border-primary/10 bg-atelier-blue-soft/55 px-2.5 py-1 text-xs font-medium text-foreground"
+                    className="rounded-full border border-atelier-line bg-muted/35 px-2.5 py-1 text-xs font-medium text-foreground"
                   >
                     {equipment.label} {equipmentStatusLabel(equipment)}
                   </span>
@@ -177,19 +178,19 @@ export function MarketListCard({ item, isStaff, contextLabel, isOpening = false,
           {completion && hasVisibleCompletion ? (
             <div className="mt-4 flex flex-wrap gap-2 border-t border-primary/10 pt-3 text-sm">
               {!isStaff && completion.totalRevenue !== null ? (
-                <span className="rounded-full border border-primary/10 bg-atelier-blue-soft/55 px-3 py-1.5 font-medium text-foreground">
+                <span className="rounded-full border border-atelier-line bg-muted/35 px-3 py-1.5 font-medium text-foreground">
                   營收 {formatCurrency(completion.totalRevenue)}
                 </span>
               ) : null}
               {!isStaff && completion.estimatedNetProfit !== null ? (
                 <span className={`rounded-full border px-3 py-1.5 font-medium ${completion.estimatedNetProfit >= 0
-                  ? 'border-status-good-border bg-status-good-bg text-status-good-text'
+                  ? 'border-atelier-line bg-muted/35 text-foreground'
                   : 'border-status-danger-border bg-status-danger-bg text-status-danger-text'}`}>
                   估計淨利 {formatCurrency(completion.estimatedNetProfit)}
                 </span>
               ) : null}
               {completion.totalDeals !== null ? (
-                <span className="rounded-full border border-primary/10 bg-muted/55 px-3 py-1.5 font-medium text-foreground">
+                <span className="rounded-full border border-atelier-line bg-muted/35 px-3 py-1.5 font-medium text-foreground">
                   成交 {completion.totalDeals} 筆
                 </span>
               ) : null}

@@ -64,7 +64,7 @@ export function SalesPhotoEvidenceCapturePreviewDialog({
             <h2 id="sales-photo-evidence-preview-title" className="text-xl font-medium text-white">
               確認成交照片
             </h2>
-            <p className="mt-1 text-sm leading-relaxed text-white/80">
+            <p className="mt-1 text-sm leading-relaxed text-white">
               成交已完成。確認照片清楚後上傳，或重新拍攝與選擇照片。
             </p>
           </div>
@@ -72,7 +72,7 @@ export function SalesPhotoEvidenceCapturePreviewDialog({
             type="button"
             onClick={onClose}
             disabled={isUploading}
-            className="shrink-0 rounded-full bg-white/20 p-2 text-white transition-colors hover:bg-white/30 disabled:opacity-50"
+            className="shrink-0 rounded-full bg-transparent p-2 text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             aria-label="關閉照片預覽"
           >
             <X className="h-5 w-5" />
@@ -120,7 +120,7 @@ export function SalesPhotoEvidenceCapturePreviewDialog({
             type="button"
             onClick={onUpload}
             disabled={isUploading}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
             {isUploading ? '同步並上傳中' : '確認並上傳照片'}

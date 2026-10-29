@@ -8,6 +8,9 @@ import {
   DEFAULT_THEME_PALETTE,
   getContrastRatio,
   getThemeContrastChecks,
+  getThemeInteractionChecks,
+  getThemeInteractionColors,
+  blendThemeColors,
   isThemePaletteAccessible,
   normalizeHex,
   parseThemeLabImport,
@@ -48,7 +51,29 @@ for (const presetId of ['honey-milk-tea', 'hydrangea-rain', 'forest-market', 'se
 for (const preset of BUILT_IN_THEME_PRESETS) {
   assert.equal(isThemePaletteAccessible(preset.palette), true, `${preset.id} must pass core AA checks`);
   assert.ok(getThemeContrastChecks(preset.palette).every((check) => check.ratio >= check.minimum));
+  for (const check of getThemeInteractionChecks(preset.palette)) {
+    assert.ok(check.passes, `${preset.id}: ${check.id} ${check.ratio} must meet ${check.minimum}`);
+  }
+  // Sample the full opaque header gradient, including its middle, not only endpoints.
+  const rendered = getThemeInteractionColors(preset.palette);
+  for (let step = 0; step <= 100; step++) {
+    const background = blendThemeColors(rendered.headerPrimary, rendered.headerSecondary, step / 100);
+    assert.ok(getContrastRatio('#FFFFFF', background) >= 4.5, `${preset.id} header at ${step}%`);
+  }
+  const tintedCard = '#' + [1,3,5].map(start => Math.round(
+    parseInt(preset.palette.primary.slice(start,start+2),16)*0.1
+    + parseInt(preset.palette.card.slice(start,start+2),16)*0.9,
+  ).toString(16).padStart(2,'0')).join('');
+  assert.ok(getContrastRatio(preset.palette.foreground,tintedCard) >= 4.5, `${preset.id} selected text stays readable on the primary tint`);
+  assert.ok(getContrastRatio(preset.palette.primary,tintedCard) >= 3, `${preset.id} selected boundary remains distinguishable`);
 }
+// Formerly safe danger text on a dark custom card does not imply safe white action text.
+const darkCardTheme = { ...DEFAULT_THEME_PALETTE, card: '#111111', danger: '#FFCCCC' };
+const customActions = getThemeInteractionColors(darkCardTheme);
+assert.ok(getContrastRatio('#FFFFFF', customActions.dangerAction) >= 4.5);
+assert.ok(getContrastRatio('#FFFFFF', customActions.dangerHover) >= 4.5);
+assert.equal(darkCardTheme.danger, '#FFCCCC', 'derived interaction colors do not overwrite a stored palette');
+assert.ok(getThemeInteractionChecks(darkCardTheme).some(check => !check.passes), 'unsafe custom contexts are reported');
 assert.equal(
   isThemePaletteAccessible({ ...DEFAULT_THEME_PALETTE, primary: '#F5F5F5' }),
   false,
@@ -101,9 +126,10 @@ assert.match(themeModel, /style\.setProperty/);
 assert.match(themeModel, /!isThemePaletteAccessible\(palette\)/);
 assert.match(themeModel, /!isThemePaletteAccessible\(state\.palette\)/);
 assert.match(home, /TodayMarketCard/);
-assert.match(todayMarketCard, /bg-home-ended-card/);
-assert.match(home, /bg-upcoming-section/);
-assert.match(home, /bg-upcoming-date-badge/);
+// These optional surfaces were retired by the neutral UI palette refinement.
+// Existing palette values still round-trip above; UI no longer advertises unused controls.
+assert.doesNotMatch(todayMarketCard, /bg-home-ended-card/);
+assert.doesNotMatch(home, /bg-upcoming-section|bg-upcoming-date-badge/);
 assert.match(tailwind, /'home-ended-card'/);
 assert.match(tailwind, /'upcoming-section'/);
 assert.match(tailwind, /'upcoming-date-badge'/);

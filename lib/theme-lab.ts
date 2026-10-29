@@ -30,6 +30,8 @@ export interface ThemeTokenDefinition {
   cssVariable: `--brand-${string}`;
   description: string;
   group: 'foundation' | 'soft' | 'status';
+  /** Retain older exported palettes without offering controls for retired surfaces. */
+  editable?: boolean;
 }
 
 export interface ThemePreset {
@@ -55,7 +57,7 @@ export interface ThemeLabExport {
 }
 
 export interface ThemeContrastCheck {
-  id: 'body' | 'muted' | 'primaryAction' | 'secondaryHero' | 'danger';
+  id: string;
   label: string;
   foreground: string;
   background: string;
@@ -65,8 +67,8 @@ export interface ThemeContrastCheck {
 }
 
 export const THEME_TOKEN_DEFINITIONS: readonly ThemeTokenDefinition[] = [
-  { key: 'primary', label: '霧藍主色', cssVariable: '--brand-primary', description: '頁首、主要按鈕與焦點', group: 'foundation' },
-  { key: 'secondary', label: '暖木輔色', cssVariable: '--brand-secondary', description: '漸層、標記與溫暖點綴', group: 'foundation' },
+  { key: 'primary', label: '品牌主色', cssVariable: '--brand-primary', description: '主要按鈕、選中狀態與焦點', group: 'foundation' },
+  { key: 'secondary', label: '品牌輔色', cssVariable: '--brand-secondary', description: '頁首漸層與少量品牌點綴', group: 'foundation' },
   { key: 'background', label: '米白背景', cssVariable: '--brand-background', description: 'App 整體畫布', group: 'foundation' },
   { key: 'card', label: '卡片底色', cssVariable: '--brand-card', description: '卡片、輸入框與浮層', group: 'foundation' },
   { key: 'foreground', label: '主要文字', cssVariable: '--brand-foreground', description: '標題與正文', group: 'foundation' },
@@ -74,9 +76,9 @@ export const THEME_TOKEN_DEFINITIONS: readonly ThemeTokenDefinition[] = [
   { key: 'softPink', label: '柔粉', cssVariable: '--brand-soft-pink', description: '溫柔提示與分類底色', group: 'soft' },
   { key: 'softGreen', label: '柔綠', cssVariable: '--brand-soft-green', description: '區塊底色與自然感', group: 'soft' },
   { key: 'softYellow', label: '柔黃', cssVariable: '--brand-soft-yellow', description: '暖光背景與提醒底色', group: 'soft' },
-  { key: 'homeEndedCard', label: '收班卡片底色', cssVariable: '--brand-home-ended-card', description: '首頁「今日已收班」整張卡片', group: 'soft' },
-  { key: 'upcomingSection', label: '近期市集區塊底色', cssVariable: '--brand-upcoming-section', description: '首頁「近期市集」整個橫向區塊', group: 'soft' },
-  { key: 'upcomingDateBadge', label: '近期日期標籤底色', cssVariable: '--brand-upcoming-date-badge', description: '近期市集內的日期標籤，例如 7/23（週四）', group: 'soft' },
+  { key: 'homeEndedCard', label: '收班卡片底色', cssVariable: '--brand-home-ended-card', description: '首頁「今日已收班」整張卡片', group: 'soft', editable: false },
+  { key: 'upcomingSection', label: '近期市集區塊底色', cssVariable: '--brand-upcoming-section', description: '首頁「近期市集」整個橫向區塊', group: 'soft', editable: false },
+  { key: 'upcomingDateBadge', label: '近期日期標籤底色', cssVariable: '--brand-upcoming-date-badge', description: '近期市集內的日期標籤，例如 7/23（週四）', group: 'soft', editable: false },
   { key: 'danger', label: '危險色', cssVariable: '--brand-danger', description: '刪除、錯誤與重要警示', group: 'status' },
   { key: 'warn', label: '提醒色', cssVariable: '--brand-warn', description: '待處理與注意狀態', group: 'status' },
   { key: 'info', label: '資訊色', cssVariable: '--brand-info', description: '一般資訊與次要狀態', group: 'status' },
@@ -278,6 +280,11 @@ const LAB_MANAGED_CSS_VARIABLES = [
   '--atelier-shadow',
   '--atelier-key-shadow',
   '--atelier-lift-shadow',
+  '--brand-primary-hover',
+  '--brand-danger-action',
+  '--brand-danger-hover',
+  '--brand-header-primary',
+  '--brand-header-secondary',
 ];
 
 const BACKWARD_COMPATIBLE_THEME_KEYS: readonly ThemeTokenKey[] = [
@@ -399,6 +406,12 @@ export function applyThemePalette(palette: ThemePalette): void {
   }
 
   const primary = rgbTriplet(palette.primary);
+  const interactions = getThemeInteractionColors(palette);
+  root.style.setProperty('--brand-primary-hover', rgbTriplet(interactions.primaryHover)!);
+  root.style.setProperty('--brand-danger-action', rgbTriplet(interactions.dangerAction)!);
+  root.style.setProperty('--brand-danger-hover', rgbTriplet(interactions.dangerHover)!);
+  root.style.setProperty('--brand-header-primary', rgbTriplet(interactions.headerPrimary)!);
+  root.style.setProperty('--brand-header-secondary', rgbTriplet(interactions.headerSecondary)!);
   if (primary) {
     root.style.setProperty('--atelier-shadow', `0 10px 28px rgb(${primary} / 0.10)`);
     root.style.setProperty('--atelier-key-shadow', `0 2px 0 rgb(${primary} / 0.10), 0 8px 18px rgb(${primary} / 0.10)`);
@@ -433,6 +446,49 @@ export function getContrastRatio(first: string, second: string): number {
   const lighter = Math.max(firstLuminance, secondLuminance);
   const darker = Math.min(firstLuminance, secondLuminance);
   return (lighter + 0.05) / (darker + 0.05);
+}
+
+/** Opaque action colors retain their contrast regardless of the surface below. */
+export function getThemeInteractionColors(palette: ThemePalette) {
+  const darker = (color: string) => rgbToHex(hexToRgb(color)!.map(channel => Math.floor(channel * 0.9)) as unknown as Rgb);
+  const dangerAction = rgbToHex(darkenUntilContrast(hexToRgb(palette.danger)!, WHITE));
+  return {
+    primaryHover: darker(palette.primary),
+    dangerAction,
+    dangerHover: darker(dangerAction),
+    // Margin for channel quantization along a rendered gradient.
+    headerPrimary: rgbToHex(darkenUntilContrast(hexToRgb(palette.primary)!, WHITE, 4.7)),
+    headerSecondary: rgbToHex(darkenUntilContrast(hexToRgb(palette.secondary)!, WHITE, 4.7)),
+  };
+}
+
+export function blendThemeColors(foreground: string, background: string, opacity: number): string {
+  const front = hexToRgb(foreground)!;
+  const back = hexToRgb(background)!;
+  return rgbToHex(front.map((channel, index) => channel * opacity + back[index] * (1 - opacity)) as unknown as Rgb);
+}
+
+/** Representative rendered states, separate from the compatible five-color save gate. */
+export function getThemeInteractionChecks(palette: ThemePalette): ThemeContrastCheck[] {
+  const colors = getThemeInteractionColors(palette);
+  const selected = blendThemeColors(palette.primary, palette.card, 0.1);
+  const definitions = [
+    { id: 'headerPrimary', label: '白字 / 頁首主色', foreground: WHITE, background: colors.headerPrimary, minimum: 4.5 },
+    { id: 'headerSecondary', label: '白字 / 頁首輔色', foreground: WHITE, background: colors.headerSecondary, minimum: 4.5 },
+    { id: 'primaryHover', label: '白字 / 主按鈕滑入', foreground: WHITE, background: colors.primaryHover, minimum: 4.5 },
+    { id: 'dangerAction', label: '白字 / 危險按鈕', foreground: WHITE, background: colors.dangerAction, minimum: 4.5 },
+    { id: 'dangerHover', label: '白字 / 危險按鈕滑入', foreground: WHITE, background: colors.dangerHover, minimum: 4.5 },
+    { id: 'cardText', label: '主要文字 / 卡片與頁首操作', foreground: palette.foreground, background: palette.card, minimum: 4.5 },
+    { id: 'focus', label: '焦點實線 / 卡片', foreground: palette.foreground, background: palette.card, minimum: 3 },
+    { id: 'selectedText', label: '選中文字 / 淡主色卡片', foreground: palette.foreground, background: selected, minimum: 4.5 },
+    { id: 'selectedOutline', label: '選中外框 / 淡主色卡片', foreground: palette.primary, background: selected, minimum: 3 },
+    { id: 'chartPrimary', label: '圖表柱形 / 卡片', foreground: palette.primary, background: palette.card, minimum: 3 },
+    { id: 'chartAverage', label: '平均虛線 / 卡片', foreground: palette.secondary, background: palette.card, minimum: 3 },
+  ];
+  return definitions.map(definition => {
+    const ratio = getContrastRatio(definition.foreground, definition.background);
+    return { ...definition, ratio, passes: ratio >= definition.minimum };
+  });
 }
 
 export function getThemeContrastChecks(palette: ThemePalette): ThemeContrastCheck[] {

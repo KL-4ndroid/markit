@@ -43,13 +43,6 @@ interface CartItem {
   quantity: number;
 }
 
-const PRODUCT_SURFACES = [
-  'bg-atelier-sage-soft',
-  'bg-atelier-apricot-soft',
-  'bg-atelier-blue-soft',
-  'bg-atelier-rose-soft',
-] as const;
-
 export function QuickTransactionGrid({
   marketId,
   marketReturnTo,
@@ -178,7 +171,7 @@ export function QuickTransactionGrid({
       {cart.size > 0 && <p className="mb-3 text-xs text-muted-foreground">離開管理商品後，本次商品需重新選取。</p>}
       {products && products.length > 0 ? (
         <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {products.map((product, productIndex) => {
+          {products.map((product) => {
             const quantity = product.id ? cart.get(product.id)?.quantity ?? 0 : 0;
             return (
               <button
@@ -186,10 +179,10 @@ export function QuickTransactionGrid({
                 type="button"
                 onClick={() => addToCart(product)}
                 disabled={isProcessing}
-                className={`relative min-h-28 rounded-control p-3 text-left shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm disabled:opacity-50 ${
+                className={`relative min-h-28 rounded-control border p-3 text-left shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 active:translate-y-0.5 active:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 disabled:opacity-50 ${
                   quantity > 0
-                    ? 'bg-atelier-sage-soft ring-2 ring-primary'
-                    : `${PRODUCT_SURFACES[productIndex % PRODUCT_SURFACES.length]} hover:brightness-[0.98]`
+                    ? 'border-primary bg-primary/10 ring-1 ring-inset ring-primary'
+                    : 'border-atelier-line bg-atelier-paper hover:bg-muted/50'
                 }`}
               >
                 {quantity > 0 && (
@@ -224,7 +217,7 @@ export function QuickTransactionGrid({
               type="button"
               onClick={() => setCart(new Map())}
               disabled={isProcessing}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-sm text-atelier-clay hover:bg-atelier-clay/10 disabled:opacity-50"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-control px-2 text-sm text-muted-foreground hover:bg-muted/50 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
               清空
@@ -245,7 +238,7 @@ export function QuickTransactionGrid({
                     type="button"
                     onClick={() => changeQuantity(item.product.id!, -1)}
                     disabled={isProcessing}
-                    className="flex h-11 w-11 items-center justify-center rounded-control bg-atelier-canvas text-atelier-ink transition-colors hover:bg-atelier-rose-soft disabled:opacity-50"
+                    className="flex h-11 w-11 items-center justify-center rounded-control bg-atelier-canvas text-atelier-ink transition-colors hover:bg-muted/50 disabled:opacity-50"
                     aria-label={`減少 ${item.product.name} 數量`}
                   >
                     <Minus className="h-4 w-4" />
@@ -257,7 +250,7 @@ export function QuickTransactionGrid({
                     type="button"
                     onClick={() => changeQuantity(item.product.id!, 1)}
                     disabled={isProcessing}
-                    className="flex h-11 w-11 items-center justify-center rounded-control bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
+                    className="flex h-11 w-11 items-center justify-center rounded-control bg-atelier-canvas text-atelier-ink hover:bg-muted/50 disabled:opacity-50"
                     aria-label={`增加 ${item.product.name} 數量`}
                   >
                     <Plus className="h-4 w-4" />
@@ -271,7 +264,7 @@ export function QuickTransactionGrid({
 
       <div className={`${presentation === 'sheet' ? 'mb-3' : 'mb-5'} relative flex items-center justify-between overflow-hidden rounded-card bg-deep px-4 py-4 text-white shadow-atelier`}>
         <span className="absolute inset-y-0 left-0 w-1.5 bg-atelier-clay" aria-hidden="true" />
-        <span className="text-sm font-medium text-white/75">交易總額</span>
+        <span className="text-sm font-medium text-white">交易總額</span>
         <span className="text-2xl font-semibold tabular-nums">NT${totalAmount.toLocaleString()}</span>
       </div>
 
@@ -285,7 +278,7 @@ export function QuickTransactionGrid({
         type="button"
         onClick={() => void handleCheckout()}
         disabled={isProcessing || cart.size === 0}
-        className={`${presentation === 'sheet' ? 'sticky bottom-0 z-10 mt-5 shadow-[0_-10px_24px_rgb(255_255_255_/_0.92)]' : 'mt-4'} inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100`}
+        className={`${presentation === 'sheet' ? 'sticky bottom-0 z-10 mt-5 shadow-[0_-10px_24px_rgb(255_255_255_/_0.92)]' : 'mt-4'} inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100`}
       >
         {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
         {isProcessing ? '正在記錄交易' : `完成交易 NT$${totalAmount.toLocaleString()} · ${formatSalesPaymentMethod(selectedPaymentMethod)}`}

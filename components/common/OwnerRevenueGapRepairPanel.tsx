@@ -157,7 +157,7 @@ export function OwnerRevenueGapRepairPanel() {
         <div className="flex items-start gap-3">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-              hasRepairs ? 'bg-soft-green text-info' : 'bg-warm-mist text-muted-foreground'
+              hasRepairs ? 'bg-soft-green text-foreground' : 'bg-warm-mist text-muted-foreground'
             }`}
           >
             {hasRepairs ? <Zap size={20} /> : <RefreshCw size={20} />}
@@ -174,7 +174,7 @@ export function OwnerRevenueGapRepairPanel() {
           <div className="space-y-2 rounded-md border border-neutral-stripe bg-background p-3 text-sm">
             {previewResult.repaired.length > 0 && (
               <div>
-                <p className="mb-1 font-medium text-info">可修復 ({previewResult.repaired.length})</p>
+                <p className="mb-1 font-medium text-foreground">可修復 ({previewResult.repaired.length})</p>
                 {previewResult.repaired.map(r => (
                   <div key={r.marketId} className="pl-2 text-muted-foreground">
                     {r.marketId.slice(0, 8)}... 收入 {formatMoney(r.localRevenueBefore)} → {formatMoney(r.localRevenueAfter)}，

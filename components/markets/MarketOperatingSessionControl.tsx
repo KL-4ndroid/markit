@@ -52,10 +52,10 @@ export function MarketOperatingSessionControl({
     <section
       className={embedded ? 'flex flex-wrap items-center gap-3' : `mb-4 flex flex-col gap-3 rounded-card border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
         isWarning
-          ? 'border-secondary/25 bg-atelier-apricot-soft/55'
+          ? 'border-status-warn-border bg-status-warn-bg'
           : session.phase === 'closed'
             ? 'border-border bg-muted/45'
-            : 'border-primary/15 bg-atelier-sage-soft/55'
+            : 'border-atelier-line bg-atelier-paper'
       }`}
       aria-label={embedded ? '今日營業操作' : '今日營業狀態'}
     >

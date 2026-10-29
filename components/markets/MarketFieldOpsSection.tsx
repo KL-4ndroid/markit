@@ -49,7 +49,7 @@ export function MarketFieldOpsSection({
           aria-controls={panelId}
           className="flex min-h-14 w-full items-center gap-3 rounded-card bg-atelier-paper px-4 py-3 text-left shadow-atelier lg:hidden"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-atelier-blue-soft text-primary">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-muted/45 text-muted-foreground">
             <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">

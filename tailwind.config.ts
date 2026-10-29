@@ -25,6 +25,7 @@ const config: Config = {
       colors: {
         // 主品牌色
         primary: "rgb(var(--brand-primary) / <alpha-value>)",
+        'primary-hover': "rgb(var(--brand-primary-hover) / <alpha-value>)",
         secondary: "rgb(var(--brand-secondary) / <alpha-value>)",
         // 文字
         foreground: "rgb(var(--brand-foreground) / <alpha-value>)",
@@ -44,6 +45,8 @@ const config: Config = {
         'upcoming-date-badge': "rgb(var(--brand-upcoming-date-badge) / <alpha-value>)",
         // 功能色
         danger: "rgb(var(--brand-danger) / <alpha-value>)",
+        'danger-action': "rgb(var(--brand-danger-action) / <alpha-value>)",
+        'danger-hover': "rgb(var(--brand-danger-hover) / <alpha-value>)",
         warn: "rgb(var(--brand-warn) / <alpha-value>)",
         info: "rgb(var(--brand-info) / <alpha-value>)",
         // 員工區分（沿用主色 + 透明度，不另設獨立色票）

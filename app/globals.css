@@ -15,6 +15,9 @@
 
   /* 主色：霧藍 */
   --brand-primary: 96 123 130;           /* #607B82 — 保留霧藍調並讓白字符合 AA */
+  --brand-primary-hover: 86 110 117;     /* opaque, darker hover; also derived by ThemeLab */
+  --brand-header-primary: 88 113 120;
+  --brand-header-secondary: 140 109 76;
 
   /* 次色：暖木 */
   --brand-secondary: 140 109 76;         /* #8C6D4C — 保留暖木調並讓白字符合 AA */
@@ -41,6 +44,8 @@
 
   /* 功能色：危險 / 提醒 / 資訊 */
   --brand-danger: 168 100 93;            /* #A8645D — 一般文字在白底符合 AA */
+  --brand-danger-action: 168 100 93;
+  --brand-danger-hover: 151 90 83;
   --brand-warn: 229 196 107;             /* #E5C46B 柔霧黃（舊 #FFF8E7 柔黃） */
   --brand-info: 126 154 160;             /* #7E9AA0 霧藍灰 */
 
@@ -175,9 +180,7 @@ body {
 
 /* JapaneseD 的招牌霧藍 × 暖木漸層，降低飽和度以維持新版可讀性。 */
 .japanese-warm-header {
-  background:
-    radial-gradient(circle at 86% 12%, rgb(255 255 255 / 0.18), transparent 15rem),
-    linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-primary) / 0.94) 46%, rgb(var(--brand-secondary)) 100%);
+  background: linear-gradient(135deg, rgb(var(--brand-header-primary)) 0%, rgb(var(--brand-header-secondary)) 100%);
 }
 
 /* JapaneseD 全專案視覺基準。 */
@@ -191,16 +194,12 @@ body {
 }
 
 .japanese-gradient-header {
-  background:
-    radial-gradient(circle at 86% 12%, rgb(255 255 255 / 0.18), transparent 15rem),
-    linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-primary) / 0.94) 46%, rgb(var(--brand-secondary)) 100%);
+  background: linear-gradient(135deg, rgb(var(--brand-header-primary)) 0%, rgb(var(--brand-header-secondary)) 100%);
   box-shadow: var(--atelier-lift-shadow);
 }
 
 .japanese-gradient-header-staff {
-  background:
-    radial-gradient(circle at 86% 12%, rgb(255 255 255 / 0.14), transparent 15rem),
-    linear-gradient(135deg, rgb(var(--brand-primary)) 0%, rgb(var(--brand-primary) / 0.88) 100%);
+  background: rgb(var(--brand-header-primary));
 }
 
 .japanese-surface-card {

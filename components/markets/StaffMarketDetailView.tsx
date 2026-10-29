@@ -278,9 +278,9 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
             <div className="flex min-w-0 flex-1 flex-col items-start gap-3 sm:flex-row">
               <MarketReturnLink returnTo={returnTo} />
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-white/85">今天一起把現場顧好</p>
+                <p className="text-xs font-semibold text-white">今天一起把現場顧好</p>
                 <h1 className="mt-1 break-words text-2xl font-semibold leading-tight text-white">{market.name}</h1>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/80">
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white">
                   {/* 日期 */}
                   <div className="flex items-start gap-1.5">
                     <Calendar className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
@@ -294,11 +294,11 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
                   {/* 地點 */}
                   <div className="flex min-w-0 items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="shrink-0 rounded-md bg-white/10 px-1.5 text-xs">{marketRegionLabel(market.regionCode)}</span>
+                    <span className="shrink-0 rounded-md bg-transparent px-1.5 text-xs">{marketRegionLabel(market.regionCode)}</span>
                     <span className="truncate">{market.location}</span>
                   </div>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-white/80">交易、照片與待辦，都在熟悉的位置等你。</p>
+                <p className="mt-2 text-xs leading-5 text-white">交易、照片與待辦，都在熟悉的位置等你。</p>
               </div>
             </div>
             
@@ -449,7 +449,7 @@ export function StaffMarketDetailView({ market, initialPhotoEvidenceView, initia
             )}
 
             {canRecordInteraction && (
-              <section className="rounded-card bg-atelier-blue-soft/65 p-4 shadow-atelier lg:col-start-2 lg:row-start-1">
+              <section className="rounded-card border border-atelier-line bg-atelier-paper p-4 shadow-atelier lg:col-start-2 lg:row-start-1">
                 <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-atelier-ink">
                   <TrendingUp className="w-5 h-5 text-primary" />
                   記錄互動

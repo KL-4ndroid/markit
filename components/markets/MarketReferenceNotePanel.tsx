@@ -10,13 +10,13 @@ export function MarketReferenceNotePanel({ note }: MarketReferenceNotePanelProps
   return (
     <section className="rounded-xl border border-primary/10 bg-white p-4 shadow-sm shadow-primary/10">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-soft-yellow text-secondary">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/45 text-muted-foreground">
           <MapPin className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-base font-medium text-foreground">主辦／場地備註</h2>
-            <span className="rounded-full bg-soft-yellow px-2 py-0.5 text-[11px] font-semibold text-secondary">
+            <span className="rounded-full bg-muted/45 px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
               整場適用
             </span>
           </div>

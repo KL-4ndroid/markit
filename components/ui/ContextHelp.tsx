@@ -19,7 +19,7 @@ export function ContextHelp({ label, title = label, children, className, iconOnl
   return <>
     <button type="button" aria-label={`查看${label}`} aria-haspopup="dialog" aria-expanded={open}
       onClick={() => setOpen(true)}
-      className={cn('inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-2 text-sm text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40', className)}>
+      className={cn('inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-2 text-sm text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground', className)}>
       <Info className="h-4 w-4 shrink-0" aria-hidden="true" />
       {!iconOnly && <span>{label}</span>}
     </button>

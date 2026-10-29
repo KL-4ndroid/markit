@@ -440,7 +440,7 @@ function MarketsPageContent() {
                     onClick={() => selectPreparationFilter(filter.id)}
                     className={`flex min-h-11 items-center justify-center gap-1.5 rounded-full border px-2 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary ${selected
                       ? 'border-primary bg-primary text-white shadow-sm'
-                      : 'border-primary/15 bg-atelier-paper text-foreground hover:border-primary/35 hover:bg-atelier-blue-soft/55'}`}
+                      : 'border-primary/15 bg-atelier-paper text-foreground hover:border-primary/35 hover:bg-primary/5'}`}
                   >
                     <span>{filter.label}</span>
                     <span className={`min-w-5 rounded-full px-1.5 py-0.5 text-xs tabular-nums ${selected ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'}`}>

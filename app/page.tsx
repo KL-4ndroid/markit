@@ -67,17 +67,15 @@ interface TaskRowProps {
   description: string;
   actionLabel?: string;
   onClick?: () => void;
-  tone?: 'sage' | 'apricot' | 'blue' | 'rose';
+  tone?: 'neutral' | 'attention';
 }
 
 const TASK_TONE_CLASSES = {
-  sage: 'bg-atelier-sage-soft text-primary',
-  apricot: 'bg-atelier-apricot-soft text-atelier-clay',
-  blue: 'bg-atelier-blue-soft text-atelier-blue',
-  rose: 'bg-atelier-rose-soft text-atelier-rose',
+  neutral: 'bg-muted/45 text-muted-foreground',
+  attention: 'bg-status-warn-bg text-status-warn-text',
 } as const;
 
-function TaskRow({ icon, title, description, actionLabel, onClick, tone = 'sage' }: TaskRowProps) {
+function TaskRow({ icon, title, description, actionLabel, onClick, tone = 'neutral' }: TaskRowProps) {
   const content = (
     <>
       <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control ${TASK_TONE_CLASSES[tone]}`}>
@@ -87,7 +85,7 @@ function TaskRow({ icon, title, description, actionLabel, onClick, tone = 'sage'
         <span className="block text-sm font-medium text-foreground">{title}</span>
         <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{description}</span>
       </span>
-      {actionLabel && <span className="text-xs font-semibold text-atelier-clay">{actionLabel}</span>}
+      {actionLabel && <span className="text-xs font-semibold text-primary">{actionLabel}</span>}
       {onClick && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
     </>
   );
@@ -249,15 +247,15 @@ export default function HomePage() {
         <div className="mx-auto max-w-3xl">
           <div className="min-w-0">
             {isStaff ? (
-              <p className="truncate text-xs font-semibold text-white/90">{staffWorkspaceName}</p>
+              <p className="truncate text-xs font-semibold text-white">{staffWorkspaceName}</p>
             ) : (
-              <p className="truncate text-xs font-semibold text-white/90">{ownerBrandName}</p>
+              <p className="truncate text-xs font-semibold text-white">{ownerBrandName}</p>
             )}
           </div>
 
           <div className="mt-2 min-w-0">
             <h1 className="text-lg font-medium leading-snug text-white">{greeting}</h1>
-            <p className="mt-1 text-xs text-white/90">{formatDateLabel(now)}</p>
+            <p className="mt-1 text-xs text-white">{formatDateLabel(now)}</p>
             {isStaff && <div className="mt-2"><StaffBadge tone="default" /></div>}
           </div>
         </div>
@@ -291,7 +289,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => router.push('/markets')}
-              className="flex min-h-20 w-full items-center gap-3 rounded-card bg-atelier-blue-soft/50 px-4 py-3 text-left transition-colors hover:bg-atelier-blue-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex min-h-20 w-full items-center gap-3 rounded-card border border-atelier-line bg-atelier-paper px-4 py-3 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               <CalendarDays className="h-5 w-5 shrink-0 text-atelier-blue" aria-hidden="true" />
               <span className="min-w-0 flex-1">
@@ -307,7 +305,7 @@ export default function HomePage() {
             </button>
           )}
           {canViewOwnerPlanning && todayArrangement && (
-            <p className="mt-3 flex items-start gap-2 rounded-control bg-atelier-blue-soft/50 px-3 py-3 text-sm text-foreground">
+            <p className="mt-3 flex items-start gap-2 rounded-control bg-muted/35 px-3 py-3 text-sm text-foreground">
               <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-atelier-blue" aria-hidden="true" />
               今天有同日多場安排，請確認時間與人手；不一定有時段重疊。
             </p>
@@ -332,7 +330,7 @@ export default function HomePage() {
                   title={photoReminders.loading ? '正在確認待補照片' : '照片待補狀態尚未確認'}
                   description={photoReminders.warning ?? '正在核對今日成交與雲端照片紀錄'}
                   actionLabel={photoReminders.canRefresh && !photoReminders.loading ? '重試' : undefined}
-                  onClick={photoReminders.canRefresh && !photoReminders.loading ? photoReminders.refresh : undefined} tone="rose" />
+                  onClick={photoReminders.canRefresh && !photoReminders.loading ? photoReminders.refresh : undefined} tone={photoReminders.warning ? 'attention' : 'neutral'} />
               )}
               {pendingPhotoItems.length > 0 && (
                 <TaskRow
@@ -340,7 +338,7 @@ export default function HomePage() {
                   title={`待補照片 ${pendingPhotoItems.length} 筆`}
                   description={photoReminders.warning ?? "查看今日待補提醒；未上傳原圖仍在來源裝置"}
                   actionLabel="處理"
-                  tone="rose"
+                  tone="attention"
                   onClick={() => openMarket(pendingPhotoMarketId, 'pending-photos')}
                 />
               )}
@@ -352,7 +350,7 @@ export default function HomePage() {
                   title={status === SyncStatus.OFFLINE ? '目前離線' : status === SyncStatus.ERROR ? '同步需要重試' : `${pendingCount} 筆資料待同步`}
                   description={pendingCount > 0 ? `${pendingCount} 筆紀錄只保存在這台裝置，尚未送達雲端` : '尚無法確認最新雲端資料；已保存的本機紀錄仍保留'}
                   actionLabel={status === SyncStatus.OFFLINE ? undefined : '重試'}
-                  tone="blue"
+                  tone={status === SyncStatus.OFFLINE || status === SyncStatus.ERROR ? 'attention' : 'neutral'}
                   onClick={status === SyncStatus.OFFLINE ? undefined : () => void sync()}
                 />
               )}
@@ -393,7 +391,7 @@ export default function HomePage() {
           </section>
         )}
 
-        <section className="-mx-4 mt-7 bg-upcoming-section px-4 py-5 sm:-mx-6 sm:px-6" aria-labelledby="upcoming-title">
+        <section className="-mx-4 mt-7 border-t border-atelier-line px-4 py-5 sm:-mx-6 sm:px-6" aria-labelledby="upcoming-title">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold text-atelier-blue">接下來</p>
@@ -418,7 +416,7 @@ export default function HomePage() {
                   onClick={() => openMarket(item.market.id)}
                   className="flex min-h-20 w-full items-start gap-3 rounded-card bg-atelier-paper/90 px-3 py-3 text-left shadow-sm transition-colors hover:bg-atelier-paper focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  <span className="flex min-h-12 w-14 shrink-0 flex-col items-center justify-center rounded-control bg-upcoming-date-badge px-1 py-1.5 text-atelier-blue">
+                  <span className="flex min-h-12 w-14 shrink-0 flex-col items-center justify-center rounded-control bg-muted/45 px-1 py-1.5 text-foreground">
                     <span className="text-base font-semibold tabular-nums">{Number(item.nextDate.slice(5, 7))}/{Number(item.nextDate.slice(8, 10))}</span>
                     <span className="mt-0.5 text-xs">{formatDateKey(item.nextDate, { weekday: 'short' })}</span>
                   </span>

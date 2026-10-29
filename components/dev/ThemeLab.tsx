@@ -20,6 +20,8 @@ import {
   createThemeLabExport,
   getContrastRatio,
   getThemeContrastChecks,
+  getThemeInteractionChecks,
+  getThemeInteractionColors,
   isThemePaletteAccessible,
   normalizeHex,
   parseThemeLabImport,
@@ -138,9 +140,9 @@ function PresetCard({
   );
 }
 
-function ContrastRow({ label, first, second }: { label: string; first: string; second: string }) {
+function ContrastRow({ label, first, second, minimum = 4.5 }: { label: string; first: string; second: string; minimum?: number }) {
   const ratio = getContrastRatio(first, second);
-  const passes = ratio >= 4.5;
+  const passes = ratio >= minimum;
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2.5">
@@ -149,9 +151,10 @@ function ContrastRow({ label, first, second }: { label: string; first: string; s
         <span className="h-6 w-6" style={{ backgroundColor: second }} />
       </span>
       <span className="min-w-0 flex-1 text-xs font-medium text-gray-700">{label}</span>
-      <span className={`inline-flex items-center gap-1 text-xs font-semibold ${passes ? 'text-emerald-700' : 'text-amber-700'}`}>
+      <span title={`門檻 ${minimum}:1；${passes ? '通過' : '待調整'}`} className={`inline-flex items-center gap-1 text-xs font-semibold ${passes ? 'text-emerald-700' : 'text-amber-700'}`}>
         {passes ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />}
-        {ratio.toFixed(2)}:1
+        <span className="sr-only">{passes ? '通過' : '待調整'}，門檻 {minimum}:1，實際 </span>
+        {(Math.floor(ratio * 100) / 100).toFixed(2)}:1
       </span>
     </div>
   );
@@ -179,6 +182,8 @@ export function ThemeLab({
   }, [message]);
 
   const contrastChecks = getThemeContrastChecks(palette);
+  const interactionChecks = getThemeInteractionChecks(palette);
+  const interactionColors = getThemeInteractionColors(palette);
   const paletteIsAccessible = isThemePaletteAccessible(palette);
 
   const updateToken = (key: keyof ThemePalette, value: string) => {
@@ -251,12 +256,12 @@ export function ThemeLab({
               <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
                 <div
                   className="relative min-h-40 p-5 text-white"
-                  style={{ background: `linear-gradient(135deg, ${palette.primary}, ${palette.secondary})` }}
+                  style={{ background: `linear-gradient(135deg, ${interactionColors.headerPrimary}, ${interactionColors.headerSecondary})` }}
                 >
-                  <Sparkles className="absolute right-5 top-5 h-6 w-6 opacity-70" aria-hidden="true" />
-                  <p className="text-xs font-bold tracking-[0.18em] opacity-80">LIVE PREVIEW</p>
+                  <Sparkles className="absolute right-5 top-5 h-6 w-6" aria-hidden="true" />
+                  <p className="text-xs font-bold tracking-[0.18em]">LIVE PREVIEW</p>
                   <h3 className="mt-3 text-2xl font-bold">今天也一起，把市集過得從容。</h3>
-                  <p className="mt-2 max-w-lg text-sm leading-6 opacity-90">頁首、卡片、文字與柔色會在整個 App 立即更新。</p>
+                  <p className="mt-2 max-w-lg text-sm leading-6">頁首、卡片、文字與柔色會在整個 App 立即更新。</p>
                 </div>
                 <div className="grid gap-3 p-4 sm:grid-cols-2" style={{ backgroundColor: palette.background }}>
                   <div className="rounded-2xl border p-4" style={{ backgroundColor: palette.card, borderColor: palette.softGreen }}>
@@ -289,7 +294,7 @@ export function ThemeLab({
                     </button>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {THEME_TOKEN_DEFINITIONS.map((definition) => (
+                    {THEME_TOKEN_DEFINITIONS.filter(definition => definition.editable !== false).map((definition) => (
                       <ColorField
                         key={definition.key}
                         definition={definition}
@@ -336,7 +341,7 @@ export function ThemeLab({
 
               <section aria-labelledby="contrast-title" className="rounded-3xl border border-gray-200 bg-gray-100 p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 id="contrast-title" className="text-sm font-bold text-gray-950">文字對比檢查</h3>
+                  <h3 id="contrast-title" className="text-sm font-bold text-gray-950">核心文字對比檢查</h3>
                   <span className="text-[11px] font-semibold text-gray-500">AA ≥ 4.5:1</span>
                 </div>
                 <div className="mt-3 space-y-2">
@@ -348,6 +353,15 @@ export function ThemeLab({
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   低於標準仍可自由預覽，但不能儲存為配色；關閉後會回復最近一次通過檢查的配色。
                 </p>
+                <details className="mt-4 border-t border-gray-300 pt-3">
+                  <summary className="min-h-11 cursor-pointer text-sm font-semibold text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-900">
+                    互動情境檢查（{interactionChecks.filter(check => check.passes).length}/{interactionChecks.length} 通過）
+                  </summary>
+                  <div className="mt-2 space-y-2">
+                    {interactionChecks.map(check => <ContrastRow key={check.id} label={check.label} first={check.foreground} second={check.background} minimum={check.minimum} />)}
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-gray-600">文字門檻為 4.5:1；必要外框、焦點與圖形為 3:1。此處提供情境檢查，不改動既有配色的五項儲存規則，也不代表全站已通過無障礙驗證。</p>
+                </details>
               </section>
 
               <section aria-labelledby="preset-title">

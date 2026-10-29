@@ -119,7 +119,6 @@ export function QuickInteractionButtons({
         <p className="text-xs text-atelier-muted">新台幣</p>
       </div>
       <div className="relative mb-4 overflow-hidden rounded-card bg-deep px-4 py-5 shadow-atelier">
-        <span className="absolute inset-y-0 left-0 w-1.5 bg-atelier-clay" aria-hidden="true" />
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 text-3xl font-semibold tabular-nums text-white sm:text-4xl">
             NT$ {amount.toLocaleString()}
@@ -128,7 +127,7 @@ export function QuickInteractionButtons({
             type="button"
             onClick={() => setDisplayAmount('0')}
             disabled={isProcessing}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-white/10 text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 disabled:opacity-50"
             aria-label="清除金額"
           >
             <Delete className="h-5 w-5" />
@@ -143,7 +142,7 @@ export function QuickInteractionButtons({
             type="button"
             onClick={() => handleNumberClick(number)}
             disabled={isProcessing}
-            className="min-h-14 rounded-control bg-atelier-paper text-xl font-semibold text-atelier-ink shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-atelier-sage-soft active:translate-y-0.5 active:shadow-sm disabled:opacity-50"
+            className="min-h-14 rounded-control bg-atelier-paper text-xl font-semibold text-atelier-ink shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-muted/50 active:translate-y-0.5 active:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 disabled:opacity-50"
           >
             {number}
           </button>
@@ -152,7 +151,7 @@ export function QuickInteractionButtons({
           type="button"
           onClick={() => setDisplayAmount(previous => previous === '0' ? '0' : previous + '00')}
           disabled={isProcessing}
-          className="min-h-14 rounded-control bg-atelier-blue-soft text-lg font-semibold text-atelier-blue shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-atelier-blue-soft/70 active:translate-y-0.5 active:shadow-sm disabled:opacity-50"
+          className="min-h-14 rounded-control bg-muted/50 text-lg font-semibold text-atelier-ink shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-muted/70 active:translate-y-0.5 active:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 disabled:opacity-50"
         >
           00
         </button>
@@ -160,7 +159,7 @@ export function QuickInteractionButtons({
           type="button"
           onClick={() => handleNumberClick(0)}
           disabled={isProcessing}
-          className="min-h-14 rounded-control bg-atelier-paper text-xl font-semibold text-atelier-ink shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-atelier-sage-soft active:translate-y-0.5 active:shadow-sm disabled:opacity-50"
+          className="min-h-14 rounded-control bg-atelier-paper text-xl font-semibold text-atelier-ink shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-muted/50 active:translate-y-0.5 active:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 disabled:opacity-50"
         >
           0
         </button>
@@ -168,7 +167,7 @@ export function QuickInteractionButtons({
           type="button"
           onClick={() => setDisplayAmount(previous => previous.length <= 1 ? '0' : previous.slice(0, -1))}
           disabled={isProcessing}
-          className="flex min-h-14 items-center justify-center rounded-control bg-atelier-apricot-soft text-atelier-clay shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-atelier-rose-soft active:translate-y-0.5 active:shadow-sm disabled:opacity-50"
+          className="flex min-h-14 items-center justify-center rounded-control bg-muted/50 text-atelier-ink shadow-atelier-key transition-[transform,box-shadow,background-color] duration-150 hover:bg-muted/70 active:translate-y-0.5 active:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 disabled:opacity-50"
           aria-label="刪除最後一位數字"
         >
           <Delete className="h-5 w-5" aria-hidden="true" />
@@ -185,7 +184,7 @@ export function QuickInteractionButtons({
         type="button"
         onClick={() => void handleQuickDeal()}
         disabled={isProcessing || amount <= 0}
-        className={`${presentation === 'sheet' ? 'sticky bottom-0 z-10 mt-5 shadow-[0_-10px_24px_rgb(255_255_255_/_0.92)]' : 'mt-4'} inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100`}
+        className={`${presentation === 'sheet' ? 'sticky bottom-0 z-10 mt-5 shadow-[0_-10px_24px_rgb(255_255_255_/_0.92)]' : 'mt-4'} inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-atelier-line disabled:text-atelier-muted disabled:opacity-100`}
       >
         {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" aria-hidden="true" />}
         {isProcessing ? '正在記錄交易' : `完成收款 NT$${amount.toLocaleString()} · ${formatSalesPaymentMethod(selectedPaymentMethod)}`}

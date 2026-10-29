@@ -29,7 +29,7 @@ export function SalesPhotoEvidencePostSalePrompt({
         >
           <header className="japanese-gradient-header flex items-center justify-between gap-4 px-6 py-6">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-transparent text-white">
                 <CheckCircle2 className="h-5 w-5" />
               </span>
               <h2 id="sales-photo-evidence-post-sale-title" className="text-xl font-medium text-white">
@@ -39,7 +39,7 @@ export function SalesPhotoEvidencePostSalePrompt({
             <button
               type="button"
               onClick={onLater}
-              className="shrink-0 rounded-full bg-white/20 p-2 text-white transition-colors hover:bg-white/30"
+              className="shrink-0 rounded-full bg-transparent p-2 text-white transition-colors hover:bg-primary-hover"
               aria-label="稍後補拍"
             >
               <X className="h-5 w-5" />
@@ -54,7 +54,7 @@ export function SalesPhotoEvidencePostSalePrompt({
               <button
                 type="button"
                 onClick={onCaptureNow}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
               >
                 <Camera className="h-4 w-4" />
                 {isCaptureReady ? '拍攝商品' : '開啟待補照片'}

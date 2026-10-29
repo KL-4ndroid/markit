@@ -1183,12 +1183,12 @@ export function MarketDetailScreen() {
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push('/markets')}
-              className="mb-4 text-white/80 hover:text-white transition-colors flex items-center gap-2"
+              className="mb-4 text-white hover:text-white transition-colors flex items-center gap-2"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>返回</span>
             </button>
-            <h1 className="text-2xl font-medium text-white opacity-90">
+            <h1 className="text-2xl font-medium text-white">
               資料庫異常
             </h1>
           </div>
@@ -1237,12 +1237,12 @@ export function MarketDetailScreen() {
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => router.push('/markets')}
-              className="mb-4 text-white/80 hover:text-white transition-colors flex items-center gap-2"
+              className="mb-4 text-white hover:text-white transition-colors flex items-center gap-2"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>返回</span>
             </button>
-            <h1 className="text-2xl font-medium text-white opacity-90">
+            <h1 className="text-2xl font-medium text-white">
               找不到市集
             </h1>
           </div>
@@ -1287,6 +1287,9 @@ export function MarketDetailScreen() {
   }
 
   const liveStage = getMarketLiveStage(operatingSession?.phase, marketWorkspacePhase);
+  const summaryEstimatedProfit = finance.enabled
+    ? finance.loading || rawFinancialStats === undefined ? null : ownerFinancialReading?.estimatedProfit ?? null
+    : calculateEstimatedMarketNetProfit(market);
   const liveBackfillDate = getMarketLiveBackfillDate(market, operatingSession?.sessionDate, currentDateKey);
   const pendingPhotoSummary = {
     label: '待補照片',
@@ -1312,7 +1315,7 @@ export function MarketDetailScreen() {
               <MarketReturnLink returnTo={requestedReturnTo} />
               <div className="min-w-0 flex-1">
                 <h1 className="break-words text-xl font-semibold leading-snug text-white sm:text-2xl">{market.name}</h1>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/90">
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white">
                   {/* 日期 - 完整顯示，支援換行 */}
                   <div className="flex items-start gap-1.5">
                     <Calendar className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
@@ -1326,11 +1329,11 @@ export function MarketDetailScreen() {
                   {/* 地點 */}
                   <div className="flex min-w-0 flex-wrap items-start gap-1.5">
                     <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="shrink-0 rounded-md bg-white/10 px-1.5 text-xs">{marketRegionLabel(market.regionCode)}</span>
+                    <span className="shrink-0 rounded-md bg-transparent px-1.5 text-xs">{marketRegionLabel(market.regionCode)}</span>
                     <span className="min-w-0 break-words">{market.location}</span>
                   </div>
                 </div>
-                {marketHeaderDescription && <p className={`mt-2 text-xs leading-5 text-white/80 ${isOperating ? 'hidden sm:block' : ''}`}>{marketHeaderDescription}</p>}
+                {marketHeaderDescription && <p className={`mt-2 text-xs leading-5 text-white ${isOperating ? 'hidden sm:block' : ''}`}>{marketHeaderDescription}</p>}
               </div>
             </div>
             
@@ -1396,7 +1399,8 @@ export function MarketDetailScreen() {
                   { label: '總收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
                   {
                     label: '估計淨利',
-                    value: finance.enabled ? finance.loading || rawFinancialStats===undefined ? '讀取中' : ownerFinancialReading?.estimatedProfit == null ? '待確認' : formatCurrency(ownerFinancialReading.estimatedProfit) : formatCurrency(calculateEstimatedMarketNetProfit(market)),
+                    value: finance.enabled && (finance.loading || rawFinancialStats === undefined) ? '讀取中' : summaryEstimatedProfit == null ? '待確認' : formatCurrency(summaryEstimatedProfit),
+                    tone: summaryEstimatedProfit != null && summaryEstimatedProfit < 0 ? 'danger' : 'neutral',
                   },
                   { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
                 ]
@@ -1531,7 +1535,7 @@ export function MarketDetailScreen() {
                   />
                 </div>
 
-                <section className="rounded-card bg-atelier-blue-soft/65 p-4 shadow-atelier lg:col-start-2 lg:row-start-1">
+                <section className="rounded-card border border-atelier-line bg-atelier-paper p-4 shadow-atelier lg:col-start-2 lg:row-start-1">
                   <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-atelier-ink">
                     <TrendingUp className="w-5 h-5 text-primary" />
                     記錄互動

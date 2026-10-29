@@ -1,6 +1,6 @@
 'use client';
 
-import { Banknote, CreditCard, MoreHorizontal, Smartphone } from 'lucide-react';
+import { Banknote, Check, CreditCard, MoreHorizontal, Smartphone } from 'lucide-react';
 
 import {
   SALES_PAYMENT_METHODS,
@@ -41,14 +41,15 @@ export function PaymentMethodSelector({
             aria-checked={selected}
             onClick={() => onChange(method)}
             disabled={disabled}
-            className={`flex min-h-12 items-center justify-center gap-2 rounded-control px-2 py-2 text-xs font-medium transition-[transform,box-shadow,background-color] duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-control border px-2 py-2 text-xs font-medium transition-[transform,box-shadow,background-color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
               selected
-                ? 'bg-primary text-white shadow-atelier-key'
-                : 'bg-atelier-canvas text-atelier-muted shadow-sm hover:bg-atelier-sage-soft hover:text-atelier-ink active:translate-y-0.5'
+                ? 'border-primary bg-primary/10 font-semibold text-foreground ring-1 ring-inset ring-primary'
+                : 'border-atelier-line bg-atelier-paper text-atelier-muted hover:bg-muted/50 hover:text-atelier-ink active:translate-y-0.5'
             }`}
           >
-            <Icon className="h-4 w-4 shrink-0" />
+            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span>{SALES_PAYMENT_METHOD_LABELS[method]}</span>
+            <span className="h-3.5 w-3.5 shrink-0" aria-hidden="true">{selected && <Check className="h-3.5 w-3.5" />}</span>
           </button>
         );
       })}

@@ -165,22 +165,22 @@ export function SalesPhotoEvidencePendingListDialog({
         <header className="japanese-gradient-header flex items-start justify-between gap-4 px-6 py-6">
           <div>
             <h2 id="sales-photo-evidence-pending-title" className="text-xl font-medium text-white">待補照片</h2>
-            <p className="mt-1 text-sm leading-relaxed text-white/80">
+            <p className="mt-1 text-sm leading-relaxed text-white">
               成交紀錄已保留。你可以拍攝或選擇照片，完成後再上傳。
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full bg-white/20 px-3 py-1 text-white">
+              <span className="rounded-full bg-transparent px-3 py-1 text-white">
                 全部 {items.length}
               </span>
-              <span className="rounded-full bg-white/20 px-3 py-1 text-white">
+              <span className="rounded-full bg-transparent px-3 py-1 text-white">
                 等待同步 {statusCounts.waiting_for_event_sync}
               </span>
-              <span className="rounded-full bg-white/20 px-3 py-1 text-white">
+              <span className="rounded-full bg-transparent px-3 py-1 text-white">
                 需留意 {needsAttentionCount}
               </span>
             </div>
             {lastLoadedLabel && (
-              <p className="mt-2 text-xs text-white/70">
+              <p className="mt-2 text-xs text-white">
                 最後讀取時間：{lastLoadedLabel}
               </p>
             )}
@@ -188,7 +188,7 @@ export function SalesPhotoEvidencePendingListDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full bg-white/20 p-2 text-white transition-colors hover:bg-white/30"
+            className="rounded-full bg-transparent p-2 text-white transition-colors hover:bg-primary-hover"
             aria-label="關閉待補照片"
           >
             <X className="h-5 w-5" />
@@ -313,7 +313,7 @@ export function SalesPhotoEvidencePendingListDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
           >
             關閉
           </button>

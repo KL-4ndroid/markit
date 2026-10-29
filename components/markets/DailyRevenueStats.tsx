@@ -202,9 +202,9 @@ export function DailyRevenueStats({
   
   return (
     <section className="mb-5 overflow-hidden rounded-card bg-atelier-paper shadow-atelier">
-      <div className="flex min-h-16 items-center justify-between bg-atelier-blue-soft/75 px-4 py-4 sm:px-5">
+      <div className="flex min-h-16 items-center justify-between border-b border-atelier-line bg-atelier-paper px-4 py-4 sm:px-5">
         <div>
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-atelier-blue">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
             <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
             營運節奏
           </p>
@@ -213,7 +213,7 @@ export function DailyRevenueStats({
           </h2>
         </div>
         {!isSingleDay && (
-          <div className="rounded-full bg-atelier-paper/80 px-3 py-1 text-xs font-medium text-atelier-blue">
+          <div className="rounded-full bg-muted/45 px-3 py-1 text-xs font-medium text-muted-foreground">
             共 {dateRange.length} 天
           </div>
         )}
@@ -222,7 +222,7 @@ export function DailyRevenueStats({
       {validFocusDate && <a href={`#daily-revenue-${validFocusDate}`} className="mx-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline underline-offset-4">查看報告指定日期 {formatDate(validFocusDate)}</a>}
       {!isEmptyReview && !isSingleDay && dateRange.length > 5 && (
         <div className="border-b border-atelier-line bg-atelier-paper px-4 py-3 sm:px-5">
-          <div className="grid grid-cols-3 rounded-control bg-atelier-canvas p-1" role="group" aria-label="每日表現顯示範圍">
+          <div className="grid grid-cols-3 rounded-control bg-muted/35 p-1" role="group" aria-label="每日表現顯示範圍">
             {([
               ['recorded', `有紀錄 ${recordedDays.length}`],
               ['all', `全部 ${dailyData.length}`],
@@ -235,7 +235,7 @@ export function DailyRevenueStats({
                 onClick={() => setDateView(value)}
                 className={`min-h-10 rounded-control px-2 text-xs font-medium transition-colors ${
                   effectiveDateView === value
-                    ? 'bg-white text-foreground shadow-sm'
+                    ? 'bg-primary/10 font-semibold text-foreground ring-1 ring-inset ring-primary'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -267,7 +267,7 @@ export function DailyRevenueStats({
               type="button"
               onClick={() => setShowEmptyReviewDates(value => !value)}
               aria-expanded={showEmptyReviewDates}
-              className="min-h-11 rounded-control border border-atelier-line bg-atelier-canvas px-4 text-sm font-medium text-atelier-ink transition-colors hover:bg-atelier-sage-soft"
+              className="min-h-11 rounded-control border border-atelier-line bg-atelier-canvas px-4 text-sm font-medium text-atelier-ink transition-colors hover:bg-muted/50"
             >
               {showEmptyReviewDates ? '收合日期' : '查看全部日期'}
             </button>
@@ -297,7 +297,7 @@ export function DailyRevenueStats({
               ref={day.date === focusedWindowStartDate ? focusedDayRef : null}
               className={`relative scroll-mt-4 px-4 py-4 transition-colors sm:px-5 ${
                 isFuture ? 'opacity-55' : ''
-              } ${isToday || day.date === validFocusDate ? 'bg-atelier-sage-soft/65' : 'bg-atelier-paper'}`}
+              } ${isToday || day.date === validFocusDate ? 'bg-primary/5' : 'bg-atelier-paper'}`}
             >
               {day.date === validFocusDate && <p className="mb-2 pl-7 text-xs font-medium text-primary">報告指定日期</p>}
               {dayIndex < visibleDailyData.length - 1 && (
@@ -305,7 +305,7 @@ export function DailyRevenueStats({
               )}
               <span
                 className={`absolute left-4 top-[1.35rem] h-3 w-3 rounded-full ring-4 ring-atelier-paper sm:left-5 ${
-                  isToday ? 'bg-primary' : isFuture ? 'bg-atelier-line' : 'bg-atelier-sun'
+                  isToday ? 'bg-primary' : 'bg-atelier-line'
                 }`}
                 aria-hidden="true"
               />
@@ -315,13 +315,13 @@ export function DailyRevenueStats({
                   <span className="text-sm font-medium text-foreground">{formatDate(day.date)}</span>
                   {isToday && <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-white">今天</span>}
                   {isFuture && <span className="rounded-full bg-atelier-canvas px-2 py-0.5 text-xs text-atelier-muted">尚未開始</span>}
-                  {day.zeroIncomeConfirmed && <span className="text-xs text-atelier-blue">已確認零收入</span>}
+                  {day.zeroIncomeConfirmed && <span className="text-xs text-muted-foreground">已確認零收入</span>}
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-[11px] text-muted-foreground">當日收入</div>
-                    <div className="mt-0.5 break-words text-xl font-semibold leading-tight tabular-nums text-primary">
+                    <div className="mt-0.5 break-words text-xl font-semibold leading-tight tabular-nums text-foreground">
                       {formatCurrency(day.revenue)}
                     </div>
                   </div>
@@ -357,7 +357,7 @@ export function DailyRevenueStats({
                       <button
                         type="button"
                         onClick={() => onAddRevenue(day.date)}
-                        className="flex min-h-11 items-center justify-center gap-1.5 rounded-control bg-atelier-apricot-soft px-3 text-sm font-medium text-atelier-clay transition-colors hover:bg-atelier-clay hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className="flex min-h-11 items-center justify-center gap-1.5 rounded-control border border-primary/25 bg-atelier-paper px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         title="補登收入"
                         aria-label={`${formatDate(day.date)}補登收入`}
                       >
@@ -369,7 +369,7 @@ export function DailyRevenueStats({
                 )}
 
                 {showInteractions && interactionButtons.length > 0 && !isFuture && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2 rounded-control bg-atelier-blue-soft/70 px-3 py-2 text-xs text-atelier-muted">
+                  <div className="mt-3 flex flex-wrap items-center gap-2 rounded-control bg-muted/35 px-3 py-2 text-xs text-atelier-muted">
                     <TrendingUp className="h-3.5 w-3.5 text-atelier-blue" />
                     <span>互動</span>
                     {Object.values(day.interactions).some((count) => count > 0) ? (
@@ -393,10 +393,10 @@ export function DailyRevenueStats({
       )}
 
       {showTotals && !isSingleDay && !isEmptyReview && (
-        <div className="flex flex-wrap items-end justify-between gap-4 bg-atelier-apricot-soft/70 px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap items-end justify-between gap-4 border-t border-atelier-line bg-muted/35 px-4 py-4 sm:px-5">
           <div>
             <div className="text-xs text-muted-foreground">這場市集合計</div>
-            <div className="mt-1 text-xl font-semibold tabular-nums text-primary">{formatCurrency(dailyTotals.totalRevenue)}</div>
+            <div className="mt-1 text-xl font-semibold tabular-nums text-foreground">{formatCurrency(dailyTotals.totalRevenue)}</div>
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-atelier-muted">
             {hideProfit ? null : (

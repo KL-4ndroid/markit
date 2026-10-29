@@ -106,7 +106,7 @@ export function TransactionWorkspace({
 
   return (
     <section className={isSheet ? '' : 'mb-6 overflow-hidden rounded-card bg-atelier-paper shadow-atelier-lift'}>
-      {!isSheet && <div className="flex items-start justify-between gap-3 bg-atelier-apricot-soft/65 px-4 py-4 sm:px-5">
+      {!isSheet && <div className="flex items-start justify-between gap-3 border-b border-atelier-line bg-atelier-paper px-4 py-4 sm:px-5">
         <div className="min-w-0">
           <p className="text-xs font-semibold text-atelier-ink">現場收款</p>
           <h2 className="mt-1 text-lg font-semibold text-atelier-ink">把這筆交易收好</h2>
@@ -118,12 +118,12 @@ export function TransactionWorkspace({
           <button
             type="button"
             onClick={onOpenPendingPhotos}
-            className="relative flex min-h-11 shrink-0 items-center gap-2 rounded-control bg-atelier-paper px-3 text-sm font-medium text-atelier-ink shadow-sm transition-colors hover:bg-atelier-rose-soft"
+            className="relative flex min-h-11 shrink-0 items-center gap-2 rounded-control bg-atelier-paper px-3 text-sm font-medium text-atelier-ink shadow-sm transition-colors hover:bg-muted/50"
             aria-label={`待補照片 ${pendingPhotoCount} 筆`}
           >
             <ImagePlus className="h-4 w-4 text-primary" aria-hidden="true" />
             待補
-            <span className="min-w-5 rounded-full bg-atelier-clay px-1.5 py-0.5 text-center text-xs text-white">
+            <span className="min-w-5 rounded-full bg-status-warn-bg px-1.5 py-0.5 text-center text-xs text-status-warn-text">
               {pendingPhotoCount}
             </span>
           </button>
@@ -136,7 +136,7 @@ export function TransactionWorkspace({
       </div>}
 
       <div className={isSheet ? '' : 'p-4 sm:p-5'}>
-        {!isSheet && <div className="mb-5 grid grid-cols-2 rounded-control bg-atelier-sage-soft p-1" role="tablist" aria-label="交易方式">
+        {!isSheet && <div className="mb-5 grid grid-cols-2 rounded-control border border-atelier-line bg-atelier-paper p-1" role="tablist" aria-label="交易方式">
           <button
             id={`transaction-tab-quick-${marketId}`}
             type="button"
@@ -146,7 +146,7 @@ export function TransactionWorkspace({
             tabIndex={selectedMode === 'quick' ? 0 : -1}
             onClick={() => setMode('quick')}
             onKeyDown={event => changeModeFromKeyboard(event, 'products')}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${selectedMode === 'quick' ? 'bg-atelier-paper text-primary shadow-sm' : 'text-atelier-muted hover:bg-atelier-paper/65 hover:text-atelier-ink'}`}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${selectedMode === 'quick' ? 'bg-primary/10 font-semibold text-foreground ring-1 ring-inset ring-primary' : 'text-atelier-muted hover:bg-muted/50 hover:text-atelier-ink'}`}
           >
             <DollarSign className="h-4 w-4" />
             快速收款
@@ -160,7 +160,7 @@ export function TransactionWorkspace({
             tabIndex={selectedMode === 'products' ? 0 : -1}
             onClick={() => setMode('products')}
             onKeyDown={event => changeModeFromKeyboard(event, 'quick')}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${selectedMode === 'products' ? 'bg-atelier-paper text-primary shadow-sm' : 'text-atelier-muted hover:bg-atelier-paper/65 hover:text-atelier-ink'}`}
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium transition-colors ${selectedMode === 'products' ? 'bg-primary/10 font-semibold text-foreground ring-1 ring-inset ring-primary' : 'text-atelier-muted hover:bg-muted/50 hover:text-atelier-ink'}`}
           >
             <ShoppingBag className="h-4 w-4" />
             商品銷售
@@ -169,7 +169,7 @@ export function TransactionWorkspace({
 
         {!isSheet && <div className="min-h-0" aria-live="polite" aria-atomic="true">
           {recentSale && (
-            <div className="mb-4 flex items-center gap-3 rounded-control bg-atelier-sage-soft px-3 py-3 text-status-good-text shadow-sm" role="status">
+            <div className="mb-4 flex items-center gap-3 rounded-control bg-status-good-bg px-3 py-3 text-status-good-text shadow-sm" role="status">
               <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" />
               <p className="text-sm font-medium">
                 這筆收好了，已安全儲存 NT${recentSale.amount.toLocaleString()} · {formatSalesPaymentMethod(recentSale.paymentMethod)}

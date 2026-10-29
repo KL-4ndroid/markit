@@ -111,7 +111,7 @@ export function SalesPhotoEvidenceFlowDialog({
                 <button
                   type="button"
                   onClick={onBack}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent text-white hover:bg-primary-hover"
                   aria-label="返回待補照片"
                 >
                   <ArrowLeft className="h-5 w-5" />
@@ -128,7 +128,7 @@ export function SalesPhotoEvidenceFlowDialog({
               type="button"
               onClick={onClose}
               disabled={isLocked}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 disabled:opacity-50"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-transparent text-white hover:bg-primary-hover disabled:opacity-50"
               aria-label="關閉成交照片視窗"
             >
               <X className="h-5 w-5" />
@@ -240,7 +240,7 @@ export function SalesPhotoEvidenceFlowDialog({
                       <button
                         type="button"
                         onClick={() => onCapture(state.item, 'camera')}
-                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90"
+                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
                       >
                         <Camera className="h-5 w-5" />
                         拍照
@@ -345,7 +345,7 @@ export function SalesPhotoEvidenceFlowDialog({
                         <button
                           type="button"
                           onClick={() => onUpload(state.item, payload)}
-                          className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90"
+                          className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
                         >
                           {state.view === 'upload_failed' ? <RefreshCw className="h-5 w-5" /> : <UploadCloud className="h-5 w-5" />}
                           {state.view === 'upload_failed' ? '重新上傳' : '使用這張照片'}

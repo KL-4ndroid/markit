@@ -51,7 +51,7 @@ export function MarketTodayTimeline({ market, countdown = '--', defaultExpanded 
       </div>
       {!expanded && operatingTime && <p className="ml-7 text-sm tabular-nums text-atelier-muted">{operatingTime}</p>}
       {countdown !== '--' && countdown !== '已開始' && (
-        <p className="mt-2 rounded-control bg-atelier-sage-soft px-3 py-2 text-sm font-semibold text-primary">{countdown}</p>
+        <p className="mt-2 rounded-control bg-muted/45 px-3 py-2 text-sm font-semibold text-foreground">{countdown}</p>
       )}
       <div id="owner-market-timeline-panel" hidden={!expanded} className="mt-3 space-y-3">
         {rows.length > 0 ? (
@@ -60,13 +60,13 @@ export function MarketTodayTimeline({ market, countdown = '--', defaultExpanded 
               <li key={label} className="flex min-h-14 items-center gap-3 rounded-control bg-atelier-canvas px-3 py-2.5">
                 <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                 <span className="min-w-0 flex-1 text-sm text-atelier-ink">{label}</span>
-                <span className="shrink-0 text-base font-semibold tabular-nums text-primary">{formatClockTime(time)}</span>
+                <span className="shrink-0 text-base font-semibold tabular-nums text-foreground">{formatClockTime(time)}</span>
               </li>
             ))}
           </ol>
         ) : <p className="text-sm text-atelier-muted">尚未設定時間資訊</p>}
         {market.operatingStartTime && market.operatingEndTime && (
-          <dl className="grid grid-cols-2 gap-3 rounded-control bg-atelier-blue-soft/55 p-3 text-sm">
+          <dl className="grid grid-cols-2 gap-3 rounded-control bg-muted/35 p-3 text-sm">
             <div><dt className="text-xs text-atelier-muted">營業時長</dt><dd className="mt-1 font-semibold">{calculateMarketDurationLabel(market.operatingStartTime, market.operatingEndTime)}</dd></div>
             <div><dt className="text-xs text-atelier-muted">含報到總時長</dt><dd className="mt-1 font-semibold">{calculateMarketDurationLabel(market.checkInTime, market.operatingEndTime)}</dd></div>
           </dl>

@@ -9,6 +9,7 @@ interface MarketWorkspaceSummaryItem {
   label: string;
   value: ReactNode;
   emphasis?: boolean;
+  tone?: 'neutral' | 'danger';
   onClick?: () => void;
   actionLabel?: string;
 }
@@ -24,15 +25,9 @@ interface MarketWorkspaceSummaryProps {
 }
 
 const PHASE_STYLES: Record<MarketWorkspacePhase, string> = {
-  'not-started': 'bg-secondary',
+  'not-started': 'bg-muted-foreground',
   operating: 'bg-primary',
   ended: 'bg-muted-foreground',
-};
-
-const PHASE_SURFACES: Record<MarketWorkspacePhase, string> = {
-  'not-started': 'bg-atelier-apricot-soft/75',
-  operating: 'bg-atelier-sage-soft',
-  ended: 'bg-atelier-blue-soft/80',
 };
 
 function SummaryValue({ item }: { item: MarketWorkspaceSummaryItem }) {
@@ -65,7 +60,7 @@ export function MarketWorkspaceSummary({
   const secondaryItems = items.filter((_, index) => index !== primaryIndex);
 
   return (
-    <section className={`rounded-card shadow-atelier ${compactOnMobile ? 'mb-3 p-4 sm:mb-5 sm:p-6' : 'mb-5 p-5 sm:p-6'} ${PHASE_SURFACES[phase]}`} aria-label="市集摘要">
+    <section className={`rounded-card border border-atelier-line bg-atelier-paper shadow-atelier ${compactOnMobile ? 'mb-3 p-4 sm:mb-5 sm:p-6' : 'mb-5 p-5 sm:p-6'}`} aria-label="市集摘要">
       <div className="flex min-h-8 items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-atelier-ink">
           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${PHASE_STYLES[phase]}`} aria-hidden="true" />
@@ -85,9 +80,7 @@ export function MarketWorkspaceSummary({
           <div className="min-w-0">
             <dt className="text-xs font-medium text-atelier-muted">{primaryItem.label}</dt>
             <dd
-              className={`mt-1 break-words font-semibold leading-tight tabular-nums ${compactOnMobile ? 'text-2xl sm:text-[2rem]' : 'text-[1.75rem] sm:text-[2rem]'} ${
-                primaryItem.emphasis ? 'text-primary' : 'text-atelier-ink'
-              }`}
+              className={`mt-1 break-words font-semibold leading-tight tabular-nums ${primaryItem.tone === 'danger' ? 'text-status-danger-text' : 'text-atelier-ink'} ${compactOnMobile ? 'text-2xl sm:text-[2rem]' : 'text-[1.75rem] sm:text-[2rem]'}`}
               title={typeof primaryItem.value === 'string' || typeof primaryItem.value === 'number' ? String(primaryItem.value) : undefined}
             >
               <SummaryValue item={primaryItem} />
@@ -101,9 +94,7 @@ export function MarketWorkspaceSummary({
               <div key={item.label} className="min-w-0">
                 <dt className="text-[11px] font-medium text-atelier-muted">{item.label}</dt>
                 <dd
-                  className={`mt-1 break-words font-semibold tabular-nums ${compactOnMobile ? 'text-sm sm:text-lg' : 'text-base sm:text-lg'} ${
-                    item.emphasis ? 'text-primary' : 'text-atelier-ink'
-                  }`}
+                  className={`mt-1 break-words font-semibold tabular-nums ${item.tone === 'danger' ? 'text-status-danger-text' : 'text-atelier-ink'} ${compactOnMobile ? 'text-sm sm:text-lg' : 'text-base sm:text-lg'}`}
                   title={typeof item.value === 'string' || typeof item.value === 'number' ? String(item.value) : undefined}
                 >
                   <SummaryValue item={item} />

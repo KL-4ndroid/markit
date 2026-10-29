@@ -16,9 +16,9 @@ export function SameDayMarketArrangements({ arrangements, onOpenMarket }: SameDa
 
   return (
     <section className="mt-6" aria-labelledby="same-day-arrangements-title">
-      <details className="group overflow-hidden rounded-card border border-primary/10 bg-atelier-blue-soft/50">
+      <details className="group overflow-hidden rounded-card border border-atelier-line bg-atelier-paper">
         <summary className="flex min-h-20 cursor-pointer list-none items-center gap-3 rounded-card p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
-          <CalendarDays className="h-5 w-5 shrink-0 text-atelier-blue" aria-hidden="true" />
+          <CalendarDays className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span className="min-w-0 flex-1">
             <span id="same-day-arrangements-title" className="block text-sm font-semibold text-foreground">同日多場安排</span>
             <span className="mt-1 block text-xs leading-5 text-muted-foreground">最近 {formatDisplayDate(nearest.date)} 有 {nearest.markets.length} 場</span>
@@ -31,7 +31,7 @@ export function SameDayMarketArrangements({ arrangements, onOpenMarket }: SameDa
           <ul className="mt-3 space-y-4">
             {arrangements.map(arrangement => (
               <li key={arrangement.date}>
-                <p className="text-xs font-semibold text-atelier-blue">{formatDisplayDate(arrangement.date)}</p>
+                <p className="text-xs font-semibold text-foreground">{formatDisplayDate(arrangement.date)}</p>
                 <ul className="mt-1">
                   {arrangement.markets.map(market => (
                     <li key={market.id ?? market.name}>
