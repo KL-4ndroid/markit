@@ -21,9 +21,15 @@ assert.match(staff, /h-11 w-11/);
 
 const liveFieldOps = marketDetail.indexOf("{resolvedOwnerWorkspaceView === 'live' && (");
 const fieldOps = marketDetail.indexOf('<MarketFieldOpsSection', liveFieldOps);
-const manageReference = marketDetail.indexOf('<MarketReferenceNotePanel note={market.notes} />', fieldOps);
 assert.ok(liveFieldOps > 0 && fieldOps > liveFieldOps);
-assert.ok(manageReference > fieldOps);
+// Timeline and reference notes now belong to the live layout, with notes inside
+// fieldwork rather than a separate duplicate panel in management.
+const liveLayoutEnd = marketDetail.indexOf('{/* ✅ 當日流水帳', fieldOps);
+const liveLayout = marketDetail.slice(liveFieldOps, liveLayoutEnd);
+assert.ok(liveLayoutEnd > fieldOps);
+assert.match(liveLayout, /<MarketLiveLayout/);
+assert.match(liveLayout, /timeline=\{\s*<MarketTodayTimeline/);
+assert.match(liveLayout, /fieldwork=\{[\s\S]*<MarketFieldOpsSection[\s\S]*referenceNote=\{market\.notes\}/);
 assert.match(marketDetail, /<MarketRegistrationPanel/);
 assert.match(marketDetail, /else handleStatusChangeRequest\(status\)/);
 const registrationPanel = read('components/markets/MarketRegistrationPanel.tsx');
@@ -50,7 +56,8 @@ assert.ok(productCard.indexOf('aspect-square h-16 w-16') < productCard.indexOf('
 assert.match(productCard, /isOpening \? '開啟中\.\.\.'/);
 
 assert.match(marketsPage, /router\.prefetch\(buildMarketDetailHref\(item\.market\.id\)\)/);
-assert.match(productsPage, /router\.prefetch\(buildProductDetailHref\(product\.id\)\)/);
+assert.match(productsPage, /router\.prefetch\(buildProductDetailHref\(product\.id, productOrigin\)\)/);
+assert.match(productsPage, /router\.push\(buildProductDetailHref\(product\.id, productOrigin\)\)/);
 assert.match(recoveryPage, /<details[\s\S]*進階診斷[\s\S]*<OwnerPendingOperationDiagnosticsPanel/);
 
 console.log('PASS mobile UIUX optimization contracts');

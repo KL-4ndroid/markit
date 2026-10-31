@@ -79,6 +79,10 @@ function parseTrustedTimestamp(value: string | null): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+// Account APIs can mint a snapshot a few milliseconds ahead of the device.
+// This tolerance applies only to issuance, never refresh or entitlement expiry.
+const CAPABILITY_ISSUANCE_CLOCK_SKEW_MS = 5_000;
+
 function planIncludesFeature(planCode: AccountPlanCode, feature: AccountCapabilityFeature): boolean {
   const status = SUBSCRIPTION_PLAN_DEFINITIONS[planCode].features[ACCOUNT_CAPABILITY_PLAN_FEATURE[feature]];
   return status === 'included';
@@ -158,7 +162,7 @@ export function resolveCapabilityFreshness(input: {
   const entitlementEndsAt = parseTrustedTimestamp(input.capabilities.entitlementEndsAt);
   if (evaluatedAt === null || refreshAfter === null) return 'unavailable';
   if (input.capabilities.entitlementEndsAt !== null && entitlementEndsAt === null) return 'unavailable';
-  if (evaluatedAt > input.nowMs || refreshAfter < evaluatedAt) return 'unavailable';
+  if (evaluatedAt > input.nowMs + CAPABILITY_ISSUANCE_CLOCK_SKEW_MS || refreshAfter < evaluatedAt) return 'unavailable';
   if (input.nowMs <= refreshAfter) return 'fresh';
   if (input.network === 'online') return 'stale';
 

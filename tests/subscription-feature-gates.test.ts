@@ -53,6 +53,33 @@ function access(overrides: Partial<Parameters<typeof evaluateCapabilityAccess>[0
 
 assert.deepEqual(access(), { allowed: true, reason: 'allowed', accessMode: 'entitled' });
 
+// Production reproduced a successful capability response issued 30–65 ms ahead
+// of the device clock. Only issuance time gets bounded skew tolerance; expiry
+// and the refresh deadline must retain their exact boundaries.
+for (const skewMs of [30, 65, 5_000]) {
+  const slightlyAhead = capabilities('team', {
+    capabilityEvaluatedAt: new Date(NOW + skewMs).toISOString(),
+  });
+  assert.equal(resolveCapabilityFreshness({ capabilities: slightlyAhead, nowMs: NOW, network: 'online' }), 'fresh');
+  assert.equal(access({ capabilities: slightlyAhead }).allowed, true);
+  assert.equal(access({ capabilities: { ...slightlyAhead, entitlementEndsAt: new Date(NOW - 1).toISOString() } }).allowed, false,
+    'Clock tolerance must never extend a paid entitlement');
+}
+assert.equal(resolveCapabilityFreshness({
+  capabilities: capabilities('team', { capabilityEvaluatedAt: new Date(NOW + 5_001).toISOString() }),
+  nowMs: NOW, network: 'online',
+}), 'unavailable', 'Future issuance beyond the bounded tolerance is still rejected');
+assert.equal(resolveCapabilityFreshness({
+  capabilities: capabilities('team', {
+    capabilityEvaluatedAt: new Date(NOW + 65).toISOString(),
+    capabilityRefreshAfter: new Date(NOW + 64).toISOString(),
+  }), nowMs: NOW, network: 'online',
+}), 'unavailable', 'Invalid timestamp ordering must still be rejected');
+assert.equal(resolveCapabilityFreshness({
+  capabilities: capabilities('team', { capabilityRefreshAfter: new Date(NOW - 1).toISOString() }),
+  nowMs: NOW, network: 'online',
+}), 'stale', 'Clock tolerance must never extend the refresh deadline');
+
 // A malformed end must never be treated like an explicitly open-ended grant.
 for (const plan of ['pro', 'team'] as const) {
   for (const invalidEnd of ['', 'invalid-date']) {

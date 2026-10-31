@@ -246,6 +246,19 @@ async function main(): Promise<void> {
   assert.equal(requestedUrl, 'https://api.example.test/v1/api/account-capabilities');
   assert.equal(requestedAuthorization, 'Bearer verified-token');
 
+  for (const skewMs of [30, 65, 5_000, 5_001]) {
+    const skewResult = await readAccountCapabilities({
+      accessToken: 'verified-token',
+      nowMs: NOW - skewMs,
+      apiUrl: { configuredBaseUrl: 'https://api.example.test' },
+      fetchImpl: (async () => new Response(JSON.stringify(adminPro.response), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      })) as typeof fetch,
+    });
+    assert.equal(skewResult.ok, skewMs <= 5_000, 'API client must preserve the bounded issuance tolerance');
+    if (skewMs > 5_000) assert.equal(skewResult.ok ? null : skewResult.code, 'unavailable');
+  }
+
   const staleClientResult = await readAccountCapabilities({
     accessToken: 'verified-token',
     nowMs: NOW + ACCOUNT_CAPABILITY_REFRESH_TTL_MS + 1,

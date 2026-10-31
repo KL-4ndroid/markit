@@ -22,7 +22,11 @@ assert.match(workspaceSource, /aria-controls=\{`transaction-panel-products-/);
 assert.match(workspaceSource, /const selectedMode = controlledMode \?\? mode/);
 assert.match(workspaceSource, /hidden=\{selectedMode !== 'quick'\}/);
 assert.match(workspaceSource, /hidden=\{selectedMode !== 'products'\}/);
-assert.match(workspaceSource, /markit:last-sales-payment-method/);
+// A new sale defaults to cash; changing the method applies only to this sale.
+assert.match(workspaceSource, /useState<SalesPaymentMethod>\('cash'\)/);
+assert.doesNotMatch(workspaceSource, /markit:last-sales-payment-method/);
+assert.match(workspaceSource, /const completeTransaction = \(\) => \{\s*setPaymentMethod\('cash'\);/);
+assert.equal((workspaceSource.match(/onTransactionCompleted=\{completeTransaction\}/g) ?? []).length, 2);
 assert.match(workspaceSource, /<QuickInteractionButtons/);
 assert.match(workspaceSource, /<QuickTransactionGrid/);
 assert.match(workspaceSource, /本場需拍照/);
@@ -32,6 +36,14 @@ for (const source of [quickRevenueSource, productSaleSource, addRevenueSource]) 
   assert.match(source, /<PaymentMethodSelector/);
   assert.match(source, /recordDealWithOptionalSalesPhotoEvidence/);
   assert.match(source, /onSalesPhotoEvidenceResult/);
+}
+for (const source of [quickRevenueSource, productSaleSource]) {
+  const failedSave = source.indexOf('本次輸入已保留。');
+  const stopRetry = source.indexOf('return;', failedSave);
+  const resetPayment = source.indexOf("setLocalPaymentMethod('cash')", failedSave);
+  const completeSale = source.indexOf('onTransactionCompleted?.();', failedSave);
+  assert.ok(failedSave > 0 && stopRetry > failedSave && resetPayment > stopRetry && completeSale > resetPayment,
+    'Failed submissions must return before resetting the payment method or completing the sale');
 }
 assert.match(quickRevenueSource, /完成收款 NT\$/);
 assert.match(productSaleSource, /完成交易 NT\$/);

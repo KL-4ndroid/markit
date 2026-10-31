@@ -1,5 +1,7 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-10-31 線上方案時間差修正：[正式驗收與異常紀錄](FINANCIAL_PRODUCTION_RELEASE_2026_10_31.md)。成本核對已在 `f126e99` 正式啟用並完成保存／撤回／還原；線上重現伺服器核發比裝置回應時間快約 30–65 ms 而被判 unavailable。[共用 freshness](../lib/subscription/subscription-capabilities.ts)只對核發時間增加最多 5 秒容差，[回歸](../tests/subscription-feature-gates.test.ts)保留到期／刷新期限／過量未來時間的拒絕。方案、價格、資料存取範圍、正式付款與離線期限不變；修正建置及正式複驗另見紀錄。斷線後工作區重建的草稿保留仍待修正。
+
 2026-10-31 正式成本核對發布執行中：[發布設定與線上複驗追蹤](FINANCIAL_PRODUCTION_RELEASE_2026_10_31.md)。使用者授權提交、發布及正式啟用；Vercel Production 已設定 `NEXT_PUBLIC_FINANCIAL_REVIEWS_ENABLED=true`，需新建置及線上驗證後才算啟用完成。094 資料庫與 owner／付費規則不變，不含正式付款。下方尚未提交／正式旗標未改為先前驗收時的歷史狀態。
 
 2026-10-31 財務真實複驗（最新）：[操作紀錄與限制](FINANCIAL_CROSS_PAGE_ACCEPTANCE_2026_10_31.md)，本機 094 保存／更正／撤回／重開與四頁返回、三尺寸、PDF 下載已驗；補上[每日日卡可信條件](../lib/analytics/financial-record-quality.ts)、[日卡傳入確認](../components/markets/DailyRevenueStats.tsx)及[渲染測試](../tests/daily-revenue-financial-quality.test.tsx)。員工仍隱藏利潤，不改價格／方案／權益。正式版核對表單尚未啟用，本批尚未提交／發布。下段瀏覽器停用是前批歷史狀態。

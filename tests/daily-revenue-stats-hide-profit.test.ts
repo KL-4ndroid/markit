@@ -78,13 +78,13 @@ runTest('多日總計採主收入與次要指標的彈性結構', () => {
   assert.match(source, /flex flex-wrap items-end justify-between/);
 });
 
-runTest('hideProfit=true 時不渲染「總利潤」文字（底部總計）', () => {
-  // 驗證總計區塊的「總利潤」div 也被條件渲染包住
-  const summaryProfitBlock = /\{hideProfit\s*\?\s*null\s*:\s*\(\s*[\s\S]*?總利潤[\s\S]*?\)\s*\}/;
+runTest('hideProfit=true 時不渲染「銷售利潤合計」文字（底部總計）', () => {
+  // 保留員工隱藏利潤契約，沿用目前區分銷售利潤與淨利的正式名稱。
+  const summaryProfitBlock = /\{hideProfit\s*\?\s*null\s*:\s*\(\s*[\s\S]*?銷售利潤合計[\s\S]*?\)\s*\}/;
   assert.match(
     source,
     summaryProfitBlock,
-    '底部總計的「總利潤」div 應被 {hideProfit ? null : ...} 包住'
+    '底部總計的「銷售利潤合計」div 應被 {hideProfit ? null : ...} 包住'
   );
 });
 

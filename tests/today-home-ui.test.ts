@@ -26,7 +26,7 @@ assert.doesNotMatch(home, /useMonthlyStats|本月概覽|currentPlan|showUserMenu
 assert.doesNotMatch(home, /confirmDiscardLocalChangesForSignOut|\bsignOut\s*\(/);
 
 assert.match(detail, /useSearchParams\(\)/);
-assert.match(detail, /initialView:\s*searchParams\.get\('task'\) === 'pending-photos'/);
+assert.match(detail, /initialView:\s*canAnalyze && searchParams\.get\('task'\) === 'pending-photos' \? 'pending_list' : undefined/);
 assert.match(staffDetail, /initialView:\s*initialPhotoEvidenceView/);
 assert.match(photoFlow, /dispatch\(\{ type: initialView === 'pending_list' \? 'OPEN_PENDING_LIST' : 'CLOSE' \}\)/);
 assert.match(photoFlow, /\[actorId, marketId, initialView\]/);
