@@ -1,6 +1,8 @@
 # 訂閱方案變更導航與完整檔案索引
 
-2026-10-31 草稿保護發布執行中：使用者已授權本輪提交、Production 發布及線上複驗，目標 markit-app／main；[發布與驗收狀態](FINANCIAL_DRAFT_LIFECYCLE_2026_10_31.md#發布執行)。下方「尚未提交／發布」為本機驗收完成時的歷史狀態，需依此段與實際部署結果判讀。無新 SQL、旗標、價格或付款變更。
+2026-11-01 草稿保護發布收尾：正式重新登入、原帳號私人草稿恢復及專用測試草稿清理皆已確認，成本還原 0／收入 50／成交 1／淨利 -50；原有待送照片未強制捨棄。此輪僅補提交[完整發布驗收](FINANCIAL_DRAFT_LIFECYCLE_2026_10_31.md#2026-11-01-收尾)與進度導航，不改執行碼／方案／SQL／付款。
+
+2026-10-31 草稿保護已發布並完成核心複驗：程式 `bd9acca` 已推送 main，Production `dpl_4GUCMCyfvSo5TRn7ny6xpZki6gnx` Ready，主要網域 health 同版。[發布與驗收狀態](FINANCIAL_DRAFT_LIFECYCLE_2026_10_31.md#發布執行)包含真實草稿重開、衝突比較／明確保存、正式 alias 的 A→B→A、手機畫面與照片 guard；主要網域 3 筆未送照片保留，測試成本還原 0。初次載入自動恢復、完整歷史監控及實機仍有範圍限制，沒有把未取到日誌當作零錯誤。下方「尚未提交／發布」為歷史狀態。無新 SQL、旗標、價格或付款變更。
 
 2026-10-31 財務核對草稿生命週期（本機實作）：[規則與驗收](FINANCIAL_DRAFT_LIFECYCLE_2026_10_31.md)。新增[私人草稿模型](../lib/markets/financial-review-drafts.ts)、[編輯 session](../lib/markets/financial-review-draft-session.ts)，[repository](../lib/markets/financial-review-repository.ts)加入 owner 隔離、本機比較交換及來源重讀；[表單](../components/markets/FinancialReviewPanel.tsx)提供繼續／捨棄／明確衝突確認。[schema 12](../lib/db/index.ts)新增裝置私人草稿，auth cache reset 保留、舊 scope 失效，明確 clearAllData 移除。[生命週期回歸](../tests/financial-review-drafts.test.ts)、[渲染存取邊界](../tests/financial-review-draft-access.test.tsx)與 manifest 同步更新。不延長權益，不改方案、價格、付款、094 SQL 或雲端自動同步；本輪尚未提交／發布，不能把本機草稿保存視為已正式啟用訂閱。
 
