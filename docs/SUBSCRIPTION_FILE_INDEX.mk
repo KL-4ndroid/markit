@@ -1,5 +1,11 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-10-31 正式成本核對發布執行中：[發布設定與線上複驗追蹤](FINANCIAL_PRODUCTION_RELEASE_2026_10_31.md)。使用者授權提交、發布及正式啟用；Vercel Production 已設定 `NEXT_PUBLIC_FINANCIAL_REVIEWS_ENABLED=true`，需新建置及線上驗證後才算啟用完成。094 資料庫與 owner／付費規則不變，不含正式付款。下方尚未提交／正式旗標未改為先前驗收時的歷史狀態。
+
+2026-10-31 財務真實複驗（最新）：[操作紀錄與限制](FINANCIAL_CROSS_PAGE_ACCEPTANCE_2026_10_31.md)，本機 094 保存／更正／撤回／重開與四頁返回、三尺寸、PDF 下載已驗；補上[每日日卡可信條件](../lib/analytics/financial-record-quality.ts)、[日卡傳入確認](../components/markets/DailyRevenueStats.tsx)及[渲染測試](../tests/daily-revenue-financial-quality.test.tsx)。員工仍隱藏利潤，不改價格／方案／權益。正式版核對表單尚未啟用，本批尚未提交／發布。下段瀏覽器停用是前批歷史狀態。
+
+2026-10-31 財務跨頁收尾：[修正與驗證](POST_WEB_READINESS_PROGRESS_2026_10_31.md)、[共用判讀](../lib/analytics/market-financial-reading.ts)、[老闆批次讀取 hook](../hooks/useMarketFinancialReadings.ts)、[回歸](../tests/market-financial-reading.test.ts)。094 overlay 延伸到列表及分析，保留免費／員工讀取限制；未改方案價格、權益、正式付款或旗標。未知成本／矛盾舊費用不再產生確定淨利，真實 RPC 權限再驗通過；瀏覽器被 Work 設定停用，畫面與正式啟用仍待複驗。本批未提交／發布。
+
 2026-10-29 報告批次 2 雲端接通（最新）：使用者確認 094 完成；[真實保存／撤回／重開與 PDF 複驗](SETTLEMENT_REPORT_FINANCIAL_REVIEWS_2026_10_29.md)已完成核心案例，僅 `.env.local` 啟用，Vercel／正式版仍未啟用。新增[真實 RPC 驗證腳本](../scripts/verify-financial-reviews-live.mjs)，只用暫時環境變數傳入測試登入、不含密鑰、不改角色；老闆回讀成功，員工 read／save 及匿名呼叫拒絕。新增[每日零收入分類 helper](../lib/ui/daily-revenue-totals.ts)及[測試](../tests/daily-revenue-totals.test.ts)，[types](../types/db.ts)增加只供可信 overlay 使用的零收入標記；每日表現不再把已確認零收入顯示為無紀錄。不改 Free／Light／Advanced 分界、價格或付款；下方「094 尚未套用／旗標關閉」為啟用前歷史狀態。自動 PDF 預覽受工具安全政策阻擋，未當作通過。
 
 2026-10-29 報告批次 2（最新狀態）：[成本核對與明確零值](SETTLEMENT_REPORT_FINANCIAL_REVIEWS_2026_10_29.md)。[094](../supabase/migrations/094_add_owner_financial_reviews.sql)與[唯讀驗證](../supabase/verification/094_owner_financial_reviews_readiness.sql)新增付費老闆專用保存／讀取 RPC；[domain](../lib/markets/financial-reviews.ts)、[repository](../lib/markets/financial-review-repository.ts)、[scope](../lib/markets/financial-review-scope.ts)、[Supabase adapter](../lib/supabase/financial-reviews.ts)、[hook](../hooks/useFinancialReviews.ts)、[表單](../components/markets/FinancialReviewPanel.tsx)串接既有單場與報告。新增 owner 讀取快取，帳號重設會清除；[單元測試](../tests/financial-reviews.test.ts)、[隔離 SQL 腳本](../scripts/verify-financial-reviews-sql.mjs)及 manifest 同步更新。新旗標見 [.env.example](../.env.example)：預設關閉，094 尚未套用雲端，尚未真實保存驗收或發布；不改方案、價格、角色或付款。取代下方首批「尚無 writer／SQL」的目前狀態描述。

@@ -1,5 +1,6 @@
 import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import type { Market } from '@/types/db';
+import type { MarketFinancialReadings } from './market-financial-reading';
 
 export type MarketTrendDirection = 'improving' | 'declining' | 'flat' | 'not_enough_data';
 
@@ -40,14 +41,6 @@ function getFixedCost(market: Market): number {
   );
 }
 
-function getNetProfit(market: Market): number {
-  const revenue = toNumber(market.totalRevenue);
-  const grossProfit = toNumber(market.totalProfit);
-  const commission = revenue * (toNumber(market.commissionRate) / 100);
-
-  return grossProfit - getFixedCost(market) - commission;
-}
-
 function getTrendDate(market: Market): string {
   if (market.dates && market.dates.length > 0) {
     return market.dates.reduce((earliest, date) => (date < earliest ? date : earliest), market.dates[0]);
@@ -56,11 +49,13 @@ function getTrendDate(market: Market): string {
   return market.startDate;
 }
 
-function toPoint(market: Market): MarketTrendPoint | null {
+function toPoint(market: Market, readings: MarketFinancialReadings): MarketTrendPoint | null {
   if (!market.id) return null;
+  const netProfit = readings.get(market.id)?.estimatedProfit;
+  if (netProfit == null) return null;
 
   const revenue = toNumber(market.totalRevenue);
-  if (revenue <= 0) return null;
+  if (revenue < 0) return null;
 
   return {
     marketId: market.id,
@@ -68,7 +63,7 @@ function toPoint(market: Market): MarketTrendPoint | null {
     date: getTrendDate(market),
     revenue,
     grossProfit: toNumber(market.totalProfit),
-    netProfit: getNetProfit(market),
+    netProfit,
     fixedCost: getFixedCost(market),
     dealCount: toNumber(market.totalDeals),
   };
@@ -128,19 +123,21 @@ function buildNextAction(direction: MarketTrendDirection): string {
   return '先完成每場市集的總收入與主要成本紀錄，分析會先從場次層級提供建議。';
 }
 
-export function buildMarketTrend(markets: Market[] = []): MarketTrendResult {
+export function buildMarketTrend(markets: Market[] = [], readings?: MarketFinancialReadings): MarketTrendResult {
+  const eligible = markets.filter(market => market.status !== 'cancelled' && !market.isDeleted);
+  const pending = !readings || eligible.some(market => readings.get(market.id ?? '')?.estimatedProfit == null);
   const points = markets
     .filter((market) => market.status !== 'cancelled' && market.isDeleted !== true)
-    .map(toPoint)
+    .map(market => toPoint(market, readings ?? new Map()))
     .filter((point): point is MarketTrendPoint => point !== null)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const direction = getDirection(points);
+  const direction = pending ? 'not_enough_data' : getDirection(points);
 
   return {
     direction,
     points,
-    summary: buildSummary(direction, points),
+    summary: pending ? '部分場次的收入或成本待確認，暫不判斷淨利趨勢。' : buildSummary(direction, points),
     nextAction: buildNextAction(direction),
   };
 }

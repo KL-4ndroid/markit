@@ -1,5 +1,7 @@
 import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import type { DailyStats, Event, Market, Product } from '@/types/db';
+import { buildMarketFinancialReadings, type MarketFinancialReadings } from './market-financial-reading';
+import { getLocalDateString } from '@/lib/time-utils';
 import {
   analyzeDataCompleteness,
   type AnalyticsDataCompletenessResult,
@@ -47,6 +49,8 @@ export interface ActionableAnalyticsInput {
   events?: Event[];
   dailyStats?: DailyStats[];
   products?: Product[];
+  financialReadings?: MarketFinancialReadings;
+  asOfDate?: string;
 }
 
 export interface ActionableAnalyticsResult {
@@ -80,12 +84,10 @@ function getFixedCost(market: Market): number {
   );
 }
 
-function getNetProfit(market: Market): number {
-  const revenue = market.totalRevenue ?? 0;
-  const grossProfit = market.totalProfit ?? revenue;
-  const commission = revenue * ((market.commissionRate ?? 0) / 100);
-
-  return grossProfit - getFixedCost(market) - commission;
+export function resolveAnalyticsFinancialReadings(input: ActionableAnalyticsInput): MarketFinancialReadings {
+  return input.financialReadings ?? buildMarketFinancialReadings({
+    markets: input.markets ?? [], dailyStats: input.dailyStats ?? [], asOfDate: input.asOfDate ?? getLocalDateString(),
+  });
 }
 
 function getConfidence(marketsWithRevenue: number): AnalyticsConfidence {
@@ -97,11 +99,12 @@ function getConfidence(marketsWithRevenue: number): AnalyticsConfidence {
 function buildMarketDecisionCard(
   markets: Market[],
   confidence: AnalyticsConfidence,
-  dataLevel: AnalyticsDataLevel
+  dataLevel: AnalyticsDataLevel,
+  readings: MarketFinancialReadings,
 ): AnalyticsActionCard {
   const marketsWithRevenue = markets.filter((market) => isPositiveNumber(market.totalRevenue));
 
-  if (marketsWithRevenue.length === 0) {
+  if (marketsWithRevenue.length === 0 && (markets.length === 0 || markets.some(market => readings.get(market.id ?? '')?.estimatedProfit == null))) {
     return {
       kind: 'market_decision',
       tone: 'notice',
@@ -116,8 +119,16 @@ function buildMarketDecisionCard(
   }
 
   const totalRevenue = sum(marketsWithRevenue.map((market) => market.totalRevenue ?? 0));
-  const totalFixedCost = sum(marketsWithRevenue.map(getFixedCost));
-  const totalNetProfit = sum(marketsWithRevenue.map(getNetProfit));
+  const totalFixedCost = sum(markets.map(getFixedCost));
+  if (markets.some(market => market.status !== 'cancelled' && !market.isDeleted && readings.get(market.id ?? '')?.estimatedProfit == null)) {
+    return {
+      kind: 'market_decision', tone: 'notice', title: '市集參加建議',
+      headline: '估計淨利待確認', body: '收入紀錄仍可查看；部分日期或成本尚未確認，暫不判斷是否值得再次參加。',
+      nextAction: '先在場次回顧核對收入、銷售成本與攤位費。', confidence: 'low', dataLevel,
+      blockedBy: ['financial_record_quality'],
+    };
+  }
+  const totalNetProfit = sum(markets.map(market => readings.get(market.id ?? '')?.estimatedProfit ?? 0));
   const costRatio = totalRevenue > 0 ? totalFixedCost / totalRevenue : 0;
 
   if (totalNetProfit > 0 && costRatio <= 0.35) {
@@ -161,7 +172,8 @@ function buildMarketDecisionCard(
 function buildCostPressureCard(
   markets: Market[],
   confidence: AnalyticsConfidence,
-  dataLevel: AnalyticsDataLevel
+  dataLevel: AnalyticsDataLevel,
+  readings: MarketFinancialReadings,
 ): AnalyticsActionCard {
   const marketsWithRevenue = markets.filter((market) => isPositiveNumber(market.totalRevenue));
 
@@ -180,6 +192,11 @@ function buildCostPressureCard(
   }
 
   const totalRevenue = sum(marketsWithRevenue.map((market) => market.totalRevenue ?? 0));
+  if (markets.some(market => readings.get(market.id ?? '')?.estimatedProfit == null)) {
+    return {kind:'cost_pressure', tone:'notice', title:'成本壓力', headline:'先核對收入與成本',
+      body:'目前資料尚未完整，不把空白或未確認的零值當作成本偏低。',
+      nextAction:'在場次回顧核對銷售成本及攤位相關費用。', confidence:'low', dataLevel, blockedBy:['financial_record_quality']};
+  }
   const totalFixedCost = sum(marketsWithRevenue.map(getFixedCost));
   const costRatio = totalRevenue > 0 ? totalFixedCost / totalRevenue : 0;
   const costPercent = Math.round(costRatio * 100);
@@ -320,11 +337,13 @@ export function buildActionableAnalytics(input: ActionableAnalyticsInput): Actio
   const markets = input.markets ?? [];
   const completeness = analyzeDataCompleteness(input);
   const marketsWithRevenue = markets.filter((market) => isPositiveNumber(market.totalRevenue)).length;
-  const confidence = getConfidence(marketsWithRevenue);
+  const readings = resolveAnalyticsFinancialReadings(input);
+  const confidence = markets.some(market => readings.get(market.id ?? '')?.status !== 'ready')
+    ? 'low' : getConfidence(marketsWithRevenue);
   const productInsights = buildProductInsights(input, completeness, confidence);
 
-  const marketDecisionCard = buildMarketDecisionCard(markets, confidence, completeness.level);
-  const costPressureCard = buildCostPressureCard(markets, confidence, completeness.level);
+  const marketDecisionCard = buildMarketDecisionCard(markets, confidence, completeness.level, readings);
+  const costPressureCard = buildCostPressureCard(markets, confidence, completeness.level, readings);
   const dataGuidanceCard = buildDataGuidanceCard(completeness, confidence);
   const productCard = buildProductCard(productInsights, completeness, confidence);
 

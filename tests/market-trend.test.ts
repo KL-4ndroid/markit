@@ -1,6 +1,16 @@
 import assert from 'node:assert/strict';
-import { buildMarketTrend } from '../lib/analytics/market-trend';
-import type { Market } from '../types/db';
+import { buildMarketTrend as buildTrend } from '../lib/analytics/market-trend';
+import { buildMarketFinancialReadings } from '../lib/analytics/market-financial-reading';
+import type { Market, DailyStats } from '../types/db';
+
+function buildMarketTrend(markets: Market[]) {
+  const dailyStats: DailyStats[] = markets.map(market => ({
+    marketId:market.id, date:market.startDate, revenue:market.totalRevenue ?? 0,
+    cost:(market.totalRevenue ?? 0)-(market.totalProfit ?? 0), profit:market.totalProfit ?? 0,
+    dealCount:market.totalDeals ?? 0, touchCount:0, inquiryCount:0, productsSold:[], updatedAt:0,
+  }));
+  return buildTrend(markets, buildMarketFinancialReadings({markets,dailyStats,asOfDate:'2026-10-31'}));
+}
 
 const timestamp = new Date('2026-01-01T10:00:00+08:00').getTime();
 
@@ -10,9 +20,8 @@ function market(overrides: Partial<Market> = {}): Market {
     name: 'Weekend Market',
     location: 'Taipei',
     startDate: '2026-01-01',
-    endDate: '2026-01-01',
     status: 'completed',
-    registrationFee: 100,
+    registrationFee: 0,
     boothCost: 500,
     totalRevenue: 3000,
     totalProfit: 1800,
@@ -20,6 +29,7 @@ function market(overrides: Partial<Market> = {}): Market {
     createdAt: timestamp,
     updatedAt: timestamp,
     ...overrides,
+    endDate: overrides.endDate ?? overrides.startDate ?? '2026-01-01',
   };
 }
 
@@ -111,7 +121,8 @@ async function main(): Promise<void> {
     market({ id: 'deleted', isDeleted: true, totalRevenue: 10000, totalProfit: 9000 }),
     market({ id: 'no-revenue', totalRevenue: 0, totalProfit: 0 }),
   ]);
-  assert.equal(ignoredTrend.points.length, 0);
+  assert.equal(ignoredTrend.points.length, 1,'a completed recorded zero-income market is valid data');
+  assert.equal(ignoredTrend.points[0].netProfit,-500);
 
   console.log('PASS market trend analytics');
 }

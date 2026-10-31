@@ -37,6 +37,7 @@ import { StateView } from '@/components/ui/StateView';
 import { Tabs, type TabItem } from '@/components/ui/Tabs';
 import { useAccountCapabilities } from '@/hooks/useAccountCapabilities';
 import { useAnalyticsCache, useAnalyticsCacheInvalidation } from '@/hooks/useAnalyticsCache';
+import { useMarketFinancialReadings } from '@/hooks/useMarketFinancialReadings';
 import { SyncStatus } from '@/hooks/useSync';
 import { useRoleContext } from '@/lib/role-context';
 import { db } from '@/lib/db';
@@ -59,6 +60,7 @@ import {
 } from '@/lib/analytics/metrics-engine';
 import {
   EMPTY_MARKET_METRICS_VIEW_MODEL,
+  applyFinancialReadingsToMetrics,
   loadMarketMetricsViewModel,
   type MarketMetricsViewModel,
 } from '@/lib/analytics/market-metrics-view-model';
@@ -387,12 +389,18 @@ export default function AnalyticsPage() {
     }
   }, [activeTab, analyticsView.canReadProductAffinity, marketIdsKey, validMarketCount, refreshRevision]);
 
+  const finance = useMarketFinancialReadings(currentOwnerId ?? '', markets,
+    Boolean(currentOwnerId) && (analyticsView.canComputeMarketMetrics || analyticsView.canComputeFullMarketTrend), todayString);
+  const reviewedMetrics = useMemo(() => applyFinancialReadingsToMetrics(metricsResult?.data ?? EMPTY_MARKET_METRICS_VIEW_MODEL, finance.readings), [metricsResult, finance.readings]);
+  const financeComplete = markets.length > 0 && markets.every(market => finance.readings.get(market.id ?? '')?.status === 'ready');
   const analyticsInput = useMemo(() => ({
     markets: analyticsView.canReadSummaryEvents ? markets : [],
     events: analyticsView.canReadSummaryEvents ? summaryResult?.data.events ?? [] : [],
     dailyStats: analyticsView.canReadSummaryEvents ? summaryResult?.data.dailyStats ?? [] : [],
     products: analyticsView.canReadSummaryEvents ? products : [],
-  }), [analyticsView.canReadSummaryEvents, markets, products, summaryResult]);
+    financialReadings: finance.readings,
+    asOfDate: todayString,
+  }), [analyticsView.canReadSummaryEvents, markets, products, summaryResult, finance.readings, todayString]);
   const dataCompleteness = useMemo(
     () => analyzeDataCompleteness(analyticsInput),
     [analyticsInput],
@@ -418,8 +426,8 @@ export default function AnalyticsPage() {
     [analyticsInput, analyticsView.canComputeMarketRecap],
   );
   const marketTrend = useMemo(
-    () => analyticsView.canComputeFullMarketTrend ? buildMarketTrend(markets) : null,
-    [analyticsView.canComputeFullMarketTrend, markets],
+    () => analyticsView.canComputeFullMarketTrend ? buildMarketTrend(markets, finance.readings) : null,
+    [analyticsView.canComputeFullMarketTrend, markets, finance.readings],
   );
 
   const handleRecalculate = async () => {
@@ -542,6 +550,10 @@ export default function AnalyticsPage() {
         ) : (
           <div className="mt-5 space-y-5">
             <MarketFeeReviewNotice markets={markets} />
+            {finance.error && <div role="status" className="rounded-control border border-border bg-atelier-paper p-4 text-sm text-muted-foreground">
+              <p>{finance.error}</p>
+              <button type="button" onClick={() => void finance.refresh()} className="mt-2 min-h-11 font-medium text-primary underline">重新讀取成本核對</button>
+            </div>}
             {activeTab !== 'regions' && <AnalyticsKpiRow
               marketCount={validMarketCount}
               totalRevenue={summaryKpis.totalRevenue}
@@ -565,7 +577,7 @@ export default function AnalyticsPage() {
                       /></div>
                   )}
                 </div>
-              ) : summaryResult === undefined || metricsResult === undefined ? (
+              ) : summaryResult === undefined || metricsResult === undefined || finance.loading ? (
                 <StateView title="正在整理摘要" description="只會讀取目前範圍內的成交、互動與統計資料。" />
               ) : summaryResult.error || metricsResult.error ? (
                 <StateView
@@ -592,7 +604,7 @@ export default function AnalyticsPage() {
                       <AnalyticsConfidencePanel presentation={confidencePresentation} />
                     </details>
                     {confidencePresentation.canShowFormalConclusions ? (
-                      <AnalyticsSummaryHighlights viewModel={metricsResult.data} />
+                      <AnalyticsSummaryHighlights viewModel={reviewedMetrics} />
                     ) : null}
                   </div>
                 </div>
@@ -688,16 +700,16 @@ export default function AnalyticsPage() {
             )}
 
             {activeTab === 'advanced' && (
-              metricsResult === undefined ? (
+              metricsResult === undefined || finance.loading ? (
                 <StateView title="正在整理進階指標" description="核心指標只會計算一次，再供評分與象限共用。" />
               ) : metricsResult.error ? (
                 <StateView title="進階分析暫時無法完成" description={metricsResult.error} />
               ) : (
                 <AdvancedAnalyticsSection
-                  viewModel={metricsResult.data}
+                  viewModel={reviewedMetrics}
                   validMarketCount={validMarketCount}
-                  canShowFormalConclusions={confidencePresentation.canShowFormalConclusions}
-                  missingDataAction={confidencePresentation.missingDataAction}
+                  canShowFormalConclusions={confidencePresentation.canShowFormalConclusions && financeComplete}
+                  missingDataAction={!financeComplete ? '部分場次的收入或成本待確認，請先在場次回顧核對，再查看綜合評分與象限。' : confidencePresentation.missingDataAction}
                 />
               )
             )}

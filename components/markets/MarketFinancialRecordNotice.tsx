@@ -18,5 +18,5 @@ export function MarketFinancialRecordNotice({market,ownerId}:{market:Market;owne
   const reading = report.reading!;
   if (!reading.rows.length || reading.rows.every(row=>row.state === 'upcoming') || reading.estimatedProfit !== null) return null;
   const reasons = reading.issues.filter(issue=>issue.kind !== 'method').map(issue=>issue.title.replace(/^有/,''));
-  return <p role="status" className="mb-4 px-1 text-xs leading-6 text-muted-foreground">上方淨利僅依已填費用估算；{reasons.length ? reasons.join('、') : '完整資料仍待確認'}，完整報告會保留待確認狀態。</p>;
+  return <p role="status" className="mb-4 px-1 text-xs leading-6 text-muted-foreground">估計淨利待確認：{reasons.length ? reasons.join('、') : '完整資料仍待確認'}。</p>;
 }

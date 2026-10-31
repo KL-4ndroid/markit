@@ -1,5 +1,6 @@
 import type { DailyStats, Market } from '@/types/db';
 import { marketBusinessDates } from '@/lib/markets/market-business-dates';
+import { resolveMarketBoothFee } from '@/lib/markets/market-booth-fee';
 
 export type AmountKnowledge = 'unknown' | 'recorded' | 'confirmed-zero' | 'invalid';
 
@@ -40,11 +41,18 @@ export function assessDailyFinancialRecord(stat: DailyStats, confirmations: read
     costUsable: revenueValid && costConsistent && (costState === 'recorded' || costState === 'confirmed-zero') };
 }
 
+/** Same daily sales-profit boundary for reports and daily cards. A legacy recorded zero-income day stays compatible. */
+export function isDailySalesProfitUsable(stat: DailyStats, confirmations: readonly FinancialZeroConfirmation[] = []): boolean {
+  const quality = assessDailyFinancialRecord(stat, confirmations);
+  return quality.revenueValid && quality.costConsistent && (quality.costUsable || stat.revenue === 0);
+}
+
 export function assessFixedMarketFee(market: Market, total: number, confirmations: readonly FinancialZeroConfirmation[] = []) {
   const fees = [market.boothCost, market.registrationFee,
     ...(!market.tableFree ? [market.tableRental] : []), ...(!market.chairFree ? [market.chairRental] : []),
     ...(!market.umbrellaFree ? [market.umbrellaRental] : []), ...(!market.tableclothFree ? [market.tableclothRental] : [])];
   if (fees.some(value=>value != null && (!Number.isFinite(value) || value < 0))) return 'invalid';
+  if (resolveMarketBoothFee(market).conflict) return 'unknown';
   const confirmed = confirmations.some(row => row.kind === 'zero-fixed-fee' && row.basis === marketFeeBasis(market));
   return classifyFinancialAmount(total, confirmed);
 }

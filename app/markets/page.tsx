@@ -38,6 +38,9 @@ import { getDeepLinkPort } from '@/lib/platform/interaction-capabilities';
 import { getSessionStatePort } from '@/lib/platform/session-state-capability';
 import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
+import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
+import { useMarketFinancialReadings } from '@/hooks/useMarketFinancialReadings';
+import { getLocalDateString } from '@/lib/time-utils';
 import MarketsLoading from './loading';
 
 const AddMarketForm = dynamic(
@@ -111,6 +114,7 @@ function MarketsPageContent() {
   const router = useRouter();
   const { userRole, roleRefreshState } = useRoleContext();
   const { user } = useAuth();
+  const { canRecord } = useSubscriptionExperience();
   const isRoleReady = roleRefreshState.stage === 'ready';
   const isStaffMode = isRoleReady ? userRole.isStaff : true;
   const currentOwnerId = isRoleReady ? (isStaffMode ? userRole.ownerId : user?.id) : undefined;
@@ -200,7 +204,8 @@ function MarketsPageContent() {
     order: 'desc',
     ownerId: scopedOwnerId,
   });
-  const groups = useMemo(() => buildMarketListGroups(allMarkets, now), [allMarkets, now]);
+  const finance = useMarketFinancialReadings(user?.id ?? '', allMarkets, canLoadScopedData && !isStaffMode && canRecord, getLocalDateString(now));
+  const groups = useMemo(() => buildMarketListGroups(allMarkets, now, finance.readings), [allMarkets, now, finance.readings]);
   const searchedGroups = useMemo(() => ({
     active: groups.active.filter(item => matchesMarketSearch(item.market, searchQuery)),
     preparing: groups.preparing.filter(item => matchesMarketSearch(item.market, searchQuery)),
@@ -420,6 +425,12 @@ function MarketsPageContent() {
         )}
 
         <MarketSearchField value={searchQuery} onChange={setSearchQuery} />
+        {activeView === 'ended' && finance.error ? (
+          <div className="mt-3 text-sm text-muted-foreground" role="status">
+            <p>{finance.error}</p>
+            <Button variant="secondary" onClick={() => void finance.refresh()}>重新讀取成本核對</Button>
+          </div>
+        ) : null}
         {searchQuery.trim() && (
           <p className="mt-2 text-xs leading-5 text-muted-foreground" role="status">
             此分類找到 {filteredMarkets.length} 場；上方分類數字為搜尋結果數量。

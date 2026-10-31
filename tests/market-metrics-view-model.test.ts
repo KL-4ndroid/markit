@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   composeAdvancedMarketMetricsViewModel,
   composeMarketMetricsViewModel,
+  applyFinancialReadingsToMetrics,
   type MarketMetricItem,
 } from '../lib/analytics/market-metrics-view-model';
 import type { MarketMetrics } from '../lib/analytics/types';
@@ -72,3 +73,16 @@ assert.equal(
 );
 
 console.log('PASS shared market metrics view model');
+
+const before = JSON.stringify(viewModel);
+const reviewed = applyFinancialReadingsToMetrics(viewModel, new Map([
+  ['winner',{estimatedProfit:25,status:'ready' as const}],
+  ['steady',{estimatedProfit:null,status:'pending' as const}],
+]));
+assert.deepEqual(reviewed.profitableRanking.map(item=>item.marketId),['winner'],'unconfirmed profit never enters the ranking');
+assert.equal(reviewed.profitableRanking[0].metrics.hourlyProfit,5,'hourly profit uses the same reviewed net result');
+assert.equal(reviewed.items.find(item=>item.marketId==='winner')!.metrics.netProfit,25);
+assert.equal(reviewed.items.find(item=>item.marketId==='winner')!.metrics.derivedMetrics.efficiencyIndex,0.5);
+assert.deepEqual(reviewed.averageOrderValueRanking,viewModel.averageOrderValueRanking,'cost uncertainty does not erase independently available AOV');
+assert.equal(JSON.stringify(viewModel),before,'overlay never rewrites cached metrics');
+console.log('PASS reviewed net profit overlays, pending ranking exclusion, independent AOV and immutable source');

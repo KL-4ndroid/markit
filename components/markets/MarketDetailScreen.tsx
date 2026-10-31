@@ -71,15 +71,14 @@ import { marketCashEnabled } from '@/lib/markets/market-cash';
 import { marketJournalsEnabled } from '@/lib/markets/market-journal';
 import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceDetailTabs';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
-import { calculateEstimatedMarketNetProfit, calculateTrackedMarketFixedCost } from '@/lib/analytics/market-financial-summary';
+import { calculateTrackedMarketFixedCost } from '@/lib/analytics/market-financial-summary';
+import { buildMarketFinancialReadings } from '@/lib/analytics/market-financial-reading';
 import { MarketFinancialRecordNotice } from './MarketFinancialRecordNotice';
 import { FinancialReviewPanel } from './FinancialReviewPanel';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getLocalDateString } from '@/lib/time-utils';
 import { useFinancialReviews } from '@/hooks/useFinancialReviews';
 import { applyFinancialReviews,financialReviewsEnabled } from '@/lib/markets/financial-reviews';
-import { buildReadableSettlementReport } from '@/lib/reporting/settlement-report-reading';
-import { deriveRoleCapabilities as deriveFinancialOwnerCapabilities } from '@/lib/permissions/role-capabilities';
 import { ContextHelp } from '@/components/ui/ContextHelp';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import { MarketLiveLayout } from '@/components/markets/MarketLiveLayout';
@@ -287,10 +286,11 @@ export function MarketDetailScreen() {
   const cacheAccessDenied = Boolean(candidateMarket && !canReadCachedEntity(candidateMarket, user?.id, userRole));
   const market = cacheAccessDenied ? undefined : candidateMarket;
   const canReviewFinance=Boolean(financialReviewsEnabled() && !isStaff && !isRoleLoading && canRecord && user?.id && market?.owner_id===user.id && market.access_type!=='staff');
-  const rawFinancialStats=useLiveQuery(async()=>canReviewFinance && market?.id ? db.dailyStats.where('marketId').equals(market.id).toArray():[],[canReviewFinance,market?.id]);
+  const canReadFinance=Boolean(!isStaff && !isRoleLoading && canRecord && user?.id && market?.owner_id===user.id && market.access_type!=='staff');
+  const rawFinancialStats=useLiveQuery(async()=>canReadFinance && market?.id ? db.dailyStats.where('marketId').equals(market.id).toArray():[],[canReadFinance,market?.id,user?.id]);
   const finance=useFinancialReviews(user?.id ?? '',market?.id?[market.id]:[],canReviewFinance);
   const financialOverlay=useMemo(()=>finance.enabled && market ? applyFinancialReviews([market],rawFinancialStats ?? [],finance.snapshots,finance.blocked):null,[finance.enabled,market,rawFinancialStats,finance.snapshots,finance.blocked]);
-  const ownerFinancialReading=useMemo(()=>financialOverlay && market ? buildReadableSettlementReport({capabilities:deriveFinancialOwnerCapabilities({isOwner:true,staffRole:null}),markets:[market],dailyStats:financialOverlay.stats,financialConfirmations:financialOverlay.confirmations,generatedAtDate:getLocalDateString(),period:{kind:'monthly',startDate:market.startDate,endDate:market.endDate,label:'整場'}}).reading:null,[financialOverlay,market]);
+  const ownerFinancialReading=useMemo(()=>canReadFinance && market ? buildMarketFinancialReadings({markets:[market],dailyStats:financialOverlay?.stats ?? rawFinancialStats ?? [],confirmations:financialOverlay?.confirmations,asOfDate:getLocalDateString(),loading:finance.loading || rawFinancialStats===undefined}).get(market.id ?? ''):undefined,[canReadFinance,financialOverlay,rawFinancialStats,finance.loading,market]);
   const salesPhotoEvidenceRequired = Boolean(
     canAnalyze && (market as SalesPhotoEvidenceMarket | undefined)?.salesPhotoEvidenceRequired
   );
@@ -1121,13 +1121,6 @@ export function MarketDetailScreen() {
     setSelectedInteractionType(null);
   };
 
-  // 處理編輯成交記錄（暫時只顯示提示）
-  const handleEditDeal = (deal: Event<DealClosedPayload>) => {
-    toast.info('編輯功能即將推出', {
-      description: '目前僅支援查看成交詳情',
-    });
-  };
-
   // 處理刪除成交記錄 - 優化版本
   const handleDeleteDeal = useCallback(async (deal: Event<DealClosedPayload>) => {
     if (dbStatus?.ok === false) return;
@@ -1287,9 +1280,7 @@ export function MarketDetailScreen() {
   }
 
   const liveStage = getMarketLiveStage(operatingSession?.phase, marketWorkspacePhase);
-  const summaryEstimatedProfit = finance.enabled
-    ? finance.loading || rawFinancialStats === undefined ? null : ownerFinancialReading?.estimatedProfit ?? null
-    : calculateEstimatedMarketNetProfit(market);
+  const summaryEstimatedProfit = ownerFinancialReading?.estimatedProfit ?? null;
   const liveBackfillDate = getMarketLiveBackfillDate(market, operatingSession?.sessionDate, currentDateKey);
   const pendingPhotoSummary = {
     label: '待補照片',
@@ -1399,7 +1390,7 @@ export function MarketDetailScreen() {
                   { label: '總收入', value: formatCurrency(stats?.totalRevenue ?? market.totalRevenue ?? 0), emphasis: true },
                   {
                     label: '估計淨利',
-                    value: finance.enabled && (finance.loading || rawFinancialStats === undefined) ? '讀取中' : summaryEstimatedProfit == null ? '待確認' : formatCurrency(summaryEstimatedProfit),
+                    value: ownerFinancialReading?.status === 'loading' ? '讀取中' : summaryEstimatedProfit == null ? '待確認' : formatCurrency(summaryEstimatedProfit),
                     tone: summaryEstimatedProfit != null && summaryEstimatedProfit < 0 ? 'danger' : 'neutral',
                   },
                   { label: '成交', value: stats?.totalDeals ?? market.totalDeals ?? 0 },
@@ -1669,6 +1660,7 @@ export function MarketDetailScreen() {
           <DailyRevenueStats
             market={market}
             reviewedStats={financialOverlay?.stats}
+            financialConfirmations={financialOverlay?.confirmations[market.id ?? '']?.days}
             focusDate={searchParams.get('reportDate') ?? undefined}
             dealRecordCountByDate={dealRecordCountByDate}
             onAddRevenue={handleOpenAddRevenue}
@@ -2131,7 +2123,6 @@ export function MarketDetailScreen() {
         isOpen={canRecord && showDealDetailModal}
         deal={selectedDeal}
         onClose={handleCloseDealDetail}
-        onEdit={handleEditDeal}
         onDelete={handleDeleteDeal}
         photoEvidence={selectedDealPhotoEvidence}
         expiredPhotoEvidence={selectedDealExpiredPhotoEvidence}

@@ -1,6 +1,6 @@
 import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import type { Market, MarketStatus } from '@/types/db';
-import { calculateEstimatedMarketNetProfit } from '@/lib/analytics/market-financial-summary';
+import type { MarketFinancialReadings } from '@/lib/analytics/market-financial-reading';
 import { formatDisplayDateRange } from '@/lib/presentation/formatters';
 import {
   resolveMarketOperatingSession,
@@ -33,6 +33,7 @@ export interface MarketPreparationSummary {
 export interface MarketCompletionSummary {
   totalRevenue: number | null;
   estimatedNetProfit: number | null;
+  profitStatus: 'ready' | 'pending' | 'loading';
   totalDeals: number | null;
 }
 
@@ -57,16 +58,19 @@ function positiveAmount(value: number | null | undefined): number | null {
 function buildCompletionSummary(
   market: Market,
   stage: MarketListStage,
+  readings?: MarketFinancialReadings,
 ): MarketCompletionSummary | null {
   if (stage !== 'ended') return null;
 
-  const totalRevenue = positiveAmount(market.totalRevenue);
-  const totalDeals = positiveAmount(market.totalDeals);
+  const confirmed = readings?.get(market.id ?? '')?.status === 'ready';
+  const totalRevenue = confirmed && market.totalRevenue === 0 ? 0 : positiveAmount(market.totalRevenue);
+  const totalDeals = confirmed && market.totalDeals === 0 ? 0 : positiveAmount(market.totalDeals);
   if (totalRevenue === null && totalDeals === null) return null;
 
   return {
     totalRevenue,
-    estimatedNetProfit: totalRevenue === null ? null : calculateEstimatedMarketNetProfit(market),
+    estimatedNetProfit: readings?.get(market.id ?? '')?.estimatedProfit ?? null,
+    profitStatus: readings?.get(market.id ?? '')?.status ?? 'pending',
     totalDeals,
   };
 }
@@ -225,6 +229,7 @@ function displayDateForStage(
 export function buildMarketListGroups(
   markets: readonly Market[],
   now: Date = new Date(),
+  readings?: MarketFinancialReadings,
 ): MarketListGroups {
   const today = dateKey(now);
   const groups: MarketListGroups = {
@@ -244,7 +249,7 @@ export function buildMarketListGroups(
       stage,
       preparationAttention: resolvePreparationAttention(market, stage),
       preparationSummary: buildPreparationSummary(market, stage),
-      completionSummary: buildCompletionSummary(market, stage),
+      completionSummary: buildCompletionSummary(market, stage, readings),
       stageLabel: STAGE_LABEL[stage],
       statusLabel: stage === 'preparing' ? preparingStatusLabel(market) : STAGE_LABEL[stage],
       displayDate: displayDateForStage(market, stage, today, session),

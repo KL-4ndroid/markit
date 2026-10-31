@@ -3,12 +3,11 @@ import {
   buildActionableAnalytics,
   type ActionableAnalyticsInput,
   type AnalyticsConfidence,
+  resolveAnalyticsFinancialReadings,
 } from './actionable-insights';
 import type { AnalyticsDataLevel } from './data-completeness';
-import {
-  calculateEstimatedMarketNetProfit,
-  calculateTrackedMarketFixedCost,
-} from './market-financial-summary';
+import { calculateTrackedMarketFixedCost } from './market-financial-summary';
+import type { MarketFinancialReadings } from './market-financial-reading';
 
 export interface MarketRecapReport {
   title: string;
@@ -33,13 +32,14 @@ function getReportTitle(markets: Market[]): string {
   return `市集回顧：${markets.length} 場`;
 }
 
-function getResultLabel(markets: Market[]): MarketRecapReport['resultLabel'] {
+function getResultLabel(markets: Market[], readings: MarketFinancialReadings): MarketRecapReport['resultLabel'] {
   const marketsWithRevenue = markets.filter((market) => isPositiveNumber(market.totalRevenue));
-  if (marketsWithRevenue.length === 0) return 'not_enough_data';
+  if (markets.length === 0) return 'not_enough_data';
+  if (markets.some(market => readings.get(market.id ?? '')?.estimatedProfit == null)) return 'not_enough_data';
 
   const totalRevenue = marketsWithRevenue.reduce((total, market) => total + (market.totalRevenue ?? 0), 0);
-  const totalNetProfit = marketsWithRevenue.reduce((total, market) => total + calculateEstimatedMarketNetProfit(market), 0);
-  const totalFixedCost = marketsWithRevenue.reduce((total, market) => total + calculateTrackedMarketFixedCost(market), 0);
+  const totalNetProfit = markets.reduce((total, market) => total + readings.get(market.id ?? '')!.estimatedProfit!, 0);
+  const totalFixedCost = markets.reduce((total, market) => total + calculateTrackedMarketFixedCost(market), 0);
   const costRatio = totalRevenue > 0 ? totalFixedCost / totalRevenue : 0;
 
   if (totalNetProfit > 0 && costRatio <= 0.35) return 'strong';
@@ -47,13 +47,13 @@ function getResultLabel(markets: Market[]): MarketRecapReport['resultLabel'] {
   return 'needs_adjustment';
 }
 
-function buildSummary(label: MarketRecapReport['resultLabel'], markets: Market[]): string {
+function buildSummary(label: MarketRecapReport['resultLabel'], markets: Market[], readings: MarketFinancialReadings): string {
   if (label === 'not_enough_data') {
-    return '目前資料還不足以產生可靠回顧。先補上收入與主要成本，就能得到基本市集判斷。';
+    return '估計淨利待確認。先核對收入、銷售成本與攤位費，再判斷市集表現；已有收入紀錄會保留。';
   }
 
   const totalRevenue = markets.reduce((total, market) => total + (market.totalRevenue ?? 0), 0);
-  const totalNetProfit = markets.reduce((total, market) => total + calculateEstimatedMarketNetProfit(market), 0);
+  const totalNetProfit = markets.reduce((total, market) => total + readings.get(market.id ?? '')!.estimatedProfit!, 0);
 
   if (label === 'strong') {
     return `這個範圍整體表現良好，收入約 ${Math.round(totalRevenue)}，估計淨利約 ${Math.round(totalNetProfit)}。`;
@@ -126,14 +126,15 @@ function buildNextActions(input: ActionableAnalyticsInput): string[] {
 export function buildMarketRecapReport(input: ActionableAnalyticsInput): MarketRecapReport {
   const markets = input.markets ?? [];
   const analytics = buildActionableAnalytics(input);
-  const resultLabel = getResultLabel(markets);
+  const readings = resolveAnalyticsFinancialReadings(input);
+  const resultLabel = getResultLabel(markets, readings);
 
   return {
     title: getReportTitle(markets),
-    summary: buildSummary(resultLabel, markets),
+    summary: buildSummary(resultLabel, markets, readings),
     resultLabel,
     dataLevel: analytics.dataCompleteness.level,
-    confidence: analytics.confidence,
+    confidence: resultLabel === 'not_enough_data' ? 'low' : analytics.confidence,
     highlights: buildHighlights(input),
     opportunities: buildOpportunities(input),
     nextActions: buildNextActions(input),

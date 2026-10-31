@@ -7,6 +7,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { getInteractionButtons } from '@/lib/interaction-buttons-store';
 import { computeDailyTotals, hasDailyRevenueRecord } from '@/lib/ui/daily-revenue-totals';
 import type { Market,DailyStats } from '@/types/db';
+import { isDailySalesProfitUsable, type FinancialZeroConfirmation } from '@/lib/analytics/financial-record-quality';
 
 interface DailyRevenueStatsProps {
   market: Market;
@@ -27,6 +28,7 @@ interface DailyRevenueStatsProps {
   dealRecordCountByDate?: Readonly<Record<string, number>>;
   focusDate?: string;
   reviewedStats?: readonly DailyStats[];
+  financialConfirmations?: Readonly<Record<string, readonly FinancialZeroConfirmation[]>>;
 }
 
 /**
@@ -47,6 +49,7 @@ export function DailyRevenueStats({
   dealRecordCountByDate,
   focusDate,
   reviewedStats,
+  financialConfirmations,
 }: DailyRevenueStatsProps) {
   const originalStats = useDateRangeStats(market.startDate, market.endDate);
   const stats = !hideProfit && reviewedStats ? reviewedStats : originalStats;
@@ -106,6 +109,7 @@ export function DailyRevenueStats({
     });
 
     // ✅ 修復：只累加當前市集的統計數據
+    const seenDates = new Set<string>();
     stats?.forEach(stat => {
       // 檢查是否屬於當前市集且在日期範圍內
       if (stat.marketId === market.id && dateRange.includes(stat.date)) {
@@ -113,7 +117,7 @@ export function DailyRevenueStats({
         if (existing) {
           dataMap.set(stat.date, {
             ...existing,
-            profitPending:stat.financialReviewPending,
+            profitPending:!hideProfit && (seenDates.has(stat.date) || existing.profitPending === true || !isDailySalesProfitUsable(stat,financialConfirmations?.[stat.date])),
             zeroIncomeConfirmed:!hideProfit && stat.financialZeroIncomeConfirmed === true && !stat.financialReviewPending,
             revenue: stat.revenue || 0,
             profit: stat.profit || 0,
@@ -124,6 +128,7 @@ export function DailyRevenueStats({
               ...(stat.extraInteractions || {}),
             },
           });
+          seenDates.add(stat.date);
         }
       }
     });
@@ -135,7 +140,7 @@ export function DailyRevenueStats({
       date,
       ...data,
     }));
-  }, [stats, dateRange, market.id, interactionButtons, hideProfit]);
+  }, [stats, dateRange, market.id, interactionButtons, hideProfit, financialConfirmations]);
 
   // ✅ C3.4 修復：總計必須來自每日卡片加總，**不**直接讀 market.total*
   // 否則可能出現「下方總計 ≠ 每日卡片加總」的 UI 內部矛盾

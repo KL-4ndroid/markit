@@ -8,7 +8,7 @@ const cardSource = readFileSync(join(root, 'components/markets/MarketListCard.ts
 const addFormSource = readFileSync(join(root, 'components/markets/AddMarketForm.tsx'), 'utf8');
 const editFormSource = readFileSync(join(root, 'components/markets/EditMarketForm.tsx'), 'utf8');
 
-assert.match(source, /buildMarketListGroups\(allMarkets, now\)/);
+assert.match(source, /buildMarketListGroups\(allMarkets, now, finance.readings\)/);
 assert.match(source, /label: '進行中'/);
 assert.match(source, /label: '待準備'/);
 assert.match(source, /label: '已結束'/);

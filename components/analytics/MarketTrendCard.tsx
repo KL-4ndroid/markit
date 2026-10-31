@@ -48,7 +48,7 @@ export function MarketTrendCard({ trend }: MarketTrendCardProps) {
           {directionLabels[trend.direction]}
         </span>
         <span className="text-xs px-3 py-1 rounded-full bg-cream-lighter text-foreground">
-          {trend.points.length} 場有收入紀錄
+          {trend.points.length} 場淨利已確認
         </span>
       </div>
 

@@ -182,11 +182,11 @@ export function MarketListCard({ item, isStaff, contextLabel, isOpening = false,
                   營收 {formatCurrency(completion.totalRevenue)}
                 </span>
               ) : null}
-              {!isStaff && completion.estimatedNetProfit !== null ? (
-                <span className={`rounded-full border px-3 py-1.5 font-medium ${completion.estimatedNetProfit >= 0
+              {!isStaff ? (
+                <span className={`rounded-full border px-3 py-1.5 font-medium ${completion.estimatedNetProfit === null || completion.estimatedNetProfit >= 0
                   ? 'border-atelier-line bg-muted/35 text-foreground'
                   : 'border-status-danger-border bg-status-danger-bg text-status-danger-text'}`}>
-                  估計淨利 {formatCurrency(completion.estimatedNetProfit)}
+                  估計淨利 {completion.profitStatus === 'loading' ? '讀取中' : completion.estimatedNetProfit === null ? '待確認' : formatCurrency(completion.estimatedNetProfit)}
                 </span>
               ) : null}
               {completion.totalDeals !== null ? (

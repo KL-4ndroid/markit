@@ -1,5 +1,5 @@
 import { marketBusinessDates } from '@/lib/markets/market-business-dates';
-import { assessDailyFinancialRecord, assessFixedMarketFee, type FinancialZeroConfirmation } from '@/lib/analytics/financial-record-quality';
+import { assessDailyFinancialRecord, assessFixedMarketFee, isDailySalesProfitUsable, type FinancialZeroConfirmation } from '@/lib/analytics/financial-record-quality';
 import { buildSettlementReportModel, type BuildSettlementReportModelInput, type SettlementMarketRow, type SettlementReportModel, type SettlementReportPeriod } from './settlement-report';
 
 export type ReportRecordState = 'recorded' | 'missing' | 'upcoming' | 'activity-only';
@@ -99,10 +99,7 @@ function buildOne(input: BuildReadableSettlementReportInput): SettlementReportMo
     const missingDates = expected.filter(date=>!recordedDates.includes(date));
     const hasOffDate = input.dailyStats.some(stat=>stat.marketId === row.marketId && stat.date >= input.period.startDate && stat.date <= input.period.endDate && stat.date <= asOf && !dates.includes(stat.date));
     const revenueUsable = !hasOffDate && recordedDates.length === stats.length && stats.every(stat=>quality(stat).revenueValid);
-    const costRecorded = state === 'recorded' && revenueUsable && stats.every(stat=>{
-      const recordQuality = quality(stat);
-      return recordQuality.costConsistent && (recordQuality.costUsable || stat.revenue === 0);
-    });
+    const costRecorded = state === 'recorded' && revenueUsable && stats.every(stat=>isDailySalesProfitUsable(stat,confirmations?.days?.[stat.date]));
     const fixedFeeState = assessFixedMarketFee(market,row.fixedMarketCost,confirmations?.fees);
     const allocated = allocateReportFixedCost(row.fixedMarketCost,dates,input.period);
     const inProgress = market.status !== 'completed' && dates.some(date=>date >= asOf && date >= input.period.startDate && date <= input.period.endDate && !stats.some(stat=>stat.date===date && quality(stat).zeroIncomeConfirmed));
@@ -128,7 +125,7 @@ function buildOne(input: BuildReadableSettlementReportInput): SettlementReportMo
   issue('invalid','有收入紀錄需要核對','同一天重複、日期歸屬或收入／成交數不正確時，先核對來源紀錄，再進行比較。',rows.filter(row=>!row.revenueUsable),'performance');
   issue('cost','有銷售成本待確認',input.financialConfirmations ? '請核對對應日期的銷售成本總額，攤位與設備費另列。保存核對金額即可，請勿重複補登同筆收入。' : '請核對對應日期的成交與銷售成本，攤位與設備費另列。目前僅供核對，請勿重複補登同筆收入。',recorded.filter(row=>row.revenueUsable && !row.costRecorded),'performance');
   issue('in-progress','有場次仍在進行','收入可先回顧，收攤後再比較完整期間的淨利與每日表現。',recorded.filter(row=>row.revenueUsable && row.missingDates.length === 0 && !row.canCompare),'performance','status');
-  issue('zero-fee','有場次固定費用待確認','固定費用為零時，目前無法區分免費出攤與尚未填寫；不正確的費用也需先核對。先保留收入與成本明細，暫不列入淨利比較。',recorded.filter(row=>['unknown','invalid'].includes(row.fixedFeeState) || row.commissionFee < 0 || !validCommissionRate(marketById.get(row.marketId)?.commissionRate)),'costs');
+  issue('zero-fee','有場次固定費用待確認','請核對未確認的零費用、不正確的金額，或舊報名費與攤位費不一致的紀錄。收入與成本明細仍保留，核對前暫不列入淨利比較。',recorded.filter(row=>['unknown','invalid'].includes(row.fixedFeeState) || row.commissionFee < 0 || !validCommissionRate(marketById.get(row.marketId)?.commissionRate)),'costs');
   issue('partial','跨期場次已分攤固定費用','固定費用按活動日期均攤，尾差分配至較早日期；保證金不列為費用。',rows.filter(row=>row.isPartial),'costs','method');
   const revenueUsable = rows.every(row=>row.revenueUsable);
   const estimatedProfit = recorded.length > 0 && rows.every(row=>row.state === 'upcoming'||row.estimatedProfit !== null)

@@ -1,0 +1,58 @@
+import assert from 'node:assert/strict';
+import { buildMarketFinancialReadings } from '../lib/analytics/market-financial-reading';
+import { buildMarketListGroups } from '../lib/markets/market-list-view-model';
+import { buildActionableAnalytics } from '../lib/analytics/actionable-insights';
+import { buildMarketRecapReport } from '../lib/analytics/market-recap';
+import { buildMarketTrend } from '../lib/analytics/market-trend';
+import { buildReadableSettlementReport } from '../lib/reporting/settlement-report-reading';
+import { deriveRoleCapabilities } from '../lib/permissions/role-capabilities';
+import { dailyFinancialBasis, marketFeeBasis } from '../lib/analytics/financial-record-quality';
+import { applyFinancialReviews } from '../lib/markets/financial-reviews';
+import type { DailyStats, Market } from '../types/db';
+
+const asOfDate='2026-10-31';
+const market: Market = {id:'m',name:'成本核對測試',owner_id:'owner',location:'fixture',status:'completed',
+  startDate:'2026-10-30',endDate:'2026-10-30',boothCost:100,totalRevenue:50,totalProfit:50,totalDeals:1,createdAt:0,updatedAt:0};
+const stat: DailyStats = {marketId:'m',date:'2026-10-30',revenue:50,cost:0,profit:50,dealCount:1,touchCount:0,inquiryCount:0,productsSold:[],updatedAt:0};
+const before=JSON.stringify([market,stat]);
+const pending=buildMarketFinancialReadings({markets:[market],dailyStats:[stat],asOfDate});
+assert.deepEqual(pending.get('m'),{estimatedProfit:null,status:'pending'},'zero cost without evidence is not free');
+assert.equal(buildMarketListGroups([market],new Date(2026,9,31),pending).ended[0].completionSummary!.estimatedNetProfit,null);
+assert.equal(buildMarketRecapReport({markets:[market],dailyStats:[stat],financialReadings:pending}).resultLabel,'not_enough_data');
+assert.match(buildMarketRecapReport({markets:[market],dailyStats:[stat],financialReadings:pending}).summary,/待確認/);
+assert.ok(buildActionableAnalytics({markets:[market],dailyStats:[stat],financialReadings:pending}).cards.find(row=>row.kind==='market_decision')?.blockedBy?.includes('financial_record_quality'));
+assert.equal(buildMarketTrend([market],pending).points.length,0);
+
+const confirmations={m:{days:{[stat.date]:[{kind:'zero-sales-cost' as const,basis:dailyFinancialBasis(stat)}]}}};
+const ready=buildMarketFinancialReadings({markets:[market],dailyStats:[stat],asOfDate,confirmations});
+const report=buildReadableSettlementReport({capabilities:deriveRoleCapabilities({isOwner:true,staffRole:null}),markets:[market],dailyStats:[stat],financialConfirmations:confirmations,generatedAtDate:asOfDate,
+  period:{kind:'monthly',startDate:market.startDate,endDate:market.endDate,label:'fixture'}});
+assert.deepEqual(ready.get('m'),{estimatedProfit:-50,status:'ready'});
+assert.equal(ready.get('m')!.estimatedProfit,report.reading!.estimatedProfit);
+assert.equal(buildMarketListGroups([market],new Date(2026,9,31),ready).ended[0].completionSummary!.estimatedNetProfit,-50);
+assert.equal(buildMarketTrend([market],ready).points[0].netProfit,-50);
+assert.match(buildMarketRecapReport({markets:[market],dailyStats:[stat],financialReadings:ready}).summary,/-50/);
+assert.equal(buildMarketFinancialReadings({markets:[market],dailyStats:[stat],asOfDate,confirmations,loading:true}).get('m')!.status,'loading');
+assert.equal(buildMarketFinancialReadings({markets:[market],dailyStats:[{...stat,revenue:60,profit:60}],asOfDate,confirmations}).get('m')!.estimatedProfit,null,'changed source invalidates confirmation');
+assert.equal(buildMarketFinancialReadings({markets:[market],dailyStats:[stat,stat],asOfDate,confirmations}).get('m')!.estimatedProfit,null,'duplicate stats cannot become a complete estimate');
+const free={...market,boothCost:0};
+const costed={...stat,cost:10,profit:40};
+assert.equal(buildMarketFinancialReadings({markets:[free],dailyStats:[costed],asOfDate}).get('m')!.estimatedProfit,null);
+assert.equal(buildMarketFinancialReadings({markets:[free],dailyStats:[costed],asOfDate,confirmations:{m:{fees:[{kind:'zero-fixed-fee',basis:marketFeeBasis(free)}]}}}).get('m')!.estimatedProfit,40);
+const blocked=applyFinancialReviews([market],[costed],[],new Set(['m']));
+assert.equal(buildMarketFinancialReadings({markets:[market],dailyStats:blocked.stats,asOfDate,confirmations:blocked.confirmations}).get('m')!.estimatedProfit,null,'failed or offline review reads stay pending');
+const partial={...market,endDate:'2026-10-31'};
+const zeroMarket={...market,totalRevenue:0,totalProfit:0,totalDeals:0};
+const zeroStat={...stat,revenue:0,cost:0,profit:0,dealCount:0};
+const zeroReadings=buildMarketFinancialReadings({markets:[zeroMarket],dailyStats:[zeroStat],asOfDate});
+assert.equal(zeroReadings.get('m')!.estimatedProfit,-100,'a completed zero-income record keeps the fixed expense');
+const zeroSummary=buildMarketListGroups([zeroMarket],new Date(2026,9,31),zeroReadings).ended[0].completionSummary!;
+assert.equal(zeroSummary.totalRevenue,0);assert.equal(zeroSummary.estimatedNetProfit,-100);
+assert.equal(buildMarketRecapReport({markets:[zeroMarket],dailyStats:[zeroStat],financialReadings:zeroReadings}).resultLabel,'needs_adjustment');
+assert.equal(buildMarketTrend([zeroMarket],zeroReadings).points[0].netProfit,-100);
+assert.equal(buildMarketFinancialReadings({markets:[partial],dailyStats:[costed],asOfDate}).get('m')!.estimatedProfit,null,'missing business day blocks whole-market profit');
+const rental={...market,tableclothRental:20,commissionRate:10,deposit:500};
+assert.equal(buildMarketFinancialReadings({markets:[{...market,registrationFee:200}],dailyStats:[costed],asOfDate}).get('m')!.estimatedProfit,null,'unresolved legacy fee conflict blocks every presentation');
+assert.equal(buildMarketFinancialReadings({markets:[rental],dailyStats:[costed],asOfDate}).get('m')!.estimatedProfit,-85,'includes tablecloth and commission, excludes deposit');
+assert.equal(JSON.stringify([market,stat]),before,'reading does not mutate events, projections, revenue or costs');
+console.log('PASS shared list/detail/report/recap/trend financial states: unknown, confirmed zero, changed source, duplicate, offline, missing day, full expenses and immutable source');

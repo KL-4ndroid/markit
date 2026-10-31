@@ -12,7 +12,7 @@ function market(overrides: Partial<Market> = {}): Market {
     startDate: '2026-01-10',
     endDate: '2026-01-10',
     status: 'completed',
-    registrationFee: 100,
+    registrationFee: 0,
     boothCost: 500,
     totalRevenue: 3000,
     totalProfit: 1800,
@@ -89,12 +89,13 @@ async function main(): Promise<void> {
   assert.equal(summaryOnly.topAction.kind, 'market_decision');
 
   const costPressure = buildActionableAnalytics({
+    dailyStats: [dailyStat({revenue:2000, cost:400, profit:1600})],
     markets: [
       market({
         totalRevenue: 2000,
         totalProfit: 1600,
         boothCost: 900,
-        registrationFee: 200,
+        registrationFee: 0,
         tableRental: 200,
       }),
     ],
@@ -123,6 +124,7 @@ async function main(): Promise<void> {
   assert.equal(productDetail.cards.some((card) => card.kind === 'product_suggestion' && card.blockedBy === undefined), true);
 
   const mediumConfidence = buildActionableAnalytics({
+    dailyStats: Array.from({length:3},(_,index)=>dailyStat({marketId:`market-${index+1}`})),
     markets: [
       market({ id: 'market-1' }),
       market({ id: 'market-2' }),
@@ -133,10 +135,12 @@ async function main(): Promise<void> {
   assert.equal(mediumConfidence.confidence, 'medium');
 
   const highConfidence = buildActionableAnalytics({
+    dailyStats: Array.from({length:8},(_,index)=>dailyStat({marketId:`market-${index+1}`})),
     markets: Array.from({ length: 8 }, (_, index) => market({ id: `market-${index + 1}` })),
   });
 
   assert.equal(highConfidence.confidence, 'high');
+  assert.equal(buildActionableAnalytics({markets:Array.from({length:8},(_,index)=>market({id:`market-${index+1}`}))}).confidence,'low','sample count cannot override unknown financial sources');
 
   console.log('PASS actionable analytics insight rules');
 }

@@ -32,7 +32,7 @@ interface DealDetailModalProps {
 
 /**
  * 成交詳細內容彈窗
- * 顯示成交詳情、商品明細，並提供編輯和刪除功能
+ * 顯示成交詳情、商品明細，僅呈現呼叫端已提供的操作。
  */
 export function DealDetailModal({
   isOpen,
@@ -244,23 +244,23 @@ export function DealDetailModal({
           </div>
 
           {/* 操作按鈕 */}
-          <div className="flex gap-3 p-6 border-t border-primary/10 bg-background/50">
-            <button
+          {(onDelete || onEdit) && <div className="flex gap-3 p-6 border-t border-primary/10 bg-background/50">
+            {onDelete && <button
               onClick={handleDelete}
               disabled={isDeleting}
               className="flex-1 py-3 px-4 bg-soft-pink text-danger rounded-xl font-medium hover:bg-soft-pink/80 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
               {isDeleting ? '刪除中...' : '刪除'}
-            </button>
-            <button
+            </button>}
+            {onEdit && <button
               onClick={() => onEdit?.(deal)}
               className="flex-1 py-3 px-4 bg-primary text-white rounded-xl font-medium hover:bg-primary/85 transition-colors flex items-center justify-center gap-2"
             >
               <Edit className="w-4 h-4" />
               編輯
-            </button>
-          </div>
+            </button>}
+          </div>}
         </DialogPanel>
       </div>
     </Dialog>

@@ -145,7 +145,8 @@ const endedWithResults = completionDetails.find(item => item.market.id === 'ende
 const endedWithoutResults = completionDetails.find(item => item.market.id === 'ended-without-results');
 assert.deepEqual(endedWithResults?.completionSummary, {
   totalRevenue: 5000,
-  estimatedNetProfit: 1400,
+  estimatedNetProfit: null,
+  profitStatus: 'pending',
   totalDeals: 8,
 });
 assert.equal(endedWithoutResults?.completionSummary, null);

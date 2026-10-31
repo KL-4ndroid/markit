@@ -12,7 +12,7 @@ function market(overrides: Partial<Market> = {}): Market {
     startDate: '2026-01-10',
     endDate: '2026-01-10',
     status: 'completed',
-    registrationFee: 100,
+    registrationFee: 0,
     boothCost: 500,
     totalRevenue: 3000,
     totalProfit: 1800,
@@ -105,12 +105,13 @@ async function main(): Promise<void> {
   assert.equal(strongSummaryReport.opportunities.some((text) => text.includes('商品層級資料不足')), true);
 
   const costPressureReport = buildMarketRecapReport({
+    dailyStats: [dailyStat({revenue:2000, cost:400, profit:1600})],
     markets: [
       market({
         totalRevenue: 2000,
         totalProfit: 1600,
         boothCost: 1000,
-        registrationFee: 300,
+        registrationFee: 0,
       }),
     ],
   });

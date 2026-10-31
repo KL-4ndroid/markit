@@ -4,6 +4,8 @@ import { calculateHealthScores } from '@/lib/analytics/health-score-engine';
 import { calculateQuadrants } from '@/lib/analytics/quadrant-engine';
 import type { MarketHealthScore, MarketMetrics, QuadrantResult } from '@/lib/analytics/types';
 import type { Market } from '@/types/db';
+import type { MarketFinancialReadings } from './market-financial-reading';
+import { calculateTrackedMarketFixedCost } from './market-financial-summary';
 
 export interface MarketMetricItem {
   market: Market;
@@ -29,6 +31,22 @@ export const EMPTY_MARKET_METRICS_VIEW_MODEL: MarketMetricsViewModel = {
   averageOrderValueRanking: [],
   averageConversionRate: 0,
 };
+
+/** Presentation overlay only. Unverified rows stay available for AOV, never for profit rankings. */
+export function applyFinancialReadingsToMetrics(view: MarketMetricsViewModel, readings: MarketFinancialReadings): MarketMetricsViewModel {
+  const confirmed = view.items.flatMap(item => {
+    const netProfit = readings.get(item.marketId)?.estimatedProfit;
+    if (netProfit == null) return [];
+    const fixedCost = calculateTrackedMarketFixedCost(item.market);
+    const hourlyProfit = item.metrics.operatingHours > 0 ? netProfit / item.metrics.operatingHours : 0;
+    return [{...item, metrics:{...item.metrics, netProfit, totalFixedCost:fixedCost,
+      hourlyProfit,
+      derivedMetrics:{...item.metrics.derivedMetrics, efficiencyIndex:item.metrics.uniqueEngaged > 0 ? hourlyProfit/item.metrics.uniqueEngaged : 0},
+      boothROI:fixedCost > 0 ? item.metrics.totalRevenue / fixedCost * 100 : 0}}];
+  });
+  const byId = new Map(confirmed.map(item => [item.marketId, item]));
+  return {...view, items:view.items.map(item => byId.get(item.marketId) ?? item), profitableRanking:composeMarketMetricsViewModel(confirmed).profitableRanking};
+}
 
 export function composeMarketMetricsViewModel(items: MarketMetricItem[]): MarketMetricsViewModel {
   const profitableRanking = items
