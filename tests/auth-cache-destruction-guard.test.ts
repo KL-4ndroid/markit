@@ -476,6 +476,9 @@ runTest('force discard removes every pending-write table so sign-out cannot re-b
     ['marketJournalDrafts', db.marketJournalDrafts],
     ['marketCashRecords', db.marketCashRecords],
     ['marketCashDrafts', db.marketCashDrafts],
+    ['financialReviewCache', db.financialReviewCache],
+    ['venues', db.venues],
+    ['operationSchedules', db.operationSchedules],
   ] as const;
   const originalClearMethods = tables.map(([, table]) => table.clear.bind(table));
 

@@ -11,6 +11,9 @@ export function emptyFinancialDay(marketId:string,date:string):DailyStats{return
 export function financialReviewError(error:unknown){
  const text=String((error as {message?:string})?.message ?? error);
  if(text.includes('FINANCE_SCOPE'))return '目前身分或方案無法核對這場市集。';
+ if(text.includes('FINANCE_DRAFT_CONFLICT'))return '另一個視窗已更新這份草稿。你的輸入仍在畫面中，請重新開啟最新草稿，避免覆蓋。';
+ if(text.includes('FINANCE_DRAFT_EXISTS'))return '這一天已有未完成草稿，請先選擇繼續或捨棄草稿。';
+ if(text.includes('FINANCE_OFFLINE'))return '目前離線，草稿仍留在這台裝置。連線後請重新讀取來源，再確認保存結果。';
  if(/FINANCE_(SOURCE|CONFLICT|RETRY_CONFLICT)/.test(text))return '來源或核對紀錄已更新，請重新讀取後再核對；目前輸入仍保留。';
  if(text.includes('FINANCE_DATE'))return '請選擇已到的有效營業日期。';
  if(text.includes('FINANCE_INPUT'))return '金額或確認內容不正確，請檢查後再保存。';

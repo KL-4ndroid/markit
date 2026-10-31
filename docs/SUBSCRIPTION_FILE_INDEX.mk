@@ -1,5 +1,13 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-10-31 草稿保護發布執行中：使用者已授權本輪提交、Production 發布及線上複驗，目標 markit-app／main；[發布與驗收狀態](FINANCIAL_DRAFT_LIFECYCLE_2026_10_31.md#發布執行)。下方「尚未提交／發布」為本機驗收完成時的歷史狀態，需依此段與實際部署結果判讀。無新 SQL、旗標、價格或付款變更。
+
+2026-10-31 財務核對草稿生命週期（本機實作）：[規則與驗收](FINANCIAL_DRAFT_LIFECYCLE_2026_10_31.md)。新增[私人草稿模型](../lib/markets/financial-review-drafts.ts)、[編輯 session](../lib/markets/financial-review-draft-session.ts)，[repository](../lib/markets/financial-review-repository.ts)加入 owner 隔離、本機比較交換及來源重讀；[表單](../components/markets/FinancialReviewPanel.tsx)提供繼續／捨棄／明確衝突確認。[schema 12](../lib/db/index.ts)新增裝置私人草稿，auth cache reset 保留、舊 scope 失效，明確 clearAllData 移除。[生命週期回歸](../tests/financial-review-drafts.test.ts)、[渲染存取邊界](../tests/financial-review-draft-access.test.tsx)與 manifest 同步更新。不延長權益，不改方案、價格、付款、094 SQL 或雲端自動同步；本輪尚未提交／發布，不能把本機草稿保存視為已正式啟用訂閱。
+
+本輪收尾補充：[scope 通知](../lib/markets/financial-review-scope.ts)與[讀取 hook](../hooks/useFinancialReviews.ts)重建失效 repository、隔離舊請求；[帳號頁](../components/settings/AccountSyncPanel.tsx)說明草稿留在原裝置、不隨登出自動送出。[auth reset](../lib/db/clear-user-data.ts)補齊據點／固定安排快取清理，避免 A→B→A 重播 `venue_created` 撞 ID；私人財務草稿仍保留，既有 pending／照片 guard 不變。真實重開、雙 origin 衝突、帳號切回與修正後同步通過；真正到期為隔離時鐘證據、實機仍待驗，詳見上方驗收紀錄。
+
+舊分頁補齊：[功能權益提示](../components/subscription/SubscriptionFeatureNotice.tsx)在 unavailable 時提供既有登入視窗入口，原帳號可重新驗證，不必先登出或丟棄待送照片；不繞過方案／資料 gate。
+
 2026-10-31 線上方案時間差修正：[正式驗收與異常紀錄](FINANCIAL_PRODUCTION_RELEASE_2026_10_31.md)。`f126e99` 成本核對及 `efd6a67` 時鐘差修正已正式 Ready；線上重現伺服器核發比裝置回應時間快約 30–65 ms 而被判 unavailable。[共用 freshness](../lib/subscription/subscription-capabilities.ts)只對核發時間增加最多 5 秒容差，[模型回歸](../tests/subscription-feature-gates.test.ts)及 [API client 回歸](../tests/subscription-account-capability-api.test.ts)保留到期／刷新期限／過量未來時間拒絕。正式單場、分析、報告返回、三尺寸報告及 PDF 實際下載／渲染通過；同一斷線重連案例的草稿仍保留，沒有自動重送。真正到期／帳號切換／程序重開的草稿生命週期與多裝置完整矩陣仍待驗。方案、價格、資料範圍、正式付款、離線期限與 DB gate 不變。
 
 2026-10-31 正式成本核對發布執行中：[發布設定與線上複驗追蹤](FINANCIAL_PRODUCTION_RELEASE_2026_10_31.md)。使用者授權提交、發布及正式啟用；Vercel Production 已設定 `NEXT_PUBLIC_FINANCIAL_REVIEWS_ENABLED=true`，需新建置及線上驗證後才算啟用完成。094 資料庫與 owner／付費規則不變，不含正式付款。下方尚未提交／正式旗標未改為先前驗收時的歷史狀態。

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { triggerLogin } from '@/components/auth/AuthManager';
 import { useSubscriptionExperience } from './SubscriptionExperienceProvider';
 
 export function SubscriptionFeatureNotice({ advanced = false }: { advanced?: boolean }) {
@@ -14,6 +15,7 @@ export function SubscriptionFeatureNotice({ advanced = false }: { advanced?: boo
       : '免費版保留市集安排、錄取、繳費、準備與心得；銷售、互動及商品管理由輕量版起提供。'}</p>
     <div className="flex flex-wrap gap-3">
       {tier === 'unavailable' && <button type="button" onClick={refresh} className="min-h-11 rounded-xl border px-4">重新確認</button>}
+      {tier === 'unavailable' && <button type="button" onClick={() => triggerLogin()} className="min-h-11 rounded-xl border px-4">重新登入</button>}
       <Link href="/subscription" className="inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-white">查看方案</Link>
       <Link href="/markets" className="inline-flex min-h-11 items-center rounded-xl border px-4">返回市集</Link>
     </div>

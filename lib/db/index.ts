@@ -39,6 +39,7 @@ import { invalidatePreparationTemplateScope } from '@/lib/markets/preparation-te
 import type { MarketCashRecord, MarketCashDraft } from '@/lib/markets/market-cash';
 import { invalidateCashScope } from '@/lib/markets/market-cash-scope';
 import type { FinancialReviewCache } from '@/lib/markets/financial-reviews';
+import type { FinancialReviewDraft } from '@/lib/markets/financial-review-drafts';
 import { invalidateFinancialReviewScope } from '@/lib/markets/financial-review-scope';
 import { invalidateRegionBackfillScope } from '@/lib/markets/market-region-backfill';
 import { invalidateOwnerFollowupScope } from '@/lib/markets/owner-followup';
@@ -84,9 +85,10 @@ export class MarketPulseDB extends Dexie {
   marketCashRecords!: Table<MarketCashRecord, string>;
   marketCashDrafts!: Table<MarketCashDraft, string>;
   financialReviewCache!: Table<FinancialReviewCache,string>;
+  financialReviewDrafts!: Table<FinancialReviewDraft, string>;
 
-  constructor() {
-    super('MarketPulseDB');
+  constructor(name = 'MarketPulseDB') {
+    super(name);
     
     // 版本 1：初始版本
     this.version(1).stores({
@@ -312,6 +314,7 @@ export class MarketPulseDB extends Dexie {
       marketCashDrafts: 'id, ownerId, marketId, [ownerId+marketId]',
     });
     this.version(11).stores({financialReviewCache:'id, ownerId, marketId, [ownerId+marketId]'});
+    this.version(12).stores({financialReviewDrafts:'id, ownerId, marketId, [ownerId+marketId]'});
   }
 }
 
@@ -399,7 +402,7 @@ export async function clearAllData(): Promise<void> {
   invalidateFinancialReviewScope();
   invalidateRegionBackfillScope();
   try {
-    await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.venues, db.operationSchedules, db.marketJournals, db.marketJournalDrafts, db.marketCashRecords, db.marketCashDrafts,db.financialReviewCache], async () => {
+    await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.venues, db.operationSchedules, db.marketJournals, db.marketJournalDrafts, db.marketCashRecords, db.marketCashDrafts,db.financialReviewCache,db.financialReviewDrafts], async () => {
       await db.events.clear();
       await db.markets.clear();
       await db.products.clear();
@@ -411,6 +414,7 @@ export async function clearAllData(): Promise<void> {
       await db.marketCashRecords.clear();
       await db.marketCashDrafts.clear();
       await db.financialReviewCache.clear();
+      await db.financialReviewDrafts.clear();
     });
     
     console.log('🗑️ 所有資料已清空（設定保留）');

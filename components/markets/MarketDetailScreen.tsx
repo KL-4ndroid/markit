@@ -1426,7 +1426,7 @@ export function MarketDetailScreen() {
           </ContextHelp>}
         </MarketWorkspaceSummary>
         {resolvedOwnerWorkspaceView === 'overview' && canRecord && !isStaff && !isRoleLoading && user?.id && (finance.enabled
-          ? <FinancialReviewPanel market={market} rawStats={rawFinancialStats ?? []} finance={finance} initialDate={searchParams.get('reportDate') ?? undefined} />
+          ? <FinancialReviewPanel key={`${user.id}:${market.id}`} market={market} rawStats={rawFinancialStats ?? []} finance={finance} initialDate={searchParams.get('reportDate') ?? undefined} />
           : <MarketFinancialRecordNotice market={market} ownerId={user.id} />)}
 
         {/* Registration is a current record, not proof of completed prior steps. */}

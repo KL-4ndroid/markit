@@ -26,6 +26,7 @@ import { getSyncPresentation } from '@/lib/sync/sync-presentation';
 import { SUBSCRIPTION_PRESENTATION } from '@/lib/subscription/subscription-presentation';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { CashDraftList } from '@/components/settings/CashDraftList';
+import { financialReviewsEnabled } from '@/lib/markets/financial-reviews';
 import type { LocalPendingWriteReport } from '@/lib/sync/local-pending-write-report';
 
 const SYNC_STATUS_ICONS = {
@@ -179,6 +180,7 @@ export function AccountSyncPanel() {
       <section className="border-t border-primary/10 pt-5">
         <h2 className="text-base font-semibold text-foreground">結束這次使用</h2>
         <p className="mt-1 text-sm text-muted-foreground">登出前會先檢查尚未送達雲端的資料。</p>
+        {!isStaff && financialReviewsEnabled() && <p className="mt-1 text-xs leading-5 text-muted-foreground">成本核對草稿會保留在這台裝置，只供原帳號繼續使用，不會隨登出自動送出。</p>}
         <Button
           className="mt-4 w-full sm:w-auto"
           variant="secondary"

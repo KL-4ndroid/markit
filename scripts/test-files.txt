@@ -73,6 +73,8 @@ tsx tests/financial-record-quality.test.ts
 tsx tests/market-financial-reading.test.ts
 tsx tests/daily-revenue-financial-quality.test.tsx
 tsx tests/financial-reviews.test.ts
+tsx tests/financial-review-drafts.test.ts
+tsx tests/financial-review-draft-access.test.tsx
 tsx tests/settlement-report-subscription-access.test.ts
 tsx tests/settlement-report-pdf-visual-spec.test.ts
 tsx tests/settlement-report-pdf-technical-plan.test.ts

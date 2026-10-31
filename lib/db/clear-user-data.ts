@@ -293,6 +293,12 @@ export async function resetAuthenticatedCache(
   invalidatePreparationTemplateScope();
   console.log(`🔒 resetAuthenticatedCache(scope=${scope}, userId=${userId?.slice(0, 8) ?? 'none'})`);
 
+  // financialReviewDrafts are intentionally retained private inputs, NOT a
+  // sync queue/cache. Owner-scoped reads require a matching authenticated
+  // identity, market and paid UI gate. In-flight editors were invalidated
+  // above; another account must never restore or submit these drafts.
+  // Explicit clearAllData() removes them; this reset only rebuilds cloud cache.
+
   // Always clear authenticated tables, including every table counted by
   // getLocalPendingWriteReport. Leaving one of these queues behind causes a
   // forced sign-out to immediately reopen the blocked-cache dialog.
@@ -311,6 +317,8 @@ export async function resetAuthenticatedCache(
     db.marketCashRecords,
     db.marketCashDrafts,
     db.financialReviewCache,
+    db.venues,
+    db.operationSchedules,
   ], async () => {
     await db.events.clear();
     await db.markets.clear();
@@ -326,6 +334,10 @@ export async function resetAuthenticatedCache(
     await db.marketCashRecords.clear();
     await db.marketCashDrafts.clear();
     await db.financialReviewCache.clear();
+    // Their source events are cleared above. Keeping these projections would
+    // make the returning owner's cloud creation events fail on duplicate IDs.
+    await db.venues.clear();
+    await db.operationSchedules.clear();
   });
 
   // Clear sync-related state
