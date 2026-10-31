@@ -1,6 +1,6 @@
 # 訂閱方案變更導航與完整檔案索引
 
-2026-10-31 線上方案時間差修正：[正式驗收與異常紀錄](FINANCIAL_PRODUCTION_RELEASE_2026_10_31.md)。成本核對已在 `f126e99` 正式啟用並完成保存／撤回／還原；線上重現伺服器核發比裝置回應時間快約 30–65 ms 而被判 unavailable。[共用 freshness](../lib/subscription/subscription-capabilities.ts)只對核發時間增加最多 5 秒容差，[回歸](../tests/subscription-feature-gates.test.ts)保留到期／刷新期限／過量未來時間的拒絕。方案、價格、資料存取範圍、正式付款與離線期限不變；修正建置及正式複驗另見紀錄。斷線後工作區重建的草稿保留仍待修正。
+2026-10-31 線上方案時間差修正：[正式驗收與異常紀錄](FINANCIAL_PRODUCTION_RELEASE_2026_10_31.md)。`f126e99` 成本核對及 `efd6a67` 時鐘差修正已正式 Ready；線上重現伺服器核發比裝置回應時間快約 30–65 ms 而被判 unavailable。[共用 freshness](../lib/subscription/subscription-capabilities.ts)只對核發時間增加最多 5 秒容差，[模型回歸](../tests/subscription-feature-gates.test.ts)及 [API client 回歸](../tests/subscription-account-capability-api.test.ts)保留到期／刷新期限／過量未來時間拒絕。正式單場、分析、報告返回、三尺寸報告及 PDF 實際下載／渲染通過；同一斷線重連案例的草稿仍保留，沒有自動重送。真正到期／帳號切換／程序重開的草稿生命週期與多裝置完整矩陣仍待驗。方案、價格、資料範圍、正式付款、離線期限與 DB gate 不變。
 
 2026-10-31 正式成本核對發布執行中：[發布設定與線上複驗追蹤](FINANCIAL_PRODUCTION_RELEASE_2026_10_31.md)。使用者授權提交、發布及正式啟用；Vercel Production 已設定 `NEXT_PUBLIC_FINANCIAL_REVIEWS_ENABLED=true`，需新建置及線上驗證後才算啟用完成。094 資料庫與 owner／付費規則不變，不含正式付款。下方尚未提交／正式旗標未改為先前驗收時的歷史狀態。
 
