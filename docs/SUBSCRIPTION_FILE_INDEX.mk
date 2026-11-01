@@ -1,5 +1,7 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-11-01 完整重播批次投影（本機完成，未提交／發布）：[效能與一致性驗收](OWNER_REPLAY_PROJECTION_PERFORMANCE_2026_11_01.md)。新增[transaction 內投影快取](../lib/sync/replay-projection-batch.ts)，[owner replay](../lib/sync/owner-event-replay.ts)僅對手動收入／互動整批套用，沿用原 handler 與 50 筆原子提交；其他事件保留原路徑。[參考路徑 parity 測試](../tests/replay-projection-batch.test.ts)、[Web 隔離量測 UI](../scripts/replay-benchmark/browser.ts)、[loopback 建置器](../scripts/serve-replay-benchmark.mjs)及[工具型別設定](../tsconfig.replay-benchmark.json)新增並更新 manifest。三輪原生 IndexedDB 量測、回滾／重試、14 測試與 Web／手機靜態建置通過；沒有新 SQL、價格、方案、付款或雲端 writer，不改免費→付費 payload 恢復及 pending 保留。
+
 2026-11-01 大量歷史首載修正已發布：程式 `71db0e3` 已推送 main，Production `dpl_Ennx12181gWMAfzchNGkX5sqTjHq` Ready，主要網域 health 同版；[正式發布與慢網路複驗](FIRST_LOGIN_LARGE_HISTORY_PERFORMANCE_2026_11_01.md#正式發布)通過乾淨登入、金額／筆數、明細返回及手機畫面。沒有新 SQL、價格、付款或權益變更。後續完整重播效能為另一批；下段未發布為先前本機狀態。
 
 2026-11-01 大量歷史首載優化（本機，未提交／發布）：[量測與驗收](FIRST_LOGIN_LARGE_HISTORY_PERFORMANCE_2026_11_01.md)。新增[有限併發讀取](../lib/sync/bounded-cloud-reading.ts)，[owner pull](../lib/sync/owner-pull-service.ts)沿用本人／方案 view、以本機交集保持原市集範圍，移除巨型 UUID URL 並回報已讀筆數；[ID 清單](../lib/sync/owner-market-access-service.ts)分頁、[metadata](../lib/sync/owner-market-hydration-service.ts)100 ID 分組讀取。[replay](../lib/sync/owner-event-replay.ts)按相關 ID 讀取及略過相同 synced payload；免費→付費需恢復的變動 payload 仍更新、pending 不覆寫。[handler](../lib/db/events.ts)及 [context 型別](../types/db.ts)支援成交／互動重播靜默訊息，不改帳務規則。新增[隔離測試](../tests/large-owner-pull-performance.test.ts)、[量測腳本](../scripts/benchmark-first-login-pull.ts)，同步更新 flow audit 與 manifest；沒有新 SQL、價格、權益、付款或 outbox 重送。

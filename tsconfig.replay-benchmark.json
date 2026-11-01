@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": ".next/cache/tsconfig.replay-benchmark.tsbuildinfo"
+  },
+  "include": ["next-env.d.ts", "scripts/replay-benchmark/**/*.ts"],
+  "exclude": ["node_modules", "tests", ".next"]
+}

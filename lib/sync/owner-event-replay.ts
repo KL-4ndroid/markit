@@ -3,6 +3,7 @@ import { eventHandlers } from '@/lib/db/events';
 import { normalizeEventPayloadForLocal } from '@/lib/data-mappers';
 import { getDealItems, getDealItemProductId, getEventMarketId, getTombstoneTargetEventId } from '@/lib/events/event-read-model';
 import type { Event } from '@/types/db';
+import { createReplayProjectionBatch } from './replay-projection-batch';
 
 /** Conservative structural equality; JSON.stringify would conflate NaN and null. */
 function sameReplayRecord(left: unknown, right: unknown): boolean {
@@ -69,7 +70,9 @@ export function orderOwnerReplayEvents(incoming: readonly Event[], existing: rea
 /** Each bounded batch commits both event IDs and projections, or neither. */
 export async function replayOwnerEvents(
   incoming: readonly Event[],
-  options: { onProgress?: (current: number, total: number) => void; assertActive?: () => void; refreshSyncedPayloads?: boolean } = {},
+  options: { onProgress?: (current: number, total: number) => void; assertActive?: () => void; refreshSyncedPayloads?: boolean;
+    /** false is reserved for reference-path parity tests and profiling. */
+    projectionBatching?: boolean } = {},
 ): Promise<void> {
   options.assertActive?.();
   if (!incoming.length) return;
@@ -103,6 +106,8 @@ export async function replayOwnerEvents(
       continue;
     }
     await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings, db.venues, db.operationSchedules], async () => {
+      const projectionBatch = options.projectionBatching === false ? null
+        : await createReplayProjectionBatch(db, batch.filter(event => !existingIds.has(event.id)), () => options.assertActive?.());
       for (const event of batch) {
         options.assertActive?.();
         if (existingIds.has(event.id)) {
@@ -120,10 +125,11 @@ export async function replayOwnerEvents(
         if (!handler) throw new Error(`Unsupported cloud event type: ${event.type}`);
         await db.events.add(event);
         if (!hydratedCreation && !(isDeletion && deletedTargets.has(targetKey))) {
-          await handler({ ...event, payload: normalizeEventPayloadForLocal(event.payload) }, db, { quiet: true });
+          await handler({ ...event, payload: normalizeEventPayloadForLocal(event.payload) }, projectionBatch?.database ?? db, { quiet: true });
         }
         if (isDeletion) deletedTargets.add(targetKey);
       }
+      await projectionBatch?.flush();
     });
     options.onProgress?.(Math.min(start + batchSize, ordered.length), ordered.length);
   }

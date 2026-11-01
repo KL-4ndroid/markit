@@ -429,6 +429,7 @@ tsx tests/basic-workflow-corrections.test.ts
 tsx tests/test-tools-release-boundary.test.ts
 tsx tests/local-pending-count-observer.test.ts
 tsx tests/owner-event-replay.test.ts
+tsx tests/replay-projection-batch.test.ts
 tsx tests/cold-login-pull.test.ts
 tsx tests/large-owner-pull-performance.test.ts
 tsx tests/cold-login-migration.test.ts
