@@ -2,7 +2,7 @@
 
 日期：2026-11-01。範圍：測試／救援入口、未完成入口與測試資料清冊。這不是另一輪首次登入效能優化，也不代表全站、所有角色或手機實機驗收完成。
 
-狀態：本機修正與本批驗證已完成，未提交／未部署。本次正式站唯讀基準仍為 `49296dc`；本機驗證通過不能當成正式站已套用。
+狀態：程式 `426e485` 已提交、推送及正式發布，最小範圍線上確認通過。本機與發布前正式站 `49296dc` 的證據保留為歷史對照；最新結果見「正式發布與最小線上確認」。
 
 ## 沿用的完成證據
 
@@ -60,9 +60,24 @@
 | 手機正式產物 | `build:mobile`、`verify:mobile`、`smoke:mobile` 全部通過；33 個 segment aliases、371 個靜態檔案、20.03 MiB；靜態主機實驗室網址 404、11 個既有資產／路由成功 |
 | 清理 | 已停止本輪 41060 臨時正式伺服器；原有 3000 開發服務仍監聽，未關閉使用者分頁或改待送資料 |
 
-正式站的 8 個 GET 基準只確認目前版本與入口隔離，不操作 Demo、不跑購買／角色切換或寫入探針。尚未部署本機修正，因此正式站實驗室仍為 200，需發布後對應路由變為 404 才能結案線上部分。
+發布前正式站的 8 個 GET 基準只確認當時版本與入口隔離，不操作 Demo、不跑購買／角色切換或寫入探針。當時尚未部署修正，實驗室為 200；下節已確認發布後改為 404。
 
 證據（忽略於 Git）：`.codex-artifacts/release-cleanup-production-baseline.json`、`release-cleanup-inventory.json`、`release-cleanup-local-routes.json`、`release-cleanup-web-build.log`、`release-cleanup-mobile-build.log`、`release-cleanup-mobile-verify.log`、`release-cleanup-mobile-smoke.log`。
+
+## 正式發布與最小線上確認
+
+- 程式：`426e485fa76840bad4358f99589cd4d7ff61db0c`，已推送 `KL-4ndroid/markit` 的 main；17 個本批檔案，既有 Demo／素材變更保留在本機。
+- Vercel：`markit-app`／`prj_dWZtQILgK88xXK0CA2x4xtH80DJN`／既定 team `team_unaNhyTnsu4mWsnTcbmShoVR` 的 Production，部署 `dpl_2EYbpTJkfmpKqzGw2ih712RQsrEH` Ready，Git SHA 相同、主要 alias 已指向新部署。
+- 正式網域 `https://markit-app-mocha.vercel.app/api/health`：healthy、`commitSha:426e485`、buildTime `2026-11-01T09:13:56.386Z`。
+- `2026-11-01T09:15:25.2852355Z` 完成以下公開 GET。只記狀態與標頭，不登入、不操作資料，不重跑登入效能／PDF／角色／財務驗收。
+
+| 路由 | 正式結果 |
+| --- | --- |
+| `/tools/market-text-import-lab`、尾斜線、`/review` 子路徑 | 全部最終 404、no-store、noindex/nofollow |
+| `/recovery`、`/settings/data`、抽查 `/debug/staff-role-test` | 404、no-store、noindex/nofollow |
+| `/settings/app`、`/markets` | 公開 HTML shell 200；不擴張宣稱完整登入後操作皆重驗 |
+
+線上證據：`.codex-artifacts/release-cleanup-production-acceptance.json`。本節為發布後文件收尾，執行碼不再變動；文件提交部署後只確認 Ready 與主要 health 版本，不重跑上述路由或其他矩陣。本批實作與線上部分結案。
 
 ## 完成條件與後續界線
 
