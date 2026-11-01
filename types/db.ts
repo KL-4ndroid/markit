@@ -596,7 +596,7 @@ export type EventPayloadMap = {
 export type EventHandler<T = any> = (
   event: Event<T>,
   db: any, // Dexie 資料庫實例
-  context?: { productSnapshot?: boolean } // Trusted importer context, never read from event payload.
+  context?: { productSnapshot?: boolean; quiet?: boolean } // Trusted importer/replay context, never read from event payload.
 ) => Promise<void>;
 
 /**

@@ -12,8 +12,20 @@ import { getEventMarketId, getTombstoneTargetEventId } from '@/lib/events/event-
 import type { InfoLevel } from '@/lib/data-sanitization';
 import type { Event } from '@/types/db';
 import { parseSubscriptionReadScope } from '@/lib/subscription/read-access';
+import { readCloudPages } from './bounded-cloud-reading';
 
 const REPLAY_REVISION = 'dependency-order-v2-product-owners';
+type CloudCreatedAtRow = { created_at?: unknown };
+
+/** A large history must not exceed the engine's function-argument limit. */
+export function getLatestCloudEventTimestamp(events: readonly CloudCreatedAtRow[]): number | null {
+  let latest: number | null = null;
+  for (const event of events) {
+    const timestamp = Date.parse(String(event.created_at ?? ''));
+    if (Number.isFinite(timestamp) && (latest === null || timestamp > latest)) latest = timestamp;
+  }
+  return latest;
+}
 
 export async function pullOwnerEvents(
   userId: string,
@@ -21,16 +33,18 @@ export async function pullOwnerEvents(
   infoLevel: InfoLevel,
   assertActive: () => void = () => undefined,
 ): Promise<void> {
+  assertActive();
   const settings = await db.settings.toCollection().first();
   const { data: readScopeData, error: readScopeError } = await supabase.rpc('read_subscription_data_scope');
   const readScope = parseSubscriptionReadScope(readScopeData,userId);
+  assertActive();
   if (readScopeError || !readScope) throw new Error('Subscription data scope unavailable');
   const replayRevision = `${userId}:${REPLAY_REVISION}:${readScope.scope}`;
   // Verify complete cloud history once before correcting caches built by the old order.
   let needsHistoryVerification = settings?.ownerReplayRevision !== replayRevision;
   let lastSyncAt = needsHistoryVerification ? null : await getLastSyncTimestamp();
   onProgress(0, 0, '正在讀取市集與歷史紀錄', 'incremental');
-  const marketIds = await getOwnerAccessibleMarketIds(userId);
+  const marketIds = await getOwnerAccessibleMarketIds(userId, assertActive);
   const localMarkets = await db.markets.bulkGet(marketIds);
   if (localMarkets.some(market => !market)) {
     needsHistoryVerification = true;
@@ -38,24 +52,21 @@ export async function pullOwnerEvents(
   }
 
   // Avoid silently truncating accounts above the API row limit.
-  const newEvents: Record<string, any>[] = [];
-  const pageSize = 500;
-  for (let offset = 0; ; offset += pageSize) {
+  const accessibleIds = new Set(marketIds);
+  const downloadedEvents = await readCloudPages<Record<string, any>>(async (start, end) => {
     assertActive();
-    let query = supabase.from('owner_accessible_events').select('*').order('created_at').order('id').range(offset, offset + pageSize - 1);
+    let query = supabase.from('owner_accessible_events').select('*').order('created_at').order('id').range(start, end);
     // Include the boundary: the cursor has millisecond precision, PostgreSQL can
     // have microseconds. Event IDs make the overlap safe.
     if (lastSyncAt) query = query.gte('created_at', new Date(lastSyncAt).toISOString());
-    query = marketIds.length > 0
-      // RLS resolves actual product ownership for manager-authored metadata.
-      // Former members must not disappear from the brand's retained history.
-      ? query.or(`market_id.in.(${marketIds.join(',')}),market_id.is.null`)
-      : query.is('market_id', null);
+    // The security-barrier view already limits rows to this authenticated owner
+    // and subscription scope (migration 092). Avoid an unbounded UUID URL list;
+    // retain the exact accessible-market intersection locally below.
     const { data, error } = await query;
     if (error) throw error;
-    newEvents.push(...(data ?? []));
-    if (!data || data.length < pageSize) break;
-  }
+    return data ?? [];
+  }, { assertActive, onPage: count => onProgress(count, 0, `正在讀取歷史紀錄（已讀取 ${count} 筆）`, 'incremental') });
+  const newEvents = downloadedEvents.filter(event => event.market_id == null || accessibleIds.has(event.market_id));
   assertActive();
   const touchedMarketIds = new Set<string>();
   const hydrationIds = new Set(marketIds);
@@ -83,8 +94,8 @@ export async function pullOwnerEvents(
   }
   await reconcileSyncedProjectionMarkets(touchedMarketIds, 'owner-full');
   assertActive();
-  const validCreatedAt = newEvents.map(e => Date.parse(e.created_at)).filter(Number.isFinite);
-  if (validCreatedAt.length) await updateLastSyncTimestamp(Math.max(...validCreatedAt));
+  const latestCreatedAt = getLatestCloudEventTimestamp(newEvents);
+  if (latestCreatedAt !== null) await updateLastSyncTimestamp(latestCreatedAt);
 }
 
 /** Exact cloud/local event sets with no pending writes are required for repair. */

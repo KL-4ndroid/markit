@@ -218,12 +218,15 @@ runTest('owner pull uses created_at cursor and owner projection reconciliation',
   assert.match(hookSource, /import \{ pullOwnerEvents \} from ['"]@\/lib\/sync\/owner-pull-service['"]/);
   assert.match(body, /await getLastSyncTimestamp\(\)/);
   assert.match(body, /\.gte\(['"]created_at['"],\s*new Date\(lastSyncAt\)\.toISOString\(\)\)/);
-  assert.match(body, /\.map\(e\s*=>\s*Date\.parse\(e\.created_at\)\)/);
+  assert.match(body, /getLatestCloudEventTimestamp\(newEvents\)/);
   assert.match(body, /const hydrationIds\s*=\s*new Set\(marketIds\)/);
   assert.match(body, /hydrationIds\.add\(id\)/);
   assert.match(body, /await batchHydrateMarkets\(hydrationIds,\s*infoLevel,\s*assertActive\)/);
   assertBefore(body, 'await replayOwnerEvents(', 'await updateLastSyncTimestamp(');
-  assert.match(body, /await updateLastSyncTimestamp\(Math\.max\(\.\.\.validCreatedAt\)\)/);
+  assert.match(body, /await updateLastSyncTimestamp\(latestCreatedAt\)/);
+  const cursorBody = findFunctionBody(syncSources, 'getLatestCloudEventTimestamp');
+  assert.match(cursorBody, /Number\.isFinite\(timestamp\)/);
+  assert.doesNotMatch(cursorBody, /Math\.max\(\.\.\./);
   assert.match(body, /await reconcileSyncedProjectionMarkets\(touchedMarketIds,\s*['"]owner-full['"]\)/);
 });
 
@@ -243,8 +246,9 @@ runTest('owner market access helper includes member and owner-owned markets', ()
 
   assert.match(body, /supabase\.from\(['"]market_members['"]\)\.select\(['"]market_id['"]\)\.eq\(['"]user_id['"],\s*userId\)/);
   assert.match(body, /supabase\.from\(['"]owner_accessible_markets['"]\)\.select\(['"]id['"]\)\.eq\(['"]owner_id['"],\s*userId\)/);
-  assert.match(body, /if\s*\(memberError\)\s*throw memberError/);
-  assert.match(body, /if\s*\(ownedError\)\s*throw ownedError/);
+  assert.match(body, /readCloudPages/);
+  assert.match(body, /if\s*\(error\)\s*throw error/);
+  assert.match(body, /\.range\(start,\s*end\)/);
   assert.match(body, /Array\.from\(new Set\(\[\.\.\.memberIds,\s*\.\.\.ownedIds\]\)\)/);
 });
 
@@ -255,8 +259,9 @@ runTest('owner market hydration preserves local-first fetch and sanitized cache 
   assert.match(body, /await db\.markets\.bulkGet\(toFetch\)/);
   assert.match(body, /notYetLocal\.push\(marketId\)/);
   assert.match(body, /hydrated\.add\(marketId\)/);
-  assert.match(body, /\.from\(['"]owner_accessible_markets['"]\)[\s\S]*\.select\(['"]\*['"]\)[\s\S]*\.in\(['"]id['"],\s*notYetLocal\)/);
-  assert.match(body, /if\s*\(error\)\s*\{[\s\S]*for\s*\(const id of notYetLocal\)\s*failed\.add\(id\)[\s\S]*return \{ hydrated, missing, failed \}/);
+  assert.match(body, /readCloudIdBatches\(notYetLocal/);
+  assert.match(body, /\.from\(['"]owner_accessible_markets['"]\)[\s\S]*\.select\(['"]\*['"]\)[\s\S]*\.in\(['"]id['"],\s*ids\)/);
+  assert.match(body, /catch\s*\(error\)\s*\{[\s\S]*for\s*\(const id of notYetLocal\)\s*failed\.add\(id\)[\s\S]*return \{ hydrated, missing, failed \}/);
   assert.match(body, /marketRowToLocal\(market\)/);
   assert.match(body, /marketGateForLevel\(infoLevel\)\.sanitizeMarketProjection/);
   assert.match(body, /resetMarketProjectionFields\(/);

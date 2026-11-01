@@ -4,6 +4,28 @@ import { normalizeEventPayloadForLocal } from '@/lib/data-mappers';
 import { getDealItems, getDealItemProductId, getEventMarketId, getTombstoneTargetEventId } from '@/lib/events/event-read-model';
 import type { Event } from '@/types/db';
 
+/** Conservative structural equality; JSON.stringify would conflate NaN and null. */
+function sameReplayRecord(left: unknown, right: unknown): boolean {
+  const pending: [unknown, unknown][] = [[left, right]];
+  const visited = new WeakSet<object>();
+  while (pending.length) {
+    const [a, b] = pending.pop()!;
+    if (Object.is(a, b)) continue;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b)) return false;
+    if (visited.has(a)) return false;
+    visited.add(a);
+    if (!Array.isArray(a) && (Object.getPrototypeOf(a) !== Object.prototype || Object.getPrototypeOf(b) !== Object.prototype)) return false;
+    if (Array.isArray(a) && a.length !== (b as unknown[]).length) return false;
+    const keys = Object.keys(a);
+    if (keys.length !== Object.keys(b).length) return false;
+    for (const key of keys) {
+      if (!Object.prototype.hasOwnProperty.call(b, key)) return false;
+      pending.push([(a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]]);
+    }
+  }
+  return true;
+}
+
 /** Stable dependency ordering: historical backfills may be dated after their deletion. */
 export function orderOwnerReplayEvents(incoming: readonly Event[], existing: readonly Event[] = []): Event[] {
   const byId = new Map(existing.concat(incoming).filter(e => e.id).map(e => [e.id!, e]));
@@ -49,22 +71,44 @@ export async function replayOwnerEvents(
   incoming: readonly Event[],
   options: { onProgress?: (current: number, total: number) => void; assertActive?: () => void; refreshSyncedPayloads?: boolean } = {},
 ): Promise<void> {
-  const existing = await db.events.toArray();
-  const ordered = orderOwnerReplayEvents(incoming, existing);
+  options.assertActive?.();
+  if (!incoming.length) return;
+  const ids = [...new Set(incoming.map(event => event.id).filter((id): id is string => !!id))];
+  const incomingIds = new Set(ids);
+  const deletions = incoming.filter(event => event.type === 'deal_deleted' || event.type === 'interaction_deleted');
+  const dependencyIds = [...new Set(deletions.map(getTombstoneTargetEventId).filter((id): id is string => !!id && !incomingIds.has(id)))];
+  // Incremental reads must not deserialize every historical sale on this device.
+  const hasLocalHistory = await db.events.count() > 0;
+  const [existingRows, dependencies, priorDeletions] = hasLocalHistory ? await Promise.all([
+    db.events.bulkGet(ids), db.events.bulkGet(dependencyIds),
+    deletions.length ? db.events.where('type').anyOf(['deal_deleted', 'interaction_deleted']).toArray() : Promise.resolve([]),
+  ]) : [[], [], []];
+  options.assertActive?.();
+  const existing = existingRows.filter((event): event is Event => !!event);
+  const ordered = orderOwnerReplayEvents(incoming, [...existing, ...dependencies.filter((event): event is Event => !!event)]);
   const existingIds = new Set(existing.map(e => e.id));
-  const deletedTargets = new Set(existing.filter(e => e.type === 'deal_deleted' || e.type === 'interaction_deleted')
+  const existingById = new Map(existing.map(event => [event.id, event]));
+  const unchangedIds = new Set(ordered.filter(event => {
+    const previous = existingById.get(event.id);
+    return options.refreshSyncedPayloads && previous?.sync_status === 'synced' && sameReplayRecord(previous, event);
+  }).map(event => event.id));
+  const deletedTargets = new Set(priorDeletions
     .map(e => `${getEventMarketId(e)}:${getTombstoneTargetEventId(e)}`));
   const batchSize = 50;
   for (let start = 0; start < ordered.length; start += batchSize) {
     options.assertActive?.();
     const batch = ordered.slice(start, start + batchSize);
+    if (batch.every(event => existingIds.has(event.id) && (!options.refreshSyncedPayloads || unchangedIds.has(event.id)))) {
+      options.onProgress?.(Math.min(start + batchSize, ordered.length), ordered.length);
+      continue;
+    }
     await db.transaction('rw', [db.events, db.markets, db.products, db.dailyStats, db.settings, db.venues, db.operationSchedules], async () => {
       for (const event of batch) {
         options.assertActive?.();
         if (existingIds.has(event.id)) {
           // A Free read may have stored a masked foundation payload. Restore the
           // complete cloud record without replaying projections twice or touching drafts.
-          if (options.refreshSyncedPayloads && (await db.events.get(event.id!))?.sync_status === 'synced') await db.events.put(event);
+          if (options.refreshSyncedPayloads && !unchangedIds.has(event.id) && (await db.events.get(event.id!))?.sync_status === 'synced') await db.events.put(event);
           continue;
         }
         // Hydration already supplies the market's current metadata. Do not reset it
@@ -76,7 +120,7 @@ export async function replayOwnerEvents(
         if (!handler) throw new Error(`Unsupported cloud event type: ${event.type}`);
         await db.events.add(event);
         if (!hydratedCreation && !(isDeletion && deletedTargets.has(targetKey))) {
-          await handler({ ...event, payload: normalizeEventPayloadForLocal(event.payload) }, db);
+          await handler({ ...event, payload: normalizeEventPayloadForLocal(event.payload) }, db, { quiet: true });
         }
         if (isDeletion) deletedTargets.add(targetKey);
       }

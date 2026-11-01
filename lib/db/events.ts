@@ -896,7 +896,7 @@ registerEventHandler('product_deleted', async (event: Event<{ productId: string 
  * 1. 更新市集的互動統計
  * 2. 更新每日統計（支持自定義按鈕）
  */
-registerEventHandler('interaction_recorded', async (event: Event<InteractionRecordedPayload>, db) => {
+registerEventHandler('interaction_recorded', async (event: Event<InteractionRecordedPayload>, db, context) => {
   const market_id = pickMarketId(event.payload)!;
   const { type } = event.payload;
 
@@ -960,7 +960,7 @@ registerEventHandler('interaction_recorded', async (event: Event<InteractionReco
     });
   }
 
-  console.log(`👋 互動已記錄：${type} (市集 ID: ${market_id})`);
+  if (!context?.quiet) console.log(`👋 互動已記錄：${type} (市集 ID: ${market_id})`);
 });
 
 registerEventHandler('field_note_created', async () => {});
@@ -1001,7 +1001,7 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db, 
     totalCost = manualProjection.cost;
     dealCount = manualProjection.dealCount;
     
-    console.log(`📝 簡化補登：收入 NT$${totalAmount}，成本 NT$${totalCost}，成交 ${dealCount} 筆`);
+    if (!context?.quiet) console.log(`📝 簡化補登：收入 NT$${totalAmount}，成本 NT$${totalCost}，成交 ${dealCount} 筆`);
   }
   // ========== 完整模式：選擇商品 ==========
   else {
@@ -1074,7 +1074,7 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db, 
       updatedAt: event.timestamp,
     });
     
-    console.log(`📊 市集統計更新：轉換率 ${conversionRate.toFixed(1)}%，客單價 NT$${averageOrderValue.toFixed(0)}`);
+    if (!context?.quiet) console.log(`📊 市集統計更新：轉換率 ${conversionRate.toFixed(1)}%，客單價 NT$${averageOrderValue.toFixed(0)}`);
   }
   
   // ========== 更新每日統計 ==========
@@ -1113,7 +1113,7 @@ registerEventHandler('deal_closed', async (event: Event<DealClosedPayload>, db, 
   }
   
   const modeText = isManualEntry ? '簡化補登' : isBackfill ? '完整補登' : '正常交易';
-  console.log(`💰 ${modeText}已記錄：NT$${totalAmount} (日期: ${transactionDate}, 市集 ID: ${market_id.substring(0, 8)}...)`);
+  if (!context?.quiet) console.log(`💰 ${modeText}已記錄：NT$${totalAmount} (日期: ${transactionDate}, 市集 ID: ${market_id.substring(0, 8)}...)`);
 });
 
 /**

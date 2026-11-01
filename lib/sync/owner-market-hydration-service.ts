@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase/client';
 import { marketRowToLocal } from '@/lib/data-mappers';
 import { resetMarketProjectionFields } from '@/lib/sync/projection-reset';
 import { createPermissionGate, type InfoLevel } from '@/lib/data-sanitization';
+import { readCloudIdBatches } from './bounded-cloud-reading';
 
 export interface MarketHydrationResult {
   hydrated: Set<string>;
@@ -42,12 +43,16 @@ export async function batchHydrateMarkets(
     return { hydrated, missing, failed };
   }
 
-  const { data: markets, error } = await supabase
-    .from('owner_accessible_markets')
-    .select('*')
-    .in('id', notYetLocal);
-
-  if (error) {
+  let markets;
+  try {
+    markets = await readCloudIdBatches(notYetLocal, async ids => {
+      const { data, error } = await supabase.from('owner_accessible_markets').select('*').in('id', ids);
+      if (error) throw error;
+      if (data?.some(row => !ids.includes(row.id))) throw new Error('Unexpected hydration market');
+      return data ?? [];
+    }, assertActive);
+  } catch (error) {
+    assertActive();
     console.error('[hydration] Failed to fetch markets from Cloud:', error);
     for (const id of notYetLocal) failed.add(id);
     return { hydrated, missing, failed };
