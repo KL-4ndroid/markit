@@ -8,6 +8,7 @@ import { resolveTestToolsBuild } from '../scripts/lib/test-tools-build-policy.mj
 import { excludeTestToolsFromExport } from '../scripts/lib/test-tools-export.mjs';
 import RecoveryLayout from '../app/recovery/layout';
 import TestDataToolsLayout from '../app/settings/data/layout';
+import MarketTextImportLabLayout from '../app/tools/market-text-import-lab/layout';
 
 assert.equal(resolveTestToolsBuild(), false);
 assert.equal(resolveTestToolsBuild({ nodeEnv: 'production' }), false);
@@ -21,23 +22,25 @@ for (const nodeEnv of ['development', 'production', 'test', undefined]) {
 
 // Standalone tests have no explicit test build marker. Server layouts must stop
 // direct navigation before the child test tools can render.
-for (const Layout of [RecoveryLayout, TestDataToolsLayout]) {
+for (const Layout of [RecoveryLayout, TestDataToolsLayout, MarketTextImportLabLayout]) {
   assert.throws(() => Layout({ children: 'test tool must not render' }), /NEXT_HTTP_ERROR_FALLBACK;404/);
 }
-for (const path of ['/recovery', '/recovery/', '/settings/data', '/settings/data/history']) {
+for (const path of ['/recovery', '/recovery/', '/settings/data', '/settings/data/history', '/tools/market-text-import-lab', '/tools/market-text-import-lab/', '/tools/market-text-import-lab/review']) {
   const response = proxy(new NextRequest(`http://localhost${path}`));
   assert.equal(response.status, 404, path);
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
 }
 const output = mkdtempSync(join(tmpdir(), 'feria-test-tools-export-'));
 try {
-  for (const path of ['recovery', 'settings/data', 'settings/account', 'markets']) {
+  for (const path of ['recovery', 'settings/data', 'tools/market-text-import-lab', 'settings/account', 'markets', 'tools/unrelated']) {
     mkdirSync(join(output, path), { recursive: true });
     writeFileSync(join(output, path, 'index.html'), path);
   }
   excludeTestToolsFromExport(output);
   assert.equal(existsSync(join(output, 'recovery')), false);
   assert.equal(existsSync(join(output, 'settings/data')), false);
+  assert.equal(existsSync(join(output, 'tools/market-text-import-lab')), false);
+  assert.equal(readFileSync(join(output, 'tools/unrelated/index.html'), 'utf8'), 'tools/unrelated');
   assert.equal(readFileSync(join(output, 'settings/account/index.html'), 'utf8'), 'settings/account');
   assert.equal(readFileSync(join(output, 'markets/index.html'), 'utf8'), 'markets');
   symlinkSync(join(output, 'markets'), join(output, 'recovery'), 'junction');

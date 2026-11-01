@@ -31,6 +31,7 @@ const forbiddenPaths = [
   'products/[id]',
   'recovery',
   'settings/data',
+  'tools/market-text-import-lab',
 ];
 
 const forbiddenBundlePatterns = [

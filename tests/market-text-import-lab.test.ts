@@ -58,6 +58,7 @@ const root = join(__dirname, '..');
 const lab = readFileSync(join(root, 'components/markets/MarketTextImportLab.tsx'), 'utf8');
 const route = readFileSync(join(root, 'app/tools/market-text-import-lab/page.tsx'), 'utf8');
 const appSettings = readFileSync(join(root, 'app/settings/app/page.tsx'), 'utf8');
+const layout = readFileSync(join(root, 'app/tools/market-text-import-lab/layout.tsx'), 'utf8');
 
 assert.match(lab, /await import\('@\/lib\/market-text-import\/parser'\)/);
 assert.doesNotMatch(lab, /\b(?:fetch|supabase|dexie|indexedDB|localStorage|sessionStorage|navigator|clipboard|createMarket)\b/i);
@@ -67,5 +68,8 @@ assert.match(route, /!isOwner/);
 assert.match(route, /isAuthorizationFresh/);
 assert.match(appSettings, /href="\/tools\/market-text-import-lab"/);
 assert.match(appSettings, /isOwner/);
+assert.match(appSettings, /TEST_TOOLS_ENABLED && isOwner/);
+assert.match(layout, /if \(!TEST_TOOLS_ENABLED\) notFound\(\)/);
+assert.match(layout, /index: false, follow: false/);
 
 console.log('market text import lab privacy and owner-route guardrails passed');

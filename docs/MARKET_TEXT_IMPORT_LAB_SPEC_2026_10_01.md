@@ -3,7 +3,7 @@
 - 建立日期：2026-10-01
 - 狀態：第一版已實作，尚未新增任何雲端資料儲存或自動規則更新
 - 路由：`/tools/market-text-import-lab`
-- 存取範圍：登入後的 owner；staff 一律不顯示實驗內容
+- 存取範圍：測試版本中已登入且授權新鮮的 owner；staff 一律不顯示實驗內容。2026-11-01 起沿用 [測試工具版本界線](TEST_TOOLS_RELEASE_BOUNDARY.md)，正式版隱藏入口、Web 直接路由 404、手機匯出排除；本機修正與發布狀態見 [發布整理](FORMAL_RELEASE_CLEANUP_2026_11_01.md)。新增市集內的產品文字解析功能保留原 release gate。
 
 ## 1. 目的
 

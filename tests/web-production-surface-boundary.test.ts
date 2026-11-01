@@ -43,7 +43,9 @@ assert.match(debugLayout, /index: false/);
 assert.match(debugLayout, /follow: false/);
 
 const productionProxy = read('proxy.ts');
-assert.match(productionProxy, /matcher: \['\/debug\/:path\*', '\/recovery\/:path\*', '\/settings\/data\/:path\*'\]/);
+for (const route of ['/debug/:path*', '/recovery/:path*', '/settings/data/:path*', '/tools/market-text-import-lab/:path*']) {
+  assert.ok(productionProxy.includes(`'${route}'`));
+}
 assert.match(productionProxy, /isInternalTestSurfaceAvailable\(\)/);
 assert.match(productionProxy, /status: 404/);
 assert.match(productionProxy, /'Cache-Control': 'no-store'/);
@@ -78,6 +80,9 @@ for (const route of [
   '/debug/flicker-test',
   '/debug/staff-role-test',
   '/debug/sales-photo-evidence',
+  '/recovery',
+  '/settings/data',
+  '/tools/market-text-import-lab',
   '/api/dev/subscription-simulation',
   '/api/dev/subscription-price-foundation-smoke',
   '/demo',

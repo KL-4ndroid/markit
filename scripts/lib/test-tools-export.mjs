@@ -6,7 +6,7 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 export function excludeTestToolsFromExport(outputRoot) {
   if (lstatSync(outputRoot).isSymbolicLink()) throw new Error('test_tools_export_symlink_forbidden');
   const root = realpathSync(outputRoot);
-  const targets = ['recovery', 'settings/data'].map(route => resolve(root, route));
+  const targets = ['recovery', 'settings/data', 'tools/market-text-import-lab'].map(route => resolve(root, route));
   for (const target of targets) {
     const relativeTarget = relative(root, target);
     if (!relativeTarget || relativeTarget === '..' || relativeTarget.startsWith(`..${sep}`) || isAbsolute(relativeTarget)) {

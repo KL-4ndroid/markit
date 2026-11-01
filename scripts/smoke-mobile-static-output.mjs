@@ -82,6 +82,7 @@ try {
     '/api/health',
     '/recovery/',
     '/settings/data/',
+    '/tools/market-text-import-lab/',
   ]) {
     const missingApi = await fetch(`${baseUrl}${apiPath}`);
     if (missingApi.status !== 404) {

@@ -71,6 +71,9 @@ for (const path of [
   '/debug/flicker-test',
   '/debug/staff-role-test',
   '/debug/sales-photo-evidence',
+  '/recovery',
+  '/settings/data',
+  '/tools/market-text-import-lab',
 ]) {
   await assertPageNotFound(path);
 }

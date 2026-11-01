@@ -4,6 +4,13 @@ Date: 2026-08-01
 
 Status: local and commit-bound Production smokes passed
 
+2026-11-01 source update: the smoke also checks `/recovery`, `/settings/data`, and
+`/tools/market-text-import-lab`. These use the existing product release-channel
+policy in [TEST_TOOLS_RELEASE_BOUNDARY.md](TEST_TOOLS_RELEASE_BOUNDARY.md): a formal
+build omits them, while an explicit `test` build retains owner-only access. The
+older evidence below does not certify the newly added lab boundary; see
+[the cleanup record](FORMAL_RELEASE_CLEANUP_2026_11_01.md) for current results.
+
 ## Contract
 
 Production keeps these internal surfaces unavailable:

@@ -7,6 +7,7 @@ import { Beaker, ChevronRight, FileText, Info, LifeBuoy, ShieldCheck, Smartphone
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { useRoleContext } from '@/lib/role-context';
 import { APP_METADATA } from '@/lib/app-metadata';
+import { TEST_TOOLS_ENABLED } from '@/lib/app/build-profile';
 
 const PWAInstallButton = dynamic(
   () => import('@/components/PWAInstallButton').then((module) => module.PWAInstallButton),
@@ -40,7 +41,7 @@ export default function AppSettingsPage() {
       <div className="space-y-6">
         <PWAInstallButton />
 
-        {isOwner ? (
+        {TEST_TOOLS_ENABLED && isOwner ? (
           <section className="overflow-hidden rounded-card border border-primary/10 bg-white" aria-labelledby="market-text-import-lab-link-title">
             <Link
               href="/tools/market-text-import-lab"

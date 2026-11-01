@@ -6,9 +6,10 @@ import { TEST_TOOLS_ENABLED } from '@/lib/app/build-profile';
 
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const isRecoveryTool = path === '/recovery' || path.startsWith('/recovery/')
-    || path === '/settings/data' || path.startsWith('/settings/data/');
-  if (isRecoveryTool ? TEST_TOOLS_ENABLED : isInternalTestSurfaceAvailable()) return NextResponse.next();
+  const isTestTool = path === '/recovery' || path.startsWith('/recovery/')
+    || path === '/settings/data' || path.startsWith('/settings/data/')
+    || path === '/tools/market-text-import-lab' || path.startsWith('/tools/market-text-import-lab/');
+  if (isTestTool ? TEST_TOOLS_ENABLED : isInternalTestSurfaceAvailable()) return NextResponse.next();
 
   return new NextResponse('Not Found', {
     status: 404,
@@ -21,5 +22,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/debug/:path*', '/recovery/:path*', '/settings/data/:path*'],
+  matcher: ['/debug/:path*', '/recovery/:path*', '/settings/data/:path*', '/tools/market-text-import-lab/:path*'],
 };
