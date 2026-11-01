@@ -1,6 +1,6 @@
 # 完整歷史重播：批次投影效能與資料一致性
 
-日期：2026-11-01。狀態：本機實作、核心瀏覽器驗收與建置檢查完成，尚未提交／發布。上一批大量歷史下載修正已正式發布：程式 `71db0e3`，發布驗收文件 `189f29f`。本文件的投影批次優化不包含在該正式版本。
+日期：2026-11-01。狀態：程式 `9c7cba7` 已提交、推送及正式發布，核心線上複驗通過。先前 `71db0e3`／`189f29f` 為下載優化的歷史版本；本批包含新的投影批次優化。下列效能數字為隔離重播量測，不等同於所有正式帳號的端到端登入時間。
 
 ## 瓶頸及實作
 
@@ -51,6 +51,26 @@
 - 14 個相關測試檔全部通過：batch parity、owner replay、large pull、cold pull、固定安排、sync flow audit、reconciliation、私人草稿、首次讀取恢復、activity、訂閱保留資料、游標、canonical factory 及登入 UI。
 - `tsc --noEmit --project tsconfig.mobile.json` 與 `tsconfig.replay-benchmark.json` 通過；修改檔 lint、Web 工具的 `eslint --no-ignore`、server 的 Node syntax check 通過。
 - 最終 `npm.cmd run build`、`npm.cmd run build:mobile`、`npm.cmd run verify:mobile` 全部通過；35 個 segment aliases、382 個靜態檔案的邊界／資產驗證通過。
-- 量測伺服器已停止，原測試帳號的場次、成交、方案、角色及照片沒有更動。不需新 SQL；新批次尚未提交／發布。
+- 量測伺服器已停止，原測試帳號的場次、成交、方案、角色及照片沒有更動。不需新 SQL；本批已正式發布，結果見下節。
 
 共享邏輯沒有新增 browser API；量測 UI 與 PerformanceObserver 僅在 Web 專用 scripts。`tsconfig.replay-benchmark.json` 另外驗證量測工具；不會把工具當成產品路由或原生套件。這些檢查不等同於 iPhone／Android 實機或完整產品端到端計時。
+
+## 正式發布與線上複驗
+
+- 提交：`9c7cba7934d06788103eaff98ee6f7d8c14547f9`，已推送 `KL-4ndroid/markit` 的 main。只提交本批 10 個檔案，原有 Demo／素材變更留在本機。
+- 目標：Vercel `markit-app`，專案 `prj_dWZtQILgK88xXK0CA2x4xtH80DJN`，team `team_unaNhyTnsu4mWsnTcbmShoVR`，Production。
+- 部署：`dpl_GjhvEqEYo4Rxz2RY3V3q8TMbcBAQ` Ready，Git SHA 相同，主要 alias 已指向新部署。
+- 主要網域 health：healthy、`commitSha:9c7cba7`、buildTime `2026-11-01T07:46:22.607Z`。
+
+| 線上案例 | 結果 |
+| --- | --- |
+| 乾淨登入／完整同步 | 新部署 origin `markit-e4ffmxjnq-masons-projects-1db534c5.vercel.app` 先顯示歡迎頁，使用既定測試老闆登入。600ms 延遲、下載 50,000 bytes/s 下完成同步，收入 50、淨利 -50、成交 1。沒有清除原正式網域資料。 |
+| 唯讀故障與自動恢復 | 僅讓第一次 `read_market_financial_reviews` 請求失敗，立即解除攔截；後續 HTTP 200，未點重讀或重新整理，即由讀取中恢復淨利 -50；沒有攔截保存 RPC。 |
+| 成交進入／返回 | 明細為共 1 筆、總收入 50、現金總額紀錄，關閉返回正常。 |
+| 重開／冪等結果 | 重新整理同一部署頁面，仍為收入 50、淨利 -50、摘要成交 1／入口 1 筆；沒有觀察到重複累加。 |
+| 主要網域重連 | 主要網域載入新版後金額一致；離線時淨利待確認、成交保留 1，恢復連線後核對讀取自行恢復 -50。 |
+| 手機畫面 | 實際 CSS 390×844、scrollWidth 382，沒有橫向溢出；證據 `.codex-artifacts/replay-production-mobile.jpg`。 |
+
+本輪成功流程未觀察到 PrematureCommitError；沒有把指定故障注入當成全站零錯誤監控證明。測試僅登入與讀取既有合成場次，未改營收、費用、角色、方案或照片，沒有登出或強制捨棄待送內容。結束已解除請求攔截、限速、離線與裝置尺寸模擬，關閉本輪臨時分頁。
+
+此輪驗收不把小型正式帳號的成功，視為 20,000 筆正式資料量或 iPhone／Android 效能證據；大型量測與真實回滾仍以前述隔離證據為準。

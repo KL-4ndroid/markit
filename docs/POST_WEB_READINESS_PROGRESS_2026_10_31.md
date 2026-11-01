@@ -1,8 +1,8 @@
 # 後續收尾進度：財務一致性、線上與 iOS 前置
 
-## 最新：2026-11-01 完整歷史重播效能（本機完成，未發布）
+## 最新：2026-11-01 完整歷史重播效能（已發布與核心複驗）
 
-[本批量測與修正](OWNER_REPLAY_PROJECTION_PERFORMANCE_2026_11_01.md)：在每 50 筆 transaction 內對手動收入／互動共用投影讀取，沿用既有 handler 計算，集中寫回；商品、刪除及其他事件保留原路徑。真實 IndexedDB 與 production-optimized 共享程式三輪量測：5,000 筆中位數 11.62→4.84 秒，20,000 筆 45.55→18.06 秒；不是整段登入或實機速度保證。失敗回滾／重試／context 失效、14 個相關測試、兩份型別檢查、lint 與 Web／手機靜態建置全部通過。本批尚未提交／發布；上一批下載優化已正式發布，見下段。
+[本批量測與修正](OWNER_REPLAY_PROJECTION_PERFORMANCE_2026_11_01.md)：在每 50 筆 transaction 內對手動收入／互動共用投影讀取，沿用既有 handler 計算，集中寫回；商品、刪除及其他事件保留原路徑。真實 IndexedDB 與 production-optimized 共享程式三輪量測：5,000 筆中位數 11.62→4.84 秒，20,000 筆 45.55→18.06 秒；不是整段登入或實機速度保證。失敗回滾／重試／context 失效、14 個相關測試、兩份型別檢查、lint 與 Web／手機靜態建置全部通過。程式 `9c7cba7` 已推送 main，Production `dpl_GjhvEqEYo4Rxz2RY3V3q8TMbcBAQ` Ready、主要網域 health 同版；[線上複驗](OWNER_REPLAY_PROJECTION_PERFORMANCE_2026_11_01.md#正式發布與線上複驗)通過慢網路乾淨登入、唯讀故障恢復、重開不重複累加、明細返回、重連與手機畫面。
 
 ## 最新：2026-11-01 大量歷史與慢速網路（已發布）
 
