@@ -40,10 +40,6 @@ import {
 import { useMarket, updateMarket, updateMarketStatus, startMarket, endMarket, useMarketStatsFromProjection } from '@/lib/db/hooks';
 import { db, initializeDatabaseSafely, type DatabaseInitResult } from '@/lib/db';
 import { recordEvent } from '@/lib/db/events';
-import {
-  getActiveDealEventsForMarket,
-  getActiveInteractionEventsForMarket,
-} from '@/lib/events/active-event-service';
 import { formatCurrency, formatDateRanges } from '@/lib/utils';
 import { formatClockTimeRange, formatDisplayDateRange } from '@/lib/presentation/formatters';
 import { toast } from 'sonner';
@@ -78,6 +74,7 @@ import { FinancialReviewPanel } from './FinancialReviewPanel';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getLocalDateString } from '@/lib/time-utils';
 import { useFinancialReviews } from '@/hooks/useFinancialReviews';
+import { useMarketActivity } from '@/hooks/useMarketActivity';
 import { applyFinancialReviews,financialReviewsEnabled } from '@/lib/markets/financial-reviews';
 import { ContextHelp } from '@/components/ui/ContextHelp';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
@@ -104,7 +101,7 @@ import { normalizeMarketRouteId, shouldShowMarketDetailLoading } from '@/lib/mar
 import { getMarketDetail } from '@/lib/markets/detail-service';
 import { shouldTrySupabaseFallback, selectMarketDetailRecord } from '@/lib/markets/detail-fallback';
 import { deleteDealEvent } from '@/lib/markets/event-deletion-service';
-import { countDealRecordsByDate, getDealEventDate, getDealEventRevenue, getInteractionType, getLocalDateStringFromTimestamp } from '@/lib/markets/event-view-utils';
+import { countDealRecordsByDate, getDealEventDate, getDealEventRevenue, getInteractionType } from '@/lib/markets/event-view-utils';
 import { buildMarketInteractionSummary } from '@/lib/markets/market-interaction-summary';
 import {
   completeMarketDetailTransition,
@@ -129,7 +126,7 @@ import {
   findSalesPhotoEvidenceOwnerExpiredStateForSale,
   findSalesPhotoEvidenceOwnerImageForSale,
 } from '@/lib/sales/photo-evidence-owner-view';
-import type { Market, MarketStatus, Event, InteractionRecordedPayload, DealClosedPayload } from '@/types/db';
+import type { Market, MarketStatus, Event, DealClosedPayload } from '@/types/db';
 import {
   restoreSkippedScheduledOccurrence,
   skipScheduledOccurrence,
@@ -332,8 +329,9 @@ export function MarketDetailScreen() {
   const DEBOUNCE_DELAY = 300; // 300ms 防抖
   
   // 互動行為數據狀態
-  const [interactionEvents, setInteractionEvents] = useState<Event<InteractionRecordedPayload>[]>([]);
-  const [dealEvents, setDealEvents] = useState<Event<DealClosedPayload>[]>([]);
+  const activity = useMarketActivity(user?.id ?? '', market, Boolean(!isStaff && !isRoleLoading && canRecord && dbStatus?.ok !== false));
+  const interactionEvents = activity.interactions;
+  const dealEvents = activity.deals;
   const dealRecordCountByDate = useMemo(() => countDealRecordsByDate(dealEvents), [dealEvents]);
   const [buttonLabels, setButtonLabels] = useState<Record<string, { label: string; role: InteractionButton['role'] }>>({});
   const selectedDealPhotoEvidence = useMemo(
@@ -443,73 +441,12 @@ export function MarketDetailScreen() {
     return () => clearInterval(interval);
   }, [market]);
 
-  // 載入互動事件數據
+  // Labels follow the current market; activity itself observes IndexedDB writes.
   useEffect(() => {
-    const loadInteractionData = async () => {
-      if (!market) return;
-
-      try {
-        // 獲取按鈕配置（使用新版 interaction-buttons-store）
-        const buttons = getInteractionButtons();
-        const labelMap: Record<string, { label: string; role: InteractionButton['role'] }> = {};
-        buttons.forEach(btn => {
-          labelMap[btn.id] = { label: btn.label, role: btn.role };
-        });
-        setButtonLabels(labelMap);
-
-        // ✅ 修復：使用 dates 陣列或降級到 startDate/endDate
-        const marketDates = market.dates && market.dates.length > 0 
-          ? market.dates 
-          : (() => {
-              // 降級：生成連續日期範圍
-              const dates: string[] = [];
-              const start = new Date(market.startDate);
-              const end = new Date(market.endDate);
-              for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                dates.push(dateStr);
-              }
-              return dates;
-            })();
-
-        // 獲取互動事件 - 只篩選在 marketDates 中的日期
-        const interactions = (await getActiveInteractionEventsForMarket(marketId))
-          .filter(e => {
-            return marketDates.includes(getLocalDateStringFromTimestamp(e.timestamp));
-          });
-
-        console.log('✅ 找到互動事件:', interactions.length);
-
-        setInteractionEvents(interactions);
-
-        // 獲取成交事件 - 只篩選在 marketDates 中的日期
-        const deals = (await getActiveDealEventsForMarket(marketId))
-          .filter(e => {
-            return marketDates.includes(getDealEventDate(e));
-          });
-
-        setDealEvents(deals);
-      } catch (error) {
-        console.error('載入互動數據失敗：', error);
-      }
-    };
-
-    if (market && dbStatus?.ok !== false) {
-      loadInteractionData();
-    }
-
-    // 監聽互動記錄事件，重新載入數據
-    const handleInteractionRecorded = () => {
-      loadInteractionData();
-    };
-
-    window.addEventListener('interaction-recorded', handleInteractionRecorded);
-    window.addEventListener('deal-closed', handleInteractionRecorded);
-
-    return () => {
-      window.removeEventListener('interaction-recorded', handleInteractionRecorded);
-      window.removeEventListener('deal-closed', handleInteractionRecorded);
-    };
+    if (!market || dbStatus?.ok === false) return;
+    const labelMap: Record<string, { label: string; role: InteractionButton['role'] }> = {};
+    getInteractionButtons().forEach(button => { labelMap[button.id] = { label: button.label, role: button.role }; });
+    setButtonLabels(labelMap);
   }, [market, marketId, dbStatus]);
 
   const interactionSummary = useMemo(
@@ -1127,8 +1064,6 @@ export function MarketDetailScreen() {
     try {
       const result = await deleteDealEvent(deal, { allowDelete: !isStaff });
 
-      setDealEvents(prev => prev.filter(d => d.id !== deal.id));
-
       toast.success('成交記錄已刪除', {
         description: `已扣回 ${formatCurrency(result.totalAmount)}`,
       });
@@ -1139,11 +1074,8 @@ export function MarketDetailScreen() {
     } catch (error) {
       console.error('刪除成交記錄失敗:', error);
       toast.error('刪除失敗，請稍後再試');
-
-      const updatedDeals = await getActiveDealEventsForMarket(marketId);
-      setDealEvents(updatedDeals);
     }
-  }, [marketId, selectedDeal, dbStatus, isStaff]);
+  }, [selectedDeal, dbStatus, isStaff]);
   const isDetailLoading = dbStatus === null || shouldShowMarketDetailLoading({
     isInitialized: dbStatus?.ok !== false,
     localLookupComplete,
@@ -1657,12 +1589,13 @@ export function MarketDetailScreen() {
 
         {resolvedOwnerWorkspaceView === 'overview' && visibleOverviewDetail === 'performance' && (
         <>
+          {activity.failed && <p role="status" className="mb-4 text-sm text-danger">暫時無法讀取成交與互動紀錄。<button type="button" onClick={activity.refresh} className="ml-2 min-h-11 underline">重新讀取紀錄</button></p>}
           <DailyRevenueStats
             market={market}
             reviewedStats={financialOverlay?.stats}
             financialConfirmations={financialOverlay?.confirmations[market.id ?? '']?.days}
             focusDate={searchParams.get('reportDate') ?? undefined}
-            dealRecordCountByDate={dealRecordCountByDate}
+            dealRecordCountByDate={activity.ready ? dealRecordCountByDate : undefined}
             onAddRevenue={handleOpenAddRevenue}
             onDateClick={handleDateClick}
             showTotals={false}

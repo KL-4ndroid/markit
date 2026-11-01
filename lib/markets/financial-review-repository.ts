@@ -56,10 +56,10 @@ export class FinancialReviewRepository {
   for(const id of ids){const market=await this.localDb.markets.get(id);if(!market || market.owner_id!==this.ownerId || market.access_type==='staff' || market.isDeleted)throw new Error('FINANCE_SCOPE');}
   await this.cloud.assertIdentity(this.ownerId);this.scope();
  }
- async refresh(ids:string[]){
-  await this.authorize(ids);const snapshots=await this.cloud.read(ids);await this.authorize(ids);
+ async refresh(ids:string[],assertCurrent:()=>void=()=>{}){
+  assertCurrent();await this.authorize(ids);const snapshots=await this.cloud.read(ids);assertCurrent();await this.authorize(ids);
   if(snapshots.length!==new Set(ids).size || new Set(snapshots.map(s=>s.marketId)).size!==snapshots.length || snapshots.some(s=>s.ownerId!==this.ownerId || !ids.includes(s.marketId)))throw new Error('FINANCE_SCOPE');
-  await this.localDb.transaction('rw',this.localDb.financialReviewCache,async()=>{this.scope();await this.localDb.financialReviewCache.bulkPut(snapshots.map(snapshot=>({id:financialCacheId(this.ownerId,snapshot.marketId),ownerId:this.ownerId,marketId:snapshot.marketId,snapshot})));});
+  await this.localDb.transaction('rw',this.localDb.financialReviewCache,async()=>{this.scope();assertCurrent();await this.localDb.financialReviewCache.bulkPut(snapshots.map(snapshot=>({id:financialCacheId(this.ownerId,snapshot.marketId),ownerId:this.ownerId,marketId:snapshot.marketId,snapshot})));});
   return snapshots;
  }
  async save(write:FinancialReviewWrite){

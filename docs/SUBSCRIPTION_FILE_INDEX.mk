@@ -1,5 +1,7 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-11-01 首次登入讀取恢復（本機，尚未提交／發布）：[修正與驗收](FIRST_LOGIN_READ_RECOVERY_2026_11_01.md)。新增[本人快取準備判斷](../lib/markets/owner-cache-readiness.ts)、[財務讀取恢復](../lib/markets/financial-review-reading.ts)、[場次活動讀取](../lib/markets/market-activity-reading.ts)及 [activity hook](../hooks/useMarketActivity.ts)；[核對 hook](../hooks/useFinancialReviews.ts)等待本人資料就緒，暫時性只讀錯誤重試一次，重連／前景／session 更新後重讀，[repository](../lib/markets/financial-review-repository.ts)阻止舊讀取覆蓋快取。[單場](../components/markets/MarketDetailScreen.tsx)觀察雲端重播並避免未完成歷史顯示已確認零筆。新增[恢復測試](../tests/first-login-read-recovery.test.ts)、[活動觀察測試](../tests/market-activity-live-reading.test.ts)及 manifest。沿用本人／付費 gate 與平台 ports；不改權益、價格、SQL、付款、草稿保存或 outbox 重送。
+
 2026-11-01 草稿保護發布收尾：正式重新登入、原帳號私人草稿恢復及專用測試草稿清理皆已確認，成本還原 0／收入 50／成交 1／淨利 -50；原有待送照片未強制捨棄。此輪僅補提交[完整發布驗收](FINANCIAL_DRAFT_LIFECYCLE_2026_10_31.md#2026-11-01-收尾)與進度導航，不改執行碼／方案／SQL／付款。
 
 2026-10-31 草稿保護已發布並完成核心複驗：程式 `bd9acca` 已推送 main，Production `dpl_4GUCMCyfvSo5TRn7ny6xpZki6gnx` Ready，主要網域 health 同版。[發布與驗收狀態](FINANCIAL_DRAFT_LIFECYCLE_2026_10_31.md#發布執行)包含真實草稿重開、衝突比較／明確保存、正式 alias 的 A→B→A、手機畫面與照片 guard；主要網域 3 筆未送照片保留，測試成本還原 0。初次載入自動恢復、完整歷史監控及實機仍有範圍限制，沒有把未取到日誌當作零錯誤。下方「尚未提交／發布」為歷史狀態。無新 SQL、旗標、價格或付款變更。
