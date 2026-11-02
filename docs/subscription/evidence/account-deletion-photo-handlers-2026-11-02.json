@@ -1,0 +1,23 @@
+{
+  "at": "2026-11-02T05:05:57.889Z",
+  "checks": [
+    "default-off and incompatible/deployed/remote configuration stops before registration, claim or photo writes",
+    "product handler success: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler cleanup_failed: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler unknown_put: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler finalize_lost: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler ack_lost: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler conflict: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler freeze: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler success: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler cleanup_failed: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler unknown_put: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler finalize_lost: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler ack_lost: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler conflict: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler freeze: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "both committed-finalize response losses reconcile from handler receipts without deleting photos; unrelated unknown attempts still block account cleanup"
+  ],
+  "productionEnabled": false,
+  "scope": "real existing Next handler factories + captured isolated PostgreSQL/BFFs + real loopback S3 SDK; auth/plan gates injected, not GoTrue/PostgREST or production/R2 acceptance"
+}

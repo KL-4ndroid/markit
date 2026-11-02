@@ -1,0 +1,22 @@
+{
+  "projectRef": "fgejncfsvvsayiequubm",
+  "verifiedAt": "2026-11-01T22:38:53.879Z",
+  "source": "Supabase SQL Editor metadata only",
+  "rows": [
+    {
+      "check_name": "095_snapshot_scope_ready",
+      "passed": true,
+      "checks": [
+        {
+          "passed": true,
+          "function": "public.cleanup_old_snapshots(uuid)"
+        },
+        {
+          "passed": true,
+          "function": "public.get_latest_snapshot(uuid)"
+        }
+      ]
+    }
+  ],
+  "accountDeletionEnabled": false
+}

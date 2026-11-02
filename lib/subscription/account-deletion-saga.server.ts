@@ -19,6 +19,7 @@ export type AccountDeletionSagaSnapshot = Readonly<{
 
 export type AccountDeletionSagaStepResult =
   | Readonly<{ outcome: 'completed'; affectedCount: number; evidenceHash: string }>
+  | Readonly<{ outcome: 'processing'; safeErrorCode: 'engine_batch_pending' }>
   | Readonly<{ outcome: 'failed_retryable' | 'manual_review'; safeErrorCode: string }>;
 
 export type AccountDeletionSagaRepository = {
@@ -51,6 +52,7 @@ export type AccountDeletionSagaStepExecutor = (
     requestId: string;
     accountKind: AccountDeletionAccountKind;
     stepCode: AccountDeletionStepCode;
+    leaseToken: string;
   }>,
 ) => Promise<AccountDeletionSagaStepResult>;
 
@@ -127,8 +129,10 @@ export async function runAccountDeletionSagaTick(input: {
   }
 
   const { snapshot } = claim;
-  if (snapshot.requestStatus !== 'processing' && snapshot.requestStatus !== 'manual_review') {
-    await releaseQuietly(input.repository, snapshot.requestId, claim.leaseToken);
+  if (snapshot.requestId !== input.requestId || !snapshot.identityConfirmed
+    || !snapshot.preflightResolution
+    || (snapshot.requestStatus !== 'processing' && snapshot.requestStatus !== 'manual_review')) {
+    await releaseQuietly(input.repository, input.requestId, claim.leaseToken);
     return Object.freeze({ outcome: 'request_not_processable', stepCode: null });
   }
 
@@ -140,6 +144,7 @@ export async function runAccountDeletionSagaTick(input: {
         requestId: snapshot.requestId,
         accountKind: snapshot.accountKind,
         stepCode,
+        leaseToken: claim.leaseToken,
       });
       await input.repository.recordStepResult({
         requestId: snapshot.requestId,

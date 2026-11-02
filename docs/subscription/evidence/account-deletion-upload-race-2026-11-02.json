@@ -1,0 +1,15 @@
+{
+  "at": "2026-11-02T03:02:00.918Z",
+  "checks": [
+    "captured product claim binds pending photo/version and preserves old/new keys before PUT",
+    "freeze permits already-issued PUT to return but fences the next PUT/finalize; expired open lease never proves quiescence; manifest contains four old/new keys",
+    "captured staff sale claim is blocked by staff freeze; settle remains callable; profile cleanup removes actor identity while retaining other-brand keys",
+    "unknown PUT outcome holds cleanup even after request completion; wrong token cannot release it",
+    "uncertainty cannot be downgraded even with its valid token; competing same-key writes and cross-owner registration are rejected",
+    "untracked expired legacy claim requires review rather than assuming the old writer stopped",
+    "two PostgreSQL sessions serialize freeze/new-begin: waiter rechecks committed freeze and cannot register a new writer",
+    "client roles cannot control upload barrier; service cannot directly read private attempts"
+  ],
+  "scope": "captured local PostgreSQL + real session coordinator; deferred PUT stand-in, no cloud/Auth writes",
+  "productionEnabled": false
+}

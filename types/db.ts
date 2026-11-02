@@ -73,6 +73,7 @@ export interface Event<T = any> {
     userId?: string;           // 未來可能的用戶 ID
     deviceId?: string;         // 裝置 ID
     version?: string;          // 應用版本
+    deletedActor?: boolean;    // 保留成交事實時，操作者身分已刪除
   };
 }
 

@@ -1,0 +1,79 @@
+{
+  "observedAt": "2026-11-02T00:14:35.423Z",
+  "finishedAt": "2026-11-02T00:14:39.138Z",
+  "source": "local configured R2 target; production binding unverified",
+  "projectRef": "fgejncfsvvsayiequubm",
+  "localTargetMatch": null,
+  "scope": "read-only metadata; no photo body downloaded or data/configuration changed",
+  "metadata": {
+    "product_cover_photos": {
+      "rows": 1,
+      "statuses": {
+        "uploaded": 1
+      },
+      "activeLeases": 0
+    },
+    "sale_photo_evidence": {
+      "rows": 23,
+      "statuses": {
+        "uploaded": 10,
+        "expired": 12,
+        "upload_failed": 1
+      },
+      "activeLeases": 0
+    }
+  },
+  "metadataStable": true,
+  "r2": {
+    "objects": 0,
+    "bytes": 0,
+    "listComplete": true,
+    "listRequests": 1,
+    "listError": null,
+    "multipartCount": 0,
+    "multipartComplete": true,
+    "multipartError": null,
+    "lifecycle": {
+      "readable": false,
+      "error": {
+        "code": "AccessDenied",
+        "status": 403
+      }
+    }
+  },
+  "analysis": {
+    "comparisonComplete": true,
+    "referencedKeys": 22,
+    "matchedKeys": 0,
+    "invalidOwnerReferences": 0,
+    "sharedOwnerReferences": 0,
+    "uploadedReferencesNotListed": 22,
+    "otherReferencesNotListed": 0,
+    "unreferencedObjects": 0,
+    "agedUnreferencedCandidates": 0,
+    "recentUnreferencedObjects": 0,
+    "unclassifiedObjects": 0
+  },
+  "missingUploadedHeadSamples": {
+    "present": 0,
+    "explicit404": 10,
+    "unavailable": 0,
+    "limit": 10
+  },
+  "deletionAuthorized": false,
+  "productionDeletionEnabled": false,
+  "remaining": [
+    "deployed revision configuration binding",
+    "backup/replica inventory",
+    "signed in-flight PUT fencing",
+    "live disposable-prefix deletion acceptance",
+    "bucket lifecycle permissions"
+  ],
+  "productionTargetVerified": false,
+  "productionConfigurationVerification": {
+    "variablesExistInLinkedProject": true,
+    "envRun": "required R2 values unavailable in child environment",
+    "temporaryEnvPull": "automatic approval rejected",
+    "reviewReason": "blocked by policy; no further reason supplied"
+  }
+}

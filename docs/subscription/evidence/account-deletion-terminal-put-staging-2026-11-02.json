@@ -1,0 +1,15 @@
+{
+  "at": "2026-11-02T04:18:02.277Z",
+  "checks": [
+    "real staging R2 200 receipt survives lost SQL acknowledgement and lost HTTP response; fresh DB-backed proof reconciles; second PUT is frozen",
+    "forged drain hash is rejected inside SQL commit; reusing a writer cannot issue another network PUT",
+    "production bucket, alternate endpoint path and mismatched disposable run are rejected before any network write"
+  ],
+  "scenarioPassed": true,
+  "cleanupComplete": true,
+  "attemptedMarkers": 1,
+  "confirmedAbsent": 1,
+  "scope": "real staging R2 + real loopback producer HTTP + captured isolated PostgreSQL; SQL ack and producer response loss injected; no production SQL/Auth/objects",
+  "productionEnabled": false,
+  "productionUploadRaceClosed": false
+}

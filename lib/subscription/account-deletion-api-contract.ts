@@ -32,6 +32,23 @@ export type AccountDeletionSafeStatus = Readonly<{
   nextActionAfter: string | null;
 }>;
 
+export type AccountDeletionAction = 'confirm' | 'cancel';
+export type AccountDeletionActionRequest = Readonly<{
+  requestId: string;
+  expectedStatus: 'requested' | 'identity_confirmed';
+}>;
+
+export function parseAccountDeletionActionRequest(
+  value: unknown,
+  action: AccountDeletionAction,
+): AccountDeletionActionRequest | null {
+  if (!isRecord(value) || Object.keys(value).some(key => !['requestId', 'expectedStatus'].includes(key))) return null;
+  if (typeof value.requestId !== 'string' || !OPAQUE_REQUEST_ID.test(value.requestId)) return null;
+  if (value.expectedStatus !== 'requested' && value.expectedStatus !== 'identity_confirmed') return null;
+  if (action === 'confirm' && value.expectedStatus !== 'requested') return null;
+  return Object.freeze({ requestId: value.requestId, expectedStatus: value.expectedStatus });
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

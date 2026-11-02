@@ -15,6 +15,7 @@ import type {
   AccountDeletionSagaRepository,
   AccountDeletionSagaSnapshot,
 } from './account-deletion-saga.server';
+import { AccountDeletionWorkflowConflict } from './account-deletion-request-workflow.server';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const SHA256_HEX = /^[0-9a-f]{64}$/u;
@@ -24,6 +25,8 @@ const LEASE_TOKEN = /^[0-9a-f-]{36}$/iu;
 const RPC_NAMES = [
   'bff_read_account_deletion_request',
   'bff_create_account_deletion_request',
+  'bff_confirm_account_deletion_request',
+  'bff_cancel_account_deletion_request',
   'bff_claim_account_deletion_lease',
   'bff_record_account_deletion_step',
   'bff_finalize_account_deletion',
@@ -145,7 +148,14 @@ export function createAccountDeletionStorageRepository(
 
   async function rpc(name: AccountDeletionRpcName, args: Record<string, unknown>): Promise<unknown> {
     const result = await client.rpc(name, args);
-    if (result.error) throw new Error('Account deletion RPC failed.');
+    if (result.error) {
+      const code = typeof result.error === 'object' ? (result.error as { code?: unknown }).code : undefined;
+      if (name === 'bff_confirm_account_deletion_request' || name === 'bff_cancel_account_deletion_request') {
+        if (code === 'P0002') throw new AccountDeletionWorkflowConflict('account_deletion_not_found');
+        if (code === '55000') throw new AccountDeletionWorkflowConflict('account_deletion_conflict');
+      }
+      throw new Error('Account deletion RPC failed.');
+    }
     return result.data;
   }
 
@@ -166,6 +176,25 @@ export function createAccountDeletionStorageRepository(
         p_idempotency_hash: input.idempotencyHash,
         p_policy_revision: input.policyRevision,
         p_preflight_resolution: input.preflightResolution,
+      }));
+    },
+
+    async confirmForActor(input) {
+      if (!UUID_PATTERN.test(input.actorId) || !UUID_PATTERN.test(input.requestId) || input.expectedStatus !== 'requested') {
+        throw new Error('Account deletion confirmation is invalid.');
+      }
+      return mapSafeStatus(await rpc('bff_confirm_account_deletion_request', {
+        p_actor_id: input.actorId, p_request_id: input.requestId, p_expected_status: input.expectedStatus,
+      }));
+    },
+
+    async cancelForActor(input) {
+      if (!UUID_PATTERN.test(input.actorId) || !UUID_PATTERN.test(input.requestId)
+        || !['requested', 'identity_confirmed'].includes(input.expectedStatus)) {
+        throw new Error('Account deletion cancellation is invalid.');
+      }
+      return mapSafeStatus(await rpc('bff_cancel_account_deletion_request', {
+        p_actor_id: input.actorId, p_request_id: input.requestId, p_expected_status: input.expectedStatus,
       }));
     },
 

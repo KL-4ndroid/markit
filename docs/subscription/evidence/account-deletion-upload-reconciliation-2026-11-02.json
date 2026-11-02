@@ -1,0 +1,18 @@
+{
+  "at": "2026-11-02T03:48:52.701Z",
+  "checks": [
+    "recovery requires exact live deletion lease, matching freeze and completed freeze/revoke steps; uncertain cleanup remains held",
+    "active transport, wrong drain scope and unreadable objects cannot create a recovery receipt",
+    "expired evidence, stale source, missing/duplicate/cross-owner keys and unknown object states roll back without release",
+    "metadata CAS rejects drift; lost commit acknowledgement replays one immutable receipt, preserving photos/metadata and rejecting conflicting or stale writer completion",
+    "normal manifest resumes with all four old/new keys; present/missing observations are evidence, never object deletion or metadata repair",
+    "captured failure metadata with incomplete compensation stays intact; expired open still needs drain proof; staff recovery retains other-brand keys/receipt and removes actor attribution",
+    "two-session lock waits recheck DB-clock deletion lease and proof expiry; neither expired case releases the attempt",
+    "captured finalize success with lost response preserves published metadata/photos; concurrent reviewers produce one receipt and reject conflicting evidence",
+    "unbound/legacy outcomes stay held; client roles cannot reconcile and service cannot read private review records",
+    "expired deletion lease cannot inspect/release an attempt; formal cleanup remains disabled"
+  ],
+  "scope": "captured isolated PostgreSQL + real reconciliation/session ports; fixture terminal-drain attestor and object observations, no cloud/Auth/R2 writes",
+  "productionEnabled": false,
+  "productionDrainAttestorImplemented": false
+}

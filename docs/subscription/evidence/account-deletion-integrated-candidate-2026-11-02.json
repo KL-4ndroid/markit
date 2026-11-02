@@ -1,0 +1,164 @@
+{
+  "at": "2026-11-02T07:03:18.320Z",
+  "checks": [
+    "default-off and incompatible/deployed/remote configuration stops before registration, claim or photo writes",
+    "product success replay: JPEG/WebP exact content readback, changed payload conflict, missing object holds, zero extra PUTs",
+    "product handler success: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler cleanup_failed: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler unknown_put: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product finalize_lost replay: JPEG/WebP exact content readback, changed payload conflict, missing object holds, zero extra PUTs",
+    "product handler finalize_lost: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler ack_lost: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler conflict: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "product handler freeze: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale success replay: JPEG/WebP exact content readback, changed payload conflict, missing object holds, zero extra PUTs",
+    "sale handler success: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler cleanup_failed: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler unknown_put: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale finalize_lost replay: JPEG/WebP exact content readback, changed payload conflict, missing object holds, zero extra PUTs",
+    "sale handler finalize_lost: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler ack_lost: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler conflict: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "sale handler freeze: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
+    "both readbacks retire only their confirmed attempt; unrelated unknown attempts still block account cleanup",
+    "real GoTrue password/bearer, PostgREST role/ACL and enabled canonical Free/cross-brand write denial in one candidate",
+    "same candidate clean owner: real REST worker runs all ten steps, real GoTrue freeze/hard delete, sessions absent; other unknown owners stay held"
+  ],
+  "focus": null,
+  "sourceHashes": [
+    {
+      "path": "supabase/migrations/071_add_account_deletion_request_foundation.sql",
+      "sha256": "c3eb900e5be36ddf68e8e022bd1c1b2fe02f54f1bd2b629b1b4fcea5505e6e59"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_REQUEST_WORKFLOW_2026_11_01.sql",
+      "sha256": "9eaa029b520f45fdac03c04790c782517ffa2582c78df0e967122b1882ef2bfb"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_ENGINE_2026_11_02.sql",
+      "sha256": "e43accedcc2a06b88eba363f23aa9aebd6042d986724c965025eb1b97c11a759"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_OPERATIONAL_COVERAGE_2026_11_02.sql",
+      "sha256": "5f39e31f2390b3f3e6e24707c86b3d4c4b8d1e79995e125d6b34e654ddb6eb1b"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_BILLING_RETENTION_2026_11_02.sql",
+      "sha256": "04f50ebead655faf1f073c96d4811e869d6cb6fc12f8551a1cfbdd1026aa2057"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_ACCESS_FENCE_2026_11_02.sql",
+      "sha256": "1d794963e10e451d14ca92b786876403c34b173edd91309fff16cb096233216f"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_UPLOAD_BARRIER_2026_11_02.sql",
+      "sha256": "6edf0f8a3f42ef0cc1256006e0fc51e471d6633b3111242d79e4325747cec396"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_UPLOAD_RECONCILIATION_2026_11_02.sql",
+      "sha256": "b29d9e2622869abafa0aad615d611f8ec5ac2cec3e41921cb3f30b1f42971b6c"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_TERMINAL_PUT_2026_11_02.sql",
+      "sha256": "bb20a7f43c6db34f34635e136abf368d97b649318d00c16f5bae3d3dac7ca3bf"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_PHOTO_READBACK_2026_11_02.sql",
+      "sha256": "b185e9818e260f31e997d4578b9ddec807b975453c5b50ef3634e9bd067272c9"
+    },
+    {
+      "path": "lib/subscription/account-deletion-engine.server.ts",
+      "sha256": "2d21da001a751921945606d545bee094fef26d0407cade42e4865d06bd3bb1a0"
+    },
+    {
+      "path": "lib/subscription/account-deletion-engine-adapters.server.ts",
+      "sha256": "8070bb6efced7d9db8fa4799f60a5d51232301b32f0100de7b4b91656b876769"
+    },
+    {
+      "path": "lib/subscription/account-deletion-upload-barrier.server.ts",
+      "sha256": "18afcbc35b3ac0bbd09f7623c7ae8613934fe983669997cb285e181e0c3c9070"
+    },
+    {
+      "path": "lib/subscription/account-deletion-terminal-put.server.ts",
+      "sha256": "48e96f65902994995874f389888eb38ea1eeba6c47825034e78dbc0c509834cd"
+    },
+    {
+      "path": "lib/subscription/account-deletion-workflow-gate.ts",
+      "sha256": "01e62905955b6cded79b4f52ac3ffb52289744eab6c7c927c9b4421075bf678a"
+    },
+    {
+      "path": "lib/subscription/account-deletion-request-workflow.server.ts",
+      "sha256": "2d9fbeec4b05799419a115011764d3280672abd93c46fd8b2b2284c6357eba91"
+    },
+    {
+      "path": "lib/subscription/account-deletion-billing-engine.server.ts",
+      "sha256": "2a4871bb0d31146b48cebc8754b1e8189e0036661efdf5f4b3f330c3da55076c"
+    },
+    {
+      "path": "lib/subscription/account-deletion-billing-retention.server.ts",
+      "sha256": "6c744f5ffbadee3acb32d72cd3bd134e3000e7824a2b9173d12056f7f6a3c04a"
+    },
+    {
+      "path": "lib/subscription/account-deletion-saga.server.ts",
+      "sha256": "a1d94a066288b01eca811c1141c1376707f86938a3983ef05284b975e1fe6ea8"
+    },
+    {
+      "path": "lib/subscription/account-deletion-access-policy.ts",
+      "sha256": "5b7899104b15955a889faae704658c5a58c61653abb02ab078fde305e1c07546"
+    },
+    {
+      "path": "lib/subscription/account-deletion-data-policy.ts",
+      "sha256": "cdbdfe93cbcb098c6a29378e922c5ad7ba50ff4a6980e589eee71cfbc66a20b1"
+    },
+    {
+      "path": "lib/subscription/photo-upload-readback.server.ts",
+      "sha256": "9ff9c4064d1986108fa93f1372922c383d4b3464e369cd150138b41fef665d2d"
+    },
+    {
+      "path": "app/api/product-cover-photo/upload/route.ts",
+      "sha256": "f45b8c29dda5ce2966b81e8ac8cd325379641cc044831a21ffd982b38b07668d"
+    },
+    {
+      "path": "app/api/sales-photo-evidence/upload/route.ts",
+      "sha256": "2f5977d3aec7b7a7c637e8e92604e8f73081566e0eaeb8bae78d524a328a4cab"
+    },
+    {
+      "path": "scripts/lib/account-deletion-candidate-sources.ts",
+      "sha256": "7c840dd04cb7b6bdbd942f405a4c528406b3723e863b456f1bd4cdbf87bffe28"
+    },
+    {
+      "path": "scripts/lib/account-deletion-catalog-fixture.ts",
+      "sha256": "3a53bed2af05ac9aea391aefbfe0dd1da5394c32f1eeb572407cb293458b2a8f"
+    },
+    {
+      "path": "scripts/lib/account-deletion-access-fixture.ts",
+      "sha256": "4f240d74fd4a67fa342423be4e4f344c0c80399e4feb67b1518075509703cea1"
+    },
+    {
+      "path": "scripts/lib/account-deletion-candidate-services.ts",
+      "sha256": "bb7ddcd3cf2fc91a6d71844d227e9cd1e7c34cd586fa125dd2f88aa15f5a42c8"
+    },
+    {
+      "path": "scripts/lib/account-deletion-photo-handler-checks.ts",
+      "sha256": "13affd83e9fa9dd606e4955ddac2ae49d0071f22e0270a8588e494e8b5bae9ad"
+    },
+    {
+      "path": "scripts/verify-account-deletion-upload-race.ts",
+      "sha256": "3eddea5c5934b321c27fbe929c0888861f63e2f34b161e8a6698868b27a882fc"
+    },
+    {
+      "path": "docs/subscription/evidence/account-deletion-guards-2026-11-02.json",
+      "sha256": "c5a4255bfa8ecbbb863edc5842a826699316f005678a07193e6afc3c8a9d02e6"
+    },
+    {
+      "path": "docs/subscription/evidence/account-deletion-access-definitions-2026-11-02.json",
+      "sha256": "6d2e2c35e3892aa1c14981076639e1b9307ea86a7dda81df08f04bc9d3c769a9"
+    },
+    {
+      "path": "docs/subscription/evidence/account-deletion-catalog-2026-11-02.json",
+      "sha256": "571c35a188bf49e70d13eda373439e96fb8fb448656d50027705a3ff67932fa4"
+    }
+  ],
+  "productionEnabled": false,
+  "scope": "real GoTrue bearer + real PostgREST JWT roles/reads/RPC + existing Next handler factories + captured PostgreSQL + loopback S3; canonical API subscription write decision enabled; captured triggers, not managed production Auth/Vercel/R2 acceptance"
+}

@@ -1,0 +1,20 @@
+{
+  "observedAt": "2026-11-02T02:10:06.233Z",
+  "bucket": "markit-sales-photo-staging",
+  "checks": [
+    "three create-only staging markers exist; real HEAD distinguishes present from absence",
+    "real conditional PUT rejects overwrite with 412 and preserves ownership metadata",
+    "real invalid-signature 403 is a read failure, never absence",
+    "executor denies stale fixture lease and propagates real 403 without acknowledging or touching canary",
+    "real DELETE plus lost fixture acknowledgement resumes safely; repeated DELETE of absent key succeeds",
+    "another actor canary survives cross-scope delete attempt",
+    "late self-created PUT before verification blocks absence; explicit cleanup then permits real 404 verification",
+    "post-verification recreation is possible: upload-quiescence remains a separate unresolved production requirement"
+  ],
+  "markerObjects": 3,
+  "cleanupComplete": true,
+  "scenarioPassed": true,
+  "productionEnabled": false,
+  "scope": "real staging R2; in-memory executor lease/receipt fixture; invalid signature 403 and acknowledgement loss explicitly injected; no real DB/Auth/store/provider tests",
+  "productionUploadRaceClosed": false
+}

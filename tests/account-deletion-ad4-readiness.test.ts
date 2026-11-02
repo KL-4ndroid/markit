@@ -67,9 +67,10 @@ assert.equal(current.report.ready, false);
 assert.equal(current.report.productionRuntimeMustRemainDisabled, true);
 assert.equal(current.report.blockers.includes('capacitor_gate2_open'), false);
 for (const blocker of ACCOUNT_DELETION_AD4_BLOCKER_IDS.filter(
-  blocker => blocker !== 'capacitor_gate2_open',
+  blocker => blocker !== 'capacitor_gate2_open'&&blocker!=='public_deletion_resource_absent',
 )) {
   assert.ok(current.report.blockers.includes(blocker), `missing current blocker: ${blocker}`);
 }
+assert.equal(current.report.blockers.includes('public_deletion_resource_absent'),false);
 
 console.log('PASS account deletion AD4 readiness remains fail closed and machine-checkable');
