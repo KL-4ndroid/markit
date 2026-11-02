@@ -1,7 +1,11 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": { "incremental": false },
+  "compilerOptions": {
+    "incremental": false
+  },
   "include": [
+    "scripts/prepare-account-deletion-migration.ts",
+    "scripts/verify-account-deletion-migration.ts",
     "scripts/serve-account-deletion-workflow.ts",
     "scripts/serve-account-deletion-supabase.ts",
     "scripts/verify-account-deletion-supabase.ts",
@@ -35,5 +39,7 @@
     "tests/account-deletion-request-workflow.test.ts",
     "tests/fixtures/account-deletion-workflow-fixture.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }
