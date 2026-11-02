@@ -1,6 +1,7 @@
 export const STANDALONE_PUBLIC_ROUTES = [
   '/demo',
   '/support',
+  '/account-deletion',
   '/terms',
   '/privacy',
   '/about',

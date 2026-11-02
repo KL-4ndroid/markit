@@ -81,4 +81,6 @@
 
 外部資訊：Supabase／R2 以外副本／備份及保留方式，客服信箱收件與刪除需求承接。已一次合併詢問；未確認前正式啟用阻擋保持。未來正式商店訂閱供應商通知另依原生任務，不擴入本批。
 
-提交／候選部署實際結果待本輪完成後補在本段，避免記錄計畫為已發布。
+提交 `e45fb0af2f6cccef0ef4183ef86ca627c5cefcd2` 已推送至 `codex/account-deletion-integrated-candidate`，Vercel Preview `dpl_4oanjDV7CNKTuBmsA33aGqnM3SGb` Ready。用現有 Vercel CLI 身分核對 health=200、revision=e45fb0a、刪帳 GET／confirm POST／cancel POST 皆 501 disabled；沒有調整 Deployment Protection。初次直接 HTTP 讀取雖為 200，但實際轉到 Vercel 登入頁，未算通過。
+
+公開頁初次部署被 AppChrome 登入殼遮住，已補 `lib/navigation/public-route.ts` 的 standalone public route，並在既有 public legal 測試確認 `/settings/account/deletion`／API／相似前綴仍不是公開路由。這個實際發現需要第二次候選建置；未重跑無關的 22 組 DB／照片矩陣。修正版部署最小複驗待本輪完成後記錄。
