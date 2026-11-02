@@ -1,6 +1,6 @@
 # 帳號刪除：整合交付與驗證去重計畫
 
-狀態：本輪整合實作與 22 組候選驗收已完成；選擇性提交、Preview 發布與最小部署確認收尾中。正式 migration、遠端清理資格與外部配套仍未完成，不能將本批稱為正式刪除全數完成。依使用者要求，將原七項待辦合為**一個整合交付批次**，自主推進至可審查、可部署驗證的候選版；內部有依賴順序，但不再逐小項交付、重跑大矩陣或要求使用者回覆「下一步」。正式不可逆刪除的啟用決策另行保留。
+狀態：本輪安全讀回與 22 組候選驗收、選擇性提交、Preview 發布與最小部署確認已完成。正式 migration、遠端清理資格與外部配套仍未完成，不能將本批稱為正式刪除全數完成。依使用者要求，將原七項待辦合為**一個整合交付批次**，自主推進至可審查、可部署驗證的候選版；內部有依賴順序，但不再逐小項交付、重跑大矩陣或要求使用者回覆「下一步」。正式不可逆刪除的啟用決策另行保留。
 
 ## 同一批次的範圍
 
@@ -83,4 +83,6 @@
 
 提交 `e45fb0af2f6cccef0ef4183ef86ca627c5cefcd2` 已推送至 `codex/account-deletion-integrated-candidate`，Vercel Preview `dpl_4oanjDV7CNKTuBmsA33aGqnM3SGb` Ready。用現有 Vercel CLI 身分核對 health=200、revision=e45fb0a、刪帳 GET／confirm POST／cancel POST 皆 501 disabled；沒有調整 Deployment Protection。初次直接 HTTP 讀取雖為 200，但實際轉到 Vercel 登入頁，未算通過。
 
-公開頁初次部署被 AppChrome 登入殼遮住，已補 `lib/navigation/public-route.ts` 的 standalone public route，並在既有 public legal 測試確認 `/settings/account/deletion`／API／相似前綴仍不是公開路由。這個實際發現需要第二次候選建置；未重跑無關的 22 組 DB／照片矩陣。修正版部署最小複驗待本輪完成後記錄。
+公開頁初次部署被 AppChrome 登入殼遮住，已補 `lib/navigation/public-route.ts` 的 standalone public route，並在既有 public legal 測試確認 `/settings/account/deletion`／API／相似前綴仍不是公開路由。這個實際發現需要第二次候選建置；未重跑無關的 22 組 DB／照片矩陣。修正版 `5b2f5c3fcaf8d822b9344333d8cc16056496d9f1` 已推送，Preview `dpl_5NjRfsacxBJJH2UhA4hYt3866DP5` Ready。[/account-deletion 候選頁](https://markit-8o53b3y37-masons-projects-1db534c5.vercel.app/account-deletion)匿名可讀，草案／未開放自助文案、返回／隱私／支援連結、支援頁入口與沒有自助刪除連結皆確認；health=200、revision=5b2f5c3，刪帳 GET=501 disabled。前版 confirm／cancel POST=501，其 handler 在修正版無差異。公開路由及私有前綴邊界兩份既有測試通過；Vercel 修正版建置通過。第一次在建置中讀到平台 200 building 頁未列為應用程式證據，等 Ready 後才完成上述核對。
+
+[最小部署證據](evidence/account-deletion-preview-2026-11-02.json)只記可核對的 revision／HTTP／頁面內容，不含 token、客服私訊或真帳號資料；非 AD4 正式候選資格證書。兩個程式提交均在 `codex/account-deletion-integrated-candidate`，未合併 main／promote 正式站。部署後純紀錄提交不改已驗證的 runtime 來源，無須重跑 22 組或另造 UI／PDF 大矩陣。

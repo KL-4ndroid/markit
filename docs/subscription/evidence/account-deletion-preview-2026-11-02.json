@@ -1,0 +1,54 @@
+{
+  "at": "2026-11-02T07:21:53.050991+00:00",
+  "scope": "preview minimal release-difference checks; not production deletion acceptance",
+  "deployment": {
+    "id": "dpl_5NjRfsacxBJJH2UhA4hYt3866DP5",
+    "url": "https://markit-8o53b3y37-masons-projects-1db534c5.vercel.app",
+    "target": "preview",
+    "state": "READY",
+    "commit": "5b2f5c3fcaf8d822b9344333d8cc16056496d9f1"
+  },
+  "checks": [
+    {
+      "name": "health",
+      "status": 200,
+      "commitSha": "5b2f5c3"
+    },
+    {
+      "name": "anonymous deletion information",
+      "status": 200,
+      "draftCopyPresent": true,
+      "selfServiceLinkAbsent": true,
+      "returnSupportPrivacyLinksPresent": true
+    },
+    {
+      "name": "support entry",
+      "status": 200,
+      "deletionInformationLinkPresent": true
+    },
+    {
+      "name": "deletion GET",
+      "status": 501,
+      "code": "account_deletion_disabled"
+    },
+    {
+      "name": "confirm/cancel POST",
+      "status": 501,
+      "code": "account_deletion_disabled",
+      "testedCommit": "e45fb0af2f6cccef0ef4183ef86ca627c5cefcd2",
+      "unchangedInVerifiedCommit": true
+    }
+  ],
+  "access": "existing Vercel CLI identity; deployment protection unchanged; login/build interstitial HTML not counted as application evidence",
+  "isolatedEvidence": "account-deletion-integrated-candidate-2026-11-02.json",
+  "productionEnabled": false,
+  "remainingEngineering": [
+    "remote-installable rerunnable migration and target/writer rollout",
+    "managed Supabase/Auth/Vercel/R2 integration acceptance",
+    "unknown/legacy upload evidence handling"
+  ],
+  "externalFactsUnconfirmed": [
+    "backup/external copies handling",
+    "support mailbox receipt and human processing"
+  ]
+}
