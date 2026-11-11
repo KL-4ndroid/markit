@@ -65,7 +65,7 @@ const pages = [
   ['/support', ['支援中心', '資料刪除與裝置暫存', '服務營運者']],
   ['/terms', ['服務條款', '目前版本尚未開放真實付款', '不得以草案自行排除法定權利']],
   ['/privacy', ['隱私政策', '主要可信來源', 'Cloudflare R2', '自成功上傳起保存七日']],
-  ['/about', ['Féria', '關於我們']],
+  ['/about', ['拾光日子', 'STALLIGHT DAYS', '從安排出攤到收攤回顧', '免登入體驗']],
 ];
 
 for (const [path, expectedContent] of pages) {
