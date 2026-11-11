@@ -95,7 +95,7 @@ assert.match(formalMarkets, /MarketListCard/);
 assert.match(app, /MarketListCard/);
 assert.match(formalMarkets, /buildMarketListGroups/);
 assert.match(app, /buildMarketListGroups/);
-assert.ok(formalHome.includes('bg-upcoming-section'));
+assert.match(formalHome, /aria-labelledby="upcoming-title"/);
 assert.ok(app.includes('bg-upcoming-section'));
 assert.match(formalHome, /TodayMarketCard/);
 assert.match(app, /TodayMarketCard/);

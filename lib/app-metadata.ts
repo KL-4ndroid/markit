@@ -1,3 +1,5 @@
+import { APP_BRAND } from './app-brand';
+
 // next.config.mjs injects the package version for both Web and mobile builds.
 // Keep package.json out of client bundles: importing it here exposes the full
 // dependency manifest to every client that renders application metadata.
@@ -25,8 +27,8 @@ function formatDateTime(value: string): string {
 }
 
 export const APP_METADATA = {
-  name: 'Féria',
-  displayName: 'Féria - 出攤筆記',
+  name: APP_BRAND.name,
+  displayName: APP_BRAND.displayName,
   version: appVersion,
   commitSha: appCommitSha,
   versionLabel: appVersionLabel,

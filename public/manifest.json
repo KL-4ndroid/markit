@@ -1,7 +1,7 @@
 {
-  "name": "Féria - 出攤筆記",
-  "short_name": "Féria",
-  "description": "手作品牌的市集經營筆記 - 輕鬆管理銷售、統計數據、追蹤成本",
+  "name": "拾光日子",
+  "short_name": "拾光日子",
+  "description": "記下每一次擺攤、每一筆營業、每個場地與商品表現，讓經營資料慢慢累積成看得懂的紀錄。",
   "id": "/",
   "start_url": "/",
   "display": "standalone",
@@ -65,7 +65,7 @@
       "sizes": "540x720",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Féria 今日營運與市集工作台"
+      "label": "拾光日子今日與市集"
     }
   ],
   "categories": ["business", "productivity", "finance"],

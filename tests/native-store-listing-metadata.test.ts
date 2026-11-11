@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { APP_BRAND } from '../lib/app-brand';
 
 import {
   evaluateNativeStoreListingMetadata,
@@ -22,8 +23,15 @@ assert.equal(currentReport.readyForConsoleEntry, false);
 assert.equal(currentReport.checkCount, 11);
 assert.equal(currentReport.passedCount, 0);
 assert.equal(currentReport.blockerCount, 11);
-assert.equal(current.apple.appName, 'Féria - 出攤筆記');
-assert.equal(current.google.appName, 'Féria - 出攤筆記');
+assert.equal(current.apple.appName, APP_BRAND.name);
+assert.equal(current.google.appName, APP_BRAND.name);
+const english = parseNativeStoreListingMetadata(JSON.parse(readFileSync(
+  join(root, 'docs/subscription/NATIVE_STORE_LISTING_METADATA_EN_US.json'), 'utf8',
+)));
+assert.equal(english.locale, 'en-US');
+assert.equal(english.apple.appName, APP_BRAND.englishName);
+assert.equal(english.google.appName, APP_BRAND.englishName);
+assert.equal(evaluateNativeStoreListingMetadata(english).readyForConsoleEntry, false);
 assert.ok(Buffer.byteLength(current.apple.keywords, 'utf8') <= 100);
 assert.doesNotMatch(canonicalRaw, /@|password\s*[:=]|token\s*[:=]|secret\s*[:=]/i);
 assert.doesNotMatch(
@@ -89,7 +97,7 @@ const documentation = readFileSync(join(
 ), 'utf8');
 const manifest = readFileSync(join(root, 'scripts/test-files.txt'), 'utf8');
 const packageJson = readFileSync(join(root, 'package.json'), 'utf8');
-assert.match(appMetadata, /displayName: 'Féria - 出攤筆記'/);
+assert.match(appMetadata, /displayName: APP_BRAND\.displayName/);
 assert.match(documentation, /STORE-COMPLIANCE.*pending_manual/);
 assert.match(documentation, /reviewer credentials/);
 assert.ok(manifest.includes('tsx tests/native-store-listing-metadata.test.ts'));

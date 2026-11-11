@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 import Link from 'next/link';
 import { AlertTriangle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -14,7 +15,7 @@ const PUBLIC_LINKS = [
   { href: '/support', label: '支援中心' },
   { href: '/privacy', label: '隱私政策' },
   { href: '/terms', label: '服務條款' },
-  { href: '/about', label: '關於 Féria' },
+  { href: '/about', label: `關於${APP_BRAND.name}` },
 ] as const;
 
 export function PublicDocumentShell({
@@ -33,9 +34,9 @@ export function PublicDocumentShell({
             className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            返回 Féria
+            返回{APP_BRAND.name}
           </Link>
-          <p className="mt-6 text-sm font-semibold text-atelier-clay">Féria 出攤筆記</p>
+          <p className="mt-6 text-sm font-semibold text-atelier-clay">{APP_BRAND.name}</p>
           <h1 className="mt-2 text-3xl font-semibold leading-tight text-foreground">{title}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
 

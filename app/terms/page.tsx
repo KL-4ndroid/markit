@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 import Link from 'next/link';
 
 import { PublicDocumentShell } from '@/components/public/PublicDocumentShell';
@@ -9,14 +10,14 @@ export default function TermsPage() {
   return (
     <PublicDocumentShell
       title="服務條款"
-      description="使用 Féria 出攤筆記時，營運者與帳號使用者共同遵守的服務邊界。"
+      description={`使用${APP_BRAND.name}時，營運者與帳號使用者共同遵守的服務邊界。`}
       effectiveDate={config.effectiveDate}
       publicationReady={config.policyPublicationReady}
     >
       <section className="py-7">
         <h2 className="text-lg font-semibold text-foreground">1. 適用範圍與同意</h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Féria 出攤筆記提供市集、商品、成交、成本、互動、分析與團隊協作功能。建立帳號或使用服務，表示您已閱讀並同意本條款與隱私政策。未滿法定成年年齡者，須由法定代理人同意後使用。
+          {APP_BRAND.name}提供市集、商品、成交、成本、互動、分析與團隊協作功能。建立帳號或使用服務，表示您已閱讀並同意本條款與隱私政策。未滿法定成年年齡者，須由法定代理人同意後使用。
         </p>
       </section>
 

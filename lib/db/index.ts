@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 /**
  * Féria - Dexie 資料庫定義
  * 
@@ -521,7 +522,7 @@ const EMERGENCY_BACKUP_METADATA_KEY = 'market_pulse_emergency_backup_metadata';
 async function triggerEmergencyBackupDownload(backupJson: string): Promise<void> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   await savePlatformFile({
-    filename: `feria-emergency-backup-${timestamp}.json`,
+    filename: `${APP_BRAND.filePrefix}-emergency-backup-${timestamp}.json`,
     data: new Blob([backupJson], { type: 'application/json' }),
   });
 }

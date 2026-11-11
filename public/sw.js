@@ -1,4 +1,4 @@
-// Service Worker for Féria PWA
+// Service Worker for 拾光日子
 // Version: 2.0.1
 // 功能：僅提供 PWA 基礎功能（安裝到主畫面、推送通知）
 // 已移除：離線快取功能
@@ -121,7 +121,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('Féria', options)
+    self.registration.showNotification('拾光日子', options)
   );
 });
 

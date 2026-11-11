@@ -1,5 +1,10 @@
 # iOS Capacitor Execution Progress
 
+## 2026-11-11：拾光日子更名與原生包裝準備
+
+`IOS-BRAND-ROLLOUT` 為 `pending_manual`。共用介面與商店文案已更新為「拾光日子／STALLIGHT DAYS」，iOS 包裝會套用繁中／英文桌面名稱、圖示、啟動圖與權限用途。待 Mac 簽署建置、實機與商店素材驗收。詳細範圍見[品牌規格](brand/STALLIGHT_DAYS_BRAND_BRIEF_2026_11_02.md)。
+
+
 > 現行跨 iOS／Android 路線與人工／AI 分工請見
 > `docs/CAPACITOR_IOS_ANDROID_EXECUTION_PLAN_2026_08_16.md`。本文件保留 Phase 1／2 的詳細
 > 歷史證據；Gate／task 狀態以 canonical JSON 為準。

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "sourceDocument": "subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.md",
+  "updatedAt": "2026-11-11",
+  "locale": "en-US",
+  "status": "candidate_requires_manual_review",
+  "submissionStatus": "disabled",
+  "publicOrigin": null,
+  "accountDeletionUrl": null,
+  "reviewContactStatus": "pending_manual",
+  "reviewAccountStatus": "pending_manual",
+  "googleContactEmailStatus": "pending_manual",
+  "legalReviewStatus": "pending_manual",
+  "finalBinaryReviewStatus": "pending_manual",
+  "apple": {
+    "appName": "STALLIGHT DAYS",
+    "subtitle": "A journal for market sellers",
+    "promotionalText": "Keep the days behind every stall.",
+    "description": "STALLIGHT DAYS is a journal for market sellers.\n\nKeep track of the markets you apply to, your booth fees, and the sales you make. Record notes after each market and review how venues and products performed over time.\n\nBuilt for independent makers, food trucks, night-market vendors, and sellers who move between regular and pop-up events. Features vary by plan.\n\nKeep the days behind every stall.",
+    "keywords": "market,vendor,stall,booth,sales,journal,popup,inventory,expenses,events",
+    "primaryCategory": "Business",
+    "secondaryCategory": "Productivity",
+    "supportUrl": null,
+    "marketingUrl": null,
+    "privacyPolicyUrl": null,
+    "privacyChoicesUrl": null,
+    "reviewNotesDraft": "Authentication is required. Use the non-expiring review credentials supplied securely in App Store Connect. The review workspace must contain disposable sample data and no customer information. Confirm the final subscription, restore, role, and account-deletion behavior against the submitted binary before submission."
+  },
+  "google": {
+    "appName": "STALLIGHT DAYS",
+    "shortDescription": "A journal for market sellers. Track markets, booth fees, sales, and notes.",
+    "fullDescription": "STALLIGHT DAYS is a journal for market sellers.\n\nKeep track of the markets you apply to, your booth fees, and the sales you make. Record notes after each market and review how venues and products performed over time.\n\nBuilt for independent makers, food trucks, night-market vendors, and sellers who move between regular and pop-up events. Features vary by plan.\n\nKeep the days behind every stall.",
+    "category": "Business",
+    "supportWebsiteUrl": null,
+    "privacyPolicyUrl": null,
+    "appAccessInstructionsDraft": "Authentication is required. Supply a non-expiring reviewer account securely in Play Console. The review workspace must use disposable sample data. Before submission, verify all subscription, restore, role, and account-deletion paths in the submitted binary and describe any non-obvious navigation here.",
+    "adsDeclarationDraft": "no_ads_current_runtime_requires_final_binary_review",
+    "targetAudienceDraft": "adult_business_users_requires_console_review"
+  }
+}

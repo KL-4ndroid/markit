@@ -5,6 +5,7 @@
  */
 
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
@@ -46,7 +47,7 @@ export function GlobalLoadingState() {
             {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon is already generated at fixed sizes */}
             <img
               src="/icons/icon-192x192.png"
-              alt="Féria - 出攤筆記"
+              alt={APP_BRAND.name}
               className="h-full w-full object-contain"
             />
           </div>

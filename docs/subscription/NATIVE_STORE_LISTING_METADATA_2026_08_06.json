@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.md",
-  "updatedAt": "2026-08-06",
+  "updatedAt": "2026-11-11",
   "locale": "zh-TW",
   "status": "candidate_requires_manual_review",
   "submissionStatus": "disabled",
@@ -13,10 +13,10 @@
   "legalReviewStatus": "pending_manual",
   "finalBinaryReviewStatus": "pending_manual",
   "apple": {
-    "appName": "Féria - 出攤筆記",
-    "subtitle": "市集品牌的營運工作台",
-    "promotionalText": "從市集排程、商品與成本，到現場銷售記錄與出攤復盤，讓每次出攤都累積成品牌下一步的依據。",
-    "description": "Féria 是為市集品牌與獨立創作者設計的出攤營運工具。\n\n把市集排程、商品資料、成本與現場銷售記錄放在同一個工作流程裡。出攤前整理品項與庫存，現場快速記錄成交與互動，活動後保留每一場市集的營運資料。\n\n主要功能：\n- 規劃市集日期、地點與營運狀態\n- 管理商品、售價、成本與庫存\n- 記錄現場銷售與顧客互動\n- 整理每場市集的營收與支出\n- 讓長期記錄成為下一次出攤的參考\n\nFéria 專注在小品牌真正會重複使用的工作流程。功能供應、帳號同步與進階能力仍以實際版本和畫面內說明為準。",
+    "appName": "拾光日子",
+    "subtitle": "給攤主的營業日誌與帳本",
+    "promotionalText": "把每一次做生意的日子，好好留下來。",
+    "description": "拾光日子是給攤主的營業日誌與帳本。\n\n記下每一次擺攤、每一筆營業、每個場地與商品表現，讓經營資料慢慢累積成看得懂的紀錄。\n\n- 記錄市集報名、錄取與攤位費，出攤前核對安排。\n- 在現場記錄成交與顧客互動，收攤後整理收入及心得。\n- 回顧市集和商品表現，為下次出攤準備。\n\n把每一次做生意的日子，好好留下來。\n\n實際功能依方案及 App 內說明提供。",
     "keywords": "市集管理,擺攤記錄,品牌經營,銷售記錄,商品管理,成本管理,出攤復盤",
     "primaryCategory": "Business",
     "secondaryCategory": "Productivity",
@@ -27,9 +27,9 @@
     "reviewNotesDraft": "Authentication is required. Use the non-expiring review credentials supplied securely in App Store Connect. The review workspace must contain disposable sample data and no customer information. Confirm the final subscription, restore, role, and account-deletion behavior against the submitted binary before submission."
   },
   "google": {
-    "appName": "Féria - 出攤筆記",
-    "shortDescription": "市集品牌的營運工作台，整合出攤、商品、銷售記錄與復盤",
-    "fullDescription": "Féria 是為市集品牌與獨立創作者設計的出攤營運工具。\n\n把市集排程、商品資料、成本與現場銷售記錄放在同一個工作流程裡。出攤前整理品項與庫存，現場快速記錄成交與互動，活動後保留每一場市集的營運資料。\n\n主要功能：\n- 規劃市集日期、地點與營運狀態\n- 管理商品、售價、成本與庫存\n- 記錄現場銷售與顧客互動\n- 整理每場市集的營收與支出\n- 讓長期記錄成為下一次出攤的參考\n\nFéria 專注在小品牌真正會重複使用的工作流程。功能供應、帳號同步與進階能力仍以實際版本和畫面內說明為準。",
+    "appName": "拾光日子",
+    "shortDescription": "給攤主的營業日誌與帳本，記下每場市集、每筆營業與每次出攤心得。",
+    "fullDescription": "拾光日子是給攤主的營業日誌與帳本。\n\n記下每一次擺攤、每一筆營業、每個場地與商品表現，讓經營資料慢慢累積成看得懂的紀錄。\n\n- 記錄市集報名、錄取與攤位費，出攤前核對安排。\n- 在現場記錄成交與顧客互動，收攤後整理收入及心得。\n- 回顧市集和商品表現，為下次出攤準備。\n\n把每一次做生意的日子，好好留下來。\n\n實際功能依方案及 App 內說明提供。",
     "category": "Business",
     "supportWebsiteUrl": null,
     "privacyPolicyUrl": null,

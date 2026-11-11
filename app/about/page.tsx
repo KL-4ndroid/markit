@@ -1,4 +1,5 @@
 import { APP_METADATA } from '@/lib/app-metadata';
+import { APP_BRAND } from '@/lib/app-brand';
 
 export default function AboutPage() {
   return (
@@ -9,20 +10,24 @@ export default function AboutPage() {
             {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon 已是預優化小圖，不需要 next/image 額外處理 */}
             <img
               src="/icons/icon-192x192.png"
-              alt="Féria - 出攤筆記"
+              alt=""
               className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Féria</h1>
-          <p className="text-lg text-muted-foreground">Féria - 出攤筆記</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">{APP_BRAND.name}</h1>
+          <p lang="en" className="text-xs tracking-widest text-muted-foreground">{APP_BRAND.englishName}</p>
+          <p className="mt-3 text-lg text-muted-foreground">{APP_BRAND.positioning}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{APP_BRAND.tagline}</p>
         </div>
         
         <div className="japanese-surface-card space-y-6 p-8">
           <section>
-            <h2 className="text-xl font-semibold text-foreground mb-3">關於我們</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-3">關於{APP_BRAND.name}</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Féria - 出攤筆記是專為市集攤販打造的數位管理系統，我們深知市集經營的辛苦與挑戰，
-              因此致力於提供簡單、直覺、實用的工具，幫助攤販朋友們更輕鬆地管理生意。
+              {APP_BRAND.description}
+            </p>
+            <p className="mt-3 text-muted-foreground leading-relaxed">
+              不論是手作文創品牌、固定夜市攤位、餐車，還是固定與流動場次交錯的攤主，都能回頭看看哪裡值得再去、什麼賣得最好，以及這段時間的生意是怎麼一路走過來的。
             </p>
           </section>
 
@@ -58,14 +63,6 @@ export default function AboutPage() {
                 </div>
               </li>
             </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold text-foreground mb-3">技術架構</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              採用現代化的 Web 技術棧，包括 Next.js、Supabase、IndexedDB 等，
-              確保應用的穩定性、安全性與效能。
-            </p>
           </section>
 
           <section>

@@ -1,4 +1,4 @@
-# Feria 人工上架工作操作指南
+# 拾光日子人工上架工作操作指南
 
 日期：2026-08-16
 
@@ -288,6 +288,10 @@ Canonical handoff：
 ```powershell
 npm.cmd run check:native-external-readiness
 ```
+
+### 3.4 拾光日子更名驗收（`IOS-BRAND-ROLLOUT`）
+
+使用同一候選版本，在繁中與英文設定的 iPhone 核對桌面名稱、圖示、啟動與照片權限說明。使用既有識別從測試舊版更新，確認登入與本機資料仍可正常開啟。以候選版擷取商店截圖，並核對繁中與英文名稱、介紹及公開客服入口。保存版本與裝置資訊，依[品牌規格](brand/STALLIGHT_DAYS_BRAND_BRIEF_2026_11_02.md)記錄結果。
 
 ## 4. Pro／Team、試用、寬限期與 Founder 政策核准
 

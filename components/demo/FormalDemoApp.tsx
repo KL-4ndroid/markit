@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import Image from 'next/image';
 import {
@@ -325,7 +326,7 @@ function TodayPage({
       <header className="japanese-warm-header overflow-hidden rounded-b-[2rem] px-5 pb-9 pt-[calc(1.25rem+env(safe-area-inset-top))] text-white shadow-atelier-lift">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-start justify-between gap-4">
-            <p className="min-w-0 truncate text-xs font-semibold text-white/90">Feria・暖暖手作</p>
+            <p className="min-w-0 truncate text-xs font-semibold text-white/90">{APP_BRAND.name}・暖暖手作</p>
             <div className="flex shrink-0 items-center gap-1">
               <StaticSyncStatus />
               <IconButton label="開啟設定" tooltip="設定" className="bg-white/20 text-white shadow-sm backdrop-blur-sm hover:bg-white/30 hover:text-white" icon={<Settings className="h-5 w-5" />} onClick={onOpenSettings} />
@@ -597,7 +598,7 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
     return (
       <DemoSettingsShell title="帳號與同步" description="管理帳號、備份與跨裝置同步。" icon={Cloud} onBack={() => setView('root')}>
         <div className="space-y-6">
-          <section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Users className="h-5 w-5" /></span><div><h2 className="text-base font-semibold text-foreground">登入帳號</h2><p className="mt-1 text-sm text-muted-foreground">demo@feria.app</p><p className="mt-2 text-xs text-muted-foreground">帳號身分：老闆・Demo 模式</p></div></div></section>
+          <section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Users className="h-5 w-5" /></span><div><h2 className="text-base font-semibold text-foreground">登入帳號</h2><p className="mt-1 text-sm text-muted-foreground">demo@example.test</p><p className="mt-2 text-xs text-muted-foreground">帳號身分：老闆・Demo 模式</p></div></div></section>
           <section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-semibold text-foreground">雲端同步</h2><p className="mt-1 text-sm text-muted-foreground">正式版會先保存本機操作，再於連線時送往雲端。</p></div><span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-soft-green px-3 py-1 text-xs font-medium text-primary"><Check className="h-4 w-4" />Demo 已同步</span></div><dl className="mt-5 divide-y divide-primary/10 border-y border-primary/10 text-sm"><div className="flex items-center justify-between py-3"><dt className="text-muted-foreground">最後同步</dt><dd className="font-medium">{lastSyncLabel}</dd></div><div className="flex items-center justify-between py-3"><dt className="text-muted-foreground">待同步項目</dt><dd className="font-medium">0 筆</dd></div><div className="flex items-center justify-between py-3"><dt className="text-muted-foreground">資料來源</dt><dd className="font-medium">記憶體 Demo</dd></div></dl><Button variant="secondary" className="mt-4 w-full sm:w-auto" leadingIcon={<RefreshCw className="h-4 w-4" />} onClick={() => { setLastSyncLabel('現在'); toast.success('Demo 同步完成'); }}>立即同步</Button></section>
         </div>
       </DemoSettingsShell>
@@ -616,7 +617,7 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
       <DemoSettingsShell title="團隊成員" description="邀請夥伴並設定工作權限。" icon={Users} onBack={() => setView('root')}>
         <div className="space-y-6">
           <section className="rounded-card border border-primary/10 bg-white p-5"><h2 className="text-base font-semibold text-foreground">新增成員</h2><p className="mt-1 text-sm text-muted-foreground">這裡只模擬邀請流程，不會寄出通知。</p><div className="mt-4 flex flex-col gap-2 sm:flex-row"><label htmlFor="demo-team-name" className="sr-only">成員名稱</label><input id="demo-team-name" value={inviteName} onChange={event => setInviteName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') invite(); }} placeholder="輸入成員名稱" className="min-h-12 flex-1 rounded-control border border-primary/15 bg-background px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" /><Button onClick={invite} leadingIcon={<Plus className="h-4 w-4" />}>加入團隊</Button></div></section>
-          <section className="overflow-hidden rounded-card border border-primary/10 bg-white"><div className="flex items-center justify-between border-b border-primary/10 p-4"><div><p className="text-sm font-semibold">Demo 老闆</p><p className="mt-1 text-xs text-muted-foreground">demo@feria.app</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">老闆</span></div>{teamMembers.map(member => <div key={member} className="flex min-h-16 items-center justify-between gap-3 border-b border-primary/10 px-4 last:border-0"><span className="text-sm font-medium">{member}</span><button type="button" onClick={() => setTeamMembers(current => current.filter(item => item !== member))} aria-label={`移除 ${member}`} className="inline-flex h-11 w-11 items-center justify-center rounded-control text-danger hover:bg-status-danger-bg"><Trash2 className="h-4 w-4" /></button></div>)}</section>
+          <section className="overflow-hidden rounded-card border border-primary/10 bg-white"><div className="flex items-center justify-between border-b border-primary/10 p-4"><div><p className="text-sm font-semibold">Demo 老闆</p><p className="mt-1 text-xs text-muted-foreground">demo@example.test</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">老闆</span></div>{teamMembers.map(member => <div key={member} className="flex min-h-16 items-center justify-between gap-3 border-b border-primary/10 px-4 last:border-0"><span className="text-sm font-medium">{member}</span><button type="button" onClick={() => setTeamMembers(current => current.filter(item => item !== member))} aria-label={`移除 ${member}`} className="inline-flex h-11 w-11 items-center justify-center rounded-control text-danger hover:bg-status-danger-bg"><Trash2 className="h-4 w-4" /></button></div>)}</section>
         </div>
       </DemoSettingsShell>
     );
@@ -642,7 +643,7 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
   if (view === 'app') {
     return (
       <DemoSettingsShell title="App 與版本" description="查看版本資訊並調整這次 Demo 的主題。" icon={Smartphone} onBack={() => setView('root')}>
-        <div className="space-y-6"><section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Palette className="h-5 w-5" /></span><div className="min-w-0 flex-1"><h2 className="text-base font-semibold">主題實驗室</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">即時調整正式版與 Demo 共用的色彩變數。</p></div></div><Button className="mt-4 w-full" onClick={onOpenThemeLab} leadingIcon={<Palette className="h-4 w-4" />}>開啟主題實驗室</Button></section><section className="rounded-card border border-primary/10 bg-white px-4 py-4"><div className="flex items-center gap-3"><Image src="/icons/icon-192x192.png" alt="" width={40} height={40} className="h-10 w-10 rounded-lg object-contain" /><div><p className="text-sm font-semibold">Féria</p><p className="mt-1 text-xs text-muted-foreground">互動 Demo・記憶體資料版</p></div></div></section></div>
+        <div className="space-y-6"><section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Palette className="h-5 w-5" /></span><div className="min-w-0 flex-1"><h2 className="text-base font-semibold">主題實驗室</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">即時調整正式版與 Demo 共用的色彩變數。</p></div></div><Button className="mt-4 w-full" onClick={onOpenThemeLab} leadingIcon={<Palette className="h-4 w-4" />}>開啟主題實驗室</Button></section><section className="rounded-card border border-primary/10 bg-white px-4 py-4"><div className="flex items-center gap-3"><Image src="/icons/icon-192x192.png" alt="" width={40} height={40} className="h-10 w-10 rounded-lg object-contain" /><div><p className="text-sm font-semibold">{APP_BRAND.name}</p><p className="mt-1 text-xs text-muted-foreground">互動 Demo・記憶體資料版</p></div></div></section></div>
       </DemoSettingsShell>
     );
   }
@@ -654,7 +655,7 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
       icon={MoreHorizontal}
       isStaff={false}
     >
-      <section className="mb-6 flex items-center justify-between gap-4 border-b border-primary/10 pb-5"><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">demo@feria.app</p><p className="mt-1 text-xs text-muted-foreground">目前身分：老闆</p></div><span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">營運者</span></section><div className="space-y-6"><SettingsSection title="營運設定"><SettingsRow icon={Cloud} label="帳號與同步" description="登入帳號、同步狀態與登出" onClick={() => setView('account')} /><SettingsRow icon={Users} label="團隊與權限" description="邀請成員並管理每位員工的角色" onClick={() => setView('team')} /><SettingsRow icon={Camera} label="銷售與照片" description="品牌名稱、成交照片與互動記錄偏好" onClick={() => { setPhotoDraft(defaultPhotoRequired); setView('sales'); }} /></SettingsSection><SettingsSection title="系統"><SettingsRow icon={Database} label="資料與救援" description="檢查資料健康、修復與清除資料" onClick={() => setView('data')} /><SettingsRow icon={Smartphone} label="App 與版本" description="安裝到主畫面、版本與關於 Féria" onClick={() => setView('app')} /></SettingsSection></div>
+      <section className="mb-6 flex items-center justify-between gap-4 border-b border-primary/10 pb-5"><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">demo@example.test</p><p className="mt-1 text-xs text-muted-foreground">目前身分：老闆</p></div><span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">營運者</span></section><div className="space-y-6"><SettingsSection title="營運設定"><SettingsRow icon={Cloud} label="帳號與同步" description="登入帳號、同步狀態與登出" onClick={() => setView('account')} /><SettingsRow icon={Users} label="團隊與權限" description="邀請成員並管理每位員工的角色" onClick={() => setView('team')} /><SettingsRow icon={Camera} label="銷售與照片" description="品牌名稱、成交照片與互動記錄偏好" onClick={() => { setPhotoDraft(defaultPhotoRequired); setView('sales'); }} /></SettingsSection><SettingsSection title="系統"><SettingsRow icon={Database} label="資料與救援" description="檢查資料健康、修復與清除資料" onClick={() => setView('data')} /><SettingsRow icon={Smartphone} label="App 與版本" description={`安裝到主畫面、版本與關於${APP_BRAND.name}`} onClick={() => setView('app')} /></SettingsSection></div>
     </SettingsPageShell>
   );
 }
@@ -1078,7 +1079,7 @@ export function FormalDemoApp() {
     const url = URL.createObjectURL(new Blob([payload], { type: 'application/json;charset=utf-8' }));
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `feria-demo-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.download = `${APP_BRAND.filePrefix}-demo-${new Date().toISOString().slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
     toast.success('Demo 備份已下載');

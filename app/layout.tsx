@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppChrome } from "@/components/AppChrome";
@@ -8,13 +9,14 @@ import { NativePlatformGate } from '@/components/platform/NativePlatformGate';
 import { NativeLinkNavigation } from '@/components/platform/NativeLinkNavigation';
 
 export const metadata: Metadata = {
-  title: "Féria - 出攤筆記",
-  description: "獨立品牌的市集經營筆記 - 記錄市集、商品、成本與成果",
+  title: { default: APP_BRAND.displayName, template: `%s｜${APP_BRAND.name}` },
+  description: APP_BRAND.description,
   manifest: "/manifest.json",
+  openGraph: { siteName: APP_BRAND.name, locale: "zh_TW" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Féria 出攤筆記",
+    title: APP_BRAND.name,
   },
   icons: {
     icon: [
@@ -45,7 +47,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Féria 出攤筆記" />
+        <meta name="apple-mobile-web-app-title" content={APP_BRAND.name} />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="theme-color" content="#7B9FA6" />
         <meta name="msapplication-TileColor" content="#7B9FA6" />

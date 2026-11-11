@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { APP_BRAND } from '../lib/app-brand';
 
 import { isEntityCreateDeepLink } from '../lib/navigation/entity-create-deep-link';
 import {
@@ -15,6 +16,10 @@ const read = (path: string) => readFileSync(join(root, path), 'utf8');
 console.log('\n=== Web PWA release smoke contract ===');
 
 const manifest = JSON.parse(read('public/manifest.json')) as Record<string, unknown>;
+assert.equal(manifest.name, APP_BRAND.name);
+assert.equal(manifest.short_name, APP_BRAND.name);
+assert.equal(manifest.description, APP_BRAND.description);
+assert.equal(manifest.id, '/');
 const assets = assertWebAppManifestContract(manifest);
 assert.ok(assets.length >= 9, 'manifest must expose the reviewed icon and screenshot assets');
 
@@ -49,7 +54,8 @@ const marketPage = read('app/markets/page.tsx');
 const productPage = read('app/products/page.tsx');
 for (const page of [marketPage, productPage]) {
   assert.match(page, /links\.getCurrentUrl\(\)/);
-  assert.match(page, /(?:useSearchParams\(\)|searchParams)\.get\('action'\)/);
+  const params = page.match(/const (\w+) = useSearchParams\(\)/)?.[1];
+  assert.ok(params && page.includes(`${params}.get('action')`));
   assert.match(page, /shortcutAction !== 'add'/);
   assert.match(page, /<Suspense fallback=/);
   assert.match(page, /isStaffMode \|\| !canLoadScopedData \|\| dbStatus\.ok === false/);

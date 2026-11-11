@@ -20,15 +20,17 @@ type ProductDisposition =
   | 'deferred_pending_mechanism';
 
 const PRO_CAPABILITY_CODES = [
+  'core.sales_recording',
+  'core.product_catalog',
   'analytics.basic',
-  'analytics.advanced',
-  'report.settlement_preview',
-  'report.pdf',
   'photo.product_cover',
 ] as const satisfies readonly SubscriptionPlanFeatureCode[];
 
 const TEAM_CAPABILITY_CODES = [
   ...PRO_CAPABILITY_CODES,
+  'analytics.advanced',
+  'report.settlement_preview',
+  'report.pdf',
   'photo.sales_evidence',
   'team.staff_collaboration',
   'team.manager_workflow',

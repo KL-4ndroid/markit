@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.md",
-  "updatedAt": "2026-08-06",
+  "updatedAt": "2026-11-11",
   "locale": "zh-TW",
   "activationStatus": "disabled",
   "submissionStatus": "disabled",
@@ -12,47 +12,47 @@
   "finalBinaryReviewStatus": "pending_manual",
   "founderPolicyDecisionStatus": "pending_manual",
   "apple": {
-    "subscriptionGroupDisplayName": "Feria 方案",
+    "subscriptionGroupDisplayName": "拾光日子方案",
     "products": [
       {
         "priceVersionId": "pro_monthly_twd_launch_v1",
         "planCode": "pro",
         "disposition": "candidate_requires_manual_review",
-        "displayName": "Féria Pro 月繳",
-        "description": "單場復盤、跨市集分析、PDF 報告與商品封面照片",
-        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover"]
+        "displayName": "拾光日子 輕量版 月繳",
+        "description": "記錄銷售與互動、管理商品、查看單場成果與基本月摘要",
+        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover"]
       },
       {
         "priceVersionId": "pro_annual_twd_launch_v1",
         "planCode": "pro",
         "disposition": "candidate_requires_manual_review",
-        "displayName": "Féria Pro 年繳",
-        "description": "單場復盤、跨市集分析、PDF 報告與商品封面照片",
-        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover"]
+        "displayName": "拾光日子 輕量版 年繳",
+        "description": "記錄銷售與互動、管理商品、查看單場成果與基本月摘要",
+        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover"]
       },
       {
         "priceVersionId": "pro_founder_annual_twd_launch_v1",
         "planCode": "pro",
         "disposition": "deferred_pending_mechanism",
-        "displayName": "Féria Pro 創始年繳",
-        "description": "單場復盤、跨市集分析、PDF 報告與商品封面照片",
-        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover"]
+        "displayName": "拾光日子 輕量版 創始年繳",
+        "description": "記錄銷售與互動、管理商品、查看單場成果與基本月摘要",
+        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover"]
       },
       {
         "priceVersionId": "team_monthly_twd_launch_v1",
         "planCode": "team",
         "disposition": "candidate_requires_manual_review",
-        "displayName": "Féria Team 月繳",
-        "description": "包含 Pro，提供員工協作、Manager 流程與成交照片證據",
-        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
+        "displayName": "拾光日子 高階版 月繳",
+        "description": "跨市集比較、完整結算與 PDF 匯出、成交照片與員工協作",
+        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
       },
       {
         "priceVersionId": "team_annual_twd_launch_v1",
         "planCode": "team",
         "disposition": "candidate_requires_manual_review",
-        "displayName": "Féria Team 年繳",
-        "description": "包含 Pro，提供員工協作、Manager 流程與成交照片證據",
-        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
+        "displayName": "拾光日子 高階版 年繳",
+        "description": "跨市集比較、完整結算與 PDF 匯出、成交照片與員工協作",
+        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
       }
     ]
   },
@@ -61,16 +61,16 @@
       {
         "planCode": "pro",
         "disposition": "candidate_requires_manual_review",
-        "name": "Féria Pro",
-        "benefits": ["單場市集分析與復盤", "跨市集比較與商品決策建議", "週月結算與設計版 PDF 報告", "商品封面照片"],
-        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover"]
+        "name": "拾光日子 輕量版",
+        "benefits": ["記錄銷售與互動", "商品庫存與封面照片", "單場成果與基本月摘要", "選填現金對帳"],
+        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover"]
       },
       {
         "planCode": "team",
         "disposition": "candidate_requires_manual_review",
-        "name": "Féria Team",
-        "benefits": ["包含完整 Pro 功能", "正式員工協作", "Manager 分工流程", "成交照片證據"],
-        "capabilityCodes": ["analytics.basic", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.product_cover", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
+        "name": "拾光日子 高階版",
+        "benefits": ["跨市集比較與進階分析", "完整結算報告與 PDF 匯出", "成交照片證據", "員工協作與角色管理"],
+        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
       }
     ]
   }

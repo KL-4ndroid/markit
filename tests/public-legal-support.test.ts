@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { APP_BRAND } from '../lib/app-brand';
 
 import {
   buildSupportMailto,
@@ -49,7 +50,7 @@ assert.equal(isValidIsoCalendarDate('development'), false);
 
 assert.equal(
   buildSupportMailto('support@boothbook.tw', '資料與隱私'),
-  'mailto:support@boothbook.tw?subject=%5BFeria%20support%5D%20%E8%B3%87%E6%96%99%E8%88%87%E9%9A%B1%E7%A7%81',
+  'mailto:support@boothbook.tw?subject=%5BSTALLIGHT%20DAYS%20support%5D%20%E8%B3%87%E6%96%99%E8%88%87%E9%9A%B1%E7%A7%81',
 );
 assert.equal(buildSupportMailto(null, '帳號'), null);
 
@@ -60,6 +61,9 @@ assert.equal(isPathWithinAnyRoute('/privacy', STANDALONE_PUBLIC_ROUTES), true);
 assert.equal(isPathWithinAnyRoute('/terms-old', STANDALONE_PUBLIC_ROUTES), false);
 
 const root = process.cwd();
+const supportEmailExample = readFileSync(join(root, '.env.example'), 'utf8')
+  .match(/^NEXT_PUBLIC_SUPPORT_EMAIL=(.+)$/m)?.[1];
+assert.equal(normalizePublicSupportEmail(supportEmailExample), APP_BRAND.supportEmail);
 const appChrome = readFileSync(join(root, 'components/AppChrome.tsx'), 'utf8');
 const supportPage = readFileSync(join(root, 'app/support/page.tsx'), 'utf8');
 const termsPage = readFileSync(join(root, 'app/terms/page.tsx'), 'utf8');

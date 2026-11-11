@@ -165,7 +165,7 @@ export const MANUAL_LAUNCH_CHECKLIST_TASKS: readonly ChecklistTaskDefinition[] =
       item('deletion.billing-identity', '核准付費 identity 與 profiles.id 的解耦方式'),
       item('deletion.billing-identity-legal', '由 legal_privacy_owner 核准 billing subject 法律基礎、最小化與 erasure boundary'),
       item('deletion.billing-identity-review', '由 security_owner 核准 billing subject key、存取、加密、audit 與不可重新識別'),
-      item('deletion.active-store', '核准有效 Apple／Google 訂閱下刪除 Féria 帳號的行為與告知'),
+      item('deletion.active-store', '核准有效 Apple／Google 訂閱下刪除拾光日子帳號的行為與告知'),
       item('deletion.third-party-data', '核准 owner workspace 中員工／第三方資料的保留、匯出、匿名化或刪除'),
       item('deletion.staff-third-party-legal', '由 legal_privacy_owner 核准第三方權利、controller 邊界、shared object 與 appeal'),
       item('deletion.staff-third-party-review', '由 security_owner 核准匿名化欄位／演算法、linkage resistance 與 evidence'),
@@ -412,7 +412,7 @@ export function renderManualLaunchChecklist(
   const itemStatuses = new Map(itemStatus.items.map(entry => [entry.id, entry.status] as const));
   const summary = summarizeManualLaunchChecklist(plan, external, itemStatus);
   const lines: string[] = [
-    '# Feria 人工上架工作 Checklist',
+    '# 拾光日子人工上架工作 Checklist',
     '',
     `狀態來源更新日：${sourceUpdatedAt(plan, external, itemStatus)}`,
     '',

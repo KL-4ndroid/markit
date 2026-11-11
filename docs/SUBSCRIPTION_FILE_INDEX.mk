@@ -1,5 +1,7 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-11-11 品牌更名：[品牌規格與發布狀態](brand/STALLIGHT_DAYS_BRAND_BRIEF_2026_11_02.md)、[共用文案](../lib/app-brand.json)、[訂閱揭露](../lib/subscription/native-purchase-disclosure.ts)、[繁中商店文案](subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.json)、[英文商店文案](subscription/NATIVE_STORE_LISTING_METADATA_EN_US.json)、[商品顯示名稱](subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json)。`IOS-BRAND-ROLLOUT` 為 `pending_manual`，見[上架任務矩陣](LAUNCH_EXECUTION_TASKS_2026_08_09.json)。方案、價格、權益、產品 ID 與購買啟用均沿用既有規格。
+
 2026-11-01 正式版發布整理（已發布與最小線上確認）：[入口盤點與驗收去重](FORMAL_RELEASE_CLEANUP_2026_11_01.md)、[測試資料 ID 清冊](TEST_DATA_INVENTORY_2026_11_01.md)。`426e485`／Production `dpl_2EYbpTJkfmpKqzGw2ih712RQsrEH` Ready、主要 health 同版；研究實驗室網址含子路徑正式 404，設定／市集 HTML shell 200。本批結案。僅研究實驗室沿用既有 `TEST_TOOLS_ENABLED` 正式／測試版本界線；訂閱指定帳號測試開關、082 allowlist、權益、價格、付款與保留規則不變。已發布的讀取恢復／下載／重播分批成果沿用證據，不因文件殘留歷史狀態重做。
 
 2026-11-01 完整重播批次投影（已發布）：[效能與一致性驗收](OWNER_REPLAY_PROJECTION_PERFORMANCE_2026_11_01.md)。新增[transaction 內投影快取](../lib/sync/replay-projection-batch.ts)，[owner replay](../lib/sync/owner-event-replay.ts)僅對手動收入／互動整批套用，沿用原 handler 與 50 筆原子提交；其他事件保留原路徑。[參考路徑 parity 測試](../tests/replay-projection-batch.test.ts)、[Web 隔離量測 UI](../scripts/replay-benchmark/browser.ts)、[loopback 建置器](../scripts/serve-replay-benchmark.mjs)及[工具型別設定](../tsconfig.replay-benchmark.json)新增並更新 manifest。三輪原生 IndexedDB 量測、回滾／重試、14 測試與 Web／手機靜態建置通過；程式 `9c7cba7` 已推送 main，Production `dpl_GjhvEqEYo4Rxz2RY3V3q8TMbcBAQ` Ready，主要網域 health 同版，[核心線上複驗](OWNER_REPLAY_PROJECTION_PERFORMANCE_2026_11_01.md#正式發布與線上複驗)完成。沒有新 SQL、價格、方案、付款或雲端 writer，不改免費→付費 payload 恢復及 pending 保留。
@@ -243,6 +245,7 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 | [docs/subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md](subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [docs/subscription/NATIVE_STORE_LISTING_ASSET_BASELINE_2026_08_06.md](subscription/NATIVE_STORE_LISTING_ASSET_BASELINE_2026_08_06.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [docs/subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.json](subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.json) | 機器可讀草稿／狀態／檢查設定。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
+| [docs/subscription/NATIVE_STORE_LISTING_METADATA_EN_US.json](subscription/NATIVE_STORE_LISTING_METADATA_EN_US.json) | 英文商店文案草稿與核准狀態。 | [文案檢查指令](../scripts/check-native-store-listing-metadata.ts)、[文案模型](../lib/deployment/native-store-listing-metadata.ts)。 |
 | [docs/subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.md](subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json](subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json) | 機器可讀草稿／狀態／檢查設定。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |
 | [docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.md](subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.md) | 規格、政策、計畫或相關功能／發布紀錄。 | 未列直接 import；仍需查文件、路由、腳本或 SQL 呼叫。 |

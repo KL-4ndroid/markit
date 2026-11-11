@@ -1,4 +1,5 @@
 const IOS_CAPACITOR_VERSION = '8.5.3';
+const brand = require('../../lib/app-brand.json');
 
 function createIosBootstrapConfig(env) {
   const appId = env.IOS_APP_ID?.trim();
@@ -27,7 +28,7 @@ function createIosBootstrapConfig(env) {
   }
   return {
     appId,
-    appName: 'Féria',
+    appName: brand.name,
     webDir: 'out',
     loggingBehavior: 'none',
     ios: { path: 'ios', scheme: 'App' },

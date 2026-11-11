@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import { CheckCircle2, Download, Share, Smartphone } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -79,7 +80,7 @@ export function PWAInstallButton() {
           </span>
           <div className="min-w-0 flex-1">
             <h2 id="install-app-title" className="text-base font-semibold text-foreground">
-              {isInstalled ? '已安裝到這台裝置' : '安裝 Féria 到主畫面'}
+              {isInstalled ? '已安裝到這台裝置' : `將${APP_BRAND.name}加到主畫面`}
             </h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               {isInstalled
@@ -105,7 +106,7 @@ export function PWAInstallButton() {
       <AppDialog
         open={showInstructions}
         onClose={() => setShowInstructions(false)}
-        title="在 iPhone 或 iPad 安裝 Féria"
+        title={`在 iPhone 或 iPad 安裝${APP_BRAND.name}`}
         description="Safari 會透過分享選單把網頁加入主畫面。"
         size="sm"
         footer={<Button onClick={() => setShowInstructions(false)}>完成</Button>}

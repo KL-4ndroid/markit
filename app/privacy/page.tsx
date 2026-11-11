@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 import Link from 'next/link';
 
 import { PublicDocumentShell } from '@/components/public/PublicDocumentShell';
@@ -9,14 +10,14 @@ export default function PrivacyPage() {
   return (
     <PublicDocumentShell
       title="隱私政策"
-      description="Féria 如何蒐集、使用、保存與保護帳號及市集營運資料。"
+      description={`${APP_BRAND.name}如何蒐集、使用、保存與保護帳號及市集營運資料。`}
       effectiveDate={config.effectiveDate}
       publicationReady={config.policyPublicationReady}
     >
       <section className="py-7">
         <h2 className="text-lg font-semibold text-foreground">1. 資料控管者與適用範圍</h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          本政策適用於 Féria 出攤筆記的 Web 應用、同步服務、支援流程及您選擇啟用的媒體功能。正式資料控管者為本頁公開設定的服務營運者；若營運者資訊未完整顯示，本版本仍是上架前草案，不得視為已完成對外告知。
+          本政策適用於 {APP_BRAND.name}的 Web 應用、同步服務、支援流程及您選擇啟用的媒體功能。正式資料控管者為本頁公開設定的服務營運者；若營運者資訊未完整顯示，本版本仍是上架前草案，不得視為已完成對外告知。
         </p>
       </section>
 
@@ -37,7 +38,7 @@ export default function PrivacyPage() {
       <section className="py-7">
         <h2 className="text-lg font-semibold text-foreground">3. 使用目的與方式</h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          資料用於驗證帳號、維持工作空間權限、同步與重建資料、呈現營運紀錄、產生您可見的分析與報表、提供支援、偵測濫用及處理安全事故。Féria 不以出售個人資料為營運方式，也不會把品牌營運資料提供給其他品牌作商業使用。
+          資料用於驗證帳號、維持工作空間權限、同步與重建資料、呈現營運紀錄、產生您可見的分析與報表、提供支援、偵測濫用及處理安全事故。{APP_BRAND.name}不以出售個人資料為營運方式，也不會把品牌營運資料提供給其他品牌作商業使用。
         </p>
       </section>
 
@@ -78,7 +79,7 @@ export default function PrivacyPage() {
       <section className="py-7">
         <h2 className="text-lg font-semibold text-foreground">7. 安全與事件通知</h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Féria 使用傳輸加密、資料列權限、私有媒體物件、最小權限及操作紀錄等措施降低風險。若知悉個人資料遭竊取、竄改、毀損、滅失或洩漏，會採取必要應變，並依適用法令通知受影響使用者與主管機關。
+          {APP_BRAND.name}使用傳輸加密、資料列權限、私有媒體物件、最小權限及操作紀錄等措施降低風險。若知悉個人資料遭竊取、竄改、毀損、滅失或洩漏，會採取必要應變，並依適用法令通知受影響使用者與主管機關。
         </p>
       </section>
 

@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 import { useHomePhotoReminders } from '@/hooks/useHomePhotoReminders';
@@ -112,7 +113,7 @@ export default function HomePage() {
   const { userRole, isStaff, isOwner, roleRefreshState } = useRoleContext();
   const { status, pendingCount, sync, lastSyncAt, isOnline } = useSyncContext();
   const [now, setNow] = useState(() => new Date());
-  const [ownerBrandName, setOwnerBrandName] = useState('Féria - 出攤筆記');
+  const [ownerBrandName, setOwnerBrandName] = useState(APP_BRAND.name);
   const [startingMarketId, setStartingMarketId] = useState<string | null>(null);
 
   const currentOwnerId = isStaff ? userRole.ownerId : user?.id;
@@ -132,7 +133,7 @@ export default function HomePage() {
   useEffect(() => {
     let cancelled = false;
     if (!user?.id || isStaff) {
-      setOwnerBrandName('Féria - 出攤筆記');
+      setOwnerBrandName(APP_BRAND.name);
       return;
     }
 
