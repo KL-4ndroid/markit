@@ -4,8 +4,12 @@
     "incremental": false
   },
   "include": [
+    "scripts/account-deletion-managed-migration.ts",
+    "scripts/account-deletion-test-prg-migration.ts",
+    "tests/account-deletion-managed-target.test.ts",
     "scripts/prepare-account-deletion-migration.ts",
     "scripts/verify-account-deletion-migration.ts",
+    "scripts/verify-account-deletion-test-prg-upgrade.ts",
     "scripts/serve-account-deletion-workflow.ts",
     "scripts/serve-account-deletion-supabase.ts",
     "scripts/verify-account-deletion-supabase.ts",

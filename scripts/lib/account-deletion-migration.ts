@@ -6,8 +6,12 @@ import { capturedAccessDefinitions, frozenPublicSurfaceDdl, fencedEventAuthorize
 import { capturedDeletionCatalog, approvedOperationalColumnsDdl, quoteSql as q } from './account-deletion-catalog-fixture';
 
 export const DELETION_MIGRATION_PROJECT = 'fgejncfsvvsayiequubm';
-export const DELETION_MIGRATION_VERSION = '096-account-deletion-candidate-v1';
+export const DELETION_MIGRATION_VERSION = '096-account-deletion-candidate-v2';
+export const DELETION_MANAGED_QUERY_URL = `https://api.supabase.com/v1/projects/${DELETION_MIGRATION_PROJECT}/database/query`;
 export const DELETION_MIGRATION_PATH = 'docs/subscription/candidate/096_account_deletion_candidate.sql';
+export const DELETION_TEST_PRG_PROJECT = 'tzhbirwchhqabkxhqjdl';
+export const DELETION_TEST_PRG_QUERY_URL = `https://api.supabase.com/v1/projects/${DELETION_TEST_PRG_PROJECT}/database/query`;
+export type AccountDeletionMigrationTarget = 'production' | 'test_prg';
 const snapshotHashes: Record<string, string> = {
   get_latest_snapshot: '0683d4eb751ae5148c72624b63c0e7d8',
   cleanup_old_snapshots: '8acd35d91782110158bba12838f23b35',
@@ -112,7 +116,10 @@ function baselineAssertion() {
   IF schema_now IS NOT NULL THEN RAISE EXCEPTION 'deletion_migration_baseline_routines: %',schema_now;END IF;`;
 }
 
-export function buildAccountDeletionMigration() {
+export function buildAccountDeletionMigration(target: AccountDeletionMigrationTarget = 'production') {
+  if (target !== 'production' && target !== 'test_prg') throw Error('managed_target_invalid');
+  const projectRef = target === 'test_prg' ? DELETION_TEST_PRG_PROJECT : DELETION_MIGRATION_PROJECT;
+  const controlPlaneUrl = target === 'test_prg' ? DELETION_TEST_PRG_QUERY_URL : DELETION_MANAGED_QUERY_URL;
   const chunks = [
     draft('REQUEST_WORKFLOW_2026_11_01'), draft('ENGINE_2026_11_02'), approvedOperationalColumnsDdl(),
     draft('OPERATIONAL_COVERAGE_2026_11_02'), draft('BILLING_RETENTION_2026_11_02'),
@@ -128,15 +135,18 @@ export function buildAccountDeletionMigration() {
   // reviewed DDL release, target binding and a new schema attestation.
   const releaseDdl = `CREATE SCHEMA deletion_release_private;
    REVOKE ALL ON SCHEMA deletion_release_private FROM PUBLIC,anon,authenticated,service_role;
-   CREATE TABLE deletion_release_private.installation(version text PRIMARY KEY,project_ref text NOT NULL,payload_sha text NOT NULL,schema_hash text NOT NULL,installed_at timestamptz NOT NULL DEFAULT clock_timestamp());
+   CREATE TABLE deletion_release_private.installation(version text PRIMARY KEY,project_ref text NOT NULL,payload_sha text NOT NULL,schema_hash text NOT NULL,target_ack jsonb NOT NULL,installed_at timestamptz NOT NULL DEFAULT clock_timestamp());
    CREATE TABLE deletion_release_private.controls(slot boolean PRIMARY KEY CHECK(slot),runtime_enabled boolean NOT NULL DEFAULT false CONSTRAINT deletion_candidate_disabled CHECK(NOT runtime_enabled));
    INSERT INTO deletion_release_private.controls VALUES(true,false);
    REVOKE ALL ON ALL TABLES IN SCHEMA deletion_release_private FROM PUBLIC,anon,authenticated,service_role;
    CREATE FUNCTION deletion_release_private.runtime_allowed()RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=''AS $$SELECT coalesce((SELECT runtime_enabled FROM deletion_release_private.controls WHERE slot),false)$$;
    REVOKE ALL ON FUNCTION deletion_release_private.runtime_allowed()FROM PUBLIC,anon,authenticated,service_role;`;
-  const sql = `-- GENERATED candidate 096. NOT approved for remote execution; not in automatic migrations.
+  const scopeHeader = target === 'test_prg' ? '-- Fixed test_prg target. Use the dedicated managed test installer.\n' : '';
+  const sql = `${scopeHeader}-- GENERATED candidate 096. NOT approved for remote execution; not in automatic migrations.
 -- Requires 071 + deployed 095, exact catalog/ACL baseline, DBA target acknowledgement.
 -- Installs no R2 target, billing key, worker route, schedule, or enabled runtime.
+-- Managed execution ONLY through the fixed HTTPS control-plane runner. The SQL
+-- acknowledgement below is an audit record, NOT independent proof of DB identity.
 BEGIN;
 SET LOCAL lock_timeout='5s';
 SET LOCAL statement_timeout='60s';
@@ -145,19 +155,22 @@ DO $candidate_migration$
 DECLARE installed record;schema_now text;payload constant text:=${q(payload)};
 BEGIN
  IF session_user<>'postgres' THEN RAISE EXCEPTION 'deletion_migration_dba_required';END IF;
- IF current_setting('deletion.install_project_ref',true)IS DISTINCT FROM ${q(DELETION_MIGRATION_PROJECT)}
+ IF current_setting('deletion.install_project_ref',true)IS DISTINCT FROM ${q(projectRef)}
   OR current_setting('deletion.install_payload_sha',true)IS DISTINCT FROM ${q(payloadSha)}
   THEN RAISE EXCEPTION 'deletion_migration_target_ack_required';END IF;
  IF current_setting('deletion.install_environment',true)='isolated' THEN
   IF current_database()<>'deletion_engine_test'THEN RAISE EXCEPTION 'deletion_migration_isolated_database';END IF;
  ELSIF current_setting('deletion.install_environment',true)='managed' THEN
-  IF current_setting('app.settings.project_ref',true)IS DISTINCT FROM ${q(DELETION_MIGRATION_PROJECT)}
+  IF current_database()<>'postgres'
+   OR current_setting('deletion.install_transport',true)IS DISTINCT FROM 'supabase-management-api'
+   OR current_setting('deletion.install_target_uri',true)IS DISTINCT FROM ${q(controlPlaneUrl)}
+   OR coalesce(current_setting('deletion.install_nonce',true),'')!~'^[0-9a-f]{64}$'
    OR current_setting('deletion.install_review_sha',true)IS DISTINCT FROM ${q(payloadSha)}
    THEN RAISE EXCEPTION 'deletion_migration_managed_target_unverified';END IF;
  ELSE RAISE EXCEPTION 'deletion_migration_environment_required';END IF;
  IF to_regclass('deletion_release_private.installation')IS NOT NULL THEN
   EXECUTE 'SELECT * FROM deletion_release_private.installation WHERE version=$1'INTO installed USING ${q(DELETION_MIGRATION_VERSION)};
-  IF installed IS NULL OR installed.project_ref IS DISTINCT FROM ${q(DELETION_MIGRATION_PROJECT)} OR installed.payload_sha IS DISTINCT FROM ${q(payloadSha)}
+  IF installed IS NULL OR installed.project_ref IS DISTINCT FROM ${q(projectRef)} OR installed.payload_sha IS DISTINCT FROM ${q(payloadSha)}
    THEN RAISE EXCEPTION 'deletion_migration_version_conflict';END IF;
   SELECT ${catalog} INTO schema_now;
   IF schema_now IS DISTINCT FROM installed.schema_hash THEN RAISE EXCEPTION 'deletion_migration_installed_drift';END IF;
@@ -168,11 +181,15 @@ BEGIN
  EXECUTE ${q(releaseDdl)};
  EXECUTE payload;
  SELECT ${catalog} INTO schema_now;
- INSERT INTO deletion_release_private.installation(version,project_ref,payload_sha,schema_hash)
-  VALUES(${q(DELETION_MIGRATION_VERSION)},${q(DELETION_MIGRATION_PROJECT)},${q(payloadSha)},schema_now);
+ INSERT INTO deletion_release_private.installation(version,project_ref,payload_sha,schema_hash,target_ack)
+  VALUES(${q(DELETION_MIGRATION_VERSION)},${q(projectRef)},${q(payloadSha)},schema_now,
+   jsonb_build_object('environment',current_setting('deletion.install_environment'),
+    'transport',current_setting('deletion.install_transport',true),'uri',current_setting('deletion.install_target_uri',true),
+    'nonce',current_setting('deletion.install_nonce',true),'database',current_database(),'sessionUser',session_user,
+    'scope','operator acknowledgement; identity verified by external execution transport'));
 END;
 $candidate_migration$;
 COMMIT;
 `;
-  return { sql, payloadSha, sqlSha: sha(sql), version: DELETION_MIGRATION_VERSION };
+  return { sql, payloadSha, sqlSha: sha(sql), version: DELETION_MIGRATION_VERSION, projectRef, controlPlaneUrl };
 }

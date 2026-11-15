@@ -6,8 +6,11 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { capturedOperationalFixtureDdl, capturedDeletionCatalog, quoteIdentifier as qi, quoteSql as q } from './lib/account-deletion-catalog-fixture';
 import { capturedRuntimeDefinitionsDdl, capturedRuntimeSecurityDdl, capturedRuntimeTriggersDdl } from './lib/account-deletion-access-fixture';
-import { buildAccountDeletionMigration, DELETION_MIGRATION_PATH, DELETION_MIGRATION_PROJECT, migrationCatalogSql } from './lib/account-deletion-migration';
+import { buildAccountDeletionMigration, DELETION_MIGRATION_PATH, DELETION_MIGRATION_PROJECT, DELETION_MANAGED_QUERY_URL,
+  DELETION_TEST_PRG_PROJECT, DELETION_TEST_PRG_QUERY_URL, migrationCatalogSql } from './lib/account-deletion-migration';
 import { verifyCapturedAccess } from './lib/account-deletion-access-checks';
+import { managedMigrationSql } from './lib/account-deletion-managed-target';
+import { restoreTestPrgRoutineLineEndings } from './lib/account-deletion-test-prg-upgrade';
 
 async function main() {
   assert.deepEqual(process.argv.slice(2), ['--isolated']);
@@ -51,6 +54,72 @@ async function main() {
     reject(ack + "SET deletion.install_environment='managed';" + candidate.sql, 'deletion_migration_managed_target_unverified');
     reject(ack + 'SET SESSION AUTHORIZATION service_role;' + candidate.sql, 'deletion_migration_dba_required');
     pass('wrong project, unverified managed target and application service session cannot install');
+    // Model the managed DB name in network-none Docker. These acknowledgements
+    // test SQL compatibility only; they do NOT prove any real control-plane identity.
+    sql('DROP DATABASE postgres;CREATE DATABASE postgres TEMPLATE deletion_engine_test;');
+    const managed = managedMigrationSql(candidate, '1'.repeat(64));
+    reject(ack + "SET deletion.install_environment='managed';SET app.settings.project_ref='fgejncfsvvsayiequubm';" + candidate.sql,
+      'deletion_migration_managed_target_unverified', 'postgres');
+    for (const changed of [
+      managed.replace('api.supabase.com/v1/projects/fgejncfsvvsayiequubm', 'api.supabase.com/v1/projects/wrong-project'),
+      managed.replace("install_nonce='" + '1'.repeat(64) + "'", "install_nonce=''"),
+      managed.replace("install_review_sha='" + candidate.payloadSha + "'", "install_review_sha='wrong'"),
+    ]) reject(changed, 'deletion_migration_managed_target_unverified', 'postgres');
+    pass('managed guard rejects fabricated provider setting, wrong control-plane route, nonce and review acknowledgement');
+    const modeled = managed.replace(/COMMIT;\s*$/, `SELECT (target_ack->>'transport')||':'||(target_ack->>'database') FROM deletion_release_private.installation;ROLLBACK;`);
+    assert.equal(sql(modeled, 'postgres'), 'supabase-management-api:postgres');
+    assert.equal(sql("SELECT count(*)FROM pg_namespace WHERE nspname LIKE 'deletion_%';", 'postgres'), '0');
+    pass('managed SQL installs with absent provider GUC in modeled postgres DB and transaction-local acknowledgements roll back; no remote identity claim');
+    const testCandidate = buildAccountDeletionMigration('test_prg');
+    const testManaged = managedMigrationSql(testCandidate, '2'.repeat(64));
+    reject(testManaged.replace(`install_project_ref='${DELETION_TEST_PRG_PROJECT}'`, `install_project_ref='${DELETION_MIGRATION_PROJECT}'`),
+      'deletion_migration_target_ack_required', 'postgres');
+    reject(testManaged.replace(`install_target_uri='${DELETION_TEST_PRG_QUERY_URL}'`, `install_target_uri='${DELETION_MANAGED_QUERY_URL}'`),
+      'deletion_migration_managed_target_unverified', 'postgres');
+    const testModeled = testManaged.replace(/COMMIT;\s*$/, `SELECT i.project_ref||':'||c.runtime_enabled::text
+      FROM deletion_release_private.installation i CROSS JOIN deletion_release_private.controls c;ROLLBACK;`);
+    assert.equal(sql(testModeled, 'postgres'), `${DELETION_TEST_PRG_PROJECT}:false`);
+    assert.equal(sql("SELECT count(*)FROM pg_namespace WHERE nspname LIKE 'deletion_%';", 'postgres'), '0');
+    pass('test_prg SQL rejects production acknowledgements, installs disabled in the modeled database and rolls back');
+    const cashRoutine = "'public.read_market_cash_sales(uuid)'::regprocedure";
+    const readCashDefinition = `pg_get_functiondef(${cashRoutine})`;
+    const cashHash = (database: string) => sql(`SELECT md5(${readCashDefinition});`, database);
+    const exactCashHash = cashHash('postgres');
+    sql(`DO $$BEGIN EXECUTE replace(${readCashDefinition},chr(13),'');END$$;`, 'postgres');
+    assert.notEqual(cashHash('postgres'), exactCashHash);
+    sql(restoreTestPrgRoutineLineEndings(), 'postgres');
+    assert.equal(cashHash('postgres'), exactCashHash);
+    sql(`DO $$BEGIN EXECUTE replace(${readCashDefinition},'CASH_SCOPE','CASH_SCOPE_CHANGED');END$$;`, 'postgres');
+    const changedCashHash = cashHash('postgres');
+    assert.notEqual(changedCashHash, exactCashHash);
+    sql(restoreTestPrgRoutineLineEndings(), 'postgres');
+    assert.equal(cashHash('postgres'), changedCashHash);
+    sql(`DO $$BEGIN EXECUTE replace(${readCashDefinition},'CASH_SCOPE_CHANGED','CASH_SCOPE');END$$;`, 'postgres');
+    assert.equal(cashHash('postgres'), exactCashHash);
+    pass('test_prg replay restores mixed LF/CRLF definitions exactly and leaves meaningful differences for the baseline check');
+    // The hosted legacy upgrade was rehearsed separately. Here use the exact
+    // 095 fixture and the real preservation checks to exercise the later commit boundary.
+    const [preserveBefore, preserveAfter] = readFileSync('supabase/verification/096_test_prg_baseline_data_preservation.sql', 'utf8')
+      .replaceAll('\r\n', '\n').split('\n-- BASELINE UPDATES RUN HERE\n');
+    const ownerId = randomUUID();
+    sql(`INSERT INTO auth.users(id,email,raw_user_meta_data) VALUES('${ownerId}','retained@example.test','{}');`, 'postgres');
+    const retainedCatalog = sql(migrationCatalogSql(), 'postgres');
+    const staged = testManaged.replace('\nDO $candidate_migration$', () => `
+      ALTER TABLE public.products ADD COLUMN sync_status text NOT NULL DEFAULT 'synced';
+      ${preserveBefore}
+      ALTER TABLE public.products DROP COLUMN sync_status;
+      DO $candidate_migration$`);
+    const atomic = staged.replace(/\nCOMMIT;\n$/, () => `\nSET CONSTRAINTS ALL IMMEDIATE;\n${preserveAfter}\nCOMMIT;\n`);
+    reject(atomic.replace('DO $preserve_after$', `UPDATE auth.users SET email='changed@example.test' WHERE id='${ownerId}';
+      DO $preserve_after$`), 'Existing records changed in auth.users', 'postgres');
+    assert.equal(sql(migrationCatalogSql(), 'postgres'), retainedCatalog);
+    assert.equal(sql(`SELECT email FROM auth.users WHERE id='${ownerId}';`, 'postgres'), 'retained@example.test');
+    sql(atomic, 'postgres');
+    assert.equal(sql(`SELECT i.project_ref||':'||c.runtime_enabled::text||':'||(i.schema_hash=(${migrationCatalogSql()}))::text
+      FROM deletion_release_private.installation i CROSS JOIN deletion_release_private.controls c;`, 'postgres'),
+      `${DELETION_TEST_PRG_PROJECT}:false:true`);
+    assert.equal(sql(`SELECT email FROM auth.users WHERE id='${ownerId}';`, 'postgres'), 'retained@example.test');
+    pass('retained-row verification after dormant 096 rolls back both stages on mutation and commits when unchanged');
     reject(ack+candidate.sql,'deletion_migration_isolated_database','postgres');
     reject(ack+candidate.sql.replace("payload constant text:='","payload constant text:='-- synthetic altered payload\n"),'deletion_migration_payload_changed');
     pass('wrong physical test database and modified SQL payload reject before DDL');

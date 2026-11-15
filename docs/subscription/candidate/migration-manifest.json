@@ -1,8 +1,8 @@
 {
-  "version": "096-account-deletion-candidate-v1",
+  "version": "096-account-deletion-candidate-v2",
   "projectRef": "fgejncfsvvsayiequubm",
   "payloadSha": "c449baff62f39e53b6851e8c1af4e4866ca79baa923b78092eae5c50686cc40e",
-  "sqlSha": "f2ffc5f2cee5b437d9bfe3c72067962db73ee4d4e15724908714a00a0d19511d",
+  "sqlSha": "bba0aa472ee7cfe26e6370dbe2a79e91b37f75846bc41f1c99ee29ebd92f8088",
   "sources": [
     {
       "path": "supabase/migrations/071_add_account_deletion_request_foundation.sql",
@@ -54,11 +54,11 @@
     },
     {
       "path": "lib/subscription/account-deletion-upload-barrier.server.ts",
-      "sha256": "18afcbc35b3ac0bbd09f7623c7ae8613934fe983669997cb285e181e0c3c9070"
+      "sha256": "da6d7f9187844469f5ab2780d340f889bc33b5436a2835c469e394a9ae0452de"
     },
     {
       "path": "lib/subscription/account-deletion-terminal-put.server.ts",
-      "sha256": "48e96f65902994995874f389888eb38ea1eeba6c47825034e78dbc0c509834cd"
+      "sha256": "d9b87ebfdfce0d2e7cb8c3fffe7e1ad4cc1da9cc6fb1c281b128bc1f99da2972"
     },
     {
       "path": "lib/subscription/account-deletion-workflow-gate.ts",
@@ -90,7 +90,7 @@
     },
     {
       "path": "lib/subscription/photo-upload-readback.server.ts",
-      "sha256": "9ff9c4064d1986108fa93f1372922c383d4b3464e369cd150138b41fef665d2d"
+      "sha256": "c20590acfde90ff0a8209483e036d690870175d819667ff67fbf44973a6387bb"
     },
     {
       "path": "app/api/product-cover-photo/upload/route.ts",
@@ -114,15 +114,15 @@
     },
     {
       "path": "scripts/lib/account-deletion-candidate-services.ts",
-      "sha256": "bb7ddcd3cf2fc91a6d71844d227e9cd1e7c34cd586fa125dd2f88aa15f5a42c8"
+      "sha256": "44ffead53732b0889a03fd809a6402b55fcc4e750dce2dd93df852c1e88629e8"
     },
     {
       "path": "scripts/lib/account-deletion-photo-handler-checks.ts",
-      "sha256": "13affd83e9fa9dd606e4955ddac2ae49d0071f22e0270a8588e494e8b5bae9ad"
+      "sha256": "6b2a107c8047f383f7fd5fc76da45166b5ce6fc0ec47ad86e291699549937df1"
     },
     {
       "path": "scripts/verify-account-deletion-upload-race.ts",
-      "sha256": "3eddea5c5934b321c27fbe929c0888861f63e2f34b161e8a6698868b27a882fc"
+      "sha256": "9c64941ddf4abbc8782eea1d3e65ba92d2c8ae5d35e8019266289587566dd9a2"
     },
     {
       "path": "docs/subscription/evidence/account-deletion-guards-2026-11-02.json",
@@ -138,11 +138,39 @@
     },
     {
       "path": "scripts/lib/account-deletion-migration.ts",
-      "sha256": "9772d058cc03e3ee4a612bbaa57013e0073ba91c0a7fd3161b63cb18ea87ee42"
+      "sha256": "2830bbfb5d6763f5ef9d849c7201f9941196351328bcfee0d5f31de0122b8238"
     },
     {
       "path": "scripts/prepare-account-deletion-migration.ts",
-      "sha256": "7b9bf5caf46ba100810afb083956dc9833eaeb221b898e38acc08c51e0600882"
+      "sha256": "9658134dcdf08d3bf7a22fe76c77542af82b37e257724394eb8acc14e58af640"
+    },
+    {
+      "path": "scripts/lib/account-deletion-managed-target.ts",
+      "sha256": "a1b79e2e3c8d38c4503530ab2e67b9531e3e7af2e407cb05741adb0697ae8876"
+    },
+    {
+      "path": "scripts/account-deletion-managed-migration.ts",
+      "sha256": "3a4e66707f3d2a0378d0abee72dda365dd38bdaddd393c325ba4e8021eb533c6"
+    },
+    {
+      "path": "tests/account-deletion-managed-target.test.ts",
+      "sha256": "5b65a931310eaf16d197d5385a1ede283d88b4ced04db9c90b4d9403c307e787"
+    },
+    {
+      "path": "scripts/account-deletion-test-prg-migration.ts",
+      "sha256": "bda38bedaccc6e67a92cc968a5b00c1d4ab7f2e9ccdc6af351155afa0aae0a05"
+    },
+    {
+      "path": "scripts/lib/account-deletion-test-prg-upgrade.ts",
+      "sha256": "ca55dd14a58f2aacf92ae322af0d535716f36bafea9e3c45d8dcf2e2f39892e4"
+    },
+    {
+      "path": "scripts/prepare-account-deletion-test-prg-rollback.mjs",
+      "sha256": "052edc4e1551636dd80ad5a7ae6a9a335d38b30ab1b7c899afbe26a4ba0bbc53"
+    },
+    {
+      "path": "scripts/verify-account-deletion-test-prg-upgrade.ts",
+      "sha256": "508d7aee3e6e697eff20708db7f18f223e84dfd5fe78914af95d3d4df765eb50"
     },
     {
       "path": "supabase/migrations/095_scope_snapshot_rpcs_to_owner.sql",
@@ -150,7 +178,7 @@
     },
     {
       "path": "scripts/verify-account-deletion-migration.ts",
-      "sha256": "cab8875b20d2def25b18373a0a4483d4f00469f7fa6f2987733bc3f6aea0e90b"
+      "sha256": "2724eb34a9092d8b898a7a429b3fccedee331bc0e32bdc031f8226e55614b33c"
     }
   ],
   "runtimeEnabled": false,
@@ -158,5 +186,5 @@
   "status": "transactional_migration_candidate_requires_target_review",
   "baseline": "captured catalog plus independently deployed 095",
   "runtimeGuard": "SQL CHECK prohibits enablement by row update; no release adapter, target or credentials installed",
-  "remoteTarget": "DBA acknowledgement plus server-side app.settings.project_ref; managed provider binding remains unverified"
+  "remoteTarget": "fixed authenticated HTTPS Supabase project query route; transaction-local SQL acknowledgements are not identity proof; remote execution remains unapproved and untested"
 }

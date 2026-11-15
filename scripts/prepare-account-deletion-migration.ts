@@ -8,6 +8,9 @@ assert.deepEqual(process.argv.slice(2), [process.argv[2]]);
 assert.ok(['--write', '--check'].includes(process.argv[2]));
 const candidate = buildAccountDeletionMigration();
 const sourcePaths = ['scripts/lib/account-deletion-migration.ts', 'scripts/prepare-account-deletion-migration.ts',
+  'scripts/lib/account-deletion-managed-target.ts','scripts/account-deletion-managed-migration.ts','tests/account-deletion-managed-target.test.ts',
+  'scripts/account-deletion-test-prg-migration.ts', 'scripts/lib/account-deletion-test-prg-upgrade.ts',
+  'scripts/prepare-account-deletion-test-prg-rollback.mjs', 'scripts/verify-account-deletion-test-prg-upgrade.ts',
   'supabase/migrations/095_scope_snapshot_rpcs_to_owner.sql','scripts/verify-account-deletion-migration.ts'];
 const sources = [...candidateSourceHashes(), ...sourcePaths.map(path => ({ path,
   sha256: createHash('sha256').update(readFileSync(path, 'utf8').replaceAll('\r\n', '\n')).digest('hex') }))];
@@ -16,7 +19,7 @@ const manifest = { version: candidate.version, projectRef: DELETION_MIGRATION_PR
   status: 'transactional_migration_candidate_requires_target_review',
   baseline: 'captured catalog plus independently deployed 095',
   runtimeGuard: 'SQL CHECK prohibits enablement by row update; no release adapter, target or credentials installed',
-  remoteTarget: 'DBA acknowledgement plus server-side app.settings.project_ref; managed provider binding remains unverified',
+  remoteTarget: 'fixed authenticated HTTPS Supabase project query route; transaction-local SQL acknowledgements are not identity proof; remote execution remains unapproved and untested',
 };
 const manifestPath = 'docs/subscription/candidate/migration-manifest.json';
 if (process.argv[2] === '--write') {
