@@ -5,32 +5,48 @@ import { DeletionEngineFailure, isOwnedDeletionObjectKey } from './account-delet
 import type { UploadDrainPort, UploadReviewIdentity, UploadReviewScope } from './account-deletion-upload-reconciliation.server';
 
 type Rpc = { rpc(name: string, args: Record<string, unknown>): PromiseLike<{ data?: unknown; error: unknown | null }> };
-export type TerminalPutTarget = Readonly<{ endpoint: string; bucket: string; mode: 'isolated' | 'staging-disposable' }>;
+export type TerminalPutTarget = Readonly<{ endpoint: string; bucket: string; mode: 'isolated' | 'staging-disposable' | 'preview-photos' }>;
 const digest = (v: string | Uint8Array) => createHash('sha256').update(v).digest('hex');
 const HASH = /^[a-f0-9]{64}$/;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 function stopped(): never { throw new DeletionEngineFailure('manual_review', 'terminal_put_unconfirmed'); }
 
+export function requirePreviewPhotoDatabase(endpoint: string, expectedRef: string): void {
+  const url = new URL(endpoint);
+  if (!/^[a-z0-9]{20}$/.test(expectedRef) || expectedRef === 'fgejncfsvvsayiequubm'
+    || ![`https://${expectedRef}.supabase.co`, `https://${expectedRef}.supabase.co/`].includes(endpoint)
+    || url.origin !== `https://${expectedRef}.supabase.co`) stopped();
+}
+
 export function terminalPutTargetHash(t: TerminalPutTarget): string {
   const u = new URL(t.endpoint);
-  if (u.pathname !== '/' || u.username || u.password || u.search || u.hash || t.bucket !== 'markit-sales-photo-staging') stopped();
+  const expectedBucket = t.mode === 'preview-photos' ? 'markit-account-deletion-preview' : 'markit-sales-photo-staging';
+  if (u.pathname !== '/' || u.username || u.password || u.search || u.hash || t.bucket !== expectedBucket) stopped();
   if (t.mode === 'isolated') requireIsolatedEndpoint(t.endpoint);
-  else if (t.mode !== 'staging-disposable' || u.protocol !== 'https:' || u.port || !/^[a-f0-9]{32}(\.eu|\.fedramp)?\.r2\.cloudflarestorage\.com$/.test(u.hostname)) stopped();
+  else if ((t.mode !== 'staging-disposable' && t.mode !== 'preview-photos') || u.protocol !== 'https:'
+    || u.port || !/^[a-f0-9]{32}(\.eu|\.fedramp)?\.r2\.cloudflarestorage\.com$/.test(u.hostname)) stopped();
   return digest(JSON.stringify(['s3-single-put-200-v1', u.origin, t.bucket]));
 }
 
-/** Single, bounded, create-only PUT. Explicit local/staging target and credentials,
- * no product route, retry loop, injected SDK client, multipart or production bucket. */
+/** Single, bounded, create-only PUT against a scoped test target. */
 export function createTerminalPutWriter(input: {
   databaseEndpoint: string; client: Rpc; attemptId: string; token: string; target: TerminalPutTarget;
   credentials: { accessKeyId: string; secretAccessKey: string }; assertKey(key: string): void;
-  localPhotoScope?: { ownerId: string; keys: readonly string[] };
+  photoScope?: { ownerId: string; keys: readonly string[] };
+  previewProjectRef?: string;
 }) {
-  requireIsolatedEndpoint(input.databaseEndpoint);
-  if (process.env.VERCEL || process.env.VERCEL_ENV || !UUID.test(input.attemptId) || !UUID.test(input.token)) stopped();
+  if (input.target.mode === 'preview-photos') {
+    if (process.env.VERCEL !== '1' || process.env.VERCEL_ENV !== 'preview') stopped();
+    requirePreviewPhotoDatabase(input.databaseEndpoint, input.previewProjectRef ?? '');
+    if (!input.photoScope) stopped();
+  } else {
+    requireIsolatedEndpoint(input.databaseEndpoint);
+    if (process.env.VERCEL || process.env.VERCEL_ENV) stopped();
+  }
+  if (!UUID.test(input.attemptId) || !UUID.test(input.token)) stopped();
   const targetHash = terminalPutTargetHash(input.target);
-  const photoScope = input.localPhotoScope;
-  if (photoScope && (input.target.mode !== 'isolated' || photoScope.keys.length !== 2
+  const photoScope = input.photoScope;
+  if (photoScope && (input.target.mode === 'staging-disposable' || photoScope.keys.length !== 2
     || photoScope.keys.some(k => !isOwnedDeletionObjectKey(k, photoScope.ownerId)))) stopped();
   const created = new Set<string>();
   const sdk = new S3Client({ region: 'auto', endpoint: input.target.endpoint, credentials: input.credentials,

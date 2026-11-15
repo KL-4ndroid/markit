@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-02T07:03:18.320Z",
+  "at": "2026-11-15T16:18:31.047Z",
   "checks": [
     "default-off and incompatible/deployed/remote configuration stops before registration, claim or photo writes",
     "product success replay: JPEG/WebP exact content readback, changed payload conflict, missing object holds, zero extra PUTs",
@@ -76,11 +76,11 @@
     },
     {
       "path": "lib/subscription/account-deletion-upload-barrier.server.ts",
-      "sha256": "18afcbc35b3ac0bbd09f7623c7ae8613934fe983669997cb285e181e0c3c9070"
+      "sha256": "da6d7f9187844469f5ab2780d340f889bc33b5436a2835c469e394a9ae0452de"
     },
     {
       "path": "lib/subscription/account-deletion-terminal-put.server.ts",
-      "sha256": "48e96f65902994995874f389888eb38ea1eeba6c47825034e78dbc0c509834cd"
+      "sha256": "d9b87ebfdfce0d2e7cb8c3fffe7e1ad4cc1da9cc6fb1c281b128bc1f99da2972"
     },
     {
       "path": "lib/subscription/account-deletion-workflow-gate.ts",
@@ -112,7 +112,7 @@
     },
     {
       "path": "lib/subscription/photo-upload-readback.server.ts",
-      "sha256": "9ff9c4064d1986108fa93f1372922c383d4b3464e369cd150138b41fef665d2d"
+      "sha256": "c20590acfde90ff0a8209483e036d690870175d819667ff67fbf44973a6387bb"
     },
     {
       "path": "app/api/product-cover-photo/upload/route.ts",

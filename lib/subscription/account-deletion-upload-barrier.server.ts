@@ -1,9 +1,9 @@
-// Server-side upload coordination; local-only while production deletion is disabled.
+// Server-side upload coordination for isolated tests and the managed Preview.
 import {randomUUID} from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
 import {requireIsolatedEndpoint} from './account-deletion-engine-adapters.server';
 import {isOwnedDeletionObjectKey} from './account-deletion-engine.server';
-import {createTerminalPutWriter,terminalPutTargetHash,type TerminalPutTarget} from './account-deletion-terminal-put.server';
+import {createTerminalPutWriter,requirePreviewPhotoDatabase,terminalPutTargetHash,type TerminalPutTarget} from './account-deletion-terminal-put.server';
 import {readRecordedPhotoUpload,type PhotoReadbackInput} from './photo-upload-readback.server';
 
 type Rpc={rpc(name:string,args:Record<string,unknown>):PromiseLike<{data?:unknown;error:unknown|null}>};
@@ -58,20 +58,50 @@ export async function beginDeletionUploadSession(client:Rpc,actorId:string,owner
  return session;
 }
 export async function beginConfiguredDeletionUpload(actorId:string,ownerId:string,providedClient?:Rpc,env:Record<string,string|undefined>=process.env):Promise<DeletionUploadSession|null>{
- const receipts=env.ACCOUNT_DELETION_UPLOAD_RECEIPTS_ENABLED==='1';
- if(env.ACCOUNT_DELETION_UPLOAD_BARRIER_ENABLED!=='1'){if(receipts)throw Error('deletion_upload_receipts_require_barrier');return null;}
- if(env.VERCEL||env.VERCEL_ENV)throw Error('deletion_upload_barrier_local_only');
- const url=env.NEXT_PUBLIC_SUPABASE_URL??'';requireIsolatedEndpoint(url);
- const key=env.SUPABASE_SECRET_KEY||env.SUPABASE_SERVICE_ROLE_KEY;
- if(!providedClient&&!key)throw Error('deletion_upload_barrier_unavailable');
- const client=providedClient??createClient(url,key!,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
- if(!receipts)return beginDeletionUploadSession(client,actorId,ownerId);
- const endpoint=env.R2_ENDPOINT??'';requireIsolatedEndpoint(endpoint);
- const target:TerminalPutTarget={mode:'isolated',endpoint,bucket:env.R2_BUCKET_NAME??''};terminalPutTargetHash(target);
- const credentials={accessKeyId:env.R2_ACCESS_KEY_ID?.trim()??'',secretAccessKey:env.R2_SECRET_ACCESS_KEY?.trim()??''};
- if(!credentials.accessKeyId||!credentials.secretAccessKey)throw Error('deletion_upload_receipts_unavailable');
- return beginDeletionUploadSession(client,actorId,ownerId,{readback:photo=>readRecordedPhotoUpload({actor:actorId,owner:ownerId,client,endpoint,bucket:target.bucket,credentials,photo}),createWriter:({id,token},b)=>createTerminalPutWriter({
-  databaseEndpoint:url,client,attemptId:id,token,target,credentials,localPhotoScope:{ownerId,keys:[...b.writeKeys]},
-  assertKey(k){if(!b.writeKeys.includes(k)||!isOwnedDeletionObjectKey(k,ownerId))throw Error('deletion_upload_scope');},
- })});
+  const receipts = env.ACCOUNT_DELETION_UPLOAD_RECEIPTS_ENABLED === '1';
+  const preview = env.ACCOUNT_DELETION_PREVIEW_UPLOADS_ENABLED === '1';
+  if (env.ACCOUNT_DELETION_UPLOAD_BARRIER_ENABLED !== '1') {
+    if (receipts || preview) throw Error('deletion_upload_receipts_require_barrier');
+    return null;
+  }
+  const url = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  const previewProjectRef = env.ACCOUNT_DELETION_PREVIEW_SUPABASE_REF ?? '';
+  if (preview) {
+    if (!receipts || env.VERCEL !== '1' || env.VERCEL_ENV !== 'preview'
+      || ownerId !== env.ACCOUNT_DELETION_PREVIEW_OWNER_ID) throw Error('deletion_upload_preview_scope');
+    requirePreviewPhotoDatabase(url, previewProjectRef);
+  } else {
+    if (env.VERCEL || env.VERCEL_ENV) throw Error('deletion_upload_barrier_local_only');
+    requireIsolatedEndpoint(url);
+  }
+
+  const key = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!providedClient && !key) throw Error('deletion_upload_barrier_unavailable');
+  const client = providedClient ?? createClient(url, key!, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+  if (!receipts) return beginDeletionUploadSession(client, actorId, ownerId);
+
+  const accountId = env.R2_ACCOUNT_ID?.trim() ?? '';
+  const endpoint = env.R2_ENDPOINT?.trim() || (preview && accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '');
+  const target = {
+    mode: preview ? 'preview-photos' : 'isolated',
+    endpoint,
+    bucket: env.R2_BUCKET_NAME?.trim() ?? '',
+  } satisfies TerminalPutTarget;
+  const targetHash = terminalPutTargetHash(target);
+  if (preview && (!/^[a-f0-9]{32}$/.test(accountId)
+    || new URL(endpoint).hostname.split('.')[0] !== accountId
+    || targetHash !== env.ACCOUNT_DELETION_PREVIEW_R2_TARGET_SHA256)) throw Error('deletion_upload_preview_target');
+  const credentials = { accessKeyId: env.R2_ACCESS_KEY_ID?.trim() ?? '', secretAccessKey: env.R2_SECRET_ACCESS_KEY?.trim() ?? '' };
+  if (!credentials.accessKeyId || !credentials.secretAccessKey) throw Error('deletion_upload_receipts_unavailable');
+
+  return beginDeletionUploadSession(client, actorId, ownerId, {
+    readback: photo => readRecordedPhotoUpload({ actor: actorId, owner: ownerId, client, target, credentials, photo }),
+    createWriter: ({ id, token }, binding) => createTerminalPutWriter({
+      databaseEndpoint: url, client, attemptId: id, token, target, credentials, previewProjectRef,
+      photoScope: { ownerId, keys: [...binding.writeKeys] },
+      assertKey(objectKey) {
+        if (!binding.writeKeys.includes(objectKey) || !isOwnedDeletionObjectKey(objectKey, ownerId)) throw Error('deletion_upload_scope');
+      },
+    }),
+  });
 }
