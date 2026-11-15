@@ -54,6 +54,12 @@ async function main(){
   const owner=users?.owner.id??randomUUID(),other=users?.other.id??randomUUID(),staff=users?.staff.id??randomUUID(),legacy=users?.legacy.id??randomUUID(),product=randomUUID(),otherProduct=randomUUID(),legacyProduct=randomUUID(),market=randomUUID(),sale=randomUUID();
   for(const id of [owner,other,staff,legacy]){if(!live)sql(`INSERT INTO auth.users(id) VALUES('${id}');`);insert('profiles',{id,email:Object.values(users??{}).find(u=>u.id===id)?.email??`${id}@example.test`,display_name:'Synthetic upload race'});}
   for(const id of [owner,other,legacy]){insert('subscription_accounts',{owner_id:id,plan_code:integrated&&id===legacy?'free':'team',plan_source:integrated&&id===legacy?'free':'admin',billing_status:'none',entitlement_status:'active'});insert('account_entitlements',{owner_id:id,product_cover_photo_enabled:true,source:'admin'});}
+  if(users){
+   const {id,email}=users.cleanup;
+   insert('profiles',{id,email,display_name:'Synthetic photo cleanup'});
+   insert('subscription_accounts',{owner_id:id,plan_code:'team',plan_source:'admin',billing_status:'none',entitlement_status:'active'});
+   insert('account_entitlements',{owner_id:id,product_cover_photo_enabled:true,source:'admin'});
+  }
   if(integrated)insert('subscription_write_guard_settings',{singleton:true,enforce_all:true});
   for(const [id,who] of [[product,owner],[otherProduct,other],[legacyProduct,legacy]])insert('products',{id,owner_id:who,name:'Synthetic product',category:'other',is_active:true,price:10});
   insert('markets',{id:market,owner_id:other,name:'Synthetic market',location:'Synthetic',start_date:'2026-11-02',end_date:'2026-11-02',status:'registered'});
@@ -82,7 +88,7 @@ async function main(){
   const step=(r:Req,s:string)=>{let result=JSON.parse(call(r,s));if(s==='access_frozen')result=JSON.parse(call(r,s,'complete_external'));sql(`SELECT bff_record_account_deletion_step('${r.id}','${r.token}',${q(s)},'completed',${result.affectedCount},${q(result.evidenceHash)},NULL);`);};
   if(handlers){
    const {checkPhotoHandlerReceipts}=await import('./lib/account-deletion-photo-handler-checks');
-   await checkPhotoHandlerReceipts({sql,denied,client,insert,request,step,starts,owner,other,product,otherProduct,live,staff,legacy,sourceHashes});
+   await checkPhotoHandlerReceipts({sql,denied,client,insert,request,step,starts,owner,other,product,otherProduct,live,staff,legacy,cleanupOwner:users?.cleanup.id,sourceHashes});
    if(sourceHashes)assert.deepEqual(candidateSourceHashes(),sourceHashes,'Candidate sources changed during verification');
    return;
   }

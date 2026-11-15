@@ -21,7 +21,7 @@ type Fixture = {
   request(actor: string): Req; step(r: Req, s: string): void;
   starts: { id: string; token: string; owner: string }[]; owner: string; other: string; product: string; otherProduct: string;
   live?:Awaited<ReturnType<typeof import('./account-deletion-candidate-services')['startCandidateServices']>>;
-  staff?:string;legacy?:string;
+  staff?:string;legacy?:string;cleanupOwner?:string;
   sourceHashes?:{path:string;sha256:string}[];
 };
 type Mode = 'success' | 'cleanup_failed' | 'unknown_put' | 'finalize_lost' | 'ack_lost' | 'conflict' | 'freeze';
@@ -119,8 +119,14 @@ export async function checkPhotoHandlerReceipts(f: Fixture) {
     assert.equal(f.starts.length, before);
     pass('default-off and incompatible/deployed/remote configuration stops before registration, claim or photo writes');
     const focus=process.env.DELETION_CANDIDATE_FOCUS;
-    for (const kind of focus==='cleanup'?[]:focus==='sale'?['sale']:['product', 'sale']) for (const mode of ['success', 'cleanup_failed', 'unknown_put', 'finalize_lost', 'ack_lost', 'conflict', 'freeze'] as const) {
-      const actor = kind === 'product' ? f.owner : f.other;
+    const scenarios: { kind: 'product' | 'sale'; mode: Mode; actor: string }[] = [];
+    const kinds = focus==='cleanup' ? [] : focus==='sale' ? ['sale'] as const : ['product', 'sale'] as const;
+    for (const kind of kinds) for (const mode of ['success', 'cleanup_failed', 'unknown_put', 'finalize_lost', 'ack_lost', 'conflict', 'freeze'] as const) {
+      scenarios.push({kind, mode, actor: kind==='product' ? f.owner : f.other});
+    }
+    const cleanupOwner = !focus || focus==='cleanup' ? f.cleanupOwner : undefined;
+    if (cleanupOwner) scenarios.push({kind:'product',mode:'success',actor:cleanupOwner},{kind:'sale',mode:'success',actor:cleanupOwner});
+    for (const {kind, mode, actor} of scenarios) {
       control = { actor, mode,mime:mode==='success'?'image/jpeg':'image/webp', keys: [], puts: 0, deletes: [], requestedDeletes:[], lost: false };
       const form = new FormData(); let handler: (r: Request) => Promise<Response>; let entity: string;
       if (kind === 'product') {
@@ -191,15 +197,24 @@ export async function checkPhotoHandlerReceipts(f: Fixture) {
     }
     pass('both readbacks retire only their confirmed attempt; unrelated unknown attempts still block account cleanup');
     if(f.live){await f.live.verifyAnonymous();const free=await authorize(f.legacy!,f.legacy!,'product_photo');assert.equal(free.allowed,false);const cross=await authorize(f.staff!,f.owner,'product_photo');assert.equal(cross.allowed,false);pass('real GoTrue password/bearer, PostgREST role/ACL and enabled canonical Free/cross-brand write denial in one candidate');}
-    if(f.live&&(!focus||focus==='cleanup')){
-      const r=f.request(f.legacy!),executor=createAccountDeletionStepExecutor({database:createDeletionDatabasePort(f.live,databaseEndpoint),objects:createDeletionObjectPort({client:sdk,endpoint,bucket}),identity:f.live.identity});
+    if(f.live&&cleanupOwner){
+      const ownKeys = saved.filter(x=>x.actor===cleanupOwner).flatMap(x=>x.keys);
+      assert.equal(new Set(ownKeys).size,4);
+      assert.ok(ownKeys.every(key=>objects.has(key)));
+      const otherKeys = [...objects.keys()].filter(key=>!ownKeys.includes(key));
+      const r=f.request(cleanupOwner),executor=createAccountDeletionStepExecutor({database:createDeletionDatabasePort(f.live,databaseEndpoint),objects:createDeletionObjectPort({client:sdk,endpoint,bucket}),identity:f.live.identity});
       assert.equal(r.kind,'owner');
       for(const step of ['access_frozen','staff_access_revoked','object_manifest_built','r2_objects_deleted','r2_absence_verified','billing_identity_detached','operational_data_cleaned','profile_deleted','auth_user_deleted','sessions_revoked']as const){
         const result=await executor({requestId:r.id,leaseToken:r.token,accountKind:'owner',stepCode:step});assert.equal(result.outcome,'completed',JSON.stringify({step,result}));if(result.outcome!=='completed')throw Error('Candidate deletion stopped');
+        if(step==='r2_objects_deleted'||step==='r2_absence_verified')assert.equal(result.affectedCount,ownKeys.length);
         const saved=await f.live.rpc('bff_record_account_deletion_step',{p_request_id:r.id,p_lease_token:r.token,p_step_code:step,p_outcome:'completed',p_affected_count:result.affectedCount,p_evidence_hash:result.evidenceHash,p_safe_error_code:null});assert.equal(saved.error,null);
       }
-      assert.equal(sql(`SELECT count(*) FROM auth.users WHERE id='${f.legacy}';`),'0');assert.equal(sql(`SELECT count(*) FROM auth.sessions WHERE user_id='${f.legacy}';`),'0');
-      pass('same candidate clean owner: real REST worker runs all ten steps, real GoTrue freeze/hard delete, sessions absent; other unknown owners stay held');
+      assert.ok(ownKeys.every(key=>!objects.has(key)));
+      assert.ok(otherKeys.every(key=>objects.has(key)));
+      for(const table of ['product_cover_photos','sale_photo_evidence'])assert.equal(sql(`SELECT count(*) FROM public.${table} WHERE owner_id='${cleanupOwner}';`),'0');
+      assert.equal(sql(`SELECT count(*) FROM deletion_upload_private.attempts WHERE owner_id='${cleanupOwner}';`),'0');
+      assert.equal(sql(`SELECT count(*) FROM auth.users WHERE id='${cleanupOwner}';`),'0');assert.equal(sql(`SELECT count(*) FROM auth.sessions WHERE user_id='${cleanupOwner}';`),'0');
+      pass('same candidate owner with uploaded photos: ten steps remove four objects, photo rows, upload attempts, GoTrue identity and sessions; other owners retain their objects');
     }
     mkdirSync('.codex-artifacts', { recursive: true });
     writeFileSync(focus?'.codex-artifacts/account-deletion-candidate-focus.json':f.live?'.codex-artifacts/account-deletion-integrated-candidate.json':'.codex-artifacts/account-deletion-photo-handlers.json', JSON.stringify({ at: new Date().toISOString(), checks,focus:focus??null,sourceHashes:f.sourceHashes, productionEnabled: false,
