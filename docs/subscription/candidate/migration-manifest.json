@@ -146,7 +146,7 @@
     },
     {
       "path": "scripts/prepare-account-deletion-migration.ts",
-      "sha256": "9658134dcdf08d3bf7a22fe76c77542af82b37e257724394eb8acc14e58af640"
+      "sha256": "a226768e86e79659786b629555ec66900698dd7ddc194f8422e37927bce57fc7"
     },
     {
       "path": "scripts/lib/account-deletion-managed-target.ts",
@@ -177,12 +177,16 @@
       "sha256": "508d7aee3e6e697eff20708db7f18f223e84dfd5fe78914af95d3d4df765eb50"
     },
     {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_TEST_PRG_SCOPE.sql",
+      "sha256": "6b476e13b6bf9b8f34fc8ec5d3c959f92935daa686ba81b72cdae4cefbe6345c"
+    },
+    {
       "path": "supabase/migrations/095_scope_snapshot_rpcs_to_owner.sql",
       "sha256": "faa42015cad073e526bdd64cfd373b7fd28d5c3f5922bae77713b6dfe86d997c"
     },
     {
       "path": "scripts/verify-account-deletion-migration.ts",
-      "sha256": "2724eb34a9092d8b898a7a429b3fccedee331bc0e32bdc031f8226e55614b33c"
+      "sha256": "705b14a5f39ce63bb798e529785a2a1b13f58438dea7d68576c3a3a49f611658"
     }
   ],
   "runtimeEnabled": false,

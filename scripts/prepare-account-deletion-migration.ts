@@ -11,6 +11,7 @@ const sourcePaths = ['scripts/lib/account-deletion-migration.ts', 'scripts/prepa
   'scripts/lib/account-deletion-managed-target.ts','scripts/account-deletion-managed-migration.ts','tests/account-deletion-managed-target.test.ts',
   'scripts/account-deletion-test-prg-migration.ts', 'scripts/lib/account-deletion-test-prg-upgrade.ts',
   'scripts/prepare-account-deletion-test-prg-rollback.mjs', 'scripts/verify-account-deletion-test-prg-upgrade.ts',
+  'docs/subscription/drafts/ACCOUNT_DELETION_TEST_PRG_SCOPE.sql',
   'supabase/migrations/095_scope_snapshot_rpcs_to_owner.sql','scripts/verify-account-deletion-migration.ts'];
 const sources = [...candidateSourceHashes(), ...sourcePaths.map(path => ({ path,
   sha256: createHash('sha256').update(readFileSync(path, 'utf8').replaceAll('\r\n', '\n')).digest('hex') }))];

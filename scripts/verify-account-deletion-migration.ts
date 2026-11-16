@@ -120,6 +120,68 @@ async function main() {
       `${DELETION_TEST_PRG_PROJECT}:false:true`);
     assert.equal(sql(`SELECT email FROM auth.users WHERE id='${ownerId}';`, 'postgres'), 'retained@example.test');
     pass('retained-row verification after dormant 096 rolls back both stages on mutation and commits when unchanged');
+    const previewScope = readFileSync('docs/subscription/drafts/ACCOUNT_DELETION_TEST_PRG_SCOPE.sql', 'utf8').replaceAll('\r\n', '\n');
+    assert.match(previewScope, /\nROLLBACK;\s*$/);
+    const scopedActor = randomUUID(), unrelatedActor = randomUUID(), targetHash = 'a'.repeat(64);
+    const scopedRehearsal = previewScope.replace(/\nROLLBACK;\s*$/, () => `
+      ALTER TABLE auth.users ADD COLUMN created_at timestamptz NOT NULL DEFAULT clock_timestamp();
+      INSERT INTO auth.users(id,email,raw_user_meta_data) VALUES
+        ('${scopedActor}','candidate-cleanup-123456789abc@example.test','{}'),
+        ('${unrelatedActor}','existing@example.test','{}');
+      INSERT INTO public.profiles(id,email) VALUES
+        ('${scopedActor}','candidate-cleanup-123456789abc@example.test'),
+        ('${unrelatedActor}','existing@example.test') ON CONFLICT (id) DO NOTHING;
+      INSERT INTO deletion_upload_private.transport_target VALUES(true,'${targetHash}');
+      DO $exercise$
+      DECLARE request_id uuid; unrelated_request uuid; token text; other_token text;
+      BEGIN
+        SELECT r.request_id INTO request_id FROM public.bff_create_account_deletion_request('${scopedActor}',repeat('1',64),repeat('2',64),'2026-08-17','clean') r;
+        SELECT r.request_id INTO unrelated_request FROM public.bff_create_account_deletion_request('${unrelatedActor}',repeat('3',64),repeat('4',64),'2026-08-17','clean') r;
+        PERFORM public.bff_confirm_account_deletion_request('${scopedActor}',request_id,'requested');
+        PERFORM public.bff_confirm_account_deletion_request('${unrelatedActor}',unrelated_request,'requested');
+        BEGIN
+          PERFORM deletion_release_private.register_preview_grant(unrelated_request,'${unrelatedActor}','${targetHash}',clock_timestamp()+interval '5 minutes');
+          RAISE EXCEPTION 'existing fixture registered';
+        EXCEPTION WHEN SQLSTATE '55000' THEN IF SQLERRM <> 'preview_deletion_invalid_grant' THEN RAISE; END IF; END;
+        PERFORM deletion_release_private.register_preview_grant(request_id,'${scopedActor}','${targetHash}',clock_timestamp()+interval '5 minutes');
+        token := public.bff_claim_account_deletion_lease(request_id,'preview-test',clock_timestamp(),60)->>'leaseToken';
+        other_token := public.bff_claim_account_deletion_lease(unrelated_request,'preview-test',clock_timestamp(),60)->>'leaseToken';
+        SET LOCAL ROLE service_role;
+        BEGIN
+          PERFORM deletion_release_private.register_preview_grant(request_id,'${scopedActor}','${targetHash}',clock_timestamp()+interval '5 minutes');
+          RAISE EXCEPTION 'service role may not register';
+        EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+        BEGIN
+          PERFORM public.bff_account_deletion_engine(unrelated_request,other_token,'access_frozen','owner','execute',NULL);
+          RAISE EXCEPTION 'other fixture allowed';
+        EXCEPTION WHEN SQLSTATE '55000' THEN IF SQLERRM <> 'preview_deletion_scope' THEN RAISE; END IF; END;
+        IF public.bff_account_deletion_engine(request_id,token,'access_frozen','owner','context',NULL)->>'actorId' IS DISTINCT FROM '${scopedActor}'
+        THEN RAISE EXCEPTION 'wrong approved actor'; END IF;
+        PERFORM public.bff_account_deletion_engine(request_id,token,'access_frozen','owner','execute',NULL);
+        RESET ROLE;
+        IF (SELECT count(*) FROM deletion_engine_private.frozen) <> 1
+          OR NOT deletion_engine_private.actor_enabled('${unrelatedActor}')
+          OR deletion_engine_private.actor_enabled('${scopedActor}') THEN RAISE EXCEPTION 'unexpected freeze'; END IF;
+        UPDATE deletion_upload_private.transport_target SET target_hash=repeat('b',64);
+        BEGIN
+          PERFORM public.bff_account_deletion_engine(request_id,token,'access_frozen','owner','context',NULL);
+          RAISE EXCEPTION 'changed target allowed';
+        EXCEPTION WHEN SQLSTATE '55000' THEN IF SQLERRM <> 'preview_deletion_scope' THEN RAISE; END IF; END;
+        UPDATE deletion_upload_private.transport_target SET target_hash='${targetHash}';
+        UPDATE deletion_release_private.preview_grant SET expires_at=clock_timestamp();
+        BEGIN
+          PERFORM public.bff_account_deletion_engine(request_id,token,'access_frozen','owner','execute',NULL);
+          RAISE EXCEPTION 'expired fixture allowed';
+        EXCEPTION WHEN SQLSTATE '55000' THEN IF SQLERRM <> 'preview_deletion_scope' THEN RAISE; END IF; END;
+        IF deletion_release_private.runtime_allowed() THEN RAISE EXCEPTION 'unexpected global enablement'; END IF;
+      END;
+      $exercise$;
+      ROLLBACK;`);
+    const preScope = sql(migrationCatalogSql(), 'postgres');
+    sql(scopedRehearsal, 'postgres');
+    assert.equal(sql(migrationCatalogSql(), 'postgres'), preScope);
+    assert.equal(sql("SELECT to_regclass('deletion_release_private.preview_grant') IS NULL;", 'postgres'), 't');
+    pass('test_prg grant admits only the new synthetic owner, denies unrelated and expired requests, and rolls back');
     reject(ack+candidate.sql,'deletion_migration_isolated_database','postgres');
     reject(ack+candidate.sql.replace("payload constant text:='","payload constant text:='-- synthetic altered payload\n"),'deletion_migration_payload_changed');
     pass('wrong physical test database and modified SQL payload reject before DDL');
