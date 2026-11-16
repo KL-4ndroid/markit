@@ -340,3 +340,13 @@ Vercel `markit-app` 已開啟 Require Log In，採 Standard Protection。遠端�
 本機提交 `db658f1` 含照片接線、設定範本與驗收證據。3 份針對性測試、專用 TypeScript 檢查及 22 組本機整合驗收通過。整合測試使用本機 GoTrue、PostgREST、PostgreSQL 與 S3 替身，涵蓋照片成功重送、回覆遺失、內容衝突、未知寫入需人工審查及合成帳號十步清理。[本機驗收證據](evidence/account-deletion-integrated-candidate-2026-11-02.json)
 
 同日將整合驗收擴至 26 組。本機提交 `4fb1009` 使用同一合成老闆經兩條上傳入口建立商品照和成交照，確認刪帳十步清除四個物件、照片資料列、上傳嘗試紀錄、Auth 帳號與工作階段，其他帳號的物件保留。096 另通過 14 項管理入口測試、23 項隔離安裝檢查及舊基線回滾檢查。本機舊基線模型的目錄差異仍由 096 拒絕。12 月 1 日後以受保護的 Preview 補驗實際部署、Supabase 和 R2 的串接。[本機驗收證據](evidence/account-deletion-integrated-candidate-2026-11-02.json)
+
+### 受保護 Preview 部署與驗收步驟
+
+2026-11-16 本機演練使用乾淨 checkout `d4a44b4`。離線 `npm ci` 從快取安裝完成，候選與 096 指紋檢查及 Node.js 24.22.3 的 Next.js 正式建置均通過。建置完成後啟動 loopback 伺服器，`/api/health` 回 200 且 SHA 相符，刪帳查詢、確認、撤回三支 API 均回 `501 account_deletion_disabled`。演練未配置 Supabase 或 R2 憑證。
+
+1. 從乾淨的候選分支 checkout 確認 Git revision。用專案指定的 Node.js 24 執行 `npm ci`、`npm run build` 和 `git diff --exit-code`。用 `npx tsx scripts/prepare-account-deletion-candidate.ts --check` 及 `npx tsx scripts/prepare-account-deletion-migration.ts --check` 核對候選來源與 096 安裝檔。現有 26 組本機驗收涵蓋兩條上傳入口及含照片帳號的清理，程式有相關變更時才重跑受影響案例。
+2. 12 月 1 日後，將環境變數限於候選分支的 Preview。`NEXT_PUBLIC_SUPABASE_URL` 指向 `https://tzhbirwchhqabkxhqjdl.supabase.co`，`NEXT_PUBLIC_SUPABASE_ANON_KEY` 使用該專案的公開金鑰，伺服器使用同專案的 `SUPABASE_SECRET_KEY`。`R2_BUCKET_NAME` 指向 `markit-account-deletion-preview`，R2 憑證只授權該私有貯體。啟用 `ACCOUNT_DELETION_UPLOAD_BARRIER_ENABLED`、`ACCOUNT_DELETION_UPLOAD_RECEIPTS_ENABLED` 和 `ACCOUNT_DELETION_PREVIEW_UPLOADS_ENABLED`，確認 `ACCOUNT_DELETION_PREVIEW_SUPABASE_REF`、`ACCOUNT_DELETION_PREVIEW_OWNER_ID` 和 `ACCOUNT_DELETION_PREVIEW_R2_TARGET_SHA256` 各自對應專案、當次新建合成老闆及已登記的貯體指紋。以 `.env.example` 的設定名稱為準，敏感值只存在受保護的執行環境。
+3. 確認 `PRODUCT_COVER_PHOTO_UPLOAD_ENABLED`、`PRODUCT_COVER_PHOTO_READ_ENABLED`、`SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED`、`SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED` 和 `SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ENABLED` 已套用。部署後，先看未登入時是否被 Vercel 攔截，再用已授權的身分讀 `/api/health` 並核對 SHA。確認 `test_prg` 的 096 回條、唯一 R2 綁定、`runtime_enabled=false`，以及此部署的刪帳 API 回 `501 account_deletion_disabled`。
+4. 在同一個部署，以合成老闆新增商品、市集和成交。各上傳一張商品照和成交照，再送出相同 ID 與照片內容。驗收應回 `replayed: true`、每對原圖與縮圖各只有一筆成功寫入回條、物件內容一致。再比對內容不同時回 `409`，以及使用另一合成身分越權讀取時受到拒絕。每次確認後只記錄部署 ID、revision、狀態碼與測試結果。
+5. 清理時先記錄本輪合成帳號、場次、商品及物件鍵，逐一比對歸屬。完整刪帳引擎的託管驗收需先有僅能執行當次合成帳號的入口。若先完成照片驗收，使用當次清單清除已建立的測試物件與資料，讀回物件 404 和資料庫筆數，再撤銷短效憑證及移除該分支的測試環境變數。若物件寫入結果不明，保留該筆證據以便查回，待確認後再清理。
