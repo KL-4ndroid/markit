@@ -1,4 +1,5 @@
 import { CreditCard, Database, LifeBuoy, Lock, Mail, User } from 'lucide-react';
+import Link from 'next/link';
 
 import { PublicDocumentShell } from '@/components/public/PublicDocumentShell';
 import {
@@ -44,6 +45,7 @@ export default function SupportPage() {
       publicationReady={config.policyPublicationReady}
     >
       <section className="py-7">
+        <p className="mb-5 text-sm"><Link href="/account-deletion" className="text-primary underline underline-offset-4">帳號與資料刪除說明</Link></p>
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <LifeBuoy className="h-5 w-5" aria-hidden="true" />

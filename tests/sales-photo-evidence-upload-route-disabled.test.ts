@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import Module, { createRequire } from 'node:module';
 import { join } from 'node:path';
+import {beginDeletionUploadSession} from '../lib/subscription/account-deletion-upload-barrier.server';
 
 const testRequire = createRequire(import.meta.url);
 const serverOnlyPath = testRequire.resolve('server-only');
@@ -1446,6 +1447,31 @@ runTest('downgrade during R2 upload compensates uploaded objects without finaliz
   assert.equal(mutations.finalizedInputs.length, 0);
   assert.equal(calls.filter(call => call === 'cleanup').length, 2);
   assert.equal(mutations.failedInputs.length, 1);
+});
+
+runTest('deletion barrier gates real sales handler PUT/finalize and retains uncertain compensation',async()=>{
+  for(const mode of ['success','freeze_first','freeze_second','cleanup_failed','finalize_unknown','begin_failed']){
+    const calls:string[]=[],states:string[]=[];let frozen=false,puts=0,deletes=0;
+    const fakeClient=createFakeClient({events:{data:{id:IDS.saleId,type:'deal_closed',market_id:IDS.marketId,timestamp:'2026-07-07T01:02:03.000Z',markets:{owner_id:IDS.ownerId}},error:null},sale_photo_evidence:{data:null,error:null}});
+    const mutations=createFakeMutationRepository(calls,mode==='finalize_unknown'?{finalizeError:Error('Lost finalize response')}:{});
+    const rpc={async rpc(name:string,args:Record<string,unknown>){
+      if(name==='bff_begin_deletion_upload'&&mode==='begin_failed')return {error:{code:'network'}};
+      if(name==='bff_authorize_deletion_upload'&&frozen)return {error:{code:'55000'}};
+      if(name==='bff_finish_deletion_upload')states.push(String(args.p_state));return {error:null};
+    }};
+    const handlers=createSalesPhotoEvidenceUploadRouteHandlers({isMetadataClaimEnabled:()=>true,isR2UploadEnabled:()=>true,resolveActor:async()=>({actorId:IDS.ownerId}),createRepository:()=>fakeClient,createMutationRepository:()=>mutations,
+      beginDeletionUpload:(actor,owner)=>beginDeletionUploadSession(rpc,actor,owner),
+      r2UploadAdapter:{async uploadObject(input){puts++;if(mode==='freeze_first'||mode==='cleanup_failed'||mode==='freeze_second'&&puts===2)frozen=true;return {ok:true,key:input.key};},async deleteObject(input){deletes++;return mode==='cleanup_failed'?{ok:false,key:input.key,code:'r2_delete_failed',message:'Injected failure'}:{ok:true,key:input.key};}}});
+    const response=await handlers.POST(createUploadFormDataRequest()),body=await response.json();
+    if(mode==='success'){assert.equal(response.status,200);assert.deepEqual(states,['settled']);assert.equal(puts,2);assert.equal(body.shouldDeleteLocalPayloadAfterSuccess,true);}
+    else{assert.equal(body.shouldKeepLocalPayload,true);assert.notEqual(response.status,200);
+      if(mode==='begin_failed'){assert.equal(puts,0);assert.ok(!calls.includes('claim'));}
+      if(mode==='freeze_first'){assert.equal(puts,1);assert.equal(deletes,1);assert.deepEqual(states,['settled']);assert.equal(mutations.finalizedInputs.length,0);}
+      if(mode==='freeze_second'){assert.equal(puts,2);assert.equal(deletes,2);assert.deepEqual(states,['settled']);assert.equal(mutations.finalizedInputs.length,0);}
+      if(mode==='cleanup_failed'){assert.equal(body.cleanupIncomplete,true);assert.deepEqual(states,['uncertain']);}
+      if(mode==='finalize_unknown'){assert.equal(response.status,503);assert.equal(deletes,0);assert.deepEqual(states,['uncertain']);}
+    }
+  }
 });
 
 async function main(): Promise<void> {

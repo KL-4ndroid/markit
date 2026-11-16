@@ -1,4 +1,4 @@
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 
 import { NextResponse } from 'next/server';
 
@@ -210,9 +210,38 @@ export function isSalesPhotoEvidenceExpirationCronAuthorized(
   if (!secret || secret.length < 32 || secret.length > 1_024 || secret !== secret.trim()) return false;
   const expected = `Bearer ${secret}`;
   const actual = request.headers.get('authorization') ?? '';
-  if (actual.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(actual), Buffer.from(expected));
+  const actualBytes = Buffer.from(actual);
+  const expectedBytes = Buffer.from(expected);
+  return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes);
 }
+
+// Match the audited production storage target without returning configuration values.
+const AUDITED_R2_ENDPOINT_SHA256 = '87f2a86a63f1ec243c4b2d652b29babd9240f0bca85b0be42845a82f3d240551';
+
+export function verifyProductionR2Target(request: Request, env: ExpirationRouteEnv): Response {
+  const headers = new Headers({ 'Cache-Control': 'private, no-store' });
+  if (request.method !== 'HEAD' || env.VERCEL_ENV !== 'production'
+    || !isSalesPhotoEvidenceExpirationCronAuthorized(request, env)) {
+    return new Response(null, { status: 404, headers });
+  }
+  const nonce = request.headers.get('x-r2-verification-nonce') ?? '';
+  if (!/^[0-9a-f]{64}$/.test(nonce)) return new Response(null, { status: 400, headers });
+
+  const deploymentId = env.VERCEL_DEPLOYMENT_ID ?? '';
+  if (!/^dpl_[A-Za-z0-9]+$/.test(deploymentId)) return new Response(null, { status: 503, headers });
+
+  const accountId = env.R2_ACCOUNT_ID?.trim();
+  const endpoint = env.R2_ENDPOINT?.trim() || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '');
+  const endpointHash = createHash('sha256').update(endpoint.replace(/\/$/, '')).digest('hex');
+  const matches = endpointHash === AUDITED_R2_ENDPOINT_SHA256
+    && env.R2_BUCKET_NAME?.trim() === 'markit-media-production';
+
+  headers.set('x-r2-verification-nonce', nonce);
+  headers.set('x-r2-verification-deployment', deploymentId);
+  return new Response(null, { status: matches ? 204 : 409, headers });
+}
+
+export const HEAD = (request: Request) => verifyProductionR2Target(request, process.env);
 
 async function createRepository(): Promise<SalesPhotoEvidenceExpirationRepository | null> {
   if (!isSalesPhotoEvidenceExpirationRouteEnabledForEnv(process.env)) return null;

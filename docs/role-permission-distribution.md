@@ -1,5 +1,32 @@
 # Role / Permission Distribution Notes
 
+## 2026-11-02 | Integrated candidate readback and review surface
+
+[The 22-case candidate](subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md) uses real GoTrue bearer, PostgREST ACL/RPC and the enabled canonical subscription write check. The existing deletion identity adapter performs a synthetic owner hard-delete through GoTrue. New readback/review BFFs are service-only and cannot bypass owner/staff scope, frozen actor, live processing lease or exact content/receipt verification. Unknown attempts and unattributed legacy claims remain held; no production role, paid tier, database or upload gate was changed. The SQL package remains review-only, and the public deletion page explicitly remains draft/default-off.
+
+
+## 2026-11-02 | Local product/sales handler receipts
+
+The existing handlers can opt into recorded single-PUT writes through a default-off local gate. Their auth, owner/staff and subscription decisions still run before claim/write; no new public RPC, role or paid capability is introduced. Remote/deployed targets and receipts without the barrier are rejected. Compensation only removes keys created and confirmed in the same attempt, preserving pre-existing photos on 412 or unknown outcomes. Real handler factories/BFF SQL/loopback S3 passed sixteen grouped checks, including per-attempt reconciliation that does not release other unknown writes. Auth/plan decisions were injected, so this is not a new real-role/GoTrue acceptance. No production permissions or settings changed. See [scope and follow-up](subscription/ACCOUNT_DELETION_PHOTO_HANDLER_RECEIPTS_2026_11_02.md).
+
+## 2026-11-02 | Isolated terminal-PUT receipts
+
+Two additional service-only BFFs record single-use PUT intent/ack and read a drain digest through the existing live deletion lease/freeze/scope checks. Private target/receipt tables remain inaccessible to service/client roles; the configured target is installer-owned. A matching ack may be persisted after freeze but cannot issue another PUT or overwrite an existing receipt. The reconciliation commit now validates the actual ledger when the terminal-PUT draft is installed. Five local HTTP/SQL and three real staging cases passed; one marker was removed and confirmed absent. Product/sales production handlers have not adopted the new writer, production targets are rejected and no deployed permission change occurred. See [evidence and limits](subscription/ACCOUNT_DELETION_TERMINAL_PUT_2026_11_02.md).
+
+## 2026-11-02 | Isolated upload uncertainty reconciliation
+
+One new service-only BFF validates a live deletion lease, matching request freeze and actor/owner scope before inspecting or atomically reconciling a tracked attempt. Client roles cannot call it; service_role cannot read private reviews. Source CAS, DB-clock expiry checks and exact evidence replay prevent concurrent reviewers or old writer tokens from replacing a decision. The trusted drain-attestor contract remains unimplemented for production: a hash alone does not prove stopped I/O. Photo metadata and other-brand keys remain intact, staff attribution is removed only by the existing cleanup hook, and no paid feature/role boundary changes. See [scope and ten isolated cases](subscription/ACCOUNT_DELETION_UPLOAD_RECONCILIATION_2026_11_02.md). No production permission change or cleanup enablement.
+
+## 2026-11-02 | Local upload/freeze coordination
+
+The isolated upload registry adds four explicit service-only BFFs for begin/bind/authorize/finish. PUBLIC, anon and authenticated cannot control attempts; service_role cannot directly read the private ledger. Existing product/sales BFFs retain role, owner and entitlement checks. Sorted actor/owner locks serialize freezes and writes; unknown outcomes require review, never time-based release. Staff cleanup waits for their uploads into other brands, then removes private actor attribution while preserving the brand owner's keys. This is a default-off, loopback-only SQL/API slice, not a deployed permission change or a new paid capability. See [scope and tests](subscription/ACCOUNT_DELETION_UPLOAD_BARRIER_2026_11_02.md).
+
+## 2026-11-02 | Isolated deletion access fences; deployed snapshot privacy repair
+
+The captured 134 public routines, 5 views and 45 public-table triggers now have a local-only deletion compatibility fixture. Frozen callers/owners are blocked while existing viewer/operator/manager price/stock and cost/profit/metadata masks stay intact. Historical sales authored by deleted staff remain owned by their brand. Worker exceptions require the exact actor, lease and next unfinished step, with precise identity redaction rather than arbitrary financial rewrites. A private manifest detects routine/view/ACL/RLS/trigger drift. The full fence remains an isolated SQL draft; it does not change deployed subscription tiers or enable deletion. See `docs/subscription/ACCOUNT_DELETION_ACCESS_FENCE_2026_11_02.md` (19 access/operational and 16 billing cases).
+
+Separately, migration 095 is deployed: snapshot SECURITY DEFINER RPCs require the authenticated snapshot owner or the already privileged service role, have fixed search_path and no PUBLIC/anon EXECUTE. Self access remains available; cross-account/anonymous access is rejected. Installation did not execute cleanup or read customer snapshots. Cloud metadata verification passed; this does not enable the deletion engine. Direct service-role base-table reads still have BYPASSRLS and require separate API integration review.
+
 ## 2026-10-25 | Explicit return navigation
 
 Owner, Staff and loading Market detail shells share an internal-destination return link. Route parameters choose navigation only; they do not authorize data access. Private journal entry points still require the existing owner scope and rollout checks, including the journal task destination. No role, freshness, Team entitlement, staff scope, field-note/checklist sharing or writer changed. See `docs/UIUX_ENTRY_RETURN_AUDIT_2026_10_25.md`; live Staff login and native hardware-back behavior remain outside this browser audit.

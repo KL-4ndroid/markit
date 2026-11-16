@@ -59,6 +59,9 @@ assert.equal(isPathWithinRoute('/support/account', '/support'), true);
 assert.equal(isPathWithinRoute('/support-anything', '/support'), false);
 assert.equal(isPathWithinAnyRoute('/privacy', STANDALONE_PUBLIC_ROUTES), true);
 assert.equal(isPathWithinAnyRoute('/terms-old', STANDALONE_PUBLIC_ROUTES), false);
+for(const privatePath of ['/account-deletion-anything','/settings/account/deletion','/api/account-deletion']) {
+  assert.equal(isPathWithinAnyRoute(privatePath,STANDALONE_PUBLIC_ROUTES),false);
+}
 
 const root = process.cwd();
 const supportEmailExample = readFileSync(join(root, '.env.example'), 'utf8')
@@ -73,7 +76,7 @@ const manifest = readFileSync(join(root, 'scripts/test-files.txt'), 'utf8');
 const legalReview = readFileSync(join(root, 'docs/WEB_LEGAL_SUPPORT_LAUNCH_REVIEW.md'), 'utf8');
 
 assert.match(appChrome, /isPathWithinAnyRoute/);
-for (const publicPath of ['/support', '/privacy', '/terms', '/about']) {
+for (const publicPath of ['/support', '/privacy', '/terms', '/about', '/account-deletion']) {
   assert.ok(STANDALONE_PUBLIC_ROUTES.includes(publicPath as typeof STANDALONE_PUBLIC_ROUTES[number]));
 }
 assert.match(supportPage, /正式支援信箱尚未設定/);

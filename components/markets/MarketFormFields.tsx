@@ -1,5 +1,6 @@
 'use client';
 
+import { EQUIPMENT_AVAILABILITY_LABELS, equipmentAvailability, type EquipmentAvailability, type MarketRegistrationConditions } from '@/lib/markets/market-registration-conditions';
 import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 
 import {
@@ -300,8 +301,9 @@ interface MarketCostFieldsProps {
   idPrefix: string;
   boothCost: number;
   deposit: number;
-  commissionRate: number;
-  fixedCostTotal: number;
+  commissionRate: number | undefined;
+  fixedCostTotal?: number;
+  registrationTerms?: boolean;
   disabled?: boolean;
   onChange: (field: 'boothCost' | 'deposit' | 'commissionRate', value: number) => void;
 }
@@ -312,6 +314,7 @@ export function MarketCostFields({
   deposit,
   commissionRate,
   fixedCostTotal,
+  registrationTerms = false,
   disabled = false,
   onChange,
 }: MarketCostFieldsProps) {
@@ -350,23 +353,23 @@ export function MarketCostFields({
           )}
         </FormField>
       </div>
-      {canRecord && <FormField id={`${idPrefix}-commission-rate`} label="營業額抽成（%）">
+      {(registrationTerms || canRecord) && <FormField id={`${idPrefix}-commission-rate`} label={registrationTerms ? '主辦抽成比例（%）' : '營業額抽成（%）'}>
         {(fieldProps) => (
           <input
             {...fieldProps}
             type="number"
-            value={commissionRate}
+            value={commissionRate ?? 0}
             onChange={event => onChange('commissionRate', Number(event.target.value))}
             min="0"
             max="100"
-            step="0.1"
+            step={registrationTerms ? "0.01" : "0.1"}
             inputMode="decimal"
             disabled={disabled}
             className={inputClassName}
           />
         )}
       </FormField>}
-      {canRecord && <p className="rounded-2xl border border-secondary/15 bg-soft-yellow/45 p-3 text-sm text-muted-foreground">
+      {canRecord && fixedCostTotal !== undefined && <p className="rounded-2xl border border-secondary/15 bg-soft-yellow/45 p-3 text-sm text-muted-foreground">
         攤位與設備固定成本合計
         <strong className="ml-2 font-medium tabular-nums text-foreground">
           NT$ {fixedCostTotal.toLocaleString()}
@@ -382,10 +385,13 @@ export type MarketEquipmentFreeField = 'tableFree' | 'chairFree' | 'umbrellaFree
 interface MarketEquipmentFieldsProps {
   idPrefix: string;
   rentals: Record<MarketEquipmentField, number>;
+  registrationTerms?: boolean;
   free: Record<MarketEquipmentFreeField, boolean>;
+  conditions?: MarketRegistrationConditions;
+  onStatusChange?: (field: MarketEquipmentFreeField, rentalField: MarketEquipmentField, status: EquipmentAvailability) => void;
   disabled?: boolean;
   onRentalChange: (field: MarketEquipmentField, value: number) => void;
-  onFreeChange: (field: MarketEquipmentFreeField, value: boolean) => void;
+  onFreeChange?: (field: MarketEquipmentFreeField, value: boolean) => void;
 }
 
 const EQUIPMENT_OPTIONS: Array<{
@@ -403,21 +409,33 @@ export function MarketEquipmentFields({
   idPrefix,
   rentals,
   free,
+  conditions,
+  onStatusChange,
+  registrationTerms = false,
   disabled = false,
   onRentalChange,
   onFreeChange,
 }: MarketEquipmentFieldsProps) {
   const { canRecord } = useSubscriptionExperience();
-  if (!canRecord) return null;
+  if (!registrationTerms && !canRecord) return null;
   return (
     <div className="space-y-4">
+      {registrationTerms && <p className="text-sm text-muted-foreground">數量可記在主辦／場地備註。</p>}
       {EQUIPMENT_OPTIONS.map(option => {
         const Icon = option.icon;
         const isFree = free[option.freeField];
+        const status = equipmentAvailability(isFree, rentals[option.rentalField], conditions?.[option.freeField]);
         const inputId = `${idPrefix}-${option.rentalField}`;
         return (
           <div key={option.rentalField} className="grid gap-3 rounded-2xl border border-primary/10 bg-soft-green/25 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-            <FormField id={inputId} label={`${option.label}租金`}>
+            {onStatusChange ? <FormField id={inputId + '-status'} label={option.label}>
+              {fieldProps => <select {...fieldProps} value={status}
+                onChange={event => onStatusChange(option.freeField, option.rentalField, event.target.value as EquipmentAvailability)}
+                disabled={disabled} className={inputClassName}>
+                {Object.entries(EQUIPMENT_AVAILABILITY_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>}
+            </FormField> : null}
+            {(!onStatusChange || status === 'rental') && <FormField id={inputId} label={`${option.label}租金`}>
               {(fieldProps) => (
                 <div className="relative">
                   <Icon className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -434,17 +452,17 @@ export function MarketEquipmentFields({
                   />
                 </div>
               )}
-            </FormField>
-            <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-primary/10 bg-atelier-paper px-3 text-sm text-foreground transition-colors hover:border-primary/25">
+            </FormField>}
+            {!onStatusChange && <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-primary/10 bg-atelier-paper px-3 text-sm text-foreground transition-colors hover:border-primary/25">
               <input
                 type="checkbox"
                 checked={isFree}
-                onChange={event => onFreeChange(option.freeField, event.target.checked)}
+                onChange={event => onFreeChange?.(option.freeField, event.target.checked)}
                 disabled={disabled}
                 className="h-4 w-4 rounded border-primary/30 text-primary focus:ring-primary/40"
               />
               免費提供
-            </label>
+            </label>}
           </div>
         );
       })}

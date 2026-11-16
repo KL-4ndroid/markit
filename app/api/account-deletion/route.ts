@@ -3,7 +3,7 @@ import {
   createAppApiCorsPreflightResponse,
   createAppApiCorsRejectionResponse,
 } from '@/lib/api/server/cors';
-import { authenticateAppApiRequest, type AppApiActor } from '@/lib/api/server/auth';
+import type { AppApiActor } from '@/lib/api/server/auth';
 import { createAppApiJsonResponse } from '@/lib/api/server/response';
 import {
   parseAccountDeletionCreateRequest,
@@ -15,13 +15,14 @@ import {
   evaluateAccountDeletionRecentReauth,
 } from '@/lib/subscription/account-deletion-reauth.server';
 import { createAccountDeletionStorageRepository } from '@/lib/subscription/account-deletion-storage.server';
+import { isAccountDeletionWorkflowEnabled, readAccountDeletionJson, resolveAccountDeletionActor } from '@/lib/subscription/account-deletion-request-workflow.server';
+import type { AccountDeletionActionRequest } from '@/lib/subscription/account-deletion-api-contract';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 5;
 
 const ALLOWED_METHODS = ['GET', 'POST', 'OPTIONS'] as const;
-const MAX_JSON_BYTES = 4_096;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 type RouteEnv = Record<string, string | undefined>;
@@ -35,6 +36,8 @@ export type AccountDeletionRouteRepository = {
     policyRevision: string;
     preflightResolution: string;
   }): Promise<unknown>;
+  confirmForActor?(input: AccountDeletionActionRequest & { actorId: string }): Promise<unknown>;
+  cancelForActor?(input: AccountDeletionActionRequest & { actorId: string }): Promise<unknown>;
 };
 
 export type AccountDeletionRouteDeps = {
@@ -51,18 +54,6 @@ function errorResponse(status: number, code: string, message: string): Response 
 
 function disabledResponse(): Response {
   return errorResponse(501, 'account_deletion_disabled', 'Account deletion is not enabled.');
-}
-
-async function parseBoundedJson(request: Request): Promise<unknown | null> {
-  const declaredLength = Number(request.headers.get('content-length'));
-  if (Number.isFinite(declaredLength) && declaredLength > MAX_JSON_BYTES) return null;
-  const raw = await request.text();
-  if (Buffer.byteLength(raw, 'utf8') > MAX_JSON_BYTES) return null;
-  try {
-    return JSON.parse(raw) as unknown;
-  } catch {
-    return null;
-  }
 }
 
 function safeSuccess(status: AccountDeletionSafeStatus, httpStatus = 200): Response {
@@ -120,7 +111,7 @@ export function createAccountDeletionRouteHandlers(deps: AccountDeletionRouteDep
         return errorResponse(409, reauth.code, 'Recent reauthentication is required.');
       }
 
-      const body = parseAccountDeletionCreateRequest(await parseBoundedJson(request));
+      const body = parseAccountDeletionCreateRequest(await readAccountDeletionJson(request));
       if (!body) return errorResponse(400, 'invalid_request', 'Account deletion request is invalid.');
 
       const secret = deps.resolveHashSecret();
@@ -165,20 +156,14 @@ export function isAccountDeletionRouteEnabledForEnv(env: RouteEnv): boolean {
     || env.ACCOUNT_DELETION_ROUTE_ALLOW_PRODUCTION === '1';
 }
 
-async function resolveActor(request: Request): Promise<AppApiActor | 'unavailable' | null> {
-  const result = await authenticateAppApiRequest(request);
-  if (result.ok) return result.actor;
-  return result.code === 'authentication_unavailable' ? 'unavailable' : null;
-}
-
 async function createRepository(): Promise<AccountDeletionRouteRepository | null> {
   return createAccountDeletionStorageRepository();
 }
 
-const deps: AccountDeletionRouteDeps = {
-  isEnabled: () => isAccountDeletionRouteEnabledForEnv(process.env),
+export const accountDeletionRouteDeps: AccountDeletionRouteDeps = {
+  isEnabled: () => isAccountDeletionRouteEnabledForEnv(process.env) && isAccountDeletionWorkflowEnabled(process.env),
   nowMs: () => Date.now(),
-  resolveActor,
+  resolveActor: resolveAccountDeletionActor,
   resolveHashSecret: () => process.env.ACCOUNT_DELETION_HMAC_SECRET?.trim() || null,
   createRepository,
 };
@@ -191,11 +176,11 @@ async function runWithCors(request: Request, handler: () => Promise<Response>): 
 
 export const GET = (request: Request) => runWithCors(
   request,
-  () => createAccountDeletionRouteHandlers(deps).GET(request),
+  () => createAccountDeletionRouteHandlers(accountDeletionRouteDeps).GET(request),
 );
 export const POST = (request: Request) => runWithCors(
   request,
-  () => createAccountDeletionRouteHandlers(deps).POST(request),
+  () => createAccountDeletionRouteHandlers(accountDeletionRouteDeps).POST(request),
 );
 export const OPTIONS = (request: Request) => createAppApiCorsPreflightResponse(request, {
   allowedMethods: ALLOWED_METHODS,

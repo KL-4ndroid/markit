@@ -670,6 +670,7 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
     umbrellaRental: payload.umbrellaRental,
     tableclothRental: payload.tableclothRental,
     commissionRate: payload.commissionRate,
+    registrationConditions: payload.registrationConditions,
     
     // 免費提供標記
     tableFree: payload.tableFree,
@@ -713,9 +714,12 @@ registerEventHandler('market_created', async (event: Event<MarketCreatedPayload>
 registerEventHandler('market_updated', async (event: Event<{ market_id: string; updates: Partial<Market> }>, db) => {
   const { market_id, updates } = event.payload;
   
+  const conditions = updates.registrationConditions;
+  const existingConditions = conditions ? (await db.markets.get(market_id))?.registrationConditions : undefined;
   // 更新市集資料
   await db.markets.update(market_id, {
     ...paymentDeadlineFieldsToLocal(marketRegionFieldsToLocal(updates)),
+    ...(conditions ? { registrationConditions: { ...existingConditions, ...conditions } } : {}),
     updatedAt: event.timestamp,
   });
   

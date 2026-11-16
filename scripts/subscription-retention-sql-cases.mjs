@@ -57,9 +57,14 @@ export async function verifySubscriptionRetention(pg,{owner,other,operator,manag
   await root();await pg.exec('BEGIN');
   try {
    await pg.exec('UPDATE subscription_write_guard_settings SET enforce_all=true');await asUser(owner);
-   await pg.query("INSERT INTO events(id,actor_id,type,payload,market_id,timestamp) VALUES(gen_random_uuid(),$1,'market_updated',$2,$3,now())",[owner,JSON.stringify({market_id:market,updates:{name:'Free foundation still works'}}),market]);
+   await pg.query("INSERT INTO events(id,actor_id,type,payload,market_id,timestamp) VALUES(gen_random_uuid(),$1,'market_updated',$2,$3,now())",[owner,JSON.stringify({market_id:market,updates:{name:'Free foundation still works',table_free:true,chair_rental:80,commission_rate:10}}),market]);
    await root();assert.equal((await pg.query('SELECT name FROM markets WHERE id=$1',[market])).rows[0].name,'Free foundation still works');
    await asUser(owner);
+   const terms = (await pg.query('SELECT table_free,chair_rental,commission_rate,total_revenue,total_profit FROM owner_accessible_markets WHERE id=$1',[market])).rows[0];
+   assert.equal(terms.table_free,true);assert.equal(Number(terms.chair_rental),80);assert.equal(Number(terms.commission_rate),10);
+   assert.equal(terms.total_revenue,null);assert.equal(terms.total_profit,null);
+   const event = (await pg.query("SELECT payload FROM owner_accessible_events WHERE type='market_updated' AND payload->'updates'->>'name'='Free foundation still works'")).rows[0];
+   assert.equal(event.payload.updates.commission_rate,10);
    await assert.rejects(()=>pg.query("INSERT INTO events(id,actor_id,type,payload,market_id,timestamp) VALUES(gen_random_uuid(),$1,'deal_closed',$2,$3,now())",[owner,JSON.stringify({market_id:market,totalAmount:1,items:[]}),market]),e=>e.code==='42501');
   } finally {await pg.exec('ROLLBACK');await root();}
  });
@@ -105,5 +110,29 @@ export async function verifySubscriptionRetention(pg,{owner,other,operator,manag
   await root();assert.equal((await pg.query("SELECT has_function_privilege('authenticated','check_subscription_read_for_actor(uuid,uuid,text)','EXECUTE') AS ok")).rows[0].ok,false);
   assert.equal((await pg.query("SELECT has_table_privilege('anon','owner_accessible_events','SELECT') AS ok")).rows[0].ok,false);
   for(const name of baseTables)assert.deepEqual((await pg.query(`SELECT to_jsonb(t) AS row FROM ${name} t ORDER BY to_jsonb(t)::text`)).rows,before[name],name);
+ });
+ await check('097 owner-only conditions persist, merge across edits, and preserve Free finance masking',async()=>{
+  await root();
+  await pg.exec(readFileSync('supabase/migrations/097_add_market_registration_conditions.sql','utf8'));
+  const initial=(await pg.query('SELECT registration_conditions,commission_rate FROM markets WHERE id=$1',[market])).rows[0];
+  assert.equal(initial.registration_conditions,null);
+  await plan('free');await asUser(owner);
+  const write=updates=>pg.query("INSERT INTO events(id,actor_id,type,payload,market_id,timestamp) VALUES(gen_random_uuid(),$1,'market_updated',$2,$3,now())",[owner,JSON.stringify({market_id:market,updates}),market]);
+  await write({commission_rate:10,registration_conditions:{tableFree:'self'}});
+  await write({commission_rate:0});
+  await write({registration_conditions:{chairFree:'rental'}});
+  await assert.rejects(()=>write({registration_conditions:{umbrellaFree:'invalid'}}),e=>e.code==='22023');
+  const saved=(await pg.query('SELECT registration_conditions,commission_rate,total_revenue FROM owner_accessible_markets WHERE id=$1',[market])).rows[0];
+  assert.deepEqual(saved.registration_conditions,{tableFree:'self',chairFree:'rental'});
+  assert.equal(Number(saved.commission_rate),0);assert.equal(saved.total_revenue,null);
+  const created = (await pg.query('SELECT gen_random_uuid() AS id')).rows[0].id;
+  await pg.query("INSERT INTO events(id,actor_id,type,payload,market_id,timestamp) VALUES(gen_random_uuid(),$1,'market_created',$2,$3,now())", [
+    owner, JSON.stringify({marketId:created,name:'New synthetic arrangement',location:'synthetic',startDate:'2026-11-16',endDate:'2026-11-16',
+      tableFree:true,registrationConditions:{tableFree:'free'}}), created,
+  ]);
+  const newMarket=(await pg.query('SELECT registration_conditions FROM owner_accessible_markets WHERE id=$1',[created])).rows[0];
+  assert.deepEqual(newMarket.registration_conditions,{tableFree:'free'});
+  await asUser(other);assert.equal((await pg.query('SELECT registration_conditions FROM owner_accessible_markets WHERE id=$1',[market])).rows.length,0);
+  await root();assert.equal((await pg.query("SELECT has_function_privilege('authenticated','project_market_registration_conditions()','EXECUTE') AS allowed")).rows[0].allowed,false);
  });
 }

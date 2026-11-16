@@ -41,26 +41,28 @@ export function PricingCard({ plan }: PricingCardProps) {
 
       <h2 className="mt-4 text-lg font-semibold text-foreground">{plan.name}</h2>
       <p className="mt-1 text-sm font-medium text-primary">{plan.priceLabel}</p>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">{plan.description}</p>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">適合：{plan.audience}</p>
-
-      <ul className="mt-5 space-y-3 border-t border-atelier-line pt-5">
-        {plan.features.map(feature => (
-          <li key={feature.code} className="flex items-start gap-2 text-sm text-foreground">
-            {feature.status === 'coming_soon' ? (
-              <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-atelier-clay" aria-hidden="true" />
-            ) : (
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            )}
-            <span>
-              {feature.label}
-              {feature.status === 'coming_soon' && (
-                <span className="ml-1 text-xs text-muted-foreground">（規劃中）</span>
+      <p className="mt-3 text-sm font-medium text-foreground">{plan.headline}</p>
+      <details className="mt-4 border-t border-atelier-line">
+        <summary className="flex min-h-11 cursor-pointer items-center gap-2 rounded-control text-sm font-medium text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">查看包含的功能</summary>
+        <p className="pb-3 text-sm leading-6 text-muted-foreground">{plan.description}</p>
+        <ul className="space-y-3 pb-2">
+          {plan.features.map(feature => (
+            <li key={feature.code} className="flex items-start gap-2 text-sm text-foreground">
+              {feature.status === 'coming_soon' ? (
+                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-atelier-clay" aria-hidden="true" />
+              ) : (
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
               )}
-            </span>
-          </li>
-        ))}
-      </ul>
+              <span>
+                {feature.label}
+                {feature.status === 'coming_soon' && (
+                  <span className="ml-1 text-xs text-muted-foreground">（規劃中）</span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </details>
 
       {current ? <p className="mt-6 rounded-control bg-atelier-sage-soft px-4 py-3 text-center text-sm font-semibold text-primary">目前使用</p> : plan.actionEnabled && <button
         type="button"

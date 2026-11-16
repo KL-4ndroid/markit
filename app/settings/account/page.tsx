@@ -1,10 +1,12 @@
 'use client';
 
 import { Cloud } from 'lucide-react';
+import Link from 'next/link';
 
 import { AccountSyncPanel } from '@/components/settings/AccountSyncPanel';
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { useRoleContext } from '@/lib/role-context';
+import { accountDeletionWorkflowUiEnabled } from '@/lib/subscription/account-deletion-workflow-gate';
 
 export default function AccountSettingsPage() {
   const { isStaff } = useRoleContext();
@@ -18,6 +20,7 @@ export default function AccountSettingsPage() {
       backHref="/settings"
     >
       <AccountSyncPanel />
+      {accountDeletionWorkflowUiEnabled() && <Link href="/settings/account/deletion" className="mt-6 flex min-h-11 items-center rounded-xl border border-primary/15 bg-white px-4 py-3 text-sm font-medium text-foreground">刪除帳號</Link>}
     </SettingsPageShell>
   );
 }

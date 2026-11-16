@@ -6,6 +6,7 @@ import {
   INITIAL_DEMO_ACTIVITIES,
   INITIAL_DEMO_MARKETS,
   INITIAL_DEMO_PRODUCTS,
+  INITIAL_DEMO_SALES,
 } from '../lib/demo/formal-demo-data';
 
 const root = join(__dirname, '..');
@@ -127,6 +128,7 @@ for (const viewLabel of ['今日', '市集', '商品', '分析', '更多']) {
 assert.match(data, /INITIAL_DEMO_MARKETS/);
 assert.match(data, /INITIAL_DEMO_PRODUCTS/);
 assert.match(data, /INITIAL_DEMO_ACTIVITIES/);
+assert.match(data, /INITIAL_DEMO_SALES/);
 assert.ok(INITIAL_DEMO_MARKETS.length >= 13, 'demo should include a useful market history');
 assert.equal(INITIAL_DEMO_MARKETS.filter(market => market.status === 'operating').length, 1);
 assert.ok(INITIAL_DEMO_MARKETS.filter(market => market.status === 'preparing').length >= 2);
@@ -163,6 +165,9 @@ assert.ok(INITIAL_DEMO_PRODUCTS.some(product => product.unlimitedStock), 'demo s
 assert.ok(INITIAL_DEMO_ACTIVITIES.length >= 10, 'demo should include a useful activity stream');
 assert.ok(INITIAL_DEMO_ACTIVITIES.some(activity => activity.type === 'sale'));
 assert.ok(INITIAL_DEMO_ACTIVITIES.some(activity => activity.type === 'interaction'));
+assert.ok(INITIAL_DEMO_SALES.filter(sale => sale.photoPath).length >= 3, 'demo should include sales with actual photo evidence');
+assert.match(app, /最近成交照片/);
+assert.doesNotMatch(app, /夥伴銷售總覽|夥伴銷售排名|PartnerSalesOverview|partner-sales/);
 assert.match(app, /analyticsMarkets[\s\S]*market\.status === 'ongoing'[\s\S]*market\.status === 'completed'/);
 assert.match(app, /contextLabel=\{sourceMarket\?\.scenarioLabel\}/);
 assert.doesNotMatch(

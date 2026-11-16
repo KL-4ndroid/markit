@@ -1,0 +1,210 @@
+{
+  "version": "096-account-deletion-candidate-v2",
+  "projectRef": "fgejncfsvvsayiequubm",
+  "payloadSha": "c449baff62f39e53b6851e8c1af4e4866ca79baa923b78092eae5c50686cc40e",
+  "sqlSha": "bba0aa472ee7cfe26e6370dbe2a79e91b37f75846bc41f1c99ee29ebd92f8088",
+  "sources": [
+    {
+      "path": "supabase/migrations/071_add_account_deletion_request_foundation.sql",
+      "sha256": "c3eb900e5be36ddf68e8e022bd1c1b2fe02f54f1bd2b629b1b4fcea5505e6e59"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_REQUEST_WORKFLOW_2026_11_01.sql",
+      "sha256": "9eaa029b520f45fdac03c04790c782517ffa2582c78df0e967122b1882ef2bfb"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_ENGINE_2026_11_02.sql",
+      "sha256": "e43accedcc2a06b88eba363f23aa9aebd6042d986724c965025eb1b97c11a759"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_OPERATIONAL_COVERAGE_2026_11_02.sql",
+      "sha256": "5f39e31f2390b3f3e6e24707c86b3d4c4b8d1e79995e125d6b34e654ddb6eb1b"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_BILLING_RETENTION_2026_11_02.sql",
+      "sha256": "04f50ebead655faf1f073c96d4811e869d6cb6fc12f8551a1cfbdd1026aa2057"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_ACCESS_FENCE_2026_11_02.sql",
+      "sha256": "1d794963e10e451d14ca92b786876403c34b173edd91309fff16cb096233216f"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_UPLOAD_BARRIER_2026_11_02.sql",
+      "sha256": "6edf0f8a3f42ef0cc1256006e0fc51e471d6633b3111242d79e4325747cec396"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_UPLOAD_RECONCILIATION_2026_11_02.sql",
+      "sha256": "b29d9e2622869abafa0aad615d611f8ec5ac2cec3e41921cb3f30b1f42971b6c"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_TERMINAL_PUT_2026_11_02.sql",
+      "sha256": "bb20a7f43c6db34f34635e136abf368d97b649318d00c16f5bae3d3dac7ca3bf"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_PHOTO_READBACK_2026_11_02.sql",
+      "sha256": "b185e9818e260f31e997d4578b9ddec807b975453c5b50ef3634e9bd067272c9"
+    },
+    {
+      "path": "lib/subscription/account-deletion-engine.server.ts",
+      "sha256": "2d21da001a751921945606d545bee094fef26d0407cade42e4865d06bd3bb1a0"
+    },
+    {
+      "path": "lib/subscription/account-deletion-engine-adapters.server.ts",
+      "sha256": "00c7ac3d1bed9316580a77003545c04a7985a3d3198845863ee961ab1e7eae97"
+    },
+    {
+      "path": "lib/subscription/account-deletion-upload-barrier.server.ts",
+      "sha256": "da6d7f9187844469f5ab2780d340f889bc33b5436a2835c469e394a9ae0452de"
+    },
+    {
+      "path": "lib/subscription/account-deletion-terminal-put.server.ts",
+      "sha256": "d9b87ebfdfce0d2e7cb8c3fffe7e1ad4cc1da9cc6fb1c281b128bc1f99da2972"
+    },
+    {
+      "path": "lib/subscription/account-deletion-workflow-gate.ts",
+      "sha256": "01e62905955b6cded79b4f52ac3ffb52289744eab6c7c927c9b4421075bf678a"
+    },
+    {
+      "path": "lib/subscription/account-deletion-request-workflow.server.ts",
+      "sha256": "2d9fbeec4b05799419a115011764d3280672abd93c46fd8b2b2284c6357eba91"
+    },
+    {
+      "path": "lib/subscription/account-deletion-billing-engine.server.ts",
+      "sha256": "2a4871bb0d31146b48cebc8754b1e8189e0036661efdf5f4b3f330c3da55076c"
+    },
+    {
+      "path": "lib/subscription/account-deletion-billing-retention.server.ts",
+      "sha256": "6c744f5ffbadee3acb32d72cd3bd134e3000e7824a2b9173d12056f7f6a3c04a"
+    },
+    {
+      "path": "lib/subscription/account-deletion-saga.server.ts",
+      "sha256": "a1d94a066288b01eca811c1141c1376707f86938a3983ef05284b975e1fe6ea8"
+    },
+    {
+      "path": "lib/subscription/account-deletion-access-policy.ts",
+      "sha256": "5b7899104b15955a889faae704658c5a58c61653abb02ab078fde305e1c07546"
+    },
+    {
+      "path": "lib/subscription/account-deletion-data-policy.ts",
+      "sha256": "cdbdfe93cbcb098c6a29378e922c5ad7ba50ff4a6980e589eee71cfbc66a20b1"
+    },
+    {
+      "path": "lib/subscription/photo-upload-readback.server.ts",
+      "sha256": "c20590acfde90ff0a8209483e036d690870175d819667ff67fbf44973a6387bb"
+    },
+    {
+      "path": "lib/subscription/account-deletion-preview-executor.server.ts",
+      "sha256": "5679b99f8ab8aeb21df712e728f9258cb9f22986d56a1150f081ae4ace96dd8f"
+    },
+    {
+      "path": "app/api/product-cover-photo/upload/route.ts",
+      "sha256": "f45b8c29dda5ce2966b81e8ac8cd325379641cc044831a21ffd982b38b07668d"
+    },
+    {
+      "path": "app/api/sales-photo-evidence/upload/route.ts",
+      "sha256": "2f5977d3aec7b7a7c637e8e92604e8f73081566e0eaeb8bae78d524a328a4cab"
+    },
+    {
+      "path": "scripts/lib/account-deletion-candidate-sources.ts",
+      "sha256": "06d653669a47bd4a6e72d69dc2279f5c3234f31bb8c82bce9c8691ddaae139e2"
+    },
+    {
+      "path": "scripts/lib/account-deletion-catalog-fixture.ts",
+      "sha256": "3a53bed2af05ac9aea391aefbfe0dd1da5394c32f1eeb572407cb293458b2a8f"
+    },
+    {
+      "path": "scripts/lib/account-deletion-access-fixture.ts",
+      "sha256": "4f240d74fd4a67fa342423be4e4f344c0c80399e4feb67b1518075509703cea1"
+    },
+    {
+      "path": "scripts/lib/account-deletion-candidate-services.ts",
+      "sha256": "44ffead53732b0889a03fd809a6402b55fcc4e750dce2dd93df852c1e88629e8"
+    },
+    {
+      "path": "scripts/lib/account-deletion-photo-handler-checks.ts",
+      "sha256": "720ae200b0160fe905ab44dbb84ac13b8e54da502500c713b424b36b8afd8c17"
+    },
+    {
+      "path": "scripts/verify-account-deletion-upload-race.ts",
+      "sha256": "9c64941ddf4abbc8782eea1d3e65ba92d2c8ae5d35e8019266289587566dd9a2"
+    },
+    {
+      "path": "docs/subscription/evidence/account-deletion-guards-2026-11-02.json",
+      "sha256": "c5a4255bfa8ecbbb863edc5842a826699316f005678a07193e6afc3c8a9d02e6"
+    },
+    {
+      "path": "docs/subscription/evidence/account-deletion-access-definitions-2026-11-02.json",
+      "sha256": "6d2e2c35e3892aa1c14981076639e1b9307ea86a7dda81df08f04bc9d3c769a9"
+    },
+    {
+      "path": "docs/subscription/evidence/account-deletion-catalog-2026-11-02.json",
+      "sha256": "571c35a188bf49e70d13eda373439e96fb8fb448656d50027705a3ff67932fa4"
+    },
+    {
+      "path": "scripts/lib/account-deletion-migration.ts",
+      "sha256": "2830bbfb5d6763f5ef9d849c7201f9941196351328bcfee0d5f31de0122b8238"
+    },
+    {
+      "path": "scripts/prepare-account-deletion-migration.ts",
+      "sha256": "542a3fb620a8dc25276b9368a5f7abfa549fdd0f1bf4270f680c6ddd307dadaf"
+    },
+    {
+      "path": "scripts/lib/account-deletion-managed-target.ts",
+      "sha256": "a1b79e2e3c8d38c4503530ab2e67b9531e3e7af2e407cb05741adb0697ae8876"
+    },
+    {
+      "path": "scripts/account-deletion-managed-migration.ts",
+      "sha256": "3a4e66707f3d2a0378d0abee72dda365dd38bdaddd393c325ba4e8021eb533c6"
+    },
+    {
+      "path": "tests/account-deletion-managed-target.test.ts",
+      "sha256": "5b65a931310eaf16d197d5385a1ede283d88b4ced04db9c90b4d9403c307e787"
+    },
+    {
+      "path": "scripts/account-deletion-test-prg-migration.ts",
+      "sha256": "bda38bedaccc6e67a92cc968a5b00c1d4ab7f2e9ccdc6af351155afa0aae0a05"
+    },
+    {
+      "path": "scripts/lib/account-deletion-test-prg-upgrade.ts",
+      "sha256": "ca55dd14a58f2aacf92ae322af0d535716f36bafea9e3c45d8dcf2e2f39892e4"
+    },
+    {
+      "path": "scripts/prepare-account-deletion-test-prg-rollback.mjs",
+      "sha256": "052edc4e1551636dd80ad5a7ae6a9a335d38b30ab1b7c899afbe26a4ba0bbc53"
+    },
+    {
+      "path": "scripts/verify-account-deletion-test-prg-upgrade.ts",
+      "sha256": "508d7aee3e6e697eff20708db7f18f223e84dfd5fe78914af95d3d4df765eb50"
+    },
+    {
+      "path": "docs/subscription/drafts/ACCOUNT_DELETION_TEST_PRG_SCOPE.sql",
+      "sha256": "b55c5ba203b2505e2a1d2bd09aba620da6c48fad82b0f03b45d0622c378d514a"
+    },
+    {
+      "path": "scripts/lib/account-deletion-test-prg-preview.ts",
+      "sha256": "948085dff207a657e31ab1fc75616728b830e4c2888f929541e1fa0c1fdde1f3"
+    },
+    {
+      "path": "scripts/prepare-account-deletion-test-prg-preview.ts",
+      "sha256": "3f2c448f7f1a0a18becf056b61af7d9db25ebd7c5e2b6246c691290359c862a6"
+    },
+    {
+      "path": "scripts/account-deletion-test-prg-preview-tick.ts",
+      "sha256": "05f1ced5dc8a855a6d501802ac05a13958e8a5a9dcf5a2eb36de7ddec8bee93c"
+    },
+    {
+      "path": "supabase/migrations/095_scope_snapshot_rpcs_to_owner.sql",
+      "sha256": "faa42015cad073e526bdd64cfd373b7fd28d5c3f5922bae77713b6dfe86d997c"
+    },
+    {
+      "path": "scripts/verify-account-deletion-migration.ts",
+      "sha256": "23c3a673aa4f4606c64811eea180579ae5e98cba0b4f5c59ba4775a190303315"
+    }
+  ],
+  "runtimeEnabled": false,
+  "remoteExecutionApproved": false,
+  "status": "transactional_migration_candidate_requires_target_review",
+  "baseline": "captured catalog plus independently deployed 095",
+  "runtimeGuard": "SQL CHECK prohibits enablement by row update; no release adapter, target or credentials installed",
+  "remoteTarget": "fixed authenticated HTTPS Supabase project query route; transaction-local SQL acknowledgements are not identity proof; remote execution remains unapproved and untested"
+}

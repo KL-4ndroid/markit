@@ -40,6 +40,7 @@ import {
 } from '@/lib/supabase/sales-photo-evidence-metadata-claim-repository';
 import type { SalesPhotoEvidenceUploadMetadataRepository } from '@/lib/supabase/sales-photo-evidence-metadata-claim-repository';
 import { createSalesPhotoEvidenceServerMutationRepository } from '@/lib/supabase/sales-photo-evidence-server-mutation-repository.server';
+import {beginConfiguredDeletionUpload,type DeletionUploadSession} from '@/lib/subscription/account-deletion-upload-barrier.server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -50,6 +51,7 @@ type SalesPhotoEvidenceUploadRouteActor = {
 };
 
 export type SalesPhotoEvidenceUploadRouteDeps = {
+  beginDeletionUpload?(actorId:string,ownerId:string):Promise<DeletionUploadSession|null>;
   authorizeSubscriptionWrite?(actorId: string, ownerId: string): Promise<SubscriptionWriteDecision>;
   isMetadataClaimEnabled(): boolean;
   isR2UploadEnabled?(): boolean;
@@ -302,11 +304,13 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
 
   async function compensateConfirmedR2Uploads(
     adapter: SalesPhotoEvidenceR2UploadAdapter,
-    objectKeys: readonly string[]
+    objectKeys: readonly string[],
+    barrier?:DeletionUploadSession|null
   ): Promise<{ cleanupIncomplete: boolean }> {
     let cleanupIncomplete = false;
 
     for (const key of objectKeys) {
+      if(barrier?.canCompensate&&!barrier.canCompensate(key))continue;
       try {
         const result = await adapter.deleteObject({ key });
         if (!result.ok) {
@@ -332,6 +336,7 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       }
     }
 
+    if(cleanupIncomplete)barrier?.uncertain();
     return { cleanupIncomplete };
   }
 
@@ -381,6 +386,13 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       deps.createRepository(request),
       mutationRepository
     );
+    const uploadBarrier=await deps.beginDeletionUpload?.(actor.actorId,body.ownerId)??null;
+    try {
+    if(uploadBarrier?.readback){
+      let replay;try{replay=await uploadBarrier.readback({kind:'sale',entityId:body.saleEventId,marketId:body.marketId,width:body.imageMetadata.width,height:body.imageMetadata.height,image:body.image,thumbnail:body.thumbnail});}catch{return jsonResponse({ok:false,code:'photo_readback_unavailable',shouldKeepLocalPayload:true},503);}
+      if(replay==='confirmed')return jsonResponse({ok:true,action:'upload_completed',status:'uploaded',replayed:true,shouldDeleteLocalPayloadAfterSuccess:true,shouldRetryWithLocalPayload:false},200);
+      if(replay!=='absent')return jsonResponse({ok:false,code:replay==='pending'?'photo_upload_requires_review':'photo_upload_conflict',shouldKeepLocalPayload:true,shouldRetryWithLocalPayload:false,retryable:false},409);
+    }
     const result = await executeSalesPhotoEvidenceMetadataClaimAdapter({
       actorId: actor.actorId,
       actorRole: actor.actorId === body.ownerId ? 'owner' : 'staff',
@@ -398,6 +410,7 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       return mapClaimResultToResponse(result);
     }
     if (result.action !== 'metadata_claim_created' && result.action !== 'metadata_claim_reused') {
+      uploadBarrier?.uncertain();
       return mapClaimResultToResponse(result);
     }
 
@@ -420,8 +433,14 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       kind: 'thumbnail',
       extension: thumbnailContentType === 'image/jpeg' ? 'jpg' : 'webp',
     });
+    await uploadBarrier?.bind({kind:'sale',entityId:row.id,keys:[imageObjectKey,thumbnailObjectKey],writeKeys:[imageObjectKey,thumbnailObjectKey],expected:{attemptId:uploadAttemptId}});
+    const put=(input:Parameters<SalesPhotoEvidenceR2UploadAdapter['uploadObject']>[0])=>{
+      const operation=()=>r2UploadAdapter.uploadObject(input);
+      const recorded=async()=>{if(!await uploadBarrier!.writeObject!(input.key,input.body,input.contentType))throw Error('photo_write_failed');return {ok:true as const,key:input.key};};
+      return (uploadBarrier?.writeObject?recorded():uploadBarrier?uploadBarrier.put(input.key,operation):operation()).catch(()=>({ok:false as const,key:input.key,code:'r2_upload_failed' as const,message:'Photo write stopped.'}));
+    };
 
-    const imageUpload = await r2UploadAdapter.uploadObject({
+    const imageUpload = await put({
       key: imageObjectKey,
       body: body.image,
       contentType: imageContentType,
@@ -463,14 +482,14 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
           code: 'r2_upload_failed' as const,
           message: 'Controlled sales photo evidence thumbnail upload failure.',
         }
-      : await r2UploadAdapter.uploadObject({
+      : await put({
           key: thumbnailObjectKey,
           body: body.thumbnail,
           contentType: thumbnailContentType,
           contentLength: body.thumbnailMetadata.fileSizeBytes,
         });
     if (!thumbnailUpload.ok) {
-      const cleanup = await compensateConfirmedR2Uploads(r2UploadAdapter, [imageObjectKey]);
+      const cleanup = await compensateConfirmedR2Uploads(r2UploadAdapter, [imageObjectKey],uploadBarrier);
       await markUploadFailedIfPossible(row, 'r2_thumbnail_upload_failed', repository);
       recordServerOperationalEvent({
         level: 'error',
@@ -514,7 +533,9 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
     };
 
     let finalWriteAccess: SubscriptionWriteDecision | undefined;
+    let finalizeStarted=false;
     try {
+      await uploadBarrier?.assertActive();
       finalWriteAccess = await deps.authorizeSubscriptionWrite?.(actor.actorId, row.ownerId);
       if (finalWriteAccess && !finalWriteAccess.allowed) throw new Error('entitlement_changed');
       if (
@@ -523,12 +544,14 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       ) {
         throw new Error('Controlled sales photo evidence metadata finalize failure.');
       }
+      finalizeStarted=true;
       await repository.finalizeEvidenceUploaded(finalizeInput);
     } catch (error) {
+      if(uploadBarrier&&finalizeStarted){uploadBarrier.uncertain();return jsonResponse({ok:false,code:'upload_result_unconfirmed',shouldKeepLocalPayload:true},503);}
       const cleanup = await compensateConfirmedR2Uploads(r2UploadAdapter, [
         thumbnailObjectKey,
         imageObjectKey,
-      ]);
+      ],uploadBarrier);
       await markUploadFailedIfPossible(row, 'metadata_finalize_failed', repository);
       recordServerOperationalEvent({
         level: 'error',
@@ -578,6 +601,7 @@ export function createSalesPhotoEvidenceUploadRouteHandlers(deps: SalesPhotoEvid
       shouldDeleteLocalPayloadAfterSuccess: true,
       shouldRetryWithLocalPayload: false,
     }, 200);
+    }finally{await uploadBarrier?.finish();}
   }
 
   return {
@@ -662,6 +686,7 @@ async function createDefaultR2UploadAdapter(): Promise<SalesPhotoEvidenceR2Uploa
 }
 
 const routeHandlers = createSalesPhotoEvidenceUploadRouteHandlers({
+  beginDeletionUpload: (actorId,ownerId)=>beginConfiguredDeletionUpload(actorId,ownerId),
   authorizeSubscriptionWrite: (actorId, ownerId) => checkServerSubscriptionWrite({ actorId, ownerId, feature: 'sales_photo' }),
   isMetadataClaimEnabled: isMetadataClaimRouteEnabled,
   isR2UploadEnabled: isR2UploadRouteEnabled,

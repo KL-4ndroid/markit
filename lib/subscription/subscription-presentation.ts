@@ -19,6 +19,7 @@ export interface PlanPreview {
   id: PlanType;
   name: string;
   priceLabel: string;
+  headline: string;
   description: string;
   audience: string;
   availability: 'preview';
@@ -52,17 +53,17 @@ export type AccountCapabilitySourcePresentation = {
 };
 
 const PLAN_FEATURE_LABELS: Record<SubscriptionPlanFeatureCode, string> = {
-  'core.market_operations': '市集安排、報名、錄取、繳費與私人心得',
+  'core.market_operations': '市集安排、報名與繳費、設備與抽成條件、私人心得',
   'core.sales_recording': '快速成交與收攤後總額記錄',
   'core.product_catalog': '文字商品目錄與庫存資料',
   'core.cloud_sync': '文字與事件資料同步',
-  'analytics.basic': '單場成果、基本月摘要與選填現金對帳',
+  'analytics.basic': '固定成本、抽成金額、估計淨利、基本月摘要與選填現金對帳',
   'analytics.advanced': '跨市集比較與商品決策建議',
   'report.settlement_preview': '完整週／月結算報告（網頁閱讀）',
   'report.pdf': 'PDF 選用匯出',
   'report.excel': 'Excel 報表',
   'photo.product_cover': '商品封面照片',
-  'photo.sales_evidence': '成交照片證據',
+  'photo.sales_evidence': '成交照片與待補照片',
   'team.staff_collaboration': '正式員工協作',
   'team.manager_workflow': 'Manager 分工流程',
 };
@@ -85,7 +86,6 @@ const PLAN_PREVIEW_FEATURES: Record<AccountPlanCode, readonly SubscriptionPlanFe
     'team.staff_collaboration',
     'team.manager_workflow',
     'photo.sales_evidence',
-    'report.settlement_preview',
   ],
 };
 
@@ -101,6 +101,7 @@ function buildPlanPreview(planCode: AccountPlanCode): PlanPreview {
     id: planCode,
     name: definition.displayName,
     priceLabel: PLAN_PRICE_LABELS[planCode],
+    headline: { free: '安排市集與出攤準備', pro: '記錄與核對每一場生意', team: '比較經營成果與團隊分工' }[planCode],
     description: definition.description,
     audience: definition.audience,
     availability: 'preview',

@@ -49,9 +49,9 @@
 - iOS 包裝已準備繁中與英文的桌面顯示名稱、相機與照片權限文案、圖示及啟動圖。Mac 簽署建置後，須依實機語言驗證顯示名稱、圖示、啟動畫面及安裝更新。英文顯示名稱已準備給原生系統和商店，App 內現有介面仍為繁中。
 - [繁中商店草稿](../subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.json)與[英文商店草稿](../subscription/NATIVE_STORE_LISTING_METADATA_EN_US.json)已更新。最終以簽署候選版擷取商店截圖，再於 App Store Connect／Google Play Console 檢核文案、審查資訊和公開連結。
 - Web 發布時使用現有網址，核對客服環境設定 `NEXT_PUBLIC_SUPPORT_EMAIL`、各公開入口與既有登入及安裝資料。獨立官網、託管郵件模板與自訂網域需在各自的部署來源處理。
-- [正式上架任務矩陣](../LAUNCH_EXECUTION_TASKS_2026_08_09.json)將 `IOS-BRAND-ROLLOUT` 列為 `IOS-STORE-ASSETS` 與 `IOS-PAID-RELEASE` 的前置條件。刪帳候選版的發布由原工作分支追蹤。
+- [正式上架任務矩陣](../LAUNCH_EXECUTION_TASKS_2026_08_09.json)將 `IOS-BRAND-ROLLOUT` 列為 `IOS-STORE-ASSETS` 與 `IOS-PAID-RELEASE` 的前置條件。刪帳發布狀態沿用其[獨立交付計畫](../subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md)。
 
 ## 本機驗收紀錄
 
-- 正式 Web 建置與行動靜態輸出檢查通過。以 Chrome 手機尺寸核對首頁、登入視窗、關於、隱私、條款、客服和展示首頁。從正式建置擷取 [PWA 安裝預覽](../../public/screenshots/home.png)。
+- 正式 Web 建置與行動靜態輸出檢查通過。以 Chrome 手機尺寸核對首頁、登入視窗、關於、隱私、條款、客服、帳號刪除說明和展示首頁。從正式建置擷取 [PWA 安裝預覽](../../public/screenshots/home.png)。
 - iOS 模板測試涵蓋桌面名稱、語系資源、權限說明、圖示與啟動圖。商店草稿檢查依目前權益將完整結算報告和 PDF 列在高階版。PDF 樣板、繁中字型、PWA 與公開客服測試通過。

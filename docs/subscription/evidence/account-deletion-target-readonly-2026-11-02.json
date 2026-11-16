@@ -1,0 +1,172 @@
+{
+  "observedAt": "2026-11-02T11:52:58.911889+00:00",
+  "scope": "read-only production metadata and dashboard configuration review; no install, cloud object/auth/config mutation, permission expansion or cleanup",
+  "projectRef": "fgejncfsvvsayiequubm",
+  "sqlEditorProjectAndProductionBranchObserved": true,
+  "sqlQuerySource": "supabase/verification/096_account_deletion_target_readonly.sql",
+  "sqlEditorQueryId": "76906821-536d-42be-87bd-55d117e25d9f",
+  "catalog": {
+    "observedAt": "2026-11-02T11:32:43.715631+00:00",
+    "csvSha256": "c34803bba704eac66ceac941ff184d15fd1851ff043c3f13c82cfc84909d4ae6",
+    "rows": 180,
+    "expectedIdentityLabelIsNotProof": true,
+    "target": {
+      "database": "postgres",
+      "observedAt": "2026-11-02T11:32:43.715631+00:00",
+      "sessionUser": "postgres",
+      "serverVersion": "17.6",
+      "engineInstalled": false,
+      "releaseInstalled": false,
+      "projectRefSetting": null,
+      "providerRefSetting": null
+    },
+    "relationsChecked": 45,
+    "routinesChecked": 134,
+    "baselineMatches": true,
+    "differences": [],
+    "unexpectedObjects": [],
+    "compared": [
+      "columns",
+      "constraints",
+      "trigger definitions and enabled state",
+      "RLS and policies",
+      "relation grants",
+      "views",
+      "owner and options",
+      "routine source MD5",
+      "routine grants/config/security/language"
+    ],
+    "baselineFiles": [
+      {
+        "path": "docs/subscription/evidence/account-deletion-catalog-2026-11-02.json",
+        "sha256": "571c35a188bf49e70d13eda373439e96fb8fb448656d50027705a3ff67932fa4"
+      },
+      {
+        "path": "docs/subscription/evidence/account-deletion-access-definitions-2026-11-02.json",
+        "sha256": "6d2e2c35e3892aa1c14981076639e1b9307ea86a7dda81df08f04bc9d3c769a9"
+      }
+    ],
+    "snapshot095ScopeAndGrantsMatch": true
+  },
+  "vercel": {
+    "projectId": "prj_dWZtQILgK88xXK0CA2x4xtH80DJN",
+    "teamId": "team_unaNhyTnsu4mWsnTcbmShoVR",
+    "deploymentId": "dpl_7RJsX8sd4pQMsBRBuQYjPUZCr2f4",
+    "target": "production",
+    "state": "READY",
+    "productionCommit": "3638b91",
+    "healthStatus": 200,
+    "deletionGetStatus": 501,
+    "deletionGetCode": "account_deletion_disabled",
+    "currentProjectSettings": {
+      "supabaseUrlMatchesExpectedProject": true,
+      "r2EndpointMatchesCloudflare": true,
+      "r2EndpointSha256": "87f2a86a63f1ec243c4b2d652b29babd9240f0bca85b0be42845a82f3d240551",
+      "endpointScope": "all environments",
+      "productionBucketType": "Secret",
+      "productionBucketLiteralReadBack": false,
+      "allDeletionEnableFlagsAbsentFromProductionVariableList": true
+    },
+    "settingsAreNotDeployedRuntimeTargetAttestation": true,
+    "connector": "project tools returned not_found; authenticated explicitly scoped CLI and authenticated dashboard used",
+    "mailVerificationCompletedByUser": true
+  },
+  "r2": {
+    "observedAt": "2026-11-02T11:42:02.143935+00:00",
+    "comparedAt": "2026-11-02T11:42:06.891Z",
+    "source": "Cloudflare authenticated dashboard list + bounded database SELECT; no S3 calls",
+    "bucket": "markit-media-production",
+    "totalSizeDisplay": "6.45 KB",
+    "metadata": {
+      "product_cover_photos": {
+        "rows": 1,
+        "statuses": {
+          "uploaded": 1
+        },
+        "activeLeases": 0
+      },
+      "sale_photo_evidence": {
+        "rows": 23,
+        "statuses": {
+          "uploaded": 10,
+          "expired": 12,
+          "upload_failed": 1
+        },
+        "activeLeases": 0
+      }
+    },
+    "metadataStable": true,
+    "analysis": {
+      "comparisonComplete": true,
+      "referencedKeys": 22,
+      "matchedKeys": 2,
+      "invalidOwnerReferences": 0,
+      "sharedOwnerReferences": 0,
+      "uploadedReferencesNotListed": 20,
+      "pastExpiryUploadedReferencesNotListed": 20,
+      "otherReferencesNotListed": 0,
+      "unreferencedObjects": 0,
+      "agedUnreferencedCandidates": 0,
+      "recentUnreferencedObjects": 0,
+      "unclassifiedObjects": 0
+    },
+    "productionTargetVerified": false,
+    "objectAbsenceVerified": false,
+    "multipartVerified": false,
+    "deletionAuthorized": false,
+    "productionDeletionEnabled": false,
+    "dashboardSettings": {
+      "publicAccessEnabled": false,
+      "customDomains": 0,
+      "bucketLockRules": 0,
+      "localUploadsEnabled": false,
+      "onDemandMigrationEnabled": false,
+      "objectAccessLoggingEnabled": false,
+      "lifecycle": [
+        {
+          "prefix": "sales-evidence/7d/",
+          "deleteAfterDays": 7,
+          "enabled": true
+        },
+        {
+          "prefix": "sales-evidence-thumbs/7d/",
+          "deleteAfterDays": 7,
+          "enabled": true
+        },
+        {
+          "prefix": "all",
+          "abortMultipartAfterDays": 7,
+          "enabled": true
+        }
+      ]
+    },
+    "apiCredentialPermissionRechecked": false
+  },
+  "operatorFacts": {
+    "confirmedDate": "2026-11-02",
+    "operatorBackupsOrCopies": "none confirmed by user",
+    "accountDeletionCanBeRecovered": false,
+    "publicMailbox": "stallight.days@gmail.com",
+    "mailboxReceipt": "user confirmed normal receipt",
+    "agentSentTestEmail": false,
+    "supportResponseWorkflowDocumented": false,
+    "providerBackupDashboard": "Free Plan does not include project backups",
+    "providerInternalRetentionProvenAbsent": false
+  },
+  "decision": {
+    "install096Now": false,
+    "enableDeletionNow": false,
+    "currentManagedGuardAvailable": false,
+    "requiredChanges": [
+      "replace unprovided DB project-ref setting dependency with independently verified control-plane/TLS target binding; do not forge setting",
+      "add private deployed-runtime target comparison without returning secrets",
+      "review dormant migration install order and controlled DDL window",
+      "complete remote writer protection and controlled integrated acceptance before enabling deletion"
+    ]
+  },
+  "references": [
+    "https://supabase.com/docs/reference/api/v1-run-a-query",
+    "https://supabase.com/docs/guides/database/connecting-to-postgres",
+    "https://supabase.com/docs/guides/platform/backups"
+  ]
+}

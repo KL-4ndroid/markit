@@ -57,3 +57,6 @@
 *.woff2        binary
 *.ttf          binary
 *.eot          binary
+# Generated candidate embeds reviewed function bodies verbatim; preserve their
+# trailing spaces. Payload/source hashes enforce integrity for this one artifact.
+docs/subscription/candidate/096_account_deletion_candidate.sql whitespace=-blank-at-eol

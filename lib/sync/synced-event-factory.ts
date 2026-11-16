@@ -6,7 +6,7 @@ export function createCanonicalSyncedEvent(rawEvent: Record<string, unknown>): E
     id: rawEvent.id as string,
     type: rawEvent.type as Event['type'],
     payload: rawEvent.payload as Event['payload'],
-    actor_id: rawEvent.actor_id as string | undefined,
+    actor_id: typeof rawEvent.actor_id === 'string' ? rawEvent.actor_id : undefined,
     market_id: rawEvent.market_id as string | undefined,
     timestamp: new Date(rawEvent.timestamp as string).getTime(),
     sync_status: 'synced',

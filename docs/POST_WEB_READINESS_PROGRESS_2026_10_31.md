@@ -1,5 +1,62 @@
 # 後續收尾進度：財務一致性、線上與 iOS 前置
 
+## 2026-11-02 整合候選：同版 22 組通過，正式資格仍未齊
+
+[唯一整合交付／結果／未完成清單](subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md)。同張照片真讀回／零重複 PUT、最小 unknown 審查清單、進度校正、SQL 指紋套件與公開草案頁完成；真 GoTrue／PostgREST＋captured SQL＋既有 handler＋loopback S3 共 22 組通過，清理合成 owner 十步及 Auth hard delete 驗證。正式可重跑 migration、遠端整套與 unknown／legacy 正式處置仍需工程，備份／客服承接待外部確認；候選部署不等於 production 刪除開放。以下歷史「下一步」以本次集中清單為準，不要求重跑既有 Web／PDF 大矩陣。
+
+
+## 2026-11-02 商品／成交 handler 回條接入：本機 16 組通過
+
+[本批結果與下一步](subscription/ACCOUNT_DELETION_PHOTO_HANDLER_RECEIPTS_2026_11_02.md)：兩個既有 handler 以預設關閉的 receipts gate 使用單次 writer；成功、補償失敗、未知 PUT、finalize／ack 遺失、412 保護及回應前 freeze 共 14 條分支，加設定邊界與單筆核對共 16 組整合通過。實際 claim／finalize／freeze SQL 與 loopback S3 SDK 執行，auth／plan gate 為測試注入。只清理本次已確認建立的物件；已提交成功照片保留，其他 unknown attempt 仍阻擋清理。舊 handler／coordinator 回歸、TypeScript／lint／Web build 通過，容器與 HTTP server 清理。沒有 staging／正式照片、雲端 SQL／Auth／設定變更，未提交發布，正式刪除仍關閉。下一步補同張照片的安全讀回／重送，避免已成功但持續重試；再處理正式 migration／target／所有 producers 強制接入。
+
+## 2026-11-02 單次 PUT 回條：HTTP／SQL／真 staging R2 通過
+
+[本批證據與界線](subscription/ACCOUNT_DELETION_TERMINAL_PUT_2026_11_02.md)：原 upload registry 上新增單次 create-only SDK PUT、intent／成功回條、target 指紋與 DB-backed drain。5 組真 loopback HTTP／SDK／SQL 及 3 組真 staging R2 通過，包含 freeze 後完成、SQL ack／producer HTTP 回應遺失、假 digest／錯誤 target 拒絕。未知 R2 回應即使 HEAD 404 或逾期仍不放行。唯一 staging marker 已 DELETE／HEAD 確認不存在，兩個隔離 DB／HTTP servers 清理；相關型別／lint／單測通過。正式商品／成交 handler 尚未接入，新 writer 拒絕 production bucket；未改正式資料、雲端 SQL／Auth／設定，未提交發布，正式刪除／AD4 保持關閉。下一步接入兩個既有 handler 的本機預設關閉模式；不重跑既有 Web／PDF／效能／帳務大矩陣。
+
+## 2026-11-02 uncertain 核對與恢復：隔離核心完成
+
+[本批流程與限制](subscription/ACCOUNT_DELETION_UPLOAD_RECONCILIATION_2026_11_02.md)：重用 upload registry／凍結／原 manifest，新增內部 prepare／commit、可信停止證據契約、逐 key 觀察、metadata CAS 與原子回條，解除經核對的單筆阻擋。10 組真實隔離 SQL 包含雙連線競爭、等待鎖時到期、真 finalize 成功但回應遺失、核對 ack 重試及員工跨品牌保留；相關單測／TypeScript／ESLint 通過，容器移除。未綁定／舊版未知 claim 仍須審查；正式停止證據 adapter 未實作，fixture 不能用於正式解除。無雲端 SQL／R2／Auth／設定變更、未提交發布，正式刪除維持關閉。下一步是可查驗的 producer 終止證據及真 HTTP＋staging R2 整合，不重跑既有 SQL／效能／Web／PDF 大矩陣。
+
+## 2026-11-02 在途上傳／凍結協調：本機修補完成
+
+[本批紀錄](subscription/ACCOUNT_DELETION_UPLOAD_BARRIER_2026_11_02.md)：商品／成交上傳在 claim 前登記，逐 PUT／finalize 授權；凍結後等待已發出的 PUT 結束，manifest 納入舊／新 key。未知結果、過期 open attempt 及補償失敗皆不自動放行。員工刪帳保留其他品牌的 key、移除 actor 歸屬。另修正商品舊圖清理失敗誤刪新圖及同 key replay。8 組真隔離 PostgreSQL、商品 9 handler 情境、成交既有 28 加新 6 情境、相關單測／TypeScript／ESLint／Web build 通過。R2 為 deferred/stub，沿用前批真 staging 證據；未改雲端 SQL／正式照片／設定、未提交發布，正式刪除仍關閉。下一步為 uncertain 核對／恢復，之後才審查 production 接入與真 HTTP＋R2 競爭；不再重跑既有大矩陣。
+
+## 2026-11-02 真實 staging R2：8 組完成，測試物件已清除
+
+[驗證與限制](subscription/ACCOUNT_DELETION_R2_LIVE_STAGING_2026_11_02.md)：staging 專用 exact-key／run metadata probe 建立 3 個 marker，真實 HEAD／conditional PUT 412／錯誤簽章 403／DELETE／404、原 executor 搭配 fixture 租約與 ack 遺失、跨 actor 保護通過。最後所有嘗試建立的 key 均確認不存在；沒有正式照片、SQL、Auth 或權限變更。原 adapter 仍 loopback-only，正式刪除仍關閉。已驗證不存在的 key 仍可被有寫權限的 client 重建，故下一批聚焦既有 server PUT 在凍結後完成的競爭；不把本批當成整體刪除／Gate 2／AD4 完成。既有 SQL、Web／PDF／登入效能矩陣不重跑。
+
+## 2026-11-02 R2 唯讀盤點：本機配置已查，正式目標仍待確認
+
+最新續記：[Cloudflare 實體清單比對](subscription/ACCOUNT_DELETION_R2_INVENTORY_2026_11_02.md#最新結果cloudflare-登入後的實體物件比對)完成：`markit-media-production` 有 4 個物件，全部對應 DB、無未到期引用不符／無引用物件；18 個未列出的 key 全已過期，不能誤報成目前照片遺失。已確認成交原圖／縮圖 7 天刪除及 multipart 7 天中止規則，未修改設定。API credential 對 production 為 403，使用合法登入 dashboard 清單＋同一分析器比對，不讀金鑰、不擴權、不下載照片。部署 Secret 值、production multipart／HEAD／備份及真刪除仍未完成；下一個獨立切片為 staging 可丟棄前綴真 R2 測試。下段為前一次登入前歷史。
+
+後續管理頁核對已確認：使用者完成 Vercel 二次驗證後，共用 endpoint 與本機一致；pre-production bucket 明確為 `markit-sales-photo-staging`，也與本機一致。Production bucket 仍是不可讀回的 Secret，不能用 staging 空桶推定正式照片狀況。對應 Cloudflare R2 管理頁已開啟，目前需使用者登入或提供非密鑰的正式 bucket 名稱。沒有下載環境檔、讀密鑰或改設定。原始碼也確認現有照片走 server PUT，不應把尚未實作的 presigned URL 工作列成現階段必做；下一批應聚焦現有上傳 lease 的凍結競爭。
+
+[本批結果與限制](subscription/ACCOUNT_DELETION_R2_INVENTORY_2026_11_02.md)：完成有界 metadata／R2 objects／multipart／HEAD 比對工具及針對性測試。DB 1 筆商品照片＋10 筆成交照片 uploaded、22 keys；本機配置指向的 R2 完整列舉為空，10 個抽樣 HEAD 404，lifecycle 403。正式部署目標尚未核對，不能宣稱照片遺失或孤兒清理完成；正式環境設定下載操作遭自動核准審查拒絕。未刪照片、未改配置／權限、未啟用正式刪除；下一步先確認正式 bucket／endpoint 及唯讀資訊，再沿用同一工具。既有 SQL／帳務／Web／PDF／效能矩陣不重跑。
+
+## 2026-11-02 刪除引擎第四批：完整來源存取凍結隔離完成
+
+[134 函式／5 檢視／45 原觸發器與相容性紀錄](subscription/ACCOUNT_DELETION_ACCESS_FENCE_2026_11_02.md)：逐一分類與 outer guard、保留員工金額遮罩、精確 lease／actor／next-step、匿名化例外及存取 manifest，19 組營運／權限與 16 組帳務整合通過。TypeScript、純邏輯／生成器及 ESLint 通過，容器已清除；未重跑 Web／PDF／登入效能或真 Auth／R2。另既有 snapshot RPC 跨帳號隱私風險以 095 獨立修補，已套用雲端並核對定義／權限，未讀取快照內容或執行清理。其餘凍結 SQL 仍 local-only、未提交／發布；正式刪除仍關閉，AD4 ready=false、13 blockers。不需使用者手動 SQL。下一個切片為真實 R2 範圍／孤兒／在途物件證據；直接 service-role 基表查詢及 managed Auth trigger 等完整發布整合仍待驗證。
+
+## 2026-11-02 刪除引擎第三批：帳務分離／保留到期的隔離切片完成
+
+[實作、安全界線與 14 組結果](subscription/ACCOUNT_DELETION_BILLING_ENGINE_2026_11_02.md)：沿用最小化契約，實作 private subject-only 保留區、prepare/stage/detach、來源 hash 變更拒絕、原 ledger guard 的受限 DELETE 例外與整批回復；provider ref 退役／key version、來源指標分類與 absence 回條、明確 review、legal hold／revision／DB-clock purge／冪等回條也已完成隔離驗證。既有 7 組營運回歸及純邏輯、TypeScript、ESLint 通過。未執行雲端 SQL、真商店扣款／取消、真 blob／vault 或公開 worker；後續通知的匿名帳務 ingress、所有 RPC/view/trigger fence、原生商店及正式發布仍未完成。下一個切片是 RPC/view 凍結相容性，不重跑已完成帳務矩陣。未提交／發布，不需手動 SQL。
+
+## 2026-11-02 刪除引擎第二批：部署結構對照與營運清理
+
+[新實作與分開列示的未完成項目](subscription/ACCOUNT_DELETION_OPERATIONAL_COVERAGE_2026_11_02.md)：已透過 Supabase SQL Editor 唯讀取得 40 表／5 view／134 函式，建立 45 relation 分類與真欄位／FK／CHECK fixture，補 archive、snapshot、雲端 pending、邀請、範本、心得、盤點、財務核對及固定安排清理順序。7 組新 SQL 案例、原 engine 10 組回歸、帳務最小化／跨帳號／null actor 測試、工具型別與 ESLint 通過。沒有雲端 DDL/DML 或正式 worker。帳務 detach／purge 仍待實作，本批只有專用 subject／HMAC 輸出契約；全部 RPC/view/投影 trigger fence、真 R2 與正式發布仍未完成。未提交／發布，不需手動 SQL。已完成的 public catalog／營運切片不再重開。
+
+## 2026-11-02 刪除引擎：隔離版完成，正式站保持關閉
+
+[設計與 10 組新整合結果](subscription/ACCOUNT_DELETION_ENGINE_2026_11_02.md)：沿用 saga 建立逐步執行層、資料庫 lease fence／收據、每批 20 個物件進度、員工匿名化及 Auth 最後刪除。真實可丟棄 PostgreSQL／GoTrue 通過員工與老闆刪帳、session 清除、遺失回條、部分物件失敗、403 不冒充 absence、交易回復、跨 owner 保護、帳務／未知 schema 停止與 DB 重啟。S3 是 loopback HTTP 協定替身，未使用真 R2；isolated schema 明確拒絕正式 DB，沒有新增正式 worker／排程。尚須實際 catalog 逐表補齊、帳務保留與 subject 遷移、真 R2／孤兒物件及全部 API fence，AD4 仍 ready=false。未提交／發布，不需要手動 SQL。原有申請整合維持結案，未重跑效能／PDF／UI 矩陣。
+
+## 2026-11-01 帳號刪除第二批：真實本機整合完成，未正式啟用
+
+[同一計畫的真實整合結果](subscription/ACCOUNT_DELETION_REQUEST_WORKFLOW_2026_11_01.md#第二批真實本機-supabase-整合2026-11-01)：真實本機 GoTrue→產品匯出 API→PostgREST→私人申請表→同一手機面板已串通。16 項新增整合檢查包含 DB／API 重啟持久性、跨 actor／grant 拒絕、真實 refresh 的 stale AMR 拒絕、同帳號新登入不能替舊 bearer 更新證據、confirm／cancel／重開。Auth／profile／合成市場與員工關係數不變，cleanup 未開始；獨立測試服務及 private keys 已清理。產品 runtime 無新改動，沿用上一批建置；不重跑效能／PDF／鎖競爭。未提交／發布，不啟用正式刪除，不需要手動 SQL。
+
+## 2026-11-01 帳號刪除第一批：本機／隔離完成，未正式啟用
+
+[唯一計畫、安全評估與驗收](subscription/ACCOUNT_DELETION_REQUEST_WORKFLOW_2026_11_01.md)：沿用 AD2／AD3A，新增申請確認／撤回、手機操作畫面與 session-bound 近期驗證；待送資料／草稿保護、遺失回應讀回及 session 切換隔離。7 個相關測試、11 組獨立 PostgreSQL（含雙連線競爭）、同元件手機尺寸流程及 Web／手機打包通過。SQL 僅 ROLLBACK 草案，未套用雲端；預設關閉且拒絕遠端 DB／部署環境。未提交／發布，未新增 worker、R2／Auth／正式資料刪除；AD4／整體上架資格保持未完成。既有登入效能、PDF、正式發布批次繼續結案，不因本批重開。
+
 ## 目前狀態：2026-11-01 正式版發布整理
 
 [本輪入口盤點與驗收去重](FORMAL_RELEASE_CLEANUP_2026_11_01.md)：首次讀取恢復（`8b42c1b`）、歷史下載（`71db0e3`）、重播批次（`9c7cba7`）均已發布及核心複驗完成，本輪不重跑效能量測。市集文字解析研究實驗室的正式／測試版本隔離已於 `426e485` 提交、推送及發布；Production `dpl_2EYbpTJkfmpKqzGw2ih712RQsrEH` Ready、主要 health 同版。實驗室含尾斜線／子路徑 404，救援／資料工具與抽查 debug 仍 404，設定／市集公開 HTML shell 200；保留既有本機測試及其他產品功能。[測試資料清冊](TEST_DATA_INVENTORY_2026_11_01.md)只盤點、不刪除。本批結案；發布後文件收尾只確認部署版本，不再跑操作矩陣。

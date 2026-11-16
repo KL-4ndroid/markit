@@ -1,0 +1,71 @@
+{
+  "observedAt": "2026-11-02T00:57:19.964Z",
+  "comparedAt": "2026-11-02T00:58:33.724Z",
+  "source": "Cloudflare authenticated dashboard list + bounded database SELECT; no S3 calls",
+  "bucket": "markit-media-production",
+  "totalSizeDisplay": "66.65 kB",
+  "metadata": {
+    "product_cover_photos": {
+      "rows": 1,
+      "statuses": {
+        "uploaded": 1
+      },
+      "activeLeases": 0
+    },
+    "sale_photo_evidence": {
+      "rows": 23,
+      "statuses": {
+        "uploaded": 10,
+        "expired": 12,
+        "upload_failed": 1
+      },
+      "activeLeases": 0
+    }
+  },
+  "metadataStable": true,
+  "analysis": {
+    "comparisonComplete": true,
+    "referencedKeys": 22,
+    "matchedKeys": 4,
+    "invalidOwnerReferences": 0,
+    "sharedOwnerReferences": 0,
+    "uploadedReferencesNotListed": 18,
+    "pastExpiryUploadedReferencesNotListed": 18,
+    "otherReferencesNotListed": 0,
+    "unreferencedObjects": 0,
+    "agedUnreferencedCandidates": 0,
+    "recentUnreferencedObjects": 0,
+    "unclassifiedObjects": 0
+  },
+  "productionTargetVerified": false,
+  "objectAbsenceVerified": false,
+  "multipartVerified": false,
+  "deletionAuthorized": false,
+  "productionDeletionEnabled": false,
+  "dashboardSettings": {
+    "publicAccessEnabled": false,
+    "customDomains": 0,
+    "bucketLockRules": 0,
+    "lifecycle": [
+      {
+        "prefix": "sales-evidence/7d/",
+        "deleteAfterDays": 7,
+        "enabled": true
+      },
+      {
+        "prefix": "sales-evidence-thumbs/7d/",
+        "deleteAfterDays": 7,
+        "enabled": true
+      },
+      {
+        "prefix": "all",
+        "abortMultipartAfterDays": 7,
+        "enabled": true
+      }
+    ],
+    "objectAccessLoggingEnabled": false
+  },
+  "productionApiCredentialAccess": "AccessDenied 403 with existing local credential; no permissions changed",
+  "bucketIdentification": "dashboard bucket name and current DB object-key matches; literal deployed Vercel Secret not read back",
+  "backupsVerified": false
+}

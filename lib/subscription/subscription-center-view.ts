@@ -80,6 +80,7 @@ export function buildSubscriptionCenterView(input: {
   isAuthenticated: boolean;
   isLoading: boolean;
   capabilityResult: AccountCapabilityClientResult | null;
+  capabilityAvailable?: boolean;
   billingOrigin?: BillingOrigin | null;
   nowMs?: number;
 }): SubscriptionCenterView {
@@ -99,7 +100,9 @@ export function buildSubscriptionCenterView(input: {
       entitlementLabel: '未檢查',
     });
   }
-  if (input.isLoading || input.capabilityResult === null) return emptyView('loading');
+  if (input.isLoading) return emptyView('loading');
+  if (input.viewer === 'unknown') return emptyView('unavailable');
+  if (input.capabilityResult === null) return emptyView('loading');
   if (!input.capabilityResult.ok) {
     if (input.capabilityResult.code === 'authentication_required') {
       return emptyView('authentication_required', {
@@ -112,10 +115,15 @@ export function buildSubscriptionCenterView(input: {
     return emptyView('unavailable', { canRetry: input.capabilityResult.retryable });
   }
 
+  if (input.capabilityAvailable === false) return emptyView('unavailable', { canRetry: true });
+
   const capabilities = input.capabilityResult.capabilities;
   const source = getAccountCapabilitySourcePresentation(input.capabilityResult.status);
   const origin = input.billingOrigin ?? null;
-  const effectivePaid = capabilities.planCode !== 'free' && hasEffectiveEntitlement(capabilities, input.nowMs ?? Date.now());
+  const nowMs = input.nowMs ?? Date.now();
+  const expired = capabilities.planCode !== 'free' && capabilities.entitlementEndsAt !== null
+    && Date.parse(capabilities.entitlementEndsAt) < nowMs;
+  const effectivePaid = capabilities.planCode !== 'free' && hasEffectiveEntitlement(capabilities, nowMs);
   const effectivePlan = effectivePaid ? capabilities.planCode : 'free';
   // Only describe a lifecycle state supplied by the authoritative capability
   // response. Never infer a past subscription from an ordinary free account.
@@ -123,7 +131,7 @@ export function buildSubscriptionCenterView(input: {
     || ['admin_inactive', 'billing_inactive', 'promotion_inactive'].includes(input.capabilityResult.status)
     ? {
         title: '付費功能目前未開放',
-        description: '已儲存的紀錄會保留；市集安排仍可使用，銷售與商品功能依目前方案開放。',
+        description: '市集安排仍可使用。銷售、商品與照片的查看依目前方案開放，已儲存的紀錄會保留。',
       }
     : capabilities.entitlementStatus === 'grace'
       ? { title: '目前處於寬限期', description: '請以訂閱來源確認的權益狀態與有效期限為準。' }
@@ -134,9 +142,10 @@ export function buildSubscriptionCenterView(input: {
     state: 'available',
     planCode: effectivePlan,
     planLabel: SUBSCRIPTION_PLAN_DEFINITIONS[effectivePlan].displayName,
-    sourceLabel: source.label,
-    sourceDescription: source.description,
-    entitlementLabel: entitlementLabel(capabilities.entitlementStatus),
+    sourceLabel: expired ? '原付費方案已到期' : source.label,
+    sourceDescription: expired ? '目前可使用免費版功能。' : source.description,
+    entitlementLabel: lifecycleNotice?.title === '付費功能目前未開放'
+      ? '付費功能未開放' : entitlementLabel(capabilities.entitlementStatus),
     billingLabel: billingLabel(capabilities.billingStatus),
     entitlementEndsAt: capabilities.entitlementEndsAt,
     billingOrigin: origin,

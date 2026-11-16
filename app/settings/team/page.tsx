@@ -157,12 +157,14 @@ export default function TeamSettingsPage() {
               目前為本機訂閱模擬。可檢查 Team 控制項是否正確顯示，但所有團隊資料寫入仍由伺服器拒絕，不會修改雲端資料。
             </div>
           )}
-          <StaffManagement
-            teamFeatureAllowed={staffCollaborationAccess.allowed}
-            managerWorkflowAllowed={managerWorkflowAccess.allowed}
-            simulationActive={simulationActive}
-            teamAccessReason={staffCollaborationAccess.allowed ? undefined : staffCollaborationAccess.reason}
-          />
+          <div id="team-members" className="scroll-mt-4">
+            <StaffManagement
+              teamFeatureAllowed={staffCollaborationAccess.allowed}
+              managerWorkflowAllowed={managerWorkflowAccess.allowed}
+              simulationActive={simulationActive}
+              teamAccessReason={staffCollaborationAccess.allowed ? undefined : staffCollaborationAccess.reason}
+            />
+          </div>
         </div>
       )}
 

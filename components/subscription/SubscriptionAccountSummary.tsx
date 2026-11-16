@@ -1,10 +1,12 @@
 'use client';
 
+import Link from 'next/link';
+import { useSyncContext } from '@/lib/sync-context';
 import { Crown, RefreshCw, ShieldAlert } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { Button } from '@/components/ui/Button';
-import { useAccountCapabilities } from '@/hooks/useAccountCapabilities';
+import { useSubscriptionExperience } from './SubscriptionExperienceProvider';
 import { useRoleContext } from '@/lib/role-context';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { buildSubscriptionCenterView } from '@/lib/subscription/subscription-center-view';
@@ -20,18 +22,17 @@ function formatEntitlementEnd(value: string | null): string {
 }
 
 export function SubscriptionAccountSummary() {
+  const { pendingCount } = useSyncContext();
   const { session, loading: authLoading } = useAuth();
   const { isOwner, isStaff, isLoading: roleLoading } = useRoleContext();
-  const query = useAccountCapabilities({
-    accessToken: session?.access_token,
-    enabled: Boolean(session && !roleLoading && isOwner),
-  });
+  const { tier, capabilityQuery: query } = useSubscriptionExperience();
   const view = useMemo(() => buildSubscriptionCenterView({
     viewer: isOwner ? 'owner' : isStaff ? 'staff' : 'unknown',
     isAuthenticated: Boolean(session),
     isLoading: authLoading || roleLoading || query.isLoading,
     capabilityResult: query.result,
-  }), [authLoading, isOwner, isStaff, query.isLoading, query.result, roleLoading, session]);
+    capabilityAvailable: tier !== 'unavailable',
+  }), [authLoading, isOwner, isStaff, query.isLoading, query.result, roleLoading, session, tier]);
 
   if (view.state === 'loading') {
     return (
@@ -98,6 +99,12 @@ export function SubscriptionAccountSummary() {
         </div>
       )}
 
+      {view.planCode === 'free' && view.lifecycleNotice && isOwner && pendingCount > 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">這台裝置有 {pendingCount} 筆待同步紀錄。受方案限制的項目會保留，恢復對應方案後可繼續同步。</p>
+      ) : null}
+      {view.planCode === 'team' && isOwner ? (
+        <Link href="/settings/team#team-members" className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-primary underline">查看團隊成員與恢復存取</Link>
+      ) : null}
       {view.state === 'available' && isOwner && (
         <details className="mt-4 border-t border-atelier-line pt-4 text-sm">
           <summary className="cursor-pointer py-2 font-medium text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { buildMonthlySalesRecords } from '../lib/subscription/basic-business-summary';
+import type { DailyStats, Market } from '../types/db';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -117,5 +119,30 @@ assert.match(hookSource, /readAccountCapabilities/);
 assert.match(hookSource, /getNetworkPort/);
 assert.doesNotMatch(hookSource, /supabase|localStorage|sessionStorage|window\.|document\.|navigator\./i);
 assert.match(manifestSource, /tsx tests\/analytics-subscription-access\.test\.ts/);
+
+const baseMarket = { name: '跨月市集', location: '台灣', status: 'completed', startDate: '2026-10-31',
+  endDate: '2026-11-02', registrationFee: 0, boothCost: 0, createdAt: 0, updatedAt: 0 } as const;
+const recordMarkets: Market[] = [
+  { ...baseMarket, id: 'own', owner_id: 'owner' },
+  { ...baseMarket, id: 'foreign', owner_id: 'another-owner' },
+  { ...baseMarket, id: 'removed', owner_id: 'owner', isDeleted: true },
+];
+const day = (marketId: string, date: string, revenue: number, dealCount: number) => ({ marketId, date, revenue, dealCount,
+  touchCount: 0, inquiryCount: 0, cost: 0, profit: 0, productsSold: [] } as DailyStats);
+const month = buildMonthlySalesRecords(recordMarkets, [
+  day('own', '2026-10-31', 1000, 2), day('own', '2026-11-01', 250, 1),
+  day('own', '2026-11-02', 0, 1), day('own', '2026-11-03', 500, 3),
+  day('foreign', '2026-11-02', 200, 1), day('removed', '2026-11-02', 200, 1),
+], 'owner', '2026-11-01', '2026-11-02');
+assert.deepEqual(month, { revenue: 250, deals: 2, markets: [
+  { id: 'own', name: '跨月市集', revenue: 250, deals: 2, latest: '2026-11-02' },
+] });
+const gateSource = readFileSync(join(root, 'components/subscription/SubscriptionSurfaceGate.tsx'), 'utf8');
+assert.match(gateSource, /basic_summary'\) return <BasicBusinessSummary/);
+const lightPage = readFileSync(join(root, 'components/subscription/BasicBusinessSummary.tsx'), 'utf8');
+assert.match(lightPage, /<MonthlySalesRecords/);
+const monthlySource = readFileSync(join(root, 'components/analytics/MonthlySalesRecords.tsx'), 'utf8');
+assert.match(monthlySource, /task: 'performance', returnTo: 'records'/);
+assert.doesNotMatch(monthlySource, /\/reports\/settlement/);
 
 console.log('PASS S6A single-market analytics subscription access');

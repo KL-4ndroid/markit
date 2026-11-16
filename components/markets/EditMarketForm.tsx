@@ -1,8 +1,9 @@
 'use client';
 
+import { changedRegistrationConditions, type MarketRegistrationConditions, type EquipmentAvailability } from '@/lib/markets/market-registration-conditions';
 import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 
-import { getMarketBoothFee, resolveMarketBoothFee, confirmedMarketBoothFee } from '@/lib/markets/market-booth-fee';
+import { getMarketBoothFee, resolveMarketBoothFee } from '@/lib/markets/market-booth-fee';
 import { MarketFeeConflictNotice } from './MarketFeeConflictNotice';
 import { Clock, DollarSign, FileText, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -25,6 +26,7 @@ import { updateMarket } from '@/lib/db/hooks';
 import {
   calculateMarketDurationLabel,
   calculateMarketFixedCost,
+  changedMarketFeeFields,
   deriveMarketDateBounds,
   getFirstMarketCoreError,
   hasMarketFormChanges,
@@ -63,6 +65,7 @@ interface EditMarketFormValues {
   chairRental: number;
   umbrellaRental: number;
   commissionRate: number;
+  registrationConditions?: MarketRegistrationConditions;
   notes: string;
 }
 
@@ -93,6 +96,7 @@ function createEditMarketFormValues(market: Market): EditMarketFormValues {
     chairRental: Number(market.chairRental || 0),
     umbrellaRental: Number(market.umbrellaRental || 0),
     commissionRate: Number(market.commissionRate || 0),
+    registrationConditions: market.registrationConditions,
     notes: market.notes || '',
   };
 }
@@ -105,7 +109,7 @@ export function EditMarketForm({
   mode = 'owner',
   markScheduleOverride = false,
 }: EditMarketFormProps) {
-  const { canRecord } = useSubscriptionExperience();
+  const { canRecord, isLoading: isPlanLoading } = useSubscriptionExperience();
   const isManagerMode = mode === 'manager';
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feeConfirmed, setFeeConfirmed] = useState(false);
@@ -155,16 +159,16 @@ export function EditMarketForm({
     setSubmitError(null);
   };
 
-  const handleEquipmentFreeChange = (field: MarketEquipmentFreeField, value: boolean) => {
-    const rentalField: Record<MarketEquipmentFreeField, MarketEquipmentField> = {
-      tableFree: 'tableRental',
-      chairFree: 'chairRental',
-      umbrellaFree: 'umbrellaRental',
-    };
-    if (field === 'tableFree') setTableFree(value);
-    if (field === 'chairFree') setChairFree(value);
-    if (field === 'umbrellaFree') setUmbrellaFree(value);
-    if (value) handleChange(rentalField[field], 0);
+  const handleEquipmentStatusChange = (field: MarketEquipmentFreeField, rentalField: MarketEquipmentField, status: EquipmentAvailability) => {
+    if (field === 'tableFree') setTableFree(status === 'free');
+    if (field === 'chairFree') setChairFree(status === 'free');
+    if (field === 'umbrellaFree') setUmbrellaFree(status === 'free');
+    setFormData(previous => ({
+      ...previous,
+      ...(status !== 'rental' ? { [rentalField]: 0 } : {}),
+      registrationConditions: { ...previous.registrationConditions, [field]: status },
+    }));
+    setSubmitError(null);
   };
 
   const focusFirstError = (nextErrors: MarketCoreFormErrors) => {
@@ -217,15 +221,8 @@ export function EditMarketForm({
         checkInTime: formData.checkInTime,
         operatingStartTime: formData.operatingStartTime,
         operatingEndTime: formData.operatingEndTime,
-        ...confirmedMarketBoothFee(formData.boothCost),
-        deposit: formData.deposit,
-        tableRental: tableFree ? 0 : formData.tableRental,
-        chairRental: chairFree ? 0 : formData.chairRental,
-        umbrellaRental: umbrellaFree ? 0 : formData.umbrellaRental,
-        tableFree,
-        chairFree,
-        umbrellaFree,
-        commissionRate: formData.commissionRate,
+        ...changedMarketFeeFields(market, { ...formData, tableFree, chairFree, umbrellaFree }, feeConfirmed),
+        ...changedRegistrationConditions(market.registrationConditions, formData.registrationConditions),
         notes: formData.notes.trim(),
         ...(markScheduleOverride ? { isScheduleOverride: true } : {}),
       };
@@ -242,15 +239,17 @@ export function EditMarketForm({
     }
   };
 
-  const fixedCostTotal = calculateMarketFixedCost({
+  const fixedCostTotal = canRecord && !isPlanLoading ? calculateMarketFixedCost({
     boothCost: formData.boothCost,
     tableRental: formData.tableRental,
     chairRental: formData.chairRental,
     umbrellaRental: formData.umbrellaRental,
+    tableclothRental: market.tableclothRental,
+    tableclothFree: market.tableclothFree,
     tableFree,
     chairFree,
     umbrellaFree,
-  });
+  }) : undefined;
   const totalStartTime = noEarlyEntry ? formData.checkInTime : formData.earlyEntryTime;
   const operatingDuration = formData.operatingStartTime && formData.operatingEndTime
     ? calculateMarketDurationLabel(formData.operatingStartTime, formData.operatingEndTime)
@@ -316,8 +315,8 @@ export function EditMarketForm({
           {!isManagerMode && (
             <>
               <FormSectionDisclosure
-                title={canRecord ? '成本與抽成' : '繳費金額'}
-                description={canRecord ? '攤位費、保證金與營業額抽成' : '攤位費與保證金'}
+                title="費用與抽成條件"
+                description="攤位費、保證金與營業額抽成比例"
                 icon={DollarSign}
                 tone="yellow"
               >
@@ -325,21 +324,23 @@ export function EditMarketForm({
                   idPrefix={FIELD_PREFIX}
                   boothCost={formData.boothCost}
                   deposit={formData.deposit}
-                  commissionRate={formData.commissionRate}
+                  commissionRate={formData.commissionRate ?? 0}
                   fixedCostTotal={fixedCostTotal}
+                  registrationTerms
                   disabled={isSubmitting}
                   onChange={(field, value) => handleChange(field, value)}
                 />
               </FormSectionDisclosure>
 
-              {canRecord && <FormSectionDisclosure
+              <FormSectionDisclosure
                 title="設備"
-                description="桌椅與傘具租金或免費提供狀態"
+                description="免費提供、租用或自備桌椅與傘具"
                 icon={Package}
                 tone="green"
               >
                 <MarketEquipmentFields
                   idPrefix={FIELD_PREFIX}
+                  registrationTerms
                   rentals={{
                     tableRental: formData.tableRental,
                     chairRental: formData.chairRental,
@@ -348,9 +349,10 @@ export function EditMarketForm({
                   free={{ tableFree, chairFree, umbrellaFree }}
                   disabled={isSubmitting}
                   onRentalChange={(field, value) => handleChange(field, value)}
-                  onFreeChange={handleEquipmentFreeChange}
+                  conditions={formData.registrationConditions}
+                  onStatusChange={handleEquipmentStatusChange}
                 />
-              </FormSectionDisclosure>}
+              </FormSectionDisclosure>
             </>
           )}
 

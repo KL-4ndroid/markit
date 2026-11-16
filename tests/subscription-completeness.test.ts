@@ -44,7 +44,7 @@ async function main() {
       assert.equal(resolveSubscriptionSurface(path+suffix, 'light'), 'content');
     }
     for (const path of ['/analytics', '/analytics/regions']) {
-      assert.equal(resolveSubscriptionSurface(path+suffix, 'free'), 'advanced_notice');
+      assert.equal(resolveSubscriptionSurface(path+suffix, 'free'), 'light_notice');
       assert.equal(resolveSubscriptionSurface(path+suffix, 'light'), 'basic_summary');
       assert.equal(resolveSubscriptionSurface(path+suffix, 'advanced'), 'content');
     }

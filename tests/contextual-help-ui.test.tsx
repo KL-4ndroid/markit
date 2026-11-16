@@ -3,7 +3,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ContextHelp } from '../components/ui/ContextHelp';
 import { ProductFormFields } from '../components/products/ProductFormFields';
-import { MarketBasicFields } from '../components/markets/MarketFormFields';
+import { MarketBasicFields, MarketCostFields, MarketEquipmentFields } from '../components/markets/MarketFormFields';
 import { createEmptyProductFormValues } from '../lib/products/product-form';
 import { StaffPermissionCard } from '../components/staff/StaffPermissionCard';
 
@@ -32,6 +32,16 @@ assert.match(market, /市集日期（可複選）/);
 assert.match(market, /地標或地址皆可/);
 assert.match(market, /名稱待確認/);
 assert.doesNotMatch(market, /名稱、地點與日期是市集的核心資料|例如：華山文創市集/);
+
+// The default subscription context represents a still-unavailable owner capability.
+const terms = renderToStaticMarkup(<form>
+  <MarketCostFields idPrefix="terms" registrationTerms boothCost={300} deposit={0} commissionRate={undefined} fixedCostTotal={400} onChange={write} />
+  <MarketEquipmentFields idPrefix="terms" registrationTerms rentals={{ tableRental: 0, chairRental: 100, umbrellaRental: 0 }}
+    free={{ tableFree: true, chairFree: false, umbrellaFree: false }} onRentalChange={write} onStatusChange={write} />
+</form>);
+for (const label of ['主辦抽成比例', '桌子', '椅子租金', '傘具', '主辦免費提供', '需自備', '未確認']) assert.ok(terms.includes(label));
+assert.match(terms, /<input[^>]*id="terms-commission-rate"[^>]*value="0"/);
+assert.doesNotMatch(terms, /攤位與設備固定成本合計/);
 
 for (const role of ['viewer', 'operator', 'manager'] as const) {
   const html = renderToStaticMarkup(<StaffPermissionCard staffRole={role} authorizationFresh />);

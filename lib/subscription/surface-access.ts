@@ -10,7 +10,7 @@ export function resolveSubscriptionSurface(path: string, tier: SubscriptionExper
   if (['/products','/recovery'].some(route => isPathWithinRoute(path, route)) && !paid) return 'light_notice';
   if (isPathWithinRoute(path, '/analytics')) {
     if (tier === 'light') return 'basic_summary';
-    return tier === 'advanced' ? 'content' : 'advanced_notice';
+    return tier === 'advanced' ? 'content' : 'light_notice';
   }
   if (['/reports', '/settings/team', '/staff'].some(route => isPathWithinRoute(path, route)) && tier !== 'advanced') return 'advanced_notice';
   return 'content';

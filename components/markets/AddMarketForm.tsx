@@ -1,5 +1,6 @@
 'use client';
 
+import { type EquipmentAvailability } from '@/lib/markets/market-registration-conditions';
 import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 
 import { Clock, DollarSign, FileText, Package } from 'lucide-react';
@@ -122,6 +123,7 @@ function hasMeaningfulMarketDraft(draft: AddMarketDraft): boolean {
     || data.operatingStartTime !== defaults.operatingStartTime
     || data.operatingEndTime !== defaults.operatingEndTime;
   const hasBooleanChanges = draft.noEarlyEntry !== DEFAULT_NO_EARLY_ENTRY
+    || Object.keys(data.registrationConditions ?? {}).length > 0
     || draft.tableFree !== DEFAULT_TABLE_FREE
     || draft.chairFree !== DEFAULT_CHAIR_FREE
     || draft.umbrellaFree !== DEFAULT_UMBRELLA_FREE;
@@ -138,7 +140,7 @@ function addMinutes(value: string, minutesToAdd: number): string {
 }
 
 export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps) {
-  const { canRecord } = useSubscriptionExperience();
+  const { canRecord, isLoading: isPlanLoading } = useSubscriptionExperience();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [noEarlyEntry, setNoEarlyEntry] = useState(DEFAULT_NO_EARLY_ENTRY);
@@ -293,16 +295,16 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
     setSubmitError(null);
   };
 
-  const handleEquipmentFreeChange = (field: MarketEquipmentFreeField, value: boolean) => {
-    const rentalField: Record<MarketEquipmentFreeField, MarketEquipmentField> = {
-      tableFree: 'tableRental',
-      chairFree: 'chairRental',
-      umbrellaFree: 'umbrellaRental',
-    };
-    if (field === 'tableFree') setTableFree(value);
-    if (field === 'chairFree') setChairFree(value);
-    if (field === 'umbrellaFree') setUmbrellaFree(value);
-    if (value) handleChange(rentalField[field], 0);
+  const handleEquipmentStatusChange = (field: MarketEquipmentFreeField, rentalField: MarketEquipmentField, status: EquipmentAvailability) => {
+    if (field === 'tableFree') setTableFree(status === 'free');
+    if (field === 'chairFree') setChairFree(status === 'free');
+    if (field === 'umbrellaFree') setUmbrellaFree(status === 'free');
+    setFormData(previous => ({
+      ...previous,
+      ...(status !== 'rental' ? { [rentalField]: 0 } : {}),
+      registrationConditions: { ...previous.registrationConditions, [field]: status },
+    }));
+    setSubmitError(null);
   };
 
   const handleImportApply = (patch: MarketTextImportPatch) => {
@@ -389,7 +391,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
   const totalDuration = totalStartTime && operatingEndTime
     ? calculateMarketDurationLabel(totalStartTime, operatingEndTime)
     : '尚未設定';
-  const fixedCostTotal = calculateMarketFixedCost({
+  const fixedCostTotal = canRecord && !isPlanLoading ? calculateMarketFixedCost({
     boothCost: formData.boothCost,
     tableRental: formData.tableRental,
     chairRental: formData.chairRental,
@@ -397,7 +399,7 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
     tableFree,
     chairFree,
     umbrellaFree,
-  });
+  }) : undefined;
 
   return (
     <>
@@ -447,8 +449,8 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
             <div className="space-y-3">
 
             <FormSectionDisclosure
-              title={canRecord ? '成本與抽成' : '繳費金額'}
-              description={canRecord ? '攤位費、保證金與營業額抽成' : '攤位費與保證金'}
+              title="費用與抽成條件"
+              description="攤位費、保證金與營業額抽成比例"
               icon={DollarSign}
               tone="yellow"
             >
@@ -456,21 +458,23 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                 idPrefix={FIELD_PREFIX}
                 boothCost={Number(formData.boothCost || 0)}
                 deposit={Number(formData.deposit || 0)}
-                commissionRate={Number(formData.commissionRate || 0)}
+                commissionRate={formData.commissionRate ?? 0}
                 fixedCostTotal={fixedCostTotal}
+                registrationTerms
                 disabled={isSubmitting}
                 onChange={(field, value) => handleChange(field, value)}
               />
             </FormSectionDisclosure>
 
-            {canRecord && <FormSectionDisclosure
+            <FormSectionDisclosure
               title="設備"
-              description="桌椅與傘具租金或免費提供狀態"
+              description="免費提供、租用或自備桌椅與傘具"
               icon={Package}
               tone="green"
             >
               <MarketEquipmentFields
                 idPrefix={FIELD_PREFIX}
+                registrationTerms
                 rentals={{
                   tableRental: Number(formData.tableRental || 0),
                   chairRental: Number(formData.chairRental || 0),
@@ -479,9 +483,10 @@ export function AddMarketForm({ isOpen, onClose, onSuccess }: AddMarketFormProps
                 free={{ tableFree, chairFree, umbrellaFree }}
                 disabled={isSubmitting}
                 onRentalChange={(field, value) => handleChange(field, value)}
-                onFreeChange={handleEquipmentFreeChange}
+                conditions={formData.registrationConditions}
+                onStatusChange={handleEquipmentStatusChange}
               />
-            </FormSectionDisclosure>}
+            </FormSectionDisclosure>
 
             <FormSectionDisclosure
               title="時間軸"

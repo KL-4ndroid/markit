@@ -101,3 +101,6 @@ assert.doesNotMatch(
 );
 
 console.log('PASS subscription capability preview truthfulness');
+
+const advancedFeatures = PLAN_PREVIEWS.find(plan => plan.id === 'team')!.features.map(feature => feature.code);
+assert.equal(advancedFeatures.length, new Set(advancedFeatures).size);

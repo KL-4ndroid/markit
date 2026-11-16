@@ -4,9 +4,13 @@ import Link from 'next/link';
 import { triggerLogin } from '@/components/auth/AuthManager';
 import { useSubscriptionExperience } from './SubscriptionExperienceProvider';
 
-export function SubscriptionFeatureNotice({ advanced = false }: { advanced?: boolean }) {
+export function SubscriptionFeatureNotice({ advanced = false, compact = false }: { advanced?: boolean; compact?: boolean }) {
   const { tier, refresh, isLoading } = useSubscriptionExperience();
   if (isLoading) return <p role="status" className="my-4 rounded-xl bg-atelier-paper px-4 py-3 text-sm text-muted-foreground">正在確認方案身分…</p>;
+  if (compact && tier === 'unavailable') return <div role="status" className="my-4 flex flex-wrap items-center justify-between gap-2 rounded-control border border-border bg-atelier-paper px-4 py-2 text-sm">
+    <p>目前無法確認方案，市集安排仍可使用。</p>
+    <button type="button" onClick={refresh} className="min-h-11 font-medium text-primary underline">重新確認</button>
+  </div>;
   return <section className="mx-auto my-6 max-w-3xl space-y-3 rounded-card bg-atelier-paper p-5" aria-live="polite">
     <h2 className="text-lg font-semibold">{tier === 'unavailable' ? '暫時無法確認方案身分' : advanced ? '高階版功能' : '輕量版起可使用'}</h2>
     <p className="text-sm leading-6 text-muted-foreground">{tier === 'unavailable'

@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-02T08:20:05.337Z",
+  "version": "096-account-deletion-candidate-v1",
+  "sqlSha": "f2ffc5f2cee5b437d9bfe3c72067962db73ee4d4e15724908714a00a0d19511d",
+  "payloadSha": "c449baff62f39e53b6851e8c1af4e4866ca79baa923b78092eae5c50686cc40e",
+  "checks": [
+    "missing target acknowledgement and unapplied 095 reject before installing private schema",
+    "wrong project, unverified managed target and application service session cannot install",
+    "wrong physical test database and modified SQL payload reject before DDL",
+    "baseline table/column/view-option/RLS/ACL/function drift stops install and preserves original catalog",
+    "late failure rolls back every installed schema, function, grant and actor-column alteration",
+    "complete candidate installs atomically; runtime is CHECK-disabled, with no R2 target or billing secret",
+    "verified reruns preserve all schema fingerprints and original installation receipt",
+    "installed schema/ACL/function/version drift rejects rerun rather than overwriting evidence",
+    "active owner/operator views preserve original price/stock access and staff cost/profit/metadata masks",
+    "viewer/operator/manager masks and canonical role transitions preserve deployed permission rules",
+    "ordinary authenticated sale runs all deployed projections once; repeated insert does not duplicate income or stock deduction",
+    "snapshot self-read/cleanup work; anonymous and cross-account access fail; cleanup returns affected count",
+    "80 stored-data routines reject a frozen principal before their bodies (12 predicates return false)",
+    "all 5 definer views return zero rows for frozen owners and frozen staff with old JWT claims",
+    "frozen-brand targeting blocked for service role; other brands and historical staff-authored income stay visible",
+    "UUID arrays, nested JSON targets and anonymous invitation-token lookups cannot bypass frozen ownership",
+    "application roles cannot use TRUNCATE to bypass row policies/fences",
+    "rerun after synthetic normal operations preserves records and accepts only the unchanged installed contract"
+  ],
+  "scope": "PostgreSQL 17 captured catalog+095, generated SQL install/replay/drift/ACL; synthetic data; no managed cloud/Auth/R2 validation",
+  "productionEnabled": false
+}

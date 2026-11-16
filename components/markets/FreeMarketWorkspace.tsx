@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Market, MarketStatus } from '@/types/db';
 import type { MarketOperatingSession } from '@/lib/markets/market-operating-session';
+import { MarketEquipmentSummary } from './MarketEquipmentSummary';
 import { MarketRegistrationPanel } from './MarketRegistrationPanel';
 import { MarketPaymentDeadlineNotice } from './MarketPaymentDeadlineNotice';
 import { MarketTodayTimeline } from './MarketTodayTimeline';
@@ -31,6 +32,8 @@ export function FreeMarketWorkspace({ market, returnTo, busy, onStatus, onEdit, 
           readOnly={market.sessionOrigin === 'schedule'} ended={session?.workspacePhase === 'ended'}>
           <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
             {marketFeeDisplayRows(market).map(row => <div key={row.label}><dt className="text-muted-foreground">{row.label}</dt><dd className="mt-1 font-semibold tabular-nums">{formatCurrency(row.value)}</dd></div>)}
+            <div><dt className="text-muted-foreground">主辦抽成比例</dt>
+              <dd className="mt-1 font-semibold tabular-nums">{market.commissionRate ?? 0}%</dd></div>
           </dl>
           <MarketFeeConflictNotice market={market} />
           <MarketPaymentDeadlineNotice market={market} compact />
@@ -39,6 +42,10 @@ export function FreeMarketWorkspace({ market, returnTo, busy, onStatus, onEdit, 
           description={session.phase === 'closed' ? '今天已結束，可到出攤心得記下本場感想。' : session.phase === 'early-window' ? '可先開始今日出攤，並確認準備待辦。' : session.phase === 'extended' ? '已超過原定結束時間，確認準備事項後可結束今日出攤。' : '今日出攤已開始，可查看時間與準備事項。'}
           onStartEarly={onStart} onCloseToday={onClose} />}
         <MarketTodayTimeline title="本場時間" market={market} onEdit={onEdit} />
+        <section className="mx-auto max-w-3xl rounded-card border border-border bg-atelier-paper p-4">
+          <h2 className="text-base font-semibold">設備準備</h2>
+          <MarketEquipmentSummary market={market} />
+        </section>
         <MarketFieldOpsSection marketId={market.id!} referenceNote={market.notes} collaborationEnabled={false} canManageFieldNotes={false} canManageChecklist={canManageFieldOps} canToggleChecklistItem={canManageFieldOps} readOnlyReason={!canManageFieldOps ? '此場次的準備待辦已封存為唯讀紀錄。' : undefined} />
         {market.sessionOrigin === 'schedule' && market.scheduleOccurrenceState === 'skipped' && <button type="button" disabled={busy} onClick={() => void onRestore()} className="min-h-11 rounded-xl border px-4">恢復這一次</button>}
         {market.sessionOrigin === 'schedule' && market.scheduleOccurrenceState === 'scheduled' && market.status === 'registered' && <button type="button" disabled={busy} onClick={() => void onSkip()} className="min-h-11 rounded-xl border px-4">略過這一次</button>}

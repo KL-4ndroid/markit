@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-02T04:22:09.656Z",
+  "checks": [
+    "actual loopback S3 PUT finishes after freeze; durable receipt and a new proof reader reconcile despite lost producer HTTP response; second PUT is fenced",
+    "forged drain hash is rejected inside SQL commit; reusing a writer cannot issue another network PUT",
+    "production bucket, alternate endpoint path and mismatched disposable run are rejected before any network write",
+    "real HTTP socket loss remains unconfirmed after HEAD 404, lease expiry and late reappearance; one SDK attempt only, no fake terminal proof",
+    "body/target mismatch, retry-count claims and changed receipts reject; client roles cannot attest and private receipts stay unreadable"
+  ],
+  "scenarioPassed": true,
+  "cleanupComplete": true,
+  "attemptedMarkers": 2,
+  "confirmedAbsent": 2,
+  "scope": "real loopback HTTP/S3 SDK + captured isolated PostgreSQL; controlled provider, no cloud operations",
+  "productionEnabled": false,
+  "productionUploadRaceClosed": false
+}
