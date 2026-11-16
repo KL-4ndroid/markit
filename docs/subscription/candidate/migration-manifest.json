@@ -50,7 +50,7 @@
     },
     {
       "path": "lib/subscription/account-deletion-engine-adapters.server.ts",
-      "sha256": "8070bb6efced7d9db8fa4799f60a5d51232301b32f0100de7b4b91656b876769"
+      "sha256": "00c7ac3d1bed9316580a77003545c04a7985a3d3198845863ee961ab1e7eae97"
     },
     {
       "path": "lib/subscription/account-deletion-upload-barrier.server.ts",
@@ -146,7 +146,7 @@
     },
     {
       "path": "scripts/prepare-account-deletion-migration.ts",
-      "sha256": "a226768e86e79659786b629555ec66900698dd7ddc194f8422e37927bce57fc7"
+      "sha256": "542a3fb620a8dc25276b9368a5f7abfa549fdd0f1bf4270f680c6ddd307dadaf"
     },
     {
       "path": "scripts/lib/account-deletion-managed-target.ts",
@@ -178,7 +178,19 @@
     },
     {
       "path": "docs/subscription/drafts/ACCOUNT_DELETION_TEST_PRG_SCOPE.sql",
-      "sha256": "6b476e13b6bf9b8f34fc8ec5d3c959f92935daa686ba81b72cdae4cefbe6345c"
+      "sha256": "b55c5ba203b2505e2a1d2bd09aba620da6c48fad82b0f03b45d0622c378d514a"
+    },
+    {
+      "path": "scripts/lib/account-deletion-test-prg-preview.ts",
+      "sha256": "948085dff207a657e31ab1fc75616728b830e4c2888f929541e1fa0c1fdde1f3"
+    },
+    {
+      "path": "scripts/prepare-account-deletion-test-prg-preview.ts",
+      "sha256": "3f2c448f7f1a0a18becf056b61af7d9db25ebd7c5e2b6246c691290359c862a6"
+    },
+    {
+      "path": "scripts/account-deletion-test-prg-preview-tick.ts",
+      "sha256": "05f1ced5dc8a855a6d501802ac05a13958e8a5a9dcf5a2eb36de7ddec8bee93c"
     },
     {
       "path": "supabase/migrations/095_scope_snapshot_rpcs_to_owner.sql",
@@ -186,7 +198,7 @@
     },
     {
       "path": "scripts/verify-account-deletion-migration.ts",
-      "sha256": "705b14a5f39ce63bb798e529785a2a1b13f58438dea7d68576c3a3a49f611658"
+      "sha256": "23c3a673aa4f4606c64811eea180579ae5e98cba0b4f5c59ba4775a190303315"
     }
   ],
   "runtimeEnabled": false,

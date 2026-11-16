@@ -1,6 +1,10 @@
 import { DeleteObjectCommand, HeadObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { DeletionEngineFailure, type DeletionContext, type DeletionDatabasePort, type DeletionIdentityPort, type DeletionLease, type DeletionObjectPort } from './account-deletion-engine.server';
+
+import { createPreviewDeletionExecutor } from './account-deletion-preview-executor.server';
+import { runAccountDeletionSagaTick, type AccountDeletionSagaStepResult } from './account-deletion-saga.server';
+import { createAccountDeletionStorageRepository } from './account-deletion-storage.server';
 
 type Rpc = { rpc(name: string, args: Record<string, unknown>): PromiseLike<{ data: unknown; error: { code?: string; message?: string } | null }> };
 
@@ -13,6 +17,10 @@ export function requireIsolatedEndpoint(value: string): void {
 /** Explicit client injection; no process.env/default production credentials or runtime route. */
 export function createDeletionDatabasePort(client: Rpc, endpoint: string): DeletionDatabasePort {
   requireIsolatedEndpoint(endpoint);
+  return bindDatabasePort(client);
+}
+
+function bindDatabasePort(client: Rpc): DeletionDatabasePort {
   async function call(lease: DeletionLease, action: string, key: string | null = null): Promise<unknown> {
     const { data, error } = await client.rpc('bff_account_deletion_engine', {
       p_request_id: lease.requestId, p_lease_token: lease.leaseToken, p_step: lease.stepCode,
@@ -40,6 +48,10 @@ export function createDeletionDatabasePort(client: Rpc, endpoint: string): Delet
 
 export function createDeletionIdentityPort(client: Pick<SupabaseClient, 'auth'>, endpoint: string): DeletionIdentityPort {
   requireIsolatedEndpoint(endpoint);
+  return bindIdentityPort(client);
+}
+
+function bindIdentityPort(client: Pick<SupabaseClient, 'auth'>): DeletionIdentityPort {
   const admin = client.auth.admin;
   return {
     async freeze(id) {
@@ -68,11 +80,15 @@ export function isExplicitDeletionObjectAbsence(error: unknown): boolean {
 
 export function createDeletionObjectPort(input: { client: Pick<S3Client, 'send'>; bucket: string; endpoint: string }): DeletionObjectPort {
   requireIsolatedEndpoint(input.endpoint);
+  return bindObjectPort(input);
+}
+
+function bindObjectPort(input: { client: Pick<S3Client, 'send'>; bucket: string }): DeletionObjectPort {
   if (!input.bucket || !/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(input.bucket)) throw new Error('Invalid deletion bucket.');
   return {
-    async deleteObject(key) { await input.client.send(new DeleteObjectCommand({ Bucket: input.bucket, Key: key })); },
+    async deleteObject(key) { await input.client.send(new DeleteObjectCommand({ Bucket: input.bucket, Key: key }), { abortSignal: AbortSignal.timeout(10_000) }); },
     async isAbsent(key) {
-      try { await input.client.send(new HeadObjectCommand({ Bucket: input.bucket, Key: key })); return false; }
+      try { await input.client.send(new HeadObjectCommand({ Bucket: input.bucket, Key: key }), { abortSignal: AbortSignal.timeout(10_000) }); return false; }
       catch (error) {
         // Permission failures/timeouts/unknown response are never proof of absence.
         if (isExplicitDeletionObjectAbsence(error)) return true;
@@ -80,4 +96,90 @@ export function createDeletionObjectPort(input: { client: Pick<S3Client, 'send'>
       }
     },
   };
+}
+
+type PreviewTickConfig = Omit<Parameters<typeof createPreviewDeletionExecutor>[0], 'ports' | 'now'> & {
+  publicKey: string;
+  secretKey: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+};
+
+/** Explicit single-step operator entry. The database must also authorize the same request. */
+export async function runBoundPreviewDeletionTick(config: PreviewTickConfig) {
+  const nowMs = Date.now();
+  if (!/^https:\/\/[0-9a-f]{32}\.r2\.cloudflarestorage\.com$/.test(config.r2Endpoint)
+    || !/^sb_secret_[A-Za-z0-9_-]{22,}$/.test(config.secretKey)
+    || !config.publicKey || !config.accessKeyId || !config.secretAccessKey
+    || nowMs < config.grant.issuedAt || nowMs >= config.grant.expiresAt) {
+    throw new Error('preview_deletion_invalid_configuration');
+  }
+  const origin = new URL(config.databaseUrl).origin;
+  const client = createClient(config.databaseUrl, config.secretKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: {
+      fetch(input, init) {
+        const url = new URL(input instanceof Request ? input.url : input);
+        if (url.origin !== origin) throw new Error('preview_deletion_target_mismatch');
+        const timeout = AbortSignal.timeout(10_000);
+        const signal = init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+        return fetch(input, { ...init, redirect: 'error', signal });
+      },
+    },
+  });
+  const objectClient = new S3Client({
+    endpoint: config.r2Endpoint,
+    region: 'auto',
+    forcePathStyle: true,
+    maxAttempts: 1,
+    credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
+  });
+  try {
+    const database = bindDatabasePort(client);
+    const executeStep = createPreviewDeletionExecutor({
+      ...config,
+      now: Date.now,
+      ports: {
+        database: {
+          ...database,
+          async context(lease) {
+            const context = await database.context(lease) as DeletionContext & { previewTargetHash?: string };
+            if (context?.previewTargetHash !== config.boundTargetHash) {
+              throw new DeletionEngineFailure('manual_review', 'preview_deletion_target_mismatch');
+            }
+            return context;
+          },
+        },
+        identity: bindIdentityPort(client),
+        objects: bindObjectPort({ client: objectClient, bucket: config.bucket }),
+      },
+    });
+    const repository = createAccountDeletionStorageRepository({
+      env: {
+        NEXT_PUBLIC_SUPABASE_URL: config.databaseUrl,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: config.publicKey,
+        SUPABASE_SECRET_KEY: config.secretKey,
+      },
+      createMutationClient: () => ({
+        async rpc(name, args) { return await client.rpc(name, args); },
+      }),
+    });
+    if (!repository) throw new Error('preview_deletion_invalid_configuration');
+    let stepOutcome: AccountDeletionSagaStepResult['outcome'] | null = null;
+    const tick = await runAccountDeletionSagaTick({
+      requestId: config.grant.requestId,
+      workerId: 'test-prg-preview-operator',
+      nowMs,
+      leaseDurationMs: 120_000,
+      repository,
+      async executeStep(lease) {
+        const result = await executeStep(lease);
+        stepOutcome = result.outcome;
+        return result;
+      },
+    });
+    return { ...tick, stepOutcome };
+  } finally {
+    objectClient.destroy();
+  }
 }

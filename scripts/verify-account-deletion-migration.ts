@@ -8,6 +8,7 @@ import { capturedOperationalFixtureDdl, capturedDeletionCatalog, quoteIdentifier
 import { capturedRuntimeDefinitionsDdl, capturedRuntimeSecurityDdl, capturedRuntimeTriggersDdl } from './lib/account-deletion-access-fixture';
 import { buildAccountDeletionMigration, DELETION_MIGRATION_PATH, DELETION_MIGRATION_PROJECT, DELETION_MANAGED_QUERY_URL,
   DELETION_TEST_PRG_PROJECT, DELETION_TEST_PRG_QUERY_URL, migrationCatalogSql } from './lib/account-deletion-migration';
+import { buildTestPrgPreviewScope } from './lib/account-deletion-test-prg-preview';
 import { verifyCapturedAccess } from './lib/account-deletion-access-checks';
 import { managedMigrationSql } from './lib/account-deletion-managed-target';
 import { restoreTestPrgRoutineLineEndings } from './lib/account-deletion-test-prg-upgrade';
@@ -133,7 +134,7 @@ async function main() {
         ('${unrelatedActor}','existing@example.test') ON CONFLICT (id) DO NOTHING;
       INSERT INTO deletion_upload_private.transport_target VALUES(true,'${targetHash}');
       DO $exercise$
-      DECLARE request_id uuid; unrelated_request uuid; token text; other_token text;
+      DECLARE request_id uuid; unrelated_request uuid; token text;
       BEGIN
         SELECT r.request_id INTO request_id FROM public.bff_create_account_deletion_request('${scopedActor}',repeat('1',64),repeat('2',64),'2026-08-17','clean') r;
         SELECT r.request_id INTO unrelated_request FROM public.bff_create_account_deletion_request('${unrelatedActor}',repeat('3',64),repeat('4',64),'2026-08-17','clean') r;
@@ -145,18 +146,23 @@ async function main() {
         EXCEPTION WHEN SQLSTATE '55000' THEN IF SQLERRM <> 'preview_deletion_invalid_grant' THEN RAISE; END IF; END;
         PERFORM deletion_release_private.register_preview_grant(request_id,'${scopedActor}','${targetHash}',clock_timestamp()+interval '5 minutes');
         token := public.bff_claim_account_deletion_lease(request_id,'preview-test',clock_timestamp(),60)->>'leaseToken';
-        other_token := public.bff_claim_account_deletion_lease(unrelated_request,'preview-test',clock_timestamp(),60)->>'leaseToken';
         SET LOCAL ROLE service_role;
         BEGIN
           PERFORM deletion_release_private.register_preview_grant(request_id,'${scopedActor}','${targetHash}',clock_timestamp()+interval '5 minutes');
           RAISE EXCEPTION 'service role may not register';
         EXCEPTION WHEN insufficient_privilege THEN NULL; END;
         BEGIN
-          PERFORM public.bff_account_deletion_engine(unrelated_request,other_token,'access_frozen','owner','execute',NULL);
+          PERFORM public.bff_claim_account_deletion_lease(unrelated_request,'preview-test',clock_timestamp(),60);
+          RAISE EXCEPTION 'unrelated lease allowed';
+        EXCEPTION WHEN SQLSTATE '55000' THEN IF SQLERRM <> 'preview_deletion_scope' THEN RAISE; END IF; END;
+        BEGIN
+          PERFORM public.bff_account_deletion_engine(unrelated_request,NULL,'access_frozen','owner','execute',NULL);
           RAISE EXCEPTION 'other fixture allowed';
         EXCEPTION WHEN SQLSTATE '55000' THEN IF SQLERRM <> 'preview_deletion_scope' THEN RAISE; END IF; END;
         IF public.bff_account_deletion_engine(request_id,token,'access_frozen','owner','context',NULL)->>'actorId' IS DISTINCT FROM '${scopedActor}'
         THEN RAISE EXCEPTION 'wrong approved actor'; END IF;
+        IF public.bff_account_deletion_engine(request_id,token,'access_frozen','owner','context',NULL)->>'previewTargetHash' IS DISTINCT FROM '${targetHash}'
+        THEN RAISE EXCEPTION 'wrong approved object target'; END IF;
         PERFORM public.bff_account_deletion_engine(request_id,token,'access_frozen','owner','execute',NULL);
         RESET ROLE;
         IF (SELECT count(*) FROM deletion_engine_private.frozen) <> 1
@@ -182,6 +188,12 @@ async function main() {
     assert.equal(sql(migrationCatalogSql(), 'postgres'), preScope);
     assert.equal(sql("SELECT to_regclass('deletion_release_private.preview_grant') IS NULL;", 'postgres'), 't');
     pass('test_prg grant admits only the new synthetic owner, denies unrelated and expired requests, and rolls back');
+    const previewCandidate = buildTestPrgPreviewScope();
+    reject(previewCandidate.sql.replace('DO $verify$', 'CREATE TABLE public.preview_drift(id uuid); DO $verify$'), 'preview_deletion_installation_drift', 'postgres');
+    assert.equal(sql(migrationCatalogSql(), 'postgres'), preScope);
+    sql(previewCandidate.sql, 'postgres');
+    assert.equal(sql(previewCandidate.readbackSql, 'postgres'), DELETION_TEST_PRG_PROJECT + '|t|t|t|0');
+    pass('reviewed Preview SQL installs without grants, rejects catalog drift and stamps committed schema');
     reject(ack+candidate.sql,'deletion_migration_isolated_database','postgres');
     reject(ack+candidate.sql.replace("payload constant text:='","payload constant text:='-- synthetic altered payload\n"),'deletion_migration_payload_changed');
     pass('wrong physical test database and modified SQL payload reject before DDL');

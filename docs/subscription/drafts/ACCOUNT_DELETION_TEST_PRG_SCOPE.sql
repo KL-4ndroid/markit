@@ -63,12 +63,32 @@ DO $wire$
 DECLARE
   routine regprocedure := 'public.bff_account_deletion_engine(uuid,text,text,text,text,text)'::regprocedure;
   original text := pg_get_functiondef(routine);
+  saga_routine regprocedure;
+  body_begin constant text := E'(\n[[:blank:]]*BEGIN)[[:blank:]]*\r?\n';
+  context_field constant text := '''actorId'',actor,';
   guard text := 'IF NOT deletion_release_private.runtime_allowed() THEN RAISE EXCEPTION USING ERRCODE=''55000'',MESSAGE=''engine_local_only''; END IF;';
 BEGIN
   IF (length(original) - length(replace(original, guard, ''))) <> length(guard) THEN
     RAISE EXCEPTION 'preview_deletion_engine_guard_changed';
   END IF;
-  EXECUTE replace(original, guard, 'PERFORM deletion_release_private.require_preview_grant(p_request_id);');
+  IF (length(original) - length(replace(original, context_field, ''))) <> length(context_field) THEN
+    RAISE EXCEPTION 'preview_deletion_engine_context_changed';
+  END IF;
+  original := replace(original, guard, 'PERFORM deletion_release_private.require_preview_grant(p_request_id);');
+  EXECUTE replace(original, context_field, context_field ||
+    '''previewTargetHash'',(SELECT g.target_hash FROM deletion_release_private.preview_grant g WHERE g.slot),');
+  -- Scope the saga writes as well. Lease release remains available for cleanup after expiry.
+  FOREACH saga_routine IN ARRAY ARRAY[
+    'public.bff_claim_account_deletion_lease(uuid,text,timestamptz,integer)'::regprocedure,
+    'public.bff_record_account_deletion_step(uuid,text,text,text,integer,text,text)'::regprocedure,
+    'public.bff_finalize_account_deletion(uuid,text)'::regprocedure
+  ] LOOP
+    original := pg_get_functiondef(saga_routine);
+    IF original !~* body_begin OR strpos(original, 'require_preview_grant') <> 0
+      THEN RAISE EXCEPTION 'preview_deletion_saga_guard_changed'; END IF;
+    EXECUTE regexp_replace(original, body_begin,
+      E'\\1\n  PERFORM deletion_release_private.require_preview_grant(p_request_id);\n', 'i');
+  END LOOP;
   UPDATE deletion_engine_private.approved_access SET contract = deletion_engine_private.access_catalog();
   PERFORM deletion_engine_private.assert_catalog();
 END;

@@ -665,3 +665,5 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 | 2026-10-23 | 新增已確認價格／首購優惠與可設定營運後台需求，總數 305；舊制度與 FERIA50 文件標示歷史入口 | 核對本機價格模型、migration 066、canonical gates、Apple／Google 官方規則及文件連結；只更新需求與導航，未啟用收費 |
 | 2026-10-23 | 依使用者要求增補新客牌價、優惠到期價格、舊客調價批次、逐戶價格及通知歷程與 5 項待辦；來源檔總數仍為 305 | 文件內容、連結與差異核對；未實作後台、核定通知天數或執行調價 |
 | 2026-10-23 | 使用者確認未來調價政策：首發優惠按揭露還原、既有月繳至少提前 60 天通知、年繳於符合條件續訂調整、早期用戶限期保價；待辦增至 6 項，來源檔總數仍為 305 | 核對本輪決策、移除 60 天尚未核定的現行描述、文件連結與差異；未實作或執行調價，一年保價仍為活動範例 |
+
+2026-11-16 `test_prg` 清理候選：[部署與驗收步驟](subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md#可部署的-test_prg-清理候選)、[安裝／唯讀 SQL 產生器](../scripts/prepare-account-deletion-test-prg-preview.ts)、[單步操作入口](../scripts/account-deletion-test-prg-preview-tick.ts)。

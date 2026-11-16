@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
+import { runBoundPreviewDeletionTick } from '../lib/subscription/account-deletion-engine-adapters.server';
 import { createPreviewDeletionExecutor } from '../lib/subscription/account-deletion-preview-executor.server';
 import { terminalPutTargetHash } from '../lib/subscription/account-deletion-terminal-put.server';
 
@@ -74,4 +75,59 @@ test('rejects a mixed-owner object batch before any delete and stops when a live
   input.ports.database.execute = async () => { expire(); return { affectedCount: 0, evidenceHash: 'c'.repeat(64) }; };
   assert.equal((await execute(lease)).outcome, 'manual_review');
   assert.deepEqual(calls, ['context']);
+});
+
+test('operator tick uses only the approved PostgREST endpoint and request', async t => {
+  const { input } = fixture();
+  const now = Date.now();
+  const config = {
+    ...input,
+    grant: { ...input.grant, issuedAt: now - 1000, expiresAt: now + 60_000 },
+    publicKey: 'test-publishable-key',
+    secretKey: 'sb_secret_' + 'test'.repeat(7),
+    accessKeyId: 'fixture-access',
+    secretAccessKey: 'fixture-secret',
+  };
+  const calls: { url: string; requestId: string; redirect: RequestRedirect | undefined }[] = [];
+  t.mock.method(globalThis, 'fetch', async (url: string | URL, init: RequestInit) => {
+    calls.push({ url: String(url), requestId: JSON.parse(String(init.body)).p_request_id, redirect: init.redirect });
+    return new Response('{"claimed":false}', { headers: { 'Content-Type': 'application/json' } });
+  });
+  for (const override of [{ deployment: 'production' }, { databaseUrl: 'https://invalid.example.test' },
+    { bucket: 'other-bucket' }, { boundTargetHash: '0'.repeat(64) },
+    { grant: { ...config.grant, expiresAt: now - 1 } }]) {
+    await assert.rejects(() => runBoundPreviewDeletionTick({ ...config, ...override }));
+  }
+  assert.deepEqual(calls, []);
+  const result = await runBoundPreviewDeletionTick(config);
+  assert.equal(result.outcome, 'lease_not_acquired');
+  assert.deepEqual(calls, [{
+    url: config.databaseUrl + '/rest/v1/rpc/bff_claim_account_deletion_lease',
+    requestId: config.grant.requestId,
+    redirect: 'error',
+  }]);
+  const steps: string[] = [];
+  t.mock.restoreAll();
+  t.mock.method(globalThis, 'fetch', async (url: string | URL, init: RequestInit) => {
+    const rpc = String(url).split('/').at(-1)!;
+    steps.push(rpc);
+    const args = JSON.parse(String(init.body));
+    const responses: Record<string, unknown> = {
+      bff_claim_account_deletion_lease: { claimed: true, leaseToken: randomUUID(), snapshot: {
+        requestId: config.grant.requestId, accountKind: 'owner', requestStatus: 'processing',
+        identityConfirmed: true, preflightResolution: 'clean', steps: [],
+      } },
+      bff_account_deletion_engine: { actorId: config.grant.actorId, previewTargetHash: '0'.repeat(64),
+        objects: [], totalObjects: 0 },
+      bff_record_account_deletion_step: null,
+      bff_release_account_deletion_lease: true,
+    };
+    assert.ok(Object.hasOwn(responses, rpc));
+    if (rpc === 'bff_account_deletion_engine') assert.equal(args.p_action, 'context');
+    if (rpc === 'bff_record_account_deletion_step') assert.equal(args.p_safe_error_code, 'preview_deletion_target_mismatch');
+    return Response.json(responses[rpc]);
+  });
+  assert.equal((await runBoundPreviewDeletionTick(config)).stepOutcome, 'manual_review');
+  assert.deepEqual(steps, ['bff_claim_account_deletion_lease', 'bff_account_deletion_engine',
+    'bff_record_account_deletion_step', 'bff_release_account_deletion_lease']);
 });

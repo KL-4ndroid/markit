@@ -6,6 +6,8 @@
   "include": [
     "scripts/account-deletion-managed-migration.ts",
     "scripts/account-deletion-test-prg-migration.ts",
+    "scripts/account-deletion-test-prg-preview-tick.ts",
+    "scripts/prepare-account-deletion-test-prg-preview.ts",
     "tests/account-deletion-managed-target.test.ts",
     "scripts/prepare-account-deletion-migration.ts",
     "scripts/verify-account-deletion-migration.ts",

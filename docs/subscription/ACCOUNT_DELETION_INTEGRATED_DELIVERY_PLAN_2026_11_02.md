@@ -349,13 +349,13 @@ Vercel `markit-app` 已開啟 Require Log In，採 Standard Protection。遠端�
 2. 12 月 1 日後，將環境變數限於候選分支的 Preview。`NEXT_PUBLIC_SUPABASE_URL` 指向 `https://tzhbirwchhqabkxhqjdl.supabase.co`，`NEXT_PUBLIC_SUPABASE_ANON_KEY` 使用該專案的公開金鑰，伺服器使用同專案的 `SUPABASE_SECRET_KEY`。`R2_BUCKET_NAME` 指向 `markit-account-deletion-preview`，R2 憑證只授權該私有貯體。啟用 `ACCOUNT_DELETION_UPLOAD_BARRIER_ENABLED`、`ACCOUNT_DELETION_UPLOAD_RECEIPTS_ENABLED` 和 `ACCOUNT_DELETION_PREVIEW_UPLOADS_ENABLED`，確認 `ACCOUNT_DELETION_PREVIEW_SUPABASE_REF`、`ACCOUNT_DELETION_PREVIEW_OWNER_ID` 和 `ACCOUNT_DELETION_PREVIEW_R2_TARGET_SHA256` 各自對應專案、當次新建合成老闆及已登記的貯體指紋。以 `.env.example` 的設定名稱為準，敏感值只存在受保護的執行環境。
 3. 確認 `PRODUCT_COVER_PHOTO_UPLOAD_ENABLED`、`PRODUCT_COVER_PHOTO_READ_ENABLED`、`SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED`、`SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED` 和 `SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ENABLED` 已套用。部署後，先看未登入時是否被 Vercel 攔截，再用已授權的身分讀 `/api/health` 並核對 SHA。確認 `test_prg` 的 096 回條、唯一 R2 綁定、`runtime_enabled=false`，以及此部署的刪帳 API 回 `501 account_deletion_disabled`。
 4. 在同一個部署，以合成老闆新增商品、市集和成交。各上傳一張商品照和成交照，再送出相同 ID 與照片內容。驗收應回 `replayed: true`、每對原圖與縮圖各只有一筆成功寫入回條、物件內容一致。再比對內容不同時回 `409`，以及使用另一合成身分越權讀取時受到拒絕。每次確認後只記錄部署 ID、revision、狀態碼與測試結果。
-5. 清理時先記錄本輪合成帳號、場次、商品及物件鍵，逐一比對歸屬。完整刪帳引擎的託管驗收需先有僅能執行當次合成帳號的入口。若先完成照片驗收，使用當次清單清除已建立的測試物件與資料，讀回物件 404 和資料庫筆數，再撤銷短效憑證及移除該分支的測試環境變數。若物件寫入結果不明，保留該筆證據以便查回，待確認後再清理。
+5. 清理時先記錄本輪合成帳號、場次、商品及物件鍵，逐一比對歸屬。依下方專案限定的清理候選驗收整套刪帳引擎，讀回物件 404、Auth 與資料庫筆數，再撤銷短效憑證及移除該分支的測試環境變數。若物件寫入結果不明，保留該筆證據以便查回，待確認後再清理。
 
 ### Preview 合成帳號清理執行器
 
 伺服器端執行器要求 Preview、`test_prg`、專用 R2 及相符的貯體指紋。每次執行比對固定的合成老闆 UUID、刪帳申請 UUID 與最長 30 分鐘的授權期限。身份以資料庫回傳為準，儲存批次先整批核對歸屬，並在每次清理、確認和回條寫入前再核對期限。應用程式資料模型與手機能力維持共用，操作透過既有資料庫、Auth 和物件儲存介面。
 
-目前由本機整合測試建立合成帳號與授權，使用本機 PostgreSQL、GoTrue 和 S3 替身執行。託管接線需讓資料庫端由專案管理者登記本輪新建帳號與申請，並在清理 RPC 逐次核對該登記。R2 和 Auth 連線須使用同一核對過的測試設定。現有 096 的執行鎖仍為停用。託管接線需保留對其他帳號的拒絕，驗收前先在本機隔離復驗。
+目前由本機整合測試建立合成帳號與授權，使用本機 PostgreSQL、GoTrue 和 S3 替身執行。下方候選讓專案管理者登記本輪合成帳號與申請，清理 RPC 逐次核對登記。執行端比對 SQL 回傳與自身計算的貯體指紋，再進入 Auth 或 R2 操作。096 的全域執行鎖維持停用。
 
 3 組範圍測試與 26 組本機整合案例通過，包含指定帳號的兩類照片及十步清理。第一次全量執行在本機 Docker 建立網路時逾時，下一次在商品照凍結案例出現回條數不符，針對性驗收及最後一次全量複跑通過。[本機整合證據](evidence/account-deletion-integrated-candidate-2026-11-02.json)
 
@@ -364,3 +364,16 @@ Vercel `markit-app` 已開啟 Require Log In，採 Standard Protection。遠端�
 新增交易末尾強制回滾的 SQL 草案。只有符合指定 `test_prg` 096 安裝回條的資料庫可進入演練。資料庫管理角色可為當次新建且已確認身分的合成老闆登記一筆授權，綁定申請、帳號、有效期限與已核對的 R2 指紋。清理引擎每次 RPC 查驗這筆授權並鎖定相關資料列。既有租約、步驟順序與資料目錄檢查照常執行。
 
 在隔離資料庫套用實際停用版 096 後驗證。已登記的合成帳號可讀取清理範圍並凍結，第二個帳號的請求被拒絕。過期授權及 R2 指紋變更會使清理 RPC 停止，服務角色無權登記授權。驗證結束後確認整筆回滾、資料庫指紋還原。下一步是把這份演練整理成可獨立審查的測試環境部署候選，接上同一測試目標的 Auth、PostgREST 和 R2。 [SQL 演練](drafts/ACCOUNT_DELETION_TEST_PRG_SCOPE.sql) · [隔離測試](../../scripts/verify-account-deletion-migration.ts)
+
+### 可部署的 `test_prg` 清理候選
+
+本機產生器會輸出安裝 SQL、SHA-256 與獨立唯讀驗證 SQL。安裝會鎖定同一個 096 安裝鎖，核對已安裝的停用版基線，再於同一交易加入授權保護。租約、清理、步驟回條與最終確認都要求同一筆有效授權。安裝回條涵蓋更新後的目錄指紋，安裝時授權表為空。遇到既有環境差異或回應不明，先讀回與查核，不重送安裝。 [候選產生器](../../scripts/prepare-account-deletion-test-prg-preview.ts) · [本機安裝測試](../../scripts/verify-account-deletion-migration.ts)
+
+1. 在乾淨 checkout 執行 `node --import tsx scripts/prepare-account-deletion-test-prg-preview.ts --prepare`。12 月 1 日後，核對 Supabase 管理頁專案為 `test_prg`（`tzhbirwchhqabkxhqjdl`）、096 已安裝且停用、專用 R2 指紋相符，再完整執行產生的安裝 SQL。另開唯讀查詢執行產生的 readback，確認專案、目錄與停用狀態皆通過且授權數為 0。
+2. 受保護 Preview 先用新建的 `candidate-cleanup-<12 位小寫十六進位>@example.test` 合成老闆完成商品及成交照片驗收。記錄原圖、縮圖與合成資料 IDs。以同專案的管理或服務端連線建立並確認該合成申請，管理者再用 `deletion_release_private.register_preview_grant` 登記該申請 UUID、老闆 UUID、核對過的貯體指紋與到期時間。只有 30 分鐘內建立的合成帳號可登記。先以另一個測試請求驗證授權拒絕，再處理獲准的申請。
+3. 新開只含當次 Preview 設定的操作端工作階段，使用同專案 Supabase secret key、專用貯體短效令牌、`VERCEL_ENV=preview` 及與資料庫登記相符的 `ACCOUNT_DELETION_PREVIEW_R2_TARGET_SHA256`、`TEST_PRG_DELETION_ACTOR_ID`、`TEST_PRG_DELETION_REQUEST_ID`、`TEST_PRG_DELETION_ISSUED_AT_MS` 和 `TEST_PRG_DELETION_EXPIRES_AT_MS`。時間欄使用 Unix 毫秒，以同一個最多 30 分鐘的窗口為準。執行 `node --import tsx scripts/account-deletion-test-prg-preview-tick.ts --tick`。每次只做一個步驟或結案。依回傳的步驟狀態再決定是否續跑，並記錄當次結果。過期、部分完成或結果不明時，先核對資料庫及儲存回條。 [操作入口](../../scripts/account-deletion-test-prg-preview-tick.ts)
+4. 核對 Auth、sessions、營運資料與兩條照片入口的四個 R2 物件皆已驗證清理，並比對其他測試帳號與物件均保留。驗收後撤銷當次憑證、清除 Preview 專用暫時設定，並由管理者移除本輪授權。提前停止時先撤銷授權與短效憑證，已執行的永久刪除無法撤回。
+
+託管候選部署及端到端驗收留到 12 月 1 日後。刪帳的 App HTTP 入口繼續停用，這個專案限定操作入口只有測試用途。
+
+本輪 25 項隔離資料庫檢查、4 項執行端測試及專用 TypeScript 檢查通過。26 組整合回歸使用本機 GoTrue、PostgREST、PostgreSQL 與 S3 替身，重驗照片重送與十步清理。託管專案限定 SQL 與執行入口的端到端組合列入 Preview 驗收。正式 096 的 SHA-256 維持相同。 [本機整合證據](evidence/account-deletion-integrated-candidate-2026-11-02.json)

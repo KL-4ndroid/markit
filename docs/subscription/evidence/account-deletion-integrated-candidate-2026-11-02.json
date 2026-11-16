@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-16T02:10:57.681Z",
+  "at": "2026-11-16T07:05:40.969Z",
   "checks": [
     "default-off and incompatible/deployed/remote configuration stops before registration, claim or photo writes",
     "product success replay: JPEG/WebP exact content readback, changed payload conflict, missing object holds, zero extra PUTs",
@@ -76,7 +76,7 @@
     },
     {
       "path": "lib/subscription/account-deletion-engine-adapters.server.ts",
-      "sha256": "8070bb6efced7d9db8fa4799f60a5d51232301b32f0100de7b4b91656b876769"
+      "sha256": "00c7ac3d1bed9316580a77003545c04a7985a3d3198845863ee961ab1e7eae97"
     },
     {
       "path": "lib/subscription/account-deletion-upload-barrier.server.ts",
