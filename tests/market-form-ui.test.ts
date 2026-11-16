@@ -22,9 +22,21 @@ for (const source of [addForm, editForm]) {
   assert.doesNotMatch(source, /\b(?:window\.)?alert\s*\(|\bwindow\.confirm\s*\(/);
 }
 
-assert.match(addForm, /title=\{canRecord \? '成本與抽成' : '繳費金額'\}/);
-assert.match(addForm, /title="設備"/);
-assert.match(editForm, /!isManagerMode &&[\s\S]*?title=\{canRecord \? '成本與抽成' : '繳費金額'\}/);
+for (const source of [addForm, editForm]) {
+  assert.match(source, /title="費用與抽成條件"/);
+  assert.match(source, /<MarketCostFields[\s\S]*?registrationTerms/);
+  assert.match(source, /<MarketEquipmentFields[\s\S]*?registrationTerms/);
+  assert.match(source, /fixedCostTotal = canRecord && !isPlanLoading \?/);
+}
+assert.match(editForm, /!isManagerMode &&[\s\S]*?title="費用與抽成條件"/);
+assert.match(editForm, /changedMarketFeeFields\(market,/);
+assert.match(sharedFields, /registrationTerms \|\| canRecord/);
+assert.match(sharedFields, /canRecord && fixedCostTotal !== undefined/);
+assert.match(sharedFields, /!registrationTerms && !canRecord/);
+const freeWorkspace = readFileSync(join(root, 'components/markets/FreeMarketWorkspace.tsx'), 'utf8');
+assert.match(freeWorkspace, /主辦抽成比例/);
+assert.match(freeWorkspace, /設備準備/);
+assert.doesNotMatch(freeWorkspace, /totalRevenue|totalProfit|calculate.*FixedCost/);
 assert.match(sharedFields, /label="市集名稱"/);
 assert.match(sharedFields, /label="市集日期（可複選）"/);
 assert.match(sharedFields, /mode\?: 'owner' \| 'manager'/);

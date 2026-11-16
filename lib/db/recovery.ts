@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 import {
   checkAppDatabaseIntegrity,
   checkCurrentDatabaseIntegrity,
@@ -108,7 +109,7 @@ export async function createRecoveryBackup(): Promise<RecoveryBackup> {
   const timestamp = new Date(createdAt).toISOString().replace(/[:.]/g, '-');
 
   return {
-    filename: `feria-recovery-${suffix}-${timestamp}.json`,
+    filename: `${APP_BRAND.filePrefix}-recovery-${suffix}-${timestamp}.json`,
     mimeType: 'application/json',
     content,
     createdAt,

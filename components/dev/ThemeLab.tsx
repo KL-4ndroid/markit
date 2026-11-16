@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import {
   AlertTriangle,
@@ -190,7 +191,7 @@ export function ThemeLab({
     onPaletteChange({ ...palette, [key]: value });
   };
 
-  const exportPayload = () => createThemeLabExport(presetName || 'Féria 自訂配色', palette);
+  const exportPayload = () => createThemeLabExport(presetName || `${APP_BRAND.name}自訂配色`, palette);
 
   const copyJson = async () => {
     try {
@@ -206,7 +207,7 @@ export function ThemeLab({
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `feria-theme-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.download = `${APP_BRAND.filePrefix}-theme-${new Date().toISOString().slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
     setMessage('已匯出配色檔');

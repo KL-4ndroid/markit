@@ -15,6 +15,7 @@ const {
   createSalesPhotoEvidenceExpirationRouteHandlers,
   isSalesPhotoEvidenceExpirationCronAuthorized,
   isSalesPhotoEvidenceExpirationRouteEnabledForEnv,
+  verifyProductionR2Target,
 } = testRequire('../app/api/cron/sales-photo-evidence-expiration/route') as typeof import(
   '../app/api/cron/sales-photo-evidence-expiration/route'
 );
@@ -101,6 +102,36 @@ runTest('expiration route requires explicit production enablement and cron authe
   assert.equal(isSalesPhotoEvidenceExpirationCronAuthorized(authorizedRequest, {
     CRON_SECRET: `${cronSecret}-wrong`,
   }), false);
+});
+
+runTest('R2 target HEAD requires production and cron auth and only returns a bound match', async () => {
+  const nonce = 'a'.repeat(64);
+  const env = {
+    VERCEL_ENV: 'production',
+    VERCEL_DEPLOYMENT_ID: 'dpl_test123',
+    CRON_SECRET: cronSecret,
+    R2_ACCOUNT_ID: '72293a95c36f98208b5d84567364c490',
+    R2_BUCKET_NAME: 'markit-media-production',
+  };
+  const url = 'https://example.test/api/cron/sales-photo-evidence-expiration';
+  const request = (secret: string, challenge = nonce) => new Request(url, {
+    method: 'HEAD',
+    headers: { authorization: `Bearer ${secret}`, 'x-r2-verification-nonce': challenge },
+  });
+  assert.equal(verifyProductionR2Target(request('wrong'), env).status, 404);
+  assert.equal(verifyProductionR2Target(request('é' + cronSecret.slice(1)), env).status, 404);
+  assert.equal(verifyProductionR2Target(request(cronSecret), { ...env, VERCEL_ENV: 'preview' }).status, 404);
+  assert.equal(verifyProductionR2Target(request(cronSecret, 'wrong'), env).status, 400);
+  assert.equal(verifyProductionR2Target(request(cronSecret), { ...env, VERCEL_DEPLOYMENT_ID: '' }).status, 503);
+  assert.equal(verifyProductionR2Target(request(cronSecret), { ...env, R2_BUCKET_NAME: 'different' }).status, 409);
+  assert.equal(verifyProductionR2Target(request(cronSecret), { ...env, R2_ENDPOINT: 'https://other.test' }).status, 409);
+
+  const response = verifyProductionR2Target(request(cronSecret), env);
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get('cache-control'), 'private, no-store');
+  assert.equal(response.headers.get('x-r2-verification-nonce'), nonce);
+  assert.equal(response.headers.get('x-r2-verification-deployment'), env.VERCEL_DEPLOYMENT_ID);
+  assert.equal(await response.text(), '');
 });
 
 runTest('cleanup deletes thumbnail and image before expiration metadata finalize', async () => {

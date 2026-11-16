@@ -1,6 +1,6 @@
-# Feria 人工上架工作 Checklist
+# 拾光日子人工上架工作 Checklist
 
-狀態來源更新日：2026-10-20
+狀態來源更新日：2026-11-11
 
 > 此檔案由 `npm.cmd run update:manual-launch-checklist` 產生，請勿直接手動勾選。
 > 操作步驟與停止條件以 `docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md` 為準。
@@ -29,11 +29,12 @@
 | `APPLE-VERIFICATION-RUNTIME` | agent | `pending_approval` | `APPLE-CATALOG-CONFIG` |
 | `IOS-STORE-ADAPTERS` | agent | `blocked_dependency` | `IOS-DEVICE-ADAPTERS`、`APPLE-CATALOG-CONFIG` |
 | `IOS-STORE-COMPLIANCE` | shared | `blocked_dependency` | `IOS-STORE-ADAPTERS`、`ACCOUNT-DELETION-RUNTIME`、`LEGAL-SUPPORT-APPROVAL` |
-| `IOS-STORE-ASSETS` | shared | `blocked_dependency` | `IOS-DEVICE-VERIFICATION` |
+| `IOS-BRAND-ROLLOUT` | shared | `pending_manual` | 依對應實作切片審查 |
+| `IOS-STORE-ASSETS` | shared | `blocked_dependency` | `IOS-DEVICE-VERIFICATION`、`IOS-BRAND-ROLLOUT` |
 | `IOS-SANDBOX-LIFECYCLE` | shared | `blocked_dependency` | `APPLE-VERIFICATION-RUNTIME`、`ENTITLEMENT-WRITER-RUNTIME`、`IOS-STORE-ADAPTERS`、`IOS-STORE-COMPLIANCE` |
 | `IOS-WEB-ACCESS` | shared | `blocked_dependency` | `IOS-SANDBOX-LIFECYCLE` |
 | `IOS-EXTERNAL-TESTFLIGHT` | shared | `blocked_dependency` | `IOS-INTERNAL-TESTFLIGHT`、`IOS-WEB-ACCESS`、`IOS-STORE-ASSETS`、`IOS-STORE-COMPLIANCE` |
-| `IOS-PAID-RELEASE` | shared | `blocked_dependency` | `IOS-EXTERNAL-TESTFLIGHT`、`SEC-REMEDIATION`、`WEB-PRODUCTION-CONFIG`、`WEB-MEDIA-PRODUCTION`、`WEB-OBSERVABILITY`、`WEB-SECURITY-HEADERS-FINAL` |
+| `IOS-PAID-RELEASE` | shared | `blocked_dependency` | `IOS-EXTERNAL-TESTFLIGHT`、`SEC-REMEDIATION`、`WEB-PRODUCTION-CONFIG`、`WEB-MEDIA-PRODUCTION`、`WEB-OBSERVABILITY`、`WEB-SECURITY-HEADERS-FINAL`、`IOS-BRAND-ROLLOUT` |
 | `IOS-SIGNING-READINESS` | shared | `pending_manual` | `IOS-BOOTSTRAP-PREP` |
 | `IOS-PROJECT-GENERATION` | shared | `pending_manual` | `IOS-BOOTSTRAP-PREP` |
 | `IOS-INTERACTIONS-SOURCE` | agent | `complete` | `IOS-BOOTSTRAP-PREP`、`IOS-FILES-SOURCE` |
@@ -166,7 +167,7 @@
   - [x] 核准付費 identity 與 profiles.id 的解耦方式（已核准；item-status:deletion.billing-identity）
   - [x] 由 legal_privacy_owner 核准 billing subject 法律基礎、最小化與 erasure boundary（已核准；item-status:deletion.billing-identity-legal）
   - [x] 由 security_owner 核准 billing subject key、存取、加密、audit 與不可重新識別（已核准；item-status:deletion.billing-identity-review）
-  - [x] 核准有效 Apple／Google 訂閱下刪除 Féria 帳號的行為與告知（已核准；item-status:deletion.active-store）
+  - [x] 核准有效 Apple／Google 訂閱下刪除拾光日子帳號的行為與告知（已核准；item-status:deletion.active-store）
   - [x] 核准 owner workspace 中員工／第三方資料的保留、匯出、匿名化或刪除（已核准；item-status:deletion.third-party-data）
   - [x] 由 legal_privacy_owner 核准第三方權利、controller 邊界、shared object 與 appeal（已核准；item-status:deletion.staff-third-party-legal）
   - [x] 由 security_owner 核准匿名化欄位／演算法、linkage resistance 與 evidence（已核准；item-status:deletion.staff-third-party-review）

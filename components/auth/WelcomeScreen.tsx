@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import { ClipboardList, Shield, Users } from 'lucide-react';
 import Link from 'next/link';
@@ -21,17 +22,17 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
             {/* eslint-disable-next-line @next/next/no-img-element -- PWA icon is already generated at fixed sizes */}
             <img
               src="/icons/icon-192x192.png"
-              alt="Féria - 出攤筆記"
+              alt=""
               className="h-full w-full object-contain"
             />
           </div>
 
           <h1 className="mb-3 font-serif text-4xl tracking-[0.15em] text-foreground/80">
-            Féria
+            {APP_BRAND.name}
           </h1>
 
-          <p className="text-xs text-muted-foreground tracking-[0.4em]">
-            出攤筆記
+          <p className="text-sm text-muted-foreground tracking-wide">
+            {APP_BRAND.positioning}
           </p>
         </div>
 

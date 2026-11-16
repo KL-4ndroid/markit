@@ -29,12 +29,14 @@ function ProtectedBottomNavigation() {
   );
   const { isStaff, roleRefreshState } = useRoleContext();
 
-  const { canRecord, tier } = useSubscriptionExperience();
+  const { tier, navigationTier } = useSubscriptionExperience();
+  const showSalesNavigation = navigationTier === 'light' || navigationTier === 'advanced';
   const navItems = getAppNavigationItems({
     isStaff,
     roleReady: roleRefreshState.isAuthorizationFresh,
-  }).filter(item => isStaff || canRecord || (item.id !== 'products' && item.id !== 'analytics'))
-    .map(item => item.id === 'analytics' && tier === 'light' ? { ...item, label: '紀錄' } : item);
+  }).filter(item => isStaff || showSalesNavigation || (item.id !== 'products' && item.id !== 'analytics')
+    || (tier === 'unavailable' && roleRefreshState.isAuthorizationFresh && getActiveAppNavigationItemId(pathname, [item]) === item.id))
+    .map(item => item.id === 'analytics' && navigationTier !== 'advanced' ? { ...item, label: '紀錄' } : item);
   const activeItemId = getActiveAppNavigationItemId(pathname, navItems);
 
   return (

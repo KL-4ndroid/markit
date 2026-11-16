@@ -27,11 +27,11 @@ const report = evaluateLaunchExecutionPlan(document);
 assert.equal(document.overallStatus, 'not_ready');
 assert.deepEqual(document.releaseOrder, LAUNCH_EXECUTION_RELEASE_ORDER);
 assert.equal(report.launchReady, false);
-assert.equal(report.totalTaskCount, 58);
+assert.equal(report.totalTaskCount, 59);
 assert.deepEqual(report.counts, {
   complete: 15,
   ready_agent: 0,
-  pending_manual: 10,
+  pending_manual: 11,
   pending_approval: 6,
   blocked_dependency: 24,
   deferred: 3,
@@ -49,6 +49,9 @@ assert.ok(!report.humanActionIds.includes('ACCOUNT-DELETION-POLICY'));
 assert.ok(report.approvalIds.includes('APPLE-VERIFICATION-RUNTIME'));
 assert.ok(report.approvalIds.includes('SEC-REMEDIATION'));
 assert.ok(report.deferredIds.includes('WEB-ECPAY'));
+assert.ok(report.humanActionIds.includes('IOS-BRAND-ROLLOUT'));
+assert.ok(document.tasks.find(task=>task.id==='IOS-STORE-ASSETS')?.dependsOn.includes('IOS-BRAND-ROLLOUT'));
+assert.ok(!document.tasks.find(task=>task.id==='IOS-BOOTSTRAP-PREP')?.dependsOn.includes('IOS-BRAND-ROLLOUT'));
 
 for (const task of document.tasks) {
   for (const path of task.evidence) assert.equal(existsSync(join(root, path)), true, path);

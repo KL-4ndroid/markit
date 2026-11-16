@@ -46,7 +46,7 @@ assert.equal(report.founderDisposition, 'deferred_pending_mechanism');
 assert.equal(report.checkCount, 6);
 assert.equal(report.passedCount, 0);
 assert.equal(report.blockerCount, 6);
-assert.equal(document.apple.subscriptionGroupDisplayName, 'Feria 方案');
+assert.equal(document.apple.subscriptionGroupDisplayName, '拾光日子方案');
 assert.ok(document.apple.products.every(product => Array.from(product.displayName).length <= 30));
 assert.ok(document.apple.products.every(product => Array.from(product.description).length <= 45));
 assert.ok(document.google.subscriptions.every(subscription => (

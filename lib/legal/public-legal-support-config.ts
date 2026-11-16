@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 export type PublicLegalSupportEnv = Record<string, string | undefined>;
 
 export type PublicLegalSupportConfig = {
@@ -111,5 +112,5 @@ export function buildSupportMailto(
   if (!supportEmail) return null;
   const boundedTopic = boundedPublicText(topic.trim(), 1, 80);
   if (!boundedTopic) return `mailto:${supportEmail}`;
-  return `mailto:${supportEmail}?subject=${encodeURIComponent(`[Feria support] ${boundedTopic}`)}`;
+  return `mailto:${supportEmail}?subject=${encodeURIComponent(`[${APP_BRAND.englishName} support] ${boundedTopic}`)}`;
 }

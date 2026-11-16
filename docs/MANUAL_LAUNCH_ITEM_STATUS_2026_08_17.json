@@ -78,7 +78,7 @@
     { "id": "legal.subscription", "status": "proposed_ai", "note": "Store-authoritative price, renewal, cancellation and refund disclosure proposal prepared.", "approvedAt": null, "approvedByRole": null, "evidence": [] },
     { "id": "legal.withdrawal-right", "status": "pending_human", "note": "Taiwan counsel must confirm whether and how any statutory exception applies to the actual service.", "approvedAt": null, "approvedByRole": null, "evidence": [] },
     { "id": "legal.security", "status": "proposed_ai", "note": "Incident severity, notification, evidence and escalation proposal prepared.", "approvedAt": null, "approvedByRole": null, "evidence": [] },
-    { "id": "support.mailbox", "status": "pending_human", "note": "Public mailbox and responder ownership require an external account decision.", "approvedAt": null, "approvedByRole": null, "evidence": [] },
+    { "id": "support.mailbox", "status": "pending_human", "note": "User confirmed the public mailbox and normal receipt on 2026-11-02; see the integrated deletion plan. Responder ownership and case-workflow evidence remain outstanding.", "approvedAt": null, "approvedByRole": null, "evidence": [] },
     { "id": "support.sla", "status": "proposed_ai", "note": "Tiered first-response and escalation targets prepared for approval.", "approvedAt": null, "approvedByRole": null, "evidence": [] },
     { "id": "support.case-drill", "status": "pending_human", "note": "Requires a real mailbox workflow using a non-customer fixture.", "approvedAt": null, "approvedByRole": null, "evidence": [] },
     { "id": "support.incident-drill", "status": "pending_human", "note": "Requires a non-Production incident fixture and assigned responders.", "approvedAt": null, "approvedByRole": null, "evidence": [] },

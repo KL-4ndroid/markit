@@ -14,7 +14,7 @@ const actions = readFileSync(
 );
 
 assert.match(page, /<SubscriptionAccountSummary \/>/);
-assert.match(summary, /useAccountCapabilities/);
+assert.match(summary, /useSubscriptionExperience/);
 assert.match(summary, /buildSubscriptionCenterView/);
 for (const label of ['目前方案', '功能狀態', '付款狀態', '有效期限', '購買來源']) {
   assert.ok(summary.includes(label), `subscription summary missing ${label}`);

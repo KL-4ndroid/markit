@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import { useEffect, useState } from 'react';
 import { Download, FileWarning, RefreshCw, ShieldCheck } from 'lucide-react';
@@ -65,7 +66,7 @@ export function ImportSafetyStatusPanel() {
     setIsExporting(true);
     try {
       await savePlatformFile({
-        filename: `feria-emergency-backup-${timestamp}.json`,
+        filename: `${APP_BRAND.filePrefix}-emergency-backup-${timestamp}.json`,
         data: new Blob([content], { type: 'application/json' }),
       });
       toast.success('緊急備份已匯出');

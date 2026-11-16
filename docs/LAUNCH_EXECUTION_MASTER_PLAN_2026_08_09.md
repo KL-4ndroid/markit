@@ -1,4 +1,9 @@
-# Féria Launch Execution Master Plan
+# 拾光日子 / STALLIGHT DAYS Launch Execution Master Plan
+
+## 2026-11-11：品牌更名交付
+
+`IOS-BRAND-ROLLOUT` 為 `pending_manual`。更名已進入來源實作與發布驗收階段，涵蓋 Web、PWA、iOS 包裝與繁中／英文商店文案。線上發布、原生簽署建置與商店送審分別驗收。詳細範圍見[品牌規格](brand/STALLIGHT_DAYS_BRAND_BRIEF_2026_11_02.md)。
+
 
 Date: 2026-08-09
 

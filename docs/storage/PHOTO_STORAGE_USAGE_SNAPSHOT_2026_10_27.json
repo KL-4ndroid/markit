@@ -1,0 +1,39 @@
+{
+  "observedAt": "2026-10-27T02:21:29.889Z",
+  "scope": "read-only; configured project/bucket only; excludes billing account usage and monthly bandwidth",
+  "supabasePlan": "not verified",
+  "metadata": {
+    "product_cover_photos": {
+      "complete": true,
+      "rows": 0,
+      "statusCounts": {},
+      "recordedBytes": 0,
+      "note": "metadata may include obsolete records"
+    },
+    "sale_photo_evidence": {
+      "complete": true,
+      "rows": 23,
+      "statusCounts": {
+        "uploaded": 10,
+        "expired": 12,
+        "upload_failed": 1
+      },
+      "recordedBytes": 5896817,
+      "note": "file_size_bytes may omit thumbnail; metadata is not physical bucket inventory"
+    }
+  },
+  "r2": {
+    "objectCount": 0,
+    "bytes": 0,
+    "decimalMB": 0,
+    "complete": true,
+    "listRequests": 1,
+    "note": "snapshot, not GB-month or account-wide invoice; no object downloaded or modified"
+  },
+  "supabaseStorage": {
+    "bucketCount": 0,
+    "privateBucketCount": 0,
+    "note": "listing only, no files copied or bucket changed"
+  },
+  "productionConfigurationMatch": "not verified; local configured R2 bucket is empty while DB has uploaded photo records; do not infer production files missing or total production usage zero"
+}

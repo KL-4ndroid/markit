@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import { useEffect, useState } from 'react';
 import { X, Download, Share } from 'lucide-react';
@@ -107,7 +108,7 @@ export function PWAInstallPrompt({
       <div className="fixed inset-0 z-dialog flex items-end bg-deep/35 p-4 backdrop-blur-sm sm:items-center sm:justify-center">
         <div className="japanese-surface-card w-full max-w-md rounded-t-[2rem] p-6 animate-slide-up sm:rounded-[2rem]">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-foreground">安裝 Féria 到主畫面</h3>
+            <h3 className="text-lg font-medium text-foreground">將{APP_BRAND.name}加到主畫面</h3>
             <button
               onClick={handleDismiss}
               className="p-2 rounded-full hover:bg-soft-pink transition-colors"
@@ -117,7 +118,7 @@ export function PWAInstallPrompt({
           </div>
 
           <p className="text-sm text-muted-foreground mb-6">
-            將 Féria 加入主畫面，享受更快速的啟動和更好的使用體驗！
+            加入後可直接從主畫面開啟{APP_BRAND.name}。
           </p>
 
           <div className="space-y-4 mb-6">
@@ -157,7 +158,7 @@ export function PWAInstallPrompt({
 
           <div className="bg-cat-clothing rounded-xl p-4">
             <p className="text-xs text-muted-foreground">
-              💡 安裝後，您可以像使用一般 App 一樣從主畫面啟動 Féria，享受更流暢的體驗！
+              💡 加入主畫面後，點一下圖示即可開啟。
             </p>
           </div>
 
@@ -184,7 +185,7 @@ export function PWAInstallPrompt({
 
             <div className="flex-1">
               <h3 className="text-base font-medium text-foreground mb-1">
-                安裝 Féria
+                安裝{APP_BRAND.name}
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 安裝到您的裝置，享受更快速的啟動和離線使用！

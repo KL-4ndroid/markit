@@ -52,8 +52,8 @@ products describe only capabilities marked `included` in the canonical runtime p
 
 | Plan | Candidate recurring value |
 | --- | --- |
-| Pro | Single-market review, cross-market analysis, settlement/PDF reporting, and product-cover photos. |
-| Team | All Pro capabilities plus staff collaboration, Manager workflow, and sales-photo evidence. |
+| 輕量版 (`pro`) | Sales and interaction records, product inventory, single-market review, basic monthly summaries, and product-cover photos. |
+| 高階版 (`team`) | Cross-market analysis, full settlement reports with PDF export, sales-photo evidence, and staff collaboration. |
 
 The JSON carries the exact capability IDs behind every Apple product and Google
 subscription. The parser rejects any capability not currently `included` for that
@@ -93,9 +93,8 @@ requires that status to be `complete`; it still does not activate the product.
 
 1. Approve the canonical Pro/Team capability matrix and confirm every listed capability
    exists in the final native binary at the intended entitlement and role boundary.
-2. Approve brand spelling. The Apple subscription-group name uses `Feria` without the
-   diacritic because Apple restricts special/diacritic characters in that field; product
-   names retain the canonical `Féria` brand.
+2. Verify the subscription group and tier names in each console for zh-TW. Existing
+   store product IDs remain stable.
 3. Recheck Apple/Google current field limits and subscription policies.
 4. Complete legal review of recurring-value claims and the separate in-app billing copy.
 5. Resolve or explicitly defer Founder on native stores.

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "LAUNCH_EXECUTION_MASTER_PLAN_2026_08_09.md",
-  "updatedAt": "2026-10-20",
+  "updatedAt": "2026-11-11",
   "overallStatus": "not_ready",
   "releaseOrder": ["web_core", "ios_native_paid", "android_native_paid", "web_paid_deferred"],
   "tasks": [
@@ -405,11 +405,20 @@
       "evidence": ["docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md"]
     },
     {
+      "id": "IOS-BRAND-ROLLOUT",
+      "title": "Verify Stallight Days branding on native devices and in store listings",
+      "owner": "shared",
+      "status": "pending_manual",
+      "dependsOn": [],
+      "gateRefs": [],
+      "evidence": ["docs/brand/STALLIGHT_DAYS_BRAND_BRIEF_2026_11_02.md","docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md"]
+    },
+    {
       "id": "IOS-STORE-ASSETS",
       "title": "Approve iOS artwork and capture native candidate screenshots",
       "owner": "shared",
       "status": "blocked_dependency",
-      "dependsOn": ["IOS-DEVICE-VERIFICATION"],
+      "dependsOn": ["IOS-DEVICE-VERIFICATION","IOS-BRAND-ROLLOUT"],
       "gateRefs": [],
       "evidence": ["docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md"]
     },
@@ -445,7 +454,7 @@
       "title": "Record iOS paid release canary and App Store go or no-go",
       "owner": "shared",
       "status": "blocked_dependency",
-      "dependsOn": ["IOS-EXTERNAL-TESTFLIGHT","SEC-REMEDIATION","WEB-PRODUCTION-CONFIG","WEB-MEDIA-PRODUCTION","WEB-OBSERVABILITY","WEB-SECURITY-HEADERS-FINAL"],
+      "dependsOn": ["IOS-EXTERNAL-TESTFLIGHT","SEC-REMEDIATION","WEB-PRODUCTION-CONFIG","WEB-MEDIA-PRODUCTION","WEB-OBSERVABILITY","WEB-SECURITY-HEADERS-FINAL","IOS-BRAND-ROLLOUT"],
       "gateRefs": [],
       "evidence": ["docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md"]
     },

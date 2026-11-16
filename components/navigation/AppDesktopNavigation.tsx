@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import Link from 'next/link';
 
@@ -19,15 +20,15 @@ export function AppDesktopNavigation({ items, activeItemId }: AppDesktopNavigati
       <div className="border-b border-primary/10 px-5 py-6">
         <Link
           href="/"
-          aria-label="Féria 首頁"
+          aria-label={`${APP_BRAND.name}首頁`}
           className="flex min-h-11 items-center gap-3 rounded-control px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-control bg-primary text-lg font-semibold text-white shadow-atelier-key">
             F
           </span>
           <span className="min-w-0">
-            <span className="block text-lg font-semibold text-foreground">Féria</span>
-            <span className="block text-xs text-muted-foreground">出攤筆記</span>
+            <span className="block text-lg font-semibold text-foreground">{APP_BRAND.name}</span>
+            <span className="block text-xs text-muted-foreground">{APP_BRAND.positioning}</span>
           </span>
         </Link>
       </div>

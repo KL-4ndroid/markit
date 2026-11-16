@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -67,7 +68,7 @@ export default function AppSettingsPage() {
             className="flex min-h-14 items-center gap-3 border-t border-primary/10 px-4 transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
           >
             <Info className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-            <span className="flex-1 text-sm font-medium text-foreground">關於 Féria</span>
+            <span className="flex-1 text-sm font-medium text-foreground">關於{APP_BRAND.name}</span>
             <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
           </Link>
         </section>

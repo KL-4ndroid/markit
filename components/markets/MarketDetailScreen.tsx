@@ -3,6 +3,9 @@
 import { useSubscriptionExperience } from '@/components/subscription/SubscriptionExperienceProvider';
 import { SubscriptionFeatureNotice } from '@/components/subscription/SubscriptionFeatureNotice';
 import { getMarketBoothFee } from '@/lib/markets/market-booth-fee';
+import { MarketEquipmentSummary } from './MarketEquipmentSummary';
+import { getDealPaymentMethod } from '@/lib/events/event-read-model';
+import { formatSalesPaymentMethod } from '@/lib/sales/payment-methods';
 import { MarketFeeConflictNotice } from './MarketFeeConflictNotice';
 import { FreeMarketWorkspace } from './FreeMarketWorkspace';
 import { MarketRegistrationPanel } from '@/components/markets/MarketRegistrationPanel';
@@ -30,9 +33,6 @@ import {
   Camera,
   Store,
   BarChart3,
-  Table,
-  Armchair,
-  Umbrella,
   Package,
   Wallet,
   BookOpen,
@@ -332,6 +332,15 @@ export function MarketDetailScreen() {
   const activity = useMarketActivity(user?.id ?? '', market, Boolean(!isStaff && !isRoleLoading && canRecord && dbStatus?.ok !== false));
   const interactionEvents = activity.interactions;
   const dealEvents = activity.deals;
+  const paymentTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+    for (const deal of dealEvents) {
+      const method = formatSalesPaymentMethod(getDealPaymentMethod(deal));
+      totals.set(method, (totals.get(method) ?? 0) + getDealEventRevenue(deal));
+    }
+    return [...totals];
+  }, [dealEvents]);
+  const commission = market?.commissionRate ?? 0;
   const dealRecordCountByDate = useMemo(() => countDealRecordsByDate(dealEvents), [dealEvents]);
   const [buttonLabels, setButtonLabels] = useState<Record<string, { label: string; role: InteractionButton['role'] }>>({});
   const selectedDealPhotoEvidence = useMemo(
@@ -1354,7 +1363,7 @@ export function MarketDetailScreen() {
           )}
           {resolvedOwnerWorkspaceView === 'overview' && <ContextHelp label="淨利怎麼算">
             <p>估計淨利＝已記錄銷售利潤－固定成本－營收抽成。固定成本包含攤位費（即報名費）與自付設備租金（含桌布）；免費提供的設備不扣款。</p>
-            <p>未記錄銷售利潤時，暫以營收估算。未填成本不代表沒有支出；交通、人工等未記錄費用不會自動計入。可退保證金不列成本，現金盤點也不會改變淨利。</p>
+            <p>未記錄銷售利潤時，暫以營收估算。抽成留白以 0% 計算。未填成本不代表沒有支出；交通、人工等未記錄費用不會自動計入。可退保證金不列成本，現金盤點也不會改變淨利。</p>
           </ContextHelp>}
         </MarketWorkspaceSummary>
         {resolvedOwnerWorkspaceView === 'overview' && canRecord && !isStaff && !isRoleLoading && user?.id && (finance.enabled
@@ -1590,6 +1599,16 @@ export function MarketDetailScreen() {
         {resolvedOwnerWorkspaceView === 'overview' && visibleOverviewDetail === 'performance' && (
         <>
           {activity.failed && <p role="status" className="mb-4 text-sm text-danger">暫時無法讀取成交與互動紀錄。<button type="button" onClick={activity.refresh} className="ml-2 min-h-11 underline">重新讀取紀錄</button></p>}
+          {activity.ready && paymentTotals.length > 0 ? (
+            <details className="mb-4 rounded-card border border-border bg-atelier-paper px-4">
+              <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">本場付款方式小計</summary>
+              <dl className="space-y-2 pb-3 text-sm">{paymentTotals.map(([method, amount]) => (
+                <div key={method} className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">{method}</dt><dd className="font-medium tabular-nums">{formatCurrency(amount)}</dd>
+                </div>
+              ))}</dl>
+            </details>
+          ) : null}
           <DailyRevenueStats
             market={market}
             reviewedStats={financialOverlay?.stats}
@@ -1677,72 +1696,17 @@ export function MarketDetailScreen() {
             </div>
             
             <MarketFeeConflictNotice market={market} />
-            {!market.tableclothFree && (market.tableclothRental ?? 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">桌布租金</span><span className="font-medium">{formatCurrency(market.tableclothRental ?? 0)}</span></div>}
-            {/* 設備租賃 - 始終顯示 */}
-            <div className="space-y-1 pl-4 py-2 bg-background rounded-xl">
-              <div className="text-xs font-medium text-muted-foreground mb-1">設備租賃：</div>
-              
-              {/* 桌子 */}
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Table className="w-4 h-4" />
-                  桌子
-                </span>
-                <span className="font-medium text-foreground">
-                  {market.tableFree 
-                    ? <span className="text-primary">免費提供</span>
-                    : (market.tableRental && market.tableRental > 0)
-                    ? formatCurrency(market.tableRental)
-                    : <span className="text-muted-foreground">自備</span>
-                  }
-                </span>
-              </div>
-              
-              {/* 椅子 */}
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Armchair className="w-4 h-4" />
-                  椅子
-                </span>
-                <span className="font-medium text-foreground">
-                  {market.chairFree 
-                    ? <span className="text-primary">免費提供</span>
-                    : (market.chairRental && market.chairRental > 0)
-                    ? formatCurrency(market.chairRental)
-                    : <span className="text-muted-foreground">自備</span>
-                  }
-                </span>
-              </div>
-              
-              {/* 傘架 */}
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Umbrella className="w-4 h-4" />
-                  傘架
-                </span>
-                <span className="font-medium text-foreground">
-                  {market.umbrellaFree 
-                    ? <span className="text-primary">免費提供</span>
-                    : (market.umbrellaRental && market.umbrellaRental > 0)
-                    ? formatCurrency(market.umbrellaRental)
-                    : <span className="text-muted-foreground">自備</span>
-                  }
-                </span>
-              </div>
+            <div className="rounded-xl bg-background p-3">
+              <h3 className="text-sm font-medium">設備準備</h3>
+              <MarketEquipmentSummary market={market} />
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">主辦抽成（{commission}%）</span>
+              <span className="font-medium tabular-nums">
+                {formatCurrency(((market.totalRevenue ?? 0) * commission) / 100)}
+              </span>
             </div>
 
-            {/* 抽成 */}
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">
-                抽成 ({market.commissionRate || 0}%)
-              </span>
-              <span className="font-medium text-foreground">
-                {formatCurrency(
-                  ((market.totalRevenue || 0) * (market.commissionRate || 0)) / 100
-                )}
-              </span>
-            </div>
-            
             {/* 保證金 - 不計入成本，僅作提醒 */}
             {(market.deposit ?? 0) > 0 && (
               <div className="flex justify-between items-center bg-soft-yellow px-3 py-2 rounded-lg">
@@ -1844,7 +1808,7 @@ export function MarketDetailScreen() {
         </div>
         </div>
         </> : <>
-          {tier === 'unavailable' && <SubscriptionFeatureNotice />}
+          {tier === 'unavailable' && <SubscriptionFeatureNotice compact />}
           <FreeMarketWorkspace initialView={requestedTask === 'journal' ? 'journal' : 'arrangement'} canManageFieldOps={canManageOwnerFieldOps} market={market} returnTo={requestedReturnTo} busy={isUpdating || isUpdatingOperationSession || isSkippingOccurrence || isRestoringOccurrence} onSkip={handleSkipScheduledOccurrence} onRestore={handleRestoreScheduledOccurrence} onStatus={status => { if (status === 'cancelled') setShowCancelConfirm(true); else handleStatusChangeRequest(status); }} onEdit={handleOpenEditForm} onDelete={() => setShowDeleteConfirm(true)} session={operatingSession} onStart={handleStartEarlyOperation} onClose={handleCloseTodayOperation} />
         </>}
       </div>

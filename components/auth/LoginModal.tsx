@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import { useEffect, useId, useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
@@ -203,7 +204,7 @@ export function LoginModal({
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <DialogTitle className="text-2xl font-medium text-foreground mb-2">
-                {isSignup ? '建立 Féria 帳號' : '登入 Féria'}
+                {isSignup ? `建立${APP_BRAND.name}帳號` : `登入${APP_BRAND.name}`}
               </DialogTitle>
               {isSignup && <p className="text-sm text-muted-foreground leading-relaxed">建立帳號後即可同步資料。若你是透過邀請連結加入團隊，註冊後會自動加入。</p>}
             </div>

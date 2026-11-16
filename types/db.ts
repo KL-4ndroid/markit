@@ -1,3 +1,4 @@
+import type { MarketRegistrationConditions } from '@/lib/markets/market-registration-conditions';
 import type {
   OperationSchedule,
   ScheduleOccurrenceState,
@@ -111,6 +112,7 @@ export interface Market {
   location: string;            // 地點
   regionCode?: MarketRegionCode | null;
   paymentDeadline?: MarketPaymentDeadline | null;
+  registrationConditions?: MarketRegistrationConditions;
   dates?: string[];            // ✅ 新增：日期陣列（支持多選日期，可選以保持向後兼容）
   startDate: string;           // 開始日期（ISO 8601 格式）- 保留作為最早日期
   endDate: string;             // 結束日期（ISO 8601 格式）- 保留作為最晚日期
@@ -191,6 +193,7 @@ export interface MarketCreatedPayload {
   location: string;
   regionCode?: MarketRegionCode | null;
   paymentDeadline?: MarketPaymentDeadline | null;
+  registrationConditions?: MarketRegistrationConditions;
   dates?: string[];            // ✅ 新增：日期陣列（多選日期）
   startDate: string;           // 保留：最早日期（向後兼容）
   endDate: string;             // 保留：最晚日期（向後兼容）

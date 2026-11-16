@@ -55,7 +55,20 @@ const inactiveView = buildSubscriptionCenterView({
 });
 assert.equal(inactiveView.lifecycleNotice?.title, '付費功能目前未開放');
 assert.match(inactiveView.lifecycleNotice?.description ?? '', /紀錄會保留/);
-assert.match(inactiveView.lifecycleNotice?.description ?? '', /銷售與商品功能依目前方案/);
+assert.match(inactiveView.lifecycleNotice?.description ?? '', /銷售、商品與照片的查看依目前方案/);
+const expiredView = buildSubscriptionCenterView({
+  viewer: 'owner', isAuthenticated: true, isLoading: false, nowMs: Date.parse('2026-11-16T00:00:00Z'),
+  capabilityResult: { ok: true, status: 'admin_enabled', freshness: 'fresh',
+    capabilities: { ...capabilities, entitlementEndsAt: '2026-11-15T00:00:00Z' } },
+});
+assert.equal(expiredView.planLabel, '免費版');
+assert.equal(expiredView.sourceLabel, '原付費方案已到期');
+assert.equal(expiredView.entitlementLabel, '付費功能未開放');
+assert.equal(buildSubscriptionCenterView({
+  viewer: 'owner', isAuthenticated: true, isLoading: false, capabilityAvailable: false,
+  capabilityResult: { ok: true, status: 'admin_enabled', freshness: 'fresh', capabilities },
+}).state, 'unavailable');
+
 const graceView = buildSubscriptionCenterView({
   viewer: 'owner', isAuthenticated: true, isLoading: false,
   capabilityResult: { ok: true, status: 'admin_enabled', freshness: 'fresh',

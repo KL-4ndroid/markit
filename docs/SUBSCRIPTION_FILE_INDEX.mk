@@ -1,5 +1,7 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-11-16 三方案操作調整：輕量版「紀錄」改用本月已記錄營業資料，保留單場回顧與返回；方案中心區別暫時無法確認、到期及待同步，並加入團隊恢復入口。設備可區分未確認與需自備，抽成留白顯示並以 0% 計算；新設備狀態的跨裝置同步依賴 097，發布時先完成資料庫遷移再部署前端。097 會改變 096 審查的資料庫目錄；同庫合併部署前應用新版目錄重新審查刪帳候選。原定的 `test_prg` 刪帳驗收可先用固定候選提交 `2b54569` 單獨驗證。[輕量紀錄](../components/analytics/MonthlySalesRecords.tsx) · [方案狀態](../lib/subscription/subscription-center-view.ts) · [097](../supabase/migrations/097_add_market_registration_conditions.sql)
+
 2026-11-16 [Preview 資料庫授權演練](subscription/drafts/ACCOUNT_DELETION_TEST_PRG_SCOPE.sql)在停用版 096 上驗證專用資料庫、合成帳號申請、R2 綁定與授權期限。[本機 SQL 驗證](../scripts/verify-account-deletion-migration.ts)
 
 2026-11-16 [Preview 合成帳號清理執行器](../lib/subscription/account-deletion-preview-executor.server.ts)限制測試專案、貯體指紋、刪帳申請、帳號及授權期限。[範圍回歸測試](../tests/account-deletion-preview-executor.test.ts)涵蓋錯誤目標、其他帳號、跨帳號物件及授權到期。[執行器與託管接線紀錄](subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md#preview-合成帳號清理執行器)
@@ -665,5 +667,7 @@ Supabase `onAuthStateChange`、`subscription.unsubscribe()` 與網路監聽的�
 | 2026-10-23 | 新增已確認價格／首購優惠與可設定營運後台需求，總數 305；舊制度與 FERIA50 文件標示歷史入口 | 核對本機價格模型、migration 066、canonical gates、Apple／Google 官方規則及文件連結；只更新需求與導航，未啟用收費 |
 | 2026-10-23 | 依使用者要求增補新客牌價、優惠到期價格、舊客調價批次、逐戶價格及通知歷程與 5 項待辦；來源檔總數仍為 305 | 文件內容、連結與差異核對；未實作後台、核定通知天數或執行調價 |
 | 2026-10-23 | 使用者確認未來調價政策：首發優惠按揭露還原、既有月繳至少提前 60 天通知、年繳於符合條件續訂調整、早期用戶限期保價；待辦增至 6 項，來源檔總數仍為 305 | 核對本輪決策、移除 60 天尚未核定的現行描述、文件連結與差異；未實作或執行調價，一年保價仍為活動範例 |
+
+2026-11-16 免費版的市集條件包含設備免費提供狀態、個別租金與主辦抽成比例，老闆可在新增／編輯市集填寫，並從「安排與準備」查看。固定成本、抽成金額及估計淨利仍屬輕量／高階版。權限讀取中可填基本條件，編輯只提交已變更的費用欄位。[市集欄位](../components/markets/MarketFormFields.tsx) · [免費版場次](../components/markets/FreeMarketWorkspace.tsx) · [費用更新](../lib/markets/market-form.ts) · [隔離權限驗證](../scripts/subscription-retention-sql-cases.mjs)
 
 2026-11-16 `test_prg` 清理候選：[部署與驗收步驟](subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md#可部署的-test_prg-清理候選)、[安裝／唯讀 SQL 產生器](../scripts/prepare-account-deletion-test-prg-preview.ts)、[單步操作入口](../scripts/account-deletion-test-prg-preview-tick.ts)。

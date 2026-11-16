@@ -55,6 +55,17 @@ export interface DemoActivity {
   time: string;
 }
 
+export interface DemoSaleRecord {
+  id: string;
+  marketId: string;
+  productName: string;
+  quantity: number;
+  amount: number;
+  paymentMethod: '現金' | '行動支付' | '信用卡／轉帳';
+  time: string;
+  photoPath?: string;
+}
+
 type DemoMarketSeed = Pick<
   DemoMarket,
   | 'id'
@@ -391,6 +402,17 @@ export const INITIAL_DEMO_ACTIVITIES: readonly DemoActivity[] = [
   { id: 'activity-10', type: 'sale', label: '售出 散步城市明信片 x4', detail: 'NT$ 320・現金', time: '13:16' },
 ];
 
+export const INITIAL_DEMO_SALES: readonly DemoSaleRecord[] = [
+  { id: 'sale-1', marketId: 'market-summer', productName: '帆布小花袋', quantity: 1, amount: 480, paymentMethod: '現金', time: '15:42', photoPath: '/demo/sales/flower-tote.webp' },
+  { id: 'sale-2', marketId: 'market-summer', productName: '檸檬奶油塔', quantity: 2, amount: 360, paymentMethod: '行動支付', time: '15:18', photoPath: '/demo/sales/lemon-tarts.webp' },
+  { id: 'sale-3', marketId: 'market-summer', productName: '黃銅月光項鍊', quantity: 1, amount: 980, paymentMethod: '信用卡／轉帳', time: '14:56' },
+  { id: 'sale-4', marketId: 'market-summer', productName: '晨霧玻璃耳環', quantity: 1, amount: 620, paymentMethod: '行動支付', time: '14:38', photoPath: '/demo/sales/glass-earrings.webp' },
+  { id: 'sale-5', marketId: 'market-summer', productName: '森日便箋組', quantity: 1, amount: 160, paymentMethod: '現金', time: '14:23' },
+  { id: 'sale-6', marketId: 'market-summer', productName: '柑橘冷萃咖啡', quantity: 3, amount: 450, paymentMethod: '行動支付', time: '13:52' },
+  { id: 'sale-7', marketId: 'market-summer', productName: '散步城市明信片', quantity: 4, amount: 320, paymentMethod: '現金', time: '13:16' },
+  { id: 'sale-8', marketId: 'market-summer', productName: '出攤日常貼紙包', quantity: 2, amount: 240, paymentMethod: '現金', time: '12:48' },
+];
+
 export function createInitialDemoMarkets(): DemoMarket[] {
   return INITIAL_DEMO_MARKETS.map(market => ({ ...market, dates: [...market.dates] }));
 }
@@ -401,4 +423,8 @@ export function createInitialDemoProducts(): DemoProduct[] {
 
 export function createInitialDemoActivities(): DemoActivity[] {
   return INITIAL_DEMO_ACTIVITIES.map(activity => ({ ...activity }));
+}
+
+export function createInitialDemoSales(): DemoSaleRecord[] {
+  return INITIAL_DEMO_SALES.map(sale => ({ ...sale }));
 }

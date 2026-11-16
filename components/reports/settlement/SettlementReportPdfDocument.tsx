@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 import React from 'react';
 import { compactPdfText, wrapPdfText } from '@/lib/reporting/pdf-display-text';
 import {
@@ -27,7 +28,7 @@ export type SettlementReportPdfDocumentProps = {
   fontSource?: string;
 };
 
-const PDF_FONT_FAMILY = 'Féria Noto Sans TC';
+const PDF_FONT_FAMILY = 'Noto Sans TC';
 const registeredFontSources = new Set<string>();
 const WARNING_DISPLAY_LIMIT = 5;
 const ACTION_DISPLAY_LIMIT = 2;
@@ -756,7 +757,7 @@ export function SettlementReportPdfDocument({
   return (
     <Document
       title={viewModel.meta.fileNameBase}
-      author="Féria"
+      author={APP_BRAND.name}
       language="zh-TW"
     >
       {viewModel.pages.map(page => (
@@ -789,7 +790,7 @@ export function SettlementReportPdfDocument({
           {renderPageBody(page)}
           <View style={styles.footer} fixed>
             <Text style={styles.footerText}>{compactPdfText(viewModel.meta.brandName, 48)}</Text>
-            <Text style={styles.footerText}>Féria 結算報告</Text>
+            <Text style={styles.footerText}>{APP_BRAND.name}結算報告</Text>
           </View>
         </Page>
       ))}

@@ -1,3 +1,5 @@
+import { APP_BRAND } from '../app-brand';
+
 export const NATIVE_STORE_LISTING_METADATA_SCHEMA_VERSION = 1 as const;
 export const NATIVE_STORE_LISTING_METADATA_SOURCE_DOCUMENT =
   'subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.md' as const;
@@ -9,7 +11,7 @@ export type NativeStoreListingMetadataDocument = Readonly<{
   schemaVersion: typeof NATIVE_STORE_LISTING_METADATA_SCHEMA_VERSION;
   sourceDocument: typeof NATIVE_STORE_LISTING_METADATA_SOURCE_DOCUMENT;
   updatedAt: string;
-  locale: 'zh-TW';
+  locale: 'zh-TW' | 'en-US';
   status: 'candidate_requires_manual_review';
   submissionStatus: 'disabled';
   publicOrigin: string | null;
@@ -173,7 +175,7 @@ function isAppleMetadata(value: unknown): value is NativeStoreListingMetadataDoc
   return keywords.length > 0
     && keywords.every(keyword => countCharacters(keyword) > 2)
     && new Set(normalized).size === normalized.length
-    && !normalized.some(keyword => /f[ée]ria|出攤筆記/u.test(keyword));
+    && !normalized.some(keyword => /f[ée]ria|出攤筆記|拾光日子|stallight days/u.test(keyword));
 }
 
 function isGoogleMetadata(value: unknown): value is NativeStoreListingMetadataDocument['google'] {
@@ -212,7 +214,7 @@ export function parseNativeStoreListingMetadata(
   if (!isValidDateOnly(value.updatedAt)) {
     throw new NativeStoreListingMetadataValidationError('updated_date_invalid');
   }
-  if (value.locale !== 'zh-TW' || value.status !== 'candidate_requires_manual_review') {
+  if ((value.locale !== 'zh-TW' && value.locale !== 'en-US') || value.status !== 'candidate_requires_manual_review') {
     throw new NativeStoreListingMetadataValidationError('document_invalid');
   }
   if (value.submissionStatus !== 'disabled') {
@@ -234,6 +236,9 @@ export function parseNativeStoreListingMetadata(
   if (!isGoogleMetadata(value.google)) {
     throw new NativeStoreListingMetadataValidationError('google_metadata_invalid');
   }
+  const displayName = value.locale === 'zh-TW' ? APP_BRAND.name : APP_BRAND.englishName;
+  if (value.apple.appName !== displayName) throw new NativeStoreListingMetadataValidationError('apple_metadata_invalid');
+  if (value.google.appName !== displayName) throw new NativeStoreListingMetadataValidationError('google_metadata_invalid');
 
   return Object.freeze(value as unknown as NativeStoreListingMetadataDocument);
 }

@@ -2,15 +2,15 @@
 
 Date: 2026-08-06
 
-Status: candidate zh-TW copy complete; external URLs, review access, approvals, and final binary review pending
+Status: candidate zh-TW and en-US copy complete as of 2026-11-11. External URLs, review access, approvals, and final binary review are pending.
 
 Gate: `STORE-COMPLIANCE` remains `pending_manual`
 
 ## 1. Purpose And Boundary
 
-The canonical handoff file is
-`docs/subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.json`. It contains
-candidate public copy and status markers only. It must not contain reviewer credentials,
+The handoff files are [zh-TW](NATIVE_STORE_LISTING_METADATA_2026_08_06.json)
+and [en-US](NATIVE_STORE_LISTING_METADATA_EN_US.json). They contain candidate public
+copy and status markers only. They must not contain reviewer credentials,
 support email addresses, secrets, store account identifiers, customer data, or payment
 details.
 
@@ -18,6 +18,7 @@ Run the bounded local check with:
 
 ```powershell
 npm.cmd run check:native-store-metadata
+npm.cmd run check:native-store-metadata -- --input=docs/subscription/NATIVE_STORE_LISTING_METADATA_EN_US.json
 ```
 
 Exit `1` is expected while external values and approvals are pending. Exit `0` means
@@ -45,7 +46,7 @@ description 4,000 characters.
 
 ## 3. Product-Truth Rules
 
-The candidate copy uses the canonical product name `Féria - 出攤筆記` and describes
+The candidate copy uses `拾光日子` in zh-TW and `STALLIGHT DAYS` in en-US. It describes
 the shared market, product, cost, sales, interaction, and operational-record workflows.
 It intentionally excludes:
 

@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -120,7 +121,7 @@ export default function DataSettingsPage() {
                 <div className="flex items-start gap-3">
                   <Cloud className="mt-0.5 h-5 w-5 shrink-0 text-danger" aria-hidden="true" />
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-semibold text-danger">刪除 Féria 帳號</h3>
+                    <h3 className="text-sm font-semibold text-danger">刪除{APP_BRAND.name}帳號</h3>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
                       安全刪除流程仍在驗證中。舊的雲端資料清除功能不等同帳號刪除，因此已停止從此頁執行。
                     </p>

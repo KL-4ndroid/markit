@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 import { TEST_TOOLS_ENABLED } from '@/lib/app/build-profile';
 
 export type SettingsDestinationId = 'account' | 'team' | 'sales' | 'regions' | 'data' | 'app';
@@ -53,7 +54,7 @@ const DATA_DESTINATION: SettingsDestination = {
 const APP_DESTINATION: SettingsDestination = {
   id: 'app',
   label: 'App 與版本',
-  description: '安裝到主畫面、版本與關於 Féria',
+  description: `安裝到主畫面、版本與關於${APP_BRAND.name}`,
   href: '/settings/app',
 };
 const REGIONS_DESTINATION: SettingsDestination={id:'regions',label:'市集縣市整理',description:'檢查未分類場次並預覽多筆補填',href:'/markets/regions'};

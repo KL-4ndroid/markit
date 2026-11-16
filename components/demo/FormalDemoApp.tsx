@@ -1,4 +1,5 @@
 'use client';
+import { APP_BRAND } from '@/lib/app-brand';
 
 import Image from 'next/image';
 import {
@@ -88,10 +89,12 @@ import {
   createInitialDemoActivities,
   createInitialDemoMarkets,
   createInitialDemoProducts,
+  createInitialDemoSales,
   type DemoActivity,
   type DemoMarket,
   type DemoMarketStatus,
   type DemoProduct,
+  type DemoSaleRecord,
   type DemoView,
 } from '@/lib/demo/formal-demo-data';
 import type { SalesPaymentMethod } from '@/lib/sales/payment-methods';
@@ -325,7 +328,7 @@ function TodayPage({
       <header className="japanese-warm-header overflow-hidden rounded-b-[2rem] px-5 pb-9 pt-[calc(1.25rem+env(safe-area-inset-top))] text-white shadow-atelier-lift">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-start justify-between gap-4">
-            <p className="min-w-0 truncate text-xs font-semibold text-white/90">Feria・暖暖手作</p>
+            <p className="min-w-0 truncate text-xs font-semibold text-white/90">{APP_BRAND.name}・暖暖手作</p>
             <div className="flex shrink-0 items-center gap-1">
               <StaticSyncStatus />
               <IconButton label="開啟設定" tooltip="設定" className="bg-white/20 text-white shadow-sm backdrop-blur-sm hover:bg-white/30 hover:text-white" icon={<Settings className="h-5 w-5" />} onClick={onOpenSettings} />
@@ -585,7 +588,17 @@ function DemoSettingsShell({ title, description, icon: Icon, onBack, children }:
   );
 }
 
-function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange, onExport, onReset }: { onOpenThemeLab: () => void; defaultPhotoRequired: boolean; onPhotoRequiredChange: (value: boolean) => void; onExport: () => void; onReset: () => void }) {
+function SalesPhotoGallery({ sales }: { sales: DemoSaleRecord[] }) {
+  const photoSales = sales.filter(sale => sale.photoPath);
+  return (
+    <section className="rounded-card border border-primary/10 bg-white p-4 shadow-atelier">
+      <div className="mb-4 flex items-start justify-between gap-3"><div><p className="text-xs font-medium text-muted-foreground">本場紀錄</p><h2 className="mt-1 text-base font-semibold text-foreground">最近成交照片</h2></div><span className="rounded-full bg-soft-green px-3 py-1 text-xs font-medium text-primary">{photoSales.length} 筆已完成</span></div>
+      <div className="space-y-4">{photoSales.map((sale, index) => <article key={sale.id} className="overflow-hidden rounded-card border border-primary/10 bg-atelier-canvas"><div className="relative aspect-[4/3] w-full overflow-hidden bg-muted"><Image src={sale.photoPath!} alt={`${sale.productName} 的成交照片`} fill priority={index === 0} sizes="(max-width: 640px) 100vw, 480px" className="object-cover" /></div><div className="p-3"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-foreground">售出 {sale.productName}{sale.quantity > 1 ? ` x${sale.quantity}` : ''}</p><p className="mt-1 text-xs text-muted-foreground">{sale.time}・{sale.paymentMethod}</p></div><p className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(sale.amount)}</p></div></div></article>)}</div>
+    </section>
+  );
+}
+
+function MorePage({ sales, onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange, onExport, onReset }: { sales: DemoSaleRecord[]; onOpenThemeLab: () => void; defaultPhotoRequired: boolean; onPhotoRequiredChange: (value: boolean) => void; onExport: () => void; onReset: () => void }) {
   const [view, setView] = useState<DemoSettingsView>('root');
   const [lastSyncLabel, setLastSyncLabel] = useState('剛剛');
   const [teamMembers, setTeamMembers] = useState(['小葵・店員']);
@@ -597,7 +610,7 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
     return (
       <DemoSettingsShell title="帳號與同步" description="管理帳號、備份與跨裝置同步。" icon={Cloud} onBack={() => setView('root')}>
         <div className="space-y-6">
-          <section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Users className="h-5 w-5" /></span><div><h2 className="text-base font-semibold text-foreground">登入帳號</h2><p className="mt-1 text-sm text-muted-foreground">demo@feria.app</p><p className="mt-2 text-xs text-muted-foreground">帳號身分：老闆・Demo 模式</p></div></div></section>
+          <section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Users className="h-5 w-5" /></span><div><h2 className="text-base font-semibold text-foreground">登入帳號</h2><p className="mt-1 text-sm text-muted-foreground">demo@example.test</p><p className="mt-2 text-xs text-muted-foreground">帳號身分：老闆・Demo 模式</p></div></div></section>
           <section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-semibold text-foreground">雲端同步</h2><p className="mt-1 text-sm text-muted-foreground">正式版會先保存本機操作，再於連線時送往雲端。</p></div><span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-soft-green px-3 py-1 text-xs font-medium text-primary"><Check className="h-4 w-4" />Demo 已同步</span></div><dl className="mt-5 divide-y divide-primary/10 border-y border-primary/10 text-sm"><div className="flex items-center justify-between py-3"><dt className="text-muted-foreground">最後同步</dt><dd className="font-medium">{lastSyncLabel}</dd></div><div className="flex items-center justify-between py-3"><dt className="text-muted-foreground">待同步項目</dt><dd className="font-medium">0 筆</dd></div><div className="flex items-center justify-between py-3"><dt className="text-muted-foreground">資料來源</dt><dd className="font-medium">記憶體 Demo</dd></div></dl><Button variant="secondary" className="mt-4 w-full sm:w-auto" leadingIcon={<RefreshCw className="h-4 w-4" />} onClick={() => { setLastSyncLabel('現在'); toast.success('Demo 同步完成'); }}>立即同步</Button></section>
         </div>
       </DemoSettingsShell>
@@ -616,7 +629,7 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
       <DemoSettingsShell title="團隊成員" description="邀請夥伴並設定工作權限。" icon={Users} onBack={() => setView('root')}>
         <div className="space-y-6">
           <section className="rounded-card border border-primary/10 bg-white p-5"><h2 className="text-base font-semibold text-foreground">新增成員</h2><p className="mt-1 text-sm text-muted-foreground">這裡只模擬邀請流程，不會寄出通知。</p><div className="mt-4 flex flex-col gap-2 sm:flex-row"><label htmlFor="demo-team-name" className="sr-only">成員名稱</label><input id="demo-team-name" value={inviteName} onChange={event => setInviteName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') invite(); }} placeholder="輸入成員名稱" className="min-h-12 flex-1 rounded-control border border-primary/15 bg-background px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" /><Button onClick={invite} leadingIcon={<Plus className="h-4 w-4" />}>加入團隊</Button></div></section>
-          <section className="overflow-hidden rounded-card border border-primary/10 bg-white"><div className="flex items-center justify-between border-b border-primary/10 p-4"><div><p className="text-sm font-semibold">Demo 老闆</p><p className="mt-1 text-xs text-muted-foreground">demo@feria.app</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">老闆</span></div>{teamMembers.map(member => <div key={member} className="flex min-h-16 items-center justify-between gap-3 border-b border-primary/10 px-4 last:border-0"><span className="text-sm font-medium">{member}</span><button type="button" onClick={() => setTeamMembers(current => current.filter(item => item !== member))} aria-label={`移除 ${member}`} className="inline-flex h-11 w-11 items-center justify-center rounded-control text-danger hover:bg-status-danger-bg"><Trash2 className="h-4 w-4" /></button></div>)}</section>
+          <section className="overflow-hidden rounded-card border border-primary/10 bg-white"><div className="flex items-center justify-between border-b border-primary/10 p-4"><div><p className="text-sm font-semibold">Demo 老闆</p><p className="mt-1 text-xs text-muted-foreground">demo@example.test</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">老闆</span></div>{teamMembers.map(member => <div key={member} className="flex min-h-16 items-center justify-between gap-3 border-b border-primary/10 px-4 last:border-0"><span className="text-sm font-medium">{member}</span><button type="button" onClick={() => setTeamMembers(current => current.filter(item => item !== member))} aria-label={`移除 ${member}`} className="inline-flex h-11 w-11 items-center justify-center rounded-control text-danger hover:bg-status-danger-bg"><Trash2 className="h-4 w-4" /></button></div>)}</section>
         </div>
       </DemoSettingsShell>
     );
@@ -625,7 +638,7 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
   if (view === 'sales') {
     return (
       <DemoSettingsShell title="成交照片" description="管理品牌顯示與成交照片預設值。" icon={Camera} onBack={() => setView('root')}>
-        <section className="rounded-card border border-primary/10 bg-white p-6 shadow-atelier"><div className="mb-4 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Camera className="h-5 w-5" /></span><div><h2 className="text-lg font-medium text-foreground">成交照片紀錄</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">設定新建立的市集是否預設需要在成交後補上照片。</p></div></div><button type="button" onClick={() => setPhotoDraft(current => !current)} className="flex w-full items-center justify-between gap-4 rounded-2xl border border-primary/15 bg-background px-4 py-4 text-left transition-colors hover:border-primary"><span><span className="block text-sm font-medium text-foreground">新市集預設需要成交照片</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">只影響之後新增的市集，不會修改既有市集。</span></span><span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${photoDraft ? 'bg-primary' : 'bg-gray-300'}`}><span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${photoDraft ? 'translate-x-6' : 'translate-x-1'}`} /></span></button><Button className="mt-4 w-full" disabled={photoDraft === defaultPhotoRequired} onClick={() => { onPhotoRequiredChange(photoDraft); toast.success('成交照片紀錄設定已更新'); }} leadingIcon={<Check className="h-4 w-4" />}>儲存成交照片設定</Button></section>
+        <div className="space-y-5"><SalesPhotoGallery sales={sales} /><section className="rounded-card border border-primary/10 bg-white p-5 shadow-atelier"><div className="mb-4 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Camera className="h-5 w-5" /></span><div><h2 className="text-base font-semibold text-foreground">成交照片紀錄</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">設定新建立的市集是否預設需要在成交後補上照片。</p></div></div><button type="button" onClick={() => setPhotoDraft(current => !current)} className="flex w-full items-center justify-between gap-4 rounded-control border border-primary/15 bg-background px-4 py-4 text-left transition-colors hover:border-primary"><span><span className="block text-sm font-medium text-foreground">新市集預設需要成交照片</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">只影響之後新增的市集，不會修改既有市集。</span></span><span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${photoDraft ? 'bg-primary' : 'bg-gray-300'}`}><span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${photoDraft ? 'translate-x-6' : 'translate-x-1'}`} /></span></button><Button className="mt-4 w-full" disabled={photoDraft === defaultPhotoRequired} onClick={() => { onPhotoRequiredChange(photoDraft); toast.success('成交照片紀錄設定已更新'); }} leadingIcon={<Check className="h-4 w-4" />}>儲存成交照片設定</Button></section></div>
       </DemoSettingsShell>
     );
   }
@@ -642,7 +655,7 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
   if (view === 'app') {
     return (
       <DemoSettingsShell title="App 與版本" description="查看版本資訊並調整這次 Demo 的主題。" icon={Smartphone} onBack={() => setView('root')}>
-        <div className="space-y-6"><section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Palette className="h-5 w-5" /></span><div className="min-w-0 flex-1"><h2 className="text-base font-semibold">主題實驗室</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">即時調整正式版與 Demo 共用的色彩變數。</p></div></div><Button className="mt-4 w-full" onClick={onOpenThemeLab} leadingIcon={<Palette className="h-4 w-4" />}>開啟主題實驗室</Button></section><section className="rounded-card border border-primary/10 bg-white px-4 py-4"><div className="flex items-center gap-3"><Image src="/icons/icon-192x192.png" alt="" width={40} height={40} className="h-10 w-10 rounded-lg object-contain" /><div><p className="text-sm font-semibold">Féria</p><p className="mt-1 text-xs text-muted-foreground">互動 Demo・記憶體資料版</p></div></div></section></div>
+        <div className="space-y-6"><section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Palette className="h-5 w-5" /></span><div className="min-w-0 flex-1"><h2 className="text-base font-semibold">主題實驗室</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">即時調整正式版與 Demo 共用的色彩變數。</p></div></div><Button className="mt-4 w-full" onClick={onOpenThemeLab} leadingIcon={<Palette className="h-4 w-4" />}>開啟主題實驗室</Button></section><section className="rounded-card border border-primary/10 bg-white px-4 py-4"><div className="flex items-center gap-3"><Image src="/icons/icon-192x192.png" alt="" width={40} height={40} className="h-10 w-10 rounded-lg object-contain" /><div><p className="text-sm font-semibold">{APP_BRAND.name}</p><p className="mt-1 text-xs text-muted-foreground">互動 Demo・記憶體資料版</p></div></div></section></div>
       </DemoSettingsShell>
     );
   }
@@ -654,7 +667,7 @@ function MorePage({ onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange,
       icon={MoreHorizontal}
       isStaff={false}
     >
-      <section className="mb-6 flex items-center justify-between gap-4 border-b border-primary/10 pb-5"><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">demo@feria.app</p><p className="mt-1 text-xs text-muted-foreground">目前身分：老闆</p></div><span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">營運者</span></section><div className="space-y-6"><SettingsSection title="營運設定"><SettingsRow icon={Cloud} label="帳號與同步" description="登入帳號、同步狀態與登出" onClick={() => setView('account')} /><SettingsRow icon={Users} label="團隊與權限" description="邀請成員並管理每位員工的角色" onClick={() => setView('team')} /><SettingsRow icon={Camera} label="銷售與照片" description="品牌名稱、成交照片與互動記錄偏好" onClick={() => { setPhotoDraft(defaultPhotoRequired); setView('sales'); }} /></SettingsSection><SettingsSection title="系統"><SettingsRow icon={Database} label="資料與救援" description="檢查資料健康、修復與清除資料" onClick={() => setView('data')} /><SettingsRow icon={Smartphone} label="App 與版本" description="安裝到主畫面、版本與關於 Féria" onClick={() => setView('app')} /></SettingsSection></div>
+      <section className="mb-6 flex items-center justify-between gap-4 border-b border-primary/10 pb-5"><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">demo@example.test</p><p className="mt-1 text-xs text-muted-foreground">目前身分：老闆</p></div><span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">營運者</span></section><div className="space-y-6"><SettingsSection title="營運設定"><SettingsRow icon={Cloud} label="帳號與同步" description="登入帳號、同步狀態與登出" onClick={() => setView('account')} /><SettingsRow icon={Users} label="團隊與權限" description="邀請成員並管理每位員工的角色" onClick={() => setView('team')} /><SettingsRow icon={Camera} label="銷售與照片" description="查看成交照片與調整紀錄偏好" onClick={() => { setPhotoDraft(defaultPhotoRequired); setView('sales'); }} /></SettingsSection><SettingsSection title="系統"><SettingsRow icon={Database} label="資料與救援" description="檢查資料健康、修復與清除資料" onClick={() => setView('data')} /><SettingsRow icon={Smartphone} label="App 與版本" description={`安裝到主畫面、版本與關於${APP_BRAND.name}`} onClick={() => setView('app')} /></SettingsSection></div>
     </SettingsPageShell>
   );
 }
@@ -882,6 +895,7 @@ export function FormalDemoApp() {
   const [markets, setMarkets] = useState<DemoMarket[]>(createInitialDemoMarkets);
   const [products, setProducts] = useState<DemoProduct[]>(createInitialDemoProducts);
   const [activities, setActivities] = useState<DemoActivity[]>(createInitialDemoActivities);
+  const [sales, setSales] = useState<DemoSaleRecord[]>(createInitialDemoSales);
   const [marketView, setMarketView] = useState<MarketView>('active');
   const [productView, setProductView] = useState<ProductView>('all');
   const [productQuery, setProductQuery] = useState('');
@@ -926,6 +940,7 @@ export function FormalDemoApp() {
     setMarkets(current => current.map(market => market.id === saleMarket.id ? { ...market, revenue: market.revenue + total, deals: market.deals + 1 } : market));
     const label = resolvedItems.length === 1 ? `售出 ${resolvedItems[0].product.name} × ${resolvedItems[0].quantity}` : `售出 ${resolvedItems.length} 項商品（共 ${totalQuantity} 件）`;
     addActivity({ type: 'sale', label, detail: `${formatCurrency(total)}・商品結帳` });
+    setSales(current => [{ id: `sale-${Date.now()}`, marketId: saleMarket.id, productName: resolvedItems.map(item => item.product.name).join('、'), quantity: totalQuantity, amount: total, paymentMethod: '現金', time: timeLabel() }, ...current]);
     toast.success('商品成交已完成', { description: formatCurrency(total) });
   };
 
@@ -933,6 +948,7 @@ export function FormalDemoApp() {
     if (!saleMarket) return;
     setMarkets(current => current.map(market => market.id === saleMarket.id ? { ...market, revenue: market.revenue + amount, deals: market.deals + 1 } : market));
     addActivity({ type: 'sale', label: '快速金額成交', detail: `${formatCurrency(amount)}・Demo 成交` });
+    setSales(current => [{ id: `sale-${Date.now()}`, marketId: saleMarket.id, productName: '快速金額成交', quantity: 1, amount, paymentMethod: '現金', time: timeLabel() }, ...current]);
     toast.success('成交已記錄', { description: formatCurrency(amount) });
   };
 
@@ -1074,11 +1090,11 @@ export function FormalDemoApp() {
 
   const openThemeLab = () => window.dispatchEvent(new Event(THEME_LAB_OPEN_EVENT));
   const exportDemoData = () => {
-    const payload = JSON.stringify({ exportedAt: new Date().toISOString(), markets, products, activities, settings: { defaultPhotoRequired } }, null, 2);
+    const payload = JSON.stringify({ exportedAt: new Date().toISOString(), markets, products, activities, sales, settings: { defaultPhotoRequired } }, null, 2);
     const url = URL.createObjectURL(new Blob([payload], { type: 'application/json;charset=utf-8' }));
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `feria-demo-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.download = `${APP_BRAND.filePrefix}-demo-${new Date().toISOString().slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
     toast.success('Demo 備份已下載');
@@ -1087,6 +1103,7 @@ export function FormalDemoApp() {
     setMarkets(createInitialDemoMarkets());
     setProducts(createInitialDemoProducts());
     setActivities(createInitialDemoActivities());
+    setSales(createInitialDemoSales());
     setMarketView('active');
     setProductView('all');
     setProductQuery('');
@@ -1104,7 +1121,7 @@ export function FormalDemoApp() {
     else if (activeView === 'markets') page = <MarketsPage markets={markets} view={marketView} onViewChange={setMarketView} onAdd={openAddMarketForm} onOpen={market => setWorkspaceMarketId(market.id)} />;
     else if (activeView === 'products') page = <ProductsPage products={products} query={productQuery} view={productView} showInactive={showInactiveProducts} onQueryChange={setProductQuery} onViewChange={setProductView} onShowInactiveChange={setShowInactiveProducts} onAdd={openAddProductForm} onOpen={product => setDetailProductId(product.id)} />;
     else if (activeView === 'analytics') page = <AnalyticsPage markets={markets} products={products} />;
-    else page = <MorePage onOpenThemeLab={openThemeLab} defaultPhotoRequired={defaultPhotoRequired} onPhotoRequiredChange={setDefaultPhotoRequired} onExport={exportDemoData} onReset={resetDemo} />;
+    else page = <MorePage sales={sales} onOpenThemeLab={openThemeLab} defaultPhotoRequired={defaultPhotoRequired} onPhotoRequiredChange={setDefaultPhotoRequired} onExport={exportDemoData} onReset={resetDemo} />;
   }
 
   const content = workspaceMarket

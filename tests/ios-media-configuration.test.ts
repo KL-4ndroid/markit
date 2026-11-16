@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const plist = require('plist');
 async function main() {
-  const { planIosMediaConfiguration } = await import('../scripts/configure-ios-media.mjs');
+  const { createIosBrandAssets, planIosMediaConfiguration } = await import('../scripts/configure-ios-media.mjs');
   const readTemplate = (path: string) => execFileSync('tar', ['-xOf', 'node_modules/@capacitor/cli/assets/ios-spm-template.tar.gz', path],
     { encoding: 'utf8', windowsHide: true });
   const input = { info: readTemplate('App/App/Info.plist'), project: readTemplate('App/App.xcodeproj/project.pbxproj'), privacy: null };
@@ -17,6 +17,15 @@ async function main() {
     assert.ok(typeof info[key] === 'string' && info[key].length > 4);
   }
   assert.equal(info.CFBundleIdentifier, plist.parse(input.info).CFBundleIdentifier);
+  assert.equal(info.CFBundleDisplayName, '拾光日子');
+  const { icon, splash } = await createIosBrandAssets();
+  assert.deepEqual(icon, readFileSync('store-assets/ios/app-icon-1024.png'));
+  const { width, height, hasAlpha } = await require('sharp')(splash).metadata();
+  assert.deepEqual({ width, height, hasAlpha }, { width: 2732, height: 2732, hasAlpha: false });
+  assert.match(output.englishBrand, /"CFBundleDisplayName" = "STALLIGHT DAYS";/);
+  assert.match(output.chineseBrand, /"CFBundleDisplayName" = "拾光日子";/);
+  assert.match(output.project, /InfoPlist\.strings in Resources/);
+  assert.match(output.project, /zh-Hant\.lproj\/InfoPlist\.strings/);
   const privacy = plist.parse(output.privacy);
   assert.deepEqual(privacy.NSPrivacyAccessedAPITypes, [{ NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
     NSPrivacyAccessedAPITypeReasons: ['C617.1'] }]);

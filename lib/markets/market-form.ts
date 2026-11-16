@@ -1,4 +1,4 @@
-import { getMarketBoothFee } from './market-booth-fee';
+import { confirmedMarketBoothFee, getMarketBoothFee } from './market-booth-fee';
 import { isOptionalMarketRegion } from './market-region';
 import { normalizePaymentDeadline } from './market-payment-deadline';
 
@@ -95,12 +95,43 @@ export function calculateMarketDurationLabel(start?: string | null, end?: string
   return minutes > 0 ? `${hours} 小時 ${minutes} 分鐘` : `${hours} 小時`;
 }
 
+const editableFees = ['deposit', 'commissionRate'] as const;
+const equipmentPairs = [['tableFree', 'tableRental'], ['chairFree', 'chairRental'], ['umbrellaFree', 'umbrellaRental']] as const;
+type EquipmentFreeKey = typeof equipmentPairs[number][0];
+type FeeKey = typeof editableFees[number] | typeof equipmentPairs[number][1] | 'boothCost' | 'registrationFee';
+type MarketFeeFields = Partial<Record<FeeKey, number> & Record<EquipmentFreeKey, boolean>>;
+
+/** Omit unchanged values so editing registration or notes cannot resend stale costs. */
+export function changedMarketFeeFields(current: MarketFeeFields, draft: MarketFeeFields, confirmBoothFee: boolean): MarketFeeFields {
+  const updates: MarketFeeFields = {};
+  if (draft.boothCost !== undefined && (confirmBoothFee || draft.boothCost !== getMarketBoothFee(current))) {
+    Object.assign(updates, confirmedMarketBoothFee(draft.boothCost));
+  }
+  for (const key of editableFees) {
+    if (draft[key] !== undefined && draft[key] !== Number(current[key] || 0)) updates[key] = draft[key];
+  }
+  for (const [freeKey, rentalKey] of equipmentPairs) {
+    const currentFree = Boolean(current[freeKey]);
+    const free = draft[freeKey] ?? currentFree;
+    const rental = free ? 0 : Number(draft[rentalKey] || 0);
+    if (free !== currentFree) {
+      updates[freeKey] = free;
+      updates[rentalKey] = rental;
+    } else if (!free && draft[rentalKey] !== undefined && rental !== Number(current[rentalKey] || 0)) {
+      updates[rentalKey] = rental;
+    }
+  }
+  return updates;
+}
+
 export function calculateMarketFixedCost(values: {
   boothCost?: number;
   registrationFee?: number;
   tableRental?: number;
   chairRental?: number;
   umbrellaRental?: number;
+  tableclothRental?: number;
+  tableclothFree?: boolean;
   tableFree: boolean;
   chairFree: boolean;
   umbrellaFree: boolean;
@@ -108,5 +139,6 @@ export function calculateMarketFixedCost(values: {
   return getMarketBoothFee(values)
     + (values.tableFree ? 0 : Number(values.tableRental || 0))
     + (values.chairFree ? 0 : Number(values.chairRental || 0))
-    + (values.umbrellaFree ? 0 : Number(values.umbrellaRental || 0));
+    + (values.umbrellaFree ? 0 : Number(values.umbrellaRental || 0))
+    + (values.tableclothFree ? 0 : Number(values.tableclothRental || 0));
 }

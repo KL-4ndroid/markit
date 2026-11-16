@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 import type {
   InAppPurchaseOption,
   InAppPurchasePricePhase,
@@ -113,7 +114,7 @@ export function prepareNativePurchaseDisclosure(input: Readonly<{
       autoRenewalNotice: '除非在續訂日前取消，方案將依商店顯示的週期與價格自動續訂。',
       cancellationNotice: '可前往原購買商店管理或取消訂閱。',
       freeAccessNotice: '不訂閱仍可繼續使用 Free 的核心市集記錄功能。',
-      accountAccessNotice: '商店交易通過伺服器驗證後，方案綁定 Féria 帳號並可跨裝置使用。',
+      accountAccessNotice: `商店交易通過伺服器驗證後，方案綁定${APP_BRAND.name}帳號並可跨裝置使用。`,
     },
   };
 }

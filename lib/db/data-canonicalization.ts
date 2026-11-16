@@ -1,3 +1,4 @@
+import { APP_BRAND } from '@/lib/app-brand';
 import { normalizeEventPayloadForLocal } from '@/lib/data-mappers';
 import type { DailyStats, Event } from '@/types/db';
 import { db, exportData } from './index';
@@ -239,7 +240,7 @@ async function createLocalCanonicalizationBackup(): Promise<void> {
   }
 
   await savePlatformFile({
-    filename: `markit-canonicalization-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`,
+    filename: `${APP_BRAND.filePrefix}-canonicalization-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`,
     data: new Blob([backup], { type: 'application/json' }),
   });
 }
