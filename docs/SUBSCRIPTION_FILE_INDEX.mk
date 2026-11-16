@@ -1,5 +1,7 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-11-16 [Preview 合成帳號清理執行器](../lib/subscription/account-deletion-preview-executor.server.ts)限制測試專案、貯體指紋、刪帳申請、帳號及授權期限。[範圍回歸測試](../tests/account-deletion-preview-executor.test.ts)涵蓋錯誤目標、其他帳號、跨帳號物件及授權到期。[執行器與託管接線紀錄](subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md#preview-合成帳號清理執行器)
+
 2026-11-12 [test_prg 合併安裝工具](../scripts/account-deletion-test-prg-migration.ts)已在託管測試庫以同一筆交易升級基線、安裝停用版 096、比對保留資料。讀回確認 `runtimeEnabled=false`，一次性管理憑證已撤銷。[SQL 產生器](../scripts/lib/account-deletion-test-prg-upgrade.ts)與[隔離安裝驗證](../scripts/verify-account-deletion-migration.ts)涵蓋函式換行相容、提交及晚段失敗回滾。[整合安裝紀錄](subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md#2026-11-12-基線升級與停用版-096-合併安裝)
 
 2026-11-12 [基線升級的原資料比對](../supabase/verification/096_test_prg_baseline_data_preservation.sql)已在 `test_prg` 確認 31 張表、167 筆原有資料保留，完整 096 前置檢查通過且已獨立驗證回滾。[演練與後續](subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md#2026-11-12-保留原資料的基線升級演練)

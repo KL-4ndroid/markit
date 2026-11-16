@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-15T16:22:20.868Z",
+  "at": "2026-11-16T02:10:57.681Z",
   "checks": [
     "default-off and incompatible/deployed/remote configuration stops before registration, claim or photo writes",
     "product success replay: JPEG/WebP exact content readback, changed payload conflict, missing object holds, zero extra PUTs",
@@ -24,7 +24,7 @@
     "product handler success: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
     "sale success replay: JPEG/WebP exact content readback, changed payload conflict, missing object holds, zero extra PUTs",
     "sale handler success: actual claim/finalize SQL, receipt writes, MIME and local payload protection",
-    "both readbacks retire only their confirmed attempt; unrelated unknown attempts still block account cleanup",
+    "confirmed readbacks retire only their own attempts; unrelated unknown attempts still block account cleanup",
     "real GoTrue password/bearer, PostgREST role/ACL and enabled canonical Free/cross-brand write denial in one candidate",
     "same candidate owner with uploaded photos: ten steps remove four objects, photo rows, upload attempts, GoTrue identity and sessions; other owners retain their objects"
   ],
@@ -119,6 +119,10 @@
       "sha256": "c20590acfde90ff0a8209483e036d690870175d819667ff67fbf44973a6387bb"
     },
     {
+      "path": "lib/subscription/account-deletion-preview-executor.server.ts",
+      "sha256": "5679b99f8ab8aeb21df712e728f9258cb9f22986d56a1150f081ae4ace96dd8f"
+    },
+    {
       "path": "app/api/product-cover-photo/upload/route.ts",
       "sha256": "f45b8c29dda5ce2966b81e8ac8cd325379641cc044831a21ffd982b38b07668d"
     },
@@ -128,7 +132,7 @@
     },
     {
       "path": "scripts/lib/account-deletion-candidate-sources.ts",
-      "sha256": "7c840dd04cb7b6bdbd942f405a4c528406b3723e863b456f1bd4cdbf87bffe28"
+      "sha256": "06d653669a47bd4a6e72d69dc2279f5c3234f31bb8c82bce9c8691ddaae139e2"
     },
     {
       "path": "scripts/lib/account-deletion-catalog-fixture.ts",
@@ -144,7 +148,7 @@
     },
     {
       "path": "scripts/lib/account-deletion-photo-handler-checks.ts",
-      "sha256": "6b2a107c8047f383f7fd5fc76da45166b5ce6fc0ec47ad86e291699549937df1"
+      "sha256": "720ae200b0160fe905ab44dbb84ac13b8e54da502500c713b424b36b8afd8c17"
     },
     {
       "path": "scripts/verify-account-deletion-upload-race.ts",

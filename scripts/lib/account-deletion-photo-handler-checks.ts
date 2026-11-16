@@ -8,7 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { beginConfiguredDeletionUpload } from '../../lib/subscription/account-deletion-upload-barrier.server';
 import { terminalPutTargetHash } from '../../lib/subscription/account-deletion-terminal-put.server';
 import { isOwnedDeletionObjectKey } from '../../lib/subscription/account-deletion-engine.server';
-import {createAccountDeletionStepExecutor} from '../../lib/subscription/account-deletion-engine.server';
+import {createPreviewDeletionExecutor} from '../../lib/subscription/account-deletion-preview-executor.server';
 import {createDeletionDatabasePort,createDeletionObjectPort} from '../../lib/subscription/account-deletion-engine-adapters.server';
 import { quoteSql as q, quoteIdentifier as qi } from './account-deletion-catalog-fixture';
 
@@ -186,6 +186,7 @@ export async function checkPhotoHandlerReceipts(f: Fixture) {
       saved.push({ kind, mode, attemptId, keys: [...control.keys], actor });
       pass(`${kind} handler ${mode}: actual claim/finalize SQL, receipt writes, MIME and local payload protection`);
     }
+    let verifiedReplays = 0;
     for (const actor of [f.owner, f.other]) {
       const row = saved.find(x => x.actor === actor && x.mode === 'finalize_lost')!;
       if(!row)continue;
@@ -194,15 +195,25 @@ export async function checkPhotoHandlerReceipts(f: Fixture) {
       const lease=freezeLeases.get(actor)!;
       const queue=JSON.parse(sql(`SELECT bff_account_deletion_upload_reviews('${lease.id}','${lease.token}');`));assert.equal(queue.canAutoRelease,false);assert.ok(queue.items.some((v:{reason:string})=>v.reason==='provider_outcome_unknown'));assert.ok(!JSON.stringify(queue).includes('object_key'));
       denied(`SELECT bff_account_deletion_upload_reviews('${lease.id}','${randomUUID()}');`,'55000');
+      verifiedReplays++;
     }
-    pass('both readbacks retire only their confirmed attempt; unrelated unknown attempts still block account cleanup');
+    if (verifiedReplays) pass('confirmed readbacks retire only their own attempts; unrelated unknown attempts still block account cleanup');
     if(f.live){await f.live.verifyAnonymous();const free=await authorize(f.legacy!,f.legacy!,'product_photo');assert.equal(free.allowed,false);const cross=await authorize(f.staff!,f.owner,'product_photo');assert.equal(cross.allowed,false);pass('real GoTrue password/bearer, PostgREST role/ACL and enabled canonical Free/cross-brand write denial in one candidate');}
     if(f.live&&cleanupOwner){
       const ownKeys = saved.filter(x=>x.actor===cleanupOwner).flatMap(x=>x.keys);
       assert.equal(new Set(ownKeys).size,4);
       assert.ok(ownKeys.every(key=>objects.has(key)));
       const otherKeys = [...objects.keys()].filter(key=>!ownKeys.includes(key));
-      const r=f.request(cleanupOwner),executor=createAccountDeletionStepExecutor({database:createDeletionDatabasePort(f.live,databaseEndpoint),objects:createDeletionObjectPort({client:sdk,endpoint,bucket}),identity:f.live.identity});
+      const r=f.request(cleanupOwner);
+      // Use the proposed grant with local ports. The target metadata models a Preview deployment.
+      const previewTarget = { endpoint: `https://${'a'.repeat(32)}.r2.cloudflarestorage.com`,
+        bucket: 'markit-account-deletion-preview', mode: 'preview-photos' as const };
+      const issuedAt = Date.now();
+      const executor = createPreviewDeletionExecutor({ deployment: 'preview', databaseUrl: 'https://tzhbirwchhqabkxhqjdl.supabase.co',
+        r2Endpoint: previewTarget.endpoint, bucket: previewTarget.bucket, boundTargetHash: terminalPutTargetHash(previewTarget),
+        grant: { actorId: cleanupOwner, requestId: r.id, issuedAt, expiresAt: issuedAt + 300_000 },
+        ports: { database: createDeletionDatabasePort(f.live,databaseEndpoint),
+          objects: createDeletionObjectPort({client:sdk,endpoint,bucket}), identity: f.live.identity } });
       assert.equal(r.kind,'owner');
       for(const step of ['access_frozen','staff_access_revoked','object_manifest_built','r2_objects_deleted','r2_absence_verified','billing_identity_detached','operational_data_cleaned','profile_deleted','auth_user_deleted','sessions_revoked']as const){
         const result=await executor({requestId:r.id,leaseToken:r.token,accountKind:'owner',stepCode:step});assert.equal(result.outcome,'completed',JSON.stringify({step,result}));if(result.outcome!=='completed')throw Error('Candidate deletion stopped');

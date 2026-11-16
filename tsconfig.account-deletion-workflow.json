@@ -23,6 +23,7 @@
     "lib/subscription/account-deletion-terminal-put.server.ts",
     "tests/account-deletion-upload-reconciliation.test.ts",
     "tests/account-deletion-upload-barrier.test.ts",
+    "tests/account-deletion-preview-executor.test.ts",
     "tests/product-cover-upload-freeze.test.ts",
     "app/api/product-cover-photo/upload/route.ts",
     "app/api/sales-photo-evidence/upload/route.ts",

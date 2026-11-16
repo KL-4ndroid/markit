@@ -350,3 +350,11 @@ Vercel `markit-app` 已開啟 Require Log In，採 Standard Protection。遠端�
 3. 確認 `PRODUCT_COVER_PHOTO_UPLOAD_ENABLED`、`PRODUCT_COVER_PHOTO_READ_ENABLED`、`SALES_PHOTO_EVIDENCE_METADATA_CLAIM_ROUTE_ENABLED`、`SALES_PHOTO_EVIDENCE_R2_UPLOAD_ROUTE_ENABLED` 和 `SALES_PHOTO_EVIDENCE_IMAGE_READ_ROUTE_ENABLED` 已套用。部署後，先看未登入時是否被 Vercel 攔截，再用已授權的身分讀 `/api/health` 並核對 SHA。確認 `test_prg` 的 096 回條、唯一 R2 綁定、`runtime_enabled=false`，以及此部署的刪帳 API 回 `501 account_deletion_disabled`。
 4. 在同一個部署，以合成老闆新增商品、市集和成交。各上傳一張商品照和成交照，再送出相同 ID 與照片內容。驗收應回 `replayed: true`、每對原圖與縮圖各只有一筆成功寫入回條、物件內容一致。再比對內容不同時回 `409`，以及使用另一合成身分越權讀取時受到拒絕。每次確認後只記錄部署 ID、revision、狀態碼與測試結果。
 5. 清理時先記錄本輪合成帳號、場次、商品及物件鍵，逐一比對歸屬。完整刪帳引擎的託管驗收需先有僅能執行當次合成帳號的入口。若先完成照片驗收，使用當次清單清除已建立的測試物件與資料，讀回物件 404 和資料庫筆數，再撤銷短效憑證及移除該分支的測試環境變數。若物件寫入結果不明，保留該筆證據以便查回，待確認後再清理。
+
+### Preview 合成帳號清理執行器
+
+伺服器端執行器要求 Preview、`test_prg`、專用 R2 及相符的貯體指紋。每次執行比對固定的合成老闆 UUID、刪帳申請 UUID 與最長 30 分鐘的授權期限。身份以資料庫回傳為準，儲存批次先整批核對歸屬，並在每次清理、確認和回條寫入前再核對期限。應用程式資料模型與手機能力維持共用，操作透過既有資料庫、Auth 和物件儲存介面。
+
+目前由本機整合測試建立合成帳號與授權，使用本機 PostgreSQL、GoTrue 和 S3 替身執行。託管接線需讓資料庫端由專案管理者登記本輪新建帳號與申請，並在清理 RPC 逐次核對該登記。R2 和 Auth 連線須使用同一核對過的測試設定。現有 096 的執行鎖仍為停用。託管接線需保留對其他帳號的拒絕，驗收前先在本機隔離復驗。
+
+3 組範圍測試與 26 組本機整合案例通過，包含指定帳號的兩類照片及十步清理。第一次全量執行在本機 Docker 建立網路時逾時，下一次在商品照凍結案例出現回條數不符，針對性驗收及最後一次全量複跑通過。[本機整合證據](evidence/account-deletion-integrated-candidate-2026-11-02.json)

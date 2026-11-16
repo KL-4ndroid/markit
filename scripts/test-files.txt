@@ -480,5 +480,6 @@ tests/account-deletion-access-policy.test.ts
 tests/account-deletion-r2-inventory.test.ts
 tests/account-deletion-r2-staging.test.ts
 tests/account-deletion-upload-barrier.test.ts
+tests/account-deletion-preview-executor.test.ts
 tests/account-deletion-upload-reconciliation.test.ts
 tests/product-cover-upload-freeze.test.ts
