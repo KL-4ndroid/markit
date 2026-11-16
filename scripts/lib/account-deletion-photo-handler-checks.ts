@@ -218,7 +218,16 @@ export async function checkPhotoHandlerReceipts(f: Fixture) {
       for(const step of ['access_frozen','staff_access_revoked','object_manifest_built','r2_objects_deleted','r2_absence_verified','billing_identity_detached','operational_data_cleaned','profile_deleted','auth_user_deleted','sessions_revoked']as const){
         const result=await executor({requestId:r.id,leaseToken:r.token,accountKind:'owner',stepCode:step});assert.equal(result.outcome,'completed',JSON.stringify({step,result}));if(result.outcome!=='completed')throw Error('Candidate deletion stopped');
         if(step==='r2_objects_deleted'||step==='r2_absence_verified')assert.equal(result.affectedCount,ownKeys.length);
-        const saved=await f.live.rpc('bff_record_account_deletion_step',{p_request_id:r.id,p_lease_token:r.token,p_step_code:step,p_outcome:'completed',p_affected_count:result.affectedCount,p_evidence_hash:result.evidenceHash,p_safe_error_code:null});assert.equal(saved.error,null);
+        const recordedStep: Awaited<ReturnType<Client['rpc']>> = await f.live.rpc('bff_record_account_deletion_step', {
+          p_request_id: r.id,
+          p_lease_token: r.token,
+          p_step_code: step,
+          p_outcome: 'completed',
+          p_affected_count: result.affectedCount,
+          p_evidence_hash: result.evidenceHash,
+          p_safe_error_code: null,
+        });
+        assert.equal(recordedStep.error, null);
       }
       assert.ok(ownKeys.every(key=>!objects.has(key)));
       assert.ok(otherKeys.every(key=>objects.has(key)));

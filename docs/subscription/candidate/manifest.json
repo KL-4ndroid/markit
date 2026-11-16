@@ -120,7 +120,7 @@
     },
     {
       "path": "scripts/lib/account-deletion-photo-handler-checks.ts",
-      "sha256": "720ae200b0160fe905ab44dbb84ac13b8e54da502500c713b424b36b8afd8c17"
+      "sha256": "48c94d0544a5e8559e8925b719adc9879d81f7883d4fbf1b33548f904c35d856"
     },
     {
       "path": "scripts/verify-account-deletion-upload-race.ts",

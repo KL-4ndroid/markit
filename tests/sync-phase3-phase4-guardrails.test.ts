@@ -75,7 +75,7 @@ function productionSyncFiles(): string[] {
   ].map(path => join(projectRoot, path));
 }
 
-runTest('Phase 3 guardrail: pending_operations only appears in approved Gate D migrations', () => {
+runTest('Phase 3 guardrail: pending_operations references are limited to approved migrations and deletion classification', () => {
   const scannedRoots = ['supabase/migrations', 'app', 'components', 'hooks', 'lib']
     .map(path => join(projectRoot, path));
   const files = scannedRoots.flatMap(root => collectFiles(root));
@@ -86,13 +86,15 @@ runTest('Phase 3 guardrail: pending_operations only appears in approved Gate D m
     'supabase/migrations/050_drain_checklist_toggle_pending_operation.sql',
     'supabase/migrations/051_list_owner_pending_operation_diagnostics.sql',
     'supabase/migrations/052_recover_stale_processing_pending_operation.sql',
+    // The shared deletion policy classifies receipts without reading or writing the table.
+    'lib/subscription/account-deletion-data-policy.ts',
   ]);
   const unexpectedMatches = matches.filter(path => !approvedMatches.has(path));
 
   assert.deepEqual(
     unexpectedMatches,
     [],
-    `pending_operations must stay out of production code and unapproved migrations. Matches: ${matches.join(', ')}`
+    `pending_operations must stay out of sync runtime and unapproved migrations. Matches: ${matches.join(', ')}`
   );
 });
 
