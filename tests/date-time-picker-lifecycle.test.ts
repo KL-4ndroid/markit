@@ -3,17 +3,19 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
 
+type DocumentListener = (event: { target: unknown }) => void;
+
 function fixture() {
   const nodes: any[] = [];
-  const listeners = new Map<string, Set<Function>>();
+  const listeners = new Map<string, Set<DocumentListener>>();
   const timers = new Map<number, () => void>();
   let nextTimer = 0;
   const document = {
     createElement() { return { style: {}, className: '', setAttribute() {}, addEventListener() {}, contains(target: unknown) { return target === this; }, remove() { const i = nodes.indexOf(this); if (i >= 0) nodes.splice(i, 1); } }; },
     body: { appendChild(node: any) { nodes.push(node); } },
     querySelectorAll(selector: string) { return nodes.filter(node => `.${node.className}` === selector); },
-    addEventListener(type: string, callback: Function) { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type)!.add(callback); },
-    removeEventListener(type: string, callback: Function) { listeners.get(type)?.delete(callback); },
+    addEventListener(type: string, callback: DocumentListener) { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type)!.add(callback); },
+    removeEventListener(type: string, callback: DocumentListener) { listeners.get(type)?.delete(callback); },
   };
   const sandbox = { module: { exports: {} }, document, Date,
     setTimeout(callback: () => void) { const id = ++nextTimer; timers.set(id, callback); return id; },
