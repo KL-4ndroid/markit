@@ -52,10 +52,10 @@ export default function AboutPage() {
             <p lang="en" className="mt-1 text-xs font-medium tracking-widest text-muted-foreground">{APP_BRAND.englishName}</p>
             <p className="mt-4 text-lg font-medium">{APP_BRAND.positioning}</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{APP_BRAND.tagline}</p>
-            <p className="mt-5 text-sm leading-7 text-muted-foreground sm:text-base">
-              從週末市集、固定夜市到流動餐車，都可以把擺攤安排、收入和現場心得留在同一個地方。回頭看時，更容易知道哪裡值得再去、什麼商品賣得好，以及下次可以怎麼準備。
+            <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+              安排市集、記錄收入，留下每一場的出攤心得，方便下次準備。
             </p>
-            <Link href="/demo" className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+            <Link href="/demo" className="mt-4 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
               免登入體驗
             </Link>
           </div>
