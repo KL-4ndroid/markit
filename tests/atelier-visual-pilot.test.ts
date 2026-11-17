@@ -26,7 +26,7 @@ const ownerMarket = read('components/markets/MarketDetailScreen.tsx');
 const staffMarket = read('components/markets/StaffMarketDetailView.tsx');
 const photoStory = read('components/markets/MarketOverviewPhotoStory.tsx');
 const transactionWorkspace = read('components/sales/TransactionWorkspace.tsx');
-const quickIncome = read('components/sales/QuickInteractionButtons.tsx');
+const quickIncome = read('components/sales/QuickAmountCheckout.tsx');
 const productSale = read('components/sales/QuickTransactionGrid.tsx');
 const paymentSelector = read('components/sales/PaymentMethodSelector.tsx');
 const interactions = read('components/sales/InteractionButtons.tsx');
@@ -66,7 +66,7 @@ assert.match(bottomNavigationBar, /bg-atelier-paper\/95/);
 assert.match(bottomNavigationBar, /bg-primary text-white/);
 assert.match(bottomNavigationBar, /bg-atelier-clay/);
 
-assert.match(ownerMarket, /<MarketOverviewPhotoStory/);
+assert.match(ownerMarket, /<SalesPhotoEvidenceOwnerAlbumRouteSection/);
 assert.match(ownerMarket, /bg-atelier-canvas/);
 assert.match(staffMarket, /bg-atelier-canvas/);
 assert.match(photoStory, /buildSalesPhotoEvidenceOwnerAlbumViewModel/);

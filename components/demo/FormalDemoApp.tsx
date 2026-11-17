@@ -2,9 +2,12 @@
 import { APP_BRAND } from '@/lib/app-brand';
 
 import Image from 'next/image';
+import Link from 'next/link';
+import { DemoMarketComparison } from './DemoMarketComparison';
 import {
   ArrowLeft,
   ArrowRight,
+  Banknote,
   BarChart3,
   BookOpen,
   Calendar,
@@ -13,8 +16,6 @@ import {
   Check,
   ChevronRight,
   ClipboardCheck,
-  Cloud,
-  Database,
   DollarSign,
   Edit,
   FileText,
@@ -24,23 +25,17 @@ import {
   Minus,
   MoreHorizontal,
   Package,
-  Palette,
   Plus,
-  RefreshCw,
   Settings,
   ShoppingBag,
   ShoppingCart,
-  Smartphone,
   Store,
   ToggleLeft,
   ToggleRight,
   Trash2,
-  TrendingUp,
-  Users,
   X,
-  type LucideIcon,
 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 
 import { ActionableInsightsCard } from '@/components/analytics/ActionableInsightsCard';
@@ -53,7 +48,12 @@ import { TopProductsCard } from '@/components/analytics/TopProductsCard';
 import { TodayMarketCard } from '@/components/home/TodayMarketCard';
 import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { MarketListCard } from '@/components/markets/MarketListCard';
+import { MarketRegistrationPanel } from '@/components/markets/MarketRegistrationPanel';
+import { MarketEquipmentSummary } from '@/components/markets/MarketEquipmentSummary';
+import { MarketTodayTimeline } from '@/components/markets/MarketTodayTimeline';
 import { MarketWorkspaceNavigation } from '@/components/markets/MarketWorkspaceNavigation';
+import { MarketWorkspaceDetailTabs } from '@/components/markets/MarketWorkspaceDetailTabs';
+import { MarketSaleReceipt } from '@/components/markets/MarketSaleReceipt';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
 import {
   MarketBasicFields,
@@ -62,18 +62,14 @@ import {
   MarketNotesField,
   MarketTimelineFields,
   type MarketEquipmentField,
-  type MarketEquipmentFreeField,
   type MarketTimelineField,
 } from '@/components/markets/MarketFormFields';
 import { ProductCard } from '@/components/products/ProductCard';
 import { ProductFormFields } from '@/components/products/ProductFormFields';
 import { AppBottomNavigationBar } from '@/components/navigation/AppBottomNavigationBar';
-import {
-  SettingsActionRow as SharedSettingsActionRow,
-  SettingsSection as SharedSettingsSection,
-} from '@/components/settings/SettingsMenu';
 import { SettingsPageShell } from '@/components/settings/SettingsPageShell';
 import { PaymentMethodSelector } from '@/components/sales/PaymentMethodSelector';
+import { QuickAmountCheckout } from '@/components/sales/QuickAmountCheckout';
 import { AppDialog } from '@/components/ui/AppDialog';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -88,6 +84,7 @@ import type { MarketMetrics } from '@/lib/analytics/types';
 import {
   createInitialDemoActivities,
   createInitialDemoMarkets,
+  DEMO_REGISTRATION_MARKET_ID,
   createInitialDemoProducts,
   createInitialDemoSales,
   type DemoActivity,
@@ -97,7 +94,7 @@ import {
   type DemoSaleRecord,
   type DemoView,
 } from '@/lib/demo/formal-demo-data';
-import type { SalesPaymentMethod } from '@/lib/sales/payment-methods';
+import { formatSalesPaymentMethod, type SalesPaymentMethod } from '@/lib/sales/payment-methods';
 import {
   calculateMarketDurationLabel,
   calculateMarketFixedCost,
@@ -105,7 +102,7 @@ import {
   validateMarketCoreForm,
   type MarketCoreFormErrors,
 } from '@/lib/markets/market-form';
-import { buildMarketListGroups } from '@/lib/markets/market-list-view-model';
+import { buildMarketListGroups, type MarketPreparationFilter } from '@/lib/markets/market-list-view-model';
 import { buildTodayViewModel } from '@/lib/home/today-view-model';
 import {
   getAppNavigationItems,
@@ -118,13 +115,14 @@ import {
   type ProductFormErrors,
   type ProductFormValues,
 } from '@/lib/products/product-form';
-import { THEME_LAB_OPEN_EVENT } from '@/lib/theme-lab';
+import { marketFeeDisplayRows } from '@/lib/subscription/ui-presentation';
+import { formatDisplayDate } from '@/lib/presentation/formatters';
 import { formatCurrency } from '@/lib/utils';
 import type { Market, Product, ProductCategory } from '@/types/db';
 
-type MarketView = 'active' | 'preparing' | 'ended';
+type MarketView = 'active' | 'preparing' | 'ended' | 'cancelled';
 type ProductView = 'all' | ProductCategory;
-type AnalyticsView = 'summary' | 'trends' | 'products' | 'advanced';
+type AnalyticsView = 'summary' | 'trends' | 'products';
 type WorkspaceView = 'live' | 'overview' | 'manage';
 type TransactionMode = 'quick' | 'products';
 
@@ -179,6 +177,10 @@ function toFormalMarket(market: DemoMarket): Market {
     id: market.id,
     name: market.name,
     location: market.location,
+    regionCode: market.regionCode,
+    registrationConditions: market.registrationConditions,
+    earlyEntryEnabled: market.earlyEntryEnabled,
+    earlyEntryTime: market.earlyEntryTime,
     dates: [...market.dates],
     startDate,
     endDate,
@@ -187,7 +189,7 @@ function toFormalMarket(market: DemoMarket): Market {
     checkInTime: market.checkInTime,
     operatingStartTime: market.operatingStartTime,
     operatingEndTime: market.operatingEndTime,
-    status: market.status === 'operating' ? 'ongoing' : market.status === 'ended' ? 'completed' : 'paid',
+    status: market.registrationStatus ?? (market.status === 'operating' ? 'ongoing' : market.status === 'ended' ? 'completed' : 'paid'),
     operationPhase: market.status === 'operating' ? 'operating' : market.status === 'ended' ? 'closing' : 'preparation',
     registrationFee: 0,
     boothCost: market.boothCost,
@@ -230,6 +232,8 @@ function toFormalProduct(product: DemoProduct): Product {
 interface DemoMarketFormValues {
   name: string;
   location: string;
+  regionCode?: Market['regionCode'];
+  registrationConditions?: Market['registrationConditions'];
   dates: string[];
   noEarlyEntry: boolean;
   earlyEntryTime: string;
@@ -253,9 +257,11 @@ function createDemoMarketFormValues(market?: DemoMarket): DemoMarketFormValues {
   return {
     name: market?.name ?? '',
     location: market?.location ?? '',
+    regionCode: market?.regionCode,
+    registrationConditions: market?.registrationConditions,
     dates: market ? [...market.dates] : [],
-    noEarlyEntry: true,
-    earlyEntryTime: '10:00',
+    noEarlyEntry: !market?.earlyEntryEnabled,
+    earlyEntryTime: market?.earlyEntryTime ?? '10:00',
     checkInTime: market?.checkInTime ?? '11:00',
     operatingStartTime: market?.operatingStartTime ?? '12:00',
     operatingEndTime: market?.operatingEndTime ?? '18:00',
@@ -287,24 +293,6 @@ function stageForMarket(status: DemoMarketStatus): MarketView {
   return 'ended';
 }
 
-function stageLabel(stage: MarketView): string {
-  if (stage === 'active') return '營運中';
-  if (stage === 'preparing') return '準備中';
-  return '已結束';
-}
-
-function StaticSyncStatus() {
-  return (
-    <span
-      className="inline-flex h-11 w-11 items-center justify-center rounded-control bg-white/20 text-white shadow-sm backdrop-blur-sm"
-      aria-label="資料已同步"
-      title="資料已同步"
-    >
-      <Cloud className="h-5 w-5" aria-hidden="true" />
-    </span>
-  );
-}
-
 function TodayPage({
   activeMarket,
   upcomingMarkets,
@@ -330,7 +318,7 @@ function TodayPage({
           <div className="flex items-start justify-between gap-4">
             <p className="min-w-0 truncate text-xs font-semibold text-white/90">{APP_BRAND.name}・暖暖手作</p>
             <div className="flex shrink-0 items-center gap-1">
-              <StaticSyncStatus />
+              <span className="rounded-full bg-white/15 px-2 py-1 text-xs font-medium text-white">範例體驗</span>
               <IconButton label="開啟設定" tooltip="設定" className="bg-white/20 text-white shadow-sm backdrop-blur-sm hover:bg-white/30 hover:text-white" icon={<Settings className="h-5 w-5" />} onClick={onOpenSettings} />
             </div>
           </div>
@@ -386,13 +374,30 @@ function TodayPage({
   );
 }
 
-function MarketsPage({ markets, view, onViewChange, onAdd, onOpen }: { markets: DemoMarket[]; view: MarketView; onViewChange: (view: MarketView) => void; onAdd: () => void; onOpen: (market: DemoMarket) => void }) {
+function MarketsPage({ markets, view, preparationFilter, onFilterChange, onViewChange, onAdd, onOpen, onTryRegistration }: {
+  markets: DemoMarket[];
+  view: MarketView;
+  preparationFilter: MarketPreparationFilter;
+  onFilterChange: (filter: MarketPreparationFilter) => void;
+  onViewChange: (view: MarketView) => void;
+  onAdd: () => void;
+  onOpen: (market: DemoMarket) => void;
+  onTryRegistration: () => void;
+}) {
   const groups = buildMarketListGroups(markets.map(toFormalMarket), DEMO_NOW);
-  const filtered = groups[view];
+  const filtered = view === 'preparing' && preparationFilter !== 'all'
+    ? groups.preparing.filter(item => item.preparationAttention === preparationFilter)
+    : groups[view];
+  const preparationTabs = [
+    { id: 'all' as const, label: '全部', count: groups.preparing.length },
+    { id: 'awaiting_decision' as const, label: '等待錄取', count: groups.preparing.filter(item => item.preparationAttention === 'awaiting_decision').length },
+    { id: 'payment_due' as const, label: '待繳費', count: groups.preparing.filter(item => item.preparationAttention === 'payment_due').length },
+  ];
   const tabs = [
     { id: 'active' as const, label: '進行中', count: groups.active.length },
     { id: 'preparing' as const, label: '待準備', count: groups.preparing.length },
     { id: 'ended' as const, label: '已結束', count: groups.ended.length },
+    ...(groups.cancelled.length > 0 ? [{ id: 'cancelled' as const, label: '已取消', count: groups.cancelled.length }] : []),
   ];
   return (
     <div className="min-h-screen bg-background">
@@ -404,7 +409,17 @@ function MarketsPage({ markets, view, onViewChange, onAdd, onOpen }: { markets: 
       />
       <div className="mx-auto max-w-3xl px-4 pb-8 pt-6 sm:px-6">
         <Tabs items={tabs} value={view} onChange={onViewChange} ariaLabel="市集工作階段" />
+        {view === 'preparing' && <>
+          <Tabs className="mt-3" items={preparationTabs} value={preparationFilter} onChange={onFilterChange} ariaLabel="報名與繳費篩選" />
+          <div className="mt-2 flex flex-wrap items-center gap-x-3">
+            <Button className="px-0 text-primary underline underline-offset-4" variant="ghost" onClick={onTryRegistration}>試著安排一場市集</Button>
+            <span className="text-xs text-muted-foreground">市集安排可在免費版使用。</span>
+          </div>
+        </>}
         <div className="mt-5 space-y-3">
+          {filtered.length === 0 && <p className="rounded-card border border-border bg-atelier-paper p-4 text-sm text-muted-foreground">
+            {view === 'preparing' && preparationFilter === 'payment_due' ? '目前沒有待繳費的市集。' : '這個分類目前沒有市集。'}
+          </p>}
           {filtered.map(item => {
             const sourceMarket = markets.find(market => market.id === item.market.id);
             return (
@@ -463,9 +478,14 @@ function buildDemoMetrics(markets: Market[]) {
     const revenue = market.totalRevenue ?? 0;
     const deals = market.totalDeals ?? 0;
     const engaged = market.totalInteractions ?? 0;
-    const fixedCost = (market.registrationFee ?? 0) + (market.boothCost ?? 0) + (market.tableRental ?? 0) + (market.chairRental ?? 0);
+    const fixedCost = calculateMarketFixedCost({
+      ...market,
+      tableFree: Boolean(market.tableFree),
+      chairFree: Boolean(market.chairFree),
+      umbrellaFree: Boolean(market.umbrellaFree),
+    });
     const totalProfit = market.totalProfit ?? 0;
-    const netProfit = totalProfit - fixedCost;
+    const netProfit = totalProfit - fixedCost - revenue * (market.commissionRate ?? 0) / 100;
     const conversionRate = engaged > 0 ? deals / engaged : 0;
     const metrics = {
       uniqueEngaged: engaged,
@@ -493,7 +513,7 @@ function buildDemoMetrics(markets: Market[]) {
   }));
 }
 
-function AnalyticsPage({ markets, products }: { markets: DemoMarket[]; products: DemoProduct[] }) {
+function AnalyticsPage({ markets, products, onOpenMarket }: { markets: DemoMarket[]; products: DemoProduct[]; onOpenMarket: (market: DemoMarket) => void }) {
   const [range, setRange] = useState<AnalyticsRange>('all');
   const [activeTab, setActiveTab] = useState<AnalyticsView>('summary');
   const [selectedMarketId, setSelectedMarketId] = useState(markets[0]?.id ?? '');
@@ -524,7 +544,6 @@ function AnalyticsPage({ markets, products }: { markets: DemoMarket[]; products:
     { id: 'summary' as const, label: '摘要' },
     { id: 'trends' as const, label: '趨勢' },
     { id: 'products' as const, label: '商品' },
-    { id: 'advanced' as const, label: '進階' },
   ];
   return (
     <div className="min-h-screen bg-background">
@@ -532,15 +551,15 @@ function AnalyticsPage({ markets, products }: { markets: DemoMarket[]; products:
         title="分析"
         eyebrow="營運決策"
         icon={BarChart3}
-        action={<div className="flex items-center gap-1"><IconButton label="開啟結算報表" tone="inverse" icon={<FileText className="h-5 w-5" />} onClick={() => toast.info('Demo 不會產生正式報表')} /><IconButton label="重新計算分析" tone="inverse" icon={<RefreshCw className="h-5 w-5" />} onClick={() => toast.success('分析已重新計算')} /></div>}
       />
       <div className="mx-auto max-w-3xl px-4 pb-10 pt-6 sm:px-6">
+        <p className="mb-4 text-sm leading-6 text-muted-foreground">這裡顯示範例分析。正式版的完整報告與 PDF 匯出適用於高階版。</p>
+        <DemoMarketComparison markets={markets} onOpen={onOpenMarket} />
         <DateRangeFilter value={range} onChange={setRange} markets={analyticsMarkets} selectedMarketId={selectedMarketId} onMarketChange={setSelectedMarketId} />
         <Tabs className="mt-5" items={tabs} value={activeTab} onChange={setActiveTab} ariaLabel="分析分頁" />
         <div className="mt-5">
           {activeTab === 'summary' && (
             <div className="space-y-5">
-              <section className="rounded-card border border-status-warn-border bg-status-warn-bg px-4 py-3"><p className="text-sm font-semibold text-foreground">資料可靠度：中等</p><p className="mt-1 text-xs text-muted-foreground">目前範圍有 {filteredMarkets.filter(market => (market.totalRevenue ?? 0) > 0).length} 場有效市集資料，持續記錄會讓建議更準確。</p></section>
               <ActionableInsightsCard result={actionable} />
               <AnalyticsSummaryHighlights viewModel={metrics} />
             </div>
@@ -556,35 +575,9 @@ function AnalyticsPage({ markets, products }: { markets: DemoMarket[]; products:
               <AdvancedAnalysisGate title="商品搭配分析還需要更多資料" description="累積更多市集成交紀錄後，就能找出最常一起被購買的商品。" requirement={`目前範圍 ${filteredMarkets.length} 場，累積至 15 場即可解鎖`} />
             </div>
           )}
-          {activeTab === 'advanced' && <AdvancedAnalysisGate title="進階分析正在累積資料" description="進階健康分數與象限分析會在資料量足夠後顯示。" requirement="至少需要 15 場具有完整營業額、成本與互動資料的市集" />}
         </div>
       </div>
     </div>
-  );
-}
-
-interface SettingsRowProps {
-  icon: LucideIcon;
-  label: string;
-  description: string;
-  onClick: () => void;
-}
-
-function SettingsRow({ icon: Icon, label, description, onClick }: SettingsRowProps) {
-  return <SharedSettingsActionRow icon={Icon} label={label} description={description} onClick={onClick} />;
-}
-
-function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
-  return <SharedSettingsSection title={title}>{children}</SharedSettingsSection>;
-}
-
-type DemoSettingsView = 'root' | 'account' | 'team' | 'sales' | 'data' | 'app';
-
-function DemoSettingsShell({ title, description, icon: Icon, onBack, children }: { title: string; description: string; icon: LucideIcon; onBack: () => void; children: ReactNode }) {
-  return (
-    <SettingsPageShell title={title} description={description} icon={Icon} isStaff={false} onBack={onBack}>
-      {children}
-    </SettingsPageShell>
   );
 }
 
@@ -598,80 +591,26 @@ function SalesPhotoGallery({ sales }: { sales: DemoSaleRecord[] }) {
   );
 }
 
-function MorePage({ sales, onOpenThemeLab, defaultPhotoRequired, onPhotoRequiredChange, onExport, onReset }: { sales: DemoSaleRecord[]; onOpenThemeLab: () => void; defaultPhotoRequired: boolean; onPhotoRequiredChange: (value: boolean) => void; onExport: () => void; onReset: () => void }) {
-  const [view, setView] = useState<DemoSettingsView>('root');
-  const [lastSyncLabel, setLastSyncLabel] = useState('剛剛');
-  const [teamMembers, setTeamMembers] = useState(['小葵・店員']);
-  const [inviteName, setInviteName] = useState('');
-  const [photoDraft, setPhotoDraft] = useState(defaultPhotoRequired);
+function MorePage({ sales, onReset, onOpenGuide }: { sales: DemoSaleRecord[]; onReset: () => void; onOpenGuide: () => void }) {
   const [resetOpen, setResetOpen] = useState(false);
-
-  if (view === 'account') {
-    return (
-      <DemoSettingsShell title="帳號與同步" description="管理帳號、備份與跨裝置同步。" icon={Cloud} onBack={() => setView('root')}>
-        <div className="space-y-6">
-          <section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Users className="h-5 w-5" /></span><div><h2 className="text-base font-semibold text-foreground">登入帳號</h2><p className="mt-1 text-sm text-muted-foreground">demo@example.test</p><p className="mt-2 text-xs text-muted-foreground">帳號身分：老闆・Demo 模式</p></div></div></section>
-          <section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-base font-semibold text-foreground">雲端同步</h2><p className="mt-1 text-sm text-muted-foreground">正式版會先保存本機操作，再於連線時送往雲端。</p></div><span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-soft-green px-3 py-1 text-xs font-medium text-primary"><Check className="h-4 w-4" />Demo 已同步</span></div><dl className="mt-5 divide-y divide-primary/10 border-y border-primary/10 text-sm"><div className="flex items-center justify-between py-3"><dt className="text-muted-foreground">最後同步</dt><dd className="font-medium">{lastSyncLabel}</dd></div><div className="flex items-center justify-between py-3"><dt className="text-muted-foreground">待同步項目</dt><dd className="font-medium">0 筆</dd></div><div className="flex items-center justify-between py-3"><dt className="text-muted-foreground">資料來源</dt><dd className="font-medium">記憶體 Demo</dd></div></dl><Button variant="secondary" className="mt-4 w-full sm:w-auto" leadingIcon={<RefreshCw className="h-4 w-4" />} onClick={() => { setLastSyncLabel('現在'); toast.success('Demo 同步完成'); }}>立即同步</Button></section>
-        </div>
-      </DemoSettingsShell>
-    );
-  }
-
-  if (view === 'team') {
-    const invite = () => {
-      const name = inviteName.trim();
-      if (!name) { toast.error('請輸入成員名稱'); return; }
-      setTeamMembers(current => [...current, `${name}・店員`]);
-      setInviteName('');
-      toast.success('Demo 團隊成員已加入');
-    };
-    return (
-      <DemoSettingsShell title="團隊成員" description="邀請夥伴並設定工作權限。" icon={Users} onBack={() => setView('root')}>
-        <div className="space-y-6">
-          <section className="rounded-card border border-primary/10 bg-white p-5"><h2 className="text-base font-semibold text-foreground">新增成員</h2><p className="mt-1 text-sm text-muted-foreground">這裡只模擬邀請流程，不會寄出通知。</p><div className="mt-4 flex flex-col gap-2 sm:flex-row"><label htmlFor="demo-team-name" className="sr-only">成員名稱</label><input id="demo-team-name" value={inviteName} onChange={event => setInviteName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') invite(); }} placeholder="輸入成員名稱" className="min-h-12 flex-1 rounded-control border border-primary/15 bg-background px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" /><Button onClick={invite} leadingIcon={<Plus className="h-4 w-4" />}>加入團隊</Button></div></section>
-          <section className="overflow-hidden rounded-card border border-primary/10 bg-white"><div className="flex items-center justify-between border-b border-primary/10 p-4"><div><p className="text-sm font-semibold">Demo 老闆</p><p className="mt-1 text-xs text-muted-foreground">demo@example.test</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">老闆</span></div>{teamMembers.map(member => <div key={member} className="flex min-h-16 items-center justify-between gap-3 border-b border-primary/10 px-4 last:border-0"><span className="text-sm font-medium">{member}</span><button type="button" onClick={() => setTeamMembers(current => current.filter(item => item !== member))} aria-label={`移除 ${member}`} className="inline-flex h-11 w-11 items-center justify-center rounded-control text-danger hover:bg-status-danger-bg"><Trash2 className="h-4 w-4" /></button></div>)}</section>
-        </div>
-      </DemoSettingsShell>
-    );
-  }
-
-  if (view === 'sales') {
-    return (
-      <DemoSettingsShell title="成交照片" description="管理品牌顯示與成交照片預設值。" icon={Camera} onBack={() => setView('root')}>
-        <div className="space-y-5"><SalesPhotoGallery sales={sales} /><section className="rounded-card border border-primary/10 bg-white p-5 shadow-atelier"><div className="mb-4 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Camera className="h-5 w-5" /></span><div><h2 className="text-base font-semibold text-foreground">成交照片紀錄</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">設定新建立的市集是否預設需要在成交後補上照片。</p></div></div><button type="button" onClick={() => setPhotoDraft(current => !current)} className="flex w-full items-center justify-between gap-4 rounded-control border border-primary/15 bg-background px-4 py-4 text-left transition-colors hover:border-primary"><span><span className="block text-sm font-medium text-foreground">新市集預設需要成交照片</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">只影響之後新增的市集，不會修改既有市集。</span></span><span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${photoDraft ? 'bg-primary' : 'bg-gray-300'}`}><span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${photoDraft ? 'translate-x-6' : 'translate-x-1'}`} /></span></button><Button className="mt-4 w-full" disabled={photoDraft === defaultPhotoRequired} onClick={() => { onPhotoRequiredChange(photoDraft); toast.success('成交照片紀錄設定已更新'); }} leadingIcon={<Check className="h-4 w-4" />}>儲存成交照片設定</Button></section></div>
-      </DemoSettingsShell>
-    );
-  }
-
-  if (view === 'data') {
-    return (
-      <DemoSettingsShell title="資料與救援" description="匯出目前資料，或將 Demo 還原成最初狀態。" icon={Database} onBack={() => setView('root')}>
-        <div className="space-y-7"><section><h2 className="mb-2 px-1 text-xs font-semibold text-muted-foreground">備份工具</h2><div className="rounded-card border border-primary/10 bg-white p-5"><h3 className="text-sm font-semibold text-foreground">匯出 Demo 資料</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">下載目前市集、商品與活動紀錄的 JSON 檔案。</p><Button className="mt-4 w-full sm:w-auto" variant="secondary" onClick={onExport} leadingIcon={<Database className="h-4 w-4" />}>下載備份</Button></div></section><section className="border-t border-danger/20 pt-6"><h2 className="text-base font-semibold text-danger">清除資料</h2><p className="mt-1 text-sm text-muted-foreground">只會重設這個 Demo 頁面，不影響正式版資料。</p><div className="mt-4 rounded-card border border-danger/20 bg-white p-5"><h3 className="text-sm font-semibold">還原初始範例</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">目前新增、編輯與成交紀錄都會被清除。</p><Button className="mt-4 w-full sm:w-auto" variant="danger" onClick={() => setResetOpen(true)}>還原 Demo</Button></div></section></div>
-        <ConfirmDialog open={resetOpen} onClose={() => setResetOpen(false)} onConfirm={() => { setResetOpen(false); setView('root'); onReset(); }} title="還原 Demo 初始資料？" description="這會清除本次操作新增的市集、商品與成交紀錄，但不會碰觸正式版資料。" confirmLabel="還原 Demo" tone="danger" />
-      </DemoSettingsShell>
-    );
-  }
-
-  if (view === 'app') {
-    return (
-      <DemoSettingsShell title="App 與版本" description="查看版本資訊並調整這次 Demo 的主題。" icon={Smartphone} onBack={() => setView('root')}>
-        <div className="space-y-6"><section className="rounded-card border border-primary/10 bg-white p-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Palette className="h-5 w-5" /></span><div className="min-w-0 flex-1"><h2 className="text-base font-semibold">主題實驗室</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">即時調整正式版與 Demo 共用的色彩變數。</p></div></div><Button className="mt-4 w-full" onClick={onOpenThemeLab} leadingIcon={<Palette className="h-4 w-4" />}>開啟主題實驗室</Button></section><section className="rounded-card border border-primary/10 bg-white px-4 py-4"><div className="flex items-center gap-3"><Image src="/icons/icon-192x192.png" alt="" width={40} height={40} className="h-10 w-10 rounded-lg object-contain" /><div><p className="text-sm font-semibold">{APP_BRAND.name}</p><p className="mt-1 text-xs text-muted-foreground">互動 Demo・記憶體資料版</p></div></div></section></div>
-      </DemoSettingsShell>
-    );
-  }
-
   return (
-    <SettingsPageShell
-      title="更多"
-      description="帳號、團隊、營業偏好與系統工具都集中在這裡。"
-      icon={MoreHorizontal}
-      isStaff={false}
-    >
-      <section className="mb-6 flex items-center justify-between gap-4 border-b border-primary/10 pb-5"><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">demo@example.test</p><p className="mt-1 text-xs text-muted-foreground">目前身分：老闆</p></div><span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary">營運者</span></section><div className="space-y-6"><SettingsSection title="營運設定"><SettingsRow icon={Cloud} label="帳號與同步" description="登入帳號、同步狀態與登出" onClick={() => setView('account')} /><SettingsRow icon={Users} label="團隊與權限" description="邀請成員並管理每位員工的角色" onClick={() => setView('team')} /><SettingsRow icon={Camera} label="銷售與照片" description="查看成交照片與調整紀錄偏好" onClick={() => { setPhotoDraft(defaultPhotoRequired); setView('sales'); }} /></SettingsSection><SettingsSection title="系統"><SettingsRow icon={Database} label="資料與救援" description="檢查資料健康、修復與清除資料" onClick={() => setView('data')} /><SettingsRow icon={Smartphone} label="App 與版本" description={`安裝到主畫面、版本與關於${APP_BRAND.name}`} onClick={() => setView('app')} /></SettingsSection></div>
+    <SettingsPageShell title="更多" description="管理這次免登入體驗。" icon={MoreHorizontal} isStaff={false}>
+      <div className="space-y-5">
+        <section className="rounded-card border border-border bg-atelier-paper p-4">
+          <h2 className="font-semibold">開始自己的紀錄</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">在正式版建立的市集，登入後可跨裝置同步。</p>
+          <Link href="/" className="mt-2 inline-flex min-h-11 items-center font-semibold text-primary hover:underline">開始記錄自己的市集</Link>
+        </section>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={onOpenGuide}>重新開啟體驗引導</Button>
+          <Button variant="secondary" onClick={() => setResetOpen(true)}>還原範例資料</Button>
+        </div>
+        <SalesPhotoGallery sales={sales} />
+      </div>
+      <ConfirmDialog open={resetOpen} onClose={() => setResetOpen(false)} onConfirm={() => { setResetOpen(false); onReset(); }} title="還原範例資料？" description="本次新增的市集、商品與成交紀錄會清除。" confirmLabel="還原範例" tone="danger" />
     </SettingsPageShell>
   );
 }
-
 function DemoMarketForm({
   open,
   title,
@@ -691,14 +630,12 @@ function DemoMarketForm({
   onClose: () => void;
   onSubmit: () => void;
 }) {
-  const fixedCostTotal = calculateMarketFixedCost(values);
   const update = <Field extends keyof DemoMarketFormValues>(field: Field, value: DemoMarketFormValues[Field]) => {
     onChange({ ...values, [field]: value });
   };
   const updateTimeline = (field: MarketTimelineField, value: string) => update(field, value);
   const updateCost = (field: 'boothCost' | 'deposit' | 'commissionRate', value: number) => update(field, value);
   const updateRental = (field: MarketEquipmentField, value: number) => update(field, value);
-  const updateFree = (field: MarketEquipmentFreeField, value: boolean) => update(field, value);
 
   return (
     <FullScreenForm
@@ -715,6 +652,8 @@ function DemoMarketForm({
             idPrefix="demo-market"
             name={values.name}
             location={values.location}
+            regionCode={values.regionCode}
+            onRegionChange={value => update('regionCode', value)}
             dates={values.dates}
             errors={errors}
             onNameChange={value => update('name', value)}
@@ -737,20 +676,28 @@ function DemoMarketForm({
             onUseDefaults={() => onChange({ ...values, noEarlyEntry: true, checkInTime: '11:00', operatingStartTime: '12:00', operatingEndTime: '18:00' })}
           />
         </FormSectionDisclosure>
-        <FormSectionDisclosure title="成本設定" description="攤位費、押金與抽成比例" icon={DollarSign} tone="yellow">
-          <MarketCostFields idPrefix="demo-market" boothCost={values.boothCost} deposit={values.deposit} commissionRate={values.commissionRate} fixedCostTotal={fixedCostTotal} onChange={updateCost} />
+        <FormSectionDisclosure title="報名與費用" description="攤位費、保證金與主辦抽成比例" icon={DollarSign}>
+          <MarketCostFields idPrefix="demo-market" boothCost={values.boothCost} deposit={values.deposit} commissionRate={values.commissionRate} registrationTerms onChange={updateCost} />
         </FormSectionDisclosure>
-        <FormSectionDisclosure title="設備租借" description="桌椅、陽傘與免費提供設定" icon={Package} tone="blue">
-          <MarketEquipmentFields idPrefix="demo-market" rentals={{ tableRental: values.tableRental, chairRental: values.chairRental, umbrellaRental: values.umbrellaRental }} free={{ tableFree: values.tableFree, chairFree: values.chairFree, umbrellaFree: values.umbrellaFree }} onRentalChange={updateRental} onFreeChange={updateFree} />
+        <FormSectionDisclosure title="設備與租借" description="桌椅、陽傘與租借費用" icon={Package}>
+          <MarketEquipmentFields
+            idPrefix="demo-market"
+            registrationTerms
+            rentals={{ tableRental: values.tableRental, chairRental: values.chairRental, umbrellaRental: values.umbrellaRental }}
+            free={{ tableFree: values.tableFree, chairFree: values.chairFree, umbrellaFree: values.umbrellaFree }}
+            conditions={values.registrationConditions}
+            onRentalChange={updateRental}
+            onFreeChange={(field, value) => update(field, value)}
+            onStatusChange={(field, rentalField, status) => onChange({
+              ...values,
+              [field]: status === 'free',
+              ...(status !== 'rental' ? { [rentalField]: 0 } : {}),
+              registrationConditions: { ...values.registrationConditions, [field]: status },
+            })}
+          />
         </FormSectionDisclosure>
-        <FormSectionDisclosure title="主辦／場地備註與成交照片" description="固定資訊與成交後紀錄方式" icon={FileText} tone="pink">
-          <div className="space-y-4">
-            <MarketNotesField idPrefix="demo-market" value={values.notes} onChange={value => update('notes', value)} />
-            <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-control border border-primary/15 bg-white px-3">
-              <input type="checkbox" checked={values.salesPhotoEvidenceRequired} onChange={event => update('salesPhotoEvidenceRequired', event.target.checked)} className="h-4 w-4 rounded border-primary/30 text-primary focus:ring-primary/40" />
-              <span><span className="block text-sm font-medium text-foreground">成交後需要補拍照片</span><span className="block text-xs text-muted-foreground">Demo 只會顯示流程，不會存取相機或上傳照片</span></span>
-            </label>
-          </div>
+        <FormSectionDisclosure title="主辦／場地備註" description="停車、入場與場地資訊" icon={FileText}>
+          <MarketNotesField idPrefix="demo-market" value={values.notes} onChange={value => update('notes', value)} />
         </FormSectionDisclosure>
       </div>
     </FullScreenForm>
@@ -815,16 +762,19 @@ function ProductDetail({ product, onBack, onEdit, onToggleActive, onDelete }: { 
   );
 }
 
-function DemoTransactionWorkspace({ products, onCartSale, onManualSale }: { products: DemoProduct[]; onCartSale: (items: Array<{ productId: string; quantity: number }>) => void; onManualSale: (amount: number) => void }) {
-  const [mode, setMode] = useState<TransactionMode>('quick');
+function DemoTransactionWorkspace({ mode, products, onCartSale, onManualSale }: { mode: TransactionMode; products: DemoProduct[]; onCartSale: (items: Array<{ productId: string; quantity: number }>, paymentMethod: SalesPaymentMethod) => boolean; onManualSale: (amount: number, paymentMethod: SalesPaymentMethod) => void }) {
   const [displayAmount, setDisplayAmount] = useState('0');
   const [paymentMethod, setPaymentMethod] = useState<SalesPaymentMethod>('cash');
   const [cart, setCart] = useState<Record<string, number>>({});
   const amount = Number.parseInt(displayAmount, 10) || 0;
   const cartItems = products.flatMap(product => cart[product.id] ? [{ product, quantity: cart[product.id] }] : []);
   const cartTotal = cartItems.reduce((total, item) => total + item.product.price * item.quantity, 0);
-  const appendNumber = (number: number) => setDisplayAmount(previous => previous === '0' ? String(number) : `${previous}${number}`);
-  const completeManual = () => { if (amount <= 0) return; onManualSale(amount); setDisplayAmount('0'); };
+  const completeManual = () => {
+    if (!Number.isSafeInteger(amount) || amount <= 0) return;
+    onManualSale(amount, paymentMethod);
+    setDisplayAmount('0');
+    setPaymentMethod('cash');
+  };
   const addProduct = (product: DemoProduct) => setCart(current => ({ ...current, [product.id]: product.unlimitedStock ? (current[product.id] ?? 0) + 1 : Math.min(product.stock, (current[product.id] ?? 0) + 1) }));
   const changeQuantity = (productId: string, delta: number) => setCart(current => {
     const product = products.find(item => item.id === productId);
@@ -838,17 +788,19 @@ function DemoTransactionWorkspace({ products, onCartSale, onManualSale }: { prod
   });
   const completeProduct = () => {
     if (cartItems.length === 0) return;
-    onCartSale(cartItems.map(item => ({ productId: item.product.id, quantity: item.quantity })));
-    setCart({});
+    onCartSale(cartItems.map(item => ({ productId: item.product.id, quantity: item.quantity })), paymentMethod);
   };
   return (
-    <section className="mb-6 overflow-hidden rounded-card bg-atelier-paper shadow-atelier-lift">
-      <div className="flex items-start justify-between gap-3 bg-atelier-apricot-soft/65 px-4 py-4 sm:px-5"><div className="min-w-0"><p className="text-xs font-semibold text-atelier-clay">現場收款</p><h2 className="mt-1 text-lg font-semibold text-atelier-ink">把這筆交易收好</h2><p className="mt-1 text-xs text-atelier-muted">成交後會立即更新今天的紀錄</p></div><button type="button" className="relative flex min-h-11 shrink-0 items-center gap-2 rounded-control bg-atelier-paper/75 px-3 text-sm font-medium text-atelier-muted shadow-sm"><Camera className="h-4 w-4 text-primary" />待補<span className="min-w-5 rounded-full bg-atelier-canvas px-1.5 py-0.5 text-center text-xs">0</span></button></div>
-      <div className="p-4 sm:p-5">
-        <div className="mb-4 flex items-center justify-between gap-3 px-1 py-1"><span className="flex items-center gap-2 text-xs text-atelier-muted"><Camera className="h-4 w-4 text-primary" />成交照片</span><span className="rounded-full bg-atelier-canvas px-2.5 py-1 text-xs font-medium text-atelier-muted">依需要補拍</span></div>
-        <div className="mb-5 grid grid-cols-2 rounded-control bg-atelier-sage-soft p-1" role="tablist" aria-label="交易方式"><button type="button" role="tab" aria-selected={mode === 'quick'} onClick={() => setMode('quick')} className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium ${mode === 'quick' ? 'bg-atelier-paper text-primary shadow-sm' : 'text-atelier-muted'}`}><DollarSign className="h-4 w-4" />快速金額</button><button type="button" role="tab" aria-selected={mode === 'products'} onClick={() => setMode('products')} className={`flex min-h-11 items-center justify-center gap-2 rounded-control text-sm font-medium ${mode === 'products' ? 'bg-atelier-paper text-primary shadow-sm' : 'text-atelier-muted'}`}><ShoppingBag className="h-4 w-4" />商品結帳</button></div>
+    <div>
         {mode === 'quick' ? (
-          <div><div className="mb-2 flex items-center justify-between gap-3"><p className="text-sm font-medium text-atelier-ink">成交金額</p><p className="text-xs text-atelier-muted">直接輸入</p></div><div className="relative mb-4 overflow-hidden rounded-card bg-deep px-4 py-5 shadow-atelier"><span className="absolute inset-y-0 left-0 w-1.5 bg-atelier-clay" /><div className="flex items-center justify-between gap-3"><div className="text-3xl font-semibold tabular-nums text-white">NT$ {amount.toLocaleString()}</div><button type="button" onClick={() => setDisplayAmount('0')} className="flex h-11 w-11 items-center justify-center rounded-control bg-white/10 text-white"><X className="h-5 w-5" /></button></div></div><div className="mb-5 grid grid-cols-3 gap-2.5">{[1,2,3,4,5,6,7,8,9].map(number => <button key={number} type="button" onClick={() => appendNumber(number)} className="min-h-14 rounded-control bg-atelier-paper text-xl font-semibold text-atelier-ink shadow-atelier-key hover:bg-atelier-sage-soft">{number}</button>)}<button type="button" onClick={() => setDisplayAmount(previous => previous === '0' ? '0' : `${previous}00`)} className="min-h-14 rounded-control bg-atelier-blue-soft text-lg font-semibold text-atelier-blue shadow-atelier-key">00</button><button type="button" onClick={() => appendNumber(0)} className="min-h-14 rounded-control bg-atelier-paper text-xl font-semibold text-atelier-ink shadow-atelier-key">0</button><button type="button" onClick={() => setDisplayAmount(previous => previous.length <= 1 ? '0' : previous.slice(0, -1))} aria-label="刪除最後一位" className="min-h-14 rounded-control bg-atelier-apricot-soft text-atelier-clay shadow-atelier-key">⌫</button></div><PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} /><button type="button" onClick={completeManual} disabled={amount <= 0} className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white disabled:bg-atelier-line disabled:text-atelier-muted"><Check className="h-5 w-5" />完成成交 NT${amount.toLocaleString()}</button></div>
+          <QuickAmountCheckout
+            displayAmount={displayAmount}
+            setDisplayAmount={setDisplayAmount}
+            paymentMethod={paymentMethod}
+            onPaymentMethodChange={setPaymentMethod}
+            onComplete={completeManual}
+            presentation="sheet"
+          />
         ) : (
           <div>
             <div className="mb-3 flex items-center justify-between"><div><p className="text-sm font-medium text-atelier-ink">選擇商品</p><p className="mt-0.5 text-xs text-atelier-muted">點一下加入這筆交易</p></div></div>
@@ -859,44 +811,183 @@ function DemoTransactionWorkspace({ products, onCartSale, onManualSale }: { prod
             <button type="button" onClick={completeProduct} disabled={cartItems.length === 0} className="mt-4 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-semibold text-white disabled:bg-atelier-line disabled:text-atelier-muted"><ShoppingCart className="h-5 w-5" />完成商品結帳 NT${cartTotal.toLocaleString()}</button>
           </div>
         )}
-      </div>
-    </section>
+    </div>
   );
 }
 
-function MarketWorkspace({ market, products, activities, onBack, onCartSale, onManualSale, onInteraction, onEditMarket, onStatusChange }: { market: DemoMarket; products: DemoProduct[]; activities: DemoActivity[]; onBack: () => void; onCartSale: (items: Array<{ productId: string; quantity: number }>) => void; onManualSale: (amount: number) => void; onInteraction: (label: string) => void; onEditMarket: () => void; onStatusChange: (status: DemoMarketStatus) => void }) {
-  const [view, setView] = useState<WorkspaceView>('live');
-  const phase = market.status === 'operating' ? 'operating' : market.status === 'ended' ? 'ended' : 'not-started';
-  const tabs = [{ id: 'live' as const, label: '現場', icon: Store }, { id: 'overview' as const, label: '回顧', icon: BarChart3 }, { id: 'manage' as const, label: '管理', icon: ClipboardCheck }];
-  const summaryItems = view === 'manage'
-    ? [{ label: '市集狀態', value: stageLabel(stageForMarket(market.status)) }, { label: '固定成本', value: formatCurrency(2000) }, { label: '成交照片', value: '依需要' }]
-    : view === 'overview'
-      ? [{ label: '總營業額', value: formatCurrency(market.revenue), emphasis: true }, { label: '估計淨利', value: formatCurrency(Math.round(market.revenue * 0.48)) }, { label: '成交', value: market.deals }]
-      : [{ label: '營業額', value: formatCurrency(market.revenue), emphasis: true }, { label: '成交', value: market.deals }, { label: '待補照片', value: 0 }];
+const PERFORMANCE_TABS = [{ id: 'performance', label: '每日表現', icon: Calendar }] as const;
+
+function DemoMarketPerformance({ market, sales, latestSaleId }: {
+  market: Market;
+  sales: DemoSaleRecord[];
+  latestSaleId?: string;
+}) {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const dates = market.dates?.length ? market.dates : [market.startDate];
+  const salesOn = (date: string) => sales.filter(sale => (sale.date ?? market.startDate) === date);
+  const selectedSales = selectedDate ? salesOn(selectedDate) : [];
+
   return (
-    <div className="min-h-screen bg-atelier-canvas pb-24 text-atelier-ink">
+    <>
+      <MarketWorkspaceDetailTabs value="performance" items={PERFORMANCE_TABS} onChange={() => {}} ariaLabel="回顧明細" panelId="demo-overview" />
+      <section id="demo-overview" role="tabpanel" aria-labelledby="demo-overview-tab-performance" className="rounded-card border border-border bg-atelier-paper p-4 sm:p-5">
+        <h2 className="font-semibold">{dates.length === 1 ? '收入明細' : '每日表現'}</h2>
+        <ul className="mt-3 space-y-3">
+          {dates.map(date => {
+            const records = salesOn(date);
+            const amount = dates.length === 1 ? market.totalRevenue ?? 0 : records.reduce((sum, sale) => sum + sale.amount, 0);
+            return <li key={date} className="rounded-control border border-border px-4 py-3">
+              <h3 className="font-semibold">{formatDisplayDate(date)}</h3>
+              {(dates.length === 1 || records.length > 0) && <p className="mt-1 text-sm text-muted-foreground">當日收入 <strong className="text-foreground tabular-nums">{formatCurrency(amount)}</strong></p>}
+              {records.length > 0
+                ? <Button className="mt-3" variant="secondary" onClick={() => setSelectedDate(date)}>查看 {records.length} 筆{dates.length === 1 && records.length !== market.totalDeals ? '紀錄' : '成交'}</Button>
+                : <p className="mt-2 text-sm text-muted-foreground">這天的範例沒有提供逐筆成交明細。</p>}
+            </li>;
+          })}
+        </ul>
+        <Link href="/" className="mt-3 inline-flex min-h-11 items-center font-semibold text-primary hover:underline">開始記錄自己的市集</Link>
+      </section>
+      <AppDialog open={selectedDate !== null} onClose={() => setSelectedDate(null)}
+        title={selectedDate ? `${formatDisplayDate(selectedDate)} 成交記錄` : '成交記錄'}
+        presentation="sheet"
+        footer={<Button variant="secondary" onClick={() => setSelectedDate(null)}>返回每日表現</Button>}>
+        <ul className="divide-y divide-border">
+          {selectedSales.map(sale => <li key={sale.id} className="flex items-center justify-between gap-3 py-3">
+            <div>
+              <p className="text-sm font-medium">{sale.productName}</p>
+              <p className="text-xs text-muted-foreground">{sale.time} · {sale.paymentMethod}</p>
+              {sale.id === latestSaleId && <span className="text-xs font-medium text-primary">剛新增</span>}
+            </div>
+            <span className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(sale.amount)}</span>
+          </li>)}
+        </ul>
+      </AppDialog>
+    </>
+  );
+}
+
+function MarketWorkspace({
+  market, products, activities, sales, initialView, initialCheckout, lastSale,
+  onBack, onShowMarketList, onCartSale, onManualSale, onInteraction, onEditMarket, onStatusChange, onRegistrationChange,
+}: {
+  market: DemoMarket;
+  products: DemoProduct[];
+  activities: DemoActivity[];
+  sales: DemoSaleRecord[];
+  initialView: WorkspaceView;
+  initialCheckout: boolean;
+  lastSale?: DemoSaleRecord;
+  onBack: () => void;
+  onShowMarketList: () => void;
+  onCartSale: (items: Array<{ productId: string; quantity: number }>, paymentMethod: SalesPaymentMethod) => boolean;
+  onManualSale: (amount: number, paymentMethod: SalesPaymentMethod) => void;
+  onInteraction: (label: string) => void;
+  onEditMarket: () => void;
+  onStatusChange: (status: DemoMarketStatus) => void;
+  onRegistrationChange: (status: Market['status']) => void;
+}) {
+  const [view, setView] = useState(initialView);
+  const [checkoutMode, setCheckoutMode] = useState<TransactionMode | null>(initialCheckout ? 'quick' : null);
+  const formalMarket = toFormalMarket(market);
+  const isOperating = market.status === 'operating';
+  const hasEnded = market.status === 'ended';
+  const phase = isOperating ? 'operating' : hasEnded ? 'ended' : 'not-started';
+  const tabs = [{ id: 'live', label: '現場', icon: Store }, { id: 'overview', label: '回顧', icon: BarChart3 }, { id: 'manage', label: '管理', icon: ClipboardCheck }] as const;
+  const summaryItems = view === 'manage'
+    ? marketFeeDisplayRows(formalMarket).map(row => ({ label: row.label, value: formatCurrency(row.value) }))
+    : [{ label: '總收入', value: formatCurrency(market.revenue), emphasis: true }, { label: '成交', value: market.deals }];
+  const marketSales = sales.filter(sale => sale.marketId === market.id);
+  const registrationExample = market.id === DEMO_REGISTRATION_MARKET_ID && market.status === 'preparing';
+
+  return (
+    <div className="min-h-screen bg-atelier-canvas text-atelier-ink">
       <header className="japanese-gradient-header rounded-b-[2rem] px-4 pb-6 pt-[calc(1rem+env(safe-area-inset-top))] text-white">
-        <div className="mx-auto max-w-5xl"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 flex-1 items-start gap-3"><button type="button" onClick={onBack} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-atelier-paper text-atelier-muted shadow-sm hover:bg-atelier-blue-soft" aria-label="返回市集列表"><ArrowLeft className="h-5 w-5" /></button><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-white/85">一場一場，好好經營市集</p><h1 className="mt-1 break-words text-2xl font-semibold leading-tight text-white">{market.name}</h1><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/80"><div className="flex items-start gap-1.5"><Calendar className="mt-0.5 h-3.5 w-3.5" /><span>{market.dateLabel}</span></div><div className="flex min-w-0 items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /><span className="truncate">{market.location}</span></div></div><p className="mt-2 text-xs leading-5 text-white/80">現場、回顧與管理都集中在這裡，依照現在的節奏使用就好。</p></div></div><div className="flex shrink-0 items-center gap-1"><StaticSyncStatus /><button type="button" onClick={onEditMarket} className="flex min-h-11 items-center gap-1.5 rounded-control bg-atelier-paper px-3 text-sm font-medium text-atelier-ink shadow-sm"><Edit className="h-4 w-4" />編輯</button></div></div></div>
+        <div className="mx-auto max-w-5xl">
+          <div className="flex items-center justify-between gap-2">
+            <Button variant="secondary" onClick={onBack} leadingIcon={<ArrowLeft className="h-4 w-4" />}>返回</Button>
+            <span className="text-xs font-medium">範例市集</span>
+            <Button variant="secondary" onClick={onEditMarket} leadingIcon={<Edit className="h-4 w-4" />}>編輯</Button>
+          </div>
+          <h1 className="mt-4 break-words text-2xl font-semibold">{market.name}</h1>
+          <p className="mt-2 flex items-center gap-2 text-sm"><Calendar className="h-4 w-4 shrink-0" aria-hidden="true" />{market.dateLabel}</p>
+          {market.location && <p className="mt-1 flex items-start gap-2 text-sm"><MapPin className="h-4 w-4 shrink-0" aria-hidden="true" /><span className="min-w-0 break-words">{market.location}</span></p>}
+        </div>
       </header>
       <div className="mx-auto max-w-5xl px-4 pb-6">
         <MarketWorkspaceNavigation value={view} onChange={setView} ariaLabel="市集工作區" items={tabs} />
-        <MarketWorkspaceSummary phase={phase} operatingTime={market.time} items={summaryItems} />
-        {view === 'live' && market.status === 'operating' && <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]"><section className="rounded-card bg-atelier-blue-soft/65 p-4 shadow-atelier lg:col-start-2 lg:row-start-1"><h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-atelier-ink"><TrendingUp className="h-5 w-5 text-primary" />記錄互動</h2><div className="relative grid grid-cols-3 gap-2">{['停留詢問','追蹤 IG','試用體驗'].map((label, index) => <button key={label} type="button" onClick={() => onInteraction(label)} className={`relative min-h-24 overflow-hidden rounded-control p-3 shadow-atelier-key ${['bg-atelier-sage-soft','bg-atelier-apricot-soft','bg-atelier-blue-soft'][index]}`}><div className="mb-2 text-center text-2xl">{['💬','♡','✦'][index]}</div><div className="text-center text-sm font-semibold text-atelier-ink">{label}</div></button>)}</div></section><div className="lg:col-start-1 lg:row-start-1 lg:row-span-2"><DemoTransactionWorkspace products={products} onCartSale={onCartSale} onManualSale={onManualSale} /></div><div className="rounded-card bg-atelier-paper p-4 shadow-atelier lg:col-start-2 lg:row-start-2"><h2 className="mb-3 text-base font-semibold text-atelier-ink">最近紀錄</h2><div className="space-y-2">{activities.slice(0, 4).map(activity => <div key={activity.id} className="rounded-control bg-atelier-canvas px-3 py-2"><p className="text-sm font-medium text-foreground">{activity.label}</p><p className="mt-1 text-xs text-muted-foreground">{activity.time}・{activity.detail}</p></div>)}</div></div></div>}
-        {view === 'live' && market.status !== 'operating' && <div className="rounded-card bg-atelier-apricot-soft/70 px-4 py-4 text-sm text-atelier-muted shadow-sm">這場市集目前不在營運時間，仍可切換到「回顧」或「管理」查看資料。</div>}
-        {view === 'overview' && <div className="grid gap-4 sm:grid-cols-2"><div className="rounded-card bg-atelier-paper p-5 shadow-atelier"><h2 className="text-base font-semibold text-atelier-ink">營運表現</h2><div className="mt-4 grid grid-cols-2 gap-3"><div className="rounded-control bg-soft-green p-4"><p className="text-xs text-muted-foreground">互動</p><p className="mt-1 text-xl font-semibold">{market.interactions}</p></div><div className="rounded-control bg-soft-yellow p-4"><p className="text-xs text-muted-foreground">轉換率</p><p className="mt-1 text-xl font-semibold">{market.interactions > 0 ? Math.round(market.deals / market.interactions * 100) : 0}%</p></div></div></div><div className="rounded-card bg-atelier-paper p-5 shadow-atelier"><h2 className="text-base font-semibold text-atelier-ink">市集筆記</h2><span className="mt-3 inline-flex rounded-full bg-atelier-blue-soft px-2.5 py-1 text-xs font-medium text-atelier-blue">{market.scenarioLabel}</span><p className="mt-3 text-sm leading-6 text-muted-foreground">{market.note}</p></div></div>}
-        {view === 'manage' && <div className="space-y-4"><section className="rounded-card border border-primary/10 bg-atelier-paper p-5 shadow-atelier"><div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold text-foreground">營運狀態</h2><p className="mt-1 text-sm text-muted-foreground">依照現場進度開始或結束本場營運。</p></div>{market.status === 'preparing' ? <Button onClick={() => onStatusChange('operating')}>開始營運</Button> : market.status === 'operating' ? <Button variant="secondary" onClick={() => onStatusChange('ended')}>結束營運</Button> : <span className="rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">已結束</span>}</div></section><section className="rounded-card border border-primary/10 bg-atelier-paper p-5 shadow-atelier"><h2 className="text-lg font-semibold text-foreground">基本設定</h2><div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded-control bg-background p-4"><p className="text-xs text-muted-foreground">營運時間</p><p className="mt-1 text-sm font-medium">{market.time}</p></div><div className="rounded-control bg-background p-4"><p className="text-xs text-muted-foreground">市集地點</p><p className="mt-1 text-sm font-medium">{market.location}</p></div></div><Button variant="secondary" onClick={onEditMarket} className="mt-4" leadingIcon={<Edit className="h-4 w-4" />}>編輯完整設定</Button></section><section className="rounded-card border border-primary/10 bg-atelier-paper p-5 shadow-atelier"><h2 className="text-lg font-semibold text-foreground">成本與紀錄</h2><p className="mt-2 text-sm text-muted-foreground">固定成本 {formatCurrency(calculateMarketFixedCost(market))}・成交照片{market.salesPhotoEvidenceRequired ? '必須補拍' : '依需要補拍'}。</p></section></div>}
+        <MarketWorkspaceSummary phase={phase} operatingTime={market.time} items={summaryItems} compactOnMobile />
+        {view === 'live' && <>
+          {lastSale && <MarketSaleReceipt amount={lastSale.amount} paymentLabel={lastSale.paymentMethod}
+            totalRevenue={market.revenue} onReview={() => setView('overview')} />}
+          {isOperating ? <div className="space-y-4">
+            <section className="grid grid-cols-2 gap-2" aria-label="收款與銷售">
+              <Button onClick={() => setCheckoutMode('quick')} leadingIcon={<Banknote className="h-4 w-4" />}>快速收款</Button>
+              <Button variant="secondary" onClick={() => setCheckoutMode('products')} leadingIcon={<ShoppingBag className="h-4 w-4" />}>商品銷售</Button>
+            </section>
+            <section className="rounded-card border border-border bg-atelier-paper p-4">
+              <h2 className="font-semibold">記錄互動</h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {['停留詢問', '追蹤 IG', '試用體驗'].map(label => <Button variant="secondary" key={label} onClick={() => onInteraction(label)}>{label}</Button>)}
+              </div>
+              {activities[0] && <p className="mt-3 text-sm text-muted-foreground">最近紀錄 · {activities[0].label}</p>}
+            </section>
+          </div> : <p className="mb-4 rounded-card border border-border bg-atelier-paper p-4 text-sm text-muted-foreground">
+            {hasEnded ? '本場已收攤，可到回顧查看營業紀錄。' : '這場市集還沒開始，可到管理更新報名與繳費。'}
+          </p>}
+          <div className="mt-4"><MarketTodayTimeline market={formalMarket} onEdit={onEditMarket} /></div>
+        </>}
+        {view === 'overview' && <DemoMarketPerformance market={formalMarket} sales={marketSales} latestSaleId={lastSale?.id} />}
+        {view === 'manage' && <div className="space-y-4">
+          <MarketRegistrationPanel status={formalMarket.status} onChange={onRegistrationChange} ended={hasEnded} readOnly={hasEnded || isOperating}>
+            <p className="mt-2 text-sm text-muted-foreground">主辦抽成比例 {formalMarket.commissionRate ?? 0}%</p>
+            {registrationExample && formalMarket.status === 'registered' && <p className="mt-2 text-sm text-muted-foreground">假設你收到主辦的錄取通知，試著標記已錄取。</p>}
+            {registrationExample && formalMarket.status === 'accepted' && <p className="mt-2 text-sm text-muted-foreground">假設攤位費已繳清，試著標記已繳費。</p>}
+            {registrationExample && formalMarket.status === 'paid' && <div className="mt-3">
+              <p role="status" className="text-sm font-medium">已更新清單中的繳費狀態。</p>
+              <Button className="mt-2" variant="secondary" onClick={onShowMarketList}>回市集清單</Button>
+            </div>}
+          </MarketRegistrationPanel>
+          <section className="mx-auto max-w-3xl rounded-card border border-border bg-atelier-paper p-4">
+            <h2 className="font-semibold">設備準備</h2>
+            <MarketEquipmentSummary market={formalMarket} />
+            {formalMarket.notes && <p className="mt-3 text-sm text-muted-foreground">{formalMarket.notes}</p>}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={onEditMarket}>編輯市集資料</Button>
+              {isOperating && <Button variant="secondary" onClick={() => onStatusChange('ended')}>結束營運</Button>}
+              {market.status === 'preparing' && formalMarket.status === 'paid' && <Button onClick={() => { onStatusChange('operating'); setView('live'); }}>開始營運</Button>}
+            </div>
+            <Link href="/" className="mt-3 inline-flex min-h-11 items-center font-semibold text-primary hover:underline">開始記錄自己的市集</Link>
+          </section>
+        </div>}
       </div>
+      <AppDialog open={view === 'live' && isOperating && checkoutMode !== null}
+        onClose={() => setCheckoutMode(null)} title={checkoutMode === 'products' ? '商品銷售' : '快速收款'}
+        description="銷售記錄適用於輕量版與高階版。"
+        presentation="sheet">
+        {checkoutMode && <DemoTransactionWorkspace key={checkoutMode} mode={checkoutMode} products={products}
+          onCartSale={(items, paymentMethod) => {
+            const completed = onCartSale(items, paymentMethod);
+            if (completed) setCheckoutMode(null);
+            return completed;
+          }}
+          onManualSale={(amount, paymentMethod) => {
+            onManualSale(amount, paymentMethod);
+            setCheckoutMode(null);
+          }} />}
+      </AppDialog>
     </div>
   );
 }
 
 export function FormalDemoApp() {
   const [activeView, setActiveView] = useState<DemoView>('today');
+  const [guideOpen, setGuideOpen] = useState(true);
   const [markets, setMarkets] = useState<DemoMarket[]>(createInitialDemoMarkets);
   const [products, setProducts] = useState<DemoProduct[]>(createInitialDemoProducts);
   const [activities, setActivities] = useState<DemoActivity[]>(createInitialDemoActivities);
   const [sales, setSales] = useState<DemoSaleRecord[]>(createInitialDemoSales);
   const [marketView, setMarketView] = useState<MarketView>('active');
+  const [preparationFilter, setPreparationFilter] = useState<MarketPreparationFilter>('all');
   const [productView, setProductView] = useState<ProductView>('all');
   const [productQuery, setProductQuery] = useState('');
   const [showInactiveProducts, setShowInactiveProducts] = useState(false);
@@ -911,7 +1002,10 @@ export function FormalDemoApp() {
   const [productFormValues, setProductFormValues] = useState<ProductFormValues>(createEmptyProductFormValues);
   const [productFormErrors, setProductFormErrors] = useState<ProductFormErrors>({});
   const [deleteProductOpen, setDeleteProductOpen] = useState(false);
-  const [defaultPhotoRequired, setDefaultPhotoRequired] = useState(false);
+  const [lastSale, setLastSale] = useState<DemoSaleRecord | null>(null);
+  const [initialWorkspaceView, setInitialWorkspaceView] = useState<WorkspaceView>('live');
+  const [initialCheckout, setInitialCheckout] = useState(false);
+  const nextSaleNumber = useRef(0);
 
   const activeMarket = markets.find(market => market.status === 'operating') ?? markets[0];
   const workspaceMarket = markets.find(market => market.id === workspaceMarketId);
@@ -922,14 +1016,27 @@ export function FormalDemoApp() {
 
   const saleMarket = workspaceMarket?.status === 'operating' ? workspaceMarket : activeMarket;
 
-  const recordCartSale = (items: Array<{ productId: string; quantity: number }>) => {
-    if (!saleMarket || items.length === 0) return;
+  const saveSale = (market: DemoMarket, sale: Omit<DemoSaleRecord, 'id' | 'marketId' | 'date' | 'time'>) => {
+    const record: DemoSaleRecord = {
+      ...sale,
+      id: `demo-checkout-${++nextSaleNumber.current}`,
+      marketId: market.id,
+      date: market.dates[0],
+      time: timeLabel(),
+    };
+    setMarkets(current => current.map(item => item.id === market.id ? { ...item, revenue: item.revenue + record.amount, deals: item.deals + 1 } : item));
+    setSales(current => [record, ...current]);
+    setLastSale(record);
+  };
+
+  const recordCartSale = (items: Array<{ productId: string; quantity: number }>, paymentMethod: SalesPaymentMethod) => {
+    if (!saleMarket || items.length === 0) return false;
     const resolvedItems = items.flatMap(item => {
       const product = products.find(candidate => candidate.id === item.productId);
       if (!product || item.quantity <= 0 || (!product.unlimitedStock && product.stock < item.quantity)) return [];
       return [{ product, quantity: item.quantity }];
     });
-    if (resolvedItems.length !== items.length) { toast.error('部分商品庫存不足，請重新確認'); return; }
+    if (resolvedItems.length !== items.length) { toast.error('部分商品庫存不足，請重新確認'); return false; }
     const total = resolvedItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
     const totalQuantity = resolvedItems.reduce((sum, item) => sum + item.quantity, 0);
     setProducts(current => current.map(product => {
@@ -937,19 +1044,16 @@ export function FormalDemoApp() {
       if (!cartItem) return product;
       return { ...product, stock: product.unlimitedStock ? product.stock : product.stock - cartItem.quantity, sold: product.sold + cartItem.quantity };
     }));
-    setMarkets(current => current.map(market => market.id === saleMarket.id ? { ...market, revenue: market.revenue + total, deals: market.deals + 1 } : market));
     const label = resolvedItems.length === 1 ? `售出 ${resolvedItems[0].product.name} × ${resolvedItems[0].quantity}` : `售出 ${resolvedItems.length} 項商品（共 ${totalQuantity} 件）`;
     addActivity({ type: 'sale', label, detail: `${formatCurrency(total)}・商品結帳` });
-    setSales(current => [{ id: `sale-${Date.now()}`, marketId: saleMarket.id, productName: resolvedItems.map(item => item.product.name).join('、'), quantity: totalQuantity, amount: total, paymentMethod: '現金', time: timeLabel() }, ...current]);
-    toast.success('商品成交已完成', { description: formatCurrency(total) });
+    saveSale(saleMarket, { productName: resolvedItems.map(item => item.product.name).join('、'), quantity: totalQuantity, amount: total, paymentMethod: formatSalesPaymentMethod(paymentMethod) });
+    return true;
   };
 
-  const recordManualSale = (amount: number) => {
+  const recordManualSale = (amount: number, paymentMethod: SalesPaymentMethod) => {
     if (!saleMarket) return;
-    setMarkets(current => current.map(market => market.id === saleMarket.id ? { ...market, revenue: market.revenue + amount, deals: market.deals + 1 } : market));
     addActivity({ type: 'sale', label: '快速金額成交', detail: `${formatCurrency(amount)}・Demo 成交` });
-    setSales(current => [{ id: `sale-${Date.now()}`, marketId: saleMarket.id, productName: '快速金額成交', quantity: 1, amount, paymentMethod: '現金', time: timeLabel() }, ...current]);
-    toast.success('成交已記錄', { description: formatCurrency(amount) });
+    saveSale(saleMarket, { productName: '快速金額成交', quantity: 1, amount, paymentMethod: formatSalesPaymentMethod(paymentMethod) });
   };
 
   const recordInteraction = (label: string) => {
@@ -961,7 +1065,7 @@ export function FormalDemoApp() {
 
   const openAddMarketForm = () => {
     setEditingMarketId(null);
-    setMarketFormValues({ ...createDemoMarketFormValues(), salesPhotoEvidenceRequired: defaultPhotoRequired });
+    setMarketFormValues(createDemoMarketFormValues());
     setMarketFormErrors({});
     setMarketFormMode('add');
   };
@@ -982,14 +1086,20 @@ export function FormalDemoApp() {
       name: marketFormValues.name.trim(),
       dateLabel: formatDemoDateLabel(marketFormValues.dates),
       location: marketFormValues.location.trim(),
+      regionCode: marketFormValues.regionCode,
+      registrationConditions: marketFormValues.registrationConditions,
+      earlyEntryEnabled: !marketFormValues.noEarlyEntry,
+      earlyEntryTime: marketFormValues.noEarlyEntry ? undefined : marketFormValues.earlyEntryTime,
       time: `${marketFormValues.operatingStartTime} - ${marketFormValues.operatingEndTime}`,
       status: base?.status ?? 'preparing',
+      registrationStatus: base?.registrationStatus ?? (base ? toFormalMarket(base).status : 'registered'),
       scenarioLabel: base?.scenarioLabel ?? '自訂 Demo 市集',
       revenue: base?.revenue ?? 0,
       deals: base?.deals ?? 0,
       interactions: base?.interactions ?? 0,
       grossMargin: base?.grossMargin ?? 0.65,
       note: marketFormValues.notes.trim() || '尚未填寫主辦／場地備註。',
+      postMarketNote: base?.postMarketNote,
       dates: [...marketFormValues.dates].sort(),
       checkInTime: marketFormValues.checkInTime,
       operatingStartTime: marketFormValues.operatingStartTime,
@@ -1009,7 +1119,11 @@ export function FormalDemoApp() {
       setMarkets(current => current.map(market => market.id === editingMarketId ? buildMarket(market) : market));
       toast.success('市集設定已更新');
     } else {
-      setMarkets(current => [buildMarket(), ...current]);
+      const created = buildMarket();
+      setMarkets(current => [created, ...current]);
+      setActiveView('markets');
+      setPreparationFilter('all');
+      openWorkspace(created.id, 'manage');
       setMarketView('preparing');
       toast.success('市集已建立');
     }
@@ -1088,44 +1202,85 @@ export function FormalDemoApp() {
     toast.success(status === 'operating' ? '市集已開始營運' : '市集已結束營運');
   };
 
-  const openThemeLab = () => window.dispatchEvent(new Event(THEME_LAB_OPEN_EVENT));
-  const exportDemoData = () => {
-    const payload = JSON.stringify({ exportedAt: new Date().toISOString(), markets, products, activities, sales, settings: { defaultPhotoRequired } }, null, 2);
-    const url = URL.createObjectURL(new Blob([payload], { type: 'application/json;charset=utf-8' }));
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `${APP_BRAND.filePrefix}-demo-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    toast.success('Demo 備份已下載');
+  const changeRegistrationStatus = (marketId: string, registrationStatus: Market['status']) => {
+    setMarkets(current => current.map(market => market.id === marketId ? { ...market, registrationStatus } : market));
+    setMarketView(registrationStatus === 'cancelled' ? 'cancelled' : 'preparing');
+    if (registrationStatus !== 'accepted') setPreparationFilter('all');
+    toast.success('報名與繳費狀態已更新');
   };
+
   const resetDemo = () => {
+    setActiveView('today');
+    setGuideOpen(true);
     setMarkets(createInitialDemoMarkets());
     setProducts(createInitialDemoProducts());
     setActivities(createInitialDemoActivities());
     setSales(createInitialDemoSales());
+    setLastSale(null);
     setMarketView('active');
+    setPreparationFilter('all');
     setProductView('all');
     setProductQuery('');
     setShowInactiveProducts(false);
     setWorkspaceMarketId(null);
     setDetailProductId(null);
-    setDefaultPhotoRequired(false);
+    setInitialWorkspaceView('live');
     toast.success('Demo 已還原成初始狀態');
   };
+  const openWorkspace = (id: string, view: WorkspaceView = 'live', openCheckout = false) => {
+    setInitialWorkspaceView(view);
+    setInitialCheckout(openCheckout);
+    setWorkspaceMarketId(id);
+  };
+
   const changeMainView = (view: AppNavigationItemId) => { setWorkspaceMarketId(null); setDetailProductId(null); setActiveView(view); };
+
+  const showPreparationList = (filter: MarketPreparationFilter) => {
+    setMarketView('preparing');
+    setPreparationFilter(filter);
+    changeMainView('markets');
+  };
+
+  const tryRegistration = () => {
+    showPreparationList('all');
+    openWorkspace(DEMO_REGISTRATION_MARKET_ID, 'manage');
+  };
+
+  const tryGuideSale = () => {
+    if (activeMarket?.status !== 'operating') return;
+    setGuideOpen(false);
+    changeMainView('today');
+    openWorkspace(activeMarket.id, 'live', true);
+  };
 
   let page: ReactNode = null;
   if (activeMarket) {
-    if (activeView === 'today') page = <TodayPage activeMarket={activeMarket} upcomingMarkets={markets.filter(market => market.status === 'preparing')} onOpenMarket={market => setWorkspaceMarketId(market.id)} onShowMarkets={() => setActiveView('markets')} onOpenSettings={() => setActiveView('more')} />;
-    else if (activeView === 'markets') page = <MarketsPage markets={markets} view={marketView} onViewChange={setMarketView} onAdd={openAddMarketForm} onOpen={market => setWorkspaceMarketId(market.id)} />;
+    if (activeView === 'today') page = <TodayPage activeMarket={activeMarket} upcomingMarkets={markets.filter(market => market.status === 'preparing' && market.registrationStatus !== 'cancelled')} onOpenMarket={market => openWorkspace(market.id, market.status === 'preparing' ? 'manage' : 'live')} onShowMarkets={() => showPreparationList('all')} onOpenSettings={() => setActiveView('more')} />;
+    else if (activeView === 'markets') page = <MarketsPage markets={markets} view={marketView} preparationFilter={preparationFilter} onFilterChange={setPreparationFilter} onViewChange={setMarketView} onAdd={openAddMarketForm} onTryRegistration={tryRegistration} onOpen={market => openWorkspace(market.id, market.status === 'preparing' ? 'manage' : market.status === 'ended' ? 'overview' : 'live')} />;
     else if (activeView === 'products') page = <ProductsPage products={products} query={productQuery} view={productView} showInactive={showInactiveProducts} onQueryChange={setProductQuery} onViewChange={setProductView} onShowInactiveChange={setShowInactiveProducts} onAdd={openAddProductForm} onOpen={product => setDetailProductId(product.id)} />;
-    else if (activeView === 'analytics') page = <AnalyticsPage markets={markets} products={products} />;
-    else page = <MorePage sales={sales} onOpenThemeLab={openThemeLab} defaultPhotoRequired={defaultPhotoRequired} onPhotoRequiredChange={setDefaultPhotoRequired} onExport={exportDemoData} onReset={resetDemo} />;
+    else if (activeView === 'analytics') page = <AnalyticsPage markets={markets} products={products} onOpenMarket={market => openWorkspace(market.id, 'overview')} />;
+    else page = <MorePage sales={sales} onReset={resetDemo} onOpenGuide={() => setGuideOpen(true)} />;
   }
 
   const content = workspaceMarket
-    ? <MarketWorkspace market={workspaceMarket} products={products} activities={activities} onBack={() => setWorkspaceMarketId(null)} onCartSale={recordCartSale} onManualSale={recordManualSale} onInteraction={recordInteraction} onEditMarket={() => openEditMarketForm(workspaceMarket)} onStatusChange={status => changeMarketStatus(workspaceMarket.id, status)} />
+    ? <MarketWorkspace
+        key={workspaceMarket.id}
+        market={workspaceMarket}
+        products={products}
+        activities={activities}
+        sales={sales}
+        initialView={initialWorkspaceView}
+        initialCheckout={initialCheckout}
+        lastSale={lastSale?.marketId === workspaceMarket.id ? lastSale : undefined}
+        onBack={() => setWorkspaceMarketId(null)}
+        onShowMarketList={() => showPreparationList('all')}
+        onCartSale={recordCartSale}
+        onManualSale={recordManualSale}
+        onInteraction={recordInteraction}
+        onEditMarket={() => openEditMarketForm(workspaceMarket)}
+        onStatusChange={status => changeMarketStatus(workspaceMarket.id, status)}
+        onRegistrationChange={status => changeRegistrationStatus(workspaceMarket.id, status)}
+      />
     : detailProduct
       ? <ProductDetail product={detailProduct} onBack={() => setDetailProductId(null)} onEdit={() => openEditProductForm(detailProduct)} onToggleActive={() => toggleProductActive(detailProduct.id)} onDelete={() => setDeleteProductOpen(true)} />
       : page;
@@ -1138,7 +1293,22 @@ export function FormalDemoApp() {
       >
         {content}
       </div>
-      <AppBottomNavigationBar items={DEMO_NAV_ITEMS} activeItemId={activeView} onSelect={changeMainView} />
+      <AppBottomNavigationBar items={DEMO_NAV_ITEMS} activeItemId={activeView} onSelect={changeMainView} showOnDesktop />
+
+      <AppDialog
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        title="你想先試什麼？"
+        description="這次會用範例資料操作，重新整理後會還原。"
+        size="sm"
+        presentation="sheet"
+      >
+        <div className="grid gap-2">
+          <Button onClick={() => { setGuideOpen(false); showPreparationList('payment_due'); }}>看看哪些市集還沒繳費</Button>
+          {activeMarket?.status === 'operating' && <Button variant="secondary" onClick={tryGuideSale}>記一筆現場收入</Button>}
+          <Button variant="ghost" onClick={() => { changeMainView('today'); setGuideOpen(false); }}>先自己逛逛</Button>
+        </div>
+      </AppDialog>
 
       <DemoMarketForm open={marketFormMode !== null} title={marketFormMode === 'edit' ? '編輯市集' : '新增市集'} submitLabel={marketFormMode === 'edit' ? '儲存變更' : '建立市集'} values={marketFormValues} errors={marketFormErrors} onChange={values => { setMarketFormValues(values); setMarketFormErrors({}); }} onClose={() => setMarketFormMode(null)} onSubmit={submitMarketForm} />
       <DemoProductForm open={productFormMode !== null} title={productFormMode === 'edit' ? '編輯商品' : '新增商品'} submitLabel={productFormMode === 'edit' ? '儲存變更' : '建立商品'} values={productFormValues} errors={productFormErrors} onChange={changeProductForm} onClose={() => setProductFormMode(null)} onSubmit={submitProductForm} />

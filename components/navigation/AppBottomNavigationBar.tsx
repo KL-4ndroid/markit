@@ -13,6 +13,7 @@ interface AppBottomNavigationBarProps {
   activeItemId: AppNavigationItemId;
   onSelect?: (itemId: AppNavigationItemId) => void;
   visible?: boolean;
+  showOnDesktop?: boolean;
 }
 
 function NavigationItemContent({
@@ -46,13 +47,14 @@ export function AppBottomNavigationBar({
   activeItemId,
   onSelect,
   visible = true,
+  showOnDesktop = false,
 }: AppBottomNavigationBarProps) {
   const itemClassName = 'group relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-control transition-colors';
 
   return (
     <nav
       aria-label="主要導覽"
-      className={`fixed bottom-0 left-0 right-0 z-navigation border-t border-primary/10 bg-atelier-paper/95 px-2 pb-[calc(0.6rem+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-10px_30px_rgb(123_159_166_/_0.10)] backdrop-blur-md ease-in-out lg:hidden ${
+      className={`fixed bottom-0 left-0 right-0 z-navigation border-t border-primary/10 bg-atelier-paper/95 px-2 pb-[calc(0.6rem+env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-10px_30px_rgb(123_159_166_/_0.10)] backdrop-blur-md ease-in-out ${showOnDesktop ? '' : 'lg:hidden'} ${
         visible ? 'bottom-0 translate-y-0' : '-bottom-24 translate-y-24'
       }`}
     >

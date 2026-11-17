@@ -78,6 +78,7 @@ import { useMarketActivity } from '@/hooks/useMarketActivity';
 import { applyFinancialReviews,financialReviewsEnabled } from '@/lib/markets/financial-reviews';
 import { ContextHelp } from '@/components/ui/ContextHelp';
 import { MarketWorkspaceSummary } from '@/components/markets/MarketWorkspaceSummary';
+import { MarketSaleReceipt } from '@/components/markets/MarketSaleReceipt';
 import { MarketLiveLayout } from '@/components/markets/MarketLiveLayout';
 import { MarketLiveSummaryActions } from '@/components/markets/MarketLiveSummaryActions';
 import { getMarketLiveStage, getMarketLiveBackfillDate } from '@/lib/markets/market-live-presentation';
@@ -113,6 +114,8 @@ import {
   type OwnerMarketWorkspaceView,
 } from '@/lib/markets/market-workspace';
 import type { LocalPendingSalesPhotoEvidenceCreation } from '@/lib/sales/photo-evidence-pending-creation';
+import type { SalesPhotoEvidenceRuntimeResultHandler } from '@/lib/sales/photo-evidence-runtime-enqueue';
+import type { SalesTransactionSummary } from '@/lib/sales/sale-summary';
 import {
   listOwnerSalesPhotoEvidenceAlbumMetadataRows,
 } from '@/lib/supabase/sales-photo-evidence';
@@ -1010,6 +1013,25 @@ export function MarketDetailScreen() {
     initialView: canAnalyze && searchParams.get('task') === 'pending-photos' ? 'pending_list' : undefined,
   });
   const handleSalesPhotoEvidenceResult = salesPhotoEvidenceFlow.handleSalesPhotoEvidenceResult;
+  const [savedSale, setSavedSale] = useState<{ scope: string; transaction: SalesTransactionSummary } | null>(null);
+  const [reviewSaleId, setReviewSaleId] = useState<string | null>(null);
+  const receiptScope = user?.id && marketId && canRecord && !isStaff && !isRoleLoading
+    ? `${user.id}:${marketId}` : null;
+  const latestSale = receiptScope && savedSale?.scope === receiptScope ? savedSale.transaction : null;
+  const latestDeal = latestSale ? dealEvents.find(deal => deal.id === latestSale.dealEventId) : undefined;
+  const saleReviewDate = latestSale && latestSale.dealEventId === reviewSaleId
+    ? latestDeal ? getDealEventDate(latestDeal) : getLocalDateString(new Date(latestSale.completedAt))
+    : undefined;
+  const handleLiveSaleResult: SalesPhotoEvidenceRuntimeResultHandler = result => {
+    if (receiptScope) setSavedSale({ scope: receiptScope, transaction: result.transaction });
+    return handleSalesPhotoEvidenceResult(result);
+  };
+  const reviewLatestSale = () => {
+    if (!latestSale) return;
+    setReviewSaleId(latestSale.dealEventId);
+    setOwnerOverviewDetail('performance');
+    setOwnerWorkspaceView('overview');
+  };
   const handleOpenPendingSalesPhotoEvidence = salesPhotoEvidenceFlow.openPendingList;
 
   const handleOpenAddRevenue = (date: string) => {
@@ -1072,6 +1094,7 @@ export function MarketDetailScreen() {
     if (dbStatus?.ok === false) return;
     try {
       const result = await deleteDealEvent(deal, { allowDelete: !isStaff });
+      setSavedSale(current => current?.transaction.dealEventId === deal.id ? null : current);
 
       toast.success('成交記錄已刪除', {
         description: `已扣回 ${formatCurrency(result.totalAmount)}`,
@@ -1366,6 +1389,12 @@ export function MarketDetailScreen() {
             <p>未記錄銷售利潤時，暫以營收估算。抽成留白以 0% 計算。未填成本不代表沒有支出；交通、人工等未記錄費用不會自動計入。可退保證金不列成本，現金盤點也不會改變淨利。</p>
           </ContextHelp>}
         </MarketWorkspaceSummary>
+        {resolvedOwnerWorkspaceView === 'live' && latestSale && <MarketSaleReceipt
+          amount={latestSale.totalAmount}
+          paymentLabel={formatSalesPaymentMethod(latestSale.paymentMethod)}
+          totalRevenue={stats?.totalRevenue ?? market.totalRevenue ?? 0}
+          onReview={reviewLatestSale}
+        />}
         {resolvedOwnerWorkspaceView === 'overview' && canRecord && !isStaff && !isRoleLoading && user?.id && (finance.enabled
           ? <FinancialReviewPanel key={`${user.id}:${market.id}`} market={market} rawStats={rawFinancialStats ?? []} finance={finance} initialDate={searchParams.get('reportDate') ?? undefined} />
           : <MarketFinancialRecordNotice market={market} ownerId={user.id} />)}
@@ -1427,7 +1456,7 @@ export function MarketDetailScreen() {
                   pendingPhotoCount={canAnalyze ? salesPhotoEvidenceFlow.pendingCount : 0}
                   onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
                   salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
-                  onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+                  onSalesPhotoEvidenceResult={handleLiveSaleResult}
                 />
 
                 <OperatingInteractionPanel
@@ -1463,7 +1492,8 @@ export function MarketDetailScreen() {
                     pendingPhotoCount={canAnalyze ? salesPhotoEvidenceFlow.pendingCount : 0}
                     onOpenPendingPhotos={handleOpenPendingSalesPhotoEvidence}
                     salesPhotoEvidenceContext={addRevenueSalesPhotoEvidenceContext}
-                    onSalesPhotoEvidenceResult={handleSalesPhotoEvidenceResult}
+                    onSalesPhotoEvidenceResult={handleLiveSaleResult}
+                    showRecentSale={false}
                   />
                 </div>
 
@@ -1613,7 +1643,8 @@ export function MarketDetailScreen() {
             market={market}
             reviewedStats={financialOverlay?.stats}
             financialConfirmations={financialOverlay?.confirmations[market.id ?? '']?.days}
-            focusDate={searchParams.get('reportDate') ?? undefined}
+            focusDate={saleReviewDate ?? searchParams.get('reportDate') ?? undefined}
+            focusDateLabel={saleReviewDate ? '查看剛才成交的日期' : undefined}
             dealRecordCountByDate={activity.ready ? dealRecordCountByDate : undefined}
             onAddRevenue={handleOpenAddRevenue}
             onDateClick={handleDateClick}
@@ -2057,6 +2088,7 @@ export function MarketDetailScreen() {
         onClose={handleCloseDailyDeals}
         date={selectedDate}
         deals={getDealsByDate(selectedDate)}
+        highlightedDealId={latestSale?.dealEventId}
         onDealClick={handleDealClick}
       />
 

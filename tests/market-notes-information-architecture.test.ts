@@ -31,11 +31,11 @@ assert.match(marketFormFields, /整場市集共用的固定資訊/);
 assert.match(marketFormFields, /停車資訊與場地限制/);
 assert.match(addMarketForm, /title="主辦／場地備註"/);
 assert.match(editMarketForm, /title="主辦／場地備註"/);
-assert.match(demo, /title="主辦／場地備註與成交照片"/);
+assert.match(demo, /title="主辦／場地備註"/);
 assert.match(marketCard, /DialogTitle[\s\S]*主辦／場地備註/);
 
 assert.match(referencePanel, /interface MarketReferenceNotePanelProps[\s\S]*note\?: string \| null/);
-assert.match(referencePanel, /整場共用/);
+assert.match(referencePanel, /整場適用/);
 assert.match(referencePanel, /尚未填寫主辦／場地備註/);
 assert.doesNotMatch(referencePanel, /useLiveQuery|useAuth|useUserRole|supabase|createFieldNote/);
 assert.match(fieldOpsSection, /<MarketReferenceNotePanel note=\{referenceNote\}/);

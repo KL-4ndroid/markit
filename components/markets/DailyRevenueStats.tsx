@@ -27,6 +27,7 @@ interface DailyRevenueStatsProps {
   reviewMode?: boolean;
   dealRecordCountByDate?: Readonly<Record<string, number>>;
   focusDate?: string;
+  focusDateLabel?: string;
   reviewedStats?: readonly DailyStats[];
   financialConfirmations?: Readonly<Record<string, readonly FinancialZeroConfirmation[]>>;
 }
@@ -48,6 +49,7 @@ export function DailyRevenueStats({
   reviewMode = false,
   dealRecordCountByDate,
   focusDate,
+  focusDateLabel,
   reviewedStats,
   financialConfirmations,
 }: DailyRevenueStatsProps) {
@@ -57,6 +59,7 @@ export function DailyRevenueStats({
   const [showEmptyReviewDates, setShowEmptyReviewDates] = useState(false);
   const dailyListRef = useRef<HTMLDivElement | null>(null);
   const focusedDayRef = useRef<HTMLDivElement | null>(null);
+  const focusDateLinkRef = useRef<HTMLAnchorElement | null>(null);
 
   // 互動按鈕配置（從 store 讀取，computed per render）
   const interactionButtons = useMemo(() => getInteractionButtons(), []);
@@ -159,6 +162,9 @@ export function DailyRevenueStats({
     !hasDailyRevenueRecord(day)
   )), [dailyData, today]);
   const validFocusDate = focusDate && dateRange.includes(focusDate) ? focusDate : undefined;
+  useEffect(() => {
+    if (focusDateLabel && validFocusDate) focusDateLinkRef.current?.focus();
+  }, [focusDateLabel, validFocusDate]);
   const effectiveDateView = dateView === 'auto' && validFocusDate ? 'all' : dateView === 'auto'
     ? market.status === 'completed' && dailyData.length > 7 && recordedDays.length > 0
       ? 'recorded'
@@ -224,7 +230,7 @@ export function DailyRevenueStats({
         )}
       </div>
 
-      {validFocusDate && <a href={`#daily-revenue-${validFocusDate}`} className="mx-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline underline-offset-4">查看報告指定日期 {formatDate(validFocusDate)}</a>}
+      {validFocusDate && <a ref={focusDateLinkRef} href={`#daily-revenue-${validFocusDate}`} className="mx-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline underline-offset-4">{focusDateLabel ?? '查看報告指定日期'} {formatDate(validFocusDate)}</a>}
       {!isEmptyReview && !isSingleDay && dateRange.length > 5 && (
         <div className="border-b border-atelier-line bg-atelier-paper px-4 py-3 sm:px-5">
           <div className="grid grid-cols-3 rounded-control bg-muted/35 p-1" role="group" aria-label="每日表現顯示範圍">

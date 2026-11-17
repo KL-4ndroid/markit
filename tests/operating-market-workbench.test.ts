@@ -14,6 +14,7 @@ const owner = read('components/markets/MarketDetailScreen.tsx');
 const staff = read('components/markets/StaffMarketDetailView.tsx');
 const transaction = read('components/sales/TransactionWorkspace.tsx');
 const quickSale = read('components/sales/QuickInteractionButtons.tsx');
+const quickAmountCheckout = read('components/sales/QuickAmountCheckout.tsx');
 const productSale = read('components/sales/QuickTransactionGrid.tsx');
 const interactions = read('components/sales/InteractionButtons.tsx');
 const photoFlow = read('components/markets/SalesPhotoEvidenceFlowDialog.tsx');
@@ -51,15 +52,18 @@ assert.match(interactionPanel, /href="\/settings\/sales"/);
 assert.match(interactionPanel, /variant="inline"/);
 assert.match(fieldOps, /collapsibleOnMobile\?: boolean/);
 assert.match(fieldOps, /aria-expanded=\{isMobileExpanded\}/);
-assert.match(fieldOps, />現場工作</);
+assert.match(fieldOps, /collaborationEnabled \? '現場工作' : '出攤準備'/);
 assert.match(fieldOps, /主辦備註、交接筆記與待辦/);
 assert.match(summary, /onClick\?: \(\) => void/);
 assert.match(summary, /<SummaryValue item=\{item\}/);
 
 assert.match(transaction, /presentation\?: TransactionPresentation/);
-assert.match(transaction, /onTransactionCompleted=\{onTransactionCompleted\}/g);
+assert.match(transaction, /onTransactionCompleted=\{completeTransaction\}/g);
 for (const source of [quickSale, productSale]) {
   assert.match(source, /onTransactionCompleted\?\.\(\)/);
+}
+assert.match(quickSale, /<QuickAmountCheckout[\s\S]*presentation=\{presentation\}/);
+for (const source of [quickAmountCheckout, productSale]) {
   assert.match(source, /presentation === 'sheet'[\s\S]*sticky bottom-0/);
 }
 assert.match(interactions, /variant\?: 'card' \| 'dock' \| 'inline'/);

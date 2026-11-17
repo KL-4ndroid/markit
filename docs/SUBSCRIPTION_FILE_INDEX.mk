@@ -1,5 +1,7 @@
 # 訂閱方案變更導航與完整檔案索引
 
+免登入體驗的[方案功能提示](../components/demo/FormalDemoApp.tsx)說明免費版市集安排、輕量版與高階版銷售記錄，以及高階版完整報告與 PDF 匯出。展示版以記憶體範例操作，正式權益仍由[訂閱存取規則](../lib/subscription/subscription-access.ts)決定。
+
 2026-11-16 三方案操作調整：輕量版「紀錄」改用本月已記錄營業資料，保留單場回顧與返回；方案中心區別暫時無法確認、到期及待同步，並加入團隊恢復入口。設備可區分未確認與需自備，抽成留白顯示並以 0% 計算；新設備狀態的跨裝置同步依賴 097，發布時先完成資料庫遷移再部署前端。097 會改變 096 審查的資料庫目錄；同庫合併部署前應用新版目錄重新審查刪帳候選。原定的 `test_prg` 刪帳驗收可先用固定候選提交 `2b54569` 單獨驗證。[輕量紀錄](../components/analytics/MonthlySalesRecords.tsx) · [方案狀態](../lib/subscription/subscription-center-view.ts) · [097](../supabase/migrations/097_add_market_registration_conditions.sql)
 
 2026-11-16 [Preview 資料庫授權演練](subscription/drafts/ACCOUNT_DELETION_TEST_PRG_SCOPE.sql)在停用版 096 上驗證專用資料庫、合成帳號申請、R2 綁定與授權期限。[本機 SQL 驗證](../scripts/verify-account-deletion-migration.ts)

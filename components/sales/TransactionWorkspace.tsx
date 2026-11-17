@@ -32,6 +32,7 @@ interface TransactionWorkspaceProps {
   mode?: TransactionMode;
   initialMode?: TransactionMode;
   presentation?: TransactionPresentation;
+  showRecentSale?: boolean;
 }
 
 export function TransactionWorkspace({
@@ -48,6 +49,7 @@ export function TransactionWorkspace({
   mode: controlledMode,
   initialMode = 'quick',
   presentation = 'card',
+  showRecentSale = true,
 }: TransactionWorkspaceProps) {
   const [mode, setMode] = useState<TransactionMode>(initialMode);
   const [paymentMethod, setPaymentMethod] = useState<SalesPaymentMethod>('cash');
@@ -57,6 +59,7 @@ export function TransactionWorkspace({
   const isSheet = presentation === 'sheet';
 
   useEffect(() => {
+    if (!showRecentSale || isSheet) return;
     const handleDealClosed = (event: Event) => {
       const detail = (event as CustomEvent<{
         marketId?: string;
@@ -84,7 +87,7 @@ export function TransactionWorkspace({
       window.removeEventListener('deal-closed', handleDealClosed);
       if (noticeTimeoutRef.current) window.clearTimeout(noticeTimeoutRef.current);
     };
-  }, [marketId]);
+  }, [marketId, isSheet, showRecentSale]);
 
   const changePaymentMethod = (next: SalesPaymentMethod) => setPaymentMethod(next);
   const completeTransaction = () => {
@@ -167,7 +170,7 @@ export function TransactionWorkspace({
           </button>
         </div>}
 
-        {!isSheet && <div className="min-h-0" aria-live="polite" aria-atomic="true">
+        {!isSheet && showRecentSale && <div className="min-h-0" aria-live="polite" aria-atomic="true">
           {recentSale && (
             <div className="mb-4 flex items-center gap-3 rounded-control bg-status-good-bg px-3 py-3 text-status-good-text shadow-sm" role="status">
               <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden="true" />

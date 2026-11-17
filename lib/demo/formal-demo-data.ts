@@ -1,3 +1,5 @@
+import type { Market } from '@/types/db';
+
 export type DemoView = 'today' | 'markets' | 'products' | 'analytics' | 'more';
 
 export type DemoMarketStatus = 'operating' | 'preparing' | 'ended';
@@ -11,12 +13,18 @@ export interface DemoMarket {
   location: string;
   time: string;
   status: DemoMarketStatus;
+  registrationStatus?: Market['status'];
+  regionCode?: Market['regionCode'];
+  registrationConditions?: Market['registrationConditions'];
+  earlyEntryEnabled?: boolean;
+  earlyEntryTime?: string;
   scenarioLabel: string;
   revenue: number;
   deals: number;
   interactions: number;
   grossMargin: number;
   note: string;
+  postMarketNote?: string;
   dates: string[];
   checkInTime: string;
   operatingStartTime: string;
@@ -58,10 +66,11 @@ export interface DemoActivity {
 export interface DemoSaleRecord {
   id: string;
   marketId: string;
+  date?: string;
   productName: string;
   quantity: number;
   amount: number;
-  paymentMethod: '現金' | '行動支付' | '信用卡／轉帳';
+  paymentMethod: string;
   time: string;
   photoPath?: string;
 }
@@ -118,6 +127,8 @@ function defineDemoMarket(seed: DemoMarketSeed): DemoMarket {
   };
 }
 
+export const DEMO_REGISTRATION_MARKET_ID = 'market-warehouse';
+
 export const INITIAL_DEMO_MARKETS: readonly DemoMarket[] = [
   defineDemoMarket({
     id: 'market-summer',
@@ -146,6 +157,7 @@ export const INITIAL_DEMO_MARKETS: readonly DemoMarket[] = [
     dateLabel: '7/23（四）',
     location: '新北・淡水金色水岸',
     status: 'preparing',
+    registrationStatus: 'accepted',
     scenarioLabel: '夜間市集準備',
     revenue: 0,
     deals: 0,
@@ -167,6 +179,7 @@ export const INITIAL_DEMO_MARKETS: readonly DemoMarket[] = [
     dateLabel: '8/2（日）',
     location: '高雄・駁二藝術特區',
     status: 'preparing',
+    registrationStatus: 'registered',
     scenarioLabel: '跨城市出攤',
     revenue: 0,
     deals: 0,
@@ -237,6 +250,7 @@ export const INITIAL_DEMO_MARKETS: readonly DemoMarket[] = [
     interactions: 85,
     grossMargin: 0.46,
     note: '營收創新高，但高攤位費、抽成與包裝成本壓縮利潤，需要重新評估高價場次。',
+    postMarketNote: '禮盒詢問多，下次可先確認主辦抽成，並記下每套禮盒的包裝成本。',
     dates: ['2026-05-30'],
     operatingStartTime: '10:30',
     operatingEndTime: '20:00',
@@ -259,6 +273,7 @@ export const INITIAL_DEMO_MARKETS: readonly DemoMarket[] = [
     interactions: 14,
     grossMargin: 0.7,
     note: '人流不大，但客群明確、停留時間長，多數詢問都能轉為成交，適合帶完整系列。',
+    postMarketNote: '上午熟客願意停下來慢慢挑，下次可以帶完整系列，也記下往返交通費。',
     dates: ['2026-05-17'],
     operatingStartTime: '09:00',
     operatingEndTime: '14:00',

@@ -7,14 +7,24 @@ const read = (path: string) => readFileSync(join(projectRoot, path), 'utf8');
 
 const workspaceSource = read('components/sales/TransactionWorkspace.tsx');
 const quickRevenueSource = read('components/sales/QuickInteractionButtons.tsx');
+const quickAmountCheckout = read('components/sales/QuickAmountCheckout.tsx');
 const productSaleSource = read('components/sales/QuickTransactionGrid.tsx');
 const paymentSelectorSource = read('components/sales/PaymentMethodSelector.tsx');
 const addRevenueSource = read('components/markets/AddRevenueDialog.tsx');
 const flowDialogSource = read('components/markets/SalesPhotoEvidenceFlowDialog.tsx');
 const flowHookSource = read('hooks/useSalesPhotoEvidenceFlow.ts');
 const ownerPageSource = read('components/markets/MarketDetailScreen.tsx');
+const receiptSource = read('components/markets/MarketSaleReceipt.tsx');
+const dailyDealsSource = read('components/markets/DailyDealsModal.tsx');
 const staffPageSource = read('components/markets/StaffMarketDetailView.tsx');
 const manifestSource = read('scripts/test-files.txt');
+
+assert.equal((ownerPageSource.match(/onSalesPhotoEvidenceResult=\{handleLiveSaleResult\}/g) ?? []).length, 2);
+assert.match(ownerPageSource, /setSavedSale\([\s\S]*return handleSalesPhotoEvidenceResult\(result\)/);
+assert.match(ownerPageSource, /reviewLatestSale[\s\S]*setReviewSaleId\(latestSale\.dealEventId\)[\s\S]*setOwnerOverviewDetail\('performance'\)/);
+assert.match(ownerPageSource, /highlightedDealId=\{latestSale\?\.dealEventId\}/);
+assert.match(dailyDealsSource, /deal\.id === highlightedDealId[\s\S]*剛新增/);
+assert.match(receiptSource, /本場累計收入[\s\S]*查看回顧/);
 
 assert.match(workspaceSource, /role="tablist"/);
 assert.match(workspaceSource, /aria-controls=\{`transaction-panel-quick-/);
@@ -33,9 +43,12 @@ assert.match(workspaceSource, /本場需拍照/);
 assert.doesNotMatch(workspaceSource, /role="switch"|onTogglePhotoRequirement/);
 
 for (const source of [quickRevenueSource, productSaleSource, addRevenueSource]) {
-  assert.match(source, /<PaymentMethodSelector/);
   assert.match(source, /recordDealWithOptionalSalesPhotoEvidence/);
   assert.match(source, /onSalesPhotoEvidenceResult/);
+}
+assert.match(quickRevenueSource, /<QuickAmountCheckout/);
+for (const source of [quickAmountCheckout, productSaleSource, addRevenueSource]) {
+  assert.match(source, /<PaymentMethodSelector/);
 }
 for (const source of [quickRevenueSource, productSaleSource]) {
   const failedSave = source.indexOf('本次輸入已保留。');
@@ -45,7 +58,7 @@ for (const source of [quickRevenueSource, productSaleSource]) {
   assert.ok(failedSave > 0 && stopRetry > failedSave && resetPayment > stopRetry && completeSale > resetPayment,
     'Failed submissions must return before resetting the payment method or completing the sale');
 }
-assert.match(quickRevenueSource, /完成收款 NT\$/);
+assert.match(quickAmountCheckout, /完成收款 NT\$/);
 assert.match(productSaleSource, /完成交易 NT\$/);
 assert.doesNotMatch(productSaleSource, /handlePayment\(['"]cash['"]\)|grid-cols-5/);
 assert.match(paymentSelectorSource, /SALES_PAYMENT_METHOD_LABELS/);

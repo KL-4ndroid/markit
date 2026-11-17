@@ -4,8 +4,8 @@ import type { Metadata } from 'next';
 import { FeriaDemoApp } from '@/components/demo/FeriaDemoApp';
 
 export const metadata: Metadata = {
-  title: '操作展示版',
-  description: `免登入、使用記憶體假資料的${APP_BRAND.name}操作展示。`,
+  title: '免登入體驗',
+  description: `使用範例資料體驗${APP_BRAND.name}，試著安排市集、記一筆收入並回顧成交。`,
 };
 
 export default function DemoPage() {

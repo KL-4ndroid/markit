@@ -11,6 +11,7 @@ interface DailyDealsModalProps {
   onClose: () => void;
   date: string;
   deals: Event<DealClosedPayload>[];
+  highlightedDealId?: string;
   onDealClick: (deal: Event<DealClosedPayload>) => void;
 }
 
@@ -24,6 +25,7 @@ export function DailyDealsModal({
   onClose,
   date,
   deals,
+  highlightedDealId,
   onDealClick,
 }: DailyDealsModalProps) {
   // 格式化日期顯示
@@ -38,6 +40,10 @@ export function DailyDealsModal({
 
   // 計算總收入
   const totalRevenue = deals.reduce((sum, deal) => sum + getDealEventRevenue(deal), 0);
+  const sortedDeals = [...deals].sort((left, right) => {
+    const isHighlighted = (deal: Event<DealClosedPayload>) => Number(Boolean(highlightedDealId && deal.id === highlightedDealId));
+    return isHighlighted(right) - isHighlighted(left) || right.timestamp - left.timestamp;
+  });
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
@@ -80,15 +86,12 @@ export function DailyDealsModal({
               </div>
             ) : (
               <div className="space-y-2">
-                {[...deals]
-                  .sort((a, b) => b.timestamp - a.timestamp) // 最新成交優先
-                  .map((deal) => (
-                    <DealItem
-                      key={deal.id}
-                      deal={deal}
-                      onClick={() => onDealClick(deal)}
-                    />
-                  ))}
+                {sortedDeals.map(deal => (
+                  <div key={deal.id}>
+                    {highlightedDealId && deal.id === highlightedDealId && <p className="mb-1 text-xs font-medium text-primary">剛新增</p>}
+                    <DealItem deal={deal} onClick={() => onDealClick(deal)} />
+                  </div>
+                ))}
               </div>
             )}
           </div>
