@@ -39,7 +39,7 @@ async function main() {
     const parallel = storage.getItem(key + '-code-verifier');
     await tick();
     assert.equal(loads, 1, 'eager SDK initialization and concurrent calls share native setup');
-    assert.deepEqual(events, [], 'SDK cannot read any credentials before native loading');
+    assert.equal(events.length, 0, 'SDK cannot read any credentials before native loading');
     loaded.resolve(createNativeAuthStorage({
       async get({ key: readKey }) { events.push('get'); return { value: readKey === key ? session : null }; },
       async set() { events.push('set'); }, async remove() { events.push('remove'); },

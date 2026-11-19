@@ -17,7 +17,7 @@ console.log('\n=== Platform interaction boundaries ===');
 
 async function main(): Promise<void> {
   const calls: string[] = [];
-  let deepLinkListener: ((url: string) => void) | null = null;
+  const deepLinkListeners: Array<(url: string) => void> = [];
   const restore = installInteractionPorts({
     clipboard: { writeText: async value => { calls.push(`copy:${value}`); } },
     share: { share: async input => { calls.push(`share:${input.url}`); return 'shared'; } },
@@ -26,7 +26,7 @@ async function main(): Promise<void> {
       createAppUrl: path => `feria://app${path}`,
       getInitialUrl: async () => 'feria://app/join?token=initial',
       getCurrentUrl: async () => 'feria://app/markets',
-      subscribe(listener) { deepLinkListener = listener; return () => { deepLinkListener = null; }; },
+      subscribe(listener) { deepLinkListeners.push(listener); return () => { deepLinkListeners.length = 0; }; },
     },
   });
 
@@ -38,8 +38,8 @@ async function main(): Promise<void> {
     assert.equal(await getExternalLinkPort().open('https://example.com'), true);
     assert.equal(await getDeepLinkPort().getInitialUrl(), 'feria://app/join?token=initial');
     const unsubscribe = getDeepLinkPort().subscribe(url => calls.push(`deep:${url}`));
-    assert.equal(typeof deepLinkListener, 'function');
-    (deepLinkListener as (url: string) => void)('feria://app/join?token=next');
+    assert.equal(typeof deepLinkListeners[0], 'function');
+    deepLinkListeners[0]('feria://app/join?token=next');
     unsubscribe();
   } finally {
     restore();

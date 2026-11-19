@@ -43,6 +43,6 @@ assert.equal((owner.match(/<MarketTodayTimeline\s/g) ?? []).length, 1);
 assert.doesNotMatch(owner, /今日現場模式|isTimelineCollapsed|<MarketReferenceNotePanel/);
 assert.match(owner, /resolvedOwnerWorkspaceView === 'manage' && !isOperating[\s\S]*<MarketRegistrationPanel/);
 assert.match(owner, /resolvedOwnerWorkspaceView === 'manage' && <MarketPaymentDeadlineNotice/);
-assert.match(owner, /ownerOverviewDetail === 'cash'/);
-assert.match(owner, /ownerOverviewDetail === 'journal'/);
+assert.match(owner, /visibleOverviewDetail === 'cash'/);
+assert.match(owner, /visibleOverviewDetail === 'journal'/);
 console.log('PASS live timeline, operating controls, preserved phase permissions, compact presentation and management/review boundaries');

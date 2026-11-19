@@ -89,7 +89,7 @@ function product(overrides: Partial<Product> = {}): Product {
   return {
     id: 'product-1',
     name: '手作串珠耳環',
-    category: '飾品',
+    category: 'accessory',
     price: 400,
     cost: 130,
     isActive: true,
@@ -184,7 +184,7 @@ console.log('\n=== Settlement report PDF browser visual validation ===');
 runTest('renders a readable owner-only fixture PDF for browser visual validation', async () => {
   const viewModel = buildReadableFixtureViewModel();
   const buffer = await renderToBuffer(
-    React.createElement(SettlementReportPdfDocument, { viewModel, fontSource: fontPath })
+    SettlementReportPdfDocument({ viewModel, fontSource: fontPath })
   );
 
   assert.match(buffer.subarray(0, 8).toString('latin1'), /^%PDF-/);
@@ -222,7 +222,7 @@ runTest('long CJK names and full ranking/action lists remain five true-A4 pages'
   viewModel.pages[2].rows = Array.from({ length: 8 }, (_, i) => ({ ...viewModel.pages[2].rows[0], marketId: `stress-m-${i}`, marketName: `${longName}${i}` }));
   viewModel.pages[3].rows = Array.from({ length: 8 }, (_, i) => ({ ...viewModel.pages[3].rows[0], productId: `stress-p-${i}`, productName: `${longName}${i}` }));
   viewModel.pages[4].actionGroups = viewModel.pages[4].actionGroups.map(group => ({ ...group, actions: Array.from({ length: 4 }, (_, i) => `${longName}${i}建議參加並留意商品與場次安排。`) }));
-  const buffer = await renderToBuffer(React.createElement(SettlementReportPdfDocument, { viewModel, fontSource: fontPath }));
+  const buffer = await renderToBuffer(SettlementReportPdfDocument({ viewModel, fontSource: fontPath }));
   assert.equal(countPdfPages(buffer), 5);
   const boxes = readMediaBoxes(buffer);
   assert.equal(boxes.length, 5);

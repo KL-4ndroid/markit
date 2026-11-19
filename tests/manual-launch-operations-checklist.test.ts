@@ -81,7 +81,7 @@ assert.match(guide, /Session 0：AI 本機基準命令/);
 assert.match(guide, /canonical 狀態沒有改變，Checklist 保持未勾選是正確結果/);
 
 const completedRaw = JSON.parse(JSON.stringify(plan)) as {
-  tasks: Array<{ id: string; status: string }>;
+  tasks: Array<{ -readonly [K in keyof (typeof plan.tasks)[number]]: (typeof plan.tasks)[number][K] }>;
 };
 completedRaw.tasks.find(task => task.id === 'NATIVE-GATE2-EVIDENCE')!.status = 'complete';
 const completedPlan = {

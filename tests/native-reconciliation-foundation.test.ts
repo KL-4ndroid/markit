@@ -33,7 +33,7 @@ function memoryRepository() {
       let unlock!: () => void; const previous = tail; tail = new Promise<void>(resolve => { unlock = resolve; }); await previous;
       try {
         assert.equal(ownerId, context.authenticatedOwnerId);
-        const staged = structuredClone(state); const stagedReceipts = new Map(receipts);
+        let staged = structuredClone(state); const stagedReceipts = new Map(receipts);
         let stagedProjection = projection; let added = 0; let updated = 0;
         const result = await work({ readState: async (_, key) => { beforeRead(); return { ...staged, receipt: stagedReceipts.get(key) ?? null }; },
           readMapping: async current => current.productId === mapping.productId ? mapping : null,
@@ -44,8 +44,8 @@ function memoryRepository() {
             if (failApply) throw new Error('private-db-detail');
             assert.equal(input.decision.outcome, 'apply'); assert.ok(input.decision.projection);
             stagedProjection = input.decision.projection; updated++;
-            staged.referenceOwnerId = ownerId; staged.projectionSource = 'billing';
-            staged.previous = { snapshotHash: input.snapshot.snapshotHash, storeObservedAt: input.snapshot.storeObservedAt };
+            staged = { ...staged, referenceOwnerId: ownerId, projectionSource: 'billing',
+              previous: { snapshotHash: input.snapshot.snapshotHash, storeObservedAt: input.snapshot.storeObservedAt } };
           },
         });
         state = staged; receipts = stagedReceipts; projection = stagedProjection; records += added; writes += updated;

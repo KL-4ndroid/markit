@@ -198,18 +198,18 @@ runTest('event is CustomEvent instance', () => {
   // （在 node 環境由 jsdom-style polyfill 或 ES2020 內建）建立。
   // 測試重點：dispatch 出來的 event 物件 type 正確，且非普通 Event。
   const win = (globalThis as { window: any }).window;
-  let captured: Event | null = null;
+  const captured: Event[] = [];
   const handler = (e: Event) => {
-    captured = e;
+    captured.push(e);
   };
   win.addEventListener(ROLE_CACHE_INVALIDATED_EVENT, handler);
   invalidateRoleCache();
   win.removeEventListener(ROLE_CACHE_INVALIDATED_EVENT, handler);
-  assert.ok(captured !== null, 'event captured');
-  assert.equal(captured!.type, ROLE_CACHE_INVALIDATED_EVENT, 'event type matches');
+  assert.equal(captured.length, 1, 'event captured');
+  assert.equal(captured[0].type, ROLE_CACHE_INVALIDATED_EVENT, 'event type matches');
   // CustomEvent 的 constructor.name === 'CustomEvent'
   assert.equal(
-    (captured as { constructor?: { name?: string } }).constructor?.name,
+    captured[0].constructor?.name,
     'CustomEvent',
     'event constructor is CustomEvent'
   );

@@ -1,5 +1,9 @@
 # iOS Capacitor Execution Progress
 
+## 2026-11-19 Windows 階段後續安排
+
+[Windows 執行計畫](IOS_WINDOWS_EXECUTION_PLAN_2026_11_19.md)整理下一輪順序、每批驗收與中斷恢復方式。B01 已完成版本／證據與測試修正，見 [集中驗收結果](IOS_WINDOWS_B01_BASELINE_2026_11_19.md)。接續 B02 的 096／097 相容與本機候選；既有 adapter 來源及未變更範圍的證據沿用。Mac 編譯、簽署、iPhone 與 TestFlight 仍待實際執行。
+
 ## 2026-11-11：拾光日子更名與原生包裝準備
 
 `IOS-BRAND-ROLLOUT` 為 `pending_manual`。共用介面與商店文案已更新為「拾光日子／STALLIGHT DAYS」，iOS 包裝會套用繁中／英文桌面名稱、圖示、啟動圖與權限用途。待 Mac 簽署建置、實機與商店素材驗收。詳細範圍見[品牌規格](brand/STALLIGHT_DAYS_BRAND_BRIEF_2026_11_02.md)。

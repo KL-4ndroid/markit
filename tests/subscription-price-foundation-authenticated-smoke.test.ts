@@ -102,9 +102,10 @@ assert.match(serverSource, /__denial_smoke_missing__/);
 assert.match(serverSource, /MISSING_ROW_ID/);
 assert.doesNotMatch(routeSource + serverSource, /SUPABASE_SECRET_KEY|service_role|subscription_accounts/);
 assert.doesNotMatch(routeSource + serverSource, /console\.(?:log|error)|localStorage|sessionStorage/);
-assert.match(panelSource, /data-testid="subscription-price-foundation-smoke"/);
-assert.match(panelSource, /驗證資料庫權限/);
-assert.match(panelSource, /資料庫權限驗證通過/);
+assert.match(panelSource, /data-testid="subscription-simulation-panel"/);
+assert.match(panelSource, /readSubscriptionSimulation/);
+assert.match(panelSource, /if \(!canUse \|\| snapshot\?\.token !== token\) return null/);
+assert.doesNotMatch(panelSource, /subscription-price-foundation-smoke/);
 
 console.log('PASS authenticated F3A denial smoke route and UI contract');
 }

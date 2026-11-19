@@ -10,7 +10,7 @@ import {
   parseNativeExternalAccountReadiness,
 } from '../lib/deployment/native-external-account-readiness';
 
-type MutableCheck = { id: string; status: string };
+type MutableCheck = Record<string, unknown> & { id: string; status: string };
 type MutableDocument = Record<string, unknown> & { checks: MutableCheck[] };
 
 const root = process.cwd();

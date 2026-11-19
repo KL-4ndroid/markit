@@ -94,7 +94,7 @@ for (const source of [contract, documentation]) {
 }
 assert.doesNotMatch(contract, /subscription_accounts|update\(|insert\(|upsert\(/i);
 assert.match(documentation, /does not add an API route/);
-assert.match(documentation, /STORE-VERIFICATION.*remains incomplete/s);
-assert.match(documentation, /productId.*basePlanId.*offerId.*mappedPriceVersionId/s);
+assert.match(documentation, /STORE-VERIFICATION[\s\S]*remains incomplete/);
+assert.match(documentation, /productId[\s\S]*basePlanId[\s\S]*offerId[\s\S]*mappedPriceVersionId/);
 
 console.log('PASS bounded native store verification request and trusted server context');

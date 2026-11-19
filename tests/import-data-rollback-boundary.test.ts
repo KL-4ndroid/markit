@@ -109,10 +109,10 @@ async function withImportTripwires(fn: () => Promise<void>): Promise<void> {
   try {
     (db as unknown as { transaction: typeof db.transaction }).transaction = failTransaction;
     (db.events as unknown as { toArray: typeof db.events.toArray }).toArray = failTableRead;
-    (db.markets as unknown as { toArray: typeof db.markets.toArray }).toArray = failTableRead as typeof db.markets.toArray;
-    (db.products as unknown as { toArray: typeof db.products.toArray }).toArray = failTableRead as typeof db.products.toArray;
-    (db.dailyStats as unknown as { toArray: typeof db.dailyStats.toArray }).toArray = failTableRead as typeof db.dailyStats.toArray;
-    (db.settings as unknown as { toArray: typeof db.settings.toArray }).toArray = failTableRead as typeof db.settings.toArray;
+    (db.markets as unknown as { toArray: typeof db.markets.toArray }).toArray = failTableRead as unknown as typeof db.markets.toArray;
+    (db.products as unknown as { toArray: typeof db.products.toArray }).toArray = failTableRead as unknown as typeof db.products.toArray;
+    (db.dailyStats as unknown as { toArray: typeof db.dailyStats.toArray }).toArray = failTableRead as unknown as typeof db.dailyStats.toArray;
+    (db.settings as unknown as { toArray: typeof db.settings.toArray }).toArray = failTableRead as unknown as typeof db.settings.toArray;
     console.error = () => {};
 
     await fn();

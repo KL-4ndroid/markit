@@ -37,7 +37,7 @@ if (originalZone === undefined) delete process.env.TZ; else process.env.TZ = ori
 const cloud = marketCreatedPayloadToCloud({ ...market, paymentDeadline: { date: deadline.date, timeZone: deadline.timeZone } } as never);
 assert.deepEqual(cloud.paymentDeadline, deadline);
 assert.deepEqual(cloud.payment_deadline, deadline);
-assert.deepEqual((normalizeEventPayloadForLocal(cloud) as Market).paymentDeadline, deadline);
+assert.deepEqual(normalizeEventPayloadForLocal(cloud).paymentDeadline, deadline);
 assert.deepEqual(marketUpdatesToSnake({ paymentDeadline: null }), { payment_deadline: null });
 assert.deepEqual(marketUpdatesToSnake({ paymentDeadline: null, payment_deadline: undefined }), { payment_deadline: null }, 'undefined alias cannot swallow an explicit clear');
 assert.deepEqual(marketUpdatesToSnake({ paymentDeadline: undefined, notes: 'legacy' }), { notes: 'legacy' });

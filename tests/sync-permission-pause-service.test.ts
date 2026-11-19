@@ -10,12 +10,12 @@ import {
 } from '../lib/sync/sync-permission-pause-service';
 
 function installMockLocalStorage(): () => void {
-  const originalWindow = (globalThis as typeof globalThis & { window?: unknown }).window;
-  const originalLocalStorage = (globalThis as typeof globalThis & { localStorage?: unknown }).localStorage;
+  const originalWindow = (globalThis as unknown as { window?: unknown }).window;
+  const originalLocalStorage = (globalThis as unknown as { localStorage?: unknown }).localStorage;
   const store = new Map<string, string>();
 
-  (globalThis as typeof globalThis & { window?: unknown }).window = globalThis;
-  (globalThis as typeof globalThis & { localStorage?: unknown }).localStorage = {
+  (globalThis as unknown as { window?: unknown }).window = globalThis;
+  (globalThis as unknown as { localStorage?: unknown }).localStorage = {
     getItem: (key: string) => store.get(key) ?? null,
     setItem: (key: string, value: string) => {
       store.set(key, value);
@@ -26,8 +26,8 @@ function installMockLocalStorage(): () => void {
   };
 
   return () => {
-    (globalThis as typeof globalThis & { window?: unknown }).window = originalWindow;
-    (globalThis as typeof globalThis & { localStorage?: unknown }).localStorage = originalLocalStorage;
+    (globalThis as unknown as { window?: unknown }).window = originalWindow;
+    (globalThis as unknown as { localStorage?: unknown }).localStorage = originalLocalStorage;
   };
 }
 

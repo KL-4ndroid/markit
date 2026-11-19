@@ -12,7 +12,8 @@ const dialog = readFileSync(join(root, 'components/ui/AppDialog.tsx'), 'utf8');
 
 assert.match(plan, /UX-R2 - Product Workflow And First-Viewport Quality/);
 
-assert.match(detail, /aria-label="返回商品列表"/);
+assert.match(detail, /productBackLabel = reportReturn\?\.label \?\? '返回商品列表'/);
+assert.match(detail, /aria-label=\{productBackLabel\}/);
 assert.match(detail, /min-h-11/);
 assert.match(detail, /aspect-square h-24 w-24/);
 assert.doesNotMatch(detail, /aspect-\[4\/3\]/);

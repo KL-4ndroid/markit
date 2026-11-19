@@ -128,7 +128,7 @@ const recordMarkets: Market[] = [
   { ...baseMarket, id: 'removed', owner_id: 'owner', isDeleted: true },
 ];
 const day = (marketId: string, date: string, revenue: number, dealCount: number) => ({ marketId, date, revenue, dealCount,
-  touchCount: 0, inquiryCount: 0, cost: 0, profit: 0, productsSold: [] } as DailyStats);
+  touchCount: 0, inquiryCount: 0, cost: 0, profit: 0, productsSold: [], updatedAt: 0 } satisfies DailyStats);
 const month = buildMonthlySalesRecords(recordMarkets, [
   day('own', '2026-10-31', 1000, 2), day('own', '2026-11-01', 250, 1),
   day('own', '2026-11-02', 0, 1), day('own', '2026-11-03', 500, 3),

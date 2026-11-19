@@ -28,7 +28,7 @@ async function main() {
     await expectLatest(2);
     await events.update('offline-backfill', { sync_status: 'synced' });
     await expectLatest(1);
-    await events.update('pending-edit', { sync_status: 'blocked' });
+    await events.update('pending-edit', { sync_status: 'blocked' as unknown as Event['sync_status'] /* legacy stored value */ });
     await expectLatest(0);
     stop();
     const delivered = counts.length;

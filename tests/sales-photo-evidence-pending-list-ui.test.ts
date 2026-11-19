@@ -156,7 +156,7 @@ runTest('pending list is a task view with one primary action and no operator dia
   assert.match(dialogSource, /待補照片/);
   assert.match(taskCardSource, /transaction\.totalAmount/);
   assert.match(taskCardSource, /formatSalesPaymentMethod\(transaction\.paymentMethod\)/);
-  assert.match(taskCardSource, /尚未拍照/);
+  assert.match(taskCardSource, /這台裝置尚無照片/);
   assert.match(taskCardSource, /照片尚未上傳/);
   assert.match(taskCardSource, /照片已保留，可重新上傳/);
   assert.match(taskCardSource, /payload \?/);
@@ -170,7 +170,7 @@ runTest('owner and staff wire the shared pending task controller without cloud w
     assert.match(source, /useSalesPhotoEvidenceFlow/);
     assert.match(source, /SalesPhotoEvidenceFlowDialog/);
     assert.match(source, /pendingItems=\{salesPhotoEvidenceFlow\.pendingItems\}/);
-    assert.match(source, /pendingPhotoCount=\{salesPhotoEvidenceFlow\.pendingCount\}/);
+    assert.match(source, /pendingPhotoCount=\{(?:canAnalyze \? )?salesPhotoEvidenceFlow\.pendingCount(?: : 0)?\}/);
     assert.match(source, /onOpenPendingPhotos=\{handleOpenPendingSalesPhotoEvidence\}/);
     assert.match(source, /onRefresh=\{\(\) => void salesPhotoEvidenceFlow\.loadPendingItems\(\)\}/);
     assert.doesNotMatch(

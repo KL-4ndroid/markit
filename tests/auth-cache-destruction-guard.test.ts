@@ -1,3 +1,4 @@
+import Dexie from 'dexie';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -175,8 +176,8 @@ runTest('local pending write report is read-only and classifies blocking reasons
       },
     };
 
-    db.marketJournalDrafts.count = async () => 0;
-    db.marketCashDrafts.count = async () => 0;
+    db.marketJournalDrafts.count = () => Dexie.Promise.resolve(0);
+    db.marketCashDrafts.count = () => Dexie.Promise.resolve(0);
     const report = await getLocalPendingWriteReport('user-1');
 
     assert.equal(report.isClean, false);
@@ -242,8 +243,8 @@ runTest('local pending write report observes active sync lock', async () => {
     };
 
     assert.equal(acquireSyncLock(), true);
-    db.marketJournalDrafts.count = async () => 0;
-    db.marketCashDrafts.count = async () => 0;
+    db.marketJournalDrafts.count = () => Dexie.Promise.resolve(0);
+    db.marketCashDrafts.count = () => Dexie.Promise.resolve(0);
     const report = await getLocalPendingWriteReport('user-1');
 
     assert.equal(report.syncLocked, true);

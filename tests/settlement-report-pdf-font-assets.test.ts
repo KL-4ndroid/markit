@@ -50,7 +50,6 @@ function market(overrides: Partial<Market> = {}): Market {
     registrationFee: 0,
     commissionRate: 0,
     totalRevenue: 9000,
-    totalCost: 3000,
     totalProfit: 6000,
     totalDeals: 18,
     totalInteractions: 42,
@@ -72,7 +71,6 @@ function dailyStat(overrides: Partial<DailyStats> = {}): DailyStats {
     touchCount: 42,
     inquiryCount: 20,
     productsSold: [{ productId: 'product-1', quantity: 18, revenue: 9000 }],
-    createdAt: timestamp,
     updatedAt: timestamp,
     ...overrides,
   };
@@ -82,7 +80,7 @@ function product(overrides: Partial<Product> = {}): Product {
   return {
     id: 'product-1',
     name: '招牌商品',
-    category: 'goods',
+    category: 'other',
     price: 500,
     cost: 180,
     isActive: true,

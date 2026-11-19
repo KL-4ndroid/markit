@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  type CreateLocalPendingOperationInput,
   classifyPendingOperationWorkerCandidate,
   createLocalPendingOperation,
   derivePendingOperationFinalEventId,
@@ -40,7 +41,7 @@ function runTest(name: string, fn: TestFn): void {
   tests.push({ name, fn });
 }
 
-function retryableOperation(overrides: Partial<typeof baseInput> = {}) {
+function retryableOperation(overrides: Partial<CreateLocalPendingOperationInput> = {}) {
   return markPendingOperationRetryableFailure(
     createLocalPendingOperation({ ...baseInput, ...overrides }),
     {

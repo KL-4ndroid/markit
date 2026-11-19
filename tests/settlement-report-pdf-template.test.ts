@@ -156,7 +156,7 @@ console.log('\n=== Settlement report PDF template ===');
 runTest('renders the settlement report view model into a five-page A4 PDF buffer', async () => {
   const viewModel = buildFixtureViewModel();
   const buffer = await renderToBuffer(
-    React.createElement(SettlementReportPdfDocument, { viewModel, fontSource: fontPath })
+    SettlementReportPdfDocument({ viewModel, fontSource: fontPath })
   );
   const pdfSource = buffer.toString('latin1');
 

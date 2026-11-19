@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import Dexie from 'dexie';
 import assert from 'node:assert/strict';
 import { db } from '../lib/db';
 import { replayOwnerEvents } from '../lib/sync/owner-event-replay';
@@ -73,7 +74,7 @@ async function main() {
 
     await seed();
     const bulkPut = db.markets.bulkPut;
-    db.markets.bulkPut = async () => { throw new Error('flush failed'); };
+    db.markets.bulkPut = () => Dexie.Promise.reject(new Error('flush failed'));
     try { await assert.rejects(replayOwnerEvents([sale('one'), sale('two')]), /flush failed/); }
     finally { db.markets.bulkPut = bulkPut; }
     assert.equal(await db.events.count(), 0); assert.equal(await db.dailyStats.count(), 0);

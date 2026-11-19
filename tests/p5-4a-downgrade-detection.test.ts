@@ -310,7 +310,7 @@ console.log('\n=== 4. handleRoleChangeDetection ===');
 
 runTest('first poll no cache + current operator → write baseline, no onDowngrade', () => {
   mockLs.reset();
-  let persisted: StaffStatusKnownRoleCache | null = null;
+  const persisted: StaffStatusKnownRoleCache[] = [];
   let downgradeCalled = false;
   const result = handleRoleChangeDetection({
     userId: USER_A,
@@ -319,7 +319,7 @@ runTest('first poll no cache + current operator → write baseline, no onDowngra
     currentRole: 'operator',
     currentInfoLevel: 2,
     persist: (c) => {
-      persisted = c;
+      persisted.push(c);
     },
     onDowngrade: () => {
       downgradeCalled = true;
@@ -327,9 +327,9 @@ runTest('first poll no cache + current operator → write baseline, no onDowngra
   });
   assert.equal(result, 'baseline');
   assert.equal(downgradeCalled, false);
-  assert.ok(persisted !== null);
-  assert.equal(persisted!.role, 'operator');
-  assert.equal(persisted!.infoLevel, 2);
+  assert.equal(persisted.length, 1);
+  assert.equal(persisted[0].role, 'operator');
+  assert.equal(persisted[0].infoLevel, 2);
 });
 
 runTest('active staff role unchanged → no invalidate', () => {
@@ -448,7 +448,7 @@ runTest('manager → operator → downgrade, onDowngrade called', () => {
 
 runTest('downgrade updates knownRole to current role', () => {
   mockLs.reset();
-  let persisted: StaffStatusKnownRoleCache | null = null;
+  const persisted: StaffStatusKnownRoleCache[] = [];
   handleRoleChangeDetection({
     userId: USER_A,
     ownerId: OWNER_X,
@@ -456,15 +456,15 @@ runTest('downgrade updates knownRole to current role', () => {
     currentRole: 'viewer',
     currentInfoLevel: 0,
     persist: (c) => {
-      persisted = c;
+      persisted.push(c);
     },
     onDowngrade: () => undefined,
   });
-  assert.ok(persisted !== null);
-  assert.equal(persisted!.role, 'viewer');
-  assert.equal(persisted!.infoLevel, 0);
+  assert.equal(persisted.length, 1);
+  assert.equal(persisted[0].role, 'viewer');
+  assert.equal(persisted[0].infoLevel, 0);
   // roundtrip via writeKnownRoleCache
-  writeKnownRoleCache(persisted!);
+  writeKnownRoleCache(persisted[0]);
   const read = readKnownRoleCache(USER_A, OWNER_X);
   assert.ok(read !== null);
   assert.equal(read!.role, 'viewer');
@@ -565,7 +565,7 @@ runTest('upgrade with logger.info, no warn', () => {
 
 runTest('previousRole null + currentRole valid → baseline', () => {
   mockLs.reset();
-  let persisted: StaffStatusKnownRoleCache | null = null;
+  const persisted: StaffStatusKnownRoleCache[] = [];
   const result = handleRoleChangeDetection({
     userId: USER_A,
     ownerId: OWNER_X,
@@ -573,13 +573,13 @@ runTest('previousRole null + currentRole valid → baseline', () => {
     currentRole: 'operator',
     currentInfoLevel: 2,
     persist: (c) => {
-      persisted = c;
+      persisted.push(c);
     },
     onDowngrade: () => undefined,
   });
   assert.equal(result, 'baseline');
-  assert.ok(persisted !== null);
-  assert.equal(persisted!.role, 'operator');
+  assert.equal(persisted.length, 1);
+  assert.equal(persisted[0].role, 'operator');
 });
 
 // ─── 5. 整合：downgrade 端到端（用 mock localStorage + mock onDowngrade） ─

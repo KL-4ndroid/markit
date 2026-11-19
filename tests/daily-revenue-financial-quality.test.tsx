@@ -5,7 +5,7 @@ import { DailyRevenueStats } from '../components/markets/DailyRevenueStats';
 import { dailyFinancialBasis, type FinancialZeroConfirmation } from '../lib/analytics/financial-record-quality';
 import type { DailyStats, Market } from '../types/db';
 
-const market: Market = {id:'m',name:'fixture',location:'fixture',startDate:'2026-10-30',endDate:'2026-10-31',status:'completed',boothCost:100,createdAt:0,updatedAt:0};
+const market: Market = {id:'m',name:'fixture',location:'fixture',startDate:'2026-10-30',endDate:'2026-10-31',status:'completed',registrationFee:0,boothCost:100,createdAt:0,updatedAt:0};
 const stat: DailyStats = {marketId:'m',date:'2026-10-30',revenue:50,cost:0,profit:50,dealCount:1,touchCount:0,inquiryCount:0,productsSold:[],updatedAt:0};
 function render(stats: DailyStats[], confirmations?: Record<string, readonly FinancialZeroConfirmation[]>, hideProfit=false) {
   return renderToStaticMarkup(<DailyRevenueStats market={market} reviewedStats={stats} financialConfirmations={confirmations}

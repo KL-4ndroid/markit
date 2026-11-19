@@ -254,7 +254,7 @@ const verificationSource = readFileSync(
 assert.match(topology, /purchaseOptionId/);
 assert.match(topology, /basePlanId/);
 assert.match(topology, /offerId/);
-assert.match(topology, /Founder.*permanent renewal price/s);
+assert.match(topology, /Founder[\s\S]*permanent renewal price/);
 assert.equal(gates.gates.find(gate => gate.id === 'STORE-CATALOG')?.status, 'pending_manual');
 assert.doesNotMatch(
   catalogSource,

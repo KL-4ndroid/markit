@@ -27,7 +27,7 @@ for (const asset of assets) {
   const bytes = readFileSync(join(root, 'public', asset.src.replace(/^\//, '')));
   const dimensions = readPngDimensions(bytes);
   assert.ok(
-    asset.sizes.some(size => size.width === dimensions.width && size.height === dimensions.height),
+    asset.sizes.some((size: { width: number; height: number }) => size.width === dimensions.width && size.height === dimensions.height),
     `${asset.src} dimensions must match the manifest`,
   );
 }

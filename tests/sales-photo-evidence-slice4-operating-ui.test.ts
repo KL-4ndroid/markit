@@ -49,12 +49,12 @@ runTest('owner operating screen shows compact photo status and keeps setting out
   assert.match(ownerPageSource, /import \{ TransactionWorkspace \}/);
   const operatingBlock = section(
     ownerPageSource,
-    "{resolvedOwnerWorkspaceView === 'live' && isOperating && (",
-    "{resolvedOwnerWorkspaceView === 'live' && ("
+    "{resolvedOwnerWorkspaceView === 'live' && (",
+    '/* 7. 每日收入統計'
   );
   assert.match(operatingBlock, /<TransactionWorkspace/);
   assert.match(operatingBlock, /salesPhotoEvidenceRequired=\{salesPhotoEvidenceRequired\}/);
-  assert.match(operatingBlock, /pendingPhotoCount=\{salesPhotoEvidenceFlow\.pendingCount\}/);
+  assert.match(operatingBlock, /pendingPhotoCount=\{canAnalyze \? salesPhotoEvidenceFlow\.pendingCount : 0\}/);
   assert.match(operatingBlock, /onOpenPendingPhotos=\{handleOpenPendingSalesPhotoEvidence\}/);
   assert.doesNotMatch(operatingBlock, /onTogglePhotoRequirement|handleToggleSalesPhotoEvidence/);
   assert.doesNotMatch(operatingBlock, /sale_photo_evidence|uploadEvidence|getUserMedia|signedUrl|signed_url/i);

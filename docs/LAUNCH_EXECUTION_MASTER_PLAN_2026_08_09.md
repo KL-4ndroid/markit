@@ -1,5 +1,7 @@
 # 拾光日子 / STALLIGHT DAYS Launch Execution Master Plan
 
+2026-11-19 起的 Windows 工作入口為 [iOS 上架 Windows 階段執行計畫](IOS_WINDOWS_EXECUTION_PLAN_2026_11_19.md)。按發布證據校正、刪帳候選、行動流程、Apple 訂閱、商店資料及 Mac 交接推進；每批記錄實際完成證據與下一動作。原有 canonical 任務與 gates 持續管理發布狀態。
+
 ## 2026-11-11：品牌更名交付
 
 `IOS-BRAND-ROLLOUT` 為 `pending_manual`。更名已進入來源實作與發布驗收階段，涵蓋 Web、PWA、iOS 包裝與繁中／英文商店文案。線上發布、原生簽署建置與商店送審分別驗收。詳細範圍見[品牌規格](brand/STALLIGHT_DAYS_BRAND_BRIEF_2026_11_02.md)。

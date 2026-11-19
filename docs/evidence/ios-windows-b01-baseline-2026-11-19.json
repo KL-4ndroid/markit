@@ -1,0 +1,749 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-19",
+  "batch": "B01",
+  "baseRevision": "19752f66992d273acafd368414c309642552e0f1",
+  "environment": "Windows / Node 24.22.3 / local changes",
+  "remote": {
+    "originMainMatches": true,
+    "productionHealthMatches": true,
+    "actionsRun": 43999230015,
+    "webTests": "failed old photo component assertion",
+    "windowsMobile": "success",
+    "hexBudget": "success"
+  },
+  "manifestAudit": {
+    "elapsedMs": 429156,
+    "total": 479,
+    "finished": 479,
+    "passed": 471,
+    "failures": [
+      {
+        "file": "tests/sales-photo-evidence-pending-list-ui.test.ts",
+        "status": 1
+      },
+      {
+        "file": "tests/sales-photo-evidence-slice4-operating-ui.test.ts",
+        "status": 1
+      },
+      {
+        "file": "tests/role-provider-r1.test.ts",
+        "status": 1
+      },
+      {
+        "file": "tests/app-wide-uiux-product-workflow.test.ts",
+        "status": 1
+      },
+      {
+        "file": "tests/subscription-price-foundation-authenticated-smoke.test.ts",
+        "status": 1
+      },
+      {
+        "file": "tests/main-landmark-ownership.test.ts",
+        "status": 1
+      },
+      {
+        "file": "tests/recurring-operations-sync-contract.test.ts",
+        "status": 1
+      },
+      {
+        "file": "tests/market-tab-placement.test.tsx",
+        "status": 1
+      }
+    ]
+  },
+  "repairedFailuresRetested": true,
+  "additionalCiRegressionRepaired": "tests/sales-photo-evidence-owner-delete.test.ts",
+  "standaloneTypecheck": {
+    "runtimeErrors": 0,
+    "note": "68 fixture/mocking errors fixed in 33 test files; full default tsconfig checked without exclusions or weakened strictness.",
+    "initialExitCode": 2,
+    "initialTestErrors": [
+      {
+        "file": "tests/analytics-free-preview.test.ts",
+        "line": 39,
+        "column": 14,
+        "code": "TS2352",
+        "message": "Conversion of type '{ marketId: string; paymentMethod: \"cash\"; totalAmount: number; items: { productId: string; quantity: number; price: number; price_at_time_of_sale?: number; cost_at_time_of_sale?: number; product_name?: string; }[]; is_manual_entry: boolean; }' to type 'DealClosedPayload' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+      },
+      {
+        "file": "tests/analytics-subscription-access.test.ts",
+        "line": 130,
+        "column": 86,
+        "code": "TS2352",
+        "message": "Conversion of type '{ marketId: string; date: string; revenue: number; dealCount: number; touchCount: number; inquiryCount: number; cost: number; profit: number; productsSold: never[]; }' to type 'DailyStats' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+      },
+      {
+        "file": "tests/auth-cache-destruction-guard.test.ts",
+        "line": 178,
+        "column": 48,
+        "code": "TS2322",
+        "message": "Type 'Promise<number>' is not assignable to type 'PromiseExtended<number> | PromiseExtended<R>'."
+      },
+      {
+        "file": "tests/auth-cache-destruction-guard.test.ts",
+        "line": 179,
+        "column": 45,
+        "code": "TS2322",
+        "message": "Type 'Promise<number>' is not assignable to type 'PromiseExtended<number> | PromiseExtended<R>'."
+      },
+      {
+        "file": "tests/auth-cache-destruction-guard.test.ts",
+        "line": 245,
+        "column": 48,
+        "code": "TS2322",
+        "message": "Type 'Promise<number>' is not assignable to type 'PromiseExtended<number> | PromiseExtended<R>'."
+      },
+      {
+        "file": "tests/auth-cache-destruction-guard.test.ts",
+        "line": 246,
+        "column": 45,
+        "code": "TS2322",
+        "message": "Type 'Promise<number>' is not assignable to type 'PromiseExtended<number> | PromiseExtended<R>'."
+      },
+      {
+        "file": "tests/auth-storage-initialization.test.ts",
+        "line": 44,
+        "column": 49,
+        "code": "TS2345",
+        "message": "Argument of type '\"get\"' is not assignable to parameter of type 'never'."
+      },
+      {
+        "file": "tests/auth-storage-initialization.test.ts",
+        "line": 45,
+        "column": 33,
+        "code": "TS2345",
+        "message": "Argument of type '\"set\"' is not assignable to parameter of type 'never'."
+      },
+      {
+        "file": "tests/auth-storage-initialization.test.ts",
+        "line": 45,
+        "column": 73,
+        "code": "TS2345",
+        "message": "Argument of type '\"remove\"' is not assignable to parameter of type 'never'."
+      },
+      {
+        "file": "tests/daily-revenue-financial-quality.test.tsx",
+        "line": 8,
+        "column": 7,
+        "code": "TS2741",
+        "message": "Property 'registrationFee' is missing in type '{ id: string; name: string; location: string; startDate: string; endDate: string; status: \"completed\"; boothCost: number; createdAt: number; updatedAt: number; }' but required in type 'Market'."
+      },
+      {
+        "file": "tests/import-data-rollback-boundary.test.ts",
+        "line": 112,
+        "column": 81,
+        "code": "TS2352",
+        "message": "Conversion of type '{ (): PromiseExtended<Event<any>[]>; <R>(thenShortcut: ThenShortcut<Event<any>[], R>): PromiseExtended<R>; }' to type '{ (): PromiseExtended<Market[]>; <R>(thenShortcut: ThenShortcut<Market[], R>): PromiseExtended<R>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+      },
+      {
+        "file": "tests/import-data-rollback-boundary.test.ts",
+        "line": 113,
+        "column": 83,
+        "code": "TS2352",
+        "message": "Conversion of type '{ (): PromiseExtended<Event<any>[]>; <R>(thenShortcut: ThenShortcut<Event<any>[], R>): PromiseExtended<R>; }' to type '{ (): PromiseExtended<Product[]>; <R>(thenShortcut: ThenShortcut<Product[], R>): PromiseExtended<R>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+      },
+      {
+        "file": "tests/import-data-rollback-boundary.test.ts",
+        "line": 114,
+        "column": 87,
+        "code": "TS2352",
+        "message": "Conversion of type '{ (): PromiseExtended<Event<any>[]>; <R>(thenShortcut: ThenShortcut<Event<any>[], R>): PromiseExtended<R>; }' to type '{ (): PromiseExtended<DailyStats[]>; <R>(thenShortcut: ThenShortcut<DailyStats[], R>): PromiseExtended<R>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+      },
+      {
+        "file": "tests/import-data-rollback-boundary.test.ts",
+        "line": 115,
+        "column": 83,
+        "code": "TS2352",
+        "message": "Conversion of type '{ (): PromiseExtended<Event<any>[]>; <R>(thenShortcut: ThenShortcut<Event<any>[], R>): PromiseExtended<R>; }' to type '{ (): PromiseExtended<Settings[]>; <R>(thenShortcut: ThenShortcut<Settings[], R>): PromiseExtended<R>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+      },
+      {
+        "file": "tests/import-safety-status-ui.test.ts",
+        "line": 40,
+        "column": 5,
+        "code": "TS2322",
+        "message": "Type '{ getItem: (key: string) => string; }' is not assignable to type 'Storage & LocalStorageStub'."
+      },
+      {
+        "file": "tests/import-safety-status-ui.test.ts",
+        "line": 51,
+        "column": 14,
+        "code": "TS2790",
+        "message": "The operand of a 'delete' operator must be optional."
+      },
+      {
+        "file": "tests/local-pending-count-observer.test.ts",
+        "line": 31,
+        "column": 43,
+        "code": "TS2322",
+        "message": "Type '\"blocked\"' is not assignable to type '\"error\" | \"pending\" | \"local_only\" | \"synced\" | \"conflict\" | PropModification | undefined'."
+      },
+      {
+        "file": "tests/manual-launch-operations-checklist.test.ts",
+        "line": 89,
+        "column": 10,
+        "code": "TS2352",
+        "message": "Conversion of type '{ id: string; status: string; }[]' to type 'readonly Readonly<{ id: string; title: string; owner: \"shared\" | \"agent\" | \"human\"; status: \"complete\" | \"pending_manual\" | \"pending_approval\" | \"blocked_dependency\" | \"ready_agent\" | \"deferred\"; dependsOn: readonly string[]; gateRefs: readonly LaunchExecutionGateRef[]; evidence: readonly string[]; }>[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+      },
+      {
+        "file": "tests/market-cash.test.ts",
+        "line": 21,
+        "column": 164,
+        "code": "TS2322",
+        "message": "Type '{ 100: string; 2000?: undefined; 1000?: undefined; 500?: undefined; } | { 2000: string; 100?: undefined; 1000?: undefined; 500?: undefined; } | { 1000: string; 500: string; 100?: undefined; 2000?: undefined; }' is not assignable to type 'Record<string, string>'."
+      },
+      {
+        "file": "tests/market-cash.test.ts",
+        "line": 26,
+        "column": 24,
+        "code": "TS2345",
+        "message": "Argument of type '{ id: string; owner_id: string; name: string; location: string; startDate: string; endDate: string; dates: string[]; status: \"completed\"; createdAt: number; updatedAt: number; totalRevenue: number; totalProfit: number; }' is not assignable to parameter of type 'Market'."
+      },
+      {
+        "file": "tests/market-cash.test.ts",
+        "line": 48,
+        "column": 170,
+        "code": "TS2322",
+        "message": "Type '() => Promise<void>' is not assignable to type '(userId: string, onProgress?: ((current: number, total: number, currentItem?: string | undefined) => void) | undefined) => Promise<number>'."
+      },
+      {
+        "file": "tests/market-financial-reading.test.ts",
+        "line": 14,
+        "column": 7,
+        "code": "TS2741",
+        "message": "Property 'registrationFee' is missing in type '{ id: string; name: string; owner_id: string; location: string; status: \"completed\"; startDate: string; endDate: string; boothCost: number; totalRevenue: number; totalProfit: number; totalDeals: number; createdAt: number; updatedAt: number; }' but required in type 'Market'."
+      },
+      {
+        "file": "tests/market-journal-persistence.test.ts",
+        "line": 19,
+        "column": 24,
+        "code": "TS2345",
+        "message": "Argument of type '{ id: string; owner_id: string; name: string; location: string; dates: string[]; startDate: string; endDate: string; status: \"completed\"; createdAt: number; updatedAt: number; totalRevenue: number; totalDeals: number; notes: string; }' is not assignable to parameter of type 'Market'."
+      },
+      {
+        "file": "tests/market-journal-persistence.test.ts",
+        "line": 92,
+        "column": 62,
+        "code": "TS2739",
+        "message": "Type '{ id: string; owner_id: string; name: string; location: string; dates: string[]; startDate: string; endDate: string; status: \"completed\"; createdAt: number; updatedAt: number; totalRevenue: number; totalDeals: number; notes: string; }' is missing the following properties from type 'Market': registrationFee, boothCost"
+      },
+      {
+        "file": "tests/market-journal-persistence.test.ts",
+        "line": 93,
+        "column": 62,
+        "code": "TS2739",
+        "message": "Type '{ id: string; owner_id: string; name: string; location: string; dates: string[]; startDate: string; endDate: string; status: \"completed\"; createdAt: number; updatedAt: number; totalRevenue: number; totalDeals: number; notes: string; }' is missing the following properties from type 'Market': registrationFee, boothCost"
+      },
+      {
+        "file": "tests/market-journal-persistence.test.ts",
+        "line": 94,
+        "column": 62,
+        "code": "TS2739",
+        "message": "Type '{ id: string; owner_id: string; name: string; location: string; dates: string[]; startDate: string; endDate: string; status: \"completed\"; createdAt: number; updatedAt: number; totalRevenue: number; totalDeals: number; notes: string; }' is missing the following properties from type 'Market': registrationFee, boothCost"
+      },
+      {
+        "file": "tests/market-journal-persistence.test.ts",
+        "line": 95,
+        "column": 62,
+        "code": "TS2739",
+        "message": "Type '{ isDeleted: true; id: string; owner_id: string; name: string; location: string; dates: string[]; startDate: string; endDate: string; status: \"completed\"; createdAt: number; updatedAt: number; totalRevenue: number; totalDeals: number; notes: string; }' is missing the following properties from type 'Market': registrationFee, boothCost"
+      },
+      {
+        "file": "tests/market-journal-persistence.test.ts",
+        "line": 96,
+        "column": 62,
+        "code": "TS2739",
+        "message": "Type '{ id: string; owner_id: string; name: string; location: string; dates: string[]; startDate: string; endDate: string; status: \"completed\"; createdAt: number; updatedAt: number; totalRevenue: number; totalDeals: number; notes: string; }' is missing the following properties from type 'Market': registrationFee, boothCost"
+      },
+      {
+        "file": "tests/market-journal-persistence.test.ts",
+        "line": 97,
+        "column": 62,
+        "code": "TS2739",
+        "message": "Type '{ id: string; owner_id: string; name: string; location: string; dates: string[]; startDate: string; endDate: string; status: \"completed\"; createdAt: number; updatedAt: number; totalRevenue: number; totalDeals: number; notes: string; }' is missing the following properties from type 'Market': registrationFee, boothCost"
+      },
+      {
+        "file": "tests/market-operating-session.test.ts",
+        "line": 7,
+        "column": 3,
+        "code": "TS2322",
+        "message": "Type '{ id: string; name: string; location: string; regionCode?: (MarketRegionCode | null) | undefined; paymentDeadline?: (MarketPaymentDeadline | null) | undefined; ... 47 more ...; updatedAt: number; }' is not assignable to type 'Market'."
+      },
+      {
+        "file": "tests/market-operating-uiux.test.ts",
+        "line": 76,
+        "column": 101,
+        "code": "TS1501",
+        "message": "This regular expression flag is only available when targeting 'es2018' or later."
+      },
+      {
+        "file": "tests/market-payment-deadline.test.ts",
+        "line": 40,
+        "column": 19,
+        "code": "TS2352",
+        "message": "Conversion of type 'AnyRecord' to type 'Market' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+      },
+      {
+        "file": "tests/market-text-import-gate9-release.test.ts",
+        "line": 59,
+        "column": 70,
+        "code": "TS1501",
+        "message": "This regular expression flag is only available when targeting 'es2018' or later."
+      },
+      {
+        "file": "tests/native-external-account-readiness.test.ts",
+        "line": 92,
+        "column": 42,
+        "code": "TS2339",
+        "message": "Property 'evidence' does not exist on type 'MutableCheck'."
+      },
+      {
+        "file": "tests/native-reconciliation-foundation.test.ts",
+        "line": 47,
+        "column": 20,
+        "code": "TS2540",
+        "message": "Cannot assign to 'referenceOwnerId' because it is a read-only property."
+      },
+      {
+        "file": "tests/native-reconciliation-foundation.test.ts",
+        "line": 47,
+        "column": 55,
+        "code": "TS2540",
+        "message": "Cannot assign to 'projectionSource' because it is a read-only property."
+      },
+      {
+        "file": "tests/native-reconciliation-foundation.test.ts",
+        "line": 48,
+        "column": 20,
+        "code": "TS2540",
+        "message": "Cannot assign to 'previous' because it is a read-only property."
+      },
+      {
+        "file": "tests/native-store-catalog.test.ts",
+        "line": 257,
+        "column": 58,
+        "code": "TS1501",
+        "message": "This regular expression flag is only available when targeting 'es2018' or later."
+      },
+      {
+        "file": "tests/native-store-verification-contract.test.ts",
+        "line": 97,
+        "column": 69,
+        "code": "TS1501",
+        "message": "This regular expression flag is only available when targeting 'es2018' or later."
+      },
+      {
+        "file": "tests/native-store-verification-contract.test.ts",
+        "line": 98,
+        "column": 83,
+        "code": "TS1501",
+        "message": "This regular expression flag is only available when targeting 'es2018' or later."
+      },
+      {
+        "file": "tests/owner-followup.test.ts",
+        "line": 29,
+        "column": 9,
+        "code": "TS2739",
+        "message": "Type '{ id: string; owner_id: string; name: string; location: string; regionCode: \"tw-tainan-city\"; startDate: string; endDate: string; status: \"completed\"; createdAt: number; updatedAt: number; }' is missing the following properties from type 'Market': registrationFee, boothCost"
+      },
+      {
+        "file": "tests/owner-followup.test.ts",
+        "line": 206,
+        "column": 18,
+        "code": "TS2352",
+        "message": "Conversion of type '<FnName extends string, Args extends any = never, FilterBuilder extends { Row: any; Result: any; RelationName: FnName; Relationships: null; } = { Row: any; Result: any; RelationName: FnName; Relationships: null; }>(name: string) => { abortSignal(): PostgrestFilterBuilder<...>; retry(): Promise<...>; }' to type '<FnName extends string, Args extends any = never, FilterBuilder extends { Row: any; Result: any; RelationName: FnName; Relationships: null; } = { Row: any; Result: any; RelationName: FnName; Relationships: null; }>(fn: FnName, args?: Args | undefined, options?: { ...; } | undefined) => PostgrestFilterBuilder<...>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+      },
+      {
+        "file": "tests/p5-4a-downgrade-detection.test.ts",
+        "line": 331,
+        "column": 27,
+        "code": "TS2339",
+        "message": "Property 'role' does not exist on type 'never'."
+      },
+      {
+        "file": "tests/p5-4a-downgrade-detection.test.ts",
+        "line": 332,
+        "column": 27,
+        "code": "TS2339",
+        "message": "Property 'infoLevel' does not exist on type 'never'."
+      },
+      {
+        "file": "tests/p5-4a-downgrade-detection.test.ts",
+        "line": 464,
+        "column": 27,
+        "code": "TS2339",
+        "message": "Property 'role' does not exist on type 'never'."
+      },
+      {
+        "file": "tests/p5-4a-downgrade-detection.test.ts",
+        "line": 465,
+        "column": 27,
+        "code": "TS2339",
+        "message": "Property 'infoLevel' does not exist on type 'never'."
+      },
+      {
+        "file": "tests/p5-4a-downgrade-detection.test.ts",
+        "line": 582,
+        "column": 27,
+        "code": "TS2339",
+        "message": "Property 'role' does not exist on type 'never'."
+      },
+      {
+        "file": "tests/p5-4b-role-cache-invalidation.test.ts",
+        "line": 209,
+        "column": 26,
+        "code": "TS2339",
+        "message": "Property 'type' does not exist on type 'never'."
+      },
+      {
+        "file": "tests/platform-interaction-boundary.test.ts",
+        "line": 42,
+        "column": 6,
+        "code": "TS2352",
+        "message": "Conversion of type 'null' to type '(url: string) => void' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+      },
+      {
+        "file": "tests/region-analytics.test.ts",
+        "line": 13,
+        "column": 71,
+        "code": "TS2322",
+        "message": "Type '{ id: string; name: string; location: string; regionCode?: (MarketRegionCode | null) | undefined; paymentDeadline?: (MarketPaymentDeadline | null) | undefined; ... 47 more ...; updatedAt: number; }' is not assignable to type 'Market'."
+      },
+      {
+        "file": "tests/region-analytics.test.ts",
+        "line": 68,
+        "column": 7,
+        "code": "TS2353",
+        "message": "Object literal may only specify known properties, and 'sync_status' does not exist in type 'EventLike'."
+      },
+      {
+        "file": "tests/region-analytics.test.ts",
+        "line": 75,
+        "column": 7,
+        "code": "TS2353",
+        "message": "Object literal may only specify known properties, and 'sync_status' does not exist in type 'EventLike'."
+      },
+      {
+        "file": "tests/replay-projection-batch.test.ts",
+        "line": 76,
+        "column": 5,
+        "code": "TS2322",
+        "message": "Type '() => Promise<never>' is not assignable to type '{ <B extends boolean>(items: readonly Market[], keys: IndexableTypeArrayReadonly, options: { allKeys: B; }): PromiseExtended<B extends true ? string[] : string>; <B extends boolean>(items: readonly Market[], options: { ...; }): PromiseExtended<...>; (items: readonly Market[], keys?: IndexableTypeArrayReadonly | unde...'."
+      },
+      {
+        "file": "tests/sale-completion-flow.test.ts",
+        "line": 34,
+        "column": 7,
+        "code": "TS2741",
+        "message": "Property 'deleted_at' is missing in type '{ owner_id: string; market_id: string; sale_id: string; captured_by_staff_id: null; sale_completed_at: string; status: \"pending_capture\"; created_at: string; updated_at: string; }' but required in type 'SalesPhotoEvidencePendingDraft'."
+      },
+      {
+        "file": "tests/settlement-report-pdf-browser-visual.test.ts",
+        "line": 92,
+        "column": 5,
+        "code": "TS2322",
+        "message": "Type '\"飾品\"' is not assignable to type 'ProductCategory'."
+      },
+      {
+        "file": "tests/settlement-report-pdf-browser-visual.test.ts",
+        "line": 187,
+        "column": 5,
+        "code": "TS2345",
+        "message": "Argument of type 'FunctionComponentElement<SettlementReportPdfDocumentProps>' is not assignable to parameter of type 'ReactElement<DocumentProps, string | JSXElementConstructor<any>>'."
+      },
+      {
+        "file": "tests/settlement-report-pdf-browser-visual.test.ts",
+        "line": 225,
+        "column": 39,
+        "code": "TS2345",
+        "message": "Argument of type 'FunctionComponentElement<SettlementReportPdfDocumentProps>' is not assignable to parameter of type 'ReactElement<DocumentProps, string | JSXElementConstructor<any>>'."
+      },
+      {
+        "file": "tests/settlement-report-pdf-font-assets.test.ts",
+        "line": 53,
+        "column": 5,
+        "code": "TS2353",
+        "message": "Object literal may only specify known properties, and 'totalCost' does not exist in type 'Market'."
+      },
+      {
+        "file": "tests/settlement-report-pdf-font-assets.test.ts",
+        "line": 75,
+        "column": 5,
+        "code": "TS2353",
+        "message": "Object literal may only specify known properties, and 'createdAt' does not exist in type 'DailyStats'."
+      },
+      {
+        "file": "tests/settlement-report-pdf-font-assets.test.ts",
+        "line": 85,
+        "column": 5,
+        "code": "TS2322",
+        "message": "Type '\"goods\"' is not assignable to type 'ProductCategory'."
+      },
+      {
+        "file": "tests/settlement-report-pdf-template.test.ts",
+        "line": 159,
+        "column": 5,
+        "code": "TS2345",
+        "message": "Argument of type 'FunctionComponentElement<SettlementReportPdfDocumentProps>' is not assignable to parameter of type 'ReactElement<DocumentProps, string | JSXElementConstructor<any>>'."
+      },
+      {
+        "file": "tests/sync-pending-operation-worker-model.test.ts",
+        "line": 116,
+        "column": 7,
+        "code": "TS2322",
+        "message": "Type '\"field_note_create\"' is not assignable to type '\"checklist_item_toggle\"'."
+      },
+      {
+        "file": "tests/sync-pending-operation-worker-model.test.ts",
+        "line": 117,
+        "column": 7,
+        "code": "TS2322",
+        "message": "Type '\"field_note\"' is not assignable to type '\"checklist_item\"'."
+      },
+      {
+        "file": "tests/sync-pending-operation-worker-model.test.ts",
+        "line": 119,
+        "column": 18,
+        "code": "TS2353",
+        "message": "Object literal may only specify known properties, and 'text' does not exist in type '{ market_id: string; itemId: string; completed: boolean; }'."
+      },
+      {
+        "file": "tests/sync-pending-operation-worker-model.test.ts",
+        "line": 126,
+        "column": 7,
+        "code": "TS2322",
+        "message": "Type '\"field_note\"' is not assignable to type '\"checklist_item\"'."
+      },
+      {
+        "file": "tests/sync-permission-pause-service.test.ts",
+        "line": 17,
+        "column": 3,
+        "code": "TS2322",
+        "message": "Type 'typeof globalThis' is not assignable to type 'Window & typeof globalThis'."
+      },
+      {
+        "file": "tests/sync-permission-pause-service.test.ts",
+        "line": 18,
+        "column": 3,
+        "code": "TS2739",
+        "message": "Type '{ getItem: (key: string) => string | null; setItem: (key: string, value: string) => void; removeItem: (key: string) => void; }' is missing the following properties from type 'Storage': length, clear, key"
+      },
+      {
+        "file": "tests/web-pwa-release-smoke.test.ts",
+        "line": 30,
+        "column": 22,
+        "code": "TS7006",
+        "message": "Parameter 'size' implicitly has an 'any' type."
+      }
+    ],
+    "finalExitCode": 0,
+    "remainingErrors": []
+  },
+  "canonicalTaskStatusesUnchanged": true,
+  "productionMutations": false,
+  "nextBatch": "B02",
+  "affectedRetest": {
+    "elapsedMs": 56755,
+    "total": 41,
+    "finished": 41,
+    "passed": 40,
+    "failures": [
+      {
+        "file": "tests/replay-projection-batch.test.ts",
+        "status": 1
+      }
+    ],
+    "finalOverrides": [
+      {
+        "file": "tests/replay-projection-batch.test.ts",
+        "status": 0,
+        "reason": "Keep fake-indexeddb import before Dexie; rollback/retry cases passed."
+      },
+      {
+        "file": "tests/market-cash.test.ts",
+        "status": 0,
+        "reason": "Final explicit invalid-count fixture typing rechecked."
+      }
+    ],
+    "finalPassed": 41
+  },
+  "checks": {
+    "fullStandaloneTypecheck": 0,
+    "affectedEslint": 0,
+    "launchExecutionPlan": 0,
+    "generatedManualChecklist": 0,
+    "candidateFingerprints": 0,
+    "migration096Fingerprints": 0,
+    "gitDiffCheck": 0
+  },
+  "sourceHashes": [
+    {
+      "path": "components/common/RetainedDataAccessNotice.tsx",
+      "sha256": "3dd46c9d90bdfe7adf5a13cf1a3fd9998daa6b0ea20b5e6970c7954a4b95143c"
+    },
+    {
+      "path": "tests/analytics-free-preview.test.ts",
+      "sha256": "b4fedb7e4364e7d6ccef451745295e2a0e731a3160b849a6fcc25cf0aafa0121"
+    },
+    {
+      "path": "tests/analytics-subscription-access.test.ts",
+      "sha256": "a957cdaaa8689ae2e4215d8d65762da451f4599f17a05cc1a79c361a4011de46"
+    },
+    {
+      "path": "tests/app-wide-uiux-product-workflow.test.ts",
+      "sha256": "52012aa919a22a20a57e56e9bbb6a4769e14ff6e340188085ea8c656378b1702"
+    },
+    {
+      "path": "tests/auth-cache-destruction-guard.test.ts",
+      "sha256": "95097c67b85c44d164060af2ae38862ce635e5e3c49678a4b42e664997f2b123"
+    },
+    {
+      "path": "tests/auth-storage-initialization.test.ts",
+      "sha256": "854087062b4421adf88f678670e026e7377cf98c64f626ff6aca19e0f89d0aa6"
+    },
+    {
+      "path": "tests/daily-revenue-financial-quality.test.tsx",
+      "sha256": "d7d2b0995aa36001cf667efaf2fb823e96e93f2f8d176608416cdbb8933a62cd"
+    },
+    {
+      "path": "tests/import-data-rollback-boundary.test.ts",
+      "sha256": "1fec51c6fc01619def3cda5eba0c6cb148261a34ab50636e404ed297b3d2cce8"
+    },
+    {
+      "path": "tests/import-safety-status-ui.test.ts",
+      "sha256": "c175fb8790dbc7d6a385668520eada82deb726287fc6eb5dcb083b9375d2396d"
+    },
+    {
+      "path": "tests/local-pending-count-observer.test.ts",
+      "sha256": "87543152c2ed720a8a3583cdef00ab941ea4f8ea63ad6a5dd1353c94de9111bc"
+    },
+    {
+      "path": "tests/manual-launch-operations-checklist.test.ts",
+      "sha256": "d874157d2b96f32aa1a41e5c2bec0d974770ae1b9d1ef56516ecd7f2ec942653"
+    },
+    {
+      "path": "tests/market-cash.test.ts",
+      "sha256": "2589a19544ba9b4347f8c0a4c9942de24597a2b550a2a38bc20edc58fb8f7b82"
+    },
+    {
+      "path": "tests/market-financial-reading.test.ts",
+      "sha256": "0210b6718d0e3c55a88c683cd6d22eef6a8f45f5a2e36cf1a6af7e2cf8197739"
+    },
+    {
+      "path": "tests/market-journal-persistence.test.ts",
+      "sha256": "be5ad83fd14e644265210713b47dbc9072a7e64b14a0364ae05e1fa8c624eca9"
+    },
+    {
+      "path": "tests/market-operating-session.test.ts",
+      "sha256": "a4f9d291bfdea09d716be43fb89485998eac615b8448268080aa78fe32832205"
+    },
+    {
+      "path": "tests/market-operating-uiux.test.ts",
+      "sha256": "808c87a72dfb8110c63e1d69f28783473c4ae049ca5950f2248fe026569122b9"
+    },
+    {
+      "path": "tests/market-payment-deadline.test.ts",
+      "sha256": "14670decf4191b6ca8ca5e5aca397e5132166a384e56c7c284bbea83183ec10f"
+    },
+    {
+      "path": "tests/market-tab-placement.test.tsx",
+      "sha256": "146ec6e93877db392eb134ad1141762aa5877f4258306220c71407fabf7f9a29"
+    },
+    {
+      "path": "tests/market-text-import-gate9-release.test.ts",
+      "sha256": "cfd4538da58fb826a89b57606d9e0825ba7d274199aeda258074a81db8f9e478"
+    },
+    {
+      "path": "tests/native-external-account-readiness.test.ts",
+      "sha256": "6b2986c65df62e1ca0cedcf1855c2b95d3f53b35a0766c459a51fed82b6df64b"
+    },
+    {
+      "path": "tests/native-reconciliation-foundation.test.ts",
+      "sha256": "ba759d1b17787ad74dbb5b81ca4dd8fe6eb2ea37c1d691a29678d0f23eae78ab"
+    },
+    {
+      "path": "tests/native-store-catalog.test.ts",
+      "sha256": "ce8b072f1d561268042dcab85bf4590e75acc09b26e01079eedaffe252977aff"
+    },
+    {
+      "path": "tests/native-store-verification-contract.test.ts",
+      "sha256": "8ec2ed1d919de666ef6d9cb5ead064a9e1cad1f7d4892a828335c37c964dd330"
+    },
+    {
+      "path": "tests/owner-followup.test.ts",
+      "sha256": "0deac74f29258e0105130bde04dd757e0e05fc437aeeb4cd6a511e3a2251f7d8"
+    },
+    {
+      "path": "tests/p5-4a-downgrade-detection.test.ts",
+      "sha256": "97df25a59b8123eb95b43ab044ec17a28f77fc0c939d6732d8dd98136b4ebe91"
+    },
+    {
+      "path": "tests/p5-4b-role-cache-invalidation.test.ts",
+      "sha256": "fd2d5eea9fbf5338d5d74490a83858301f408573f5253bfef6d88145943f86f8"
+    },
+    {
+      "path": "tests/platform-interaction-boundary.test.ts",
+      "sha256": "be95c1ac2880b621ac595a3d2c23d41d6c743b0921e4ffbdaccdc374bcd0bce2"
+    },
+    {
+      "path": "tests/recurring-operations-sync-contract.test.ts",
+      "sha256": "35570d3b8d13d34f3a977de4a850744357846d4c041851f7a9f45b9eef9eb74d"
+    },
+    {
+      "path": "tests/region-analytics.test.ts",
+      "sha256": "a872a5a80b4fbca47394c02514b2a23d1326044535e89f10ac6698b4fc75f529"
+    },
+    {
+      "path": "tests/replay-projection-batch.test.ts",
+      "sha256": "2c132d5e1de1d2c8417b8820a8a92914d8acb40098518ac9b051660ddfc0cbb7"
+    },
+    {
+      "path": "tests/role-provider-r1.test.ts",
+      "sha256": "06e9b8e0037b5ad126ff15de94011d4159647a570e8a61e8e503073f1fa3edb8"
+    },
+    {
+      "path": "tests/sale-completion-flow.test.ts",
+      "sha256": "649239b8770a2a1f0fa969717fa6dd5f90c9d35cb4220e3f573c988339b7d424"
+    },
+    {
+      "path": "tests/sales-photo-evidence-owner-delete.test.ts",
+      "sha256": "b9e832ba20275f9bef7c897fd781db461a1e0abc08821bb52e8a7bba3e6316b6"
+    },
+    {
+      "path": "tests/sales-photo-evidence-pending-list-ui.test.ts",
+      "sha256": "3661a8e65483df7e5d9c72c292248e8df60c16d98d1444498533bf08712b9707"
+    },
+    {
+      "path": "tests/sales-photo-evidence-slice4-operating-ui.test.ts",
+      "sha256": "e0466692eadb9d487d66d240cda79abeda95e1c3a71c96c6b48031caf867b8bb"
+    },
+    {
+      "path": "tests/settlement-report-pdf-browser-visual.test.ts",
+      "sha256": "81552aebdc564746c6f7d6c9240901aac97539d6700287fcf7801cc536cd314c"
+    },
+    {
+      "path": "tests/settlement-report-pdf-font-assets.test.ts",
+      "sha256": "e2618c84eeb5902f5d573ca879c7a6676400bc7de9107ccd1f2cf0a16f6559a0"
+    },
+    {
+      "path": "tests/settlement-report-pdf-template.test.ts",
+      "sha256": "48e8fcbf093f48b3f81b4f3ea2c6988bdd4c3f2ced638ed02577ccce30a07ba8"
+    },
+    {
+      "path": "tests/subscription-price-foundation-authenticated-smoke.test.ts",
+      "sha256": "86c36c3c280c43d8701c1cfb11c8551ab91eaa4c60aca6eeb0278c2dd8780eb7"
+    },
+    {
+      "path": "tests/sync-pending-operation-worker-model.test.ts",
+      "sha256": "f263976dc1f7ce2166085b0b31e755859a7fde08ccae863e3657e230b2dc3ea3"
+    },
+    {
+      "path": "tests/sync-permission-pause-service.test.ts",
+      "sha256": "78b16d376edf7de58fe9380bf2ba85d144e629983bfe37a970c2c8a9e5c87e6f"
+    },
+    {
+      "path": "tests/web-pwa-release-smoke.test.ts",
+      "sha256": "bee918b571e3c47b13217b87cdfa6b0c088532387c384dc71b84cb8822f66e0e"
+    }
+  ]
+}

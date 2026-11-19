@@ -31,7 +31,7 @@ function runTest(name: string, fn: TestFn): void {
 }
 
 function withWindowStorage(values: StorageMap, fn: () => void): void {
-  const globalWithWindow = globalThis as typeof globalThis & {
+  const globalWithWindow = globalThis as unknown as {
     window?: { localStorage: LocalStorageStub };
   };
   const originalWindow = globalWithWindow.window;

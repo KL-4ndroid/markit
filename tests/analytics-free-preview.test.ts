@@ -37,7 +37,7 @@ function deal(
     market_id: marketId,
     timestamp: TS,
     payload: {
-      marketId,
+      market_id: marketId,
       paymentMethod: 'cash',
       totalAmount: 0,
       items,

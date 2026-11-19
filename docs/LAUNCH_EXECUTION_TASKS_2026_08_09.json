@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "LAUNCH_EXECUTION_MASTER_PLAN_2026_08_09.md",
-  "updatedAt": "2026-11-11",
+  "updatedAt": "2026-11-19",
   "overallStatus": "not_ready",
   "releaseOrder": ["web_core", "ios_native_paid", "android_native_paid", "web_paid_deferred"],
   "tasks": [
@@ -12,7 +12,7 @@
       "status": "complete",
       "dependsOn": [],
       "gateRefs": [],
-      "evidence": ["docs/LAUNCH_EXECUTION_MASTER_PLAN_2026_08_09.md", "docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json"]
+      "evidence": ["docs/LAUNCH_EXECUTION_MASTER_PLAN_2026_08_09.md", "docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json", "docs/IOS_WINDOWS_EXECUTION_PLAN_2026_11_19.md"]
     },
     {
       "id": "SEC-SRA000-ARTIFACT",
@@ -130,7 +130,7 @@
       "status": "pending_approval",
       "dependsOn": ["ACCOUNT-DELETION-POLICY"],
       "gateRefs": ["native:ACCOUNT-DELETION"],
-      "evidence": ["docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md", "docs/subscription/ACCOUNT_DELETION_AI_IMPLEMENTATION_EVIDENCE_PLAN_2026_08_17.md", "docs/subscription/ACCOUNT_DELETION_AD0_READ_ONLY_AUDIT_2026_08_17.md", "docs/subscription/ACCOUNT_DELETION_AD1_THREAT_MODEL_2026_08_17.md", "docs/subscription/drafts/ACCOUNT_DELETION_AD1_REQUEST_FOUNDATION_DRAFT.sql", "tests/account-deletion-ad1-contract.test.ts", "docs/subscription/ACCOUNT_DELETION_AD2_FOUNDATION_EVIDENCE_2026_08_17.md", "tests/account-deletion-ad2-foundation.test.ts"]
+      "evidence": ["docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md","docs/subscription/ACCOUNT_DELETION_AD2_FOUNDATION_EVIDENCE_2026_08_17.md","tests/account-deletion-ad2-foundation.test.ts","docs/subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md","docs/subscription/evidence/account-deletion-integrated-candidate-2026-11-02.json","scripts/account-deletion-test-prg-preview-tick.ts"]
     },
     {
       "id": "LEGAL-SUPPORT-APPROVAL",

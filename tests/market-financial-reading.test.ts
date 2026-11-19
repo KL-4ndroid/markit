@@ -12,7 +12,7 @@ import type { DailyStats, Market } from '../types/db';
 
 const asOfDate='2026-10-31';
 const market: Market = {id:'m',name:'成本核對測試',owner_id:'owner',location:'fixture',status:'completed',
-  startDate:'2026-10-30',endDate:'2026-10-30',boothCost:100,totalRevenue:50,totalProfit:50,totalDeals:1,createdAt:0,updatedAt:0};
+  startDate:'2026-10-30',endDate:'2026-10-30',registrationFee:0,boothCost:100,totalRevenue:50,totalProfit:50,totalDeals:1,createdAt:0,updatedAt:0};
 const stat: DailyStats = {marketId:'m',date:'2026-10-30',revenue:50,cost:0,profit:50,dealCount:1,touchCount:0,inquiryCount:0,productsSold:[],updatedAt:0};
 const before=JSON.stringify([market,stat]);
 const pending=buildMarketFinancialReadings({markets:[market],dailyStats:[stat],asOfDate});

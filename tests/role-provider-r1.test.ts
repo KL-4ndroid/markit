@@ -187,7 +187,8 @@ runTest('all production role consumers stay behind RoleProvider', () => {
   }
 
   assert.match(homePageSource, /ownerId:\s*scopedOwnerId|ownerId:\s*dashboardOwnerId/);
-  assert.doesNotMatch(homePageSource, /ownerId:\s*currentOwnerId/);
+  assert.match(homePageSource, /useMarketsQuery\(\{[\s\S]*?ownerId:\s*scopedOwnerId/);
+  assert.match(homePageSource, /useHomePhotoReminders\(\{[\s\S]*?canRead: canAnalyze && roleRefreshState\.stage === 'ready' && roleRefreshState\.shouldMountProtectedChildren/);
   assert.doesNotMatch(homePageSource, /useMonthlyStats\(currentOwnerId\)/);
 });
 

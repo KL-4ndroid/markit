@@ -56,7 +56,7 @@ assert.match(panel, /原文只在此裝置分析/);
 assert.match(panel, /最多保留 30 分鐘/);
 assert.match(panel, /不會傳給 LLM、寫入市集或分析紀錄/);
 assert.doesNotMatch(panel, /fetch\(|XMLHttpRequest|sendBeacon|track\(|capture\(|identify\(/);
-assert.doesNotMatch(panel, /console\.error\([^)]*(?:inputText|error)/s);
+assert.doesNotMatch(panel, /console\.error\([^)]*(?:inputText|error)/);
 
 for (const path of [
   'lib/market-text-import/parser.ts',

@@ -295,7 +295,7 @@ runTest('owner UI confirms deletion and updates the shared album state', () => {
   assert.match(detail, /setOwnerSalesPhotoEvidenceRows\(rows => rows\.filter\(row => row\.id !== evidenceId\)\)/);
   assert.match(detail, /getSalesPhotoEvidenceOwnerDeleteCapability/);
   assert.match(detail, /onDelete=\{handleDeleteOwnerSalesPhotoEvidence\}/);
-  assert.match(detail, /<MarketOverviewPhotoStory[\s\S]*rows=\{ownerSalesPhotoEvidenceRows\}/);
+  assert.match(detail, /<SalesPhotoEvidenceOwnerAlbumRouteSection[\s\S]*rows=\{ownerSalesPhotoEvidenceRows\}/);
   assert.doesNotMatch(client, /@aws-sdk|SUPABASE_SECRET_KEY|bff_prepare_sale_photo_evidence_delete/);
   assert.match(route, /photo-evidence-r2-upload-adapter\.server/);
 });

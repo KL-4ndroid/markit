@@ -73,7 +73,7 @@ assert.doesNotMatch(albumSource, /成交 {item\.saleId/);
 assert.match(checklistSource, />現場待辦</);
 for (const source of [ownerPageSource, staffPageSource, marketCardSource]) {
   assert.match(source, /formatDisplayDateRange/);
-  assert.doesNotMatch(source, /formatDate\(market\.startDate\).*[-~].*formatDate\(market\.endDate\)/s);
+  assert.doesNotMatch(source, /formatDate\(market\.startDate\)[\s\S]*[-~][\s\S]*formatDate\(market\.endDate\)/);
 }
 for (const source of [pendingPhotoSource, photoStorySource, albumSource]) {
   assert.match(source, /formatDisplayDateTime/);

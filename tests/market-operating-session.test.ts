@@ -14,6 +14,8 @@ function market(overrides: Partial<Market> = {}): Market {
     status: 'paid',
     operatingStartTime: '00:15',
     operatingEndTime: '23:00',
+    registrationFee: 0,
+    boothCost: 0,
     createdAt: 1,
     updatedAt: 1,
     ...overrides,

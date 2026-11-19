@@ -15,7 +15,7 @@ async function main() {
   const restoreNetwork = installNetworkPort({getCurrentStatus:()=>({connected:true,connectionType:'unknown'}),subscribe:()=>()=>{}});
   process.env.NEXT_PUBLIC_MARKET_JOURNALS_ENABLED = 'true';
   await db.open(); await clearAllData();
-  const market = { id:'journal-market', owner_id:'owner', name:'Test', location:'Test', dates:['2026-10-23','2026-10-25'], startDate:'2026-10-23', endDate:'2026-10-25', status:'completed' as const, createdAt:1,updatedAt:1, totalRevenue:500, totalDeals:2, notes:'shared host note' };
+  const market = { id:'journal-market', owner_id:'owner', name:'Test', location:'Test', dates:['2026-10-23','2026-10-25'], startDate:'2026-10-23', endDate:'2026-10-25', status:'completed' as const,registrationFee:0,boothCost:0, createdAt:1,updatedAt:1, totalRevenue:500, totalDeals:2, notes:'shared host note' };
   await db.markets.put(market);
   assert.deepEqual(journalMarketDates(market),market.dates);
   assert.throws(() => validateJournalInput('hello','2026-10-24',market),/營業日期/);

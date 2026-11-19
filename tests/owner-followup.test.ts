@@ -35,6 +35,8 @@ async function main() {
     startDate: "2026-09-30",
     endDate: "2026-10-03",
     status: "completed",
+    registrationFee: 0,
+    boothCost: 0,
     createdAt: 1,
     updatedAt: 1,
   };
@@ -254,7 +256,7 @@ async function main() {
         return Promise.resolve({ data: result, error: null });
       },
     };
-  }) as typeof originalRpc;
+  }) as unknown as typeof originalRpc;
   let connected = true;
   const restore = installNetworkPort({
     getCurrentStatus: () => ({ connected, connectionType: "unknown" }),

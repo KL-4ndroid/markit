@@ -1,5 +1,9 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-11-19 B01：[Windows 基線／修正結果](IOS_WINDOWS_B01_BASELINE_2026_11_19.md)與[機器證據](evidence/ios-windows-b01-baseline-2026-11-19.json)記錄 479 檔初次稽核、受影響重驗、測試型別修正及 canonical 證據校正。訂閱測試面板檢查對齊現行身分切換，authenticated denial 案例仍保留；刪帳 pending_approval 與正式付款／刪除啟用狀態不變。
+
+2026-11-19 [iOS Windows 階段執行計畫](IOS_WINDOWS_EXECUTION_PLAN_2026_11_19.md)列出刪帳候選、Apple 驗證／通知／權益 writer、購買／恢復來源及對外揭露的順序、依賴與驗收條件；實際完成狀態仍依 canonical 任務和各環境證據更新。
+
 免登入體驗的[方案功能提示](../components/demo/FormalDemoApp.tsx)說明免費版市集安排、輕量版與高階版銷售記錄，以及高階版完整報告與 PDF 匯出。展示版以記憶體範例操作，正式權益仍由[訂閱存取規則](../lib/subscription/subscription-access.ts)決定。
 
 2026-11-16 三方案操作調整：輕量版「紀錄」改用本月已記錄營業資料，保留單場回顧與返回；方案中心區別暫時無法確認、到期及待同步，並加入團隊恢復入口。設備可區分未確認與需自備，抽成留白顯示並以 0% 計算；新設備狀態的跨裝置同步依賴 097，發布時先完成資料庫遷移再部署前端。097 會改變 096 審查的資料庫目錄；同庫合併部署前應用新版目錄重新審查刪帳候選。原定的 `test_prg` 刪帳驗收可先用固定候選提交 `2b54569` 單獨驗證。[輕量紀錄](../components/analytics/MonthlySalesRecords.tsx) · [方案狀態](../lib/subscription/subscription-center-view.ts) · [097](../supabase/migrations/097_add_market_registration_conditions.sql)

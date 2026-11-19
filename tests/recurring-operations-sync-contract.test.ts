@@ -52,9 +52,11 @@ assert.equal(operationScheduleRowToLocal({
 assert.match(pushSource, /maybeSingle\(\)/);
 assert.match(pushSource, /insertError\.code === '23505'/);
 assert.match(pullSource, /from\('owner_accessible_events'\)/);
-assert.match(pullSource, /market_id\.is\.null/);
+assert.match(pullSource, /downloadedEvents\.filter\(event => event\.market_id == null \|\| accessibleIds\.has\(event\.market_id\)\)/);
 assert.doesNotMatch(pullSource, /teamMemberIds/);
 assert.match(pullSource, /await replayOwnerEvents\(/);
-assert.match(fs.readFileSync(path.join(root, 'lib/sync/owner-event-replay.ts'), 'utf8'), /eventHandlers\[event\.type/);
+const replaySource = fs.readFileSync(path.join(root, 'lib/sync/owner-event-replay.ts'), 'utf8');
+assert.match(replaySource, /const handler = eventHandlers\[event\.type\]/);
+assert.match(replaySource, /await handler\(/);
 
 console.log('recurring operations sync contract tests passed');

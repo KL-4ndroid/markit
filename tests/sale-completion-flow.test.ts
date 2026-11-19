@@ -38,6 +38,7 @@ const result: SalesPhotoEvidenceRuntimeResult = {
         captured_by_staff_id: null,
         sale_completed_at: timestamp,
         status: 'pending_capture',
+        deleted_at: null,
         created_at: timestamp,
         updated_at: timestamp,
       },
