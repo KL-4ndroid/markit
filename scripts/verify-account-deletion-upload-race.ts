@@ -7,12 +7,13 @@ import {capturedDeletionCatalog,capturedOperationalFixtureDdl,approvedOperationa
 import {capturedAccessDefinitions,capturedRuntimeDefinitionsDdl,capturedRuntimeSecurityDdl,capturedRuntimeTriggersDdl,frozenPublicSurfaceDdl,fencedEventAuthorizerDdl,accessCatalogManifestDdl} from './lib/account-deletion-access-fixture';
 import {beginDeletionUploadSession} from '../lib/subscription/account-deletion-upload-barrier.server';
 import {candidateSourceHashes} from './lib/account-deletion-candidate-sources';
+import {registrationFenceDdl, REGISTRATION_SOURCE} from './lib/account-deletion-registration-compat';
 
 async function main(){
- const mode=process.argv[2],integrated=mode==='--candidate-isolated',handlers=integrated||mode==='--photo-handler-isolated',terminal=handlers||mode==='--terminal-put-isolated'||mode==='--terminal-put-staging-disposable';
+ const mode=process.argv[2],registration=mode==='--registration-candidate-isolated',integrated=registration||mode==='--candidate-isolated',handlers=integrated||mode==='--photo-handler-isolated',terminal=handlers||mode==='--terminal-put-isolated'||mode==='--terminal-put-staging-disposable';
  const reconciliation=mode==='--reconciliation-isolated'||terminal;
  const sourceHashes=integrated?candidateSourceHashes():undefined;
- assert.ok(['--isolated','--reconciliation-isolated','--terminal-put-isolated','--terminal-put-staging-disposable','--photo-handler-isolated','--candidate-isolated'].includes(mode));
+ assert.ok(['--isolated','--reconciliation-isolated','--terminal-put-isolated','--terminal-put-staging-disposable','--photo-handler-isolated','--candidate-isolated','--registration-candidate-isolated'].includes(mode));
  assert.deepEqual(process.argv.slice(2),[mode]);assert.ok(!process.env.DOCKER_HOST&&!process.env.DOCKER_CONTEXT&&!process.env.VERCEL&&!process.env.VERCEL_ENV);
  const docker=(args:string[],input?:string)=>execFileSync('docker',['--context','desktop-linux',...args],{input,encoding:'utf8',timeout:30000,maxBuffer:4*1024*1024,stdio:['pipe','pipe','pipe']}).trim();
  assert.equal(docker(['context','inspect','desktop-linux','--format','{{.Endpoints.docker.Host}}']),'npipe:////./pipe/dockerDesktopLinuxEngine');
@@ -80,6 +81,13 @@ async function main(){
   if(terminal)draft('ACCOUNT_DELETION_TERMINAL_PUT_2026_11_02.sql');
   if(handlers)draft('ACCOUNT_DELETION_PHOTO_READBACK_2026_11_02.sql');
   sql(accessCatalogManifestDdl());sql('SELECT deletion_engine_private.assert_catalog();');
+  if(registration){
+   sql(readFileSync(REGISTRATION_SOURCE,'utf8').replaceAll('\r\n','\n'));
+   // Exact same fenced 097 payload as the installed-096 migration tests above;
+   // this existing fixture keeps its local-only engine and service ports.
+   sql(registrationFenceDdl());
+   pass('097 registration projection/view and frozen-access payload installed in the existing local Auth/PostgREST/photo fixture');
+  }
   await live?.startRest();
   denied(`BEGIN ISOLATION LEVEL REPEATABLE READ;SELECT bff_begin_deletion_upload('${randomUUID()}','${randomUUID()}','${other}','${other}');ROLLBACK;`,'40001');
   const request=(actor:string)=>{const id=sql(`SELECT request_id FROM bff_create_account_deletion_request('${actor}','${hash(actor)}','${hash(actor)}','2026-08-17','clean');`);sql(`SELECT * FROM bff_confirm_account_deletion_request('${actor}','${id}','requested');`);const r=JSON.parse(sql(`SELECT bff_claim_account_deletion_lease('${id}','upload-race-fixture',clock_timestamp(),300);`));return {id,actor,token:r.leaseToken as string,kind:r.snapshot.accountKind as string};};
@@ -88,7 +96,7 @@ async function main(){
   const step=(r:Req,s:string)=>{let result=JSON.parse(call(r,s));if(s==='access_frozen')result=JSON.parse(call(r,s,'complete_external'));sql(`SELECT bff_record_account_deletion_step('${r.id}','${r.token}',${q(s)},'completed',${result.affectedCount},${q(result.evidenceHash)},NULL);`);};
   if(handlers){
    const {checkPhotoHandlerReceipts}=await import('./lib/account-deletion-photo-handler-checks');
-   await checkPhotoHandlerReceipts({sql,denied,client,insert,request,step,starts,owner,other,product,otherProduct,live,staff,legacy,cleanupOwner:users?.cleanup.id,sourceHashes});
+   await checkPhotoHandlerReceipts({sql,denied,client,insert,request,step,starts,owner,other,product,otherProduct,live,staff,legacy,cleanupOwner:users?.cleanup.id,sourceHashes,registration});
    if(sourceHashes)assert.deepEqual(candidateSourceHashes(),sourceHashes,'Candidate sources changed during verification');
    return;
   }

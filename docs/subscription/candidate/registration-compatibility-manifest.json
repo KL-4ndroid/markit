@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "version": "097-account-deletion-registration-v1",
+  "status": "local_candidate_requires_hosted_readback_and_review",
+  "runtimeEnabled": false,
+  "remoteExecutionApproved": false,
+  "targets": [
+    {
+      "target": "production",
+      "projectRef": "fgejncfsvvsayiequubm",
+      "payloadSha": "4e267826eb84b971035142097da47e90073e376621138a4edec0a52b693d154a",
+      "sqlSha": "9f5c27b9b1212f823beafc632bdc2c258e1e7e05df22e58003fdf1f086ef5c73",
+      "rollbackSha": "b7ffddc784a25ddcdf369d5ef0f1a0d62568ec1002ab1429b67be5e050ce9462",
+      "original096SqlSha": "bba0aa472ee7cfe26e6370dbe2a79e91b37f75846bc41f1c99ee29ebd92f8088",
+      "source097Sha": "62ab13ea038f0813d922f6da078c12b774f5e215c02c8df5dc7079f038bb7ae6"
+    },
+    {
+      "target": "test_prg",
+      "projectRef": "tzhbirwchhqabkxhqjdl",
+      "payloadSha": "4e267826eb84b971035142097da47e90073e376621138a4edec0a52b693d154a",
+      "sqlSha": "05a63eb6e64b1269a6a8adefee670427f7c8be689034186abd739e59ec4bf5f9",
+      "rollbackSha": "aef4457f195cba6dea945b52a3126c8c55574eded5b960e9572acc9c0fa542a1",
+      "original096SqlSha": "d2da85030a8239ae76ebea650b6f233d9a1f456438431cb6f7a86d16b47ca04f",
+      "source097Sha": "62ab13ea038f0813d922f6da078c12b774f5e215c02c8df5dc7079f038bb7ae6"
+    }
+  ],
+  "sources": [
+    {
+      "path": "supabase/migrations/097_add_market_registration_conditions.sql",
+      "sha256": "62ab13ea038f0813d922f6da078c12b774f5e215c02c8df5dc7079f038bb7ae6"
+    },
+    {
+      "path": "docs/subscription/candidate/096_account_deletion_candidate.sql",
+      "sha256": "bba0aa472ee7cfe26e6370dbe2a79e91b37f75846bc41f1c99ee29ebd92f8088"
+    },
+    {
+      "path": "scripts/lib/account-deletion-registration-compat.ts",
+      "sha256": "088ecf2ec0b099a421768023bdad3acf2c8a12ffe7e921fe256be8e0375fbff9"
+    },
+    {
+      "path": "scripts/lib/account-deletion-migration.ts",
+      "sha256": "2830bbfb5d6763f5ef9d849c7201f9941196351328bcfee0d5f31de0122b8238"
+    },
+    {
+      "path": "scripts/lib/account-deletion-test-prg-upgrade.ts",
+      "sha256": "36a8d036483a64582da66c76980b0356d47c9343d9f6f1ec140f2b756a05a28e"
+    },
+    {
+      "path": "scripts/test-files.txt",
+      "sha256": "31413aaa69978656e75117fbd0f302522520b78b283faccf96c96ae00b4a3f71"
+    },
+    {
+      "path": "tsconfig.account-deletion-workflow.json",
+      "sha256": "9988fe7960e3d8f3a7508c3be23d1a2c1f3ca03e71203c6ad8c6593500ecc172"
+    },
+    {
+      "path": "scripts/lib/account-deletion-registration-compat-checks.ts",
+      "sha256": "39737523f87c8df9ad2827018fe79f4ee27ba3689e104c1023bf351245292787"
+    },
+    {
+      "path": "scripts/prepare-account-deletion-registration-compat.ts",
+      "sha256": "4d1abca0c8731e274f5dd3d1bc3a3d9096846d22a93995e118e8a52c8e2a5a2c"
+    },
+    {
+      "path": "scripts/verify-account-deletion-migration.ts",
+      "sha256": "7fc42ae58f57aac4ca18c100abafdeff3efc0a45b384bfda1f680ae5bffbbf9d"
+    },
+    {
+      "path": "scripts/verify-account-deletion-upload-race.ts",
+      "sha256": "169c3d01c15b6d230851a264dcf4fc3656932237c7a6a6f9e1fe6672b412c3ba"
+    },
+    {
+      "path": "scripts/lib/account-deletion-photo-handler-checks.ts",
+      "sha256": "60a2c64b4919d144eb70d94e3ce865d956aeecfca50098c7452c828af2b5d88e"
+    },
+    {
+      "path": "tests/account-deletion-registration-compat.test.ts",
+      "sha256": "446b749ac72e2187b01a314ac350e95bac500162a9a6482d9b33faab05ac0fcf"
+    }
+  ],
+  "installation": "Requires installed disabled 096-v2 with exact payload. Applies unchanged 097 atomically if absent; verifies only its known delta if present. Refuses active freeze/processing or previously installed Preview scope.",
+  "rollback": "Requires exact inactive compatibility candidate. Restores pre-compat 097 state and disabled 096 receipt; preserves all registration condition data. Old engine blocks on 097 drift again. Cannot reverse deleted business data."
+}

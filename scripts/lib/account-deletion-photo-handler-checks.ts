@@ -23,6 +23,7 @@ type Fixture = {
   live?:Awaited<ReturnType<typeof import('./account-deletion-candidate-services')['startCandidateServices']>>;
   staff?:string;legacy?:string;cleanupOwner?:string;
   sourceHashes?:{path:string;sha256:string}[];
+  registration?: boolean;
 };
 type Mode = 'success' | 'cleanup_failed' | 'unknown_put' | 'finalize_lost' | 'ack_lost' | 'conflict' | 'freeze';
 type Control = { actor: string; mode: Mode; mime:string;keys: string[]; puts: number; deletes: string[]; requestedDeletes:string[]; lost: boolean; frozen?: Req };
@@ -146,6 +147,12 @@ export async function checkPhotoHandlerReceipts(f: Fixture) {
       } else {
         const market = randomUUID(); entity = randomUUID(); const now = new Date().toISOString();
         f.insert('markets', { id: market, owner_id: actor, name: 'Synthetic receipt market', location: 'Synthetic', start_date: '2026-11-02', end_date: '2026-11-02', status: 'registered' });
+        if(f.registration){
+          f.insert('events',{id:randomUUID(),actor_id:actor,market_id:market,type:'market_updated',timestamp:now,
+            payload:{market_id:market,updates:{registrationConditions:{tableFree:'rental',chairFree:'free',umbrellaFree:'self'}}}},
+            `SELECT set_config('request.jwt.claim.sub','${actor}',false);SELECT set_config('request.jwt.claim.role','authenticated',false);`);
+          assert.equal(sql(`SELECT registration_conditions->>'tableFree' FROM public.markets WHERE id='${market}';`),'rental');
+        }
         f.insert('events', { id: entity, actor_id: actor, market_id: market, type: 'deal_closed', timestamp: now, payload: { totalAmount: 10 } }, `SELECT set_config('request.jwt.claim.sub','${actor}',false);SELECT set_config('request.jwt.claim.role','authenticated',false);`);
         for (const [k, v] of Object.entries({ ownerId: actor, marketId: market, saleEventId: entity, capturedAt: now, saleCompletedAt: now })) form.set(k, v);
         for (const name of ['image', 'thumbnail']) { const blob = image(name==='thumbnail'); form.set(name, blob); form.set(name + 'Metadata', JSON.stringify({ kind: name, mimeType: blob.type, fileSizeBytes: blob.size, width: 1, height: 1 })); }
@@ -232,12 +239,17 @@ export async function checkPhotoHandlerReceipts(f: Fixture) {
       assert.ok(ownKeys.every(key=>!objects.has(key)));
       assert.ok(otherKeys.every(key=>objects.has(key)));
       for(const table of ['product_cover_photos','sale_photo_evidence'])assert.equal(sql(`SELECT count(*) FROM public.${table} WHERE owner_id='${cleanupOwner}';`),'0');
+      if(f.registration){
+        assert.equal(sql(`SELECT count(*) FROM public.markets WHERE owner_id='${cleanupOwner}';`),'0');
+        assert.ok(Number(sql(`SELECT count(*) FROM public.markets WHERE owner_id<>'${cleanupOwner}' AND registration_conditions->>'tableFree'='rental';`))>0);
+        pass('097 equipment conditions follow market/event cleanup for the same owner; other brands retain their conditions');
+      }
       assert.equal(sql(`SELECT count(*) FROM deletion_upload_private.attempts WHERE owner_id='${cleanupOwner}';`),'0');
       assert.equal(sql(`SELECT count(*) FROM auth.users WHERE id='${cleanupOwner}';`),'0');assert.equal(sql(`SELECT count(*) FROM auth.sessions WHERE user_id='${cleanupOwner}';`),'0');
       pass('same candidate owner with uploaded photos: ten steps remove four objects, photo rows, upload attempts, GoTrue identity and sessions; other owners retain their objects');
     }
     mkdirSync('.codex-artifacts', { recursive: true });
-    writeFileSync(focus?'.codex-artifacts/account-deletion-candidate-focus.json':f.live?'.codex-artifacts/account-deletion-integrated-candidate.json':'.codex-artifacts/account-deletion-photo-handlers.json', JSON.stringify({ at: new Date().toISOString(), checks,focus:focus??null,sourceHashes:f.sourceHashes, productionEnabled: false,
+    writeFileSync(focus?'.codex-artifacts/account-deletion-candidate-focus.json':f.registration?'.codex-artifacts/account-deletion-registration-integrated.json':f.live?'.codex-artifacts/account-deletion-integrated-candidate.json':'.codex-artifacts/account-deletion-photo-handlers.json', JSON.stringify({ at: new Date().toISOString(), checks,focus:focus??null,sourceHashes:f.sourceHashes, registration097: f.registration??false, productionEnabled: false,
       scope:f.live?'real GoTrue bearer + real PostgREST JWT roles/reads/RPC + existing Next handler factories + captured PostgreSQL + loopback S3; canonical API subscription write decision enabled; captured triggers, not managed production Auth/Vercel/R2 acceptance':'real existing Next handler factories + captured isolated PostgreSQL/BFFs + real loopback S3 SDK; auth/plan gates injected, not GoTrue/PostgREST or production/R2 acceptance' }, null, 2));
   } finally { sdk.destroy(); server.closeAllConnections(); await new Promise<void>(r => server.close(() => r())); }
   console.log(`PASS existing photo handlers (${checks.length} groups); loopback HTTP closed`);

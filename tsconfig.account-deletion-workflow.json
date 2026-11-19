@@ -10,6 +10,8 @@
     "scripts/prepare-account-deletion-test-prg-preview.ts",
     "tests/account-deletion-managed-target.test.ts",
     "scripts/prepare-account-deletion-migration.ts",
+    "scripts/prepare-account-deletion-registration-compat.ts",
+    "tests/account-deletion-registration-compat.test.ts",
     "scripts/verify-account-deletion-migration.ts",
     "scripts/verify-account-deletion-test-prg-upgrade.ts",
     "scripts/serve-account-deletion-workflow.ts",

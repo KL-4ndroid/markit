@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "LAUNCH_EXECUTION_MASTER_PLAN_2026_08_09.md",
-  "updatedAt": "2026-11-19",
+  "updatedAt": "2026-11-20",
   "overallStatus": "not_ready",
   "releaseOrder": ["web_core", "ios_native_paid", "android_native_paid", "web_paid_deferred"],
   "tasks": [
@@ -130,7 +130,7 @@
       "status": "pending_approval",
       "dependsOn": ["ACCOUNT-DELETION-POLICY"],
       "gateRefs": ["native:ACCOUNT-DELETION"],
-      "evidence": ["docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md","docs/subscription/ACCOUNT_DELETION_AD2_FOUNDATION_EVIDENCE_2026_08_17.md","tests/account-deletion-ad2-foundation.test.ts","docs/subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md","docs/subscription/evidence/account-deletion-integrated-candidate-2026-11-02.json","scripts/account-deletion-test-prg-preview-tick.ts"]
+      "evidence": ["docs/subscription/ACCOUNT_DELETION_IMPLEMENTATION_PROPOSAL_2026_08_06.md","docs/subscription/ACCOUNT_DELETION_AD2_FOUNDATION_EVIDENCE_2026_08_17.md","tests/account-deletion-ad2-foundation.test.ts","docs/subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md","docs/subscription/evidence/account-deletion-integrated-candidate-2026-11-02.json","scripts/account-deletion-test-prg-preview-tick.ts", "docs/IOS_WINDOWS_B02_DELETION_COMPAT_2026_11_20.md", "docs/subscription/evidence/account-deletion-registration-compatibility-2026-11-20.json"]
     },
     {
       "id": "LEGAL-SUPPORT-APPROVAL",

@@ -1,6 +1,6 @@
 # 拾光日子人工上架工作 Checklist
 
-狀態來源更新日：2026-11-19
+狀態來源更新日：2026-11-20
 
 > 此檔案由 `npm.cmd run update:manual-launch-checklist` 產生，請勿直接手動勾選。
 > 操作步驟與停止條件以 `docs/MANUAL_LAUNCH_OPERATIONS_GUIDE_2026_08_09.md` 為準。

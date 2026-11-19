@@ -104,7 +104,7 @@
     },
     {
       "path": "scripts/lib/account-deletion-candidate-sources.ts",
-      "sha256": "06d653669a47bd4a6e72d69dc2279f5c3234f31bb8c82bce9c8691ddaae139e2"
+      "sha256": "d1d9d3009618f8a9fb9c6271715f93166467dbef144929510df128015acf615b"
     },
     {
       "path": "scripts/lib/account-deletion-catalog-fixture.ts",
@@ -120,11 +120,19 @@
     },
     {
       "path": "scripts/lib/account-deletion-photo-handler-checks.ts",
-      "sha256": "48c94d0544a5e8559e8925b719adc9879d81f7883d4fbf1b33548f904c35d856"
+      "sha256": "60a2c64b4919d144eb70d94e3ce865d956aeecfca50098c7452c828af2b5d88e"
     },
     {
       "path": "scripts/verify-account-deletion-upload-race.ts",
-      "sha256": "9c64941ddf4abbc8782eea1d3e65ba92d2c8ae5d35e8019266289587566dd9a2"
+      "sha256": "169c3d01c15b6d230851a264dcf4fc3656932237c7a6a6f9e1fe6672b412c3ba"
+    },
+    {
+      "path": "supabase/migrations/097_add_market_registration_conditions.sql",
+      "sha256": "62ab13ea038f0813d922f6da078c12b774f5e215c02c8df5dc7079f038bb7ae6"
+    },
+    {
+      "path": "scripts/lib/account-deletion-registration-compat.ts",
+      "sha256": "088ecf2ec0b099a421768023bdad3acf2c8a12ffe7e921fe256be8e0375fbff9"
     },
     {
       "path": "docs/subscription/evidence/account-deletion-guards-2026-11-02.json",

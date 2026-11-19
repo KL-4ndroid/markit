@@ -1,5 +1,9 @@
 # iOS Capacitor Execution Progress
 
+## 2026-11-20：B02 本機刪帳相容完成
+
+[集中審查與驗收](IOS_WINDOWS_B02_DELETION_COMPAT_2026_11_20.md)完成精確 097 相容、資料保留回滾、8 組隔離與 27 組本機整合。096 原 SQL 不變，候選保持停用。遠端當前目錄及受保護 Preview 的完整組合列 E01，仍在 12/1 後；下一本機批次 B03。
+
 ## 2026-11-19 Windows 階段後續安排
 
 [Windows 執行計畫](IOS_WINDOWS_EXECUTION_PLAN_2026_11_19.md)整理下一輪順序、每批驗收與中斷恢復方式。B01 已完成版本／證據與測試修正，見 [集中驗收結果](IOS_WINDOWS_B01_BASELINE_2026_11_19.md)。接續 B02 的 096／097 相容與本機候選；既有 adapter 來源及未變更範圍的證據沿用。Mac 編譯、簽署、iPhone 與 TestFlight 仍待實際執行。

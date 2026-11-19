@@ -1,5 +1,9 @@
 # 訂閱方案變更導航與完整檔案索引
 
+2026-11-20 B02：[096／097 相容審查與集中驗收](IOS_WINDOWS_B02_DELETION_COMPAT_2026_11_20.md)與[8 組隔離／27 組整合證據](subscription/evidence/account-deletion-registration-compatibility-2026-11-20.json)。新增[離線產生器](../scripts/prepare-account-deletion-registration-compat.ts)、[精確差異與回滾 SQL builder](../scripts/lib/account-deletion-registration-compat.ts)、[隔離檢查](../scripts/lib/account-deletion-registration-compat-checks.ts)、[來源契約測試](../tests/account-deletion-registration-compat.test.ts)及[部署包 manifest](subscription/candidate/registration-compatibility-manifest.json)；兩個固定目標各有安裝／回滾／唯讀 readback，檔案連結見 B02 紀錄。原 096 SQL 不變，免費設備條件／財務遮罩維持，正式引擎不啟用。
+
+[既有 migration verifier](../scripts/verify-account-deletion-migration.ts)新增 `--registration-isolated`，只重驗新相容範圍；[既有照片整合工具](../scripts/verify-account-deletion-upload-race.ts)新增 `--registration-candidate-isolated`，沿用 Auth／PostgREST／handler／S3 fixture。 [換行相容 helper](../scripts/lib/account-deletion-test-prg-upgrade.ts)防止 PostgreSQL 對 aggregate 求函式定義；[候選來源清單](../scripts/lib/account-deletion-candidate-sources.ts)、[handler 驗收](../scripts/lib/account-deletion-photo-handler-checks.ts)、[測試清單](../scripts/test-files.txt)與[專用型別配置](../tsconfig.account-deletion-workflow.json)同步。既有候選 manifest 只更新來源指紋，不重新定義已安裝 096。E01 的遠端安裝／讀回／授權／真 R2 組合依原定 12/1 後執行；canonical pending_approval 不變。
+
 2026-11-19 B01：[Windows 基線／修正結果](IOS_WINDOWS_B01_BASELINE_2026_11_19.md)與[機器證據](evidence/ios-windows-b01-baseline-2026-11-19.json)記錄 479 檔初次稽核、受影響重驗、測試型別修正及 canonical 證據校正。訂閱測試面板檢查對齊現行身分切換，authenticated denial 案例仍保留；刪帳 pending_approval 與正式付款／刪除啟用狀態不變。
 
 2026-11-19 [iOS Windows 階段執行計畫](IOS_WINDOWS_EXECUTION_PLAN_2026_11_19.md)列出刪帳候選、Apple 驗證／通知／權益 writer、購買／恢復來源及對外揭露的順序、依賴與驗收條件；實際完成狀態仍依 canonical 任務和各環境證據更新。

@@ -6,6 +6,7 @@ export const candidateSourcePaths=[
  ...['engine.server','engine-adapters.server','upload-barrier.server','terminal-put.server','workflow-gate','request-workflow.server','billing-engine.server','billing-retention.server','saga.server','access-policy','data-policy'].map(n=>`lib/subscription/account-deletion-${n}.ts`),
  'lib/subscription/photo-upload-readback.server.ts','lib/subscription/account-deletion-preview-executor.server.ts','app/api/product-cover-photo/upload/route.ts','app/api/sales-photo-evidence/upload/route.ts',
  'scripts/lib/account-deletion-candidate-sources.ts','scripts/lib/account-deletion-catalog-fixture.ts','scripts/lib/account-deletion-access-fixture.ts','scripts/lib/account-deletion-candidate-services.ts','scripts/lib/account-deletion-photo-handler-checks.ts','scripts/verify-account-deletion-upload-race.ts',
+ 'supabase/migrations/097_add_market_registration_conditions.sql','scripts/lib/account-deletion-registration-compat.ts',
  'docs/subscription/evidence/account-deletion-guards-2026-11-02.json',
  'docs/subscription/evidence/account-deletion-access-definitions-2026-11-02.json','docs/subscription/evidence/account-deletion-catalog-2026-11-02.json',
 ];

@@ -32,7 +32,9 @@ BEGIN
       FROM string_to_table(f.normalized,chr(10)) WITH ORDINALITY AS lines(line,ordinal)) AS reviewed_form
     FROM (VALUES ${rows}) e(signature,fingerprint,normalized_hash,crlf)
     JOIN pg_proc p ON p.oid=to_regprocedure(e.signature)
-    CROSS JOIN LATERAL (SELECT pg_get_functiondef(p.oid) AS definition) d
+    -- PostgreSQL may inline/reorder the join before applying its signature filter.
+    -- Guard the expression itself so catalog aggregates are never decompiled.
+    CROSS JOIN LATERAL (SELECT CASE WHEN p.prokind IN ('f','p') THEN pg_get_functiondef(p.oid) END AS definition) d
     CROSS JOIN LATERAL (SELECT replace(d.definition,chr(13),'') AS normalized) f
     WHERE md5(d.definition)<>e.fingerprint AND md5(f.normalized)=e.normalized_hash
   LOOP

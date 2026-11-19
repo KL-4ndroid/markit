@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { buildAccountDeletionMigration, DELETION_MIGRATION_PATH } from '../scripts/lib/account-deletion-migration';
+import { buildRegistrationCompatibility, registrationCatalogDocumentSql, registrationFenceDdl } from '../scripts/lib/account-deletion-registration-compat';
+
+const legacy = buildAccountDeletionMigration();
+assert.equal(readFileSync(DELETION_MIGRATION_PATH, 'utf8').replaceAll('\r\n', '\n'), legacy.sql, 'never edit installed 096 to accept 097');
+const production = buildRegistrationCompatibility();
+const test = buildRegistrationCompatibility('test_prg');
+assert.equal(production.original096SqlSha, legacy.sqlSha);
+assert.notEqual(production.projectRef, test.projectRef);
+assert.notEqual(production.sqlSha, test.sqlSha);
+assert.equal(production.payloadSha, test.payloadSha, 'shared business/data compatibility; targets have separate SQL guards');
+assert.match(production.sql, /registration_compat_unreviewed_drift/);
+assert.match(production.sql, /registration_compat_097_routine/);
+assert.match(production.sql, /registration_compat_097_trigger/);
+assert.match(production.sql, /registration_compat_097_column/);
+assert.match(production.sql, /registration_compat_097_view/);
+assert.match(production.sql, /registration_compat_inactive_required/);
+assert.match(production.sql, /registration_compat_managed_target_unverified/);
+assert.match(production.sql, /LOCK TABLE public\.markets,public\.events IN ACCESS EXCLUSIVE MODE/);
+assert.match(registrationFenceDdl(), /identity_allowed\(NEW\.actor_id, false\)/);
+assert.match(registrationFenceDdl(), /visible_row\(to_jsonb\(visible\)\)/);
+assert.match(production.rollbackSql, /sourceSchemaHash/);
+assert.doesNotMatch(production.sql + production.rollbackSql, /DROP COLUMN|DROP TABLE|TRUNCATE|SET runtime_enabled\s*=\s*true/i);
+assert.doesNotMatch(registrationCatalogDocumentSql(), /^SELECT md5/);
+console.log('PASS isolated 097 compatibility candidate scope, immutable 096, frozen-access preservation, separate targets and data-preserving rollback contracts');

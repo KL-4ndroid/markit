@@ -11,10 +11,12 @@ import { buildAccountDeletionMigration, DELETION_MIGRATION_PATH, DELETION_MIGRAT
 import { buildTestPrgPreviewScope } from './lib/account-deletion-test-prg-preview';
 import { verifyCapturedAccess } from './lib/account-deletion-access-checks';
 import { managedMigrationSql } from './lib/account-deletion-managed-target';
+import { verifyRegistrationCompatibility } from './lib/account-deletion-registration-compat-checks';
 import { restoreTestPrgRoutineLineEndings } from './lib/account-deletion-test-prg-upgrade';
 
 async function main() {
-  assert.deepEqual(process.argv.slice(2), ['--isolated']);
+  const registrationOnly = process.argv[2] === '--registration-isolated';
+  assert.deepEqual(process.argv.slice(2), [registrationOnly ? '--registration-isolated' : '--isolated']);
   assert.ok(!process.env.DOCKER_HOST && !process.env.DOCKER_CONTEXT && !process.env.VERCEL && !process.env.VERCEL_ENV);
   const candidate = buildAccountDeletionMigration();
   assert.equal(readFileSync(DELETION_MIGRATION_PATH, 'utf8').replaceAll('\r\n', '\n'), candidate.sql, 'Regenerate candidate first');
@@ -32,6 +34,17 @@ async function main() {
   const ack = `SET deletion.install_environment='isolated';SET deletion.install_project_ref='${DELETION_MIGRATION_PROJECT}';SET deletion.install_payload_sha='${candidate.payloadSha}';`;
   const inTransaction = candidate.sql.replace(/\nBEGIN;\n/, '\n').replace(/COMMIT;\s*$/, '');
   const drift = (change: string, error: string) => reject(`BEGIN;${change}${ack}${inTransaction}ROLLBACK;`, error);
+    const tables = capturedDeletionCatalog().filter(r => r.detail.kind === 'r');
+    const insert = (name: string, data: Record<string, unknown>, prefix='') => {
+      const cols = tables.find(t => t.identity === 'public.' + name)!.detail.columns, row = { ...data };
+      for (const c of cols) if (!c.nullable && row[c.name] === undefined) {
+        if (c.type === 'uuid') row[c.name] = randomUUID(); else if (c.type === 'timestamp with time zone') row[c.name] = new Date().toISOString();
+        else if (c.type === 'boolean') row[c.name] = false; else if (/^(integer|bigint|numeric)/.test(c.type)) row[c.name] = 1;
+        else if (c.type === 'jsonb') row[c.name] = {}; else throw Error('Explicit synthetic field needed: ' + name + '.' + c.name);
+      }
+      sql(`${prefix}INSERT INTO public.${qi(name)}(${Object.keys(row).map(qi).join(',')})VALUES(${Object.entries(row).map(([k,v])=>v===null?'NULL':cols.find(c=>c.name===k)!.type==='jsonb'?q(JSON.stringify(v))+'::jsonb':q(String(v))).join(',')});`);
+    };
+
   let started = false;
   try {
     docker(['run', '--rm', '-d', '--network', 'none', '--name', db, '--label', `feria-purpose=${purpose}`, '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', '-e', 'POSTGRES_DB=deletion_engine_test', 'postgres:17-alpine']); started = true;
@@ -51,6 +64,21 @@ async function main() {
     reject(ack + candidate.sql, 'deletion_migration_baseline_routines');
     sql(readFileSync('supabase/migrations/095_scope_snapshot_rpcs_to_owner.sql', 'utf8'));
     pass('missing target acknowledgement and unapplied 095 reject before installing private schema');
+    if (registrationOnly) {
+      sql(ack + candidate.sql);
+      const owner = randomUUID(), other = randomUUID(), market = randomUUID(), otherMarket = randomUUID();
+      for (const id of [owner, other]) {
+        sql(`INSERT INTO auth.users(id)VALUES('${id}');`);
+        insert('profiles', { id, email: id+'@example.test', display_name:'Synthetic registration compatibility' });
+        insert('subscription_accounts', { owner_id:id, plan_code:'team', plan_source:'admin', billing_status:'none', entitlement_status:'active' });
+      }
+      for (const [id, who] of [[market, owner], [otherMarket, other]]) insert('markets', { id, owner_id:who, name:'Synthetic conditions', location:'Synthetic', start_date:'2026-11-20', end_date:'2026-11-20', status:'registered' });
+      verifyRegistrationCompatibility({ sql: s => sql(s), reject: (s, code) => reject(s, code), pass, insert, owner, other, market, otherMarket });
+      mkdirSync('.codex-artifacts', {recursive:true});
+      writeFileSync('.codex-artifacts/account-deletion-registration-migration.json',JSON.stringify({date:'2026-11-20',checks,scope:'actual generated 096 + 097 compatibility in network-none PostgreSQL 17; no hosted changes',productionEnabled:false},null,2));
+      return;
+    }
+
     reject(ack + "SET deletion.install_project_ref='wrong-project';" + candidate.sql, 'deletion_migration_target_ack_required');
     reject(ack + "SET deletion.install_environment='managed';" + candidate.sql, 'deletion_migration_managed_target_unverified');
     reject(ack + 'SET SESSION AUTHORIZATION service_role;' + candidate.sql, 'deletion_migration_dba_required');
@@ -231,16 +259,6 @@ async function main() {
     drift("UPDATE deletion_release_private.installation SET payload_sha=repeat('0',64);", 'deletion_migration_version_conflict');
     assert.equal(sql(migrationCatalogSql()), installed);
     pass('installed schema/ACL/function/version drift rejects rerun rather than overwriting evidence');
-    const tables = capturedDeletionCatalog().filter(r => r.detail.kind === 'r');
-    const insert = (name: string, data: Record<string, unknown>, prefix='') => {
-      const cols = tables.find(t => t.identity === 'public.' + name)!.detail.columns, row = { ...data };
-      for (const c of cols) if (!c.nullable && row[c.name] === undefined) {
-        if (c.type === 'uuid') row[c.name] = randomUUID(); else if (c.type === 'timestamp with time zone') row[c.name] = new Date().toISOString();
-        else if (c.type === 'boolean') row[c.name] = false; else if (/^(integer|bigint|numeric)/.test(c.type)) row[c.name] = 1;
-        else if (c.type === 'jsonb') row[c.name] = {}; else throw Error('Explicit synthetic field needed: ' + name + '.' + c.name);
-      }
-      sql(`${prefix}INSERT INTO public.${qi(name)}(${Object.keys(row).map(qi).join(',')})VALUES(${Object.entries(row).map(([k,v])=>v===null?'NULL':cols.find(c=>c.name===k)!.type==='jsonb'?q(JSON.stringify(v))+'::jsonb':q(String(v))).join(',')});`);
-    };
     const owner = randomUUID(), other = randomUUID(), staff = randomUUID(), market = randomUUID(), otherMarket = randomUUID(), product = randomUUID(), otherProduct = randomUUID(), event = randomUUID();
     for (const id of [owner, other, staff]) { sql(`INSERT INTO auth.users(id)VALUES('${id}');`); insert('profiles', {id,email:id+'@example.test',display_name:'Synthetic migration'}); }
     insert('subscription_accounts',{owner_id:owner,plan_code:'team',plan_source:'admin',billing_status:'none',entitlement_status:'active'});
@@ -256,6 +274,7 @@ async function main() {
     assert.equal(sql(dataHashSql),dataHash,'Verified replay must not mutate synthetic operational records');
     assert.equal(sql(migrationCatalogSql()), installed);
     pass('rerun after synthetic normal operations preserves records and accepts only the unchanged installed contract');
+    verifyRegistrationCompatibility({ sql: s => sql(s), reject: (s, code) => reject(s, code), pass, insert, owner, other, market, otherMarket });
     mkdirSync('.codex-artifacts', {recursive:true});
     writeFileSync('.codex-artifacts/account-deletion-migration.json',JSON.stringify({at:new Date().toISOString(),version:candidate.version,sqlSha:candidate.sqlSha,payloadSha:candidate.payloadSha,checks,
       scope:'PostgreSQL 17 captured catalog+095, generated SQL install/replay/drift/ACL; synthetic data; no managed cloud/Auth/R2 validation',productionEnabled:false},null,2));
