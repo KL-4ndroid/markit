@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-20",
+  "batch": "B03",
+  "baseRevision": "c9bfe65f9f2b6dab2a7e5502c232915984b6e856",
+  "status": "local_core_complete_with_native_and_provider_followup",
+  "environment": {
+    "os": "Windows",
+    "node": "24.22.3",
+    "browser": "IAB Chromium with requested 390x844 viewport; no exact CSS pixel certification",
+    "database": "disposable PostgreSQL17 / GoTrue2.196.0 / PostgREST16.1",
+    "formalMobileStaticOutput": true,
+    "demoUsed": false,
+    "remoteTouched": false,
+    "api": "real exported handlers with exact loopback CDP transport forwarding; TLS not tested",
+    "realR2": false,
+    "realStoreKit": false
+  },
+  "uiEvidence": {
+    "observer": "CUA actual navigation and forms",
+    "flows": [
+      "real login / reload",
+      "owner A to B to A; B cannot open A market or draft",
+      "120 mobile payment response lost after SQL commit",
+      "200 cash while offline, reconnect and reload",
+      "120 product cash sale and inventory decrement",
+      "actual clock entitlement expiry; paid draft retained",
+      "free equipment rental / blank commission zero / preserved hidden costs",
+      "free registration to accepted to paid with region and payment deadline",
+      "owner 88 draft versus independent API client cost77; compare and explicit save88",
+      "cash1000 to1320 versus cash sales320; noncash120 excluded",
+      "downgrade suspends staff; upgrade retains suspension; owner confirms restoration; actual operator login; downgrade revokes again",
+      "photo service disabled and retry keeps product",
+      "analysis to report / sections / return / PDF save"
+    ],
+    "photoStatesCoveredBy": "tests/product-cover-photo-read.test.tsx; no real upload claim",
+    "preview": "browser tool blocked blob navigation; no bypass; native preview remains pending"
+  },
+  "peerApi": {
+    "environment": "loopback disposable Auth/PostgREST",
+    "secondClient": "independent authenticated HTTP client; not second physical device",
+    "checks": [
+      "live source revenue440/deals3",
+      "peer cost77 revision1 saved",
+      "same mutation replay revision1",
+      "stale revision rejected40001",
+      "other owner rejected42501"
+    ],
+    "at": "2026-11-20T00:28:39.975Z"
+  },
+  "persistedReadback": {
+    "at": "2026-11-20T00:38:14.475Z",
+    "environment": "loopback disposable Auth/PostgREST",
+    "sales": {
+      "ids": [
+        "b273dcc8-346e-4883-8e50-266afaab9a9b",
+        "bc021678-0f47-4788-a6b7-9097c1e187af",
+        "3f58e44b-6a4c-42e7-ae86-2b45e7e97adb"
+      ],
+      "count": 3,
+      "revenue": 440,
+      "cash": 320,
+      "nonCash": 120
+    },
+    "product": {
+      "stock": 19
+    },
+    "financialReview": {
+      "amount": 88,
+      "revision": 2
+    },
+    "cash": {
+      "opening": 1000,
+      "closing": 1320,
+      "difference": 0
+    },
+    "registration": {
+      "status": "paid",
+      "fee": 800,
+      "region": "tw-tainan-city",
+      "deadline": {
+        "date": "2026-11-25",
+        "timeZone": "Asia/Taipei",
+        "reminderEnabled": true
+      },
+      "blankCommission": 0
+    },
+    "retainedCosts": {
+      "booth": 600,
+      "legacyRegistration": 0,
+      "equipmentRental": 100
+    },
+    "team": {
+      "status": "suspended_by_plan",
+      "role": "operator",
+      "automaticRestoration": false
+    },
+    "otherBrandRetained": true
+  },
+  "pdf": {
+    "file": "local ignored .codex-artifacts/b03-settlement.pdf",
+    "bytes": 55314,
+    "sha256": "a5cec80c5f594cf9a69dc8eedec1ca255a08094f66ea7c71a4efbe42005155f6",
+    "pages": 5,
+    "pageSize": "A4",
+    "renderer": "Poppler pdftoppm",
+    "visualReview": "all five rendered pages inspected; Chinese and tabular values legible; no overlap/clipping",
+    "nativePreviewAccepted": false
+  },
+  "checks": {
+    "mobileProductionBuild": 0,
+    "staticBoundary": 0,
+    "staticFiles": 396,
+    "staticMiB": 20.39,
+    "segmentAliases": 37,
+    "genericStaticSmoke": 0,
+    "smokeArtifactsOrRoutes": 11,
+    "standaloneTypecheck": 0,
+    "changedScriptEslint": 0,
+    "directedTests": [
+      {
+        "file": "tests/financial-review-drafts.test.ts",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/financial-review-draft-access.test.tsx",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/product-cover-photo-read.test.tsx",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/market-form.test.ts",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/market-form-ui.test.ts",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/market-payment-deadline-persistence.test.ts",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/market-cash-comparison.test.ts",
+        "exitCode": 0
+      },
+      {
+        "file": "tests/subscription-account-capability-api.test.ts",
+        "exitCode": 0
+      }
+    ],
+    "candidateFingerprintChecks": 3,
+    "diffCheck": 0
+  },
+  "reused": [
+    {
+      "evidence": "docs/evidence/ios-windows-b01-baseline-2026-11-19.json",
+      "scope": "479-file baseline with 8 directed repairs; App source unchanged this batch"
+    },
+    {
+      "evidence": "docs/subscription/evidence/account-deletion-registration-compatibility-2026-11-20.json",
+      "scope": "B02 27 Auth/PostgREST/handler/S3 substitute and cleanup groups; helper optional interface only, default unchanged; no rerun"
+    }
+  ],
+  "cleanup": {
+    "browserNetworkRestored": true,
+    "interceptionRemoved": true,
+    "viewportReset": true,
+    "createdTabsClosed": true,
+    "disposableContainersAndNetworkRemoved": true
+  },
+  "remaining": [
+    {
+      "gate": "H01 / B06",
+      "items": [
+        "real Capacitor HTTPS / ATS / CORS",
+        "Keychain / background / process termination",
+        "real camera / limited library / R2 / photo retry",
+        "QuickLook / save / share / cancellation / temporary cleanup",
+        "exact responsive sizes and touch / keyboard / two physical devices"
+      ]
+    },
+    {
+      "gate": "B04 / B05 / E02",
+      "items": [
+        "Apple validation / notifications / authoritative writer",
+        "StoreKit purchase and restore / true sandbox expiry"
+      ]
+    },
+    {
+      "gate": "E01 after Dec1",
+      "items": [
+        "hosted deletion candidate and dedicated real R2 integration"
+      ]
+    }
+  ],
+  "notDeployable": "out uses disposable local public config; B06 must rebuild with reviewed real public settings; no push or deploy",
+  "sources": [
+    {
+      "path": "scripts/serve-mobile-core-acceptance.ts",
+      "sha256": "61ead4a170ce51db7898aee5aae7c0f974cf425c76e29d66d24e50fef7215509"
+    },
+    {
+      "path": "scripts/verify-mobile-core-live.ts",
+      "sha256": "3af3940d277dd9f7c239246953cb05fb66e6216187f3a9fa55225ba3ccfeb7a1"
+    },
+    {
+      "path": "scripts/lib/account-deletion-candidate-services.ts",
+      "sha256": "c37254a429667c21f12706448a76c54c7d3ea9300d43b06f6f2ace35beae05ec"
+    },
+    {
+      "path": "lib/api/client.ts",
+      "sha256": "7f0ee9d479f4588c5b933840fb49825696430a342a74951e627d236c768b61b4"
+    },
+    {
+      "path": "hooks/useAccountCapabilities.ts",
+      "sha256": "01f93954663cb24519c81ede538d7e2c3daf1a2b1dcc936c130b2c771c9cf32d"
+    },
+    {
+      "path": "lib/markets/financial-review-repository.ts",
+      "sha256": "0df73ef7029d3bd6e423661ae7d4472e26658a121ff75d8b47bc936466d0247c"
+    },
+    {
+      "path": "lib/supabase/staff.ts",
+      "sha256": "ff3a12e63523790a65f628ac0b1973c404d045e0262e5516e6ba86451beb0008"
+    },
+    {
+      "path": "lib/reporting/settlement-report.ts",
+      "sha256": "c244c482d8ae52a3f1a337dd2b508a2eca84bcef7109ed212a94a27546123395"
+    },
+    {
+      "path": "tests/financial-review-drafts.test.ts",
+      "sha256": "450ed554e2e3f58b5026ec02c15e8a36b24773cfe841b6ed80a85f534235af23"
+    },
+    {
+      "path": "tests/financial-review-draft-access.test.tsx",
+      "sha256": "e123d6f36956ceefec9a6be5ba4f2271fa57f629be3ce2e5d2cb0508692f600a"
+    },
+    {
+      "path": "tests/product-cover-photo-read.test.tsx",
+      "sha256": "c77283cf50f351b5f8068b230d748bb30cb6c60a6e2f78348d2f73ff5c51607f"
+    },
+    {
+      "path": "tests/market-form.test.ts",
+      "sha256": "dbde5cb446c3d14db80a83317574fc25b273ae7e2e9b9cb173635cbf91c5921b"
+    },
+    {
+      "path": "tests/market-form-ui.test.ts",
+      "sha256": "c99c6ab58968ba8ff6738d85a7b6858298959960ad04ded7e16557af33504268"
+    },
+    {
+      "path": "tests/market-payment-deadline-persistence.test.ts",
+      "sha256": "27f180449ca87762725897437bb576284081834bde2ccaa90a65d3f1fc0c3758"
+    },
+    {
+      "path": "tests/market-cash-comparison.test.ts",
+      "sha256": "1167e8809bbc9eb683a7fce6858ddd46513b8878c48119e7e0138720062fc241"
+    },
+    {
+      "path": "tests/subscription-account-capability-api.test.ts",
+      "sha256": "6e3cfebf35f5758a8ac33bf50d13d6abfb46a3d3da6707c9b1bd8c2876b9b437"
+    }
+  ]
+}

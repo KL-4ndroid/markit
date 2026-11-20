@@ -68,6 +68,8 @@ node --import tsx scripts/verify-account-deletion-upload-race.ts --registration-
 
 ## E01：12 月 1 日後的唯一待辦入口
 
+後續 B03 為重用同一隔離服務 helper，新增可選合成密碼與測試連線資訊；原隨機預設與 B02 行為不變。[B03 紀錄](IOS_WINDOWS_B03_MOBILE_CORE_2026_11_20.md)保存實際使用結果及最新來源指紋。兩份既有 candidate manifest 已更新 helper SHA，沒有改 096 SQL、handler 或本批 097 安裝候選；27 組未變的矩陣沿用本紀錄。
+
 1. 固定本批提交，從受保護的執行環境唯讀取得 **test_prg `tzhbirwchhqabkxhqjdl`** 的 096 回條、097 是否存在、目前 schema、R2 綁定及 Preview scope 狀態。現有歷史回條不能代替當下核對。正式專案 `fgejncfsvvsayiequubm` 與 test_prg 使用不同 SQL，先讀回確認選擇。
 2. 新相容 SQL 只接受既有的固定 Management API 路由與交易確認欄位。屆時沿用受保護的管理連線核對目標，對照本 manifest／SQL hash，再安裝 test_prg 候選；不能只在任意 SQL Editor 設一個 project 字串就聲稱證明目標。這輪沒有新增遠端自動執行入口或下載憑證。
 3. 使用對應唯讀 readback，確認回傳一筆正確 project／版本、相容 payload、schema／catalog 及 `runtime_disabled=true`。回應不明先讀回，不盲目重送。若有未審查 drift，停止並保存唯讀差異，不重新蓋章。

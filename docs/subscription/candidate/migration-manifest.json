@@ -118,7 +118,7 @@
     },
     {
       "path": "scripts/lib/account-deletion-candidate-services.ts",
-      "sha256": "44ffead53732b0889a03fd809a6402b55fcc4e750dce2dd93df852c1e88629e8"
+      "sha256": "c37254a429667c21f12706448a76c54c7d3ea9300d43b06f6f2ace35beae05ec"
     },
     {
       "path": "scripts/lib/account-deletion-photo-handler-checks.ts",
