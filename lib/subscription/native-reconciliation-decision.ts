@@ -4,7 +4,7 @@ import type { NativeBillingOrigin } from './native-account-entitlement';
 import { isNativeBillingOrigin } from './native-account-entitlement';
 import type { NativeStoreVerificationContext, VerifiedNativeStoreSubscription } from './native-store-verification-contract';
 import { isValidNativeStoreVerificationContext } from './native-store-verification-contract';
-import { isSubscriptionPriceVersionId, SUBSCRIPTION_PRICE_CATALOG, type SubscriptionPriceVersion } from './subscription-pricing';
+import { isSubscriptionPriceVersionId, getSubscriptionPriceVersion, type SubscriptionPriceVersion } from './subscription-pricing';
 
 /** Internal source contract only. A decision never verifies a receipt or grants access. */
 export const NATIVE_RECONCILIATION_FRESHNESS_MS = 5 * 60 * 1000;
@@ -30,7 +30,7 @@ function instant(value: unknown): number | null {
 
 /** Structural validation of a trusted adapter response, never cryptographic verification. */
 export function validateNativeReconciliationSnapshot(
-  value: unknown, context: NativeStoreVerificationContext, nowMs: number, requireFresh = true,
+  value: unknown, context: NativeStoreVerificationContext, nowMs: number, requireFresh = true, registeredDatabasePrice = false,
 ): value is VerifiedNativeStoreSubscription {
   if (!record(value) || !record(context) || Object.keys(value).length !== SNAPSHOT_KEYS.length
     || Object.keys(value).some(key => !SNAPSHOT_KEYS.includes(key))
@@ -43,7 +43,7 @@ export function validateNativeReconciliationSnapshot(
     || ![value.basePlanId, value.offerId].every(item => item === null || bounded(item, 256))
     || value.origin === 'apple_app_store' && value.basePlanId !== null
     || value.origin === 'google_play' && value.basePlanId === null
-    || !isSubscriptionPriceVersionId(value.mappedPriceVersionId)
+    || !(registeredDatabasePrice ? bounded(value.mappedPriceVersionId,96) && /^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(value.mappedPriceVersionId) : isSubscriptionPriceVersionId(value.mappedPriceVersionId))
     || typeof value.mappedPlanCode !== 'string' || !['pro', 'team'].includes(value.mappedPlanCode)
     || typeof value.mappedCadence !== 'string' || !['monthly', 'annual'].includes(value.mappedCadence)
     || typeof value.status !== 'string' || !STATUSES.includes(value.status) || typeof value.autoRenewEnabled !== 'boolean'
@@ -113,14 +113,17 @@ export function decideNativeReconciliation(input: {
   mapping: ReconciliationMapping | null;
   state: NativeReconciliationState;
   nowMs: number;
+  /** Comes only from the private repository's immutable price registry. */
+  trustedPriceVersion?: SubscriptionPriceVersion;
 }): NativeReconciliationDecision {
   let previousDecision: NativeReconciliationCode | null = null;
   const result = (outcome: NativeReconciliationDecision['outcome'], code: NativeReconciliationCode,
     appendDecision = false, projection: ReconciliationProjection | null = null): NativeReconciliationDecision =>
     Object.freeze({ outcome, code, appendDecision: appendDecision && previousDecision !== code, projection: projection && Object.freeze(projection) });
   const { context, snapshot, mapping, state, nowMs } = input;
-  if (!validateNativeReconciliationSnapshot(snapshot, context, nowMs)) return result('reject', 'snapshot_invalid');
-  const canonicalPrice = SUBSCRIPTION_PRICE_CATALOG[snapshot.mappedPriceVersionId];
+  if (!validateNativeReconciliationSnapshot(snapshot, context, nowMs, true, Boolean(input.trustedPriceVersion))) return result('reject', 'snapshot_invalid');
+  const canonicalPrice = input.trustedPriceVersion ?? getSubscriptionPriceVersion(snapshot.mappedPriceVersionId);
+  if(!canonicalPrice || canonicalPrice.id!==snapshot.mappedPriceVersionId)return result('reject','mapping_unavailable');
   if (!record(state) || state.ownerId !== context.authenticatedOwnerId) return result('reject', 'owner_mismatch');
   if (state.referenceOwnerId !== null && state.referenceOwnerId !== state.ownerId) return result('reject', 'reference_owned_elsewhere');
   if (!mapping || mapping.status !== 'active' || mapping.origin !== snapshot.origin || mapping.environment !== snapshot.environment

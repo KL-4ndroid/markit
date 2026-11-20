@@ -6,6 +6,7 @@ import type {
 } from '@/lib/platform/contracts/in-app-purchase';
 import {
   SUBSCRIPTION_PRICE_CATALOG,
+  getSubscriptionPriceVersion,
   type SubscriptionPriceVersionId,
 } from './subscription-pricing';
 
@@ -303,8 +304,8 @@ export function validateNativeStoreCatalog(input: {
   }> = [];
 
   for (const mapping of activeMappings) {
-    const internalPrice = SUBSCRIPTION_PRICE_CATALOG[mapping.priceVersionId];
-    if (internalPrice.runtimeStatus !== 'active') {
+    const internalPrice = getSubscriptionPriceVersion(mapping.priceVersionId);
+    if (!internalPrice || internalPrice.runtimeStatus !== 'active') {
       return {
         ok: false,
         code: 'price_not_commercially_active',

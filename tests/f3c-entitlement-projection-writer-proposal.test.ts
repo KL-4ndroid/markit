@@ -38,4 +38,5 @@ for (const forbiddenPath of [
   assert.equal(existsSync(join(root, forbiddenPath)), false, `${forbiddenPath} must remain absent`);
 }
 
-console.log('PASS F3C entitlement projection writer remains a bounded planning-only proposal');
+assert.ok(existsSync(join(root,'docs/subscription/APPLE_B04_SOURCE_REVIEW_2026_11_20.md')));
+console.log('PASS historical F3C proposal and separate B04 local source preserve deployment approval boundary');

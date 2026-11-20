@@ -20,6 +20,9 @@ export type NativeReconciliationTransaction = {
   }>): Promise<void>;
 };
 export type NativeReconciliationRepository = {
+  /** Only a private repository reading immutable, guarded DB price versions may opt in.
+   * This is a server dependency, never a device-supplied flag. */
+  priceCatalog?: 'database';
   /** Serialize owner, enforce globally unique provider binding, and commit/rollback ALL effects atomically.
    * Resolve only after commit; an ambiguous commit must reject and be safely replayable.
    * Decision audit is append-only, deduplicated by key/code; held decisions can
@@ -63,8 +66,9 @@ export function createNativeReconciliationService(dependencies: {
     if (adapter.origin !== parsed.value.store || adapter.environment !== context.environment) return { outcome: 'unavailable', code: 'configuration_unavailable' };
     try {
       const proof = await bounded(() => adapter.verifyPurchase({ context, request: parsed.value }));
+      if(proof && !proof.ok && proof.error.code==='unsupported_operation')return {outcome:'review_required',code:'policy_review_required'};
       if (!proof?.ok) return { outcome: 'unavailable', code: 'verification_unavailable' };
-      if (!validateNativeReconciliationSnapshot(proof.value, context, dependencies.now(), false)
+      if (!validateNativeReconciliationSnapshot(proof.value, context, dependencies.now(), false, dependencies.repository.priceCatalog==='database')
         || proof.value.origin !== adapter.origin || proof.value.productId !== parsed.value.productId) {
         return { outcome: 'rejected', code: 'snapshot_invalid' };
       }
@@ -74,9 +78,10 @@ export function createNativeReconciliationService(dependencies: {
         current = await bounded(() => adapter.querySubscription({ context, origin: adapter.origin,
           providerSubscriptionRef: proof.value.providerSubscriptionRef }));
       } catch { return { outcome: 'unavailable', code: 'current_state_unavailable' }; }
+      if(current && !current.ok && current.error.code==='unsupported_operation')return {outcome:'review_required',code:'policy_review_required'};
       if (!current?.ok) return { outcome: 'unavailable', code: 'current_state_unavailable' };
       const nowMs = dependencies.now();
-      if (!validateNativeReconciliationSnapshot(current.value, context, nowMs) || current.value.origin !== adapter.origin
+      if (!validateNativeReconciliationSnapshot(current.value, context, nowMs, true, dependencies.repository.priceCatalog==='database') || current.value.origin !== adapter.origin
         || current.value.providerSubscriptionRef !== proof.value.providerSubscriptionRef) return { outcome: 'rejected', code: 'snapshot_invalid' };
       const snapshot = Object.freeze({ ...current.value });
       const key = createHash('sha256').update(JSON.stringify([
@@ -88,7 +93,9 @@ export function createNativeReconciliationService(dependencies: {
           const state = await transaction.readState(snapshot, key);
           const mapping = await transaction.readMapping(snapshot);
           // Time spent waiting for the owner lock must not extend verification freshness.
-          const decision = decideNativeReconciliation({ context, snapshot, mapping, state, nowMs: dependencies.now() });
+          const decision = decideNativeReconciliation({ context, snapshot, mapping, state, nowMs: dependencies.now(),
+            ...(dependencies.repository.priceCatalog==='database' && mapping ? {trustedPriceVersion:mapping.price}:{}),
+          });
           if (decision.appendDecision) await transaction.recordDecision({ reconciliationKey: key, snapshot, decision });
           if (decision.outcome === 'apply') await transaction.applyBillingProjection({ snapshot, decision });
           return { outcome: decision.outcome === 'apply' ? 'applied' : decision.outcome === 'reject' ? 'rejected' : decision.outcome,

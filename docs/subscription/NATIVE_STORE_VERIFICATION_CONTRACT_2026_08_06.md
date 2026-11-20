@@ -2,7 +2,13 @@
 
 Date: 2026-08-06
 
-Status: N3 contract complete locally; adapter runtime and writes pending approval
+Status: N3 contract complete locally; Apple B04 local integration complete; deployment and live writes pending approval
+
+2026-11-20: [B04](../IOS_WINDOWS_B04_APPLE_BACKEND_2026_11_20.md) implements and
+integrates the Apple server adapter, private PostgreSQL writer and notification
+handler factories locally. Production activation and Google implementation remain
+separate. The original non-activating N3 boundary below describes its historical
+slice, not an assertion that the B04 source is absent.
 
 ## Boundary
 

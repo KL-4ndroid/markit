@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "status": "unconfigured_not_purchasable",
+  "environment": "sandbox",
+  "activationEnabled": false,
+  "bundleId": null,
+  "appAppleId": null,
+  "subscriptionGroupId": null,
+  "currency": "TWD",
+  "amountConvention": "existing internal catalog integer TWD; actual purchase display and charge must come from App Store",
+  "products": [
+    {"priceVersionId":"pro_monthly_twd_2026_10_v1","planCode":"pro","cadence":"monthly","listPrice":59,"productId":null},
+    {"priceVersionId":"pro_annual_twd_2026_10_v1","planCode":"pro","cadence":"annual","listPrice":588,"productId":null},
+    {"priceVersionId":"team_monthly_twd_2026_10_v1","planCode":"team","cadence":"monthly","listPrice":249,"productId":null},
+    {"priceVersionId":"team_annual_twd_2026_10_v1","planCode":"team","cadence":"annual","listPrice":2490,"productId":null}
+  ],
+  "legacyAppleHandoffSuperseded": "NATIVE_STORE_CATALOG_CONFIG_2026_08_06.json remains disabled historical topology; do not use its old price IDs to create current Apple products",
+  "pending": ["Apple account and app identity", "real four product IDs and group", "store-localized prices", "B05 current catalog/purchase UI wiring", "E02 verified runtime and formal migration/read activation review"],
+  "offersTrialsGraceFamilySharing": "not activated; policy-specific verified inputs held for review"
+}

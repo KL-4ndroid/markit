@@ -47,7 +47,7 @@
     },
     {
       "path": "scripts/test-files.txt",
-      "sha256": "31413aaa69978656e75117fbd0f302522520b78b283faccf96c96ae00b4a3f71"
+      "sha256": "e98d475f03868e31d19302d26b1df6719120081982ecd2855fb5844aab0e7a74"
     },
     {
       "path": "tsconfig.account-deletion-workflow.json",

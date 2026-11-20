@@ -5,15 +5,16 @@ import { AuthClient } from '@supabase/auth-js';
 import { createDeletionIdentityPort } from '../../lib/subscription/account-deletion-engine-adapters.server';
 import { randomBytes,createHmac } from 'node:crypto';
 type Docker=(a:string[],input?:string)=>string;
-export async function startCandidateServices(input:{docker:Docker;db:string;network:string;purpose:string;fixturePassword?:string}){
+export async function startCandidateServices(input:{docker:Docker;db:string;network:string;purpose:string;fixturePassword?:string;databaseName?:string}){
  const {docker,db,network,purpose}=input,secret=randomBytes(48).toString('hex'),auth=db+'-auth',rest=db+'-rest';let restStarted=false;
+ const databaseName=input.databaseName??'deletion_engine_test';assert.match(databaseName,/^[a-z][a-z0-9_]{1,50}$/);
  const jwt=(role:string)=>{const a=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),b=Buffer.from(JSON.stringify({role,iss:'supabase',aud:'authenticated',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url');return `${a}.${b}.${createHmac('sha256',secret).update(`${a}.${b}`).digest('base64url')}`;};
  const service=jwt('service_role'),password=input.fixturePassword??randomBytes(20).toString('hex');
  const endpoint=(name:string,port:string)=>{const r=JSON.parse(docker(['inspect',name]))[0];assert.equal(r.Config.Labels['feria-purpose'],purpose);assert.equal(r.HostConfig.PortBindings[port][0].HostIp,'127.0.0.1');return `http://127.0.0.1:${r.NetworkSettings.Ports[port][0].HostPort}`;};
  async function ready(url:string){for(let i=0;i<100;i++){try{if((await fetch(url)).ok)return;}catch{}await new Promise(r=>setTimeout(r,100));}throw Error('Candidate service health failed');}
  docker(['run','--rm','-d','--name',auth,'--network',network,'--label',`feria-purpose=${purpose}`,'-p','127.0.0.1::9999',
   '-e','GOTRUE_API_HOST=0.0.0.0','-e','GOTRUE_API_PORT=9999','-e','API_EXTERNAL_URL=http://127.0.0.1','-e','GOTRUE_SITE_URL=http://127.0.0.1',
-  '-e','GOTRUE_DB_DRIVER=postgres','-e',`GOTRUE_DB_DATABASE_URL=postgres://postgres@${db}:5432/deletion_engine_test?sslmode=disable&search_path=auth`,
+  '-e','GOTRUE_DB_DRIVER=postgres','-e',`GOTRUE_DB_DATABASE_URL=postgres://postgres@${db}:5432/${databaseName}?sslmode=disable&search_path=auth`,
   '-e','GOTRUE_DB_NAMESPACE=auth','-e',`GOTRUE_JWT_SECRET=${secret}`,'-e','GOTRUE_JWT_ADMIN_ROLES=service_role','-e','GOTRUE_JWT_AUD=authenticated','-e','GOTRUE_JWT_DEFAULT_GROUP=authenticated',
   '-e','GOTRUE_MAILER_AUTOCONFIRM=true','-e','GOTRUE_DISABLE_SIGNUP=false','public.ecr.aws/supabase/gotrue:v2.196.0']);
  const authUrl=endpoint(auth,'9999/tcp');
@@ -25,7 +26,7 @@ export async function startCandidateServices(input:{docker:Docker;db:string;netw
  return {
   connectionInfo(){return {authUrl,restUrl,anonToken:jwt('anon'),serviceToken:service};},
   async users(){const out={}as Record<'owner'|'other'|'staff'|'legacy'|'cleanup',{id:string;email:string}>;for(const kind of ['owner','other','staff','legacy','cleanup']as const){const email=`candidate-${kind}-${randomBytes(6).toString('hex')}@example.test`;const created=await authCall('/admin/users','POST',{email,password,email_confirm:true,role:'authenticated'});assert.equal(created.status,200);const u=created.data as{id:string};const login=await authCall('/token?grant_type=password','POST',{email,password});assert.equal(login.status,200);tokens.set(u.id,(login.data as{access_token:string}).access_token);out[kind]={id:u.id,email};}return out;},
-  async startRest(){docker(['run','--rm','-d','--name',rest,'--network',network,'--label',`feria-purpose=${purpose}`,'-p','127.0.0.1::3000','-e',`PGRST_DB_URI=postgres://postgres@${db}:5432/deletion_engine_test`,'-e','PGRST_DB_SCHEMAS=public','-e','PGRST_DB_ANON_ROLE=anon','-e',`PGRST_JWT_SECRET=${secret}`,'public.ecr.aws/supabase/postgrest:v16.1']);restStarted=true;restUrl=endpoint(rest,'3000/tcp');await ready(restUrl+'/');},
+  async startRest(){docker(['run','--rm','-d','--name',rest,'--network',network,'--label',`feria-purpose=${purpose}`,'-p','127.0.0.1::3000','-e',`PGRST_DB_URI=postgres://postgres@${db}:5432/${databaseName}`,'-e','PGRST_DB_SCHEMAS=public','-e','PGRST_DB_ANON_ROLE=anon','-e',`PGRST_JWT_SECRET=${secret}`,'public.ecr.aws/supabase/postgrest:v16.1']);restStarted=true;restUrl=endpoint(rest,'3000/tcp');await ready(restUrl+'/');},
   rpc,
   async authenticate(request:Request){const {authenticateAppApiRequest}=await import('../../lib/api/server/auth');return authenticateAppApiRequest(request,{verifier:{async getUser(token){const r=await authCall('/user','GET',undefined,token);return {data:{user:r.status===200?r.data as{id:string}:null},error:r.status===200?null:Error('Candidate auth rejected')};}}});},
   token(actor:string){const t=tokens.get(actor);assert.ok(t);return t;},

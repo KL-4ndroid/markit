@@ -1,5 +1,11 @@
 # Native Store Catalog Topology
 
+2026-11-20 Apple handoff update: use [the current four-price candidate](APPLE_STORE_CATALOG_CANDIDATE_2026_11_20.json)
+and [B04](../IOS_WINDOWS_B04_APPLE_BACKEND_2026_11_20.md). The August JSON below is
+disabled historical topology with old price IDs; do not use it to create current
+Apple products. B05/W06 must align purchase sources and store copy with the new IDs.
+Google runtime remains separately gated.
+
 Date: 2026-08-06
 
 Status: platform-neutral selector contract complete; store topology and identifiers pending manual approval

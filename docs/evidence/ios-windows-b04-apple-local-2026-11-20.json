@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "batch": "B04",
+  "at": "2026-11-20T07:25:10.585Z",
+  "localOnly": true,
+  "officialSdk": "3.1.0",
+  "signedFixture": "fresh local ES256 x5c chain; SDK cryptographic verification enabled with isolated test root, online checks false ONLY in test",
+  "provider": "loopback HTTP substitute; not Apple sandbox",
+  "database": "PostgreSQL17 with original063066067 and B04 guarded draft",
+  "checks": [
+    "isolated target / original063066067 / current prices / real Auth ready",
+    "anonymous / ordinary / service / staff writer denial",
+    "production constructor rejects non-Apple root; historical price unchanged",
+    "real HTTP / verified signatures / concurrent purchase single subscription",
+    "purchase replay is idempotent",
+    "winning commit acknowledgement loss retries without duplicate subscription or invented charge",
+    "mismatched authenticated owner cannot claim subscription",
+    "tampered signature / wrong app environment product account type ownership denied",
+    "unconfigured trial or offer is explicitly held for policy review",
+    "candidate mapping cannot authorize paid access",
+    "provider outage preserves previous entitlement and is retryable",
+    "cancel renewal retains verified period and notification dedupe",
+    "durable notification retry recovers to latest plan",
+    "late purchase proof queries current state rather than reverting plan",
+    "unapproved grace policy held; no invented extension",
+    "expiry restricts entitlement while preserving business records",
+    "verified revocation prevents access even with future expiration",
+    "slow old authoritative query cannot override newer concurrent query",
+    "late failure rolls back F3B snapshot audit receipt and entitlement atomically",
+    "admin assignment never overwritten",
+    "unverified notification cannot enter inbox",
+    "expired notification lease recovers safely after process interruption",
+    "cross-owner provider-chain race has one winner and no transfer",
+    "writer role without verified evidence marker is rejected",
+    "future DB-owned price version works without editing code or changing old prices",
+    "second active origin is held without cancellation refund or replacing valid access",
+    "private ACL final readback / durable inbox settled / business data retained"
+  ],
+  "passed": 27,
+  "liveStoreKit": false,
+  "productionEnabled": false,
+  "billingReaderEnabled": false,
+  "sources": [
+    {
+      "path": "lib/subscription/apple-verification.server.ts",
+      "sha256": "7553a829f2f3b298d4a1dfb507ed4721fbcd19cd47debd6188f52f18ed95a3bc"
+    },
+    {
+      "path": "lib/subscription/apple-repository.server.ts",
+      "sha256": "e292920fae8fa1b113452bc87e9b93de39a9ca37cb0a46c0a7cf954e3b4c15eb"
+    },
+    {
+      "path": "lib/subscription/apple-handlers.server.ts",
+      "sha256": "3b7733b90315137ed43ca3fd33fa7e4a34d7c7b736c85e3358ea698f245f642a"
+    },
+    {
+      "path": "lib/subscription/native-reconciliation.server.ts",
+      "sha256": "7102764a17164f2ddaebbc3583cd6d0bc3b043aa2fd6c71a6d1fc2b004a430c4"
+    },
+    {
+      "path": "lib/subscription/native-reconciliation-decision.ts",
+      "sha256": "545c0b97887f1d97ab089caae30ed3a7dac0e253c6acdbca528f36c11b2bb242"
+    },
+    {
+      "path": "lib/subscription/subscription-pricing.ts",
+      "sha256": "bebfef877df43602eeda648956ac4811f37507faec4a9d3ab6dda5ae8ec85e91"
+    },
+    {
+      "path": "lib/subscription/native-store-catalog.ts",
+      "sha256": "d1f9409ed2a6918810add52e04a22e673a4f53b777421c80378725010a908069"
+    },
+    {
+      "path": "scripts/verify-apple-b04.ts",
+      "sha256": "329e744114c7e84f00472e9a98dfef7d8ef317fa8f2f61e8936ca2351193cf18"
+    },
+    {
+      "path": "scripts/lib/account-deletion-candidate-services.ts",
+      "sha256": "daddd597525fac128033bf8fb1051a34931c6c33cacd0690dfc411ed74d3f620"
+    },
+    {
+      "path": "tests/fixtures/apple-signed-fixture.ts",
+      "sha256": "c16962faec56b7631ec53207134faf3080183947e14900543b14921644d030a6"
+    },
+    {
+      "path": "tests/apple-b04.test.ts",
+      "sha256": "d2c9174137babcd5047d652ca9c7fdf4f65ce8ce650a75387e4dc8302acc1773"
+    },
+    {
+      "path": "docs/subscription/drafts/APPLE_B04_LOCAL_WRITER.sql",
+      "sha256": "cdbe0fd4049302694fa2573f24eca722c1b8d23a9832ccf9b33dc3615c7c4d22"
+    },
+    {
+      "path": "package.json",
+      "sha256": "b9a77d1b32fbdcdeee5f32364bb7656857cae5fe632db03f0bd637a6c27973ad"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "2fe3697f1fdcb1e0abe9d182285cd512b15ecff8992bbb70f717f326c8638483"
+    }
+  ],
+  "quality": {
+    "standaloneTypecheck": 0,
+    "affectedEslint": 0,
+    "directedTests": [
+      {
+        "path": "tests/subscription-pricing.test.ts",
+        "exitCode": 0
+      },
+      {
+        "path": "tests/subscription-price-catalog-foundation.test.ts",
+        "exitCode": 0
+      },
+      {
+        "path": "tests/native-reconciliation-foundation.test.ts",
+        "exitCode": 0
+      },
+      {
+        "path": "tests/native-store-catalog.test.ts",
+        "exitCode": 0
+      },
+      {
+        "path": "tests/native-store-catalog-config.test.ts",
+        "exitCode": 0
+      },
+      {
+        "path": "tests/native-store-verification-contract.test.ts",
+        "exitCode": 0
+      },
+      {
+        "path": "tests/native-account-entitlement.test.ts",
+        "exitCode": 0
+      },
+      {
+        "path": "tests/account-capability-billing-read-contract.test.ts",
+        "exitCode": 0
+      },
+      {
+        "path": "tests/f3c-entitlement-projection-writer-proposal.test.ts",
+        "exitCode": 0
+      },
+      {
+        "path": "tests/apple-b04.test.ts",
+        "exitCode": 0
+      }
+    ],
+    "mobileProductionBuild": 0,
+    "staticBoundary": 0,
+    "staticFiles": 396,
+    "staticMiB": 20.39,
+    "segmentAliases": 37,
+    "genericStaticSmoke": 0,
+    "smokeRoutesOrAssets": 11,
+    "candidateFingerprintChecks": 3,
+    "canonicalPlanCheck": 0,
+    "manualChecklistCheck": 0
+  },
+  "existingDependencyAudit": {
+    "metadata": {
+      "info": 0,
+      "low": 0,
+      "moderate": 1,
+      "high": 4,
+      "critical": 1,
+      "total": 6
+    },
+    "packages": [
+      {
+        "name": "baseline-browser-mapping",
+        "severity": "moderate"
+      },
+      {
+        "name": "nanoid",
+        "severity": "high"
+      },
+      {
+        "name": "next",
+        "severity": "critical"
+      },
+      {
+        "name": "postcss",
+        "severity": "high"
+      },
+      {
+        "name": "sharp",
+        "severity": "high"
+      },
+      {
+        "name": "source-map-js",
+        "severity": "high"
+      }
+    ],
+    "newSdkOrPgAdvisoryListed": false,
+    "releaseAction": "B06 dependency remediation and review; no framework upgrades or live deployment in B04"
+  },
+  "cleanup": {
+    "disposableContainersAndNetworkRemoved": true,
+    "ephemeralSigningKeysRemoved": true
+  },
+  "remaining": [
+    "B05 purchase/restore/manage sources and current store catalog/copy",
+    "E02 real Apple App and four products, credentials, API/OCSP/notifications/sandbox",
+    "E02 formal migration, read activation, least-privilege login/pool, CORS/TLS/rate limits and operational reconciliation",
+    "deletion-engine binding retention/anonymization/fence integration before applying new schema",
+    "B06 existing dependency security findings and final build with real public settings",
+    "H01 physical iPhone StoreKit and lifecycle"
+  ],
+  "validationSources": [
+    {
+      "path": "scripts/verify-mobile-static-output.mjs",
+      "sha256": "238e03656949de7cc15330a43541fba8d24bf54e02f9d7f412d2e8ecbb68d9a8"
+    },
+    {
+      "path": "scripts/run-tests.mjs",
+      "sha256": "26ff9438678d2a1439258836057c48ab74c515294269efc53b2537ec8f5a0757"
+    },
+    {
+      "path": "scripts/test-files.txt",
+      "sha256": "e98d475f03868e31d19302d26b1df6719120081982ecd2855fb5844aab0e7a74"
+    },
+    {
+      "path": "tests/f3c-entitlement-projection-writer-proposal.test.ts",
+      "sha256": "b30c5f2aa65bca9d393daee4f9ea53932c7ba45f4d516780f795f57e180d96c1"
+    }
+  ]
+}

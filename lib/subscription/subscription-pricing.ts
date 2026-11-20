@@ -10,7 +10,12 @@ export const SUBSCRIPTION_PRICE_VERSION_IDS = [
   'team_annual_twd_launch_v1',
 ] as const;
 
-export type SubscriptionPriceVersionId = typeof SUBSCRIPTION_PRICE_VERSION_IDS[number];
+export const CURRENT_SUBSCRIPTION_PRICE_VERSION_IDS = [
+  'pro_monthly_twd_2026_10_v1', 'pro_annual_twd_2026_10_v1',
+  'team_monthly_twd_2026_10_v1', 'team_annual_twd_2026_10_v1',
+] as const;
+type LegacyPriceVersionId = typeof SUBSCRIPTION_PRICE_VERSION_IDS[number];
+export type SubscriptionPriceVersionId = LegacyPriceVersionId | typeof CURRENT_SUBSCRIPTION_PRICE_VERSION_IDS[number];
 export type PaidPlanCode = Exclude<AccountPlanCode, 'free'>;
 export type BillingCadence = 'monthly' | 'annual';
 export type PricePolicy = 'standard' | 'founder_locked';
@@ -33,7 +38,7 @@ const priceVersion = (value: SubscriptionPriceVersion): SubscriptionPriceVersion
   Object.freeze(value);
 
 export const SUBSCRIPTION_PRICE_CATALOG: Readonly<
-  Record<SubscriptionPriceVersionId, SubscriptionPriceVersion>
+  Record<LegacyPriceVersionId, SubscriptionPriceVersion>
 > = Object.freeze({
   pro_monthly_twd_launch_v1: priceVersion({
     id: 'pro_monthly_twd_launch_v1',
@@ -92,19 +97,29 @@ export const SUBSCRIPTION_PRICE_CATALOG: Readonly<
   }),
 });
 
+/** Approved current list prices, not activated store products. Historical versions above are immutable. */
+export const CURRENT_SUBSCRIPTION_PRICE_CATALOG = Object.freeze(Object.fromEntries(
+  CURRENT_SUBSCRIPTION_PRICE_VERSION_IDS.map((id, index) => [id, priceVersion({
+    id, planCode: index < 2 ? 'pro' : 'team', cadence: index % 2 === 0 ? 'monthly' : 'annual',
+    currency: 'TWD', amountMinor: [59, 588, 249, 2490][index], policy: 'standard', offerCode: null,
+    runtimeStatus: 'candidate', effectiveAt: null,
+  })]),
+)) as Readonly<Record<typeof CURRENT_SUBSCRIPTION_PRICE_VERSION_IDS[number], SubscriptionPriceVersion>>;
+
 export function isSubscriptionPriceVersionId(
   value: unknown,
 ): value is SubscriptionPriceVersionId {
   return (
     typeof value === 'string' &&
-    SUBSCRIPTION_PRICE_VERSION_IDS.includes(value as SubscriptionPriceVersionId)
+    [...SUBSCRIPTION_PRICE_VERSION_IDS, ...CURRENT_SUBSCRIPTION_PRICE_VERSION_IDS].includes(value as SubscriptionPriceVersionId)
   );
 }
 
 export function getSubscriptionPriceVersion(
   id: SubscriptionPriceVersionId,
 ): SubscriptionPriceVersion {
-  return SUBSCRIPTION_PRICE_CATALOG[id];
+  return (SUBSCRIPTION_PRICE_CATALOG as Partial<Record<SubscriptionPriceVersionId, SubscriptionPriceVersion>>)[id]
+    ?? CURRENT_SUBSCRIPTION_PRICE_CATALOG[id as typeof CURRENT_SUBSCRIPTION_PRICE_VERSION_IDS[number]];
 }
 
 export type FounderEligibilityBlockReason =

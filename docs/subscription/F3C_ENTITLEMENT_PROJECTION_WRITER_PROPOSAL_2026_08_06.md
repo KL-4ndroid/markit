@@ -2,15 +2,18 @@
 
 Date: 2026-08-06
 
-Status: planning only; implementation, migration, provider runtime, and all writes remain
-unapproved
+Status: historical planning only proposal; Production migration, runtime activation
+and live writes remain unapproved. The separately reviewed B04 local implementation
+is recorded in [B04](../IOS_WINDOWS_B04_APPLE_BACKEND_2026_11_20.md) and
+[its source review](APPLE_B04_SOURCE_REVIEW_2026_11_20.md); it is not a remote installer.
 
 2026-10-20 update: the user authorized continued Windows implementation. A bounded
 source foundation (shared decisions + private server orchestration with an injected
 transaction port) is reviewed and tested separately in
 `NATIVE_RECONCILIATION_FOUNDATION_REVIEW_2026_10_20.md` and
 `NATIVE_RECONCILIATION_FOUNDATION_EVIDENCE_2026_10_20.md`. The concrete database
-writer/migration described here remains planning only. No production or provider
+writer/migration described here remained planning only in that October slice; the
+separate B04 local candidate is linked above. No production or provider
 runtime was enabled and this does not close the F3C/native writer gate.
 
 Depends on:
@@ -18,7 +21,7 @@ Depends on:
 - migration 063 `subscription_accounts` read model;
 - selected-sandbox F3A migration 066 verification;
 - selected-sandbox F3B migration 067 verification;
-- `lib/subscription/native-store-verification.ts` normalized verification contract;
+- `lib/subscription/native-store-verification-contract.ts` normalized verification contract;
 - approved Apple/Google server verification adapters and account-binding policy.
 
 ## 1. Objective

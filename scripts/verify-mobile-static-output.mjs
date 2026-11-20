@@ -35,6 +35,9 @@ const forbiddenPaths = [
 ];
 
 const forbiddenBundlePatterns = [
+  { pattern: '@apple/app-store-server-library', label: 'Apple server SDK package name' },
+  { pattern: 'native_billing_private.command', label: 'private billing writer RPC' },
+  { pattern: 'pg-protocol', label: 'PostgreSQL wire protocol client' },
   { pattern: '@aws-sdk/client-s3', label: 'AWS SDK package name' },
   { pattern: 'R2_SECRET_ACCESS_KEY', label: 'R2 secret environment name' },
   { pattern: 'R2_ACCESS_KEY_ID', label: 'R2 access-key environment name' },

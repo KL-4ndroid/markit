@@ -1,5 +1,18 @@
 # Role / Permission Distribution Notes
 
+## 2026-11-20 | B04 local Apple writer boundary
+
+[B04](IOS_WINDOWS_B04_APPLE_BACKEND_2026_11_20.md) adds a guarded disposable-database
+candidate only. A NOLOGIN `stallight_billing_writer` role can execute one private,
+fixed-search-path function; anon, authenticated and general service_role cannot.
+The function reuses F3B subscription/inbox/audit tables and atomically writes only
+Free/billing projections, preserving admin/promotion and business records. The
+repository may use the guarded immutable F3A DB price registry; no client flag or
+price creates authority. Staff cannot create an owner billing binding. No public
+route, live role/grant/RLS change or billing reader activation is installed.
+Production deletion fences/retention and read-policy integration require E02 review;
+new private binding FKs must not be ignored by the deletion engine.
+
 ## 2026-11-02 | Integrated candidate readback and review surface
 
 [The 22-case candidate](subscription/ACCOUNT_DELETION_INTEGRATED_DELIVERY_PLAN_2026_11_02.md) uses real GoTrue bearer, PostgREST ACL/RPC and the enabled canonical subscription write check. The existing deletion identity adapter performs a synthetic owner hard-delete through GoTrue. New readback/review BFFs are service-only and cannot bypass owner/staff scope, frozen actor, live processing lease or exact content/receipt verification. Unknown attempts and unattributed legacy claims remain held; no production role, paid tier, database or upload gate was changed. The SQL package remains review-only, and the public deletion page explicitly remains draft/default-off.
