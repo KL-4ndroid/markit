@@ -40,9 +40,9 @@ const document = parseNativeStoreProductMetadata(canonical);
 const report = evaluateNativeStoreProductMetadata(document);
 
 assert.equal(report.readyForConsoleEntry, false);
-assert.equal(report.appleProductCount, 5);
+assert.equal(report.appleProductCount, 4);
 assert.equal(report.googleSubscriptionCount, 2);
-assert.equal(report.founderDisposition, 'deferred_pending_mechanism');
+assert.equal(report.founderDisposition, 'not_offered');
 assert.equal(report.checkCount, 6);
 assert.equal(report.passedCount, 0);
 assert.equal(report.blockerCount, 6);
@@ -116,8 +116,8 @@ expectInvalid(input => {
   input.apple.products[0].disposition = 'deferred_pending_mechanism';
 }, 'founder_disposition_invalid');
 expectInvalid(input => {
-  input.apple.products[2].disposition = 'candidate_requires_manual_review';
-}, 'founder_disposition_invalid');
+  input.apple.products[2].priceVersionId = 'pro_founder_annual_twd_launch_v1';
+}, 'apple_metadata_invalid');
 expectInvalid(input => { input.price = 'not-allowed'; }, 'document_invalid');
 
 const documentation = readFileSync(join(

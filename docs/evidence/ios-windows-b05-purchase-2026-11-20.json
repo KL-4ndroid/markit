@@ -1,0 +1,372 @@
+{
+  "date": "2026-11-20",
+  "environment": "Windows disposable PostgreSQL17 / GoTrue / real SDK signatures with synthetic CA / HTTP B04",
+  "checks": [
+    "real Auth-bound session / bridge catalog / localized display prices",
+    "client -> HTTP B04 -> official JWS verification -> SQL commit with dropped response",
+    "reopen reads unfinished / duplicate receipt -> finish / no second purchase",
+    "explicit restore -> latest authoritative snapshot -> same owner projection",
+    "account switch cannot reuse authenticated server port or finish",
+    "business data retained; list prices do not fabricate payments"
+  ],
+  "passed": 6,
+  "liveStoreKit": false,
+  "swiftCompiled": false,
+  "productionEnabled": false,
+  "sources": [
+    {
+      "path": "lib/platform/contracts/in-app-purchase.ts",
+      "sha256": "2d6b3e94f11e6c9ab41952e61ae071099db6ca5e4cb970174364398ddf82d5c4"
+    },
+    {
+      "path": "lib/platform/capacitor/apple-purchases.ts",
+      "sha256": "68b59175b3e7cd74835e012b02620aae3ccc5a9d007170a6330810da07afcd24"
+    },
+    {
+      "path": "lib/platform/capacitor/load-apple-purchases.ts",
+      "sha256": "9dbc203120f663508100e7f7c8e6c9c3956b349673ad2d2cb011c246594a90ee"
+    },
+    {
+      "path": "lib/subscription/apple-purchase-session.ts",
+      "sha256": "bb9ad02133eb01db5dabe4f6ae7e2e6f94c50ebdc9c87c0a038e6aa73515ad0f"
+    },
+    {
+      "path": "lib/subscription/apple-purchase-client.ts",
+      "sha256": "f674c265d0c40d1effcffa78fe382f74c8918f44225f24a78494b6ea0ed2f5be"
+    },
+    {
+      "path": "lib/subscription/apple-purchase-runtime.ts",
+      "sha256": "da71b84725415218d1b22eb4f22abc97d1f3d44ca12ec0dc8df3c3be38cf9cca"
+    },
+    {
+      "path": "components/subscription/ApplePurchaseView.tsx",
+      "sha256": "265de7dfed76f663c0d3febd3ead79d9cc4868e506c7ae15e2f43c22a870de97"
+    },
+    {
+      "path": "components/subscription/NativeSubscriptionActions.tsx",
+      "sha256": "3973a4030ccac3b5a3a0c64b0eb0c3a6fa967eaff296801024700ffc589c1177"
+    },
+    {
+      "path": "scripts/lib/apple-b05-integration.ts",
+      "sha256": "2b2ea8c5817a194c44be6ae780d68239c555f6961caa64f25e87b96eb41085b0"
+    },
+    {
+      "path": "scripts/verify-apple-b04.ts",
+      "sha256": "d642c2b9785584242447e28d7fa8a70ca965e6d775eb59c978f057ab53a6326d"
+    },
+    {
+      "path": "plugins/stallight-purchases/ios/Sources/StallightPurchasesPlugin/StallightPurchasesPlugin.swift",
+      "sha256": "f745e8959e957173be3094c98d4727bda26732fa946b73d935ea6e73b9ce3ee9"
+    }
+  ],
+  "basisRevision": "5eeda86",
+  "quality": {
+    "workflowGroups": 18,
+    "directedTestFiles": 13,
+    "directedTests": [
+      "apple-purchase-session",
+      "platform-in-app-purchase-boundary",
+      "native-purchase-workflow",
+      "native-purchase-disclosure",
+      "subscription-center-ui",
+      "subscription-center-view",
+      "native-store-product-metadata",
+      "native-store-product-metadata-cli",
+      "native-store-data-disclosure-baseline",
+      "native-store-listing-metadata",
+      "native-store-listing-metadata-cli",
+      "native-platform-startup",
+      "native-store-verification-contract"
+    ],
+    "typescript": "passed",
+    "eslint": "passed for changed application and fixture sources",
+    "mobileBuild": "passed: 37 aliases, 397 files / 20.41 MiB, 11 smoke routes/assets",
+    "buildConfiguration": "synthetic public Supabase/API values; rebuild with final approved origins before shipping",
+    "launchPlanAndManualChecklist": "passed; deployment gates unchanged",
+    "databaseContainersAndNetworkRemoved": true,
+    "uiServerStopped": true
+  },
+  "browser": {
+    "environment": "local React actions + injected synthetic store; no charge",
+    "actualCssViewports": [
+      {
+        "width": 320,
+        "height": 740
+      },
+      {
+        "width": 400,
+        "height": 844
+      }
+    ],
+    "horizontalOverflow": false,
+    "minimumButtonHeightCssPx": 44,
+    "observed": [
+      "confirmation sheet / return",
+      "purchase commit and management entry",
+      "ack loss -> retry: 1 purchase / 2 verification calls",
+      "cancelled",
+      "pending",
+      "wrong account",
+      "other-origin subscription blocks new purchase",
+      "management return retains Apple source and hides purchase cards"
+    ],
+    "screenshotPersisted": false,
+    "screenshotNote": "Screenshot capture could not be saved; DOM state and layout metrics used. Not native-device proof."
+  },
+  "remaining": [
+    "E02 Apple identity/catalog/credentials and protected backend activation",
+    "E02 binding/current source API + writer/reader/retention/deletion fence integration",
+    "H01 Swift compile, signed device, StoreKit sandbox, lifecycle/reinstall/device verification",
+    "B06 existing audit findings / final candidate / Mac handoff",
+    "E01 hosted account-deletion integration after 2026-12-01",
+    "Final legal/provider retention/privacy/store material approval"
+  ],
+  "logs": [
+    {
+      "path": ".codex-artifacts/b05-test-apple-purchase-session.log",
+      "sha256": "0f9c6a8970a7bdf4bcbf0940ee0ba85619fa1c652d4ef30a1985c2f241f7672b"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-platform-in-app-purchase-boundary.log",
+      "sha256": "5e40280a12198d2f8a3be339592ee12195fd73c6a405476be09bd9b863c7b1c1"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-native-purchase-workflow.log",
+      "sha256": "3784bc7542e396b4f94f134976f021159a40e20be48a9516ae479bb98daae50c"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-native-purchase-disclosure.log",
+      "sha256": "44d3e7c59d52c22c60ee84cf14af01a18b92dec5f7f52030879aa8936a64e507"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-subscription-center-ui.log",
+      "sha256": "483545faf76a498d486f18fbecd746bb2efb192e5e8780de45f769624eebccea"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-subscription-center-view.log",
+      "sha256": "ea1ee73e637f515c5bf3e0022ede92add5a1967aed1cac5c10a2af9c1d20f297"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-native-store-product-metadata.log",
+      "sha256": "34ccfef412c5bd7abca79e2e8238f6f3b06f08f62ba8e344724d83efc356a4b5"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-native-store-product-metadata-cli.log",
+      "sha256": "9eaa6f8a48f0538cde28e39c8a8c56dc7d7343bfbc4f9eeae37cc19be7d6f219"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-native-store-data-disclosure-baseline.log",
+      "sha256": "0acd365e348951bbb318632c37e3aea351504ffb616b458382f918f37fa55a76"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-native-store-listing-metadata.log",
+      "sha256": "12fbf72fb2d2594762623dbe901a67e872e3c1e14b56fc56deaab146977729f9"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-native-store-listing-metadata-cli.log",
+      "sha256": "62b3b5f1cca6607f7e883a4a19332e916de0796865aba583e04b965bed2989c3"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-native-platform-startup.log",
+      "sha256": "8d90452a1263bb732fdec78a272a94efae69fdaa4da75563fc6b095cab9f1f77"
+    },
+    {
+      "path": ".codex-artifacts/b05-test-native-store-verification-contract.log",
+      "sha256": "2ddb40edea56cd0f064818b1c993c1d8dd0887046ec07b90b938c387ed09549d"
+    },
+    {
+      "path": ".codex-artifacts/b05-mobile-build-final.log",
+      "sha256": "8c4faddae07035688b0c168d84c6a66c67de2e20bf71df7749f15aab95e03e79"
+    }
+  ],
+  "deliverySources": [
+    {
+      "path": "app/subscription/page.tsx",
+      "sha256": "399dea5d9743ce230d346b7271a06d7baec30a23b6d0944c6b1a50e2043259f4"
+    },
+    {
+      "path": "components/subscription/ApplePurchaseView.tsx",
+      "sha256": "265de7dfed76f663c0d3febd3ead79d9cc4868e506c7ae15e2f43c22a870de97"
+    },
+    {
+      "path": "components/subscription/NativeSubscriptionActions.tsx",
+      "sha256": "3973a4030ccac3b5a3a0c64b0eb0c3a6fa967eaff296801024700ffc589c1177"
+    },
+    {
+      "path": "components/subscription/SubscriptionAccountSummary.tsx",
+      "sha256": "ceb0907dbdd200c2f4ed25a37e1194c8b6b70474813bed1fb5670b7a286f30e9"
+    },
+    {
+      "path": "components/subscription/SubscriptionPreviewOnly.tsx",
+      "sha256": "3549c022e2f6a60fecae59149a2b6cf4de3eb72a2157805f3b6876f16029b122"
+    },
+    {
+      "path": "docs/IOS_WINDOWS_B05_PURCHASE_EXPERIENCE_2026_11_20.md",
+      "sha256": "b40eb3bf7f05971e8962b24aba813ad124565e2b58698edc207f9c980f46de77"
+    },
+    {
+      "path": "docs/IOS_WINDOWS_EXECUTION_PLAN_2026_11_19.md",
+      "sha256": "b7186cebe869ba2e3592bf94672f0428a9dee53e882f0a12f771c3a3f3700323"
+    },
+    {
+      "path": "docs/LAUNCH_EXECUTION_TASKS_2026_08_09.json",
+      "sha256": "a8896e64f2e7837ed7a27330713ca06c2c1a8fdee652d8b15a9b2f3fe5a2fa1c"
+    },
+    {
+      "path": "docs/SUBSCRIPTION_FILE_INDEX.mk",
+      "sha256": "03c502f6ca3d2b2292f333d2cfea4077e3ab2a0e43598a1b6ffa186c0bfac8a1"
+    },
+    {
+      "path": "docs/subscription/APPLE_B05_SOURCE_REVIEW_2026_11_20.md",
+      "sha256": "71dd6b9c2f826f265f811e5b3ae8b2c7cfd4aeb2c02430aa33a80819716a2959"
+    },
+    {
+      "path": "docs/subscription/APPLE_STORE_CATALOG_CANDIDATE_2026_11_20.json",
+      "sha256": "87f10bfe58413ac946e3510df1d8b62d0883bcfbf24bd3ec65e320222a74a190"
+    },
+    {
+      "path": "docs/subscription/IOS_B05_STORE_HANDOFF_2026_11_20.md",
+      "sha256": "916f5526f33263eed573598de3f9b47ebdec427d8456420b603e22310c0c01d4"
+    },
+    {
+      "path": "docs/subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.json",
+      "sha256": "b1ccdeab87fe19372ab5c17d1379d5793eab97a1564ab49dadf4734847a2c1fa"
+    },
+    {
+      "path": "docs/subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md",
+      "sha256": "06896ccd047db3041afb5421380ee62100e27e8d6a853838f0f971cf1ab22e83"
+    },
+    {
+      "path": "docs/subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.json",
+      "sha256": "d067c6064059d1f88c4c33bc13b00993d561c06094bb26b096335529c42530a7"
+    },
+    {
+      "path": "docs/subscription/NATIVE_STORE_LISTING_METADATA_EN_US.json",
+      "sha256": "b0c97b05ea8eed452247fc7dc64e491f6c01a00c4b54cd92503ecd811b6fbedb"
+    },
+    {
+      "path": "docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.json",
+      "sha256": "df1e9661753629dd510983c1e2182bb0d11f8aeef55f78c7c34f11b54102a57f"
+    },
+    {
+      "path": "docs/subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.md",
+      "sha256": "0e8616ae2bf30186c3db0b453f74adffb4033b2050800f014ba79c2247343c64"
+    },
+    {
+      "path": "docs/subscription/candidate/registration-compatibility-manifest.json",
+      "sha256": "75be5aa7cf052c474333b1b4cc72e2433accb6a23d8a5776e8c500437f7af64b"
+    },
+    {
+      "path": "lib/platform/capacitor/apple-purchases.ts",
+      "sha256": "68b59175b3e7cd74835e012b02620aae3ccc5a9d007170a6330810da07afcd24"
+    },
+    {
+      "path": "lib/platform/capacitor/load-apple-purchases.ts",
+      "sha256": "9dbc203120f663508100e7f7c8e6c9c3956b349673ad2d2cb011c246594a90ee"
+    },
+    {
+      "path": "lib/platform/contracts/in-app-purchase.ts",
+      "sha256": "2d6b3e94f11e6c9ab41952e61ae071099db6ca5e4cb970174364398ddf82d5c4"
+    },
+    {
+      "path": "lib/platform/contracts/index.ts",
+      "sha256": "f2b259d1154f604ffa6e99759df6c9d0489a50754b5cac2c792a7ebc9a6241c3"
+    },
+    {
+      "path": "lib/platform/index.ts",
+      "sha256": "e497854812371f11fb4356dc2f57882a9f2e066aaceb60f597fc041dca9fe49b"
+    },
+    {
+      "path": "lib/subscription/apple-purchase-client.ts",
+      "sha256": "f674c265d0c40d1effcffa78fe382f74c8918f44225f24a78494b6ea0ed2f5be"
+    },
+    {
+      "path": "lib/subscription/apple-purchase-runtime.ts",
+      "sha256": "da71b84725415218d1b22eb4f22abc97d1f3d44ca12ec0dc8df3c3be38cf9cca"
+    },
+    {
+      "path": "lib/subscription/apple-purchase-session.ts",
+      "sha256": "bb9ad02133eb01db5dabe4f6ae7e2e6f94c50ebdc9c87c0a038e6aa73515ad0f"
+    },
+    {
+      "path": "lib/subscription/native-store-product-metadata.ts",
+      "sha256": "dc367426cd9e2883343040a1207556e764bf2c9a891e7894fabd9426f19bcdf4"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "96ec4436f6f0badf743b977dda4e0a3147f84eb2e09e990b6259ed72d9865e2f"
+    },
+    {
+      "path": "package.json",
+      "sha256": "41bb2a135890491a78371f12b87699abc4d218566b50c60642315eef7e317447"
+    },
+    {
+      "path": "plugins/stallight-purchases/Package.swift",
+      "sha256": "251a96745d7eb9017939d7fcd1af90d2e71d85b5a6676db527330da411706b47"
+    },
+    {
+      "path": "plugins/stallight-purchases/StallightPurchases.podspec",
+      "sha256": "60af5d0b02e31f26ef210bffb9f3e0c654085216e82bdcfb485d8ab717fce198"
+    },
+    {
+      "path": "plugins/stallight-purchases/index.js",
+      "sha256": "d2ce34781c489e1833ac6770e884157ba97a1c8418fa811a6f5884af01789534"
+    },
+    {
+      "path": "plugins/stallight-purchases/ios/Sources/StallightPurchasesPlugin/StallightPurchasesPlugin.swift",
+      "sha256": "f745e8959e957173be3094c98d4727bda26732fa946b73d935ea6e73b9ce3ee9"
+    },
+    {
+      "path": "plugins/stallight-purchases/package.json",
+      "sha256": "8c1087986e54217d4531e012374b881aff850631223ece2204e7f6e6ce266d26"
+    },
+    {
+      "path": "scripts/lib/apple-b05-integration.ts",
+      "sha256": "2b2ea8c5817a194c44be6ae780d68239c555f6961caa64f25e87b96eb41085b0"
+    },
+    {
+      "path": "scripts/serve-apple-b05-ui.ts",
+      "sha256": "d61039e730e26f6c0bbb939e54288b9a47290d5eb8a47c8c1e5a20e5c2784961"
+    },
+    {
+      "path": "scripts/test-files.txt",
+      "sha256": "677a6372bfc59bba50edc9da59666832231a79cfe41425e51838c7f25b3e99af"
+    },
+    {
+      "path": "scripts/verify-apple-b04.ts",
+      "sha256": "d642c2b9785584242447e28d7fa8a70ca965e6d775eb59c978f057ab53a6326d"
+    },
+    {
+      "path": "scripts/verify-mobile-static-output.mjs",
+      "sha256": "c5df993d6a1f014162cd64dbc180076a88c6410d3b076826148b9cb9991c7d1a"
+    },
+    {
+      "path": "tests/apple-purchase-session.test.ts",
+      "sha256": "e8d18d24b7d75f3ef81cc12ff5be40e2ecc160ceb7372f976ff383b221b9ced3"
+    },
+    {
+      "path": "tests/fixtures/apple-purchase-browser.tsx",
+      "sha256": "69eaed683e1b6308eafed9f690beb38b4963c1f2c9c9d2524947d7f4e91b4ae7"
+    },
+    {
+      "path": "tests/native-store-data-disclosure-baseline.test.ts",
+      "sha256": "67792a381fbd8a90ae63c7762a289f7077c34e23e76f7046039028dd1b0551eb"
+    },
+    {
+      "path": "tests/native-store-listing-metadata.test.ts",
+      "sha256": "e30d45badc1b10efb14bf337631c0582df491c97192c286f6cc95f51947c68f5"
+    },
+    {
+      "path": "tests/native-store-product-metadata-cli.test.ts",
+      "sha256": "5d32aea6aad73f61286cceaba3a3381b3db99072500a08c79279264abf13256f"
+    },
+    {
+      "path": "tests/native-store-product-metadata.test.ts",
+      "sha256": "a80335e6bc21998673c90910ff9715ee9839ba40bec9bef5b4efd4bae7242e85"
+    },
+    {
+      "path": "tests/subscription-center-ui.test.ts",
+      "sha256": "fc086f13e9dd160b2043380b71ff5b461a8a3340db41b139db2cdd57a327b3ca"
+    }
+  ]
+}

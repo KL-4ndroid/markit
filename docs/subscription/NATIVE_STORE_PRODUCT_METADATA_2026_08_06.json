@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "subscription/NATIVE_STORE_PRODUCT_METADATA_2026_08_06.md",
-  "updatedAt": "2026-11-11",
+  "updatedAt": "2026-11-20",
   "locale": "zh-TW",
   "activationStatus": "disabled",
   "submissionStatus": "disabled",
@@ -15,44 +15,68 @@
     "subscriptionGroupDisplayName": "拾光日子方案",
     "products": [
       {
-        "priceVersionId": "pro_monthly_twd_launch_v1",
+        "priceVersionId": "pro_monthly_twd_2026_10_v1",
         "planCode": "pro",
         "disposition": "candidate_requires_manual_review",
         "displayName": "拾光日子 輕量版 月繳",
         "description": "記錄銷售與互動、管理商品、查看單場成果與基本月摘要",
-        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover"]
+        "capabilityCodes": [
+          "core.sales_recording",
+          "core.product_catalog",
+          "analytics.basic",
+          "photo.product_cover"
+        ]
       },
       {
-        "priceVersionId": "pro_annual_twd_launch_v1",
+        "priceVersionId": "pro_annual_twd_2026_10_v1",
         "planCode": "pro",
         "disposition": "candidate_requires_manual_review",
         "displayName": "拾光日子 輕量版 年繳",
         "description": "記錄銷售與互動、管理商品、查看單場成果與基本月摘要",
-        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover"]
+        "capabilityCodes": [
+          "core.sales_recording",
+          "core.product_catalog",
+          "analytics.basic",
+          "photo.product_cover"
+        ]
       },
       {
-        "priceVersionId": "pro_founder_annual_twd_launch_v1",
-        "planCode": "pro",
-        "disposition": "deferred_pending_mechanism",
-        "displayName": "拾光日子 輕量版 創始年繳",
-        "description": "記錄銷售與互動、管理商品、查看單場成果與基本月摘要",
-        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover"]
-      },
-      {
-        "priceVersionId": "team_monthly_twd_launch_v1",
+        "priceVersionId": "team_monthly_twd_2026_10_v1",
         "planCode": "team",
         "disposition": "candidate_requires_manual_review",
         "displayName": "拾光日子 高階版 月繳",
         "description": "跨市集比較、完整結算與 PDF 匯出、成交照片與員工協作",
-        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
+        "capabilityCodes": [
+          "core.sales_recording",
+          "core.product_catalog",
+          "analytics.basic",
+          "photo.product_cover",
+          "analytics.advanced",
+          "report.settlement_preview",
+          "report.pdf",
+          "photo.sales_evidence",
+          "team.staff_collaboration",
+          "team.manager_workflow"
+        ]
       },
       {
-        "priceVersionId": "team_annual_twd_launch_v1",
+        "priceVersionId": "team_annual_twd_2026_10_v1",
         "planCode": "team",
         "disposition": "candidate_requires_manual_review",
         "displayName": "拾光日子 高階版 年繳",
         "description": "跨市集比較、完整結算與 PDF 匯出、成交照片與員工協作",
-        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
+        "capabilityCodes": [
+          "core.sales_recording",
+          "core.product_catalog",
+          "analytics.basic",
+          "photo.product_cover",
+          "analytics.advanced",
+          "report.settlement_preview",
+          "report.pdf",
+          "photo.sales_evidence",
+          "team.staff_collaboration",
+          "team.manager_workflow"
+        ]
       }
     ]
   },
@@ -62,15 +86,41 @@
         "planCode": "pro",
         "disposition": "candidate_requires_manual_review",
         "name": "拾光日子 輕量版",
-        "benefits": ["記錄銷售與互動", "商品庫存與封面照片", "單場成果與基本月摘要", "選填現金對帳"],
-        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover"]
+        "benefits": [
+          "記錄銷售與互動",
+          "商品庫存與封面照片",
+          "單場成果與基本月摘要",
+          "選填現金對帳"
+        ],
+        "capabilityCodes": [
+          "core.sales_recording",
+          "core.product_catalog",
+          "analytics.basic",
+          "photo.product_cover"
+        ]
       },
       {
         "planCode": "team",
         "disposition": "candidate_requires_manual_review",
         "name": "拾光日子 高階版",
-        "benefits": ["跨市集比較與進階分析", "完整結算報告與 PDF 匯出", "成交照片證據", "員工協作與角色管理"],
-        "capabilityCodes": ["core.sales_recording", "core.product_catalog", "analytics.basic", "photo.product_cover", "analytics.advanced", "report.settlement_preview", "report.pdf", "photo.sales_evidence", "team.staff_collaboration", "team.manager_workflow"]
+        "benefits": [
+          "跨市集比較與進階分析",
+          "完整結算報告與 PDF 匯出",
+          "成交照片證據",
+          "員工協作與角色管理"
+        ],
+        "capabilityCodes": [
+          "core.sales_recording",
+          "core.product_catalog",
+          "analytics.basic",
+          "photo.product_cover",
+          "analytics.advanced",
+          "report.settlement_preview",
+          "report.pdf",
+          "photo.sales_evidence",
+          "team.staff_collaboration",
+          "team.manager_workflow"
+        ]
       }
     ]
   }

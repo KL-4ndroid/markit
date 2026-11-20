@@ -1,5 +1,7 @@
 # Native Store Data Disclosure Baseline
 
+2026-11-20 B05 update: [current data flow and retention handoff](IOS_B05_STORE_HANDOFF_2026_11_20.md) covers the private StoreKit source, B04 server SDK/DB, account binding and device-only uncertainty flags. JSON inventory is updated; source implementation is distinct from disabled production runtime. Public policy, processor retention and final binary/App Privacy approval remain pending. Older contract-only descriptions below are historical context, not current engineering status.
+
 Date: 2026-08-06
 
 Status: draft requires manual, legal, provider, and final-binary review

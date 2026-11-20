@@ -12,6 +12,7 @@ export type {
   InAppPurchaseEnvironment,
   InAppPurchaseErrorCode,
   InAppPurchasePort,
+  RecoverablePurchasePort,
   InAppPurchaseOption,
   InAppPurchaseProduct,
   InAppPurchaseRequest,

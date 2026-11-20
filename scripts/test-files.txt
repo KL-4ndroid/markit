@@ -486,3 +486,5 @@ tests/product-cover-upload-freeze.test.ts
 tests/account-deletion-managed-target.test.ts
 tests/account-deletion-registration-compat.test.ts
 tests/apple-b04.test.ts
+
+tsx tests/apple-purchase-session.test.ts

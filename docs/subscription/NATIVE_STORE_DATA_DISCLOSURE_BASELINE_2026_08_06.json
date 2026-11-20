@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "subscription/NATIVE_STORE_DATA_DISCLOSURE_BASELINE_2026_08_06.md",
-  "updatedAt": "2026-10-20",
+  "updatedAt": "2026-11-20",
   "nativeSdkInventory": {
     "reviewStatus": "source_only_final_binary_review_pending",
-    "reviewEvidence": "docs/IOS_PLATFORM_BOOTSTRAP_SOURCE_REVIEW_2026_10_20.md",
+    "reviewEvidence": "docs/subscription/APPLE_B05_SOURCE_REVIEW_2026_11_20.md",
     "packages": {
       "@capacitor/app": "8.1.2",
       "@capacitor/app-launcher": "8.0.1",
@@ -17,10 +17,17 @@
       "@capacitor/filesystem": "8.1.5",
       "@capacitor/share": "8.0.3",
       "@feria/capacitor-auth-storage": "file:plugins/feria-auth-storage",
-      "@feria/capacitor-file-preview": "file:plugins/feria-file-preview"
+      "@feria/capacitor-file-preview": "file:plugins/feria-file-preview",
+      "@stallight/capacitor-purchases": "file:plugins/stallight-purchases"
     },
-    "localPluginVersions": { "@feria/capacitor-auth-storage": "0.1.0", "@feria/capacitor-file-preview": "0.1.0" },
-    "transitivePackages": { "@capacitor/synapse": "1.0.4" },
+    "localPluginVersions": {
+      "@feria/capacitor-auth-storage": "0.1.0",
+      "@feria/capacitor-file-preview": "0.1.0",
+      "@stallight/capacitor-purchases": "0.1.0"
+    },
+    "transitivePackages": {
+      "@capacitor/synapse": "1.0.4"
+    },
     "nativePackageRequirements": {
       "IONCameraLib": "2.0.x; resolved version and source audit pending macOS",
       "IONFilesystemLib": "2.0.1; native build verification pending macOS"
@@ -38,8 +45,8 @@
     "dataSale": "no_by_design",
     "encryptedInTransit": "expected_https_requires_release_confirmation",
     "privacyPolicy": "implemented_local_publication_pending",
-    "privacyChoices": "support_workflow_implemented_local_public_contact_pending",
-    "accountDeletion": "missing_compliant_in_app_flow",
+    "privacyChoices": "support_email_confirmed_release_publication_review_pending",
+    "accountDeletion": "local_flow_implemented_production_runtime_disabled",
     "retention": "pending_legal_approval",
     "processorTerms": "pending_manual_review"
   },
@@ -55,8 +62,14 @@
       "linkedToAccount": true,
       "tracking": false,
       "requirednessDraft": "required",
-      "purposes": ["app_functionality", "account_management", "security"],
-      "processors": ["Supabase"],
+      "purposes": [
+        "app_functionality",
+        "account_management",
+        "security"
+      ],
+      "processors": [
+        "Supabase"
+      ],
       "codeEvidence": [
         "lib/supabase/staff.ts",
         "lib/supabase/migration.ts",
@@ -78,8 +91,15 @@
       "linkedToAccount": true,
       "tracking": false,
       "requirednessDraft": "required",
-      "purposes": ["app_functionality", "account_management", "security"],
-      "processors": ["Supabase", "Vercel"],
+      "purposes": [
+        "app_functionality",
+        "account_management",
+        "security"
+      ],
+      "processors": [
+        "Supabase",
+        "Vercel"
+      ],
       "codeEvidence": [
         "types/staff.ts",
         "lib/auth/role-mode.ts",
@@ -101,8 +121,13 @@
       "linkedToAccount": true,
       "tracking": false,
       "requirednessDraft": "required",
-      "purposes": ["app_functionality", "personalization"],
-      "processors": ["Supabase"],
+      "purposes": [
+        "app_functionality",
+        "personalization"
+      ],
+      "processors": [
+        "Supabase"
+      ],
       "codeEvidence": [
         "types/db.ts",
         "lib/supabase/settings.ts",
@@ -124,8 +149,13 @@
       "linkedToAccount": true,
       "tracking": false,
       "requirednessDraft": "required",
-      "purposes": ["app_functionality", "analytics"],
-      "processors": ["Supabase"],
+      "purposes": [
+        "app_functionality",
+        "analytics"
+      ],
+      "processors": [
+        "Supabase"
+      ],
       "codeEvidence": [
         "types/db.ts",
         "app/privacy/page.tsx"
@@ -146,8 +176,14 @@
       "linkedToAccount": true,
       "tracking": false,
       "requirednessDraft": "optional",
-      "purposes": ["app_functionality"],
-      "processors": ["Vercel", "Supabase", "Cloudflare R2"],
+      "purposes": [
+        "app_functionality"
+      ],
+      "processors": [
+        "Vercel",
+        "Supabase",
+        "Cloudflare R2"
+      ],
       "codeEvidence": [
         "lib/products/product-cover-photo-server.ts",
         "app/api/sales-photo-evidence/upload/route.ts",
@@ -169,8 +205,14 @@
       "linkedToAccount": "provider_review_required",
       "tracking": false,
       "requirednessDraft": "required",
-      "purposes": ["app_functionality", "analytics", "security"],
-      "processors": ["Vercel"],
+      "purposes": [
+        "app_functionality",
+        "analytics",
+        "security"
+      ],
+      "processors": [
+        "Vercel"
+      ],
       "codeEvidence": [
         "lib/observability/sync-incident-contract.ts",
         "app/api/operational-events/sync/route.ts",
@@ -192,8 +234,14 @@
       "linkedToAccount": true,
       "tracking": false,
       "requirednessDraft": "optional",
-      "purposes": ["app_functionality", "account_management", "security"],
-      "processors": ["approved_support_mail_provider_pending"],
+      "purposes": [
+        "app_functionality",
+        "account_management",
+        "security"
+      ],
+      "processors": [
+        "approved_support_mail_provider_pending"
+      ],
       "codeEvidence": [
         "app/support/page.tsx",
         "app/privacy/page.tsx"
@@ -205,7 +253,7 @@
     },
     {
       "id": "native_subscription_purchase_history",
-      "runtimeState": "contract_only",
+      "runtimeState": "source_implemented_runtime_disabled",
       "launchDisposition": "declare_before_paid_native_release",
       "sourceSurface": "verified Apple or Google subscription transaction and lifecycle state",
       "appleDataType": "Purchases / Purchase History",
@@ -214,21 +262,34 @@
       "linkedToAccount": true,
       "tracking": false,
       "requirednessDraft": "required_for_paid_features",
-      "purposes": ["app_functionality", "account_management", "security"],
-      "processors": ["Apple_or_Google", "Vercel", "Supabase"],
+      "purposes": [
+        "app_functionality",
+        "account_management",
+        "security"
+      ],
+      "processors": [
+        "Apple_or_Google",
+        "Vercel",
+        "Supabase"
+      ],
       "codeEvidence": [
         "lib/platform/contracts/in-app-purchase.ts",
         "lib/subscription/native-store-verification-contract.ts",
-        "lib/subscription/native-account-entitlement.ts"
+        "lib/subscription/native-account-entitlement.ts",
+        "lib/subscription/apple-verification.server.ts",
+        "lib/subscription/apple-repository.server.ts",
+        "lib/subscription/apple-purchase-session.ts",
+        "plugins/stallight-purchases/ios/Sources/StallightPurchasesPlugin/StallightPurchasesPlugin.swift"
       ],
       "manualChecks": [
-        "Replace contract-only evidence with reviewed native adapter and server runtime evidence",
-        "Confirm store token, transaction, subscription, refund, and retention handling"
+        "E02 real Apple API and configured products; H01 Swift compile and device transactions",
+        "Store transaction/binding/receipt retention, deletion fence and protected archival review before installing private writer",
+        "Native device-only Keychain holds uncertainty flags only; unfinished JWS remain managed by StoreKit; no JS receipt persistence"
       ]
     },
     {
       "id": "native_store_account_binding",
-      "runtimeState": "contract_only",
+      "runtimeState": "source_implemented_runtime_disabled",
       "launchDisposition": "declare_with_user_identifier",
       "sourceSurface": "opaque Apple account token or Google obfuscated account identifier",
       "appleDataType": "Identifiers / User ID",
@@ -237,11 +298,21 @@
       "linkedToAccount": true,
       "tracking": false,
       "requirednessDraft": "required_for_paid_features",
-      "purposes": ["app_functionality", "account_management", "security"],
-      "processors": ["Apple_or_Google", "Vercel", "Supabase"],
+      "purposes": [
+        "app_functionality",
+        "account_management",
+        "security"
+      ],
+      "processors": [
+        "Apple_or_Google",
+        "Vercel",
+        "Supabase"
+      ],
       "codeEvidence": [
         "lib/platform/contracts/in-app-purchase.ts",
-        "lib/subscription/native-store-verification-contract.ts"
+        "lib/subscription/native-store-verification-contract.ts",
+        "lib/subscription/apple-repository.server.ts",
+        "lib/platform/capacitor/apple-purchases.ts"
       ],
       "manualChecks": [
         "Confirm the production binding is one-way and never sends the raw owner UUID",

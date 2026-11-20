@@ -132,7 +132,9 @@ export function SubscriptionAccountSummary() {
       )}
 
       {isOwner && (
-        <NativeSubscriptionActions canManageSubscription={view.canDisplayBillingControls} />
+        <NativeSubscriptionActions canManageSubscription={view.canDisplayBillingControls}
+          ownerId={session?.user.id} accessToken={session?.access_token}
+          capabilityFresh={view.state === 'available' && query.result?.ok === true && query.result.freshness === 'fresh'} />
       )}
     </section>
   );

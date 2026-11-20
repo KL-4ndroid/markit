@@ -49,7 +49,7 @@ const manifest = read('scripts/test-files.txt');
 
 assert.equal(baseline.status, 'draft_requires_manual_and_provider_review');
 assert.equal(baseline.storeComplianceGateStatus, 'pending_manual');
-assert.equal(baseline.globalAnswers.accountDeletion, 'missing_compliant_in_app_flow');
+assert.equal(baseline.globalAnswers.accountDeletion, 'local_flow_implemented_production_runtime_disabled');
 assert.equal(baseline.globalAnswers.tracking, 'no_by_design');
 assert.equal(baseline.globalAnswers.advertising, 'none');
 assert.equal(baseline.globalAnswers.dataSale, 'no_by_design');
@@ -78,7 +78,7 @@ for (const record of baseline.records) {
 
 assert.equal(
   baseline.records.find(record => record.id === 'native_subscription_purchase_history')?.runtimeState,
-  'contract_only',
+  'source_implemented_runtime_disabled',
 );
 assert.equal(
   baseline.records.find(record => record.id === 'product_and_sales_photos')?.launchDisposition,
@@ -92,7 +92,7 @@ for (const [dependency, version] of Object.entries(baseline.nativeSdkInventory.p
   assert.equal(packageJson.dependencies[dependency] ?? packageJson.devDependencies[dependency], version);
 }
 assert.deepEqual(Object.keys(baseline.nativeSdkInventory.packages).sort(),
-  ['@capacitor/app', '@capacitor/app-launcher', '@capacitor/camera', '@capacitor/cli', '@capacitor/clipboard', '@capacitor/core', '@capacitor/filesystem', '@capacitor/ios', '@capacitor/network', '@capacitor/share', '@feria/capacitor-auth-storage', '@feria/capacitor-file-preview']);
+  ['@capacitor/app', '@capacitor/app-launcher', '@capacitor/camera', '@capacitor/cli', '@capacitor/clipboard', '@capacitor/core', '@capacitor/filesystem', '@capacitor/ios', '@capacitor/network', '@capacitor/share', '@feria/capacitor-auth-storage', '@feria/capacitor-file-preview', '@stallight/capacitor-purchases']);
 for (const [dependency, version] of Object.entries(baseline.nativeSdkInventory.transitivePackages)) {
   assert.equal(JSON.parse(read(`node_modules/${dependency}/package.json`)).version, version);
 }
@@ -100,6 +100,8 @@ const localAuthPlugin = JSON.parse(read('plugins/feria-auth-storage/package.json
 assert.equal(baseline.nativeSdkInventory.localPluginVersions[localAuthPlugin.name], localAuthPlugin.version);
 const localPreviewPlugin = JSON.parse(read('plugins/feria-file-preview/package.json'));
 assert.equal(baseline.nativeSdkInventory.localPluginVersions[localPreviewPlugin.name], localPreviewPlugin.version);
+const purchasePlugin = JSON.parse(read('plugins/stallight-purchases/package.json'));
+assert.equal(baseline.nativeSdkInventory.localPluginVersions[purchasePlugin.name], purchasePlugin.version);
 assert.equal(baseline.nativeSdkInventory.devicePluginsInstalled, true);
 assert.equal(baseline.nativeSdkInventory.storeSdkInstalled, false);
 assert.equal(baseline.nativeSdkInventory.nativeProjectGenerated, false);

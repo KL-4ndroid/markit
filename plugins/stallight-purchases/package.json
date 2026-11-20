@@ -1,0 +1,11 @@
+{
+  "name": "@stallight/capacitor-purchases",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "description": "Private StoreKit 2 subscription bridge; runtime disabled until E02 review",
+  "main": "index.js",
+  "files": ["index.js", "Package.swift", "StallightPurchases.podspec", "ios/Sources"],
+  "peerDependencies": { "@capacitor/core": ">=8.5.3 <9" },
+  "capacitor": { "ios": { "src": "ios" } }
+}

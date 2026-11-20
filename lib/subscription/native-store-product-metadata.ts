@@ -45,11 +45,10 @@ readonly SubscriptionPlanFeatureCode[]
 });
 
 const EXPECTED_APPLE_PRODUCTS = Object.freeze([
-  { priceVersionId: 'pro_monthly_twd_launch_v1', planCode: 'pro' },
-  { priceVersionId: 'pro_annual_twd_launch_v1', planCode: 'pro' },
-  { priceVersionId: 'pro_founder_annual_twd_launch_v1', planCode: 'pro' },
-  { priceVersionId: 'team_monthly_twd_launch_v1', planCode: 'team' },
-  { priceVersionId: 'team_annual_twd_launch_v1', planCode: 'team' },
+  { priceVersionId: 'pro_monthly_twd_2026_10_v1', planCode: 'pro' },
+  { priceVersionId: 'pro_annual_twd_2026_10_v1', planCode: 'pro' },
+  { priceVersionId: 'team_monthly_twd_2026_10_v1', planCode: 'team' },
+  { priceVersionId: 'team_annual_twd_2026_10_v1', planCode: 'team' },
 ] as const satisfies readonly Readonly<{
   priceVersionId: SubscriptionPriceVersionId;
   planCode: ProductPlanCode;
@@ -119,7 +118,7 @@ export type NativeStoreProductMetadataReport = Readonly<{
   readyForConsoleEntry: boolean;
   appleProductCount: number;
   googleSubscriptionCount: number;
-  founderDisposition: ProductDisposition;
+  founderDisposition: ProductDisposition | 'not_offered';
   checkCount: number;
   passedCount: number;
   blockerCount: number;
@@ -307,12 +306,7 @@ export function parseNativeStoreProductMetadata(
     if (product.priceVersionId !== expected.priceVersionId || product.planCode !== expected.planCode) {
       throw new NativeStoreProductMetadataValidationError('apple_metadata_invalid');
     }
-    const isFounder = product.priceVersionId === 'pro_founder_annual_twd_launch_v1';
-    if (!isFounder && product.disposition !== 'candidate_requires_manual_review') {
-      throw new NativeStoreProductMetadataValidationError('founder_disposition_invalid');
-    }
-    if (isFounder && product.disposition === 'candidate_requires_manual_review'
-      && value.founderPolicyDecisionStatus !== 'complete') {
+    if (product.disposition !== 'candidate_requires_manual_review') {
       throw new NativeStoreProductMetadataValidationError('founder_disposition_invalid');
     }
   }
@@ -358,14 +352,11 @@ export function evaluateNativeStoreProductMetadata(
     reviewCheck('founder_policy_decision', document.founderPolicyDecisionStatus),
   ]);
   const passedCount = checks.filter(check => check.ok).length;
-  const founder = document.apple.products.find(product => (
-    product.priceVersionId === 'pro_founder_annual_twd_launch_v1'
-  ))!;
   return Object.freeze({
     readyForConsoleEntry: passedCount === checks.length,
     appleProductCount: document.apple.products.length,
     googleSubscriptionCount: document.google.subscriptions.length,
-    founderDisposition: founder.disposition,
+    founderDisposition: 'not_offered' as const,
     checkCount: checks.length,
     passedCount,
     blockerCount: checks.length - passedCount,

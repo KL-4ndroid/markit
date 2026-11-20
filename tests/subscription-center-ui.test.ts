@@ -20,10 +20,14 @@ for (const label of ['目前方案', '功能狀態', '付款狀態', '有效期�
   assert.ok(summary.includes(label), `subscription summary missing ${label}`);
 }
 assert.match(summary, /canManageSubscription=\{view\.canDisplayBillingControls\}/);
-assert.match(actions, /verificationRuntimeAvailable = false/);
-assert.match(actions, /disabled=\{!operationReady \|\| isBusy\}/);
-assert.match(actions, /恢復購買/);
-assert.match(actions, /管理訂閱/);
+assert.match(actions, /getApplePurchaseRuntime/);
+assert.match(actions, /if \(!runtime\?\.configuration.enabled \|\| !ownerId \|\| !accessToken\) return null/);
+assert.match(actions, /session.current\?\.dispose/);
+const purchaseView = readFileSync(join(root, 'components/subscription/ApplePurchaseView.tsx'), 'utf8');
+assert.match(purchaseView, /恢復購買/);
+assert.match(purchaseView, /管理訂閱/);
+assert.match(purchaseView, /disabled=\{busy \|\| !online \|\| !authorized\}/);
+assert.match(purchaseView, /前往 App Store 確認/);
 assert.doesNotMatch(actions, /grant|subscription_accounts|entitlementStatus|fetch\(/i);
 
 console.log('PASS subscription center is read-only and native actions fail closed');

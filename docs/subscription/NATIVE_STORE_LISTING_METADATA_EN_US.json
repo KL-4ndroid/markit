@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.md",
-  "updatedAt": "2026-11-11",
+  "updatedAt": "2026-11-20",
   "locale": "en-US",
   "status": "candidate_requires_manual_review",
   "submissionStatus": "disabled",
@@ -16,7 +16,7 @@
     "appName": "STALLIGHT DAYS",
     "subtitle": "A journal for market sellers",
     "promotionalText": "Keep the days behind every stall.",
-    "description": "STALLIGHT DAYS is a journal for market sellers.\n\nKeep track of the markets you apply to, your booth fees, and the sales you make. Record notes after each market and review how venues and products performed over time.\n\nBuilt for independent makers, food trucks, night-market vendors, and sellers who move between regular and pop-up events. Features vary by plan.\n\nKeep the days behind every stall.",
+    "description": "STALLIGHT DAYS is a journal for market sellers.\n\nKeep track of the markets you apply to, your booth fees, and the sales you make. Record notes after each market and review how venues and products performed over time.\n\nBuilt for independent makers, food trucks, night-market vendors, and sellers who move between regular and pop-up events. Features vary by plan.\n\nKeep the days behind every stall.\n\nFree includes market planning, applications, booth-fee records, preparation details, and private journals. Light adds sales and product records, individual market reviews, and basic summaries. Advanced adds comparisons, full reports on screen, optional PDF export, and staff collaboration.",
     "keywords": "market,vendor,stall,booth,sales,journal,popup,inventory,expenses,events",
     "primaryCategory": "Business",
     "secondaryCategory": "Productivity",
@@ -24,12 +24,12 @@
     "marketingUrl": null,
     "privacyPolicyUrl": null,
     "privacyChoicesUrl": null,
-    "reviewNotesDraft": "Authentication is required. Use the non-expiring review credentials supplied securely in App Store Connect. The review workspace must contain disposable sample data and no customer information. Confirm the final subscription, restore, role, and account-deletion behavior against the submitted binary before submission."
+    "reviewNotesDraft": "Authentication is required. Use the non-expiring review credentials supplied securely in App Store Connect. The review workspace must contain disposable sample data and no customer information. Confirm the final subscription, restore, role, and account-deletion behavior against the submitted binary before submission. Purchase and restore are in Settings > Plan center. The app first shows localized store prices and renewal terms, then the native store confirmation. Restore never starts a new purchase. Existing subscriptions must be managed at their original store. Verify production account-deletion execution and native transaction handling before submitting this draft."
   },
   "google": {
     "appName": "STALLIGHT DAYS",
     "shortDescription": "A journal for market sellers. Track markets, booth fees, sales, and notes.",
-    "fullDescription": "STALLIGHT DAYS is a journal for market sellers.\n\nKeep track of the markets you apply to, your booth fees, and the sales you make. Record notes after each market and review how venues and products performed over time.\n\nBuilt for independent makers, food trucks, night-market vendors, and sellers who move between regular and pop-up events. Features vary by plan.\n\nKeep the days behind every stall.",
+    "fullDescription": "STALLIGHT DAYS is a journal for market sellers.\n\nKeep track of the markets you apply to, your booth fees, and the sales you make. Record notes after each market and review how venues and products performed over time.\n\nBuilt for independent makers, food trucks, night-market vendors, and sellers who move between regular and pop-up events. Features vary by plan.\n\nKeep the days behind every stall.\n\nFree includes market planning, applications, booth-fee records, preparation details, and private journals. Light adds sales and product records, individual market reviews, and basic summaries. Advanced adds comparisons, full reports on screen, optional PDF export, and staff collaboration.",
     "category": "Business",
     "supportWebsiteUrl": null,
     "privacyPolicyUrl": null,

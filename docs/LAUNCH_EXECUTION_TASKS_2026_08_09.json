@@ -379,12 +379,12 @@
     },
     {
       "id": "IOS-STORE-ADAPTERS",
-      "title": "Implement reviewed Apple purchase restore and management adapter",
+      "title": "Compile and verify locally integrated Apple purchase restore and management adapter",
       "owner": "agent",
       "status": "blocked_dependency",
       "dependsOn": ["IOS-DEVICE-ADAPTERS","APPLE-CATALOG-CONFIG"],
       "gateRefs": [],
-      "evidence": ["docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md"]
+      "evidence": ["docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md", "docs/IOS_WINDOWS_B05_PURCHASE_EXPERIENCE_2026_11_20.md", "docs/evidence/ios-windows-b05-purchase-2026-11-20.json"]
     },
     {
       "id": "ANDROID-ADAPTERS",
@@ -402,7 +402,7 @@
       "status": "blocked_dependency",
       "dependsOn": ["IOS-STORE-ADAPTERS","ACCOUNT-DELETION-RUNTIME","LEGAL-SUPPORT-APPROVAL"],
       "gateRefs": [],
-      "evidence": ["docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md"]
+      "evidence": ["docs/IOS_WINDOWS_FIRST_DELIVERY_PROPOSAL_2026_10_19.md", "docs/subscription/IOS_B05_STORE_HANDOFF_2026_11_20.md"]
     },
     {
       "id": "IOS-BRAND-ROLLOUT",

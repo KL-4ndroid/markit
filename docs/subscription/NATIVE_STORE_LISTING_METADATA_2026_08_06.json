@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourceDocument": "subscription/NATIVE_STORE_LISTING_METADATA_2026_08_06.md",
-  "updatedAt": "2026-11-11",
+  "updatedAt": "2026-11-20",
   "locale": "zh-TW",
   "status": "candidate_requires_manual_review",
   "submissionStatus": "disabled",
@@ -16,7 +16,7 @@
     "appName": "拾光日子",
     "subtitle": "給攤主的營業日誌與帳本",
     "promotionalText": "把每一次做生意的日子，好好留下來。",
-    "description": "拾光日子是給攤主的營業日誌與帳本。\n\n記下每一次擺攤、每一筆營業、每個場地與商品表現，讓經營資料慢慢累積成看得懂的紀錄。\n\n- 記錄市集報名、錄取與攤位費，出攤前核對安排。\n- 在現場記錄成交與顧客互動，收攤後整理收入及心得。\n- 回顧市集和商品表現，為下次出攤準備。\n\n把每一次做生意的日子，好好留下來。\n\n實際功能依方案及 App 內說明提供。",
+    "description": "拾光日子是給攤主的營業日誌與帳本。\n\n記下每一次擺攤、每一筆營業、每個場地與商品表現，讓經營資料慢慢累積成看得懂的紀錄。\n\n- 記錄市集報名、錄取與攤位費，出攤前核對安排。\n- 在現場記錄成交與顧客互動，收攤後整理收入及心得。\n- 回顧市集和商品表現，為下次出攤準備。\n\n把每一次做生意的日子，好好留下來。\n\n實際功能依方案及 App 內說明提供。\n\nFree 方案可安排市集、記錄報名與繳費、設備條件及私人心得。輕量版加入銷售與商品記錄、單場成果及基本摘要；高階版提供跨市集比較、完整網頁報告、選用 PDF 匯出與員工協作。",
     "keywords": "市集管理,擺攤記錄,品牌經營,銷售記錄,商品管理,成本管理,出攤復盤",
     "primaryCategory": "Business",
     "secondaryCategory": "Productivity",
@@ -24,12 +24,12 @@
     "marketingUrl": null,
     "privacyPolicyUrl": null,
     "privacyChoicesUrl": null,
-    "reviewNotesDraft": "Authentication is required. Use the non-expiring review credentials supplied securely in App Store Connect. The review workspace must contain disposable sample data and no customer information. Confirm the final subscription, restore, role, and account-deletion behavior against the submitted binary before submission."
+    "reviewNotesDraft": "Authentication is required. Use the non-expiring review credentials supplied securely in App Store Connect. The review workspace must contain disposable sample data and no customer information. Confirm the final subscription, restore, role, and account-deletion behavior against the submitted binary before submission. Purchase and restore are in Settings > Plan center. The app first shows localized store prices and renewal terms, then the native store confirmation. Restore never starts a new purchase. Existing subscriptions must be managed at their original store. Verify production account-deletion execution and native transaction handling before submitting this draft."
   },
   "google": {
     "appName": "拾光日子",
     "shortDescription": "給攤主的營業日誌與帳本，記下每場市集、每筆營業與每次出攤心得。",
-    "fullDescription": "拾光日子是給攤主的營業日誌與帳本。\n\n記下每一次擺攤、每一筆營業、每個場地與商品表現，讓經營資料慢慢累積成看得懂的紀錄。\n\n- 記錄市集報名、錄取與攤位費，出攤前核對安排。\n- 在現場記錄成交與顧客互動，收攤後整理收入及心得。\n- 回顧市集和商品表現，為下次出攤準備。\n\n把每一次做生意的日子，好好留下來。\n\n實際功能依方案及 App 內說明提供。",
+    "fullDescription": "拾光日子是給攤主的營業日誌與帳本。\n\n記下每一次擺攤、每一筆營業、每個場地與商品表現，讓經營資料慢慢累積成看得懂的紀錄。\n\n- 記錄市集報名、錄取與攤位費，出攤前核對安排。\n- 在現場記錄成交與顧客互動，收攤後整理收入及心得。\n- 回顧市集和商品表現，為下次出攤準備。\n\n把每一次做生意的日子，好好留下來。\n\n實際功能依方案及 App 內說明提供。\n\nFree 方案可安排市集、記錄報名與繳費、設備條件及私人心得。輕量版加入銷售與商品記錄、單場成果及基本摘要；高階版提供跨市集比較、完整網頁報告、選用 PDF 匯出與員工協作。",
     "category": "Business",
     "supportWebsiteUrl": null,
     "privacyPolicyUrl": null,

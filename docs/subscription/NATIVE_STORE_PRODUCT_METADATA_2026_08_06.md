@@ -1,5 +1,7 @@
 # Native Store Subscription Product Metadata
 
+2026-11-20 current Apple handoff: the JSON and validator now require four `_2026_10_v1` products (Pro monthly/annual, Team monthly/annual). No Founder SKU is offered; the older five-product discussion below is historical. Use [B05 current handoff](IOS_B05_STORE_HANDOFF_2026_11_20.md) and [four-product catalog](APPLE_STORE_CATALOG_CANDIDATE_2026_11_20.json), not the old disabled catalog IDs. Review and submission remain pending; localized price still comes from the store.
+
 Date: 2026-08-06
 
 Status: zh-TW candidate product copy complete; six manual reviews pending; Founder mechanism deferred

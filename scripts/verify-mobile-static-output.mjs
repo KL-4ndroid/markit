@@ -35,6 +35,8 @@ const forbiddenPaths = [
 ];
 
 const forbiddenBundlePatterns = [
+  { pattern: 'synthetic-not-a-real-token', label: 'B05 injected UI fixture' },
+  { pattern: 'B05 手機流程驗收', label: 'B05 test harness copy' },
   { pattern: '@apple/app-store-server-library', label: 'Apple server SDK package name' },
   { pattern: 'native_billing_private.command', label: 'private billing writer RPC' },
   { pattern: 'pg-protocol', label: 'PostgreSQL wire protocol client' },

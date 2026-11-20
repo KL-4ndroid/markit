@@ -27,7 +27,7 @@ try {
   const currentOutput = JSON.parse(current.stdout);
   assert.equal(currentOutput.report.readyForConsoleEntry, false);
   assert.equal(currentOutput.report.blockerCount, 6);
-  assert.equal(currentOutput.report.founderDisposition, 'deferred_pending_mechanism');
+  assert.equal(currentOutput.report.founderDisposition, 'not_offered');
   assert.doesNotMatch(current.stdout, /Féria|priceVersion|capability|description|benefit/iu);
 
   const ready = JSON.parse(readFileSync(canonicalPath, 'utf8')) as MutableDocument;

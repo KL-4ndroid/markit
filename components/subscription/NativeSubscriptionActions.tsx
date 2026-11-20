@@ -1,110 +1,74 @@
 'use client';
 
-import { ExternalLink, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
-import { useEffect, useState } from 'react';
-
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { getNetworkPort } from '@/lib/platform/network-capability';
+import { getLifecyclePort } from '@/lib/platform/lifecycle-capability';
+import { getApplePurchaseRuntime, getServerApplePurchaseRuntime, subscribeApplePurchaseRuntime } from '@/lib/subscription/apple-purchase-runtime';
+import { createApplePurchaseSession, type ApplePurchaseContext, type ApplePurchaseState } from '@/lib/subscription/apple-purchase-session';
+import { ApplePurchaseView } from './ApplePurchaseView';
 import { Button } from '@/components/ui/Button';
-import { getInAppPurchasePort } from '@/lib/platform/in-app-purchase-capability';
-import type { InAppPurchaseAvailability } from '@/lib/platform/contracts/in-app-purchase';
-import {
-  openNativeSubscriptionManagement,
-  runNativePurchaseRestore,
-  type NativePurchaseWorkflowState,
-} from '@/lib/subscription/native-purchase-workflow';
 
-export function NativeSubscriptionActions({
-  canManageSubscription,
-  accountBindingToken = null,
-  verificationRuntimeAvailable = false,
-}: {
-  canManageSubscription: boolean;
-  accountBindingToken?: string | null;
-  verificationRuntimeAvailable?: boolean;
+export function NativeSubscriptionActions({ ownerId = null, accessToken = null, capabilityFresh = false }: {
+  canManageSubscription?: boolean; ownerId?: string | null; accessToken?: string | null; capabilityFresh?: boolean;
 }) {
-  const [availability, setAvailability] = useState<InAppPurchaseAvailability | null>(null);
-  const [workflow, setWorkflow] = useState<NativePurchaseWorkflowState | null>(null);
-
+  const runtime = useSyncExternalStore(subscribeApplePurchaseRuntime, getApplePurchaseRuntime, getServerApplePurchaseRuntime);
+  const [state, setState] = useState<ApplePurchaseState>({ phase: 'loading', products: [], message: '正在確認商店服務…' });
+  const [source, setSource] = useState<{ ownerId: string; billingOrigin: string | null; hasActiveSubscription: boolean } | null>(null);
+  const [online, setOnline] = useState(true);
+  const [attempt, setAttempt] = useState(0);
+  const session = useRef<ReturnType<typeof createApplePurchaseSession> | null>(null);
+  // Invalidate old async work before effect cleanup on account switch.
+  const current = useRef({ ownerId, accessToken, capabilityFresh });
+  current.current = { ownerId, accessToken, capabilityFresh };
   useEffect(() => {
-    let active = true;
-    void getInAppPurchasePort().getAvailability().then(value => {
-      if (active) setAvailability(value);
+    if (!runtime?.configuration.enabled || !ownerId || !accessToken) return;
+    let closed = false; let stopTransactions = () => {}; let stopLifecycle = () => {}; let stopNetwork = () => {};
+    let context: ApplePurchaseContext | null = null;
+    void runtime.connect(ownerId, accessToken).then(async connection => {
+      if (closed || current.current.ownerId !== ownerId) return;
+      const network = getNetworkPort();
+      context = { ownerId, accountToken: connection.accountToken, online: network.getCurrentStatus().connected,
+        ownerAuthorized: true, capabilityFresh: current.current.capabilityFresh,
+        billingOrigin: connection.billingOrigin, hasActiveSubscription: connection.hasActiveSubscription };
+      setSource({ ownerId, billingOrigin: connection.billingOrigin, hasActiveSubscription: connection.hasActiveSubscription });
+      setOnline(context.online);
+      const active = createApplePurchaseSession({ port: runtime.port, server: connection.server, configuration: runtime.configuration,
+        context: () => current.current.ownerId === ownerId && context
+          ? { ...context, capabilityFresh: current.current.capabilityFresh } : null,
+        changed: value => {
+          if (!closed && current.current.ownerId === ownerId) {
+            setState(value);
+            if (value.phase === 'confirmed') setSource({ ownerId, billingOrigin: 'apple_app_store', hasActiveSubscription: true });
+          }
+        } });
+      session.current = active;
+      stopNetwork = network.subscribe(value => {
+        if (!context || closed) return;
+        context = { ...context, online: value.connected }; setOnline(value.connected);
+        if (value.connected) void active.retry();
+      });
+      stopLifecycle = getLifecyclePort().subscribe(value => { if (value === 'active') void active.retry(); });
+      if (runtime.port.subscribeTransactions) {
+        const stop = await runtime.port.subscribeTransactions(() => { void active.retry(); });
+        if (closed) { stop(); return; } stopTransactions = stop;
+      }
+      if (!closed) await active.initialize();
+    }).catch(() => {
+      if (!closed && current.current.ownerId === ownerId) {
+        setSource(null); setState({ phase: 'blocked', products: [], message: '商店驗證服務尚未啟用或暫時無法連線，請稍後再試。' });
+      }
     });
-    return () => { active = false; };
-  }, []);
-
-  const operationReady = availability?.available === true
-    && verificationRuntimeAvailable
-    && Boolean(accountBindingToken);
-  const isBusy = workflow?.phase === 'restoring' || workflow?.phase === 'managing';
-
-  const restorePurchase = async () => {
-    if (!operationReady || !accountBindingToken) return;
-    setWorkflow({ phase: 'restoring', products: [], evidence: [], errorCode: null, retryable: false });
-    setWorkflow(await runNativePurchaseRestore({
-      port: getInAppPurchasePort(),
-      request: { accountBinding: { opaqueAccountToken: accountBindingToken } },
-    }));
-  };
-
-  const manageSubscription = async () => {
-    if (!availability?.available || !canManageSubscription) return;
-    setWorkflow({ phase: 'managing', products: [], evidence: [], errorCode: null, retryable: false });
-    setWorkflow(await openNativeSubscriptionManagement(getInAppPurchasePort()));
-  };
-
-  const statusLabel = availability === null
-    ? '正在確認商店服務'
-    : availability.available
-      ? verificationRuntimeAvailable
-        ? '商店服務可用'
-        : '商店驗證服務尚未啟用'
-      : availability.reason === 'web_checkout_deferred'
-        ? 'Web 付款將於後續開放'
-        : '此裝置尚未連接商店服務';
-
-  if (!availability?.available) return null;
-
-  return (
-    <section className="mt-4 border-t border-atelier-line pt-4" aria-label="訂閱操作">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
-          {availability === null || isBusy ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <ShieldCheck className="h-4 w-4 text-primary" aria-hidden="true" />
-          )}
-          <span>{statusLabel}</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="secondary"
-            size="compact"
-            leadingIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}
-            disabled={!operationReady || isBusy}
-            onClick={() => void restorePurchase()}
-          >
-            恢復購買
-          </Button>
-          <Button
-            variant="secondary"
-            size="compact"
-            leadingIcon={<ExternalLink className="h-4 w-4" aria-hidden="true" />}
-            disabled={!availability?.available || !canManageSubscription || isBusy}
-            onClick={() => void manageSubscription()}
-          >
-            管理訂閱
-          </Button>
-        </div>
-      </div>
-      {workflow?.phase === 'pending' && (
-        <p className="mt-2 text-xs text-atelier-clay" role="status">商店正在處理購買，確認後會重新檢查方案。</p>
-      )}
-      {workflow?.phase === 'awaiting_server_verification' && (
-        <p className="mt-2 text-xs text-atelier-clay" role="status">購買資料已收到，正在等待伺服器驗證。</p>
-      )}
-      {workflow?.phase === 'failed' && (
-        <p className="mt-2 text-xs text-danger" role="alert">目前無法完成訂閱操作，請稍後再試。</p>
-      )}
-    </section>
-  );
+    return () => { closed = true; context = null; session.current?.dispose(); session.current = null; stopTransactions(); stopLifecycle(); stopNetwork(); };
+  }, [runtime, ownerId, accessToken, attempt]);
+  useEffect(() => { if (capabilityFresh && ['idle', 'blocked'].includes(session.current?.getState().phase ?? '')) void session.current?.initialize(); }, [capabilityFresh]);
+  if (!runtime?.configuration.enabled || !ownerId || !accessToken) return null;
+  const accountSource = source?.ownerId === ownerId ? source : null;
+  if (!accountSource && state.phase === 'blocked') return <div className="mt-4 space-y-2" role="status">
+    <p className="text-sm text-muted-foreground">{state.message}</p><Button variant="secondary" onClick={() => setAttempt(value => value + 1)}>重新連接商店服務</Button>
+  </div>;
+  return <ApplePurchaseView key={ownerId} state={accountSource ? state : { phase: 'loading', products: [], message: '正在確認商店服務…' }}
+    configuration={runtime.configuration} activeSubscription={state.phase === 'confirmed' || (accountSource?.hasActiveSubscription ?? true)}
+    billingOrigin={state.phase === 'confirmed' ? 'apple_app_store' : accountSource?.billingOrigin ?? null} online={online} authorized={capabilityFresh}
+    purchase={async id => { await session.current?.purchase(id); }} restore={async () => { await session.current?.restore(); }}
+    retry={async () => { await session.current?.retry(); }} manage={async () => { await session.current?.manage(); }} />;
 }

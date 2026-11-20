@@ -36,8 +36,10 @@ assert.ok(Buffer.byteLength(current.apple.keywords, 'utf8') <= 100);
 assert.doesNotMatch(canonicalRaw, /@|password\s*[:=]|token\s*[:=]|secret\s*[:=]/i);
 assert.doesNotMatch(
   `${current.apple.description}\n${current.google.fullDescription}`,
-  /65%|Founder|席次|照片上傳|無限|PDF|付費分析|訂閱已開放/iu,
+  /65%|Founder|席次|照片上傳|無限|付費分析|訂閱已開放/iu,
 );
+assert.match(current.apple.description, /高階版[^。]*選用 PDF/);
+assert.match(current.google.fullDescription, /高階版[^。]*選用 PDF/);
 
 function clone(): Record<string, any> {
   return structuredClone(canonicalInput);

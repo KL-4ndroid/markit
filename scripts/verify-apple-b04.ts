@@ -17,7 +17,8 @@ const purpose='apple-b04',databaseName='stallight_b04_test';
 const read=(p:string)=>readFileSync(p,'utf8');
 async function listen(server:Server){await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const address=server.address();assert.ok(address&&typeof address==='object');return 'http://127.0.0.1:'+address.port;}
 async function main(){
- assert.deepEqual(process.argv.slice(2),['--isolated']);
+ const b05=process.argv[2]==='--b05-isolated';
+ assert.deepEqual(process.argv.slice(2),[b05?'--b05-isolated':'--isolated']);
  assert.ok(!process.env.DOCKER_HOST&&!process.env.DOCKER_CONTEXT&&!process.env.VERCEL);
  assert.ok(!Object.keys(process.env).some(k=>/SUPABASE|(^|_)R2_|APPLE_.*KEY|DATABASE_URL/.test(k)&&process.env[k]),'Provider credentials refused');
  for(const p of ['.env','.env.local','.env.production','.env.production.local'])assert.ok(!existsSync(p),'Active env file refused');
@@ -68,10 +69,15 @@ async function main(){
   const info=services.connectionInfo();
   const handlers=createAppleHandlers({enabled:true,identity,verifier,store,adapter,now:Date.now,authenticate:async request=>{const token=request.headers.get('authorization');if(!token)return null;const r=await fetch(info.authUrl+'/user',{headers:{authorization:token}});return r.ok?(await r.json()).id:null;}});
   let dropPurchaseAck=false;
-  const api=createServer((req,res)=>{void(async()=>{const chunks:Buffer[]=[];for await(const c of req)chunks.push(Buffer.from(c));const request=new Request('http://127.0.0.1'+req.url,{method:'POST',headers:req.headers as Record<string,string>,body:Buffer.concat(chunks)});const response=await(req.url==='/notification'?handlers.notification(request):handlers.purchase(request));if(dropPurchaseAck&&req.url==='/purchase'&&response.ok){dropPurchaseAck=false;res.destroy();return;}res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));})().catch(()=>res.writeHead(500).end());});servers.push(api);const origin=await listen(api);
+  const api=createServer((req,res)=>{void(async()=>{const chunks:Buffer[]=[];for await(const c of req)chunks.push(Buffer.from(c));const request=new Request('http://127.0.0.1'+req.url,{method:'POST',headers:req.headers as Record<string,string>,body:Buffer.concat(chunks)});const response=await(req.url==='/notification'?handlers.notification(request):handlers.purchase(request));if(dropPurchaseAck&&req.url!=='/notification'&&response.ok){dropPurchaseAck=false;res.destroy();return;}res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));})().catch(()=>res.writeHead(500).end());});servers.push(api);const origin=await listen(api);
   const proof=(overrides:object={})=>({schemaVersion:1,store:'apple_app_store',productId:state.productId,opaqueVerificationPayload:cryptographic.sign(transaction(overrides))});
   const purchase=async(payload:unknown=proof(),actor=users.owner.id)=>{const r=await fetch(origin+'/purchase',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+services!.token(actor)},body:JSON.stringify(payload)});return {status:r.status,body:await r.json() as{code:string}};};
   const account=()=>JSON.parse(sql(`SELECT to_jsonb(a) FROM public.subscription_accounts a WHERE owner_id='${users.owner.id}';`));
+  if(b05){
+   const {runAppleB05Integration}=await import('./lib/apple-b05-integration');
+   await runAppleB05Integration({origin,ownerId:users.owner.id,accessToken:services.token(users.owner.id),accountToken:context.expectedAccountBindingToken,productId:pro,
+    proof,account,sql,dropAck:()=>{dropPurchaseAck=true;}});return;
+  }
   const requests=await Promise.all([purchase(),purchase()]);assert.ok(requests.every(r=>r.status===200),JSON.stringify(requests));assert.equal(account().plan_code,'pro');assert.equal(account().plan_source,'billing');assert.equal(Number(sql('SELECT count(*) FROM public.billing_subscriptions;')),1);pass('real HTTP / verified signatures / concurrent purchase single subscription');
   const replay=await purchase();assert.equal(replay.body.code,'duplicate');pass('purchase replay is idempotent');
   state={...state,transactionId:'100010'};dropPurchaseAck=true;await assert.rejects(purchase());assert.equal((await purchase()).body.code,'duplicate');assert.equal(Number(sql('SELECT count(*) FROM public.billing_subscriptions;')),1);assert.equal(sql("SELECT provider_transaction_ref FROM public.billing_transactions LIMIT 1;"),'');pass('winning commit acknowledgement loss retries without duplicate subscription or invented charge');

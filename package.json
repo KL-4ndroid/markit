@@ -72,6 +72,7 @@
     "@feria/capacitor-file-preview": "file:plugins/feria-file-preview",
     "@headlessui/react": "^2.2.9",
     "@react-pdf/renderer": "^4.5.1",
+    "@stallight/capacitor-purchases": "file:plugins/stallight-purchases",
     "@supabase/supabase-js": "^2.91.1",
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",

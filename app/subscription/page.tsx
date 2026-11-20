@@ -4,6 +4,7 @@ import { PricingCard } from '@/components/subscription/PricingCard';
 import { SubscriptionBackButton } from '@/components/subscription/SubscriptionBackButton';
 import { SubscriptionSimulationPanel } from '@/components/subscription/SubscriptionSimulationPanel';
 import { SubscriptionAccountSummary } from '@/components/subscription/SubscriptionAccountSummary';
+import { SubscriptionPreviewOnly } from '@/components/subscription/SubscriptionPreviewOnly';
 import { isInternalTestSurfaceAvailable } from '@/lib/deployment/internal-test-surface';
 import {
   PLAN_PREVIEWS,
@@ -34,7 +35,7 @@ export default function SubscriptionPage() {
           </div>
         )}
 
-        <section className="flex items-start gap-3 border-y border-atelier-line bg-atelier-paper px-4 py-4 sm:rounded-card sm:border">
+        <SubscriptionPreviewOnly><section className="flex items-start gap-3 border-y border-atelier-line bg-atelier-paper px-4 py-4 sm:rounded-card sm:border">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
           <div>
             <h2 className="text-sm font-semibold text-foreground">可用範圍</h2>
@@ -46,7 +47,7 @@ export default function SubscriptionPage() {
 
         <section className="mt-7 grid gap-4 md:grid-cols-3" aria-label="未來方案預覽">
           {PLAN_PREVIEWS.map(plan => <PricingCard key={plan.id} plan={plan} />)}
-        </section>
+        </section></SubscriptionPreviewOnly>
       </div>
     </div>
   );

@@ -86,3 +86,10 @@ export interface InAppPurchasePort {
   restore(input: InAppPurchaseRestoreRequest): Promise<InAppPurchaseResult<readonly StorePurchaseEvidence[]>>;
   openSubscriptionManagement(): Promise<InAppPurchaseResult<true>>;
 }
+
+/** Recovery/acknowledgement capability; shared logic must not persist raw store receipts. */
+export interface RecoverablePurchasePort extends InAppPurchasePort {
+  recover(binding: StoreAccountBinding): Promise<InAppPurchaseResult<readonly StorePurchaseEvidence[]>>;
+  finish(evidence: StorePurchaseEvidence, binding: StoreAccountBinding): Promise<InAppPurchaseResult<true>>;
+  subscribeTransactions?(listener: () => void): Promise<() => void>;
+}
